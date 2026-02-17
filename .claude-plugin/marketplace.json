@@ -1,0 +1,21 @@
+{
+  "name": "coding-friend",
+  "owner": {
+    "name": "Anh-Thi Dinh"
+  },
+  "metadata": {
+    "description": "Lean toolkit for disciplined engineering workflows with Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "coding-friend",
+      "source": "./",
+      "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
+      "author": {
+        "name": "Anh-Thi Dinh"
+      },
+      "keywords": ["skills", "tdd", "debugging", "code-review", "workflows", "knowledge", "agents"],
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+/tmp/
+*.log
+
+# Claude Code local settings (not tracked)
+.claude/settings.local.json
+
+# AI config files (managed by AI Sync)
+.agent/
+.aider*
+.copilot/
+.cursor/
+.cursorrules
+.gemini/
+.github/copilot-instructions.md
+.github/skills
+.ipynb_checkpoints
+.windsurfrules
+ai-docs
+docs/learn
+docs/memory
+docs/plans
+# End AI Sync managed

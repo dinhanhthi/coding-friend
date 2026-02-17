@@ -1,0 +1,9 @@
+{
+  "name": "coding-friend",
+  "version": "1.0.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
+  "author": {
+    "name": "Anh-Thi Dinh"
+  },
+  "keywords": ["skills", "tdd", "debugging", "code-review", "workflows", "knowledge", "agents"]
+}

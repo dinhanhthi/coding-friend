@@ -1,0 +1,62 @@
+name: Release on Tag Push
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog for this version
+        id: changelog
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          BODY=$(awk -v tag="$TAG" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              header=$2
+              gsub(/[^v0-9.].*/, "", header)
+              if (header == tag) { found=1; next }
+            }
+            found { print }
+          ' docs/CHANGELOG.md)
+
+          if [ -z "$BODY" ]; then
+            echo "::warning::No changelog entry found for $TAG, using default message"
+            BODY="Release $TAG"
+          fi
+
+          echo "$BODY" > /tmp/release-body.md
+
+      - name: Delete existing release if present
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$TAG" &>/dev/null; then
+            echo "Deleting existing release for $TAG"
+            gh release delete "$TAG" --yes
+          fi
+
+      - name: Create GitHub Release
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file /tmp/release-body.md

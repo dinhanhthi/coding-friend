@@ -1,0 +1,18 @@
+# Directories to block from agent access
+# These are typically large, generated, or irrelevant to coding
+
+node_modules
+dist
+build
+.next
+.nuxt
+__pycache__
+.venv
+venv
+vendor
+target
+.git
+coverage
+.cache
+.turbo
+.output

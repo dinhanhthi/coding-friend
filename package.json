@@ -1,0 +1,12 @@
+{
+  "name": "coding-friend",
+  "version": "2.0.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
+  "private": true,
+  "author": "Anh-Thi Dinh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dinhanhthi/coding-friend.git"
+  }
+}
