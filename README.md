@@ -24,14 +24,14 @@ In Claude Code, run:
 
 ```
 /plugin marketplace add dinhanhthi/coding-friend
-/plugin install coding-friend-marketplace@coding-friend
+/plugin install coding-friend@coding-friend-marketplace
 ```
 
 Or via CLI:
 
 ```bash
 claude plugin marketplace add dinhanhthi/coding-friend
-claude plugin install coding-friend-marketplace@coding-friend
+claude plugin install coding-friend@coding-friend-marketplace
 ```
 
 Restart Claude Code after installing. The plugin installs **globally** and is active across all projects.
@@ -50,7 +50,7 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 ```json
 {
   "enabledPlugins": {
-    "coding-friend-marketplace@coding-friend": false
+    "coding-friend@coding-friend-marketplace": false
   }
 }
 ```
@@ -59,8 +59,8 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 
 ```
 /plugin marketplace update                      # Update marketplace
-/plugin update coding-friend-marketplace@coding-friend      # Update plugin
-/plugin uninstall coding-friend-marketplace@coding-friend   # Uninstall plugin
+/plugin update coding-friend@coding-friend-marketplace      # Update plugin
+/plugin uninstall coding-friend@coding-friend-marketplace   # Uninstall plugin
 /plugin marketplace remove coding-friend-marketplace   # Remove marketplace
 ```
 
