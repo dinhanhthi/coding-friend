@@ -6,7 +6,7 @@
 
 Lean toolkit for disciplined engineering workflows with Claude Code.
 
-## What It Does
+## ✨ What It Does
 
 - Enforces test-driven development (TDD)
 - Provides systematic debugging methodology
@@ -17,7 +17,7 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - Helps humans learn from vibe coding sessions (`/cf-learn`)
 - In-depth research with web search and parallel subagents (`/cf-research`)
 
-## Installation
+## 📦 Installation
 
 ### Prerequisites
 
@@ -67,7 +67,7 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 }
 ```
 
-## Manage
+## 🔧 Manage
 
 ```
 /plugin marketplace update                      # Update marketplace
@@ -87,7 +87,7 @@ By default, third-party plugins are **not** auto-updated. To enable:
 
 This updates the plugin automatically on each Claude Code startup.
 
-## Skills
+## 🛠️ Skills
 
 ### Slash Commands (user triggers)
 

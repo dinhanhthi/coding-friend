@@ -19,6 +19,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 ## Available Skills
 
 ### Slash Commands (user triggers)
+- `/cf-init` — Initialize coding-friend workspace (folders + .gitignore)
 - `/cf-plan [task]` — Brainstorm and write implementation plan
 - `/cf-review [target]` — Dispatch code review to subagent
 - `/cf-commit [hint]` — Analyze diff and create conventional commit

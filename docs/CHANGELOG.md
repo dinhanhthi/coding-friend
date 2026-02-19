@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.0
+
+- Add `/cf-init` command to initialize coding-friend workspace in a project (creates docs folders + optional .gitignore setup)
+
 ## v1.2.2
 
 - Add `/cf-update` command to update plugin and refresh statusline

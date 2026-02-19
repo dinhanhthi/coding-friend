@@ -10,11 +10,12 @@ Lean toolkit for disciplined engineering workflows.
 4. **Respect boundaries** — Do not read files in .coding-friend/ignore or .env/credentials.
 5. **Commit with purpose** — Conventional commits. Focus on "why", not "what".
 6. **No AI attribution** — Never add "Co-Authored-By" or any AI/Claude mention in commits, code, or PRs.
-7. **Keep cf-help in sync** — When adding/removing skills, commands, agents, or conventions, update `skills/cf-help/SKILL.md` to match.
+7. **Keep all references in sync** — When adding/removing skills or commands, update ALL of these: `skills/cf-help/SKILL.md`, `hooks/compact-marker.sh`, `hooks/dev-rules-reminder.sh`.
 
 ## Skills
 
 ### Commands (user triggers with /slash)
+- `/cf-init` — Initialize coding-friend in the current project
 - `/cf-plan [task]` — Brainstorm + implementation plan
 - `/cf-review [target]` — Code review (runs in forked subagent)
 - `/cf-commit [hint]` — Smart conventional commit
