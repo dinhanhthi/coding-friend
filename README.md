@@ -19,6 +19,17 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## Installation
 
+### Prerequisites
+
+Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs and checking latest versions. Install it for the best experience:
+
+```bash
+brew install gh
+gh auth login
+```
+
+Without `gh`, these skills fall back to manual alternatives (e.g. browser links, `curl`).
+
 ### Via Claude Code marketplace (recommended)
 
 In Claude Code, run:

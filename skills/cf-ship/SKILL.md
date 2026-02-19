@@ -38,9 +38,15 @@ git push
 ### Step 4: Create PR (if on a feature branch)
 Only if current branch is NOT `main` or `master`:
 
+Try `gh` first, fall back to a manual link if `gh` is not installed:
+
 ```bash
 gh pr create --title "<title>" --body "<body>"
 ```
+
+If `gh` is not available, tell the user to create the PR manually and provide the URL:
+> `gh` CLI not found. Please create a PR manually:
+> https://github.com/<owner>/<repo>/compare/<branch>?expand=1
 
 PR body template:
 ```
