@@ -95,7 +95,7 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 | `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules |
 | `privacy-block.sh` | PreToolUse | Block .env, credentials |
 | `scout-block.sh` | PreToolUse | Block .coding-friend/ignore patterns |
-| `statusline.sh` | Statusline | Show session info |
+| `statusline.sh` | Statusline | Show session info (model, branch, files read) |
 | `compact-marker.sh` | PreCompact | Preserve context |
 | `context-tracker.sh` | PostToolUse | Track files read |
 
@@ -211,6 +211,24 @@ build
 .next
 __pycache__
 ```
+
+### Statusline
+
+The plugin includes a statusline hook that displays: plugin name, active model, git branch, and files read count.
+
+If you have a custom `statusLine` in `~/.claude/settings.json`, it will take priority over the plugin's statusline. To use the one from coding-friend instead, remove the `statusLine` block from your global settings:
+
+```json
+// ~/.claude/settings.json
+{
+  "statusLine": {  // ← remove this block
+    "type": "command",
+    "command": "..."
+  }
+}
+```
+
+To disable the plugin's statusline, set `"statusline": false` in `.coding-friend/config.json`.
 
 ### Privacy
 

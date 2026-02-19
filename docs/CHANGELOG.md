@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.1
+
+- Show active model in statusline hook
+- Add statusline configuration guide to README
+
 ## v1.0.0
 
 - Initial release
