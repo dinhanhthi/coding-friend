@@ -19,45 +19,27 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## 📦 Installation
 
-### Prerequisites
+- **Prerequisites** (optional): Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs. Install with `brew install gh && gh auth login`. Without it, skills fall back to manual alternatives.
+- Run `claude` and install the plugin from the marketplace:
+  ```
+  /plugin marketplace add dinhanhthi/coding-friend
+  /plugin install coding-friend@coding-friend-marketplace
+  ```
+- **In each project**, run `/cf-init` to set up the workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally add them to `.gitignore`.
+- **Enable auto-update**: run `/plugin` > Go to installed plugins > select `coding-friend-marketplace` > Enable auto-update
+- **Restart Claude Code** to load the plugin.
 
-Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs and checking latest versions. Install it for the best experience:
+<details>
+<summary><b>Other installation methods & options</b></summary>
 
-```bash
-brew install gh
-gh auth login
-```
-
-Without `gh`, these skills fall back to manual alternatives (e.g. browser links, `curl`).
-
-### Via Claude Code marketplace (recommended)
-
-In Claude Code, run:
-
-```
-/plugin marketplace add dinhanhthi/coding-friend
-/plugin install coding-friend@coding-friend-marketplace
-```
-
-Or via CLI:
-
-```bash
-claude plugin marketplace add dinhanhthi/coding-friend
-claude plugin install coding-friend@coding-friend-marketplace
-```
-
-Restart Claude Code after installing. The plugin installs **globally** and is active across all projects.
-
-### For local development
+**For local development:**
 
 ```bash
 git clone https://github.com/dinhanhthi/coding-friend.git
 claude --plugin-dir ./coding-friend
 ```
 
-### Disable for a specific project
-
-To disable coding-friend in a particular project, add to `.claude/settings.json` or `.claude/settings.local.json`:
+**Disable for a specific project** — add to `.claude/settings.json` or `.claude/settings.local.json`:
 
 ```json
 {
@@ -67,71 +49,67 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 }
 ```
 
+</details>
+
 ## 🔧 Manage
 
-```
-/plugin marketplace update                      # Update marketplace
-/plugin update coding-friend@coding-friend-marketplace      # Update plugin
-/plugin uninstall coding-friend@coding-friend-marketplace   # Uninstall plugin
+```bash
+# Update marketplace
+/plugin marketplace update
+# Update plugin
+/plugin update coding-friend@coding-friend-marketplace
+# Uninstall plugin
+/plugin uninstall coding-friend@coding-friend-marketplace
+# Remove marketplace
 /plugin marketplace remove coding-friend-marketplace   # Remove marketplace
 ```
-
-### Enable auto-update
-
-By default, third-party plugins are **not** auto-updated. To enable:
-
-1. Run `/plugin` in Claude Code
-2. Go to **Marketplaces** tab
-3. Select `coding-friend-marketplace`
-4. Choose **Enable auto-update**
-
-This updates the plugin automatically on each Claude Code startup.
 
 ## 🛠️ Skills
 
 ### Slash Commands (user triggers)
 
-| Command | Description |
-|---|---|
-| `/cf-plan [task]` | Brainstorm and write implementation plan |
-| `/cf-review [target]` | Dispatch code review to subagent |
-| `/cf-commit [hint]` | Analyze diff and create conventional commit |
-| `/cf-ship [hint]` | Verify, commit, push, and create PR |
-| `/cf-fix [bug]` | Quick bug fix workflow |
-| `/cf-remember [topic]` | Extract project knowledge to `docs/memory/` |
-| `/cf-learn [topic]` | Extract learnings to `docs/learn/` |
-| `/cf-research [topic]` | In-depth research with web search → `docs/research/` |
-| `/cf-statusline` | Setup coding-friend statusline |
-| `/cf-update` | Update plugin and refresh statusline |
+| Command                | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `/cf-init`             | Initialize workspace folders + optional `.gitignore` setup |
+| `/cf-plan [task]`      | Brainstorm and write implementation plan                   |
+| `/cf-review [target]`  | Dispatch code review to subagent                           |
+| `/cf-commit [hint]`    | Analyze diff and create conventional commit                |
+| `/cf-ship [hint]`      | Verify, commit, push, and create PR                        |
+| `/cf-fix [bug]`        | Quick bug fix workflow                                     |
+| `/cf-remember [topic]` | Extract project knowledge to `docs/memory/`                |
+| `/cf-learn [topic]`    | Extract learnings to `docs/learn/`                         |
+| `/cf-research [topic]` | In-depth research with web search → `docs/research/`       |
+| `/cf-statusline`       | Setup coding-friend statusline                             |
+| `/cf-update`           | Update plugin and refresh statusline                       |
 
 ### Auto-Invoked (agent loads when relevant)
 
-| Skill | When |
-|---|---|
-| `cf-tdd` | Writing new code |
-| `cf-sys-debug` | Debugging bugs |
-| `cf-code-review` | Reviewing code |
+| Skill             | When                 |
+| ----------------- | -------------------- |
+| `cf-tdd`          | Writing new code     |
+| `cf-sys-debug`    | Debugging bugs       |
+| `cf-code-review`  | Reviewing code       |
 | `cf-verification` | Before claiming done |
 
 ## Hooks
 
-| Hook | Event | Purpose |
-|---|---|---|
-| `session-init.sh` | SessionStart | Bootstrap context |
-| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules |
-| `privacy-block.sh` | PreToolUse | Block .env, credentials |
-| `scout-block.sh` | PreToolUse | Block .coding-friend/ignore patterns |
-| `statusline.sh` | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
-| `compact-marker.sh` | PreCompact | Preserve context |
-| `context-tracker.sh` | PostToolUse | Track files read |
+| Hook                    | Event                    | Purpose                                            |
+| ----------------------- | ------------------------ | -------------------------------------------------- |
+| `session-init.sh`       | SessionStart             | Bootstrap context                                  |
+| `dev-rules-reminder.sh` | UserPromptSubmit         | Inject core rules                                  |
+| `privacy-block.sh`      | PreToolUse               | Block .env, credentials                            |
+| `scout-block.sh`        | PreToolUse               | Block .coding-friend/ignore patterns               |
+| `statusline.sh`         | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
+| `compact-marker.sh`     | PreCompact               | Preserve context                                   |
+| `context-tracker.sh`    | PostToolUse              | Track files read                                   |
 
 ## Agents
 
-| Agent | Purpose |
-|---|---|
-| `code-reviewer` | Multi-layer code review |
-| `implementer` | TDD implementation |
-| `planner` | Codebase exploration + task breakdown |
+| Agent           | Purpose                               |
+| --------------- | ------------------------------------- |
+| `code-reviewer` | Multi-layer code review               |
+| `implementer`   | TDD implementation                    |
+| `planner`       | Codebase exploration + task breakdown |
 
 ## Project Structure
 
@@ -144,7 +122,7 @@ coding-friend/
 ├── .claude-plugin/          # Plugin + marketplace manifest
 ├── .claude/                 # Settings + agents
 ├── hooks/                   # Lifecycle hooks
-├── skills/                  # 14 skills
+├── skills/                  # 15 skills
 └── docs/                    # Generated docs
     ├── plans/               # Implementation plans
     ├── memory/              # Project knowledge
@@ -182,16 +160,16 @@ Nothing to configure — coding-friend is active globally. On session start, hoo
 
 ### Daily workflows
 
-| Task | Command | What happens |
-|---|---|---|
-| **Add feature** | `/cf-plan [task]` → implement → `/cf-review` → `/cf-ship` | Plan → TDD → review → ship |
-| **Fix bug** | `/cf-fix [description]` | Reproduce → root cause → fix → verify. Auto-escalates after 3 failed attempts |
-| **Review code** | `/cf-review` or `/cf-review HEAD~3..HEAD` | 4-layer review (plan, quality, security, tests) in forked context |
-| **Commit** | `/cf-commit [hint]` | Runs tests → stages files → conventional commit |
-| **Debug** | Describe the bug naturally | `cf-sys-debug` auto-loads: investigate → analyze → hypothesis → fix |
-| **Save knowledge** | `/cf-remember [topic]` | Captures logic, conventions, decisions → `docs/memory/` |
-| **Learn** | `/cf-learn [topic]` | Extracts concepts from session → `docs/learn/` |
-| **Research** | `/cf-research [topic]` | Web search + parallel subagents → structured docs in `docs/research/` |
+| Task               | Command                                                   | What happens                                                                  |
+| ------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Add feature**    | `/cf-plan [task]` → implement → `/cf-review` → `/cf-ship` | Plan → TDD → review → ship                                                    |
+| **Fix bug**        | `/cf-fix [description]`                                   | Reproduce → root cause → fix → verify. Auto-escalates after 3 failed attempts |
+| **Review code**    | `/cf-review` or `/cf-review HEAD~3..HEAD`                 | 4-layer review (plan, quality, security, tests) in forked context             |
+| **Commit**         | `/cf-commit [hint]`                                       | Runs tests → stages files → conventional commit                               |
+| **Debug**          | Describe the bug naturally                                | `cf-sys-debug` auto-loads: investigate → analyze → hypothesis → fix           |
+| **Save knowledge** | `/cf-remember [topic]`                                    | Captures logic, conventions, decisions → `docs/memory/`                       |
+| **Learn**          | `/cf-learn [topic]`                                       | Extracts concepts from session → `docs/learn/`                                |
+| **Research**       | `/cf-research [topic]`                                    | Web search + parallel subagents → structured docs in `docs/research/`         |
 
 ## Configuration
 
@@ -217,15 +195,15 @@ Create `.coding-friend/config.json` in your project to customize settings:
 
 All fields are optional. Defaults are used when omitted. No file = all defaults.
 
-| Setting | Default | Description |
-|---|---|---|
-| `docsDir` | `"docs"` | Root folder for plans, memory, learn, and research docs |
-| `hooks.privacyBlock` | `true` | Block access to .env and credentials |
-| `hooks.scoutBlock` | `true` | Block access to .coding-friend/ignore patterns |
-| `hooks.devRulesReminder` | `true` | Inject rules on every prompt |
-| `hooks.contextTracker` | `true` | Track files read per session |
-| `commit.verify` | `true` | Run tests before committing |
-| `commit.conventionalCommits` | `true` | Enforce conventional commit format |
+| Setting                      | Default  | Description                                             |
+| ---------------------------- | -------- | ------------------------------------------------------- |
+| `docsDir`                    | `"docs"` | Root folder for plans, memory, learn, and research docs |
+| `hooks.privacyBlock`         | `true`   | Block access to .env and credentials                    |
+| `hooks.scoutBlock`           | `true`   | Block access to .coding-friend/ignore patterns          |
+| `hooks.devRulesReminder`     | `true`   | Inject rules on every prompt                            |
+| `hooks.contextTracker`       | `true`   | Track files read per session                            |
+| `commit.verify`              | `true`   | Run tests before committing                             |
+| `commit.conventionalCommits` | `true`   | Enforce conventional commit format                      |
 
 ### .coding-friend/ignore
 
@@ -260,6 +238,7 @@ Usage percentage is color-coded (green → red) based on utilization level. Requ
 ### Privacy
 
 The `privacy-block` hook automatically blocks access to:
+
 - `.env` files (except `.env.example`)
 - Credential files (`.pem`, `.key`, `id_rsa`)
 - SSH directories (`.ssh/`)
