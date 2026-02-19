@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.2
+
+- Fix statusline hook to use JSON response format for plugin compatibility
+
 ## v1.0.1
 
 - Show active model in statusline hook

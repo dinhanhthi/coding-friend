@@ -50,4 +50,13 @@ fi
 
 output="${output}${separator}${GRAY}${FILE_COUNT} files read${RESET}"
 
-printf "%s\n" "$output"
+# Escape for JSON
+escaped_output=$(printf '%s' "$output" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+cat <<EOF
+{
+  "hookSpecificOutput": {
+    "statusline": "$escaped_output"
+  }
+}
+EOF
