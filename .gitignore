@@ -22,7 +22,6 @@ node_modules/
 .copilot/
 .cursor/
 .cursorrules
-.gemini/
 .github/copilot-instructions.md
 .github/skills
 .ipynb_checkpoints
@@ -31,4 +30,5 @@ ai-docs
 docs/learn
 docs/memory
 docs/plans
+docs/research
 # End AI Sync managed

@@ -64,6 +64,17 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 /plugin marketplace remove coding-friend-marketplace   # Remove marketplace
 ```
 
+### Enable auto-update
+
+By default, third-party plugins are **not** auto-updated. To enable:
+
+1. Run `/plugin` in Claude Code
+2. Go to **Marketplaces** tab
+3. Select `coding-friend-marketplace`
+4. Choose **Enable auto-update**
+
+This updates the plugin automatically on each Claude Code startup.
+
 ## Skills
 
 ### Slash Commands (user triggers)
