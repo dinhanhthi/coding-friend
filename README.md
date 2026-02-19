@@ -91,6 +91,7 @@ This updates the plugin automatically on each Claude Code startup.
 | `/cf-learn [topic]` | Extract learnings to `docs/learn/` |
 | `/cf-research [topic]` | In-depth research with web search → `docs/research/` |
 | `/cf-statusline` | Setup coding-friend statusline |
+| `/cf-update` | Update plugin and refresh statusline |
 
 ### Auto-Invoked (agent loads when relevant)
 
@@ -240,7 +241,7 @@ This automatically configures `~/.claude/settings.json` with the correct path. R
 Example output:
 
 ```
-cf │ my-project │ claude-sonnet-4-6 │ ⎇ main │ 5% → 13:00
+cf v1.2.1 │ DocumentAnalysis │ Opus 4.6 │ ⎇ preprod │ 15% → 13:00
 ```
 
 Usage percentage is color-coded (green → red) based on utilization level. Requires `~/.claude/fetch-claude-usage.swift` for usage data (macOS only).

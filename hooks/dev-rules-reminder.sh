@@ -18,7 +18,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 # Lightweight reminder — injected on every user prompt
 REMINDER="<reminder>
 RULES: 1) Check skills first 2) Test before code 3) Verify before claiming 4) Respect .coding-friend/ignore 5) Conventional commits
-SKILLS: /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-remember /cf-learn
+SKILLS: /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-remember /cf-learn /cf-research /cf-statusline /cf-update
 AUTO: cf-tdd, cf-sys-debug, cf-verification, cf-code-review
 </reminder>"
 

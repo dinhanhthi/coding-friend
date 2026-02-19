@@ -28,6 +28,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - `/cf-learn [topic]` — Extract learnings to docs/learn/
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
+- `/cf-update` — Update plugin and refresh statusline
 
 ### Auto-Invoked (load when relevant)
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR

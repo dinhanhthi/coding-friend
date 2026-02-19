@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.2
+
+- Add `/cf-update` command to update plugin and refresh statusline
+- Update compact-marker and dev-rules-reminder hooks with missing skill references
+
 ## v1.2.1
 
 - Show plugin version in statusline (e.g. `cf v1.2.1 │ ...`)

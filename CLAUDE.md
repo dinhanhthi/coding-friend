@@ -24,6 +24,7 @@ Lean toolkit for disciplined engineering workflows.
 - `/cf-learn [topic]` — Extract learnings → docs/learn/
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
+- `/cf-update` — Update plugin + refresh statusline
 
 ### Auto-invoked (loaded when relevant)
 - `cf-tdd` — TDD workflow
