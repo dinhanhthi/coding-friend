@@ -30,6 +30,10 @@ LEVEL_10=$'\033[38;5;124m' # deep red
 
 separator="${GRAY} │ ${RESET}"
 
+# Plugin version
+PLUGINS_JSON="$HOME/.claude/plugins/installed_plugins.json"
+VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$PLUGINS_JSON" 2>/dev/null)
+
 # Current folder
 current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')
 current_dir=$(basename "$current_dir_path")
@@ -105,7 +109,11 @@ else
 fi
 
 # Build output
-output="${BLUE}cf${RESET}"
+if [ -n "$VERSION" ]; then
+  output="${BLUE}cf v${VERSION}${RESET}"
+else
+  output="${BLUE}cf${RESET}"
+fi
 
 if [ -n "$current_dir" ]; then
   output="${output}${separator}${BLUE}${current_dir}${RESET}"

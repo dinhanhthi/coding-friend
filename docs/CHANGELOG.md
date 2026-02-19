@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.1
+
+- Show plugin version in statusline (e.g. `cf v1.2.1 │ ...`)
+
 ## v1.2.0
 
 - Add `/cf-research [topic]` command for in-depth research with web search, parallel subagents, and structured output in `docs/research/`
