@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.0
+
+- Add `/cf-research [topic]` command for in-depth research with web search, parallel subagents, and structured output in `docs/research/`
+
 ## v1.1.0
 
 - Add `/cf-statusline` command to auto-setup statusline in `~/.claude/settings.json`

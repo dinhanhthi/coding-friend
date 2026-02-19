@@ -15,6 +15,7 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - Smart conventional commits and code review
 - Captures project knowledge across sessions (`/cf-remember`)
 - Helps humans learn from vibe coding sessions (`/cf-learn`)
+- In-depth research with web search and parallel subagents (`/cf-research`)
 
 ## Installation
 
@@ -88,6 +89,7 @@ This updates the plugin automatically on each Claude Code startup.
 | `/cf-fix [bug]` | Quick bug fix workflow |
 | `/cf-remember [topic]` | Extract project knowledge to `docs/memory/` |
 | `/cf-learn [topic]` | Extract learnings to `docs/learn/` |
+| `/cf-research [topic]` | In-depth research with web search → `docs/research/` |
 | `/cf-statusline` | Setup coding-friend statusline |
 
 ### Auto-Invoked (agent loads when relevant)
@@ -130,11 +132,12 @@ coding-friend/
 ├── .claude-plugin/          # Plugin + marketplace manifest
 ├── .claude/                 # Settings + agents
 ├── hooks/                   # Lifecycle hooks
-├── skills/                  # 13 skills
+├── skills/                  # 14 skills
 └── docs/                    # Generated docs
     ├── plans/               # Implementation plans
     ├── memory/              # Project knowledge
-    └── learn/               # Human learning notes
+    ├── learn/               # Human learning notes
+    └── research/            # In-depth research results
 ```
 
 ## Usage
@@ -158,6 +161,7 @@ Claude explores requirements, picks an approach, writes a plan to `docs/plans/`.
 Nothing to configure — coding-friend is active globally. On session start, hooks auto-detect project type, package manager, and load ignore patterns.
 
 ```
+/cf-research React Server Components      # Deep research before planning
 /cf-plan Add email notifications when task is assigned
 /cf-fix Login fails with 401 when token is valid
 /cf-review src/auth/
@@ -175,6 +179,7 @@ Nothing to configure — coding-friend is active globally. On session start, hoo
 | **Debug** | Describe the bug naturally | `cf-sys-debug` auto-loads: investigate → analyze → hypothesis → fix |
 | **Save knowledge** | `/cf-remember [topic]` | Captures logic, conventions, decisions → `docs/memory/` |
 | **Learn** | `/cf-learn [topic]` | Extracts concepts from session → `docs/learn/` |
+| **Research** | `/cf-research [topic]` | Web search + parallel subagents → structured docs in `docs/research/` |
 
 ## Configuration
 
@@ -202,7 +207,7 @@ All fields are optional. Defaults are used when omitted. No file = all defaults.
 
 | Setting | Default | Description |
 |---|---|---|
-| `docsDir` | `"docs"` | Root folder for plans, memory, and learn docs |
+| `docsDir` | `"docs"` | Root folder for plans, memory, learn, and research docs |
 | `hooks.privacyBlock` | `true` | Block access to .env and credentials |
 | `hooks.scoutBlock` | `true` | Block access to .coding-friend/ignore patterns |
 | `hooks.devRulesReminder` | `true` | Inject rules on every prompt |

@@ -22,6 +22,7 @@ Lean toolkit for disciplined engineering workflows.
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge → docs/memory/
 - `/cf-learn [topic]` — Extract learnings → docs/learn/
+- `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
 
 ### Auto-invoked (loaded when relevant)
@@ -38,7 +39,7 @@ Lean toolkit for disciplined engineering workflows.
 ## Conventions
 - Conventional commits: feat/fix/refactor/test/docs/chore
 - Tests next to source or in __tests__/tests/
-- Project docs in docs/memory/, learning notes in docs/learn/
+- Project docs in docs/memory/, learning notes in docs/learn/, research in docs/research/
 - Respect .coding-friend/ignore patterns
 - Config via .coding-friend/config.json (optional)
 

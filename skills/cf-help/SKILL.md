@@ -26,6 +26,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
 - `/cf-learn [topic]` — Extract learnings to docs/learn/
+- `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
 
 ### Auto-Invoked (load when relevant)
@@ -44,6 +45,6 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 
 - Tests live next to source files or in `__tests__/` / `tests/` directories
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
-- Project knowledge in `docs/memory/`, learning notes in `docs/learn/`, plans in `docs/plans/`
+- Project knowledge in `docs/memory/`, learning notes in `docs/learn/`, plans in `docs/plans/`, research in `docs/research/`
 - Config via `.coding-friend/config.json` (optional, all settings have defaults)
 - Respect `.coding-friend/ignore` patterns — do not read blocked directories
