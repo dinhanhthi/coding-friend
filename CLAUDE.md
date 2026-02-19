@@ -22,6 +22,7 @@ Lean toolkit for disciplined engineering workflows.
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge → docs/memory/
 - `/cf-learn [topic]` — Extract learnings → docs/learn/
+- `/cf-statusline` — Setup coding-friend statusline
 
 ### Auto-invoked (loaded when relevant)
 - `cf-tdd` — TDD workflow

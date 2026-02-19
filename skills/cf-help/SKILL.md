@@ -26,6 +26,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
 - `/cf-learn [topic]` — Extract learnings to docs/learn/
+- `/cf-statusline` — Setup coding-friend statusline
 
 ### Auto-Invoked (load when relevant)
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR

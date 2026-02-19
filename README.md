@@ -77,6 +77,7 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 | `/cf-fix [bug]` | Quick bug fix workflow |
 | `/cf-remember [topic]` | Extract project knowledge to `docs/memory/` |
 | `/cf-learn [topic]` | Extract learnings to `docs/learn/` |
+| `/cf-statusline` | Setup coding-friend statusline |
 
 ### Auto-Invoked (agent loads when relevant)
 
@@ -95,7 +96,7 @@ To disable coding-friend in a particular project, add to `.claude/settings.json`
 | `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules |
 | `privacy-block.sh` | PreToolUse | Block .env, credentials |
 | `scout-block.sh` | PreToolUse | Block .coding-friend/ignore patterns |
-| `statusline.sh` | Statusline | Show session info (model, branch, files read) |
+| `statusline.sh` | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
 | `compact-marker.sh` | PreCompact | Preserve context |
 | `context-tracker.sh` | PostToolUse | Track files read |
 
@@ -118,7 +119,7 @@ coding-friend/
 ├── .claude-plugin/          # Plugin + marketplace manifest
 ├── .claude/                 # Settings + agents
 ├── hooks/                   # Lifecycle hooks
-├── skills/                  # 12 skills
+├── skills/                  # 13 skills
 └── docs/                    # Generated docs
     ├── plans/               # Implementation plans
     ├── memory/              # Project knowledge
@@ -177,8 +178,7 @@ Create `.coding-friend/config.json` in your project to customize settings:
     "privacyBlock": true,
     "scoutBlock": true,
     "devRulesReminder": true,
-    "contextTracker": true,
-    "statusline": true
+    "contextTracker": true
   },
   "commit": {
     "verify": true,
@@ -196,7 +196,6 @@ All fields are optional. Defaults are used when omitted. No file = all defaults.
 | `hooks.scoutBlock` | `true` | Block access to .coding-friend/ignore patterns |
 | `hooks.devRulesReminder` | `true` | Inject rules on every prompt |
 | `hooks.contextTracker` | `true` | Track files read per session |
-| `hooks.statusline` | `true` | Show status bar info |
 | `commit.verify` | `true` | Run tests before committing |
 | `commit.conventionalCommits` | `true` | Enforce conventional commit format |
 
@@ -212,23 +211,23 @@ build
 __pycache__
 ```
 
-### Statusline
+### Statusline (optional)
 
-The plugin includes a statusline hook that displays: plugin name, active model, git branch, and files read count.
+The plugin ships a statusline script that displays: plugin name, current folder, active model, git branch, usage percentage, and reset time. To set it up:
 
-If you have a custom `statusLine` in `~/.claude/settings.json`, it will take priority over the plugin's statusline. To use the one from coding-friend instead, remove the `statusLine` block from your global settings:
-
-```json
-// ~/.claude/settings.json
-{
-  "statusLine": {  // ← remove this block
-    "type": "command",
-    "command": "..."
-  }
-}
+```
+/cf-statusline
 ```
 
-To disable the plugin's statusline, set `"statusline": false` in `.coding-friend/config.json`.
+This automatically configures `~/.claude/settings.json` with the correct path. Restart Claude Code after setup.
+
+Example output:
+
+```
+cf │ my-project │ claude-sonnet-4-6 │ ⎇ main │ 5% → 13:00
+```
+
+Usage percentage is color-coded (green → red) based on utilization level. Requires `~/.claude/fetch-claude-usage.swift` for usage data (macOS only).
 
 ### Privacy
 
