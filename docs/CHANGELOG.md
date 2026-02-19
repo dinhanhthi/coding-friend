@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.0
+
+- Top-level `language` config setting — applies to all doc-generating skills (`/cf-learn`, `/cf-plan`, `/cf-research`, etc.)
+- Configurable `/cf-learn`: output location, categories, auto-commit, README index
+- `/cf-learn` supports `readmeIndex: "per-category"` — distributed README per category folder + lightweight main README
+- Layered config system: global (`~/.coding-friend/config.json`) + local (`.coding-friend/config.json`), local overrides global
+- `/cf-init` is now re-runnable — detects previous setup, only shows pending steps
+- `/cf-init` asks about language and learn settings
+- `/cf-init` offers to configure Claude Code permissions (`~/.claude/settings.json`) for external `outputDir`
+- `/cf-init` README index option now has 3 choices: No / Single README / Per-category
+- `/cf-learn` can auto-invoke on substantial new knowledge
+- Config schema documented in `docs/config-schema.md`
+
 ## v1.3.0
 
 - Add `/cf-init` command to initialize coding-friend workspace in a project (creates docs folders + optional .gitignore setup)

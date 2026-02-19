@@ -19,14 +19,14 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 ## Available Skills
 
 ### Slash Commands (user triggers)
-- `/cf-init` — Initialize coding-friend workspace (folders + .gitignore)
+- `/cf-init` — Initialize coding-friend workspace (folders + .gitignore + learn config)
 - `/cf-plan [task]` — Brainstorm and write implementation plan
 - `/cf-review [target]` — Dispatch code review to subagent
 - `/cf-commit [hint]` — Analyze diff and create conventional commit
 - `/cf-ship [hint]` — Verify, commit, push, and create PR
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
-- `/cf-learn [topic]` — Extract learnings to docs/learn/
+- `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked on substantial knowledge.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
 - `/cf-update` — Update plugin and refresh statusline
@@ -49,4 +49,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Project knowledge in `docs/memory/`, learning notes in `docs/learn/`, plans in `docs/plans/`, research in `docs/research/`
 - Config via `.coding-friend/config.json` (optional, all settings have defaults)
+- Global config at `~/.coding-friend/config.json` — defaults for all projects
+- Local config overrides global (merge at top-level key)
+- Top-level `language` setting applies to all doc-generating skills (default: `en`)
 - Respect `.coding-friend/ignore` patterns — do not read blocked directories

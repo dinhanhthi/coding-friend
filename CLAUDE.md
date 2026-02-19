@@ -15,14 +15,14 @@ Lean toolkit for disciplined engineering workflows.
 ## Skills
 
 ### Commands (user triggers with /slash)
-- `/cf-init` — Initialize coding-friend in the current project
+- `/cf-init` — Initialize coding-friend in the current project (+ learn config)
 - `/cf-plan [task]` — Brainstorm + implementation plan
 - `/cf-review [target]` — Code review (runs in forked subagent)
 - `/cf-commit [hint]` — Smart conventional commit
 - `/cf-ship [hint]` — Verify + commit + push + PR
 - `/cf-fix [bug]` — Quick bug fix workflow
 - `/cf-remember [topic]` — Extract project knowledge → docs/memory/
-- `/cf-learn [topic]` — Extract learnings → docs/learn/
+- `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
 - `/cf-statusline` — Setup coding-friend statusline
 - `/cf-update` — Update plugin + refresh statusline
@@ -32,6 +32,7 @@ Lean toolkit for disciplined engineering workflows.
 - `cf-sys-debug` — 4-phase debugging
 - `cf-code-review` — Review methodology
 - `cf-verification` — Completion gate
+- `cf-learn` — Auto-extract learnings on substantial new knowledge
 
 ## Agents
 - `code-reviewer` — Multi-layer review
@@ -43,7 +44,7 @@ Lean toolkit for disciplined engineering workflows.
 - Tests next to source or in __tests__/tests/
 - Project docs in docs/memory/, learning notes in docs/learn/, research in docs/research/
 - Respect .coding-friend/ignore patterns
-- Config via .coding-friend/config.json (optional)
+- Config via .coding-friend/config.json (local) and ~/.coding-friend/config.json (global)
 
 ## Versioning
 
@@ -53,6 +54,7 @@ After any change, determine the version bump type:
 - **MAJOR** (1.0.0): breaking change (config format, removed skill, changed CLI behavior)
 
 Steps:
-1. Check latest version: `git tag --sort=-v:refname | head -1` (fallback: read `.claude-plugin/plugin.json`)
-2. Bump version in `.claude-plugin/plugin.json`
-3. Update changelog in `docs/CHANGELOG.md`
+1. Check latest **git tag**: `git tag --sort=-v:refname | head -1` — this is the source of truth for the current released version
+2. Check `plugin.json` version — if it's already ahead of the tag, the current unreleased version is in progress. Do NOT bump again; add changes to the existing unreleased version instead
+3. Only bump `plugin.json` when the tag and `plugin.json` match (meaning a new release cycle is starting)
+4. Update changelog in `docs/CHANGELOG.md` (add to existing unreleased section if one exists)
