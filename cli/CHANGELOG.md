@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 
+## v1.0.4
+
+- Test publish to npm with OIDC from GitHub Actions
+
 ## v1.0.3
 
 - `cf update` now also updates the CLI npm package (`coding-friend-cli`)
