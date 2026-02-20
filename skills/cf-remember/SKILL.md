@@ -35,33 +35,65 @@ Choose the right location:
 | Conventions | `{docsDir}/memory/conventions/<name>.md` | Project-wide patterns and rules |
 | Decisions | `{docsDir}/memory/decisions/<name>.md` | Architecture/design decision records |
 
-### Step 3: Write or Update the Doc
-If the file exists, **update** it (don't overwrite). If new, create it.
+### Step 3: Assess Complexity
 
-Template:
-```markdown
-# <Title>
+Before delegating to the writer agent, assess the complexity of the content:
 
-## Overview
-<1-2 sentences describing this feature/convention/decision>
+**Use `writer` agent (haiku)** when:
+- Simple feature docs, naming conventions, straightforward decisions
+- Short content with clear structure
 
-## Key Points
-- <point 1>
-- <point 2>
+**Use `writer-deep` agent (sonnet)** when:
+- Complex architecture decisions with nuanced trade-offs
+- Deep technical explanations requiring careful reasoning
+- Long context that needs synthesis
 
-## Details
-<Longer explanation with code examples if needed>
+### Step 4: Delegate to Writer Agent
 
-## Gotchas
-- <gotcha 1>
-- <gotcha 2>
+Construct a write spec and invoke the appropriate writer agent via the `Task` tool.
 
-## Related
-- <link to related code/docs>
+Check if the target file already exists:
+- File exists → `task: update`
+- File doesn't exist → `task: create`
+
+Read the `language` setting from config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`, default: `en`).
+
+Build the write spec:
+
+```
+WRITE SPEC
+----------
+task: create | update
+file_path: {docsDir}/memory/{category}/{name}.md
+language: {language from config}
+content: |
+  # <Title>
+
+  ## Overview
+  <1-2 sentences describing this feature/convention/decision>
+
+  ## Key Points
+  - <point 1>
+  - <point 2>
+
+  ## Details
+  <Longer explanation with code examples if needed>
+
+  ## Gotchas
+  - <gotcha 1>
+  - <gotcha 2>
+
+  ## Related
+  - <link to related code/docs>
+readme_update: false
+auto_commit: false
+existing_file_action: append
 ```
 
-### Step 4: Confirm
-Show the user what was saved and where.
+Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
+
+### Step 5: Confirm
+Read back the writer agent's output and show the user what was saved and where.
 
 ## Rules
 - Use `$ARGUMENTS` as topic hint if provided

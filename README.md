@@ -41,18 +41,20 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 All commands:
 
-| Command                  | Description                                         |
-| ------------------------ | --------------------------------------------------- |
-| `/cf-plan [task]`        | Brainstorm and write implementation plan            |
-| `/cf-fix [bug]`          | Quick bug fix workflow                              |
-| `/cf-ask [question]`     | Quick Q&A about codebase → `docs/memory/`           |
-| `/cf-optimize [target]`  | Structured optimization with before/after measurement |
-| `/cf-review [target]`    | Dispatch code review to subagent                    |
-| `/cf-commit [hint]`      | Analyze diff and create conventional commit         |
-| `/cf-ship [hint]`        | Verify, commit, push, and create PR                 |
-| `/cf-remember [topic]`   | Extract project knowledge to `docs/memory/`         |
-| `/cf-learn [topic]`      | Extract learnings to `docs/learn/`                  |
-| `/cf-research [topic]`   | In-depth research with web search                   |
+
+| Command                 | Description                                           |
+| ----------------------- | ----------------------------------------------------- |
+| `/cf-plan [task]`       | Brainstorm and write implementation plan              |
+| `/cf-fix [bug]`         | Quick bug fix workflow                                |
+| `/cf-ask [question]`    | Quick Q&A about codebase → `docs/memory/`             |
+| `/cf-optimize [target]` | Structured optimization with before/after measurement |
+| `/cf-review [target]`   | Dispatch code review to subagent                      |
+| `/cf-commit [hint]`     | Analyze diff and create conventional commit           |
+| `/cf-ship [hint]`       | Verify, commit, push, and create PR                   |
+| `/cf-remember [topic]`  | Extract project knowledge to `docs/memory/`           |
+| `/cf-learn [topic]`     | Extract learnings to `docs/learn/`                    |
+| `/cf-research [topic]`  | In-depth research with web search                     |
+
 
 Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
 
@@ -136,6 +138,7 @@ Create `.coding-friend/config.json` in your project to customize settings:
 
 All fields are optional. Defaults are used when omitted. No file = all defaults.
 
+
 | Setting                      | Default  | Description                                             |
 | ---------------------------- | -------- | ------------------------------------------------------- |
 | `docsDir`                    | `"docs"` | Root folder for plans, memory, learn, and research docs |
@@ -145,6 +148,7 @@ All fields are optional. Defaults are used when omitted. No file = all defaults.
 | `hooks.contextTracker`       | `true`   | Track files read per session                            |
 | `commit.verify`              | `true`   | Run tests before committing                             |
 | `commit.conventionalCommits` | `true`   | Enforce conventional commit format                      |
+
 
 ### .coding-friend/ignore
 
@@ -170,28 +174,31 @@ Set `"privacyBlock": false` in `.coding-friend/config.json` to disable.
 
 ## Internals
 
-<details>
-<summary>Hooks, agents, project structure</summary>
+Hooks, agents, project structure
 
 ### Hooks
 
-| Hook                    | Event                    | Purpose                                            |
-| ----------------------- | ------------------------ | -------------------------------------------------- |
-| `session-init.sh`       | SessionStart             | Bootstrap context                                  |
-| `dev-rules-reminder.sh` | UserPromptSubmit         | Inject core rules                                  |
-| `privacy-block.sh`      | PreToolUse               | Block .env, credentials                            |
-| `scout-block.sh`        | PreToolUse               | Block .coding-friend/ignore patterns               |
-| `statusline.sh`         | — (via `cf statusline`)  | Optional statusline (folder, model, branch, usage) |
-| `compact-marker.sh`     | PreCompact               | Preserve context                                   |
-| `context-tracker.sh`    | PostToolUse              | Track files read                                   |
+
+| Hook                    | Event                   | Purpose                                            |
+| ----------------------- | ----------------------- | -------------------------------------------------- |
+| `session-init.sh`       | SessionStart            | Bootstrap context                                  |
+| `dev-rules-reminder.sh` | UserPromptSubmit        | Inject core rules                                  |
+| `privacy-block.sh`      | PreToolUse              | Block .env, credentials                            |
+| `scout-block.sh`        | PreToolUse              | Block .coding-friend/ignore patterns               |
+| `statusline.sh`         | — (via `cf statusline`) | Optional statusline (folder, model, branch, usage) |
+| `compact-marker.sh`     | PreCompact              | Preserve context                                   |
+| `context-tracker.sh`    | PostToolUse             | Track files read                                   |
+
 
 ### Agents
+
 
 | Agent           | Purpose                               |
 | --------------- | ------------------------------------- |
 | `code-reviewer` | Multi-layer code review               |
 | `implementer`   | TDD implementation                    |
 | `planner`       | Codebase exploration + task breakdown |
+
 
 ### Project Structure
 
@@ -216,7 +223,7 @@ coding-friend/
     └── research/            # In-depth research results
 ```
 
-</details>
+
 
 ## License
 

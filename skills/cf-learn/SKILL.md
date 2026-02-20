@@ -77,17 +77,54 @@ find {outputDir} -name "*.md" -not -name "README.md" | sort
 
 For each potentially relevant file, read its first 20 lines to understand what it covers. If the new knowledge fits an existing file, **append** to it instead of creating a new one.
 
-## Step 3: Write the Learning Doc
+## Step 3: Assess Complexity
 
-### Language Rules
+Before delegating to the writer agent, assess the complexity of the content to write:
 
-Choose writing style based on top-level `language` config:
+**Use `writer` agent (haiku)** when:
+- Simple, factual concepts (e.g., "how to use X tool", "naming convention for Y")
+- Straightforward tool/library usage notes
+- Short content with clear structure
+- Single-concept explanations
 
-- **`en` (English):** Write everything in English.
-- **`vi` (Vietnamese):** Write explanations in Vietnamese. Keep all technical terms, code, commands, library names, and variable names in English.
-- **Other languages:** Write explanations in the configured language. Keep technical terms in English.
+**Use `writer-deep` agent (sonnet)** when:
+- Content requires deep reasoning about nuanced technical concepts (e.g., explaining race conditions, distributed system trade-offs, complex type system features)
+- Very long context needs to be synthesized into a coherent doc
+- Multi-concept synthesis is needed (connecting several ideas into one explanation)
+- Advanced architecture explanations or subtle debugging insights
 
-### New File Template
+## Step 4: Delegate to Writer Agent
+
+Construct a write spec and invoke the appropriate writer agent via the `Task` tool.
+
+### Determine Task Type
+
+- If an existing file was found in Step 2 (Discovery) that matches → `task: append`
+- Otherwise → `task: create`
+
+### Build the Write Spec
+
+Include ALL of these in your delegation prompt to the writer agent:
+
+```
+WRITE SPEC
+----------
+task: create | append
+file_path: {outputDir}/{category}/{name}.md
+language: {language from config}
+content: |
+  <The full markdown content to write, including frontmatter for new files>
+readme_update: {readmeIndex from config: false | true | per-category}
+readme_path: {outputDir}/README.md (and {outputDir}/{category}/README.md for per-category)
+auto_commit: {autoCommit from config}
+commit_message: learn: <brief summary of topics added>
+existing_file_action: append
+category_description: {description of the category from config}
+```
+
+### Content to Include in the Write Spec
+
+**For new files (`task: create`)**, include full content with frontmatter:
 
 ```markdown
 ---
@@ -109,10 +146,6 @@ updated: YYYY-MM-DD
 ## How
 <Code example from the actual project — not a generic tutorial>
 
-```<language>
-// Real code from this session showing the concept
-```
-
 ## Gotchas
 - <Common mistake 1>
 - <Common mistake 2>
@@ -122,21 +155,21 @@ updated: YYYY-MM-DD
 - <Link to good tutorial>
 ```
 
-### When Appending to Existing Files
+**For appending (`task: append`)**, include only the new content to add:
+- New section under a `## Heading`
+- Note to update `updated` date in frontmatter
+- Note to add new tags if applicable
+- If file is getting long (>300 lines), switch to `task: create` with a new file name
 
-- Add new content under a new `## Heading` or as bullet points under an existing heading
-- Update the `updated` date in frontmatter
-- Add new tags to the frontmatter if the new content introduces new topics
-- Keep the file focused — if it's getting too long (>300 lines), create a new file instead
+### Language Rules (include in write spec)
 
-## Step 4: Update README Index (if configured)
+- `en`: Write everything in English
+- `vi`: Write explanations in Vietnamese. Keep all technical terms, code, commands, library names, and variable names in English
+- Other: Write explanations in the configured language. Keep technical terms in English
 
-Skip this step if `readmeIndex` is `false`.
+### README Index Formats (include if readme_update is not false)
 
-### Mode: `true` (single README)
-
-Create or update `{outputDir}/README.md` with all categories and file listings:
-
+**Mode `true` (single README)** — `{outputDir}/README.md`:
 ```markdown
 # Learning Notes
 
@@ -145,38 +178,25 @@ Create or update `{outputDir}/README.md` with all categories and file listings:
 ### <category-name>/
 - [file-name.md](<category>/file-name.md) - Brief description
 
-...
-
 ---
 *Last updated: YYYY-MM-DD*
 ```
 
-### Mode: `"per-category"` (distributed index)
+**Mode `"per-category"`** — two files:
 
-Update **two** README files:
-
-**1. Category README** — `{outputDir}/{category}/README.md`
-
-List all `.md` files in that category (excluding README.md itself):
-
+1. Category README at `{outputDir}/{category}/README.md`:
 ```markdown
 # <Category Name>
 
-<category description from config>
+<category description>
 
 ## Notes
-
-- [file-name.md](file-name.md) - Brief description (from frontmatter `title` or first heading)
-- [another-file.md](another-file.md) - Brief description
-
+- [file-name.md](file-name.md) - Brief description
 ---
 *Last updated: YYYY-MM-DD*
 ```
 
-**2. Main README** — `{outputDir}/README.md`
-
-List only categories with their descriptions. Do NOT list individual files here — that's the category README's job. Include a short summary line under each category showing how many notes it contains.
-
+2. Main README at `{outputDir}/README.md`:
 ```markdown
 # Learning Notes
 
@@ -184,31 +204,19 @@ List only categories with their descriptions. Do NOT list individual files here 
 
 ### [<Category Name>](<category-folder>/)
 <category description> — *N notes*
-
-### [<Category Name>](<category-folder>/)
-<category description> — *N notes*
-
-...
-
 ---
 *Last updated: YYYY-MM-DD*
 ```
 
-Only include categories that have at least one note file. Count only `.md` files excluding `README.md`.
+Only include categories with at least one note file (excluding README.md).
 
-## Step 5: Auto-Commit (if configured)
+### Invoke the Agent
 
-If `autoCommit` is `true` AND `outputDir` is inside a git repository:
+Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
 
-```bash
-cd {outputDir} && git add -A && git commit -m "learn: <brief summary of topics added>"
-```
+## Step 5: Confirm
 
-If `outputDir` is not a git repo, skip this step silently.
-
-## Step 6: Confirm
-
-Show the user:
+Read back the writer agent's output and show the user:
 1. What was learned and where the doc was saved (full path)
 2. Whether the file was created new or appended to
 3. If auto-committed, show the commit message

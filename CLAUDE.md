@@ -37,6 +37,8 @@ Lean toolkit for disciplined engineering workflows.
 - `code-reviewer` — Multi-layer review
 - `implementer` — TDD implementation
 - `planner` — Exploration + task breakdown
+- `writer` — Lightweight doc writer (haiku) for markdown file generation
+- `writer-deep` — Deep reasoning doc writer (sonnet) for nuanced technical content
 
 ## CLI (coding-friend-cli)
 - Standalone CLI at `cli/` — published as `coding-friend-cli` on npm, binary `cf`

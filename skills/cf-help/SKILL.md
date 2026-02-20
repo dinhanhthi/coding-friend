@@ -41,6 +41,8 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - **code-reviewer** — Multi-layer code review in forked context
 - **implementer** — TDD implementation subagent
 - **planner** — Codebase exploration and task decomposition
+- **writer** — Lightweight doc writer (haiku) for skills that generate markdown files
+- **writer-deep** — Deep reasoning doc writer (sonnet) for nuanced technical content
 
 ## Conventions
 

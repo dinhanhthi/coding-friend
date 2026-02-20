@@ -14,6 +14,10 @@
 - Shell tab completion auto-configured on install/update
 - Add `/cf-ask [question]` — lightweight codebase Q&A with auto-save to `docs/memory/`
 - Add `/cf-optimize [target]` — structured optimization workflow with baseline/after measurement
+- Add `writer` agent (haiku) — lightweight doc writer for skills that generate markdown files
+- Add `writer-deep` agent (sonnet) — fallback for content requiring deep reasoning or long context
+- `/cf-learn` and `/cf-remember` now delegate writing to writer agents (skill = brain, agent = hands)
+- Move agents from `.claude/agents/` to `agents/` (correct plugin directory structure per official docs)
 
 ## v1.4.0
 
