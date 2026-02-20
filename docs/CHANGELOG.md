@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.1
+
+- Fix plugin cache issue — bump version to force cache invalidation for users on v1.5.0
+
 ## v1.5.0
 
 - Remove `/cf-update` skill — use `cf update` (CLI) instead

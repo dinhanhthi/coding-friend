@@ -114,14 +114,12 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 # Reference skill (auto-loaded by Claude)
 ---
 name: cf-tdd
-version: 1.5.0
 description: Use when writing new production code or adding features
 ---
 
 # Task skill (user-only)
 ---
 name: cf-commit
-version: 1.5.0
 description: Smart conventional commit with diff analysis
 disable-model-invocation: true
 ---
@@ -129,7 +127,6 @@ disable-model-invocation: true
 # Background skill (never user-invoked)
 ---
 name: cf-verification
-version: 1.5.0
 description: Verify before claiming work is complete
 user-invocable: false
 ---
@@ -137,7 +134,6 @@ user-invocable: false
 # Forked skill (runs in subagent)
 ---
 name: cf-review
-version: 1.5.0
 description: Dispatch code review to subagent
 disable-model-invocation: true
 context: fork
