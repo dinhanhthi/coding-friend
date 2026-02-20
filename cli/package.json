@@ -23,7 +23,11 @@
     "mcp",
     "claude"
   ],
-  "author": "Anh-Thi Dinh",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

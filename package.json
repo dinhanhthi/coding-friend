@@ -3,7 +3,11 @@
   "version": "1.6.0",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "private": true,
-  "author": "Anh-Thi Dinh",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -3,7 +3,9 @@
   "version": "1.6.0",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "author": {
-    "name": "Anh-Thi Dinh"
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
   },
   "keywords": ["skills", "tdd", "debugging", "code-review", "workflows", "knowledge", "agents"]
 }
