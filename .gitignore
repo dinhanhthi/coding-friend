@@ -45,5 +45,6 @@ docs/research
 lib/learn-host/node_modules/
 lib/learn-host/.next/
 lib/learn-host/out/
+lib/learn-host/src/app/search/search-index.json
 lib/learn-mcp/node_modules/
 lib/learn-mcp/dist/

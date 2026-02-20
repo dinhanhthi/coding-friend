@@ -138,6 +138,15 @@ Create `.coding-friend/config.json` in your project to customize settings:
   "commit": {
     "verify": true,
     "conventionalCommits": true
+  },
+  "learn": {
+    "outputDir": "docs/learn",
+    "categories": [
+      { "name": "Web_Dev", "description": "Web development" },
+      { "name": "Tools", "description": "Developer tools and workflows" }
+    ],
+    "autoCommit": false,
+    "readmeIndex": false
   }
 }
 ```
@@ -145,15 +154,19 @@ Create `.coding-friend/config.json` in your project to customize settings:
 All fields are optional. Defaults are used when omitted. No file = all defaults.
 
 
-| Setting                      | Default  | Description                                             |
-| ---------------------------- | -------- | ------------------------------------------------------- |
-| `docsDir`                    | `"docs"` | Root folder for plans, memory, learn, and research docs |
-| `hooks.privacyBlock`         | `true`   | Block access to .env and credentials                    |
-| `hooks.scoutBlock`           | `true`   | Block access to .coding-friend/ignore patterns          |
-| `hooks.devRulesReminder`     | `true`   | Inject rules on every prompt                            |
-| `hooks.contextTracker`       | `true`   | Track files read per session                            |
-| `commit.verify`              | `true`   | Run tests before committing                             |
-| `commit.conventionalCommits` | `true`   | Enforce conventional commit format                      |
+| Setting                      | Default            | Description                                                                                              |
+| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `docsDir`                    | `"docs"`           | Root folder for plans, memory, learn, and research docs                                                  |
+| `hooks.privacyBlock`         | `true`             | Block access to .env and credentials                                                                     |
+| `hooks.scoutBlock`           | `true`             | Block access to .coding-friend/ignore patterns                                                           |
+| `hooks.devRulesReminder`     | `true`             | Inject rules on every prompt                                                                             |
+| `hooks.contextTracker`       | `true`             | Track files read per session                                                                             |
+| `commit.verify`              | `true`             | Run tests before committing                                                                              |
+| `commit.conventionalCommits` | `true`             | Enforce conventional commit format                                                                       |
+| `learn.outputDir`            | `"{docsDir}/learn"` | Where to store learning docs (supports `~/`, absolute, or relative paths)                                |
+| `learn.categories`           | 5 default categories | Custom categories as `[{ "name": "...", "description": "..." }]`                                       |
+| `learn.autoCommit`           | `false`            | Auto git-commit after writing learning docs                                                              |
+| `learn.readmeIndex`          | `false`            | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category)     |
 
 
 ### .coding-friend/ignore
