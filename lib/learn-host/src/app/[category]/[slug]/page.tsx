@@ -11,7 +11,8 @@ export async function generateStaticParams() {
   }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
+export const revalidate = 10;
 
 export default async function DocPage({
   params,
@@ -25,7 +26,7 @@ export default async function DocPage({
   const categoryDisplay = category.replace(/[_-]/g, " ");
 
   return (
-    <article>
+    <article data-pagefind-body>
       <Breadcrumbs
         crumbs={[
           { label: categoryDisplay, href: `/${category}/` },

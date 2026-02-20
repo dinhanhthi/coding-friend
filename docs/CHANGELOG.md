@@ -2,8 +2,12 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v1.5.2
+## v1.6.0
 
+- `cf host`: Switch from static export to ISR (Incremental Static Regeneration) — new/changed docs auto-update on page refresh without rebuild
+- `cf host`: Add full-text search via Pagefind (replaces substring-match search index)
+- `cf host`: Use `next start` instead of `npx serve` for ISR support
+- Remove custom search index system (search-index.json, build-search-index.ts)
 - Fix `/cf-plan` not asking for clarification — add mandatory "Clarify Before Exploring" step and user validation gate before finalizing plan
 - Fix `/cf-fix` proceeding without verifying problem — add "Verify the Problem Exists" and "Confirm Approach" steps
 - Improve planner agent — questions and assumptions surfaced first, unknowns must be resolved before planning
