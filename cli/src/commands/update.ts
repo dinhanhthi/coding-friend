@@ -1,14 +1,29 @@
-import { existsSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { readJson, writeJson } from "../lib/json.js";
 import {
   claudeSettingsPath,
   installedPluginsPath,
   pluginCachePath,
 } from "../lib/paths.js";
-import { run, commandExists } from "../lib/exec.js";
+import { run, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import chalk from "chalk";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function getCliVersion(): string {
+  const pkg = JSON.parse(
+    readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
+  );
+  return pkg.version;
+}
+
+function getLatestCliVersion(): string | null {
+  return run("npm", ["view", "coding-friend-cli", "version"]);
+}
 
 function getInstalledVersion(): string | null {
   const data = readJson<Record<string, unknown>>(installedPluginsPath());
@@ -104,7 +119,19 @@ function updateStatusline(version: string): boolean {
   return true;
 }
 
-export async function updateCommand(): Promise<void> {
+export interface UpdateOptions {
+  cli?: boolean;
+  plugin?: boolean;
+  statusline?: boolean;
+}
+
+export async function updateCommand(opts: UpdateOptions): Promise<void> {
+  // If no flags specified, update everything
+  const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
+  const doCli = updateAll || !!opts.cli;
+  const doPlugin = updateAll || !!opts.plugin;
+  const doStatusline = updateAll || !!opts.statusline;
+
   console.log("=== 🌿 Coding Friend Update 🌿 ===");
   console.log();
 
@@ -112,74 +139,95 @@ export async function updateCommand(): Promise<void> {
   const currentVersion = getInstalledVersion();
   const latestVersion = getLatestVersion();
   const statuslineVersion = getStatuslineVersion();
+  const cliVersion = getCliVersion();
+  const latestCliVersion = getLatestCliVersion();
 
-  log.info(`Installed version: ${currentVersion ? chalk.green(`v${currentVersion}`) : chalk.yellow("not found")}`);
-  log.info(`Latest version: ${latestVersion ? chalk.green(`v${latestVersion}`) : chalk.yellow("unknown (cannot reach GitHub)")}`);
+  log.info(`Plugin version: ${currentVersion ? `v${currentVersion}` : chalk.yellow("not found")}`);
+  log.info(`Latest plugin version: ${latestVersion ? chalk.green(`v${latestVersion}`) : chalk.yellow("unknown (cannot reach GitHub)")}`);
+  log.info(`CLI version: v${cliVersion}`);
+  log.info(`Latest CLI version: ${latestCliVersion ? chalk.green(`v${latestCliVersion}`) : chalk.yellow("unknown (cannot reach npm)")}`);
   log.info(
     `Statusline version: ${statuslineVersion ? chalk.green(`v${statuslineVersion}`) : chalk.yellow("not configured")}`,
   );
   console.log();
 
-  if (!latestVersion) {
-    log.warn(
-      "Cannot check latest version. Verify manually at https://github.com/dinhanhthi/coding-friend/releases",
-    );
-    return;
-  }
-
-  // Step 2: Decide
-  const isUpToDate = currentVersion === latestVersion;
-  const statuslineMismatch =
-    statuslineVersion !== null && statuslineVersion !== (currentVersion ?? latestVersion);
-
-  if (isUpToDate && !statuslineMismatch) {
-    log.success(`Already on the latest version (${chalk.green(`v${latestVersion}`)}). No update needed.`);
-    return;
-  }
-
-  // Step 3: Update plugin if needed
-  if (!isUpToDate) {
-    log.step(`Update available: ${chalk.yellow(`v${currentVersion}`)} → ${chalk.green(`v${latestVersion}`)}`);
-
-    if (!commandExists("claude")) {
-      log.error(
-        "Claude CLI not found. Install it first, or run: claude plugin update coding-friend@coding-friend-marketplace",
-      );
-      return;
-    }
-
-    log.step("Updating plugin...");
-    const result = run("claude", [
-      "plugin",
-      "update",
-      "coding-friend@coding-friend-marketplace",
-    ]);
-
-    if (result === null) {
-      log.error("Plugin update failed. Try manually: claude plugin update coding-friend@coding-friend-marketplace");
-      return;
-    }
-
-    log.success("Plugin updated!");
-
-    // Verify
-    const newVersion = getInstalledVersion();
-    if (newVersion === currentVersion) {
+  // Step 2: Update plugin if needed
+  if (doPlugin) {
+    if (!latestVersion) {
       log.warn(
-        "Version unchanged after update. Restart Claude Code and try cf update again.",
+        "Cannot check latest plugin version. Verify manually at https://github.com/dinhanhthi/coding-friend/releases",
       );
-      return;
-    }
+    } else if (currentVersion === latestVersion) {
+      log.success(`Plugin already on the latest version (${chalk.green(`v${latestVersion}`)}).`);
+    } else {
+      log.step(`Plugin update available: ${chalk.yellow(`v${currentVersion}`)} → ${chalk.green(`v${latestVersion}`)}`);
 
-    log.success(`Updated to ${chalk.green(`v${newVersion}`)}`);
+      if (!commandExists("claude")) {
+        log.error(
+          "Claude CLI not found. Install it first, or run: claude plugin update coding-friend@coding-friend-marketplace",
+        );
+      } else {
+        log.step("Updating plugin...");
+        const result = run("claude", [
+          "plugin",
+          "update",
+          "coding-friend@coding-friend-marketplace",
+        ]);
+
+        if (result === null) {
+          log.error("Plugin update failed. Try manually: claude plugin update coding-friend@coding-friend-marketplace");
+        } else {
+          log.success("Plugin updated!");
+
+          // Verify with retry — installed_plugins.json may not be written immediately
+          let newVersion = currentVersion;
+          for (let i = 0; i < 5; i++) {
+            newVersion = getInstalledVersion();
+            if (newVersion !== currentVersion) break;
+            if (i < 4) sleepSync(1000);
+          }
+
+          if (newVersion !== currentVersion) {
+            log.success(`Plugin updated to ${chalk.green(`v${newVersion}`)}`);
+          } else {
+            log.warn(
+              "Version in installed_plugins.json unchanged. Cache may still have been updated.",
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Step 3: Update CLI if needed
+  if (doCli) {
+    if (!latestCliVersion) {
+      log.warn("Cannot check latest CLI version from npm.");
+    } else if (cliVersion === latestCliVersion) {
+      log.success(`CLI already on the latest version (${chalk.green(`v${latestCliVersion}`)}).`);
+    } else {
+      log.step(`CLI update available: ${chalk.yellow(`v${cliVersion}`)} → ${chalk.green(`v${latestCliVersion}`)}`);
+      log.step("Updating CLI...");
+      const result = run("npm", ["install", "-g", "coding-friend-cli@latest"]);
+
+      if (result === null) {
+        log.error("CLI update failed. Try manually: npm install -g coding-friend-cli@latest");
+      } else {
+        log.success(`CLI updated to ${chalk.green(`v${latestCliVersion}`)}`);
+      }
+    }
   }
 
   // Step 4: Fix statusline
-  const targetVersion = findLatestCacheVersion();
-  if (targetVersion) {
-    log.step("Updating statusline...");
-    if (updateStatusline(targetVersion)) {
-      log.success(`Statusline updated to ${chalk.green(`v${targetVersion}`)}`);
+  if (doStatusline) {
+    const targetVersion = findLatestCacheVersion();
+    if (targetVersion) {
+      log.step("Updating statusline...");
+      if (updateStatusline(targetVersion)) {
+        log.success(`Statusline updated to ${chalk.green(`v${targetVersion}`)}`);
+      }
+    } else {
+      log.warn("No cached plugin version found for statusline update.");
     }
   }
 

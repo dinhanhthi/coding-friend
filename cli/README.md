@@ -24,7 +24,10 @@ cf mcp [path]        # Setup MCP server for LLM integration
                      # [path] is optional, default is `docs/learn`
                      # This prints a JSON config snippet to add to your client's MCP
 cf statusline        # Setup coding-friend statusline
-cf update            # Update plugin + fix statusline
+cf update            # Update plugin + CLI + statusline
+cf update --cli      # Update only the CLI (npm package)
+cf update --plugin   # Update only the Claude Code plugin
+cf update --statusline  # Update only the statusline
 cf help              # Show all commands
 ```
 

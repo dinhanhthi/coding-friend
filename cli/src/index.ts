@@ -54,10 +54,13 @@ program
 
 program
   .command("update")
-  .description("Update coding-friend plugin and refresh statusline")
-  .action(async () => {
+  .description("Update coding-friend plugin, CLI, and statusline")
+  .option("--cli", "Update only the CLI (npm package)")
+  .option("--plugin", "Update only the Claude Code plugin")
+  .option("--statusline", "Update only the statusline")
+  .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
-    await updateCommand();
+    await updateCommand(opts);
   });
 
 program.parse();

@@ -1,4 +1,6 @@
-# Changelog
+# Changelog (Plugin)
+
+> CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
 ## v1.5.1
 

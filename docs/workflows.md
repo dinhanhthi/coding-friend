@@ -79,7 +79,7 @@ coding-friend installs globally. No files copied into your project. On every Cla
 
 ## Save knowledge → `/cf-remember [topic]`
 
-- **When**: you discovered something important during the conversation that should persist
+- **When**: you discovered something important during the conversation that should persist. You want AI can quickly understand this important point (no need to read and investigate the whole codebase again)
 - **Why**: saves project knowledge for AI to use in future sessions (`docs/memory/`)
 - **How**:
   - `/cf-remember auth flow` — extract knowledge about a specific topic
@@ -107,3 +107,4 @@ coding-friend installs globally. No files copied into your project. On every Cla
 
 - **Automatic** (no action needed): TDD enforcement, systematic debugging (after 3 failed fixes), verification before done, privacy block (.env, credentials), scout block (node_modules, dist), session bootstrap, rules injection, learning extraction on substantial knowledge
 - **Manual** (slash commands): `cf init`, `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research`
+

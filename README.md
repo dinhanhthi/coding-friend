@@ -65,6 +65,9 @@ Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug
 - Install the Coding Friend CLI:
   ```bash
   npm i -g coding-friend-cli
+
+  # or update
+  npm update -g coding-friend
   ```
   🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
 - Run `claude` and install the plugin from the marketplace:
