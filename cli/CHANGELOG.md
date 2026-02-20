@@ -4,7 +4,7 @@
 
 ## v1.0.4
 
-- Test publish to npm with OIDC from GitHub Actions
+- Fix: `cli/src/lib/` is ignored.
 
 ## v1.0.3
 
