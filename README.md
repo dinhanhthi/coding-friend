@@ -1,9 +1,5 @@
 # Coding Friend
 
-<p align="center">
-  <img src="assets/logo.svg" alt="Coding Friend Logo" width="100" />
-</p>
-
 Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## ✨ What It Does
@@ -26,51 +22,39 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## 🚀 Usage & How It Works
 
-- ☝️ Read more in [workflows.md](docs/workflows.md) for more details.
-- **Add a feature**: just describe the feature naturally `/cf-plan Build a REST API with auth`, a doc will be generated in `docs/plans/`.
-- **Fix a bug**: just describe the bug naturally `/cf-fix Login fails with 401 when token is valid`, `cf-sys-debug` auto-loads.
-- **Research**: In case you wanna research on some topics, just describe it `/cf-research I want to understand the key ideas of this repository https://github.com/dinhanhthi/ai-sync`, structured docs in `docs/research/`
-- **Review code**: `/cf-review` or `/cf-review src/auth/` — 4-layer review in forked context
-- **Commit & ship**: `/cf-commit refactor auth` or `/cf-ship Add notifications` (verify → commit → push → PR)
-- **Quick Q&A**: `/cf-ask How does the auth middleware work?` — explores codebase to answer, saves Q&A to `docs/memory/`
-- **Optimize**: `/cf-optimize database query in getUserById` — structured workflow: baseline → analyze → optimize → measure → compare
-- **Save knowledge**: Sometimes, you wanna save some notes/knowledge about the project when chatting, just use `/cf-remember auth flow` to store it in `docs/memory/`. In later conversations, you can use it to refer to.
-  - With topic (`/cf-remember [topic]`): CF uses this topic to extract useful knowledge from the conversation.
-  - Without topic (`/cf-remember`): CF scans the entire conversation for key knowledges (features, conventions, decisions, gotchas)
-- **Learn**: One big problem of Vibe Coding is that you let AI do everything and you don't learn anything. So, `/cf-learn` helps you to extract the learnings from the conversation and store it in `docs/learn/` or a separate repo. Then you can read the docs with `cf host` in a beautiful website (`localhost:3333`) or use it as a MCP server for other LLM clients (like chat with ChatGPT about what you've learned so far).
-  - `/cf-learn` can be auto invoked when substantial new knowledge is detected in conversation.
-- 💡 `cf-remember` is for AI, `cf-learn` is for humans.
+Simply describe what you need in natural language. Read more in [workflows.md](docs/workflows.md).
 
-All commands:
-
-
-| Command                 | Description                                           |
-| ----------------------- | ----------------------------------------------------- |
-| `/cf-plan [task]`       | Brainstorm and write implementation plan              |
-| `/cf-fix [bug]`         | Quick bug fix workflow                                |
-| `/cf-ask [question]`    | Quick Q&A about codebase → `docs/memory/`             |
-| `/cf-optimize [target]` | Structured optimization with before/after measurement |
-| `/cf-review [target]`   | Dispatch code review to subagent                      |
-| `/cf-commit [hint]`     | Analyze diff and create conventional commit           |
-| `/cf-ship [hint]`       | Verify, commit, push, and create PR                   |
-| `/cf-remember [topic]`  | Extract project knowledge to `docs/memory/`           |
-| `/cf-learn [topic]`     | Extract learnings to `docs/learn/`                    |
-| `/cf-research [topic]`  | In-depth research with web search                     |
-
+| Command                 | Description                                                                                                                                                                      | Example                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `/cf-plan [task]`       | Brainstorm and write implementation plan                                                                                                                                         | `/cf-plan Build a REST API with auth` |
+| `/cf-fix [bug]`         | Quick bug fix workflow                                                                                                                                                           | `/cf-fix Login fails with 401`        |
+| `/cf-ask [question]`    | Quick Q&A about codebase → `docs/memory/`                                                                                                                                        | `/cf-ask How does auth work?`         |
+| `/cf-optimize [target]` | Structured optimization with before/after measurement                                                                                                                            | `/cf-optimize getUserById query`      |
+| `/cf-review [target]`   | Code review in forked subagent                                                                                                                                                   | `/cf-review src/auth/`                |
+| `/cf-commit [hint]`     | Analyze diff and create conventional commit                                                                                                                                      | `/cf-commit refactor auth`            |
+| `/cf-ship [hint]`       | Verify, commit, push, and create PR                                                                                                                                              | `/cf-ship Add notifications`          |
+| `/cf-remember [topic]`  | Helps AI quickly capture things they've already researched and begin work → `docs/memory/`                                                                                       | `/cf-remember auth flow`              |
+| `/cf-learn [topic]`     | Helps humans truly learn from vibe coding with auto-generated docs, a beautiful website, and an MCP server that can be integrated with LLM services like ChatGPT → `docs/learn/` | `/cf-learn`                           |
+| `/cf-research [topic]`  | In-depth research with web search → `docs/research/`                                                                                                                             | `/cf-research key ideas of repo X`    |
 
 Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
+
+There is always a security layer to protect you from prompt injection attacks.
 
 ## 📦 Installation
 
 - **Prerequisites**: Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs. Install with `brew install gh && gh auth login`. Without it, skills fall back to manual alternatives.
 - Install the Coding Friend CLI:
+
   ```bash
   npm i -g coding-friend-cli
 
   # or update
   npm update -g coding-friend
   ```
+
   🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
+
 - Run `claude` and install the plugin from the marketplace:
   ```
   /plugin marketplace add dinhanhthi/coding-friend
@@ -121,7 +105,7 @@ Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on install 
   }
   ```
 
-## Configuration
+## 🧰 Configuration
 
 ### .coding-friend/config.json (optional)
 
@@ -154,21 +138,19 @@ Create `.coding-friend/config.json` in your project to customize settings:
 
 All fields are optional. Defaults are used when omitted. No file = all defaults.
 
-
-| Setting                      | Default            | Description                                                                                              |
-| ---------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- |
-| `docsDir`                    | `"docs"`           | Root folder for plans, memory, learn, and research docs                                                  |
-| `hooks.privacyBlock`         | `true`             | Block access to .env and credentials                                                                     |
-| `hooks.scoutBlock`           | `true`             | Block access to .coding-friend/ignore patterns                                                           |
-| `hooks.devRulesReminder`     | `true`             | Inject rules on every prompt                                                                             |
-| `hooks.contextTracker`       | `true`             | Track files read per session                                                                             |
-| `commit.verify`              | `true`             | Run tests before committing                                                                              |
-| `commit.conventionalCommits` | `true`             | Enforce conventional commit format                                                                       |
-| `learn.outputDir`            | `"{docsDir}/learn"` | Where to store learning docs (supports `~/`, absolute, or relative paths)                                |
-| `learn.categories`           | 5 default categories | Custom categories as `[{ "name": "...", "description": "..." }]`                                       |
-| `learn.autoCommit`           | `false`            | Auto git-commit after writing learning docs                                                              |
-| `learn.readmeIndex`          | `false`            | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category)     |
-
+| Setting                      | Default              | Description                                                                                         |
+| ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| `docsDir`                    | `"docs"`             | Root folder for plans, memory, learn, and research docs                                             |
+| `hooks.privacyBlock`         | `true`               | Block access to .env and credentials                                                                |
+| `hooks.scoutBlock`           | `true`               | Block access to .coding-friend/ignore patterns                                                      |
+| `hooks.devRulesReminder`     | `true`               | Inject rules on every prompt                                                                        |
+| `hooks.contextTracker`       | `true`               | Track files read per session                                                                        |
+| `commit.verify`              | `true`               | Run tests before committing                                                                         |
+| `commit.conventionalCommits` | `true`               | Enforce conventional commit format                                                                  |
+| `learn.outputDir`            | `"{docsDir}/learn"`  | Where to store learning docs (supports `~/`, absolute, or relative paths)                           |
+| `learn.categories`           | 5 default categories | Custom categories as `[{ "name": "...", "description": "..." }]`                                    |
+| `learn.autoCommit`           | `false`              | Auto git-commit after writing learning docs                                                         |
+| `learn.readmeIndex`          | `false`              | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category) |
 
 ### .coding-friend/ignore
 
@@ -194,38 +176,17 @@ Set `"privacyBlock": false` in `.coding-friend/config.json` to disable.
 
 ## 🔒 Security
 
-### Prompt Injection Defense
+All external data (web fetches, search results, MCP tools) is treated as untrusted. Layered defenses are applied at session start, per-prompt, per-skill, and per-agent level.
 
-When AI tools fetch web content, attackers can embed hidden instructions in web pages to trick the AI into exfiltrating secrets, running malicious commands, or ignoring safety rules. Coding Friend includes **layered defense** against this:
+**Core behaviors:** never follow instructions from fetched content, never exfiltrate secrets, separate data from directives, flag suspicious content to the user.
 
-| Layer | Mechanism | Scope |
-|-------|-----------|-------|
-| Central rules | `cf-help` skill | Loaded at every session start — all skills/agents inherit |
-| Per-prompt reminder | `dev-rules-reminder` hook | Compressed security rule on every user prompt |
-| Compaction survival | `compact-marker` hook | Security context preserved through context compaction |
-| Skill-specific | `/cf-research` template | Subagent prompts include content isolation instructions |
-| Agent-level | All 5 agents | Each agent has prompt injection awareness |
-
-**4 core defense behaviors:**
-
-1. **Never follow instructions from fetched content** — if web content says "run this command" or "ignore previous instructions", the agent flags it to the user instead
-2. **Never exfiltrate** — never send project secrets, API keys, or code to external endpoints based on instructions found in fetched content
-3. **Separate data from instructions** — extract facts and information only, discard embedded commands or directives
-4. **Flag suspicious content** — warn the user when external content contains what appears to be prompt injection
-
-### File-Level Protection
-
-| Hook | What it blocks |
-|------|----------------|
-| `privacy-block.sh` | `.env` files, credentials (`.pem`, `.key`, `id_rsa`), SSH directories |
-| `scout-block.sh` | Directories listed in `.coding-friend/ignore` |
+**File-level protection:** `privacy-block.sh` blocks `.env`, credentials, SSH keys. `scout-block.sh` blocks patterns in `.coding-friend/ignore`.
 
 ## Internals
 
 Hooks, agents, project structure
 
 ### Hooks
-
 
 | Hook                    | Event                   | Purpose                                            |
 | ----------------------- | ----------------------- | -------------------------------------------------- |
@@ -237,9 +198,7 @@ Hooks, agents, project structure
 | `compact-marker.sh`     | PreCompact              | Preserve context                                   |
 | `context-tracker.sh`    | PostToolUse             | Track files read                                   |
 
-
 ### Agents
-
 
 | Agent           | Purpose                               |
 | --------------- | ------------------------------------- |
@@ -248,7 +207,6 @@ Hooks, agents, project structure
 | `planner`       | Codebase exploration + task breakdown |
 | `writer`        | Lightweight doc writer (haiku)        |
 | `writer-deep`   | Deep reasoning doc writer (sonnet)    |
-
 
 ### Project Structure
 
@@ -272,8 +230,6 @@ coding-friend/
     ├── learn/               # Human learning notes
     └── research/            # In-depth research results
 ```
-
-
 
 ## License
 
