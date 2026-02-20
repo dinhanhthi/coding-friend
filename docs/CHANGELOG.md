@@ -2,6 +2,8 @@
 
 ## v1.5.0
 
+- Remove `/cf-update` skill — use `cf update` (CLI) instead
+- Remove `/cf-statusline` skill — use `cf statusline` (CLI) instead
 - Remove `/cf-init` skill — use `cf init` (CLI) instead
 - `cf init` works in non-git directories (git steps skipped gracefully)
 - Add `coding-friend-cli` on npm (`npm i -g coding-friend-cli`, binary: `cf`)

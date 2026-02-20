@@ -52,8 +52,6 @@ coding-friend/
 │   ├── cf-remember/             # /cf-remember — project knowledge → docs/memory/
 │   ├── cf-learn/                # /cf-learn — human learning (also auto-invoked)
 │   ├── cf-research/             # /cf-research — web research → docs/research/
-│   ├── cf-statusline/           # /cf-statusline — statusline setup
-│   ├── cf-update/               # /cf-update — plugin update
 │   ├── cf-tdd/                  # TDD workflow (auto-invoked)
 │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
 │   ├── cf-code-review/          # Review guide (auto-invoked)
@@ -81,7 +79,7 @@ coding-friend/
 
 ---
 
-## Skills Architecture (17 skills)
+## Skills Architecture (15 skills)
 
 ### Reference Skills (5) — Auto-loaded when relevant
 
@@ -95,7 +93,7 @@ coding-friend/
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
 
-### Task Skills (12) — User-triggered via `/slash`
+### Task Skills (10) — User-triggered via `/slash`
 
 | Skill | Command | Key Feature |
 |---|---|---|
@@ -109,8 +107,6 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 | `cf-remember` | `/cf-remember [topic]` | Extract project knowledge → docs/memory/ |
 | `cf-learn` | `/cf-learn [topic]` | Extract learnings (configurable output, language, categories) |
 | `cf-research` | `/cf-research [topic]` | In-depth research with web search → docs/research/ |
-| `cf-statusline` | `/cf-statusline` | Setup coding-friend statusline |
-| `cf-update` | `/cf-update` | Update plugin + refresh statusline |
 
 ### Frontmatter Configuration
 
@@ -293,7 +289,7 @@ stripFrontmatter(content) → markdownBody
 
 | Decision | Rationale |
 |---|---|
-| 17 skills total | 5 reference + 12 task (host/mcp via CLI only). Enough coverage without bloat |
+| 15 skills total | 5 reference + 10 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks | Portable, easy to debug, no build step |
 | 3 agents only | code-reviewer, implementer, planner covers 90% of cases |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation |

@@ -53,8 +53,6 @@ All commands:
 | `/cf-remember [topic]`   | Extract project knowledge to `docs/memory/`         |
 | `/cf-learn [topic]`      | Extract learnings to `docs/learn/`                  |
 | `/cf-research [topic]`   | In-depth research with web search                   |
-| `/cf-statusline`         | Setup coding-friend statusline                      |
-| `/cf-update`             | Update plugin and refresh statusline                |
 
 Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
 
@@ -183,7 +181,7 @@ Set `"privacyBlock": false` in `.coding-friend/config.json` to disable.
 | `dev-rules-reminder.sh` | UserPromptSubmit         | Inject core rules                                  |
 | `privacy-block.sh`      | PreToolUse               | Block .env, credentials                            |
 | `scout-block.sh`        | PreToolUse               | Block .coding-friend/ignore patterns               |
-| `statusline.sh`         | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
+| `statusline.sh`         | — (via `cf statusline`)  | Optional statusline (folder, model, branch, usage) |
 | `compact-marker.sh`     | PreCompact               | Preserve context                                   |
 | `context-tracker.sh`    | PostToolUse              | Track files read                                   |
 
@@ -206,7 +204,7 @@ coding-friend/
 ├── .claude-plugin/          # Plugin + marketplace manifest
 ├── .claude/                 # Settings + agents
 ├── hooks/                   # Lifecycle hooks
-├── skills/                  # 17 skills
+├── skills/                  # 15 skills
 ├── cli/                     # Standalone CLI (npm: coding-friend-cli)
 ├── lib/
 │   ├── learn-host/          # Next.js static site for learning docs

@@ -25,8 +25,6 @@ Lean toolkit for disciplined engineering workflows.
 - `/cf-remember [topic]` — Extract project knowledge → docs/memory/
 - `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
-- `/cf-statusline` — Setup coding-friend statusline
-- `/cf-update` — Update plugin + refresh statusline
 
 ### Auto-invoked (loaded when relevant)
 - `cf-tdd` — TDD workflow
@@ -43,7 +41,7 @@ Lean toolkit for disciplined engineering workflows.
 ## CLI (coding-friend-cli)
 - Standalone CLI at `cli/` — published as `coding-friend-cli` on npm, binary `cf`
 - Commands: `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
-- These mirror the plugin skills but work without Claude Code
+- `cf statusline` and `cf update` replace the old `/cf-statusline` and `/cf-update` skills
 - Libs bundled at publish time via `scripts/bundle-libs.js` (copies from `lib/`)
 
 ## Conventions

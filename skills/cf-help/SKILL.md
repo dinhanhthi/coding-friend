@@ -30,8 +30,6 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
 - `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked on substantial knowledge.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
-- `/cf-statusline` — Setup coding-friend statusline
-- `/cf-update` — Update plugin and refresh statusline
 
 ### Auto-Invoked (load when relevant)
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR
@@ -58,10 +56,10 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 
 ## CLI (coding-friend-cli)
 
-Some commands also work standalone via `npm i -g coding-friend-cli`:
+Install via `npm i -g coding-friend-cli`:
 - `cf init` — Interactive project setup
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server
-- `cf statusline` — Setup statusline
-- `cf update` — Update plugin + fix statusline
+- `cf statusline` — Setup statusline (replaces old `/cf-statusline`)
+- `cf update` — Update plugin + fix statusline (replaces old `/cf-update`)
 - Tab completion is auto-configured on install/update

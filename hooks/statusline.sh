@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Statusline: Show session info in Claude Code status bar
-# Usage: Run /cf-statusline to configure, or add to ~/.claude/settings.json:
+# Usage: Run `cf statusline` to configure, or add to ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "command": "bash <plugin-path>/hooks/statusline.sh" }
 
 set -euo pipefail

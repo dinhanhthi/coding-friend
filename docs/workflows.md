@@ -182,5 +182,3 @@ Outputs to configured `outputDir` (default: `docs/learn/`). Also auto-invoked wh
 | | `/cf-remember` — save project knowledge |
 | | `/cf-learn` — save learning notes |
 | | `/cf-research` — in-depth web research |
-| | `/cf-statusline` — setup statusline |
-| | `/cf-update` — update plugin |
