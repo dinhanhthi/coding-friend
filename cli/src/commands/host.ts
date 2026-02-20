@@ -65,7 +65,7 @@ export async function hostCommand(
   }
 
   // Build
-  log.step("Building static site...");
+  log.step("Building site...");
   const buildCode = await streamExec("npm", ["run", "build", "--silent"], {
     cwd: hostDir,
     env: { ...process.env, DOCS_DIR: docsDir },
@@ -76,11 +76,15 @@ export async function hostCommand(
   }
   console.log();
 
-  // Serve
-  log.step("Starting local preview server...");
+  // Serve with Next.js (ISR enabled)
+  log.step("Starting server (ISR enabled)...");
   log.info(`Site: http://localhost:${port}`);
+  log.dim("New/changed docs will auto-update on page refresh.");
   log.dim("Press Ctrl+C to stop.");
   console.log();
 
-  await streamExec("npx", ["serve", "out", "-p", port], { cwd: hostDir });
+  await streamExec("npx", ["next", "start", "-p", port], {
+    cwd: hostDir,
+    env: { ...process.env, DOCS_DIR: docsDir },
+  });
 }

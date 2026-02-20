@@ -21,11 +21,3 @@ export interface CategoryInfo {
   name: string;
   docCount: number;
 }
-
-export interface SearchIndexEntry {
-  slug: string;
-  category: string;
-  title: string;
-  tags: string[];
-  excerpt: string;
-}

@@ -6,7 +6,8 @@ export async function generateStaticParams() {
   return getAllCategories().map((c) => ({ category: c.name }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
+export const revalidate = 10;
 
 export default async function CategoryPage({
   params,
