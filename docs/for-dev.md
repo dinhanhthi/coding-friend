@@ -2,7 +2,7 @@
 
 ## 🐳 CLI Development
 
-Please refer to [../cli/README.md](cli/README.md) for CLI development.
+Please refer to [cli/README.md](../cli/README.md) for CLI development.
 
 ## Install plugin from local source
 

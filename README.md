@@ -25,6 +25,7 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## 🚀 Usage & How It Works
 
+- ☝️ Read more in [workflows.md](docs/workflows.md) for more details.
 - **Add a feature**: just describe the feature naturally `/cf-plan Build a REST API with auth`, a doc will be generated in `docs/plans/`.
 - **Fix a bug**: just describe the bug naturally `/cf-fix Login fails with 401 when token is valid`, `cf-sys-debug` auto-loads.
 - **Research**: In case you wanna research on some topics, just describe it `/cf-research I want to understand the key ideas of this repository https://github.com/dinhanhthi/ai-sync`, structured docs in `docs/research/`

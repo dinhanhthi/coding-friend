@@ -1,184 +1,109 @@
 # Workflows
 
-## How It Works
+coding-friend installs globally. No files copied into your project. On every Claude Code session, hooks auto-run: detect project type, inject rules, block sensitive files, activate skills (TDD, debugging, verification, learn) based on context. You only interact via slash commands.
 
-coding-friend installs globally (`~/.claude/plugins/coding-friend`). No files are copied into user projects. On every Claude Code session:
+## Setup
 
-1. `session-init.sh` detects project type, package manager, loads ignore patterns
-2. `dev-rules-reminder.sh` injects core rules on every prompt
-3. `privacy-block.sh` + `scout-block.sh` block sensitive/ignored files
-4. Auto-invoked skills (TDD, debugging, verification, learn) activate based on context
+- **New project**: run `cf init` to create workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configure `.gitignore`, language, and `/cf-learn` settings.
+- **Existing project**: nothing needed — coding-friend is already active. Optionally run `cf init` for project-specific settings.
+- **Per-project config** (optional): `.coding-friend/config.json` to customize docs folder, toggle hooks. `.coding-friend/ignore` to block directories from agent access.
 
-User only interacts via slash commands. Everything else is automatic.
+## Plan → `/cf-plan [task]`
 
----
+- **When**: starting a new feature or significant change
+- **Why**: get a structured plan before writing code — avoids going in the wrong direction
+- **How**: `/cf-plan Build a REST API with auth`
+  - Explores codebase + requirements → brainstorms 2-3 approaches → picks best → writes plan to `docs/plans/YYYY-MM-DD-<slug>.md` → creates todo list
 
-## New Project From Scratch
+## Implement (auto)
 
-**Step 0: Initialize**
-```bash
-cf init
-```
-Sets up workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configures `.gitignore`, language, `/cf-learn` settings, and Claude Code permissions for external output directories.
+- **When**: writing any production code (after planning or ad-hoc)
+- **Why**: `cf-tdd` auto-activates to enforce test-driven development
+- **How**: just ask Claude to implement — TDD kicks in automatically
+  - RED: write failing test first
+  - GREEN: minimum code to pass
+  - REFACTOR: clean up, all tests must still pass
 
-**Step 1: Plan**
-```
-/cf-plan Build a REST API for task management with auth
-```
-Explores requirements → brainstorms 2-3 approaches → picks best one → writes plan to `docs/plans/YYYY-MM-DD-<slug>.md` → creates todo list.
+## Fix a bug → `/cf-fix [bug]`
 
-**Step 2: Implement**
-Ask Claude to implement tasks from the plan. `cf-tdd` skill auto-activates:
-- RED: write failing test first
-- GREEN: minimum code to pass
-- REFACTOR: clean up, all tests must still pass
+- **When**: you encounter a bug and want a quick fix
+- **Why**: structured fix workflow — faster than ad-hoc debugging
+- **How**: `/cf-fix Login fails with 401 when token is valid`
+  - Reproduce → locate root cause → fix → verify → regression test
+  - If 3 fix attempts fail → auto-escalates to `cf-sys-debug` (4-phase systematic debugging: root cause investigation → pattern analysis → hypothesis testing → implementation)
 
-**Step 3: Review + Ship**
-```
-/cf-review              # 4-layer review in forked context (doesn't pollute main context)
-/cf-ship Initial API    # Verify (tests, build, lint) → commit → push → create PR
-```
+## Review → `/cf-review [target]`
 
-**Step 4: Capture Knowledge**
-```
-/cf-remember auth flow  # Save to docs/memory/ for future sessions
-/cf-learn JWT tokens    # Save learning notes (auto-invoked if substantial knowledge detected)
-```
+- **When**: before shipping, after implementation, or anytime you want a second opinion
+- **Why**: runs in a forked context — doesn't pollute your main conversation
+- **How**:
+  - `/cf-review` — all uncommitted changes
+  - `/cf-review src/auth/` — specific directory
+  - `/cf-review HEAD~3..HEAD` — last 3 commits
+  - Reports: Critical (must fix) → Important (should fix) → Suggestions
 
----
+## Commit → `/cf-commit [hint]`
 
-## Existing Project (Big Codebase)
+- **When**: you're ready to commit changes
+- **Why**: runs tests first, writes conventional commit message automatically
+- **How**: `/cf-commit Add retry logic for API calls`
+  - Runs tests → stages relevant files → writes conventional commit → commits
 
-No setup needed — coding-friend is already active globally. Optionally run `cf init` to configure project-specific settings.
+## Ship → `/cf-ship [hint]`
 
-**Understand the project:** Ask Claude naturally. Session-init already detected project type and framework.
+- **When**: feature is done and reviewed, ready to push
+- **Why**: full pipeline in one command — no manual steps
+- **How**: `/cf-ship Add notifications`
+  - Verify (tests, build, lint) → commit → push → create PR
 
-**Research first:**
-```
-/cf-research React Server Components
-```
-Deep research with web search and parallel subagents → structured output in `docs/research/`.
+## Quick Q&A → `/cf-ask [question]`
 
-**Add a feature:**
-```
-/cf-plan Add email notifications when task is assigned
-```
-Plan skill explores existing codebase, finds patterns, proposes approach that fits.
+- **When**: you need to understand how something works in the codebase
+- **Why**: explores code to find the answer, then saves Q&A for future sessions
+- **How**: `/cf-ask How does the auth middleware work?`
+  - Explores codebase → answers directly → saves to `docs/memory/`
 
-**Fix a bug:**
-```
-/cf-fix Login fails with 401 when token is valid
-```
-Workflow: reproduce → locate root cause → fix → verify → regression test. Auto-escalates to `cf-sys-debug` (4-phase) after 3 failed fix attempts.
+## Optimize → `/cf-optimize [target]`
 
-**Quick Q&A:**
-```
-/cf-ask How does the auth middleware work?
-```
-Explores codebase to find the answer → saves Q&A to `docs/memory/`.
+- **When**: you know something is slow and want structured improvement
+- **Why**: measures before/after so you can prove the optimization works
+- **How**: `/cf-optimize database query in getUserById`
+  - Baseline (3 runs) → analyze bottlenecks → plan → implement (TDD) → measure after → compare
 
-**Optimize:**
-```
-/cf-optimize database query in getUserById
-```
-Structured workflow: baseline → analyze bottlenecks → optimize → measure after → compare.
+## Research → `/cf-research [topic]`
 
-**Review code:**
-```
-/cf-review                    # All uncommitted changes
-/cf-review src/auth/          # Specific directory
-/cf-review HEAD~3..HEAD       # Last 3 commits
-```
+- **When**: you need to learn about a technology, compare approaches, or explore an external repo
+- **Why**: deep research with web search + parallel subagents — more thorough than a quick search
+- **How**: `/cf-research GraphQL vs REST for mobile APIs`
+  - Structured output saved to `docs/research/`
 
-**Per-project config** (optional): Create `.coding-friend/config.json` to customize docs folder, toggle hooks. Create `.coding-friend/ignore` to block additional directories.
+## Save knowledge → `/cf-remember [topic]`
 
----
+- **When**: you discovered something important during the conversation that should persist
+- **Why**: saves project knowledge for AI to use in future sessions (`docs/memory/`)
+- **How**:
+  - `/cf-remember auth flow` — extract knowledge about a specific topic
+  - `/cf-remember` — scan entire conversation for features, conventions, decisions, gotchas
 
-## Daily Workflow Reference
+## Learn → `/cf-learn [topic]`
 
-### Adding a Feature
-```
-/cf-plan Add dark mode toggle
-```
-→ Implement (TDD auto-enforced) → `/cf-review` → `/cf-ship Dark mode feature`
+- **When**: the conversation covered something you (the human) want to remember
+- **Why**: extracts learnings so you actually learn from vibe coding — not just let AI do everything
+- **How**:
+  - `/cf-learn dependency injection` — focus on a specific concept
+  - `/cf-learn` — extract all learnings from the session
+  - Also auto-invoked when substantial new knowledge is detected
+  - Output to configured dir (default: `docs/learn/`). Read with `cf host` (localhost:3333) or use as MCP server (`cf mcp`)
 
-### Fixing a Bug
-```
-/cf-fix Users can't upload files larger than 5MB
-```
-Quick path: reproduce → fix → test. If 3 fixes fail → auto-escalates to systematic debugging.
+## Typical flow
 
-### Code Review
-```
-/cf-review
-```
-Runs in forked context. Reports: Critical (must fix) → Important (should fix) → Suggestions.
+1. `/cf-plan Add dark mode toggle` — plan
+2. Implement (TDD auto-enforced) — code
+3. `/cf-review` — review
+4. `/cf-ship Dark mode feature` — ship
+5. `/cf-remember` + `/cf-learn` — capture knowledge
 
-### Committing
-```
-/cf-commit Add retry logic for API calls
-```
-Runs tests → stages relevant files → writes conventional commit message → commits.
+## What's automatic vs manual
 
-### Shipping
-```
-/cf-ship
-```
-Full pipeline: verify (tests, build, lint) → commit → push → create PR.
-
-### Debugging
-Just describe the bug. `cf-sys-debug` auto-loads:
-1. Root cause investigation (read error, reproduce, trace backward)
-2. Pattern analysis (git history, consistency check, minimal reproduction)
-3. Hypothesis testing (form hypothesis, design test, verify)
-4. Implementation (fix root cause, regression test, full test suite)
-
-### Quick Q&A
-```
-/cf-ask What validation rules does the signup form use?
-```
-Explores codebase → answers directly → saves Q&A to `docs/memory/`.
-
-### Optimizing
-```
-/cf-optimize image processing pipeline
-```
-Baseline (3 runs) → analyze bottlenecks → plan optimization → implement (TDD) → measure after → compare before/after.
-
-### Research
-```
-/cf-research GraphQL vs REST for mobile APIs
-```
-Web search + parallel subagents → structured docs in `docs/research/`.
-
-### Saving Knowledge
-```
-/cf-remember              # Scan entire conversation for key knowledge
-/cf-remember auth flow    # Focus on specific topic
-```
-Outputs to `docs/memory/features/`, `docs/memory/conventions/`, or `docs/memory/decisions/`.
-
-### Learning
-```
-/cf-learn                         # Extract all learnings from session
-/cf-learn dependency injection    # Focus on specific concept
-```
-Outputs to configured `outputDir` (default: `docs/learn/`). Also auto-invoked when substantial new knowledge is detected.
-
----
-
-## What's Automatic vs Manual
-
-| Automatic (no action needed) | Manual (slash commands) |
-|---|---|
-| TDD enforcement when writing code | `cf init` — initialize workspace |
-| Systematic debugging when fixing bugs | `/cf-plan` — create implementation plan |
-| Verification before claiming done | `/cf-fix` — quick bug fix |
-| Privacy block (.env, credentials) | `/cf-ask` — quick Q&A about codebase |
-| Scout block (node_modules, dist) | `/cf-optimize` — structured optimization |
-| Session context bootstrap | `/cf-review` — code review |
-| Core rules injection | `/cf-commit` — conventional commit |
-| Learning extraction on substantial knowledge | `/cf-ship` — verify + commit + push + PR |
-| | `/cf-remember` — save project knowledge |
-| | `/cf-learn` — save learning notes |
-| | `/cf-research` — in-depth web research |
+- **Automatic** (no action needed): TDD enforcement, systematic debugging (after 3 failed fixes), verification before done, privacy block (.env, credentials), scout block (node_modules, dist), session bootstrap, rules injection, learning extraction on substantial knowledge
+- **Manual** (slash commands): `cf init`, `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research`
