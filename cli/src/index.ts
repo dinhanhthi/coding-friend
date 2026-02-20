@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name("cf")
   .description("coding-friend CLI — host learning docs, setup MCP, init projects")
-  .version(pkg.version);
+  .version(pkg.version, "-v, --version");
 
 program
   .command("init")
