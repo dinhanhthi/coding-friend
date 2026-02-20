@@ -1,6 +1,5 @@
 ---
 name: cf-optimize
-version: 1.5.0
 description: Structured optimization workflow — baseline, analyze, optimize, measure, compare
 disable-model-invocation: true
 ---

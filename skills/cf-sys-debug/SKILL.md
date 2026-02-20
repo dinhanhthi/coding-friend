@@ -1,6 +1,5 @@
 ---
 name: cf-sys-debug
-version: 1.5.0
 description: Use when diagnosing bugs, investigating failures, or fixing broken behavior
 ---
 

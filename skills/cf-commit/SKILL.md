@@ -1,6 +1,5 @@
 ---
 name: cf-commit
-version: 1.5.0
 description: Smart conventional commit with diff analysis
 disable-model-invocation: true
 ---

@@ -1,6 +1,5 @@
 ---
 name: cf-fix
-version: 1.5.0
 description: Quick bug fix workflow
 disable-model-invocation: true
 ---

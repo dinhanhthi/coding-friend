@@ -1,6 +1,5 @@
 ---
 name: cf-tdd
-version: 1.5.0
 description: Use when writing new production code, adding features, or implementing changes
 ---
 

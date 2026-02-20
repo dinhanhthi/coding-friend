@@ -1,6 +1,5 @@
 ---
 name: cf-plan
-version: 1.5.0
 description: Brainstorm and write an implementation plan
 disable-model-invocation: true
 ---

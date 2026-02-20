@@ -1,6 +1,5 @@
 ---
 name: cf-ask
-version: 1.5.0
 description: Quick Q&A about codebase — explores code to answer, saves to docs/memory
 disable-model-invocation: true
 ---

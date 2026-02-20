@@ -1,6 +1,5 @@
 ---
 name: cf-verification
-version: 1.5.0
 description: Verify before claiming work is complete
 user-invocable: false
 ---

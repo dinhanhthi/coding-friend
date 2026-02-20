@@ -1,6 +1,5 @@
 ---
 name: cf-help
-version: 1.5.0
 description: Core knowledge for coding-friend toolkit usage
 user-invocable: false
 ---
