@@ -1,5 +1,9 @@
 # Coding Friend
 
+<p align="center">
+  <img src="assets/logo.svg" alt="Coding Friend Logo" width="100" />
+</p>
+
 Lean toolkit for disciplined engineering workflows with Claude Code.
 
 ## ✨ What It Does
