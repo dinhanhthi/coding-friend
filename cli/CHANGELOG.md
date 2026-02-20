@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 
+## v1.1.1
+
+- Add `-v` short flag for `cf --version`
+
 ## v1.1.0
 
 - `cf host`: Switch to ISR — new/changed docs auto-update without rebuild
