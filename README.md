@@ -11,6 +11,8 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - Enforces test-driven development (TDD)
 - Provides systematic debugging methodology
 - Quick bug fix workflow (`/cf-fix`)
+- Structured optimization with before/after measurement (`/cf-optimize`)
+- Quick Q&A about codebase with memory (`/cf-ask`)
 - Ensures verification before claiming done
 - Smart conventional commits and code review
 - Captures project knowledge across sessions (via `/cf-remember`).
@@ -28,6 +30,8 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - **Research**: In case you wanna research on some topics, just describe it `/cf-research I want to understand the key ideas of this repository https://github.com/dinhanhthi/ai-sync`, structured docs in `docs/research/`
 - **Review code**: `/cf-review` or `/cf-review src/auth/` — 4-layer review in forked context
 - **Commit & ship**: `/cf-commit refactor auth` or `/cf-ship Add notifications` (verify → commit → push → PR)
+- **Quick Q&A**: `/cf-ask How does the auth middleware work?` — explores codebase to answer, saves Q&A to `docs/memory/`
+- **Optimize**: `/cf-optimize database query in getUserById` — structured workflow: baseline → analyze → optimize → measure → compare
 - **Save knowledge**: Sometimes, you wanna save some notes/knowledge about the project when chatting, just use `/cf-remember auth flow` to store it in `docs/memory/`. In later conversations, you can use it to refer to.
   - With topic (`/cf-remember [topic]`): CF uses this topic to extract useful knowledge from the conversation.
   - Without topic (`/cf-remember`): CF scans the entire conversation for key knowledges (features, conventions, decisions, gotchas)
@@ -37,18 +41,20 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 All commands:
 
-| Command                | Description                                    |
-| ---------------------- | ---------------------------------------------- |
-| `/cf-plan [task]`      | Brainstorm and write implementation plan       |
-| `/cf-fix [bug]`        | Quick bug fix workflow                         |
-| `/cf-review [target]`  | Dispatch code review to subagent               |
-| `/cf-commit [hint]`    | Analyze diff and create conventional commit    |
-| `/cf-ship [hint]`      | Verify, commit, push, and create PR            |
-| `/cf-remember [topic]` | Extract project knowledge to `docs/memory/`    |
-| `/cf-learn [topic]`    | Extract learnings to `docs/learn/`             |
-| `/cf-research [topic]` | In-depth research with web search              |
-| `/cf-statusline`       | Setup coding-friend statusline                 |
-| `/cf-update`           | Update plugin and refresh statusline           |
+| Command                  | Description                                         |
+| ------------------------ | --------------------------------------------------- |
+| `/cf-plan [task]`        | Brainstorm and write implementation plan            |
+| `/cf-fix [bug]`          | Quick bug fix workflow                              |
+| `/cf-ask [question]`     | Quick Q&A about codebase → `docs/memory/`           |
+| `/cf-optimize [target]`  | Structured optimization with before/after measurement |
+| `/cf-review [target]`    | Dispatch code review to subagent                    |
+| `/cf-commit [hint]`      | Analyze diff and create conventional commit         |
+| `/cf-ship [hint]`        | Verify, commit, push, and create PR                 |
+| `/cf-remember [topic]`   | Extract project knowledge to `docs/memory/`         |
+| `/cf-learn [topic]`      | Extract learnings to `docs/learn/`                  |
+| `/cf-research [topic]`   | In-depth research with web search                   |
+| `/cf-statusline`         | Setup coding-friend statusline                      |
+| `/cf-update`             | Update plugin and refresh statusline                |
 
 Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
 
@@ -80,6 +86,7 @@ cf mcp [path]        # Setup MCP server for LLM integration
                      # This prints a JSON config snippet to add to your client's MCP
 cf statusline        # Setup coding-friend statusline
 cf update            # Update plugin + fix statusline
+cf help              # Show all commands
 ```
 
 Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on install and update.
@@ -199,7 +206,7 @@ coding-friend/
 ├── .claude-plugin/          # Plugin + marketplace manifest
 ├── .claude/                 # Settings + agents
 ├── hooks/                   # Lifecycle hooks
-├── skills/                  # 15 skills
+├── skills/                  # 17 skills
 ├── cli/                     # Standalone CLI (npm: coding-friend-cli)
 ├── lib/
 │   ├── learn-host/          # Next.js static site for learning docs

@@ -6,7 +6,7 @@ set -euo pipefail
 # Inject a marker so the agent remembers key context after compaction
 MARKER="<compact-marker>
 TOOLKIT: coding-friend loaded. Rules: test-first, verify-before-claim, conventional-commits.
-SKILLS: /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-remember /cf-learn /cf-research /cf-statusline /cf-update
+SKILLS: /cf-ask /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-optimize /cf-remember /cf-learn /cf-research /cf-statusline /cf-update
 Check coding-friend:cf-help skill for full context.
 </compact-marker>"
 

@@ -1,5 +1,6 @@
 ---
 name: cf-statusline
+version: 1.5.0
 description: Setup coding-friend statusline in Claude Code
 disable-model-invocation: true
 ---

@@ -47,6 +47,8 @@ coding-friend/
 │   ├── cf-commit/               # /cf-commit — smart commit
 │   ├── cf-ship/                 # /cf-ship — verify + commit + push + PR
 │   ├── cf-fix/                  # /cf-fix — quick bug fix
+│   ├── cf-ask/                  # /cf-ask — quick Q&A → docs/memory/
+│   ├── cf-optimize/             # /cf-optimize — structured optimization
 │   ├── cf-remember/             # /cf-remember — project knowledge → docs/memory/
 │   ├── cf-learn/                # /cf-learn — human learning (also auto-invoked)
 │   ├── cf-research/             # /cf-research — web research → docs/research/
@@ -79,7 +81,7 @@ coding-friend/
 
 ---
 
-## Skills Architecture (15 skills)
+## Skills Architecture (17 skills)
 
 ### Reference Skills (5) — Auto-loaded when relevant
 
@@ -93,7 +95,7 @@ coding-friend/
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
 
-### Task Skills (10) — User-triggered via `/slash`
+### Task Skills (12) — User-triggered via `/slash`
 
 | Skill | Command | Key Feature |
 |---|---|---|
@@ -102,6 +104,8 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 | `cf-commit` | `/cf-commit [hint]` | Analyze diff → conventional commit |
 | `cf-ship` | `/cf-ship [hint]` | Verify + commit + push + PR |
 | `cf-fix` | `/cf-fix [bug]` | Quick bug fix, escalates to cf-sys-debug after 3 failures |
+| `cf-ask` | `/cf-ask [question]` | Quick Q&A about codebase → docs/memory/ |
+| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement |
 | `cf-remember` | `/cf-remember [topic]` | Extract project knowledge → docs/memory/ |
 | `cf-learn` | `/cf-learn [topic]` | Extract learnings (configurable output, language, categories) |
 | `cf-research` | `/cf-research [topic]` | In-depth research with web search → docs/research/ |
@@ -114,12 +118,14 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 # Reference skill (auto-loaded by Claude)
 ---
 name: cf-tdd
+version: 1.5.0
 description: Use when writing new production code or adding features
 ---
 
 # Task skill (user-only)
 ---
 name: cf-commit
+version: 1.5.0
 description: Smart conventional commit with diff analysis
 disable-model-invocation: true
 ---
@@ -127,6 +133,7 @@ disable-model-invocation: true
 # Background skill (never user-invoked)
 ---
 name: cf-verification
+version: 1.5.0
 description: Verify before claiming work is complete
 user-invocable: false
 ---
@@ -134,6 +141,7 @@ user-invocable: false
 # Forked skill (runs in subagent)
 ---
 name: cf-review
+version: 1.5.0
 description: Dispatch code review to subagent
 disable-model-invocation: true
 context: fork
@@ -285,7 +293,7 @@ stripFrontmatter(content) → markdownBody
 
 | Decision | Rationale |
 |---|---|
-| 15 skills total | 5 reference + 10 task (host/mcp via CLI only). Enough coverage without bloat |
+| 17 skills total | 5 reference + 12 task (host/mcp via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks | Portable, easy to debug, no build step |
 | 3 agents only | code-reviewer, implementer, planner covers 90% of cases |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation |

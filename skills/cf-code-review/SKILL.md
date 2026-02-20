@@ -1,5 +1,6 @@
 ---
 name: cf-code-review
+version: 1.5.0
 description: Code review methodology and checklist
 user-invocable: false
 ---

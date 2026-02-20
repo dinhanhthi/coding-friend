@@ -15,11 +15,13 @@ Lean toolkit for disciplined engineering workflows.
 ## Skills
 
 ### Commands (user triggers with /slash)
+- `/cf-ask [question]` — Quick Q&A about codebase → docs/memory/
 - `/cf-plan [task]` — Brainstorm + implementation plan
 - `/cf-review [target]` — Code review (runs in forked subagent)
 - `/cf-commit [hint]` — Smart conventional commit
 - `/cf-ship [hint]` — Verify + commit + push + PR
 - `/cf-fix [bug]` — Quick bug fix workflow
+- `/cf-optimize [target]` — Structured optimization with before/after measurement
 - `/cf-remember [topic]` — Extract project knowledge → docs/memory/
 - `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/

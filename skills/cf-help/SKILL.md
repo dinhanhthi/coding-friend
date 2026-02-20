@@ -1,5 +1,6 @@
 ---
 name: cf-help
+version: 1.5.0
 description: Core knowledge for coding-friend toolkit usage
 user-invocable: false
 ---
@@ -19,11 +20,13 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 ## Available Skills
 
 ### Slash Commands (user triggers)
+- `/cf-ask [question]` — Quick Q&A about codebase → docs/memory/
 - `/cf-plan [task]` — Brainstorm and write implementation plan
 - `/cf-review [target]` — Dispatch code review to subagent
 - `/cf-commit [hint]` — Analyze diff and create conventional commit
 - `/cf-ship [hint]` — Verify, commit, push, and create PR
 - `/cf-fix [bug]` — Quick bug fix workflow
+- `/cf-optimize [target]` — Structured optimization with before/after measurement
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
 - `/cf-learn [topic]` — Extract learnings (configurable output, language, categories). Also auto-invoked on substantial knowledge.
 - `/cf-research [topic]` — In-depth research with web search → docs/research/

@@ -10,6 +10,8 @@
 - CLI resolves config: local → global → defaults
 - Remove `/cf-learn:host` — replaced by `cf host` and `cf mcp`
 - Shell tab completion auto-configured on install/update
+- Add `/cf-ask [question]` — lightweight codebase Q&A with auto-save to `docs/memory/`
+- Add `/cf-optimize [target]` — structured optimization workflow with baseline/after measurement
 
 ## v1.4.0
 

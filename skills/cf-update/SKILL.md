@@ -1,5 +1,6 @@
 ---
 name: cf-update
+version: 1.5.0
 description: Update coding-friend plugin and refresh statusline
 disable-model-invocation: true
 ---

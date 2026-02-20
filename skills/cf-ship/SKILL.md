@@ -1,5 +1,6 @@
 ---
 name: cf-ship
+version: 1.5.0
 description: Verify, commit, push, and create PR
 disable-model-invocation: true
 ---

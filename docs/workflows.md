@@ -71,6 +71,18 @@ Plan skill explores existing codebase, finds patterns, proposes approach that fi
 ```
 Workflow: reproduce → locate root cause → fix → verify → regression test. Auto-escalates to `cf-sys-debug` (4-phase) after 3 failed fix attempts.
 
+**Quick Q&A:**
+```
+/cf-ask How does the auth middleware work?
+```
+Explores codebase to find the answer → saves Q&A to `docs/memory/`.
+
+**Optimize:**
+```
+/cf-optimize database query in getUserById
+```
+Structured workflow: baseline → analyze bottlenecks → optimize → measure after → compare.
+
 **Review code:**
 ```
 /cf-review                    # All uncommitted changes
@@ -121,6 +133,18 @@ Just describe the bug. `cf-sys-debug` auto-loads:
 3. Hypothesis testing (form hypothesis, design test, verify)
 4. Implementation (fix root cause, regression test, full test suite)
 
+### Quick Q&A
+```
+/cf-ask What validation rules does the signup form use?
+```
+Explores codebase → answers directly → saves Q&A to `docs/memory/`.
+
+### Optimizing
+```
+/cf-optimize image processing pipeline
+```
+Baseline (3 runs) → analyze bottlenecks → plan optimization → implement (TDD) → measure after → compare before/after.
+
 ### Research
 ```
 /cf-research GraphQL vs REST for mobile APIs
@@ -150,11 +174,13 @@ Outputs to configured `outputDir` (default: `docs/learn/`). Also auto-invoked wh
 | TDD enforcement when writing code | `cf init` — initialize workspace |
 | Systematic debugging when fixing bugs | `/cf-plan` — create implementation plan |
 | Verification before claiming done | `/cf-fix` — quick bug fix |
-| Privacy block (.env, credentials) | `/cf-review` — code review |
-| Scout block (node_modules, dist) | `/cf-commit` — conventional commit |
-| Session context bootstrap | `/cf-ship` — verify + commit + push + PR |
-| Core rules injection | `/cf-remember` — save project knowledge |
-| Learning extraction on substantial knowledge | `/cf-learn` — save learning notes |
+| Privacy block (.env, credentials) | `/cf-ask` — quick Q&A about codebase |
+| Scout block (node_modules, dist) | `/cf-optimize` — structured optimization |
+| Session context bootstrap | `/cf-review` — code review |
+| Core rules injection | `/cf-commit` — conventional commit |
+| Learning extraction on substantial knowledge | `/cf-ship` — verify + commit + push + PR |
+| | `/cf-remember` — save project knowledge |
+| | `/cf-learn` — save learning notes |
 | | `/cf-research` — in-depth web research |
 | | `/cf-statusline` — setup statusline |
 | | `/cf-update` — update plugin |

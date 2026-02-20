@@ -1,5 +1,6 @@
 ---
 name: cf-research
+version: 1.5.0
 description: In-depth research on a topic with web search and structured output
 disable-model-invocation: true
 ---
