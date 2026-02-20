@@ -6,6 +6,8 @@ import MobileNav from "@/components/MobileNav";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
 
+export const revalidate = 10;
+
 export const metadata: Metadata = {
   title: "Learning Notes",
   description: "Personal learning knowledge base",
@@ -18,9 +20,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <MobileNav categories={categories} />
+          <div data-pagefind-ignore>
+            <MobileNav categories={categories} />
+          </div>
           <div className="flex">
-            <Sidebar categories={categories} />
+            <div data-pagefind-ignore>
+              <Sidebar categories={categories} />
+            </div>
             <main className="flex-1 min-h-screen p-6 md:p-8 max-w-4xl">
               {children}
             </main>

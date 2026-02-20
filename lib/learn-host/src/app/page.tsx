@@ -3,6 +3,8 @@ import DocCard from "@/components/DocCard";
 import TagBadge from "@/components/TagBadge";
 import Link from "next/link";
 
+export const revalidate = 10;
+
 export default function HomePage() {
   const categories = getAllCategories();
   const docs = getAllDocs();
