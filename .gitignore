@@ -17,7 +17,6 @@ node_modules/
 .agent/
 .agents/
 .aider*
-.claude-plugin/
 .claude/
 .copilot/
 .cursor/
