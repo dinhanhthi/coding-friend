@@ -13,19 +13,24 @@ node_modules/
 /tmp/
 *.log
 
-# Claude Code local settings (not tracked)
-.claude/settings.local.json
-
 # AI config files (managed by AI Sync)
 .agent/
+.agents/
 .aider*
+.claude-plugin/
+.claude/
 .copilot/
 .cursor/
 .cursorrules
+.gemini/
 .github/copilot-instructions.md
 .github/skills
 .ipynb_checkpoints
+.mcp.json
+.opencode/
 .windsurfrules
+CLAUDE.md
+GEMINI.md
 ai-docs
 docs/learn
 docs/memory
@@ -42,5 +47,3 @@ lib/learn-host/.next/
 lib/learn-host/out/
 lib/learn-mcp/node_modules/
 lib/learn-mcp/dist/
-
-.claude/worktrees/
