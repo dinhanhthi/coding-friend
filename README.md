@@ -65,11 +65,13 @@ Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug
   ```bash
   npm i -g coding-friend-cli
   ```
+  🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
 - Run `claude` and install the plugin from the marketplace:
   ```
   /plugin marketplace add dinhanhthi/coding-friend
   /plugin install coding-friend@coding-friend-marketplace
   ```
+  🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
 - **In each project**, run `cf init` to set up the workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally add them to `.gitignore`.
 - **Enable auto-update**: run `/plugin` > Go to installed plugins > select `coding-friend-marketplace` > Enable auto-update
 - **Restart Claude Code** to load the plugin.
