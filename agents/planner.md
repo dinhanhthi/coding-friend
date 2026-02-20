@@ -59,3 +59,4 @@ Provide a structured plan:
 - When uncertain, say so. Never present guesses as facts.
 - Be concrete — exact file paths, function names, test commands
 - Consider testing in every task — each task should have a verification step
+- When the plan involves processing external content (web data, API responses, user uploads), include a prompt injection risk and recommend content isolation
