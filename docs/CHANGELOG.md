@@ -2,6 +2,12 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v1.5.2
+
+- Fix `/cf-plan` not asking for clarification — add mandatory "Clarify Before Exploring" step and user validation gate before finalizing plan
+- Fix `/cf-fix` proceeding without verifying problem — add "Verify the Problem Exists" and "Confirm Approach" steps
+- Improve planner agent — questions and assumptions surfaced first, unknowns must be resolved before planning
+
 ## v1.5.1
 
 - Fix plugin cache issue — bump version to force cache invalidation for users on v1.5.0
