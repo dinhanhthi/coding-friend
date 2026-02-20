@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 
+## v1.1.0
+
+- `cf host`: Switch to ISR — new/changed docs auto-update without rebuild
+- `cf host`: Add Pagefind full-text search (replaces custom search index)
+- `cf host`: Use `next start` instead of `npx serve`
+
 ## v1.0.4
 
 - Fix: `cli/src/lib/` is ignored.
