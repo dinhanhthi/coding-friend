@@ -21,6 +21,37 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
   cf v1.2.1 │ ProjectName │ Opus 4.6 │ ⎇ branchName │ 15% → 13:00
   ```
 
+## 🚀 Usage & How It Works
+
+- **Add a feature**: just describe the feature naturally `/cf-plan Build a REST API with auth`, a doc will be generated in `docs/plans/`.
+- **Fix a bug**: just describe the bug naturally `/cf-fix Login fails with 401 when token is valid`, `cf-sys-debug` auto-loads.
+- **Research**: In case you wanna research on some topics, just describe it `/cf-research I want to understand the key ideas of this repository https://github.com/dinhanhthi/ai-sync`, structured docs in `docs/research/`
+- **Review code**: `/cf-review` or `/cf-review src/auth/` — 4-layer review in forked context
+- **Commit & ship**: `/cf-commit refactor auth` or `/cf-ship Add notifications` (verify → commit → push → PR)
+- **Save knowledge**: Sometimes, you wanna save some notes/knowledge about the project when chatting, just use `/cf-remember auth flow` to store it in `docs/memory/`. In later conversations, you can use it to refer to.
+  - With topic (`/cf-remember [topic]`): CF uses this topic to extract useful knowledge from the conversation.
+  - Without topic (`/cf-remember`): CF scans the entire conversation for key knowledges (features, conventions, decisions, gotchas)
+- **Learn**: One big problem of Vibe Coding is that you let AI do everything and you don't learn anything. So, `/cf-learn` helps you to extract the learnings from the conversation and store it in `docs/learn/` or a separate repo. Then you can read the docs with `cf host` in a beautiful website (`localhost:3333`) or use it as a MCP server for other LLM clients (like chat with ChatGPT about what you've learned so far).
+  - `/cf-learn` can be auto invoked when substantial new knowledge is detected in conversation.
+- 💡 `cf-remember` is for AI, `cf-learn` is for humans.
+
+All commands:
+
+| Command                | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `/cf-plan [task]`      | Brainstorm and write implementation plan       |
+| `/cf-fix [bug]`        | Quick bug fix workflow                         |
+| `/cf-review [target]`  | Dispatch code review to subagent               |
+| `/cf-commit [hint]`    | Analyze diff and create conventional commit    |
+| `/cf-ship [hint]`      | Verify, commit, push, and create PR            |
+| `/cf-remember [topic]` | Extract project knowledge to `docs/memory/`    |
+| `/cf-learn [topic]`    | Extract learnings to `docs/learn/`             |
+| `/cf-research [topic]` | In-depth research with web search              |
+| `/cf-statusline`       | Setup coding-friend statusline                 |
+| `/cf-update`           | Update plugin and refresh statusline           |
+
+Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
+
 ## 📦 Installation
 
 - **Prerequisites**: Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs. Install with `brew install gh && gh auth login`. Without it, skills fall back to manual alternatives.
@@ -36,6 +67,22 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - **In each project**, run `cf init` to set up the workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally add them to `.gitignore`.
 - **Enable auto-update**: run `/plugin` > Go to installed plugins > select `coding-friend-marketplace` > Enable auto-update
 - **Restart Claude Code** to load the plugin.
+
+### 🐳 CLI Commands
+
+```bash
+cf init              # Initialize workspace (interactive)
+                     # 💡 You can run this anywhere, anytime.
+cf host [path]       # Build and serve learning docs at localhost:3333
+                     # [path] is optional, default is `docs/learn`
+cf mcp [path]        # Setup MCP server for LLM integration
+                     # [path] is optional, default is `docs/learn`
+                     # This prints a JSON config snippet to add to your client's MCP
+cf statusline        # Setup coding-friend statusline
+cf update            # Update plugin + fix statusline
+```
+
+Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on install and update.
 
 ### 🛠️ Other stuffs
 
@@ -59,135 +106,6 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
     }
   }
   ```
-
-## 🐳 CLI Commands
-
-```bash
-cf init              # Initialize workspace (interactive)
-                     # 💡 You can run this anywhere, anytime.
-cf host [path]       # Build and serve learning docs at localhost:3333
-                     # [path] is optional, default is `docs/learn`
-cf mcp [path]        # Setup MCP server for LLM integration
-                     # [path] is optional, default is `docs/learn`
-                     # This prints a JSON config snippet to add to your client's MCP
-cf statusline        # Setup coding-friend statusline
-cf update            # Update plugin + fix statusline
-```
-
-Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on install and update.
-
-## 🛠️ Skills
-
-### Slash Commands (user triggers)
-
-| Command                | Description                                                          |
-| ---------------------- | -------------------------------------------------------------------- |
-| `/cf-plan [task]`      | Brainstorm and write implementation plan                             |
-| `/cf-review [target]`  | Dispatch code review to subagent                                     |
-| `/cf-commit [hint]`    | Analyze diff and create conventional commit                          |
-| `/cf-ship [hint]`      | Verify, commit, push, and create PR                                  |
-| `/cf-fix [bug]`        | Quick bug fix workflow                                               |
-| `/cf-remember [topic]` | Extract project knowledge to `docs/memory/`                          |
-| `/cf-learn [topic]`    | Extract learnings to `docs/learn/`                                   |
-| `/cf-research [topic]` | In-depth research with web search → `docs/research/`                 |
-| `/cf-statusline`       | Setup coding-friend statusline. Alternatively, use `cf statusline`   |
-| `/cf-update`           | Update plugin and refresh statusline. Alternatively, use `cf update` |
-
-### Auto-Invoked (agent loads when relevant)
-
-| Skill             | When                 |
-| ----------------- | -------------------- |
-| `cf-tdd`          | Writing new code     |
-| `cf-sys-debug`    | Debugging bugs       |
-| `cf-code-review`  | Reviewing code       |
-| `cf-verification` | Before claiming done |
-
-## Hooks
-
-| Hook                    | Event                    | Purpose                                            |
-| ----------------------- | ------------------------ | -------------------------------------------------- |
-| `session-init.sh`       | SessionStart             | Bootstrap context                                  |
-| `dev-rules-reminder.sh` | UserPromptSubmit         | Inject core rules                                  |
-| `privacy-block.sh`      | PreToolUse               | Block .env, credentials                            |
-| `scout-block.sh`        | PreToolUse               | Block .coding-friend/ignore patterns               |
-| `statusline.sh`         | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
-| `compact-marker.sh`     | PreCompact               | Preserve context                                   |
-| `context-tracker.sh`    | PostToolUse              | Track files read                                   |
-
-## Agents
-
-| Agent           | Purpose                               |
-| --------------- | ------------------------------------- |
-| `code-reviewer` | Multi-layer code review               |
-| `implementer`   | TDD implementation                    |
-| `planner`       | Codebase exploration + task breakdown |
-
-## Project Structure
-
-```
-coding-friend/
-├── CLAUDE.md                # Claude Code rules
-├── .coding-friend/          # User config (optional)
-│   ├── config.json          # Settings
-│   └── ignore               # Agent ignore patterns
-├── .claude-plugin/          # Plugin + marketplace manifest
-├── .claude/                 # Settings + agents
-├── hooks/                   # Lifecycle hooks
-├── skills/                  # 15 skills
-├── cli/                     # Standalone CLI (npm: coding-friend-cli)
-├── lib/
-│   ├── learn-host/          # Next.js static site for learning docs
-│   └── learn-mcp/           # MCP server for LLM integration
-└── docs/                    # Generated docs
-    ├── plans/               # Implementation plans
-    ├── memory/              # Project knowledge
-    ├── learn/               # Human learning notes
-    └── research/            # In-depth research results
-```
-
-## Usage
-
-### New project from scratch
-
-Create a project folder, then run `cf init` and start with:
-
-```
-/cf-plan Build a REST API for task management with auth
-```
-
-Claude explores requirements, picks an approach, writes a plan to `docs/plans/`. Then implement — TDD is auto-enforced (write test first → make it pass → refactor). When done:
-
-```
-/cf-review              # Code review in forked context
-/cf-ship Initial API    # Verify → commit → push → PR
-/cf-remember auth flow  # Save knowledge for next session
-```
-
-### Existing project
-
-Nothing to configure except `cf init` — coding-friend is active globally. On session start, hooks auto-detect project type, package manager, and load ignore patterns.
-
-```
-/cf-research React Server Components      # Deep research before planning
-/cf-plan Add email notifications when task is assigned
-/cf-fix Login fails with 401 when token is valid
-/cf-review src/auth/
-/cf-learn dependency injection
-```
-
-### Daily workflows
-
-| Task               | Command                                                   | What happens                                                                  |
-| ------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Add feature**    | `/cf-plan [task]` → implement → `/cf-review` → `/cf-ship` | Plan → TDD → review → ship                                                    |
-| **Fix bug**        | `/cf-fix [description]`                                   | Reproduce → root cause → fix → verify. Auto-escalates after 3 failed attempts |
-| **Review code**    | `/cf-review` or `/cf-review HEAD~3..HEAD`                 | 4-layer review (plan, quality, security, tests) in forked context             |
-| **Commit**         | `/cf-commit [hint]`                                       | Runs tests → stages files → conventional commit                               |
-| **Debug**          | Describe the bug naturally                                | `cf-sys-debug` auto-loads: investigate → analyze → hypothesis → fix           |
-| **Save knowledge** | `/cf-remember [topic]`                                    | Captures logic, conventions, decisions → `docs/memory/`                       |
-| **Learn**          | `/cf-learn [topic]`                                       | Extracts concepts from session → `docs/learn/`                                |
-| **Host docs**      | `cf host [path]`                                          | Build static site → serve at `localhost:3333`                                 |
-| **Research**       | `/cf-research [topic]`                                    | Web search + parallel subagents → structured docs in `docs/research/`         |
 
 ## Configuration
 
@@ -244,6 +162,56 @@ The `privacy-block` hook automatically blocks access to:
 - SSH directories (`.ssh/`)
 
 Set `"privacyBlock": false` in `.coding-friend/config.json` to disable.
+
+## Internals
+
+<details>
+<summary>Hooks, agents, project structure</summary>
+
+### Hooks
+
+| Hook                    | Event                    | Purpose                                            |
+| ----------------------- | ------------------------ | -------------------------------------------------- |
+| `session-init.sh`       | SessionStart             | Bootstrap context                                  |
+| `dev-rules-reminder.sh` | UserPromptSubmit         | Inject core rules                                  |
+| `privacy-block.sh`      | PreToolUse               | Block .env, credentials                            |
+| `scout-block.sh`        | PreToolUse               | Block .coding-friend/ignore patterns               |
+| `statusline.sh`         | — (via `/cf-statusline`) | Optional statusline (folder, model, branch, usage) |
+| `compact-marker.sh`     | PreCompact               | Preserve context                                   |
+| `context-tracker.sh`    | PostToolUse              | Track files read                                   |
+
+### Agents
+
+| Agent           | Purpose                               |
+| --------------- | ------------------------------------- |
+| `code-reviewer` | Multi-layer code review               |
+| `implementer`   | TDD implementation                    |
+| `planner`       | Codebase exploration + task breakdown |
+
+### Project Structure
+
+```
+coding-friend/
+├── CLAUDE.md                # Claude Code rules
+├── .coding-friend/          # User config (optional)
+│   ├── config.json          # Settings
+│   └── ignore               # Agent ignore patterns
+├── .claude-plugin/          # Plugin + marketplace manifest
+├── .claude/                 # Settings + agents
+├── hooks/                   # Lifecycle hooks
+├── skills/                  # 15 skills
+├── cli/                     # Standalone CLI (npm: coding-friend-cli)
+├── lib/
+│   ├── learn-host/          # Next.js static site for learning docs
+│   └── learn-mcp/           # MCP server for LLM integration
+└── docs/                    # Generated docs
+    ├── plans/               # Implementation plans
+    ├── memory/              # Project knowledge
+    ├── learn/               # Human learning notes
+    └── research/            # In-depth research results
+```
+
+</details>
 
 ## License
 
