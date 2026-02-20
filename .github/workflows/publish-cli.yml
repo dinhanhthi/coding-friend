@@ -7,7 +7,7 @@ on:
 
 permissions:
   id-token: write  # Required for OIDC
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -32,3 +32,56 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog for this version
+        id: changelog
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          VERSION="${TAG#cli-}"
+          BODY=$(awk -v tag="$VERSION" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              header=$2
+              gsub(/[^v0-9.].*/, "", header)
+              if (header == tag) { found=1; next }
+            }
+            found { print }
+          ' cli/CHANGELOG.md)
+
+          if [ -z "$BODY" ]; then
+            echo "::warning::No changelog entry found for $VERSION, using default message"
+            BODY="Release $TAG"
+          fi
+
+          echo "$BODY" > /tmp/release-body.md
+
+      - name: Delete existing release if present
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$TAG" &>/dev/null; then
+            echo "Deleting existing release for $TAG"
+            gh release delete "$TAG" --yes
+          fi
+
+      - name: Create GitHub Release
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file /tmp/release-body.md
