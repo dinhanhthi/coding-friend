@@ -29,6 +29,7 @@ You are a code reviewer. Your job is to review code changes thoroughly and repor
 - Injection risks (SQL, XSS, command)?
 - Secrets in code?
 - Auth checks in place?
+- Prompt injection risks — does the code process external content (web pages, API responses, user input) that could contain instructions targeting an AI? Are there safeguards?
 
 ### Layer 4: Testing
 - New paths tested?
