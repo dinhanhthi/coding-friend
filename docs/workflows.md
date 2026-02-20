@@ -16,8 +16,8 @@ User only interacts via slash commands. Everything else is automatic.
 ## New Project From Scratch
 
 **Step 0: Initialize**
-```
-/cf-init
+```bash
+cf init
 ```
 Sets up workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configures `.gitignore`, language, `/cf-learn` settings, and Claude Code permissions for external output directories.
 
@@ -49,7 +49,7 @@ Ask Claude to implement tasks from the plan. `cf-tdd` skill auto-activates:
 
 ## Existing Project (Big Codebase)
 
-No setup needed — coding-friend is already active globally. Optionally run `/cf-init` to configure project-specific settings.
+No setup needed — coding-friend is already active globally. Optionally run `cf init` to configure project-specific settings.
 
 **Understand the project:** Ask Claude naturally. Session-init already detected project type and framework.
 
@@ -147,7 +147,7 @@ Outputs to configured `outputDir` (default: `docs/learn/`). Also auto-invoked wh
 
 | Automatic (no action needed) | Manual (slash commands) |
 |---|---|
-| TDD enforcement when writing code | `/cf-init` — initialize workspace |
+| TDD enforcement when writing code | `cf init` — initialize workspace |
 | Systematic debugging when fixing bugs | `/cf-plan` — create implementation plan |
 | Verification before claiming done | `/cf-fix` — quick bug fix |
 | Privacy block (.env, credentials) | `/cf-review` — code review |

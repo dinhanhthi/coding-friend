@@ -42,7 +42,6 @@ coding-friend/
 │
 ├── skills/
 │   ├── cf-help/                 # Meta-skill (background)
-│   ├── cf-init/                 # /cf-init — workspace setup
 │   ├── cf-plan/                 # /cf-plan — brainstorm + write plans
 │   ├── cf-review/               # /cf-review — dispatch code review
 │   ├── cf-commit/               # /cf-commit — smart commit
@@ -59,9 +58,13 @@ coding-friend/
 │   └── cf-verification/         # Verify before claiming done
 │
 ├── lib/
-│   ├── core.js                  # Shared utilities
-│   ├── config.js                # Config loader
-│   └── cli/                     # CLI commands + helpers
+│   ├── learn-host/              # Next.js static site for learning docs
+│   │   ├── src/app/             # App Router pages
+│   │   ├── src/components/      # UI components
+│   │   └── src/lib/             # Build-time doc loading
+│   └── learn-mcp/               # MCP server for LLM integration
+│       ├── src/tools/           # 9 MCP tools (read/write/track)
+│       └── src/lib/             # Shared docs/knowledge logic
 │
 └── docs/                        # Project docs + generated docs
     ├── architecture.md          # This file
@@ -76,7 +79,7 @@ coding-friend/
 
 ---
 
-## Skills Architecture (16 skills)
+## Skills Architecture (15 skills)
 
 ### Reference Skills (5) — Auto-loaded when relevant
 
@@ -90,11 +93,10 @@ coding-friend/
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
 
-### Task Skills (11) — User-triggered via `/slash`
+### Task Skills (10) — User-triggered via `/slash`
 
 | Skill | Command | Key Feature |
 |---|---|---|
-| `cf-init` | `/cf-init` | Initialize workspace (folders, .gitignore, learn config, Claude permissions) |
 | `cf-plan` | `/cf-plan [task]` | Brainstorm + write implementation plan |
 | `cf-review` | `/cf-review [target]` | Fork context → code-reviewer agent |
 | `cf-commit` | `/cf-commit [hint]` | Analyze diff → conventional commit |
@@ -283,7 +285,7 @@ stripFrontmatter(content) → markdownBody
 
 | Decision | Rationale |
 |---|---|
-| 16 skills total | 5 reference + 11 task. Enough coverage without bloat |
+| 15 skills total | 5 reference + 10 task (host/mcp via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks | Portable, easy to debug, no build step |
 | 3 agents only | code-reviewer, implementer, planner covers 90% of cases |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation |
@@ -291,4 +293,4 @@ stripFrontmatter(content) → markdownBody
 | context: fork for /cf-review | Isolate review from main context window |
 | Layered config | Global `~/.coding-friend/config.json` + local per-project, local overrides |
 | CLI (`cf`) for installation | Automates plugin setup, health checks, updates |
-| /cf-init for setup | Re-runnable, detects previous setup, configures permissions |
+| `cf init` for setup | Re-runnable, detects previous setup, configures permissions |

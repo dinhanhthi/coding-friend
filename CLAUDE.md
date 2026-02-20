@@ -15,7 +15,6 @@ Lean toolkit for disciplined engineering workflows.
 ## Skills
 
 ### Commands (user triggers with /slash)
-- `/cf-init` — Initialize coding-friend in the current project (+ learn config)
 - `/cf-plan [task]` — Brainstorm + implementation plan
 - `/cf-review [target]` — Code review (runs in forked subagent)
 - `/cf-commit [hint]` — Smart conventional commit
@@ -39,6 +38,12 @@ Lean toolkit for disciplined engineering workflows.
 - `implementer` — TDD implementation
 - `planner` — Exploration + task breakdown
 
+## CLI (coding-friend-cli)
+- Standalone CLI at `cli/` — published as `coding-friend-cli` on npm, binary `cf`
+- Commands: `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
+- These mirror the plugin skills but work without Claude Code
+- Libs bundled at publish time via `scripts/bundle-libs.js` (copies from `lib/`)
+
 ## Conventions
 - Conventional commits: feat/fix/refactor/test/docs/chore
 - Tests next to source or in __tests__/tests/
@@ -58,3 +63,4 @@ Steps:
 2. Check `plugin.json` version — if it's already ahead of the tag, the current unreleased version is in progress. Do NOT bump again; add changes to the existing unreleased version instead
 3. Only bump `plugin.json` when the tag and `plugin.json` match (meaning a new release cycle is starting)
 4. Update changelog in `docs/CHANGELOG.md` (add to existing unreleased section if one exists)
+5. Also update `package.json` version

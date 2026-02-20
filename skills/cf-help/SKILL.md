@@ -19,7 +19,6 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 ## Available Skills
 
 ### Slash Commands (user triggers)
-- `/cf-init` — Initialize coding-friend workspace (folders + .gitignore + learn config)
 - `/cf-plan [task]` — Brainstorm and write implementation plan
 - `/cf-review [target]` — Dispatch code review to subagent
 - `/cf-commit [hint]` — Analyze diff and create conventional commit
@@ -53,3 +52,13 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 - Local config overrides global (merge at top-level key)
 - Top-level `language` setting applies to all doc-generating skills (default: `en`)
 - Respect `.coding-friend/ignore` patterns — do not read blocked directories
+
+## CLI (coding-friend-cli)
+
+Some commands also work standalone via `npm i -g coding-friend-cli`:
+- `cf init` — Interactive project setup
+- `cf host [path]` — Build and serve learning docs website
+- `cf mcp [path]` — Setup MCP server
+- `cf statusline` — Setup statusline
+- `cf update` — Update plugin + fix statusline
+- Tab completion is auto-configured on install/update

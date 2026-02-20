@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "claude-code-plugin-hooks-system",
+    "category": "Tools_Workflow",
+    "title": "Claude Code Plugin & Hooks System",
+    "tags": [
+      "claude-code",
+      "plugins",
+      "hooks",
+      "configuration"
+    ],
+    "excerpt": "Claude Code has a plugin system that can load hooks (scripts that run on specific events like `SessionStart`, `PreToolUse`, etc.) from **multiple sources simult..."
+  },
+  {
+    "slug": "tauri-desktop-app-gotchas",
+    "category": "Mobile_Dev",
+    "title": "Tauri Desktop App Gotchas",
+    "tags": [
+      "tauri",
+      "desktop",
+      "webview",
+      "sidecar",
+      "macos",
+      "gatekeeper",
+      "race-condition"
+    ],
+    "excerpt": "Tổng hợp các vấn đề thường gặp khi build và distribute desktop app bằng Tauri v2, đặc biệt trên macOS. **What:** Khi user tải app `.dmg` từ GitHub Releases và c..."
+  },
+  {
+    "slug": "typescript-type-casting-patterns",
+    "category": "Programming_Languages",
+    "title": "TypeScript Type Casting Patterns & Gotchas",
+    "tags": [
+      "typescript",
+      "type-casting",
+      "type-narrowing",
+      "window",
+      "strict-mode"
+    ],
+    "excerpt": "Tổng hợp các pattern cast type phổ biến và gotchas khi dùng TypeScript strict mode. **What:** Khi TypeScript không cho phép cast trực tiếp giữa 2 type vì chúng ..."
+  }
+]

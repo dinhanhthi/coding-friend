@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-primary-dark: #60a5fa;
+  --color-surface: #ffffff;
+  --color-surface-dark: #111827;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-secondary-dark: #1f2937;
+  --color-border: #e5e7eb;
+  --color-border-dark: #374151;
+  --color-text: #111827;
+  --color-text-dark: #f9fafb;
+  --color-text-muted: #6b7280;
+  --color-text-muted-dark: #9ca3af;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Syntax highlighting */
+pre code.hljs {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
