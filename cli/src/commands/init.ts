@@ -12,11 +12,91 @@ import {
 } from "../lib/paths.js";
 import { hasShellCompletion, ensureShellCompletion } from "../lib/shell-completion.js";
 import { DEFAULT_CONFIG, type CodingFriendConfig, type LearnCategory } from "../types.js";
+import {
+  findPluginRoot,
+  generatePlatformFiles,
+  writeGeneratedFiles,
+  detectPlatforms,
+  ADAPTABLE_PLATFORMS,
+} from "../lib/adapters.js";
+import type { PlatformId } from "../adapters/types.js";
 
 interface SetupStep {
   name: string;
   label: string;
   done: boolean;
+}
+
+// ─── Platform helpers ─────────────────────────────────────────────────
+
+function checkPlatforms(): boolean {
+  const local = readJson<CodingFriendConfig>(localConfigPath());
+  const global = readJson<CodingFriendConfig>(globalConfigPath());
+  return !!((local?.platforms && local.platforms.length > 0) ||
+    (global?.platforms && global.platforms.length > 0));
+}
+
+const PLATFORM_LABELS: Record<string, string> = {
+  cursor: "Cursor",
+  windsurf: "Windsurf",
+  copilot: "GitHub Copilot",
+  "roo-code": "Roo Code",
+  opencode: "OpenCode",
+  codex: "Codex",
+  antigravity: "Antigravity",
+};
+
+async function setupPlatforms(
+  scope: "global" | "local",
+): Promise<PlatformId[]> {
+  const detected = detectPlatforms(process.cwd());
+  const detectedSet = new Set(detected);
+
+  const choices = ADAPTABLE_PLATFORMS.map((id) => ({
+    name: `${PLATFORM_LABELS[id] || id}${detectedSet.has(id) ? " (detected)" : ""}`,
+    value: id,
+    checked: detectedSet.has(id),
+  }));
+
+  const selected = await checkbox({
+    message: `Which platforms to configure? (${scope})`,
+    choices,
+  });
+
+  if (selected.length === 0) {
+    log.dim("No platforms selected.");
+    return [];
+  }
+
+  const pluginRoot = findPluginRoot();
+  if (!pluginRoot) {
+    log.error("Could not find coding-friend plugin. Install it first.");
+    return selected as PlatformId[];
+  }
+
+  const config = readJson<CodingFriendConfig>(localConfigPath()) ?? {};
+  const results = await generatePlatformFiles(
+    selected as PlatformId[],
+    scope,
+    process.cwd(),
+    pluginRoot,
+    config,
+  );
+
+  for (const result of results) {
+    for (const w of result.warnings) {
+      log.warn(`${result.platform}: ${w}`);
+    }
+    if (result.files.length > 0) {
+      const written = writeGeneratedFiles(result.files);
+      log.success(`${result.platform}: ${written.length} file(s) generated`);
+      for (const f of written) {
+        log.dim(`  → ${f}`);
+      }
+    }
+  }
+
+  return selected as PlatformId[];
 }
 
 // ─── Detection ────────────────────────────────────────────────────────
@@ -371,7 +451,11 @@ async function saveConfig(config: CodingFriendConfig): Promise<void> {
 
 // ─── Main ─────────────────────────────────────────────────────────────
 
-export async function initCommand(): Promise<void> {
+interface InitOptions {
+  global?: boolean;
+}
+
+export async function initCommand(opts: InitOptions = {}): Promise<void> {
   console.log("=== 🌿 Coding Friend Init 🌿 ===");
   console.log();
 
@@ -387,6 +471,8 @@ export async function initCommand(): Promise<void> {
   const hasExternalDir =
     checkLearnConfig() && isExternalOutputDir(resolvedOutputDir);
 
+  const scope = opts.global ? "global" : "local";
+
   const steps: SetupStep[] = [
     { name: "docs", label: "Create docs folders", done: checkDocsFolders() },
     ...(gitAvailable
@@ -394,6 +480,7 @@ export async function initCommand(): Promise<void> {
       : []),
     { name: "language", label: "Set docs language", done: checkLanguage() },
     { name: "learn", label: "Configure /cf-learn", done: checkLearnConfig() },
+    { name: "platforms", label: `Setup platforms (${scope})`, done: checkPlatforms() },
     { name: "completion", label: "Setup shell tab completion", done: hasShellCompletion() },
   ];
 
@@ -482,6 +569,14 @@ export async function initCommand(): Promise<void> {
         learnOutputDir = learn.outputDir;
         learnAutoCommit = learn.autoCommit;
         isExternal = learn.isExternal;
+        break;
+      }
+
+      case "platforms": {
+        const platforms = await setupPlatforms(scope);
+        if (platforms.length > 0) {
+          config.platforms = platforms;
+        }
         break;
       }
 

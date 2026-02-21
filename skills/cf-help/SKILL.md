@@ -67,9 +67,18 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 ## CLI (coding-friend-cli)
 
 Install via `npm i -g coding-friend-cli`:
-- `cf init` — Interactive project setup
+- `cf init` — Interactive project setup (includes platform selection)
+- `cf init --global` — Install into global config of each platform
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server
 - `cf statusline` — Setup statusline (replaces old `/cf-statusline`)
 - `cf update` — Update plugin + fix statusline (replaces old `/cf-update`)
+- `cf adapt` — Regenerate platform files after skill/hook changes
+- `cf adapt --global` — Regenerate global config files
+- `cf remove` — Remove coding-friend files from platforms
 - Tab completion is auto-configured on install/update
+
+## Multi-Platform Support
+
+coding-friend works with: Claude Code (native), Cursor, Windsurf, GitHub Copilot, Roo Code, OpenCode, Codex, Antigravity.
+Run `cf init` to select platforms and generate rules/hooks for each.

@@ -10,11 +10,24 @@ export interface LearnConfig {
   readmeIndex?: boolean | "per-category";
 }
 
+export interface PlatformOverride {
+  enabled?: boolean;
+  hooks?: {
+    privacyBlock?: boolean;
+    scoutBlock?: boolean;
+    devRulesReminder?: boolean;
+  };
+}
+
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
   devRulesReminder?: boolean;
   learn?: LearnConfig;
+  /** Platforms configured for this project (set by cf init) */
+  platforms?: string[];
+  /** Per-platform overrides for opt-out */
+  platformOverrides?: Record<string, PlatformOverride>;
 }
 
 export const DEFAULT_CONFIG: Required<

@@ -2,6 +2,20 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v1.7.0
+
+- **Multi-platform support** — coding-friend now works with Cursor, Windsurf, GitHub Copilot, Roo Code, OpenCode, Codex, and Antigravity (in addition to Claude Code)
+- Add `cf init --global` — install coding-friend into global config of each platform (works in all projects without per-project setup)
+- Add `cf init` platform selection step — choose which platforms to configure during project setup
+- Add `cf adapt` command — regenerate platform-specific files after skill/hook changes (`--global`, `--platform <id>`, `--dry-run`)
+- Add `cf remove` command — remove coding-friend files from platforms (`--global`, `--platform <id>`)
+- Adapter system in `cli/src/adapters/` — PlatformAdapter interface with platform-specific compilers for skills, hooks, and rules
+- Core compilers: skill-compiler (SKILL.md → platform format), hooks-compiler (hooks.json → platform hook format), rules-builder (section markers for safe file merging)
+- Platforms with hook support (Cursor, Windsurf, Copilot): generate native hook scripts with adapted I/O format
+- Platforms without hooks (Roo Code, OpenCode, Codex, Antigravity): embed security/dev rules in instructions files
+- Global install uses section markers (`<!-- coding-friend:start/end -->`) for safe idempotent upserts into shared files
+- `CodingFriendConfig` extended with `platforms` and `platformOverrides` for per-platform opt-out
+
 ## v1.6.0
 
 - Improve `cf host`:

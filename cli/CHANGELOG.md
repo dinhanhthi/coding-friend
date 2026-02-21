@@ -2,6 +2,15 @@
 
 > Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 
+## v1.2.0
+
+- Add `cf init --global` — install coding-friend into global config of each platform
+- Add `cf init` platform selection step — choose which platforms to configure during setup
+- Add `cf adapt` command — regenerate platform-specific files after skill/hook changes (`--global`, `--platform <id>`, `--dry-run`)
+- Add `cf remove` command — remove coding-friend files from platforms (`--global`, `--platform <id>`, `-y`)
+- Adapter system: PlatformAdapter interface with platform-specific compilers for skills, hooks, and rules
+- Supported platforms: Cursor, Windsurf, GitHub Copilot, Roo Code, OpenCode, Codex, Antigravity
+
 ## v1.1.1
 
 - Add `-v` short flag for `cf --version`

@@ -20,9 +20,10 @@ program
 program
   .command("init")
   .description("Initialize coding-friend in current project")
-  .action(async () => {
+  .option("--global", "Install into global config of selected platforms")
+  .action(async (opts) => {
     const { initCommand } = await import("./commands/init.js");
-    await initCommand();
+    await initCommand(opts);
   });
 
 program
@@ -61,6 +62,28 @@ program
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);
+  });
+
+program
+  .command("adapt")
+  .description("Generate platform-specific files from coding-friend skills/hooks")
+  .option("--global", "Regenerate global config files")
+  .option("--platform <id>", "Regenerate for a specific platform only")
+  .option("--dry-run", "Show what would be generated without writing")
+  .action(async (opts) => {
+    const { adaptCommand } = await import("./commands/adapt.js");
+    await adaptCommand(opts);
+  });
+
+program
+  .command("remove")
+  .description("Remove coding-friend files from platforms")
+  .option("--global", "Remove from global config")
+  .option("--platform <id>", "Remove from a specific platform only")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (opts) => {
+    const { removeCommand } = await import("./commands/remove.js");
+    await removeCommand(opts);
   });
 
 program.parse();
