@@ -1,0 +1,41 @@
+---
+title: "cf init"
+description: "Initialize workspace with documentation folders and platform configuration."
+---
+
+## Overview
+
+Initialize your workspace with Coding Friend. The command guides you through an interactive setup, creating essential documentation folders and configuring your development environment.
+
+## Usage
+
+```bash
+cf init
+```
+
+## What It Creates
+
+`cf init` creates the following folder structure:
+
+- `docs/plans/` — Implementation plans and task breakdowns
+- `docs/memory/` — Project knowledge and reference docs
+- `docs/research/` — Research findings and deep dives
+- `docs/learn/` — Learning notes and extracted knowledge
+
+## Non-Git Directories
+
+`cf init` works in any directory, even if it's not a git repository. If you're working outside of git, you can still use Coding Friend for documentation and planning.
+
+## .gitignore Configuration
+
+During setup, you can optionally add Coding Friend folders to your `.gitignore`. This is recommended for private notes and research.
+
+## Global Configuration
+
+For platform-specific setup across multiple projects, use:
+
+```bash
+cf init --global
+```
+
+This installs Coding Friend configuration into the global config directories of supported platforms (Cursor, Windsurf, Copilot, etc.).

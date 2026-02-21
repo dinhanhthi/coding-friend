@@ -1,0 +1,55 @@
+---
+title: "/cf-fix"
+description: "Quick bug fix workflow with problem verification."
+---
+
+The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, confirming your approach, implementing a fix with tests, and verifying the solution works.
+
+## Usage
+
+```bash
+/cf-fix [bug description]
+```
+
+## Workflow
+
+1. **Verify Problem** — Reproduce the bug, understand failure conditions
+2. **Confirm Approach** — Discuss the fix strategy before implementation
+3. **Implement with Tests** — Write failing test first, then fix code
+4. **Verify Solution** — Run all tests to confirm fix and no regressions
+
+## Example
+
+```bash
+/cf-fix Login fails with 401 error when auth token expires
+```
+
+The skill will:
+- Reproduce the 401 error with an expired token
+- Identify where the auth check happens
+- Design token refresh strategy
+- Write test for token refresh logic
+- Implement the fix
+- Run full test suite to verify
+
+## Key Features
+
+- **TDD Integration** — Enforces test-first approach for bug fixes
+- **Regression Prevention** — Runs existing tests to catch side effects
+- **Minimal Changes** — Focuses on surgical fixes, not rewrites
+- **Documentation** — Comments explain why, not just what
+
+## When to Use
+
+- Production bugs affecting users
+- Flaky tests that fail intermittently
+- Unexpected behavior in existing features
+- Performance regressions
+
+## Output
+
+Fixes include:
+- Test file demonstrating the bug
+- Source code changes with comments
+- Git log showing the fix commit
+- Test report showing no regressions

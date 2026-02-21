@@ -1,0 +1,68 @@
+---
+title: "/cf-commit"
+description: "Smart conventional commits with diff analysis."
+---
+
+The `/cf-commit` skill creates well-formed conventional commits by analyzing your staged changes and generating appropriate commit messages.
+
+## Usage
+
+```bash
+/cf-commit [hint]
+```
+
+## What It Does
+
+1. **Analyzes Staged Changes** — Reviews diffs of all staged files
+2. **Determines Type** — Classifies as feat, fix, refactor, test, docs, or chore
+3. **Generates Message** — Creates clear, descriptive commit message
+4. **Follows Convention** — Adheres to conventional commits standard
+5. **Creates Commit** — Stages all changes and commits with your message
+
+## Commit Types
+
+| Type | When to Use |
+|------|------------|
+| `feat` | New feature or capability |
+| `fix` | Bug fix or error correction |
+| `refactor` | Code restructuring without behavior change |
+| `test` | Test additions or modifications |
+| `docs` | Documentation, README, comments |
+| `chore` | Dependency updates, build scripts, config |
+
+## Examples
+
+```bash
+# Stage your changes, then:
+/cf-commit add user authentication
+# Creates: feat: add user authentication with JWT tokens
+```
+
+```bash
+/cf-commit fix sidebar alignment
+# Creates: fix: resolve sidebar misalignment on mobile view
+```
+
+## Message Format
+
+```
+type(scope): description
+
+Body with more context if needed.
+Explains the "why" not just the "what".
+```
+
+## Benefits
+
+- **Consistency** — Same format across all commits
+- **Clarity** — Descriptive messages aid code archaeology
+- **Automation** — Conventional format enables automated changelog generation
+- **History** — Easy to find related changes with `git log --grep`
+
+## When to Use
+
+- After completing a feature
+- Fixing bugs
+- Refactoring code sections
+- Adding tests or documentation
+- Any staged change ready to commit

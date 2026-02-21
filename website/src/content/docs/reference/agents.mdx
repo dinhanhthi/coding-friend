@@ -1,0 +1,35 @@
+---
+title: "Agents"
+description: "5 specialized agents for different engineering tasks."
+---
+
+## Overview
+
+Coding Friend includes 5 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
+
+## Agent Reference
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| `code-reviewer` | Claude Opus 4.6 | Multi-layer code review with deep reasoning |
+| `implementer` | Claude Opus 4.6 | TDD-driven implementation with test-first approach |
+| `planner` | Claude Opus 4.6 | Exploration, task breakdown, and implementation planning |
+| `writer` | Claude Haiku | Lightweight document writing and markdown generation |
+| `writer-deep` | Claude Opus 4.6 | Deep reasoning for nuanced technical documentation |
+
+## When Each Agent Is Used
+
+### code-reviewer
+Invoked by `/cf-review [target]`. Reviews code for correctness, performance, security, and maintainability.
+
+### implementer
+Invoked by `/cf-fix [bug]` and used in TDD workflows. Implements features with red-green-refactor discipline.
+
+### planner
+Invoked by `/cf-plan [task]`. Breaks down complex tasks into implementation steps with exploration.
+
+### writer
+Used for quick document generation, skill documentation, and lightweight markdown files.
+
+### writer-deep
+Invoked by `/cf-learn [topic]` with deep reasoning enabled. Extracts nuanced knowledge and creates comprehensive technical documentation.

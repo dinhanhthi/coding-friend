@@ -1,0 +1,32 @@
+---
+title: "cf statusline"
+description: "Configure the Claude Code statusline with project info."
+---
+
+## Overview
+
+`cf statusline` configures the Claude Code editor statusline to display relevant project information. This provides quick visual feedback about your coding context during a session.
+
+## Displayed Information
+
+The statusline shows:
+
+- Plugin version (e.g., `v1.6.0`)
+- Project name
+- Model (e.g., `Opus 4.6`)
+- Current branch name
+- Token usage percentage
+
+## Example Format
+
+```
+cf v1.6.0 | MyProject | Opus 4.6 | main | 15%
+```
+
+## Usage
+
+```bash
+cf statusline
+```
+
+This command configures your Claude Code statusline automatically based on your project settings and the current session context.

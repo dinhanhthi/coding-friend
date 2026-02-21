@@ -1,0 +1,90 @@
+---
+title: "/cf-learn"
+description: "Extract human learning docs from coding sessions."
+---
+
+The `/cf-learn` skill creates learning documentation from your coding sessions. It captures what you learned, insights gained, and techniques used. These docs can be hosted as a personal knowledge base or served via MCP.
+
+## Usage
+
+```bash
+/cf-learn [topic]
+```
+
+Or run without arguments to extract learnings from the current session.
+
+## What It Does
+
+1. **Analyzes Session** — Reviews what you built and problems you solved
+2. **Extracts Insights** — Identifies key learnings and techniques
+3. **Creates Docs** — Generates clear learning materials with examples
+4. **Saves to Output** — Stores in configurable directory (default: `docs/learn/`)
+5. **Enables Sharing** — Docs can be hosted as website or served via MCP
+
+## Examples
+
+```bash
+/cf-learn TypeScript generics and constraints
+```
+
+```bash
+/cf-learn async/await error handling patterns
+```
+
+```bash
+# Auto-invoked after substantial new knowledge
+```
+
+## Auto-Invocation
+
+`cf-learn` activates automatically when you:
+- Solve a complex technical problem
+- Learn a new pattern or technique
+- Overcome a major debugging challenge
+- Complete a feature with novel architecture
+
+## Output Formats
+
+Learning docs support multiple hosting options:
+
+### Website Hosting
+```bash
+cf host
+# Serves docs/learn/ as a local website
+```
+
+### MCP Server
+```bash
+cf mcp
+# Exposes docs/learn/ via Model Context Protocol
+# AI can reference while coding
+```
+
+### Static Markdown
+```
+docs/learn/
+  ├── typescript/
+  │   ├── generics-and-constraints.md
+  │   └── advanced-types.md
+  ├── patterns/
+  │   ├── async-error-handling.md
+  │   └── dependency-injection.md
+  └── techniques/
+      └── debugging-node-memory-leaks.md
+```
+
+## Benefits
+
+- **Knowledge Building** — Accumulate learning over time
+- **Sharable** — Teach team members with your docs
+- **Searchable** — Discover past learnings when stuck
+- **AI-Aware** — AI references your learning docs while coding
+- **Portable** — Host anywhere or use offline
+
+## When to Use
+
+- Completing challenging features
+- Learning new frameworks or libraries
+- Solving complex debugging problems
+- Implementing new patterns
+- After major refactors or migrations

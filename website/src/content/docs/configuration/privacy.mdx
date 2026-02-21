@@ -1,0 +1,45 @@
+---
+title: "Privacy"
+description: "Automatic protection for sensitive files and credentials."
+---
+
+## Overview
+
+Coding Friend includes automatic privacy protection that blocks agent access to sensitive files containing credentials, keys, and environment variables.
+
+## Protected Files
+
+The `privacy-block` hook automatically protects:
+
+- All `.env` files (except `.env.example`)
+- `.pem` files (certificates and keys)
+- `.key` files (private keys)
+- `id_rsa` and other SSH identity files
+- `.ssh/` directory contents
+
+These files are never exposed to the agent, even if explicitly requested.
+
+## How It Works
+
+The privacy-block hook runs on every tool use. It scans file paths before they're accessed and blocks any matches automatically.
+
+## Disabling Privacy Block
+
+If you need to disable automatic privacy protection (not recommended), set in `.coding-friend/config.json`:
+
+```json
+{
+  "hooks": {
+    "privacyBlock": false
+  }
+}
+```
+
+**Warning**: Disabling privacy protection may expose sensitive credentials to the agent. Only disable if you're working in a isolated, non-production environment.
+
+## Best Practices
+
+- Never add `.env` files to version control (use `.env.example` instead)
+- Keep SSH keys (`~/.ssh/`) separate from your project directory
+- Use `.coding-friend/ignore` for additional sensitive patterns
+- Audit your `.gitignore` to ensure credentials aren't tracked
