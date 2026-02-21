@@ -64,7 +64,9 @@ There is always a security layer to protect you from prompt injection attacks.
   /plugin marketplace add dinhanhthi/coding-friend
   /plugin install coding-friend@coding-friend-marketplace
   ```
-  🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
+  - ☝️ We install this kit as a global plugin (install once, use in every project). In case we don't want to use it in any project, we can opt-out it.
+  - **Cursor** is automatically detected if it's already installed in Claude Code. If you don't use Claude Code, please wait for Cursor support to be released.
+  - 🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
 - **In each project**, run `cf init` to set up the workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally add them to `.gitignore`.
 - **Enable auto-update**: run `/plugin` > Go to installed plugins > select `coding-friend-marketplace` > Enable auto-update
 - **Restart Claude Code** to load the plugin.
