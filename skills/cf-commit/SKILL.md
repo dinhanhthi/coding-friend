@@ -2,6 +2,8 @@
 name: cf-commit
 description: Smart conventional commit with diff analysis
 disable-model-invocation: true
+model: haiku
+tools: [Bash, Read, Glob]
 ---
 
 # /cf-commit
