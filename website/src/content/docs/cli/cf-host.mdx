@@ -1,0 +1,40 @@
+---
+title: "cf host"
+description: "Build and serve learning docs as a local website."
+---
+
+## Overview
+
+`cf host` transforms your learning documentation into a searchable, browsable website. Perfect for reviewing notes, sharing knowledge with your team, or integrating docs with other tools.
+
+## Usage
+
+```bash
+cf host [path]
+```
+
+The default path is `docs/learn/`.
+
+## Features
+
+### Local Server
+
+Docs are served at `localhost:3333` by default.
+
+### Incremental Static Regeneration (ISR)
+
+The server automatically detects changes to your markdown files and regenerates affected pages without a full rebuild.
+
+### Full-Text Search
+
+Built-in search powered by [Pagefind](https://pagefind.app/). Search across all your documentation instantly.
+
+## Example
+
+```bash
+# Serve docs from docs/learn/
+cf host
+
+# Serve docs from a custom directory
+cf host ./my-learning-docs
+```

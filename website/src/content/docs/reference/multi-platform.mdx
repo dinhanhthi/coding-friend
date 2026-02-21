@@ -1,0 +1,87 @@
+---
+title: "Multi-Platform Support"
+description: "Use Coding Friend skills and hooks across multiple AI coding tools."
+---
+
+## Overview
+
+Coding Friend supports multiple AI coding platforms through platform adapters. Write your skills and hooks once, deploy to all supported platforms.
+
+## Supported Platforms
+
+- Cursor
+- Windsurf
+- GitHub Copilot
+- Roo Code
+- OpenCode
+- Codex
+- Antigravity
+
+## How It Works
+
+Adapters are located in `cli/src/adapters/`. Each adapter:
+
+1. Reads your skills and hooks from the Coding Friend project
+2. Compiles them into platform-specific format
+3. Deploys to the platform's configuration directory
+
+Core compilation logic is in `adapters/core/`:
+- `skill-compiler.ts` — Converts skill definitions to platform format
+- `hooks-compiler.ts` — Compiles hook scripts
+- `rules-builder.ts` — Generates platform-specific rule files
+
+Each adapter implements the `PlatformAdapter` interface defined in `adapters/types.ts`.
+
+## Setup Commands
+
+### Project Setup
+
+Initialize Coding Friend in a project and select platforms:
+
+```bash
+cf init
+```
+
+The interactive prompt guides you through platform selection. Project files are created in your working directory.
+
+### Global Setup
+
+Install Coding Friend configuration globally across all selected platforms:
+
+```bash
+cf init --global
+```
+
+This installs Coding Friend into the global configuration directories of supported platforms, making it available to all projects.
+
+## Maintenance
+
+### Regenerate Platform Files
+
+After updating skills or hooks, regenerate platform files:
+
+```bash
+cf adapt
+```
+
+This recompiles all selected platforms with your latest changes.
+
+### Remove Coding Friend
+
+To remove Coding Friend from a platform:
+
+```bash
+cf remove
+```
+
+Select which platforms to remove. Coding Friend files are deleted from that platform's configuration.
+
+## Supported Features by Platform
+
+All platforms support:
+- Skills and commands
+- Hooks and lifecycle events
+- Configuration files
+- Documentation integration
+
+Platform-specific features vary — consult platform documentation for details on MCP integration, token limits, and model availability.

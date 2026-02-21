@@ -29,3 +29,18 @@ pre code.hljs {
   font-size: 0.875rem;
   line-height: 1.7;
 }
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db4c;
+  border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #d1d5dbce;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

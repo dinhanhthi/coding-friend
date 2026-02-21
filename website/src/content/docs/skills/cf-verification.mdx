@@ -1,0 +1,132 @@
+---
+title: "cf-verification"
+description: "Verification gate that ensures tests pass before claiming done."
+---
+
+The `cf-verification` skill activates before you claim a task is complete. It enforces a verification gate: all tests must pass, changes must be verified working, and no regressions should be introduced.
+
+## When It Activates
+
+Automatically triggered when:
+- Completing a feature or bug fix
+- Before running `/cf-ship`
+- Before marking a task done
+- Any time you claim work is finished
+
+## Verification Checklist
+
+### 1. Tests Pass
+All automated tests must pass.
+
+```bash
+# Run full test suite
+npm test
+# OR
+pytest
+# OR
+your test command here
+```
+
+Verifies:
+- Unit tests passing
+- Integration tests passing
+- E2E tests passing (if applicable)
+- No flaky or intermittent failures
+- No skipped tests masking problems
+
+### 2. Changes Are Verified
+Your changes work as expected.
+
+```bash
+# Manual verification steps
+# For features: test happy path and error cases
+# For fixes: reproduce bug was happening, confirm fix resolves it
+# For refactors: verify behavior unchanged
+```
+
+Examples:
+- Feature: test new UI works, handles edge cases
+- Bug fix: reproduce original error, confirm it's gone
+- Refactor: verify same behavior, performance acceptable
+
+### 3. No Regressions
+Existing functionality still works.
+
+- Previously passing tests still pass
+- Related features still function
+- Performance not degraded
+- Database migrations reversible
+- Dependent systems compatible
+
+### 4. Code Quality
+Meet minimum quality standards.
+
+```bash
+# Static analysis and linting
+npm run lint
+# Type checking
+npm run typecheck
+# Code coverage
+npm run coverage
+```
+
+Verifies:
+- No linting errors
+- Type safety checked
+- Test coverage acceptable
+- No obvious bugs from analysis
+- Consistent with codebase standards
+
+### 5. Documentation Updated
+Changes are documented.
+
+- README updated if behavior changed
+- Comments added for complex logic
+- API docs updated for new endpoints
+- Migration guide if database changed
+- CHANGELOG entry if user-facing change
+
+## Verification Report
+
+When complete, verification provides:
+
+```
+VERIFICATION REPORT
+===================
+
+Tests:
+  ✓ Unit tests: 42 passed
+  ✓ Integration tests: 8 passed
+  ✓ E2E tests: 12 passed
+
+Manual Testing:
+  ✓ Feature works in development
+  ✓ Error cases handled
+  ✓ Performance acceptable
+
+Regressions:
+  ✓ All previously passing tests still pass
+  ✓ No performance degradation
+  ✓ No database issues
+
+Code Quality:
+  ✓ Lint: 0 errors
+  ✓ Type checking: all clear
+  ✓ Coverage: 78%
+
+Documentation:
+  ✓ Updated README
+  ✓ Added code comments
+  ✓ Updated CHANGELOG
+
+Status: READY TO SHIP
+```
+
+## When to Use
+
+Use verification before:
+- Creating a pull request
+- Merging to main
+- Deploying to production
+- Closing issue as done
+- Claiming work complete

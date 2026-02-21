@@ -1,0 +1,67 @@
+---
+title: "Ignore Patterns"
+description: "Block agent access to specific files and directories."
+---
+
+## Overview
+
+Use `.coding-friend/ignore` to prevent the Claude agent from accessing sensitive, large, or irrelevant files and directories.
+
+## File Format
+
+Create `.coding-friend/ignore` in your project root. Each line is a glob pattern (similar to `.gitignore`).
+
+## Common Patterns
+
+```
+# Dependencies
+node_modules/
+vendor/
+.venv/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database files
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+.DS_Store
+```
+
+## Pattern Syntax
+
+- Use `/` for directory separators
+- `*` matches any characters except `/`
+- `**/` matches any directory depth
+- End with `/` to match only directories
+- Start with `!` to negate (allow) a pattern
+
+## Example
+
+```
+# Block all of node_modules except important config
+node_modules/
+!node_modules/package-lock.json
+
+# Block Python virtual environments
+venv/
+.venv/
+__pycache__/
+
+# Block generated code
+dist/
+build/
+```
+
+Agent tools will skip any files matching these patterns, improving performance and privacy.

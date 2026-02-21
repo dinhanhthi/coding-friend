@@ -1,0 +1,58 @@
+---
+title: "/cf-plan"
+description: "Brainstorm and create structured implementation plans."
+---
+
+The `/cf-plan` skill helps you design solutions before writing code. It explores your codebase, identifies patterns, asks clarifying questions, and produces a detailed implementation plan.
+
+## Usage
+
+```bash
+/cf-plan [task description]
+```
+
+## What It Does
+
+1. **Codebase Exploration** — Scans relevant files to understand your tech stack and patterns
+2. **Clarifying Questions** — Identifies gaps in understanding and asks for requirements
+3. **Pattern Analysis** — Discovers existing conventions you should follow
+4. **Design Phase** — Creates architecture decisions and trade-off analysis
+5. **Plan Generation** — Writes a step-by-step implementation plan to `docs/plans/`
+
+## Example
+
+```bash
+/cf-plan Build a REST API with JWT authentication and rate limiting
+```
+
+The skill will:
+- Review your existing API structure
+- Check how auth is currently handled
+- Propose endpoint design
+- Identify rate limiting libraries
+- Create a phased implementation plan
+- Save the plan to `docs/plans/rest-api-auth-plan.md`
+
+## When to Use
+
+- Starting a new feature with uncertain scope
+- Redesigning a complex system
+- Onboarding to unfamiliar codebases
+- Planning migrations or refactors
+
+## Output
+
+Plans are saved to `docs/plans/` with the format:
+```
+docs/plans/
+  ├── rest-api-auth-plan.md
+  ├── database-migration-plan.md
+  └── ...
+```
+
+Each plan includes:
+- Requirements clarification
+- Architecture diagram (ASCII or description)
+- Implementation phases
+- Risk assessment
+- Testing strategy

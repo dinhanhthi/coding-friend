@@ -1,0 +1,39 @@
+---
+title: "Skills Overview"
+description: "All 15 skills available in Coding Friend — 10 slash commands and 5 auto-invoked."
+---
+
+Coding Friend provides a comprehensive toolkit of 15 skills that automate common engineering workflows. Ten are triggered on-demand via slash commands, while five activate automatically in response to your coding patterns.
+
+## Slash Commands
+
+Interactive skills you trigger directly to solve specific problems.
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/cf-plan` | Brainstorm and create structured implementation plans | `/cf-plan Build a REST API with auth` |
+| `/cf-fix` | Quick bug fix workflow with problem verification | `/cf-fix Login fails with 401 error` |
+| `/cf-ask` | Quick Q&A about your codebase with persistent memory | `/cf-ask How does the auth middleware work?` |
+| `/cf-optimize` | Structured optimization with before/after measurement | `/cf-optimize getUserById query` |
+| `/cf-review` | Multi-layer code review in a forked subagent | `/cf-review src/auth/` |
+| `/cf-commit` | Smart conventional commits with diff analysis | `/cf-commit refactor auth flow` |
+| `/cf-ship` | Verify, commit, push, and create PR in one command | `/cf-ship Add notification system` |
+| `/cf-remember` | Capture project knowledge for AI memory across sessions | `/cf-remember auth flow decisions` |
+| `/cf-learn` | Extract human learning docs from coding sessions | `/cf-learn TypeScript patterns` |
+| `/cf-research` | In-depth research with web search and parallel subagents | `/cf-research best practices for JWT tokens` |
+
+## Auto-Invoked Skills
+
+These skills activate automatically based on what you're doing, without needing an explicit command.
+
+| Skill | Activates When | What It Does |
+|-------|----------------|-------------|
+| `cf-tdd` | Writing new code | Enforces test-driven development: RED → GREEN → REFACTOR |
+| `cf-sys-debug` | Debugging issues | Guides 4-phase systematic debugging: Observe, Hypothesize, Test, Fix |
+| `cf-code-review` | Reviewing code changes | Applies multi-layer review checklist (correctness, security, performance, maintainability, tests) |
+| `cf-verification` | Before claiming task complete | Ensures tests pass, changes verified, no regressions introduced |
+| `cf-learn` | After substantial new knowledge | Auto-extracts learnings to docs/learn/ for future reference |
+
+## Next Steps
+
+Explore individual skill documentation to learn how each one works and when to use it. Start with `/cf-plan` for designing new features and `/cf-fix` for resolving bugs.

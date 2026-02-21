@@ -1,0 +1,73 @@
+---
+title: "/cf-ship"
+description: "Verify, commit, push, and create PR in one command."
+---
+
+The `/cf-ship` skill automates the final steps of feature delivery: running tests, creating a commit, pushing to remote, and opening a pull request.
+
+## Usage
+
+```bash
+/cf-ship [hint]
+```
+
+## Workflow
+
+1. **Run Tests** — Verify all tests pass (unit, integration, e2e)
+2. **Create Commit** — Generate conventional commit with your hint
+3. **Push to Remote** — Push branch to origin with `-u` flag
+4. **Create PR** — Open pull request with auto-generated title and body
+5. **Report** — Show PR URL for review
+
+## Examples
+
+```bash
+/cf-ship Add notification system
+```
+
+Output:
+```
+✓ Tests passed (42 passed, 0 failed)
+✓ Commit created: feat: add notification system with email and SMS
+✓ Pushed to origin/feature/notification-system
+✓ PR created: https://github.com/yourorg/repo/pull/42
+```
+
+## Requirements
+
+- All changes staged and ready to commit
+- All tests passing
+- Branch created and has commits
+- Remote configured (usually origin)
+- GitHub credentials available (gh CLI or GITHUB_TOKEN)
+
+## Pre-Flight Checks
+
+`/cf-ship` verifies:
+- Working directory clean (nothing untracked left behind)
+- Tests pass before committing
+- Branch isn't already on main/master
+- Remote is reachable
+
+## PR Details
+
+The generated PR includes:
+- Clear title based on your commit
+- Summary of changes
+- Link to related issues (if detected)
+- Test results and coverage
+- Reviewers assigned (if configured)
+
+## When to Use
+
+- Ready to ship a completed feature
+- Bug fix tested and verified
+- Documentation updates finalized
+- Any work ready for team review
+
+## Workflow Integration
+
+Pairs perfectly with:
+- `/cf-plan` — Design first
+- `/cf-fix` — Bug resolution
+- `/cf-commit` — Manual staging
