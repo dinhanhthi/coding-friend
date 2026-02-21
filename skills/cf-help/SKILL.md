@@ -2,6 +2,8 @@
 name: cf-help
 description: Core knowledge for coding-friend toolkit usage
 user-invocable: false
+model: haiku
+tools: [Read]
 ---
 
 # coding-friend
