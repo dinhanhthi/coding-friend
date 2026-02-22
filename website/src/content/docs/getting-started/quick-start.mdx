@@ -1,0 +1,55 @@
+---
+title: Quick Start
+description: Your first 5 minutes with Coding Friend — learn the core workflow.
+---
+
+## The Core Workflow
+
+Coding Friend enforces a disciplined engineering workflow. Here's how a typical session looks:
+
+## 1. Plan Your Work
+
+```
+/cf-plan Build a user authentication system
+```
+
+Coding Friend explores your codebase, identifies existing patterns, and writes a structured implementation plan.
+
+## 2. Write Code with TDD
+
+Simply describe what you want to build. The `cf-tdd` skill activates automatically and enforces:
+
+1. **RED** — Write a failing test first
+2. **GREEN** — Write minimal code to pass
+3. **REFACTOR** — Clean up while tests stay green
+
+## 3. Review Your Code
+
+```
+/cf-review src/auth/
+```
+
+A multi-layer code review runs in a separate subagent, checking security, performance, style, and test coverage.
+
+## 4. Ship It
+
+```
+/cf-ship Add user authentication
+```
+
+One command to verify all tests pass, create a conventional commit, push, and open a pull request.
+
+## 5. Capture Knowledge
+
+```
+/cf-learn
+```
+
+Extract what you learned during the session into structured docs. Host them locally with `cf host` or integrate with other LLM clients via `cf mcp`.
+
+## Tips
+
+- Type `/cf-help` to see all available commands
+- Skills like `cf-tdd` and `cf-verification` activate automatically — no slash needed
+- Use `/cf-ask` for quick questions about your codebase
+- Use `/cf-fix` for quick bug fixes with problem verification

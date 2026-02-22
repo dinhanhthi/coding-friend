@@ -1,0 +1,102 @@
+---
+title: "Configuration File"
+description: "Customize Coding Friend behavior with .coding-friend/config.json."
+---
+
+## Overview
+
+Configure Coding Friend behavior using `.coding-friend/config.json`. This file lets you customize documentation directories, enable/disable hooks, and adjust learning extraction settings.
+
+## Configuration Schema
+
+### Documentation Directory
+
+```json
+{
+  "docsDir": "docs"
+}
+```
+
+Set the root directory for all documentation (default: `docs`).
+
+### Hooks
+
+Control which automatic hooks run during your session:
+
+```json
+{
+  "hooks": {
+    "privacyBlock": true,
+    "scoutBlock": true,
+    "devRulesReminder": true,
+    "contextTracker": true
+  }
+}
+```
+
+All hooks default to `true`. Set to `false` to disable.
+
+### Commit Settings
+
+```json
+{
+  "commit": {
+    "verify": true,
+    "conventionalCommits": true
+  }
+}
+```
+
+- `verify`: Run tests before allowing commit (default: `true`)
+- `conventionalCommits`: Enforce conventional commit format (default: `true`)
+
+### Learning Extraction
+
+```json
+{
+  "learn": {
+    "outputDir": "docs/learn",
+    "categories": ["concepts", "patterns", "tools"],
+    "autoCommit": true,
+    "readmeIndex": true
+  }
+}
+```
+
+- `outputDir`: Where `/cf-learn` saves files (default: `docs/learn`)
+- `categories`: Classification for learning notes (default: built-in list)
+- `autoCommit`: Automatically commit extracted learning files (default: `true`)
+- `readmeIndex`: Maintain README with index of learning docs (default: `true`)
+
+## Example Config
+
+```json
+{
+  "docsDir": "docs",
+  "hooks": {
+    "privacyBlock": true,
+    "scoutBlock": true,
+    "devRulesReminder": true,
+    "contextTracker": true
+  },
+  "commit": {
+    "verify": true,
+    "conventionalCommits": true
+  },
+  "learn": {
+    "outputDir": "docs/learn",
+    "categories": ["concepts", "patterns", "tools", "debugging"],
+    "autoCommit": true,
+    "readmeIndex": true
+  }
+}
+```
+
+## Layered Configuration
+
+Coding Friend supports two configuration levels:
+
+1. **Global**: `~/.coding-friend/config.json` — applies to all projects
+2. **Local**: `.coding-friend/config.json` — project-specific settings
+
+Local settings always override global settings. This lets you maintain project-specific rules while inheriting defaults globally.

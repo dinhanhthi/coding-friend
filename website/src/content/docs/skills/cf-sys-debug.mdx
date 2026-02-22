@@ -1,0 +1,89 @@
+---
+title: "cf-sys-debug"
+description: "4-phase systematic debugging methodology."
+---
+
+The `cf-sys-debug` skill activates when you're debugging issues. It guides you through a structured 4-phase methodology: Observe, Hypothesize, Test, Fix.
+
+## When It Activates
+
+Automatically triggered when:
+- Code is failing or behaving unexpectedly
+- Tracking down a bug or error
+- Investigating performance issues
+- Debugging test failures
+
+## The 4-Phase Methodology
+
+### Phase 1: Observe
+Gather facts without assumptions. Don't debug in your head.
+
+- Reproduce the bug consistently
+- Capture error messages and stack traces
+- Note what works and what fails
+- Identify patterns (always fails? intermittent?)
+- Check logs and monitoring data
+
+Example:
+```
+Bug: Login endpoint returns 500 error
+Facts:
+  - Error occurs on POST /api/auth/login
+  - Fails with: "TypeError: Cannot read property 'email' of undefined"
+  - Works with valid email/password before (regression)
+  - Database connection is healthy
+  - Error only happens in production, not local
+```
+
+### Phase 2: Hypothesize
+Based on observations, form a testable hypothesis.
+
+```
+Hypothesis: User record was deleted from database
+after last successful login, causing null reference.
+
+Alternative: Request payload parsing changed,
+dropping email field in recent deploy.
+```
+
+### Phase 3: Test
+Verify your hypothesis. Design minimal tests.
+
+```bash
+# Test hypothesis 1: Check database
+SELECT COUNT(*) FROM users WHERE email = 'test@example.com';
+
+# Test hypothesis 2: Log request payload
+console.log('Incoming payload:', req.body);
+
+# Add temporary debugging code
+if (!user?.email) {
+  console.log('User object:', user);
+  throw new Error('DEBUG: user.email is undefined');
+}
+```
+
+### Phase 4: Fix
+Once root cause is confirmed, implement the fix.
+
+- Fix only the root cause, not symptoms
+- Keep changes minimal
+- Add regression test
+- Verify fix doesn't break other things
+
+## Key Principles
+
+- **Collect Data** — Use logs, errors, and tests, not guesses
+- **Isolate** — Find the narrowest failing case
+- **Reproduce** — Make failure consistent and repeatable
+- **Question Assumptions** — Your first guess is often wrong
+- **Automate** — Convert manual debugging to automated tests
+
+## Tools to Use
+
+- Browser DevTools for frontend issues
+- Server logs and monitoring (CloudWatch, Sentry, etc.)
+- Database queries for data verification
+- Profilers for performance issues
+- Unit tests for edge cases
+- Git blame/log to find recent changes

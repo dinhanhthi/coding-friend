@@ -1,0 +1,64 @@
+---
+title: "/cf-ask"
+description: "Quick Q&A about your codebase with persistent memory."
+---
+
+The `/cf-ask` skill answers questions about your codebase and saves the answers to persistent memory. Future sessions can reference these answers, building institutional knowledge.
+
+## Usage
+
+```bash
+/cf-ask [question]
+```
+
+## What It Does
+
+1. **Analyzes Codebase** — Examines relevant files to answer your question
+2. **Provides Answer** — Gives clear, concise explanation with code examples
+3. **Saves to Memory** — Stores Q&A in `docs/memory/` for future reference
+4. **Cross-References** — Links to related questions and learnings
+
+## Examples
+
+```bash
+/cf-ask How does the auth middleware work?
+```
+
+```bash
+/cf-ask What database schema does the user model use?
+```
+
+```bash
+/cf-ask Where are API error codes defined?
+```
+
+## When to Use
+
+- Onboarding to a new codebase
+- Understanding design decisions
+- Locating specific functionality
+- Quick clarifications during development
+
+## Memory System
+
+Answers are saved to `docs/memory/` and indexed by topic:
+
+```
+docs/memory/
+  ├── architecture/
+  │   ├── auth-flow.md
+  │   └── database-design.md
+  ├── patterns/
+  │   ├── error-handling.md
+  │   └── state-management.md
+  └── decisions/
+      ├── jwt-vs-sessions.md
+      └── database-choice.md
+```
+
+## Benefits
+
+- **Reduces Ramp-Up Time** — Captured knowledge speeds onboarding
+- **Consistency** — Team references same answers
+- **Searchable** — Find answers from previous conversations
+- **AI-Readable** — Helps AI understand your codebase faster

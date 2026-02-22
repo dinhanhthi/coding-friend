@@ -1,0 +1,61 @@
+---
+title: "/cf-review"
+description: "Multi-layer code review in a forked subagent."
+---
+
+The `/cf-review` skill performs comprehensive code review using a dedicated subagent. It examines code from multiple angles: security, performance, style, and test coverage.
+
+## Usage
+
+```bash
+/cf-review [target]
+```
+
+## What It Checks
+
+| Dimension | Focus |
+|-----------|-------|
+| **Security** | SQL injection, auth bypasses, exposed secrets, unsafe deserialization |
+| **Performance** | N+1 queries, memory leaks, inefficient algorithms, unnecessary allocations |
+| **Style** | Code clarity, naming, consistency with codebase patterns, readability |
+| **Maintainability** | Complexity, modularity, test coverage, documentation |
+| **Testing** | Edge cases, error paths, integration test gaps |
+
+## Examples
+
+```bash
+/cf-review src/auth/
+```
+
+```bash
+/cf-review src/api/handlers/user-controller.ts
+```
+
+```bash
+/cf-review db/migrations/
+```
+
+## Subagent Isolation
+
+Reviews run in a forked subagent, providing:
+- **Fresh Perspective** — Unbiased analysis of your code
+- **Parallel Processing** — Doesn't interfere with your main workflow
+- **Focused Context** — Subagent concentrates solely on review
+- **Detailed Report** — Structured findings with severity levels
+
+## Output
+
+Reviews include:
+- Critical security issues with fixes
+- Performance bottlenecks with optimization suggestions
+- Style improvements aligned with codebase conventions
+- Test coverage gaps with test ideas
+- Overall quality assessment
+
+## When to Use
+
+- Before merging high-risk changes
+- Security-sensitive code (auth, payments, data handling)
+- Performance-critical paths
+- Public API changes
+- Junior developer code for mentorship

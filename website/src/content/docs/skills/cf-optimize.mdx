@@ -1,0 +1,66 @@
+---
+title: "/cf-optimize"
+description: "Structured optimization with before/after measurement."
+---
+
+The `/cf-optimize` skill systematically improves performance by measuring baseline metrics, analyzing bottlenecks, implementing optimizations, and comparing results.
+
+## Usage
+
+```bash
+/cf-optimize [target]
+```
+
+## Workflow
+
+1. **Baseline Measurement** — Profile code to establish current performance metrics
+2. **Bottleneck Analysis** — Identify the slowest operations and root causes
+3. **Optimization** — Implement improvements (algorithm, caching, indexing, etc.)
+4. **Verify Results** — Measure performance after changes
+5. **Compare & Report** — Show before/after with percentage improvement
+
+## Examples
+
+```bash
+/cf-optimize getUserById query
+```
+
+```bash
+/cf-optimize search endpoint response time
+```
+
+```bash
+/cf-optimize database migration script
+```
+
+## What Gets Measured
+
+- **Execution Time** — Wall-clock and CPU time
+- **Memory Usage** — Peak and average memory consumption
+- **Database Queries** — Query count and slow query analysis
+- **Network I/O** — Request/response sizes and latency
+- **Throughput** — Requests per second (for endpoints)
+
+## Output Example
+
+```
+BASELINE:
+  getUserById: 250ms avg, 15 DB queries per call
+
+OPTIMIZATION:
+  - Added query result caching (Redis)
+  - Optimized N+1 query in related data fetch
+  - Added database index on user_id
+
+AFTER:
+  getUserById: 45ms avg, 1 DB query per call
+  Improvement: 82% faster, 93% fewer queries
+```
+
+## When to Use
+
+- Performance bottlenecks identified by users
+- Database queries timing out
+- Page load times slowing growth
+- API endpoints hitting rate limits
+- Memory leaks in long-running processes
