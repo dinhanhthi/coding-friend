@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Container from "@/components/ui/Container";
 import {
   parseChangelog,
@@ -5,6 +6,15 @@ import {
   getCliChangelog,
 } from "@/lib/changelog";
 import ChangelogTabs from "./ChangelogTabs";
+
+export const metadata: Metadata = {
+  title: "Changelog",
+  description:
+    "New features, improvements, and fixes across Coding Friend releases.",
+  alternates: {
+    canonical: "https://cf.dinhanhthi.com/changelog/",
+  },
+};
 
 export default function ChangelogPage() {
   const pluginEntries = parseChangelog(getPluginChangelog());

@@ -116,6 +116,10 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: doc.frontmatter.title,
     description: doc.frontmatter.description,
+    keywords: doc.frontmatter.keywords,
+    alternates: {
+      canonical: `https://cf.dinhanhthi.com/docs/${slugStr}/`,
+    },
   };
 }
 
@@ -147,8 +151,39 @@ export default async function DocPage({ params }: Props) {
     breadcrumbs.push({ label: parts[parts.length - 1] });
   }
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://cf.dinhanhthi.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Docs",
+        item: "https://cf.dinhanhthi.com/docs/",
+      },
+      ...breadcrumbs.map((bc, i) => ({
+        "@type": "ListItem" as const,
+        position: i + 3,
+        name: bc.label,
+        ...(i === breadcrumbs.length - 1
+          ? { item: `https://cf.dinhanhthi.com/docs/${slugStr}/` }
+          : {}),
+      })),
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <article className="min-w-0 flex-1 px-6 py-8 md:px-8" data-pagefind-body>
         <DocsBreadcrumbs items={breadcrumbs} />
 
