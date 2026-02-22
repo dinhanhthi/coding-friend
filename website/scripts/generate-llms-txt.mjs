@@ -13,7 +13,7 @@ import matter from "gray-matter";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const CONTENT_DIR = path.join(ROOT, "src/content/docs");
 const PUBLIC_DIR = path.join(ROOT, "public");
-const SITE_URL = "https://coding-friend.com";
+const SITE_URL = "https://cf.dinhanhthi.com";
 
 // Navigation structure (mirrors src/lib/navigation.ts)
 const navigation = [

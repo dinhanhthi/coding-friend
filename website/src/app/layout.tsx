@@ -5,6 +5,7 @@ import "./globals.css";
 import "highlight.js/styles/github-dark.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
     default:
       "Coding Friend - Disciplined Engineering Workflows for Claude Code",
@@ -15,6 +16,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Coding Friend",
+    title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
+    description:
+      "Lean toolkit with 15 skills, 5 agents, and 7 hooks for disciplined engineering workflows with Claude Code. TDD, debugging, code review, and more.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
+    description:
+      "Lean toolkit with 15 skills, 5 agents, and 7 hooks for disciplined engineering workflows with Claude Code.",
   },
 };
 
