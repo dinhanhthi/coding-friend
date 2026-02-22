@@ -187,12 +187,12 @@ const Statusline = () => {
         </p>
       </div>
 
-      <div className="relative mx-auto max-w-2xl">
+      <div className="relative mx-auto flex flex-col items-center justify-center gap-6 w-full">
         {/* Glow backdrop */}
         <div className="pointer-events-none absolute -inset-4 rounded-3xl bg-linear-to-br from-violet-600/20 via-sky-500/10 to-emerald-500/20 opacity-60 blur-2xl" />
 
         {/* Terminal mockup */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] p-2 shadow-2xl shadow-violet-500/10">
+        <div className="relative overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] shadow-2xl shadow-violet-500/10 sm:scale-100 w-full">
           {/* Title bar */}
           <div className="mb-1 flex items-center gap-2 px-3 py-2">
             <span className="h-3 w-3 rounded-full bg-red-500/80" />
@@ -257,24 +257,26 @@ const Statusline = () => {
             <div className="my-3 border-t border-slate-700/60" />
 
             {/* Statusline */}
-            <div className="flex items-center gap-0 text-sm">
-              <span className="text-blue-400">cf v1.6.0</span>
+            <div className="flex items-center gap-0 text-sm flex-wrap gap-y-2">
+              <span className="whitespace-nowrap text-blue-400">cf v1.6.0</span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="text-orange-400">coding-friend</span>
+              <span className="whitespace-nowrap text-orange-400">
+                coding-friend
+              </span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="text-cyan-400">Opus 4.6</span>
+              <span className="whitespace-nowrap text-cyan-400">Opus 4.6</span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="text-green-400">⎇ main</span>
+              <span className="whitespace-nowrap text-green-400">⎇ main</span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="text-violet-300">19%</span>
-              <span className="mx-2 text-violet-300">{"→"}</span>
-              <span className="text-violet-300">12:59</span>
+              <span className="whitespace-nowrap text-violet-400">
+                19% → 12:59
+              </span>
             </div>
           </div>
         </div>
 
         {/* Segment labels */}
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {statuslineSegments.map((seg) => (
             <div
               key={seg.label}
@@ -289,7 +291,7 @@ const Statusline = () => {
         </div>
 
         {/* Setup hint */}
-        <p className="mt-6 text-center text-slate-500">
+        <p className="text-center text-slate-500">
           Run{" "}
           <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-xs text-violet-400">
             cf statusline

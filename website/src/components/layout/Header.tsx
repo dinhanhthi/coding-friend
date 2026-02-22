@@ -42,11 +42,11 @@ export default function Header() {
         <div className="flex items-center gap-6">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <img src="/logo.svg" alt="Coding Friend" className="h-10 w-10" />
-            <div className="flex flex-col justify-start gap-0">
+            <div className="flex flex-col justify-start gap-0.5">
               <span className="-mb-1 text-lg font-semibold text-white">
                 Coding Friend
               </span>
-              <span className="ml-0.5 font-mono text-[0.6em] font-semibold text-violet-400">
+              <span className="ml-0.5 font-mono text-[0.7em] font-semibold text-violet-400">
                 v{process.env.NEXT_PUBLIC_PLUGIN_VERSION}
               </span>
             </div>

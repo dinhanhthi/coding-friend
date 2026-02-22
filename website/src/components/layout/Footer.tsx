@@ -46,8 +46,8 @@ const footerLinks = [
 export default function Footer() {
   return (
     <footer className="bg-navy-950 border-t border-[#a0a0a01c]">
-      <Container className="pb-6">
-        <div className="flex flex-row flex-wrap justify-center gap-2 pt-6 text-center text-sm text-slate-500">
+      <Container>
+        <div className="flex flex-row flex-wrap justify-center gap-2 py-5 text-center text-sm text-slate-500">
           <div className="whitespace-nowrap">
             Made by{" "}
             <a
