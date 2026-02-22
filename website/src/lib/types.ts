@@ -3,6 +3,7 @@ export interface DocFrontmatter {
   description: string;
   section?: string;
   order?: number;
+  keywords?: string[];
 }
 
 export interface DocMeta {

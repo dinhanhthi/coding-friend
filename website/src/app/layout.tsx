@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | Coding Friend",
   },
   description:
-    "Lean toolkit with 15 skills, 5 agents, and 7 hooks for disciplined engineering workflows with Claude Code. TDD, debugging, code review, and more.",
+    "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
@@ -22,13 +22,16 @@ export const metadata: Metadata = {
     siteName: "Coding Friend",
     title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
     description:
-      "Lean toolkit with 15 skills, 5 agents, and 7 hooks for disciplined engineering workflows with Claude Code. TDD, debugging, code review, and more.",
+      "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
     description:
-      "Lean toolkit with 15 skills, 5 agents, and 7 hooks for disciplined engineering workflows with Claude Code.",
+      "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
+  },
+  alternates: {
+    canonical: "https://cf.dinhanhthi.com",
   },
 };
 

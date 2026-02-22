@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 
@@ -9,10 +10,13 @@ export default function Hero() {
 
       <Container className="relative">
         <div className="mx-auto max-w-3xl text-center">
-          <img
+          <Image
             src="/logo.svg"
             alt="Coding Friend"
-            className="mx-auto mb-4 h-16 w-16"
+            width={64}
+            height={64}
+            className="mx-auto mb-4"
+            priority
           />
           <p className="mb-4 text-sm font-medium tracking-wide text-slate-400 uppercase">
             Claude Code Plugin

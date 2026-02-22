@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -41,7 +42,13 @@ export default function Header() {
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <img src="/logo.svg" alt="Coding Friend" className="h-10 w-10" />
+            <Image
+              src="/logo.svg"
+              alt="Coding Friend"
+              width={40}
+              height={40}
+              priority
+            />
             <div className="flex flex-col justify-start gap-0.5">
               <span className="-mb-1 text-lg font-semibold text-white">
                 Coding Friend
