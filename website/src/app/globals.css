@@ -1,0 +1,129 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm slate scale (dark palette) */
+  --color-navy-800: #31353f;
+  --color-navy-900: #2a2d38;
+  --color-navy-950: #23262e;
+
+  /* Violet accent */
+  --color-accent: #7c3aed;
+  --color-accent-light: #a78bfa;
+  --color-accent-dark: #6d28d9;
+
+  --color-surface: #2a2d38;
+  --color-surface-secondary: #31353f;
+  --color-border: rgba(160, 160, 160, 0.11);
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-link: #58adfb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db4c;
+  border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #d1d5dbce;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Syntax highlighting */
+pre code {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+pre {
+  padding: 0;
+}
+
+.hljs-cf-keyword {
+  color: var(--color-accent-light);
+  font-weight: 500;
+}
+
+:where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-weight: 500;
+}
+
+:not(pre) > code {
+  background: none !important;
+  border: 1px solid #a0a0a06b;
+  font-size: 85%;
+}
+
+/* Scroll-triggered animations */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-on-scroll.delay-1 {
+  transition-delay: 0.1s;
+}
+.animate-on-scroll.delay-2 {
+  transition-delay: 0.2s;
+}
+.animate-on-scroll.delay-3 {
+  transition-delay: 0.3s;
+}
+.animate-on-scroll.delay-4 {
+  transition-delay: 0.4s;
+}
+.animate-on-scroll.delay-5 {
+  transition-delay: 0.5s;
+}
+
+/* Zigzag connector animated dashes */
+.zigzag-dash-animate {
+  animation: dash-flow 1.2s linear infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -26;
+  }
+}

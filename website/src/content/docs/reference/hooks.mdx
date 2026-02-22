@@ -1,0 +1,45 @@
+---
+title: "Hooks"
+description: "7 lifecycle hooks that run automatically during your session."
+---
+
+## Overview
+
+Hooks are lifecycle functions that execute automatically at specific points in your Coding Friend session. They handle security, formatting, reminders, and context management without requiring manual invocation.
+
+## Hook Reference
+
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `session-init` | SessionStart | Initialize session state and load configuration |
+| `dev-rules-reminder` | UserPromptSubmit | Remind developers of project rules before each prompt |
+| `privacy-block` | PreToolUse | Block access to sensitive files (.env, .pem, SSH keys) |
+| `scout-block` | PreToolUse | Block access to files matching `.coding-friend/ignore` patterns |
+| `statusline` | SessionStart | Configure editor statusline with project info |
+| `compact-marker` | PreCompact | Mark files to compact before context summarization |
+| `context-tracker` | PostToolUse | Track tool usage and context for performance analysis |
+
+## How Hooks Work
+
+Hooks are executed automatically by the Coding Friend plugin at specific lifecycle events. You don't invoke them manually — they run in the background to support your workflow.
+
+### Controlling Hooks
+
+Enable or disable hooks in `.coding-friend/config.json`:
+
+```json
+{
+  "hooks": {
+    "privacyBlock": true,
+    "scoutBlock": true,
+    "devRulesReminder": true,
+    "contextTracker": true
+  }
+}
+```
+
+All hooks default to enabled. Set to `false` to disable specific hooks for your project.
+
+## Security Hooks
+
+`privacy-block` and `scout-block` form Coding Friend's first line of defense against accidental credential exposure and inappropriate file access.

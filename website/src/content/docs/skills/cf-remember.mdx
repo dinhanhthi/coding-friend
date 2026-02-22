@@ -1,0 +1,79 @@
+---
+title: "/cf-remember"
+description: "Capture project knowledge for AI memory across sessions."
+---
+
+The `/cf-remember` skill captures important project knowledge and saves it for future reference. In subsequent sessions, the AI can read and apply this knowledge, accelerating work.
+
+## Usage
+
+```bash
+/cf-remember [topic]
+```
+
+## What It Does
+
+1. **Captures Context** — Extracts relevant code patterns and decisions
+2. **Documents Learning** — Writes clear explanations of how things work
+3. **Saves to Memory** — Stores in `docs/memory/` with proper organization
+4. **Indexes for Retrieval** — Makes knowledge searchable and linkable
+5. **Enables Cross-Session Reference** — Future work uses these docs
+
+## Examples
+
+```bash
+/cf-remember auth flow decisions and implementation
+```
+
+```bash
+/cf-remember database schema and relationships
+```
+
+```bash
+/cf-remember error handling patterns used across the codebase
+```
+
+## Memory Organization
+
+Knowledge is saved to `docs/memory/` with intuitive structure:
+
+```
+docs/memory/
+  ├── architecture/
+  │   ├── system-overview.md
+  │   └── microservices-design.md
+  ├── patterns/
+  │   ├── error-handling.md
+  │   ├── middleware-chain.md
+  │   └── state-management.md
+  ├── decisions/
+  │   ├── why-we-chose-postgres.md
+  │   ├── api-versioning-strategy.md
+  │   └── caching-approach.md
+  └── gotchas/
+      └── known-issues.md
+```
+
+## Document Format
+
+Each document includes:
+- What (behavior or design)
+- Why (reasoning and trade-offs)
+- How (code examples and implementation)
+- Related patterns (cross-references)
+
+## When to Use
+
+- After onboarding to understand current patterns
+- When completing complex features
+- After discovering important design decisions
+- When solving challenging problems (for future reference)
+- Documenting gotchas and lessons learned
+
+## AI Workflow Benefits
+
+With good memory:
+- AI understands project patterns faster
+- Decisions get applied consistently
+- Onboarding new contributors is faster
+- Knowledge doesn't get lost between sessions

@@ -1,0 +1,57 @@
+---
+title: Installation
+description: Install the Coding Friend CLI and Claude Code plugin to get started.
+---
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+ installed
+- [Claude Code](https://claude.com/claude-code) installed
+- (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
+
+## Install the CLI
+
+```bash
+npm i -g coding-friend-cli
+```
+
+This gives you the `cf` command globally. Verify with:
+
+```bash
+cf --version
+```
+
+## Install the Plugin
+
+Open Claude Code and run:
+
+```
+/plugin marketplace add dinhanhthi/coding-friend
+/plugin install coding-friend@coding-friend-marketplace
+```
+
+The plugin installs globally — install once, use in every project.
+
+## Initialize Your Workspace
+
+In each project where you want to use Coding Friend:
+
+```bash
+cf init
+```
+
+This creates the documentation folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally adds them to `.gitignore`.
+
+## Enable Auto-Update
+
+Run `/plugin` in Claude Code, go to installed plugins, select `coding-friend-marketplace`, and enable auto-update.
+
+## Restart Claude Code
+
+Restart Claude Code to load the plugin. You should see the Coding Friend statusline at the bottom.
+
+## Next Steps
+
+- Read the [Quick Start](/docs/getting-started/quick-start/) guide
+- Explore available [Skills](/docs/skills/overview/)
+- Learn about [CLI Commands](/docs/cli/overview/)

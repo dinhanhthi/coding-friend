@@ -1,0 +1,104 @@
+---
+title: "cf-code-review"
+description: "Multi-layer code review checklist applied automatically."
+---
+
+The `cf-code-review` skill activates during code review phases. It applies a comprehensive multi-layer checklist examining correctness, security, performance, maintainability, and test coverage.
+
+## When It Activates
+
+Automatically triggered when:
+- Reviewing pull requests
+- Assessing code changes before merge
+- Checking code for quality issues
+- Implementing `/cf-review` command
+
+## Review Layers
+
+### 1. Correctness
+Does the code do what it's supposed to do?
+
+- Logic is sound (no off-by-one errors, infinite loops)
+- Edge cases handled (null, empty, boundary values)
+- Error paths work correctly
+- Behavior matches requirements
+- No obvious bugs
+
+### 2. Security
+Could this code be exploited or cause data leaks?
+
+```typescript
+// BAD: SQL injection vulnerability
+const query = `SELECT * FROM users WHERE id = ${userId}`;
+
+// GOOD: Parameterized query
+const query = 'SELECT * FROM users WHERE id = ?';
+db.query(query, [userId]);
+```
+
+Checks:
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- XSS protection (proper escaping)
+- Authentication/authorization enforced
+- No exposed secrets or credentials
+- Secure defaults
+
+### 3. Performance
+Is the code efficient? Will it scale?
+
+- No N+1 query patterns
+- Efficient algorithms (avoid nested loops)
+- Memory usage reasonable
+- Caching used appropriately
+- Database indexes leveraged
+- Unnecessary computations avoided
+
+### 4. Maintainability
+Will future developers understand and modify this safely?
+
+- Clear variable and function names
+- Functions do one thing (single responsibility)
+- Complexity is reasonable
+- Comments explain why, not what
+- No code duplication
+- Consistent with codebase patterns
+
+### 5. Test Coverage
+Is behavior verified by automated tests?
+
+- Critical paths have tests
+- Edge cases tested
+- Error cases tested
+- Integration tests for multi-component behavior
+- Tests are maintainable and clear
+- Coverage adequate (aim for 70%+)
+
+## Review Checklist
+
+```
+[ ] No syntax or runtime errors
+[ ] Behavior matches requirements
+[ ] Edge cases handled properly
+[ ] Security best practices followed
+[ ] No SQL injection or XSS vulnerabilities
+[ ] Credentials not exposed
+[ ] Algorithm efficiency reasonable
+[ ] Database queries optimized
+[ ] No memory leaks
+[ ] Function names clear and descriptive
+[ ] Code is DRY (don't repeat yourself)
+[ ] Tests verify all changes
+[ ] Existing tests still pass
+[ ] Comments added for complex logic
+[ ] Consistent with codebase style
+```
+
+## Output
+
+Review results include:
+- Pass/fail for each layer
+- Severity of issues (critical, major, minor)
+- Specific recommendations for improvement
+- Code examples showing better approaches
+- Risk assessment if merged as-is

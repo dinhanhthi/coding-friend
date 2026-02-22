@@ -1,0 +1,32 @@
+---
+title: "cf mcp"
+description: "Setup MCP server for integrating learning docs with other LLM clients."
+---
+
+## Overview
+
+`cf mcp` generates a Model Context Protocol (MCP) server configuration for your learning documentation. Use this to integrate your docs with other LLM clients like ChatGPT, Claude web, or other AI tools.
+
+## Usage
+
+```bash
+cf mcp [path]
+```
+
+The default path is `docs/learn/`.
+
+## Output
+
+The command prints a JSON configuration object that you can paste into your MCP client setup. This enables those tools to access and search your learning documentation in real time.
+
+## Example
+
+```bash
+# Generate MCP config for docs/learn/
+cf mcp
+
+# Generate MCP config for custom directory
+cf mcp ./my-docs
+```
+
+The output will be a JSON object containing server details, available tools, and connection settings that your MCP client can use.

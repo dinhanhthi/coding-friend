@@ -1,0 +1,76 @@
+---
+title: "cf-tdd"
+description: "Enforces test-driven development: RED, GREEN, REFACTOR."
+---
+
+The `cf-tdd` skill automatically activates when you're writing new code. It enforces the test-driven development (TDD) discipline: write a failing test first, implement minimal code to pass it, then refactor.
+
+## When It Activates
+
+Automatically triggered when:
+- Creating new functions or methods
+- Adding new modules or classes
+- Writing feature code from scratch
+- Test file exists but implementation doesn't
+
+## The TDD Cycle
+
+### RED: Write Failing Test
+Start by writing a test that describes desired behavior—it fails because the code doesn't exist yet.
+
+```typescript
+// test/user.test.ts
+test('should hash password with bcrypt', () => {
+  const password = 'secret123';
+  const hashed = hashPassword(password);
+  expect(hashed).not.toBe(password);
+  expect(hashed.length).toBeGreaterThan(10);
+});
+```
+
+### GREEN: Implement Minimal Code
+Write the simplest code that makes the test pass. No over-engineering.
+
+```typescript
+// src/user.ts
+export function hashPassword(password: string): string {
+  // Minimal implementation to pass test
+  return 'hashed_' + password;
+}
+```
+
+### REFACTOR: Improve Code
+Now improve the code while keeping tests green.
+
+```typescript
+// src/user.ts
+import bcrypt from 'bcrypt';
+
+export function hashPassword(password: string): string {
+  return bcrypt.hashSync(password, 10);
+}
+```
+
+## Benefits
+
+- **Confidence** — Tests ensure code works before production
+- **Design** — Writing tests first leads to better API design
+- **Coverage** — Most code has tests automatically
+- **Refactoring** — Safe to improve code with test safety net
+- **Documentation** — Tests serve as usage examples
+
+## When It Helps Most
+
+- Complex business logic
+- Data transformations
+- Critical paths (auth, payments)
+- Edge case handling
+- Error scenarios
+
+## Key Rules
+
+1. **Always test first** — No code without failing test
+2. **Keep tests simple** — Each test validates one behavior
+3. **One assert per test** — Clear pass/fail indication
+4. **Test edge cases** — Null, empty, invalid input
+5. **Refactor freely** — Tests prevent regressions

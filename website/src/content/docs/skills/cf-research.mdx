@@ -1,0 +1,87 @@
+---
+title: "/cf-research"
+description: "In-depth research with web search and parallel subagents."
+---
+
+The `/cf-research` skill performs thorough technical research using web search and multiple subagents working in parallel. Results are saved to `docs/research/` for future reference.
+
+## Usage
+
+```bash
+/cf-research [topic]
+```
+
+## What It Does
+
+1. **Breaks Down Topic** — Identifies research questions and angles
+2. **Parallel Search** — Multiple subagents search simultaneously
+3. **Evaluates Sources** — Filters for relevance and credibility
+4. **Synthesizes Findings** — Combines results into coherent document
+5. **Saves to Research Dir** — Stores in `docs/research/` for future use
+
+## Examples
+
+```bash
+/cf-research best practices for JWT refresh tokens
+```
+
+```bash
+/cf-research comparing Firebase vs self-hosted auth solutions
+```
+
+```bash
+/cf-research performance optimization for React applications
+```
+
+## Research Coverage
+
+Comprehensive research includes:
+- **Official Documentation** — First-party sources from maintainers
+- **Best Practices** — Community standards and recommendations
+- **Performance Comparisons** — Benchmarks and trade-offs
+- **Case Studies** — Real-world implementations and lessons
+- **Gotchas** — Common pitfalls and how to avoid them
+- **Tooling** — Libraries, frameworks, and utilities
+
+## Output Structure
+
+```
+docs/research/
+  ├── jwt-refresh-tokens/
+  │   ├── overview.md
+  │   ├── implementation-guide.md
+  │   ├── security-considerations.md
+  │   ├── comparison-with-alternatives.md
+  │   └── sources.md
+  └── ...
+```
+
+## Parallel Subagents
+
+Research leverages multiple subagents that work simultaneously on:
+- Best practice documentation
+- Implementation guides
+- Security considerations
+- Performance benchmarks
+- Tool comparisons
+
+Results are merged into a single comprehensive document.
+
+## When to Use
+
+- Choosing new technologies or frameworks
+- Deep-diving into complex topics before implementation
+- Security-critical decisions (auth, encryption, data handling)
+- Performance optimization research
+- Evaluating library alternatives
+- Understanding emerging best practices
+
+## Output Quality
+
+Research documents include:
+- Summary and key takeaways
+- Detailed analysis by subtopic
+- Relevant code examples
+- Comparison tables
+- Recommended resources
+- Full source citations
