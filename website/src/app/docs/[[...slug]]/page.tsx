@@ -176,6 +176,7 @@ export default async function DocPage({ params }: Props) {
                   rehypeSlug,
                 ],
               },
+              blockJS: false,
             }}
           />
         </div>
