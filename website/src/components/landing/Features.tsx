@@ -282,7 +282,7 @@ const Statusline = () => {
               key={seg.label}
               className="bg-navy-950/80 flex items-center gap-2 rounded-lg border border-[#a0a0a05d] px-3 py-2"
             >
-              <span className={`font-mono text-sm font-semibold ${seg.color}`}>
+              <span className={`font-mono text-sm font-medium ${seg.color}`}>
                 {seg.example}
               </span>
               <span className="text-sm text-slate-500">{seg.label}</span>

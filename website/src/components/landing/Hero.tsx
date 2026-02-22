@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 
 export default function Hero() {
   return (
-    <section className="from-navy-950 via-navy-900 to-navy-900 relative overflow-hidden bg-gradient-to-b py-24 sm:py-32">
+    <section className="from-navy-950 via-navy-900 to-navy-900 relative overflow-hidden bg-gradient-to-b py-24 sm:py-24">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/15 via-transparent to-transparent" />
 
