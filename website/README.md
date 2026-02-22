@@ -2,7 +2,7 @@
 
 Documentation and landing page for the [Coding Friend](https://github.com/user/coding-friend) Claude Code plugin.
 
-Built with Next.js 15, Tailwind CSS 4, and MDX.
+Built with Next.js 16, Tailwind CSS 4, and MDX.
 
 ## Local Development
 
