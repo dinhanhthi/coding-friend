@@ -6,7 +6,6 @@ import { useState } from "react";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import PagefindSearch from "@/components/docs/PagefindSearch";
-import packageJson from "../../../../package.json";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
@@ -48,7 +47,7 @@ export default function Header() {
                 Coding Friend
               </span>
               <span className="ml-0.5 font-mono text-[0.6em] font-semibold text-violet-400">
-                v{packageJson.version}
+                v{process.env.NEXT_PUBLIC_PLUGIN_VERSION}
               </span>
             </div>
           </Link>
@@ -173,7 +172,7 @@ export default function Header() {
               href="/changelog/"
               className="rounded-full border border-white/20 px-2 py-0.5 text-xs font-medium text-white transition-colors duration-200 hover:border-white/60"
             >
-              v{packageJson.version}
+              v{process.env.NEXT_PUBLIC_PLUGIN_VERSION}
             </Link>
           </div>
         </nav>
