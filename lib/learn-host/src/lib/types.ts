@@ -21,3 +21,9 @@ export interface CategoryInfo {
   name: string;
   docCount: number;
 }
+
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}

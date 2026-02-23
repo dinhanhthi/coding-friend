@@ -1,6 +1,7 @@
-import { getAllDocs, getDocBySlug } from "@/lib/docs";
+import { getAllDocs, getDocBySlug, extractHeadings } from "@/lib/docs";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import TableOfContents from "@/components/TableOfContents";
 import TagBadge from "@/components/TagBadge";
 import { notFound } from "next/navigation";
 
@@ -12,7 +13,6 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true;
-export const revalidate = 10;
 
 export default async function DocPage({
   params,
@@ -24,39 +24,43 @@ export default async function DocPage({
   if (!doc) notFound();
 
   const categoryDisplay = category.replace(/[_-]/g, " ");
+  const headings = extractHeadings(doc.content);
 
   return (
-    <article data-pagefind-body>
-      <Breadcrumbs
-        crumbs={[
-          { label: categoryDisplay, href: `/${category}/` },
-          { label: doc.frontmatter.title },
-        ]}
-      />
+    <div className="flex w-full">
+      <article className="min-w-0 flex-1" data-pagefind-body>
+        <Breadcrumbs
+          crumbs={[
+            { label: categoryDisplay, href: `/${category}/` },
+            { label: doc.frontmatter.title },
+          ]}
+        />
 
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{doc.frontmatter.title}</h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-          <span className="capitalize px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
-            {categoryDisplay}
-          </span>
-          {doc.frontmatter.created && (
-            <span>Created: {doc.frontmatter.created}</span>
+        <header className="mb-8">
+          <h1 className="mb-2 text-3xl font-bold">{doc.frontmatter.title}</h1>
+          {(doc.frontmatter.created || doc.frontmatter.updated) && (
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+              {doc.frontmatter.created && (
+                <span>Created: {doc.frontmatter.created}</span>
+              )}
+              {doc.frontmatter.updated && (
+                <span>Updated: {doc.frontmatter.updated}</span>
+              )}
+            </div>
           )}
-          {doc.frontmatter.updated && (
-            <span>Updated: {doc.frontmatter.updated}</span>
+          {doc.frontmatter.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {doc.frontmatter.tags.map((tag) => (
+                <TagBadge key={tag} tag={tag} />
+              ))}
+            </div>
           )}
-        </div>
-        {doc.frontmatter.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {doc.frontmatter.tags.map((tag) => (
-              <TagBadge key={tag} tag={tag} />
-            ))}
-          </div>
-        )}
-      </header>
+        </header>
 
-      <MarkdownRenderer content={doc.content} />
-    </article>
+        <MarkdownRenderer content={doc.content} />
+      </article>
+
+      <TableOfContents headings={headings} />
+    </div>
   );
 }

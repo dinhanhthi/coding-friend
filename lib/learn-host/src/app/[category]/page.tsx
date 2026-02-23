@@ -7,7 +7,6 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true;
-export const revalidate = 10;
 
 export default async function CategoryPage({
   params,
@@ -21,8 +20,8 @@ export default async function CategoryPage({
   return (
     <div>
       <Breadcrumbs crumbs={[{ label: displayName }]} />
-      <h1 className="text-2xl font-bold capitalize mb-1">{displayName}</h1>
-      <p className="text-gray-500 dark:text-gray-400 mb-6">
+      <h1 className="mb-1 text-2xl font-bold capitalize">{displayName}</h1>
+      <p className="mb-6 text-slate-500 dark:text-slate-400">
         {docs.length} {docs.length === 1 ? "doc" : "docs"}
       </p>
 

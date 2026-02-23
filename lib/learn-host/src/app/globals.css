@@ -4,32 +4,44 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #60a5fa;
-  --color-surface: #ffffff;
-  --color-surface-dark: #111827;
-  --color-surface-secondary: #f9fafb;
-  --color-surface-secondary-dark: #1f2937;
-  --color-border: #e5e7eb;
-  --color-border-dark: #374151;
-  --color-text: #111827;
-  --color-text-dark: #f9fafb;
-  --color-text-muted: #6b7280;
-  --color-text-muted-dark: #9ca3af;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm slate scale (dark palette — from website) */
+  --color-navy-800: #31353f;
+  --color-navy-900: #2a2d38;
+  --color-navy-950: #23262e;
+
+  /* Violet accent (from website) */
+  --color-accent: #7c3aed;
+  --color-accent-light: #a78bfa;
+  --color-accent-dark: #6d28d9;
+
+  --color-surface: #2a2d38;
+  --color-surface-secondary: #31353f;
+  --color-border: rgba(160, 160, 160, 0.11);
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-link: #58adfb;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
-/* Syntax highlighting */
-pre code.hljs {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.7;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
+/* Scrollbar */
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -43,4 +55,37 @@ pre code.hljs {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Syntax highlighting */
+pre code {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+
+  &.hljs {
+    padding: 0 !important;
+  }
+}
+
+pre {
+  padding: 1rem;
+  background: #0d1117;
+}
+
+:where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-weight: 500;
+}
+
+:not(pre) > code {
+  background: none !important;
+  border: 1px solid #a0a0a06b;
+  font-size: 85%;
+  padding: 1px 5px;
+  border-radius: 4px;
 }
