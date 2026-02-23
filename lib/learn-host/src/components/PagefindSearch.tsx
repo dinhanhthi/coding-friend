@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Command } from "cmdk";
+import { useRouter } from "next/navigation";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { DialogTitle, DialogDescription } from "@radix-ui/react-dialog";
 
 interface PagefindResult {
   id: string;
@@ -8,7 +12,6 @@ interface PagefindResult {
     url: string;
     meta: { title?: string };
     excerpt: string;
-    sub_results?: { url: string; title: string; excerpt: string }[];
   }>;
 }
 
@@ -29,13 +32,32 @@ interface Pagefind {
   ) => Promise<{ results: PagefindResult[] } | null>;
 }
 
-export default function PagefindSearch({ initialQuery = "" }: { initialQuery?: string }) {
-  const [query, setQuery] = useState(initialQuery);
+function normalizePagefindUrl(url: string): string {
+  return url.replace(/\.html$/, "/");
+}
+
+// Pagefind excerpts only contain <mark> tags for highlighting — safe to render
+// This is a trusted source (local pagefind index), not user input
+function ExcerptMarkup({ html }: { html: string }) {
+  return (
+    <p
+      className="mt-0.5 line-clamp-2 text-sm text-slate-500 dark:text-slate-400 [&_mark]:bg-transparent [&_mark]:!text-yellow-600 dark:[&_mark]:!text-yellow-200"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+export default function PagefindSearch() {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const pagefindRef = useRef<Pagefind | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
+  // Load pagefind
   useEffect(() => {
     async function load() {
       try {
@@ -47,26 +69,60 @@ export default function PagefindSearch({ initialQuery = "" }: { initialQuery?: s
         pagefindRef.current = pf;
         setReady(true);
       } catch {
-        // Pagefind not available (dev mode or first run)
+        // Pagefind not available (dev mode)
       }
     }
     load();
   }, []);
 
+  // Keyboard shortcut: Cmd+K / Ctrl+K
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Click outside to close
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: PointerEvent) {
+      if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setResults([]);
+    }
+  }, [open]);
+
   const doSearch = useCallback(async (q: string) => {
     const pf = pagefindRef.current;
     if (!pf || !q.trim()) {
       setResults([]);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await pf.debouncedSearch(q, {}, 200);
-      if (!response) return; // debounced away
+    const response = await pf.debouncedSearch(q, {}, 200);
+    if (!response) return;
 
+    setLoading(true);
+    setResults([]);
+    try {
       const items: SearchResult[] = [];
-      for (const result of response.results.slice(0, 20)) {
+      for (const result of response.results.slice(0, 10)) {
         const data = await result.data();
         items.push({
           id: result.id,
@@ -82,53 +138,120 @@ export default function PagefindSearch({ initialQuery = "" }: { initialQuery?: s
   }, []);
 
   useEffect(() => {
-    if (ready) doSearch(query);
-  }, [query, ready, doSearch]);
+    if (ready && open) doSearch(query);
+  }, [query, ready, open, doSearch]);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Search</h1>
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search docs..."
-        className="w-full px-4 py-2 mb-6 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        autoFocus
-      />
+    <>
+      {/* Search trigger button */}
+      <button
+        onClick={() => setOpen(true)}
+        className="flex cursor-pointer items-center gap-1.5 rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        aria-label="Search docs"
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        <kbd className="dark:bg-navy-800/80 hidden items-center gap-0.5 rounded border border-slate-300 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex dark:border-[#a0a0a01c]">
+          <span className="text-xs">&#8984;</span>K
+        </kbd>
+      </button>
 
-      {!ready && query.trim() && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Search index not available. Run a build first.
-        </p>
-      )}
+      {/* cmdk dialog */}
+      <Command.Dialog
+        open={open}
+        onOpenChange={setOpen}
+        shouldFilter={false}
+        loop
+        label="Search documentation"
+        overlayClassName="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        contentClassName="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] pointer-events-none"
+        ref={dialogRef}
+        className="dark:bg-navy-900/80 pointer-events-auto mx-4 w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-[#a0a0a01c]"
+      >
+        <VisuallyHidden>
+          <DialogTitle>Search documentation</DialogTitle>
+          <DialogDescription>
+            Search through the documentation pages
+          </DialogDescription>
+        </VisuallyHidden>
+        {/* Search input */}
+        <div className="flex items-center gap-3 border-b border-slate-200 px-4 dark:border-[#a0a0a01c]">
+          <svg
+            className="h-6 w-6 shrink-0 text-slate-400 dark:text-slate-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <Command.Input
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Search documentation..."
+            className="flex-1 bg-transparent py-3 text-sm text-slate-900 placeholder-slate-400 outline-none dark:text-white dark:placeholder-slate-500"
+          />
+          <kbd className="rounded border border-slate-300 px-1.5 py-0.5 text-xs text-slate-400 dark:border-[#a0a0a01c] dark:text-slate-500">
+            ESC
+          </kbd>
+        </div>
 
-      {ready && query.trim() && !loading && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          {results.length} {results.length === 1 ? "result" : "results"} for &ldquo;{query}&rdquo;
-        </p>
-      )}
+        {/* Results */}
+        <Command.List className="max-h-[50vh] overflow-y-auto">
+          {loading && (
+            <Command.Loading className="px-4 py-6 text-center text-sm text-slate-400">
+              Searching...
+            </Command.Loading>
+          )}
 
-      <div className="grid gap-3">
-        {results.map((entry) => {
-          // Pagefind excerpts contain only <mark> tags for highlighting — safe to render
-          return (
-            <a
-              key={entry.id}
-              href={entry.url}
-              className="block p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all bg-white dark:bg-gray-800/50"
-            >
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                {entry.title}
-              </h3>
-              <p
-                className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2 [&_mark]:bg-yellow-200 dark:[&_mark]:bg-yellow-800 [&_mark]:rounded [&_mark]:px-0.5"
-                dangerouslySetInnerHTML={{ __html: entry.excerpt }}
-              />
-            </a>
-          );
-        })}
-      </div>
-    </div>
+          {!ready && query.trim() && (
+            <p className="px-4 py-6 text-center text-sm text-slate-400">
+              Search index not available. Run a production build first.
+            </p>
+          )}
+
+          <Command.Empty className="px-4 py-6 text-center text-sm text-slate-400">
+            {query.trim() ? (
+              <>No results found for &ldquo;{query}&rdquo;</>
+            ) : (
+              "Start typing to search..."
+            )}
+          </Command.Empty>
+
+          {!loading &&
+            results.map((entry) => (
+              <Command.Item
+                key={entry.id}
+                value={entry.id}
+                onSelect={() => {
+                  setOpen(false);
+                  router.push(normalizePagefindUrl(entry.url));
+                }}
+                className="dark:data-[selected=true]:bg-navy-800 cursor-pointer px-4 py-3 transition-colors data-[selected=true]:bg-slate-100"
+              >
+                <div className="text-base font-medium text-slate-900 dark:text-white">
+                  {entry.title}
+                </div>
+                <ExcerptMarkup html={entry.excerpt} />
+              </Command.Item>
+            ))}
+        </Command.List>
+      </Command.Dialog>
+    </>
   );
 }
