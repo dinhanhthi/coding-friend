@@ -1,55 +1,63 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { CategoryInfo } from "@/lib/types";
-import SearchBar from "./SearchBar";
-import ThemeToggle from "./ThemeToggle";
 
-export default function MobileNav({ categories }: { categories: CategoryInfo[] }) {
+export default function MobileNav({
+  categories,
+}: {
+  categories: CategoryInfo[];
+}) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="md:hidden">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <Link href="/" className="font-bold text-gray-900 dark:text-gray-100">
-          Learning Notes
-        </Link>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            onClick={() => setOpen(!open)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            aria-label="Toggle menu"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {open ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
-        </div>
-      </div>
+    <div className="dark:bg-navy-950 border-b border-slate-200 bg-slate-50 dark:border-[#a0a0a01c]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300"
+      >
+        <span>Navigation</span>
+        <svg
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
 
       {open && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <SearchBar />
-          <nav className="mt-4 space-y-1">
-            {categories.map((cat) => (
+        <nav className="max-h-[60vh] space-y-0.5 overflow-y-auto px-4 pb-4">
+          {categories.map((cat) => {
+            const isActive = pathname === `/${cat.name}/`;
+            return (
               <Link
                 key={cat.name}
                 href={`/${cat.name}/`}
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                className={`flex items-center justify-between rounded-md px-3 py-1.5 text-sm capitalize ${
+                  isActive
+                    ? "font-medium text-violet-600 dark:text-violet-400"
+                    : "text-slate-600 dark:text-slate-400"
+                }`}
               >
-                <span className="capitalize">{cat.name.replace(/[_-]/g, " ")}</span>
-                <span className="text-xs text-gray-400">{cat.docCount}</span>
+                <span>{cat.name.replace(/[_-]/g, " ")}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  {cat.docCount}
+                </span>
               </Link>
-            ))}
-          </nav>
-        </div>
+            );
+          })}
+        </nav>
       )}
     </div>
   );
