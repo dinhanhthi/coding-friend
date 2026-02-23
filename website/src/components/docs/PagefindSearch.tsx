@@ -53,6 +53,7 @@ export default function PagefindSearch() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const pagefindRef = useRef<Pagefind | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Load pagefind
@@ -84,6 +85,18 @@ export default function PagefindSearch() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Click outside to close
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: PointerEvent) {
+      if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -164,6 +177,7 @@ export default function PagefindSearch() {
         label="Search documentation"
         overlayClassName="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
         contentClassName="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] pointer-events-none"
+        ref={dialogRef}
         className="bg-navy-900/80 pointer-events-auto mx-4 w-full max-w-lg overflow-hidden rounded-xl border border-[#a0a0a01c] shadow-2xl"
       >
         <VisuallyHidden>
