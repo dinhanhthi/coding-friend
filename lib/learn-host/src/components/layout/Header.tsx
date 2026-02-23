@@ -15,12 +15,7 @@ export default function Header({ categories }: { categories: CategoryInfo[] }) {
       <div className="flex h-14 items-center justify-between">
         {/* Left: Logo + Title */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <Image
-            src="/logo.svg"
-            alt="Coding Friend"
-            width={32}
-            height={32}
-          />
+          <Image src="/logo.svg" alt="Coding Friend" width={32} height={32} />
           <span className="text-lg font-semibold text-slate-900 dark:text-white">
             Learning Notes
           </span>

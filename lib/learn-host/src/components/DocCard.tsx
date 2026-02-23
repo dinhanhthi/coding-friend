@@ -29,7 +29,7 @@ export default function DocCard({ doc }: { doc: DocMeta }) {
       </p>
       <div className="flex items-center justify-between">
         <div
-          className="flex flex-wrap gap-2 items-center"
+          className="flex flex-wrap items-center gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           {doc.frontmatter.tags.slice(0, 3).map((tag) => (
