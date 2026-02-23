@@ -23,14 +23,14 @@ export default function Sidebar({
             <Link
               key={cat.name}
               href={`/${cat.name}/`}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm capitalize transition-colors duration-200 ${
+              className={`flex items-center justify-between rounded-full px-3 py-2 text-sm capitalize transition-colors duration-200 ${
                 isActive
                   ? "font-medium text-violet-600 dark:text-violet-400"
-                  : "dark:hover:bg-navy-800 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  : "dark:hover:bg-navy-800/50 text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               <span>{cat.name.replace(/[_-]/g, " ")}</span>
-              <span className="dark:bg-navy-800 rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <span className="dark:bg-navy-800 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#a0a0a01c]">
                 {cat.docCount}
               </span>
             </Link>
