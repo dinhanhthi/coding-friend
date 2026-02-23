@@ -15,21 +15,25 @@ export default function Footer() {
               className="text-violet-600 hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300"
             >
               Coding Friend
-            </a>, {" "} developed by <a
+            </a>
+            , developed by{" "}
+            <a
               href="https://dinhanhthi.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-600 hover:text-violet-500 dark:text-violet-400 dark:hover:text-violet-300"
             >
               Anh-Thi Dinh
-            </a>.
+            </a>
+            .
           </span>
         </div>
         <div>
           Learning notes hosted locally with{" "}
           <code className="rounded border border-slate-300 px-1 py-0.5 text-xs dark:border-slate-600">
             cf host
-          </code>.
+          </code>
+          .
         </div>
       </div>
     </footer>
