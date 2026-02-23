@@ -2,6 +2,14 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v1.7.0
+
+- Add project website with docs, changelog, and landing page
+- Redesign learn-host UI with modern layout and command palette
+- Add no-AI-attribution rule to `/cf-commit` and `/cf-ship` skills
+- Use model haiku for `cf-commit` and `cf-help` skills
+- Website: SEO optimizations, OG image, Next.js 16 upgrade
+
 ## v1.6.0
 
 - Improve `cf host`:
