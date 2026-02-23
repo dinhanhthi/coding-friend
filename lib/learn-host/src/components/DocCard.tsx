@@ -17,7 +17,7 @@ export default function DocCard({ doc }: { doc: DocMeta }) {
       onKeyDown={(e) => {
         if (e.key === "Enter") router.push(href);
       }}
-      className="dark:bg-navy-800/50 block cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-all hover:border-violet-400/50 hover:shadow-sm dark:border-[#a0a0a01c] dark:hover:border-violet-400/50"
+      className="dark:bg-navy-800/50 block cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-all hover:border-violet-400/50 dark:border-[#a0a0a01c] dark:hover:border-violet-400/50"
     >
       <h3 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">
         <Link href={href} className="hover:underline">
