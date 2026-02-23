@@ -53,7 +53,7 @@ There is always a security layer to protect you from prompt injection attacks.
   npm i -g coding-friend-cli
 
   # or update
-  npm update -g coding-friend
+  npm update -g coding-friend-cli
   ```
   🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
 - Run `claude` and install the plugin from the marketplace:
