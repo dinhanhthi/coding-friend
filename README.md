@@ -1,8 +1,6 @@
 # Coding Friend
 
-<p align="center">
-  <img src="assets/logo.svg" alt="Coding Friend Logo" width="100" />
-</p>
+
 
 Lean toolkit for disciplined engineering workflows with Claude Code.
 
@@ -28,6 +26,7 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 
 Simply describe what you need in natural language. Read more in [workflows.md](docs/workflows.md).
 
+
 | Command                 | Description                                                                                                                                                                      | Example                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `/cf-plan [task]`       | Brainstorm and write implementation plan                                                                                                                                         | `/cf-plan Build a REST API with auth` |
@@ -41,6 +40,7 @@ Simply describe what you need in natural language. Read more in [workflows.md](d
 | `/cf-learn [topic]`     | Helps humans truly learn from vibe coding with auto-generated docs, a beautiful website, and an MCP server that can be integrated with LLM services like ChatGPT → `docs/learn/` | `/cf-learn`                           |
 | `/cf-research [topic]`  | In-depth research with web search → `docs/research/`                                                                                                                             | `/cf-research key ideas of repo X`    |
 
+
 Auto-invoked skills (no slash needed): `cf-tdd` when writing code, `cf-sys-debug` when debugging, `cf-code-review` when reviewing, `cf-verification` before claiming done.
 
 There is always a security layer to protect you from prompt injection attacks.
@@ -49,16 +49,13 @@ There is always a security layer to protect you from prompt injection attacks.
 
 - **Prerequisites**: Some skills use the [GitHub CLI (`gh`)](https://cli.github.com/) for creating PRs. Install with `brew install gh && gh auth login`. Without it, skills fall back to manual alternatives.
 - Install the Coding Friend CLI:
-
   ```bash
   npm i -g coding-friend-cli
 
   # or update
   npm update -g coding-friend
   ```
-
   🧑‍💻 Read more in [for-dev.md](docs/for-dev.md) for local development.
-
 - Run `claude` and install the plugin from the marketplace:
   ```
   /plugin marketplace add dinhanhthi/coding-friend
@@ -144,6 +141,7 @@ Create `.coding-friend/config.json` in your project to customize settings:
 
 All fields are optional. Defaults are used when omitted. No file = all defaults.
 
+
 | Setting                      | Default              | Description                                                                                         |
 | ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
 | `docsDir`                    | `"docs"`             | Root folder for plans, memory, learn, and research docs                                             |
@@ -157,6 +155,7 @@ All fields are optional. Defaults are used when omitted. No file = all defaults.
 | `learn.categories`           | 5 default categories | Custom categories as `[{ "name": "...", "description": "..." }]`                                    |
 | `learn.autoCommit`           | `false`              | Auto git-commit after writing learning docs                                                         |
 | `learn.readmeIndex`          | `false`              | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category) |
+
 
 ### .coding-friend/ignore
 
@@ -194,6 +193,7 @@ Hooks, agents, project structure
 
 ### Hooks
 
+
 | Hook                    | Event                   | Purpose                                            |
 | ----------------------- | ----------------------- | -------------------------------------------------- |
 | `session-init.sh`       | SessionStart            | Bootstrap context                                  |
@@ -204,7 +204,9 @@ Hooks, agents, project structure
 | `compact-marker.sh`     | PreCompact              | Preserve context                                   |
 | `context-tracker.sh`    | PostToolUse             | Track files read                                   |
 
+
 ### Agents
+
 
 | Agent           | Purpose                               |
 | --------------- | ------------------------------------- |
@@ -213,6 +215,7 @@ Hooks, agents, project structure
 | `planner`       | Codebase exploration + task breakdown |
 | `writer`        | Lightweight doc writer (haiku)        |
 | `writer-deep`   | Deep reasoning doc writer (sonnet)    |
+
 
 ### Project Structure
 
