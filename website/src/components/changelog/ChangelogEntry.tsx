@@ -13,6 +13,23 @@ interface Props {
   entry: ChangelogEntryType;
 }
 
+function renderInline(text: string) {
+  // Split on backtick pairs: odd indices are code, even are plain text
+  const parts = text.split(/`([^`]+)`/);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <code
+        key={i}
+        className="rounded bg-slate-800 px-1 py-0.5 font-mono text-sm text-violet-300"
+      >
+        {part}
+      </code>
+    ) : (
+      part
+    ),
+  );
+}
+
 export default function ChangelogEntryCard({ entry }: Props) {
   // Group changes by tag
   const grouped = entry.changes.reduce(
@@ -62,7 +79,7 @@ export default function ChangelogEntryCard({ entry }: Props) {
                     key={i}
                     className="relative pl-4 leading-relaxed text-slate-200 before:absolute before:top-2 before:left-0 before:h-1.5 before:w-1.5 before:rounded-full before:bg-slate-600 before:content-['']"
                   >
-                    {change.text}
+                    {renderInline(change.text)}
                   </li>
                 ))}
               </ul>
