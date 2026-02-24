@@ -51,8 +51,7 @@ function classifyChange(line: string): ChangelogChange {
 }
 
 function humanize(text: string): string {
-  // Clean up backticks and technical formatting for display
-  return text.replace(/`([^`]+)`/g, "$1").replace(/\s*—\s*/g, " — ");
+  return text.replace(/\s*—\s*/g, " — ");
 }
 
 export function parseChangelog(markdown: string): ChangelogEntry[] {
