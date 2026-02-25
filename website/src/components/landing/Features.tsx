@@ -7,7 +7,7 @@ interface Feature {
 }
 
 const statuslineSegments = [
-  { label: "CF version", example: "cf v1.6.0", color: "text-blue-400" },
+  { label: "CF version", example: "cf v0.0.1", color: "text-blue-400" },
   { label: "Project", example: "coding-friend", color: "text-orange-400" },
   { label: "Model", example: "Opus 4.6", color: "text-cyan-400" },
   {
@@ -258,7 +258,7 @@ const Statusline = () => {
 
             {/* Statusline */}
             <div className="flex flex-wrap items-center gap-0 gap-y-2 text-sm">
-              <span className="whitespace-nowrap text-blue-400">cf v1.6.0</span>
+              <span className="whitespace-nowrap text-blue-400">cf v0.0.1</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
                 coding-friend

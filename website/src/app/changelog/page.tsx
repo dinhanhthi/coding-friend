@@ -4,6 +4,8 @@ import {
   parseChangelog,
   getPluginChangelog,
   getCliChangelog,
+  getLearnHostChangelog,
+  getLearnMcpChangelog,
 } from "@/lib/changelog";
 import ChangelogTabs from "./ChangelogTabs";
 
@@ -19,6 +21,8 @@ export const metadata: Metadata = {
 export default function ChangelogPage() {
   const pluginEntries = parseChangelog(getPluginChangelog());
   const cliEntries = parseChangelog(getCliChangelog());
+  const learnHostEntries = parseChangelog(getLearnHostChangelog());
+  const learnMcpEntries = parseChangelog(getLearnMcpChangelog());
 
   return (
     <div className="min-h-screen py-16 sm:py-20">
@@ -35,6 +39,8 @@ export default function ChangelogPage() {
           <ChangelogTabs
             pluginEntries={pluginEntries}
             cliEntries={cliEntries}
+            learnHostEntries={learnHostEntries}
+            learnMcpEntries={learnMcpEntries}
           />
         </div>
       </Container>

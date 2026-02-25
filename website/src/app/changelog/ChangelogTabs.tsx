@@ -4,20 +4,48 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ChangelogEntryCard from "@/components/changelog/ChangelogEntry";
 import type { ChangelogEntry } from "@/lib/types";
 
+const tabs = [
+  { key: "plugin", label: "Plugin" },
+  { key: "cli", label: "CLI" },
+  { key: "learn-host", label: "Learn Host" },
+  { key: "learn-mcp", label: "Learn MCP" },
+] as const;
+
+type TabKey = (typeof tabs)[number]["key"];
+
 interface Props {
   pluginEntries: ChangelogEntry[];
   cliEntries: ChangelogEntry[];
+  learnHostEntries: ChangelogEntry[];
+  learnMcpEntries: ChangelogEntry[];
 }
 
-export default function ChangelogTabs({ pluginEntries, cliEntries }: Props) {
-  const [activeTab, setActiveTab] = useState<"plugin" | "cli">("plugin");
-  const entries = activeTab === "plugin" ? pluginEntries : cliEntries;
-  const pluginRef = useRef<HTMLButtonElement>(null);
-  const cliRef = useRef<HTMLButtonElement>(null);
+export default function ChangelogTabs({
+  pluginEntries,
+  cliEntries,
+  learnHostEntries,
+  learnMcpEntries,
+}: Props) {
+  const [activeTab, setActiveTab] = useState<TabKey>("plugin");
+  const tabRefs = useRef<Record<TabKey, HTMLButtonElement | null>>({
+    plugin: null,
+    cli: null,
+    "learn-host": null,
+    "learn-mcp": null,
+  });
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
+  const entriesMap: Record<TabKey, ChangelogEntry[]> = {
+    plugin: pluginEntries,
+    cli: cliEntries,
+    "learn-host": learnHostEntries,
+    "learn-mcp": learnMcpEntries,
+  };
+
+  const entries = entriesMap[activeTab];
+
   const updateIndicator = useCallback(() => {
-    const btn = activeTab === "plugin" ? pluginRef.current : cliRef.current;
+    const btn = tabRefs.current[activeTab];
     if (btn) {
       setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
     }
@@ -36,28 +64,22 @@ export default function ChangelogTabs({ pluginEntries, cliEntries }: Props) {
             className="bg-navy-800 absolute top-1 bottom-1 rounded-full shadow-sm transition-all duration-300 ease-in-out"
             style={{ left: indicator.left, width: indicator.width }}
           />
-          <button
-            ref={pluginRef}
-            onClick={() => setActiveTab("plugin")}
-            className={`relative z-10 cursor-pointer rounded-full px-6 py-2 text-sm font-medium transition-colors duration-200 ${
-              activeTab === "plugin"
-                ? "text-violet-400"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Plugin
-          </button>
-          <button
-            ref={cliRef}
-            onClick={() => setActiveTab("cli")}
-            className={`relative z-10 cursor-pointer rounded-full px-8 py-2 text-sm font-medium transition-colors duration-200 ${
-              activeTab === "cli"
-                ? "text-violet-400"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            CLI
-          </button>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              ref={(el) => {
+                tabRefs.current[tab.key] = el;
+              }}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative z-10 cursor-pointer rounded-full px-5 py-2 text-sm font-medium transition-colors duration-200 ${
+                activeTab === tab.key
+                  ? "text-violet-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 

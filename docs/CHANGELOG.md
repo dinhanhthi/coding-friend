@@ -2,100 +2,14 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v1.7.0
+## v0.0.1
 
-- Add project website with docs, changelog, and landing page
-- Redesign learn-host UI with modern layout and command palette
-- Add no-AI-attribution rule to `/cf-commit` and `/cf-ship` skills
-- Use model haiku for `cf-commit` and `cf-help` skills
-- Website: SEO optimizations, OG image, Next.js 16 upgrade
-
-## v1.6.0
-
-- Improve `cf host`:
-    - `cf host`: Switch from static export to ISR (Incremental Static Regeneration) — new/changed docs auto-update on page refresh without rebuild
-    - `cf host`: Add full-text search via Pagefind (replaces substring-match search index)
-    - `cf host`: Use `next start` instead of `npx serve` for ISR support
-- Improve working prompts:
-    - Fix `/cf-plan` not asking for clarification — add mandatory "Clarify Before Exploring" step and user validation gate before finalizing plan
-    - Fix `/cf-fix` proceeding without verifying problem — add "Verify the Problem Exists" and "Confirm Approach" steps
-    - Improve planner agent — questions and assumptions surfaced first, unknowns must be resolved before planning
-- Security:
-    - Add prompt injection defense — layered content isolation across skills, agents, and hooks
-    - Central security rules in `cf-help` (loaded at every session start)
-    - Security reminder in `dev-rules-reminder` hook (every user prompt)
-    - Security context preserved in `compact-marker` hook (survives compaction)
-    - `/cf-research` subagent template hardened with content isolation instructions
-    - All 5 agents updated with prompt injection awareness (code-reviewer, planner, implementer, writer, writer-deep)
-
-## v1.5.1
-
-- Fix plugin cache issue — bump version to force cache invalidation for users on v1.5.0
-
-## v1.5.0
-
-- Remove `/cf-update` skill — use `cf update` (CLI) instead
-- Remove `/cf-statusline` skill — use `cf statusline` (CLI) instead
-- Remove `/cf-init` skill — use `cf init` (CLI) instead
-- `cf init` works in non-git directories (git steps skipped gracefully)
-- Add `coding-friend-cli` on npm (`npm i -g coding-friend-cli`, binary: `cf`)
-- CLI commands: `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
-- CLI bundles `lib/learn-host` and `lib/learn-mcp` at publish time
-- CLI resolves config: local → global → defaults
-- Remove `/cf-learn:host` — replaced by `cf host` and `cf mcp`
-- Shell tab completion auto-configured on install/update
-- Add `/cf-ask [question]` — lightweight codebase Q&A with auto-save to `docs/memory/`
-- Add `/cf-optimize [target]` — structured optimization workflow with baseline/after measurement
-- Add `writer` agent (haiku) — lightweight doc writer for skills that generate markdown files
-- Add `writer-deep` agent (sonnet) — fallback for content requiring deep reasoning or long context
-- `/cf-learn` and `/cf-remember` now delegate writing to writer agents (skill = brain, agent = hands)
-- Move agents from `.claude/agents/` to `agents/` (correct plugin directory structure per official docs)
-
-## v1.4.0
-
-- Top-level `language` config — applies to all doc-generating skills
-- Configurable `/cf-learn`: output location, categories, auto-commit, README index
-- `/cf-learn` supports `readmeIndex: "per-category"`
+- 15 skills: `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research` + 5 auto-invoked (`cf-tdd`, `cf-sys-debug`, `cf-code-review`, `cf-verification`, `cf-learn`)
+- 7 hooks: session init, dev rules reminder, privacy block, scout block, statusline, compact marker, context tracker
+- 5 agents: `code-reviewer`, `implementer`, `planner`, `writer` (haiku), `writer-deep` (sonnet)
+- CLI companion (`coding-friend-cli` on npm): `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
+- Learning docs host (`cf host`) with ISR, Pagefind full-text search, and modern UI with command palette
+- MCP server (`cf mcp`) for LLM integration with learning docs
 - Layered config: global (`~/.coding-friend/`) + local (`.coding-friend/`), local wins
-- `/cf-init` re-runnable, asks about language/learn settings, configures permissions
-- `/cf-learn` auto-invokes on substantial new knowledge
-- Config schema in `docs/config-schema.md`
-
-## v1.3.0
-
-- Add `/cf-init` — initialize workspace (docs folders + .gitignore)
-
-## v1.2.2
-
-- Add `/cf-update` — update plugin + refresh statusline
-- Fix missing skill references in hooks
-
-## v1.2.1
-
-- Show plugin version in statusline
-
-## v1.2.0
-
-- Add `/cf-research [topic]` — web search + parallel subagents → `docs/research/`
-
-## v1.1.0
-
-- Add `/cf-statusline` — auto-setup statusline
-
-## v1.0.3
-
-- Change statusline from hook to `statusLine` setting
-- Update statusline.sh for printf output
-
-## v1.0.2
-
-- Fix statusline JSON response format
-
-## v1.0.1
-
-- Show active model in statusline
-
-## v1.0.0
-
-- Initial release — 12 skills, 7 hooks, 3 agents
-- Config via `.coding-friend/config.json` and `.coding-friend/ignore`
+- Prompt injection defense across all skills, agents, and hooks
+- Project website with docs, changelog, and landing page

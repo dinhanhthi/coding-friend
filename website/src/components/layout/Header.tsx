@@ -53,8 +53,11 @@ export default function Header() {
               <span className="-mb-1 text-lg font-semibold text-white">
                 Coding Friend
               </span>
-              <span className="ml-0.5 font-mono text-[0.7em] font-semibold text-violet-400">
+              <span className="ml-0.5 flex items-center gap-1.5 font-mono text-[0.7em] font-semibold text-violet-400">
                 v{process.env.NEXT_PUBLIC_PLUGIN_VERSION}
+                <span className="rounded-full bg-yellow-500/20 px-1.5 py-px text-[0.85em] font-semibold text-yellow-400">
+                  alpha
+                </span>
               </span>
             </div>
           </Link>
@@ -181,6 +184,9 @@ export default function Header() {
             >
               v{process.env.NEXT_PUBLIC_PLUGIN_VERSION}
             </Link>
+            <span className="rounded-full bg-yellow-500/20 px-1.5 py-0.5 text-[0.65rem] font-semibold text-yellow-400">
+              alpha
+            </span>
           </div>
         </nav>
       )}
