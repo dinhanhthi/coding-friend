@@ -12,6 +12,20 @@ export function getCliChangelog(): string {
   return fs.readFileSync(path.join(repoRoot, "cli/CHANGELOG.md"), "utf-8");
 }
 
+export function getLearnHostChangelog(): string {
+  return fs.readFileSync(
+    path.join(repoRoot, "lib/learn-host/CHANGELOG.md"),
+    "utf-8",
+  );
+}
+
+export function getLearnMcpChangelog(): string {
+  return fs.readFileSync(
+    path.join(repoRoot, "lib/learn-mcp/CHANGELOG.md"),
+    "utf-8",
+  );
+}
+
 function classifyChange(line: string): ChangelogChange {
   const text = line.replace(/^-\s*/, "").trim();
 

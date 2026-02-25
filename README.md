@@ -24,7 +24,7 @@ Lean toolkit for disciplined engineering workflows with Claude Code.
 - **Prompt injection defense** — layered content isolation protects against malicious instructions embedded in web content. All external data (WebFetch, WebSearch, MCP tools) is treated as untrusted. See [Security](#-security) section.
 - Customize the Claude Code statusline
   ```bash
-  cf v1.2.1 │ ProjectName │ Opus 4.6 │ ⎇ branchName │ 15% → 13:00
+  cf v0.0.1 │ ProjectName │ Opus 4.6 │ ⎇ branchName │ 15% → 13:00
   ```
 
 ## 🚀 Usage & How It Works
