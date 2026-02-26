@@ -31,8 +31,27 @@ export default function Hero() {
             workflow.
           </p>
 
+          {/* Alpha notice */}
+          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-400">
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              This project is in <strong className="font-semibold">alpha</strong>. Want to build together?{" "}
+              <a
+                href="https://github.com/dinhanhthi/coding-friend"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2 hover:opacity-80"
+              >
+                Join us on GitHub
+              </a>
+              .
+            </span>
+          </div>
+
           {/* CTAs */}
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
               href="/docs/getting-started/installation/"
               size="lg"
