@@ -28,6 +28,9 @@ cf update            # Update plugin + CLI + statusline
 cf update --cli      # Update only the CLI (npm package)
 cf update --plugin   # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline
+cf dev on [path]     # Switch to local plugin source for development
+cf dev off           # Switch back to remote marketplace
+cf dev status        # Show current dev mode (local or remote)
 cf help              # Show all commands
 ```
 
@@ -46,6 +49,7 @@ Now `cf` is available globally, pointing to your local source. After making chan
 
 ```bash
 npm run build       # Rebuild (no need to re-link)
+npm run watch       # Auto-rebuild on file changes
 ```
 
 For development without rebuilding:
@@ -58,6 +62,15 @@ To unlink when done:
 
 ```bash
 npm unlink -g coding-friend-cli
+```
+
+To check if `cf` is pointing to the local plugin source:
+
+```bash
+npm ls -g coding-friend-cli
+# Result:
+# /Users/thi/.nvm/versions/node/v22.21.1/lib
+#└── coding-friend-cli@1.1.1 -> ./../../../../../git/coding-friend/cli
 ```
 
 ## Publish CLI to npm

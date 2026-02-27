@@ -10,7 +10,8 @@
     "build": "tsup src/index.ts src/postinstall.ts --format esm --dts --clean",
     "postinstall": "node dist/postinstall.js || true",
     "prepublishOnly": "npm run build && node scripts/bundle-libs.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "watch": "tsup src/index.ts src/postinstall.ts --format esm --dts --watch"
   },
   "files": [
     "dist",
