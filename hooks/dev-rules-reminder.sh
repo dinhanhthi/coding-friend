@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+LOG_FILE="${TMPDIR:-/tmp}/coding-friend-dev-rules.log"
+exec 2>>"$LOG_FILE"
+echo "=== dev-rules-reminder.sh started at $(date) ===" >>"$LOG_FILE"
+trap 'echo "ERROR: dev-rules-reminder.sh failed at line $LINENO (exit $?)" >>"$LOG_FILE"' ERR
+
 # Check if hook is disabled via config
 CONFIG_FILE=".coding-friend/config.json"
 if [ -f "$CONFIG_FILE" ]; then

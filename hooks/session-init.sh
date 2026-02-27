@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+LOG_FILE="${TMPDIR:-/tmp}/coding-friend-session-init.log"
+exec 2>>"$LOG_FILE"
+echo "=== session-init.sh started at $(date) ===" >>"$LOG_FILE"
+trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FILE"' ERR
+
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 SKILL_FILE="$PLUGIN_ROOT/skills/cf-help/SKILL.md"
 

@@ -63,4 +63,33 @@ program
     await updateCommand(opts);
   });
 
+const dev = program
+  .command("dev")
+  .description("Switch between local and remote plugin for development");
+
+dev
+  .command("on")
+  .description("Switch to local plugin source")
+  .argument("[path]", "path to local coding-friend repo (default: cwd)")
+  .action(async (path) => {
+    const { devOnCommand } = await import("./commands/dev.js");
+    await devOnCommand(path);
+  });
+
+dev
+  .command("off")
+  .description("Switch back to remote marketplace")
+  .action(async () => {
+    const { devOffCommand } = await import("./commands/dev.js");
+    await devOffCommand();
+  });
+
+dev
+  .command("status")
+  .description("Show current dev mode")
+  .action(async () => {
+    const { devStatusCommand } = await import("./commands/dev.js");
+    await devStatusCommand();
+  });
+
 program.parse();

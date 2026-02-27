@@ -2,6 +2,14 @@
 
 > Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
 
+## v1.2.0
+
+- `cf dev on [path]`: Switch to local plugin source for development
+- `cf dev off`: Switch back to remote marketplace
+- `cf dev status`: Show current dev mode
+- Shell completion: Add support for path completion in `cf dev on [path]`
+- Shell completion: Update logic now replaces outdated blocks instead of skipping
+
 ## v1.1.1
 
 - Add `-v` short flag for `cf --version`
