@@ -13,49 +13,50 @@ coding-friend is a lean toolkit for Claude Code that enforces disciplined engine
 
 ```
 coding-friend/
-├── bin/cf.js                    # CLI entry point
+├── marketplace.json             # Marketplace manifest (points to plugin/)
 ├── CLAUDE.md                    # Claude Code instruction (~3000 tokens)
 ├── README.md                    # Installation guide
 ├── .coding-friend/              # User config
 │   ├── config.json              # Settings (optional)
 │   └── ignore                   # Agent ignore patterns
 │
-├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest
-│
-├── .claude/
-│   ├── settings.json            # Hooks config (drop-in mode)
+├── plugin/                      # ← Only this gets cached by Claude Code
+│   ├── .claude-plugin/
+│   │   └── plugin.json          # Plugin manifest
+│   │
+│   ├── hooks/
+│   │   ├── hooks.json               # Plugin hooks manifest
+│   │   ├── session-init.sh          # SessionStart: bootstrap context
+│   │   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
+│   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
+│   │   ├── scout-block.sh           # PreToolUse: respect .coding-friend/ignore
+│   │   ├── statusline.sh            # Statusline: context tracking
+│   │   ├── compact-marker.sh        # PreCompact: preserve context
+│   │   └── context-tracker.sh       # PostToolUse: track files read
+│   │
+│   ├── skills/
+│   │   ├── cf-help/                 # Meta-skill (background)
+│   │   ├── cf-plan/                 # /cf-plan — brainstorm + write plans
+│   │   ├── cf-review/               # /cf-review — dispatch code review
+│   │   ├── cf-commit/               # /cf-commit — smart commit
+│   │   ├── cf-ship/                 # /cf-ship — verify + commit + push + PR
+│   │   ├── cf-fix/                  # /cf-fix — quick bug fix
+│   │   ├── cf-ask/                  # /cf-ask — quick Q&A → docs/memory/
+│   │   ├── cf-optimize/             # /cf-optimize — structured optimization
+│   │   ├── cf-remember/             # /cf-remember — project knowledge → docs/memory/
+│   │   ├── cf-learn/                # /cf-learn — human learning (also auto-invoked)
+│   │   ├── cf-research/             # /cf-research — web research → docs/research/
+│   │   ├── cf-tdd/                  # TDD workflow (auto-invoked)
+│   │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
+│   │   ├── cf-code-review/          # Review guide (auto-invoked)
+│   │   └── cf-verification/         # Verify before claiming done
+│   │
 │   └── agents/
-│       ├── code-reviewer.md     # Code review subagent
-│       ├── implementer.md       # TDD implementation subagent
-│       └── planner.md           # Exploration + task breakdown
-│
-├── hooks/
-│   ├── hooks.json               # Plugin hooks manifest
-│   ├── session-init.sh          # SessionStart: bootstrap context
-│   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
-│   ├── privacy-block.sh         # PreToolUse: block sensitive files
-│   ├── scout-block.sh           # PreToolUse: respect .coding-friend/ignore
-│   ├── statusline.sh            # Statusline: context tracking
-│   ├── compact-marker.sh        # PreCompact: preserve context
-│   └── context-tracker.sh       # PostToolUse: track files read
-│
-├── skills/
-│   ├── cf-help/                 # Meta-skill (background)
-│   ├── cf-plan/                 # /cf-plan — brainstorm + write plans
-│   ├── cf-review/               # /cf-review — dispatch code review
-│   ├── cf-commit/               # /cf-commit — smart commit
-│   ├── cf-ship/                 # /cf-ship — verify + commit + push + PR
-│   ├── cf-fix/                  # /cf-fix — quick bug fix
-│   ├── cf-ask/                  # /cf-ask — quick Q&A → docs/memory/
-│   ├── cf-optimize/             # /cf-optimize — structured optimization
-│   ├── cf-remember/             # /cf-remember — project knowledge → docs/memory/
-│   ├── cf-learn/                # /cf-learn — human learning (also auto-invoked)
-│   ├── cf-research/             # /cf-research — web research → docs/research/
-│   ├── cf-tdd/                  # TDD workflow (auto-invoked)
-│   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
-│   ├── cf-code-review/          # Review guide (auto-invoked)
-│   └── cf-verification/         # Verify before claiming done
+│       ├── code-reviewer.md         # Code review subagent
+│       ├── implementer.md           # TDD implementation subagent
+│       ├── planner.md               # Exploration + task breakdown
+│       ├── writer.md                # Lightweight doc writer
+│       └── writer-deep.md           # Deep reasoning doc writer
 │
 ├── lib/
 │   ├── learn-host/              # Next.js static site for learning docs
@@ -193,10 +194,13 @@ Exit codes:
 
 ## Claude Code Plugin
 
-- `.claude-plugin/plugin.json` — plugin manifest
-- `hooks/hooks.json` — plugin hooks
-- `skills/` — auto-discovered by Claude Code
-- `.claude/agents/` — subagent definitions
+- `marketplace.json` — marketplace manifest (at repo root, points `source` to `./plugin`)
+- `plugin/.claude-plugin/plugin.json` — plugin manifest
+- `plugin/hooks/hooks.json` — plugin hooks
+- `plugin/skills/` — auto-discovered by Claude Code
+- `plugin/agents/` — subagent definitions
+
+Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/`, `lib/` are excluded.
 
 ---
 

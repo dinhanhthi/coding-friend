@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "coding-friend",
-      "source": "./",
+      "source": "./plugin",
       "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
       "author": {
         "name": "Anh-Thi Dinh"

@@ -38,7 +38,7 @@ This command:
 4. Installs the plugin from the local source
 5. Saves the dev state for later restoration
 
-The path must point to a directory containing `.claude-plugin/plugin.json`.
+The path must point to the repo root containing `plugin/.claude-plugin/plugin.json`.
 
 ### `cf dev off`
 
@@ -86,7 +86,7 @@ Example output:
 `cf dev on` installs your plugin into a **versioned cache directory**. Claude Code reads hooks, skills, and agents from that cache — not directly from your source files. So after `cf dev on`, any edits you make to local files are invisible to Claude Code until the cache is updated.
 
 Without `cf dev sync`, the only way to pick up changes is to:
-1. Bump the version in `.claude-plugin/plugin.json`
+1. Bump the version in `plugin/.claude-plugin/plugin.json`
 2. Run `cf dev off && cf dev on`
 3. Restart Claude Code
 

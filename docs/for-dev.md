@@ -18,7 +18,7 @@ cd coding-friend
 Use the `--plugin-dir` flag to load the plugin directly from your local source:
 
 ```bash
-claude --plugin-dir /path/to/coding-friend
+claude --plugin-dir /path/to/coding-friend/plugin
 ```
 
 This loads the plugin **for that session only** — no installation needed.
@@ -32,7 +32,7 @@ When you use `--plugin-dir`, Claude Code loads **both** the marketplace-installe
 claude plugin disable coding-friend
 
 # Now run with your local source
-claude --plugin-dir /path/to/coding-friend
+claude --plugin-dir /path/to/coding-friend/plugin
 ```
 
 When you're done developing and want to switch back to the marketplace version:
@@ -52,7 +52,7 @@ claude plugin list
 Add this to your `~/.zshrc` or `~/.bashrc` for quick access:
 
 ```bash
-alias claude-dev="claude --plugin-dir /path/to/coding-friend"
+alias claude-dev="claude --plugin-dir /path/to/coding-friend/plugin"
 ```
 
 Then just run `claude-dev` to start a session with your local plugin.
@@ -73,7 +73,7 @@ The VSCode extension does **not** support `--plugin-dir` directly. Use one of th
 Open the integrated terminal in VSCode and run:
 
 ```bash
-claude --plugin-dir /path/to/coding-friend
+claude --plugin-dir /path/to/coding-friend/plugin
 ```
 
 This gives you the full CLI experience with your local plugin, right inside VSCode.
@@ -103,7 +103,7 @@ When you run `cf dev on`, Claude Code installs the plugin from your local source
 
 This means: **edits to your local source are invisible to Claude Code until the cache is updated.**
 
-The naive fix is to bump the version in `.claude-plugin/plugin.json` and run `cf dev off && cf dev on` again. But that creates a new cache entry for every tiny change, pollutes version history, and takes ~10–15 seconds each time.
+The naive fix is to bump the version in `plugin/.claude-plugin/plugin.json` and run `cf dev off && cf dev on` again. But that creates a new cache entry for every tiny change, pollutes version history, and takes ~10–15 seconds each time.
 
 **`cf dev sync` solves this:**
 

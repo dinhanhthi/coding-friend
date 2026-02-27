@@ -64,8 +64,8 @@ export async function devOnCommand(path?: string): Promise<void> {
   const localPath = resolve(path || process.cwd());
 
   // Verify the path contains a coding-friend plugin
-  if (!existsSync(resolve(localPath, ".claude-plugin", "plugin.json"))) {
-    log.error(`No .claude-plugin/plugin.json found at ${localPath}`);
+  if (!existsSync(resolve(localPath, "plugin", ".claude-plugin", "plugin.json"))) {
+    log.error(`No plugin/.claude-plugin/plugin.json found at ${localPath}`);
     log.dim("Make sure you point to the coding-friend repo root.");
     return;
   }
@@ -204,6 +204,13 @@ export async function devSyncCommand(): Promise<void> {
   }
 
   const localPath = state.localPath;
+  const pluginSrcDir = join(localPath, "plugin");
+
+  if (!existsSync(pluginSrcDir)) {
+    log.error(`No plugin/ directory found at ${localPath}. Make sure you point to the coding-friend repo root.`);
+    return;
+  }
+
   const cacheBase = pluginCachePath();
 
   // Find the cached version directory
@@ -232,23 +239,11 @@ export async function devSyncCommand(): Promise<void> {
   }
 
   const shortDest = cacheVersionDir.replace(process.env.HOME ?? "", "~");
-  log.step(`Syncing ${chalk.cyan(localPath)} → ${chalk.dim(shortDest)}`);
+  log.step(`Syncing ${chalk.cyan(pluginSrcDir)} → ${chalk.dim(shortDest)}`);
 
-  // Dirs to sync (skip node_modules, .git, cli build artifacts)
-  const SKIP = new Set([".git", "node_modules", ".claude", ".coding-friend"]);
+  // Copy plugin/ contents directly into cache version dir
   const fileCount = { n: 0 };
-
-  for (const entry of readdirSync(localPath)) {
-    if (SKIP.has(entry)) continue;
-    const src = join(localPath, entry);
-    const dest = join(cacheVersionDir, entry);
-    if (statSync(src).isDirectory()) {
-      copyDirRecursive(src, dest, fileCount);
-    } else {
-      copyFileSync(src, dest);
-      fileCount.n++;
-    }
-  }
+  copyDirRecursive(pluginSrcDir, cacheVersionDir, fileCount);
 
   log.success(`Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`);
 }

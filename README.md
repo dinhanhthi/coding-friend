@@ -226,14 +226,16 @@ Hooks, agents, project structure
 
 ```
 coding-friend/
+├── marketplace.json         # Marketplace manifest
 ├── CLAUDE.md                # Claude Code rules
 ├── .coding-friend/          # User config (optional)
 │   ├── config.json          # Settings
 │   └── ignore               # Agent ignore patterns
-├── .claude-plugin/          # Plugin + marketplace manifest
-├── .claude/                 # Settings + agents
-├── hooks/                   # Lifecycle hooks
-├── skills/                  # 15 skills
+├── plugin/                  # ← Only this gets cached by Claude Code
+│   ├── .claude-plugin/      # Plugin manifest
+│   ├── hooks/               # Lifecycle hooks
+│   ├── skills/              # 15 skills
+│   └── agents/              # Subagent definitions
 ├── cli/                     # Standalone CLI (npm: coding-friend-cli)
 ├── lib/
 │   ├── learn-host/          # Next.js static site for learning docs
