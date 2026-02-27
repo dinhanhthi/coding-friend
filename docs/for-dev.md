@@ -97,6 +97,44 @@ This handles uninstalling, marketplace swap, and reinstalling automatically.
 
 Changes require **restarting the extension** (reload VSCode window) to take effect.
 
+**Why `cf dev on` alone is not enough:**
+
+When you run `cf dev on`, Claude Code installs the plugin from your local source into a **versioned cache directory** (e.g. `~/.claude/plugins/cache/.../0.0.2`). From that point on, Claude Code reads all hooks, skills, and agents from that cache — not directly from your source files.
+
+This means: **edits to your local source are invisible to Claude Code until the cache is updated.**
+
+The naive fix is to bump the version in `.claude-plugin/plugin.json` and run `cf dev off && cf dev on` again. But that creates a new cache entry for every tiny change, pollutes version history, and takes ~10–15 seconds each time.
+
+**`cf dev sync` solves this:**
+
+```bash
+# Edit code in local source
+vi hooks/session-init.sh
+
+# Push changes into the cache
+cf dev sync
+
+# Restart Claude Code → changes are live
+```
+
+It copies all files from your local source directly into the existing cache directory for the current version — no uninstall, no reinstall, no version bump. The whole cycle takes ~1 second.
+
+**Recommended dev workflow:**
+
+```bash
+# One-time setup
+cf dev on /path/to/coding-friend
+
+# Inner loop (repeat as many times as needed)
+# 1. Edit files
+# 2. cf dev sync
+# 3. Restart Claude Code and test
+
+# When feature is done — bump version once and commit
+```
+
+Skips `.git`, `node_modules`, `.claude`, and `.coding-friend` during sync.
+
 **Option 3: Manual marketplace swap**
 
 If you don't have the CLI, run the commands manually:

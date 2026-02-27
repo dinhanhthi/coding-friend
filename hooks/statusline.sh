@@ -30,9 +30,15 @@ LEVEL_10=$'\033[38;5;124m' # deep red
 
 separator="${GRAY} │ ${RESET}"
 
-# Plugin version
-PLUGINS_JSON="$HOME/.claude/plugins/installed_plugins.json"
-VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$PLUGINS_JSON" 2>/dev/null)
+# Plugin version — read from plugin.json in CLAUDE_PLUGIN_ROOT (works for both dev and installed)
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+VERSION=""
+if [ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
+  VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+fi
+if [ -z "$VERSION" ]; then
+  VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null)
+fi
 
 # Current folder
 current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')

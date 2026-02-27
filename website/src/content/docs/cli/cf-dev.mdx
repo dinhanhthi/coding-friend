@@ -14,6 +14,7 @@ keywords: [dev, development, local plugin, plugin development, cf dev]
 cf dev on [path]    # Switch to local plugin source
 cf dev off          # Switch back to remote marketplace
 cf dev status       # Show current dev mode
+cf dev sync         # Sync local changes to cache (no version bump needed)
 ```
 
 ## Subcommands
@@ -64,6 +65,50 @@ Example output:
 ℹ Local path: /Users/you/git/coding-friend
   Since: 2026-02-27T21:32:37.082Z
 ```
+
+### `cf dev sync`
+
+Copies local source files into the plugin cache without requiring a version bump or off/on cycle:
+
+```bash
+cf dev sync
+```
+
+Example output:
+
+```
+→ Syncing /Users/you/git/coding-friend → ~/.claude/plugins/cache/.../0.0.2
+✔ Synced 57178 files. Restart Claude Code to apply changes.
+```
+
+#### Why you need this
+
+`cf dev on` installs your plugin into a **versioned cache directory**. Claude Code reads hooks, skills, and agents from that cache — not directly from your source files. So after `cf dev on`, any edits you make to local files are invisible to Claude Code until the cache is updated.
+
+Without `cf dev sync`, the only way to pick up changes is to:
+1. Bump the version in `.claude-plugin/plugin.json`
+2. Run `cf dev off && cf dev on`
+3. Restart Claude Code
+
+That's 10–15 seconds per change and pollutes version history with meaningless intermediate bumps.
+
+`cf dev sync` short-circuits this: it pushes your local files directly into the existing cache entry for the current version. No uninstall, no reinstall, no version bump needed.
+
+#### Recommended dev loop
+
+```bash
+# One-time setup
+cf dev on /path/to/coding-friend
+
+# Repeat until the feature is done:
+# 1. Edit files in local source
+# 2. cf dev sync
+# 3. Restart Claude Code and test
+
+# When done — bump version once and commit
+```
+
+**Note:** Skips `.git`, `node_modules`, `.claude`, and `.coding-friend` during sync.
 
 ## When to Use
 
