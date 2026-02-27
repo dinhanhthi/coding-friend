@@ -42,3 +42,13 @@ export function pluginCachePath(): string {
     "coding-friend",
   );
 }
+
+/** Path to dev mode state file */
+export function devStatePath(): string {
+  return join(homedir(), ".coding-friend", "dev-state.json");
+}
+
+/** Path to Claude known marketplaces */
+export function knownMarketplacesPath(): string {
+  return join(homedir(), ".claude", "plugins", "known_marketplaces.json");
+}

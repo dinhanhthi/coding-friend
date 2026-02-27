@@ -1,0 +1,78 @@
+---
+title: "cf dev"
+description: "Switch between local and remote plugin sources for development."
+keywords: [dev, development, local plugin, plugin development, cf dev]
+---
+
+## Overview
+
+`cf dev` lets you seamlessly switch between the remote marketplace plugin and a local source copy. This is essential when developing or testing changes to the Coding Friend plugin itself.
+
+## Usage
+
+```bash
+cf dev on [path]    # Switch to local plugin source
+cf dev off          # Switch back to remote marketplace
+cf dev status       # Show current dev mode
+```
+
+## Subcommands
+
+### `cf dev on`
+
+Switches to using a local copy of the plugin:
+
+```bash
+# Use current directory as local source
+cf dev on
+
+# Or specify a path
+cf dev on /path/to/coding-friend
+```
+
+This command:
+1. Uninstalls the remote plugin (if installed)
+2. Removes the remote marketplace
+3. Adds the local directory as a marketplace
+4. Installs the plugin from the local source
+5. Saves the dev state for later restoration
+
+The path must point to a directory containing `.claude-plugin/plugin.json`.
+
+### `cf dev off`
+
+Switches back to the remote marketplace:
+
+```bash
+cf dev off
+```
+
+This command reverses what `cf dev on` did — restores the remote marketplace and reinstalls the plugin from GitHub.
+
+### `cf dev status`
+
+Shows whether dev mode is currently active:
+
+```bash
+cf dev status
+```
+
+Example output:
+
+```
+ℹ Dev mode: ON
+ℹ Local path: /Users/you/git/coding-friend
+  Since: 2026-02-27T21:32:37.082Z
+```
+
+## When to Use
+
+- **Plugin development** — editing skills, hooks, agents, or commands and testing them in Claude Code
+- **VSCode extension** — the extension doesn't support `--plugin-dir`, so `cf dev` is the recommended way to use a local plugin in the extension UI
+- **Testing before release** — verify changes work correctly before pushing to the remote marketplace
+
+## Notes
+
+- Dev state is stored at `~/.coding-friend/dev-state.json`
+- Restart Claude Code (or reload VSCode window) after switching to see changes
+- For CLI-only sessions, you can also use `claude --plugin-dir /path/to/coding-friend` as a lighter alternative (session-scoped, no install needed)
