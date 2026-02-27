@@ -15,7 +15,7 @@ _cf_completions() {
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "on off status" -- "$cur"))
+    COMPREPLY=($(compgen -W "on off status restart sync" -- "$cur"))
     return
   fi
 
@@ -53,6 +53,8 @@ _cf() {
       'on:Switch to local plugin source'
       'off:Switch back to remote marketplace'
       'status:Show current dev mode'
+      'restart:Restart dev mode (re-apply local plugin)'
+      'sync:Sync local plugin files without restarting'
     )
     _describe 'subcommand' subcommands
   elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && "\${words[3]}" == "on" ]]; then
