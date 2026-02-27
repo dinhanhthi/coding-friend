@@ -104,9 +104,9 @@ dev
   .command("restart")
   .description("Reinstall local dev plugin (off + on)")
   .argument("[path]", "path to local coding-friend repo (default: saved path or cwd)")
-  .action(async () => {
+  .action(async (path?: string) => {
     const { devRestartCommand } = await import("./commands/dev.js");
-    await devRestartCommand();
+    await devRestartCommand(path);
   });
 
 program.parse();
