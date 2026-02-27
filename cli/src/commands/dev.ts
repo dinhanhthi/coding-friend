@@ -1,7 +1,7 @@
-import { existsSync, unlinkSync } from "fs";
-import { resolve } from "path";
+import { existsSync, unlinkSync, readdirSync, statSync, mkdirSync, copyFileSync } from "fs";
+import { resolve, join } from "path";
 import { readJson, writeJson } from "../lib/json.js";
-import { devStatePath, knownMarketplacesPath, installedPluginsPath } from "../lib/paths.js";
+import { devStatePath, knownMarketplacesPath, installedPluginsPath, pluginCachePath } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import chalk from "chalk";
@@ -180,6 +180,77 @@ function getMarketplaceSource(): { type: string; location: string } | null {
     return { type: "remote", location: src.repo };
   }
   return null;
+}
+
+function copyDirRecursive(src: string, dest: string, fileCount = { n: 0 }): void {
+  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+  for (const entry of readdirSync(src)) {
+    const srcPath = join(src, entry);
+    const destPath = join(dest, entry);
+    if (statSync(srcPath).isDirectory()) {
+      copyDirRecursive(srcPath, destPath, fileCount);
+    } else {
+      copyFileSync(srcPath, destPath);
+      fileCount.n++;
+    }
+  }
+}
+
+export async function devSyncCommand(): Promise<void> {
+  const state = getDevState();
+  if (!state) {
+    log.error("Dev mode is OFF. Run `cf dev on <path>` first.");
+    return;
+  }
+
+  const localPath = state.localPath;
+  const cacheBase = pluginCachePath();
+
+  // Find the cached version directory
+  let cacheVersionDir: string | null = null;
+  if (existsSync(cacheBase)) {
+    const versions = readdirSync(cacheBase).filter((v) =>
+      statSync(join(cacheBase, v)).isDirectory()
+    );
+    if (versions.length > 0) {
+      // Use the most recently modified version dir
+      cacheVersionDir = join(
+        cacheBase,
+        versions.sort((a, b) => {
+          return (
+            statSync(join(cacheBase, b)).mtimeMs -
+            statSync(join(cacheBase, a)).mtimeMs
+          );
+        })[0]
+      );
+    }
+  }
+
+  if (!cacheVersionDir) {
+    log.error("No cached plugin version found. Run `cf dev off && cf dev on` first.");
+    return;
+  }
+
+  const shortDest = cacheVersionDir.replace(process.env.HOME ?? "", "~");
+  log.step(`Syncing ${chalk.cyan(localPath)} → ${chalk.dim(shortDest)}`);
+
+  // Dirs to sync (skip node_modules, .git, cli build artifacts)
+  const SKIP = new Set([".git", "node_modules", ".claude", ".coding-friend"]);
+  const fileCount = { n: 0 };
+
+  for (const entry of readdirSync(localPath)) {
+    if (SKIP.has(entry)) continue;
+    const src = join(localPath, entry);
+    const dest = join(cacheVersionDir, entry);
+    if (statSync(src).isDirectory()) {
+      copyDirRecursive(src, dest, fileCount);
+    } else {
+      copyFileSync(src, dest);
+      fileCount.n++;
+    }
+  }
+
+  log.success(`Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`);
 }
 
 export async function devStatusCommand(): Promise<void> {

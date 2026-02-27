@@ -92,4 +92,12 @@ dev
     await devStatusCommand();
   });
 
+dev
+  .command("sync")
+  .description("Copy local source files to plugin cache (no version bump needed)")
+  .action(async () => {
+    const { devSyncCommand } = await import("./commands/dev.js");
+    await devSyncCommand();
+  });
+
 program.parse();
