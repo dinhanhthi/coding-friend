@@ -248,12 +248,13 @@ export async function devSyncCommand(): Promise<void> {
   log.success(`Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`);
 }
 
-export async function devRestartCommand(): Promise<void> {
+export async function devRestartCommand(path?: string): Promise<void> {
   const state = getDevState();
 
   if (!ensureClaude()) return;
 
-  const localPath = state?.localPath;
+  // Priority: explicit arg > saved state > cwd
+  const localPath = path ?? state?.localPath;
 
   console.log(`\n=== ${chalk.cyan("Restarting dev mode")} ===\n`);
 
@@ -265,7 +266,7 @@ export async function devRestartCommand(): Promise<void> {
     log.info("Dev mode was OFF — skipping off step.");
   }
 
-  // Turn on with the saved path (or cwd)
+  // Turn on with resolved path
   await devOnCommand(localPath);
 }
 
