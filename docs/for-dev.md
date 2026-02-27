@@ -91,11 +91,24 @@ cf dev status
 
 # Switch back to remote marketplace
 cf dev off
+
+# Reinstall local dev plugin (useful when install state is broken)
+cf dev restart
 ```
 
 This handles uninstalling, marketplace swap, and reinstalling automatically.
 
 Changes require **restarting the extension** (reload VSCode window) to take effect.
+
+**When to use `cf dev restart`:**
+
+If the install state becomes broken or out of sync (e.g. after a failed `cf dev off`), run:
+
+```bash
+cf dev restart
+```
+
+This is equivalent to `cf dev off && cf dev on` using the previously saved local path. If dev mode was already OFF, it skips the off step and just runs `cf dev on`.
 
 **Why `cf dev on` alone is not enough:**
 

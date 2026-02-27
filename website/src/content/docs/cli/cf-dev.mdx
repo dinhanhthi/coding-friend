@@ -15,6 +15,7 @@ cf dev on [path]    # Switch to local plugin source
 cf dev off          # Switch back to remote marketplace
 cf dev status       # Show current dev mode
 cf dev sync         # Sync local changes to cache (no version bump needed)
+cf dev restart      # Reinstall local dev plugin (off + on)
 ```
 
 ## Subcommands
@@ -109,6 +110,16 @@ cf dev on /path/to/coding-friend
 ```
 
 **Note:** Skips `.git`, `node_modules`, `.claude`, and `.coding-friend` during sync.
+
+### `cf dev restart`
+
+Reinstalls the local dev plugin by running `cf dev off` then `cf dev on` in sequence:
+
+```bash
+cf dev restart
+```
+
+Use this when the install state is broken or out of sync (e.g. after a failed `cf dev off`). It reuses the local path saved in the dev state file — no need to specify it again. If dev mode was already OFF, it skips the off step and just runs `cf dev on`.
 
 ## When to Use
 
