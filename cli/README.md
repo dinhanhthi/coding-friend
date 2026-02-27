@@ -31,6 +31,8 @@ cf update --statusline  # Update only the statusline
 cf dev on [path]     # Switch to local plugin source for development
 cf dev off           # Switch back to remote marketplace
 cf dev status        # Show current dev mode (local or remote)
+cf dev sync          # Sync local changes to cache (no version bump needed)
+cf dev restart       # Reinstall local dev plugin (off + on)
 cf help              # Show all commands
 ```
 

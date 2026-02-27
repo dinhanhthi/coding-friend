@@ -248,6 +248,27 @@ export async function devSyncCommand(): Promise<void> {
   log.success(`Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`);
 }
 
+export async function devRestartCommand(): Promise<void> {
+  const state = getDevState();
+
+  if (!ensureClaude()) return;
+
+  const localPath = state?.localPath;
+
+  console.log(`\n=== ${chalk.cyan("Restarting dev mode")} ===\n`);
+
+  // Turn off first (skip if already off)
+  if (state) {
+    await devOffCommand();
+    console.log();
+  } else {
+    log.info("Dev mode was OFF — skipping off step.");
+  }
+
+  // Turn on with the saved path (or cwd)
+  await devOnCommand(localPath);
+}
+
 export async function devStatusCommand(): Promise<void> {
   const state = getDevState();
   const source = getMarketplaceSource();
