@@ -84,11 +84,19 @@ cf mcp [path]        # Setup MCP server for LLM integration
                      # [path] is optional, default is `docs/learn`
                      # This prints a JSON config snippet to add to your client's MCP
 cf statusline        # Setup coding-friend statusline
-cf update            # Update plugin + fix statusline
+cf update            # Update plugin + CLI + statusline
+cf update --cli      # Update only the CLI (npm package)
+cf update --plugin   # Update only the Claude Code plugin
+cf update --statusline  # Update only the statusline
+cf dev on [path]     # Switch to local plugin source for development
+cf dev off           # Switch back to remote marketplace
+cf dev status        # Show current dev mode (local or remote)
+cf dev sync          # Sync local changes to cache (no version bump needed)
+cf dev restart       # Reinstall local dev plugin (off + on)
 cf help              # Show all commands
 ```
 
-Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on install and update.
+Tab completion is automatically added to `~/.zshrc` (or `~/.bashrc`) on first install and kept up-to-date automatically on every `cf update`.
 
 ### 🛠️ Other stuffs
 
