@@ -1,6 +1,6 @@
 # Changelog (CLI)
 
-> Plugin changelog: [`docs/CHANGELOG.md`](../docs/CHANGELOG.md)
+> Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
 ## v1.2.0
 
