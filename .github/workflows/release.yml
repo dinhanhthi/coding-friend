@@ -33,7 +33,7 @@ jobs:
               if (header == tag) { found=1; next }
             }
             found { print }
-          ' docs/CHANGELOG.md)
+          ' plugin/CHANGELOG.md)
 
           if [ -z "$BODY" ]; then
             echo "::warning::No changelog entry found for $TAG, using default message"

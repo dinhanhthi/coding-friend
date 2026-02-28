@@ -5,7 +5,7 @@ import type { ChangelogEntry, ChangelogChange } from "./types";
 const repoRoot = path.join(process.cwd(), "..");
 
 export function getPluginChangelog(): string {
-  return fs.readFileSync(path.join(repoRoot, "docs/CHANGELOG.md"), "utf-8");
+  return fs.readFileSync(path.join(repoRoot, "plugin/CHANGELOG.md"), "utf-8");
 }
 
 export function getCliChangelog(): string {
