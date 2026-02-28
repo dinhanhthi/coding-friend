@@ -58,14 +58,16 @@ coding-friend/
 │       ├── writer.md                # Lightweight doc writer
 │       └── writer-deep.md           # Deep reasoning doc writer
 │
-├── lib/
-│   ├── learn-host/              # Next.js static site for learning docs
-│   │   ├── src/app/             # App Router pages
-│   │   ├── src/components/      # UI components
-│   │   └── src/lib/             # Build-time doc loading
-│   └── learn-mcp/               # MCP server for LLM integration
-│       ├── src/tools/           # 9 MCP tools (read/write/track)
-│       └── src/lib/             # Shared docs/knowledge logic
+├── cli/                         # CLI tool (published as coding-friend-cli)
+│   ├── src/                     # CLI source code
+│   └── lib/
+│       ├── learn-host/          # Next.js static site for learning docs
+│       │   ├── src/app/         # App Router pages
+│       │   ├── src/components/  # UI components
+│       │   └── src/lib/         # Build-time doc loading
+│       └── learn-mcp/           # MCP server for LLM integration
+│           ├── src/tools/       # 9 MCP tools (read/write/track)
+│           └── src/lib/         # Shared docs/knowledge logic
 │
 └── docs/                        # Project docs + generated docs
     ├── architecture.md          # This file
@@ -200,7 +202,7 @@ Exit codes:
 - `plugin/skills/` — auto-discovered by Claude Code
 - `plugin/agents/` — subagent definitions
 
-Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/`, `lib/` are excluded.
+Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/` are excluded.
 
 ---
 

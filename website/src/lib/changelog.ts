@@ -14,14 +14,14 @@ export function getCliChangelog(): string {
 
 export function getLearnHostChangelog(): string {
   return fs.readFileSync(
-    path.join(repoRoot, "lib/learn-host/CHANGELOG.md"),
+    path.join(repoRoot, "cli/lib/learn-host/CHANGELOG.md"),
     "utf-8",
   );
 }
 
 export function getLearnMcpChangelog(): string {
   return fs.readFileSync(
-    path.join(repoRoot, "lib/learn-mcp/CHANGELOG.md"),
+    path.join(repoRoot, "cli/lib/learn-mcp/CHANGELOG.md"),
     "utf-8",
   );
 }

@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsup src/index.ts src/postinstall.ts --format esm --dts --clean",
     "postinstall": "test -f dist/postinstall.js && node dist/postinstall.js || true",
-    "prepublishOnly": "npm run build && node scripts/bundle-libs.js",
+    "prepublishOnly": "npm run build",
     "dev": "tsx src/index.ts",
     "watch": "tsup src/index.ts src/postinstall.ts --format esm --dts --watch",
     "test": "vitest run",

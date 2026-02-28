@@ -19,7 +19,7 @@ Run the app directly without the CLI — useful when working on the UI itself.
 ### 1. Install dependencies
 
 ```bash
-cd lib/learn-host
+cd cli/lib/learn-host
 npm install
 ```
 
@@ -62,7 +62,7 @@ Content here...
 
 ```bash
 # Point to this repo's own learn docs (if they exist)
-DOCS_DIR=../../docs/learn npm run dev
+DOCS_DIR=../../../docs/learn npm run dev
 
 # Or point to any other project's docs
 DOCS_DIR=/path/to/your/project/docs/learn npm run dev
