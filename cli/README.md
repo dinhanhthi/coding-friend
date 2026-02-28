@@ -75,6 +75,22 @@ npm ls -g coding-friend-cli
 #└── coding-friend-cli@1.1.1 -> ./../../../../../git/coding-friend/cli
 ```
 
+### Running tests
+
+Tests are written with [Vitest](https://vitest.dev/) and live in `src/lib/__tests__/`.
+
+```bash
+cd cli
+
+# Run all tests once
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
+```
+
+Current coverage: `lib/json.ts`, `lib/paths.ts`, `lib/exec.ts`.
+
 ## Publish CLI to npm
 
 Publishing is automated via GitHub Actions (`.github/workflows/publish-cli.yml`). Push a tag with the `cli-v*` prefix to trigger it:
