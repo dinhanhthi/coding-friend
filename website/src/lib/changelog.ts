@@ -73,17 +73,19 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   const lines = markdown.split("\n");
 
   let currentVersion: string | null = null;
+  let currentUnpublished = false;
   let currentChanges: ChangelogChange[] = [];
   let inSecuritySection = false;
 
   for (const line of lines) {
     // Version header
-    const versionMatch = line.match(/^## (v[\d.]+)/);
+    const versionMatch = line.match(/^## (v[\d.]+)(\s+\(unpublished\))?/);
     if (versionMatch) {
       if (currentVersion) {
-        entries.push({ version: currentVersion, changes: currentChanges });
+        entries.push({ version: currentVersion, unpublished: currentUnpublished, changes: currentChanges });
       }
       currentVersion = versionMatch[1];
+      currentUnpublished = !!versionMatch[2];
       currentChanges = [];
       inSecuritySection = false;
       continue;
@@ -113,7 +115,7 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   }
 
   if (currentVersion) {
-    entries.push({ version: currentVersion, changes: currentChanges });
+    entries.push({ version: currentVersion, unpublished: currentUnpublished, changes: currentChanges });
   }
 
   return entries;
