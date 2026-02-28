@@ -53,8 +53,8 @@ function findProjectRoot(from: string): string {
     }
     dir = path.dirname(dir);
   }
-  // Fallback: assume learn-host is at <root>/lib/learn-host
-  return path.resolve(from, "../..");
+  // Fallback: assume learn-host is at <root>/cli/lib/learn-host
+  return path.resolve(from, "../../..");
 }
 
 function resolvePath(p: string, base: string): string {

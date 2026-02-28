@@ -18,7 +18,7 @@ Run the server directly without the CLI — useful when working on tools or docs
 ### 1. Install dependencies
 
 ```bash
-cd lib/learn-mcp
+cd cli/lib/learn-mcp
 npm install
 ```
 
@@ -34,7 +34,7 @@ npx tsx src/index.ts /path/to/your/docs/learn
 LEARN_DOCS_DIR=/path/to/your/docs/learn npx tsx src/index.ts
 
 # Point to this repo's own learn docs
-npx tsx src/index.ts ../../docs/learn
+npx tsx src/index.ts ../../../docs/learn
 ```
 
 The server communicates over stdio (MCP protocol), so you won't see output when running manually — it's meant to be connected to Claude.
@@ -49,7 +49,7 @@ Add to your project's `.mcp.json`:
     "coding-friend-learn": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "/path/to/coding-friend/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
+      "args": ["tsx", "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
     }
   }
 }
@@ -62,7 +62,7 @@ Or for Claude Desktop, add to `~/Library/Application Support/Claude/claude_deskt
   "mcpServers": {
     "coding-friend-learn": {
       "command": "npx",
-      "args": ["tsx", "/path/to/coding-friend/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
+      "args": ["tsx", "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
     }
   }
 }

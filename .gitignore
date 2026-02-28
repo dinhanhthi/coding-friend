@@ -38,12 +38,4 @@ docs/research
 # coding-friend
 .coding-friend/
 
-# Sub-package build artifacts
-lib/learn-host/node_modules/
-lib/learn-host/.next/
-lib/learn-host/out/
-lib/learn-host/public/_pagefind/
-lib/learn-mcp/node_modules/
-lib/learn-mcp/dist/
-
 .next/

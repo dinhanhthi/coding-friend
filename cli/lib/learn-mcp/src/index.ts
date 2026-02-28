@@ -8,7 +8,7 @@ const docsDir = path.resolve(rawDir);
 
 const server = new McpServer({
   name: "coding-friend-learn",
-  version: "1.0.0",
+  version: "0.0.1",
 });
 
 registerAllTools(server, docsDir);
