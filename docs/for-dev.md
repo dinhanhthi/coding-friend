@@ -4,6 +4,22 @@
 
 Please refer to [cli/README.md](../cli/README.md) for CLI development.
 
+### Running CLI tests
+
+Tests are written with [Vitest](https://vitest.dev/) and live in `cli/src/lib/__tests__/`.
+
+```bash
+cd cli
+
+# Run all tests once
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
+```
+
+Current coverage: `lib/json.ts`, `lib/paths.ts`, `lib/exec.ts`.
+
 ## Plugin Development (local source)
 
 ### Prerequisites
@@ -132,7 +148,7 @@ cf dev sync
 
 It copies all files from your local source directly into the existing cache directory for the current version — no uninstall, no reinstall, no version bump. The whole cycle takes ~1 second.
 
-**Recommended dev workflow:**
+**💎 Recommended dev workflow:**
 
 ```bash
 # One-time setup
