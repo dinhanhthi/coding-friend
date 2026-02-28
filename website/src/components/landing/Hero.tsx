@@ -19,7 +19,7 @@ export default function Hero() {
             priority
           />
           <p className="mb-4 text-sm font-medium tracking-wide text-slate-400 uppercase">
-            Claude Code Plugin
+            Claude Code Plugin · CLI · Learn Host · Learn MCP
           </p>
           <h1 className="text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
@@ -30,6 +30,25 @@ export default function Hero() {
             commits, code review, and knowledge capture across your engineering
             workflow.
           </p>
+
+          {/* Ecosystem pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
+              Plugin
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 font-mono text-sky-300">
+              CLI
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-emerald-300">
+              Learn Host
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 font-mono text-orange-300">
+              Learn MCP
+            </span>
+          </div>
 
           {/* Alpha notice */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-400">

@@ -97,7 +97,7 @@ export default function HowItWorks() {
     <section id="how-it-works" className="py-20" ref={sectionRef}>
       <Container>
         <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-white">How It Works</h2>
+          <h2 className="text-3xl font-bold text-white">How The Plugin Works</h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             A disciplined workflow from planning to knowledge capture.
           </p>
