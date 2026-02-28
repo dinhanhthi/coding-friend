@@ -11,6 +11,7 @@ const tagLabels = {
 
 interface Props {
   entry: ChangelogEntryType;
+  isLatest?: boolean;
 }
 
 function renderInline(text: string) {
@@ -30,7 +31,7 @@ function renderInline(text: string) {
   );
 }
 
-export default function ChangelogEntryCard({ entry }: Props) {
+export default function ChangelogEntryCard({ entry, isLatest }: Props) {
   // Group changes by tag
   const grouped = entry.changes.reduce(
     (acc, change) => {
@@ -60,6 +61,16 @@ export default function ChangelogEntryCard({ entry }: Props) {
       {/* Version header */}
       <div className="mb-4 flex items-center gap-3">
         <h3 className="text-xl font-bold text-white">{entry.version}</h3>
+        {isLatest && (
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+            Latest
+          </span>
+        )}
+        {entry.unpublished && (
+          <span className="rounded-full border border-dashed border-slate-500/30 bg-slate-500/10 px-2.5 py-0.5 text-xs font-medium text-slate-400">
+            Unpublished
+          </span>
+        )}
       </div>
 
       {/* Changes grouped by tag */}
