@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   cacheComponents: true,
   reactCompiler: true,
+  turbopack: {
+    root: __dirname,
+  },
   env: {
     NEXT_PUBLIC_PLUGIN_VERSION: rootPkg.version,
   },
