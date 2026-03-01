@@ -82,7 +82,11 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
     const versionMatch = line.match(/^## (v[\d.]+)(\s+\(unpublished\))?/);
     if (versionMatch) {
       if (currentVersion) {
-        entries.push({ version: currentVersion, unpublished: currentUnpublished, changes: currentChanges });
+        entries.push({
+          version: currentVersion,
+          unpublished: currentUnpublished,
+          changes: currentChanges,
+        });
       }
       currentVersion = versionMatch[1];
       currentUnpublished = !!versionMatch[2];
@@ -115,7 +119,11 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   }
 
   if (currentVersion) {
-    entries.push({ version: currentVersion, unpublished: currentUnpublished, changes: currentChanges });
+    entries.push({
+      version: currentVersion,
+      unpublished: currentUnpublished,
+      changes: currentChanges,
+    });
   }
 
   return entries;

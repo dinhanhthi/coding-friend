@@ -30,6 +30,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 ## Available Skills
 
 ### Slash Commands (user triggers)
+
 - `/cf-ask [question]` — Quick Q&A about codebase → docs/memory/
 - `/cf-plan [task]` — Brainstorm and write implementation plan
 - `/cf-review [target]` — Dispatch code review to subagent
@@ -42,6 +43,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
 
 ### Auto-Invoked (load when relevant)
+
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — When debugging: investigate → analyze → test → fix
 - **cf-code-review** — When reviewing code: plan, quality, security, testing
@@ -69,6 +71,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 ## CLI (coding-friend-cli)
 
 Install via `npm i -g coding-friend-cli`:
+
 - `cf init` — Interactive project setup
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server

@@ -3,10 +3,10 @@ name: Publish CLI to npm
 on:
   push:
     tags:
-      - 'cli-v*'
+      - "cli-v*"
 
 permissions:
-  id-token: write  # Required for OIDC
+  id-token: write # Required for OIDC
   contents: write
 
 jobs:

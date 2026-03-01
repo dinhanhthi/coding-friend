@@ -40,6 +40,7 @@ Output goes to `{docsDir}/research/` (default: `docs/research/`). Check `.coding
    - Name the output files in advance
 
 **Examples of splitting:**
+
 - A git repo → split by: architecture overview, key modules, data flow, API surface, dependencies
 - A technology → split by: core concepts, API/usage, ecosystem, trade-offs, best practices
 - A comparison → split by: each option as a separate doc, then a comparison summary
@@ -58,6 +59,7 @@ For each part identified in Step 2:
 4. Each subagent writes its output file directly to the research subfolder
 
 **Subagent prompt template:**
+
 > Research the following topic in depth: [PART DESCRIPTION]
 > Key questions to answer: [QUESTIONS]
 > Use WebSearch and WebFetch to find current information.
@@ -96,33 +98,41 @@ docs/research/<slug>/
 
 ## Research Part Template
 
-```markdown
+````markdown
 # <Part Title>
 
 ## Key Questions
+
 - <question this part answers>
 
 ## Findings
 
 ### <Subtopic 1>
+
 <detailed findings with specifics>
 
 ### <Subtopic 2>
+
 <detailed findings with specifics>
 
 ## Code Examples
+
 ```<language>
 // relevant code snippets if applicable
 ```
+````
 
 ## Sources
+
 - [Source title](URL)
 - [Source title](URL)
 
 ## Notes
+
 - <additional observations>
 - <caveats or limitations>
-```
+
+````
 
 ## Summary Template
 
@@ -151,7 +161,7 @@ docs/research/<slug>/
 
 ## Recommended Next Steps
 - <actionable suggestions>
-```
+````
 
 ## Rules
 

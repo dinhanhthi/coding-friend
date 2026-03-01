@@ -9,6 +9,7 @@ The `cf-verification` skill activates before you claim a task is complete. It en
 ## When It Activates
 
 Automatically triggered when:
+
 - Completing a feature or bug fix
 - Before running `/cf-ship`
 - Before marking a task done
@@ -17,6 +18,7 @@ Automatically triggered when:
 ## Verification Checklist
 
 ### 1. Tests Pass
+
 All automated tests must pass.
 
 ```bash
@@ -29,6 +31,7 @@ your test command here
 ```
 
 Verifies:
+
 - Unit tests passing
 - Integration tests passing
 - E2E tests passing (if applicable)
@@ -36,6 +39,7 @@ Verifies:
 - No skipped tests masking problems
 
 ### 2. Changes Are Verified
+
 Your changes work as expected.
 
 ```bash
@@ -46,11 +50,13 @@ Your changes work as expected.
 ```
 
 Examples:
+
 - Feature: test new UI works, handles edge cases
 - Bug fix: reproduce original error, confirm it's gone
 - Refactor: verify same behavior, performance acceptable
 
 ### 3. No Regressions
+
 Existing functionality still works.
 
 - Previously passing tests still pass
@@ -60,6 +66,7 @@ Existing functionality still works.
 - Dependent systems compatible
 
 ### 4. Code Quality
+
 Meet minimum quality standards.
 
 ```bash
@@ -72,6 +79,7 @@ npm run coverage
 ```
 
 Verifies:
+
 - No linting errors
 - Type safety checked
 - Test coverage acceptable
@@ -79,6 +87,7 @@ Verifies:
 - Consistent with codebase standards
 
 ### 5. Documentation Updated
+
 Changes are documented.
 
 - README updated if behavior changed
@@ -126,6 +135,7 @@ Status: READY TO SHIP
 ## When to Use
 
 Use verification before:
+
 - Creating a pull request
 - Merging to main
 - Deploying to production

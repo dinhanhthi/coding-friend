@@ -19,9 +19,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 ## Workflow
 
 ### Step 1: Analyze the Conversation
+
 If `$ARGUMENTS` is provided, use it as a filter — focus only on conversation content that relates to the user's stated purpose. Otherwise, scan the full conversation.
 
 Identify:
+
 - **Features worked on**: What was built or modified?
 - **Logic flows**: How does the feature work? Key decision points?
 - **Conventions**: Patterns established (naming, structure, API design)
@@ -29,17 +31,19 @@ Identify:
 - **Gotchas**: Tricky parts, common mistakes, non-obvious behavior
 
 ### Step 2: Determine the Category
+
 Choose the right location based on **what the knowledge is about**, not just what task was performed:
 
-| Category | Location | Use For |
-|---|---|---|
-| Features | `{docsDir}/memory/features/<name>.md` | Feature-specific logic, flows, APIs |
-| Conventions | `{docsDir}/memory/conventions/<name>.md` | Project-wide patterns and rules |
-| Decisions | `{docsDir}/memory/decisions/<name>.md` | Architecture/design decision records |
-| Bugs | `{docsDir}/memory/bugs/<name>.md` | Bug root causes, fixes, and how to avoid recurrence |
-| Infrastructure | `{docsDir}/memory/infrastructure/<name>.md` | Build, deploy, CI/CD, environment setup |
+| Category       | Location                                    | Use For                                             |
+| -------------- | ------------------------------------------- | --------------------------------------------------- |
+| Features       | `{docsDir}/memory/features/<name>.md`       | Feature-specific logic, flows, APIs                 |
+| Conventions    | `{docsDir}/memory/conventions/<name>.md`    | Project-wide patterns and rules                     |
+| Decisions      | `{docsDir}/memory/decisions/<name>.md`      | Architecture/design decision records                |
+| Bugs           | `{docsDir}/memory/bugs/<name>.md`           | Bug root causes, fixes, and how to avoid recurrence |
+| Infrastructure | `{docsDir}/memory/infrastructure/<name>.md` | Build, deploy, CI/CD, environment setup             |
 
 **Category selection guide:**
+
 - Fixing a bug → `bugs/` (root cause, fix, prevention), NOT `features/`
 - Adding/changing a feature → `features/`
 - Establishing a pattern or rule → `conventions/`
@@ -51,10 +55,12 @@ Choose the right location based on **what the knowledge is about**, not just wha
 Before delegating to the writer agent, assess the complexity of the content:
 
 **Use `writer` agent (haiku)** when:
+
 - Simple feature docs, naming conventions, straightforward decisions
 - Short content with clear structure
 
 **Use `writer-deep` agent (sonnet)** when:
+
 - Complex architecture decisions with nuanced trade-offs
 - Deep technical explanations requiring careful reasoning
 - Long context that needs synthesis
@@ -64,6 +70,7 @@ Before delegating to the writer agent, assess the complexity of the content:
 Construct a write spec and invoke the appropriate writer agent via the `Task` tool.
 
 Check if the target file already exists:
+
 - File exists → `task: update`
 - File doesn't exist → `task: create`
 
@@ -104,6 +111,7 @@ existing_file_action: append
 Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 5: Confirm
+
 Read back the writer agent's output and show the user what was saved and where.
 
 ## Interpreting `$ARGUMENTS`
@@ -122,11 +130,13 @@ Read back the writer agent's output and show the user what was saved and where.
 **Default behavior**: Always auto-detect the topic name from the filtered content. Only use `$ARGUMENTS` as the literal topic name when the user explicitly indicates it (e.g., with "topic:", "save as", "call it", "name it").
 
 When `$ARGUMENTS` acts as a filter:
+
 - Use it to narrow which parts of the conversation to extract knowledge from
 - Ignore conversation content that doesn't relate to the user's stated focus
 - The topic name should be derived from the filtered content, not from `$ARGUMENTS` verbatim
 
 ## Rules
+
 - If no arguments given, scan the entire conversation for key knowledge
 - Be concise — bullet points over paragraphs
 - Include code snippets only when they clarify the point

@@ -88,7 +88,11 @@ export default function ChangelogTabs({
         {entries.map((entry, i, arr) => {
           const latestPublishedIdx = arr.findIndex((e) => !e.unpublished);
           return (
-            <ChangelogEntryCard key={entry.version} entry={entry} isLatest={i === latestPublishedIdx} />
+            <ChangelogEntryCard
+              key={entry.version}
+              entry={entry}
+              isLatest={i === latestPublishedIdx}
+            />
           );
         })}
       </div>

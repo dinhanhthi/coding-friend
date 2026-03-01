@@ -10,8 +10,15 @@ import {
   localConfigPath,
   resolvePath,
 } from "../lib/paths.js";
-import { hasShellCompletion, ensureShellCompletion } from "../lib/shell-completion.js";
-import { DEFAULT_CONFIG, type CodingFriendConfig, type LearnCategory } from "../types.js";
+import {
+  hasShellCompletion,
+  ensureShellCompletion,
+} from "../lib/shell-completion.js";
+import {
+  DEFAULT_CONFIG,
+  type CodingFriendConfig,
+  type LearnCategory,
+} from "../types.js";
 
 interface SetupStep {
   name: string;
@@ -69,8 +76,7 @@ function checkClaudePermissions(outputDir: string): boolean {
   // Check if at least a Write permission exists for the outputDir
   const homePath = outputDir.replace(homedir(), "~");
   return permissions.allow.some(
-    (rule: string) =>
-      rule.includes(outputDir) || rule.includes(homePath),
+    (rule: string) => rule.includes(outputDir) || rule.includes(homePath),
   );
 }
 
@@ -211,7 +217,9 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
 
   let categories = DEFAULT_CONFIG.learn.categories;
   if (catChoice === "custom") {
-    console.log('Enter categories (format: "name: description"). Empty line to finish.');
+    console.log(
+      'Enter categories (format: "name: description"). Empty line to finish.',
+    );
     const customCats: LearnCategory[] = [];
     let keepGoing = true;
     while (keepGoing) {
@@ -257,8 +265,10 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
   return { outputDir, categories, autoCommit, readmeIndex, isExternal };
 }
 
-
-async function setupClaudePermissions(outputDir: string, autoCommit: boolean): Promise<void> {
+async function setupClaudePermissions(
+  outputDir: string,
+  autoCommit: boolean,
+): Promise<void> {
   const resolved = resolvePath(outputDir);
   const homePath = resolved.startsWith(homedir())
     ? resolved.replace(homedir(), "~")
@@ -316,9 +326,11 @@ async function setupClaudePermissions(outputDir: string, autoCommit: boolean): P
 
   permissions.allow = [...existing, ...missing];
   settings.permissions = permissions;
-  const { readJson: _r, writeJson: _w, ...restImports } = await import(
-    "../lib/json.js"
-  );
+  const {
+    readJson: _r,
+    writeJson: _w,
+    ...restImports
+  } = await import("../lib/json.js");
   _w(settingsPath, settings);
   log.success(`Added ${missing.length} permission rules.`);
 }
@@ -344,9 +356,7 @@ function isDefaultConfig(config: CodingFriendConfig): boolean {
 
 async function saveConfig(config: CodingFriendConfig): Promise<void> {
   if (isDefaultConfig(config)) {
-    log.dim(
-      "All settings match defaults — no config file needed.",
-    );
+    log.dim("All settings match defaults — no config file needed.");
     return;
   }
 
@@ -390,11 +400,21 @@ export async function initCommand(): Promise<void> {
   const steps: SetupStep[] = [
     { name: "docs", label: "Create docs folders", done: checkDocsFolders() },
     ...(gitAvailable
-      ? [{ name: "gitignore", label: "Configure .gitignore", done: checkGitignore() }]
+      ? [
+          {
+            name: "gitignore",
+            label: "Configure .gitignore",
+            done: checkGitignore(),
+          },
+        ]
       : []),
     { name: "language", label: "Set docs language", done: checkLanguage() },
     { name: "learn", label: "Configure /cf-learn", done: checkLearnConfig() },
-    { name: "completion", label: "Setup shell tab completion", done: hasShellCompletion() },
+    {
+      name: "completion",
+      label: "Setup shell tab completion",
+      done: hasShellCompletion(),
+    },
   ];
 
   if (hasExternalDir && resolvedOutputDir) {
@@ -408,7 +428,9 @@ export async function initCommand(): Promise<void> {
   // Step 3: Present
   console.log("coding-friend setup status:");
   for (const step of steps) {
-    const status = step.done ? "\x1b[32m[done]\x1b[0m" : "\x1b[33m[pending]\x1b[0m";
+    const status = step.done
+      ? "\x1b[32m[done]\x1b[0m"
+      : "\x1b[33m[pending]\x1b[0m";
     console.log(`  ${status} ${step.label}`);
   }
   console.log();
@@ -491,10 +513,7 @@ export async function initCommand(): Promise<void> {
 
       case "permissions":
         if (resolvedOutputDir) {
-          await setupClaudePermissions(
-            resolvedOutputDir,
-            learnAutoCommit,
-          );
+          await setupClaudePermissions(resolvedOutputDir, learnAutoCommit);
         }
         break;
     }

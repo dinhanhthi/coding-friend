@@ -14,7 +14,9 @@ const program = new Command();
 
 program
   .name("cf")
-  .description("coding-friend CLI — host learning docs, setup MCP, init projects")
+  .description(
+    "coding-friend CLI — host learning docs, setup MCP, init projects",
+  )
   .version(pkg.version, "-v, --version");
 
 program
@@ -63,9 +65,7 @@ program
     await updateCommand(opts);
   });
 
-const dev = program
-  .command("dev")
-  .description("Development mode commands");
+const dev = program.command("dev").description("Development mode commands");
 
 program.addHelpText(
   "after",
@@ -75,7 +75,7 @@ Dev subcommands:
   dev off             Switch back to remote marketplace
   dev status          Show current dev mode
   dev sync            Copy local source to plugin cache
-  dev restart [path]  Reinstall local dev plugin (off + on)`
+  dev restart [path]  Reinstall local dev plugin (off + on)`,
 );
 
 dev
@@ -105,7 +105,9 @@ dev
 
 dev
   .command("sync")
-  .description("Copy local source files to plugin cache (no version bump needed)")
+  .description(
+    "Copy local source files to plugin cache (no version bump needed)",
+  )
   .action(async () => {
     const { devSyncCommand } = await import("./commands/dev.js");
     await devSyncCommand();
@@ -114,7 +116,10 @@ dev
 dev
   .command("restart")
   .description("Reinstall local dev plugin (off + on)")
-  .argument("[path]", "path to local coding-friend repo (default: saved path or cwd)")
+  .argument(
+    "[path]",
+    "path to local coding-friend repo (default: saved path or cwd)",
+  )
   .action(async (path?: string) => {
     const { devRestartCommand } = await import("./commands/dev.js");
     await devRestartCommand(path);

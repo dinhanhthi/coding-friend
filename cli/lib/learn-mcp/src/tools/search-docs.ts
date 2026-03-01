@@ -8,10 +8,7 @@ export function registerSearchDocs(server: McpServer, docsDir: string): void {
     "Full-text search across all learning docs. Searches titles, tags, and content. Optionally filter by category.",
     {
       query: z.string().describe("Search query text"),
-      category: z
-        .string()
-        .optional()
-        .describe("Limit search to this category"),
+      category: z.string().optional().describe("Limit search to this category"),
     },
     async ({ query, category }) => {
       const results = searchDocs(docsDir, query, category);

@@ -181,9 +181,7 @@ export function updateDoc(
   const today = new Date().toISOString().split("T")[0];
 
   if (updates.tags) {
-    raw.data.tags = [
-      ...new Set([...(raw.data.tags || []), ...updates.tags]),
-    ];
+    raw.data.tags = [...new Set([...(raw.data.tags || []), ...updates.tags])];
   }
   if (updates.title) {
     raw.data.title = updates.title;

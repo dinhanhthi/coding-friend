@@ -30,7 +30,7 @@ export default function Sidebar({
               }`}
             >
               <span>{cat.name.replace(/[_-]/g, " ")}</span>
-              <span className="dark:bg-navy-800 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#a0a0a01c]">
+              <span className="dark:bg-navy-800 rounded-full border border-slate-200 bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500 dark:border-[#a0a0a01c] dark:text-slate-400">
                 {cat.docCount}
               </span>
             </Link>

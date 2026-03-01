@@ -1,7 +1,19 @@
-import { existsSync, unlinkSync, readdirSync, statSync, mkdirSync, copyFileSync } from "fs";
+import {
+  existsSync,
+  unlinkSync,
+  readdirSync,
+  statSync,
+  mkdirSync,
+  copyFileSync,
+} from "fs";
 import { resolve, join } from "path";
 import { readJson, writeJson } from "../lib/json.js";
-import { devStatePath, knownMarketplacesPath, installedPluginsPath, pluginCachePath } from "../lib/paths.js";
+import {
+  devStatePath,
+  knownMarketplacesPath,
+  installedPluginsPath,
+  pluginCachePath,
+} from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import chalk from "chalk";
@@ -35,7 +47,9 @@ function isMarketplaceRegistered(): boolean {
 
 function ensureClaude(): boolean {
   if (!commandExists("claude")) {
-    log.error("Claude CLI not found. Install it first: https://docs.anthropic.com/en/docs/claude-code");
+    log.error(
+      "Claude CLI not found. Install it first: https://docs.anthropic.com/en/docs/claude-code",
+    );
     return false;
   }
   return true;
@@ -64,7 +78,9 @@ export async function devOnCommand(path?: string): Promise<void> {
   const localPath = resolve(path || process.cwd());
 
   // Verify the path contains a coding-friend plugin
-  if (!existsSync(resolve(localPath, "plugin", ".claude-plugin", "plugin.json"))) {
+  if (
+    !existsSync(resolve(localPath, "plugin", ".claude-plugin", "plugin.json"))
+  ) {
     log.error(`No plugin/.claude-plugin/plugin.json found at ${localPath}`);
     log.dim("Make sure you point to the coding-friend repo root.");
     return;
@@ -75,7 +91,12 @@ export async function devOnCommand(path?: string): Promise<void> {
 
   // Step 1: Uninstall remote plugin (if installed)
   if (isPluginInstalled()) {
-    if (!runClaude(["plugin", "uninstall", PLUGIN_ID], "Uninstalling remote plugin...")) {
+    if (
+      !runClaude(
+        ["plugin", "uninstall", PLUGIN_ID],
+        "Uninstalling remote plugin...",
+      )
+    ) {
       // Try without marketplace qualifier
       run("claude", ["plugin", "uninstall", PLUGIN_NAME]);
     }
@@ -83,17 +104,30 @@ export async function devOnCommand(path?: string): Promise<void> {
 
   // Step 2: Remove remote marketplace (if registered)
   if (isMarketplaceRegistered()) {
-    runClaude(["plugin", "marketplace", "remove", MARKETPLACE_NAME], "Removing remote marketplace...");
+    runClaude(
+      ["plugin", "marketplace", "remove", MARKETPLACE_NAME],
+      "Removing remote marketplace...",
+    );
   }
 
   // Step 3: Add local marketplace
-  if (!runClaude(["plugin", "marketplace", "add", localPath], "Adding local marketplace...")) {
+  if (
+    !runClaude(
+      ["plugin", "marketplace", "add", localPath],
+      "Adding local marketplace...",
+    )
+  ) {
     log.error("Failed to add local marketplace. Aborting.");
     return;
   }
 
   // Step 4: Install from local
-  if (!runClaude(["plugin", "install", PLUGIN_ID], "Installing plugin from local source...")) {
+  if (
+    !runClaude(
+      ["plugin", "install", PLUGIN_ID],
+      "Installing plugin from local source...",
+    )
+  ) {
     // Try without marketplace qualifier
     if (!runClaude(["plugin", "install", PLUGIN_NAME], "Retrying install...")) {
       log.error("Failed to install local plugin.");
@@ -109,7 +143,9 @@ export async function devOnCommand(path?: string): Promise<void> {
   writeJson(devStatePath(), devState as unknown as Record<string, unknown>);
 
   console.log();
-  log.success(`Dev mode ${chalk.green("ON")} — using local plugin from ${chalk.cyan(localPath)}`);
+  log.success(
+    `Dev mode ${chalk.green("ON")} — using local plugin from ${chalk.cyan(localPath)}`,
+  );
   log.dim("Restart Claude Code to see changes.");
 }
 
@@ -122,28 +158,48 @@ export async function devOffCommand(): Promise<void> {
 
   if (!ensureClaude()) return;
 
-  console.log(`\n=== ${chalk.yellow("Switching back to remote marketplace")} ===\n`);
+  console.log(
+    `\n=== ${chalk.yellow("Switching back to remote marketplace")} ===\n`,
+  );
 
   // Step 1: Uninstall local plugin
   if (isPluginInstalled()) {
-    if (!runClaude(["plugin", "uninstall", PLUGIN_ID], "Uninstalling local plugin...")) {
+    if (
+      !runClaude(
+        ["plugin", "uninstall", PLUGIN_ID],
+        "Uninstalling local plugin...",
+      )
+    ) {
       run("claude", ["plugin", "uninstall", PLUGIN_NAME]);
     }
   }
 
   // Step 2: Remove local marketplace
   if (isMarketplaceRegistered()) {
-    runClaude(["plugin", "marketplace", "remove", MARKETPLACE_NAME], "Removing local marketplace...");
+    runClaude(
+      ["plugin", "marketplace", "remove", MARKETPLACE_NAME],
+      "Removing local marketplace...",
+    );
   }
 
   // Step 3: Add remote marketplace
-  if (!runClaude(["plugin", "marketplace", "add", REMOTE_URL], "Adding remote marketplace...")) {
+  if (
+    !runClaude(
+      ["plugin", "marketplace", "add", REMOTE_URL],
+      "Adding remote marketplace...",
+    )
+  ) {
     log.error("Failed to add remote marketplace.");
     return;
   }
 
   // Step 4: Install from remote
-  if (!runClaude(["plugin", "install", PLUGIN_ID], "Installing plugin from remote...")) {
+  if (
+    !runClaude(
+      ["plugin", "install", PLUGIN_ID],
+      "Installing plugin from remote...",
+    )
+  ) {
     if (!runClaude(["plugin", "install", PLUGIN_NAME], "Retrying install...")) {
       log.error("Failed to install remote plugin.");
       return;
@@ -168,7 +224,9 @@ interface MarketplaceEntry {
 }
 
 function getMarketplaceSource(): { type: string; location: string } | null {
-  const data = readJson<Record<string, MarketplaceEntry>>(knownMarketplacesPath());
+  const data = readJson<Record<string, MarketplaceEntry>>(
+    knownMarketplacesPath(),
+  );
   if (!data || !(MARKETPLACE_NAME in data)) return null;
   const entry = data[MARKETPLACE_NAME];
   const src = entry.source;
@@ -182,7 +240,11 @@ function getMarketplaceSource(): { type: string; location: string } | null {
   return null;
 }
 
-function copyDirRecursive(src: string, dest: string, fileCount = { n: 0 }): void {
+function copyDirRecursive(
+  src: string,
+  dest: string,
+  fileCount = { n: 0 },
+): void {
   if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
   for (const entry of readdirSync(src)) {
     const srcPath = join(src, entry);
@@ -207,7 +269,9 @@ export async function devSyncCommand(): Promise<void> {
   const pluginSrcDir = join(localPath, "plugin");
 
   if (!existsSync(pluginSrcDir)) {
-    log.error(`No plugin/ directory found at ${localPath}. Make sure you point to the coding-friend repo root.`);
+    log.error(
+      `No plugin/ directory found at ${localPath}. Make sure you point to the coding-friend repo root.`,
+    );
     return;
   }
 
@@ -217,7 +281,7 @@ export async function devSyncCommand(): Promise<void> {
   let cacheVersionDir: string | null = null;
   if (existsSync(cacheBase)) {
     const versions = readdirSync(cacheBase).filter((v) =>
-      statSync(join(cacheBase, v)).isDirectory()
+      statSync(join(cacheBase, v)).isDirectory(),
     );
     if (versions.length > 0) {
       // Use the most recently modified version dir
@@ -228,13 +292,15 @@ export async function devSyncCommand(): Promise<void> {
             statSync(join(cacheBase, b)).mtimeMs -
             statSync(join(cacheBase, a)).mtimeMs
           );
-        })[0]
+        })[0],
       );
     }
   }
 
   if (!cacheVersionDir) {
-    log.error("No cached plugin version found. Run `cf dev off && cf dev on` first.");
+    log.error(
+      "No cached plugin version found. Run `cf dev off && cf dev on` first.",
+    );
     return;
   }
 
@@ -245,7 +311,9 @@ export async function devSyncCommand(): Promise<void> {
   const fileCount = { n: 0 };
   copyDirRecursive(pluginSrcDir, cacheVersionDir, fileCount);
 
-  log.success(`Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`);
+  log.success(
+    `Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`,
+  );
 }
 
 export async function devRestartCommand(path?: string): Promise<void> {
@@ -285,12 +353,15 @@ export async function devStatusCommand(): Promise<void> {
 
   console.log();
   if (source) {
-    const label = source.type === "local"
-      ? `${chalk.green("local")} → ${chalk.cyan(source.location)}`
-      : `${chalk.blue("remote")} → ${source.location}`;
+    const label =
+      source.type === "local"
+        ? `${chalk.green("local")} → ${chalk.cyan(source.location)}`
+        : `${chalk.blue("remote")} → ${source.location}`;
     log.info(`Marketplace source: ${label}`);
   } else {
     log.warn(`Marketplace "${MARKETPLACE_NAME}" not registered.`);
   }
-  log.info(`Plugin installed: ${installed ? chalk.green("yes") : chalk.yellow("no")}`);
+  log.info(
+    `Plugin installed: ${installed ? chalk.green("yes") : chalk.yellow("no")}`,
+  );
 }

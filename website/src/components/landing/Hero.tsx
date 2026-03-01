@@ -52,11 +52,22 @@ export default function Hero() {
 
           {/* Alpha notice */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-400">
-            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>
-              Early stage — expect rough edges and frequent changes. Want to shape it?{" "}
+              Early stage — expect rough edges and frequent changes. Want to
+              shape it?{" "}
               <a
                 href="https://github.com/dinhanhthi/coding-friend"
                 target="_blank"
