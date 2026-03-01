@@ -1,10 +1,19 @@
-# Coding Friend
-
 <p align="center">
   <img src="assets/logo.svg" alt="Coding Friend Logo" width="100" />
 </p>
 
-Lean toolkit for disciplined engineering workflows with Claude Code.
+<h1 align="center">Coding Friend</h1>
+
+<p align="center">
+  Lean toolkit for disciplined engineering workflows with Claude Code.
+</p>
+
+<p align="center">
+  <a href="https://cf.dinhanhthi.com">Website</a> ·
+  <a href="https://cf.dinhanhthi.com/docs">Documentation</a> ·
+  <a href="https://cf.dinhanhthi.com/changelog">Changelog</a> ·
+  <a href="https://github.com/dinhanhthi/coding-friend/issues">Report Bug</a>
+</p>
 
 > [!WARNING]
 > This repository is in heavy development, use at your own risk.
@@ -98,6 +107,27 @@ cf help              # Show all commands
 ```
 
 Learn more about the CLI in the [CLI documentation](cli/README.md).
+
+## Development
+
+From the repo root:
+
+```bash
+npm run dev            # Start all sub-projects in parallel (see ports below)
+npm run format         # Format all code across the repo
+npm run format:check   # Check formatting without modifying files
+```
+
+`npm run dev` runs these in parallel with colored output:
+
+| Sub-project | Command             | Port                                           |
+| ----------- | ------------------- | ---------------------------------------------- |
+| CLI         | `npm run watch`     | — (tsup build watch)                           |
+| Website     | `npm run dev`       | [http://localhost:3000](http://localhost:3000) |
+| Learn Host  | `npm run dev`       | [http://localhost:3333](http://localhost:3333) |
+| Learn MCP   | `npm run dev:watch` | — (tsc watch)                                  |
+
+Each sub-project has its own README with more details, check section Further Reading.
 
 ## Further Reading
 
