@@ -35,6 +35,16 @@ These skills activate automatically based on what you're doing, without needing 
 | `cf-verification` | Before claiming task complete   | Ensures tests pass, changes verified, no regressions introduced                                   |
 | `cf-learn`        | After substantial new knowledge | Auto-extracts learnings to docs/learn/ for future reference                                       |
 
+## Custom Skill Guides
+
+You can extend any built-in skill with your own guidance by creating a `.md` file in `.coding-friend/skills/` (per-project) or `~/.coding-friend/skills/` (global). Each file supports 3 optional sections:
+
+- **`## Before`** — runs before the builtin workflow starts
+- **`## Rules`** — additional rules applied throughout the workflow
+- **`## After`** — runs after the final step completes
+
+For example, `.coding-friend/skills/cf-commit.md` can add custom commit rules or trigger `/changelog` after each commit. See [Configuration](/docs/configuration/config-json#custom-skill-guides) for full details.
+
 ## Next Steps
 
 Explore individual skill documentation to learn how each one works and when to use it. Start with `/cf-plan` for designing new features and `/cf-fix` for resolving bugs.

@@ -40,9 +40,11 @@ export function getAllDocSlugs(): string[] {
 
 export function extractHeadings(content: string) {
   const headings: { id: string; text: string; level: number }[] = [];
+  // Strip fenced code blocks before extracting headings
+  const stripped = content.replace(/```[\s\S]*?```/g, "");
   const regex = /^(#{2,3})\s+(.+)$/gm;
   let match;
-  while ((match = regex.exec(content)) !== null) {
+  while ((match = regex.exec(stripped)) !== null) {
     const text = match[2].trim();
     const id = text
       .toLowerCase()

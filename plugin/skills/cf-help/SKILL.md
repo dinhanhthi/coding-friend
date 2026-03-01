@@ -68,6 +68,38 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 - Top-level `language` setting applies to all doc-generating skills (default: `en`)
 - Respect `.coding-friend/ignore` patterns — do not read blocked directories
 
+## Custom Skill Guides
+
+Users can extend built-in skills with custom guidance by creating `.md` files:
+
+- **Local** (per-project): `.coding-friend/skills/<skill-name>.md`
+- **Global** (all projects): `~/.coding-friend/skills/<skill-name>.md`
+- Local overrides global (same filename)
+
+### Format
+
+Files support 3 optional sections:
+
+- `## Before` — runs BEFORE Step 1 of the builtin workflow
+- `## Rules` — applies as additional rules THROUGHOUT the workflow
+- `## After` — runs AFTER the final step completes
+
+Example `.coding-friend/skills/cf-commit.md`:
+```markdown
+## Before
+- Check branch naming convention
+
+## Rules
+- Always include ticket number in subject
+
+## After
+- Run /changelog if commit type is feat: or fix:
+```
+
+### Reload
+
+Custom guides are loaded at session start. After editing a guide, use `/clear` to reload.
+
 ## CLI (coding-friend-cli)
 
 Install via `npm i -g coding-friend-cli`:
