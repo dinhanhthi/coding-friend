@@ -65,7 +65,18 @@ program
 
 const dev = program
   .command("dev")
-  .description("Switch between local and remote plugin for development");
+  .description("Development mode commands");
+
+program.addHelpText(
+  "after",
+  `
+Dev subcommands:
+  dev on [path]       Switch to local plugin source
+  dev off             Switch back to remote marketplace
+  dev status          Show current dev mode
+  dev sync            Copy local source to plugin cache
+  dev restart [path]  Reinstall local dev plugin (off + on)`
+);
 
 dev
   .command("on")
