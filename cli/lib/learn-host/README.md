@@ -70,7 +70,7 @@ DOCS_DIR=/path/to/your/project/docs/learn npm run dev
 
 App runs at `http://localhost:3333`.
 
-> **Note:** `npm run dev` skips the Pagefind search index (built only during `npm run build`). Search won't work in dev mode, but all other features will.
+> **Note:** `npm run dev` does not rebuild the Pagefind search index. If you've previously run `npm run build`, search will still work but uses the old index — new or edited docs won't appear in search results until you build again.
 
 ### 4. Full build (with search)
 

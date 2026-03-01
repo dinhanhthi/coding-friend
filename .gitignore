@@ -38,4 +38,16 @@ docs/research
 # coding-friend
 .coding-friend/
 
+# Build artifacts
 .next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Pagefind (generated at build time)
+_pagefind/
+
+# Website
+website/public/llms.txt
+website/public/llms-full.txt
