@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # /cf-remember
 
-Extract and save project knowledge. Topic: **$ARGUMENTS**
+Extract and save project knowledge. User input: **$ARGUMENTS**
 
 ## Purpose
 
@@ -19,7 +19,9 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 ## Workflow
 
 ### Step 1: Analyze the Conversation
-Review the current conversation and identify:
+If `$ARGUMENTS` is provided, use it as a filter — focus only on conversation content that relates to the user's stated purpose. Otherwise, scan the full conversation.
+
+Identify:
 - **Features worked on**: What was built or modified?
 - **Logic flows**: How does the feature work? Key decision points?
 - **Conventions**: Patterns established (naming, structure, API design)
@@ -27,13 +29,22 @@ Review the current conversation and identify:
 - **Gotchas**: Tricky parts, common mistakes, non-obvious behavior
 
 ### Step 2: Determine the Category
-Choose the right location:
+Choose the right location based on **what the knowledge is about**, not just what task was performed:
 
 | Category | Location | Use For |
 |---|---|---|
-| Feature docs | `{docsDir}/memory/features/<name>.md` | Feature-specific logic, flows, APIs |
+| Features | `{docsDir}/memory/features/<name>.md` | Feature-specific logic, flows, APIs |
 | Conventions | `{docsDir}/memory/conventions/<name>.md` | Project-wide patterns and rules |
 | Decisions | `{docsDir}/memory/decisions/<name>.md` | Architecture/design decision records |
+| Bugs | `{docsDir}/memory/bugs/<name>.md` | Bug root causes, fixes, and how to avoid recurrence |
+| Infrastructure | `{docsDir}/memory/infrastructure/<name>.md` | Build, deploy, CI/CD, environment setup |
+
+**Category selection guide:**
+- Fixing a bug → `bugs/` (root cause, fix, prevention), NOT `features/`
+- Adding/changing a feature → `features/`
+- Establishing a pattern or rule → `conventions/`
+- Choosing between approaches → `decisions/`
+- Build/deploy/tooling knowledge → `infrastructure/`
 
 ### Step 3: Assess Complexity
 
@@ -95,9 +106,28 @@ Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessm
 ### Step 5: Confirm
 Read back the writer agent's output and show the user what was saved and where.
 
+## Interpreting `$ARGUMENTS`
+
+`$ARGUMENTS` is free-form user input. It can express:
+
+1. **A focus/filter** (most common) — the main idea, purpose, or requirement that narrows what to remember from the conversation.
+   - Example: `/cf-remember the auth flow` → filter conversation for auth-related knowledge
+   - Example: `/cf-remember why we chose Redis` → focus on that specific decision
+   - Example: `/cf-remember gotchas from the migration` → extract only gotchas related to migration
+
+2. **An explicit topic name** — only when the user clearly specifies a filename or category.
+   - Example: `/cf-remember topic:caching-strategy` → use "caching-strategy" as the topic name
+   - Example: `/cf-remember save as conventions/api-naming` → use the explicit path
+
+**Default behavior**: Always auto-detect the topic name from the filtered content. Only use `$ARGUMENTS` as the literal topic name when the user explicitly indicates it (e.g., with "topic:", "save as", "call it", "name it").
+
+When `$ARGUMENTS` acts as a filter:
+- Use it to narrow which parts of the conversation to extract knowledge from
+- Ignore conversation content that doesn't relate to the user's stated focus
+- The topic name should be derived from the filtered content, not from `$ARGUMENTS` verbatim
+
 ## Rules
-- Use `$ARGUMENTS` as topic hint if provided
-- If no topic given, scan the entire conversation for key knowledge
+- If no arguments given, scan the entire conversation for key knowledge
 - Be concise — bullet points over paragraphs
 - Include code snippets only when they clarify the point
 - Create directories as needed
