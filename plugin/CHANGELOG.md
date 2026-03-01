@@ -4,6 +4,10 @@
 
 ## v0.0.2 (unpublished)
 
+- Add custom skill guides: extend built-in skills with user-defined Before/Rules/After sections in `.coding-friend/skills/<skill-name>.md`
+- Add validation for custom guides: warn on wrong skill names, format errors, with "did you mean?" suggestions
+- Show guide warnings prominently at session start via `<guide-warnings>` block
+- Fix: exclude code blocks when extracting headings for Table of Contents (fixes duplicate key warnings in website docs)
 - Redesign website homepage to showcase full ecosystem (Plugin, CLI, Learn Host, Learn MCP)
 - Add EcosystemSection highlighting 4-tool relationships with visual `/cf-learn` pipeline
 - Add DifferentiatorSection emphasizing Simplicity and `/cf-learn` as core differentiators
