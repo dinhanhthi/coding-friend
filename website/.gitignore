@@ -1,8 +1,0 @@
-node_modules
-.next
-out
-public/_pagefind
-public/llms.txt
-public/llms-full.txt
-*.tsbuildinfo
-next-env.d.ts
