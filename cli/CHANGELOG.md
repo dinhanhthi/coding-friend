@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.2.1 (unpublished)
+## v1.2.1 (2026-03-01)
 
 - Show `cf dev` subcommands in `cf help` output
 
