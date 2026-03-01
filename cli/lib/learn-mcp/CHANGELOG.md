@@ -3,6 +3,7 @@
 ## v0.0.2 (unpublished)
 
 - Add support for coding-friend-cli integration
+- Add watch mode for development (`npm run dev`)
 
 ## v0.0.1
 

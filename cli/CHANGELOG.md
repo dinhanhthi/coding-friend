@@ -7,8 +7,12 @@
 - `cf dev on [path]`: Switch to local plugin source for development
 - `cf dev off`: Switch back to remote marketplace
 - `cf dev status`: Show current dev mode
+- `cf dev sync`: Hot-reload plugin changes during development
+- `cf dev restart [path]`: Restart dev mode with updated path
 - Shell completion: Add support for path completion in `cf dev on [path]`
 - Shell completion: Update logic now replaces outdated blocks instead of skipping
+- Fix `cf update` running wrong commands and downgrading itself
+- Add Vitest setup and tests for lib utilities
 
 ## v1.1.1
 

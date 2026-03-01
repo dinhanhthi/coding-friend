@@ -10,6 +10,12 @@
 - Clarify that /cf-learn captures knowledge for human understanding, not just AI output
 - Move plugin changelog from docs/ to plugin/ subdirectory
 - Move marketplace.json to .claude-plugin/ per Claude Code convention
+- Clarify `/cf-remember` category selection: add `bugs/` and `infrastructure/` categories with explicit guide (fixes bug fixes being saved to features/)
+- Document that `$ARGUMENTS` acts as filter for conversation content, with auto-detected topic names by default
+- Enhance `/cf-commit` workflow: add Step 2 to explicitly identify conversation-related changes vs unrelated work
+- Simplify README with website and CLI references
+- Move development guides to component READMEs
+- Consolidate gitignore files into single root
 
 ## v0.0.1
 
