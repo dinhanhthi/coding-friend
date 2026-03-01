@@ -14,11 +14,12 @@ The `/cf-commit` skill creates well-formed conventional commits by analyzing you
 
 ## What It Does
 
-1. **Analyzes Staged Changes** — Reviews diffs of all staged files
-2. **Determines Type** — Classifies as feat, fix, refactor, test, docs, or chore
-3. **Generates Message** — Creates clear, descriptive commit message
-4. **Follows Convention** — Adheres to conventional commits standard
-5. **Creates Commit** — Stages all changes and commits with your message
+1. **Analyzes Changes** — Reviews diffs of all staged and unstaged files
+2. **Identifies Relevant Changes** — Separates conversation-related changes from unrelated work (only commits what you worked on in the current session)
+3. **Determines Type** — Classifies as feat, fix, refactor, test, docs, or chore
+4. **Generates Message** — Creates clear, descriptive commit message
+5. **Follows Convention** — Adheres to conventional commits standard
+6. **Creates Commit** — Stages relevant files and commits with your message
 
 ## Commit Types
 

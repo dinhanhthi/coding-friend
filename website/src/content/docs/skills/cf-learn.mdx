@@ -14,6 +14,15 @@ The `/cf-learn` skill creates learning documentation from your coding sessions. 
 
 Or run without arguments to extract learnings from the current session.
 
+## How `$ARGUMENTS` Works
+
+The optional topic argument acts as a **filter** for the conversation:
+
+- **With argument**: Focuses only on conversation content related to the topic — e.g., `/cf-learn async error handling` extracts only async/error-related knowledge
+- **Without argument**: Scans the full conversation for the most valuable learnings
+
+The topic name for the output file is always **auto-detected** from the content, not taken verbatim from your argument. Your argument narrows *what* to extract, not *what to name the file*.
+
 ## What It Does
 
 1. **Analyzes Session** — Reviews what you built and problems you solved
