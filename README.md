@@ -127,7 +127,7 @@ npm run format:check   # Check formatting without modifying files
 | Learn Host  | `npm run dev`       | [http://localhost:3333](http://localhost:3333) |
 | Learn MCP   | `npm run dev:watch` | — (tsc watch)                                  |
 
-Each sub-project has its own README with more details, check section Further Reading.
+Each sub-project has its own README with more details, check section Further Reading. For daily workflow, check [dev-release.md](docs/dev-release.md).
 
 ## Further Reading
 
