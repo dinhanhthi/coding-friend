@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.2.1 (unpublished)
+
+- Show `cf dev` subcommands in `cf help` output
+
 ## v1.2.0
 
 - `cf dev on [path]`: Switch to local plugin source for development
