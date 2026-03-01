@@ -119,3 +119,4 @@ coding-friend installs globally. No files copied into your project. On every Cla
 
 - **🤖 Automatic** (no action needed): TDD enforcement, systematic debugging (after 3 failed fixes), verification before done, privacy block (.env, credentials), scout block (node_modules, dist), prompt injection defense (content isolation), session bootstrap, rules injection, learning extraction on substantial knowledge
 - **👤 Manual** (slash commands): `cf init`, `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research`
+
