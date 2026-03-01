@@ -68,7 +68,17 @@ Or for Claude Desktop, add to `~/Library/Application Support/Claude/claude_deskt
 }
 ```
 
-### 4. Build and run compiled
+### 4. Watch mode (auto-rebuild)
+
+Keep a terminal running to auto-rebuild on every file change:
+
+```bash
+npm run dev:watch
+```
+
+Then restart the MCP server in Claude Code (`/mcp` → restart) to pick up the latest changes.
+
+### 5. Build and run compiled
 
 ```bash
 npm run build
