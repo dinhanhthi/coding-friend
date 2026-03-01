@@ -67,7 +67,7 @@ export default function ChangelogEntryCard({ entry, isLatest }: Props) {
           </span>
         )}
         {entry.unpublished && (
-          <span className="rounded-full border border-dashed border-slate-500/30 bg-slate-500/10 px-2.5 py-0.5 text-xs font-medium text-slate-400">
+          <span className="rounded-full border border-dashed border-slate-300/30 bg-slate-500/10 px-2.5 py-0.5 text-xs tracking-wide text-slate-300">
             Unpublished
           </span>
         )}
