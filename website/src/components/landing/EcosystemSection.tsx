@@ -116,7 +116,7 @@ const colorMap: Record<
     bg: "bg-violet-500/10",
     text: "text-violet-400",
     badge: "bg-violet-500/20 text-violet-300 border-violet-500/30",
-    glow: "shadow-violet-500/20",
+    glow: "shadow-violet-500/10",
   },
   sky: {
     border: "border-sky-500/40",
@@ -151,32 +151,27 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         </span>
       )}
       <div
-        className={`flex h-full flex-col gap-3 rounded-xl border p-5 transition-all duration-200 hover:shadow-lg ${
-          tool.isPrincipal
-            ? `${c.border} bg-navy-950/80 hover:shadow-violet-500/20 ring-1 ring-violet-500/20`
-            : `border-[#a0a0a03a] bg-navy-950/40 hover:${c.border} hover:${c.glow}`
-        }`}
+        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow}`}
       >
-
-      <div className="flex items-start justify-between gap-3">
-        <div className={`rounded-lg p-2 ${c.bg}`}>
-          <span className={c.text}>{tool.icon}</span>
+        <div className="flex items-start justify-between gap-3">
+          <div className={`rounded-lg p-2 ${c.bg}`}>
+            <span className={c.text}>{tool.icon}</span>
+          </div>
+          <span
+            className={`self-start rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium ${c.badge}`}
+          >
+            {tool.subtitle}
+          </span>
         </div>
-        <span
-          className={`self-start rounded-full border px-2.5 py-0.5 text-xs font-mono font-medium ${c.badge}`}
-        >
-          {tool.subtitle}
-        </span>
-      </div>
 
-      <div>
-        <h3 className="text-base font-semibold text-white">{tool.name}</h3>
-        <p className={`text-xs font-medium ${c.text}`}>{tool.tagline}</p>
-      </div>
+        <div>
+          <h3 className="text-base font-semibold text-white">{tool.name}</h3>
+          <p className={`text-xs font-medium ${c.text}`}>{tool.tagline}</p>
+        </div>
 
-      <p className="text-sm leading-relaxed text-slate-400">
-        {tool.description}
-      </p>
+        <p className="text-sm leading-relaxed text-slate-400">
+          {tool.description}
+        </p>
       </div>
     </a>
   );
@@ -215,15 +210,17 @@ export default function EcosystemSection() {
           <div className="mx-auto flex max-w-xl flex-col items-center sm:flex-row sm:justify-center">
             {learnFlow.map((step, i) => (
               <div key={step.label} className="contents">
-                <div className="flex flex-col items-center gap-1 rounded-xl border border-[#a0a0a03a] bg-navy-950/50 px-5 py-3 text-center">
-                  <code className={`!text-sm font-semibold !border-none ${step.color}`}>
+                <div className="bg-navy-950/50 flex flex-col items-center gap-1 rounded-xl border border-[#a0a0a03a] px-5 py-3 text-center">
+                  <code
+                    className={`border-none! text-sm! font-semibold ${step.color}`}
+                  >
                     {step.label}
                   </code>
                   <span className="text-xs text-slate-400">{step.desc}</span>
                 </div>
                 {i < learnFlow.length - 1 && (
                   <svg
-                    className="h-4 w-4 shrink-0 rotate-90 text-slate-600 my-2 sm:my-0 sm:mx-3 sm:rotate-0"
+                    className="my-2 h-4 w-4 shrink-0 rotate-90 text-slate-600 sm:mx-3 sm:my-0 sm:rotate-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

@@ -15,7 +15,12 @@ $ cf host          # Browse as website
 $ cf mcp           # Feed into any LLM`;
 
 const competitors = [
-  { name: "Other tools", config: "Complex setup", learn: "Manual docs", rules: "Rigid rules" },
+  {
+    name: "Other tools",
+    config: "Complex setup",
+    learn: "Manual docs",
+    rules: "Rigid rules",
+  },
 ];
 
 const simplicity = [
@@ -24,8 +29,18 @@ const simplicity = [
     description:
       "npm install once. The plugin loads into Claude Code automatically. No per-project configuration required.",
     icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+        />
       </svg>
     ),
   },
@@ -34,8 +49,18 @@ const simplicity = [
     description:
       "Skills are Markdown files. No DSL to learn. Read them, edit them, share them — they're just text.",
     icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+        />
       </svg>
     ),
   },
@@ -44,8 +69,18 @@ const simplicity = [
     description:
       "Type /cf-plan and start. Auto-invoked skills activate in the background — TDD, debugging, verification — without a thought.",
     icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
     ),
   },
@@ -55,8 +90,18 @@ const simplicity = [
       "Works with Cursor, Windsurf, Copilot, Roo Code, and more. One toolkit, every AI coding tool.",
     comingSoon: true,
     icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" />
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3"
+        />
       </svg>
     ),
   },
@@ -78,7 +123,7 @@ export default function DifferentiatorSection() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Differentiator 1: Simplicity */}
-          <div className="flex flex-col gap-6 rounded-2xl border border-[#a0a0a03a] bg-navy-950/50 p-7">
+          <div className="bg-navy-950/50 flex flex-col gap-6 rounded-2xl border border-[#a0a0a03a] p-7">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-sky-500/10 p-2.5">
                 <svg
@@ -96,8 +141,12 @@ export default function DifferentiatorSection() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Radical Simplicity</h3>
-                <p className="text-sm text-sky-400">Install once. Start using immediately.</p>
+                <h3 className="text-xl font-bold text-white">
+                  Radical Simplicity
+                </h3>
+                <p className="text-sm text-sky-400">
+                  Install once. Start using immediately.
+                </p>
               </div>
             </div>
 
@@ -117,7 +166,7 @@ export default function DifferentiatorSection() {
                     <p className="flex items-center gap-2 text-sm font-medium text-white">
                       {item.title}
                       {"comingSoon" in item && item.comingSoon && (
-                        <span className="rounded-full border border-slate-600 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-slate-500">
+                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide text-yellow-400">
                           coming soon
                         </span>
                       )}
@@ -130,7 +179,7 @@ export default function DifferentiatorSection() {
           </div>
 
           {/* Differentiator 2: cf-learn */}
-          <div className="flex flex-col gap-6 rounded-2xl border border-[#a0a0a03a] bg-navy-950/50 p-7 ring-1 ring-violet-500/10">
+          <div className="bg-navy-950/50 flex flex-col gap-6 rounded-2xl border border-[#a0a0a03a] p-7 ring-1 ring-violet-500/10">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-violet-500/10 p-2.5">
                 <svg
@@ -159,8 +208,9 @@ export default function DifferentiatorSection() {
               Vibe-coding is fast — but you risk learning nothing. Every session
               generates insights you never write down.{" "}
               <span className="font-medium text-white">/cf-learn</span> captures
-              them as human-readable docs, so <em className="text-white">you</em> actually understand
-              what was built — not just the AI.
+              them as human-readable docs, so{" "}
+              <em className="text-white">you</em> actually understand what was
+              built — not just the AI.
             </p>
 
             {/* Terminal showing cf-learn flow */}
@@ -173,7 +223,7 @@ export default function DifferentiatorSection() {
                   terminal
                 </span>
               </div>
-              <pre className="bg-navy-950 overflow-x-auto !p-4 !pt-0 font-mono text-xs leading-relaxed text-slate-300">
+              <pre className="bg-navy-950 overflow-x-auto p-4! pt-0! font-mono text-xs leading-relaxed text-slate-300">
                 {cfLearnExample.split("\n").map((line, i) => {
                   if (line.startsWith("$")) {
                     const parts = line.split(" ");

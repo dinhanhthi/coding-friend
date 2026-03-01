@@ -37,9 +37,6 @@ export default function DocsMobileNav() {
 
       {open && (
         <nav className="max-h-[60vh] space-y-4 overflow-y-auto px-4 pb-4">
-          <div className="pb-2">
-            <PagefindSearch />
-          </div>
           {docsNavigation.map((section) => (
             <div key={section.title}>
               <div className="mb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
