@@ -93,7 +93,7 @@ Example `.coding-friend/skills/cf-commit.md`:
 - Always include ticket number in subject
 
 ## After
-- Run /changelog if commit type is feat: or fix:
+- Run tests if commit type is feat: or fix:
 ```
 
 ### Reload
