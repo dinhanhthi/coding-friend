@@ -18,6 +18,7 @@ Review the code changes for: **$ARGUMENTS**
    - If `$ARGUMENTS` is a commit range (e.g., `HEAD~3..HEAD`), review those commits
 
 2. **Gather the diff:**
+
    ```bash
    git diff HEAD
    git diff --staged
@@ -38,6 +39,7 @@ Review the code changes for: **$ARGUMENTS**
    - **Suggestion**: Consider
 
 6. **Format the report:**
+
    ```
    ## Code Review: <target>
 

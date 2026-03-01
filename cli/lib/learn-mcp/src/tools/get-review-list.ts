@@ -14,10 +14,7 @@ export function registerGetReviewList(
         .enum(["needs-review", "new"])
         .optional()
         .describe("Filter by specific status"),
-      limit: z
-        .number()
-        .optional()
-        .describe("Max number of results to return"),
+      limit: z.number().optional().describe("Max number of results to return"),
     },
     async ({ status, limit }) => {
       const results = getReviewList(docsDir, status, limit);

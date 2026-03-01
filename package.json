@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "private": true,
+  "scripts": {
+    "format": "prettier --write . && cd website && npx prettier --write . && cd ../cli/lib/learn-host && npx prettier --write .",
+    "format:check": "prettier --check . && cd website && npx prettier --check . && cd ../cli/lib/learn-host && npx prettier --check ."
+  },
   "author": {
     "name": "Anh-Thi Dinh",
     "email": "me@dinhanhthi.com",
@@ -12,5 +16,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dinhanhthi/coding-friend.git"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-sh": "^0.17.0"
   }
 }

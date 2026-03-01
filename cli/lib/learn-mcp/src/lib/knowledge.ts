@@ -71,7 +71,8 @@ export function getReviewList(
       lastReviewed: null,
       reviewCount: 0,
       notes: "",
-      firstSeen: doc.frontmatter.created || new Date().toISOString().split("T")[0]!,
+      firstSeen:
+        doc.frontmatter.created || new Date().toISOString().split("T")[0]!,
     };
 
     if (statusFilter && entry.status !== statusFilter) continue;

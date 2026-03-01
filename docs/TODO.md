@@ -28,6 +28,7 @@ Reference: [superpowers](https://github.com/obra/superpowers) uses symlinked ski
 ### Approach
 
 Follow superpowers' pattern:
+
 1. Single `skills/` directory shared across all platforms
 2. Platform-specific instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`)
 3. Platform adapters in dedicated directories (`.codex/`, `.opencode/`)

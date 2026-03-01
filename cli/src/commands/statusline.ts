@@ -42,9 +42,7 @@ export async function statuslineCommand(): Promise<void> {
   const settingsPath = claudeSettingsPath();
   const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
 
-  const existing = settings.statusLine as
-    | { command?: string }
-    | undefined;
+  const existing = settings.statusLine as { command?: string } | undefined;
   if (existing?.command) {
     log.warn(`Statusline already configured: ${existing.command}`);
     const overwrite = await confirm({

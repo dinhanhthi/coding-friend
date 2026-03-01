@@ -9,6 +9,7 @@ The `cf-tdd` skill automatically activates when you're writing new code. It enfo
 ## When It Activates
 
 Automatically triggered when:
+
 - Creating new functions or methods
 - Adding new modules or classes
 - Writing feature code from scratch
@@ -17,12 +18,13 @@ Automatically triggered when:
 ## The TDD Cycle
 
 ### RED: Write Failing Test
+
 Start by writing a test that describes desired behavior—it fails because the code doesn't exist yet.
 
 ```typescript
 // test/user.test.ts
-test('should hash password with bcrypt', () => {
-  const password = 'secret123';
+test("should hash password with bcrypt", () => {
+  const password = "secret123";
   const hashed = hashPassword(password);
   expect(hashed).not.toBe(password);
   expect(hashed.length).toBeGreaterThan(10);
@@ -30,22 +32,24 @@ test('should hash password with bcrypt', () => {
 ```
 
 ### GREEN: Implement Minimal Code
+
 Write the simplest code that makes the test pass. No over-engineering.
 
 ```typescript
 // src/user.ts
 export function hashPassword(password: string): string {
   // Minimal implementation to pass test
-  return 'hashed_' + password;
+  return "hashed_" + password;
 }
 ```
 
 ### REFACTOR: Improve Code
+
 Now improve the code while keeping tests green.
 
 ```typescript
 // src/user.ts
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);

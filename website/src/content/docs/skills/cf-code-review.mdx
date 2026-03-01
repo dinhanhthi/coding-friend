@@ -9,6 +9,7 @@ The `cf-code-review` skill activates during code review phases. It applies a com
 ## When It Activates
 
 Automatically triggered when:
+
 - Reviewing pull requests
 - Assessing code changes before merge
 - Checking code for quality issues
@@ -17,6 +18,7 @@ Automatically triggered when:
 ## Review Layers
 
 ### 1. Correctness
+
 Does the code do what it's supposed to do?
 
 - Logic is sound (no off-by-one errors, infinite loops)
@@ -26,6 +28,7 @@ Does the code do what it's supposed to do?
 - No obvious bugs
 
 ### 2. Security
+
 Could this code be exploited or cause data leaks?
 
 ```typescript
@@ -33,11 +36,12 @@ Could this code be exploited or cause data leaks?
 const query = `SELECT * FROM users WHERE id = ${userId}`;
 
 // GOOD: Parameterized query
-const query = 'SELECT * FROM users WHERE id = ?';
+const query = "SELECT * FROM users WHERE id = ?";
 db.query(query, [userId]);
 ```
 
 Checks:
+
 - Input validation and sanitization
 - SQL injection prevention (parameterized queries)
 - XSS protection (proper escaping)
@@ -46,6 +50,7 @@ Checks:
 - Secure defaults
 
 ### 3. Performance
+
 Is the code efficient? Will it scale?
 
 - No N+1 query patterns
@@ -56,6 +61,7 @@ Is the code efficient? Will it scale?
 - Unnecessary computations avoided
 
 ### 4. Maintainability
+
 Will future developers understand and modify this safely?
 
 - Clear variable and function names
@@ -66,6 +72,7 @@ Will future developers understand and modify this safely?
 - Consistent with codebase patterns
 
 ### 5. Test Coverage
+
 Is behavior verified by automated tests?
 
 - Critical paths have tests
@@ -98,6 +105,7 @@ Is behavior verified by automated tests?
 ## Output
 
 Review results include:
+
 - Pass/fail for each layer
 - Severity of issues (critical, major, minor)
 - Specific recommendations for improvement

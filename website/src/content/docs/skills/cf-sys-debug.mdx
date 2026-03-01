@@ -9,6 +9,7 @@ The `cf-sys-debug` skill activates when you're debugging issues. It guides you t
 ## When It Activates
 
 Automatically triggered when:
+
 - Code is failing or behaving unexpectedly
 - Tracking down a bug or error
 - Investigating performance issues
@@ -17,6 +18,7 @@ Automatically triggered when:
 ## The 4-Phase Methodology
 
 ### Phase 1: Observe
+
 Gather facts without assumptions. Don't debug in your head.
 
 - Reproduce the bug consistently
@@ -26,6 +28,7 @@ Gather facts without assumptions. Don't debug in your head.
 - Check logs and monitoring data
 
 Example:
+
 ```
 Bug: Login endpoint returns 500 error
 Facts:
@@ -37,6 +40,7 @@ Facts:
 ```
 
 ### Phase 2: Hypothesize
+
 Based on observations, form a testable hypothesis.
 
 ```
@@ -48,6 +52,7 @@ dropping email field in recent deploy.
 ```
 
 ### Phase 3: Test
+
 Verify your hypothesis. Design minimal tests.
 
 ```bash
@@ -65,6 +70,7 @@ if (!user?.email) {
 ```
 
 ### Phase 4: Fix
+
 Once root cause is confirmed, implement the fix.
 
 - Fix only the root cause, not symptoms

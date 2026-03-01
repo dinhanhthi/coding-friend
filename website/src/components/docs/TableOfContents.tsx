@@ -35,7 +35,7 @@ export default function TableOfContents({ headings }: Props) {
   return (
     <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto lg:block">
       <div className="p-4">
-        <h4 className="mb-3 border-b border-slate-600 text-xs font-semibold tracking-wider text-slate-400 uppercase pb-2">
+        <h4 className="mb-3 border-b border-slate-600 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
           On this page
         </h4>
         <ul className="space-y-1.5">

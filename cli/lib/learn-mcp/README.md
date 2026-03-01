@@ -49,7 +49,11 @@ Add to your project's `.mcp.json`:
     "coding-friend-learn": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
+      "args": [
+        "tsx",
+        "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts",
+        "/path/to/your/docs/learn"
+      ]
     }
   }
 }
@@ -62,7 +66,11 @@ Or for Claude Desktop, add to `~/Library/Application Support/Claude/claude_deskt
   "mcpServers": {
     "coding-friend-learn": {
       "command": "npx",
-      "args": ["tsx", "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts", "/path/to/your/docs/learn"]
+      "args": [
+        "tsx",
+        "/path/to/coding-friend/cli/lib/learn-mcp/src/index.ts",
+        "/path/to/your/docs/learn"
+      ]
     }
   }
 }
@@ -113,17 +121,17 @@ Content here...
 
 ## Available Tools
 
-| Tool | Type | Description |
-|------|------|-------------|
-| `list-categories` | Read | List all doc categories |
-| `list-docs` | Read | List docs (optionally filter by category or tag) |
-| `read-doc` | Read | Read a specific doc by category + slug |
-| `search-docs` | Read | Full-text search across all docs |
-| `get-review-list` | Read | Get docs needing review |
-| `create-doc` | Write | Create a new doc with frontmatter |
-| `update-doc` | Write | Append content or update tags on an existing doc |
-| `improve-doc` | Write | Replace doc content while preserving frontmatter |
-| `track-knowledge` | Write | Mark a doc as remembered / needs-review / new |
+| Tool              | Type  | Description                                      |
+| ----------------- | ----- | ------------------------------------------------ |
+| `list-categories` | Read  | List all doc categories                          |
+| `list-docs`       | Read  | List docs (optionally filter by category or tag) |
+| `read-doc`        | Read  | Read a specific doc by category + slug           |
+| `search-docs`     | Read  | Full-text search across all docs                 |
+| `get-review-list` | Read  | Get docs needing review                          |
+| `create-doc`      | Write | Create a new doc with frontmatter                |
+| `update-doc`      | Write | Append content or update tags on an existing doc |
+| `improve-doc`     | Write | Replace doc content while preserving frontmatter |
+| `track-knowledge` | Write | Mark a doc as remembered / needs-review / new    |
 
 ## Structure
 
