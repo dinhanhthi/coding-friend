@@ -33,6 +33,7 @@ export interface TocItem {
 
 export interface ChangelogEntry {
   version: string;
+  unpublished: boolean;
   changes: ChangelogChange[];
 }
 

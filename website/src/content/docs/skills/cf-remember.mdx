@@ -36,28 +36,45 @@ The `/cf-remember` skill captures important project knowledge and saves it for f
 
 ## Memory Organization
 
-Knowledge is saved to `docs/memory/` with intuitive structure:
+Knowledge is saved to `docs/memory/` organized by category:
+
+| Category       | Folder            | Use For                                             |
+| -------------- | ----------------- | --------------------------------------------------- |
+| Features       | `features/`       | Feature-specific logic, flows, APIs                 |
+| Conventions    | `conventions/`    | Project-wide patterns and rules                     |
+| Decisions      | `decisions/`      | Architecture/design decision records                |
+| Bugs           | `bugs/`           | Bug root causes, fixes, and how to avoid recurrence |
+| Infrastructure | `infrastructure/` | Build, deploy, CI/CD, environment setup             |
+
+**Category selection guide:**
+
+- Fixing a bug → `bugs/` (root cause, fix, prevention), NOT `features/`
+- Adding/changing a feature → `features/`
+- Establishing a pattern or rule → `conventions/`
+- Choosing between approaches → `decisions/`
+- Build/deploy/tooling knowledge → `infrastructure/`
 
 ```
 docs/memory/
-  ├── architecture/
-  │   ├── system-overview.md
-  │   └── microservices-design.md
-  ├── patterns/
-  │   ├── error-handling.md
-  │   ├── middleware-chain.md
-  │   └── state-management.md
+  ├── features/
+  │   ├── auth-flow.md
+  │   └── payment-integration.md
+  ├── conventions/
+  │   ├── api-naming.md
+  │   └── error-handling.md
   ├── decisions/
   │   ├── why-we-chose-postgres.md
-  │   ├── api-versioning-strategy.md
   │   └── caching-approach.md
-  └── gotchas/
-      └── known-issues.md
+  ├── bugs/
+  │   └── race-condition-checkout.md
+  └── infrastructure/
+      └── ci-pipeline-setup.md
 ```
 
 ## Document Format
 
 Each document includes:
+
 - What (behavior or design)
 - Why (reasoning and trade-offs)
 - How (code examples and implementation)
@@ -74,6 +91,7 @@ Each document includes:
 ## AI Workflow Benefits
 
 With good memory:
+
 - AI understands project patterns faster
 - Decisions get applied consistently
 - Onboarding new contributors is faster

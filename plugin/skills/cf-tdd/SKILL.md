@@ -14,30 +14,33 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 ## Cycle: RED → GREEN → REFACTOR
 
 ### RED — Write a failing test
+
 1. Write the smallest test that describes the desired behavior
 2. Run it. It MUST fail. If it passes, you don't need this code.
 3. The failure message should clearly describe what's missing
 
 ### GREEN — Make it pass
+
 1. Write the **minimum** production code to make the test pass
 2. No extra features, no "while I'm here" improvements
 3. Run the test. It MUST pass.
 
 ### REFACTOR — Clean up
+
 1. Remove duplication between test and production code
 2. Improve naming, extract functions if needed
 3. Run ALL tests. They MUST still pass.
 
 ## Rules
 
-| Situation | Action |
-|---|---|
-| "Let me just write the function first" | NO. Write the test first. |
-| "This is too simple to test" | If it's too simple to test, it's too simple to get wrong. Test it anyway. |
-| "I'll add tests later" | No. Tests come FIRST. This is non-negotiable. |
-| "The test framework isn't set up" | Set it up. That's part of the work. |
-| "I already know what the code should look like" | Great. Describe it as a test first. |
-| "This is just a refactor" | Ensure existing tests pass before AND after. |
+| Situation                                       | Action                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| "Let me just write the function first"          | NO. Write the test first.                                                 |
+| "This is too simple to test"                    | If it's too simple to test, it's too simple to get wrong. Test it anyway. |
+| "I'll add tests later"                          | No. Tests come FIRST. This is non-negotiable.                             |
+| "The test framework isn't set up"               | Set it up. That's part of the work.                                       |
+| "I already know what the code should look like" | Great. Describe it as a test first.                                       |
+| "This is just a refactor"                       | Ensure existing tests pass before AND after.                              |
 
 ## Test Quality Checklist
 

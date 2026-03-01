@@ -22,27 +22,32 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 ## Workflow
 
 ### Step 1: Parse the Question
+
 1. Read `$ARGUMENTS` as the question
 2. If no question provided, ask the user what they want to know
 3. Identify keywords and likely relevant areas (modules, features, patterns)
 
 ### Step 2: Explore the Codebase
+
 1. Use Glob to find files related to the keywords
 2. Use Grep to search for relevant functions, classes, patterns
 3. Read the most relevant files (limit to what's needed — stay lightweight)
 4. Do NOT use subagents or Task tool — this is a single-agent exploration
 
 ### Step 3: Form the Answer
+
 1. Synthesize findings into a clear, structured answer
 2. Reference specific files and line ranges where relevant
 3. Use code snippets only when they clarify the answer
 4. Keep it concise — this is a focused answer, not a research paper
 
 ### Step 4: Present to User
+
 1. Show the answer directly in the conversation
 2. List the key files that were consulted
 
 ### Step 5: Save to Memory
+
 1. Check `language` config — write in configured language (default: `en`)
 2. **Search existing memory files** in `{docsDir}/memory/` (features/, conventions/, decisions/)
 3. If an existing file covers the same topic, **append** the new Q&A to that file
@@ -70,6 +75,7 @@ When **creating** a new file, use the standard memory template:
 # <Title>
 
 ## Overview
+
 <1-2 sentences>
 
 ## Q&A: <short question summary> (YYYY-MM-DD)
@@ -82,9 +88,11 @@ When **creating** a new file, use the standard memory template:
 ```
 
 ### Step 6: Confirm
+
 Show the user where the Q&A was saved (new file or appended to existing).
 
 ## Rules
+
 - Stay lightweight — no subagents, no multi-doc output
 - Explore codebase proactively (Glob, Grep, Read)
 - Always save to `{docsDir}/memory/` — saving is mandatory, not optional

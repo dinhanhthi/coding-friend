@@ -24,13 +24,13 @@ Before claiming ANY task is done:
 
 ## What Counts as Evidence
 
-| Good Evidence | Bad Evidence |
-|---|---|
-| Test output showing all pass | "I believe the tests pass" |
-| Build output with exit code 0 | "The build should work" |
-| Actual command output | "I ran the tests" (without output) |
-| Screenshot of UI change | "The UI looks correct" |
-| `git diff` showing the change | "I made the change" |
+| Good Evidence                 | Bad Evidence                       |
+| ----------------------------- | ---------------------------------- |
+| Test output showing all pass  | "I believe the tests pass"         |
+| Build output with exit code 0 | "The build should work"            |
+| Actual command output         | "I ran the tests" (without output) |
+| Screenshot of UI change       | "The UI looks correct"             |
+| `git diff` showing the change | "I made the change"                |
 
 ## Common Failures
 

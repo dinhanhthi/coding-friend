@@ -14,13 +14,13 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 
 ## What It Checks
 
-| Dimension | Focus |
-|-----------|-------|
-| **Security** | SQL injection, auth bypasses, exposed secrets, unsafe deserialization |
-| **Performance** | N+1 queries, memory leaks, inefficient algorithms, unnecessary allocations |
-| **Style** | Code clarity, naming, consistency with codebase patterns, readability |
-| **Maintainability** | Complexity, modularity, test coverage, documentation |
-| **Testing** | Edge cases, error paths, integration test gaps |
+| Dimension           | Focus                                                                      |
+| ------------------- | -------------------------------------------------------------------------- |
+| **Security**        | SQL injection, auth bypasses, exposed secrets, unsafe deserialization      |
+| **Performance**     | N+1 queries, memory leaks, inefficient algorithms, unnecessary allocations |
+| **Style**           | Code clarity, naming, consistency with codebase patterns, readability      |
+| **Maintainability** | Complexity, modularity, test coverage, documentation                       |
+| **Testing**         | Edge cases, error paths, integration test gaps                             |
 
 ## Examples
 
@@ -39,6 +39,7 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 ## Subagent Isolation
 
 Reviews run in a forked subagent, providing:
+
 - **Fresh Perspective** — Unbiased analysis of your code
 - **Parallel Processing** — Doesn't interfere with your main workflow
 - **Focused Context** — Subagent concentrates solely on review
@@ -47,6 +48,7 @@ Reviews run in a forked subagent, providing:
 ## Output
 
 Reviews include:
+
 - Critical security issues with fixes
 - Performance bottlenecks with optimization suggestions
 - Style improvements aligned with codebase conventions

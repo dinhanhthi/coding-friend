@@ -14,7 +14,15 @@
       "author": {
         "name": "Anh-Thi Dinh"
       },
-      "keywords": ["skills", "tdd", "debugging", "code-review", "workflows", "knowledge", "agents"],
+      "keywords": [
+        "skills",
+        "tdd",
+        "debugging",
+        "code-review",
+        "workflows",
+        "knowledge",
+        "agents"
+      ],
       "license": "MIT",
       "category": "productivity"
     }

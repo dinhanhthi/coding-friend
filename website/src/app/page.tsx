@@ -1,5 +1,7 @@
 import Hero from "@/components/landing/Hero";
 import StatsSection from "@/components/landing/StatsSection";
+import EcosystemSection from "@/components/landing/EcosystemSection";
+import DifferentiatorSection from "@/components/landing/DifferentiatorSection";
 import Features from "@/components/landing/Features";
 import HowItWorks from "@/components/landing/HowItWorks";
 import InstallSection from "@/components/landing/InstallSection";
@@ -34,6 +36,8 @@ export default function Home() {
       />
       <Hero />
       <StatsSection />
+      <EcosystemSection />
+      <DifferentiatorSection />
       <HowItWorks />
       <Features />
       <InstallSection />

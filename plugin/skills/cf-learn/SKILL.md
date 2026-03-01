@@ -24,20 +24,21 @@ Extract settings with these defaults:
 
 **Top-level settings:**
 
-| Setting | Default | Description |
-|---|---|---|
-| `language` | `en` | Language for writing docs (shared by all skills) |
+| Setting    | Default | Description                                      |
+| ---------- | ------- | ------------------------------------------------ |
+| `language` | `en`    | Language for writing docs (shared by all skills) |
 
 **`learn` settings:**
 
-| Setting | Default | Description |
-|---|---|---|
-| `learn.outputDir` | `{docsDir}/learn` (where `docsDir` defaults to `docs`) | Where to store learn docs |
-| `learn.categories` | See Step 2 table | Subdirectories and their descriptions |
-| `learn.autoCommit` | `false` | Auto git-commit after writing |
-| `learn.readmeIndex` | `false` | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
+| Setting             | Default                                                | Description                                                                                                                   |
+| ------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `learn.outputDir`   | `{docsDir}/learn` (where `docsDir` defaults to `docs`) | Where to store learn docs                                                                                                     |
+| `learn.categories`  | See Step 2 table                                       | Subdirectories and their descriptions                                                                                         |
+| `learn.autoCommit`  | `false`                                                | Auto git-commit after writing                                                                                                 |
+| `learn.readmeIndex` | `false`                                                | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
 
 **Path resolution for `outputDir`:**
+
 - Starts with `/` → absolute path, use as-is
 - Starts with `~/` → expand `~` to home directory
 - Otherwise → relative to project root
@@ -47,6 +48,7 @@ If `outputDir` directory doesn't exist, create it.
 ## Step 1: Identify Knowledge Points
 
 Scan the conversation for things the human might not fully understand:
+
 - **New concepts**: Design patterns, algorithms, architecture principles
 - **Language features**: Syntax, idioms, type system features
 - **Library/tool usage**: API patterns, configuration, best practices
@@ -57,13 +59,13 @@ Scan the conversation for things the human might not fully understand:
 
 Use categories from config. Default categories:
 
-| Category | Folder name | Examples |
-|---|---|---|
-| Concepts | `concepts` | Dependency injection, event sourcing |
-| Patterns | `patterns` | Repository pattern, observer pattern |
+| Category  | Folder name | Examples                               |
+| --------- | ----------- | -------------------------------------- |
+| Concepts  | `concepts`  | Dependency injection, event sourcing   |
+| Patterns  | `patterns`  | Repository pattern, observer pattern   |
 | Languages | `languages` | TypeScript generics, Python decorators |
-| Tools | `tools` | Prisma migrations, Docker compose |
-| Debugging | `debugging` | Race condition fix, memory leak hunt |
+| Tools     | `tools`     | Prisma migrations, Docker compose      |
+| Debugging | `debugging` | Race condition fix, memory leak hunt   |
 
 File path: `{outputDir}/{category}/{name}.md`
 
@@ -82,12 +84,14 @@ For each potentially relevant file, read its first 20 lines to understand what i
 Before delegating to the writer agent, assess the complexity of the content to write:
 
 **Use `writer` agent (haiku)** when:
+
 - Simple, factual concepts (e.g., "how to use X tool", "naming convention for Y")
 - Straightforward tool/library usage notes
 - Short content with clear structure
 - Single-concept explanations
 
 **Use `writer-deep` agent (sonnet)** when:
+
 - Content requires deep reasoning about nuanced technical concepts (e.g., explaining race conditions, distributed system trade-offs, complex type system features)
 - Very long context needs to be synthesized into a coherent doc
 - Multi-concept synthesis is needed (connecting several ideas into one explanation)
@@ -138,24 +142,30 @@ updated: YYYY-MM-DD
 # <Concept Name>
 
 ## What
+
 <1-2 sentences: what is this concept?>
 
 ## Why
+
 <When would you use it? Why does it matter?>
 
 ## How
+
 <Code example from the actual project — not a generic tutorial>
 
 ## Gotchas
+
 - <Common mistake 1>
 - <Common mistake 2>
 
 ## Read More
+
 - <Link to official docs>
 - <Link to good tutorial>
 ```
 
 **For appending (`task: append`)**, include only the new content to add:
+
 - New section under a `## Heading`
 - Note to update `updated` date in frontmatter
 - Note to add new tags if applicable
@@ -170,42 +180,51 @@ updated: YYYY-MM-DD
 ### README Index Formats (include if readme_update is not false)
 
 **Mode `true` (single README)** — `{outputDir}/README.md`:
+
 ```markdown
 # Learning Notes
 
 ## Categories
 
 ### <category-name>/
+
 - [file-name.md](<category>/file-name.md) - Brief description
 
 ---
-*Last updated: YYYY-MM-DD*
+
+_Last updated: YYYY-MM-DD_
 ```
 
 **Mode `"per-category"`** — two files:
 
 1. Category README at `{outputDir}/{category}/README.md`:
+
 ```markdown
 # <Category Name>
 
 <category description>
 
 ## Notes
+
 - [file-name.md](file-name.md) - Brief description
+
 ---
-*Last updated: YYYY-MM-DD*
+
+_Last updated: YYYY-MM-DD_
 ```
 
 2. Main README at `{outputDir}/README.md`:
+
 ```markdown
 # Learning Notes
 
 ## Categories
 
 ### [<Category Name>](<category-folder>/)
-<category description> — *N notes*
----
-*Last updated: YYYY-MM-DD*
+
+## <category description> — _N notes_
+
+_Last updated: YYYY-MM-DD_
 ```
 
 Only include categories with at least one note file (excluding README.md).
@@ -217,11 +236,13 @@ Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessm
 ## Step 5: Confirm
 
 Read back the writer agent's output and show the user:
+
 1. What was learned and where the doc was saved (full path)
 2. Whether the file was created new or appended to
 3. If auto-committed, show the commit message
 
 ## Rules
+
 - Write for a human who can read code but might not understand WHY it works
 - Use examples from the ACTUAL conversation/project, not generic textbook examples
 - ELI5 style — explain like the reader is smart but unfamiliar with this specific topic

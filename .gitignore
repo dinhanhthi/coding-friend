@@ -38,12 +38,16 @@ docs/research
 # coding-friend
 .coding-friend/
 
-# Sub-package build artifacts
-lib/learn-host/node_modules/
-lib/learn-host/.next/
-lib/learn-host/out/
-lib/learn-host/public/_pagefind/
-lib/learn-mcp/node_modules/
-lib/learn-mcp/dist/
-
+# Build artifacts
 .next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Pagefind (generated at build time)
+_pagefind/
+
+# Website
+website/public/llms.txt
+website/public/llms-full.txt

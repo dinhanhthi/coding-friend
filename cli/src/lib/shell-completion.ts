@@ -105,7 +105,11 @@ function replaceBlock(content: string, newBlock: string): string {
   // Include any leading newlines before the marker
   let sliceStart = startIdx;
   while (sliceStart > 0 && content[sliceStart - 1] === "\n") sliceStart--;
-  return content.slice(0, sliceStart) + newBlock + content.slice(endIdx + MARKER_END.length);
+  return (
+    content.slice(0, sliceStart) +
+    newBlock +
+    content.slice(endIdx + MARKER_END.length)
+  );
 }
 
 /**
@@ -123,7 +127,8 @@ export function ensureShellCompletion(opts?: { silent?: boolean }): boolean {
     const existing = extractExistingBlock(content);
     const expectedBlock = newBlock.trim();
     if (existing && existing.trim() === expectedBlock) {
-      if (!opts?.silent) log.dim(`Tab completion already up-to-date in ~/${rcName}`);
+      if (!opts?.silent)
+        log.dim(`Tab completion already up-to-date in ~/${rcName}`);
       return false;
     }
 

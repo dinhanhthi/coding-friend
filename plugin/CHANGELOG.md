@@ -1,0 +1,34 @@
+# Changelog (Plugin)
+
+> CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
+
+## v0.0.2 (unpublished)
+
+- Add custom skill guides: extend built-in skills with user-defined Before/Rules/After sections in `.coding-friend/skills/<skill-name>.md`
+- Add validation for custom guides: warn on wrong skill names, format errors, with "did you mean?" suggestions
+- Show guide warnings prominently at session start via `<guide-warnings>` block
+- Fix: exclude code blocks when extracting headings for Table of Contents (fixes duplicate key warnings in website docs)
+- Redesign website homepage to showcase full ecosystem (Plugin, CLI, Learn Host, Learn MCP)
+- Add EcosystemSection highlighting 4-tool relationships with visual `/cf-learn` pipeline
+- Add DifferentiatorSection emphasizing Simplicity and `/cf-learn` as core differentiators
+- Clarify that `/cf-learn` captures knowledge for human understanding, not just AI output
+- Move plugin changelog from `docs/` to `plugin/` subdirectory
+- Move marketplace.json to `.claude-plugin/` per Claude Code convention
+- Clarify `/cf-remember` category selection: add `bugs/` and `infrastructure/` categories with explicit guide (fixes bug fixes being saved to features/)
+- Document that `$ARGUMENTS` acts as filter for conversation content, with auto-detected topic names by default
+- Enhance `/cf-commit` workflow: add Step 2 to explicitly identify conversation-related changes vs unrelated work
+- Simplify README with website and CLI references
+- Move development guides to component READMEs
+- Consolidate gitignore files into single root
+
+## v0.0.1
+
+- Add 15 skills: `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research` + 5 auto-invoked (`cf-tdd`, `cf-sys-debug`, `cf-code-review`, `cf-verification`, `cf-learn`)
+- Add 7 hooks: session init, dev rules reminder, privacy block, scout block, statusline, compact marker, context tracker
+- Add 5 agents: `code-reviewer`, `implementer`, `planner`, `writer` (haiku), `writer-deep` (sonnet)
+- Add CLI companion (`coding-friend-cli` on npm): `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
+- Add learning docs host (`cf host`) with ISR, Pagefind full-text search, and modern UI with command palette
+- Add MCP server (`cf mcp`) for LLM integration with learning docs
+- Add layered config: global (`~/.coding-friend/`) + local (`.coding-friend/`), local wins
+- Add prompt injection defense across all skills, agents, and hooks
+- Add project website with docs, changelog, and landing page

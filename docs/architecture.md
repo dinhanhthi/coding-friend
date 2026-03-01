@@ -58,14 +58,16 @@ coding-friend/
 │       ├── writer.md                # Lightweight doc writer
 │       └── writer-deep.md           # Deep reasoning doc writer
 │
-├── lib/
-│   ├── learn-host/              # Next.js static site for learning docs
-│   │   ├── src/app/             # App Router pages
-│   │   ├── src/components/      # UI components
-│   │   └── src/lib/             # Build-time doc loading
-│   └── learn-mcp/               # MCP server for LLM integration
-│       ├── src/tools/           # 9 MCP tools (read/write/track)
-│       └── src/lib/             # Shared docs/knowledge logic
+├── cli/                         # CLI tool (published as coding-friend-cli)
+│   ├── src/                     # CLI source code
+│   └── lib/
+│       ├── learn-host/          # Next.js static site for learning docs
+│       │   ├── src/app/         # App Router pages
+│       │   ├── src/components/  # UI components
+│       │   └── src/lib/         # Build-time doc loading
+│       └── learn-mcp/           # MCP server for LLM integration
+│           ├── src/tools/       # 9 MCP tools (read/write/track)
+│           └── src/lib/         # Shared docs/knowledge logic
 │
 └── docs/                        # Project docs + generated docs
     ├── architecture.md          # This file
@@ -84,30 +86,30 @@ coding-friend/
 
 ### Reference Skills (5) — Auto-loaded when relevant
 
-| Skill | Trigger | Core Concept |
-|---|---|---|
-| `cf-help` | Bootstrap (session-init hook) | Meta-skill: skill discovery, core rules |
-| `cf-tdd` | Writing new code | Iron law: no code without failing test |
-| `cf-sys-debug` | Debugging bugs | 4-phase: investigate → analyze → test → fix |
-| `cf-code-review` | During code review | 4-layer: plan, quality, security, testing |
-| `cf-verification` | Before claiming done | Gate: no claims without fresh evidence |
+| Skill             | Trigger                       | Core Concept                                |
+| ----------------- | ----------------------------- | ------------------------------------------- |
+| `cf-help`         | Bootstrap (session-init hook) | Meta-skill: skill discovery, core rules     |
+| `cf-tdd`          | Writing new code              | Iron law: no code without failing test      |
+| `cf-sys-debug`    | Debugging bugs                | 4-phase: investigate → analyze → test → fix |
+| `cf-code-review`  | During code review            | 4-layer: plan, quality, security, testing   |
+| `cf-verification` | Before claiming done          | Gate: no claims without fresh evidence      |
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
 
 ### Task Skills (10) — User-triggered via `/slash`
 
-| Skill | Command | Key Feature |
-|---|---|---|
-| `cf-plan` | `/cf-plan [task]` | Brainstorm + write implementation plan |
-| `cf-review` | `/cf-review [target]` | Fork context → code-reviewer agent |
-| `cf-commit` | `/cf-commit [hint]` | Analyze diff → conventional commit |
-| `cf-ship` | `/cf-ship [hint]` | Verify + commit + push + PR |
-| `cf-fix` | `/cf-fix [bug]` | Quick bug fix, escalates to cf-sys-debug after 3 failures |
-| `cf-ask` | `/cf-ask [question]` | Quick Q&A about codebase → docs/memory/ |
-| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement |
-| `cf-remember` | `/cf-remember [topic]` | Extract project knowledge → docs/memory/ |
-| `cf-learn` | `/cf-learn [topic]` | Extract learnings (configurable output, language, categories) |
-| `cf-research` | `/cf-research [topic]` | In-depth research with web search → docs/research/ |
+| Skill         | Command                 | Key Feature                                                   |
+| ------------- | ----------------------- | ------------------------------------------------------------- |
+| `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                        |
+| `cf-review`   | `/cf-review [target]`   | Fork context → code-reviewer agent                            |
+| `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                            |
+| `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                   |
+| `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures     |
+| `cf-ask`      | `/cf-ask [question]`    | Quick Q&A about codebase → docs/memory/                       |
+| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement         |
+| `cf-remember` | `/cf-remember [topic]`  | Extract project knowledge → docs/memory/                      |
+| `cf-learn`    | `/cf-learn [topic]`     | Extract learnings (configurable output, language, categories) |
+| `cf-research` | `/cf-research [topic]`  | In-depth research with web search → docs/research/            |
 
 ### Frontmatter Configuration
 
@@ -117,21 +119,18 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 name: cf-tdd
 description: Use when writing new production code or adding features
 ---
-
 # Task skill (user-only)
 ---
 name: cf-commit
 description: Smart conventional commit with diff analysis
 disable-model-invocation: true
 ---
-
 # Background skill (never user-invoked)
 ---
 name: cf-verification
 description: Verify before claiming work is complete
 user-invocable: false
 ---
-
 # Forked skill (runs in subagent)
 ---
 name: cf-review
@@ -146,15 +145,15 @@ agent: code-reviewer
 
 ## Hooks System (7 hooks)
 
-| Hook | Event | Purpose |
-|---|---|---|
-| `session-init.sh` | SessionStart | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
-| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens) |
-| `privacy-block.sh` | PreToolUse | Block .env, credentials, keys. Exit 2 = block |
-| `scout-block.sh` | PreToolUse | Respect .coding-friend/ignore patterns. Exit 2 = block |
-| `statusline.sh` | Statusline | Show context usage, git branch, session info |
-| `compact-marker.sh` | PreCompact | Mark critical context before compaction |
-| `context-tracker.sh` | PostToolUse | Track files read (async: true) |
+| Hook                    | Event            | Purpose                                                                        |
+| ----------------------- | ---------------- | ------------------------------------------------------------------------------ |
+| `session-init.sh`       | SessionStart     | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
+| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                |
+| `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                  |
+| `scout-block.sh`        | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
+| `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
+| `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
+| `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |
 
 ### Hook I/O Protocol
 
@@ -184,11 +183,11 @@ Exit codes:
 
 ## Agents (3)
 
-| Agent | Model | Purpose |
-|---|---|---|
+| Agent           | Model   | Purpose                                                    |
+| --------------- | ------- | ---------------------------------------------------------- |
 | `code-reviewer` | inherit | 4-layer review: plan alignment, quality, security, testing |
-| `implementer` | inherit | TDD implementation: write test → implement → verify |
-| `planner` | inherit | Codebase exploration + task decomposition |
+| `implementer`   | inherit | TDD implementation: write test → implement → verify        |
+| `planner`       | inherit | Codebase exploration + task decomposition                  |
 
 ---
 
@@ -200,19 +199,21 @@ Exit codes:
 - `plugin/skills/` — auto-discovered by Claude Code
 - `plugin/agents/` — subagent definitions
 
-Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/`, `lib/` are excluded.
+Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/` are excluded.
 
 ---
 
 ## /cf-remember — Project Knowledge
 
 ### Workflow
+
 1. Analyze the current conversation
 2. Identify the feature/module being worked on
 3. Extract: logic flow, conventions, decisions, gotchas
 4. Create/update files in `docs/memory/`
 
 ### Output Structure
+
 ```
 docs/memory/
 ├── features/           # Feature-specific docs
@@ -231,15 +232,16 @@ docs/memory/
 
 Uses layered config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`):
 
-| Setting | Default | Description |
-|---|---|---|
-| `language` (top-level) | `en` | Writing language for all skills (`en`, `vi`, etc.) |
-| `learn.outputDir` | `{docsDir}/learn` | Where to store (relative, absolute, or `~/`) |
-| `learn.categories` | 5 defaults | Customizable subdirectories |
-| `learn.autoCommit` | `false` | Auto git-commit (for separate repos) |
-| `learn.readmeIndex` | `false` | Index mode: `false` (none), `true` (single README), `"per-category"` (distributed) |
+| Setting                | Default           | Description                                                                        |
+| ---------------------- | ----------------- | ---------------------------------------------------------------------------------- |
+| `language` (top-level) | `en`              | Writing language for all skills (`en`, `vi`, etc.)                                 |
+| `learn.outputDir`      | `{docsDir}/learn` | Where to store (relative, absolute, or `~/`)                                       |
+| `learn.categories`     | 5 defaults        | Customizable subdirectories                                                        |
+| `learn.autoCommit`     | `false`           | Auto git-commit (for separate repos)                                               |
+| `learn.readmeIndex`    | `false`           | Index mode: `false` (none), `true` (single README), `"per-category"` (distributed) |
 
 ### Workflow
+
 1. Load config (local > global > defaults)
 2. Analyze conversation: concepts, patterns, techniques
 3. Discovery: check existing files before creating new ones
@@ -249,6 +251,7 @@ Uses layered config (local `.coding-friend/config.json` overrides global `~/.cod
 7. Auto-commit (if configured)
 
 ### Default Output Structure
+
 ```
 {outputDir}/
 ├── concepts/           # CS concepts
@@ -259,6 +262,7 @@ Uses layered config (local `.coding-friend/config.json` overrides global `~/.cod
 ```
 
 ### Doc Format
+
 - **What:** 1-2 sentences explaining the concept
 - **Why:** When to use it, why it matters
 - **How:** Real code examples (from the project)
@@ -287,14 +291,14 @@ stripFrontmatter(content) → markdownBody
 
 ## Key Design Decisions
 
-| Decision | Rationale |
-|---|---|
-| 15 skills total | 5 reference + 10 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
-| Shell scripts for hooks | Portable, easy to debug, no build step |
-| 3 agents only | code-reviewer, implementer, planner covers 90% of cases |
-| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation |
-| /cf-remember + /cf-learn | Unique value: project brain + human learning |
-| context: fork for /cf-review | Isolate review from main context window |
-| Layered config | Global `~/.coding-friend/config.json` + local per-project, local overrides |
-| CLI (`cf`) for installation | Automates plugin setup, health checks, updates |
-| `cf init` for setup | Re-runnable, detects previous setup, configures permissions |
+| Decision                                | Rationale                                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 15 skills total                         | 5 reference + 10 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
+| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
+| 3 agents only                           | code-reviewer, implementer, planner covers 90% of cases                                        |
+| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
+| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
+| context: fork for /cf-review            | Isolate review from main context window                                                        |
+| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                     |
+| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                 |
+| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                    |
