@@ -23,10 +23,10 @@ Just implement and commit. Don't think about changelogs or version numbers.
 Ask Claude to implement → Claude writes code → /cf-commit → repeat
 ```
 
-### Phase 2 — Release (when ready to publish)
+### Phase 2 — Prep release (when ready to publish)
 
 ```
-/bump-version → /cf-commit → /cf-ship
+/bump-version → /cf-commit → /cf-ship → merge PR on GitHub
 ```
 
 - `/bump-version` is the **single entry point** for release prep
@@ -34,9 +34,22 @@ Ask Claude to implement → Claude writes code → /cf-commit → repeat
 - It detects affected packages from commits since the last published git tag
 - If a package was already bumped (file version > tag version), it skips the bump and only updates the changelog
 
-### Standalone changelog
+### Phase 3 — Publish (after PR merge)
 
-`/changelog` can be used independently to preview/update changelogs without bumping version numbers. But in normal workflow, you don't need to call it directly.
+```
+git checkout main && git pull → /release → done
+```
+
+- `/release` detects packages with `(unpublished)` changelogs
+- Replaces `(unpublished)` with today's date
+- Creates git tags matching each package's pattern
+- Commits changelog updates and pushes tags
+- CI/CD triggers automatically: GitHub Release for plugin, npm publish for CLI
+
+### Standalone commands
+
+- `/changelog` — preview/update changelogs without bumping versions
+- `/release` — finalize changelogs and create tags without re-bumping
 
 ## Bump levels
 
