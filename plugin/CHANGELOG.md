@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.0.2 (unpublished)
+## v0.0.2 (2026-03-01)
 
 - Add custom skill guides: extend built-in skills with user-defined Before/Rules/After sections in `.coding-friend/skills/<skill-name>.md`
 - Add validation for custom guides: warn on wrong skill names, format errors, with "did you mean?" suggestions

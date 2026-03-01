@@ -1,6 +1,6 @@
 # Changelog (Learn MCP)
 
-## v0.0.2 (unpublished)
+## v0.0.2 (2026-03-01)
 
 - Add support for coding-friend-cli integration
 - Add watch mode for development (`npm run dev`)
