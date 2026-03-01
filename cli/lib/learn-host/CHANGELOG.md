@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.0.2 (unpublished)
+## v0.0.2 (2026-03-01)
 
 - Update header styling for consistency with ecosystem redesign
 - Code formatting and style improvements
