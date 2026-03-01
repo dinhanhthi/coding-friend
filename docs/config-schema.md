@@ -41,11 +41,20 @@ coding-friend uses a layered config system:
     // Each has a name (used as folder name) and description (used by agent for categorization)
     // Default: see below
     "categories": [
-      { "name": "concepts", "description": "Design patterns, algorithms, architecture principles" },
-      { "name": "patterns", "description": "Repository pattern, observer pattern" },
-      { "name": "languages", "description": "Language-specific features, syntax, idioms" },
+      {
+        "name": "concepts",
+        "description": "Design patterns, algorithms, architecture principles",
+      },
+      {
+        "name": "patterns",
+        "description": "Repository pattern, observer pattern",
+      },
+      {
+        "name": "languages",
+        "description": "Language-specific features, syntax, idioms",
+      },
       { "name": "tools", "description": "Libraries, frameworks, CLI tools" },
-      { "name": "debugging", "description": "Debugging techniques, bug fixes" }
+      { "name": "debugging", "description": "Debugging techniques, bug fixes" },
     ],
 
     // Auto git-commit after writing docs (useful for separate repo)
@@ -57,8 +66,8 @@ coding-friend uses a layered config system:
     // - true: single README.md at outputDir root listing all docs
     // - "per-category": README.md per category folder + lightweight main README
     // Default: false
-    "readmeIndex": false
-  }
+    "readmeIndex": false,
+  },
 }
 ```
 
@@ -71,6 +80,7 @@ Writes to `docs/learn/` in the project. English. Default categories.
 ### Vietnamese user with separate learn repo
 
 **Global** `~/.coding-friend/config.json`:
+
 ```json
 {
   "language": "vi",
@@ -80,11 +90,23 @@ Writes to `docs/learn/` in the project. English. Default categories.
     "readmeIndex": "per-category",
     "categories": [
       { "name": "AI", "description": "AI, ML, Deep Learning, LLMs" },
-      { "name": "Web_Dev", "description": "Frontend, Backend, APIs, Frameworks" },
+      {
+        "name": "Web_Dev",
+        "description": "Frontend, Backend, APIs, Frameworks"
+      },
       { "name": "DevOps_Cloud", "description": "Docker, K8s, CI/CD, AWS/GCP" },
-      { "name": "Programming_Languages", "description": "Language features, idioms, tips" },
-      { "name": "Tools_Workflow", "description": "Git, CLI tools, IDE, productivity" },
-      { "name": "System_Design", "description": "Architecture, scalability, distributed systems" }
+      {
+        "name": "Programming_Languages",
+        "description": "Language features, idioms, tips"
+      },
+      {
+        "name": "Tools_Workflow",
+        "description": "Git, CLI tools, IDE, productivity"
+      },
+      {
+        "name": "System_Design",
+        "description": "Architecture, scalability, distributed systems"
+      }
     ]
   }
 }
@@ -95,6 +117,7 @@ All skills (`/cf-learn`, `/cf-plan`, `/cf-research`, etc.) will write in Vietnam
 ### Project-specific override (English for one project)
 
 **Local** `<project>/.coding-friend/config.json`:
+
 ```json
 {
   "language": "en",
@@ -123,6 +146,7 @@ This overrides both the global `language` and `learn` settings for this project.
 ### Using `language` in skills
 
 All skills that generate docs should read the top-level `language` setting:
+
 - `"en"` → Write in English
 - `"vi"` → Write in Vietnamese, keep technical terms in English
 - Other → Write in that language, keep technical terms in English
@@ -141,3 +165,48 @@ The `cf host` and `cf mcp` CLI commands use the same `learn.outputDir` to determ
 **Web host:** Docs folder is set via `DOCS_DIR` env var at build time.
 
 Both respect the same path resolution rules as `learn.outputDir`.
+
+## Custom Skill Guides
+
+Separate from `config.json`, users can extend built-in skills with custom guidance using `.md` files.
+
+### Location
+
+- **Global**: `~/.coding-friend/skills/<skill-name>.md` — applies to all projects
+- **Local**: `.coding-friend/skills/<skill-name>.md` — project-specific
+- Local files override global files with the same filename
+
+### Format
+
+Files support 3 optional sections:
+
+```markdown
+## Before
+- Steps to run BEFORE the builtin workflow starts
+
+## Rules
+- Additional rules applied THROUGHOUT the workflow
+
+## After
+- Steps to run AFTER the builtin workflow completes
+```
+
+### Example
+
+`.coding-friend/skills/cf-commit.md`:
+```markdown
+## Before
+- Check branch naming convention (must match `feat/XX-*` or `fix/XX-*`)
+
+## Rules
+- Always include JIRA ticket number from branch name in commit subject
+- Scope should match the top-level directory of changed files
+
+## After
+- Run `/changelog` to update CHANGELOG.md
+- Only trigger if commit type is `feat:` or `fix:`
+```
+
+### Reload
+
+Custom guides are loaded at session start. After editing, use `/clear` to reload.

@@ -14,6 +14,15 @@ The `/cf-learn` skill creates learning documentation from your coding sessions. 
 
 Or run without arguments to extract learnings from the current session.
 
+## How `$ARGUMENTS` Works
+
+The optional topic argument acts as a **filter** for the conversation:
+
+- **With argument**: Focuses only on conversation content related to the topic — e.g., `/cf-learn async error handling` extracts only async/error-related knowledge
+- **Without argument**: Scans the full conversation for the most valuable learnings
+
+The topic name for the output file is always **auto-detected** from the content, not taken verbatim from your argument. Your argument narrows _what_ to extract, not _what to name the file_.
+
 ## What It Does
 
 1. **Analyzes Session** — Reviews what you built and problems you solved
@@ -39,6 +48,7 @@ Or run without arguments to extract learnings from the current session.
 ## Auto-Invocation
 
 `cf-learn` activates automatically when you:
+
 - Solve a complex technical problem
 - Learn a new pattern or technique
 - Overcome a major debugging challenge
@@ -49,12 +59,14 @@ Or run without arguments to extract learnings from the current session.
 Learning docs support multiple hosting options:
 
 ### Website Hosting
+
 ```bash
 cf host
 # Serves docs/learn/ as a local website
 ```
 
 ### MCP Server
+
 ```bash
 cf mcp
 # Exposes docs/learn/ via Model Context Protocol
@@ -62,6 +74,7 @@ cf mcp
 ```
 
 ### Static Markdown
+
 ```
 docs/learn/
   ├── typescript/

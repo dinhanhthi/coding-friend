@@ -1,0 +1,121 @@
+---
+title: Workflows
+description: How Coding Friend workflows fit together — from planning to shipping.
+keywords: [workflows, plan, implement, review, ship, tdd, debugging]
+---
+
+Coding Friend installs globally. No files are copied into your project. On every Claude Code session, hooks auto-run: detect project type, inject rules, block sensitive files, and activate skills (TDD, debugging, verification, learn) based on context. You interact via slash commands.
+
+## Setup
+
+- **New project**: run `cf init` to create workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configure `.gitignore`, language, and `/cf-learn` settings.
+- **Existing project**: nothing needed — Coding Friend is already active. Optionally run `cf init` for project-specific settings.
+- **Per-project config** (optional): `.coding-friend/config.json` to customize docs folder, toggle hooks. `.coding-friend/ignore` to block directories from agent access.
+
+## Plan
+
+```
+/cf-plan Build a REST API with auth
+```
+
+Explores codebase and requirements, brainstorms 2-3 approaches, picks the best one, writes a plan to `docs/plans/YYYY-MM-DD-<slug>.md`, and creates a todo list.
+
+## Implement (auto)
+
+TDD kicks in automatically when writing production code — no slash command needed.
+
+1. **RED** — write a failing test first
+2. **GREEN** — minimum code to pass
+3. **REFACTOR** — clean up, all tests must still pass
+
+## Fix a Bug
+
+```
+/cf-fix Login fails with 401 when token is valid
+```
+
+Reproduce, locate root cause, fix, verify, and add a regression test. If 3 fix attempts fail, auto-escalates to `cf-sys-debug` (4-phase systematic debugging).
+
+## Review
+
+```
+/cf-review
+```
+
+Runs in a forked context so it doesn't pollute your main conversation.
+
+- `/cf-review` — all uncommitted changes
+- `/cf-review src/auth/` — specific directory
+- `/cf-review HEAD~3..HEAD` — last 3 commits
+
+Reports: **Critical** (must fix) > **Important** (should fix) > **Suggestions**.
+
+## Commit
+
+```
+/cf-commit Add retry logic for API calls
+```
+
+Runs tests first, stages relevant files, writes a conventional commit message, and commits.
+
+## Ship
+
+```
+/cf-ship Add notifications
+```
+
+Full pipeline in one command: verify (tests, build, lint) > commit > push > create PR.
+
+## Quick Q&A
+
+```
+/cf-ask How does the auth middleware work?
+```
+
+Explores the codebase to find the answer, then saves Q&A to `docs/memory/` for future sessions.
+
+## Optimize
+
+```
+/cf-optimize database query in getUserById
+```
+
+Baseline (3 runs) > analyze bottlenecks > plan > implement (TDD) > measure after > compare.
+
+## Research
+
+```
+/cf-research GraphQL vs REST for mobile APIs
+```
+
+Deep research with web search and parallel subagents. Structured output saved to `docs/research/`.
+
+## Save Knowledge
+
+```
+/cf-remember auth flow
+```
+
+Saves project knowledge for the AI to use in future sessions (`docs/memory/`). Run without arguments to scan the entire conversation for features, conventions, decisions, and gotchas.
+
+## Learn
+
+```
+/cf-learn dependency injection
+```
+
+Extracts learnings so you actually learn from vibe coding — not just let AI do everything. Also auto-invoked when substantial new knowledge is detected. Output to configured dir (default: `docs/learn/`). Read with `cf host` or use as MCP server with `cf mcp`.
+
+## Typical Flow
+
+1. `/cf-plan Add dark mode toggle` — plan
+2. Implement (TDD auto-enforced) — code
+3. `/cf-review` — review
+4. `/cf-ship Dark mode feature` — ship
+5. `/cf-remember` + `/cf-learn` — capture knowledge
+
+## What's Automatic vs Manual
+
+**Automatic** (no action needed): TDD enforcement, systematic debugging (after 3 failed fixes), verification before done, privacy block (.env, credentials), scout block (node_modules, dist), prompt injection defense, session bootstrap, rules injection, learning extraction on substantial knowledge.
+
+**Manual** (slash commands): `cf init`, `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research`.

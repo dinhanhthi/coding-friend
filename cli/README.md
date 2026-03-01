@@ -75,17 +75,40 @@ npm ls -g coding-friend-cli
 #└── coding-friend-cli@1.1.1 -> ./../../../../../git/coding-friend/cli
 ```
 
-## Publish CLI to npm
+### Running tests
+
+Tests are written with [Vitest](https://vitest.dev/) and live in `src/lib/__tests__/`.
 
 ```bash
-# From the root of coding-friend project
+cd cli
+
+# Run all tests once
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
+```
+
+Current coverage: `lib/json.ts`, `lib/paths.ts`, `lib/exec.ts`.
+
+## Publish CLI to npm
+
+Publishing is automated via GitHub Actions (`.github/workflows/publish-cli.yml`). Push a tag with the `cli-v*` prefix to trigger it:
+
+```bash
+# Bump version in cli/package.json first, then tag and push
+git tag cli-v1.2.3
+git push origin cli-v1.2.3
+```
+
+The workflow will build, bundle, and publish to npm automatically (with provenance), then create a GitHub Release with the changelog for that version.
+
+**Manual publish (if needed):**
+
+```bash
 cd cli
 npm login              # Login if not already
 npm publish            # Build + bundle + publish
-
-# To bump a version
-npm version patch # 1.0.1 -> 1.0.2
-npm version minor # 1.0.1 -> 1.1.0
 ```
 
 `prepublishOnly` runs automatically: builds TypeScript → `dist/` and bundles libs from `lib/`.

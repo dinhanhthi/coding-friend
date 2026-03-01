@@ -9,11 +9,13 @@ user-invocable: false
 ## 4-Layer Review
 
 ### Layer 1: Plan Alignment
+
 - Does the code implement what was planned?
 - Are there unexpected changes outside the plan scope?
 - Are any planned items missing?
 
 ### Layer 2: Code Quality
+
 - **Naming**: Are variables, functions, and files named clearly?
 - **Complexity**: Can any function be simplified? Is there unnecessary abstraction?
 - **Duplication**: Is there repeated code that should be extracted?
@@ -21,6 +23,7 @@ user-invocable: false
 - **Edge cases**: Are boundary conditions handled?
 
 ### Layer 3: Security
+
 - **Input validation**: Is user input validated at system boundaries?
 - **Injection**: Any SQL injection, XSS, command injection risks?
 - **Secrets**: Are API keys, passwords, tokens properly handled? Not in code?
@@ -28,6 +31,7 @@ user-invocable: false
 - **Dependencies**: Any known vulnerable dependencies?
 
 ### Layer 4: Testing
+
 - **Coverage**: Are new code paths tested?
 - **Quality**: Do tests verify behavior, not implementation?
 - **Edge cases**: Are error paths and boundary conditions tested?
@@ -35,11 +39,11 @@ user-invocable: false
 
 ## Issue Severity
 
-| Level | Meaning | Action |
-|---|---|---|
-| **Critical** | Bug, security hole, data loss risk | Must fix before merge |
-| **Important** | Design issue, missing test, poor naming | Should fix |
-| **Suggestion** | Style, alternative approach, nice-to-have | Consider |
+| Level          | Meaning                                   | Action                |
+| -------------- | ----------------------------------------- | --------------------- |
+| **Critical**   | Bug, security hole, data loss risk        | Must fix before merge |
+| **Important**  | Design issue, missing test, poor naming   | Should fix            |
+| **Suggestion** | Style, alternative approach, nice-to-have | Consider              |
 
 ## Review Response Protocol
 

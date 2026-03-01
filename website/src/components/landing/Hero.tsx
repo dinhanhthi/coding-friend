@@ -19,7 +19,7 @@ export default function Hero() {
             priority
           />
           <p className="mb-4 text-sm font-medium tracking-wide text-slate-400 uppercase">
-            Claude Code Plugin
+            Claude Code Plugin · CLI · Learn Host · Learn MCP
           </p>
           <h1 className="text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
@@ -31,13 +31,43 @@ export default function Hero() {
             workflow.
           </p>
 
+          {/* Ecosystem pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
+              Plugin
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 font-mono text-sky-300">
+              CLI
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-emerald-300">
+              Learn Host
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 font-mono text-orange-300">
+              Learn MCP
+            </span>
+          </div>
+
           {/* Alpha notice */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-400">
-            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>
-              This project is in <strong className="font-semibold">alpha</strong>. Want to build together?{" "}
+              Early stage — expect rough edges and frequent changes. Want to
+              shape it?{" "}
               <a
                 href="https://github.com/dinhanhthi/coding-friend"
                 target="_blank"

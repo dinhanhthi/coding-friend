@@ -11,7 +11,9 @@ Ship the current work. Hint: **$ARGUMENTS**
 ## Workflow
 
 ### Step 1: Verify
+
 Load the `cf-verification` skill and run the full checklist:
+
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] Linter clean
@@ -20,22 +22,27 @@ Load the `cf-verification` skill and run the full checklist:
 If ANY check fails, stop and fix before proceeding.
 
 ### Step 2: Commit
+
 If there are uncommitted changes:
+
 1. Run the `/cf-commit` workflow (load the `cf-commit` skill)
 2. Use `$ARGUMENTS` as commit hint if provided
 
 ### Step 3: Push
+
 ```bash
 git push -u origin <current-branch>
 ```
 
 If push fails (e.g., remote ahead), pull first:
+
 ```bash
 git pull --rebase origin <current-branch>
 git push
 ```
 
 ### Step 4: Create PR (if on a feature branch)
+
 Only if current branch is NOT `main` or `master`:
 
 Try `gh` first, fall back to a manual link if `gh` is not installed:
@@ -45,10 +52,12 @@ gh pr create --title "<title>" --body "<body>"
 ```
 
 If `gh` is not available, tell the user to create the PR manually and provide the URL:
+
 > `gh` CLI not found. Please create a PR manually:
 > https://github.com/<owner>/<repo>/compare/<branch>?expand=1
 
 PR body template:
+
 ```
 ## Summary
 <1-3 bullet points describing the changes>
@@ -59,12 +68,15 @@ PR body template:
 ```
 
 ### Step 5: Report
+
 Show the user:
+
 - Commit SHA
 - Push result
 - PR URL (if created)
 
 ## Rules
+
 - NEVER force push unless explicitly asked
 - NEVER push to main/master directly
 - ALWAYS verify before pushing

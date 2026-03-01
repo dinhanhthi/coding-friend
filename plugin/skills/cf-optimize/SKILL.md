@@ -15,6 +15,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 ## Workflow
 
 ### Step 1: Understand the Target
+
 1. Read `$ARGUMENTS` to identify what to optimize
 2. Find and read the relevant source files
 3. Understand the current implementation — algorithm, data structures, I/O patterns
@@ -26,6 +27,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
    - Better algorithmic complexity?
 
 ### Step 2: Baseline Measurement
+
 1. Identify or create a benchmark/measurement:
    - If tests with timing exist, use those
    - If a benchmark script exists, run it
@@ -37,6 +39,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 4. Save baseline numbers — you will need them for comparison in Step 6
 
 ### Step 3: Analyze Bottlenecks
+
 1. Profile the code path (add timing, use profiler if available)
 2. Identify the actual bottleneck — do NOT guess:
    - Where is time spent?
@@ -45,6 +48,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 3. Rank bottlenecks by impact (fix the biggest one first)
 
 ### Step 4: Plan the Optimization
+
 1. For the top bottleneck, propose 1-2 optimization approaches
 2. For each approach, state:
    - **What changes:** specific files and functions
@@ -54,6 +58,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 4. Do NOT optimize multiple things at once — one change at a time
 
 ### Step 5: Implement
+
 1. Load the `cf-tdd` skill
 2. If tests exist for the target code, ensure they pass before changing anything
 3. If no tests exist, write tests first that verify current behavior
@@ -62,22 +67,25 @@ Structured workflow for optimizing existing features, algorithms, or performance
 6. Load the `cf-verification` skill — run the full checklist
 
 ### Step 6: Measure After
+
 1. Run the **exact same benchmark** from Step 2
 2. Run it **3 times** for stable numbers
 3. Record the results
 
 ### Step 7: Compare and Report
+
 1. Present a before/after comparison:
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| *metric* | *value* | *value* | *% or absolute change* |
+| Metric   | Before  | After   | Change                 |
+| -------- | ------- | ------- | ---------------------- |
+| _metric_ | _value_ | _value_ | _% or absolute change_ |
 
 2. If improvement is **< 5%**, note that it may be within noise — consider if the added complexity is worth it
 3. If performance **regressed**, revert and try a different approach (go back to Step 4)
 4. Summarize what was changed and why it helped
 
 ## Rules
+
 - ALWAYS measure before AND after — no "it should be faster" claims
 - One optimization at a time — never batch multiple changes
 - Tests must pass throughout — load cf-tdd for implementation
