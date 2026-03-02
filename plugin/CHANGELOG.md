@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.2.0 (unpublished)
+## v0.2.0 (2026-03-02)
 
 - Add `/cf-review` reminder to `/cf-plan` and `/cf-fix` workflows to prevent skipping code review before commit ([#16d608c](https://github.com/dinhanhthi/coding-friend/commit/16d608c))
 - Add activation signal display for coding-friend skills and agents ([#2dd1668](https://github.com/dinhanhthi/coding-friend/commit/2dd1668))
