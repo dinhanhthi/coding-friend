@@ -20,6 +20,14 @@ program
   .version(pkg.version, "-v, --version");
 
 program
+  .command("install")
+  .description("Install the Coding Friend plugin into Claude Code")
+  .action(async () => {
+    const { installCommand } = await import("./commands/install.js");
+    await installCommand();
+  });
+
+program
   .command("init")
   .description("Initialize coding-friend in current project")
   .action(async () => {
