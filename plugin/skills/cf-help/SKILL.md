@@ -59,7 +59,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ## Activation Signals
 
-**IMPORTANT**: Whenever you activate a coding-friend skill, agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
+**IMPORTANT**: Whenever you activate a coding-friend skill, call an agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
 
 Format:
 
@@ -76,7 +76,7 @@ Examples:
 
 Rules:
 
-- Display the signal as the FIRST line of your response when the skill/agent starts
+- Display the signal as the FIRST line of your response when the skill/agent/auto-invoked workflow starts
 - Use the exact format above — blockquote with bold "CODING FRIEND"
 - For slash commands: include the `/` prefix
 - For auto-invoked skills: no `/` prefix
@@ -134,6 +134,7 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 
 Install via `npm i -g coding-friend-cli`:
 
+- `cf install` — Install the Coding Friend plugin into Claude Code
 - `cf init` — Interactive project setup
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server

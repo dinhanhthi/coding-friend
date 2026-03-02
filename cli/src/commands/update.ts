@@ -13,7 +13,7 @@ import { ensureShellCompletion } from "../lib/shell-completion.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
-function semverCompare(a: string, b: string): number {
+export function semverCompare(a: string, b: string): number {
   const pa = a.split(".").map(Number);
   const pb = b.split(".").map(Number);
   for (let i = 0; i < 3; i++) {
@@ -36,7 +36,7 @@ function getLatestCliVersion(): string | null {
   return run("npm", ["view", "coding-friend-cli", "version"]);
 }
 
-function getInstalledVersion(): string | null {
+export function getInstalledVersion(): string | null {
   const data = readJson<Record<string, unknown>>(installedPluginsPath());
   if (!data) return null;
 
@@ -59,7 +59,7 @@ function getInstalledVersion(): string | null {
   return null;
 }
 
-function getLatestVersion(): string | null {
+export function getLatestVersion(): string | null {
   // Try gh CLI first
   let tag = run("gh", [
     "api",
