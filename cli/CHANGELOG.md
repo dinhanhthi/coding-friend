@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.3.0 (unpublished)
+
+- `cf dev on` and `cf dev restart`: Auto-update versioned paths in settings.json (e.g. statusline command) to latest cached plugin version
+
 ## v1.2.1 (2026-03-01)
 
 - Show `cf dev` subcommands in `cf help` output
