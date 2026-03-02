@@ -9,6 +9,7 @@ import {
 import { resolve, join } from "path";
 import { readJson, writeJson } from "../lib/json.js";
 import {
+  claudeSettingsPath,
   devStatePath,
   knownMarketplacesPath,
   installedPluginsPath,
@@ -63,6 +64,41 @@ function runClaude(args: string[], label: string): boolean {
     return false;
   }
   return true;
+}
+
+function updateSettingsCachePaths(): void {
+  const cachePath = pluginCachePath();
+  if (!existsSync(cachePath)) return;
+
+  const versions = readdirSync(cachePath, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort()
+    .reverse();
+  const latest = versions[0];
+  if (!latest) return;
+
+  const settingsPath = claudeSettingsPath();
+  const settings = readJson<Record<string, unknown>>(settingsPath);
+  if (!settings) return;
+
+  const statusLine = settings.statusLine as { command?: string } | undefined;
+  if (!statusLine?.command) return;
+
+  const prefix = cachePath + "/";
+  if (!statusLine.command.includes(prefix)) return;
+
+  // Replace any version segment after the cache prefix
+  const updated = statusLine.command.replace(
+    new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^/]+/`),
+    `${prefix}${latest}/`,
+  );
+
+  if (updated === statusLine.command) return;
+
+  settings.statusLine = { ...statusLine, command: updated };
+  writeJson(settingsPath, settings);
+  log.info(`Updated statusline path to ${chalk.green(`v${latest}`)}`);
 }
 
 export async function devOnCommand(path?: string): Promise<void> {
@@ -141,6 +177,9 @@ export async function devOnCommand(path?: string): Promise<void> {
     savedAt: new Date().toISOString(),
   };
   writeJson(devStatePath(), devState as unknown as Record<string, unknown>);
+
+  // Step 6: Update settings.json cached paths (e.g. statusline)
+  updateSettingsCachePaths();
 
   console.log();
   log.success(
