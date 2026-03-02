@@ -61,6 +61,7 @@ Present to the user BEFORE writing the final plan:
 1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
 2. Use the TodoWrite tool to create a task list
 3. Present the plan summary to the user
+4. Remind the user: after implementation is complete, run `/cf-review` before committing to catch issues early
 
 ## Plan Template
 
@@ -91,6 +92,10 @@ Present to the user BEFORE writing the final plan:
 ## Risks
 
 - <risk 1 and mitigation>
+
+## Next Steps
+
+After implementation: run `/cf-review` → then `/cf-commit`
 ```
 
 ## Rules
