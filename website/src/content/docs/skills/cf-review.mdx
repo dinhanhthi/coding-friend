@@ -46,6 +46,24 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 
 ## How It Works
 
+### Architecture
+
+`/cf-review` is the entry point for a 3-component system, each with a distinct role:
+
+```
+/cf-review (entry point — workflow orchestration)
+    ↓ fork + dispatch
+code-reviewer agent (execution — how to review)
+    ↓ loads
+cf-auto-review (methodology — what to check)
+```
+
+- **`/cf-review`** orchestrates the workflow: gathers the diff, detects review mode (QUICK/STANDARD/DEEP), and dispatches to the subagent
+- **`code-reviewer` agent** executes the review: reads code, applies the methodology, formats the report
+- **[`cf-auto-review`](/docs/skills/cf-auto-review/)** is the single source of truth for the 4-layer review methodology, security table, and confidence scoring
+
+Without `/cf-review`, Claude can still review code — it loads `cf-auto-review` directly inline, using the same methodology without a subagent.
+
 ### Subagent Isolation
 
 Reviews run in a **forked subagent** ([`code-reviewer`](/docs/reference/agents/#code-reviewer)), completely isolated from your main conversation:

@@ -22,7 +22,17 @@ Coding Friend includes 5 specialized agents, each optimized for specific enginee
 
 ### code-reviewer
 
-Invoked by `/cf-review [target]`. Reviews code for correctness, performance, security, and maintainability.
+Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, and formatting the report.
+
+The review **methodology** (4-layer checklist, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
+
+```
+/cf-review (workflow orchestration)
+    ↓ fork + dispatch
+code-reviewer (execution — how to review)
+    ↓ loads
+cf-auto-review (methodology — what to check)
+```
 
 ### implementer
 
