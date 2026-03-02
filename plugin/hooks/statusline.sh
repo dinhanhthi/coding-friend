@@ -81,7 +81,7 @@ if [ -n "$swift_result" ]; then
   utilization=$(echo "$swift_result" | cut -d'|' -f1)
   resets_at=$(echo "$swift_result" | cut -d'|' -f2)
 
-  if [ -n "$utilization" ] && [ "$utilization" != "ERROR" ]; then
+  if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
     # Pick color based on utilization level
     if [ "$utilization" -le 10 ]; then
       usage_color="$LEVEL_1"
