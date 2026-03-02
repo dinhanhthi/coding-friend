@@ -1,10 +1,10 @@
 ---
 title: "/cf-review"
 description: "Multi-layer code review in a forked subagent."
-keywords: [code review, pull request, review checklist, cf-review]
+keywords: [code review, pull request, review checklist, cf-review, security]
 ---
 
-The `/cf-review` skill performs comprehensive code review using a dedicated subagent. It examines code from multiple angles: security, performance, style, and test coverage.
+The `/cf-review` skill performs comprehensive code review using a dedicated subagent. It examines code from multiple angles — security, performance, style, and test coverage — with review depth automatically scaled to the size and sensitivity of your changes.
 
 ## Usage
 
@@ -12,53 +12,149 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 /cf-review [target]
 ```
 
-## What It Checks
-
-| Dimension           | Focus                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| **Security**        | SQL injection, auth bypasses, exposed secrets, unsafe deserialization      |
-| **Performance**     | N+1 queries, memory leaks, inefficient algorithms, unnecessary allocations |
-| **Style**           | Code clarity, naming, consistency with codebase patterns, readability      |
-| **Maintainability** | Complexity, modularity, test coverage, documentation                       |
-| **Testing**         | Edge cases, error paths, integration test gaps                             |
+- **No arguments** — reviews all uncommitted changes (`git diff` + `git diff --staged`)
+- **File or directory** — reviews that specific path
+- **Commit range** — reviews a range of commits
 
 ## Examples
 
 ```bash
+# Review all uncommitted changes
+/cf-review
+```
+
+```bash
+# Review a specific directory
 /cf-review src/auth/
 ```
 
 ```bash
+# Review a single file
 /cf-review src/api/handlers/user-controller.ts
 ```
 
 ```bash
-/cf-review db/migrations/
+# Review the last 3 commits
+/cf-review HEAD~3..HEAD
 ```
 
-## Subagent Isolation
+```bash
+# Force a deep or quick review
+/cf-review src/auth/ --deep
+/cf-review README.md --quick
+```
 
-Reviews run in a forked subagent, providing:
+## How It Works
 
-- **Fresh Perspective** — Unbiased analysis of your code
-- **Parallel Processing** — Doesn't interfere with your main workflow
-- **Focused Context** — Subagent concentrates solely on review
-- **Detailed Report** — Structured findings with severity levels
+### Subagent Isolation
+
+Reviews run in a **forked subagent** ([`code-reviewer`](/docs/reference/agents/#code-reviewer)), completely isolated from your main conversation:
+
+- **Clean context** — the reviewer starts fresh, no bias from your working session
+- **No interference** — your main workflow continues unaffected
+- **Token efficient** — isolated context means focused, cheaper analysis
+- **Structured output** — findings come back as a formatted report
+
+### Proportional Review
+
+Not every change needs a full security deep-dive. `/cf-review` automatically detects the size and sensitivity of your changes and scales accordingly:
+
+| Mode | When | What Happens |
+|------|------|--------------|
+| **QUICK** | ≤3 files, ≤50 lines, no sensitive paths | Secret scan + obvious issues only. Fast. |
+| **STANDARD** | 4–10 files or 51–300 lines | Full 4-layer review. All security phases, concise. |
+| **DEEP** | >10 files, >300 lines, or sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
+
+**Sensitive path detection**: if any changed file matches patterns like `auth`, `crypto`, `token`, `session`, `password`, `.env`, the review always escalates to **DEEP** — regardless of change size.
+
+You can override auto-detection with `--deep` or `--quick` flags.
+
+### 4-Layer Review
+
+The reviewer applies four layers of analysis, each focused on a different dimension:
+
+| Layer | Focus |
+|-------|-------|
+| **1. Plan Alignment** | Does the code match the intended design? Missing pieces? |
+| **2. Code Quality** | Clarity, naming, consistency, complexity, performance |
+| **3. Security** | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
+| **4. Testing** | Coverage gaps, edge cases, error paths, integration tests |
+
+### Security Analysis (Layer 3)
+
+Security gets special treatment with a 3-phase process:
+
+1. **Context Research** — identify the project's security patterns, frameworks, auth model
+2. **Vulnerability Assessment** — check 6 categories: injection, auth/access, data exposure, crypto, config, and dependency risks
+3. **Confidence Filtering** — score each finding 0–1. Only findings above 0.8 confidence are reported, reducing false positives
+
+For **QUICK** mode, only secret scanning and obvious injection checks run. For **DEEP** mode, full data flow tracing and exploit scenarios are included.
 
 ## Output
 
-Reviews include:
+Findings are organized by severity:
 
-- Critical security issues with fixes
-- Performance bottlenecks with optimization suggestions
-- Style improvements aligned with codebase conventions
-- Test coverage gaps with test ideas
-- Overall quality assessment
+```
+## Code Review: src/auth/ (DEEP mode)
+
+### Critical Issues
+- Unsanitized SQL in query builder at db/queries.ts:42
+  [Injection] (confidence: 0.95) — attacker can bypass auth via crafted email field
+  → Use parameterized queries instead of string interpolation
+
+### Important Issues
+- Missing rate limit on login endpoint at api/auth.ts:18
+
+### Suggestions
+- Consider extracting validation logic into shared util
+
+### Summary
+Auth module is functional but has one critical SQL injection vulnerability.
+```
 
 ## When to Use
 
-- Before merging high-risk changes
-- Security-sensitive code (auth, payments, data handling)
-- Performance-critical paths
-- Public API changes
-- Junior developer code for mentorship
+- **Before merging** — catch issues before they reach `main`
+- **After implementing a feature** — verify quality before [`/cf-commit`](/docs/skills/cf-commit/)
+- **Security-sensitive code** — auth, payments, data handling, crypto
+- **Performance-critical paths** — database queries, hot loops, API endpoints
+- **Unfamiliar code** — code you inherited or haven't touched in a while
+- **Learning** — see what a thorough review looks like for mentorship
+
+## Part of the Workflow
+
+`/cf-review` fits naturally into the Coding Friend pipeline:
+
+```
+/cf-plan → implement (TDD) → /cf-review → /cf-ship
+```
+
+See the full [workflow guide](/docs/getting-started/workflows/) for how all skills connect.
+
+You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/skills/cf-ship/) (which runs verification + commit + push + PR), it forms a complete quality gate before code reaches production.
+
+### Auto-Reminder
+
+A [`review-gate` hook](/docs/reference/hooks/) runs when the agent finishes a response. If you have significant uncommitted changes and haven't run a review yet, it gently reminds you:
+
+> You have uncommitted changes. Consider running `/cf-review` or `/cf-commit` before finishing.
+
+This is a soft nudge — not a blocker. Configurable via [`.coding-friend/config.json`](/docs/configuration/config-json/):
+
+```json
+{
+  "reviewGate": true,
+  "reviewGateThreshold": 50
+}
+```
+
+## Defense in Depth
+
+`/cf-review` is one layer in Coding Friend's [multi-layer security approach](/docs/reference/security/):
+
+| Layer | Component | When | What |
+|-------|-----------|------|------|
+| 1 | [`privacy-block` hook](/docs/reference/security/#file-level-protection) | Every tool call | Blocks reading `.env`, secrets, keys |
+| 2 | `review-gate` hook | Agent stop | Reminds to review before finishing |
+| 3 | [`/cf-commit`](/docs/skills/cf-commit/) secret scan | On commit | Scans staged diff for leaked secrets |
+| 4 | `/cf-review` Layer 3 | On review | Deep security analysis with confidence scoring |

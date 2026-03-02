@@ -8,9 +8,9 @@ Coding Friend installs globally. No files are copied into your project. On every
 
 ## Setup
 
-- **New project**: run `cf init` to create workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configure `.gitignore`, language, and `/cf-learn` settings.
-- **Existing project**: nothing needed — Coding Friend is already active. Optionally run `cf init` for project-specific settings.
-- **Per-project config** (optional): `.coding-friend/config.json` to customize docs folder, toggle hooks. `.coding-friend/ignore` to block directories from agent access.
+- **New project**: run [`cf init`](/docs/cli/cf-init/) to create workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`), configure `.gitignore`, language, and [`/cf-learn`](/docs/skills/cf-learn/) settings.
+- **Existing project**: nothing needed — Coding Friend is already active. Optionally run [`cf init`](/docs/cli/cf-init/) for project-specific settings.
+- **Per-project config** (optional): [`.coding-friend/config.json`](/docs/configuration/config-json/) to customize docs folder, toggle hooks. [`.coding-friend/ignore`](/docs/configuration/ignore-patterns/) to block directories from agent access.
 
 ## Plan
 
@@ -34,7 +34,7 @@ TDD kicks in automatically when writing production code — no slash command nee
 /cf-fix Login fails with 401 when token is valid
 ```
 
-Reproduce, locate root cause, fix, verify, and add a regression test. If 3 fix attempts fail, auto-escalates to `cf-sys-debug` (4-phase systematic debugging).
+Reproduce, locate root cause, fix, verify, and add a regression test. If 3 fix attempts fail, auto-escalates to [`cf-sys-debug`](/docs/skills/cf-sys-debug/) (4-phase systematic debugging).
 
 ## Review
 
@@ -42,13 +42,15 @@ Reproduce, locate root cause, fix, verify, and add a regression test. If 3 fix a
 /cf-review
 ```
 
-Runs in a forked context so it doesn't pollute your main conversation.
+Runs in a **forked subagent** ([`code-reviewer`](/docs/reference/agents/#code-reviewer)) — isolated context, no interference with your main conversation. Review depth is automatically scaled to the size and sensitivity of your changes (QUICK / STANDARD / DEEP). Touches auth or crypto files? Always gets a deep review.
 
 - `/cf-review` — all uncommitted changes
 - `/cf-review src/auth/` — specific directory
 - `/cf-review HEAD~3..HEAD` — last 3 commits
 
-Reports: **Critical** (must fix) > **Important** (should fix) > **Suggestions**.
+4-layer analysis: plan alignment, code quality, security (3-phase with confidence scoring), and testing. Reports: **Critical** (must fix) > **Important** (should fix) > **Suggestions**.
+
+A [`review-gate` hook](/docs/reference/hooks/) also auto-reminds you to review when you have significant uncommitted changes — so you don't forget. See [`/cf-review`](/docs/skills/cf-review/) for the full mechanism.
 
 ## Commit
 
@@ -104,18 +106,18 @@ Saves project knowledge for the AI to use in future sessions (`docs/memory/`). R
 /cf-learn dependency injection
 ```
 
-Extracts learnings so you actually learn from vibe coding — not just let AI do everything. Also auto-invoked when substantial new knowledge is detected. Output to configured dir (default: `docs/learn/`). Read with `cf host` or use as MCP server with `cf mcp`.
+Extracts learnings so you actually learn from vibe coding — not just let AI do everything. Also auto-invoked when substantial new knowledge is detected. Output to configured dir (default: `docs/learn/`). Read with [`cf host`](/docs/cli/cf-host/) or use as MCP server with [`cf mcp`](/docs/cli/cf-mcp/).
 
 ## Typical Flow
 
-1. `/cf-plan Add dark mode toggle` — plan
-2. Implement (TDD auto-enforced) — code
-3. `/cf-review` — review
-4. `/cf-ship Dark mode feature` — ship
-5. `/cf-remember` + `/cf-learn` — capture knowledge
+1. [`/cf-plan`](/docs/skills/cf-plan/) `Add dark mode toggle` — plan
+2. Implement ([TDD](/docs/skills/cf-tdd/) auto-enforced) — code
+3. [`/cf-review`](/docs/skills/cf-review/) — review
+4. [`/cf-ship`](/docs/skills/cf-ship/) `Dark mode feature` — ship
+5. [`/cf-remember`](/docs/skills/cf-remember/) + [`/cf-learn`](/docs/skills/cf-learn/) — capture knowledge
 
 ## What's Automatic vs Manual
 
-**Automatic** (no action needed): TDD enforcement, systematic debugging (after 3 failed fixes), verification before done, privacy block (.env, credentials), scout block (node_modules, dist), prompt injection defense, session bootstrap, rules injection, learning extraction on substantial knowledge.
+**Automatic** (no action needed): [TDD enforcement](/docs/skills/cf-tdd/), [systematic debugging](/docs/skills/cf-sys-debug/) (after 3 failed fixes), [verification before done](/docs/skills/cf-verification/), [privacy block](/docs/configuration/privacy/) (.env, credentials), scout block (node_modules, dist), [prompt injection defense](/docs/reference/security/), session bootstrap, rules injection, [learning extraction](/docs/skills/cf-learn/) on substantial knowledge.
 
-**Manual** (slash commands): `cf init`, `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research`.
+**Manual** (slash commands): [`cf init`](/docs/cli/cf-init/), [`/cf-plan`](/docs/skills/cf-plan/), [`/cf-fix`](/docs/skills/cf-fix/), [`/cf-ask`](/docs/skills/cf-ask/), [`/cf-optimize`](/docs/skills/cf-optimize/), [`/cf-review`](/docs/skills/cf-review/), [`/cf-commit`](/docs/skills/cf-commit/), [`/cf-ship`](/docs/skills/cf-ship/), [`/cf-remember`](/docs/skills/cf-remember/), [`/cf-learn`](/docs/skills/cf-learn/), [`/cf-research`](/docs/skills/cf-research/).
