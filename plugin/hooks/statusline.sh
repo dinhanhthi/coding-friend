@@ -79,17 +79,13 @@ usage_text=""
 utilization=""
 resets_at=""
 
-CREDS=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null) || true
-ACCESS_TOKEN=""
-if [ -n "$CREDS" ]; then
-  ACCESS_TOKEN=$(echo "$CREDS" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
-fi
+ACCESS_TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || true
 
 if [ -n "$ACCESS_TOKEN" ]; then
   usage_json=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    --header @- \
     -H "anthropic-beta: oauth-2025-04-20" \
-    -H "Content-Type: application/json" 2>/dev/null) || true
+    -H "Content-Type: application/json" 2>/dev/null <<< "Authorization: Bearer $ACCESS_TOKEN") || true
 
   if [ -n "$usage_json" ]; then
     utilization=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty' 2>/dev/null | cut -d. -f1)
