@@ -93,6 +93,24 @@ npm run build
 node dist/index.js /path/to/docs/learn
 ```
 
+For Claude Desktop with the compiled version:
+
+```json
+{
+  "mcpServers": {
+    "coding-friend-learn": {
+      "command": "node",
+      "args": [
+        "/path/to/coding-friend/cli/lib/learn-mcp/dist/index.js",
+        "/path/to/your/docs/learn"
+      ]
+    }
+  }
+}
+```
+
+> **Note:** The path must include `/cli/lib/learn-mcp/`, not `/lib/learn-mcp/`. Run `npm run build` first to generate `dist/`.
+
 ## Docs Directory Structure
 
 ```
