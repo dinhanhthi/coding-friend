@@ -213,7 +213,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
             log.success("Plugin updated!");
 
             // Verify with retry — installed_plugins.json may not be written immediately
-            let newVersion = currentVersion;
+            let newVersion: string | null = currentVersion;
             for (let i = 0; i < 5; i++) {
               newVersion = getInstalledVersion();
               if (newVersion !== currentVersion) break;
