@@ -32,14 +32,14 @@ Scale to review mode: QUICK = secrets + obvious injection only. STANDARD = full 
 
 **Vulnerability categories** (check each against changed code):
 
-| Category | Look for |
-|----------|----------|
-| Input Validation | SQL/command/XXE/template injection, path traversal |
-| Auth & Access | Auth bypass, privilege escalation, session flaws, JWT issues |
-| Secrets & Crypto | Hardcoded keys/tokens, weak crypto, improper key storage |
-| Code Execution | RCE via deserialization, eval injection, XSS |
-| Data Exposure | Sensitive data in logs, PII handling, debug info exposure |
-| Prompt Injection | External content targeting AI without sanitization |
+| Category         | Look for                                                     |
+| ---------------- | ------------------------------------------------------------ |
+| Input Validation | SQL/command/XXE/template injection, path traversal           |
+| Auth & Access    | Auth bypass, privilege escalation, session flaws, JWT issues |
+| Secrets & Crypto | Hardcoded keys/tokens, weak crypto, improper key storage     |
+| Code Execution   | RCE via deserialization, eval injection, XSS                 |
+| Data Exposure    | Sensitive data in logs, PII handling, debug info exposure    |
+| Prompt Injection | External content targeting AI without sanitization           |
 
 **Method**: Trace data flow from user inputs → processing → sensitive operations. Flag where untrusted data crosses trust boundaries without validation.
 

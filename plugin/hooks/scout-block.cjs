@@ -24,37 +24,37 @@
  *   Fails open on any parse or unexpected error.
  */
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // ---------------------------------------------------------------------------
 // Default patterns — always blocked unless negated by user
 // ---------------------------------------------------------------------------
 const DEFAULT_PATTERNS = [
-  'node_modules',
-  '.pnpm',
-  'dist',
-  'build',
-  '.next',
-  '.nuxt',
-  '.svelte-kit',
-  'out',
-  '.output',
-  '__pycache__',
-  '.venv',
-  'venv',
-  '.tox',
-  'vendor',
-  'target',
-  '.git',
-  'coverage',
-  '.nyc_output',
-  '.turbo',
-  '.cache',
-  '.parcel-cache',
-  '.webpack',
+  "node_modules",
+  ".pnpm",
+  "dist",
+  "build",
+  ".next",
+  ".nuxt",
+  ".svelte-kit",
+  "out",
+  ".output",
+  "__pycache__",
+  ".venv",
+  "venv",
+  ".tox",
+  "vendor",
+  "target",
+  ".git",
+  "coverage",
+  ".nyc_output",
+  ".turbo",
+  ".cache",
+  ".parcel-cache",
+  ".webpack",
 ];
 
 // ---------------------------------------------------------------------------
@@ -68,10 +68,10 @@ const DEFAULT_PATTERNS = [
  * - strip leading /
  */
 function normalizePath(p) {
-  if (!p || typeof p !== 'string') return '';
-  let norm = p.replace(/\\/g, '/');
-  if (norm.startsWith('./')) norm = norm.slice(2);
-  if (norm.startsWith('/')) norm = norm.slice(1);
+  if (!p || typeof p !== "string") return "";
+  let norm = p.replace(/\\/g, "/");
+  if (norm.startsWith("./")) norm = norm.slice(2);
+  if (norm.startsWith("/")) norm = norm.slice(1);
   return norm;
 }
 
@@ -84,19 +84,19 @@ function parseIgnoreFile(content) {
   const negations = [];
   if (!content) return { blocks, negations };
 
-  for (let line of content.split('\n')) {
+  for (let line of content.split("\n")) {
     // strip inline comments
-    const commentIdx = line.indexOf('#');
+    const commentIdx = line.indexOf("#");
     if (commentIdx !== -1) line = line.slice(0, commentIdx);
     line = line.trim();
     if (!line) continue;
 
-    if (line.startsWith('!')) {
+    if (line.startsWith("!")) {
       let pat = line.slice(1).trim();
-      pat = pat.replace(/\/+$/, ''); // strip trailing /
+      pat = pat.replace(/\/+$/, ""); // strip trailing /
       if (pat) negations.push(pat);
     } else {
-      let pat = line.replace(/\/+$/, ''); // strip trailing /
+      let pat = line.replace(/\/+$/, ""); // strip trailing /
       if (pat) blocks.push(pat);
     }
   }
@@ -130,11 +130,11 @@ function pathMatchesPattern(normPath, pattern) {
   // Exact match
   if (normPath === pattern) return true;
   // Starts with pattern/
-  if (normPath.startsWith(pattern + '/')) return true;
+  if (normPath.startsWith(pattern + "/")) return true;
   // Contains /pattern/ as segment
-  if (normPath.includes('/' + pattern + '/')) return true;
+  if (normPath.includes("/" + pattern + "/")) return true;
   // Ends with /pattern
-  if (normPath.endsWith('/' + pattern)) return true;
+  if (normPath.endsWith("/" + pattern)) return true;
   return false;
 }
 
@@ -156,7 +156,7 @@ function isBlocked(filePath, patterns) {
  * Looks at: file_path, path, pattern
  */
 function extractPaths(toolInput) {
-  if (!toolInput || typeof toolInput !== 'object') return [];
+  if (!toolInput || typeof toolInput !== "object") return [];
   const paths = [];
   if (toolInput.file_path) paths.push(toolInput.file_path);
   if (toolInput.path) paths.push(toolInput.path);
@@ -187,12 +187,12 @@ if (require.main === module) {
 function main() {
   try {
     // Check if disabled via config
-    const configPath = '.coding-friend/config.json';
+    const configPath = ".coding-friend/config.json";
     if (fs.existsSync(configPath)) {
       try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
         if (config.scoutBlock === false) {
-          process.stdout.write('{}');
+          process.stdout.write("{}");
           process.exit(0);
         }
       } catch {
@@ -201,34 +201,34 @@ function main() {
     }
 
     // Load user ignore file
-    let userContent = '';
+    let userContent = "";
     const pluginRoot =
       process.env.CLAUDE_PLUGIN_ROOT ||
-      path.resolve(path.dirname(__filename), '..');
-    const localIgnore = '.coding-friend/ignore';
-    const pluginIgnore = path.join(pluginRoot, '.coding-friend/ignore');
+      path.resolve(path.dirname(__filename), "..");
+    const localIgnore = ".coding-friend/ignore";
+    const pluginIgnore = path.join(pluginRoot, ".coding-friend/ignore");
 
     if (fs.existsSync(localIgnore)) {
-      userContent = fs.readFileSync(localIgnore, 'utf8');
+      userContent = fs.readFileSync(localIgnore, "utf8");
     } else if (fs.existsSync(pluginIgnore)) {
-      userContent = fs.readFileSync(pluginIgnore, 'utf8');
+      userContent = fs.readFileSync(pluginIgnore, "utf8");
     }
 
     const { blocks, negations } = parseIgnoreFile(userContent);
     const patterns = buildEffectivePatterns(blocks, negations);
 
     // Read stdin
-    let input = '';
+    let input = "";
     try {
-      input = fs.readFileSync(0, 'utf8');
+      input = fs.readFileSync(0, "utf8");
     } catch {
       // No stdin — fail open
-      process.stdout.write('{}');
+      process.stdout.write("{}");
       process.exit(0);
     }
 
     if (!input.trim()) {
-      process.stdout.write('{}');
+      process.stdout.write("{}");
       process.exit(0);
     }
 
@@ -237,13 +237,13 @@ function main() {
       parsed = JSON.parse(input);
     } catch {
       // Malformed JSON — fail open
-      process.stdout.write('{}');
+      process.stdout.write("{}");
       process.exit(0);
     }
 
     const toolInput = parsed.tool_input;
-    if (!toolInput || typeof toolInput !== 'object') {
-      process.stdout.write('{}');
+    if (!toolInput || typeof toolInput !== "object") {
+      process.stdout.write("{}");
       process.exit(0);
     }
 
@@ -253,7 +253,7 @@ function main() {
       if (matchedPattern) {
         const result = {
           hookSpecificOutput: {
-            decision: 'block',
+            decision: "block",
             reason: `Access to '${p}' blocked by ignore pattern: ${matchedPattern}`,
           },
         };
@@ -263,11 +263,11 @@ function main() {
     }
 
     // Allow
-    process.stdout.write('{}');
+    process.stdout.write("{}");
     process.exit(0);
   } catch {
     // Unexpected error — fail open
-    process.stdout.write('{}');
+    process.stdout.write("{}");
     process.exit(0);
   }
 }

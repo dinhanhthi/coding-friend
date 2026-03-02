@@ -150,7 +150,7 @@ agent: code-reviewer
 | `session-init.sh`       | SessionStart     | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
 | `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                |
 | `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                  |
-| `scout-block.cjs`        | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
+| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
 | `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |

@@ -2,12 +2,12 @@
 
 ## Packages
 
-| Package | Version file | Changelog | Tag pattern |
-|---------|-------------|-----------|-------------|
-| Plugin | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md` | `v*` |
-| CLI | `cli/package.json` | `cli/CHANGELOG.md` | `cli-v*` |
-| Learn MCP | `cli/lib/learn-mcp/package.json` | `cli/lib/learn-mcp/CHANGELOG.md` | `learn-mcp-v*` |
-| Learn Host | `cli/lib/learn-host/package.json` | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
+| Package    | Version file                                              | Changelog                         | Tag pattern     |
+| ---------- | --------------------------------------------------------- | --------------------------------- | --------------- |
+| Plugin     | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md`             | `v*`            |
+| CLI        | `cli/package.json`                                        | `cli/CHANGELOG.md`                | `cli-v*`        |
+| Learn MCP  | `cli/lib/learn-mcp/package.json`                          | `cli/lib/learn-mcp/CHANGELOG.md`  | `learn-mcp-v*`  |
+| Learn Host | `cli/lib/learn-host/package.json`                         | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
 
 ## Workflow
 
@@ -56,8 +56,8 @@ cf dev on /path/to/coding-friend
 
 ## Bump levels
 
-| Level | When |
-|-------|------|
-| **PATCH** (x.x.1) | Bug fix, typo, docs update |
-| **MINOR** (x.1.0) | New feature, new skill, new hook (backward compatible) |
+| Level             | When                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| **PATCH** (x.x.1) | Bug fix, typo, docs update                                           |
+| **MINOR** (x.1.0) | New feature, new skill, new hook (backward compatible)               |
 | **MAJOR** (1.0.0) | Breaking change (config format, removed skill, changed CLI behavior) |

@@ -54,6 +54,7 @@ SECRETS=$(git diff --cached | grep -c -iE "(api[_-]?key|token|password|secret|pr
 ```
 
 If `SECRETS > 0`:
+
 1. Show matches with context: `git diff --cached | grep -iE -C2 "(api[_-]?key|token|password|secret|private[_-]?key|credential)"`
 2. Review each match — variable names like `getApiKey()` or `TOKEN_TYPE` are OK, actual secret values are NOT
 3. If real secrets found: unstage the file (`git reset HEAD <file>`), suggest adding to `.gitignore`

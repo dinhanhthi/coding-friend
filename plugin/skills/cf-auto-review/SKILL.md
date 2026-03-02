@@ -36,13 +36,13 @@ Scale depth to review mode (QUICK skips Phase 1, DEEP adds exploit scenarios):
 
 Check changed code against these categories:
 
-| Category | Look for |
-|----------|----------|
+| Category             | Look for                                                                  |
+| -------------------- | ------------------------------------------------------------------------- |
 | **Input Validation** | SQL injection, command injection, XXE, template injection, path traversal |
-| **Auth & Access** | Auth bypass, privilege escalation, session flaws, JWT issues |
-| **Secrets & Crypto** | Hardcoded keys/tokens, weak crypto, improper key storage |
-| **Code Execution** | RCE via deserialization, eval injection, XSS (reflected/stored/DOM) |
-| **Data Exposure** | Sensitive data in logs, PII handling, API endpoint leakage, debug info |
+| **Auth & Access**    | Auth bypass, privilege escalation, session flaws, JWT issues              |
+| **Secrets & Crypto** | Hardcoded keys/tokens, weak crypto, improper key storage                  |
+| **Code Execution**   | RCE via deserialization, eval injection, XSS (reflected/stored/DOM)       |
+| **Data Exposure**    | Sensitive data in logs, PII handling, API endpoint leakage, debug info    |
 | **Prompt Injection** | External content (web, API, user input) targeting AI without sanitization |
 
 **Method**: Trace data flow from user inputs → through processing → to sensitive operations. Flag where untrusted data crosses trust boundaries without validation.
@@ -50,11 +50,13 @@ Check changed code against these categories:
 #### Phase 3: Confidence Filtering
 
 For each finding, assign confidence (0.0–1.0):
+
 - **0.9–1.0**: Certain exploit path identified
 - **0.8–0.9**: Clear vulnerability pattern with known exploitation methods
 - **< 0.8**: Do NOT report — too speculative
 
 **False positives** (do NOT flag):
+
 - UUIDs as identifiers (assumed unguessable)
 - Environment variables / CLI flags (trusted values)
 - Framework default protections (React auto-escaping, Angular sanitization) unless explicitly bypassed

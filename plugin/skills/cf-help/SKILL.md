@@ -62,17 +62,20 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 **IMPORTANT**: Whenever you activate a coding-friend skill, agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
 
 Format:
+
 ```
 > ✨ **CODING FRIEND** → <name> activated
 ```
 
 Examples:
+
 - `> ✨ **CODING FRIEND** → /cf-commit activated` (slash command)
 - `> ✨ **CODING FRIEND** → cf-tdd activated` (auto-invoked skill)
 - `> ✨ **CODING FRIEND** → writer agent activated` (agent dispatch)
 - `> ✨ **CODING FRIEND** → cf-verification activated` (completion gate)
 
 Rules:
+
 - Display the signal as the FIRST line of your response when the skill/agent starts
 - Use the exact format above — blockquote with bold "CODING FRIEND"
 - For slash commands: include the `/` prefix
@@ -108,14 +111,18 @@ Files support 3 optional sections:
 - `## After` — runs AFTER the final step completes
 
 Example `.coding-friend/skills/cf-commit.md`:
+
 ```markdown
 ## Before
+
 - Check branch naming convention
 
 ## Rules
+
 - Always include ticket number in subject
 
 ## After
+
 - Run tests if commit type is feat: or fix:
 ```
 

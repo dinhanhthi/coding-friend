@@ -59,11 +59,11 @@ Reviews run in a **forked subagent** ([`code-reviewer`](/docs/reference/agents/#
 
 Not every change needs a full security deep-dive. `/cf-review` automatically detects the size and sensitivity of your changes and scales accordingly:
 
-| Mode | When | What Happens |
-|------|------|--------------|
-| **QUICK** | ≤3 files, ≤50 lines, no sensitive paths | Secret scan + obvious issues only. Fast. |
-| **STANDARD** | 4–10 files or 51–300 lines | Full 4-layer review. All security phases, concise. |
-| **DEEP** | >10 files, >300 lines, or sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
+| Mode         | When                                              | What Happens                                                            |
+| ------------ | ------------------------------------------------- | ----------------------------------------------------------------------- |
+| **QUICK**    | ≤3 files, ≤50 lines, no sensitive paths           | Secret scan + obvious issues only. Fast.                                |
+| **STANDARD** | 4–10 files or 51–300 lines                        | Full 4-layer review. All security phases, concise.                      |
+| **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
 
 **Sensitive path detection**: if any changed file matches patterns like `auth`, `crypto`, `token`, `session`, `password`, `.env`, the review always escalates to **DEEP** — regardless of change size.
 
@@ -73,12 +73,12 @@ You can override auto-detection with `--deep` or `--quick` flags.
 
 The reviewer applies four layers of analysis, each focused on a different dimension:
 
-| Layer | Focus |
-|-------|-------|
-| **1. Plan Alignment** | Does the code match the intended design? Missing pieces? |
-| **2. Code Quality** | Clarity, naming, consistency, complexity, performance |
-| **3. Security** | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
-| **4. Testing** | Coverage gaps, edge cases, error paths, integration tests |
+| Layer                 | Focus                                                               |
+| --------------------- | ------------------------------------------------------------------- |
+| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?            |
+| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance               |
+| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
+| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests           |
 
 ### Security Analysis (Layer 3)
 
@@ -152,9 +152,9 @@ This is a soft nudge — not a blocker. Configurable via [`.coding-friend/config
 
 `/cf-review` is one layer in Coding Friend's [multi-layer security approach](/docs/reference/security/):
 
-| Layer | Component | When | What |
-|-------|-----------|------|------|
-| 1 | [`privacy-block` hook](/docs/reference/security/#file-level-protection) | Every tool call | Blocks reading `.env`, secrets, keys |
-| 2 | `review-gate` hook | Agent stop | Reminds to review before finishing |
-| 3 | [`/cf-commit`](/docs/skills/cf-commit/) secret scan | On commit | Scans staged diff for leaked secrets |
-| 4 | `/cf-review` Layer 3 | On review | Deep security analysis with confidence scoring |
+| Layer | Component                                                               | When            | What                                           |
+| ----- | ----------------------------------------------------------------------- | --------------- | ---------------------------------------------- |
+| 1     | [`privacy-block` hook](/docs/reference/security/#file-level-protection) | Every tool call | Blocks reading `.env`, secrets, keys           |
+| 2     | `review-gate` hook                                                      | Agent stop      | Reminds to review before finishing             |
+| 3     | [`/cf-commit`](/docs/skills/cf-commit/) secret scan                     | On commit       | Scans staged diff for leaked secrets           |
+| 4     | `/cf-review` Layer 3                                                    | On review       | Deep security analysis with confidence scoring |
