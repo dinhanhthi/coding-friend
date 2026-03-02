@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.1.1 (unpublished)
+## v0.1.1 (2026-03-02)
 
 - Fix UserPromptSubmit hook error on new session
 - Merge `/changelog` into `/bump-version` skill
