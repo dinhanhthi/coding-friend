@@ -2,6 +2,11 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.1.1 (unpublished)
+
+- Fix UserPromptSubmit hook error on new session
+- Merge `/changelog` into `/bump-version` skill
+
 ## v0.1.0 (2026-03-01)
 
 - Add custom skill guides: extend built-in skills with user-defined Before/Rules/After sections in `.coding-friend/skills/<skill-name>.md`
