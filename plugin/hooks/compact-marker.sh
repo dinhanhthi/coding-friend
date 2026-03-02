@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-# PreCompact hook: Preserve critical context before compaction
+# PreCompact hook: Preserve critical context before compaction.
+#
+# Injects a compact-marker into the conversation so the agent retains
+# key rules, available skills, and security guidelines after context
+# compaction. Without this, the agent may forget coding-friend is loaded.
+#
+# Output:
+#   JSON with hookSpecificOutput.additionalContext containing the marker.
+#
+# Configuration:
+#   None — always active when coding-friend plugin is loaded.
 
 set -euo pipefail
 

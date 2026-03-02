@@ -1,7 +1,23 @@
 #!/usr/bin/env bash
-# Statusline: Show session info in Claude Code status bar
-# Usage: Run `cf statusline` to configure, or add to ~/.claude/settings.json:
+# Statusline: Show session info in Claude Code status bar.
+#
+# Displays a compact status line with: plugin version, current directory,
+# active model, git branch, and API usage percentage with color-coded
+# gradient (green→red) and reset time.
+#
+# Usage percentage is fetched via a Swift helper (~/.claude/fetch-claude-usage.swift).
+# Time format respects macOS 24h preference (AppleICUForce24HourTime).
+#
+# Setup:
+#   Run `cf statusline` to configure, or add manually to ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "command": "bash <plugin-path>/hooks/statusline.sh" }
+#
+# Integration contract:
+#   stdin  – JSON with current_dir, session.model
+#   stdout – ANSI-colored status line string
+#
+# Configuration:
+#   None — always active once configured in settings.
 
 set -euo pipefail
 
