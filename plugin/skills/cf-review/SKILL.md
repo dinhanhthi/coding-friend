@@ -34,11 +34,11 @@ Review the code changes for: **$ARGUMENTS**
    SENSITIVE=$(git diff --name-only HEAD | grep -ciE "(auth|security|crypto|token|session|middleware|api/|login|password|secret|\.env)" || echo 0)
    ```
 
-   | Mode | Condition | Behavior |
-   |------|-----------|----------|
-   | **QUICK** | ≤3 files AND ≤50 lines AND no sensitive paths | Layer 3: secrets + obvious injection only. Skip context research. |
-   | **STANDARD** | 4–10 files OR 51–300 lines | Full 4-layer review. All security phases, concise. |
-   | **DEEP** | >10 files OR >300 lines OR sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
+   | Mode         | Condition                                          | Behavior                                                                |
+   | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
+   | **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection only. Skip context research.       |
+   | **STANDARD** | 4–10 files OR 51–300 lines                         | Full 4-layer review. All security phases, concise.                      |
+   | **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
 
    If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
 

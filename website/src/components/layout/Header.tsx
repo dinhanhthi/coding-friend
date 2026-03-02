@@ -1,12 +1,10 @@
 "use client";
 
+import PagefindSearch from "@/components/docs/PagefindSearch";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import Container from "@/components/ui/Container";
-import Button from "@/components/ui/Button";
-import PagefindSearch from "@/components/docs/PagefindSearch";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },

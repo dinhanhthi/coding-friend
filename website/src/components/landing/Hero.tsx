@@ -85,7 +85,7 @@ export default function Hero() {
             <Button
               href="/docs/getting-started/installation/"
               size="lg"
-              className="w-full sm:w-auto bg-slate-700!"
+              className="w-full bg-slate-700! sm:w-auto"
             >
               Get Started
               <svg

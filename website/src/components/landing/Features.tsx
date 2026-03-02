@@ -185,8 +185,8 @@ const CustomGuides = () => {
       <div className="text-center">
         <h2 className="text-3xl font-bold text-white">Custom Skill Guides</h2>
         <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-          Extend any built-in skill with your own rules. Add steps before, after,
-          or throughout any workflow.
+          Extend any built-in skill with your own rules. Add steps before,
+          after, or throughout any workflow.
         </p>
       </div>
 
@@ -248,7 +248,7 @@ const CustomGuides = () => {
             key={index}
             className={`bg-navy-950/50 rounded-xl border ${item.borderColor} p-4 text-center`}
           >
-            <code className={`font-bold text-sm! border-none! ${item.color}`}>
+            <code className={`border-none! text-sm! font-bold ${item.color}`}>
               {item.section}
             </code>
             <p className="mt-2 text-sm text-slate-400">{item.desc}</p>

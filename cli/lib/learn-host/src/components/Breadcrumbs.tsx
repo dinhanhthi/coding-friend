@@ -8,10 +8,7 @@ interface Crumb {
 export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
     <nav className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-      <Link
-        href="/"
-        className="hover:text-amber-600 dark:hover:text-amber-400"
-      >
+      <Link href="/" className="hover:text-amber-600 dark:hover:text-amber-400">
         Home
       </Link>
       {crumbs.map((crumb, i) => (
