@@ -21,33 +21,42 @@ BEFORE reading code or researching, identify what you don't know:
 
 Only proceed after the user confirms your understanding.
 
-### Step 2: Understand the Problem
+### Step 2: Delegate Exploration to Planner Agent
 
-1. Read relevant source files to understand current codebase
-2. Identify affected modules, dependencies, and constraints
-3. If you find information that contradicts your understanding, **stop and ask** the user
+Launch the **planner agent** to explore the codebase and brainstorm approaches. This runs in a separate context to preserve the main conversation's token budget.
 
-### Step 3: Brainstorm Approaches
+Use the **Agent tool** with `subagent_type: "coding-friend:planner"`. Pass a detailed prompt including:
 
-1. Generate 2-3 possible approaches
-2. For each approach, list:
-   - **Pros**: advantages
-   - **Cons**: disadvantages
-   - **Effort**: rough task count
-   - **Risk**: what could go wrong
-   - **Confidence**: high/medium/low — how sure you are this will work
-3. Recommend one approach with rationale
+- The user's request (`$ARGUMENTS`)
+- Confirmed assumptions from Step 1
+- Any user preferences or constraints gathered in Step 1
+- Instruction to explore the codebase, identify affected files, and generate 2-3 approaches
 
-### Step 4: Validate with User
+**Prompt template for the agent:**
 
-Present to the user BEFORE writing the final plan:
+> Plan the following task: [user request]
+>
+> Confirmed assumptions: [list from Step 1]
+> User preferences: [any constraints from Step 1]
+>
+> Skip the clarification step — assumptions have already been confirmed with the user.
+> Focus on: exploring the codebase, identifying affected files and dependencies, and generating 2-3 possible approaches. For each approach, list pros, cons, effort (task count), risk, and confidence level. Recommend one approach with rationale.
 
-1. **Key assumptions** you made and their basis
-2. **Chosen approach** and why
-3. **Open questions** — anything you're less than confident about
-4. Wait for user approval or corrections
+Wait for the agent to return its findings.
 
-### Step 5: Write the Plan
+### Step 3: Validate with User
+
+Present the planner agent's findings to the user:
+
+1. **Key findings** from the codebase exploration
+2. **Approaches** with pros/cons (from the agent's analysis)
+3. **Recommended approach** and why
+4. **Open questions** — anything the agent flagged as uncertain
+5. Wait for user approval or corrections
+
+### Step 4: Write the Plan
+
+Based on the approved approach and the agent's findings:
 
 1. Break the chosen approach into small, sequential tasks
 2. Each task should be completable in one focused session
@@ -56,7 +65,7 @@ Present to the user BEFORE writing the final plan:
    - Expected outcome
    - How to verify it worked
 
-### Step 6: Save the Plan
+### Step 5: Save the Plan
 
 1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
 2. Use the TodoWrite tool to create a task list
@@ -102,6 +111,7 @@ After implementation: run `/cf-review` → then `/cf-commit`
 
 - Do NOT start implementing. This skill is for PLANNING only.
 - **Ask first, plan second** — never proceed with unclear requirements.
+- **Delegate exploration** — always use the planner agent for codebase exploration and approach brainstorming. Never do heavy codebase reading in the main conversation.
 - When uncertain, say so. State your confidence level and ask.
 - Do NOT assume which libraries, APIs, or tools to use without asking.
 - Plans should be concrete: exact file paths, function names, test commands.
