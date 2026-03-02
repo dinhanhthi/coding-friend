@@ -2,6 +2,17 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.2.0 (unpublished)
+
+- Add `/cf-review` reminder to `/cf-plan` and `/cf-fix` workflows to prevent skipping code review before commit ([#16d608c](https://github.com/dinhanhthi/coding-friend/commit/16d608c))
+- Add activation signal display for coding-friend skills and agents ([#2dd1668](https://github.com/dinhanhthi/coding-friend/commit/2dd1668))
+- Enhance `/cf-review` documentation with proportional review depth, security analysis, and cross-links ([#2220098](https://github.com/dinhanhthi/coding-friend/commit/2220098))
+- Enhance security review with proportional depth, auto-triggers, and defense-in-depth strategy ([#53994ce](https://github.com/dinhanhthi/coding-friend/commit/53994ce))
+- Rewrite `scout-block` hook as Node.js with default patterns and negation support ([#2364935](https://github.com/dinhanhthi/coding-friend/commit/2364935))
+- Add detailed descriptions to all hook files ([#c6fadbc](https://github.com/dinhanhthi/coding-friend/commit/c6fadbc))
+- Add `review-gate` hook documentation and update hook count from 7 to 8 ([#19a1775](https://github.com/dinhanhthi/coding-friend/commit/19a1775))
+- Reduce the number of colors on homepage ([#0c2f3a2](https://github.com/dinhanhthi/coding-friend/commit/0c2f3a2))
+
 ## v0.1.1 (2026-03-02)
 
 - Fix UserPromptSubmit hook error on new session
