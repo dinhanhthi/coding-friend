@@ -38,6 +38,22 @@ Note: The `review-gate` Stop hook auto-reminds to run `/cf-review` or `/cf-commi
 
 `/bump-version` accepts a package filter: `/bump-version cli`, `/bump-version learn-mcp patch`, etc.
 
+### Local plugin development
+
+Recommended development workflow (Read more: [Plugin README](plugin/README.md)):
+
+```bash
+# One-time setup
+cf dev on /path/to/coding-friend
+
+# Inner loop (repeat as many times as needed)
+# 1. Edit files
+# 2. cf dev sync
+# 3. Restart Claude Code and test
+
+# When feature is done — bump version once and commit
+```
+
 ## Bump levels
 
 | Level | When |
