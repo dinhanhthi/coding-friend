@@ -30,7 +30,7 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "cf-tdd", slug: "skills/cf-tdd" },
       { title: "cf-sys-debug", slug: "skills/cf-sys-debug" },
-      { title: "cf-code-review", slug: "skills/cf-code-review" },
+      { title: "cf-auto-review", slug: "skills/cf-auto-review" },
       { title: "cf-verification", slug: "skills/cf-verification" },
     ],
   },

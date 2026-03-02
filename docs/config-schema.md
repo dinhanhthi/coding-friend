@@ -28,6 +28,14 @@ coding-friend uses a layered config system:
   // Default: true
   "devRulesReminder": true,
 
+  // Enable/disable review-gate Stop hook (reminds to review/commit before finishing)
+  // Default: true
+  "reviewGate": true,
+
+  // Lines changed threshold before review-gate triggers a reminder
+  // Default: 50
+  "reviewGateThreshold": 50,
+
   // --- Learn settings ---
   "learn": {
     // Where to store learn docs.

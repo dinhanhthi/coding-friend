@@ -48,7 +48,7 @@ coding-friend/
 │   │   ├── cf-research/             # /cf-research — web research → docs/research/
 │   │   ├── cf-tdd/                  # TDD workflow (auto-invoked)
 │   │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
-│   │   ├── cf-code-review/          # Review guide (auto-invoked)
+│   │   ├── cf-auto-review/          # Review guide (auto-invoked)
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
@@ -91,7 +91,7 @@ coding-friend/
 | `cf-help`         | Bootstrap (session-init hook) | Meta-skill: skill discovery, core rules     |
 | `cf-tdd`          | Writing new code              | Iron law: no code without failing test      |
 | `cf-sys-debug`    | Debugging bugs                | 4-phase: investigate → analyze → test → fix |
-| `cf-code-review`  | During code review            | 4-layer: plan, quality, security, testing   |
+| `cf-auto-review`  | During code review            | 4-layer: plan, quality, security, testing   |
 | `cf-verification` | Before claiming done          | Gate: no claims without fresh evidence      |
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.

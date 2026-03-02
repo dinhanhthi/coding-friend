@@ -46,7 +46,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — When debugging: investigate → analyze → test → fix
-- **cf-code-review** — When reviewing code: plan, quality, security, testing
+- **cf-auto-review** — When reviewing code: plan, quality, security, testing
 - **cf-verification** — Before claiming done: run, read output, verify
 
 ## Available Agents

@@ -1,5 +1,5 @@
 ---
-name: cf-code-review
+name: cf-auto-review
 description: Code review methodology and checklist
 user-invocable: false
 ---
@@ -24,11 +24,43 @@ user-invocable: false
 
 ### Layer 3: Security
 
-- **Input validation**: Is user input validated at system boundaries?
-- **Injection**: Any SQL injection, XSS, command injection risks?
-- **Secrets**: Are API keys, passwords, tokens properly handled? Not in code?
-- **Auth**: Are authentication/authorization checks in place?
-- **Dependencies**: Any known vulnerable dependencies?
+Scale depth to review mode (QUICK skips Phase 1, DEEP adds exploit scenarios):
+
+#### Phase 1: Context Research (skip in QUICK mode)
+
+- Identify existing security frameworks/libraries in the project
+- Look for established sanitization/validation patterns
+- Understand trust boundaries (user input → internal → external services)
+
+#### Phase 2: Vulnerability Assessment
+
+Check changed code against these categories:
+
+| Category | Look for |
+|----------|----------|
+| **Input Validation** | SQL injection, command injection, XXE, template injection, path traversal |
+| **Auth & Access** | Auth bypass, privilege escalation, session flaws, JWT issues |
+| **Secrets & Crypto** | Hardcoded keys/tokens, weak crypto, improper key storage |
+| **Code Execution** | RCE via deserialization, eval injection, XSS (reflected/stored/DOM) |
+| **Data Exposure** | Sensitive data in logs, PII handling, API endpoint leakage, debug info |
+| **Prompt Injection** | External content (web, API, user input) targeting AI without sanitization |
+
+**Method**: Trace data flow from user inputs → through processing → to sensitive operations. Flag where untrusted data crosses trust boundaries without validation.
+
+#### Phase 3: Confidence Filtering
+
+For each finding, assign confidence (0.0–1.0):
+- **0.9–1.0**: Certain exploit path identified
+- **0.8–0.9**: Clear vulnerability pattern with known exploitation methods
+- **< 0.8**: Do NOT report — too speculative
+
+**False positives** (do NOT flag):
+- UUIDs as identifiers (assumed unguessable)
+- Environment variables / CLI flags (trusted values)
+- Framework default protections (React auto-escaping, Angular sanitization) unless explicitly bypassed
+- Client-side permission checks (not real security boundaries)
+- Logging non-PII data
+- DoS / rate limiting (out of scope for code review)
 
 ### Layer 4: Testing
 
