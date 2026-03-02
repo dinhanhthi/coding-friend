@@ -10,7 +10,7 @@ export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
     <nav className="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
       <Link
         href="/"
-        className="hover:text-violet-600 dark:hover:text-violet-400"
+        className="hover:text-amber-600 dark:hover:text-amber-400"
       >
         Home
       </Link>
@@ -20,7 +20,7 @@ export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
           {crumb.href ? (
             <Link
               href={crumb.href}
-              className="capitalize hover:text-violet-600 dark:hover:text-violet-400"
+              className="capitalize hover:text-amber-600 dark:hover:text-amber-400"
             >
               {crumb.label}
             </Link>
