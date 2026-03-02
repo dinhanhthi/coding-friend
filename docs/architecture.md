@@ -586,10 +586,10 @@ The project operates as 4 concurrent state machine layers.
 
 ### State Summary
 
-| Layer | States | Triggers |
-| --- | --- | --- |
-| Session | IDLE → INIT → ACTIVE → STOP_GATE → END | Session start/stop |
-| Coding | WAITING → TDD (RED/GREEN/REFACTOR) → VERIFY → REVIEW → COMMIT | User commands |
-| Debug | INVESTIGATE → ANALYZE → TEST → FIX → back to TDD | Test failures |
-| Knowledge | TRIGGER → CONFIG → IDENTIFY → CATEGORIZE → WRITE → CONSUME | /cf-learn, auto |
-| Security | PRIVACY_CHECK + SCOUT_CHECK → ALLOW/BLOCK | Every file tool use |
+| Layer     | States                                                        | Triggers            |
+| --------- | ------------------------------------------------------------- | ------------------- |
+| Session   | IDLE → INIT → ACTIVE → STOP_GATE → END                        | Session start/stop  |
+| Coding    | WAITING → TDD (RED/GREEN/REFACTOR) → VERIFY → REVIEW → COMMIT | User commands       |
+| Debug     | INVESTIGATE → ANALYZE → TEST → FIX → back to TDD              | Test failures       |
+| Knowledge | TRIGGER → CONFIG → IDENTIFY → CATEGORIZE → WRITE → CONSUME    | /cf-learn, auto     |
+| Security  | PRIVACY_CHECK + SCOUT_CHECK → ALLOW/BLOCK                     | Every file tool use |
