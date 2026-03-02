@@ -11,7 +11,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install init host mcp statusline update dev"
+  local commands="install uninstall init host mcp statusline update dev"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
@@ -38,6 +38,7 @@ _cf() {
   local -a commands
   commands=(
     'install:Install the Coding Friend plugin into Claude Code'
+    'uninstall:Uninstall the Coding Friend plugin from Claude Code'
     'init:Initialize coding-friend in current project'
     'host:Build and serve learning docs as a static website'
     'mcp:Setup MCP server for learning docs'
@@ -111,6 +112,25 @@ function replaceBlock(content: string, newBlock: string): string {
     newBlock +
     content.slice(endIdx + MARKER_END.length)
   );
+}
+
+/**
+ * Remove the shell completion block from the user's rc file.
+ * Returns true if the block was found and removed, false otherwise.
+ */
+export function removeShellCompletion(): boolean {
+  const rcPath = getShellRcPath();
+  if (!existsSync(rcPath)) return false;
+
+  const content = readFileSync(rcPath, "utf-8");
+  if (!content.includes(MARKER_START)) return false;
+
+  const updated = replaceBlock(content, "");
+  writeFileSync(rcPath, updated, "utf-8");
+
+  const rcName = getRcName(rcPath);
+  log.success(`Tab completion removed from ~/${rcName}`);
+  return true;
 }
 
 /**

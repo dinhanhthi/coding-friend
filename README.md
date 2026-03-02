@@ -140,7 +140,7 @@ Each sub-project has its own README with more details, check section Further Rea
 | Website development          | [website/README.md](website/README.md)                       |
 | Learn Host (local docs site) | [cli/lib/learn-host/README.md](cli/lib/learn-host/README.md) |
 | Learn MCP (MCP server)       | [cli/lib/learn-mcp/README.md](cli/lib/learn-mcp/README.md)   |
-| Workflows guide              | [docs/workflows.md](docs/workflows.md)                       |
+| Workflows guide              | [docs/workflows.md](website/src/content/docs/getting-started/workflows.mdx)                       |
 | Release workflow             | [docs/dev-release.md](docs/dev-release.md)                   |
 | Architecture                 | [docs/architecture.md](docs/architecture.md)                 |
 

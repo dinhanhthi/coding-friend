@@ -12,11 +12,11 @@ import {
   claudeSettingsPath,
   devStatePath,
   knownMarketplacesPath,
-  installedPluginsPath,
   pluginCachePath,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
+import { isPluginInstalled, isMarketplaceRegistered } from "../lib/plugin-state.js";
 import chalk from "chalk";
 
 const REMOTE_URL = "https://github.com/dinhanhthi/coding-friend.git";
@@ -31,19 +31,6 @@ interface DevState {
 
 function getDevState(): DevState | null {
   return readJson<DevState>(devStatePath());
-}
-
-function isPluginInstalled(): boolean {
-  const data = readJson<Record<string, unknown>>(installedPluginsPath());
-  if (!data) return false;
-  const plugins = (data.plugins ?? data) as Record<string, unknown>;
-  return Object.keys(plugins).some((k) => k.includes(PLUGIN_NAME));
-}
-
-function isMarketplaceRegistered(): boolean {
-  const data = readJson<Record<string, unknown>>(knownMarketplacesPath());
-  if (!data) return false;
-  return MARKETPLACE_NAME in data;
 }
 
 function ensureClaude(): boolean {
