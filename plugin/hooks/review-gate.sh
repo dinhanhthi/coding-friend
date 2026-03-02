@@ -93,9 +93,7 @@ ESCAPED_REMINDER=$(printf '%s' "$REMINDER" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
 cat <<EOF
 {
-  "hookSpecificOutput": {
-    "decision": "block",
-    "reason": "$ESCAPED_REMINDER"
-  }
+  "decision": "block",
+  "reason": "$ESCAPED_REMINDER"
 }
 EOF
