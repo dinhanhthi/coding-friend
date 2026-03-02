@@ -110,7 +110,7 @@ This is equivalent to `cf dev off && cf dev on` using the previously saved local
 
 **Why `cf dev on` alone is not enough:**
 
-When you run `cf dev on`, Claude Code installs the plugin from your local source into a **versioned cache directory** (e.g. `~/.claude/plugins/cache/.../0.0.2`). From that point on, Claude Code reads all hooks, skills, and agents from that cache — not directly from your source files.
+When you run `cf dev on`, Claude Code installs the plugin from your local source into a **versioned cache directory** (e.g. `~/.claude/plugins/cache/.../0.1.0`). From that point on, Claude Code reads all hooks, skills, and agents from that cache — not directly from your source files.
 
 This means: **edits to your local source are invisible to Claude Code until the cache is updated.**
 

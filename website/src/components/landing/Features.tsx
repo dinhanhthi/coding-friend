@@ -217,7 +217,7 @@ const CustomGuides = () => {
               <span className="font-bold text-orange-400">## After</span>
             </div>
             <div className="text-slate-400">
-              - Run /changelog if commit type is feat: or fix:
+              - Run tests if commit type is feat: or fix:
             </div>
           </div>
         </div>
