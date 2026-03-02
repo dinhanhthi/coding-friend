@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
-# Stop hook: Remind user to review/commit before finishing
-# Soft gate — reminds, does not block. Configurable via .coding-friend/config.json
+# Stop hook: Remind user to review/commit before finishing.
+#
+# Fires when the agent is about to stop. Checks for uncommitted git
+# changes and, if they exceed a configurable threshold (default: 50
+# lines), reminds the user to run /cf-review or /cf-commit first.
+# Detects sensitive files (auth, security, crypto) and suggests DEEP
+# review mode when found.
+#
+# Soft gate — blocks the stop to show the reminder, but the user can
+# dismiss it. Skips if already reviewed (marker file) or if the session
+# is inside a stop hook (prevents infinite loops).
+#
+# Integration contract:
+#   stdin  – JSON with stop_hook_active flag
+#   stdout – JSON with hookSpecificOutput.decision = "block" + reason
+#   Exit 0 = allow stop (no reminder needed)
+#
+# Configuration:
+#   "reviewGate": false in .coding-friend/config.json disables the hook.
+#   "reviewGateThreshold": <number> sets min lines changed (default: 50).
 
 set -euo pipefail
 

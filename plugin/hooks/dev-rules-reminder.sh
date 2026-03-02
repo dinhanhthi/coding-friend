@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
-# UserPromptSubmit hook: Inject lightweight development rules reminder
-# Keeps agent on track with core rules (<200 tokens)
-# Uses plain text output (not JSON) to avoid Claude Code bug #17550
+# UserPromptSubmit hook: Inject lightweight development rules reminder.
+#
+# Fires on every user prompt to keep the agent on track with core rules,
+# available skills, and security guidelines. Output is kept under 200
+# tokens to minimize context overhead.
+#
+# Uses plain text output (not JSON) to work around Claude Code bug #17550
 # where hookSpecificOutput JSON errors on first message of new session.
+#
+# Output:
+#   Plain text <system-reminder> block with rules, skills, and security.
+#
+# Configuration:
+#   "devRulesReminder": false in .coding-friend/config.json disables the hook.
 
 cat > /dev/null  # consume stdin
 

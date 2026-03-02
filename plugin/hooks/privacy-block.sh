@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
-# PreToolUse hook: Block access to sensitive files
-# Exit code 2 = block the tool execution
+# PreToolUse hook: Block access to sensitive files.
+#
+# Prevents the agent from reading files that match sensitive patterns
+# such as .env, .pem, .key, SSH keys, AWS/GPG credentials, and anything
+# containing "secret" or "credentials" in the path.
+#
+# Safe patterns (.example, .sample, .template) are allowlisted and
+# bypass the block. Runs before Read, Write, Edit, Glob, Grep tools.
+#
+# Integration contract:
+#   stdin  – JSON with tool_input (file_path, command, pattern)
+#   stdout – JSON with hookSpecificOutput on block, {} on allow
+#   Exit 0 = allow, Exit 2 = block
+#
+# Configuration:
+#   "privacyBlock": false in .coding-friend/config.json disables the hook.
 
 set -euo pipefail
 
