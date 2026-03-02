@@ -54,6 +54,10 @@ Before changing code:
 
 If no test existed for this bug, write one that would catch it if reintroduced.
 
+### Step 8: Review Reminder
+
+Remind the user: run `/cf-review` before committing to catch any issues the fix may have introduced.
+
 ## Escalation
 
 If you've tried **3 fixes** and the bug persists:
