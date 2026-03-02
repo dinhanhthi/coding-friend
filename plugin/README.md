@@ -52,6 +52,8 @@ Changes require restarting Claude Code (or reloading VSCode window).
 
 `cf dev sync` copies your source directly into the cache without reinstalling or bumping versions (~1 second).
 
+✨ When the plugin is bumped to a new version, run `cf dev restart` to update the cache to the latest version.
+
 ✨ **Recommended workflow:**
 
 ```bash
