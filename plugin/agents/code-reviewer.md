@@ -28,11 +28,24 @@ You are a code reviewer. Your job is to review code changes thoroughly and repor
 
 ### Layer 3: Security
 
-- Input validation at boundaries?
-- Injection risks (SQL, XSS, command)?
-- Secrets in code?
-- Auth checks in place?
-- Prompt injection risks — does the code process external content (web pages, API responses, user input) that could contain instructions targeting an AI? Are there safeguards?
+Scale to review mode: QUICK = secrets + obvious injection only. STANDARD = full table. DEEP = full table + data flow tracing + exploit scenarios.
+
+**Vulnerability categories** (check each against changed code):
+
+| Category | Look for |
+|----------|----------|
+| Input Validation | SQL/command/XXE/template injection, path traversal |
+| Auth & Access | Auth bypass, privilege escalation, session flaws, JWT issues |
+| Secrets & Crypto | Hardcoded keys/tokens, weak crypto, improper key storage |
+| Code Execution | RCE via deserialization, eval injection, XSS |
+| Data Exposure | Sensitive data in logs, PII handling, debug info exposure |
+| Prompt Injection | External content targeting AI without sanitization |
+
+**Method**: Trace data flow from user inputs → processing → sensitive operations. Flag where untrusted data crosses trust boundaries without validation.
+
+**Confidence scoring**: Assign 0.0–1.0 per finding. Only report ≥ 0.8. Below 0.8 = too speculative, skip.
+
+**Do NOT flag** (false positives): UUIDs as identifiers, env vars / CLI flags, framework default protections (React auto-escaping, etc.) unless explicitly bypassed, client-side permission checks, logging non-PII data, DoS / rate limiting.
 
 ### Layer 4: Testing
 
@@ -51,10 +64,11 @@ Categorize findings:
 Format:
 
 ```
-## Code Review
+## Code Review (<QUICK|STANDARD|DEEP> mode)
 
 ### Critical
 - [file:line] Description
+  For security findings: **[Category]** (confidence: 0.X) — exploit scenario + recommendation
 
 ### Important
 - [file:line] Description

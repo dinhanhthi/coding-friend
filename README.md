@@ -93,7 +93,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-learn [topic]`     | Extract learnings for human review          |
 | `/cf-research [topic]`  | In-depth research with web search           |
 
-Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-code-review`, `cf-verification`.
+Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`.
 
 ## CLI Commands
 

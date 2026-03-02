@@ -93,7 +93,7 @@ const autoSkills: Feature[] = [
     description: "4-phase debugging methodology for systematic problem solving",
   },
   {
-    command: "cf-code-review",
+    command: "cf-auto-review",
     title: "Code Review",
     description: "Multi-layer review checklist automatically applied",
   },

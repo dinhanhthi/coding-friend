@@ -13,15 +13,27 @@
 
 ```
 # 1. Code (repeat as needed)
-/cf-commit                        # commit your changes, don't worry about versions
+/cf-commit                        # commit (includes secret scan on staged changes)
 
-# 2. Prep release (when ready to publish)
+# 2. Review (before release prep — or auto-reminded by review-gate hook)
+/cf-review                        # 4-layer review with proportional security depth
+
+# 3. Prep release (when ready to publish)
 /bump-version                     # bump + changelog + commit + PR (all-in-one)
 # → merge PR on GitHub
 
-# 3. Publish (after PR merge)
+# 4. Publish (after PR merge)
 git checkout main && git pull     # switch to main with latest changes
 /release                          # finalize changelogs, create git tags, push → CI publishes
+```
+
+Note: The `review-gate` Stop hook auto-reminds to run `/cf-review` or `/cf-commit` when you have significant uncommitted changes (≥50 lines by default). Configure via `.coding-friend/config.json`:
+
+```json
+{
+  "reviewGate": true,
+  "reviewGateThreshold": 50
+}
 ```
 
 `/bump-version` accepts a package filter: `/bump-version cli`, `/bump-version learn-mcp patch`, etc.
