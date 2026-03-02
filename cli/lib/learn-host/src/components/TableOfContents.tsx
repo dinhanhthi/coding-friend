@@ -47,7 +47,7 @@ export default function TableOfContents({ headings }: Props) {
                   h.level === 3 ? "pl-3" : ""
                 } ${
                   activeId === h.id
-                    ? "font-medium text-violet-600 dark:text-violet-400"
+                    ? "font-medium text-amber-700 dark:text-amber-400"
                     : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >

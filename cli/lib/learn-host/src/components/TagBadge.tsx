@@ -4,7 +4,7 @@ export default function TagBadge({ tag }: { tag: string }) {
   return (
     <Link
       href={`/search/?q=${encodeURIComponent(tag)}`}
-      className="inline-block rounded-full border border-slate-300 px-2.5 py-0.5 text-xs text-violet-600 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:border-slate-600 dark:text-violet-400 dark:hover:border-violet-500 dark:hover:bg-violet-900/20"
+      className="inline-block cursor-pointer rounded-full bg-slate-200 px-2.5 py-0.5 text-xs text-slate-600 transition-colors duration-200 hover:bg-slate-300 hover:text-slate-900 dark:bg-navy-950 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
     >
       {tag}
     </Link>

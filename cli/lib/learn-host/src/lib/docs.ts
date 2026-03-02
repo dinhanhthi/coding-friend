@@ -102,8 +102,17 @@ function parseFrontmatter(raw: matter.GrayMatterFile<string>): DocFrontmatter {
 
 function makeExcerpt(content: string, maxLen = 160): string {
   const text = content
-    .replace(/^#+\s.*/gm, "")
-    .replace(/```[\s\S]*?```/g, "")
+    .replace(/^#+\s.*/gm, "") // headings
+    .replace(/```[\s\S]*?```/g, "") // fenced code blocks
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // [text](url) → text
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "") // images
+    .replace(/(\*\*|__)(.*?)\1/g, "$2") // bold
+    .replace(/(\*|_)(.*?)\1/g, "$2") // italic
+    .replace(/~~(.*?)~~/g, "$1") // strikethrough
+    .replace(/`([^`]+)`/g, "$1") // inline code
+    .replace(/^>\s?/gm, "") // blockquotes
+    .replace(/^[-*+]\s/gm, "") // unordered list markers
+    .replace(/^\d+\.\s/gm, "") // ordered list markers
     .replace(/\n{2,}/g, " ")
     .replace(/\n/g, " ")
     .trim();

@@ -11,10 +11,10 @@
   --color-navy-900: #2a2d38;
   --color-navy-950: #23262e;
 
-  /* Violet accent (from website) */
-  --color-accent: #7c3aed;
-  --color-accent-light: #a78bfa;
-  --color-accent-dark: #6d28d9;
+  /* Amber accent (matching logo gradient) */
+  --color-accent: #f59e0b;
+  --color-accent-light: #fbbf24;
+  --color-accent-dark: #d97706;
 
   --color-surface: #2a2d38;
   --color-surface-secondary: #31353f;
