@@ -1,15 +1,8 @@
-import { readJson } from "../lib/json.js";
-import { knownMarketplacesPath } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
+import { isMarketplaceRegistered } from "../lib/plugin-state.js";
 import { getInstalledVersion, getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
-
-export function isMarketplaceRegistered(): boolean {
-  const data = readJson<Record<string, unknown>>(knownMarketplacesPath());
-  if (!data) return false;
-  return "coding-friend-marketplace" in data;
-}
 
 export async function installCommand(): Promise<void> {
   console.log("=== 🌿 Coding Friend Install 🌿 ===");

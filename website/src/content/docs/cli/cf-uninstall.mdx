@@ -1,0 +1,71 @@
+---
+title: "cf uninstall"
+description: "Completely remove the Coding Friend plugin from Claude Code."
+keywords: [uninstall, remove, cleanup, cf uninstall]
+---
+
+## Overview
+
+`cf uninstall` completely removes the Coding Friend plugin, marketplace registration, statusline, and shell completion from Claude Code.
+
+The command is **interactive**: it detects what's installed, shows a summary, and asks for confirmation before removing anything.
+
+## Usage
+
+```bash
+cf uninstall
+```
+
+## What It Removes
+
+1. **Plugin registration** — unregisters `coding-friend@coding-friend-marketplace` from Claude Code
+2. **Marketplace registration** — removes the `coding-friend-marketplace` entry
+3. **Plugin cache** — deletes `~/.claude/plugins/cache/coding-friend-marketplace/`
+4. **Marketplace clone** — deletes `~/.claude/plugins/marketplaces/coding-friend-marketplace/` (if present)
+5. **Statusline reference** — cleans up the statusline command from `~/.claude/settings.json`
+6. **Shell tab completion** — removes the completion block from `.zshrc` or `.bashrc`
+7. **Global config** (optional) — `~/.coding-friend/` directory (global config, custom skills) — you'll be asked whether to keep or remove it
+
+## What It Does NOT Do
+
+- Does **not** uninstall the CLI itself (`coding-friend-cli`). To do that, run `npm uninstall -g coding-friend-cli` separately.
+- Does **not** remove per-project config (`.coding-friend/` inside your projects).
+- Does **not** restart Claude Code. You'll need to restart manually after uninstalling.
+
+## Interactive Flow
+
+```
+=== Coding Friend Uninstall ===
+
+  Detected components:
+    ✔ Plugin registration
+    ✔ Marketplace registration
+    ✔ Plugin cache
+    – Marketplace clone
+    ✔ Statusline reference
+    ✔ Shell tab completion
+    ✔ Global config (~/.coding-friend/)
+
+? This will remove Coding Friend from Claude Code. Continue? (y/N)
+? Also remove ~/.coding-friend/ config directory? (y/N)
+
+→ Uninstalling plugin...
+→ Removing marketplace...
+→ Removing plugin cache...
+→ Cleaning statusline...
+→ Removing shell completion...
+✔ Coding Friend has been completely uninstalled.
+
+Restart Claude Code to complete the uninstall.
+```
+
+## Under the Hood
+
+`cf uninstall` runs these Claude CLI commands:
+
+```bash
+claude plugin uninstall coding-friend@coding-friend-marketplace
+claude plugin marketplace remove coding-friend-marketplace
+```
+
+Then manually cleans up cache directories, statusline settings, and shell completion.

@@ -135,6 +135,7 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 Install via `npm i -g coding-friend-cli`:
 
 - `cf install` — Install the Coding Friend plugin into Claude Code
+- `cf uninstall` — Completely remove the plugin from Claude Code
 - `cf init` — Interactive project setup
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server

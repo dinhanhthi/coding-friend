@@ -28,6 +28,14 @@ program
   });
 
 program
+  .command("uninstall")
+  .description("Uninstall the Coding Friend plugin from Claude Code")
+  .action(async () => {
+    const { uninstallCommand } = await import("./commands/uninstall.js");
+    await uninstallCommand();
+  });
+
+program
   .command("init")
   .description("Initialize coding-friend in current project")
   .action(async () => {
