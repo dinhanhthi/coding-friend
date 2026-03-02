@@ -4,9 +4,9 @@ import Button from "@/components/ui/Button";
 
 export default function Hero() {
   return (
-    <section className="from-navy-950 via-navy-900 to-navy-900 relative overflow-hidden bg-gradient-to-b py-24 sm:py-24">
+    <section className="from-navy-950 via-navy-900 to-navy-900 relative overflow-hidden bg-linear-to-b py-24 sm:py-24">
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/15 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-violet-900/15 via-transparent to-transparent" />
 
       <Container className="relative">
         <div className="mx-auto max-w-3xl text-center">
@@ -19,7 +19,7 @@ export default function Hero() {
             priority
           />
           <p className="mb-4 text-sm font-medium tracking-wide text-slate-400 uppercase">
-            Claude Code Plugin · CLI · Learn Host · Learn MCP
+            Claude Code Plugin
           </p>
           <h1 className="text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
@@ -85,7 +85,7 @@ export default function Hero() {
             <Button
               href="/docs/getting-started/installation/"
               size="lg"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-slate-700!"
             >
               Get Started
               <svg
