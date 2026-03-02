@@ -10,6 +10,7 @@ import TableOfContents from "@/components/docs/TableOfContents";
 import DocsBreadcrumbs from "@/components/docs/DocsBreadcrumbs";
 import PrevNextNav from "@/components/docs/PrevNextNav";
 import Callout from "@/components/docs/Callout";
+import CodeBlock from "@/components/docs/CodeBlock";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -98,6 +99,7 @@ interface Props {
 
 const mdxComponents = {
   Callout,
+  pre: CodeBlock,
 };
 
 export async function generateStaticParams() {
