@@ -1,6 +1,6 @@
 ---
 title: "Hooks"
-description: "7 lifecycle hooks that run automatically during your session."
+description: "8 lifecycle hooks that run automatically during your session."
 keywords: [hooks, lifecycle, automation, pre-commit, post-commit]
 ---
 
@@ -19,6 +19,7 @@ Hooks are lifecycle functions that execute automatically at specific points in y
 | `statusline`         | SessionStart     | Configure editor statusline with project info                   |
 | `compact-marker`     | PreCompact       | Mark files to compact before context summarization              |
 | `context-tracker`    | PostToolUse      | Track tool usage and context for performance analysis           |
+| `review-gate`        | Stop             | Remind to review/commit when significant uncommitted changes exist |
 
 ## How Hooks Work
 
@@ -26,7 +27,7 @@ Hooks are executed automatically by the Coding Friend plugin at specific lifecyc
 
 ### Controlling Hooks
 
-Enable or disable hooks in `.coding-friend/config.json`:
+Enable or disable hooks in [`.coding-friend/config.json`](/docs/configuration/config-json/):
 
 ```json
 {
@@ -35,7 +36,9 @@ Enable or disable hooks in `.coding-friend/config.json`:
     "scoutBlock": true,
     "devRulesReminder": true,
     "contextTracker": true
-  }
+  },
+  "reviewGate": true,
+  "reviewGateThreshold": 50
 }
 ```
 
@@ -43,4 +46,42 @@ All hooks default to enabled. Set to `false` to disable specific hooks for your 
 
 ## Security Hooks
 
-`privacy-block` and `scout-block` form Coding Friend's first line of defense against accidental credential exposure and inappropriate file access.
+[`privacy-block`](/docs/configuration/privacy/) and `scout-block` form Coding Friend's first line of defense against accidental credential exposure and inappropriate file access. See the [security reference](/docs/reference/security/) for the full defense-in-depth model.
+
+## Review Gate {#review-gate}
+
+The `review-gate` hook fires on the **Stop** event — when the agent is about to finish a response. It checks for uncommitted git changes and, if they exceed a configurable threshold, reminds you to run [`/cf-review`](/docs/skills/cf-review/) or [`/cf-commit`](/docs/skills/cf-commit/) before wrapping up.
+
+### How It Works
+
+1. Check for uncommitted changes (`git diff HEAD`)
+2. Count total lines changed (insertions + deletions)
+3. If lines changed < threshold (default: 50) — allow stop silently
+4. If above threshold — show a reminder with file count and line count
+5. If sensitive files are detected (auth, crypto, session, etc.) — suggest [`/cf-review`](/docs/skills/cf-review/) in **DEEP** mode
+
+This is a **soft gate** — it blocks the stop to show the reminder, but you can dismiss it and continue.
+
+### Sensitive Path Detection
+
+Changed files matching these patterns trigger a DEEP review suggestion:
+
+`auth`, `security`, `crypto`, `token`, `session`, `middleware`, `api/`, `login`, `password`, `secret`, `.env`
+
+### Configuration
+
+```json
+{
+  "reviewGate": true,
+  "reviewGateThreshold": 50
+}
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `reviewGate` | `true` | Enable or disable the review-gate hook |
+| `reviewGateThreshold` | `50` | Minimum lines changed before the reminder triggers |
+
+### Session Marker
+
+Once you run [`/cf-review`](/docs/skills/cf-review/), it creates a marker file (`/tmp/coding-friend/reviewed`). The review-gate checks this marker and skips the reminder if a review was already done in the current session — so you won't be nagged twice.

@@ -143,7 +143,7 @@ agent: code-reviewer
 
 ---
 
-## Hooks System (7 hooks)
+## Hooks System (8 hooks)
 
 | Hook                    | Event            | Purpose                                                                        |
 | ----------------------- | ---------------- | ------------------------------------------------------------------------------ |
@@ -154,6 +154,7 @@ agent: code-reviewer
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
 | `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |
+| `review-gate.sh`        | Stop             | Remind to review/commit when significant uncommitted changes exist             |
 
 ### Hook I/O Protocol
 
