@@ -78,6 +78,36 @@ pre {
   font-weight: 500;
 }
 
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  color: #94a3b8;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
 :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   font-weight: 500;
 }
