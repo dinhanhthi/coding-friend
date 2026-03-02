@@ -29,7 +29,7 @@ coding-friend/
 │   │   ├── session-init.sh          # SessionStart: bootstrap context
 │   │   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
-│   │   ├── scout-block.sh           # PreToolUse: respect .coding-friend/ignore
+│   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
 │   │   ├── compact-marker.sh        # PreCompact: preserve context
 │   │   └── context-tracker.sh       # PostToolUse: track files read
@@ -150,7 +150,7 @@ agent: code-reviewer
 | `session-init.sh`       | SessionStart     | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
 | `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                |
 | `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                  |
-| `scout-block.sh`        | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
+| `scout-block.cjs`        | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
 | `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |
