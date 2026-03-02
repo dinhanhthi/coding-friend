@@ -5,7 +5,8 @@
 # active model, git branch, and API usage percentage with color-coded
 # gradient (green→red) and reset time.
 #
-# Usage percentage is fetched via a Swift helper (~/.claude/fetch-claude-usage.swift).
+# Usage percentage is fetched from Anthropic's OAuth API using the access
+# token that Claude Code stores in the macOS Keychain.
 # Time format respects macOS 24h preference (AppleICUForce24HourTime).
 #
 # Setup:
@@ -73,59 +74,71 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
   [ -n "$branch" ] && branch_text="${GREEN}⎇ ${branch}${RESET}"
 fi
 
-# Usage (percentage + reset time)
+# Usage (percentage + reset time) — fetched from Anthropic OAuth API
 usage_text=""
-swift_result=$(swift "$HOME/.claude/fetch-claude-usage.swift" 2>/dev/null) || true
+utilization=""
+resets_at=""
 
-if [ -n "$swift_result" ]; then
-  utilization=$(echo "$swift_result" | cut -d'|' -f1)
-  resets_at=$(echo "$swift_result" | cut -d'|' -f2)
+CREDS=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null) || true
+ACCESS_TOKEN=""
+if [ -n "$CREDS" ]; then
+  ACCESS_TOKEN=$(echo "$CREDS" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
+fi
 
-  if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
-    # Pick color based on utilization level
-    if [ "$utilization" -le 10 ]; then
-      usage_color="$LEVEL_1"
-    elif [ "$utilization" -le 20 ]; then
-      usage_color="$LEVEL_2"
-    elif [ "$utilization" -le 30 ]; then
-      usage_color="$LEVEL_3"
-    elif [ "$utilization" -le 40 ]; then
-      usage_color="$LEVEL_4"
-    elif [ "$utilization" -le 50 ]; then
-      usage_color="$LEVEL_5"
-    elif [ "$utilization" -le 60 ]; then
-      usage_color="$LEVEL_6"
-    elif [ "$utilization" -le 70 ]; then
-      usage_color="$LEVEL_7"
-    elif [ "$utilization" -le 80 ]; then
-      usage_color="$LEVEL_8"
-    elif [ "$utilization" -le 90 ]; then
-      usage_color="$LEVEL_9"
-    else
-      usage_color="$LEVEL_10"
-    fi
+if [ -n "$ACCESS_TOKEN" ]; then
+  usage_json=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "anthropic-beta: oauth-2025-04-20" \
+    -H "Content-Type: application/json" 2>/dev/null) || true
 
-    # Reset time
-    reset_time_display=""
-    if [ -n "$resets_at" ] && [ "$resets_at" != "null" ]; then
-      iso_time=$(echo "$resets_at" | sed 's/\.[0-9]*Z$//')
-      epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null) || true
-
-      if [ -n "$epoch" ]; then
-        time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
-        if [ "$time_format" = "1" ]; then
-          reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
-        else
-          reset_time=$(date -r "$epoch" "+%I:%M %p" 2>/dev/null)
-        fi
-        [ -n "$reset_time" ] && reset_time_display=" → ${reset_time}"
-      fi
-    fi
-
-    usage_text="${usage_color}${utilization}%${reset_time_display}${RESET}"
-  else
-    usage_text="${YELLOW}~${RESET}"
+  if [ -n "$usage_json" ]; then
+    utilization=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty' 2>/dev/null | cut -d. -f1)
+    resets_at=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
   fi
+fi
+
+if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
+  # Pick color based on utilization level
+  if [ "$utilization" -le 10 ]; then
+    usage_color="$LEVEL_1"
+  elif [ "$utilization" -le 20 ]; then
+    usage_color="$LEVEL_2"
+  elif [ "$utilization" -le 30 ]; then
+    usage_color="$LEVEL_3"
+  elif [ "$utilization" -le 40 ]; then
+    usage_color="$LEVEL_4"
+  elif [ "$utilization" -le 50 ]; then
+    usage_color="$LEVEL_5"
+  elif [ "$utilization" -le 60 ]; then
+    usage_color="$LEVEL_6"
+  elif [ "$utilization" -le 70 ]; then
+    usage_color="$LEVEL_7"
+  elif [ "$utilization" -le 80 ]; then
+    usage_color="$LEVEL_8"
+  elif [ "$utilization" -le 90 ]; then
+    usage_color="$LEVEL_9"
+  else
+    usage_color="$LEVEL_10"
+  fi
+
+  # Reset time
+  reset_time_display=""
+  if [ -n "$resets_at" ] && [ "$resets_at" != "null" ] && [ "$resets_at" != "" ]; then
+    iso_time=$(echo "$resets_at" | sed 's/\.[0-9]*+.*$//' | sed 's/\.[0-9]*Z$//')
+    epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null) || true
+
+    if [ -n "$epoch" ]; then
+      time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
+      if [ "$time_format" = "1" ]; then
+        reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
+      else
+        reset_time=$(date -r "$epoch" "+%I:%M %p" 2>/dev/null)
+      fi
+      [ -n "$reset_time" ] && reset_time_display=" → ${reset_time}"
+    fi
+  fi
+
+  usage_text="${usage_color}${utilization}%${reset_time_display}${RESET}"
 else
   usage_text="${YELLOW}~${RESET}"
 fi
