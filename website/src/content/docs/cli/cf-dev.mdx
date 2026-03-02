@@ -134,13 +134,13 @@ All cache operations (copying files into `~/.claude/plugins/cache/...`) are hand
 
 #### When to use `restart` vs `sync`
 
-| | `cf dev sync` | `cf dev restart` |
-|---|---|---|
-| **Speed** | Fast (direct file copy) | Slow (full uninstall/reinstall cycle) |
-| **What it does** | Overwrites files in the existing cache entry | Removes and recreates the entire cache entry |
-| **After version bump** | Not enough — copies into the old version's cache dir | Required — creates a new cache entry for the new version |
-| **Marketplace/registry** | Untouched | Fully re-registered |
-| **Use when** | Normal dev loop — you just edited files | After a version bump, or when install state is broken/corrupted |
+|                          | `cf dev sync`                                        | `cf dev restart`                                                |
+| ------------------------ | ---------------------------------------------------- | --------------------------------------------------------------- |
+| **Speed**                | Fast (direct file copy)                              | Slow (full uninstall/reinstall cycle)                           |
+| **What it does**         | Overwrites files in the existing cache entry         | Removes and recreates the entire cache entry                    |
+| **After version bump**   | Not enough — copies into the old version's cache dir | Required — creates a new cache entry for the new version        |
+| **Marketplace/registry** | Untouched                                            | Fully re-registered                                             |
+| **Use when**             | Normal dev loop — you just edited files              | After a version bump, or when install state is broken/corrupted |
 
 If dev mode was already OFF, the off phase is skipped and it just runs `cf dev on`. It reuses the local path saved in the dev state file — no need to specify it again unless you want to change it.
 
