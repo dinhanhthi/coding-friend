@@ -48,7 +48,7 @@ All hooks default to enabled. Set to `false` to disable specific hooks for your 
 
 [`privacy-block`](/docs/configuration/privacy/) and `scout-block` form Coding Friend's first line of defense against accidental credential exposure and inappropriate file access. See the [security reference](/docs/reference/security/) for the full defense-in-depth model.
 
-## Review Gate {#review-gate}
+## Review Gate
 
 The `review-gate` hook fires on the **Stop** event — when the agent is about to finish a response. It checks for uncommitted git changes and, if they exceed a configurable threshold, reminds you to run [`/cf-review`](/docs/skills/cf-review/) or [`/cf-commit`](/docs/skills/cf-commit/) before wrapping up.
 
