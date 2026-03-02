@@ -57,6 +57,29 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 - **writer** — Lightweight doc writer (haiku) for skills that generate markdown files
 - **writer-deep** — Deep reasoning doc writer (sonnet) for nuanced technical content
 
+## Activation Signals
+
+**IMPORTANT**: Whenever you activate a coding-friend skill, agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
+
+Format:
+```
+> ✨ **CODING FRIEND** → <name> activated
+```
+
+Examples:
+- `> ✨ **CODING FRIEND** → /cf-commit activated` (slash command)
+- `> ✨ **CODING FRIEND** → cf-tdd activated` (auto-invoked skill)
+- `> ✨ **CODING FRIEND** → writer agent activated` (agent dispatch)
+- `> ✨ **CODING FRIEND** → cf-verification activated` (completion gate)
+
+Rules:
+- Display the signal as the FIRST line of your response when the skill/agent starts
+- Use the exact format above — blockquote with bold "CODING FRIEND"
+- For slash commands: include the `/` prefix
+- For auto-invoked skills: no `/` prefix
+- For agents: append "agent" after the name
+- ONE signal per activation — do not repeat for the same skill in the same turn
+
 ## Conventions
 
 - Tests live next to source files or in `__tests__/` / `tests/` directories
