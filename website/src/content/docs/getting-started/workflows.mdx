@@ -42,13 +42,13 @@ Reproduce, locate root cause, fix, verify, and add a regression test. If 3 fix a
 /cf-review
 ```
 
-Runs in a **forked subagent** ([`code-reviewer`](/docs/reference/agents/#code-reviewer)) — isolated context, no interference with your main conversation. Review depth is automatically scaled to the size and sensitivity of your changes (QUICK / STANDARD / DEEP). Touches auth or crypto files? Always gets a deep review.
+A 3-component system: [`/cf-review`](/docs/skills/cf-review/) orchestrates the workflow (gathers diff, detects depth) → [`code-reviewer`](/docs/reference/agents/#code-reviewer) agent executes in a **forked subagent** (isolated context) → [`cf-auto-review`](/docs/skills/cf-auto-review/) provides the 4-layer methodology (plan alignment, code quality, security with confidence scoring, testing). Review depth is automatically scaled to the size and sensitivity of your changes (QUICK / STANDARD / DEEP). Touches auth or crypto files? Always gets a deep review.
 
 - `/cf-review` — all uncommitted changes
 - `/cf-review src/auth/` — specific directory
 - `/cf-review HEAD~3..HEAD` — last 3 commits
 
-4-layer analysis: plan alignment, code quality, security (3-phase with confidence scoring), and testing. Reports: **Critical** (must fix) > **Important** (should fix) > **Suggestions**.
+Reports: **Critical** (must fix) > **Important** (should fix) > **Suggestions**.
 
 A [`review-gate` hook](/docs/reference/hooks/#review-gate) also auto-reminds you to review when you have significant uncommitted changes — so you don't forget. See [`/cf-review`](/docs/skills/cf-review/) for the full mechanism.
 
