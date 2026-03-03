@@ -53,11 +53,13 @@ export default function DocsSidebar() {
               {!isCollapsed && (
                 <ul className="mt-2 space-y-0.5">
                   {section.items.map((item) => {
-                    const isActive = pathname === `/docs/${item.slug}/`;
+                    const [slugPath, hash] = item.slug.split("#");
+                    const href = hash ? `/docs/${slugPath}/#${hash}` : `/docs/${item.slug}/`;
+                    const isActive = pathname === `/docs/${slugPath}/`;
                     return (
                       <li key={item.slug}>
                         <Link
-                          href={`/docs/${item.slug}/`}
+                          href={href}
                           className={`block cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-200 ${
                             isActive
                               ? "font-medium text-violet-400"

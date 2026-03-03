@@ -13,11 +13,16 @@ interface Props {
 export default function PrevNextNav({ prev, next }: Props) {
   if (!prev && !next) return null;
 
+  const toHref = (slug: string) => {
+    const [slugPath, hash] = slug.split("#");
+    return hash ? `/docs/${slugPath}/#${hash}` : `/docs/${slug}/`;
+  };
+
   return (
     <div className="mt-12 flex justify-between gap-4">
       {prev ? (
         <Link
-          href={`/docs/${prev.slug}/`}
+          href={toHref(prev.slug)}
           className="group flex-1 cursor-pointer rounded-lg border border-[#a0a0a01c] p-4 transition-colors hover:border-violet-400/50"
         >
           <div className="mb-1 text-xs text-slate-400">Previous</div>
@@ -30,7 +35,7 @@ export default function PrevNextNav({ prev, next }: Props) {
       )}
       {next ? (
         <Link
-          href={`/docs/${next.slug}/`}
+          href={toHref(next.slug)}
           className="group flex-1 cursor-pointer rounded-lg border border-[#a0a0a01c] p-4 text-right transition-colors hover:border-violet-400/50"
         >
           <div className="mb-1 text-xs text-slate-400">Next</div>

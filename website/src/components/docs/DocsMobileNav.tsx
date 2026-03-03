@@ -44,11 +44,13 @@ export default function DocsMobileNav() {
               </div>
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = pathname === `/docs/${item.slug}/`;
+                  const [slugPath, hash] = item.slug.split("#");
+                  const href = hash ? `/docs/${slugPath}/#${hash}` : `/docs/${item.slug}/`;
+                  const isActive = pathname === `/docs/${slugPath}/`;
                   return (
                     <li key={item.slug}>
                       <Link
-                        href={`/docs/${item.slug}/`}
+                        href={href}
                         onClick={() => setOpen(false)}
                         className={`block cursor-pointer rounded-md px-3 py-1.5 text-sm ${
                           isActive
