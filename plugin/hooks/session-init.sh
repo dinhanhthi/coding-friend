@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
-# SessionStart hook: Bootstrap coding-friend context
-# Fires on: startup, resume, clear, compact
+# SessionStart hook: Bootstrap coding-friend context.
+#
+# Fires on startup, resume, clear, and compact events. Loads the
+# cf-help meta-skill content and injects it as additional context so
+# the agent knows about all available skills, rules, and conventions.
+#
+# Also detects:
+#   - Project type (single-repo, monorepo, rust, go, python)
+#   - Package manager (npm, pnpm, yarn, bun)
+#   - Ignore patterns from .coding-friend/ignore
+#   - Custom skill guides from .coding-friend/skills/ and ~/.coding-friend/skills/
+#     with validation (skill name, section format, size limits)
+#
+# Output:
+#   JSON with hookSpecificOutput.additionalContext containing the full
+#   bootstrapped context (project info + skills + custom guides + warnings).
+#
+# Configuration:
+#   "docsDir" in .coding-friend/config.json overrides the default docs directory.
 
 set -euo pipefail
 

@@ -52,3 +52,30 @@ export function devStatePath(): string {
 export function knownMarketplacesPath(): string {
   return join(homedir(), ".claude", "plugins", "known_marketplaces.json");
 }
+
+/** Marketplace cache directory (parent of pluginCachePath) */
+export function marketplaceCachePath(): string {
+  return join(
+    homedir(),
+    ".claude",
+    "plugins",
+    "cache",
+    "coding-friend-marketplace",
+  );
+}
+
+/** Marketplace clone directory */
+export function marketplaceClonePath(): string {
+  return join(
+    homedir(),
+    ".claude",
+    "plugins",
+    "marketplaces",
+    "coding-friend-marketplace",
+  );
+}
+
+/** Global config directory (~/.coding-friend) */
+export function globalConfigDir(): string {
+  return join(homedir(), ".coding-friend");
+}

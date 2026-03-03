@@ -1,0 +1,298 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { homedir } from "os";
+import { join } from "path";
+
+// Mock fs before importing the module
+vi.mock("fs", async () => {
+  const actual = await vi.importActual<typeof import("fs")>("fs");
+  return {
+    ...actual,
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    rmSync: vi.fn(),
+  };
+});
+
+vi.mock("@inquirer/prompts", () => ({
+  confirm: vi.fn(),
+}));
+
+vi.mock("../../lib/exec.js", () => ({
+  commandExists: vi.fn(),
+  run: vi.fn(),
+}));
+
+vi.mock("../../lib/shell-completion.js", () => ({
+  hasShellCompletion: vi.fn(),
+  removeShellCompletion: vi.fn(),
+}));
+
+import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
+import { confirm } from "@inquirer/prompts";
+import { commandExists, run } from "../../lib/exec.js";
+import {
+  hasShellCompletion,
+  removeShellCompletion,
+} from "../../lib/shell-completion.js";
+import { uninstallCommand } from "../uninstall.js";
+
+const mockExistsSync = vi.mocked(existsSync);
+const mockReadFileSync = vi.mocked(readFileSync);
+const mockWriteFileSync = vi.mocked(writeFileSync);
+const mockRmSync = vi.mocked(rmSync);
+const mockConfirm = vi.mocked(confirm);
+const mockCommandExists = vi.mocked(commandExists);
+const mockRun = vi.mocked(run);
+const mockHasShellCompletion = vi.mocked(hasShellCompletion);
+const mockRemoveShellCompletion = vi.mocked(removeShellCompletion);
+
+const home = homedir();
+const installedPluginsFile = join(
+  home,
+  ".claude",
+  "plugins",
+  "installed_plugins.json",
+);
+const knownMarketplacesFile = join(
+  home,
+  ".claude",
+  "plugins",
+  "known_marketplaces.json",
+);
+const settingsFile = join(home, ".claude", "settings.json");
+const devStateFile = join(home, ".coding-friend", "dev-state.json");
+const cachePath = join(
+  home,
+  ".claude",
+  "plugins",
+  "cache",
+  "coding-friend-marketplace",
+);
+const clonePath = join(
+  home,
+  ".claude",
+  "plugins",
+  "marketplaces",
+  "coding-friend-marketplace",
+);
+const configDir = join(home, ".coding-friend");
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.spyOn(console, "log").mockImplementation(() => {});
+});
+
+describe("uninstallCommand", () => {
+  it("exits early when claude CLI is not found", async () => {
+    mockCommandExists.mockReturnValue(false);
+
+    await uninstallCommand();
+
+    expect(mockConfirm).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("exits early when dev mode is active", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === devStateFile) return true;
+      return false;
+    });
+    // Return null for JSON reads (no plugin/marketplace registered)
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+
+    await uninstallCommand();
+
+    expect(mockConfirm).not.toHaveBeenCalled();
+  });
+
+  it("reports nothing to uninstall when nothing is detected", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockReturnValue(false);
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+
+    await uninstallCommand();
+
+    expect(mockConfirm).not.toHaveBeenCalled();
+  });
+
+  it("cancels when user declines confirmation", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === cachePath) return true;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+    mockConfirm.mockResolvedValueOnce(false);
+
+    await uninstallCommand();
+
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(mockRmSync).not.toHaveBeenCalled();
+  });
+
+  it("performs full uninstall when user confirms", async () => {
+    mockCommandExists.mockReturnValue(true);
+
+    // Plugin installed
+    mockReadFileSync.mockImplementation((p) => {
+      const path = p.toString();
+      if (path === installedPluginsFile) {
+        return JSON.stringify({
+          "coding-friend@coding-friend-marketplace": {},
+        });
+      }
+      if (path === knownMarketplacesFile) {
+        return JSON.stringify({ "coding-friend-marketplace": {} });
+      }
+      if (path === settingsFile) {
+        return JSON.stringify({
+          statusLine: { command: `${cachePath}/0.2.0/hooks/statusline.sh` },
+        });
+      }
+      throw new Error("not found");
+    });
+
+    mockExistsSync.mockImplementation((p) => {
+      if (p === cachePath) return true;
+      if (p === clonePath) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      // For writeJson dir check
+      const pathStr = p.toString();
+      if (pathStr.includes(".claude")) return true;
+      return false;
+    });
+
+    mockHasShellCompletion.mockReturnValue(true);
+    mockRun.mockReturnValue("ok");
+
+    // First confirm: proceed with uninstall
+    // Second confirm: also remove config
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await uninstallCommand();
+
+    // Plugin uninstall via claude CLI
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
+    ]);
+
+    // Marketplace removal via claude CLI
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "marketplace",
+      "remove",
+      "coding-friend-marketplace",
+    ]);
+
+    // Cache dir removed
+    expect(mockRmSync).toHaveBeenCalledWith(cachePath, {
+      recursive: true,
+      force: true,
+    });
+
+    // Clone dir removed
+    expect(mockRmSync).toHaveBeenCalledWith(clonePath, {
+      recursive: true,
+      force: true,
+    });
+
+    // Statusline cleaned (settings written)
+    expect(mockWriteFileSync).toHaveBeenCalled();
+
+    // Shell completion removed
+    expect(mockRemoveShellCompletion).toHaveBeenCalled();
+
+    // Global config removed
+    expect(mockRmSync).toHaveBeenCalledWith(configDir, {
+      recursive: true,
+      force: true,
+    });
+  });
+
+  it("keeps global config when user declines config removal", async () => {
+    mockCommandExists.mockReturnValue(true);
+
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+
+    mockExistsSync.mockImplementation((p) => {
+      if (p === cachePath) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      return false;
+    });
+
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // Confirm uninstall, decline config removal
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    await uninstallCommand();
+
+    // Cache removed
+    expect(mockRmSync).toHaveBeenCalledWith(cachePath, {
+      recursive: true,
+      force: true,
+    });
+
+    // Config NOT removed
+    expect(mockRmSync).not.toHaveBeenCalledWith(configDir, expect.anything());
+  });
+
+  it("uses fallback plugin uninstall when primary fails", async () => {
+    mockCommandExists.mockReturnValue(true);
+
+    // Plugin installed
+    mockReadFileSync.mockImplementation((p) => {
+      const path = p.toString();
+      if (path === installedPluginsFile) {
+        return JSON.stringify({
+          "coding-friend@coding-friend-marketplace": {},
+        });
+      }
+      throw new Error("not found");
+    });
+
+    mockExistsSync.mockImplementation((p) => {
+      if (p === devStateFile) return false;
+      return false;
+    });
+
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // First call (PLUGIN_ID) fails, second call (PLUGIN_NAME) succeeds
+    mockRun.mockReturnValueOnce(null).mockReturnValueOnce("ok");
+
+    mockConfirm.mockResolvedValueOnce(true);
+
+    await uninstallCommand();
+
+    // Primary attempt
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
+    ]);
+
+    // Fallback attempt
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "uninstall",
+      "coding-friend",
+    ]);
+  });
+});

@@ -6,63 +6,78 @@ keywords: [ignore patterns, file exclusion, privacy]
 
 ## Overview
 
-Use `.coding-friend/ignore` to prevent the Claude agent from accessing sensitive, large, or irrelevant files and directories.
+Coding Friend blocks access to common build artifacts and dependency directories **by default**. You can add custom patterns and override defaults using `.coding-friend/ignore`.
 
-## File Format
+## Default Patterns
 
-Create `.coding-friend/ignore` in your project root. Each line is a glob pattern (similar to `.gitignore`).
-
-## Common Patterns
+The following directories are always blocked without any configuration:
 
 ```
-# Dependencies
-node_modules/
-vendor/
-.venv/
+node_modules    .pnpm           dist            build
+.next           .nuxt           .svelte-kit     out
+.output         __pycache__     .venv           venv
+.tox            vendor          target          .git
+coverage        .nyc_output     .turbo          .cache
+.parcel-cache   .webpack
+```
 
-# Build artifacts
-dist/
-build/
-.next/
-out/
+These patterns match anywhere in the path tree — e.g. `node_modules` blocks both `node_modules/pkg/index.js` and `src/node_modules/dep/file.js`.
 
-# Python cache
-__pycache__/
-*.pyc
+## Custom Patterns
 
-# Database files
-*.db
+Create `.coding-friend/ignore` in your project root to add custom patterns on top of defaults.
+
+```
+# Custom patterns are added to defaults
+secrets/
+generated/
 *.sqlite
-
-# Temporary files
-tmp/
-temp/
-.DS_Store
 ```
+
+When this file exists, the effective pattern list is **defaults + your patterns** (merged, not replaced).
+
+## Overriding Defaults
+
+Use `!` prefix to remove a specific default pattern:
+
+```
+# Allow the build/ directory (remove it from defaults)
+!build
+
+# Allow vendor/ for Go projects
+!vendor
+
+# Your custom blocks still apply
+secrets/
+```
+
+Only patterns that exactly match a default name are removed. For example, `!build` removes the `build` default but does not affect `dist` or other defaults.
 
 ## Pattern Syntax
 
-- Use `/` for directory separators
-- `*` matches any characters except `/`
-- `**/` matches any directory depth
-- End with `/` to match only directories
-- Start with `!` to negate (allow) a pattern
+- Simple directory names match anywhere in the path tree (like `**/name`)
+- Lines starting with `#` are comments
+- Empty lines are ignored
+- Trailing `/` is stripped for matching
+- `!pattern` negates (allows) a previously blocked pattern
+
+## Disabling the Hook
+
+To disable scout-block entirely, set in `.coding-friend/config.json`:
+
+```json
+{
+  "scoutBlock": false
+}
+```
 
 ## Example
 
 ```
-# Block all of node_modules except important config
-node_modules/
-!node_modules/package-lock.json
+# Keep all defaults, add project-specific blocks
+data/fixtures/
+.env.local
 
-# Block Python virtual environments
-venv/
-.venv/
-__pycache__/
-
-# Block generated code
-dist/
-build/
+# Override: allow build/ for this project
+!build
 ```
-
-Agent tools will skip any files matching these patterns, improving performance and privacy.

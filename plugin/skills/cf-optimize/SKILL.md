@@ -57,14 +57,30 @@ Structured workflow for optimizing existing features, algorithms, or performance
 3. Present the plan to the user and **wait for confirmation** before proceeding
 4. Do NOT optimize multiple things at once — one change at a time
 
-### Step 5: Implement
+### Step 5: Implement (via implementer agent)
 
-1. Load the `cf-tdd` skill
-2. If tests exist for the target code, ensure they pass before changing anything
-3. If no tests exist, write tests first that verify current behavior
-4. Implement the optimization
-5. Run all tests — no regressions allowed
-6. Load the `cf-verification` skill — run the full checklist
+Dispatch the **implementer agent** to implement the optimization test-first. Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`.
+
+**Prompt template:**
+
+> Implement the following optimization using strict TDD:
+>
+> **Optimization:** [approach confirmed in Step 4]
+> **Target:** [specific files and functions]
+> **Bottleneck:** [from Step 3 analysis]
+> **Baseline:** [measurements from Step 2]
+> **Existing tests:** [test file paths]
+> **Test framework:** [framework and conventions]
+>
+> Requirements:
+>
+> 1. If tests exist for the target code, verify they pass before changing anything
+> 2. If no tests exist, write tests first that verify current behavior
+> 3. Implement the optimization — one change at a time
+> 4. Run all tests — no regressions allowed
+> 5. Report: what was changed, test results, any concerns
+
+Review the implementer's report. If tests failed or the agent reported concerns, address them before proceeding. Then load the `cf-verification` skill and run the full checklist before measuring.
 
 ### Step 6: Measure After
 
@@ -88,7 +104,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 
 - ALWAYS measure before AND after — no "it should be faster" claims
 - One optimization at a time — never batch multiple changes
-- Tests must pass throughout — load cf-tdd for implementation
+- Tests must pass throughout — the implementer agent enforces TDD
 - Get user confirmation before implementing (Step 4)
 - If you cannot measure it, ask the user how to measure it before proceeding
 - Revert if the optimization makes things worse or breaks tests

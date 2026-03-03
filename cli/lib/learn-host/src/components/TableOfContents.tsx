@@ -35,7 +35,7 @@ export default function TableOfContents({ headings }: Props) {
   return (
     <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto lg:block">
       <div className="p-4">
-        <h4 className="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+        <h4 className="mb-3 border-b border-slate-600 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
           On this page
         </h4>
         <ul className="space-y-1.5">
@@ -47,7 +47,7 @@ export default function TableOfContents({ headings }: Props) {
                   h.level === 3 ? "pl-3" : ""
                 } ${
                   activeId === h.id
-                    ? "font-medium text-violet-600 dark:text-violet-400"
+                    ? "font-medium text-amber-700 dark:text-amber-400"
                     : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >

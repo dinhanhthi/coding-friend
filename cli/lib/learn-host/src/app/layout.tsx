@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { getAllCategories } from "@/lib/docs";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import Sidebar from "@/components/Sidebar";
+import LayoutShell from "@/components/LayoutShell";
 import MobileNav from "@/components/MobileNav";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
@@ -40,17 +39,7 @@ export default function RootLayout({
           <div data-pagefind-ignore className="md:hidden">
             <MobileNav categories={categories} />
           </div>
-          <div className="flex">
-            <div data-pagefind-ignore>
-              <Sidebar categories={categories} />
-            </div>
-            <div className="flex min-w-0 flex-1 justify-center md:pl-64 lg:pl-[300px]">
-              <main className="min-h-screen w-full max-w-5xl p-6 pb-24 md:p-8 md:pb-24">
-                {children}
-              </main>
-            </div>
-          </div>
-          <Footer />
+          <LayoutShell categories={categories}>{children}</LayoutShell>
         </ThemeProvider>
       </body>
     </html>

@@ -10,11 +10,39 @@ export interface LearnConfig {
   readmeIndex?: boolean | "per-category";
 }
 
+export type StatuslineComponent =
+  | "version"
+  | "folder"
+  | "model"
+  | "branch"
+  | "context"
+  | "usage";
+
+export interface StatuslineConfig {
+  components?: StatuslineComponent[];
+}
+
+export const STATUSLINE_COMPONENTS: {
+  id: StatuslineComponent;
+  label: string;
+}[] = [
+  { id: "version", label: "Plugin version (cf v0.3.0)" },
+  { id: "folder", label: "Project name (MyProject)" },
+  { id: "model", label: "Active model (Opus 4.6)" },
+  { id: "branch", label: "Git branch (⎇ main)" },
+  { id: "context", label: "Context window usage (ctx 42%)" },
+  { id: "usage", label: "API usage + reset time (15% → 02:30)" },
+];
+
+export const ALL_COMPONENT_IDS: StatuslineComponent[] =
+  STATUSLINE_COMPONENTS.map((c) => c.id);
+
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
   devRulesReminder?: boolean;
   learn?: LearnConfig;
+  statusline?: StatuslineConfig;
 }
 
 export const DEFAULT_CONFIG: Required<

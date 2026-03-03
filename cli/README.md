@@ -16,6 +16,10 @@ npm i -g coding-friend-cli
 ## Commands
 
 ```bash
+cf install           # Install the Coding Friend plugin into Claude Code
+                     # 💡 Safe to run multiple times (idempotent).
+cf uninstall         # Completely remove plugin, marketplace, statusline, completion
+                     # 💡 Interactive — asks for confirmation before acting.
 cf init              # Initialize workspace (interactive)
                      # 💡 You can run this anywhere, anytime.
 cf host [path]       # Build and serve learning docs at localhost:3333

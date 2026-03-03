@@ -2,6 +2,41 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.4.0 (2026-03-03)
+
+- Add customizable statusline component selection for simplified setup ([#3714a2b](https://github.com/dinhanhthi/coding-friend/commit/3714a2b))
+- Add context window usage percentage display to statusline ([#89d3c95](https://github.com/dinhanhthi/coding-friend/commit/89d3c95))
+- Improve documentation link and inline code styling on website ([#96a1071](https://github.com/dinhanhthi/coding-friend/commit/96a1071))
+
+## v0.3.0 (2026-03-03)
+
+- Add explorer agent for reusable codebase exploration ([#af2a926](https://github.com/dinhanhthi/coding-friend/commit/af2a926))
+- Add implementer agent wired into cf-plan, cf-fix, cf-tdd, cf-optimize ([#cc5b0c4](https://github.com/dinhanhthi/coding-friend/commit/cc5b0c4))
+- Add cf-plan codebase exploration delegation to planner agent ([#24b1560](https://github.com/dinhanhthi/coding-friend/commit/24b1560))
+- Fix: don't auto commit after implementation ([#a5d6750](https://github.com/dinhanhthi/coding-friend/commit/a5d6750))
+- Fix code review findings in plugin ([#f3d7f53](https://github.com/dinhanhthi/coding-friend/commit/f3d7f53))
+- Fix statusline credential hygiene in OAuth token handling ([#003993e](https://github.com/dinhanhthi/coding-friend/commit/003993e))
+- Fix statusline: use Anthropic OAuth API instead of third-party Swift script ([#56335f7](https://github.com/dinhanhthi/coding-friend/commit/56335f7))
+- Fix statusline: properly validate utilization is numeric before display ([#952bd62](https://github.com/dinhanhthi/coding-friend/commit/952bd62))
+- Fix stop hook JSON schema in review-gate.sh ([#741fc6e](https://github.com/dinhanhthi/coding-friend/commit/741fc6e))
+- Make cf-auto-review single source of truth for review methodology ([#b92f9a9](https://github.com/dinhanhthi/coding-friend/commit/b92f9a9))
+
+## v0.2.0 (2026-03-02)
+
+- Add `/cf-review` reminder to `/cf-plan` and `/cf-fix` workflows to prevent skipping code review before commit — [#16d608c](https://github.com/dinhanhthi/coding-friend/commit/16d608c)
+- Add activation signal display for coding-friend skills and agents — [#2dd1668](https://github.com/dinhanhthi/coding-friend/commit/2dd1668)
+- Enhance `/cf-review` documentation with proportional review depth, security analysis, and cross-links — [#2220098](https://github.com/dinhanhthi/coding-friend/commit/2220098)
+- Enhance security review with proportional depth, auto-triggers, and defense-in-depth strategy — [#53994ce](https://github.com/dinhanhthi/coding-friend/commit/53994ce)
+- Rewrite `scout-block` hook as Node.js with default patterns and negation support — [#2364935](https://github.com/dinhanhthi/coding-friend/commit/2364935)
+- Add detailed descriptions to all hook files — [#c6fadbc](https://github.com/dinhanhthi/coding-friend/commit/c6fadbc)
+- Add `review-gate` hook documentation and update hook count from 7 to 8 — [#19a1775](https://github.com/dinhanhthi/coding-friend/commit/19a1775)
+- Reduce the number of colors on homepage — [#0c2f3a2](https://github.com/dinhanhthi/coding-friend/commit/0c2f3a2)
+
+## v0.1.1 (2026-03-02)
+
+- Fix UserPromptSubmit hook error on new session
+- Merge `/changelog` into `/bump-version` skill
+
 ## v0.1.0 (2026-03-01)
 
 - Add custom skill guides: extend built-in skills with user-defined Before/Rules/After sections in `.coding-friend/skills/<skill-name>.md`
@@ -23,7 +58,7 @@
 
 ## v0.0.1
 
-- Add 15 skills: `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research` + 5 auto-invoked (`cf-tdd`, `cf-sys-debug`, `cf-code-review`, `cf-verification`, `cf-learn`)
+- Add 15 skills: `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research` + 5 auto-invoked (`cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`, `cf-learn`)
 - Add 7 hooks: session init, dev rules reminder, privacy block, scout block, statusline, compact marker, context tracker
 - Add 5 agents: `code-reviewer`, `implementer`, `planner`, `writer` (haiku), `writer-deep` (sonnet)
 - Add CLI companion (`coding-friend-cli` on npm): `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`

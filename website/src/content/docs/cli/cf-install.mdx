@@ -1,0 +1,40 @@
+---
+title: "cf install"
+description: "Install the Coding Friend plugin into Claude Code from the terminal."
+keywords: [install, setup, plugin, cf install, marketplace]
+---
+
+## Overview
+
+`cf install` installs the Coding Friend plugin into Claude Code entirely from the terminal — no need to open Claude Code first.
+
+The command is **idempotent**: you can run it as many times as you want without issues.
+
+## Usage
+
+```bash
+cf install
+```
+
+## What It Does
+
+1. **Checks prerequisites** — verifies that the `claude` CLI is available
+2. **Registers marketplace** — adds the `coding-friend-marketplace` if not already registered
+3. **Installs plugin** — installs `coding-friend@coding-friend-marketplace` if not already installed
+4. **Version check** — if the plugin is already installed, compares with the latest version and suggests `cf update` if an update is available
+
+## Under the Hood
+
+`cf install` runs these Claude CLI commands for you:
+
+```bash
+claude plugin marketplace add dinhanhthi/coding-friend
+claude plugin install coding-friend@coding-friend-marketplace
+```
+
+## Next Steps
+
+After installing, run:
+
+- `cf init` — initialize your workspace with documentation folders and configuration
+- `cf statusline` — setup the Claude Code statusline with project info

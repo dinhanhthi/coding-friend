@@ -3,8 +3,6 @@ dist
 .next
 public/_pagefind
 cli/lib/learn-host/out
-cli/lib/learn-host
-website
 *.min.js
 *.min.css
 pnpm-lock.yaml

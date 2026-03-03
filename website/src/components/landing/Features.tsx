@@ -20,6 +20,11 @@ const statuslineSegments = [
     color: "text-green-400",
   },
   {
+    label: "Context",
+    example: "ctx 42%",
+    color: "text-amber-400",
+  },
+  {
     label: "Usage → Reset",
     example: "19% → 12:59",
     color: "text-violet-300",
@@ -93,7 +98,7 @@ const autoSkills: Feature[] = [
     description: "4-phase debugging methodology for systematic problem solving",
   },
   {
-    command: "cf-code-review",
+    command: "cf-auto-review",
     title: "Code Review",
     description: "Multi-layer review checklist automatically applied",
   },
@@ -185,8 +190,8 @@ const CustomGuides = () => {
       <div className="text-center">
         <h2 className="text-3xl font-bold text-white">Custom Skill Guides</h2>
         <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-          Extend any built-in skill with your own rules. Add steps before, after,
-          or throughout any workflow.
+          Extend any built-in skill with your own rules. Add steps before,
+          after, or throughout any workflow.
         </p>
       </div>
 
@@ -248,7 +253,7 @@ const CustomGuides = () => {
             key={index}
             className={`bg-navy-950/50 rounded-xl border ${item.borderColor} p-4 text-center`}
           >
-            <code className={`font-bold text-sm! border-none! ${item.color}`}>
+            <code className={`border-none! text-sm! font-bold ${item.color}`}>
               {item.section}
             </code>
             <p className="mt-2 text-sm text-slate-400">{item.desc}</p>
@@ -358,6 +363,10 @@ const Statusline = () => {
               <span className="whitespace-nowrap text-cyan-400">Opus 4.6</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-green-400">⎇ main</span>
+              <span className="mx-2 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-amber-400">
+                ctx 42%
+              </span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-violet-400">
                 19% → 12:59

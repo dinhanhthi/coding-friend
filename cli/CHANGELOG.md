@@ -2,6 +2,20 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.5.0 (2026-03-03)
+
+- Add customizable statusline component selection for simplified setup ([#3714a2b](https://github.com/dinhanhthi/coding-friend/commit/3714a2b))
+
+## v1.4.0 (2026-03-03)
+
+- Add `cf install` command for plugin setup from terminal ([#e51cd4e](https://github.com/dinhanhthi/coding-friend/commit/e51cd4e))
+- Add `cf uninstall` command ([#ccf1758](https://github.com/dinhanhthi/coding-friend/commit/ccf1758))
+- Add copy button to code blocks in website and learn-host docs ([#ac47c74](https://github.com/dinhanhthi/coding-friend/commit/ac47c74))
+
+## v1.3.0 (2026-03-02)
+
+- `cf dev on` and `cf dev restart`: Auto-update versioned paths in settings.json (e.g. statusline command) to latest cached plugin version
+
 ## v1.2.1 (2026-03-01)
 
 - Show `cf dev` subcommands in `cf help` output

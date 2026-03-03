@@ -9,13 +9,17 @@ import {
 import { resolve, join } from "path";
 import { readJson, writeJson } from "../lib/json.js";
 import {
+  claudeSettingsPath,
   devStatePath,
   knownMarketplacesPath,
-  installedPluginsPath,
   pluginCachePath,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
+import {
+  isPluginInstalled,
+  isMarketplaceRegistered,
+} from "../lib/plugin-state.js";
 import chalk from "chalk";
 
 const REMOTE_URL = "https://github.com/dinhanhthi/coding-friend.git";
@@ -30,19 +34,6 @@ interface DevState {
 
 function getDevState(): DevState | null {
   return readJson<DevState>(devStatePath());
-}
-
-function isPluginInstalled(): boolean {
-  const data = readJson<Record<string, unknown>>(installedPluginsPath());
-  if (!data) return false;
-  const plugins = (data.plugins ?? data) as Record<string, unknown>;
-  return Object.keys(plugins).some((k) => k.includes(PLUGIN_NAME));
-}
-
-function isMarketplaceRegistered(): boolean {
-  const data = readJson<Record<string, unknown>>(knownMarketplacesPath());
-  if (!data) return false;
-  return MARKETPLACE_NAME in data;
 }
 
 function ensureClaude(): boolean {
@@ -63,6 +54,41 @@ function runClaude(args: string[], label: string): boolean {
     return false;
   }
   return true;
+}
+
+function updateSettingsCachePaths(): void {
+  const cachePath = pluginCachePath();
+  if (!existsSync(cachePath)) return;
+
+  const versions = readdirSync(cachePath, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort()
+    .reverse();
+  const latest = versions[0];
+  if (!latest) return;
+
+  const settingsPath = claudeSettingsPath();
+  const settings = readJson<Record<string, unknown>>(settingsPath);
+  if (!settings) return;
+
+  const statusLine = settings.statusLine as { command?: string } | undefined;
+  if (!statusLine?.command) return;
+
+  const prefix = cachePath + "/";
+  if (!statusLine.command.includes(prefix)) return;
+
+  // Replace any version segment after the cache prefix
+  const updated = statusLine.command.replace(
+    new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^/]+/`),
+    `${prefix}${latest}/`,
+  );
+
+  if (updated === statusLine.command) return;
+
+  settings.statusLine = { ...statusLine, command: updated };
+  writeJson(settingsPath, settings);
+  log.info(`Updated statusline path to ${chalk.green(`v${latest}`)}`);
 }
 
 export async function devOnCommand(path?: string): Promise<void> {
@@ -141,6 +167,9 @@ export async function devOnCommand(path?: string): Promise<void> {
     savedAt: new Date().toISOString(),
   };
   writeJson(devStatePath(), devState as unknown as Record<string, unknown>);
+
+  // Step 6: Update settings.json cached paths (e.g. statusline)
+  updateSettingsCachePaths();
 
   console.log();
   log.success(

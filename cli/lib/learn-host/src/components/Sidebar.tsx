@@ -25,7 +25,7 @@ export default function Sidebar({
               href={`/${cat.name}/`}
               className={`flex items-center justify-between rounded-full px-3 py-2 text-sm capitalize transition-colors duration-200 ${
                 isActive
-                  ? "font-medium text-violet-600 dark:text-violet-400"
+                  ? "font-medium text-amber-700 dark:text-amber-400"
                   : "dark:hover:bg-navy-800/50 text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >

@@ -55,3 +55,32 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 1. **Testing mocks, not behavior** — If your test only verifies mock calls, it tests nothing
 2. **Test-only methods in production** — Never add methods just to make testing easier
 3. **Integration test as afterthought** — Unit tests first, then integration tests for boundaries
+
+## Subagent Dispatch
+
+For **substantial implementations** (new feature spanning 3+ files, complex algorithm, or multi-step feature), dispatch the **implementer agent** instead of implementing inline. This preserves the main conversation's context and enforces TDD in an isolated execution.
+
+Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`. Pass:
+
+- Task description and expected behavior
+- Relevant file paths (source files, test files, config)
+- Test framework and patterns used in the project
+- Any constraints or edge cases
+
+**Prompt template:**
+
+> Implement the following using strict TDD:
+>
+> **Task:** [description]
+> **Expected behavior:** [what the code should do]
+> **Relevant files:** [paths]
+> **Test patterns:** [framework, conventions, example test file]
+> **Constraints:** [any limits or edge cases]
+>
+> Follow RED → GREEN → REFACTOR. Report results when done.
+
+**When NOT to dispatch** (do TDD inline instead):
+
+- Single-file changes or small functions
+- Pure refactoring with existing test coverage
+- When the user is actively pairing on the implementation

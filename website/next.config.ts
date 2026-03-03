@@ -2,8 +2,11 @@ import type { NextConfig } from "next";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const rootPkg = JSON.parse(
-  readFileSync(resolve(__dirname, "../package.json"), "utf-8"),
+const pluginMeta = JSON.parse(
+  readFileSync(
+    resolve(__dirname, "../plugin/.claude-plugin/plugin.json"),
+    "utf-8",
+  ),
 );
 
 const nextConfig: NextConfig = {
@@ -14,7 +17,7 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   env: {
-    NEXT_PUBLIC_PLUGIN_VERSION: rootPkg.version,
+    NEXT_PUBLIC_PLUGIN_VERSION: pluginMeta.version,
   },
 };
 

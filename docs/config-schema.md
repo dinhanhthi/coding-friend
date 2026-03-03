@@ -28,6 +28,14 @@ coding-friend uses a layered config system:
   // Default: true
   "devRulesReminder": true,
 
+  // Enable/disable review-gate Stop hook (reminds to review/commit before finishing)
+  // Default: true
+  "reviewGate": true,
+
+  // Lines changed threshold before review-gate triggers a reminder
+  // Default: 50
+  "reviewGateThreshold": 50,
+
   // --- Learn settings ---
   "learn": {
     // Where to store learn docs.
@@ -182,27 +190,34 @@ Files support 3 optional sections:
 
 ```markdown
 ## Before
+
 - Steps to run BEFORE the builtin workflow starts
 
 ## Rules
+
 - Additional rules applied THROUGHOUT the workflow
 
 ## After
+
 - Steps to run AFTER the builtin workflow completes
 ```
 
 ### Example
 
 `.coding-friend/skills/cf-commit.md`:
+
 ```markdown
 ## Before
+
 - Check branch naming convention (must match `feat/XX-*` or `fix/XX-*`)
 
 ## Rules
+
 - Always include JIRA ticket number from branch name in commit subject
 - Scope should match the top-level directory of changed files
 
 ## After
+
 - Run tests if commit type is `feat:` or `fix:`
 ```
 

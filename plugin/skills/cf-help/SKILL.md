@@ -46,16 +46,43 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 - **cf-tdd** — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — When debugging: investigate → analyze → test → fix
-- **cf-code-review** — When reviewing code: plan, quality, security, testing
+- **cf-auto-review** — When reviewing code: plan, quality, security, testing
 - **cf-verification** — Before claiming done: run, read output, verify
 
 ## Available Agents
 
 - **code-reviewer** — Multi-layer code review in forked context
 - **implementer** — TDD implementation subagent
-- **planner** — Codebase exploration and task decomposition
+- **explorer** — Codebase exploration and analysis (read-only, haiku)
+- **planner** — Task decomposition and approach brainstorming
 - **writer** — Lightweight doc writer (haiku) for skills that generate markdown files
 - **writer-deep** — Deep reasoning doc writer (sonnet) for nuanced technical content
+
+## Activation Signals
+
+**IMPORTANT**: Whenever you activate a coding-friend skill, call an agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
+
+Format:
+
+```
+> ✨ **CODING FRIEND** → <name> activated
+```
+
+Examples:
+
+- `> ✨ **CODING FRIEND** → /cf-commit activated` (slash command)
+- `> ✨ **CODING FRIEND** → cf-tdd activated` (auto-invoked skill)
+- `> ✨ **CODING FRIEND** → writer agent activated` (agent dispatch)
+- `> ✨ **CODING FRIEND** → cf-verification activated` (completion gate)
+
+Rules:
+
+- Display the signal as the FIRST line of your response when the skill/agent/auto-invoked workflow starts
+- Use the exact format above — blockquote with bold "CODING FRIEND"
+- For slash commands: include the `/` prefix
+- For auto-invoked skills: no `/` prefix
+- For agents: append "agent" after the name
+- ONE signal per activation — do not repeat for the same skill in the same turn
 
 ## Conventions
 
@@ -85,14 +112,18 @@ Files support 3 optional sections:
 - `## After` — runs AFTER the final step completes
 
 Example `.coding-friend/skills/cf-commit.md`:
+
 ```markdown
 ## Before
+
 - Check branch naming convention
 
 ## Rules
+
 - Always include ticket number in subject
 
 ## After
+
 - Run tests if commit type is feat: or fix:
 ```
 
@@ -104,6 +135,8 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 
 Install via `npm i -g coding-friend-cli`:
 
+- `cf install` — Install the Coding Friend plugin into Claude Code
+- `cf uninstall` — Completely remove the plugin from Claude Code
 - `cf init` — Interactive project setup
 - `cf host [path]` — Build and serve learning docs website
 - `cf mcp [path]` — Setup MCP server

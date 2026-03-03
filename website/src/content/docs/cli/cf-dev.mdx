@@ -39,6 +39,7 @@ This command:
 3. Adds the local directory as a marketplace
 4. Installs the plugin from the local source
 5. Saves the dev state for later restoration
+6. Auto-updates versioned paths in settings.json (e.g. `statusline` command) to use the latest cached plugin version
 
 The path must point to the repo root containing `plugin/.claude-plugin/plugin.json`.
 
@@ -115,13 +116,33 @@ cf dev on /path/to/coding-friend
 
 ### `cf dev restart`
 
-Reinstalls the local dev plugin by running `cf dev off` then `cf dev on` in sequence:
+Performs a full clean reinstall of the local dev plugin by running `cf dev off` then `cf dev on` in sequence:
 
 ```bash
 cf dev restart
+
+# Or specify a different path
+cf dev restart /path/to/coding-friend
 ```
 
-Use this when the install state is broken or out of sync (e.g. after a failed `cf dev off`). It reuses the local path saved in the dev state file — no need to specify it again. If dev mode was already OFF, it skips the off step and just runs `cf dev on`.
+This is a **destructive reinstall** — it completely removes the plugin from Claude Code's cache, cleans up the marketplace registration, then reinstalls everything from scratch. The full cycle:
+
+1. **Off phase:** uninstall plugin → remove local marketplace → add remote marketplace → install remote → delete dev state
+2. **On phase:** uninstall remote → remove remote marketplace → add local marketplace → install from local → save dev state → update settings paths
+
+All cache operations (copying files into `~/.claude/plugins/cache/...`) are handled internally by the `claude plugin install` command — `cf` only orchestrates the install/uninstall calls.
+
+#### When to use `restart` vs `sync`
+
+|                          | `cf dev sync`                                        | `cf dev restart`                                                |
+| ------------------------ | ---------------------------------------------------- | --------------------------------------------------------------- |
+| **Speed**                | Fast (direct file copy)                              | Slow (full uninstall/reinstall cycle)                           |
+| **What it does**         | Overwrites files in the existing cache entry         | Removes and recreates the entire cache entry                    |
+| **After version bump**   | Not enough — copies into the old version's cache dir | Required — creates a new cache entry for the new version        |
+| **Marketplace/registry** | Untouched                                            | Fully re-registered                                             |
+| **Use when**             | Normal dev loop — you just edited files              | After a version bump, or when install state is broken/corrupted |
+
+If dev mode was already OFF, the off phase is skipped and it just runs `cf dev on`. It reuses the local path saved in the dev state file — no need to specify it again unless you want to change it.
 
 ## When to Use
 

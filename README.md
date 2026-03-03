@@ -93,7 +93,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-learn [topic]`     | Extract learnings for human review          |
 | `/cf-research [topic]`  | In-depth research with web search           |
 
-Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-code-review`, `cf-verification`.
+Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`.
 
 ## CLI Commands
 
@@ -132,17 +132,17 @@ Each sub-project has its own README with more details, check section Further Rea
 
 ## Further Reading
 
-| Topic                        | Link                                                         |
-| ---------------------------- | ------------------------------------------------------------ |
-| Official documentation       | [cf.dinhanhthi.com](https://cf.dinhanhthi.com)               |
-| CLI details                  | [cli/README.md](cli/README.md)                               |
-| Plugin development           | [plugin/README.md](plugin/README.md)                         |
-| Website development          | [website/README.md](website/README.md)                       |
-| Learn Host (local docs site) | [cli/lib/learn-host/README.md](cli/lib/learn-host/README.md) |
-| Learn MCP (MCP server)       | [cli/lib/learn-mcp/README.md](cli/lib/learn-mcp/README.md)   |
-| Workflows guide              | [docs/workflows.md](docs/workflows.md)                       |
-| Release workflow             | [docs/dev-release.md](docs/dev-release.md)                   |
-| Architecture                 | [docs/architecture.md](docs/architecture.md)                 |
+| Topic                        | Link                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| Official documentation       | [cf.dinhanhthi.com](https://cf.dinhanhthi.com)                              |
+| CLI details                  | [cli/README.md](cli/README.md)                                              |
+| Plugin development           | [plugin/README.md](plugin/README.md)                                        |
+| Website development          | [website/README.md](website/README.md)                                      |
+| Learn Host (local docs site) | [cli/lib/learn-host/README.md](cli/lib/learn-host/README.md)                |
+| Learn MCP (MCP server)       | [cli/lib/learn-mcp/README.md](cli/lib/learn-mcp/README.md)                  |
+| Workflows guide              | [docs/workflows.md](website/src/content/docs/getting-started/workflows.mdx) |
+| Release workflow             | [docs/dev-release.md](docs/dev-release.md)                                  |
+| Architecture                 | [docs/architecture.md](docs/architecture.md)                                |
 
 ## License
 
