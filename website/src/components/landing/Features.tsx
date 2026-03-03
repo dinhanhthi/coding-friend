@@ -20,6 +20,11 @@ const statuslineSegments = [
     color: "text-green-400",
   },
   {
+    label: "Context",
+    example: "ctx 42%",
+    color: "text-amber-400",
+  },
+  {
     label: "Usage → Reset",
     example: "19% → 12:59",
     color: "text-violet-300",
@@ -358,6 +363,10 @@ const Statusline = () => {
               <span className="whitespace-nowrap text-cyan-400">Opus 4.6</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-green-400">⎇ main</span>
+              <span className="mx-2 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-amber-400">
+                ctx 42%
+              </span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-violet-400">
                 19% → 12:59

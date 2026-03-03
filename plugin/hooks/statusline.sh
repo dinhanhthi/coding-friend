@@ -2,11 +2,12 @@
 # Statusline: Show session info in Claude Code status bar.
 #
 # Displays a compact status line with: plugin version, current directory,
-# active model, git branch, and API usage percentage with color-coded
-# gradient (green→red) and reset time.
+# active model, git branch, context window usage, and API usage percentage
+# with color-coded gradient (green→red) and reset time.
 #
-# Usage percentage is fetched from Anthropic's OAuth API using the access
-# token that Claude Code stores in the macOS Keychain.
+# Context window usage is read from the stdin JSON (context_window.used_percentage)
+# provided by Claude Code. API usage is fetched from Anthropic's OAuth API using
+# the access token that Claude Code stores in the macOS Keychain.
 # Time format respects macOS 24h preference (AppleICUForce24HourTime).
 #
 # Setup:
@@ -14,7 +15,7 @@
 #   "statusLine": { "type": "command", "command": "bash <plugin-path>/hooks/statusline.sh" }
 #
 # Integration contract:
-#   stdin  – JSON with current_dir, session.model
+#   stdin  – JSON with current_dir (or workspace.current_dir), session.model (or model.display_name), context_window.*
 #   stdout – ANSI-colored status line string
 #
 # Configuration:
@@ -45,6 +46,23 @@ LEVEL_8=$'\033[38;5;166m'  # darker orange
 LEVEL_9=$'\033[38;5;160m'  # dark red
 LEVEL_10=$'\033[38;5;124m' # deep red
 
+# Map a percentage (0-100) to a gradient color
+color_for_percentage() {
+  local pct="$1"
+  [[ "$pct" =~ ^[0-9]+$ ]] || { echo "$LEVEL_1"; return; }
+  if [ "$pct" -le 10 ]; then echo "$LEVEL_1"
+  elif [ "$pct" -le 20 ]; then echo "$LEVEL_2"
+  elif [ "$pct" -le 30 ]; then echo "$LEVEL_3"
+  elif [ "$pct" -le 40 ]; then echo "$LEVEL_4"
+  elif [ "$pct" -le 50 ]; then echo "$LEVEL_5"
+  elif [ "$pct" -le 60 ]; then echo "$LEVEL_6"
+  elif [ "$pct" -le 70 ]; then echo "$LEVEL_7"
+  elif [ "$pct" -le 80 ]; then echo "$LEVEL_8"
+  elif [ "$pct" -le 90 ]; then echo "$LEVEL_9"
+  else echo "$LEVEL_10"
+  fi
+}
+
 separator="${GRAY} │ ${RESET}"
 
 # Plugin version — read from plugin.json in CLAUDE_PLUGIN_ROOT (works for both dev and installed)
@@ -74,6 +92,15 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
   [ -n "$branch" ] && branch_text="${GREEN}⎇ ${branch}${RESET}"
 fi
 
+# Context window usage — read from stdin JSON
+ctx_text=""
+ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1)
+
+if [ -n "$ctx_pct" ] && [[ "$ctx_pct" =~ ^[0-9]+$ ]]; then
+  ctx_color=$(color_for_percentage "$ctx_pct")
+  ctx_text="${ctx_color}ctx ${ctx_pct}%${RESET}"
+fi
+
 # Usage (percentage + reset time) — fetched from Anthropic OAuth API
 usage_text=""
 utilization=""
@@ -94,28 +121,7 @@ if [ -n "$ACCESS_TOKEN" ]; then
 fi
 
 if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
-  # Pick color based on utilization level
-  if [ "$utilization" -le 10 ]; then
-    usage_color="$LEVEL_1"
-  elif [ "$utilization" -le 20 ]; then
-    usage_color="$LEVEL_2"
-  elif [ "$utilization" -le 30 ]; then
-    usage_color="$LEVEL_3"
-  elif [ "$utilization" -le 40 ]; then
-    usage_color="$LEVEL_4"
-  elif [ "$utilization" -le 50 ]; then
-    usage_color="$LEVEL_5"
-  elif [ "$utilization" -le 60 ]; then
-    usage_color="$LEVEL_6"
-  elif [ "$utilization" -le 70 ]; then
-    usage_color="$LEVEL_7"
-  elif [ "$utilization" -le 80 ]; then
-    usage_color="$LEVEL_8"
-  elif [ "$utilization" -le 90 ]; then
-    usage_color="$LEVEL_9"
-  else
-    usage_color="$LEVEL_10"
-  fi
+  usage_color=$(color_for_percentage "$utilization")
 
   # Reset time
   reset_time_display=""
@@ -156,6 +162,10 @@ fi
 
 if [ -n "$branch_text" ]; then
   output="${output}${separator}${branch_text}"
+fi
+
+if [ -n "$ctx_text" ]; then
+  output="${output}${separator}${ctx_text}"
 fi
 
 if [ -n "$usage_text" ]; then
