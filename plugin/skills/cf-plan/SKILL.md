@@ -21,40 +21,55 @@ BEFORE reading code or researching, identify what you don't know:
 
 Only proceed after the user confirms your understanding.
 
-### Step 2: Delegate Exploration to Planner Agent
+### Step 2: Explore Codebase (via explorer agent)
 
-Launch the **planner agent** to explore the codebase and brainstorm approaches. This runs in a separate context to preserve the main conversation's token budget.
+Launch the **explorer agent** to gather codebase context. This runs in a separate context to preserve the main conversation's token budget.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:planner"`. Pass a detailed prompt including:
+Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass a detailed prompt:
 
-- The user's request (`$ARGUMENTS`)
-- Confirmed assumptions from Step 1
-- Any user preferences or constraints gathered in Step 1
-- Instruction to explore the codebase, identify affected files, and generate 2-3 approaches
+> Explore the codebase to gather context for the following task: [user request]
+>
+> Confirmed assumptions: [list from Step 1]
+> Scope: [any constraints from Step 1]
+>
+> Questions to answer:
+> 1. What is the project structure and relevant modules?
+> 2. Which files and functions are affected by this task?
+> 3. What patterns, conventions, and dependencies exist in the affected areas?
+> 4. Are there existing tests, configs, or docs relevant to this change?
 
-**Prompt template for the agent:**
+Wait for the explorer to return its findings.
+
+### Step 3: Brainstorm Approaches (via planner agent)
+
+Launch the **planner agent** with the explorer's findings to brainstorm approaches.
+
+Use the **Agent tool** with `subagent_type: "coding-friend:planner"`. Pass:
 
 > Plan the following task: [user request]
 >
 > Confirmed assumptions: [list from Step 1]
 > User preferences: [any constraints from Step 1]
 >
-> Skip the clarification step — assumptions have already been confirmed with the user.
-> Focus on: exploring the codebase, identifying affected files and dependencies, and generating 2-3 possible approaches. For each approach, list pros, cons, effort (task count), risk, and confidence level. Recommend one approach with rationale.
+> Codebase context (from explorer):
+> [include the full exploration report returned by the explorer agent]
+>
+> Skip the clarification and exploration steps — assumptions are confirmed and codebase has been explored.
+> Focus on: generating 2-3 possible approaches based on the codebase context. For each approach, list pros, cons, effort (task count), risk, and confidence level. Recommend one approach with rationale.
 
-Wait for the agent to return its findings.
+Wait for the planner to return its approaches.
 
-### Step 3: Validate with User
+### Step 4: Validate with User
 
-Present the planner agent's findings to the user:
+Present the findings to the user:
 
-1. **Key findings** from the codebase exploration
-2. **Approaches** with pros/cons (from the agent's analysis)
+1. **Key findings** from the codebase exploration (explorer)
+2. **Approaches** with pros/cons (planner)
 3. **Recommended approach** and why
-4. **Open questions** — anything the agent flagged as uncertain
+4. **Open questions** — anything flagged as uncertain
 5. Wait for user approval or corrections
 
-### Step 4: Write the Plan
+### Step 5: Write the Plan
 
 Based on the approved approach and the agent's findings:
 
@@ -65,13 +80,13 @@ Based on the approved approach and the agent's findings:
    - Expected outcome
    - How to verify it worked
 
-### Step 5: Save the Plan
+### Step 6: Save the Plan
 
 1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
 2. Use the TodoWrite tool to create a task list
 3. Present the plan summary to the user
 
-### Step 6: Offer Implementation
+### Step 7: Offer Implementation
 
 After the plan is saved, ask the user: **"Ready to start implementing?"**
 
@@ -134,7 +149,7 @@ After implementation: consider running `/cf-review` → then `/cf-commit`
 
 - **Plan first, implement second** — never start coding before the plan is saved and the user approves.
 - **Ask first, plan second** — never proceed with unclear requirements.
-- **Delegate exploration** — always use the planner agent for codebase exploration and approach brainstorming. Never do heavy codebase reading in the main conversation.
+- **Delegate exploration** — always use the explorer agent for codebase exploration, then the planner agent for approach brainstorming. Never do heavy codebase reading in the main conversation.
 - **Delegate implementation** — use the implementer agent for task execution. If the agent fails after a reasonable attempt, fall back to implementing inline following TDD discipline (load cf-tdd).
 - When uncertain, say so. State your confidence level and ask.
 - Do NOT assume which libraries, APIs, or tools to use without asking.

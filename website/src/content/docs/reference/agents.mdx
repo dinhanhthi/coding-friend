@@ -1,24 +1,54 @@
 ---
 title: "Agents"
-description: "5 specialized agents for different engineering tasks."
-keywords: [agents, subagents, code reviewer, implementer, planner]
+description: "6 specialized agents for different engineering tasks."
+keywords: [agents, subagents, explorer, code reviewer, implementer, planner]
 ---
 
 ## Overview
 
-Coding Friend includes 5 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
+Coding Friend includes 6 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
 
 ## Agent Reference
 
-| Agent           | Model           | Purpose                                                  |
-| --------------- | --------------- | -------------------------------------------------------- |
-| `code-reviewer` | Claude Opus 4.6 | Multi-layer code review with deep reasoning              |
-| `implementer`   | Claude Opus 4.6 | TDD-driven implementation with test-first approach       |
-| `planner`       | Claude Opus 4.6 | Exploration, task breakdown, and implementation planning |
-| `writer`        | Claude Haiku    | Lightweight document writing and markdown generation     |
-| `writer-deep`   | Claude Opus 4.6 | Deep reasoning for nuanced technical documentation       |
+| Agent           | Model           | Purpose                                                     |
+| --------------- | --------------- | ----------------------------------------------------------- |
+| `explorer`      | Claude Haiku    | Read-only codebase exploration and context gathering        |
+| `code-reviewer` | Claude Opus 4.6 | Multi-layer code review with deep reasoning                 |
+| `implementer`   | Claude Opus 4.6 | TDD-driven implementation with test-first approach          |
+| `planner`       | Inherited       | Task decomposition, approach brainstorming, and planning    |
+| `writer`        | Claude Haiku    | Lightweight document writing and markdown generation        |
+| `writer-deep`   | Claude Opus 4.6 | Deep reasoning for nuanced technical documentation          |
 
 ## When Each Agent Is Used
+
+### explorer
+
+The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets.
+
+Used by:
+- [`/cf-plan`](/docs/skills/cf-plan/) — explores codebase before the planner designs approaches
+- [`/cf-ask`](/docs/skills/cf-ask/) — gathers code context to answer questions
+- [`/cf-fix`](/docs/skills/cf-fix/) — explores code around a bug before diagnosing root cause
+
+```
+/cf-plan (clarify → explore → plan → approve)
+    ↓ dispatch
+explorer (map → search → read → report)
+    ↓ findings
+planner (analyze → design approaches → plan tasks)
+
+/cf-ask (parse question)
+    ↓ dispatch
+explorer (search → read → report)
+    ↓ findings
+cf-ask (synthesize answer → save to memory)
+
+/cf-fix (understand bug → verify)
+    ↓ dispatch
+explorer (trace code path → find relevant files → report)
+    ↓ findings
+cf-fix (diagnose root cause → confirm → dispatch implementer)
+```
 
 ### code-reviewer
 
@@ -60,7 +90,7 @@ implementer (RED → GREEN → REFACTOR → report)
 
 ### planner
 
-Invoked by `/cf-plan [task]`. Breaks down complex tasks into implementation steps with exploration.
+Invoked by [`/cf-plan [task]`](/docs/skills/cf-plan/) after the explorer gathers codebase context. Takes the exploration report and designs 2-3 implementation approaches with pros, cons, effort, risk, and confidence levels. Recommends one approach and breaks it into sequential tasks.
 
 ### writer
 
