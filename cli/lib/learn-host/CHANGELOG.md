@@ -1,5 +1,10 @@
 # Changelog (Learn Host)
 
+## v0.2.0 (unpublished)
+
+- Add dedicated tag pages for filtering docs by tag ([#06f5847](https://github.com/dinhanhthi/coding-friend/commit/06f5847))
+- Style improvements across website and learn-host ([#0029522](https://github.com/dinhanhthi/coding-friend/commit/0029522))
+
 ## v0.1.0 (2026-03-03)
 
 - Add copy button to code blocks ([#ac47c74](https://github.com/dinhanhthi/coding-friend/commit/ac47c74))

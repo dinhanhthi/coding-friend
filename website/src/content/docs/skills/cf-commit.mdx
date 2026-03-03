@@ -19,7 +19,8 @@ The `/cf-commit` skill creates well-formed conventional commits by analyzing you
 3. **Determines Type** — Classifies as feat, fix, refactor, test, docs, or chore
 4. **Generates Message** — Creates clear, descriptive commit message
 5. **Follows Convention** — Adheres to conventional commits standard
-6. **Creates Commit** — Stages relevant files and commits with your message
+6. **Verifies Tests** — Runs tests before committing, unless `commit.verify: false` in config or tests already passed earlier in the session
+7. **Creates Commit** — Stages relevant files and commits with your message
 
 ## Commit Types
 
