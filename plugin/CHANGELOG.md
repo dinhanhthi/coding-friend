@@ -2,6 +2,19 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.3.0 (unpublished)
+
+- Add explorer agent for reusable codebase exploration ([#af2a926](https://github.com/dinhanhthi/coding-friend/commit/af2a926))
+- Add implementer agent wired into cf-plan, cf-fix, cf-tdd, cf-optimize ([#cc5b0c4](https://github.com/dinhanhthi/coding-friend/commit/cc5b0c4))
+- Add cf-plan codebase exploration delegation to planner agent ([#24b1560](https://github.com/dinhanhthi/coding-friend/commit/24b1560))
+- Fix: don't auto commit after implementation ([#a5d6750](https://github.com/dinhanhthi/coding-friend/commit/a5d6750))
+- Fix code review findings in plugin ([#f3d7f53](https://github.com/dinhanhthi/coding-friend/commit/f3d7f53))
+- Fix statusline credential hygiene in OAuth token handling ([#003993e](https://github.com/dinhanhthi/coding-friend/commit/003993e))
+- Fix statusline: use Anthropic OAuth API instead of third-party Swift script ([#56335f7](https://github.com/dinhanhthi/coding-friend/commit/56335f7))
+- Fix statusline: properly validate utilization is numeric before display ([#952bd62](https://github.com/dinhanhthi/coding-friend/commit/952bd62))
+- Fix stop hook JSON schema in review-gate.sh ([#741fc6e](https://github.com/dinhanhthi/coding-friend/commit/741fc6e))
+- Make cf-auto-review single source of truth for review methodology ([#b92f9a9](https://github.com/dinhanhthi/coding-friend/commit/b92f9a9))
+
 ## v0.2.0 (2026-03-02)
 
 - Add `/cf-review` reminder to `/cf-plan` and `/cf-fix` workflows to prevent skipping code review before commit — [#16d608c](https://github.com/dinhanhthi/coding-friend/commit/16d608c)
