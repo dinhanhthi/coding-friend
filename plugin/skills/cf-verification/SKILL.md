@@ -12,6 +12,16 @@ user-invocable: false
 
 Claiming work is complete without verification is dishonesty, not efficiency.
 
+## When to Auto-Invoke
+
+Auto-invoke this skill after tasks that **produce or modify code** (implementation, bug fixes, refactoring).
+
+Do NOT auto-invoke after **analysis-only skills** that don't change code:
+- `/cf-review` — code review is analysis, not implementation
+- `/cf-plan` — planning doesn't produce code
+- `/cf-ask` — Q&A doesn't produce code
+- `/cf-research` — research doesn't produce code
+
 ## Checklist
 
 Before claiming ANY task is done:
