@@ -52,6 +52,7 @@ export const docsNavigation: NavSection[] = [
     title: "Configuration",
     items: [
       { title: "Config File", slug: "configuration/config-json" },
+      { title: "Custom Skill", slug: "configuration/config-json/#custom-skill-guides" },
       { title: "Ignore Patterns", slug: "configuration/ignore-patterns" },
       { title: "Privacy", slug: "configuration/privacy" },
     ],
