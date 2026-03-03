@@ -15,6 +15,13 @@ import {
   ensureShellCompletion,
 } from "../lib/shell-completion.js";
 import {
+  findStatuslineHookPath,
+  isStatuslineConfigured,
+  selectStatuslineComponents,
+  saveStatuslineConfig,
+  writeStatuslineSettings,
+} from "../lib/statusline.js";
+import {
   DEFAULT_CONFIG,
   type CodingFriendConfig,
   type LearnCategory,
@@ -415,6 +422,11 @@ export async function initCommand(): Promise<void> {
       label: "Setup shell tab completion",
       done: hasShellCompletion(),
     },
+    {
+      name: "statusline",
+      label: "Configure statusline",
+      done: isStatuslineConfigured(),
+    },
   ];
 
   if (hasExternalDir && resolvedOutputDir) {
@@ -510,6 +522,21 @@ export async function initCommand(): Promise<void> {
       case "completion":
         ensureShellCompletion();
         break;
+
+      case "statusline": {
+        const hookResult = findStatuslineHookPath();
+        if (!hookResult) {
+          log.warn(
+            "coding-friend plugin not found. Install it via Claude Code first, then re-run.",
+          );
+          break;
+        }
+        const components = await selectStatuslineComponents();
+        saveStatuslineConfig(components);
+        writeStatuslineSettings(hookResult.hookPath);
+        log.success("Statusline configured!");
+        break;
+      }
 
       case "permissions":
         if (resolvedOutputDir) {

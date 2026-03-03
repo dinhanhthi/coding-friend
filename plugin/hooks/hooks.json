@@ -34,7 +34,7 @@
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scout-block.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scout-block.cjs"
           }
         ]
       }
@@ -47,6 +47,17 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/context-tracker.sh",
             "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/review-gate.sh"
           }
         ]
       }

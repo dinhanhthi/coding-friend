@@ -12,7 +12,7 @@ const tools = [
     isPrincipal: true,
     icon: (
       <svg
-        className="h-6 w-6"
+        className="h-8 w-8"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -38,7 +38,7 @@ const tools = [
     isPrincipal: false,
     icon: (
       <svg
-        className="h-6 w-6"
+        className="h-8 w-8"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -64,7 +64,7 @@ const tools = [
     isPrincipal: false,
     icon: (
       <svg
-        className="h-6 w-6"
+        className="h-8 w-8"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -90,7 +90,7 @@ const tools = [
     isPrincipal: false,
     icon: (
       <svg
-        className="h-6 w-6"
+        className="h-8 w-8"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -154,9 +154,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow}`}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className={`rounded-lg p-2 ${c.bg}`}>
-            <span className={c.text}>{tool.icon}</span>
-          </div>
+          <div className={c.text}>{tool.icon}</div>
           <span
             className={`self-start rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium ${c.badge}`}
           >
@@ -165,8 +163,10 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         </div>
 
         <div>
-          <h3 className="text-base font-semibold text-white">{tool.name}</h3>
-          <p className={`text-xs font-medium ${c.text}`}>{tool.tagline}</p>
+          <h3 className="mb-1 text-base font-semibold text-white">
+            {tool.name}
+          </h3>
+          <p className="text-xs font-medium text-slate-400">{tool.tagline}</p>
         </div>
 
         <p className="text-sm leading-relaxed text-slate-400">

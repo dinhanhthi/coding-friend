@@ -9,9 +9,8 @@ const installSteps = [
   },
   {
     step: "2",
-    title: "Install Plugin (in Claude Code)",
-    code: `/plugin marketplace add dinhanhthi/coding-friend
-/plugin install coding-friend@coding-friend-marketplace`,
+    title: "Install Plugin",
+    code: "cf install",
   },
   {
     step: "3",
@@ -22,7 +21,7 @@ const installSteps = [
 
 export default function InstallSection() {
   return (
-    <section className="py-20">
+    <section id="install" className="py-20">
       <Container>
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold text-white">

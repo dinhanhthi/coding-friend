@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
-# PostToolUse hook: Track files read in this session (async)
-# Runs after Read, Glob, Grep tools
+# PostToolUse hook: Track files read in this session (async).
+#
+# Appends file paths from Read, Glob, Grep tool calls to a session-local
+# tracker file at /tmp/coding-friend-context-$$. This log can be used by
+# other hooks or scripts to understand what files the agent has seen.
+#
+# Runs asynchronously — does not block tool execution.
+#
+# Integration contract:
+#   stdin  – JSON with tool_input containing file_path or path
+#   stdout – JSON {} (no output needed)
+#   Exit 0 = always (async, best-effort)
+#
+# Configuration:
+#   None — always active when coding-friend plugin is loaded.
 
 set -euo pipefail
 

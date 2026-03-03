@@ -30,7 +30,7 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "cf-tdd", slug: "skills/cf-tdd" },
       { title: "cf-sys-debug", slug: "skills/cf-sys-debug" },
-      { title: "cf-code-review", slug: "skills/cf-code-review" },
+      { title: "cf-auto-review", slug: "skills/cf-auto-review" },
       { title: "cf-verification", slug: "skills/cf-verification" },
     ],
   },
@@ -38,6 +38,8 @@ export const docsNavigation: NavSection[] = [
     title: "CLI Commands",
     items: [
       { title: "Overview", slug: "cli/overview" },
+      { title: "cf install", slug: "cli/cf-install" },
+      { title: "cf uninstall", slug: "cli/cf-uninstall" },
       { title: "cf init", slug: "cli/cf-init" },
       { title: "cf host", slug: "cli/cf-host" },
       { title: "cf mcp", slug: "cli/cf-mcp" },
@@ -60,7 +62,6 @@ export const docsNavigation: NavSection[] = [
       { title: "Agents", slug: "reference/agents" },
       { title: "Hooks", slug: "reference/hooks" },
       { title: "Security", slug: "reference/security" },
-      { title: "Multi-Platform", slug: "reference/multi-platform" },
     ],
   },
 ];

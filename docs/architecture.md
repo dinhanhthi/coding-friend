@@ -29,7 +29,7 @@ coding-friend/
 │   │   ├── session-init.sh          # SessionStart: bootstrap context
 │   │   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
-│   │   ├── scout-block.sh           # PreToolUse: respect .coding-friend/ignore
+│   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
 │   │   ├── compact-marker.sh        # PreCompact: preserve context
 │   │   └── context-tracker.sh       # PostToolUse: track files read
@@ -48,7 +48,7 @@ coding-friend/
 │   │   ├── cf-research/             # /cf-research — web research → docs/research/
 │   │   ├── cf-tdd/                  # TDD workflow (auto-invoked)
 │   │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
-│   │   ├── cf-code-review/          # Review guide (auto-invoked)
+│   │   ├── cf-auto-review/          # Review guide (auto-invoked)
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
@@ -91,7 +91,7 @@ coding-friend/
 | `cf-help`         | Bootstrap (session-init hook) | Meta-skill: skill discovery, core rules     |
 | `cf-tdd`          | Writing new code              | Iron law: no code without failing test      |
 | `cf-sys-debug`    | Debugging bugs                | 4-phase: investigate → analyze → test → fix |
-| `cf-code-review`  | During code review            | 4-layer: plan, quality, security, testing   |
+| `cf-auto-review`  | During code review            | 4-layer: plan, quality, security, testing   |
 | `cf-verification` | Before claiming done          | Gate: no claims without fresh evidence      |
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
@@ -143,17 +143,18 @@ agent: code-reviewer
 
 ---
 
-## Hooks System (7 hooks)
+## Hooks System (8 hooks)
 
 | Hook                    | Event            | Purpose                                                                        |
 | ----------------------- | ---------------- | ------------------------------------------------------------------------------ |
 | `session-init.sh`       | SessionStart     | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
 | `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                |
 | `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                  |
-| `scout-block.sh`        | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
+| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
 | `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |
+| `review-gate.sh`        | Stop             | Remind to review/commit when significant uncommitted changes exist             |
 
 ### Hook I/O Protocol
 
@@ -302,3 +303,293 @@ stripFrontmatter(content) → markdownBody
 | Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                     |
 | CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                 |
 | `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                    |
+
+---
+
+## State Machine
+
+The project operates as 4 concurrent state machine layers.
+
+### 1. Session Lifecycle
+
+```
+┌─────────────┐
+│   IDLE       │  (Claude Code chưa chạy)
+└──────┬───────┘
+       │ claude session start
+       ▼
+┌─────────────────────┐
+│  SESSION_INIT        │  SessionStart hook fires
+│  ┌─────────────────┐ │
+│  │ session-init.sh │ │
+│  │ • Load cf-help  │ │
+│  │ • Detect project│ │
+│  │ • Load guides   │ │
+│  │ • Inject context│ │
+│  └─────────────────┘ │
+└──────┬───────────────┘
+       │ context injected OK
+       ▼
+┌─────────────────────┐
+│  SESSION_ACTIVE      │◄────────────────────────────────┐
+│                      │                                  │
+│  Hooks active:       │   UserPromptSubmit               │
+│  • dev-rules-reminder│◄── (on every prompt)             │
+│  • privacy-block     │◄── PreToolUse (file access)      │
+│  • scout-block       │◄── PreToolUse (file access)      │
+│  • context-tracker   │◄── PostToolUse (async logging)   │
+│                      │                                  │
+│  User interacts...   │──────────────────────────────────┘
+└──────┬───────────────┘
+       │ user stops / session ends
+       ▼
+┌─────────────────────┐
+│  STOP_GATE           │  Stop hook fires
+│  review-gate.sh      │
+│  >50 uncommitted     │──── YES ──→ [BLOCKED: suggest /cf-review or /cf-commit]
+│  lines?              │                    │
+│                      │                    │ user runs commit/review
+│                      │◄───────────────────┘
+│  <50 lines           │
+└──────┬───────────────┘
+       │ pass
+       ▼
+┌────────────────┐     ┌──────────────────┐
+│  PRE_COMPACT   │────→│  SESSION_END     │
+│  compact-marker│     │  (session done)  │
+│  preserves     │     └──────────────────┘
+│  key rules     │
+└────────────────┘
+```
+
+### 2. Coding Workflow (within SESSION_ACTIVE)
+
+```
+                    ┌──────────────────┐
+                    │  WAITING_INPUT   │◄─────────────────────────────┐
+                    │  (user prompt)   │                               │
+                    └────────┬─────────┘                               │
+                             │                                         │
+              ┌──────────────┼──────────────┬─────────────┐           │
+              ▼              ▼              ▼             ▼           │
+     ┌────────────┐  ┌────────────┐  ┌──────────┐  ┌──────────┐    │
+     │ /cf-plan   │  │ CODE_TASK  │  │ /cf-fix  │  │ /cf-ask  │    │
+     │            │  │            │  │          │  │          │    │
+     │ Brainstorm │  │ New code   │  │ Quick    │  │ Q&A →    │    │
+     │ → plan doc │  │ requested  │  │ bug fix  │  │ memory/  │    │
+     └──────┬─────┘  └─────┬──────┘  └────┬─────┘  └────┬─────┘    │
+            │               │              │              │          │
+            │               ▼              │              │          │
+            │     ┌──────────────────┐     │              │          │
+            │     │  TDD_RED         │     │              │          │
+            │     │  cf-tdd auto     │     │              │          │
+            │     │  Write failing   │     │              │          │
+            │     │  test first      │     │              │          │
+            │     └────────┬─────────┘     │              │          │
+            │              │               │              │          │
+            │              ▼               │              │          │
+            │     ┌──────────────────┐     │              │          │
+            │     │  TDD_GREEN       │     │              │          │
+            │     │  Implement code  │     │              │          │
+            │     │  to pass test    │     │              │          │
+            │     └────────┬─────────┘     │              │          │
+            │              │               │              │          │
+            │              ▼               │              │          │
+            │     ┌──────────────────┐     │              │          │
+            │     │  TDD_REFACTOR    │     │              │          │
+            │     │  Clean up code   │     │              │          │
+            │     │  Tests still pass│     │              │          │
+            │     └────────┬─────────┘     │              │          │
+            │              │               │              │          │
+            │              ▼               ▼              │          │
+            │     ┌──────────────────────────┐            │          │
+            │     │  VERIFICATION            │            │          │
+            │     │  cf-verification auto    │            │          │
+            │     │  • Run tests             │            │          │
+            │     │  • Show output           │            │          │
+            │     │  • Prove completion      │            │          │
+            │     └────────┬─────────────────┘            │          │
+            │              │                              │          │
+            │         PASS │         FAIL                 │          │
+            │              │    ┌─────────────────┐       │          │
+            │              │    │  DEBUG           │       │          │
+            │              │    │  cf-sys-debug    │       │          │
+            │              │    │  • Investigate   │       │          │
+            │              │    │  • Analyze       │       │          │
+            │              │    │  • Test fix      │       │          │
+            │              │    │  • Apply fix     │       │          │
+            │              │    └───────┬──────────┘       │          │
+            │              │           │ (back to TDD)    │          │
+            │              │           └──→ TDD_RED       │          │
+            │              ▼                              │          │
+            │     ┌──────────────────┐                    │          │
+            │     │  CODE_COMPLETE   │                    │          │
+            │     │  Ready for       │                    │          │
+            │     │  review/commit   │                    │          │
+            │     └────────┬─────────┘                    │          │
+            │              │                              │          │
+            ▼              ▼                              │          │
+    ┌───────────────────────────┐                         │          │
+    │     REVIEW/COMMIT ZONE    │                         │          │
+    │                           │                         │          │
+    │  /cf-review ──→ code-reviewer agent (fork)          │          │
+    │                 4-layer review                       │          │
+    │                                                     │          │
+    │  /cf-commit ──→ • Scan for secrets                  │          │
+    │                 • Analyze diff                       │          │
+    │                 • Generate conventional commit       │          │
+    │                 • Run tests (if configured)          │          │
+    │                                                     │          │
+    │  /cf-ship  ──→ verify + commit + push + PR          │          │
+    └───────────────────────┬───────────────┘             │          │
+                            │                             │          │
+                            ▼                             ▼          │
+                   ┌────────────────────────────────────────┐        │
+                   │  KNOWLEDGE_EXTRACTION                   │        │
+                   │                                        │        │
+                   │  /cf-learn  ──→ assess complexity       │        │
+                   │                 ├─ simple → writer      │        │
+                   │                 └─ complex → writer-deep│        │
+                   │                 → docs/learn/{cat}/     │        │
+                   │                                        │        │
+                   │  /cf-remember ──→ writer agent          │        │
+                   │                 → docs/memory/          │        │
+                   │                                        │        │
+                   │  /cf-research ──→ parallel subagents    │        │
+                   │                 → docs/research/        │        │
+                   └────────────────────┬───────────────────┘        │
+                                        │                            │
+                                        └────────────────────────────┘
+```
+
+### 3. Knowledge Pipeline (/cf-learn detail)
+
+```
+┌──────────────────┐
+│  TRIGGER          │
+│  User: /cf-learn  │
+│  OR auto-invoked  │
+│  (substantial     │
+│   knowledge found)│
+└────────┬──────────┘
+         ▼
+┌──────────────────┐
+│  CONFIG_LOAD      │
+│  Read config:     │
+│  • outputDir      │
+│  • categories     │
+│  • language       │
+│  • autoCommit     │
+│  • readmeIndex    │
+└────────┬──────────┘
+         ▼
+┌──────────────────┐
+│  IDENTIFY         │
+│  Scan conversation│
+│  for knowledge    │
+│  points           │
+└────────┬──────────┘
+         ▼
+┌──────────────────┐
+│  CATEGORIZE       │
+│  Map each point   │
+│  → concepts/      │     ┌────────────────────┐
+│  → patterns/      │     │  Categories:       │
+│  → languages/     │────→│  concepts          │
+│  → tools/         │     │  patterns          │
+│  → debugging/     │     │  languages         │
+│  → (custom)       │     │  tools             │
+└────────┬──────────┘     │  debugging         │
+         ▼               └────────────────────┘
+┌──────────────────┐
+│  ASSESS_COMPLEXITY│
+│  Simple content?  │────── YES ──→ writer agent (haiku) ──┐
+│  Nuanced/deep?    │────── YES ──→ writer-deep (sonnet) ──┤
+└───────────────────┘                                      │
+                                                           ▼
+                                                  ┌────────────────┐
+                                                  │  WRITE_SPEC    │
+                                                  │  Build spec:   │
+                                                  │  • file path   │
+                                                  │  • content     │
+                                                  │  • frontmatter │
+                                                  │  • append mode │
+                                                  └───────┬────────┘
+                                                          ▼
+                                                  ┌────────────────┐
+                                                  │  AGENT_EXECUTE │
+                                                  │  Create/append │
+                                                  │  .md file      │
+                                                  └───────┬────────┘
+                                                          │
+                                              ┌───────────┼────────────┐
+                                              ▼           ▼            ▼
+                                     ┌──────────┐ ┌────────────┐ ┌─────────┐
+                                     │ README   │ │ AUTO_COMMIT│ │  DONE   │
+                                     │ INDEX    │ │ (if config)│ │         │
+                                     │ update   │ └──────┬─────┘ │         │
+                                     └────┬─────┘        │       │         │
+                                          └───────┬──────┘       │         │
+                                                  ▼              │         │
+                                         ┌────────────────┐      │         │
+                                         │ CONSUMABLE     │◄─────┘         │
+                                         │                │                │
+                                         │ cf host ──→ website (3333)     │
+                                         │ cf mcp  ──→ MCP server        │
+                                         │ direct  ──→ .md files         │
+                                         └────────────────┘                │
+```
+
+### 4. Security Guards (parallel on every file tool use)
+
+```
+                    ┌──────────────────────────┐
+                    │  TOOL_USE_REQUESTED       │
+                    │  (Read/Write/Edit/Glob/   │
+                    │   Grep)                   │
+                    └────────────┬──────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+           ┌───────────────┐         ┌───────────────┐
+           │ PRIVACY_CHECK │         │ SCOUT_CHECK   │
+           │ privacy-block │         │ scout-block   │
+           │               │         │               │
+           │ .env? .pem?   │         │ node_modules? │
+           │ credentials?  │         │ dist? .git?   │
+           │ ssh keys?     │         │ ignore rules? │
+           └───┬───────┬───┘         └──┬────────┬───┘
+               │       │                │        │
+            PASS    BLOCK(2)         PASS     BLOCK(2)
+               │       │                │        │
+               │       ▼                │        ▼
+               │  ┌─────────┐           │   ┌─────────┐
+               │  │ DENIED  │           │   │ DENIED  │
+               │  │ Tool    │           │   │ Tool    │
+               │  │ blocked │           │   │ blocked │
+               │  └─────────┘           │   └─────────┘
+               │                        │
+               └────────┬───────────────┘
+                        ▼
+               ┌──────────────────┐
+               │  TOOL_ALLOWED    │
+               │  Execute tool    │
+               └────────┬─────────┘
+                        │
+                        ▼
+               ┌──────────────────┐
+               │  CONTEXT_TRACK   │  (async)
+               │  Log file path   │
+               │  to /tmp/cf-*    │
+               └──────────────────┘
+```
+
+### State Summary
+
+| Layer     | States                                                        | Triggers            |
+| --------- | ------------------------------------------------------------- | ------------------- |
+| Session   | IDLE → INIT → ACTIVE → STOP_GATE → END                        | Session start/stop  |
+| Coding    | WAITING → TDD (RED/GREEN/REFACTOR) → VERIFY → REVIEW → COMMIT | User commands       |
+| Debug     | INVESTIGATE → ANALYZE → TEST → FIX → back to TDD              | Test failures       |
+| Knowledge | TRIGGER → CONFIG → IDENTIFY → CATEGORIZE → WRITE → CONSUME    | /cf-learn, auto     |
+| Security  | PRIVACY_CHECK + SCOUT_CHECK → ALLOW/BLOCK                     | Every file tool use |

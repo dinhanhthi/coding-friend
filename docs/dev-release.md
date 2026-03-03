@@ -2,34 +2,62 @@
 
 ## Packages
 
-| Package | Version file | Changelog | Tag pattern |
-|---------|-------------|-----------|-------------|
-| Plugin | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md` | `v*` |
-| CLI | `cli/package.json` | `cli/CHANGELOG.md` | `cli-v*` |
-| Learn MCP | `cli/lib/learn-mcp/package.json` | `cli/lib/learn-mcp/CHANGELOG.md` | `learn-mcp-v*` |
-| Learn Host | `cli/lib/learn-host/package.json` | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
+| Package    | Version file                                              | Changelog                         | Tag pattern     |
+| ---------- | --------------------------------------------------------- | --------------------------------- | --------------- |
+| Plugin     | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md`             | `v*`            |
+| CLI        | `cli/package.json`                                        | `cli/CHANGELOG.md`                | `cli-v*`        |
+| Learn MCP  | `cli/lib/learn-mcp/package.json`                          | `cli/lib/learn-mcp/CHANGELOG.md`  | `learn-mcp-v*`  |
+| Learn Host | `cli/lib/learn-host/package.json`                         | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
 
 ## Workflow
 
 ```
 # 1. Code (repeat as needed)
-/cf-commit                        # commit your changes, don't worry about versions
+/cf-commit                        # commit (includes secret scan on staged changes)
 
-# 2. Prep release (when ready to publish)
+# 2. Review (before release prep — or auto-reminded by review-gate hook)
+/cf-review                        # 4-layer review with proportional security depth
+
+# 3. Prep release (when ready to publish)
 /bump-version                     # bump + changelog + commit + PR (all-in-one)
 # → merge PR on GitHub
 
-# 3. Publish (after PR merge)
+# 4. Publish (after PR merge)
 git checkout main && git pull     # switch to main with latest changes
 /release                          # finalize changelogs, create git tags, push → CI publishes
 ```
 
+Note: The `review-gate` Stop hook auto-reminds to run `/cf-review` or `/cf-commit` when you have significant uncommitted changes (≥50 lines by default). Configure via `.coding-friend/config.json`:
+
+```json
+{
+  "reviewGate": true,
+  "reviewGateThreshold": 50
+}
+```
+
 `/bump-version` accepts a package filter: `/bump-version cli`, `/bump-version learn-mcp patch`, etc.
+
+### Local plugin development
+
+Recommended development workflow (Read more: [Plugin README](plugin/README.md)):
+
+```bash
+# One-time setup
+cf dev on /path/to/coding-friend
+
+# Inner loop (repeat as many times as needed)
+# 1. Edit files
+# 2. cf dev sync
+# 3. Restart Claude Code and test
+
+# When feature is done — bump version once and commit
+```
 
 ## Bump levels
 
-| Level | When |
-|-------|------|
-| **PATCH** (x.x.1) | Bug fix, typo, docs update |
-| **MINOR** (x.1.0) | New feature, new skill, new hook (backward compatible) |
+| Level             | When                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| **PATCH** (x.x.1) | Bug fix, typo, docs update                                           |
+| **MINOR** (x.1.0) | New feature, new skill, new hook (backward compatible)               |
 | **MAJOR** (1.0.0) | Breaking change (config format, removed skill, changed CLI behavior) |

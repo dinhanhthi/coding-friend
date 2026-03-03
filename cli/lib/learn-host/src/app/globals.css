@@ -11,10 +11,10 @@
   --color-navy-900: #2a2d38;
   --color-navy-950: #23262e;
 
-  /* Violet accent (from website) */
-  --color-accent: #7c3aed;
-  --color-accent-light: #a78bfa;
-  --color-accent-dark: #6d28d9;
+  /* Amber accent (matching logo gradient) */
+  --color-accent: #f59e0b;
+  --color-accent-light: #fbbf24;
+  --color-accent-dark: #d97706;
 
   --color-surface: #2a2d38;
   --color-surface-secondary: #31353f;
@@ -76,6 +76,36 @@ pre code {
 pre {
   padding: 1rem;
   background: #0d1117;
+}
+
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  color: #94a3b8;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
 }
 
 :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {

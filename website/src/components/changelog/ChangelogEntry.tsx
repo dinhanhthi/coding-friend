@@ -15,20 +15,52 @@ interface Props {
 }
 
 function renderInline(text: string) {
-  // Split on backtick pairs: odd indices are code, even are plain text
-  const parts = text.split(/`([^`]+)`/);
-  return parts.map((part, i) =>
-    i % 2 === 1 ? (
-      <code
-        key={i}
-        className="rounded bg-slate-800 px-1 py-0.5 font-mono text-sm text-violet-300"
-      >
-        {part}
-      </code>
-    ) : (
-      part
-    ),
-  );
+  // Match backtick code spans and markdown links
+  const tokenRegex = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g;
+  const result: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tokenRegex.exec(text)) !== null) {
+    // Push plain text before this match
+    if (match.index > lastIndex) {
+      result.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1] !== undefined) {
+      // Backtick code span
+      result.push(
+        <code
+          key={match.index}
+          className="rounded bg-slate-800 px-1 py-0.5 font-mono text-sm text-violet-300"
+        >
+          {match[1]}
+        </code>,
+      );
+    } else {
+      // Markdown link [text](url)
+      result.push(
+        <a
+          key={match.index}
+          href={match[3]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sky-500 hover:text-sky-400"
+        >
+          {match[2]}
+        </a>,
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Push remaining plain text
+  if (lastIndex < text.length) {
+    result.push(text.slice(lastIndex));
+  }
+
+  return result;
 }
 
 export default function ChangelogEntryCard({ entry, isLatest }: Props) {

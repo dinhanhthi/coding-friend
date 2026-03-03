@@ -54,5 +54,14 @@ Fixes include:
 
 - Test file demonstrating the bug
 - Source code changes with comments
-- Git log showing the fix commit
 - Test report showing no regressions
+
+## Recommended Workflow
+
+After the fix is verified, follow this order:
+
+```
+/cf-fix → /cf-review → /cf-commit
+```
+
+The skill automatically reminds you to run `/cf-review` before committing, so you don't skip the review step and jump straight to `/cf-commit`.

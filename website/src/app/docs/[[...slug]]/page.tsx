@@ -10,6 +10,7 @@ import TableOfContents from "@/components/docs/TableOfContents";
 import DocsBreadcrumbs from "@/components/docs/DocsBreadcrumbs";
 import PrevNextNav from "@/components/docs/PrevNextNav";
 import Callout from "@/components/docs/Callout";
+import CodeBlock from "@/components/docs/CodeBlock";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -37,11 +38,13 @@ const CF_KEYWORD_RE = /\/?cf(?:-[\w]+)*\b|\/plugin\b/g;
 /**
  * rehype plugin: highlight cf-* keywords inside <code> blocks.
  * Wraps matches in <span class="hljs-cf-keyword">.
+ * Only applies to code blocks (inside <pre>), not inline code.
  */
 function rehypeHighlightCfKeywords() {
   return (tree: any) => {
-    visit(tree, "element", (node: any) => {
+    visit(tree, "element", (node: any, _index: any, parent: any) => {
       if (node.tagName !== "code") return;
+      if (!parent || parent.tagName !== "pre") return;
 
       const newChildren: any[] = [];
       let changed = false;
@@ -98,6 +101,7 @@ interface Props {
 
 const mdxComponents = {
   Callout,
+  pre: CodeBlock,
 };
 
 export async function generateStaticParams() {
@@ -197,7 +201,7 @@ export default async function DocPage({ params }: Props) {
           </p>
         )}
 
-        <div className="prose prose-invert prose-headings:font-semibold prose-a:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm max-w-none">
+        <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-400 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm max-w-none">
           <MDXRemote
             source={doc.content}
             components={mdxComponents}

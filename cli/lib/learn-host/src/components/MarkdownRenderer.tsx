@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
+import CodeBlock from "./CodeBlock";
 
 export default function MarkdownRenderer({ content }: { content: string }) {
   return (
@@ -9,6 +10,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeSlug]}
+        components={{ pre: CodeBlock }}
       >
         {content}
       </ReactMarkdown>

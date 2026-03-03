@@ -40,12 +40,25 @@ Check `.coding-friend/config.json` for `commit.verify` setting. If `verify: fals
 
 If any check fails, fix the issue FIRST. Do not commit broken code.
 
-### Step 4: Stage Files
+### Step 4: Stage & Scan
 
 - Stage only files relevant to the current conversation's task
 - Do NOT stage unrelated changes from other work
 - Do NOT stage `.env`, credentials, or secrets
 - Do NOT use `git add .` or `git add -A`
+
+**Secret scan** — after staging, check for accidental secrets:
+
+```bash
+SECRETS=$(git diff --cached | grep -c -iE "(api[_-]?key|token|password|secret|private[_-]?key|credential)" || echo 0)
+```
+
+If `SECRETS > 0`:
+
+1. Show matches with context: `git diff --cached | grep -iE -C2 "(api[_-]?key|token|password|secret|private[_-]?key|credential)"`
+2. Review each match — variable names like `getApiKey()` or `TOKEN_TYPE` are OK, actual secret values are NOT
+3. If real secrets found: unstage the file (`git reset HEAD <file>`), suggest adding to `.gitignore`
+4. If all matches are false positives (code references, not actual secrets): proceed
 
 ### Step 5: Write Commit Message
 
