@@ -1,7 +1,11 @@
 import { existsSync, readdirSync } from "fs";
 import { checkbox } from "@inquirer/prompts";
 import { readJson, writeJson, mergeJson } from "./json.js";
-import { claudeSettingsPath, globalConfigPath, pluginCachePath } from "./paths.js";
+import {
+  claudeSettingsPath,
+  globalConfigPath,
+  pluginCachePath,
+} from "./paths.js";
 import {
   STATUSLINE_COMPONENTS,
   ALL_COMPONENT_IDS,
@@ -80,9 +84,7 @@ export async function selectStatuslineComponents(
 /**
  * Save statusline component config to global config.
  */
-export function saveStatuslineConfig(
-  components: StatuslineComponent[],
-): void {
+export function saveStatuslineConfig(components: StatuslineComponent[]): void {
   mergeJson(globalConfigPath(), { statusline: { components } });
 }
 

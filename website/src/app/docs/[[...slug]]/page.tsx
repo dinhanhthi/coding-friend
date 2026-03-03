@@ -201,7 +201,7 @@ export default async function DocPage({ params }: Props) {
           </p>
         )}
 
-        <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-400 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm max-w-none">
+        <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-300 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm max-w-none">
           <MDXRemote
             source={doc.content}
             components={mdxComponents}

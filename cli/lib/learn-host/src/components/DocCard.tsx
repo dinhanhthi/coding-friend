@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import TagBadge from "./TagBadge";
 import type { DocMeta } from "@/lib/types";
 
 export default function DocCard({ doc }: { doc: DocMeta }) {
@@ -17,21 +16,25 @@ export default function DocCard({ doc }: { doc: DocMeta }) {
       onKeyDown={(e) => {
         if (e.key === "Enter") router.push(href);
       }}
-      className="dark:bg-navy-800/50 block cursor-pointer rounded-lg border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-amber-300 hover:shadow-sm dark:border-[#a0a0a01c] dark:hover:border-amber-500/40"
+      className="hover:border-navy-400 dark:bg-navy-900/80 dark:hover:bg-navy-800/60 block cursor-pointer rounded-xl border border-slate-300 p-4 transition-all duration-200 hover:-translate-y-0.5 dark:border-[#a0a0a01c]"
     >
-      <h3 className="mb-2 font-semibold text-slate-900 dark:text-slate-100">
+      <h3 className="mb-2 font-medium text-slate-900 dark:text-slate-100">
         <Link href={href}>{doc.frontmatter.title}</Link>
       </h3>
-      <p className="mb-3 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
         {doc.excerpt}
       </p>
       <div className="flex items-center justify-between">
-        <div
-          className="flex flex-wrap items-center gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex flex-wrap items-center gap-2">
           {doc.frontmatter.tags.slice(0, 3).map((tag) => (
-            <TagBadge key={tag} tag={tag} />
+            <Link
+              key={tag}
+              href={`/search/?q=${encodeURIComponent(tag)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-600/50 dark:text-slate-300"
+            >
+              {tag}
+            </Link>
           ))}
           {doc.frontmatter.tags.length > 3 && (
             <span className="text-xs text-slate-400">

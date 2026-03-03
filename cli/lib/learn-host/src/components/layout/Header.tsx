@@ -22,7 +22,7 @@ export default function Header({ categories }: { categories: CategoryInfo[] }) {
         </Link>
 
         {/* Right */}
-        <div className="flex items-center gap-1 md:gap-3">
+        <div className="flex items-center gap-1">
           {/* Search */}
           <PagefindSearch />
 

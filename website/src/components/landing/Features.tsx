@@ -364,9 +364,7 @@ const Statusline = () => {
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-green-400">⎇ main</span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="whitespace-nowrap text-amber-400">
-                ctx 42%
-              </span>
+              <span className="whitespace-nowrap text-amber-400">ctx 42%</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-violet-400">
                 19% → 12:59

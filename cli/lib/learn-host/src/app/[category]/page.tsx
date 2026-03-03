@@ -21,7 +21,7 @@ export default async function CategoryPage({
     <div>
       <Breadcrumbs crumbs={[{ label: displayName }]} />
       <h1 className="mb-1 text-2xl font-bold capitalize">{displayName}</h1>
-      <p className="mb-6 text-slate-500 dark:text-slate-400">
+      <p className="mb-6 pl-0.5 text-slate-500 dark:text-slate-400">
         {docs.length} {docs.length === 1 ? "doc" : "docs"}
       </p>
 

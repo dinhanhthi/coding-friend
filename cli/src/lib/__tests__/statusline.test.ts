@@ -29,8 +29,7 @@ function mockPaths(overrides: Partial<Record<string, string>> = {}) {
       overrides.localConfig ?? join(testDir, "nonexistent", "local.json"),
     pluginCachePath: () => overrides.pluginCache ?? join(testDir, "cache"),
     claudeSettingsPath: () =>
-      overrides.claudeSettings ??
-      join(testDir, "nonexistent", "settings.json"),
+      overrides.claudeSettings ?? join(testDir, "nonexistent", "settings.json"),
     resolvePath: (p: string) => p,
   }));
 }
@@ -62,9 +61,7 @@ describe("STATUSLINE_COMPONENTS", () => {
 
 describe("ALL_COMPONENT_IDS", () => {
   it("matches STATUSLINE_COMPONENTS ids", () => {
-    expect(ALL_COMPONENT_IDS).toEqual(
-      STATUSLINE_COMPONENTS.map((c) => c.id),
-    );
+    expect(ALL_COMPONENT_IDS).toEqual(STATUSLINE_COMPONENTS.map((c) => c.id));
   });
 });
 

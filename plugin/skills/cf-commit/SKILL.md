@@ -33,6 +33,7 @@ Review the current conversation to understand what task was performed and which 
 ### Step 3: Verify Before Committing
 
 **Skip this step if ANY of these conditions are true:**
+
 - `.coding-friend/config.json` has `commit.verify: false`
 - Tests already ran and passed earlier in this conversation (e.g., from `cf-verification` after implementation)
 

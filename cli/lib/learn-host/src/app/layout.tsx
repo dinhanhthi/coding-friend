@@ -33,7 +33,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="dark:bg-navy-900 bg-white text-slate-900 antialiased dark:text-slate-50">
+      <body className="dark:bg-navy-950 bg-white text-slate-900 antialiased dark:text-slate-50">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header categories={categories} />
           <div data-pagefind-ignore className="md:hidden">
