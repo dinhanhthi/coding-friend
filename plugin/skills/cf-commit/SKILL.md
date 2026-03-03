@@ -32,7 +32,11 @@ Review the current conversation to understand what task was performed and which 
 
 ### Step 3: Verify Before Committing
 
-Check `.coding-friend/config.json` for `commit.verify` setting. If `verify: false`, skip this step.
+**Skip this step if ANY of these conditions are true:**
+- `.coding-friend/config.json` has `commit.verify: false`
+- Tests already ran and passed earlier in this conversation (e.g., from `cf-verification` after implementation)
+
+**Otherwise:**
 
 1. Run the test suite — all tests must pass
 2. Run linter if configured — no new warnings
