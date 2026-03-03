@@ -119,6 +119,10 @@ pre {
   padding: 2px 5px !important;
 }
 
+a > code {
+  color: inherit !important;
+}
+
 /* Scroll-triggered animations */
 .animate-on-scroll {
   opacity: 0;
