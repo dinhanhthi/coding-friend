@@ -46,11 +46,8 @@ npm i -g coding-friend-cli
 
 ### 2. Install the plugin
 
-Run `claude` and install from the marketplace:
-
-```
-/plugin marketplace add dinhanhthi/coding-friend
-/plugin install coding-friend@coding-friend-marketplace
+```bash
+cf install
 ```
 
 > The plugin is installed globally (once for all projects). You can disable it per-project if needed.
@@ -98,6 +95,8 @@ Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review
 ## CLI Commands
 
 ```bash
+cf install           # Install the plugin into Claude Code
+cf uninstall         # Remove the plugin from Claude Code
 cf init              # Initialize workspace
 cf host [path]       # Serve learning docs at localhost:3333
 cf mcp [path]        # Setup MCP server for LLM integration
