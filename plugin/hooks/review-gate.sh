@@ -83,9 +83,9 @@ FILES_CHANGED=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
 REMINDER="You have $FILES_CHANGED files with ~$TOTAL_LINES lines of uncommitted changes."
 
 if [ "$SENSITIVE" -gt 0 ]; then
-  REMINDER="$REMINDER Sensitive files detected (auth/security/crypto). Consider running /cf-review (DEEP mode) before committing."
+  REMINDER="$REMINDER Sensitive files detected (auth/security/crypto). ASK the user if they want to run /cf-review (DEEP mode) or /cf-commit. Do NOT auto-run — wait for their choice."
 else
-  REMINDER="$REMINDER Consider running /cf-review or /cf-commit before finishing."
+  REMINDER="$REMINDER ASK the user if they want to run /cf-review, /cf-commit, or skip. Do NOT auto-run any skill — wait for the user to choose."
 fi
 
 # --- Output as Stop hook response ---

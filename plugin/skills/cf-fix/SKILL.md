@@ -68,7 +68,7 @@ Dispatch the **implementer agent** to fix the bug test-first. Use the **Agent to
 
 ### Step 7: Review Reminder
 
-Remind the user: run `/cf-review` before committing to catch any issues the fix may have introduced.
+Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
 
 ## Escalation
 

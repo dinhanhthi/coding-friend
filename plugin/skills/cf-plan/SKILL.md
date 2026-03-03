@@ -93,7 +93,7 @@ If the user agrees, implement each task from the plan **sequentially** using the
 2. After each task completes, review the implementer's report:
    - If tests pass and the task is verified → mark task complete, move to next
    - If issues reported → address them before proceeding (re-dispatch or fix inline)
-3. After all tasks are done, remind the user: run `/cf-review` → then `/cf-commit`
+3. After all tasks are done, ask the user if they want to run `/cf-review` or `/cf-commit`
 
 ## Plan Template
 
@@ -127,7 +127,7 @@ If the user agrees, implement each task from the plan **sequentially** using the
 
 ## Next Steps
 
-After implementation: run `/cf-review` → then `/cf-commit`
+After implementation: consider running `/cf-review` → then `/cf-commit`
 ```
 
 ## Rules
