@@ -135,7 +135,7 @@ After implementation: consider running `/cf-review` → then `/cf-commit`
 - **Plan first, implement second** — never start coding before the plan is saved and the user approves.
 - **Ask first, plan second** — never proceed with unclear requirements.
 - **Delegate exploration** — always use the planner agent for codebase exploration and approach brainstorming. Never do heavy codebase reading in the main conversation.
-- **Delegate implementation** — always use the implementer agent for task execution. Never implement inline in the main conversation during this workflow.
+- **Delegate implementation** — use the implementer agent for task execution. If the agent fails after a reasonable attempt, fall back to implementing inline following TDD discipline (load cf-tdd).
 - When uncertain, say so. State your confidence level and ask.
 - Do NOT assume which libraries, APIs, or tools to use without asking.
 - Plans should be concrete: exact file paths, function names, test commands.

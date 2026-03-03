@@ -79,7 +79,7 @@ Dispatch the **implementer agent** to implement the optimization test-first. Use
 > 4. Run all tests — no regressions allowed
 > 5. Report: what was changed, test results, any concerns
 
-Review the implementer's report. If tests failed or the agent reported concerns, address them before proceeding.
+Review the implementer's report. If tests failed or the agent reported concerns, address them before proceeding. Then load the `cf-verification` skill and run the full checklist before measuring.
 
 ### Step 6: Measure After
 
@@ -103,7 +103,7 @@ Review the implementer's report. If tests failed or the agent reported concerns,
 
 - ALWAYS measure before AND after — no "it should be faster" claims
 - One optimization at a time — never batch multiple changes
-- Tests must pass throughout — load cf-tdd for implementation
+- Tests must pass throughout — the implementer agent enforces TDD
 - Get user confirmation before implementing (Step 4)
 - If you cannot measure it, ask the user how to measure it before proceeding
 - Revert if the optimization makes things worse or breaks tests
