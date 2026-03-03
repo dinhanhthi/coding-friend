@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.1.0 (unpublished)
+## v0.1.0 (2026-03-03)
 
 - Add copy button to code blocks ([#ac47c74](https://github.com/dinhanhthi/coding-friend/commit/ac47c74))
 - Redesign home page with elegant layout and updated color scheme ([#2d53836](https://github.com/dinhanhthi/coding-friend/commit/2d53836))
