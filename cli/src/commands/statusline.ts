@@ -1,52 +1,36 @@
-import { existsSync, readdirSync } from "fs";
-import { readJson, writeJson } from "../lib/json.js";
-import { claudeSettingsPath, pluginCachePath } from "../lib/paths.js";
-import { log } from "../lib/log.js";
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
-
-function findLatestVersion(cachePath: string): string | null {
-  if (!existsSync(cachePath)) return null;
-  const versions = readdirSync(cachePath, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
-    .reverse();
-  return versions[0] ?? null;
-}
+import { log } from "../lib/log.js";
+import { ALL_COMPONENT_IDS } from "../types.js";
+import {
+  findStatuslineHookPath,
+  selectStatuslineComponents,
+  saveStatuslineConfig,
+  writeStatuslineSettings,
+  isStatuslineConfigured,
+} from "../lib/statusline.js";
 
 export async function statuslineCommand(): Promise<void> {
   console.log("=== 🌿 Coding Friend Statusline 🌿 ===");
   console.log();
 
   // Step 1: Find plugin path
-  const cachePath = pluginCachePath();
-  const version = findLatestVersion(cachePath);
+  const result = findStatuslineHookPath();
 
-  if (!version) {
+  if (!result) {
     log.error(
       "coding-friend plugin not found in cache. Install it first via Claude Code.",
     );
     return;
   }
 
-  const hookPath = `${cachePath}/${version}/hooks/statusline.sh`;
-  if (!existsSync(hookPath)) {
-    log.error(`Statusline hook not found: ${hookPath}`);
-    return;
-  }
+  log.info(`Found plugin ${chalk.green(`v${result.version}`)}`);
 
-  log.info(`Found plugin ${chalk.green(`v${version}`)}`);
-
-  // Step 2: Read current settings
-  const settingsPath = claudeSettingsPath();
-  const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
-
-  const existing = settings.statusLine as { command?: string } | undefined;
-  if (existing?.command) {
-    log.warn(`Statusline already configured: ${existing.command}`);
+  // Step 2: Check existing statusline config
+  if (isStatuslineConfigured()) {
+    log.warn("Statusline already configured.");
     const overwrite = await confirm({
-      message: "Overwrite existing statusline config?",
+      message: "Reconfigure statusline?",
       default: true,
     });
     if (!overwrite) {
@@ -55,15 +39,19 @@ export async function statuslineCommand(): Promise<void> {
     }
   }
 
-  // Step 3: Update
-  settings.statusLine = {
-    type: "command",
-    command: `bash ${hookPath}`,
-  };
-  writeJson(settingsPath, settings);
+  // Step 3: Select components
+  const components = await selectStatuslineComponents();
 
-  // Step 4: Confirm
+  // Step 4: Save config + write settings
+  saveStatuslineConfig(components);
+  writeStatuslineSettings(result.hookPath);
+
+  // Step 5: Confirm
   log.success("Statusline configured!");
   log.dim("Restart Claude Code (or start a new session) to see it.");
-  log.dim("Shows: plugin name, active model, and git branch.");
+  if (components.length < ALL_COMPONENT_IDS.length) {
+    log.dim(`Showing: ${components.join(", ")}`);
+  } else {
+    log.dim("Showing all components.");
+  }
 }
