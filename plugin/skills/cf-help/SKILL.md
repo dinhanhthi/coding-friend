@@ -53,7 +53,8 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 - **code-reviewer** — Multi-layer code review in forked context
 - **implementer** — TDD implementation subagent
-- **planner** — Codebase exploration and task decomposition
+- **explorer** — Codebase exploration and analysis (read-only, haiku)
+- **planner** — Task decomposition and approach brainstorming
 - **writer** — Lightweight doc writer (haiku) for skills that generate markdown files
 - **writer-deep** — Deep reasoning doc writer (sonnet) for nuanced technical content
 
