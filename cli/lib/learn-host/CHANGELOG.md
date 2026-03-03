@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.2.0 (unpublished)
+## v0.2.0 (2026-03-03)
 
 - Add dedicated tag pages for filtering docs by tag ([#06f5847](https://github.com/dinhanhthi/coding-friend/commit/06f5847))
 - Style improvements across website and learn-host ([#0029522](https://github.com/dinhanhthi/coding-friend/commit/0029522))
