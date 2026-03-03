@@ -199,6 +199,10 @@ export function extractHeadings(content: string): TocItem[] {
   return headings;
 }
 
+export function getDocsByTag(tag: string): DocMeta[] {
+  return getAllDocs().filter((d) => d.frontmatter.tags.includes(tag));
+}
+
 export function getAllTags(): { tag: string; count: number }[] {
   const tagMap = new Map<string, number>();
   for (const doc of getAllDocs()) {
