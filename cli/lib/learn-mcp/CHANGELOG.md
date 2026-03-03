@@ -1,6 +1,6 @@
 # Changelog (Learn MCP)
 
-## v0.0.3 (unpublished)
+## v0.0.3 (2026-03-03)
 
 - Add Claude Desktop config documentation for compiled output ([#d37a6b9](https://github.com/dinhanhthi/coding-friend/commit/d37a6b9))
 

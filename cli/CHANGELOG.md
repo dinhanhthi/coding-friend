@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.4.0 (unpublished)
+## v1.4.0 (2026-03-03)
 
 - Add `cf install` command for plugin setup from terminal ([#e51cd4e](https://github.com/dinhanhthi/coding-friend/commit/e51cd4e))
 - Add `cf uninstall` command ([#ccf1758](https://github.com/dinhanhthi/coding-friend/commit/ccf1758))

@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.3.0 (unpublished)
+## v0.3.0 (2026-03-03)
 
 - Add explorer agent for reusable codebase exploration ([#af2a926](https://github.com/dinhanhthi/coding-friend/commit/af2a926))
 - Add implementer agent wired into cf-plan, cf-fix, cf-tdd, cf-optimize ([#cc5b0c4](https://github.com/dinhanhthi/coding-friend/commit/cc5b0c4))
