@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.4.1 (unpublished)
+## v0.4.1 (2026-03-03)
 
 - Optimize verification workflow to avoid duplicate test runs ([#00b9304](https://github.com/dinhanhthi/coding-friend/commit/00b9304))
 
