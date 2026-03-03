@@ -19,12 +19,28 @@
 #   stdout – ANSI-colored status line string
 #
 # Configuration:
-#   None — always active once configured in settings.
+#   Components can be toggled via ~/.coding-friend/config.json:
+#   { "statusline": { "components": ["version", "folder", "model", "branch", "context", "usage"] } }
+#   Run `cf statusline` to configure interactively.
+#   If no config exists, all components are shown by default.
 
 set -euo pipefail
 
 # Read JSON input from stdin
 INPUT=$(cat)
+
+# Read component visibility config
+CONFIG_FILE="$HOME/.coding-friend/config.json"
+SL_COMPONENTS=""
+if [ -f "$CONFIG_FILE" ] && command -v jq &>/dev/null; then
+  SL_COMPONENTS=$(jq -r '.statusline.components // empty' "$CONFIG_FILE" 2>/dev/null)
+fi
+
+# Check if a component is enabled (show all if no config)
+component_enabled() {
+  [ -z "$SL_COMPONENTS" ] && return 0
+  echo "$SL_COMPONENTS" | jq -e "index(\"$1\")" > /dev/null 2>&1
+}
 
 # Colors
 BLUE=$'\033[0;34m'
@@ -66,110 +82,121 @@ color_for_percentage() {
 separator="${GRAY} │ ${RESET}"
 
 # Plugin version — read from plugin.json in CLAUDE_PLUGIN_ROOT (works for both dev and installed)
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 VERSION=""
-if [ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
-  VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
-fi
-if [ -z "$VERSION" ]; then
-  VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null)
+if component_enabled "version"; then
+  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+  if [ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
+    VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+  fi
+  if [ -z "$VERSION" ]; then
+    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null)
+  fi
 fi
 
 # Current folder
-current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')
-current_dir=$(basename "$current_dir_path")
+current_dir=""
+if component_enabled "folder"; then
+  current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')
+  current_dir=$(basename "$current_dir_path")
+fi
 
 # Active model
-MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null)
-if [ -z "$MODEL" ]; then
-  MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null)
+MODEL=""
+if component_enabled "model"; then
+  MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null)
+  if [ -z "$MODEL" ]; then
+    MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null)
+  fi
 fi
 
 # Git branch
 branch_text=""
-if git rev-parse --git-dir > /dev/null 2>&1; then
-  branch=$(git branch --show-current 2>/dev/null)
-  [ -n "$branch" ] && branch_text="${GREEN}⎇ ${branch}${RESET}"
+if component_enabled "branch"; then
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    branch=$(git branch --show-current 2>/dev/null)
+    [ -n "$branch" ] && branch_text="${GREEN}⎇ ${branch}${RESET}"
+  fi
 fi
 
 # Context window usage — read from stdin JSON
 ctx_text=""
-ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1)
-
-if [ -n "$ctx_pct" ] && [[ "$ctx_pct" =~ ^[0-9]+$ ]]; then
-  ctx_color=$(color_for_percentage "$ctx_pct")
-  ctx_text="${ctx_color}ctx ${ctx_pct}%${RESET}"
+if component_enabled "context"; then
+  ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1)
+  if [ -n "$ctx_pct" ] && [[ "$ctx_pct" =~ ^[0-9]+$ ]]; then
+    ctx_color=$(color_for_percentage "$ctx_pct")
+    ctx_text="${ctx_color}ctx ${ctx_pct}%${RESET}"
+  fi
 fi
 
 # Usage (percentage + reset time) — fetched from Anthropic OAuth API
 usage_text=""
-utilization=""
-resets_at=""
+if component_enabled "usage"; then
+  utilization=""
+  resets_at=""
 
-ACCESS_TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || true
+  ACCESS_TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || true
 
-if [ -n "$ACCESS_TOKEN" ]; then
-  usage_json=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
-    --header @- \
-    -H "anthropic-beta: oauth-2025-04-20" \
-    -H "Content-Type: application/json" 2>/dev/null <<< "Authorization: Bearer $ACCESS_TOKEN") || true
+  if [ -n "$ACCESS_TOKEN" ]; then
+    usage_json=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
+      --header @- \
+      -H "anthropic-beta: oauth-2025-04-20" \
+      -H "Content-Type: application/json" 2>/dev/null <<< "Authorization: Bearer $ACCESS_TOKEN") || true
 
-  if [ -n "$usage_json" ]; then
-    utilization=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty' 2>/dev/null | cut -d. -f1)
-    resets_at=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
-  fi
-fi
-
-if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
-  usage_color=$(color_for_percentage "$utilization")
-
-  # Reset time
-  reset_time_display=""
-  if [ -n "$resets_at" ] && [ "$resets_at" != "null" ] && [ "$resets_at" != "" ]; then
-    iso_time=$(echo "$resets_at" | sed 's/\.[0-9]*+.*$//' | sed 's/\.[0-9]*Z$//')
-    epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null) || true
-
-    if [ -n "$epoch" ]; then
-      time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
-      if [ "$time_format" = "1" ]; then
-        reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
-      else
-        reset_time=$(date -r "$epoch" "+%I:%M %p" 2>/dev/null)
-      fi
-      [ -n "$reset_time" ] && reset_time_display=" → ${reset_time}"
+    if [ -n "$usage_json" ]; then
+      utilization=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty' 2>/dev/null | cut -d. -f1)
+      resets_at=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
     fi
   fi
 
-  usage_text="${usage_color}${utilization}%${reset_time_display}${RESET}"
-else
-  usage_text="${YELLOW}~${RESET}"
+  if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
+    usage_color=$(color_for_percentage "$utilization")
+
+    # Reset time
+    reset_time_display=""
+    if [ -n "$resets_at" ] && [ "$resets_at" != "null" ] && [ "$resets_at" != "" ]; then
+      iso_time=$(echo "$resets_at" | sed 's/\.[0-9]*+.*$//' | sed 's/\.[0-9]*Z$//')
+      epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null) || true
+
+      if [ -n "$epoch" ]; then
+        time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
+        if [ "$time_format" = "1" ]; then
+          reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
+        else
+          reset_time=$(date -r "$epoch" "+%I:%M %p" 2>/dev/null)
+        fi
+        [ -n "$reset_time" ] && reset_time_display=" → ${reset_time}"
+      fi
+    fi
+
+    usage_text="${usage_color}${utilization}%${reset_time_display}${RESET}"
+  else
+    usage_text="${YELLOW}~${RESET}"
+  fi
 fi
 
-# Build output
+# Build output — use array to handle separators cleanly
+parts=()
+
 if [ -n "$VERSION" ]; then
-  output="${BLUE}cf v${VERSION}${RESET}"
-else
-  output="${BLUE}cf${RESET}"
+  parts+=("${BLUE}cf v${VERSION}${RESET}")
+elif component_enabled "version"; then
+  parts+=("${BLUE}cf${RESET}")
 fi
 
-if [ -n "$current_dir" ]; then
-  output="${output}${separator}${BLUE}${current_dir}${RESET}"
-fi
+[ -n "$current_dir" ] && parts+=("${BLUE}${current_dir}${RESET}")
+[ -n "$MODEL" ] && parts+=("${CYAN}${MODEL}${RESET}")
+[ -n "$branch_text" ] && parts+=("${branch_text}")
+[ -n "$ctx_text" ] && parts+=("${ctx_text}")
+[ -n "$usage_text" ] && parts+=("${usage_text}")
 
-if [ -n "$MODEL" ]; then
-  output="${output}${separator}${CYAN}${MODEL}${RESET}"
-fi
-
-if [ -n "$branch_text" ]; then
-  output="${output}${separator}${branch_text}"
-fi
-
-if [ -n "$ctx_text" ]; then
-  output="${output}${separator}${ctx_text}"
-fi
-
-if [ -n "$usage_text" ]; then
-  output="${output}${separator}${usage_text}"
-fi
+# Join parts with separator
+output=""
+for part in "${parts[@]}"; do
+  if [ -z "$output" ]; then
+    output="$part"
+  else
+    output="${output}${separator}${part}"
+  fi
+done
 
 printf "%s\n" "$output"
