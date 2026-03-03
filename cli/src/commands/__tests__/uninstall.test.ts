@@ -31,7 +31,10 @@ vi.mock("../../lib/shell-completion.js", () => ({
 import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { confirm } from "@inquirer/prompts";
 import { commandExists, run } from "../../lib/exec.js";
-import { hasShellCompletion, removeShellCompletion } from "../../lib/shell-completion.js";
+import {
+  hasShellCompletion,
+  removeShellCompletion,
+} from "../../lib/shell-completion.js";
 import { uninstallCommand } from "../uninstall.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -45,12 +48,34 @@ const mockHasShellCompletion = vi.mocked(hasShellCompletion);
 const mockRemoveShellCompletion = vi.mocked(removeShellCompletion);
 
 const home = homedir();
-const installedPluginsFile = join(home, ".claude", "plugins", "installed_plugins.json");
-const knownMarketplacesFile = join(home, ".claude", "plugins", "known_marketplaces.json");
+const installedPluginsFile = join(
+  home,
+  ".claude",
+  "plugins",
+  "installed_plugins.json",
+);
+const knownMarketplacesFile = join(
+  home,
+  ".claude",
+  "plugins",
+  "known_marketplaces.json",
+);
 const settingsFile = join(home, ".claude", "settings.json");
 const devStateFile = join(home, ".coding-friend", "dev-state.json");
-const cachePath = join(home, ".claude", "plugins", "cache", "coding-friend-marketplace");
-const clonePath = join(home, ".claude", "plugins", "marketplaces", "coding-friend-marketplace");
+const cachePath = join(
+  home,
+  ".claude",
+  "plugins",
+  "cache",
+  "coding-friend-marketplace",
+);
+const clonePath = join(
+  home,
+  ".claude",
+  "plugins",
+  "marketplaces",
+  "coding-friend-marketplace",
+);
 const configDir = join(home, ".coding-friend");
 
 beforeEach(() => {
@@ -122,7 +147,9 @@ describe("uninstallCommand", () => {
     mockReadFileSync.mockImplementation((p) => {
       const path = p.toString();
       if (path === installedPluginsFile) {
-        return JSON.stringify({ "coding-friend@coding-friend-marketplace": {} });
+        return JSON.stringify({
+          "coding-friend@coding-friend-marketplace": {},
+        });
       }
       if (path === knownMarketplacesFile) {
         return JSON.stringify({ "coding-friend-marketplace": {} });
@@ -157,19 +184,30 @@ describe("uninstallCommand", () => {
 
     // Plugin uninstall via claude CLI
     expect(mockRun).toHaveBeenCalledWith("claude", [
-      "plugin", "uninstall", "coding-friend@coding-friend-marketplace",
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
     ]);
 
     // Marketplace removal via claude CLI
     expect(mockRun).toHaveBeenCalledWith("claude", [
-      "plugin", "marketplace", "remove", "coding-friend-marketplace",
+      "plugin",
+      "marketplace",
+      "remove",
+      "coding-friend-marketplace",
     ]);
 
     // Cache dir removed
-    expect(mockRmSync).toHaveBeenCalledWith(cachePath, { recursive: true, force: true });
+    expect(mockRmSync).toHaveBeenCalledWith(cachePath, {
+      recursive: true,
+      force: true,
+    });
 
     // Clone dir removed
-    expect(mockRmSync).toHaveBeenCalledWith(clonePath, { recursive: true, force: true });
+    expect(mockRmSync).toHaveBeenCalledWith(clonePath, {
+      recursive: true,
+      force: true,
+    });
 
     // Statusline cleaned (settings written)
     expect(mockWriteFileSync).toHaveBeenCalled();
@@ -178,7 +216,10 @@ describe("uninstallCommand", () => {
     expect(mockRemoveShellCompletion).toHaveBeenCalled();
 
     // Global config removed
-    expect(mockRmSync).toHaveBeenCalledWith(configDir, { recursive: true, force: true });
+    expect(mockRmSync).toHaveBeenCalledWith(configDir, {
+      recursive: true,
+      force: true,
+    });
   });
 
   it("keeps global config when user declines config removal", async () => {
@@ -203,7 +244,10 @@ describe("uninstallCommand", () => {
     await uninstallCommand();
 
     // Cache removed
-    expect(mockRmSync).toHaveBeenCalledWith(cachePath, { recursive: true, force: true });
+    expect(mockRmSync).toHaveBeenCalledWith(cachePath, {
+      recursive: true,
+      force: true,
+    });
 
     // Config NOT removed
     expect(mockRmSync).not.toHaveBeenCalledWith(configDir, expect.anything());
@@ -216,7 +260,9 @@ describe("uninstallCommand", () => {
     mockReadFileSync.mockImplementation((p) => {
       const path = p.toString();
       if (path === installedPluginsFile) {
-        return JSON.stringify({ "coding-friend@coding-friend-marketplace": {} });
+        return JSON.stringify({
+          "coding-friend@coding-friend-marketplace": {},
+        });
       }
       throw new Error("not found");
     });
@@ -229,9 +275,7 @@ describe("uninstallCommand", () => {
     mockHasShellCompletion.mockReturnValue(false);
 
     // First call (PLUGIN_ID) fails, second call (PLUGIN_NAME) succeeds
-    mockRun
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce("ok");
+    mockRun.mockReturnValueOnce(null).mockReturnValueOnce("ok");
 
     mockConfirm.mockResolvedValueOnce(true);
 
@@ -239,12 +283,16 @@ describe("uninstallCommand", () => {
 
     // Primary attempt
     expect(mockRun).toHaveBeenCalledWith("claude", [
-      "plugin", "uninstall", "coding-friend@coding-friend-marketplace",
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
     ]);
 
     // Fallback attempt
     expect(mockRun).toHaveBeenCalledWith("claude", [
-      "plugin", "uninstall", "coding-friend",
+      "plugin",
+      "uninstall",
+      "coding-friend",
     ]);
   });
 });

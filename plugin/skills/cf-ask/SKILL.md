@@ -36,6 +36,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
 > Explore the codebase to answer the following question: [question from Step 1]
 >
 > Questions to answer:
+>
 > 1. [rephrase the user's question as specific search targets]
 > 2. What files, functions, or patterns are relevant?
 > 3. What are the key code snippets that answer the question?

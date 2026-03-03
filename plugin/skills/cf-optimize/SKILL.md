@@ -73,6 +73,7 @@ Dispatch the **implementer agent** to implement the optimization test-first. Use
 > **Test framework:** [framework and conventions]
 >
 > Requirements:
+>
 > 1. If tests exist for the target code, verify they pass before changing anything
 > 2. If no tests exist, write tests first that verify current behavior
 > 3. Implement the optimization — one change at a time

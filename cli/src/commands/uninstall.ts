@@ -11,8 +11,14 @@ import {
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
-import { hasShellCompletion, removeShellCompletion } from "../lib/shell-completion.js";
-import { isPluginInstalled, isMarketplaceRegistered } from "../lib/plugin-state.js";
+import {
+  hasShellCompletion,
+  removeShellCompletion,
+} from "../lib/shell-completion.js";
+import {
+  isPluginInstalled,
+  isMarketplaceRegistered,
+} from "../lib/plugin-state.js";
 
 const MARKETPLACE_NAME = "coding-friend-marketplace";
 const PLUGIN_NAME = "coding-friend";
@@ -73,7 +79,9 @@ function displayDetection(d: DetectionResult): void {
   console.log(`    ${check(d.cloneExists)} Marketplace clone`);
   console.log(`    ${check(d.statuslineConfigured)} Statusline reference`);
   console.log(`    ${check(d.shellCompletionExists)} Shell tab completion`);
-  console.log(`    ${check(d.globalConfigExists)} Global config (~/.coding-friend/)`);
+  console.log(
+    `    ${check(d.globalConfigExists)} Global config (~/.coding-friend/)`,
+  );
   console.log();
 }
 
@@ -94,10 +102,10 @@ export async function uninstallCommand(): Promise<void> {
 
   // Check claude CLI
   if (!commandExists("claude")) {
-    log.error(
-      "Claude CLI not found. Cannot uninstall plugin without it.",
+    log.error("Claude CLI not found. Cannot uninstall plugin without it.");
+    log.dim(
+      "Install Claude CLI first: https://docs.anthropic.com/en/docs/claude-code",
     );
-    log.dim("Install Claude CLI first: https://docs.anthropic.com/en/docs/claude-code");
     return;
   }
 
@@ -133,7 +141,8 @@ export async function uninstallCommand(): Promise<void> {
   let removeConfig = false;
   if (detection.globalConfigExists) {
     removeConfig = await confirm({
-      message: "Also remove ~/.coding-friend/ config directory? (global config, custom skills)",
+      message:
+        "Also remove ~/.coding-friend/ config directory? (global config, custom skills)",
       default: false,
     });
   }
@@ -151,7 +160,9 @@ export async function uninstallCommand(): Promise<void> {
       // Try without marketplace qualifier
       const fallback = run("claude", ["plugin", "uninstall", PLUGIN_NAME]);
       if (fallback === null) {
-        log.warn("Could not uninstall plugin via CLI (may already be removed).");
+        log.warn(
+          "Could not uninstall plugin via CLI (may already be removed).",
+        );
         errors++;
       }
     }
@@ -160,9 +171,16 @@ export async function uninstallCommand(): Promise<void> {
   // 2. Remove marketplace
   if (detection.marketplaceRegistered) {
     log.step("Removing marketplace...");
-    const result = run("claude", ["plugin", "marketplace", "remove", MARKETPLACE_NAME]);
+    const result = run("claude", [
+      "plugin",
+      "marketplace",
+      "remove",
+      MARKETPLACE_NAME,
+    ]);
     if (result === null) {
-      log.warn("Could not remove marketplace via CLI (may already be removed).");
+      log.warn(
+        "Could not remove marketplace via CLI (may already be removed).",
+      );
       errors++;
     }
   }

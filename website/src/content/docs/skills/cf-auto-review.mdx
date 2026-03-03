@@ -18,11 +18,11 @@ code-reviewer agent (execution — how to review)
 cf-auto-review (methodology — what to check)
 ```
 
-| Component | Role | Defined in |
-| --- | --- | --- |
-| [`/cf-review`](/docs/skills/cf-review/) | Entry point. Gathers diff, detects review mode, dispatches to subagent | `cf-review/SKILL.md` |
-| [`code-reviewer`](/docs/reference/agents/#code-reviewer) | Execution. Reads code, applies methodology, formats report | `agents/code-reviewer.md` |
-| `cf-auto-review` | Methodology. The complete 4-layer checklist and security table | `cf-auto-review/SKILL.md` |
+| Component                                                | Role                                                                   | Defined in                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
+| [`/cf-review`](/docs/skills/cf-review/)                  | Entry point. Gathers diff, detects review mode, dispatches to subagent | `cf-review/SKILL.md`      |
+| [`code-reviewer`](/docs/reference/agents/#code-reviewer) | Execution. Reads code, applies methodology, formats report             | `agents/code-reviewer.md` |
+| `cf-auto-review`                                         | Methodology. The complete 4-layer checklist and security table         | `cf-auto-review/SKILL.md` |
 
 The `code-reviewer` agent loads `cf-auto-review` at review time — it doesn't duplicate the methodology, it references it. This keeps the review methodology in one place.
 
@@ -58,20 +58,21 @@ Does the code implement what was planned?
 Depth scales by review mode (QUICK / STANDARD / DEEP):
 
 **Phase 1: Context Research** (skipped in QUICK mode)
+
 - Identify existing security frameworks/libraries
 - Look for established sanitization/validation patterns
 - Understand trust boundaries
 
 **Phase 2: Vulnerability Assessment**
 
-| Category | Look for |
-| --- | --- |
+| Category             | Look for                                                                  |
+| -------------------- | ------------------------------------------------------------------------- |
 | **Input Validation** | SQL injection, command injection, XXE, template injection, path traversal |
-| **Auth & Access** | Auth bypass, privilege escalation, session flaws, JWT issues |
-| **Secrets & Crypto** | Hardcoded keys/tokens, weak crypto, improper key storage |
-| **Code Execution** | RCE via deserialization, eval injection, XSS (reflected/stored/DOM) |
-| **Data Exposure** | Sensitive data in logs, PII handling, API endpoint leakage, debug info |
-| **Prompt Injection** | External content targeting AI without sanitization |
+| **Auth & Access**    | Auth bypass, privilege escalation, session flaws, JWT issues              |
+| **Secrets & Crypto** | Hardcoded keys/tokens, weak crypto, improper key storage                  |
+| **Code Execution**   | RCE via deserialization, eval injection, XSS (reflected/stored/DOM)       |
+| **Data Exposure**    | Sensitive data in logs, PII handling, API endpoint leakage, debug info    |
+| **Prompt Injection** | External content targeting AI without sanitization                        |
 
 **Method**: Trace data flow from user inputs → through processing → to sensitive operations. Flag where untrusted data crosses trust boundaries without validation.
 
@@ -80,6 +81,7 @@ Depth scales by review mode (QUICK / STANDARD / DEEP):
 Score each finding 0.0–1.0. Only report findings at **0.8 or above** — anything lower is too speculative.
 
 **False positives** (do NOT flag):
+
 - UUIDs as identifiers, environment variables / CLI flags
 - Framework default protections (React auto-escaping, etc.) unless explicitly bypassed
 - Client-side permission checks, logging non-PII data, DoS / rate limiting
@@ -93,8 +95,8 @@ Score each finding 0.0–1.0. Only report findings at **0.8 or above** — anyth
 
 ## Severity Levels
 
-| Level | Meaning | Action |
-| --- | --- | --- |
-| **Critical** | Bug, security hole, data loss risk | Must fix before merge |
-| **Important** | Design issue, missing test, poor naming | Should fix |
-| **Suggestion** | Style, alternative approach, nice-to-have | Consider |
+| Level          | Meaning                                   | Action                |
+| -------------- | ----------------------------------------- | --------------------- |
+| **Critical**   | Bug, security hole, data loss risk        | Must fix before merge |
+| **Important**  | Design issue, missing test, poor naming   | Should fix            |
+| **Suggestion** | Style, alternative approach, nice-to-have | Consider              |

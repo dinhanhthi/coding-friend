@@ -61,7 +61,7 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "Agents", slug: "reference/agents" },
       { title: "Hooks", slug: "reference/hooks" },
-      { title: "Security", slug: "reference/security" }
+      { title: "Security", slug: "reference/security" },
     ],
   },
 ];
