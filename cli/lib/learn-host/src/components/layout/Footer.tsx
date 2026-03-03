@@ -7,7 +7,7 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
         isHome ? "left-0" : "left-0 md:left-64 lg:left-[300px]"
       }`}
     >
-      <div className="flex flex-row flex-wrap items-center gap-1 px-6 py-3 text-center text-xs text-slate-500 dark:text-slate-500">
+      <div className="flex flex-row flex-wrap items-center gap-1 px-6 py-3 text-center text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <Image src="/logo.svg" alt="Coding Friend" width={20} height={20} />
           <span>
@@ -16,7 +16,7 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
               href="https://github.com/dinhanhthi/coding-friend"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
+              className="text-sky-600 hover:text-orange-500 dark:text-sky-300 dark:hover:text-orange-400"
             >
               Coding Friend
             </a>
@@ -25,7 +25,7 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
               href="https://dinhanhthi.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
+              className="text-sky-600 hover:text-orange-500 dark:text-sky-300 dark:hover:text-orange-400"
             >
               Anh-Thi Dinh
             </a>

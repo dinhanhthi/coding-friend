@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { DialogTitle, DialogDescription } from "@radix-ui/react-dialog";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface PagefindResult {
   id: string;
@@ -40,7 +40,7 @@ function normalizePagefindUrl(url: string): string {
 function ExcerptMarkup({ html }: { html: string }) {
   return (
     <p
-      className="mt-0.5 line-clamp-2 text-sm text-slate-400 [&_mark]:bg-transparent [&_mark]:!text-yellow-200 [&_mark]:text-slate-400"
+      className="mt-0.5 line-clamp-2 text-sm text-slate-400 [&_mark]:bg-transparent [&_mark]:text-yellow-200!"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -163,9 +163,6 @@ export default function PagefindSearch() {
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
           />
         </svg>
-        <kbd className="bg-navy-800/80 hidden items-center gap-0.5 rounded border border-[#a0a0a01c] px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">
-          <span className="text-xs">&#8984;</span>K
-        </kbd>
       </button>
 
       {/* cmdk dialog — handles Escape, click outside, focus management */}

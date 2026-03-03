@@ -87,7 +87,7 @@ export default function Header() {
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-1 md:gap-3">
+        <div className="flex items-center gap-1 md:gap-2">
           {/* Search (always visible) */}
           <PagefindSearch />
 

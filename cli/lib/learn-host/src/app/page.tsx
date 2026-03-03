@@ -47,7 +47,7 @@ export default function HomePage() {
             <Link
               key={cat.name}
               href={`/${cat.name}/`}
-              className="group dark:bg-navy-800/50 relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md hover:shadow-amber-100/50 dark:border-[#a0a0a01c] dark:hover:border-amber-500/40 dark:hover:shadow-amber-900/20"
+              className="group dark:bg-navy-900/80 dark:hover:bg-navy-800/60 hover:border-navy-400 relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-4 transition-all duration-200 hover:-translate-y-0.5 dark:border-[#a0a0a01c]"
             >
               <div className="mb-1 font-medium text-slate-900 capitalize dark:text-slate-100">
                 {cat.name.replace(/[_-]/g, " ")}
@@ -55,7 +55,7 @@ export default function HomePage() {
               <div className="text-sm text-slate-500 dark:text-slate-400">
                 {cat.docCount} {cat.docCount === 1 ? "doc" : "docs"}
               </div>
-              <div className="dark:bg-navy-950 absolute right-3 bottom-3 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <div className="absolute right-3 bottom-3 flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500 dark:bg-slate-600/50 dark:text-slate-400">
                 {cat.docCount}
               </div>
             </Link>

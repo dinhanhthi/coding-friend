@@ -51,7 +51,7 @@ export default async function DocPage({
           {doc.frontmatter.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {doc.frontmatter.tags.map((tag) => (
-                <TagBadge key={tag} tag={tag} />
+                <TagBadge key={tag} tag={tag} size="sm" />
               ))}
             </div>
           )}
