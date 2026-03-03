@@ -1,7 +1,11 @@
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { isMarketplaceRegistered } from "../lib/plugin-state.js";
-import { getInstalledVersion, getLatestVersion, semverCompare } from "./update.js";
+import {
+  getInstalledVersion,
+  getLatestVersion,
+  semverCompare,
+} from "./update.js";
 import chalk from "chalk";
 
 export async function installCommand(): Promise<void> {
@@ -54,7 +58,9 @@ export async function installCommand(): Promise<void> {
     }
     log.success("Plugin installed!");
   } else {
-    log.success(`Plugin already installed (${chalk.green(`v${installedVersion}`)}).`);
+    log.success(
+      `Plugin already installed (${chalk.green(`v${installedVersion}`)}).`,
+    );
 
     // Check for updates
     const latestVersion = getLatestVersion();
@@ -75,7 +81,9 @@ export async function installCommand(): Promise<void> {
   // Step 4: Next steps
   console.log();
   log.info("Next steps:");
-  log.dim(`  ${chalk.cyan("cf init")}         Initialize workspace (docs folders, config)`);
+  log.dim(
+    `  ${chalk.cyan("cf init")}         Initialize workspace (docs folders, config)`,
+  );
   log.dim(`  ${chalk.cyan("cf statusline")}   Setup statusline in Claude Code`);
   console.log();
   log.dim("Restart Claude Code (or start a new session) to use the plugin.");

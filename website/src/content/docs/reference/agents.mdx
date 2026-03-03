@@ -10,14 +10,14 @@ Coding Friend includes 6 specialized agents, each optimized for specific enginee
 
 ## Agent Reference
 
-| Agent           | Model           | Purpose                                                     |
-| --------------- | --------------- | ----------------------------------------------------------- |
-| `explorer`      | Claude Haiku    | Read-only codebase exploration and context gathering        |
-| `code-reviewer` | Claude Opus 4.6 | Multi-layer code review with deep reasoning                 |
-| `implementer`   | Claude Opus 4.6 | TDD-driven implementation with test-first approach          |
-| `planner`       | Inherited       | Task decomposition, approach brainstorming, and planning    |
-| `writer`        | Claude Haiku    | Lightweight document writing and markdown generation        |
-| `writer-deep`   | Claude Opus 4.6 | Deep reasoning for nuanced technical documentation          |
+| Agent           | Model           | Purpose                                                  |
+| --------------- | --------------- | -------------------------------------------------------- |
+| `explorer`      | Claude Haiku    | Read-only codebase exploration and context gathering     |
+| `code-reviewer` | Claude Opus 4.6 | Multi-layer code review with deep reasoning              |
+| `implementer`   | Claude Opus 4.6 | TDD-driven implementation with test-first approach       |
+| `planner`       | Inherited       | Task decomposition, approach brainstorming, and planning |
+| `writer`        | Claude Haiku    | Lightweight document writing and markdown generation     |
+| `writer-deep`   | Claude Opus 4.6 | Deep reasoning for nuanced technical documentation       |
 
 ## When Each Agent Is Used
 
@@ -26,6 +26,7 @@ Coding Friend includes 6 specialized agents, each optimized for specific enginee
 The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets.
 
 Used by:
+
 - [`/cf-plan`](/docs/skills/cf-plan/) — explores codebase before the planner designs approaches
 - [`/cf-ask`](/docs/skills/cf-ask/) — gathers code context to answer questions
 - [`/cf-fix`](/docs/skills/cf-fix/) — explores code around a bug before diagnosing root cause

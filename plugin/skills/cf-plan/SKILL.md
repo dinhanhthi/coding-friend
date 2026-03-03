@@ -33,6 +33,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass a de
 > Scope: [any constraints from Step 1]
 >
 > Questions to answer:
+>
 > 1. What is the project structure and relevant modules?
 > 2. Which files and functions are affected by this task?
 > 3. What patterns, conventions, and dependencies exist in the affected areas?

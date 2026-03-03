@@ -55,7 +55,13 @@ export function knownMarketplacesPath(): string {
 
 /** Marketplace cache directory (parent of pluginCachePath) */
 export function marketplaceCachePath(): string {
-  return join(homedir(), ".claude", "plugins", "cache", "coding-friend-marketplace");
+  return join(
+    homedir(),
+    ".claude",
+    "plugins",
+    "cache",
+    "coding-friend-marketplace",
+  );
 }
 
 /** Marketplace clone directory */

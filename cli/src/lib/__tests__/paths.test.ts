@@ -39,7 +39,13 @@ describe("resolvePath", () => {
 describe("marketplaceCachePath", () => {
   it("returns the marketplace cache directory under ~/.claude", () => {
     expect(marketplaceCachePath()).toBe(
-      join(homedir(), ".claude", "plugins", "cache", "coding-friend-marketplace"),
+      join(
+        homedir(),
+        ".claude",
+        "plugins",
+        "cache",
+        "coding-friend-marketplace",
+      ),
     );
   });
 });
@@ -47,7 +53,13 @@ describe("marketplaceCachePath", () => {
 describe("marketplaceClonePath", () => {
   it("returns the marketplace clone directory under ~/.claude", () => {
     expect(marketplaceClonePath()).toBe(
-      join(homedir(), ".claude", "plugins", "marketplaces", "coding-friend-marketplace"),
+      join(
+        homedir(),
+        ".claude",
+        "plugins",
+        "marketplaces",
+        "coding-friend-marketplace",
+      ),
     );
   });
 });

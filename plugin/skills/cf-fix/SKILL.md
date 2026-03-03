@@ -34,6 +34,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
 > Error output: [from Step 2]
 >
 > Questions to answer:
+>
 > 1. What does the code path look like from the error location backward to the origin?
 > 2. What are the relevant files, functions, and dependencies involved?
 > 3. Are there existing tests covering this area?
@@ -74,6 +75,7 @@ Dispatch the **implementer agent** to fix the bug test-first. Use the **Agent to
 > **Test patterns:** [framework, test file locations, run command]
 >
 > Requirements:
+>
 > 1. If no regression test exists for this bug, write one first that demonstrates the failure
 > 2. Fix the root cause — not the symptom. No try/catch to suppress errors.
 > 3. One fix at a time — no additional changes
