@@ -8,12 +8,21 @@ The `cf-verification` skill activates before you claim a task is complete. It en
 
 ## When It Activates
 
-Automatically triggered when:
+Automatically triggered after tasks that **produce or modify code**:
 
 - Completing a feature or bug fix
 - Before running `/cf-ship`
 - Before marking a task done
 - Any time you claim work is finished
+
+**Does NOT auto-invoke** after analysis-only skills that don't change code:
+
+- `/cf-review` — code review is analysis, not implementation
+- `/cf-plan` — planning doesn't produce code
+- `/cf-ask` — Q&A doesn't produce code
+- `/cf-research` — research doesn't produce code
+
+This avoids duplicate test runs in workflows like `/cf-plan → [implement] → /cf-review → /cf-commit`. Tests run once after implementation via `cf-verification`, then `/cf-review` and `/cf-commit` skip re-running them.
 
 ## Verification Checklist
 
