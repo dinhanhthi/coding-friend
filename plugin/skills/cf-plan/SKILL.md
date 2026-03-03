@@ -70,7 +70,30 @@ Based on the approved approach and the agent's findings:
 1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
 2. Use the TodoWrite tool to create a task list
 3. Present the plan summary to the user
-4. Remind the user: after implementation is complete, run `/cf-review` before committing to catch issues early
+
+### Step 6: Offer Implementation
+
+After the plan is saved, ask the user: **"Ready to start implementing?"**
+
+If the user agrees, implement each task from the plan **sequentially** using the **implementer agent**:
+
+1. For each task, dispatch the **Agent tool** with `subagent_type: "coding-friend:implementer"`. Pass:
+
+   > Implement the following task using strict TDD:
+   >
+   > **Task:** [task description from plan]
+   > **Context:** [overall plan context — what we're building and why]
+   > **Files:** [specific files listed in the task]
+   > **Verify:** [verification criteria from the task]
+   > **Test patterns:** [framework, conventions, test file locations]
+   > **Constraints:** [any risks or edge cases from the plan]
+   >
+   > Follow RED → GREEN → REFACTOR. Report results when done.
+
+2. After each task completes, review the implementer's report:
+   - If tests pass and the task is verified → mark task complete, move to next
+   - If issues reported → address them before proceeding (re-dispatch or fix inline)
+3. After all tasks are done, remind the user: run `/cf-review` → then `/cf-commit`
 
 ## Plan Template
 
@@ -109,9 +132,10 @@ After implementation: run `/cf-review` → then `/cf-commit`
 
 ## Rules
 
-- Do NOT start implementing. This skill is for PLANNING only.
+- **Plan first, implement second** — never start coding before the plan is saved and the user approves.
 - **Ask first, plan second** — never proceed with unclear requirements.
 - **Delegate exploration** — always use the planner agent for codebase exploration and approach brainstorming. Never do heavy codebase reading in the main conversation.
+- **Delegate implementation** — always use the implementer agent for task execution. Never implement inline in the main conversation during this workflow.
 - When uncertain, say so. State your confidence level and ask.
 - Do NOT assume which libraries, APIs, or tools to use without asking.
 - Plans should be concrete: exact file paths, function names, test commands.

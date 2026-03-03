@@ -36,7 +36,27 @@ cf-auto-review (methodology — what to check)
 
 ### implementer
 
-Invoked by `/cf-fix [bug]` and used in TDD workflows. Implements features with red-green-refactor discipline.
+Dispatched by [`/cf-plan [task]`](/docs/skills/cf-plan/), [`/cf-fix [bug]`](/docs/skills/cf-fix/), and [`/cf-optimize [target]`](/docs/skills/cf-optimize/) for test-first implementation. Also dispatched by [`cf-tdd`](/docs/skills/cf-tdd/) for substantial implementations (3+ files).
+
+The agent runs in an isolated context and follows strict RED → GREEN → REFACTOR discipline. Skills pass it a detailed prompt with task context, file paths, and test patterns, then review the agent's report.
+
+```
+/cf-plan (clarify → explore → plan → approve)
+    ↓ dispatch per task
+implementer (RED → GREEN → REFACTOR → report) × N tasks
+
+/cf-fix (diagnose → confirm approach)
+    ↓ dispatch
+implementer (write regression test → fix → verify → report)
+
+/cf-optimize (baseline → analyze → plan)
+    ↓ dispatch
+implementer (write test → optimize → verify → report)
+
+cf-tdd (auto-invoked for substantial work)
+    ↓ dispatch
+implementer (RED → GREEN → REFACTOR → report)
+```
 
 ### planner
 
