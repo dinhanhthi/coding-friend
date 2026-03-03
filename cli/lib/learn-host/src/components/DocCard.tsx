@@ -29,7 +29,7 @@ export default function DocCard({ doc }: { doc: DocMeta }) {
           {doc.frontmatter.tags.slice(0, 3).map((tag) => (
             <Link
               key={tag}
-              href={`/search/?q=${encodeURIComponent(tag)}`}
+              href={`/tag/${encodeURIComponent(tag)}/`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:border-slate-600 dark:bg-slate-600/50 dark:text-slate-300"
             >
