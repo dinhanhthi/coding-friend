@@ -38,23 +38,35 @@ Before changing code:
 2. Explain what you plan to change and why
 3. If you're not confident, say so — ask for the user's input
 
-### Step 5: Fix
+### Step 5: Implement Fix (via implementer agent)
 
-1. Fix the **root cause**, not the symptom
-2. Do NOT add try/catch to suppress errors
-3. Do NOT make multiple changes at once — one fix at a time
+Dispatch the **implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`.
 
-### Step 6: Verify
+**Prompt template:**
 
-1. Run the failing test — it must now pass
-2. Run the full test suite — no regressions
-3. Show the test output as evidence
+> Fix the following bug using strict TDD:
+>
+> **Bug:** [description from $ARGUMENTS]
+> **Root cause:** [from Step 3]
+> **Fix approach:** [confirmed in Step 4]
+> **Failing test/command:** [from Step 2]
+> **Relevant files:** [paths and line numbers from Step 3]
+> **Test patterns:** [framework, test file locations, run command]
+>
+> Requirements:
+> 1. If no regression test exists for this bug, write one first that demonstrates the failure
+> 2. Fix the root cause — not the symptom. No try/catch to suppress errors.
+> 3. One fix at a time — no additional changes
+> 4. Run the full test suite — no regressions allowed
+> 5. Report: what was fixed, tests written, and full test output as evidence
 
-### Step 7: Regression Test
+### Step 6: Verify Agent Results
 
-If no test existed for this bug, write one that would catch it if reintroduced.
+1. Review the implementer's report — confirm the fix addresses the root cause from Step 3
+2. If tests are still failing or the report shows concerns, provide more context and re-dispatch
+3. If the agent could not fix it after a reasonable attempt, fall back to fixing inline following TDD discipline
 
-### Step 8: Review Reminder
+### Step 7: Review Reminder
 
 Remind the user: run `/cf-review` before committing to catch any issues the fix may have introduced.
 
