@@ -9,7 +9,6 @@ import {
 import { resolve, join } from "path";
 import { readJson, writeJson } from "../lib/json.js";
 import {
-  claudeSettingsPath,
   devStatePath,
   knownMarketplacesPath,
   pluginCachePath,
@@ -20,6 +19,8 @@ import {
   isPluginInstalled,
   isMarketplaceRegistered,
 } from "../lib/plugin-state.js";
+import { ensureShellCompletion } from "../lib/shell-completion.js";
+import { ensureStatusline } from "../lib/statusline.js";
 import chalk from "chalk";
 
 const REMOTE_URL = "https://github.com/dinhanhthi/coding-friend.git";
@@ -54,41 +55,6 @@ function runClaude(args: string[], label: string): boolean {
     return false;
   }
   return true;
-}
-
-function updateSettingsCachePaths(): void {
-  const cachePath = pluginCachePath();
-  if (!existsSync(cachePath)) return;
-
-  const versions = readdirSync(cachePath, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
-    .reverse();
-  const latest = versions[0];
-  if (!latest) return;
-
-  const settingsPath = claudeSettingsPath();
-  const settings = readJson<Record<string, unknown>>(settingsPath);
-  if (!settings) return;
-
-  const statusLine = settings.statusLine as { command?: string } | undefined;
-  if (!statusLine?.command) return;
-
-  const prefix = cachePath + "/";
-  if (!statusLine.command.includes(prefix)) return;
-
-  // Replace any version segment after the cache prefix
-  const updated = statusLine.command.replace(
-    new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^/]+/`),
-    `${prefix}${latest}/`,
-  );
-
-  if (updated === statusLine.command) return;
-
-  settings.statusLine = { ...statusLine, command: updated };
-  writeJson(settingsPath, settings);
-  log.info(`Updated statusline path to ${chalk.green(`v${latest}`)}`);
 }
 
 export async function devOnCommand(path?: string): Promise<void> {
@@ -168,8 +134,9 @@ export async function devOnCommand(path?: string): Promise<void> {
   };
   writeJson(devStatePath(), devState as unknown as Record<string, unknown>);
 
-  // Step 6: Update settings.json cached paths (e.g. statusline)
-  updateSettingsCachePaths();
+  // Step 6: Ensure statusline and shell completion are up-to-date
+  ensureStatusline();
+  ensureShellCompletion({ silent: true });
 
   console.log();
   log.success(
@@ -368,6 +335,9 @@ async function devReinstall(
 
   // Turn on with resolved path
   await devOnCommand(localPath);
+
+  // Ensure shell completion is up-to-date
+  ensureShellCompletion({ silent: true });
 }
 
 export const devRestartCommand = (path?: string) =>

@@ -29,7 +29,11 @@ function mockPaths(overrides: Partial<Record<string, string>> = {}) {
       overrides.localConfig ?? join(testDir, "nonexistent", "local.json"),
     pluginCachePath: () => overrides.pluginCache ?? join(testDir, "cache"),
     claudeSettingsPath: () =>
-      overrides.claudeSettings ?? join(testDir, "nonexistent", "settings.json"),
+      overrides.claudeSettings ??
+      join(testDir, "nonexistent", "settings.json"),
+    installedPluginsPath: () =>
+      overrides.installedPlugins ??
+      join(testDir, "nonexistent", "installed_plugins.json"),
     resolvePath: (p: string) => p,
   }));
 }
@@ -199,7 +203,7 @@ describe("findStatuslineHookPath", () => {
     expect(result!.hookPath).toContain("statusline.sh");
   });
 
-  it("picks the latest version when multiple exist", async () => {
+  it("picks the latest version when multiple exist and no installed info", async () => {
     const cacheDir = join(testDir, "cache");
     for (const v of ["0.1.0", "0.3.0", "0.2.0"]) {
       const hookDir = join(cacheDir, v, "hooks");
@@ -211,6 +215,117 @@ describe("findStatuslineHookPath", () => {
     const { findStatuslineHookPath } = await import("../statusline.js");
     const result = findStatuslineHookPath();
     expect(result!.version).toBe("0.3.0");
+  });
+
+  it("uses installed plugin version instead of latest directory", async () => {
+    const cacheDir = join(testDir, "cache");
+    // Cache has 0.3.0 (prod) and 0.2.0 (dev/installed)
+    for (const v of ["0.2.0", "0.3.0"]) {
+      const hookDir = join(cacheDir, v, "hooks");
+      mkdirSync(hookDir, { recursive: true });
+      writeFileSync(join(hookDir, "statusline.sh"), "#!/bin/bash");
+    }
+
+    // installed_plugins.json says 0.2.0 is active
+    const installedFile = join(testDir, "installed_plugins.json");
+    writeFileSync(
+      installedFile,
+      JSON.stringify({
+        version: 2,
+        plugins: {
+          "coding-friend@coding-friend-marketplace": [
+            {
+              installPath: join(cacheDir, "0.2.0"),
+              version: "0.2.0",
+            },
+          ],
+        },
+      }),
+    );
+
+    mockPaths({ pluginCache: cacheDir, installedPlugins: installedFile });
+    const { findStatuslineHookPath } = await import("../statusline.js");
+    const result = findStatuslineHookPath();
+    expect(result!.version).toBe("0.2.0");
+  });
+
+  it("falls back to latest when installed version has no hook", async () => {
+    const cacheDir = join(testDir, "cache");
+    // 0.2.0 is installed but has no hook, 0.3.0 has a hook
+    mkdirSync(join(cacheDir, "0.2.0"), { recursive: true });
+    const hookDir = join(cacheDir, "0.3.0", "hooks");
+    mkdirSync(hookDir, { recursive: true });
+    writeFileSync(join(hookDir, "statusline.sh"), "#!/bin/bash");
+
+    const installedFile = join(testDir, "installed_plugins.json");
+    writeFileSync(
+      installedFile,
+      JSON.stringify({
+        version: 2,
+        plugins: {
+          "coding-friend@coding-friend-marketplace": [
+            {
+              installPath: join(cacheDir, "0.2.0"),
+              version: "0.2.0",
+            },
+          ],
+        },
+      }),
+    );
+
+    mockPaths({ pluginCache: cacheDir, installedPlugins: installedFile });
+    const { findStatuslineHookPath } = await import("../statusline.js");
+    const result = findStatuslineHookPath();
+    expect(result!.version).toBe("0.3.0");
+  });
+});
+
+describe("ensureStatusline", () => {
+  it("writes statusline settings when hook exists", async () => {
+    const cacheDir = join(testDir, "cache");
+    const hookDir = join(cacheDir, "0.3.0", "hooks");
+    mkdirSync(hookDir, { recursive: true });
+    writeFileSync(join(hookDir, "statusline.sh"), "#!/bin/bash\necho test");
+
+    const settingsFile = join(testDir, "settings.json");
+    writeFileSync(settingsFile, JSON.stringify({}));
+
+    mockPaths({ pluginCache: cacheDir, claudeSettings: settingsFile });
+    const { ensureStatusline } = await import("../statusline.js");
+    const result = ensureStatusline();
+    expect(result).toBe("0.3.0");
+
+    const { readJson } = await import("../json.js");
+    const settings = readJson<Record<string, unknown>>(settingsFile);
+    const sl = settings?.statusLine as { command?: string };
+    expect(sl.command).toContain("statusline.sh");
+    expect(sl.command).toContain("0.3.0");
+  });
+
+  it("returns null when no hook exists", async () => {
+    mockPaths({ pluginCache: join(testDir, "nonexistent-cache") });
+    const { ensureStatusline } = await import("../statusline.js");
+    expect(ensureStatusline()).toBeNull();
+  });
+
+  it("skips update when settings already point to latest version", async () => {
+    const cacheDir = join(testDir, "cache");
+    const hookDir = join(cacheDir, "0.3.0", "hooks");
+    mkdirSync(hookDir, { recursive: true });
+    const hookPath = join(hookDir, "statusline.sh");
+    writeFileSync(hookPath, "#!/bin/bash\necho test");
+
+    const settingsFile = join(testDir, "settings.json");
+    writeFileSync(
+      settingsFile,
+      JSON.stringify({
+        statusLine: { type: "command", command: `bash ${hookPath}` },
+      }),
+    );
+
+    mockPaths({ pluginCache: cacheDir, claudeSettings: settingsFile });
+    const { ensureStatusline } = await import("../statusline.js");
+    expect(ensureStatusline()).toBeNull();
   });
 });
 

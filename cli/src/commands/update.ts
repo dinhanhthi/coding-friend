@@ -1,15 +1,15 @@
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { readJson, writeJson } from "../lib/json.js";
-import {
-  claudeSettingsPath,
-  installedPluginsPath,
-  pluginCachePath,
-} from "../lib/paths.js";
+import { readJson } from "../lib/json.js";
+import { claudeSettingsPath } from "../lib/paths.js";
 import { run, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
+import {
+  ensureStatusline,
+  getInstalledVersion,
+} from "../lib/statusline.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -34,29 +34,6 @@ function getCliVersion(): string {
 
 function getLatestCliVersion(): string | null {
   return run("npm", ["view", "coding-friend-cli", "version"]);
-}
-
-export function getInstalledVersion(): string | null {
-  const data = readJson<Record<string, unknown>>(installedPluginsPath());
-  if (!data) return null;
-
-  // v2 format: { version: 2, plugins: { "name@marketplace": [{ version, ... }] } }
-  const plugins = (data.plugins ?? data) as Record<string, unknown>;
-
-  for (const [key, value] of Object.entries(plugins)) {
-    if (!key.includes("coding-friend")) continue;
-
-    // Array format: [{ version: "1.4.0", ... }]
-    if (Array.isArray(value) && value.length > 0) {
-      const entry = value[0] as Record<string, unknown>;
-      if (typeof entry.version === "string") return entry.version;
-    }
-    // Object format: { version: "1.4.0", ... }
-    if (typeof value === "object" && value !== null && "version" in value) {
-      return (value as { version: string }).version;
-    }
-  }
-  return null;
 }
 
 export function getLatestVersion(): string | null {
@@ -99,35 +76,6 @@ function getStatuslineVersion(): string | null {
     /coding-friend-marketplace\/coding-friend\/([^/]+)\//,
   );
   return match?.[1] ?? null;
-}
-
-function findLatestCacheVersion(): string | null {
-  const cachePath = pluginCachePath();
-  if (!existsSync(cachePath)) return null;
-  const versions = readdirSync(cachePath, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
-    .reverse();
-  return versions[0] ?? null;
-}
-
-function updateStatusline(version: string): boolean {
-  const cachePath = pluginCachePath();
-  const hookPath = `${cachePath}/${version}/hooks/statusline.sh`;
-  if (!existsSync(hookPath)) {
-    log.warn(`Statusline hook not found for v${version}`);
-    return false;
-  }
-
-  const settingsPath = claudeSettingsPath();
-  const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
-  settings.statusLine = {
-    type: "command",
-    command: `bash ${hookPath}`,
-  };
-  writeJson(settingsPath, settings);
-  return true;
 }
 
 export interface UpdateOptions {
@@ -271,16 +219,14 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
   // Step 4: Fix statusline
   if (doStatusline) {
-    const targetVersion = findLatestCacheVersion();
-    if (targetVersion) {
-      log.step("Updating statusline...");
-      if (updateStatusline(targetVersion)) {
-        log.success(
-          `Statusline updated to ${chalk.green(`v${targetVersion}`)}`,
-        );
-      }
+    log.step("Updating statusline...");
+    const updatedVersion = ensureStatusline();
+    if (updatedVersion) {
+      log.success(
+        `Statusline updated to ${chalk.green(`v${updatedVersion}`)}`,
+      );
     } else {
-      log.warn("No cached plugin version found for statusline update.");
+      log.dim("Statusline already up-to-date.");
     }
   }
 

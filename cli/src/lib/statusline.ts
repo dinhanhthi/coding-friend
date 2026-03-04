@@ -4,6 +4,7 @@ import { readJson, writeJson, mergeJson } from "./json.js";
 import {
   claudeSettingsPath,
   globalConfigPath,
+  installedPluginsPath,
   pluginCachePath,
 } from "./paths.js";
 import {
@@ -12,6 +13,33 @@ import {
   type StatuslineComponent,
   type CodingFriendConfig,
 } from "../types.js";
+
+/**
+ * Get the currently installed plugin version from installed_plugins.json.
+ * Returns the version string if found, null otherwise.
+ */
+export function getInstalledVersion(): string | null {
+  const data = readJson<Record<string, unknown>>(installedPluginsPath());
+  if (!data) return null;
+
+  // v2 format: { version: 2, plugins: { "name@marketplace": [{ version, ... }] } }
+  const plugins = (data.plugins ?? data) as Record<string, unknown>;
+
+  for (const [key, value] of Object.entries(plugins)) {
+    if (!key.includes("coding-friend")) continue;
+
+    // Array format: [{ version: "1.4.0", ... }]
+    if (Array.isArray(value) && value.length > 0) {
+      const entry = value[0] as Record<string, unknown>;
+      if (typeof entry.version === "string") return entry.version;
+    }
+    // Object format: { version: "1.4.0", ... }
+    if (typeof value === "object" && value !== null && "version" in value) {
+      return (value as { version: string }).version;
+    }
+  }
+  return null;
+}
 
 /**
  * Find the latest cached plugin version directory.
@@ -31,19 +59,31 @@ function findLatestVersion(): string | null {
 
 /**
  * Find the statusline hook path and plugin version.
+ * Prefers the currently installed version over the latest cached directory.
+ * Falls back to the latest cached version if installed version has no hook.
  * Returns null if plugin not found or hook missing.
  */
 export function findStatuslineHookPath(): {
   hookPath: string;
   version: string;
 } | null {
-  const version = findLatestVersion();
-  if (!version) return null;
+  const cachePath = pluginCachePath();
 
-  const hookPath = `${pluginCachePath()}/${version}/hooks/statusline.sh`;
+  // Prefer the installed version (respects dev/prod state)
+  const installed = getInstalledVersion();
+  if (installed) {
+    const hookPath = `${cachePath}/${installed}/hooks/statusline.sh`;
+    if (existsSync(hookPath)) return { hookPath, version: installed };
+  }
+
+  // Fall back to latest cached version
+  const latest = findLatestVersion();
+  if (!latest) return null;
+
+  const hookPath = `${cachePath}/${latest}/hooks/statusline.sh`;
   if (!existsSync(hookPath)) return null;
 
-  return { hookPath, version };
+  return { hookPath, version: latest };
 }
 
 /**
@@ -99,6 +139,26 @@ export function writeStatuslineSettings(hookPath: string): void {
     command: `bash ${hookPath}`,
   };
   writeJson(settingsPath, settings);
+}
+
+/**
+ * Ensure statusline points to the currently installed plugin version.
+ * Returns the version string if settings were updated, null if already current or no hook found.
+ */
+export function ensureStatusline(): string | null {
+  const info = findStatuslineHookPath();
+  if (!info) return null;
+
+  const settingsPath = claudeSettingsPath();
+  const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
+  const current = (settings.statusLine as { command?: string })?.command;
+  const expected = `bash ${info.hookPath}`;
+
+  if (current === expected) return null;
+
+  settings.statusLine = { type: "command", command: expected };
+  writeJson(settingsPath, settings);
+  return info.version;
 }
 
 /**
