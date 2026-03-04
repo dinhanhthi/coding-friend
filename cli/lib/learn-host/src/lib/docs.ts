@@ -189,7 +189,8 @@ export function extractHeadings(content: string): TocItem[] {
   const regex = /^(#{2,3})\s+(.+)$/gm;
   let match;
   while ((match = regex.exec(content)) !== null) {
-    const text = match[2].trim();
+    const raw = match[2].trim();
+    const text = raw.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
     const id = text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
