@@ -1,7 +1,12 @@
 ---
 name: cf-fix
-description: Quick bug fix workflow
-disable-model-invocation: true
+description: >
+  Quick bug fix workflow. Use when the user reports a bug, error, or broken behavior — e.g.
+  "fix this", "it's broken", "not working", "there's a bug", "I'm getting an error",
+  "this crashes", "something is wrong", "why does this fail", "debug this", "it throws",
+  "fix the issue", "resolve this error", "help me fix", "can you fix", "this doesn't work",
+  "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
+  Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
 ---
 
 # /cf-fix
@@ -23,11 +28,11 @@ Fix the bug: **$ARGUMENTS**
 3. If you **cannot reproduce**, tell the user and ask for more context — do NOT guess
 4. If no test exists, write one that demonstrates the failure
 
-### Step 3: Explore Relevant Code (via explorer agent)
+### Step 3: Explore Relevant Code (via cf-explorer agent)
 
-Launch the **explorer agent** to gather context around the bug.
+Launch the **cf-explorer agent** to gather context around the bug.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
@@ -40,11 +45,11 @@ Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
 > 3. Are there existing tests covering this area?
 > 4. What patterns or conventions might be relevant to the fix?
 
-Wait for the explorer to return its findings.
+Wait for the cf-explorer to return its findings.
 
 ### Step 4: Locate Root Cause
 
-Using the explorer's findings:
+Using the cf-explorer's findings:
 
 1. Read the error — full stack trace, not just the message
 2. Trace backward from where the error appears to where it originates
@@ -59,9 +64,9 @@ Before changing code:
 2. Explain what you plan to change and why
 3. If you're not confident, say so — ask for the user's input
 
-### Step 6: Implement Fix (via implementer agent)
+### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`.
+Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
 
 **Prompt template:**
 
@@ -84,7 +89,7 @@ Dispatch the **implementer agent** to fix the bug test-first. Use the **Agent to
 
 ### Step 7: Verify Agent Results
 
-1. Review the implementer's report — confirm the fix addresses the root cause from Step 4
+1. Review the cf-implementer's report — confirm the fix addresses the root cause from Step 4
 2. If tests are still failing or the report shows concerns, provide more context and re-dispatch
 3. If the agent could not fix it after a reasonable attempt, fall back to fixing inline following TDD discipline
 
