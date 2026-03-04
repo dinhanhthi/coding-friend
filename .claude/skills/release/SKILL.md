@@ -84,7 +84,7 @@ This updates the changelog. It does NOT create tags — tags are created after c
 **If the script reports a version mismatch** (package.json version != changelog version), fix the package version file to match the changelog version, then re-run the script. Use the bump helper:
 
 ```bash
-bash .claude/skills/bump-version/scripts/bump.sh <package> <correct_version>
+bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <correct_version>
 ```
 
 ### Step 5: Commit changelog updates

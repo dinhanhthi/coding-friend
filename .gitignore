@@ -37,7 +37,6 @@ docs/research
 .claude/*
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/bump-version/
 !.claude/skills/release/
 
 # coding-friend

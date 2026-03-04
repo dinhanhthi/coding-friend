@@ -19,7 +19,7 @@
 /cf-review                        # 4-layer review with proportional security depth
 
 # 3. Prep release (when ready to publish)
-/bump-version                     # bump + changelog + commit + PR (all-in-one)
+/cf-ship                          # bump + changelog + commit + PR (via cf-ship-custom guide)
 # → merge PR on GitHub
 
 # 4. Publish (after PR merge)
@@ -27,7 +27,7 @@ git checkout main && git pull     # switch to main with latest changes
 /release                          # finalize changelogs, create git tags, push → CI publishes
 ```
 
-`/bump-version` accepts a package filter: `/bump-version cli`, `/bump-version learn-mcp patch`, etc.
+`/cf-ship` accepts args for package filter: `/cf-ship cli patch`, `/cf-ship learn-mcp`, etc.
 
 ### Local plugin development
 
