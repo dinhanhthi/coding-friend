@@ -53,3 +53,7 @@ If you've attempted 3+ fixes and the bug persists, **stop**. The problem is arch
 - `git stash` — Isolate your changes to test clean state
 - Print/log tracing — Add strategic logging at decision points
 - Minimal reproduction — Smallest possible code that triggers the bug
+
+## Review Reminder
+
+After the fix is verified, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.

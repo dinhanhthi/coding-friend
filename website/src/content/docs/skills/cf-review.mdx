@@ -151,21 +151,6 @@ See the full [workflow guide](/docs/getting-started/workflows/) for how all skil
 
 You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/skills/cf-ship/) (which runs verification + commit + push + PR), it forms a complete quality gate before code reaches production.
 
-### Auto-Reminder
-
-A [`review-gate` hook](/docs/reference/hooks/#review-gate) runs when the agent finishes a response. If you have significant uncommitted changes and haven't run a review yet, it gently reminds you:
-
-> You have uncommitted changes. Consider running `/cf-review` or `/cf-commit` before finishing.
-
-This is a soft nudge — not a blocker. Configurable via [`.coding-friend/config.json`](/docs/configuration/config-json/):
-
-```json
-{
-  "reviewGate": true,
-  "reviewGateThreshold": 50
-}
-```
-
 ## Defense in Depth
 
 `/cf-review` is one layer in Coding Friend's [multi-layer security approach](/docs/reference/security/):
@@ -173,6 +158,5 @@ This is a soft nudge — not a blocker. Configurable via [`.coding-friend/config
 | Layer | Component                                                               | When            | What                                           |
 | ----- | ----------------------------------------------------------------------- | --------------- | ---------------------------------------------- |
 | 1     | [`privacy-block` hook](/docs/reference/security/#file-level-protection) | Every tool call | Blocks reading `.env`, secrets, keys           |
-| 2     | `review-gate` hook                                                      | Agent stop      | Reminds to review before finishing             |
-| 3     | [`/cf-commit`](/docs/skills/cf-commit/) secret scan                     | On commit       | Scans staged diff for leaked secrets           |
-| 4     | `/cf-review` Layer 3                                                    | On review       | Deep security analysis with confidence scoring |
+| 2     | [`/cf-commit`](/docs/skills/cf-commit/) secret scan                     | On commit       | Scans staged diff for leaked secrets           |
+| 3     | `/cf-review` Layer 3                                                    | On review       | Deep security analysis with confidence scoring |
