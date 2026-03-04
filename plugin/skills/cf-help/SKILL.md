@@ -60,7 +60,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ## Activation Signals
 
-**IMPORTANT**: Whenever you activate a coding-friend skill, call an agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it.
+**IMPORTANT**: Whenever you activate a coding-friend skill, call a coding-friend agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it. Do NOT show this signal for skills or agents from other plugins.
 
 Format:
 
