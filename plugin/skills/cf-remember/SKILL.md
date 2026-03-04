@@ -52,22 +52,22 @@ Choose the right location based on **what the knowledge is about**, not just wha
 
 ### Step 3: Assess Complexity
 
-Before delegating to the writer agent, assess the complexity of the content:
+Before delegating to the cf-writer agent, assess the complexity of the content:
 
-**Use `writer` agent (haiku)** when:
+**Use `cf-writer` agent (haiku)** when:
 
 - Simple feature docs, naming conventions, straightforward decisions
 - Short content with clear structure
 
-**Use `writer-deep` agent (sonnet)** when:
+**Use `cf-writer-deep` agent (sonnet)** when:
 
 - Complex architecture decisions with nuanced trade-offs
 - Deep technical explanations requiring careful reasoning
 - Long context that needs synthesis
 
-### Step 4: Delegate to Writer Agent
+### Step 4: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate writer agent via the **Agent tool**.
+Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
 
 Check if the target file already exists:
 
@@ -108,11 +108,11 @@ auto_commit: false
 existing_file_action: append
 ```
 
-Use the **Agent tool** with `subagent_type: "coding-friend:writer"` or `"coding-friend:writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 5: Confirm
 
-Read back the writer agent's output and show the user what was saved and where.
+Read back the cf-writer agent's output and show the user what was saved and where.
 
 ## Interpreting `$ARGUMENTS`
 

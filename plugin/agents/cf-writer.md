@@ -1,6 +1,6 @@
 ---
-name: writer
-description: Lightweight document writer for skills that generate markdown files. Use this agent when a skill (cf-learn, cf-remember, etc.) needs to write or update markdown documents. Handles straightforward content — simple concepts, factual notes, conventions, tool usage, project memory. For content requiring deep reasoning about nuanced technical concepts or very long context, use writer-deep instead.
+name: cf-writer
+description: Lightweight document writer for skills that generate markdown files. Use this agent when a skill (cf-learn, cf-remember, etc.) needs to write or update markdown documents. Handles straightforward content — simple concepts, factual notes, conventions, tool usage, project memory. For content requiring deep reasoning about nuanced technical concepts or very long context, use cf-writer-deep instead.
 model: haiku
 tools: Read, Write, Edit, Glob, Bash
 ---

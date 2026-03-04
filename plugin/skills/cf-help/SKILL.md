@@ -16,7 +16,7 @@ Determine what the user is asking about:
 
 - **General overview** — what is Coding Friend, what can it do?
 - **Specific skill** — how does /cf-commit work? what does cf-tdd do?
-- **Specific agent** — what is the code-reviewer agent?
+- **Specific agent** — what is the cf-code-reviewer agent?
 - **Setup/config** — how to configure, custom guides, ignore patterns
 - **Workflow** — how do skills work together?
 
@@ -52,12 +52,12 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Agents
 
-- **code-reviewer** — Multi-layer code review in forked context
-- **implementer** — TDD implementation subagent
-- **explorer** — Codebase exploration and analysis (read-only)
-- **planner** — Task decomposition and approach brainstorming
-- **writer** — Lightweight doc writer for markdown file generation
-- **writer-deep** — Deep reasoning doc writer for nuanced technical content
+- **cf-code-reviewer** — Multi-layer code review in forked context
+- **cf-implementer** — TDD implementation subagent
+- **cf-explorer** — Codebase exploration and analysis (read-only)
+- **cf-planner** — Task decomposition and approach brainstorming
+- **cf-writer** — Lightweight doc writer for markdown file generation
+- **cf-writer-deep** — Deep reasoning doc writer for nuanced technical content
 
 ## Step 3: Read specific files (if detailed question)
 

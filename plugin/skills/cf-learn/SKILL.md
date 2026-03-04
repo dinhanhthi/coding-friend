@@ -81,25 +81,25 @@ For each potentially relevant file, read its first 20 lines to understand what i
 
 ## Step 3: Assess Complexity
 
-Before delegating to the writer agent, assess the complexity of the content to write:
+Before delegating to the cf-writer agent, assess the complexity of the content to write:
 
-**Use `writer` agent (haiku)** when:
+**Use `cf-writer` agent (haiku)** when:
 
 - Simple, factual concepts (e.g., "how to use X tool", "naming convention for Y")
 - Straightforward tool/library usage notes
 - Short content with clear structure
 - Single-concept explanations
 
-**Use `writer-deep` agent (sonnet)** when:
+**Use `cf-writer-deep` agent (sonnet)** when:
 
 - Content requires deep reasoning about nuanced technical concepts (e.g., explaining race conditions, distributed system trade-offs, complex type system features)
 - Very long context needs to be synthesized into a coherent doc
 - Multi-concept synthesis is needed (connecting several ideas into one explanation)
 - Advanced architecture explanations or subtle debugging insights
 
-## Step 4: Delegate to Writer Agent
+## Step 4: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate writer agent via the **Agent tool**.
+Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
 
 ### Determine Task Type
 
@@ -108,7 +108,7 @@ Construct a write spec and invoke the appropriate writer agent via the **Agent t
 
 ### Build the Write Spec
 
-Include ALL of these in your delegation prompt to the writer agent:
+Include ALL of these in your delegation prompt to the cf-writer agent:
 
 ```
 WRITE SPEC
@@ -231,11 +231,11 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:writer"` or `"coding-friend:writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ## Step 5: Confirm
 
-Read back the writer agent's output and show the user:
+Read back the cf-writer agent's output and show the user:
 
 1. What was learned and where the doc was saved (full path)
 2. Whether the file was created new or appended to

@@ -1,6 +1,6 @@
 ---
-name: writer-deep
-description: Document writer for content requiring deep reasoning about nuanced technical concepts, very long context, or complex multi-concept synthesis. Use this agent instead of writer when the content involves advanced architecture explanations, subtle debugging insights, or topics that need careful technical analysis to explain well.
+name: cf-writer-deep
+description: Document writer for content requiring deep reasoning about nuanced technical concepts, very long context, or complex multi-concept synthesis. Use this agent instead of cf-writer when the content involves advanced architecture explanations, subtle debugging insights, or topics that need careful technical analysis to explain well.
 model: sonnet
 tools: Read, Write, Edit, Glob, Bash
 ---

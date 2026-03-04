@@ -58,9 +58,9 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 
 ## Subagent Dispatch
 
-For **substantial implementations** (new feature spanning 3+ files, complex algorithm, or multi-step feature), dispatch the **implementer agent** instead of implementing inline. This preserves the main conversation's context and enforces TDD in an isolated execution.
+For **substantial implementations** (new feature spanning 3+ files, complex algorithm, or multi-step feature), dispatch the **cf-implementer agent** instead of implementing inline. This preserves the main conversation's context and enforces TDD in an isolated execution.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`. Pass:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
 
 - Task description and expected behavior
 - Relevant file paths (source files, test files, config)
