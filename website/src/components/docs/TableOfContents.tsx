@@ -7,6 +7,19 @@ interface Props {
   headings: TocItem[];
 }
 
+function renderText(text: string) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return parts.map((part, i) =>
+    part.startsWith("`") && part.endsWith("`") ? (
+      <code key={i} className="rounded bg-slate-700/60 px-1 py-0.5 text-xs">
+        {part.slice(1, -1)}
+      </code>
+    ) : (
+      part
+    ),
+  );
+}
+
 export default function TableOfContents({ headings }: Props) {
   const [activeId, setActiveId] = useState("");
 
@@ -51,7 +64,7 @@ export default function TableOfContents({ headings }: Props) {
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                {h.text}
+                {renderText(h.text)}
               </a>
             </li>
           ))}

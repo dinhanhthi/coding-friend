@@ -65,7 +65,7 @@ export default function Callout({ type = "info", title, children }: Props) {
         <div className="mt-0.5 shrink-0">{icons[type]}</div>
         <div>
           {title && <div className="mb-1 font-medium text-white">{title}</div>}
-          <div className="text-sm leading-relaxed text-slate-300">
+          <div className="text-sm leading-relaxed text-slate-300 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
             {children}
           </div>
         </div>
