@@ -87,8 +87,8 @@ fi
 
 # Load custom skill guides
 # Scan global (~/.coding-friend/skills/) and local (.coding-friend/skills/) directories
-# Files must be named <skill-name>-custom.md (e.g. cf-commit-custom.md)
-# Local files override global files with the same name
+# Directories must be named <skill-name>-custom/ containing SKILL.md (e.g. cf-commit-custom/SKILL.md)
+# Local directories override global directories with the same name
 CUSTOM_GUIDES=""
 declare -A GUIDE_MAP=()
 
@@ -98,19 +98,21 @@ MAX_TOTAL_CHARS=4000
 
 # Collect global guides first
 if [ -d "$GLOBAL_SKILLS_DIR" ]; then
-  for guide_file in "$GLOBAL_SKILLS_DIR"/*-custom.md; do
-    [ -f "$guide_file" ] || continue
-    skill_name=$(basename "$guide_file" -custom.md)
-    GUIDE_MAP["$skill_name"]="$guide_file"
+  for guide_dir in "$GLOBAL_SKILLS_DIR"/*-custom; do
+    [ -d "$guide_dir" ] || continue
+    [ -f "$guide_dir/SKILL.md" ] || continue
+    skill_name=$(basename "$guide_dir" -custom)
+    GUIDE_MAP["$skill_name"]="$guide_dir/SKILL.md"
   done
 fi
 
 # Local guides override global
 if [ -d "$LOCAL_SKILLS_DIR" ]; then
-  for guide_file in "$LOCAL_SKILLS_DIR"/*-custom.md; do
-    [ -f "$guide_file" ] || continue
-    skill_name=$(basename "$guide_file" -custom.md)
-    GUIDE_MAP["$skill_name"]="$guide_file"
+  for guide_dir in "$LOCAL_SKILLS_DIR"/*-custom; do
+    [ -d "$guide_dir" ] || continue
+    [ -f "$guide_dir/SKILL.md" ] || continue
+    skill_name=$(basename "$guide_dir" -custom)
+    GUIDE_MAP["$skill_name"]="$guide_dir/SKILL.md"
   done
 fi
 
@@ -147,7 +149,7 @@ if [ "$guide_count" -gt 0 ]; then
         suggestion=" Did you mean \"${best_match}\"?"
       fi
       GUIDE_WARNINGS="${GUIDE_WARNINGS}
-- \"${skill_name}-custom.md\": Unknown skill name. No built-in skill called \"${skill_name}\" exists.${suggestion}"
+- \"${skill_name}-custom/SKILL.md\": Unknown skill name. No built-in skill called \"${skill_name}\" exists.${suggestion}"
       echo "WARNING: Unknown skill name '${skill_name}' in custom guide" >>"$LOG_FILE"
       continue
     fi
@@ -171,14 +173,14 @@ if [ "$guide_count" -gt 0 ]; then
         format_hint="${format_hint} ${has_wrong_level}"
       fi
       GUIDE_WARNINGS="${GUIDE_WARNINGS}
-- \"${skill_name}-custom.md\": No recognized sections found. ${format_hint}"
+- \"${skill_name}-custom/SKILL.md\": No recognized sections found. ${format_hint}"
       echo "WARNING: No valid sections in custom guide '${skill_name}'" >>"$LOG_FILE"
       continue
     fi
 
     if [ -n "$has_wrong_level" ]; then
       GUIDE_WARNINGS="${GUIDE_WARNINGS}
-- \"${skill_name}-custom.md\": Some sections use wrong heading level. ${has_wrong_level}"
+- \"${skill_name}-custom/SKILL.md\": Some sections use wrong heading level. ${has_wrong_level}"
     fi
 
     # Size limit check
@@ -186,7 +188,7 @@ if [ "$guide_count" -gt 0 ]; then
     new_total=$((total_chars + content_len))
     if [ "$new_total" -gt "$MAX_TOTAL_CHARS" ]; then
       GUIDE_WARNINGS="${GUIDE_WARNINGS}
-- \"${skill_name}-custom.md\": Skipped — total custom guides exceed ${MAX_TOTAL_CHARS} character limit."
+- \"${skill_name}-custom/SKILL.md\": Skipped — total custom guides exceed ${MAX_TOTAL_CHARS} character limit."
       echo "WARNING: Custom guides exceed ${MAX_TOTAL_CHARS} chars limit, skipping ${skill_name}" >>"$LOG_FILE"
       continue
     fi
@@ -221,7 +223,7 @@ Custom Skill Guide Issues:
 ${GUIDE_WARNINGS}
 
 Valid skill names: ${valid_list}
-Guide location: .coding-friend/skills/<skill-name>-custom.md or ~/.coding-friend/skills/<skill-name>-custom.md
+Guide location: .coding-friend/skills/<skill-name>-custom/SKILL.md or ~/.coding-friend/skills/<skill-name>-custom/SKILL.md
 Required format: ## Before, ## Rules, ## After (all optional, h2 level)
 </guide-warnings>"
 fi

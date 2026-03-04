@@ -207,7 +207,7 @@ const CustomGuides = () => {
         <div className="relative overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] shadow-2xl shadow-violet-500/10">
           <div className="flex items-center gap-2 border-b border-slate-700/60 px-4 py-2.5">
             <span className="font-mono text-xs text-slate-500">
-              .coding-friend/skills/cf-commit-custom.md
+              .coding-friend/skills/cf-commit-custom/SKILL.md
             </span>
           </div>
 
@@ -270,7 +270,7 @@ const CustomGuides = () => {
       <p className="text-center text-slate-500">
         Create{" "}
         <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-xs text-violet-400">
-          .coding-friend/skills/&lt;skill-name&gt;-custom.md
+          .coding-friend/skills/&lt;skill-name&gt;-custom/SKILL.md
         </code>{" "}
         to customize any skill.
       </p>

@@ -8,16 +8,16 @@ Custom skill guides let you extend built-in skills with your own instructions �
 
 ## Location
 
-| Scope      | Path                                             | Applies to        |
-| ---------- | ------------------------------------------------ | ----------------- |
-| **Global** | `~/.coding-friend/skills/<skill-name>-custom.md` | All projects      |
-| **Local**  | `.coding-friend/skills/<skill-name>-custom.md`   | This project only |
+| Scope      | Path                                                   | Applies to        |
+| ---------- | ------------------------------------------------------ | ----------------- |
+| **Global** | `~/.coding-friend/skills/<skill-name>-custom/SKILL.md` | All projects      |
+| **Local**  | `.coding-friend/skills/<skill-name>-custom/SKILL.md`   | This project only |
 
-Local files override global files with the same filename.
+Local directories override global directories with the same name.
 
 ## Format
 
-A custom guide is a Markdown file with up to 3 optional sections:
+A custom guide is a `SKILL.md` file inside a `<skill-name>-custom/` directory, with up to 3 optional sections:
 
 ```markdown
 ## Before
@@ -39,13 +39,11 @@ All sections are optional — include only what you need.
 
 Custom guides are loaded at session start. After editing a guide, use `/clear` to reload.
 
----
-
 ## Examples
 
 ### Simple: enforce conventions on `/cf-commit`
 
-`.coding-friend/skills/cf-commit-custom.md`:
+`.coding-friend/skills/cf-commit-custom/SKILL.md`:
 
 ```markdown
 ## Before
@@ -61,82 +59,3 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 
 - Run tests if commit type is `feat:` or `fix:`
 ```
-
----
-
-### Advanced: extend `/cf-ship` with a version-bump pre-step
-
-For projects that manage multiple versioned packages, you can inject a version-bump preparation phase into `/cf-ship` — so it bumps versions and updates changelogs _before_ the standard verify → commit → push → PR flow runs.
-
-The key principle: **keep heavy logic in scripts, keep the guide lean**. The `## Before` section calls scripts; the built-in workflow handles the rest.
-
-```
-.coding-friend/skills/
-├── cf-ship-custom.md    ← custom guide (lean, calls scripts)
-└── scripts/
-    ├── bump-info.sh     ← fetches tags, detects changed packages, prints state
-    └── bump.sh          ← updates version files for a given package
-```
-
-`.coding-friend/skills/cf-ship-custom.md`:
-
-```markdown
-## Before
-
-This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
-
-**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host]`
-
-### Step B1: Get bump context
-
-​`bash
-bash .coding-friend/skills/scripts/bump-info.sh [package-arg] [level-arg]
-​`
-
-Read the output — it shows which packages changed, current vs tag version, and whether to bump or just update changelog.
-
-### Step B2: Confirm bump level
-
-If level not in args, analyze the changes and suggest patch/minor/major. Ask user to confirm.
-
-### Step B3: Bump version files
-
-For each package with state = "bump":
-
-​`bash
-bash .coding-friend/skills/scripts/bump.sh <package> <new_version>
-​`
-
-### Step B4: Update changelogs
-
-Collect commits since each package's last tag. Write entries under `## v{version} (unpublished)`. One bullet per logical change with commit links.
-
-### Step B5: Sync website docs
-
-If source files changed, update corresponding website docs under `website/src/content/docs/`.
-
-### Step B6: Print summary table, then proceed
-
-Print a summary of what was bumped, then continue with the **standard cf-ship workflow** (verify → commit → push → PR). Use `bump <packages> to <versions>` as the commit hint.
-
-## Rules
-
-- NEVER bump if file version > tag version — only update changelog.
-- Do NOT create git tags — that happens during `/release`.
-- After ship: remind user to run `/release`.
-```
-
-**What this custom guide adds on top of built-in `/cf-ship`:**
-
-| Built-in `/cf-ship`                     | With this custom guide                                       |
-| --------------------------------------- | ------------------------------------------------------------ |
-| Runs tests, commits, pushes, creates PR | Same — but preceded by bump preparation                      |
-| Takes a commit hint as argument         | Takes package name and/or bump level as argument             |
-| Works on any project                    | Tailored for multi-package repos with independent versioning |
-| No changelog management                 | Collects commits since last tag, writes changelog entries    |
-| No version file updates                 | Bumps version files via `bump.sh` script                     |
-| No next-step guidance                   | Reminds user to run `/release` after merging                 |
-
-The `## Before` section runs bump preparation (B1–B6), then hands off cleanly to the built-in workflow. No steps are replaced or skipped — verify still runs to ensure everything is healthy before the bump commit is pushed.
-
-Heavy bash logic lives in `.coding-friend/skills/scripts/` rather than inline in the guide. This keeps the guide well under the 4000-character total limit and makes the scripts independently testable.
