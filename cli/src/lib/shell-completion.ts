@@ -15,12 +15,12 @@ _cf_completions() {
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "on off status restart sync" -- "$cur"))
+    COMPREPLY=($(compgen -W "on off status restart sync update" -- "$cur"))
     return
   fi
 
-  # Path completion for 'dev on'
-  if [[ "\${COMP_WORDS[1]}" == "dev" && "$prev" == "on" ]]; then
+  # Path completion for 'dev on|restart|update'
+  if [[ "\${COMP_WORDS[1]}" == "dev" && ("$prev" == "on" || "$prev" == "restart" || "$prev" == "update") ]]; then
     COMPREPLY=($(compgen -d -- "$cur"))
     return
   fi
@@ -57,9 +57,10 @@ _cf() {
       'status:Show current dev mode'
       'restart:Restart dev mode (re-apply local plugin)'
       'sync:Sync local plugin files without restarting'
+      'update:Update local dev plugin to latest version'
     )
     _describe 'subcommand' subcommands
-  elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && "\${words[3]}" == "on" ]]; then
+  elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && ("\${words[3]}" == "on" || "\${words[3]}" == "restart" || "\${words[3]}" == "update") ]]; then
     _path_files -/
   fi
 }

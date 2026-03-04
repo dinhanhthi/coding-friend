@@ -91,7 +91,8 @@ Dev subcommands:
   dev off             Switch back to remote marketplace
   dev status          Show current dev mode
   dev sync            Copy local source to plugin cache
-  dev restart [path]  Reinstall local dev plugin (off + on)`,
+  dev restart [path]  Reinstall local dev plugin (off + on)
+  dev update [path]   Update local dev plugin to latest version`,
 );
 
 dev
@@ -139,6 +140,18 @@ dev
   .action(async (path?: string) => {
     const { devRestartCommand } = await import("./commands/dev.js");
     await devRestartCommand(path);
+  });
+
+dev
+  .command("update")
+  .description("Update local dev plugin to latest version (off + on)")
+  .argument(
+    "[path]",
+    "path to local coding-friend repo (default: saved path or cwd)",
+  )
+  .action(async (path?: string) => {
+    const { devUpdateCommand } = await import("./commands/dev.js");
+    await devUpdateCommand(path);
   });
 
 program.parse();

@@ -345,7 +345,10 @@ export async function devSyncCommand(): Promise<void> {
   );
 }
 
-export async function devRestartCommand(path?: string): Promise<void> {
+async function devReinstall(
+  path: string | undefined,
+  label: string,
+): Promise<void> {
   const state = getDevState();
 
   if (!ensureClaude()) return;
@@ -353,7 +356,7 @@ export async function devRestartCommand(path?: string): Promise<void> {
   // Priority: explicit arg > saved state > cwd
   const localPath = path ?? state?.localPath;
 
-  console.log(`\n=== ${chalk.cyan("Restarting dev mode")} ===\n`);
+  console.log(`\n=== ${chalk.cyan(label)} ===\n`);
 
   // Turn off first (skip if already off)
   if (state) {
@@ -366,6 +369,12 @@ export async function devRestartCommand(path?: string): Promise<void> {
   // Turn on with resolved path
   await devOnCommand(localPath);
 }
+
+export const devRestartCommand = (path?: string) =>
+  devReinstall(path, "Restarting dev mode");
+
+export const devUpdateCommand = (path?: string) =>
+  devReinstall(path, "Updating dev plugin");
 
 export async function devStatusCommand(): Promise<void> {
   const state = getDevState();
