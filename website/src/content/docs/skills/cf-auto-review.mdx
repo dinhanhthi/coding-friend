@@ -13,18 +13,18 @@ Three components work together for code review, each with a distinct role:
 ```
 /cf-review (entry point — workflow orchestration)
     ↓ fork + dispatch
-code-reviewer agent (execution — how to review)
+cf-code-reviewer agent (execution — how to review)
     ↓ loads
 cf-auto-review (methodology — what to check)
 ```
 
-| Component                                                | Role                                                                   | Defined in                |
-| -------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
-| [`/cf-review`](/docs/skills/cf-review/)                  | Entry point. Gathers diff, detects review mode, dispatches to subagent | `cf-review/SKILL.md`      |
-| [`code-reviewer`](/docs/reference/agents/#code-reviewer) | Execution. Reads code, applies methodology, formats report             | `agents/code-reviewer.md` |
-| `cf-auto-review`                                         | Methodology. The complete 4-layer checklist and security table         | `cf-auto-review/SKILL.md` |
+| Component                                                      | Role                                                                   | Defined in                   |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------- |
+| [`/cf-review`](/docs/skills/cf-review/)                        | Entry point. Gathers diff, detects review mode, dispatches to subagent | `cf-review/SKILL.md`         |
+| [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) | Execution. Reads code, applies methodology, formats report             | `agents/cf-code-reviewer.md` |
+| `cf-auto-review`                                               | Methodology. The complete 4-layer checklist and security table         | `cf-auto-review/SKILL.md`    |
 
-The `code-reviewer` agent loads `cf-auto-review` at review time — it doesn't duplicate the methodology, it references it. This keeps the review methodology in one place.
+The `cf-code-reviewer` agent loads `cf-auto-review` at review time — it doesn't duplicate the methodology, it references it. This keeps the review methodology in one place.
 
 **Without `/cf-review`**: When Claude reviews code casually (not via the slash command), it loads `cf-auto-review` directly inline — same methodology, no subagent.
 
@@ -32,7 +32,7 @@ The `code-reviewer` agent loads `cf-auto-review` at review time — it doesn't d
 
 Automatically loaded when:
 
-- The `code-reviewer` agent runs a review
+- The `cf-code-reviewer` agent runs a review
 - Claude reviews code changes inline (without `/cf-review`)
 - Assessing code quality before merge or commit
 

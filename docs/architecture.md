@@ -55,11 +55,12 @@ coding-friend/
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
-│       ├── code-reviewer.md         # Code review subagent
-│       ├── implementer.md           # TDD implementation subagent
-│       ├── planner.md               # Exploration + task breakdown
-│       ├── writer.md                # Lightweight doc writer
-│       └── writer-deep.md           # Deep reasoning doc writer
+│       ├── cf-code-reviewer.md      # Code review subagent
+│       ├── cf-explorer.md           # Read-only codebase explorer
+│       ├── cf-implementer.md        # TDD implementation subagent
+│       ├── cf-planner.md            # Exploration + task breakdown
+│       ├── cf-writer.md             # Lightweight doc writer
+│       └── cf-writer-deep.md        # Deep reasoning doc writer
 │
 ├── cli/                         # CLI tool (published as coding-friend-cli)
 │   ├── src/                     # CLI source code
@@ -104,7 +105,7 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 | ------------- | ----------------------- | ------------------------------------------------------------- |
 | `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                          |
 | `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                        |
-| `cf-review`   | `/cf-review [target]`   | Fork context → code-reviewer agent                            |
+| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent                         |
 | `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                            |
 | `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                   |
 | `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures     |
@@ -140,7 +141,7 @@ name: cf-review
 description: Dispatch code review to subagent
 disable-model-invocation: true
 context: fork
-agent: code-reviewer
+agent: cf-code-reviewer
 ---
 ```
 
@@ -184,13 +185,16 @@ Exit codes:
 
 ---
 
-## Agents (3)
+## Agents (6)
 
-| Agent           | Model   | Purpose                                                    |
-| --------------- | ------- | ---------------------------------------------------------- |
-| `code-reviewer` | inherit | 4-layer review: plan alignment, quality, security, testing |
-| `implementer`   | inherit | TDD implementation: write test → implement → verify        |
-| `planner`       | inherit | Codebase exploration + task decomposition                  |
+| Agent              | Model   | Purpose                                                    |
+| ------------------ | ------- | ---------------------------------------------------------- |
+| `cf-code-reviewer` | inherit | 4-layer review: plan alignment, quality, security, testing |
+| `cf-explorer`      | haiku   | Read-only codebase exploration and context gathering       |
+| `cf-implementer`   | inherit | TDD implementation: write test → implement → verify        |
+| `cf-planner`       | inherit | Codebase exploration + task decomposition                  |
+| `cf-writer`        | haiku   | Lightweight document writing and markdown generation       |
+| `cf-writer-deep`   | sonnet  | Deep reasoning for nuanced technical documentation         |
 
 ---
 
@@ -298,7 +302,7 @@ stripFrontmatter(content) → markdownBody
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 15 skills total                         | 5 reference + 10 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
-| 3 agents only                           | code-reviewer, implementer, planner covers 90% of cases                                        |
+| 3 agents only                           | cf-code-reviewer, cf-implementer, cf-planner covers 90% of cases                               |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
 | /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
 | context: fork for /cf-review            | Isolate review from main context window                                                        |
@@ -423,7 +427,7 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ code-reviewer agent (fork)          │          │
+    │  /cf-review ──→ cf-code-reviewer agent (fork)          │          │
     │                 4-layer review                       │          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │
@@ -439,11 +443,11 @@ The project operates as 4 concurrent state machine layers.
                    │  KNOWLEDGE_EXTRACTION                   │        │
                    │                                        │        │
                    │  /cf-learn  ──→ assess complexity       │        │
-                   │                 ├─ simple → writer      │        │
-                   │                 └─ complex → writer-deep│        │
+                   │                 ├─ simple → cf-writer      │        │
+                   │                 └─ complex → cf-writer-deep│        │
                    │                 → docs/learn/{cat}/     │        │
                    │                                        │        │
-                   │  /cf-remember ──→ writer agent          │        │
+                   │  /cf-remember ──→ cf-writer agent       │        │
                    │                 → docs/memory/          │        │
                    │                                        │        │
                    │  /cf-research ──→ parallel subagents    │        │
@@ -494,8 +498,8 @@ The project operates as 4 concurrent state machine layers.
          ▼               └────────────────────┘
 ┌──────────────────┐
 │  ASSESS_COMPLEXITY│
-│  Simple content?  │────── YES ──→ writer agent (haiku) ──┐
-│  Nuanced/deep?    │────── YES ──→ writer-deep (sonnet) ──┤
+│  Simple content?  │────── YES ──→ cf-writer agent (haiku) ──┐
+│  Nuanced/deep?    │────── YES ──→ cf-writer-deep (sonnet) ──┤
 └───────────────────┘                                      │
                                                            ▼
                                                   ┌────────────────┐

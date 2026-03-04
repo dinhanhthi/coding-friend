@@ -27,11 +27,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 2. If no question provided, ask the user what they want to know
 3. Identify keywords and likely relevant areas (modules, features, patterns)
 
-### Step 2: Explore the Codebase (via explorer agent)
+### Step 2: Explore the Codebase (via cf-explorer agent)
 
-Launch the **explorer agent** to gather codebase context for the question.
+Launch the **cf-explorer agent** to gather codebase context for the question.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
 > Explore the codebase to answer the following question: [question from Step 1]
 >
@@ -43,7 +43,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:explorer"`. Pass:
 >
 > Scope: [keywords and likely relevant areas from Step 1]
 
-Wait for the explorer to return its findings.
+Wait for the cf-explorer to return its findings.
 
 ### Step 3: Form the Answer
 
@@ -104,7 +104,7 @@ Show the user where the Q&A was saved (new file or appended to existing).
 
 ## Rules
 
-- Delegate exploration to the explorer agent — keep the main context lean
+- Delegate exploration to the cf-explorer agent — keep the main context lean
 - Stay lightweight — no multi-doc output
 - Always save to `{docsDir}/memory/` — saving is mandatory, not optional
 - Search existing memory files before creating new ones
