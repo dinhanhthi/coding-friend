@@ -5,6 +5,16 @@ description: Use when diagnosing bugs, investigating failures, or fixing broken 
 
 # Systematic Debugging
 
+## Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-sys-debug`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → apply before the main content below
+- `## Rules` → apply as additional rules throughout
+- `## After` → apply after debugging completes
+
 ## The 3-Fix Rule
 
 If you've attempted 3+ fixes and the bug persists, **stop**. The problem is architectural, not local. Step back and re-examine your assumptions.

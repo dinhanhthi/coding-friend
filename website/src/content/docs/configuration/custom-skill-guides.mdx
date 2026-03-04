@@ -35,9 +35,15 @@ A custom guide is a `SKILL.md` file inside a `<skill-name>-custom/` directory, w
 
 All sections are optional — include only what you need.
 
-## Reload
+## How it works
 
-Custom guides are loaded at session start. After editing a guide, use `/clear` to reload.
+Each skill has a built-in step that runs `load-custom-guide.sh` at execution time. The script checks for a custom guide in the local path first, then the global path. If found, the guide content is loaded and integrated into the skill's workflow:
+
+- `## Before` → executes before the first step
+- `## Rules` → applies as additional rules throughout all steps
+- `## After` → executes after the final step
+
+Custom guides are loaded **on-demand** — only when the corresponding skill runs. Changes to a guide take effect on the next skill invocation (no `/clear` needed).
 
 ## Examples
 

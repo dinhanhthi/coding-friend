@@ -18,6 +18,16 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ## Workflow
 
+### Step 0: Load Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember`
+
+If output is not empty, integrate the returned sections into this workflow:
+
+- `## Before` → execute before Step 1
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
+
 ### Step 1: Analyze the Conversation
 
 If `$ARGUMENTS` is provided, use it as a filter — focus only on conversation content that relates to the user's stated purpose. Otherwise, scan the full conversation.

@@ -6,6 +6,16 @@ user-invocable: false
 
 # Code Review Guide
 
+## Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-auto-review`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → apply before the main content below
+- `## Rules` → apply as additional rules throughout
+- `## After` → apply after the review completes
+
 ## 4-Layer Review
 
 ### Layer 1: Plan Alignment

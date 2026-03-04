@@ -6,6 +6,16 @@ user-invocable: false
 
 # Verification Before Completion
 
+## Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-verification`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → apply before the main content below
+- `## Rules` → apply as additional rules throughout
+- `## After` → apply after verification completes
+
 ## The Gate
 
 **No completion claims without fresh verification evidence.**

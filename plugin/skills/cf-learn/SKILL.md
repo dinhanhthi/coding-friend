@@ -13,6 +13,16 @@ Extract learning points for human understanding. Topic: **$ARGUMENTS**
 
 In vibe coding, AI writes the code and human approves it — but the human doesn't actually learn anything. This skill extracts knowledge from the conversation and writes it as clear, educational docs so the human builds real understanding over time.
 
+## Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → apply before the main content below
+- `## Rules` → apply as additional rules throughout
+- `## After` → apply after the workflow completes
+
 ## Step 0: Load Config
 
 Read config from two locations and merge (local overrides global):
