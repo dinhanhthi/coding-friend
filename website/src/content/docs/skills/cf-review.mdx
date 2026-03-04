@@ -59,7 +59,7 @@ cf-auto-review (methodology — what to check)
 ```
 
 - **`/cf-review`** orchestrates the workflow: gathers the diff, detects review mode (QUICK/STANDARD/DEEP), and dispatches to the subagent
-- **`cf-code-reviewer` agent** executes the review: reads code, applies the methodology, formats the report
+- **[`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent** executes the review: reads code, applies the methodology, formats the report
 - **[`cf-auto-review`](/docs/skills/cf-auto-review/)** is the single source of truth for the 4-layer review methodology, security table, and confidence scoring
 
 Without `/cf-review`, Claude can still review code — it loads `cf-auto-review` directly inline, using the same methodology without a subagent.

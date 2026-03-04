@@ -6,37 +6,123 @@ keywords: [init, initialization, project setup, cf init]
 
 ## Overview
 
-Initialize your workspace with Coding Friend. The command guides you through an interactive setup, creating essential documentation folders and configuring your development environment.
-
-## Usage
+Interactive setup for Coding Friend. You can run it as many times as you want; only pending steps are offered. Run following command in the root directory of your project.
 
 ```bash
 cf init
 ```
 
-## What It Creates
+## Setup Steps
 
-`cf init` creates the following folder structure:
+`cf init` scans your current configuration and presents a checklist of up to 7 steps:
+
+- Create documentation folders
+- Add Coding Friend artifacts to `.gitignore`
+- Set language for generated docs
+- Configure [`/cf-learn`](/docs/skills/cf-learn/) settings
+- Set up shell tab completion
+- Configure [Claude Code statusline](/docs/cli/cf-statusline/)
+- Add Claude Code permission rules (conditional)
+
+Each step shows `[done]` or `[pending]`. You then choose either `Apply all pending`, `Pick which to apply`, or `Cancel`.
+
+### Create docs folders
+
+Following folders will be creater in your project:
 
 - `docs/plans/` — Implementation plans and task breakdowns
 - `docs/memory/` — Project knowledge and reference docs
 - `docs/research/` — Research findings and deep dives
 - `docs/learn/` — Learning notes and extracted knowledge
 
-## Non-Git Directories
+### Configure `.gitignore`
 
-`cf init` works in any directory, even if it's not a git repository. If you're working outside of git, you can still use Coding Friend for documentation and planning.
-
-## .gitignore Configuration
-
-During setup, you can optionally add Coding Friend folders to your `.gitignore`. This is recommended for private notes and research.
-
-## Global Configuration
-
-For platform-specific setup across multiple projects, use:
+In case you don't want CF's stuffs in your project, this option helps you ignore them.
 
 ```bash
-cf init --global
+# >>> coding-friend managed
+docs/plans/
+docs/memory/
+docs/research/
+docs/learn/
+.coding-friend/
+# <<< coding-friend managed
 ```
 
-This installs Coding Friend configuration into the global config directories of supported platforms (Cursor, Windsurf, Copilot, etc.).
+### Set docs language
+
+The docs will be written in **English** (`en`), **Vietnamese** (`vi`), or **Other** (enter a custom name).
+
+### Configure [`/cf-learn`](/docs/skills/cf-learn/)
+
+After your configs, following settings will be configured. It's can be in `config.json` ([global or local](/docs/configuration/config-json/)), depends on where you choose to save the config.
+
+```json
+{
+  "learn": {
+    "outputDir": "docs/learn",
+    "categories": [
+      {
+        "name": "concepts",
+        "description": "Design patterns, algorithms, architecture principles"
+      },
+      {
+        "name": "patterns",
+        "description": "Repository pattern, observer pattern"
+      },
+      {
+        "name": "languages",
+        "description": "Language-specific features, syntax, idioms"
+      },
+      { "name": "tools", "description": "Libraries, frameworks, CLI tools" },
+      { "name": "debugging", "description": "Debugging techniques, bug fixes" }
+    ],
+    "autoCommit": false,
+    "readmeIndex": false
+  }
+}
+```
+
+| Field         | Type                        | Default        | Description                                                                            |
+| ------------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| `outputDir`   | `string`                    | `"docs/learn"` | Where learning docs are saved. Absolute or `~/` paths for external storage             |
+| `categories`  | `array`                     | 5 defaults     | Each entry has `name` and `description`                                                |
+| `autoCommit`  | `boolean`                   | `false`        | Auto-commit after each `/cf-learn` (external dir only)                                 |
+| `readmeIndex` | `boolean \| "per-category"` | `false`        | `true` for single README containing all indexes or `"per-category"` for one per folder |
+
+You can edit this file directly at any time — no need to re-run `cf init`.
+
+### Configure shell completion
+
+Adds tab completion for `cf` commands to `~/.bashrc` or `~/.zshrc` (auto-detected)
+
+### Configure statusline
+
+Interactive checklist to pick which to show in the [statusline](/docs/cli/cf-statusline/).
+
+```
+cf v0.3.0 | MyProject | Opus 4.6 | ⎇ main | ctx 42% | 15% → 02:30
+```
+
+### Configure Claude Code permissions
+
+- Only appears when using an **external** output directory for [`/cf-learn`](/docs/skills/cf-learn/)
+- Adds `Read`, `Edit`, `Write` permission rules to `~/.claude/settings.json`
+- If auto-commit is enabled, also adds `git add` / `git commit` rules
+
+## Saving Configuration
+
+Configuration can be saved globally (`~/.coding-friend/config.json`), locally (`<your-project>/.coding-friend/config.json`), or both.
+
+See [Configuration](/docs/configuration/config-json/) for the config file format.
+
+## Non-Git Directories
+
+`cf init` can work outside git repos. In that case, the git-related steps (`.gitignore`, auto-commit, branch statusline) are automatically skipped.
+
+## See Also
+
+- [`cf install`](/docs/cli/cf-install/) — install the Coding Friend plugin
+- [`cf statusline`](/docs/cli/cf-statusline/) — configure statusline independently
+- [`/cf-learn`](/docs/skills/cf-learn/) — the learning extraction skill configured by this command
+- [Configuration](/docs/configuration/config-json/) — config file format and options
