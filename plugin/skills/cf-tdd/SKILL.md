@@ -84,3 +84,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:implementer"`. Pass:
 - Single-file changes or small functions
 - Pure refactoring with existing test coverage
 - When the user is actively pairing on the implementation
+
+## Review Reminder
+
+After implementation is complete and all tests pass, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.

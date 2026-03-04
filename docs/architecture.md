@@ -146,7 +146,7 @@ agent: code-reviewer
 
 ---
 
-## Hooks System (8 hooks)
+## Hooks System (7 hooks)
 
 | Hook                    | Event            | Purpose                                                                          |
 | ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
@@ -157,7 +157,6 @@ agent: code-reviewer
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
 | `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                          |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                   |
-| `review-gate.sh`        | Stop             | Remind to review/commit when significant uncommitted changes exist               |
 
 ### Hook I/O Protocol
 
@@ -345,17 +344,6 @@ The project operates as 4 concurrent state machine layers.
 │  User interacts...   │──────────────────────────────────┘
 └──────┬───────────────┘
        │ user stops / session ends
-       ▼
-┌─────────────────────┐
-│  STOP_GATE           │  Stop hook fires
-│  review-gate.sh      │
-│  >50 uncommitted     │──── YES ──→ [BLOCKED: suggest /cf-review or /cf-commit]
-│  lines?              │                    │
-│                      │                    │ user runs commit/review
-│                      │◄───────────────────┘
-│  <50 lines           │
-└──────┬───────────────┘
-       │ pass
        ▼
 ┌────────────────┐     ┌──────────────────┐
 │  PRE_COMPACT   │────→│  SESSION_END     │
@@ -591,7 +579,7 @@ The project operates as 4 concurrent state machine layers.
 
 | Layer     | States                                                        | Triggers            |
 | --------- | ------------------------------------------------------------- | ------------------- |
-| Session   | IDLE → INIT → ACTIVE → STOP_GATE → END                        | Session start/stop  |
+| Session   | IDLE → INIT → ACTIVE → COMPACT → END                          | Session start/stop  |
 | Coding    | WAITING → TDD (RED/GREEN/REFACTOR) → VERIFY → REVIEW → COMMIT | User commands       |
 | Debug     | INVESTIGATE → ANALYZE → TEST → FIX → back to TDD              | Test failures       |
 | Knowledge | TRIGGER → CONFIG → IDENTIFY → CATEGORIZE → WRITE → CONSUME    | /cf-learn, auto     |

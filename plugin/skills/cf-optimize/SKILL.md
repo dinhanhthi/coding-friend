@@ -100,6 +100,10 @@ Review the implementer's report. If tests failed or the agent reported concerns,
 3. If performance **regressed**, revert and try a different approach (go back to Step 4)
 4. Summarize what was changed and why it helped
 
+### Step 8: Review Reminder
+
+Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+
 ## Rules
 
 - ALWAYS measure before AND after — no "it should be faster" claims
