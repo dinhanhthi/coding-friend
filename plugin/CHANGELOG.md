@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.5.0 (unpublished)
+## v0.5.0 (2026-03-04)
 
 - Migrate custom skill guides from eager to on-demand loading ([#f3fcd69](https://github.com/dinhanhthi/coding-friend/commit/f3fcd69))
 - Migrate custom skill guides to directory-based format ([#f28e1af](https://github.com/dinhanhthi/coding-friend/commit/f28e1af))
