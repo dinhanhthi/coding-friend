@@ -41,6 +41,7 @@ cf dev on /path/to/coding-friend    # switch to local
 cf dev off                          # switch back to marketplace
 cf dev status                       # check current mode
 cf dev restart                      # reinstall (fixes broken state)
+cf dev update                       # update to latest local version (off + on)
 cf dev sync                         # push local edits into cache
 ```
 

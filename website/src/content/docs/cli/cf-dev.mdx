@@ -22,6 +22,7 @@ cf dev off          # Switch back to remote marketplace
 cf dev status       # Show current dev mode
 cf dev sync         # Sync local changes to cache (no version bump needed)
 cf dev restart      # Reinstall local dev plugin (off + on)
+cf dev update       # Update local dev plugin to latest version (off + on)
 ```
 
 ## Subcommands
@@ -149,6 +150,24 @@ All cache operations (copying files into `~/.claude/plugins/cache/...`) are hand
 | **Use when**             | Normal dev loop — you just edited files              | After a version bump, or when install state is broken/corrupted |
 
 If dev mode was already OFF, the off phase is skipped and it just runs `cf dev on`. It reuses the local path saved in the dev state file — no need to specify it again unless you want to change it.
+
+### `cf dev update`
+
+Updates the local dev plugin to the latest version by performing a full off/on cycle:
+
+```bash
+cf dev update
+
+# Or specify a different path
+cf dev update /path/to/coding-friend
+```
+
+Functionally identical to `cf dev restart`, but semantically distinct:
+
+- **`cf dev update`** — use when you have new local changes (e.g. after a version bump) and want to update the cached plugin to the latest version
+- **`cf dev restart`** — use when the install state is broken or corrupted and you need a clean reinstall
+
+Path resolution: explicit argument > saved dev state path > current working directory.
 
 ## When to Use
 

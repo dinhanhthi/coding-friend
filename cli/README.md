@@ -37,6 +37,7 @@ cf dev off           # Switch back to remote marketplace
 cf dev status        # Show current dev mode (local or remote)
 cf dev sync          # Sync local changes to cache (no version bump needed)
 cf dev restart       # Reinstall local dev plugin (off + on)
+cf dev update        # Update local dev plugin to latest version (off + on)
 cf help              # Show all commands
 ```
 
