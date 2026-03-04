@@ -28,7 +28,7 @@
 - Ensures verification before claiming done
 - Smart conventional commits and code review
 - Captures project knowledge across sessions (`/cf-remember`)
-- Helps humans learn from vibe coding sessions (`/cf-learn`) — host as a local website (`cf host`) or setup MCP server (`cf mcp`) for other LLM clients
+- ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — host as a local website (`cf host`) or setup MCP server (`cf mcp`) for other LLM clients
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - Prompt injection defense — layered content isolation protects against malicious instructions
