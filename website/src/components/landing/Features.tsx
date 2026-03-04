@@ -84,6 +84,12 @@ const slashCommands: Feature[] = [
     title: "Research",
     description: "In-depth research with web search and parallel subagents",
   },
+  {
+    command: "/cf-help",
+    title: "Help",
+    description:
+      "Answer questions about Coding Friend — skills, agents, workflows",
+  },
 ];
 
 const autoSkills: Feature[] = [

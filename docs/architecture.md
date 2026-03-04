@@ -34,8 +34,11 @@ coding-friend/
 │   │   ├── compact-marker.sh        # PreCompact: preserve context
 │   │   └── context-tracker.sh       # PostToolUse: track files read
 │   │
+│   ├── context/
+│   │   └── bootstrap.md             # Bootstrap context (loaded by session-init)
+│   │
 │   ├── skills/
-│   │   ├── cf-help/                 # Meta-skill (background)
+│   │   ├── cf-help/                 # /cf-help — answer questions about Coding Friend
 │   │   ├── cf-plan/                 # /cf-plan — brainstorm + write plans
 │   │   ├── cf-review/               # /cf-review — dispatch code review
 │   │   ├── cf-commit/               # /cf-commit — smart commit
@@ -84,22 +87,22 @@ coding-friend/
 
 ## Skills Architecture (15 skills)
 
-### Reference Skills (5) — Auto-loaded when relevant
+### Reference Skills (4) — Auto-loaded when relevant
 
-| Skill             | Trigger                       | Core Concept                                |
-| ----------------- | ----------------------------- | ------------------------------------------- |
-| `cf-help`         | Bootstrap (session-init hook) | Meta-skill: skill discovery, core rules     |
-| `cf-tdd`          | Writing new code              | Iron law: no code without failing test      |
-| `cf-sys-debug`    | Debugging bugs                | 4-phase: investigate → analyze → test → fix |
-| `cf-auto-review`  | During code review            | 4-layer: plan, quality, security, testing   |
-| `cf-verification` | Before claiming done          | Gate: no claims without fresh evidence      |
+| Skill             | Trigger              | Core Concept                                |
+| ----------------- | -------------------- | ------------------------------------------- |
+| `cf-tdd`          | Writing new code     | Iron law: no code without failing test      |
+| `cf-sys-debug`    | Debugging bugs       | 4-phase: investigate → analyze → test → fix |
+| `cf-auto-review`  | During code review   | 4-layer: plan, quality, security, testing   |
+| `cf-verification` | Before claiming done | Gate: no claims without fresh evidence      |
 
 Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
 
-### Task Skills (10) — User-triggered via `/slash`
+### Task Skills (11) — User-triggered via `/slash`
 
 | Skill         | Command                 | Key Feature                                                   |
 | ------------- | ----------------------- | ------------------------------------------------------------- |
+| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                          |
 | `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                        |
 | `cf-review`   | `/cf-review [target]`   | Fork context → code-reviewer agent                            |
 | `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                            |
@@ -145,16 +148,16 @@ agent: code-reviewer
 
 ## Hooks System (8 hooks)
 
-| Hook                    | Event            | Purpose                                                                        |
-| ----------------------- | ---------------- | ------------------------------------------------------------------------------ |
-| `session-init.sh`       | SessionStart     | Bootstrap context: load meta-skill, detect project, load .coding-friend/ignore |
-| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                |
-| `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                  |
-| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                         |
-| `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                   |
-| `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                        |
-| `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                 |
-| `review-gate.sh`        | Stop             | Remind to review/commit when significant uncommitted changes exist             |
+| Hook                    | Event            | Purpose                                                                          |
+| ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `session-init.sh`       | SessionStart     | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
+| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                  |
+| `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                    |
+| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
+| `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
+| `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                          |
+| `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                   |
+| `review-gate.sh`        | Stop             | Remind to review/commit when significant uncommitted changes exist               |
 
 ### Hook I/O Protocol
 
@@ -322,7 +325,7 @@ The project operates as 4 concurrent state machine layers.
 │  SESSION_INIT        │  SessionStart hook fires
 │  ┌─────────────────┐ │
 │  │ session-init.sh │ │
-│  │ • Load cf-help  │ │
+│  │ • Load bootstrap│ │
 │  │ • Detect project│ │
 │  │ • Load guides   │ │
 │  │ • Inject context│ │
