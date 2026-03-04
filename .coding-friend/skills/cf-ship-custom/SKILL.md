@@ -26,7 +26,7 @@ bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <new_version
 
 ### Step B4: Update changelogs
 
-For each affected package, collect commits since its last tag and write entries under `## v{version} (unpublished)`. One bullet per logical change. Append commit links `[#hash](repo/commit/hash)`. Deduplicate against existing entries.
+For each affected package, collect commits since its last tag and write entries under `## v{version} (unpublished)`. One bullet per logical change. Use backticks for inline code references (skill names like `cf-plan`, agent names like `cf-code-reviewer`, commands like `/cf-commit`, file names, config keys, CLI commands, technical identifiers). Append commit links `[#hash](repo/commit/hash)`. Deduplicate against existing entries.
 
 ```bash
 # Get repo URL

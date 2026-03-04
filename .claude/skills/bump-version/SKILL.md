@@ -118,6 +118,7 @@ Read the current changelog file. If a commit's intent is already captured by an 
 - Group commits about the same feature into one bullet
 - Write from user perspective: what changed, not what file was edited
 - Imperative tense: "Add X", "Fix Y", "Update Z"
+- Use backticks for inline code references: skill names (`cf-plan`, `cf-fix`), agent names (`cf-code-reviewer`), commands (`/cf-commit`), file names, config keys, CLI commands, and technical identifiers
 - Append commit link(s) at the end of each bullet point
 
 **Commit links:**
