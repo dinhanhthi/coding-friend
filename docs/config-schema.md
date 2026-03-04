@@ -172,8 +172,8 @@ Separate from `config.json`, users can extend built-in skills with custom guidan
 
 ### Location
 
-- **Global**: `~/.coding-friend/skills/<skill-name>.md` — applies to all projects
-- **Local**: `.coding-friend/skills/<skill-name>.md` — project-specific
+- **Global**: `~/.coding-friend/skills/<skill-name>-custom.md` — applies to all projects
+- **Local**: `.coding-friend/skills/<skill-name>-custom.md` — project-specific
 - Local files override global files with the same filename
 
 ### Format
@@ -196,7 +196,7 @@ Files support 3 optional sections:
 
 ### Example
 
-`.coding-friend/skills/cf-commit.md`:
+`.coding-friend/skills/cf-commit-custom.md`:
 
 ```markdown
 ## Before

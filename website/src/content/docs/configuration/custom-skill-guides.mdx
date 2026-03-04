@@ -8,10 +8,10 @@ Custom skill guides let you extend built-in skills with your own instructions �
 
 ## Location
 
-| Scope      | Path                                      | Applies to        |
-| ---------- | ----------------------------------------- | ----------------- |
-| **Global** | `~/.coding-friend/skills/<skill-name>.md` | All projects      |
-| **Local**  | `.coding-friend/skills/<skill-name>.md`   | This project only |
+| Scope      | Path                                             | Applies to        |
+| ---------- | ------------------------------------------------ | ----------------- |
+| **Global** | `~/.coding-friend/skills/<skill-name>-custom.md` | All projects      |
+| **Local**  | `.coding-friend/skills/<skill-name>-custom.md`   | This project only |
 
 Local files override global files with the same filename.
 
@@ -45,7 +45,7 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 
 ### Simple: enforce conventions on `/cf-commit`
 
-`.coding-friend/skills/cf-commit.md`:
+`.coding-friend/skills/cf-commit-custom.md`:
 
 ```markdown
 ## Before
@@ -72,13 +72,13 @@ The key principle: **keep heavy logic in scripts, keep the guide lean**. The `##
 
 ```
 .coding-friend/skills/
-├── cf-ship.md           ← custom guide (lean, calls scripts)
+├── cf-ship-custom.md    ← custom guide (lean, calls scripts)
 └── scripts/
     ├── bump-info.sh     ← fetches tags, detects changed packages, prints state
     └── bump.sh          ← updates version files for a given package
 ```
 
-`.coding-friend/skills/cf-ship.md`:
+`.coding-friend/skills/cf-ship-custom.md`:
 
 ```markdown
 ## Before

@@ -80,8 +80,8 @@ If the user asks about **configuration**, read:
 
 If the user asks about **custom skill guides**, explain:
 
-- Local: `.coding-friend/skills/<skill-name>.md`
-- Global: `~/.coding-friend/skills/<skill-name>.md`
+- Local: `.coding-friend/skills/<skill-name>-custom.md`
+- Global: `~/.coding-friend/skills/<skill-name>-custom.md`
 - Sections: `## Before` (pre-workflow), `## Rules` (throughout), `## After` (post-workflow)
 
 ## Step 4: Answer concisely
