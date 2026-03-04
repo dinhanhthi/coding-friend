@@ -84,7 +84,7 @@ Based on the approved approach and the agent's findings:
 ### Step 6: Save the Plan
 
 1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
-2. Use the TodoWrite tool to create a task list
+2. Use the TaskCreate tool to create a task list
 3. Present the plan summary to the user
 
 ### Step 7: Offer Implementation

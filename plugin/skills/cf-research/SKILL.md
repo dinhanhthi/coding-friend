@@ -49,7 +49,7 @@ Output goes to `{docsDir}/research/` (default: `docs/research/`). Check `.coding
 
 For each part identified in Step 2:
 
-1. **Launch a subagent** (using the Task tool) to research that specific part
+1. **Launch a subagent** (using the **Agent tool**) to research that specific part
 2. Each subagent should:
    - Use **WebSearch** to find up-to-date information
    - Use **WebFetch** to read relevant pages, docs, READMEs
