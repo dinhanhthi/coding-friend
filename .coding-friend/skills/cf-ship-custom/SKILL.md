@@ -7,7 +7,7 @@ This is a **version bump + ship** operation. Run these steps BEFORE the standard
 ### Step B1: Get bump context
 
 ```bash
-bash .coding-friend/skills/scripts/bump-info.sh [package-arg] [level-arg]
+bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh [package-arg] [level-arg]
 ```
 
 Read the output. It tells you: which packages changed, current vs tag version, whether to bump or just update changelog, and path→package mapping.
@@ -21,7 +21,7 @@ If level not in args, analyze the changes and suggest patch/minor/major. Ask the
 For each package that needs bumping (state = "bump", not "already-bumped"):
 
 ```bash
-bash .coding-friend/skills/scripts/bump.sh <package> <new_version>
+bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <new_version>
 ```
 
 ### Step B4: Update changelogs

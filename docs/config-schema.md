@@ -168,17 +168,17 @@ Both respect the same path resolution rules as `learn.outputDir`.
 
 ## Custom Skill Guides
 
-Separate from `config.json`, users can extend built-in skills with custom guidance using `.md` files.
+Separate from `config.json`, users can extend built-in skills with custom guidance using directory-based guides.
 
 ### Location
 
-- **Global**: `~/.coding-friend/skills/<skill-name>-custom.md` — applies to all projects
-- **Local**: `.coding-friend/skills/<skill-name>-custom.md` — project-specific
-- Local files override global files with the same filename
+- **Global**: `~/.coding-friend/skills/<skill-name>-custom/SKILL.md` — applies to all projects
+- **Local**: `.coding-friend/skills/<skill-name>-custom/SKILL.md` — project-specific
+- Local directories override global directories with the same name
 
 ### Format
 
-Files support 3 optional sections:
+Each `SKILL.md` supports 3 optional sections:
 
 ```markdown
 ## Before
@@ -196,7 +196,7 @@ Files support 3 optional sections:
 
 ### Example
 
-`.coding-friend/skills/cf-commit-custom.md`:
+`.coding-friend/skills/cf-commit-custom/SKILL.md`:
 
 ```markdown
 ## Before
