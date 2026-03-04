@@ -12,6 +12,15 @@ Review the code changes for: **$ARGUMENTS**
 
 ## Workflow
 
+0. **Load Custom Guide:**
+
+   Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review`
+
+   If output is not empty, integrate the returned sections into this workflow:
+   - `## Before` → execute before step 1
+   - `## Rules` → apply as additional rules throughout all steps
+   - `## After` → execute after the final step
+
 1. **Identify the target:**
    - If `$ARGUMENTS` is empty, review all uncommitted changes (`git diff` + `git diff --staged`)
    - If `$ARGUMENTS` is a file path, review that file

@@ -10,6 +10,16 @@ tools: [Read, Glob]
 
 Answer questions about the Coding Friend toolkit. Provide a brief overview when asked generally, or read specific skill files on-demand when asked about a particular skill/agent/workflow.
 
+## Step 0: Load Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → execute before Step 1
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
+
 ## Step 1: Understand the question
 
 Determine what the user is asking about:

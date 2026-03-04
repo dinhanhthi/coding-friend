@@ -51,7 +51,7 @@ Format: `> ✨ **CODING FRIEND** → <name> activated`
 - Project docs in `docs/memory/`, learning notes in `docs/learn/`, research in `docs/research/`
 - Config: `.coding-friend/config.json` (local) and `~/.coding-friend/config.json` (global), local overrides global
 - Top-level `language` setting applies to all doc-generating skills (default: `en`)
-- Custom skill guides: `.coding-friend/skills/<skill-name>-custom/SKILL.md` (local) or `~/.coding-friend/skills/<skill-name>-custom/SKILL.md` (global)
+- Custom skill guides: loaded on-demand per skill via `plugin/lib/load-custom-guide.sh`
 
 ## CLI (coding-friend-cli)
 

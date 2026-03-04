@@ -10,6 +10,16 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 ## Workflow
 
+### Step 0: Load Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship`
+
+If output is not empty, integrate the returned sections into this workflow:
+
+- `## Before` → execute before Step 1
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
+
 ### Step 1: Verify
 
 Load the `cf-verification` skill and run the full checklist:

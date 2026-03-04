@@ -5,6 +5,16 @@ description: Use when writing new production code, adding features, or implement
 
 # Test-Driven Development
 
+## Custom Guide
+
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd`
+
+If output is not empty, integrate the returned sections:
+
+- `## Before` → apply before the main content below
+- `## Rules` → apply as additional rules throughout
+- `## After` → apply after the workflow completes
+
 ## The Iron Law
 
 **No production code without a failing test first.**
