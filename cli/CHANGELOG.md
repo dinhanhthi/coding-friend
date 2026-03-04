@@ -2,6 +2,11 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.6.0 (unpublished)
+
+- Add `cf dev update` command to update local dev plugin ([#2788225](https://github.com/dinhanhthi/coding-friend/commit/2788225))
+- Ensure statusline and shell completion auto-update in dev/restart/update commands ([#2b754e2](https://github.com/dinhanhthi/coding-friend/commit/2b754e2))
+
 ## v1.5.2 (2026-03-04)
 
 - Improve styling across website and learn-host ([#0029522](https://github.com/dinhanhthi/coding-friend/commit/0029522))

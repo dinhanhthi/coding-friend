@@ -2,6 +2,16 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.5.0 (unpublished)
+
+- Migrate custom skill guides from eager to on-demand loading ([#f3fcd69](https://github.com/dinhanhthi/coding-friend/commit/f3fcd69))
+- Migrate custom skill guides to directory-based format ([#f28e1af](https://github.com/dinhanhthi/coding-friend/commit/f28e1af))
+- Track skills bump-version and release for this project only ([#8c88658](https://github.com/dinhanhthi/coding-friend/commit/8c88658))
+- Specify explicit model for cf-code-reviewer and cf-implementer agents ([#76bb8f2](https://github.com/dinhanhthi/coding-friend/commit/76bb8f2))
+- Add cf- prefix to all agent names ([#ce59871](https://github.com/dinhanhthi/coding-friend/commit/ce59871))
+- Expand cf-plan and cf-fix trigger keywords for better auto-invocation ([#9486160](https://github.com/dinhanhthi/coding-friend/commit/9486160))
+- Clarify cf-\* signal rules with explicit criteria ([#5191081](https://github.com/dinhanhthi/coding-friend/commit/5191081))
+
 ## v0.4.2 (2026-03-04)
 
 - Refactor custom skill guides to use -custom.md suffix ([#99648a7](https://github.com/dinhanhthi/coding-friend/commit/99648a7))
