@@ -45,7 +45,9 @@ export default function DocsMobileNav() {
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
                   const [slugPath, hash] = item.slug.split("#");
-                  const href = hash ? `/docs/${slugPath}/#${hash}` : `/docs/${item.slug}/`;
+                  const href = hash
+                    ? `/docs/${slugPath}/#${hash}`
+                    : `/docs/${item.slug}/`;
                   const isActive = pathname === `/docs/${slugPath}/`;
                   return (
                     <li key={item.slug}>

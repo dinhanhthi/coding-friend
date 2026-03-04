@@ -1,0 +1,104 @@
+---
+title: "Custom Skill Guides"
+description: "Extend built-in skills with project-specific or global guidance."
+keywords: [custom skill, skill guide, extend skill, before, rules, after]
+---
+
+Custom skill guides let you extend built-in skills with your own instructions — without modifying the plugin itself. You can add steps that run before or after the built-in workflow, or inject rules that apply throughout.
+
+## Location
+
+| Scope      | Path                                      | Applies to        |
+| ---------- | ----------------------------------------- | ----------------- |
+| **Global** | `~/.coding-friend/skills/<skill-name>.md` | All projects      |
+| **Local**  | `.coding-friend/skills/<skill-name>.md`   | This project only |
+
+Local files override global files with the same filename.
+
+## Format
+
+A custom guide is a Markdown file with up to 3 optional sections:
+
+```markdown
+## Before
+
+- Steps to run BEFORE the built-in workflow starts
+
+## Rules
+
+- Additional rules applied THROUGHOUT the workflow
+
+## After
+
+- Steps to run AFTER the built-in workflow completes
+```
+
+All sections are optional — include only what you need.
+
+## Reload
+
+Custom guides are loaded at session start. After editing a guide, use `/clear` to reload.
+
+---
+
+## Examples
+
+### Simple: enforce conventions on `/cf-commit`
+
+`.coding-friend/skills/cf-commit.md`:
+
+```markdown
+## Before
+
+- Check branch naming convention (must match `feat/XX-*` or `fix/XX-*`)
+
+## Rules
+
+- Always include JIRA ticket number from branch name in commit subject
+- Scope should match the top-level directory of changed files
+
+## After
+
+- Run tests if commit type is `feat:` or `fix:`
+```
+
+---
+
+### Advanced: replace `/cf-ship` with a version-bump workflow
+
+The built-in `/cf-ship` verifies, commits, pushes, and creates a PR. With a custom guide, you can completely replace that behavior for projects that manage versioned packages.
+
+The example below turns `/cf-ship` into a full version-bump tool — equivalent to a dedicated `/bump-version` command — while still accepting the same argument patterns.
+
+`.coding-friend/skills/cf-ship.md`:
+
+```markdown
+## Before
+
+**IMPORTANT: `/cf-ship` ALWAYS runs the bump-version workflow below. Ignore the standard cf-ship steps entirely.**
+
+`$ARGUMENTS` is optional:
+
+- No args → auto-detect affected packages from file changes, ask for bump level
+- `patch` / `minor` / `major` → use that level for all affected packages
+- `plugin` / `cli` / `learn-mcp` / `learn-host` → process only that package
+- Combined (e.g. `cli patch`, `minor plugin`) → extract both
+
+### Step 1: Fetch remote tags
+
+...
+```
+
+**What this custom guide adds on top of built-in `/cf-ship`:**
+
+| Built-in `/cf-ship`                          | With this custom guide                                               |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| Runs tests, commits, pushes, creates PR      | Replaced entirely — bump workflow runs instead                       |
+| Takes a commit hint as argument              | Takes package name and/or bump level as argument                     |
+| Works on any project                         | Tailored for multi-package repos with independent versioning         |
+| No changelog management                      | Collects commits since last tag, writes changelog entries            |
+| No version file updates                      | Bumps version in `package.json`, `plugin.json`, `index.ts`, etc.     |
+| Pushes directly or creates PR by branch type | Same — commits bump changes, pushes, creates PR if on feature branch |
+| No next-step guidance                        | Reminds user to run `/release` after merging                         |
+
+In short: the custom guide intercepts `/cf-ship` before the built-in workflow runs, substitutes an entirely different set of steps, and prevents the original steps from executing. The `## Before` section is powerful enough to act as a full workflow replacement when it ends with an explicit `STOP` instruction.
