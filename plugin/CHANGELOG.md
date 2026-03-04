@@ -2,6 +2,14 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.4.2 (unpublished)
+
+- Refactor custom skill guides to use -custom.md suffix ([#99648a7](https://github.com/dinhanhthi/coding-friend/commit/99648a7))
+- Refactor bootstrap context and split from cf-help skill ([#de47b9a](https://github.com/dinhanhthi/coding-friend/commit/de47b9a))
+- Add in-skill reminders and remove review-gate Stop hook ([#1c9f8c3](https://github.com/dinhanhthi/coding-friend/commit/1c9f8c3))
+- Fix tool naming in agent delegation documentation ([#24487d7](https://github.com/dinhanhthi/coding-friend/commit/24487d7))
+- Fix activation signal to scope to coding-friend skills only ([#41c5e43](https://github.com/dinhanhthi/coding-friend/commit/41c5e43))
+
 ## v0.4.1 (2026-03-03)
 
 - Optimize verification workflow to avoid duplicate test runs ([#00b9304](https://github.com/dinhanhthi/coding-friend/commit/00b9304))
