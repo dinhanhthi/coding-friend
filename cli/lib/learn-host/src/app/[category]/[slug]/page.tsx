@@ -37,7 +37,7 @@ export default async function DocPage({
         />
 
         <header className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold">{doc.frontmatter.title}</h1>
+          <h1 className="mb-2 text-3xl font-bold text-accent">{doc.frontmatter.title}</h1>
           {(doc.frontmatter.created || doc.frontmatter.updated) && (
             <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
               {doc.frontmatter.created && (

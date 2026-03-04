@@ -191,7 +191,7 @@ export default async function DocPage({ params }: Props) {
       <article className="min-w-0 flex-1 px-6 py-8 md:px-8" data-pagefind-body>
         <DocsBreadcrumbs items={breadcrumbs} />
 
-        <h1 className="mb-6 text-3xl font-bold text-white">
+        <h1 className="mb-6 text-3xl font-bold text-violet-400">
           {doc.frontmatter.title}
         </h1>
 

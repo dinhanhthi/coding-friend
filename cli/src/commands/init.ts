@@ -1,5 +1,5 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
-import { appendFileSync, existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { run } from "../lib/exec.js";
 import { mergeJson, readJson } from "../lib/json.js";
@@ -33,6 +33,9 @@ interface SetupStep {
   done: boolean;
 }
 
+const GITIGNORE_START = "# >>> coding-friend managed";
+const GITIGNORE_END = "# <<< coding-friend managed";
+
 // ─── Detection ────────────────────────────────────────────────────────
 
 function isGitRepo(): boolean {
@@ -46,7 +49,10 @@ function checkDocsFolders(): boolean {
 
 function checkGitignore(): boolean {
   if (!existsSync(".gitignore")) return false;
-  return readFileSync(".gitignore", "utf-8").includes("# coding-friend");
+  const content = readFileSync(".gitignore", "utf-8");
+  return (
+    content.includes(GITIGNORE_START) || content.includes("# coding-friend")
+  );
 }
 
 function checkLanguage(): boolean {
@@ -140,20 +146,35 @@ async function setupGitignore(): Promise<void> {
     }
   }
 
-  // Filter already existing entries
   const existing = existsSync(".gitignore")
     ? readFileSync(".gitignore", "utf-8")
     : "";
-  const newEntries = entries.filter((e) => !existing.includes(e));
 
-  if (newEntries.length === 0) {
-    log.dim("All entries already in .gitignore.");
-    return;
+  const block = `${GITIGNORE_START}\n${entries.join("\n")}\n${GITIGNORE_END}`;
+
+  // Replace existing managed block (new or legacy format)
+  const managedBlockRe = new RegExp(
+    `${escapeRegExp(GITIGNORE_START)}[\\s\\S]*?${escapeRegExp(GITIGNORE_END)}`,
+  );
+  const legacyBlockRe = /# coding-friend\n([\w/.]+\n)*/;
+
+  let updated: string;
+  if (managedBlockRe.test(existing)) {
+    updated = existing.replace(managedBlockRe, block);
+    log.success(`Updated .gitignore: ${entries.join(", ")}`);
+  } else if (legacyBlockRe.test(existing)) {
+    updated = existing.replace(legacyBlockRe, block);
+    log.success(`Migrated .gitignore block: ${entries.join(", ")}`);
+  } else {
+    updated = existing.trimEnd() + "\n\n" + block + "\n";
+    log.success(`Added to .gitignore: ${entries.join(", ")}`);
   }
 
-  const block = `\n# coding-friend\n${newEntries.join("\n")}\n`;
-  appendFileSync(".gitignore", block);
-  log.success(`Added to .gitignore: ${newEntries.join(", ")}`);
+  writeFileSync(".gitignore", updated);
+}
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function setupLanguage(): Promise<string> {
@@ -211,22 +232,54 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
   }
 
   // b) Categories
+  const existingConfig =
+    readJson<CodingFriendConfig>(localConfigPath()) ??
+    readJson<CodingFriendConfig>(globalConfigPath());
+  const existingCats = existingConfig?.learn?.categories;
+
+  const defaultNames = DEFAULT_CONFIG.learn.categories
+    .map((c) => c.name)
+    .join(", ");
+
+  const choices: { name: string; value: string }[] = [
+    {
+      name: `Use defaults (${defaultNames})`,
+      value: "defaults",
+    },
+  ];
+  if (existingCats && existingCats.length > 0) {
+    const existingNames = existingCats.map((c) => c.name).join(", ");
+    choices.push({
+      name: `Keep current (${existingNames})`,
+      value: "existing",
+    });
+  }
+  choices.push({ name: "Customize", value: "custom" });
+
   const catChoice = await select({
     message: "Categories for organizing learning docs?",
-    choices: [
-      {
-        name: "Use defaults (concepts, patterns, languages, tools, debugging)",
-        value: "defaults",
-      },
-      { name: "Customize", value: "custom" },
-    ],
+    choices,
   });
 
   let categories = DEFAULT_CONFIG.learn.categories;
-  if (catChoice === "custom") {
+  if (catChoice === "existing" && existingCats) {
+    categories = existingCats;
+  } else if (catChoice === "custom") {
+    console.log();
+    if (existingCats && existingCats.length > 0) {
+      console.log("Current categories in config.json:");
+      for (const c of existingCats) {
+        log.dim(`  ${c.name}: ${c.description}`);
+      }
+      console.log();
+    }
     console.log(
       'Enter categories (format: "name: description"). Empty line to finish.',
     );
+    log.dim(
+      "Tip: you can also edit config.json later — see https://cf.dinhanhthi.com/docs/cli/cf-init/",
+    );
+    console.log();
     const customCats: LearnCategory[] = [];
     let keepGoing = true;
     while (keepGoing) {
