@@ -99,7 +99,7 @@ Before delegating to the writer agent, assess the complexity of the content to w
 
 ## Step 4: Delegate to Writer Agent
 
-Construct a write spec and invoke the appropriate writer agent via the `Task` tool.
+Construct a write spec and invoke the appropriate writer agent via the **Agent tool**.
 
 ### Determine Task Type
 
@@ -231,7 +231,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the `Task` tool to invoke `writer` or `writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `subagent_type: "coding-friend:writer"` or `"coding-friend:writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ## Step 5: Confirm
 
