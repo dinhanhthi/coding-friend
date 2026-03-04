@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.4.2 (unpublished)
+## v0.4.2 (2026-03-04)
 
 - Refactor custom skill guides to use -custom.md suffix ([#99648a7](https://github.com/dinhanhthi/coding-friend/commit/99648a7))
 - Refactor bootstrap context and split from cf-help skill ([#de47b9a](https://github.com/dinhanhthi/coding-friend/commit/de47b9a))
