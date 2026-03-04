@@ -1,5 +1,5 @@
 ---
-model: inherit
+model: opus
 ---
 
 # Code Reviewer Agent

@@ -189,9 +189,9 @@ Exit codes:
 
 | Agent              | Model   | Purpose                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |
-| `cf-code-reviewer` | inherit | 4-layer review: plan alignment, quality, security, testing |
+| `cf-code-reviewer` | opus    | 4-layer review: plan alignment, quality, security, testing |
 | `cf-explorer`      | haiku   | Read-only codebase exploration and context gathering       |
-| `cf-implementer`   | inherit | TDD implementation: write test → implement → verify        |
+| `cf-implementer`   | opus    | TDD implementation: write test → implement → verify        |
 | `cf-planner`       | inherit | Codebase exploration + task decomposition                  |
 | `cf-writer`        | haiku   | Lightweight document writing and markdown generation       |
 | `cf-writer-deep`   | sonnet  | Deep reasoning for nuanced technical documentation         |
