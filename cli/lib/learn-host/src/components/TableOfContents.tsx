@@ -3,6 +3,19 @@
 import { useEffect, useState } from "react";
 import type { TocItem } from "@/lib/types";
 
+function renderText(text: string) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return parts.map((part, i) =>
+    part.startsWith("`") && part.endsWith("`") ? (
+      <code key={i} className="rounded bg-slate-700/60 px-1 py-0.5 text-xs">
+        {part.slice(1, -1)}
+      </code>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface Props {
   headings: TocItem[];
 }
@@ -51,7 +64,7 @@ export default function TableOfContents({ headings }: Props) {
                     : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 }`}
               >
-                {h.text}
+                {renderText(h.text)}
               </a>
             </li>
           ))}
