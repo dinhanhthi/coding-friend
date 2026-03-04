@@ -106,6 +106,13 @@ git tag <tag2>
 # ... one per package
 ```
 
+**Tag ordering**: Always create and push tags in this fixed priority order (skip any that aren't part of this release):
+
+1. `learn-mcp-v*`
+2. `learn-host-v*`
+3. `cli-v*`
+4. `v*` (plugin — always last)
+
 ### Step 7: Push
 
 Ask the user before pushing:
@@ -123,13 +130,17 @@ If confirmed:
 # Push the commit first
 git push origin main
 
-# Then push each tag individually (pushing all at once can fail to trigger workflows)
+# Then push each tag individually in priority order (skip missing):
+# 1. learn-mcp-v*
+# 2. learn-host-v*
+# 3. cli-v*
+# 4. v* (plugin — always last)
 git push origin <tag1>
 git push origin <tag2>
-# ... one per package
+# ... one per package, in the order above
 ```
 
-**IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually.
+**IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually, following the priority order defined in Step 6.
 
 ### Step 8: Report
 
