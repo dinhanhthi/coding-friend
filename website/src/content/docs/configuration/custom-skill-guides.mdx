@@ -65,3 +65,48 @@ Custom guides are loaded **on-demand** — only when the corresponding skill run
 
 - Run tests if commit type is `feat:` or `fix:`
 ```
+
+### Advanced: turn `/cf-ship` into a version bump + release workflow
+
+Custom guides can inject entire multi-step workflows. This example extends `/cf-ship` to automatically bump versions, update changelogs, and sync docs — before the standard ship workflow (verify → commit → push → PR) runs.
+
+`.coding-friend/skills/cf-ship-custom/SKILL.md`:
+
+```markdown
+## Before
+
+This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
+
+**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host]`
+
+### Step B1: Get bump context
+
+(run your bump-info script to detect changed packages and their versions)
+
+### Step B2: Confirm bump level
+
+If level not in args, analyze the changes and suggest patch/minor/major. Ask the user to confirm.
+
+### Step B3: Bump version files
+
+For each package that needs bumping, run your bump script.
+
+### Step B4: Update changelogs
+
+Collect commits since last tag, write entries under `## v{version} (unpublished)`.
+
+### Step B5: Print summary table
+
+Then proceed with the **standard cf-ship workflow** (verify → commit → push → PR).
+
+## Rules
+
+- Published tags on `origin` = single source of truth. Run `git fetch --tags` first.
+- NEVER bump if file version > tag version — only update changelog.
+- Do NOT create git tags — that happens during `/release`.
+- NEVER add duplicate changelog entries. One feature = one bullet.
+```
+
+This approach uses helper scripts (stored alongside the `SKILL.md`) to handle version detection and file updates. The `## Before` section runs the bump workflow, then hands off to `/cf-ship`'s built-in verify → commit → push → PR flow.
+
+For a complete real-world example with scripts, see [the Coding Friend project's own cf-ship-custom guide](https://github.com/dinhanhthi/coding-friend/tree/main/.coding-friend/skills/cf-ship-custom).

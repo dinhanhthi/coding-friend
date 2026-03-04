@@ -61,7 +61,7 @@ if [[ "$VERSION" != "$CHANGELOG_VERSION" ]]; then
   echo "  package.json version: $VERSION"
   echo "  changelog version:    $CHANGELOG_VERSION"
   echo ""
-  echo "Fix: update the package version file to $CHANGELOG_VERSION, or re-run /bump-version."
+  echo "Fix: update the package version file to $CHANGELOG_VERSION, or re-run /cf-ship."
   exit 1
 fi
 
