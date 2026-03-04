@@ -1,10 +1,10 @@
 ---
 title: "Skills Overview"
-description: "All 15 skills available in Coding Friend — 10 slash commands and 5 auto-invoked."
+description: "All 15 skills available in Coding Friend — 11 slash commands and 4 auto-invoked."
 keywords: [skills, overview, slash commands, auto-invoked, workflow]
 ---
 
-Coding Friend provides a comprehensive toolkit of 15 skills that automate common engineering workflows. Ten are triggered on-demand via slash commands, while five activate automatically in response to your coding patterns.
+Coding Friend provides a comprehensive toolkit of 15 skills that automate common engineering workflows. Eleven are triggered on-demand via slash commands, while four activate automatically in response to your coding patterns.
 
 ## Slash Commands
 
@@ -22,6 +22,7 @@ Interactive skills you trigger directly to solve specific problems.
 | `/cf-remember` | Capture project knowledge for AI memory across sessions  | `/cf-remember auth flow decisions`           |
 | `/cf-learn`    | Extract human learning docs from coding sessions         | `/cf-learn TypeScript patterns`              |
 | `/cf-research` | In-depth research with web search and parallel subagents | `/cf-research best practices for JWT tokens` |
+| `/cf-help`     | Answer questions about Coding Friend                     | `/cf-help how does cf-tdd work?`             |
 
 ## Auto-Invoked Skills
 
@@ -34,6 +35,8 @@ These skills activate automatically based on what you're doing, without needing 
 | `cf-auto-review`  | Reviewing code changes          | Applies multi-layer review checklist (correctness, security, performance, maintainability, tests) |
 | `cf-verification` | Before claiming task complete   | Ensures tests pass, changes verified, no regressions introduced                                   |
 | `cf-learn`        | After substantial new knowledge | Auto-extracts learnings to docs/learn/ for future reference                                       |
+
+Note: `cf-help` was previously an auto-invoked background skill. It is now a user-triggered slash command (`/cf-help`).
 
 ## Custom Skill Guides
 

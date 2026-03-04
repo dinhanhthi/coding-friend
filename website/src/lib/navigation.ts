@@ -23,12 +23,12 @@ export const docsNavigation: NavSection[] = [
       { title: "/cf-remember", slug: "skills/cf-remember" },
       { title: "/cf-learn", slug: "skills/cf-learn" },
       { title: "/cf-research", slug: "skills/cf-research" },
+      { title: "/cf-help", slug: "skills/cf-help" },
     ],
   },
   {
     title: "Auto-Invoked",
     items: [
-      { title: "cf-help", slug: "skills/cf-help" },
       { title: "cf-tdd", slug: "skills/cf-tdd" },
       { title: "cf-sys-debug", slug: "skills/cf-sys-debug" },
       { title: "cf-auto-review", slug: "skills/cf-auto-review" },

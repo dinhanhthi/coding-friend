@@ -2,8 +2,8 @@
 # SessionStart hook: Bootstrap coding-friend context.
 #
 # Fires on startup, resume, clear, and compact events. Loads the
-# cf-help meta-skill content and injects it as additional context so
-# the agent knows about all available skills, rules, and conventions.
+# bootstrap context and injects it as additional context so the agent
+# knows about all available skills, rules, and conventions.
 #
 # Also detects:
 #   - Project type (single-repo, monorepo, rust, go, python)
@@ -27,15 +27,15 @@ echo "=== session-init.sh started at $(date) ===" >>"$LOG_FILE"
 trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FILE"' ERR
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-SKILL_FILE="$PLUGIN_ROOT/skills/cf-help/SKILL.md"
+BOOTSTRAP_FILE="$PLUGIN_ROOT/context/bootstrap.md"
 
-# Read the meta-skill content
-if [ ! -f "$SKILL_FILE" ]; then
+# Read the bootstrap context
+if [ ! -f "$BOOTSTRAP_FILE" ]; then
   echo '{}'
   exit 0
 fi
 
-CONTENT=$(cat "$SKILL_FILE")
+CONTENT=$(cat "$BOOTSTRAP_FILE")
 
 # Load config
 CONFIG_FILE=".coding-friend/config.json"
