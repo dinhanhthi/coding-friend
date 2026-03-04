@@ -29,8 +29,7 @@ function mockPaths(overrides: Partial<Record<string, string>> = {}) {
       overrides.localConfig ?? join(testDir, "nonexistent", "local.json"),
     pluginCachePath: () => overrides.pluginCache ?? join(testDir, "cache"),
     claudeSettingsPath: () =>
-      overrides.claudeSettings ??
-      join(testDir, "nonexistent", "settings.json"),
+      overrides.claudeSettings ?? join(testDir, "nonexistent", "settings.json"),
     installedPluginsPath: () =>
       overrides.installedPlugins ??
       join(testDir, "nonexistent", "installed_plugins.json"),

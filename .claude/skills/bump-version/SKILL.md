@@ -42,6 +42,7 @@ bash .claude/skills/bump-version/scripts/bump-info.sh [package-arg] [level-arg]
 ```
 
 Read the output. It tells you per package:
+
 - **Latest tag** — the published version on origin
 - **File version** — current version in source files
 - **State** — `bump` (needs version bump) or `already-bumped` (file version > tag, only update changelog)

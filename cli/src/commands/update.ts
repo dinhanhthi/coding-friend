@@ -6,10 +6,7 @@ import { claudeSettingsPath } from "../lib/paths.js";
 import { run, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
-import {
-  ensureStatusline,
-  getInstalledVersion,
-} from "../lib/statusline.js";
+import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -222,9 +219,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     log.step("Updating statusline...");
     const updatedVersion = ensureStatusline();
     if (updatedVersion) {
-      log.success(
-        `Statusline updated to ${chalk.green(`v${updatedVersion}`)}`,
-      );
+      log.success(`Statusline updated to ${chalk.green(`v${updatedVersion}`)}`);
     } else {
       log.dim("Statusline already up-to-date.");
     }
