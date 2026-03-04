@@ -64,41 +64,79 @@ Custom guides are loaded at session start. After editing a guide, use `/clear` t
 
 ---
 
-### Advanced: replace `/cf-ship` with a version-bump workflow
+### Advanced: extend `/cf-ship` with a version-bump pre-step
 
-The built-in `/cf-ship` verifies, commits, pushes, and creates a PR. With a custom guide, you can completely replace that behavior for projects that manage versioned packages.
+For projects that manage multiple versioned packages, you can inject a version-bump preparation phase into `/cf-ship` — so it bumps versions and updates changelogs _before_ the standard verify → commit → push → PR flow runs.
 
-The example below turns `/cf-ship` into a full version-bump tool — equivalent to a dedicated `/bump-version` command — while still accepting the same argument patterns.
+The key principle: **keep heavy logic in scripts, keep the guide lean**. The `## Before` section calls scripts; the built-in workflow handles the rest.
+
+```
+.coding-friend/skills/
+├── cf-ship.md           ← custom guide (lean, calls scripts)
+└── scripts/
+    ├── bump-info.sh     ← fetches tags, detects changed packages, prints state
+    └── bump.sh          ← updates version files for a given package
+```
 
 `.coding-friend/skills/cf-ship.md`:
 
-```markdown
+````markdown
 ## Before
 
-**IMPORTANT: `/cf-ship` ALWAYS runs the bump-version workflow below. Ignore the standard cf-ship steps entirely.**
+This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
 
-`$ARGUMENTS` is optional:
+**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host]`
 
-- No args → auto-detect affected packages from file changes, ask for bump level
-- `patch` / `minor` / `major` → use that level for all affected packages
-- `plugin` / `cli` / `learn-mcp` / `learn-host` → process only that package
-- Combined (e.g. `cli patch`, `minor plugin`) → extract both
+### Step B1: Get bump context
 
-### Step 1: Fetch remote tags
+​`bash
+bash .coding-friend/skills/scripts/bump-info.sh [package-arg] [level-arg]
+​`
 
-...
-```
+Read the output — it shows which packages changed, current vs tag version, and whether to bump or just update changelog.
+
+### Step B2: Confirm bump level
+
+If level not in args, analyze the changes and suggest patch/minor/major. Ask user to confirm.
+
+### Step B3: Bump version files
+
+For each package with state = "bump":
+
+​`bash
+bash .coding-friend/skills/scripts/bump.sh <package> <new_version>
+​`
+
+### Step B4: Update changelogs
+
+Collect commits since each package's last tag. Write entries under `## v{version} (unpublished)`. One bullet per logical change with commit links.
+
+### Step B5: Sync website docs
+
+If source files changed, update corresponding website docs under `website/src/content/docs/`.
+
+### Step B6: Print summary table, then proceed
+
+Print a summary of what was bumped, then continue with the **standard cf-ship workflow** (verify → commit → push → PR). Use `bump <packages> to <versions>` as the commit hint.
+
+## Rules
+
+- NEVER bump if file version > tag version — only update changelog.
+- Do NOT create git tags — that happens during `/release`.
+- After ship: remind user to run `/release`.
+````
 
 **What this custom guide adds on top of built-in `/cf-ship`:**
 
-| Built-in `/cf-ship`                          | With this custom guide                                               |
-| -------------------------------------------- | -------------------------------------------------------------------- |
-| Runs tests, commits, pushes, creates PR      | Replaced entirely — bump workflow runs instead                       |
-| Takes a commit hint as argument              | Takes package name and/or bump level as argument                     |
-| Works on any project                         | Tailored for multi-package repos with independent versioning         |
-| No changelog management                      | Collects commits since last tag, writes changelog entries            |
-| No version file updates                      | Bumps version in `package.json`, `plugin.json`, `index.ts`, etc.     |
-| Pushes directly or creates PR by branch type | Same — commits bump changes, pushes, creates PR if on feature branch |
-| No next-step guidance                        | Reminds user to run `/release` after merging                         |
+| Built-in `/cf-ship`                     | With this custom guide                                       |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Runs tests, commits, pushes, creates PR | Same — but preceded by bump preparation                      |
+| Takes a commit hint as argument         | Takes package name and/or bump level as argument             |
+| Works on any project                    | Tailored for multi-package repos with independent versioning |
+| No changelog management                 | Collects commits since last tag, writes changelog entries    |
+| No version file updates                 | Bumps version files via `bump.sh` script                     |
+| No next-step guidance                   | Reminds user to run `/release` after merging                 |
 
-In short: the custom guide intercepts `/cf-ship` before the built-in workflow runs, substitutes an entirely different set of steps, and prevents the original steps from executing. The `## Before` section is powerful enough to act as a full workflow replacement when it ends with an explicit `STOP` instruction.
+The `## Before` section runs bump preparation (B1–B6), then hands off cleanly to the built-in workflow. No steps are replaced or skipped — verify still runs to ensure everything is healthy before the bump commit is pushed.
+
+Heavy bash logic lives in `.coding-friend/skills/scripts/` rather than inline in the guide. This keeps the guide well under the 4000-character total limit and makes the scripts independently testable.

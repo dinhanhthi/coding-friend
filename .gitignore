@@ -36,7 +36,8 @@ docs/research
 # End AI Sync managed
 
 # coding-friend
-.coding-friend/
+.coding-friend/*
+!.coding-friend/skills/
 
 # Build artifacts
 .next/
