@@ -35,7 +35,7 @@ code-reviewer, implementer, explorer, planner, writer, writer-deep
 
 ## Activation Signals
 
-**IMPORTANT**: Whenever you activate a coding-friend skill, call a coding-friend agent, or auto-invoked workflow, you MUST display a signal to the user BEFORE doing anything else. This is mandatory — never skip it. Do NOT show this signal for skills or agents from other plugins.
+**IMPORTANT**: ONLY show this signal for coding-friend skills and agents. A coding-friend skill is one that starts with `cf-` (slash commands like `/cf-commit`, `/cf-ship`, or auto-invoked like `cf-tdd`, `cf-verification`). Coding-friend agents are: code-reviewer, implementer, explorer, planner, writer, writer-deep. Do NOT show this signal for any other skill or command (e.g., `/release`, `/bump-version`, or skills from other plugins).
 
 Format: `> ✨ **CODING FRIEND** → <name> activated`
 
