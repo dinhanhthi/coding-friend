@@ -35,6 +35,8 @@ docs/research
 # End AI Sync managed
 
 .claude/*
+!.claude/skills/
+.claude/skills/*
 !.claude/skills/bump-version/
 !.claude/skills/release/
 
