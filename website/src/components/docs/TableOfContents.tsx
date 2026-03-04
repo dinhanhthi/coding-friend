@@ -8,7 +8,8 @@ interface Props {
 }
 
 function renderText(text: string) {
-  const parts = text.split(/(`[^`]+`)/g);
+  const stripped = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  const parts = stripped.split(/(`[^`]+`)/g);
   return parts.map((part, i) =>
     part.startsWith("`") && part.endsWith("`") ? (
       <code key={i} className="rounded bg-slate-700/60 px-1 py-0.5 text-xs">
