@@ -46,7 +46,8 @@ This command:
 3. Adds the local directory as a marketplace
 4. Installs the plugin from the local source
 5. Saves the dev state for later restoration
-6. Auto-updates versioned paths in settings.json (e.g. `statusline` command) to use the latest cached plugin version
+6. Ensures the statusline points to the latest cached plugin version
+7. Ensures shell tab completion is up-to-date
 
 The path must point to the repo root containing `plugin/.claude-plugin/plugin.json`.
 
@@ -135,7 +136,8 @@ cf dev restart /path/to/coding-friend
 This is a **destructive reinstall** — it completely removes the plugin from Claude Code's cache, cleans up the marketplace registration, then reinstalls everything from scratch. The full cycle:
 
 1. **Off phase:** uninstall plugin → remove local marketplace → add remote marketplace → install remote → delete dev state
-2. **On phase:** uninstall remote → remove remote marketplace → add local marketplace → install from local → save dev state → update settings paths
+2. **On phase:** uninstall remote → remove remote marketplace → add local marketplace → install from local → save dev state → update statusline path
+3. **Finalize:** ensure statusline points to latest version + update shell tab completion
 
 All cache operations (copying files into `~/.claude/plugins/cache/...`) are handled internally by the `claude plugin install` command — `cf` only orchestrates the install/uninstall calls.
 
