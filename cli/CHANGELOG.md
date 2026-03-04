@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.5.2 (unpublished)
+## v1.5.2 (2026-03-04)
 
 - Improve styling across website and learn-host ([#0029522](https://github.com/dinhanhthi/coding-friend/commit/0029522))
 
