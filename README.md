@@ -41,7 +41,14 @@ For full details, visit the **[official documentation](https://cf.dinhanhthi.com
 ### 1. Install the CLI
 
 ```bash
+# npm
 npm i -g coding-friend-cli
+
+# yarn
+yarn global add coding-friend-cli
+
+# pnpm
+pnpm add -g coding-friend-cli
 ```
 
 ### 2. Install the plugin
