@@ -6,7 +6,6 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "Installation", slug: "getting-started/installation" },
       { title: "Quick Start", slug: "getting-started/quick-start" },
-      { title: "Workflows", slug: "getting-started/workflows" },
     ],
   },
   {
