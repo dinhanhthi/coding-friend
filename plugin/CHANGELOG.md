@@ -2,7 +2,7 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.6.0 (unpublished)
+## v0.6.0 (2026-03-05)
 
 - Add frontmatter-based recall and memory documentation to skills ([#37af8ee](https://github.com/dinhanhthi/coding-friend/commit/37af8ee))
 - Add separate language settings for docs and `cf-learn` ([#1bbaae1](https://github.com/dinhanhthi/coding-friend/commit/1bbaae1))

@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.2.1 (unpublished)
+## v0.2.1 (2026-03-05)
 
 - Add package manager tabs (npm, yarn, pnpm) to website ([#72e9e05](https://github.com/dinhanhthi/coding-friend/commit/72e9e05))
 - Fix TOC heading text stripping markdown links from slug generation ([#9a8fb5c](https://github.com/dinhanhthi/coding-friend/commit/9a8fb5c))
