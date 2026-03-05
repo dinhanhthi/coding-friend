@@ -14,23 +14,15 @@ The `/cf-ask` skill answers questions about your codebase and saves the answers 
 
 ## What It Does
 
-1. **Analyzes Codebase** — Examines relevant files to answer your question
-2. **Provides Answer** — Gives clear, concise explanation with code examples
-3. **Saves to Memory** — Stores Q&A in `docs/memory/` for future reference
-4. **Cross-References** — Links to related questions and learnings
+1. **Recalls from Memory** — Searches existing `docs/memory/` using a 3-tier frontmatter grep (description → tags → full-text) for previously answered questions or related context
+2. **Analyzes Codebase** — If not already answered, explores relevant files via the [`cf-explorer`](/docs/agents/cf-explorer/) agent
+3. **Provides Answer** — Gives clear, concise explanation with code examples
+4. **Saves to Memory** — Delegates to [`cf-writer`](/docs/agents/cf-writer/) agent, stores Q&A in `docs/memory/` with frontmatter (title, description, tags) for efficient future recall
 
 ## Examples
 
 ```bash
 /cf-ask How does the auth middleware work?
-```
-
-```bash
-/cf-ask What database schema does the user model use?
-```
-
-```bash
-/cf-ask Where are API error codes defined?
 ```
 
 ## When to Use
@@ -40,16 +32,38 @@ The `/cf-ask` skill answers questions about your codebase and saves the answers 
 - Locating specific functionality
 - Quick clarifications during development
 
+## Memory Recall
+
+Before exploring the codebase, `/cf-ask` searches existing memory using a **3-tier grep** on frontmatter fields:
+
+1. **Tier 1 — Descriptions** (cheapest): Grep `description:` fields for question keywords
+2. **Tier 2 — Tags**: Grep `tags:` fields if no description match
+3. **Tier 3 — Full-text**: Last resort content search
+
+If a direct match is found, the existing answer is presented — no redundant exploration needed.
+
 ## Memory System
 
-Answers are saved to `docs/memory/` and indexed by topic:
+Answers are saved to `docs/memory/` with YAML frontmatter for efficient recall:
+
+```yaml
+---
+title: "Auth Flow"
+description: "JWT auth with refresh tokens and OAuth2 integration"
+tags: [auth, jwt, oauth]
+created: 2026-03-05
+updated: 2026-03-05
+---
+```
+
+Organized by topic:
 
 ```
 docs/memory/
-  ├── architecture/
+  ├── features/
   │   ├── auth-flow.md
-  │   └── database-design.md
-  ├── patterns/
+  │   └── api-endpoints.md
+  ├── conventions/
   │   ├── error-handling.md
   │   └── state-management.md
   └── decisions/
@@ -60,6 +74,6 @@ docs/memory/
 ## Benefits
 
 - **Reduces Ramp-Up Time** — Captured knowledge speeds onboarding
-- **Consistency** — Team references same answers
+- **Fast Recall** — Frontmatter grep finds relevant docs without reading full content
 - **Searchable** — Find answers from previous conversations
 - **AI-Readable** — Helps AI understand your codebase faster

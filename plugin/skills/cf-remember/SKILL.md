@@ -95,6 +95,14 @@ task: create | update
 file_path: {docsDir}/memory/{category}/{name}.md
 language: {language from config}
 content: |
+  ---
+  title: "<Title>"
+  description: "<One-line summary for grep-based recall, under 100 chars>"
+  tags: [tag1, tag2, tag3]
+  created: YYYY-MM-DD
+  updated: YYYY-MM-DD
+  ---
+
   # <Title>
 
   ## Overview
@@ -117,6 +125,14 @@ readme_update: false
 auto_commit: false
 existing_file_action: append
 ```
+
+**Frontmatter rules:**
+
+- `description` is the most important field — it enables fast grep-based recall without reading full docs. Write it as a factual, searchable summary.
+- Good: `"Config management via .coding-friend/config.json with local/global override"` — specific, grep-friendly
+- Bad: `"How we manage config"` — too vague, won't match grep queries
+- `tags`: 3-5 relevant keywords as array
+- When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 

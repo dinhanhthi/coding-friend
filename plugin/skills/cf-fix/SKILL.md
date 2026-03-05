@@ -38,7 +38,20 @@ If output is not empty, integrate the returned sections into this workflow:
 3. If you **cannot reproduce**, tell the user and ask for more context — do NOT guess
 4. If no test exists, write one that demonstrates the failure
 
-### Step 3: Explore Relevant Code (via cf-explorer agent)
+### Step 3: Recall Past Bugs + Explore Relevant Code
+
+**3a. Check existing bug docs** (frontmatter recall):
+
+Before exploring, search for related past bugs. Extract 2-3 keywords from the bug description.
+
+1. Grep `^description:` lines across `{docsDir}/memory/bugs/**/*.md` — match against bug keywords
+2. If no match, grep `^tags:` lines across `{docsDir}/memory/bugs/**/*.md`
+3. If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns
+4. Include any relevant findings as context for the explorer
+
+Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+
+**3b. Explore relevant code** (via cf-explorer agent):
 
 Launch the **cf-explorer agent** to gather context around the bug.
 
@@ -47,6 +60,10 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
 > Error output: [from Step 2]
+>
+> [If past bug docs were found in 3a]:
+> Related past bugs found in memory:
+> [summary of relevant findings]
 >
 > Questions to answer:
 >
@@ -103,7 +120,56 @@ Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent
 2. If tests are still failing or the report shows concerns, provide more context and re-dispatch
 3. If the agent could not fix it after a reasonable attempt, fall back to fixing inline following TDD discipline
 
-### Step 8: Review Reminder
+### Step 8: Save Bug Knowledge (conditional)
+
+**Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
+
+1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
+2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`:
+
+```
+WRITE SPEC
+----------
+task: create
+file_path: {docsDir}/memory/bugs/{name}.md
+language: {language from config}
+content: |
+  ---
+  title: "<Short bug title>"
+  description: "<One-line summary of the bug and fix, under 100 chars>"
+  tags: [tag1, tag2, tag3]
+  created: YYYY-MM-DD
+  updated: YYYY-MM-DD
+  ---
+
+  # <Bug Title>
+
+  ## Overview
+  <What went wrong — symptom and context>
+
+  ## Root Cause
+  <What was actually wrong — the real cause, not the symptom>
+
+  ## Fix
+  <What was changed to fix it>
+
+  ## Prevention
+  <How to avoid this bug in the future>
+
+  ## Related Files
+  - `path/to/file1`
+  - `path/to/file2`
+readme_update: false
+auto_commit: false
+existing_file_action: skip
+```
+
+**Frontmatter rules:**
+
+- `description`: factual summary for grep recall. Good: `"Race condition in webhook handler causing duplicate payment processing"`. Bad: `"Fixed a bug"`.
+- `tags`: include error type, affected module, root cause category (e.g., `[race-condition, webhooks, payments]`)
+
+### Step 9: Review Reminder
 
 Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
 
