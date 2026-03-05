@@ -46,9 +46,12 @@ Extract settings with these defaults:
 
 **Path resolution for `outputDir`:**
 
+- Run `pwd` to get the current working directory — substitute its actual output wherever `$CWD` appears below (do NOT pass `$CWD` as a literal string)
+- Only check `$CWD/.coding-friend/config.json` for `outputDir` — do NOT search sub-folders
 - Starts with `/` → absolute path, use as-is
 - Starts with `~/` → expand `~` to home directory
-- Otherwise → relative to project root
+- Otherwise → relative to `$CWD` (the Claude Code session working directory, **not** any git sub-folder root)
+- Always pass `file_path` as an **absolute path** to the cf-writer agent
 
 If `outputDir` directory doesn't exist, create it.
 

@@ -125,13 +125,13 @@ Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent
 **Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`:
+2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute path for `file_path` — run `pwd` and substitute its actual output for `$CWD`, only check `$CWD/.coding-friend/config.json` for `docsDir`, do NOT pass `$CWD` as a literal string):
 
 ```
 WRITE SPEC
 ----------
 task: create
-file_path: {docsDir}/memory/bugs/{name}.md
+file_path: $CWD/{docsDir}/memory/bugs/{name}.md
 language: {language from config}
 content: |
   ---
