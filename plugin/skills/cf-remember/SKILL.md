@@ -16,6 +16,13 @@ After a coding session, key knowledge gets lost — logic flows, conventions, de
 
 Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
 
+**IMPORTANT — path resolution:**
+
+- Run `pwd` to get the current working directory — substitute its actual output wherever `$CWD` appears below (do NOT pass `$CWD` as a literal string)
+- Only check `$CWD/.coding-friend/config.json` for `docsDir` — do NOT search sub-folders
+- Always resolve `file_path` as an **absolute path**: `$CWD/{docsDir}/memory/{category}/{name}.md`
+- Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
+
 ## Workflow
 
 ### Step 0: Load Custom Guide
@@ -86,13 +93,13 @@ Check if the target file already exists:
 
 Read the `language` setting from config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`, default: `en`).
 
-Build the write spec:
+Build the write spec (use absolute path for `file_path`):
 
 ```
 WRITE SPEC
 ----------
 task: create | update
-file_path: {docsDir}/memory/{category}/{name}.md
+file_path: $CWD/{docsDir}/memory/{category}/{name}.md
 language: {language from config}
 content: |
   ---
