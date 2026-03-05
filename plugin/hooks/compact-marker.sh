@@ -32,6 +32,7 @@ ESCAPED=$(printf '%s' "$MARKER" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | awk
 cat <<EOF
 {
   "hookSpecificOutput": {
+    "hookEventName": "PreCompact",
     "additionalContext": "$ESCAPED"
   }
 }
