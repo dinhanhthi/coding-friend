@@ -35,9 +35,14 @@ cf-code-reviewer, cf-implementer, cf-explorer, cf-planner, cf-writer, cf-writer-
 
 ## Activation Signals
 
-**IMPORTANT**: ONLY show this signal for coding-friend skills and agents. A coding-friend skill is one that starts with `cf-` (slash commands like `/cf-commit`, `/cf-ship`, or auto-invoked like `cf-tdd`, `cf-verification`). Coding-friend agents are: cf-code-reviewer, cf-implementer, cf-explorer, cf-planner, cf-writer, cf-writer-deep. Do NOT show this signal for any other skill or command (e.g., `/release`, or skills from other plugins).
+**CRITICAL CHECK — do this BEFORE every signal display:**
 
-Format: `> ✨ **CODING FRIEND** → <name> activated`
+1. Extract the skill or agent name being activated
+2. Check: does the name start with `cf-`? (e.g., `cf-commit`, `cf-fix`, `cf-explorer`)
+3. If YES → show the signal below
+4. If NO → **STOP. Do NOT show any signal.** Skills like `/release`, `/commit`, `/deploy`, or any non-`cf-` skill/command must NEVER get this signal, even if coding-friend is loaded.
+
+Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 
 - Slash commands: include `/` prefix (e.g., `/cf-commit activated`)
 - Auto-invoked: no `/` prefix (e.g., `cf-tdd activated`)

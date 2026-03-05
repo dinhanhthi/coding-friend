@@ -6,11 +6,11 @@ After the standard review completes, check if any changed files require document
 
 From the files already reviewed in this session, filter for changes in these source directories:
 
-| Source path pattern | Documentation target |
-|---|---|
-| `plugin/skills/{name}/SKILL.md` | `website/src/content/docs/skills/{name}.mdx` |
-| `plugin/agents/{name}.md` | `website/src/content/docs/reference/agents.mdx` |
-| `cli/src/commands/{name}.ts` | `website/src/content/docs/cli/cf-{name}.mdx` |
+| Source path pattern             | Documentation target                            |
+| ------------------------------- | ----------------------------------------------- |
+| `plugin/skills/{name}/SKILL.md` | `website/src/content/docs/skills/{name}.mdx`    |
+| `plugin/agents/{name}.md`       | `website/src/content/docs/reference/agents.mdx` |
+| `cli/src/commands/{name}.ts`    | `website/src/content/docs/cli/cf-{name}.mdx`    |
 
 Only consider files that were actually changed in this conversation's diff — do NOT scan the entire codebase.
 
