@@ -51,6 +51,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-remember [topic]` — Extract project knowledge to docs/memory/
 - `/cf-learn [topic]` — Extract learnings (configurable output, language, categories)
 - `/cf-research [topic]` — In-depth research with web search → docs/research/
+- `/cf-session [label]` — Save current session to sync folder for cross-machine resume
 - `/cf-help [question]` — This skill — answer questions about Coding Friend
 
 ### Auto-Invoked Skills (activate automatically when relevant)

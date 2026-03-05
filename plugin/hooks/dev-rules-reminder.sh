@@ -27,7 +27,7 @@ fi
 cat <<'REMINDER'
 <system-reminder>
 RULES: 1) Check skills first 2) Test before code 3) Verify before claiming 4) Respect .coding-friend/ignore 5) Conventional commits
-SKILLS: /cf-ask /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-optimize /cf-remember /cf-learn /cf-research /cf-help
+SKILLS: /cf-ask /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-optimize /cf-remember /cf-learn /cf-research /cf-session /cf-help
 AUTO: cf-tdd, cf-sys-debug, cf-verification, cf-auto-review
 GUIDES: Each skill loads its own custom guide on-demand.
 SIGNALS: BEFORE showing signal, CHECK if name starts with "cf-". YES → show: > ✨ **CODING FRIEND** → <name> activated. NO → STOP, no signal. /release, /commit, /deploy and all non-cf-* names must NEVER get this signal.

@@ -6,6 +6,9 @@ import {
   marketplaceCachePath,
   marketplaceClonePath,
   globalConfigDir,
+  encodeProjectPath,
+  claudeProjectsDir,
+  claudeSessionDir,
 } from "../paths.js";
 
 describe("resolvePath", () => {
@@ -67,5 +70,35 @@ describe("marketplaceClonePath", () => {
 describe("globalConfigDir", () => {
   it("returns ~/.coding-friend", () => {
     expect(globalConfigDir()).toBe(join(homedir(), ".coding-friend"));
+  });
+});
+
+describe("encodeProjectPath", () => {
+  it("converts absolute path by replacing / with -", () => {
+    expect(encodeProjectPath("/Users/alice/git/foo")).toBe(
+      "-Users-alice-git-foo",
+    );
+  });
+
+  it("handles trailing slash", () => {
+    expect(encodeProjectPath("/Users/thi/git/foo/")).toBe("-Users-thi-git-foo-");
+  });
+
+  it("handles single-level path", () => {
+    expect(encodeProjectPath("/tmp")).toBe("-tmp");
+  });
+});
+
+describe("claudeProjectsDir", () => {
+  it("returns ~/.claude/projects/", () => {
+    expect(claudeProjectsDir()).toBe(join(homedir(), ".claude", "projects"));
+  });
+});
+
+describe("claudeSessionDir", () => {
+  it("returns ~/.claude/projects/<encodedPath>", () => {
+    expect(claudeSessionDir("-Users-alice-git-foo")).toBe(
+      join(homedir(), ".claude", "projects", "-Users-alice-git-foo"),
+    );
   });
 });
