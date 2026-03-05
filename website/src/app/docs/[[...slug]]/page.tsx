@@ -12,6 +12,7 @@ import PrevNextNav from "@/components/docs/PrevNextNav";
 import Callout from "@/components/docs/Callout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
+import MdxLink from "@/components/docs/MdxLink";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -104,6 +105,7 @@ const mdxComponents = {
   Callout,
   PackageManagerTabs,
   pre: CodeBlock,
+  a: MdxLink,
 };
 
 export async function generateStaticParams() {
