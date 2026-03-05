@@ -81,6 +81,36 @@ program
     await updateCommand(opts);
   });
 
+const session = program
+  .command("session")
+  .description("Save and load Claude Code sessions across machines");
+
+program.addHelpText(
+  "after",
+  `
+Session subcommands:
+  session save        Save current session to sync folder (use /cf-session inside a conversation)
+  session load        Load a saved session from sync folder and print resume command`,
+);
+
+session
+  .command("save")
+  .description("Save current Claude Code session to sync folder")
+  .option("-s, --session-id <id>", "session UUID to save (default: auto-detect newest)")
+  .option("-l, --label <label>", "label for this session")
+  .action(async (opts) => {
+    const { sessionSaveCommand } = await import("./commands/session.js");
+    await sessionSaveCommand(opts);
+  });
+
+session
+  .command("load")
+  .description("Load a saved session from sync folder")
+  .action(async () => {
+    const { sessionLoadCommand } = await import("./commands/session.js");
+    await sessionLoadCommand();
+  });
+
 const dev = program.command("dev").description("Development mode commands");
 
 program.addHelpText(
