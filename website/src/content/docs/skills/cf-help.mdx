@@ -31,6 +31,19 @@ Unlike other skills that follow a fixed workflow, `/cf-help` is adaptive:
 
 This keeps the skill lightweight — it doesn't duplicate content from every skill, but reads on-demand.
 
+## `/cf-help` vs `cf help`
+
+These are two different things:
+
+| | `/cf-help` | `cf help` |
+|---|---|---|
+| **What** | A Coding Friend plugin skill | A CLI command |
+| **Where** | Inside Claude Code | In your terminal |
+| **Purpose** | Answers questions about Coding Friend skills, agents, and workflows | Shows available CLI commands and usage |
+| **Powered by** | The plugin skill system (`plugin/skills/cf-help/SKILL.md`) | Built-in [commander.js](https://github.com/tj/commander.js) help |
+
+In short: `/cf-help` is an AI-powered assistant that explains how Coding Friend works, while `cf help` is standard CLI usage output from the `coding-friend-cli` tool.
+
 ## Tips
 
 - Type `/cf-help` with no arguments for a full overview of available commands
