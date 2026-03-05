@@ -15,7 +15,7 @@ coding-friend uses a layered config system:
 {
   // --- Global settings ---
 
-  // Language for all generated docs (plans, research, learn, etc.)
+  // Language for docs (plans, memory, research, ask)
   // Supported: "en", "vi", or any language name
   // Default: "en"
   "language": "en",
@@ -30,6 +30,11 @@ coding-friend uses a layered config system:
 
   // --- Learn settings ---
   "learn": {
+    // Language for /cf-learn notes
+    // Falls back to top-level "language", then "en"
+    // Default: "en"
+    "language": "en",
+
     // Where to store learn docs.
     // - Relative path → resolved from project root (e.g., "docs/learn")
     // - Absolute path → used as-is (e.g., "/Users/thi/git/learn-with-ai")
@@ -112,7 +117,7 @@ Writes to `docs/learn/` in the project. English. Default categories.
 }
 ```
 
-All skills (`/cf-learn`, `/cf-plan`, `/cf-research`, etc.) will write in Vietnamese.
+Doc skills (`/cf-plan`, `/cf-research`, `/cf-ask`, etc.) will write in Vietnamese. `/cf-learn` also writes in Vietnamese because `learn.language` is not set, so it falls back to the top-level `language`.
 
 ### Project-specific override (English for one project)
 
@@ -132,7 +137,7 @@ All skills (`/cf-learn`, `/cf-plan`, `/cf-research`, etc.) will write in Vietnam
 }
 ```
 
-This overrides both the global `language` and `learn` settings for this project.
+This overrides both the global `language` and `learn` settings for this project. To set a different language for cf-learn notes, add `"language"` inside the `learn` object.
 
 ## Config Resolution (for skill authors)
 
@@ -145,7 +150,11 @@ This overrides both the global `language` and `learn` settings for this project.
 
 ### Using `language` in skills
 
-All skills that generate docs should read the top-level `language` setting:
+Most doc-generating skills (`/cf-ask`, `/cf-remember`, `/cf-plan`, `/cf-research`) read the top-level `language` setting.
+
+`/cf-learn` reads `learn.language` with this fallback chain: `learn.language` → top-level `language` → `"en"`.
+
+Language values:
 
 - `"en"` → Write in English
 - `"vi"` → Write in Vietnamese, keep technical terms in English

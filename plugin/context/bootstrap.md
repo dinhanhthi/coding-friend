@@ -50,7 +50,8 @@ Format: `> ✨ **CODING FRIEND** → <name> activated`
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Project docs in `docs/memory/`, learning notes in `docs/learn/`, research in `docs/research/`
 - Config: `.coding-friend/config.json` (local) and `~/.coding-friend/config.json` (global), local overrides global
-- Top-level `language` setting applies to all doc-generating skills (default: `en`)
+- Top-level `language` setting applies to doc-generating skills like `/cf-ask`, `/cf-remember`, `/cf-plan`, `/cf-research` (default: `en`)
+- `learn.language` setting applies to `/cf-learn` notes (falls back to top-level `language`, then `en`)
 - Custom skill guides: loaded on-demand per skill via `plugin/lib/load-custom-guide.sh`
 
 ## CLI (coding-friend-cli)

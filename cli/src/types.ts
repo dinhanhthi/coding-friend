@@ -4,6 +4,7 @@ export interface LearnCategory {
 }
 
 export interface LearnConfig {
+  language?: string;
   outputDir?: string;
   categories?: LearnCategory[];
   autoCommit?: boolean;
@@ -52,6 +53,7 @@ export const DEFAULT_CONFIG: Required<
   docsDir: "docs",
   devRulesReminder: true,
   learn: {
+    language: "en",
     outputDir: "docs/learn",
     categories: [
       {

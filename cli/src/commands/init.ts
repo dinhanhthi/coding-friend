@@ -55,10 +55,27 @@ function checkGitignore(): boolean {
   );
 }
 
-function checkLanguage(): boolean {
+function checkDocsLanguage(): boolean {
   const local = readJson<CodingFriendConfig>(localConfigPath());
   const global = readJson<CodingFriendConfig>(globalConfigPath());
   return !!(local?.language || global?.language);
+}
+
+async function selectLanguage(message: string): Promise<string> {
+  const choice = await select({
+    message,
+    choices: [
+      { name: "English", value: "en" },
+      { name: "Vietnamese", value: "vi" },
+      { name: "Other", value: "_other" },
+    ],
+  });
+
+  if (choice === "_other") {
+    const lang = await input({ message: "Enter language name:" });
+    return lang || "en";
+  }
+  return choice;
 }
 
 function checkLearnConfig(): boolean {
@@ -177,30 +194,24 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function setupLanguage(): Promise<string> {
-  const choice = await select({
-    message: "What language should generated docs be written in?",
-    choices: [
-      { name: "English", value: "en" },
-      { name: "Vietnamese", value: "vi" },
-      { name: "Other", value: "_other" },
-    ],
-  });
-
-  if (choice === "_other") {
-    const lang = await input({ message: "Enter language name:" });
-    return lang || "en";
-  }
-  return choice;
+async function setupDocsLanguage(): Promise<string> {
+  return selectLanguage(
+    "What language should generated docs be written in? (plans, memory, research, ask)",
+  );
 }
 
 async function setupLearnConfig(gitAvailable = true): Promise<{
+  language: string;
   outputDir: string;
   categories: LearnCategory[];
   autoCommit: boolean;
   readmeIndex: boolean | "per-category";
   isExternal: boolean;
 }> {
+  // a) Language
+  const language = await selectLanguage(
+    "What language should /cf-learn notes be written in?",
+  );
   // a) Output location
   const locationChoice = await select({
     message: "Where to store learning docs?",
@@ -322,7 +333,14 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
   if (indexChoice === "single") readmeIndex = true;
   else if (indexChoice === "per-category") readmeIndex = "per-category";
 
-  return { outputDir, categories, autoCommit, readmeIndex, isExternal };
+  return {
+    language,
+    outputDir,
+    categories,
+    autoCommit,
+    readmeIndex,
+    isExternal,
+  };
 }
 
 async function setupClaudePermissions(
@@ -401,6 +419,7 @@ function isDefaultConfig(config: CodingFriendConfig): boolean {
   if (config.language && config.language !== "en") return false;
   if (config.learn) {
     const l = config.learn;
+    if (l.language && l.language !== "en") return false;
     if (l.outputDir && l.outputDir !== "docs/learn") return false;
     if (l.autoCommit) return false;
     if (l.readmeIndex) return false;
@@ -468,7 +487,11 @@ export async function initCommand(): Promise<void> {
           },
         ]
       : []),
-    { name: "language", label: "Set docs language", done: checkLanguage() },
+    {
+      name: "docsLanguage",
+      label: "Set docs language (plans, memory, research, ask)",
+      done: checkDocsLanguage(),
+    },
     { name: "learn", label: "Configure /cf-learn", done: checkLearnConfig() },
     {
       name: "completion",
@@ -552,8 +575,8 @@ export async function initCommand(): Promise<void> {
         await setupGitignore();
         break;
 
-      case "language": {
-        const lang = await setupLanguage();
+      case "docsLanguage": {
+        const lang = await setupDocsLanguage();
         config.language = lang;
         break;
       }
@@ -561,6 +584,8 @@ export async function initCommand(): Promise<void> {
       case "learn": {
         const learn = await setupLearnConfig(gitAvailable);
         config.learn = {
+          ...config.learn,
+          language: learn.language,
           outputDir: learn.outputDir,
           categories: learn.categories,
           autoCommit: learn.autoCommit,

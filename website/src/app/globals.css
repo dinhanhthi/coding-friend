@@ -124,7 +124,8 @@ a > code {
 }
 
 /* Tighter prose list spacing */
-.prose :where(ul, ol):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+.prose
+  :where(ul, ol):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
