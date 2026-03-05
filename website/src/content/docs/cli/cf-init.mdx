@@ -18,8 +18,8 @@ cf init
 
 - Create documentation folders
 - Add Coding Friend artifacts to `.gitignore`
-- Set language for generated docs
-- Configure [`/cf-learn`](/docs/skills/cf-learn/) settings
+- Set docs language (plans, memory, research, ask)
+- Configure [`/cf-learn`](/docs/skills/cf-learn/) settings (includes language)
 - Set up shell tab completion
 - Configure [Claude Code statusline](/docs/cli/cf-statusline/)
 - Add Claude Code permission rules (conditional)
@@ -51,15 +51,18 @@ docs/learn/
 
 ### Set docs language
 
-The docs will be written in **English** (`en`), **Vietnamese** (`vi`), or **Other** (enter a custom name).
+Sets the language for generated docs in the `docs/` folder (plans, memory, research, ask). Choose **English** (`en`), **Vietnamese** (`vi`), or **Other** (enter a custom name). Saved as the top-level `language` property in config.
 
 ### Configure [`/cf-learn`](/docs/skills/cf-learn/)
+
+This step walks you through the `/cf-learn` configuration, starting with its language setting. The language for `/cf-learn` notes is separate from the docs language above — choose **English** (`en`), **Vietnamese** (`vi`), or **Other**. Saved as `learn.language` in config. If not set, falls back to the docs language above, then English.
 
 After your configs, following settings will be configured. It's can be in `config.json` ([global or local](/docs/configuration/config-json/)), depends on where you choose to save the config.
 
 ```json
 {
   "learn": {
+    "language": "en",
     "outputDir": "docs/learn",
     "categories": [
       {
@@ -85,6 +88,7 @@ After your configs, following settings will be configured. It's can be in `confi
 
 | Field         | Type                        | Default        | Description                                                                            |
 | ------------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| `language`    | `string`                    | `"en"`         | Language for cf-learn notes. Falls back to top-level `language`, then `"en"`           |
 | `outputDir`   | `string`                    | `"docs/learn"` | Where learning docs are saved. Absolute or `~/` paths for external storage             |
 | `categories`  | `array`                     | 5 defaults     | Each entry has `name` and `description`                                                |
 | `autoCommit`  | `boolean`                   | `false`        | Auto-commit after each `/cf-learn` (external dir only)                                 |

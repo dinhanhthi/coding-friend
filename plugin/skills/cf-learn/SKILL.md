@@ -32,20 +32,17 @@ Read config from two locations and merge (local overrides global):
 
 Extract settings with these defaults:
 
-**Top-level settings:**
-
-| Setting    | Default | Description                                      |
-| ---------- | ------- | ------------------------------------------------ |
-| `language` | `en`    | Language for writing docs (shared by all skills) |
-
 **`learn` settings:**
 
 | Setting             | Default                                                | Description                                                                                                                   |
 | ------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `learn.language`    | `en`                                                   | Language for cf-learn notes (falls back to top-level `language`, then `en`)                                                   |
 | `learn.outputDir`   | `{docsDir}/learn` (where `docsDir` defaults to `docs`) | Where to store learn docs                                                                                                     |
 | `learn.categories`  | See Step 2 table                                       | Subdirectories and their descriptions                                                                                         |
 | `learn.autoCommit`  | `false`                                                | Auto git-commit after writing                                                                                                 |
 | `learn.readmeIndex` | `false`                                                | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
+
+**Language resolution:** Read `learn.language` from config. If not set, fall back to top-level `language`. If neither is set, default to `en` (English).
 
 **Path resolution for `outputDir`:**
 
@@ -125,7 +122,7 @@ WRITE SPEC
 ----------
 task: create | append
 file_path: {outputDir}/{category}/{name}.md
-language: {language from config}
+language: {learn.language from config (with fallback chain)}
 content: |
   <The full markdown content to write, including frontmatter for new files>
 readme_update: {readmeIndex from config: false | true | per-category}

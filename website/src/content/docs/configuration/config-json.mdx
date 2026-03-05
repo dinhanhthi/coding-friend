@@ -56,6 +56,7 @@ All hooks default to `true`. Set to `false` to disable.
 ```json
 {
   "learn": {
+    "language": "en",
     "outputDir": "docs/learn",
     "categories": ["concepts", "patterns", "tools"],
     "autoCommit": true,
@@ -64,6 +65,7 @@ All hooks default to `true`. Set to `false` to disable.
 }
 ```
 
+- `language`: Language for `/cf-learn` notes (default: falls back to top-level `language`, then `"en"`)
 - `outputDir`: Where `/cf-learn` saves files (default: `docs/learn`)
 - `categories`: Classification for learning notes (default: built-in list)
 - `autoCommit`: Automatically commit extracted learning files (default: `true`)
@@ -85,6 +87,7 @@ All hooks default to `true`. Set to `false` to disable.
     "conventionalCommits": true
   },
   "learn": {
+    "language": "en",
     "outputDir": "docs/learn",
     "categories": ["concepts", "patterns", "tools", "debugging"],
     "autoCommit": true,
