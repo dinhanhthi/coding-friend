@@ -2,6 +2,13 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.6.0 (unpublished)
+
+- Add frontmatter-based recall and memory documentation to skills ([#37af8ee](https://github.com/dinhanhthi/coding-friend/commit/37af8ee))
+- Add separate language settings for docs and `cf-learn` ([#1bbaae1](https://github.com/dinhanhthi/coding-friend/commit/1bbaae1))
+- Consolidate `bump-version` into `cf-ship-custom` ([#287fddc](https://github.com/dinhanhthi/coding-friend/commit/287fddc))
+- Add tag push ordering rule to release docs ([#7ebf80d](https://github.com/dinhanhthi/coding-friend/commit/7ebf80d))
+
 ## v0.5.0 (2026-03-04)
 
 - Migrate custom skill guides from eager to on-demand loading ([#f3fcd69](https://github.com/dinhanhthi/coding-friend/commit/f3fcd69))

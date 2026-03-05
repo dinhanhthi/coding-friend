@@ -1,5 +1,11 @@
 # Changelog (Learn Host)
 
+## v0.2.1 (unpublished)
+
+- Add package manager tabs (npm, yarn, pnpm) to website ([#72e9e05](https://github.com/dinhanhthi/coding-friend/commit/72e9e05))
+- Fix TOC heading text stripping markdown links from slug generation ([#9a8fb5c](https://github.com/dinhanhthi/coding-friend/commit/9a8fb5c))
+- Decorate inline codes for TOC ([#573d7b0](https://github.com/dinhanhthi/coding-friend/commit/573d7b0))
+
 ## v0.2.0 (2026-03-03)
 
 - Add dedicated tag pages for filtering docs by tag ([#06f5847](https://github.com/dinhanhthi/coding-friend/commit/06f5847))
