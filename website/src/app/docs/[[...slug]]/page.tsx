@@ -11,6 +11,7 @@ import DocsBreadcrumbs from "@/components/docs/DocsBreadcrumbs";
 import PrevNextNav from "@/components/docs/PrevNextNav";
 import Callout from "@/components/docs/Callout";
 import CodeBlock from "@/components/docs/CodeBlock";
+import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -101,6 +102,7 @@ interface Props {
 
 const mdxComponents = {
   Callout,
+  PackageManagerTabs,
   pre: CodeBlock,
 };
 
