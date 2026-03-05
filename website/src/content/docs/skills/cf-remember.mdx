@@ -73,7 +73,21 @@ docs/memory/
 
 ## Document Format
 
-Each document includes:
+Each document includes YAML frontmatter for efficient grep-based recall:
+
+```yaml
+---
+title: "Config Management"
+description: "Config via .coding-friend/config.json with local/global override"
+tags: [config, settings, override]
+created: 2026-03-05
+updated: 2026-03-05
+---
+```
+
+The `description` field is the most important — it enables fast recall without reading full docs. It should be a factual, searchable summary under 100 characters.
+
+Document body includes:
 
 - What (behavior or design)
 - Why (reasoning and trade-offs)

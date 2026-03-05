@@ -4,7 +4,7 @@ description: "Quick bug fix workflow with problem verification."
 keywords: [bug fix, debugging, quick fix, cf-fix]
 ---
 
-The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, confirming your approach, implementing a fix with tests, and verifying the solution works.
+The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, exploring the codebase for context, confirming your approach, implementing a fix with tests, and verifying the solution works.
 
 ## Usage
 
@@ -14,10 +14,15 @@ The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, conf
 
 ## Workflow
 
-1. **Verify Problem** — Reproduce the bug, understand failure conditions
-2. **Confirm Approach** — Discuss the fix strategy before implementation
-3. **Implement with Tests** — Write failing test first, then fix code
-4. **Verify Solution** — Run all tests to confirm fix and no regressions
+1. **Understand the Bug** — Read the error or bug description. If vague, asks clarifying questions: what did you expect? what happened instead?
+2. **Verify Problem** — Run the failing test or command to reproduce the bug. If no test exists, writes one that demonstrates the failure
+3. **Recall Past Bugs + Explore Code** — Searches `docs/memory/bugs/` for related past bugs via frontmatter grep, then launches the [`cf-explorer`](/docs/reference/agents/#cf-explorer) agent to trace the code path
+4. **Locate Root Cause** — Traces backward from where the error appears to where it originates. States a hypothesis before fixing
+5. **Confirm Approach** — Explains the root cause and proposed fix. Asks for your input if uncertain
+6. **Implement Fix** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): write a failing regression test first, then fix the root cause
+7. **Verify Results** — Reviews the implementer's report, confirms the fix addresses the root cause, and ensures all tests pass with no regressions
+8. **Save Bug Knowledge** — If the fix required more than 1 attempt, documents the bug (symptom, root cause, fix, prevention) to `docs/memory/bugs/` via [`cf-writer`](/docs/agents/cf-writer/) agent with frontmatter for future recall
+9. **Review Reminder** — Asks if you want to run [`/cf-review`](/docs/skills/cf-review/) or [`/cf-commit`](/docs/skills/cf-commit/)
 
 ## Example
 
@@ -28,18 +33,34 @@ The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, conf
 The skill will:
 
 - Reproduce the 401 error with an expired token
-- Identify where the auth check happens
-- Design token refresh strategy
-- Write test for token refresh logic
-- Implement the fix
-- Run full test suite to verify
+- Launch `cf-explorer` to trace the auth code path
+- Identify the root cause (e.g., missing token refresh logic)
+- Confirm the fix approach with you
+- Dispatch `cf-implementer` to write a regression test and implement the fix
+- Run full test suite to verify no regressions
+
+## Quick Checks
+
+Before diving deep, the skill tries these common causes first:
+
+- **Typo in variable/function name?** Check spelling
+- **Wrong import path?** Check relative vs absolute
+- **Stale cache/build?** Clean and rebuild
+- **Missing dependency?** Check package.json/requirements
+- **Environment mismatch?** Check env vars, node version, etc.
 
 ## Key Features
 
+- **Bug Memory Recall** — Searches past bug docs before investigating, leveraging previously solved issues
 - **TDD Integration** — Enforces test-first approach for bug fixes
 - **Regression Prevention** — Runs existing tests to catch side effects
+- **Knowledge Capture** — Non-trivial bugs (multiple attempts) are documented for future reference
 - **Minimal Changes** — Focuses on surgical fixes, not rewrites
-- **Documentation** — Comments explain why, not just what
+- **Custom Guides** — Extend behavior via `.coding-friend/skills/cf-fix-custom/SKILL.md`
+
+## Escalation
+
+If the bug persists after **3 fix attempts**, the skill stops and escalates to the full [`cf-sys-debug`](/docs/skills/cf-sys-debug/) 5-phase diagnostic process — the bug is likely deeper than expected.
 
 ## When to Use
 
@@ -52,8 +73,8 @@ The skill will:
 
 Fixes include:
 
-- Test file demonstrating the bug
-- Source code changes with comments
+- Regression test demonstrating the bug
+- Source code changes with comments explaining why
 - Test report showing no regressions
 
 ## Recommended Workflow
@@ -64,4 +85,4 @@ After the fix is verified, follow this order:
 /cf-fix → /cf-review → /cf-commit
 ```
 
-The skill automatically reminds you to run `/cf-review` before committing, so you don't skip the review step and jump straight to `/cf-commit`.
+The skill automatically reminds you to run [`/cf-review`](/docs/skills/cf-review/) before committing, so you don't skip the review step and jump straight to [`/cf-commit`](/docs/skills/cf-commit/).
