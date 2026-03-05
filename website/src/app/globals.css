@@ -143,6 +143,14 @@ a > code {
   margin-bottom: 0.35em;
 }
 
+/* No-wrap for first column in prose tables */
+.prose
+  :where(table td:first-child):not(
+    :where([class~="not-prose"], [class~="not-prose"] *)
+  ) {
+  white-space: nowrap;
+}
+
 /* Scroll-triggered animations */
 .animate-on-scroll {
   opacity: 0;

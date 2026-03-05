@@ -4,7 +4,7 @@ description: "Brainstorm and create structured implementation plans."
 keywords: [planning, implementation plan, task breakdown, cf-plan]
 ---
 
-The `/cf-plan` skill helps you design solutions before writing code. It explores your codebase, identifies patterns, asks clarifying questions, and produces a detailed implementation plan.
+The `/cf-plan` skill helps you design solutions before writing code. It clarifies requirements, explores your codebase, brainstorms approaches, and produces a detailed implementation plan — then optionally implements it for you.
 
 ## Usage
 
@@ -12,13 +12,14 @@ The `/cf-plan` skill helps you design solutions before writing code. It explores
 /cf-plan [task description]
 ```
 
-## What It Does
+## Workflow
 
-1. **Codebase Exploration** — Scans relevant files to understand your tech stack and patterns
-2. **Clarifying Questions** — Identifies gaps in understanding and asks for requirements
-3. **Pattern Analysis** — Discovers existing conventions you should follow
-4. **Design Phase** — Creates architecture decisions and trade-off analysis
-5. **Plan Generation** — Writes a step-by-step implementation plan to `docs/plans/`
+1. **Clarify Before Exploring** — Lists ambiguities and assumptions, asks you to confirm before proceeding. If the task involves external tools or libraries, asks which ones you prefer — no guessing
+2. **Codebase Exploration** — Launches the [`cf-explorer`](/docs/reference/agents/#cf-explorer) agent to gather context: project structure, affected files, existing patterns, and relevant tests
+3. **Brainstorm Approaches** — Launches the [`cf-planner`](/docs/reference/agents/#cf-planner) agent to generate 2–3 possible approaches, each with pros, cons, effort estimate, risk, and confidence level. Recommends one with rationale
+4. **Validate with You** — Presents key findings, approaches, and open questions. Waits for your approval before writing anything
+5. **Write & Save the Plan** — Breaks the approved approach into small, sequential tasks with specific files, expected outcomes, and verification steps. Saves to `docs/plans/`
+6. **Offer Implementation** — Asks if you want to start implementing. If yes, executes each task sequentially using the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with [TDD discipline](/docs/skills/cf-tdd/)
 
 ## Example
 
@@ -28,12 +29,13 @@ The `/cf-plan` skill helps you design solutions before writing code. It explores
 
 The skill will:
 
-- Review your existing API structure
-- Check how auth is currently handled
-- Propose endpoint design
-- Identify rate limiting libraries
+- Ask which auth library and rate limiting strategy you prefer
+- Explore your existing API structure and auth setup
+- Propose 2–3 approaches with trade-offs
+- Present findings and wait for your approval
 - Create a phased implementation plan
-- Save the plan to `docs/plans/rest-api-auth-plan.md`
+- Save the plan to `docs/plans/2026-03-05-rest-api-auth-plan.md`
+- Offer to implement it task by task
 
 ## When to Use
 
@@ -44,30 +46,28 @@ The skill will:
 
 ## Output
 
-Plans are saved to `docs/plans/` with the format:
+Plans are saved to `docs/plans/` with a date-prefixed filename:
 
 ```
 docs/plans/
-  ├── rest-api-auth-plan.md
-  ├── database-migration-plan.md
+  ├── 2026-03-05-rest-api-auth-plan.md
+  ├── 2026-02-20-database-migration-plan.md
   └── ...
 ```
 
 Each plan includes:
 
-- Requirements clarification
-- Architecture diagram (ASCII or description)
-- Implementation phases
-- Risk assessment
-- Testing strategy
-- **Next steps** — a reminder to run `/cf-review` before committing
+- Context and problem statement
+- Confirmed assumptions with basis
+- Chosen approach and rationale
+- Sequential tasks with specific files and verification steps
+- Risk assessment and mitigations
+- **Next steps** — a reminder to run [`/cf-review`](/docs/skills/cf-review/) before committing
 
 ## Recommended Workflow
 
-After your plan is ready and implementation is complete, follow this order:
-
 ```
-/cf-plan → implement → /cf-review → /cf-commit
+/cf-plan → implement (implicitly via /cf-implementer) → /cf-review → /cf-commit
 ```
 
-The plan automatically reminds you to run `/cf-review` before committing, so you don't skip the review step and jump straight to `/cf-commit`.
+The plan automatically reminds you to run [`/cf-review`](/docs/skills/cf-review/) before committing, so you don't skip the review step and jump straight to [`/cf-commit`](/docs/skills/cf-commit/).

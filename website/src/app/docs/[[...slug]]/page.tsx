@@ -190,18 +190,24 @@ export default async function DocPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <article className="min-w-0 flex-1 px-6 py-8 md:px-8" data-pagefind-body>
+      <article
+        className="min-w-0 flex-1 px-6 pt-6 pb-8 md:px-8"
+        data-pagefind-body
+      >
         <DocsBreadcrumbs items={breadcrumbs} />
 
-        <h1 className="mb-6 text-3xl font-bold text-violet-400">
+        <h1 className="mb-4 text-3xl font-bold text-violet-400">
           {doc.frontmatter.title}
         </h1>
 
         {doc.frontmatter.description && (
-          <p className="mb-8 text-lg leading-relaxed text-slate-400">
+          <p className="mb-6 text-lg leading-relaxed text-slate-400">
             {doc.frontmatter.description}
           </p>
         )}
+
+        {/* divider */}
+        <div className="mb-8 h-px dark:bg-slate-600" />
 
         <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-300 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm max-w-none">
           <MDXRemote
