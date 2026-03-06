@@ -43,7 +43,7 @@ function isGitRepo(): boolean {
 }
 
 function checkDocsFolders(): boolean {
-  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn"];
+  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn", "docs/sessions"];
   return folders.every((f) => existsSync(f));
 }
 
@@ -113,7 +113,7 @@ function checkClaudePermissions(outputDir: string): boolean {
 // ─── Setup Steps ──────────────────────────────────────────────────────
 
 async function setupDocsFolders(): Promise<void> {
-  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn"];
+  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn", "docs/sessions"];
   const created: string[] = [];
   for (const f of folders) {
     if (!existsSync(f)) {
@@ -148,6 +148,7 @@ async function setupGitignore(): Promise<void> {
     "docs/memory/",
     "docs/research/",
     "docs/learn/",
+    "docs/sessions/",
     ".coding-friend/",
   ];
 
@@ -644,5 +645,5 @@ export async function initCommand(): Promise<void> {
   // Final
   console.log();
   log.success("Setup complete!");
-  log.dim("Available commands: /cf-plan, /cf-commit, /cf-review, /cf-learn");
+  log.dim("Available commands: /cf-plan, /cf-commit, /cf-review, /cf-learn, /cf-session");
 }

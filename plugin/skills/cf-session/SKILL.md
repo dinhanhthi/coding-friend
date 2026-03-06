@@ -1,13 +1,13 @@
 ---
 name: cf-session
-description: Save the current Claude Code conversation/session to a sync folder so it can be resumed on another machine with `cf session load` + `claude --resume`
+description: Save the current Claude Code conversation/session to docs/sessions/ so it can be resumed on another machine with `cf session load` + `claude --resume`
 user-invocable: true
 tools: [Bash, Read]
 ---
 
 # /cf-session
 
-Save the current Claude Code session to a sync folder (e.g. Dropbox, a git repo) so it can be restored on another machine.
+Save the current Claude Code session to `docs/sessions/` so it can be restored on another machine.
 
 Label: **$ARGUMENTS**
 
@@ -23,47 +23,25 @@ If output is not empty, integrate the returned sections:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-### Step 1: Resolve Sync Folder
+### Step 1: Resolve Sessions Folder
 
-Read the global config to get `sessionSyncDir`:
+Read the local config to get `docsDir` (default: `docs`):
 
 ```bash
+cat .coding-friend/config.json 2>/dev/null || echo "{}"
 cat ~/.coding-friend/config.json 2>/dev/null || echo "{}"
 ```
 
-If `sessionSyncDir` is not set, ask the user in the conversation:
+The sessions folder is `<docsDir>/sessions/` (default: `docs/sessions/`).
 
-> "No session sync folder configured. Please provide the path to your sync folder (e.g. `~/Dropbox/cf-sessions` or a path to a git repo):"
-
-Wait for the user's response. Then save it:
+Create it if it doesn't exist:
 
 ```bash
-# Read existing config, add sessionSyncDir, write back
-SYNC_DIR="<user-provided path>"
-# Expand ~/ if needed
-SYNC_DIR="${SYNC_DIR/#\~/$HOME}"
-
-CONFIG_FILE="$HOME/.coding-friend/config.json"
-mkdir -p "$(dirname "$CONFIG_FILE")"
-
-# Merge sessionSyncDir into existing config
-if [ -f "$CONFIG_FILE" ]; then
-  TMP=$(mktemp)
-  python3 -c "
-import json, sys
-with open('$CONFIG_FILE') as f:
-    cfg = json.load(f)
-cfg['sessionSyncDir'] = '$SYNC_DIR'
-print(json.dumps(cfg, indent=2))
-" > "$TMP" && mv "$TMP" "$CONFIG_FILE"
-else
-  echo "{\"sessionSyncDir\": \"$SYNC_DIR\"}" > "$CONFIG_FILE"
-fi
-echo "Saved: $SYNC_DIR"
+DOCS_DIR="docs"  # or value from config
+SESSIONS_DIR="$DOCS_DIR/sessions"
+mkdir -p "$SESSIONS_DIR"
+echo "Sessions folder: $SESSIONS_DIR"
 ```
-
-Warn the user once:
-> "Session files contain your full conversation history. Make sure this sync folder is private."
 
 ### Step 2: Detect Active Session
 
@@ -133,10 +111,10 @@ except Exception:
 echo "Preview: $PREVIEW"
 ```
 
-### Step 5: Save Session to Sync Folder
+### Step 5: Save Session to Sessions Folder
 
 ```bash
-SYNC_DIR="<from Step 1>"
+SESSIONS_DIR="<from Step 1>"
 LABEL="<from Step 3>"
 SESSION_ID="<from Step 2>"
 LATEST="<from Step 2>"
@@ -144,7 +122,7 @@ PROJECT_PATH=$(pwd)
 MACHINE=$(hostname)
 SAVED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-DEST_DIR="$SYNC_DIR/sessions/$SESSION_ID"
+DEST_DIR="$SESSIONS_DIR/$SESSION_ID"
 mkdir -p "$DEST_DIR"
 
 # Copy JSONL
@@ -175,16 +153,17 @@ Report to the user:
 Session saved successfully.
   Label:   <label>
   ID:      <session-id>
-  Folder:  <sync-dir>/sessions/<session-id>/
+  Folder:  <sessions-dir>/<session-id>/
 
 To resume on another machine:
-  1. Run: cf session load
-  2. Then: claude --resume <session-id>
+  1. Sync this project's docs/sessions/ folder (git, Dropbox, etc.)
+  2. Run: cf session load
+  3. Then: claude --resume <session-id>
 ```
 
 ## Rules
 
 - Always show the detected session path in Step 2 so the user can confirm it's the right one
 - If `$ARGUMENTS` is provided, use it directly as the label — do NOT ask again
-- Never overwrite an existing session in the sync folder without asking
+- Never overwrite an existing session in the sessions folder without asking
 - If python3 is not available, use a fallback JSON write with bash/echo for meta.json

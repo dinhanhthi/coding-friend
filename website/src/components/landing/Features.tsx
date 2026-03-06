@@ -85,6 +85,11 @@ const slashCommands: Feature[] = [
     description: "In-depth research with web search and parallel subagents",
   },
   {
+    command: "/cf-session",
+    title: "Session",
+    description: "Save current session to docs/sessions/ to resume on another machine",
+  },
+  {
     command: "/cf-help",
     title: "Help",
     description:
