@@ -2,16 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { docsNavigation } from "@/lib/navigation";
+
+const DEFAULT_COLLAPSED = new Set(["Skills", "Auto-Invoked", "CLI Commands"]);
 
 export default function DocsSidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      docsNavigation.map((s) => [s.title, DEFAULT_COLLAPSED.has(s.title)]),
+    ),
+  );
 
   const toggleSection = (title: string) => {
     setCollapsed((prev) => ({ ...prev, [title]: !prev[title] }));
   };
+
+  useEffect(() => {
+    const activeSection = docsNavigation.find((s) =>
+      s.items.some((item) => {
+        const [slugPath] = item.slug.split("#");
+        return pathname === `/docs/${slugPath}/`;
+      }),
+    );
+    if (activeSection) {
+      setCollapsed((prev) => ({ ...prev, [activeSection.title]: false }));
+    }
+  }, [pathname]);
 
   return (
     <aside
@@ -24,9 +42,6 @@ export default function DocsSidebar() {
       >
         {docsNavigation.map((section) => {
           const isCollapsed = collapsed[section.title];
-          const hasActive = section.items.some(
-            (item) => pathname === `/docs/${item.slug}/`,
-          );
 
           return (
             <div key={section.title}>
