@@ -44,7 +44,6 @@ export interface CodingFriendConfig {
   devRulesReminder?: boolean;
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
-  sessionSyncDir?: string;
 }
 
 export const DEFAULT_CONFIG: Required<

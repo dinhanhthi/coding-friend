@@ -22,6 +22,7 @@ export const docsNavigation: NavSection[] = [
       { title: "/cf-remember", slug: "skills/cf-remember" },
       { title: "/cf-learn", slug: "skills/cf-learn" },
       { title: "/cf-research", slug: "skills/cf-research" },
+      { title: "/cf-session", slug: "skills/cf-session" },
       { title: "/cf-help", slug: "skills/cf-help" },
     ],
   },
