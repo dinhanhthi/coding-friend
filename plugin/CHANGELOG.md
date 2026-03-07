@@ -2,6 +2,17 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.7.0 (unpublished)
+
+- Add `cf-session` skill for cross-machine session continuity ([#d0c58cd](https://github.com/dinhanhthi/coding-friend/commit/d0c58cd), [#6158bb7](https://github.com/dinhanhthi/coding-friend/commit/6158bb7))
+- Auto-trigger `/cf-review` after implementation and fix workflows ([#ff666ba](https://github.com/dinhanhthi/coding-friend/commit/ff666ba))
+- Add folder and brain icons to statusline for better visual clarity ([#dab4d0b](https://github.com/dinhanhthi/coding-friend/commit/dab4d0b))
+- Improve skill and hook documentation ([#e852b1c](https://github.com/dinhanhthi/coding-friend/commit/e852b1c))
+- Fix `$CWD` path resolution to prevent literal string substitution in skills ([#5b59571](https://github.com/dinhanhthi/coding-friend/commit/5b59571))
+- Fix activation signal to require explicit `cf-` name check ([#d567bed](https://github.com/dinhanhthi/coding-friend/commit/d567bed))
+- Remove non-functional `PreCompact` hook ([#687a38c](https://github.com/dinhanhthi/coding-friend/commit/687a38c))
+- Add missing `hookEventName` to `compact-marker.sh` ([#7cc4161](https://github.com/dinhanhthi/coding-friend/commit/7cc4161))
+
 ## v0.6.0 (2026-03-05)
 
 - Add frontmatter-based recall and memory documentation to skills ([#37af8ee](https://github.com/dinhanhthi/coding-friend/commit/37af8ee))
