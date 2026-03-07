@@ -124,7 +124,7 @@ If the user agrees, implement each task from the plan **sequentially** using the
 2. After each task completes, review the cf-implementer's report:
    - If tests pass and the task is verified → mark task complete, move to next
    - If issues reported → address them before proceeding (re-dispatch or fix inline)
-3. After all tasks are done, ask the user if they want to run `/cf-review` or `/cf-commit`
+3. After all tasks are done, automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
 ## Plan Template
 

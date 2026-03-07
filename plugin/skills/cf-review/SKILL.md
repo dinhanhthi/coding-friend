@@ -83,8 +83,34 @@ Review the code changes for: **$ARGUMENTS**
    <1-2 sentence overall assessment>
    ```
 
-8. **Mark review complete:**
+8. **Mark review complete and display status:**
 
    ```bash
    mkdir -p /tmp/coding-friend && touch /tmp/coding-friend/reviewed
    ```
+
+   Then display one of the following banners depending on whether **Critical Issues** were found:
+
+   **If NO critical issues were found** — show this (replace placeholders):
+
+   ```
+   ╔══════════════════════════════════════════════════╗
+   ║  ✅  Code Review Complete                        ║
+   ╚══════════════════════════════════════════════════╝
+   ```
+
+   > Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
+   >
+   > You're clear to commit. Run `/cf-commit` when ready.
+
+   **If critical issues were found** — show this (replace placeholders), then wait for the user's answer:
+
+   ```
+   ╔══════════════════════════════════════════════════╗
+   ║  ⚠️  Review Complete — Action Needed             ║
+   ╚══════════════════════════════════════════════════╝
+   ```
+
+   > Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
+   >
+   > Resolve the critical issues listed above. Shall I help fix them now?
