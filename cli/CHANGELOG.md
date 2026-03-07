@@ -2,6 +2,15 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.8.0 (unpublished)
+
+- Add `cf config` interactive command for editing individual settings without re-running the full setup wizard ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
+- Refactor `cf init` with styled banner, step-based wizard, and shared prompt utilities ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
+- Fix `cf init` step numbering and pass updated config to `stepLearnConfig` after `docsDir` is saved ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
+- Fix hardcoded `docs/learn` default in `cf init` — now derived from current `docsDir` ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
+- Remove `devRulesReminder` from config (always ON, not user-configurable) ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
+- Add `cf session` command and improve cross-machine session handling ([#6158bb7](https://github.com/dinhanhthi/coding-friend/commit/6158bb7))
+
 ## v1.7.0 (2026-03-05)
 
 - Add package manager tabs (npm, yarn, pnpm) to website ([#72e9e05](https://github.com/dinhanhthi/coding-friend/commit/72e9e05))

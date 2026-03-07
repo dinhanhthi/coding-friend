@@ -7,13 +7,7 @@ import {
   vi,
   type MockInstance,
 } from "vitest";
-import {
-  mkdirSync,
-  rmSync,
-  existsSync,
-  writeFileSync,
-  mkdtempSync,
-} from "fs";
+import { mkdirSync, rmSync, existsSync, writeFileSync, mkdtempSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 

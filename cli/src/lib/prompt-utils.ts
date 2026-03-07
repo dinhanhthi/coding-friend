@@ -14,7 +14,9 @@ export const BACK = "__back__";
 export function injectBackChoice<T extends string>(
   choices: Array<{ name: string; value: T; description?: string }>,
   label = "Back",
-): Array<{ name: string; value: T | typeof BACK; description?: string } | Separator> {
+): Array<
+  { name: string; value: T | typeof BACK; description?: string } | Separator
+> {
   return [
     ...choices,
     new Separator(),
@@ -49,9 +51,7 @@ export function showConfigHint(): void {
   console.log(chalk.dim("  Local:  .coding-friend/config.json (this project)"));
   console.log(chalk.dim("Local overrides global at property level."));
   console.log();
-  console.log(
-    `  ${chalk.yellow("[-]")}      ${chalk.dim("not set anywhere")}`,
-  );
+  console.log(`  ${chalk.yellow("[-]")}      ${chalk.dim("not set anywhere")}`);
   console.log(
     `  ${chalk.blue("[global]")}  ${chalk.dim("set in global config only")}`,
   );
@@ -121,7 +121,9 @@ function createSubfolders(docsDir: string, subfolders: string[]): void {
     }
   }
   if (created.length > 0) {
-    log.success(`Created subfolders: ${created.map((s) => `${docsDir}/${s}`).join(", ")}`);
+    log.success(
+      `Created subfolders: ${created.map((s) => `${docsDir}/${s}`).join(", ")}`,
+    );
   }
 }
 
