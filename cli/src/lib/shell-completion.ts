@@ -225,7 +225,8 @@ export function ensureShellCompletion(opts?: { silent?: boolean }): boolean {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     const existing = existsSync(rcPath) ? readFileSync(rcPath, "utf-8") : null;
     if (existing === FISH_CONTENT) {
-      if (!opts?.silent) log.dim(`Tab completion already up-to-date (${rcName})`);
+      if (!opts?.silent)
+        log.dim(`Tab completion already up-to-date (${rcName})`);
       return false;
     }
     writeFileSync(rcPath, FISH_CONTENT, "utf-8");
@@ -262,7 +263,9 @@ export function ensureShellCompletion(opts?: { silent?: boolean }): boolean {
       writeFileSync(rcPath, replaceBlock(content, newBlock), "utf-8");
       if (!opts?.silent) {
         log.success(`Tab completion updated in ~/${rcName}`);
-        log.dim(`Run \`source ~/${rcName}\` or open a new terminal to activate.`);
+        log.dim(
+          `Run \`source ~/${rcName}\` or open a new terminal to activate.`,
+        );
       }
       return true;
     }

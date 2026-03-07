@@ -34,24 +34,31 @@ function getLatestCliVersion(): string | null {
 }
 
 export function getLatestVersion(): string | null {
-  // Try gh CLI first
-  let tag = run("gh", [
+  let tag: string | null = null;
+
+  // Try gh CLI first — filter for plugin tags (v0.x.x, not cli-v*, learn-*-v*)
+  tag = run("gh", [
     "api",
-    "repos/dinhanhthi/coding-friend/releases/latest",
+    "repos/dinhanhthi/coding-friend/releases?per_page=100",
     "--jq",
-    ".tag_name",
+    '[.[] | select(.tag_name | test("^v[0-9]"))][0].tag_name',
   ]);
 
   // Fallback to curl + node JSON parse
   if (!tag) {
     const json = run("curl", [
       "-s",
-      "https://api.github.com/repos/dinhanhthi/coding-friend/releases/latest",
+      "https://api.github.com/repos/dinhanhthi/coding-friend/releases?per_page=100",
     ]);
     if (json) {
       try {
-        const data = JSON.parse(json);
-        tag = data.tag_name;
+        const releases = JSON.parse(json);
+        if (Array.isArray(releases)) {
+          const pluginRelease = releases.find((r: { tag_name?: string }) =>
+            /^v[0-9]/.test(r.tag_name ?? ""),
+          );
+          if (pluginRelease) tag = pluginRelease.tag_name;
+        }
       } catch {
         // ignore
       }

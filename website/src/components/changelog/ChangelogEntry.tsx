@@ -45,7 +45,7 @@ function renderInline(text: string) {
           href={match[3]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sky-300 hover:text-violet-400"
+          className="text-white/40 hover:text-sky-500"
         >
           {match[2]}
         </a>,
