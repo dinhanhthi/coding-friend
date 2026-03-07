@@ -1,12 +1,20 @@
 ---
 title: "cf statusline"
-description: "Configure the Claude Code statusline with project info."
+description: "Configure the Claude Code statusline with project info and API usage."
 keywords: [statusline, status bar, terminal, cf statusline]
 ---
 
-## Overview
+## Usage
 
-`cf statusline` configures the Claude Code editor statusline to display relevant project information. This provides quick visual feedback about your coding context during a session.
+```bash
+cf statusline
+```
+
+Example:
+
+```bash
+cf v0.3.0 | MyProject | Opus 4.6 | ⎇ main | ctx 42% | 15% → 02:30
+```
 
 ## Available Components
 
@@ -21,31 +29,11 @@ The statusline can show any combination of these components:
 | `context` | Context window usage (color-coded green→red) | `ctx 42%`     |
 | `usage`   | API token usage with reset time              | `15% → 02:30` |
 
-## Example Format
-
-With all components enabled:
-
-```
-cf v0.3.0 | MyProject | Opus 4.6 | ⎇ main | ctx 42% | 15% → 02:30
-```
-
-## Usage
-
-```bash
-cf statusline
-```
-
 When you run this command, an interactive checklist lets you choose which components to display. All components are enabled by default.
 
 ## Customization
 
-### Interactive
-
-Run `cf statusline` at any time to change which components are shown. The checklist pre-selects your current configuration.
-
-### Manual
-
-You can also edit `~/.coding-friend/config.json` directly. Changes take effect on the next statusline render (no need to re-run `cf statusline`).
+You can either edit `~/.coding-friend/config.json` directly, or run `cf statusline` (interactively) at any time to change which components are shown. The checklist pre-selects your current configuration.
 
 ```json
 {
@@ -55,20 +43,6 @@ You can also edit `~/.coding-friend/config.json` directly. Changes take effect o
 }
 ```
 
-To hide a component, remove it from the array. For example, to show only the model and git branch:
-
-```json
-{
-  "statusline": {
-    "components": ["model", "branch"]
-  }
-}
-```
-
-### Default Behavior
-
-If no `statusline` config exists, all 6 components are shown.
-
 ## Setup via `cf init`
 
-The statusline step is also available during `cf init`, which walks you through all Coding Friend configuration in one go.
+The statusline step is also available during [`cf init`](/docs/cli/cf-init/), which walks you through all Coding Friend configuration in one go.

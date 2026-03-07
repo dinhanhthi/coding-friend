@@ -10,6 +10,13 @@ agent: cf-code-reviewer
 
 Review the code changes for: **$ARGUMENTS**
 
+## Auto-Triggered
+
+This skill is automatically invoked by other skills — you don't always need to run it manually:
+
+- **`/cf-plan`** — runs `/cf-review` after all implementation tasks complete
+- **`/cf-fix`** — runs `/cf-review` after the fix is verified
+
 ## Workflow
 
 0. **Load Custom Guide:**
@@ -25,6 +32,7 @@ Review the code changes for: **$ARGUMENTS**
    - If `$ARGUMENTS` is empty, review all uncommitted changes (`git diff` + `git diff --staged`)
    - If `$ARGUMENTS` is a file path, review that file
    - If `$ARGUMENTS` is a commit range (e.g., `HEAD~3..HEAD`), review those commits
+   - If `$ARGUMENTS` is a natural language description (e.g., "the auth logic changes"), review all uncommitted changes but **focus the review** on the described area — filter findings to only report issues relevant to that description
    - If `$ARGUMENTS` contains `--deep` or `--quick`, use that mode (override auto-detection)
 
 2. **Gather the diff:**

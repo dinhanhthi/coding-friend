@@ -1,24 +1,17 @@
 ---
 title: "cf dev"
-description: "Switch between local and remote plugin sources for development."
+description: "A command reserved for plugin developers."
 keywords: [dev, development, local plugin, plugin development, cf dev]
 ---
 
-<Callout type="warning" title="Plugin developers only">
-  This command is intended for developers contributing to the Coding Friend
-  plugin itself. If you're just using Coding Friend as an end user, you don't
-  need this command.
-</Callout>
-
-## Overview
-
-`cf dev` lets you seamlessly switch between the remote marketplace plugin and a local source copy. This is essential when developing or testing changes to the Coding Friend plugin itself.
+⚠️ This command is intended for developers contributing to the Coding Friend plugin itself. If you're just using Coding Friend as an end user, you don't need this command.
 
 ## Usage
 
 ```bash
 cf dev on [path]    # Switch to local plugin source
-                    # ⚠️ Without [path], it must be run from the root of the coding-friend repo
+                    # ⚠️ Without [path], it must be run from the root
+                    # of the coding-friend repo
 cf dev off          # Switch back to remote marketplace
 cf dev status       # Show current dev mode
 cf dev sync         # Sync local changes to cache (no version bump needed)
@@ -28,158 +21,15 @@ cf dev update       # Update local dev plugin to latest version (off + on)
 
 ## Subcommands
 
-### `cf dev on`
-
-Switches to using a local copy of the plugin:
-
-```bash
-# Use current directory as local source
-cf dev on
-
-# Or specify a path
-cf dev on /path/to/coding-friend
-```
-
-This command:
-
-1. Uninstalls the remote plugin (if installed)
-2. Removes the remote marketplace
-3. Adds the local directory as a marketplace
-4. Installs the plugin from the local source
-5. Saves the dev state for later restoration
-6. Ensures the statusline points to the latest cached plugin version
-7. Ensures shell tab completion is up-to-date
-
-The path must point to the repo root containing `plugin/.claude-plugin/plugin.json`.
-
-### `cf dev off`
-
-Switches back to the remote marketplace:
-
-```bash
-cf dev off
-```
-
-This command reverses what `cf dev on` did — restores the remote marketplace and reinstalls the plugin from GitHub.
-
-### `cf dev status`
-
-Shows whether dev mode is currently active:
-
-```bash
-cf dev status
-```
-
-Example output:
-
-```
-ℹ Dev mode: ON
-ℹ Local path: /Users/you/git/coding-friend
-  Since: 2026-02-27T21:32:37.082Z
-```
-
-### `cf dev sync`
-
-Copies local source files into the plugin cache without requiring a version bump or off/on cycle:
-
-```bash
-cf dev sync
-```
-
-Example output:
-
-```
-→ Syncing /Users/you/git/coding-friend → ~/.claude/plugins/cache/.../0.1.0
-✔ Synced 57178 files. Restart Claude Code to apply changes.
-```
-
-#### Why you need this
-
-`cf dev on` installs your plugin into a **versioned cache directory**. Claude Code reads hooks, skills, and agents from that cache — not directly from your source files. So after `cf dev on`, any edits you make to local files are invisible to Claude Code until the cache is updated.
-
-Without `cf dev sync`, the only way to pick up changes is to:
-
-1. Bump the version in `plugin/.claude-plugin/plugin.json`
-2. Run `cf dev off && cf dev on`
-3. Restart Claude Code
-
-That's 10–15 seconds per change and pollutes version history with meaningless intermediate bumps.
-
-`cf dev sync` short-circuits this: it pushes your local files directly into the existing cache entry for the current version. No uninstall, no reinstall, no version bump needed.
-
-#### Recommended dev loop
-
-```bash
-# One-time setup
-cf dev on /path/to/coding-friend
-
-# Repeat until the feature is done:
-# 1. Edit files in local source
-# 2. cf dev sync
-# 3. Restart Claude Code and test
-
-# When done — bump version once and commit
-```
-
-**Note:** Skips `.git`, `node_modules`, `.claude`, and `.coding-friend` during sync.
-
-### `cf dev restart`
-
-Performs a full clean reinstall of the local dev plugin by running `cf dev off` then `cf dev on` in sequence:
-
-```bash
-cf dev restart
-
-# Or specify a different path
-cf dev restart /path/to/coding-friend
-```
-
-This is a **destructive reinstall** — it completely removes the plugin from Claude Code's cache, cleans up the marketplace registration, then reinstalls everything from scratch. The full cycle:
-
-1. **Off phase:** uninstall plugin → remove local marketplace → add remote marketplace → install remote → delete dev state
-2. **On phase:** uninstall remote → remove remote marketplace → add local marketplace → install from local → save dev state → update statusline path
-3. **Finalize:** ensure statusline points to latest version + update shell tab completion
-
-All cache operations (copying files into `~/.claude/plugins/cache/...`) are handled internally by the `claude plugin install` command — `cf` only orchestrates the install/uninstall calls.
-
-#### When to use `restart` vs `sync`
-
-|                          | `cf dev sync`                                        | `cf dev restart`                                                |
-| ------------------------ | ---------------------------------------------------- | --------------------------------------------------------------- |
-| **Speed**                | Fast (direct file copy)                              | Slow (full uninstall/reinstall cycle)                           |
-| **What it does**         | Overwrites files in the existing cache entry         | Removes and recreates the entire cache entry                    |
-| **After version bump**   | Not enough — copies into the old version's cache dir | Required — creates a new cache entry for the new version        |
-| **Marketplace/registry** | Untouched                                            | Fully re-registered                                             |
-| **Use when**             | Normal dev loop — you just edited files              | After a version bump, or when install state is broken/corrupted |
-
-If dev mode was already OFF, the off phase is skipped and it just runs `cf dev on`. It reuses the local path saved in the dev state file — no need to specify it again unless you want to change it.
-
-### `cf dev update`
-
-Updates the local dev plugin to the latest version by performing a full off/on cycle:
-
-```bash
-cf dev update
-
-# Or specify a different path
-cf dev update /path/to/coding-friend
-```
-
-Functionally identical to `cf dev restart`, but semantically distinct:
-
-- **`cf dev update`** — use when you have new local changes (e.g. after a version bump) and want to update the cached plugin to the latest version
-- **`cf dev restart`** — use when the install state is broken or corrupted and you need a clean reinstall
-
-Path resolution: explicit argument > saved dev state path > current working directory.
-
-## When to Use
-
-- **Plugin development** — editing skills, hooks, agents, or commands and testing them in Claude Code
-- **VSCode extension** — the extension doesn't support `--plugin-dir`, so `cf dev` is the recommended way to use a local plugin in the extension UI
-- **Testing before release** — verify changes work correctly before pushing to the remote marketplace
+- `cf dev on` - Switch to local plugin source. This will uninstall the remote plugin and add the local directory as a marketplace. You will see more information when you run this command.
+- `cf dev off` - Switch back to remote marketplace. This restores the remote marketplace and reinstalls the plugin from GitHub.
+- `cf dev status` - Show current dev mode.
+- `cf dev sync` - Sync local changes to cache without bumping the version. Useful for testing changes without reinstalling the plugin. Since Claude stores plugins in versioned cache directories, this command copies your local changes to the active cache directory.
+- `cf dev restart` - Performs a full clean reinstall of the local dev plugin (off + on).
+- `cf dev update` - Update local dev plugin to latest version (off + on). This is functionally identical to `cf dev restart`, but semantically distinct: you should use `cf dev update` when you have new local changes (e.g. after a version bump) and want to update the cached plugin to the latest version, and `cf dev restart` when the install state is broken or corrupted and you need a clean reinstall.
 
 ## Notes
 
 - Dev state is stored at `~/.coding-friend/dev-state.json`
-- Restart Claude Code (or reload VSCode window) after switching to see changes
-- For CLI-only sessions, you can also use `claude --plugin-dir /path/to/coding-friend` as a lighter alternative (session-scoped, no install needed)
+- Restart Claude Code (or reload VSCode window) after switching to see changes.
+- For CLI-only sessions, you can also use `claude --plugin-dir /path/to/coding-friend` as a lighter alternative (session-scoped, no install needed), check [the official documentation](https://code.claude.com/docs/en/plugins) for more details.

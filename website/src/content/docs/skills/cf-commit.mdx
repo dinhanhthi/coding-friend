@@ -4,7 +4,7 @@ description: "Smart conventional commits with diff analysis."
 keywords: [git commit, conventional commits, smart commit, cf-commit]
 ---
 
-The `/cf-commit` skill creates well-formed conventional commits by analyzing your staged changes and generating appropriate commit messages.
+The `/cf-commit` skill creates well-formed conventional commits by analyzing your changes, staging only conversation-related files, scanning for secrets, and generating appropriate commit messages.
 
 ## Usage
 
@@ -14,29 +14,30 @@ The `/cf-commit` skill creates well-formed conventional commits by analyzing you
 
 ## What It Does
 
-1. **Analyzes Changes** — Reviews diffs of all staged and unstaged files
+1. **Analyzes Changes** — Reviews diffs of all staged and unstaged files, plus recent commit history
 2. **Identifies Relevant Changes** — Separates conversation-related changes from unrelated work (only commits what you worked on in the current session)
-3. **Determines Type** — Classifies as feat, fix, refactor, test, docs, or chore
-4. **Generates Message** — Creates clear, descriptive commit message
-5. **Follows Convention** — Adheres to conventional commits standard
-6. **Verifies Tests** — Runs tests before committing, unless `commit.verify: false` in config or tests already passed earlier in the session
-7. **Creates Commit** — Stages relevant files and commits with your message
+3. **Verifies Tests** — Runs tests, linter, and build before committing — skipped if `commit.verify: false` in config or tests already passed earlier in the session
+4. **Stages & Scans** — Stages only relevant files (never uses `git add .`) and scans for accidentally staged secrets
+5. **Generates Message** — Creates a conventional commit message explaining the "why", not the "what"
+6. **Creates Commit** — Commits with the generated message — no AI attribution is ever included
 
 ## Commit Types
 
-| Type       | When to Use                                |
-| ---------- | ------------------------------------------ |
-| `feat`     | New feature or capability                  |
-| `fix`      | Bug fix or error correction                |
-| `refactor` | Code restructuring without behavior change |
-| `test`     | Test additions or modifications            |
-| `docs`     | Documentation, README, comments            |
-| `chore`    | Dependency updates, build scripts, config  |
+| Type       | When to Use                                 |
+| ---------- | ------------------------------------------- |
+| `feat`     | New feature or capability                   |
+| `fix`      | Bug fix or error correction                 |
+| `refactor` | Code restructuring without behavior change  |
+| `test`     | Test additions or modifications             |
+| `docs`     | Documentation, README, comments             |
+| `chore`    | Dependency updates, build scripts, config   |
+| `style`    | Code style changes (formatting, semicolons) |
+| `perf`     | Performance improvements                    |
+| `ci`       | CI/CD pipeline changes                      |
 
 ## Examples
 
 ```bash
-# Stage your changes, then:
 /cf-commit add user authentication
 # Creates: feat: add user authentication with JWT tokens
 ```
@@ -46,19 +47,35 @@ The `/cf-commit` skill creates well-formed conventional commits by analyzing you
 # Creates: fix: resolve sidebar misalignment on mobile view
 ```
 
+```bash
+/cf-commit
+# Auto generate a commit message based on the changes
+```
+
 ## Message Format
 
 ```
-type(scope): description
+type(scope): subject
 
 Body with more context if needed.
 Explains the "why" not just the "what".
 ```
 
+Rules:
+
+- Subject line under 72 characters
+- Body explains motivation, not mechanics
+- References issue numbers when applicable
+
+## Secret Scanning
+
+After staging, the skill automatically scans diffs for potential secrets (API keys, tokens, passwords, private keys, credentials). If real secrets are detected, the file is unstaged and you're advised to add it to `.gitignore`.
+
 ## Benefits
 
 - **Consistency** — Same format across all commits
 - **Clarity** — Descriptive messages aid code archaeology
+- **Safety** — Secret scanning prevents accidental credential leaks
 - **Automation** — Conventional format enables automated changelog generation
 - **History** — Easy to find related changes with `git log --grep`
 
@@ -68,4 +85,4 @@ Explains the "why" not just the "what".
 - Fixing bugs
 - Refactoring code sections
 - Adding tests or documentation
-- Any staged change ready to commit
+- Any change ready to commit

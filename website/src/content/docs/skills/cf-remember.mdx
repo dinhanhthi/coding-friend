@@ -4,13 +4,15 @@ description: "Capture project knowledge for AI memory across sessions."
 keywords: [memory, project knowledge, documentation, cf-remember]
 ---
 
-The `/cf-remember` skill captures important project knowledge and saves it for future reference. In subsequent sessions, the AI can read and apply this knowledge, accelerating work.
+The `/cf-remember` skill captures important project knowledge and saves it for future reference in `docs/memory/`. In subsequent sessions, the AI can read and apply this knowledge, accelerating work.
 
 ## Usage
 
 ```bash
 /cf-remember [topic]
 ```
+
+Without `[topic]`, it will scan the entire conversation for key knowledge.
 
 ## What It Does
 
@@ -27,11 +29,8 @@ The `/cf-remember` skill captures important project knowledge and saves it for f
 ```
 
 ```bash
-/cf-remember database schema and relationships
-```
-
-```bash
-/cf-remember error handling patterns used across the codebase
+/cf-remember
+# Auto detect the key knowledge based on the conversation
 ```
 
 ## Memory Organization
@@ -54,23 +53,6 @@ Knowledge is saved to `docs/memory/` organized by category:
 - Choosing between approaches → `decisions/`
 - Build/deploy/tooling knowledge → `infrastructure/`
 
-```
-docs/memory/
-  ├── features/
-  │   ├── auth-flow.md
-  │   └── payment-integration.md
-  ├── conventions/
-  │   ├── api-naming.md
-  │   └── error-handling.md
-  ├── decisions/
-  │   ├── why-we-chose-postgres.md
-  │   └── caching-approach.md
-  ├── bugs/
-  │   └── race-condition-checkout.md
-  └── infrastructure/
-      └── ci-pipeline-setup.md
-```
-
 ## Document Format
 
 Each document includes YAML frontmatter for efficient grep-based recall:
@@ -89,10 +71,10 @@ The `description` field is the most important — it enables fast recall without
 
 Document body includes:
 
-- What (behavior or design)
-- Why (reasoning and trade-offs)
-- How (code examples and implementation)
-- Related patterns (cross-references)
+- **What** (behavior or design)
+- **Why** (reasoning and trade-offs)
+- **How** (code examples and implementation)
+- **Related patterns** (cross-references)
 
 ## When to Use
 
@@ -101,12 +83,3 @@ Document body includes:
 - After discovering important design decisions
 - When solving challenging problems (for future reference)
 - Documenting gotchas and lessons learned
-
-## AI Workflow Benefits
-
-With good memory:
-
-- AI understands project patterns faster
-- Decisions get applied consistently
-- Onboarding new contributors is faster
-- Knowledge doesn't get lost between sessions

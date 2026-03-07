@@ -6,30 +6,24 @@ keywords: [learning, knowledge extraction, notes, cf-learn]
 
 The `/cf-learn` skill creates learning documentation from your coding sessions. It captures what you learned, insights gained, and techniques used. These docs can be hosted as a personal knowledge base or served via MCP.
 
+💡 To see what you've learned so far, run [`cf host`](/docs/cli/cf-host/) to view the learning notes in your browser or using [`cf mcp`](/docs/cli/cf-mcp/) to integrate with other LLM clients.
+
 ## Usage
 
 ```bash
-/cf-learn [topic]
+/cf-learn [arguments]
 ```
 
-Or run without arguments to extract learnings from the current session.
-
-## How `$ARGUMENTS` Works
-
-The optional topic argument acts as a **filter** for the conversation:
-
-- **With argument**: Focuses only on conversation content related to the topic — e.g., `/cf-learn async error handling` extracts only async/error-related knowledge
-- **Without argument**: Scans the full conversation for the most valuable learnings
-
-The topic name for the output file is always **auto-detected** from the content, not taken verbatim from your argument. Your argument narrows _what_ to extract, not _what to name the file_.
+Or run without arguments to extract learnings from the current session. Your argument narrows _what_ to extract, not _what to name the file_.
 
 ## What It Does
 
 1. **Analyzes Session** — Reviews what you built and problems you solved
 2. **Extracts Insights** — Identifies key learnings and techniques
-3. **Creates Docs** — Generates clear learning materials with examples
-4. **Saves to Output** — Stores in configurable directory (default: `docs/learn/`)
-5. **Enables Sharing** — Docs can be hosted as website or served via MCP
+3. **Categorizes** — Organizes by concept type (concepts, patterns, languages, tools, debugging)
+4. **Creates Docs** — Generates clear learning materials with examples
+5. **Saves to Output** — Stores in configurable directory (default: `docs/learn/`)
+6. **Enables Sharing** — Docs can be hosted as website or served via MCP
 
 ## Examples
 
@@ -38,12 +32,37 @@ The topic name for the output file is always **auto-detected** from the content,
 ```
 
 ```bash
-/cf-learn async/await error handling patterns
+/cf-learn
+# Auto detect the key knowledge based on the conversation
 ```
 
 ```bash
 # Auto-invoked after substantial new knowledge
 ```
+
+## Configuration
+
+All settings are optional. Configure in `.coding-friend/config.json` (local, overrides global) or `~/.coding-friend/config.json` (global).
+
+| Setting             | Default         | Description                                                                                         |
+| ------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| `learn.language`    | `en`            | Language for learning notes (falls back to top-level `language`, then `en`)                         |
+| `learn.outputDir`   | `docs/learn`    | Where to store learning docs (relative to project root, or absolute)                                |
+| `learn.categories`  | See table below | Subdirectories and their descriptions                                                               |
+| `learn.autoCommit`  | `false`         | Auto git-commit after writing                                                                       |
+| `learn.readmeIndex` | `false`         | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category) |
+
+### Default Categories
+
+| Category  | Folder      | Examples                               |
+| --------- | ----------- | -------------------------------------- |
+| Concepts  | `concepts`  | Dependency injection, event sourcing   |
+| Patterns  | `patterns`  | Repository pattern, observer pattern   |
+| Languages | `languages` | TypeScript generics, Python decorators |
+| Tools     | `tools`     | Prisma migrations, Docker compose      |
+| Debugging | `debugging` | Race condition fix, memory leak hunt   |
+
+You can override these categories in your config to match your preferred organization.
 
 ## Auto-Invocation
 
@@ -53,52 +72,3 @@ The topic name for the output file is always **auto-detected** from the content,
 - Learn a new pattern or technique
 - Overcome a major debugging challenge
 - Complete a feature with novel architecture
-
-## Output Formats
-
-Learning docs support multiple hosting options:
-
-### Website Hosting
-
-```bash
-cf host
-# Serves docs/learn/ as a local website
-```
-
-### MCP Server
-
-```bash
-cf mcp
-# Exposes docs/learn/ via Model Context Protocol
-# AI can reference while coding
-```
-
-### Static Markdown
-
-```
-docs/learn/
-  ├── typescript/
-  │   ├── generics-and-constraints.md
-  │   └── advanced-types.md
-  ├── patterns/
-  │   ├── async-error-handling.md
-  │   └── dependency-injection.md
-  └── techniques/
-      └── debugging-node-memory-leaks.md
-```
-
-## Benefits
-
-- **Knowledge Building** — Accumulate learning over time
-- **Sharable** — Teach team members with your docs
-- **Searchable** — Discover past learnings when stuck
-- **AI-Aware** — AI references your learning docs while coding
-- **Portable** — Host anywhere or use offline
-
-## When to Use
-
-- Completing challenging features
-- Learning new frameworks or libraries
-- Solving complex debugging problems
-- Implementing new patterns
-- After major refactors or migrations
