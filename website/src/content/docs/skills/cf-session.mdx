@@ -1,0 +1,67 @@
+---
+title: "/cf-session"
+description: 'Save the current Claude Code session to "docs/sessions/" so it can be resumed on another machine.'
+keywords: [session, cross-machine, resume, sync, cf-session]
+---
+
+The `/cf-session` skill saves your current Claude Code conversation to `docs/sessions/` so you can resume it on another machine using `cf session load` + `claude --resume`.
+
+## Usage
+
+```bash
+/cf-session [label]
+```
+
+The optional label helps you identify the session later. If omitted, it defaults to `session-YYYY-MM-DD`.
+
+## How It Works
+
+1. **Resolves Sessions Folder** — Uses `docs/sessions/` in the current project. This folder is created by `cf init` — if it doesn't exist yet, the skill creates it automatically as a fallback.
+2. **Detects Active Session** — Finds the most recently modified JSONL session file for the current project.
+3. **Labels the Session** — Uses `$ARGUMENTS` as the label, or prompts you to provide one.
+4. **Builds Preview** — Extracts the first user message as a short preview for later identification.
+5. **Saves to Sessions Folder** — Copies the JSONL file and writes a `meta.json` with session metadata.
+6. **Confirms** — Reports the saved location and how to resume.
+
+## Examples
+
+```bash
+/cf-session
+# Saves with default label: session-2025-03-06
+
+/cf-session refactor auth flow
+# Saves with label: refactor auth flow
+```
+
+## Resuming on Another Machine
+
+Sync the `docs/sessions/` folder to another machine (via git, Dropbox, etc.), then:
+
+```bash
+cf session load
+# Lists saved sessions and copies the selected one to ~/.claude/projects/
+
+claude --resume <session-id>
+# Resumes the conversation in Claude Code
+```
+
+## Sessions Folder Structure
+
+```
+docs/sessions/
+  <session-id>/
+    session.jsonl   # Full conversation history
+    meta.json       # Label, project path, machine, timestamp, preview
+```
+
+This folder is created by `cf init` alongside `docs/plans/`, `docs/memory/`, `docs/research/`, and `docs/learn/`. It is added to `.gitignore` during `cf init` if you choose to ignore docs artifacts.
+
+## Privacy Warning
+
+Session files contain your **full conversation history**, including code, file contents, and any sensitive context from the session. Be careful when syncing this folder — ensure it is not publicly accessible.
+
+## When to Use
+
+- Switching between machines mid-session
+- Saving a long debugging session to continue later
+- Preserving context before a machine reset or reinstall

@@ -11,7 +11,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall init host mcp statusline update dev"
+  local commands="install uninstall init config host mcp statusline update dev"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
@@ -40,6 +40,7 @@ _cf() {
     'install:Install the Coding Friend plugin into Claude Code'
     'uninstall:Uninstall the Coding Friend plugin from Claude Code'
     'init:Initialize coding-friend in current project'
+    'config:Manage Coding Friend configuration'
     'host:Build and serve learning docs as a static website'
     'mcp:Setup MCP server for learning docs'
     'statusline:Setup coding-friend statusline in Claude Code'

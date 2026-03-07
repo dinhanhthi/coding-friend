@@ -1,0 +1,532 @@
+import { confirm, input, select } from "@inquirer/prompts";
+import chalk from "chalk";
+import { readJson, mergeJson } from "../lib/json.js";
+import { log } from "../lib/log.js";
+import {
+  globalConfigPath,
+  localConfigPath,
+  resolvePath,
+} from "../lib/paths.js";
+import {
+  DEFAULT_CONFIG,
+  type CodingFriendConfig,
+  type LearnCategory,
+} from "../types.js";
+import {
+  BACK,
+  injectBackChoice,
+  askScope,
+  showConfigHint,
+  getScopeLabel,
+  formatScopeLabel,
+  getMergedValue,
+  applyDocsDirChange,
+} from "../lib/prompt-utils.js";
+import { existsSync } from "fs";
+import { run } from "../lib/exec.js";
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+
+function getLearnFieldScope(
+  field: string,
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): string {
+  const inGlobal = globalCfg?.learn
+    ? (globalCfg.learn as Record<string, unknown>)[field] !== undefined
+    : false;
+  const inLocal = localCfg?.learn
+    ? (localCfg.learn as Record<string, unknown>)[field] !== undefined
+    : false;
+  if (inGlobal && inLocal) return "both";
+  if (inGlobal) return "global";
+  if (inLocal) return "local";
+  return "-";
+}
+
+function getMergedLearnValue(
+  field: string,
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): unknown {
+  const localVal = localCfg?.learn
+    ? (localCfg.learn as Record<string, unknown>)[field]
+    : undefined;
+  if (localVal !== undefined) return localVal;
+  const globalVal = globalCfg?.learn
+    ? (globalCfg.learn as Record<string, unknown>)[field]
+    : undefined;
+  return globalVal;
+}
+
+function writeToScope(
+  scope: "global" | "local",
+  data: Record<string, unknown>,
+): void {
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, data);
+  log.success(`Saved to ${targetPath}`);
+}
+
+/**
+ * Write a learn sub-field to the chosen scope, preserving other learn fields.
+ */
+function writeLearnField(
+  scope: "global" | "local",
+  field: string,
+  value: unknown,
+): void {
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  const existingConfig = readJson<CodingFriendConfig>(targetPath);
+  const existingLearn = existingConfig?.learn ?? {};
+  const updated = { ...existingLearn, [field]: value };
+  mergeJson(targetPath, { learn: updated });
+  log.success(`Saved to ${targetPath}`);
+}
+
+// ─── Option Editors ───────────────────────────────────────────────────
+
+async function editDocsDir(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("docsDir", globalCfg, localCfg) as
+    | string
+    | undefined;
+  if (currentValue) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await input({
+    message: "Docs folder name:",
+    default: currentValue ?? DEFAULT_CONFIG.docsDir,
+    validate: (val) => {
+      if (!val) return "Folder name cannot be empty";
+      if (val.includes("/") || val.includes("\\"))
+        return "Must be a folder name, not a path (no slashes)";
+      return true;
+    },
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  applyDocsDirChange(value, currentValue, scope);
+  writeToScope(scope, { docsDir: value });
+}
+
+async function editLanguage(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("language", globalCfg, localCfg) as
+    | string
+    | undefined;
+  if (currentValue) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const choice = await select({
+    message: "What language should generated docs be written in?",
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Back",
+    ),
+  });
+
+  if (choice === BACK) return;
+
+  let lang = choice;
+  if (choice === "_other") {
+    lang = await input({ message: "Enter language name:" });
+    if (!lang) lang = "en";
+  }
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { language: lang });
+}
+
+// ─── Learn Sub-menu ───────────────────────────────────────────────────
+
+async function editLearnOutputDir(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedLearnValue("outputDir", globalCfg, localCfg) as
+    | string
+    | undefined;
+  if (currentValue) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const locationChoice = await select({
+    message: "Where to store learning docs?",
+    choices: [
+      { name: "In this project (docs/learn/)", value: "local" },
+      { name: "A separate folder", value: "external" },
+    ],
+  });
+
+  let outputDir = "docs/learn";
+  if (locationChoice === "external") {
+    outputDir = await input({
+      message: "Enter path (absolute or ~/...):",
+      default: currentValue ?? undefined,
+      validate: (val) => (val.length > 0 ? true : "Path cannot be empty"),
+    });
+    const resolved = resolvePath(outputDir);
+    if (!existsSync(resolved)) {
+      const create = await confirm({
+        message: `Folder ${resolved} doesn't exist. Create it?`,
+        default: true,
+      });
+      if (create) {
+        run("mkdir", ["-p", resolved]);
+        log.success(`Created ${resolved}`);
+      }
+    }
+  }
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeLearnField(scope, "outputDir", outputDir);
+}
+
+async function editLearnLanguage(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedLearnValue("language", globalCfg, localCfg) as
+    | string
+    | undefined;
+  if (currentValue) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const choice = await select({
+    message: "What language should /cf-learn notes be written in?",
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Back",
+    ),
+  });
+
+  if (choice === BACK) return;
+
+  let lang = choice;
+  if (choice === "_other") {
+    lang = await input({ message: "Enter language name:" });
+    if (!lang) lang = "en";
+  }
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeLearnField(scope, "language", lang);
+}
+
+async function editLearnCategories(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const existingCats = getMergedLearnValue(
+    "categories",
+    globalCfg,
+    localCfg,
+  ) as LearnCategory[] | undefined;
+
+  const defaultNames = DEFAULT_CONFIG.learn.categories
+    .map((c) => c.name)
+    .join(", ");
+
+  const catChoices: { name: string; value: string }[] = [
+    { name: `Use defaults (${defaultNames})`, value: "defaults" },
+  ];
+  if (existingCats && existingCats.length > 0) {
+    const existingNames = existingCats.map((c) => c.name).join(", ");
+    catChoices.push({
+      name: `Keep current (${existingNames})`,
+      value: "existing",
+    });
+  }
+  catChoices.push({ name: "Customize", value: "custom" });
+
+  const catChoice = await select({
+    message: "Categories for organizing learning docs?",
+    choices: catChoices,
+  });
+
+  let categories = DEFAULT_CONFIG.learn.categories;
+  if (catChoice === "existing" && existingCats) {
+    categories = existingCats;
+  } else if (catChoice === "custom") {
+    console.log();
+    if (existingCats && existingCats.length > 0) {
+      console.log("Current categories:");
+      for (const c of existingCats) {
+        log.dim(`  ${c.name}: ${c.description}`);
+      }
+      console.log();
+    }
+    console.log(
+      'Enter categories (format: "name: description"). Empty line to finish.',
+    );
+    console.log();
+    const customCats: LearnCategory[] = [];
+    let keepGoing = true;
+    while (keepGoing) {
+      const line = await input({
+        message: `Category ${customCats.length + 1}:`,
+      });
+      if (!line) {
+        keepGoing = false;
+      } else {
+        const [name, ...descParts] = line.split(":");
+        customCats.push({
+          name: name.trim(),
+          description: descParts.join(":").trim() || name.trim(),
+        });
+      }
+    }
+    if (customCats.length > 0) categories = customCats;
+  }
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeLearnField(scope, "categories", categories);
+}
+
+async function editLearnAutoCommit(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedLearnValue(
+    "autoCommit",
+    globalCfg,
+    localCfg,
+  ) as boolean | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message: "Auto-commit learning docs to git after each /cf-learn?",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeLearnField(scope, "autoCommit", value);
+}
+
+async function editLearnReadmeIndex(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedLearnValue(
+    "readmeIndex",
+    globalCfg,
+    localCfg,
+  ) as boolean | "per-category" | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const indexChoice = await select({
+    message: "How should learning docs be indexed?",
+    choices: [
+      { name: "No index", value: "none" },
+      { name: "Single README at root", value: "single" },
+      { name: "Per-category READMEs", value: "per-category" },
+    ],
+  });
+
+  let readmeIndex: boolean | "per-category" = false;
+  if (indexChoice === "single") readmeIndex = true;
+  else if (indexChoice === "per-category") readmeIndex = "per-category";
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeLearnField(scope, "readmeIndex", readmeIndex);
+}
+
+async function learnSubMenu(): Promise<void> {
+  while (true) {
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+    const outputDirScope = getLearnFieldScope("outputDir", globalCfg, localCfg);
+    const outputDirVal = getMergedLearnValue(
+      "outputDir",
+      globalCfg,
+      localCfg,
+    ) as string | undefined;
+
+    const langScope = getLearnFieldScope("language", globalCfg, localCfg);
+    const langVal = getMergedLearnValue("language", globalCfg, localCfg) as
+      | string
+      | undefined;
+
+    const catScope = getLearnFieldScope("categories", globalCfg, localCfg);
+
+    const autoCommitScope = getLearnFieldScope(
+      "autoCommit",
+      globalCfg,
+      localCfg,
+    );
+    const autoCommitVal = getMergedLearnValue(
+      "autoCommit",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
+    const readmeScope = getLearnFieldScope("readmeIndex", globalCfg, localCfg);
+    const readmeVal = getMergedLearnValue(
+      "readmeIndex",
+      globalCfg,
+      localCfg,
+    ) as boolean | "per-category" | undefined;
+
+    const choice = await select({
+      message: "Learn settings:",
+      choices: injectBackChoice(
+        [
+          {
+            name: `Output dir ${formatScopeLabel(outputDirScope)}${outputDirVal ? ` (${outputDirVal})` : ""}`,
+            value: "outputDir",
+          },
+          {
+            name: `Language ${formatScopeLabel(langScope)}${langVal ? ` (${langVal})` : ""}`,
+            value: "language",
+          },
+          {
+            name: `Categories ${formatScopeLabel(catScope)}`,
+            value: "categories",
+          },
+          {
+            name: `Auto-commit ${formatScopeLabel(autoCommitScope)}${autoCommitVal !== undefined ? ` (${autoCommitVal})` : ""}`,
+            value: "autoCommit",
+          },
+          {
+            name: `README index ${formatScopeLabel(readmeScope)}${readmeVal !== undefined ? ` (${readmeVal})` : ""}`,
+            value: "readmeIndex",
+          },
+        ],
+        "Back",
+      ),
+    });
+
+    if (choice === BACK) return;
+
+    switch (choice) {
+      case "outputDir":
+        await editLearnOutputDir(globalCfg, localCfg);
+        break;
+      case "language":
+        await editLearnLanguage(globalCfg, localCfg);
+        break;
+      case "categories":
+        await editLearnCategories(globalCfg, localCfg);
+        break;
+      case "autoCommit":
+        await editLearnAutoCommit(globalCfg, localCfg);
+        break;
+      case "readmeIndex":
+        await editLearnReadmeIndex(globalCfg, localCfg);
+        break;
+    }
+  }
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────
+
+const em = chalk.hex("#10b981");
+
+export async function configCommand(): Promise<void> {
+  console.log();
+  console.log(em("  ╭───────────────────────╮"));
+  console.log(
+    em("  │  ") +
+      "✦" +
+      em(" ") +
+      chalk.bold.white("Coding Friend") +
+      em("  ✦   │"),
+  );
+  console.log(em("  │    ") + chalk.dim("Config") + em("             │"));
+  console.log(em("  ╰────────────╮──────────╯"));
+  console.log(em("               ╰─▸"));
+  console.log();
+
+  showConfigHint();
+
+  while (true) {
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+    const docsDirScope = getScopeLabel("docsDir", globalCfg, localCfg);
+    const docsDirVal = getMergedValue("docsDir", globalCfg, localCfg) as
+      | string
+      | undefined;
+
+    const langScope = getScopeLabel("language", globalCfg, localCfg);
+    const langVal = getMergedValue("language", globalCfg, localCfg) as
+      | string
+      | undefined;
+
+    const learnScope = getScopeLabel("learn", globalCfg, localCfg);
+
+    const choice = await select({
+      message: "What to configure?",
+      choices: injectBackChoice(
+        [
+          {
+            name: `docsDir ${formatScopeLabel(docsDirScope)}${docsDirVal ? ` (${docsDirVal})` : ""}`,
+            value: "docsDir",
+            description:
+              "  Top-level folder name for plans, memory, research, and sessions",
+          },
+          {
+            name: `Docs language ${formatScopeLabel(langScope)}${langVal ? ` (${langVal})` : ""}`,
+            value: "language",
+            description:
+              "  Language for /cf-plan, /cf-ask, /cf-remember generated docs",
+          },
+          {
+            name: `Learn settings ${formatScopeLabel(learnScope)}`,
+            value: "learn",
+            description:
+              "  Output dir, language, categories, auto-commit, README index",
+          },
+        ],
+        "Exit",
+      ),
+    });
+
+    if (choice === BACK) {
+      process.exit(0);
+    }
+
+    switch (choice) {
+      case "docsDir":
+        await editDocsDir(globalCfg, localCfg);
+        break;
+      case "language":
+        await editLanguage(globalCfg, localCfg);
+        break;
+      case "learn":
+        await learnSubMenu();
+        break;
+    }
+
+    console.log();
+  }
+}

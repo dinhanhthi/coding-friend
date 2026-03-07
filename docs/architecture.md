@@ -31,7 +31,6 @@ coding-friend/
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
 │   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
-│   │   ├── compact-marker.sh        # PreCompact: preserve context
 │   │   └── context-tracker.sh       # PostToolUse: track files read
 │   │
 │   ├── context/
@@ -147,7 +146,7 @@ agent: cf-code-reviewer
 
 ---
 
-## Hooks System (7 hooks)
+## Hooks System (6 hooks)
 
 | Hook                    | Event            | Purpose                                                                          |
 | ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
@@ -156,7 +155,6 @@ agent: cf-code-reviewer
 | `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                    |
 | `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
-| `compact-marker.sh`     | PreCompact       | Mark critical context before compaction                                          |
 | `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                   |
 
 ### Hook I/O Protocol
@@ -349,12 +347,10 @@ The project operates as 4 concurrent state machine layers.
 └──────┬───────────────┘
        │ user stops / session ends
        ▼
-┌────────────────┐     ┌──────────────────┐
-│  PRE_COMPACT   │────→│  SESSION_END     │
-│  compact-marker│     │  (session done)  │
-│  preserves     │     └──────────────────┘
-│  key rules     │
-└────────────────┘
+┌──────────────────┐
+│  SESSION_END     │
+│  (session done)  │
+└──────────────────┘
 ```
 
 ### 2. Coding Workflow (within SESSION_ACTIVE)
