@@ -169,9 +169,9 @@ existing_file_action: skip
 - `description`: factual summary for grep recall. Good: `"Race condition in webhook handler causing duplicate payment processing"`. Bad: `"Fixed a bug"`.
 - `tags`: include error type, affected module, root cause category (e.g., `[race-condition, webhooks, payments]`)
 
-### Step 9: Review Reminder
+### Step 9: Auto-Review
 
-Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
 ## Escalation
 
