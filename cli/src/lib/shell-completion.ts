@@ -1,5 +1,13 @@
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from "fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { homedir } from "os";
+import { basename, join } from "path";
 import { log } from "./log.js";
 
 const MARKER_START = "# >>> coding-friend CLI completion >>>";
@@ -31,10 +39,7 @@ complete -o default -F _cf_completions cf
 ${MARKER_END}
 `;
 
-const ZSH_BLOCK = `
-
-${MARKER_START}
-_cf() {
+const ZSH_FUNCTION_BODY = `_cf() {
   local -a commands
   commands=(
     'install:Install the Coding Friend plugin into Claude Code'
@@ -65,34 +70,90 @@ _cf() {
     _path_files -/
   fi
 }
-compdef _cf cf
+compdef _cf cf`;
+
+function buildZshBlock(needsCompinit: boolean): string {
+  const compinit = needsCompinit ? "autoload -Uz compinit && compinit\n" : "";
+  return `\n\n${MARKER_START}\n${compinit}${ZSH_FUNCTION_BODY}\n${MARKER_END}\n`;
+}
+
+const FISH_CONTENT = `# coding-friend CLI completions
+complete -c cf -f
+complete -c cf -n "__fish_use_subcommand" -a install -d "Install the Coding Friend plugin into Claude Code"
+complete -c cf -n "__fish_use_subcommand" -a uninstall -d "Uninstall the Coding Friend plugin from Claude Code"
+complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend in current project"
+complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
+complete -c cf -n "__fish_use_subcommand" -a host -d "Build and serve learning docs as a static website"
+complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learning docs"
+complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend statusline in Claude Code"
+complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
+complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a on -d "Switch to local plugin source"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a off -d "Switch back to remote marketplace"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a status -d "Show current dev mode"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a restart -d "Restart dev mode"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a sync -d "Sync local plugin files"
+complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local dev plugin"
+`;
+
+const POWERSHELL_BLOCK = `
+
+${MARKER_START}
+Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
+  param($wordToComplete, $commandAst, $cursorPosition)
+  $commands = @('install','uninstall','init','config','host','mcp','statusline','update','dev')
+  $devSubcommands = @('on','off','status','restart','sync','update')
+  $words = $commandAst.CommandElements
+  if ($words.Count -ge 2 -and $words[1].ToString() -eq 'dev') {
+    $devSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } else {
+    $commands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  }
+}
 ${MARKER_END}
 `;
 
-function getShellRcPath(): string {
+// ─── Shell detection ─────────────────────────────────────────────────────────
+
+type ShellType = "zsh" | "bash" | "fish" | "powershell" | "unsupported";
+
+function detectShell(): ShellType {
+  if (process.platform === "win32") return "powershell";
   const shell = process.env.SHELL ?? "";
-  if (shell.includes("zsh")) return `${homedir()}/.zshrc`;
-  return `${homedir()}/.bashrc`;
+  if (shell.includes("zsh")) return "zsh";
+  if (shell.includes("bash")) return "bash";
+  if (shell.includes("fish")) return "fish";
+  return "unsupported";
 }
 
-function getRcName(rcPath: string): string {
-  return rcPath.endsWith(".zshrc") ? ".zshrc" : ".bashrc";
+function getRcPath(shell: ShellType): string | null {
+  const home = homedir();
+  switch (shell) {
+    case "zsh":
+      return join(home, ".zshrc");
+    case "bash":
+      // macOS bash uses .bash_profile for login shells
+      return process.platform === "darwin"
+        ? join(home, ".bash_profile")
+        : join(home, ".bashrc");
+    case "fish":
+      return join(home, ".config", "fish", "completions", "cf.fish");
+    case "powershell":
+      return join(
+        process.env.USERPROFILE ?? home,
+        "Documents",
+        "PowerShell",
+        "Microsoft.PowerShell_profile.ps1",
+      );
+    default:
+      return null;
+  }
 }
 
-function isZsh(rcPath: string): boolean {
-  return rcPath.endsWith(".zshrc");
-}
+// ─── Block helpers (for rc-file based shells) ────────────────────────────────
 
-export function hasShellCompletion(): boolean {
-  const rcPath = getShellRcPath();
-  if (!existsSync(rcPath)) return false;
-  return readFileSync(rcPath, "utf-8").includes(MARKER_START);
-}
-
-/**
- * Extract the current completion block content from an rc file.
- * Returns null if no block found.
- */
 function extractExistingBlock(content: string): string | null {
   const startIdx = content.indexOf(MARKER_START);
   const endIdx = content.indexOf(MARKER_END);
@@ -100,13 +161,9 @@ function extractExistingBlock(content: string): string | null {
   return content.slice(startIdx, endIdx + MARKER_END.length);
 }
 
-/**
- * Replace the existing completion block in rc file content.
- */
 function replaceBlock(content: string, newBlock: string): string {
   const startIdx = content.indexOf(MARKER_START);
   const endIdx = content.indexOf(MARKER_END);
-  // Include any leading newlines before the marker
   let sliceStart = startIdx;
   while (sliceStart > 0 && content[sliceStart - 1] === "\n") sliceStart--;
   return (
@@ -116,59 +173,107 @@ function replaceBlock(content: string, newBlock: string): string {
   );
 }
 
-/**
- * Remove the shell completion block from the user's rc file.
- * Returns true if the block was found and removed, false otherwise.
- */
-export function removeShellCompletion(): boolean {
-  const rcPath = getShellRcPath();
-  if (!existsSync(rcPath)) return false;
+// ─── Public API ──────────────────────────────────────────────────────────────
 
+export function hasShellCompletion(): boolean {
+  const shell = detectShell();
+  const rcPath = getRcPath(shell);
+  if (!rcPath) return false;
+  if (shell === "fish") return existsSync(rcPath);
+  if (!existsSync(rcPath)) return false;
+  return readFileSync(rcPath, "utf-8").includes(MARKER_START);
+}
+
+export function removeShellCompletion(): boolean {
+  const shell = detectShell();
+  const rcPath = getRcPath(shell);
+  if (!rcPath) return false;
+
+  if (shell === "fish") {
+    if (!existsSync(rcPath)) return false;
+    rmSync(rcPath);
+    log.success(`Tab completion removed (${basename(rcPath)})`);
+    return true;
+  }
+
+  if (!existsSync(rcPath)) return false;
   const content = readFileSync(rcPath, "utf-8");
   if (!content.includes(MARKER_START)) return false;
 
-  const updated = replaceBlock(content, "");
-  writeFileSync(rcPath, updated, "utf-8");
-
-  const rcName = getRcName(rcPath);
-  log.success(`Tab completion removed from ~/${rcName}`);
+  writeFileSync(rcPath, replaceBlock(content, ""), "utf-8");
+  log.success(`Tab completion removed from ~/${basename(rcPath)}`);
   return true;
 }
 
-/**
- * Ensure shell completion is configured and up-to-date.
- * Adds the completion block if missing, or replaces it if outdated.
- */
 export function ensureShellCompletion(opts?: { silent?: boolean }): boolean {
-  const rcPath = getShellRcPath();
-  const rcName = getRcName(rcPath);
-  const newBlock = isZsh(rcPath) ? ZSH_BLOCK : BASH_BLOCK;
+  const shell = detectShell();
 
-  if (hasShellCompletion()) {
-    // Check if the existing block is outdated
-    const content = readFileSync(rcPath, "utf-8");
-    const existing = extractExistingBlock(content);
-    const expectedBlock = newBlock.trim();
-    if (existing && existing.trim() === expectedBlock) {
-      if (!opts?.silent)
-        log.dim(`Tab completion already up-to-date in ~/${rcName}`);
+  if (shell === "unsupported") {
+    if (!opts?.silent)
+      log.warn(
+        `Shell not supported for tab completion (SHELL=${process.env.SHELL ?? ""}). Skipping.`,
+      );
+    return false;
+  }
+
+  const rcPath = getRcPath(shell)!;
+  const rcName = basename(rcPath);
+
+  // Fish: write a standalone file
+  if (shell === "fish") {
+    const dir = join(homedir(), ".config", "fish", "completions");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const existing = existsSync(rcPath) ? readFileSync(rcPath, "utf-8") : null;
+    if (existing === FISH_CONTENT) {
+      if (!opts?.silent) log.dim(`Tab completion already up-to-date (${rcName})`);
       return false;
     }
-
-    // Replace outdated block
-    const updated = replaceBlock(content, newBlock);
-    writeFileSync(rcPath, updated, "utf-8");
+    writeFileSync(rcPath, FISH_CONTENT, "utf-8");
     if (!opts?.silent) {
-      log.success(`Tab completion updated in ~/${rcName}`);
-      log.dim(`Run \`source ~/${rcName}\` or open a new terminal to activate.`);
+      log.success(`Tab completion written to ${rcPath}`);
+      log.dim("Open a new terminal to activate.");
     }
     return true;
+  }
+
+  // Determine new block
+  let newBlock: string;
+  if (shell === "zsh") {
+    const existingContent = existsSync(rcPath)
+      ? readFileSync(rcPath, "utf-8")
+      : "";
+    const needsCompinit = !existingContent.includes("autoload -Uz compinit");
+    newBlock = buildZshBlock(needsCompinit);
+  } else if (shell === "powershell") {
+    newBlock = POWERSHELL_BLOCK;
+  } else {
+    newBlock = BASH_BLOCK;
+  }
+
+  if (existsSync(rcPath)) {
+    const content = readFileSync(rcPath, "utf-8");
+    if (content.includes(MARKER_START)) {
+      const existing = extractExistingBlock(content);
+      if (existing && existing.trim() === newBlock.trim()) {
+        if (!opts?.silent)
+          log.dim(`Tab completion already up-to-date in ~/${rcName}`);
+        return false;
+      }
+      writeFileSync(rcPath, replaceBlock(content, newBlock), "utf-8");
+      if (!opts?.silent) {
+        log.success(`Tab completion updated in ~/${rcName}`);
+        log.dim(`Run \`source ~/${rcName}\` or open a new terminal to activate.`);
+      }
+      return true;
+    }
   }
 
   appendFileSync(rcPath, newBlock);
   if (!opts?.silent) {
     log.success(`Tab completion added to ~/${rcName}`);
-    log.dim(`Run \`source ~/${rcName}\` or open a new terminal to activate.`);
+    if (shell !== "powershell")
+      log.dim(`Run \`source ~/${rcName}\` or open a new terminal to activate.`);
+    else log.dim("Open a new PowerShell terminal to activate.");
   }
   return true;
 }
