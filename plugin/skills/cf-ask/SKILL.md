@@ -19,6 +19,13 @@ Quick, focused Q&A about the codebase. Proactively explores code to find the ans
 
 Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
 
+**IMPORTANT — path resolution:**
+
+- Run `pwd` to get the current working directory — substitute its actual output wherever `$CWD` appears below (do NOT pass `$CWD` as a literal string)
+- Only check `$CWD/.coding-friend/config.json` for `docsDir` — do NOT search sub-folders
+- Always resolve `file_path` as an **absolute path**: `$CWD/{docsDir}/memory/{category}/{name}.md`
+- Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
+
 ## Workflow
 
 ### Step 0: Load Custom Guide
@@ -115,13 +122,13 @@ Wait for the cf-explorer to return its findings.
 
 Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
 
-**When creating** a new file:
+**When creating** a new file (use absolute path for `file_path`):
 
 ```
 WRITE SPEC
 ----------
 task: create
-file_path: {docsDir}/memory/{category}/{name}.md
+file_path: $CWD/{docsDir}/memory/{category}/{name}.md
 language: {language from config}
 content: |
   ---
@@ -149,13 +156,13 @@ auto_commit: false
 existing_file_action: skip
 ```
 
-**When appending** to an existing file:
+**When appending** to an existing file (use absolute path for `file_path`):
 
 ```
 WRITE SPEC
 ----------
 task: update
-file_path: {docsDir}/memory/{category}/{name}.md
+file_path: $CWD/{docsDir}/memory/{category}/{name}.md
 language: {language from config}
 content: |
   ## Q&A: <short question summary> (YYYY-MM-DD)

@@ -79,3 +79,23 @@ export function marketplaceClonePath(): string {
 export function globalConfigDir(): string {
   return join(homedir(), ".coding-friend");
 }
+
+/**
+ * Encode an absolute project path to Claude Code's directory name format.
+ * Claude Code stores sessions under ~/.claude/projects/<encodedPath>/
+ * Encoding: replace all "/" with "-"
+ * e.g. /Users/thi/git/foo → -Users-thi-git-foo
+ */
+export function encodeProjectPath(absolutePath: string): string {
+  return absolutePath.replace(/\//g, "-");
+}
+
+/** Path to Claude Code's projects directory (~/.claude/projects) */
+export function claudeProjectsDir(): string {
+  return join(homedir(), ".claude", "projects");
+}
+
+/** Path to a specific project's session directory (~/.claude/projects/<encodedPath>) */
+export function claudeSessionDir(encodedPath: string): string {
+  return join(claudeProjectsDir(), encodedPath);
+}

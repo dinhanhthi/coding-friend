@@ -1,8 +1,9 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
+import chalk from "chalk";
 import { run } from "../lib/exec.js";
-import { mergeJson, readJson } from "../lib/json.js";
+import { mergeJson, readJson, writeJson } from "../lib/json.js";
 import { log } from "../lib/log.js";
 import {
   claudeSettingsPath,
@@ -26,117 +27,179 @@ import {
   type CodingFriendConfig,
   type LearnCategory,
 } from "../types.js";
-
-interface SetupStep {
-  name: string;
-  label: string;
-  done: boolean;
-}
+import {
+  BACK,
+  injectBackChoice,
+  askScope,
+  showConfigHint,
+  getScopeLabel,
+  formatScopeLabel,
+  getMergedValue,
+  applyDocsDirChange,
+} from "../lib/prompt-utils.js";
 
 const GITIGNORE_START = "# >>> coding-friend managed";
 const GITIGNORE_END = "# <<< coding-friend managed";
 
-// ─── Detection ────────────────────────────────────────────────────────
+// ─── Banner & Step UI ─────────────────────────────────────────────────
+
+const em = chalk.hex("#10b981"); // emerald
+const dk = chalk.hex("#064e3b"); // dark green
+
+function printBanner(): void {
+  console.log();
+  console.log(em("  ╭───────────────────────╮"));
+  console.log(
+    em("  │  ") +
+      "✦" +
+      em(" ") +
+      chalk.bold.white("Coding Friend") +
+      em("  ✦   │"),
+  );
+  console.log(em("  │    ") + chalk.dim("Setup Wizard") + em("       │"));
+  console.log(em("  ╰────────────╮──────────╯"));
+  console.log(em("               ╰─▸"));
+  console.log();
+}
+
+let _stepIndex = 0;
+
+function printStepHeader(label: string, description?: string): void {
+  _stepIndex++;
+  const line = chalk.hex("#10b981")("─".repeat(44));
+  console.log();
+  console.log(`${line}`);
+  console.log(
+    `${em("🔶")} ${chalk.bold.hex("#f59e0b")(`Step ${_stepIndex}`)}  ${chalk.dim(label)}`,
+  );
+  if (description) {
+    console.log(`     ${chalk.dim(description)}`);
+  }
+  console.log(`${line}`);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────
 
 function isGitRepo(): boolean {
   return run("git", ["rev-parse", "--is-inside-work-tree"]) === "true";
 }
 
-function checkDocsFolders(): boolean {
-  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn"];
-  return folders.every((f) => existsSync(f));
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function checkGitignore(): boolean {
-  if (!existsSync(".gitignore")) return false;
-  const content = readFileSync(".gitignore", "utf-8");
+/**
+ * Write a config value to the chosen scope.
+ */
+function writeToScope(
+  scope: "global" | "local",
+  data: Record<string, unknown>,
+): void {
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, data);
+  log.success(`Saved to ${targetPath}`);
+}
+
+/**
+ * If user picks BACK sentinel, cancel init and exit.
+ */
+function handleBack(value: string): void {
+  if (value === BACK) {
+    console.log();
+    log.dim("Init cancelled. Remaining steps skipped — nothing further saved.");
+    process.exit(0);
+  }
+}
+
+/**
+ * Get the effective docsDir from merged config.
+ */
+function getDocsDir(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): string {
   return (
-    content.includes(GITIGNORE_START) || content.includes("# coding-friend")
+    (localCfg?.docsDir as string | undefined) ??
+    (globalCfg?.docsDir as string | undefined) ??
+    DEFAULT_CONFIG.docsDir
   );
 }
 
-function checkDocsLanguage(): boolean {
-  const local = readJson<CodingFriendConfig>(localConfigPath());
-  const global = readJson<CodingFriendConfig>(globalConfigPath());
-  return !!(local?.language || global?.language);
-}
+// ─── Step Functions ───────────────────────────────────────────────────
 
-async function selectLanguage(message: string): Promise<string> {
-  const choice = await select({
-    message,
-    choices: [
-      { name: "English", value: "en" },
-      { name: "Vietnamese", value: "vi" },
-      { name: "Other", value: "_other" },
-    ],
+async function stepDocsDir(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("docsDir", globalCfg, localCfg) as
+    | string
+    | undefined;
+  const scopeLabel = getScopeLabel("docsDir", globalCfg, localCfg);
+
+  printStepHeader(
+    `Docs folder name ${formatScopeLabel(scopeLabel)}${currentValue ? ` (${chalk.dim(currentValue)})` : ""}`,
+    "Where plans, memory, research, and session docs are stored in your project.",
+  );
+
+  const value = await input({
+    message: "Docs folder name:",
+    default: currentValue ?? DEFAULT_CONFIG.docsDir,
+    validate: (val) => {
+      if (!val) return "Folder name cannot be empty";
+      if (val.includes("/") || val.includes("\\"))
+        return "Must be a folder name, not a path (no slashes)";
+      return true;
+    },
   });
 
-  if (choice === "_other") {
-    const lang = await input({ message: "Enter language name:" });
-    return lang || "en";
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped docsDir.");
+    return;
   }
-  return choice;
+
+  const DOCS_SUBFOLDERS = ["plans", "memory", "research", "learn", "sessions"];
+  applyDocsDirChange(value, currentValue, scope, DOCS_SUBFOLDERS);
+  writeToScope(scope, { docsDir: value });
 }
 
-function checkLearnConfig(): boolean {
-  const local = readJson<CodingFriendConfig>(localConfigPath());
-  const global = readJson<CodingFriendConfig>(globalConfigPath());
-  return !!(local?.learn || global?.learn);
-}
+async function stepGitignore(docsDir: string): Promise<void> {
+  const hasBlock = (() => {
+    if (!existsSync(".gitignore")) return false;
+    const content = readFileSync(".gitignore", "utf-8");
+    return (
+      content.includes(GITIGNORE_START) || content.includes("# coding-friend")
+    );
+  })();
 
-function getResolvedOutputDir(): string | null {
-  const local = readJson<CodingFriendConfig>(localConfigPath());
-  if (local?.learn?.outputDir) return resolvePath(local.learn.outputDir);
-  const global = readJson<CodingFriendConfig>(globalConfigPath());
-  if (global?.learn?.outputDir) return resolvePath(global.learn.outputDir);
-  return null;
-}
+  if (hasBlock) {
+    printStepHeader(
+      `Configure .gitignore ${chalk.green("[done]")}`,
+      "Keeps AI-generated docs and config out of your git history.",
+    );
+    log.dim(".gitignore already configured.");
+    return;
+  }
 
-function isExternalOutputDir(outputDir: string | null): boolean {
-  if (!outputDir) return false;
-  const cwd = process.cwd();
-  return !outputDir.startsWith(cwd);
-}
-
-function checkClaudePermissions(outputDir: string): boolean {
-  const settings = readJson<Record<string, unknown>>(claudeSettingsPath());
-  if (!settings) return false;
-  const permissions = settings.permissions as { allow?: string[] } | undefined;
-  if (!permissions?.allow) return false;
-  // Check if at least a Write permission exists for the outputDir
-  const homePath = outputDir.replace(homedir(), "~");
-  return permissions.allow.some(
-    (rule: string) => rule.includes(outputDir) || rule.includes(homePath),
+  printStepHeader(
+    "Configure .gitignore",
+    "Keeps Coding Friend's AI-generated docs and config out of your git history. You can edit it later in .gitignore.",
   );
-}
 
-// ─── Setup Steps ──────────────────────────────────────────────────────
-
-async function setupDocsFolders(): Promise<void> {
-  const folders = ["docs/plans", "docs/memory", "docs/research", "docs/learn"];
-  const created: string[] = [];
-  for (const f of folders) {
-    if (!existsSync(f)) {
-      run("mkdir", ["-p", f]);
-      created.push(f);
-    }
-  }
-  if (created.length > 0) {
-    log.success(`Created: ${created.join(", ")}`);
-  } else {
-    log.dim("All docs folders already exist.");
-  }
-}
-
-async function setupGitignore(): Promise<void> {
   const choice = await select({
     message: "Add coding-friend artifacts to .gitignore?",
-    choices: [
-      { name: "Yes, ignore all", value: "all" },
-      { name: "Partial — pick which to ignore", value: "partial" },
-      { name: "No — keep everything tracked", value: "none" },
-    ],
+    choices: injectBackChoice(
+      [
+        { name: "Yes, ignore all", value: "all" },
+        { name: "Partial -- pick which to ignore", value: "partial" },
+        { name: "No -- keep everything tracked", value: "none" },
+      ],
+      "Cancel init",
+    ),
   });
+
+  handleBack(choice);
 
   if (choice === "none") {
     log.dim("Skipped .gitignore config.");
@@ -144,10 +207,11 @@ async function setupGitignore(): Promise<void> {
   }
 
   const allEntries = [
-    "docs/plans/",
-    "docs/memory/",
-    "docs/research/",
-    "docs/learn/",
+    `${docsDir}/plans/`,
+    `${docsDir}/memory/`,
+    `${docsDir}/research/`,
+    `${docsDir}/learn/`,
+    `${docsDir}/sessions/`,
     ".coding-friend/",
   ];
 
@@ -169,7 +233,6 @@ async function setupGitignore(): Promise<void> {
 
   const block = `${GITIGNORE_START}\n${entries.join("\n")}\n${GITIGNORE_END}`;
 
-  // Replace existing managed block (new or legacy format)
   const managedBlockRe = new RegExp(
     `${escapeRegExp(GITIGNORE_START)}[\\s\\S]*?${escapeRegExp(GITIGNORE_END)}`,
   );
@@ -190,42 +253,95 @@ async function setupGitignore(): Promise<void> {
   writeFileSync(".gitignore", updated);
 }
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+async function stepDocsLanguage(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("language", globalCfg, localCfg) as
+    | string
+    | undefined;
+  const scopeLabel = getScopeLabel("language", globalCfg, localCfg);
 
-async function setupDocsLanguage(): Promise<string> {
-  return selectLanguage(
-    "What language should generated docs be written in? (plans, memory, research, ask)",
+  printStepHeader(
+    `Docs language ${formatScopeLabel(scopeLabel)}${currentValue ? ` (${chalk.dim(currentValue)})` : ""}`,
+    "Skills like /cf-plan, /cf-ask, /cf-remember will write docs in this language.",
   );
+
+  const lang = await selectLanguage(
+    "What language should generated docs be written in?",
+  );
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped docs language.");
+    return;
+  }
+  writeToScope(scope, { language: lang });
 }
 
-async function setupLearnConfig(gitAvailable = true): Promise<{
-  language: string;
-  outputDir: string;
-  categories: LearnCategory[];
-  autoCommit: boolean;
-  readmeIndex: boolean | "per-category";
-  isExternal: boolean;
-}> {
+async function selectLanguage(message: string): Promise<string> {
+  const choice = await select({
+    message,
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Cancel init",
+    ),
+  });
+
+  handleBack(choice);
+
+  if (choice === "_other") {
+    const lang = await input({ message: "Enter language name:" });
+    return lang || "en";
+  }
+  return choice;
+}
+
+async function stepLearnConfig(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+  gitAvailable: boolean,
+): Promise<{ outputDir: string; autoCommit: boolean; isExternal: boolean }> {
+  const currentLearn = (localCfg?.learn ?? globalCfg?.learn) as
+    | CodingFriendConfig["learn"]
+    | undefined;
+  const scopeLabel = getScopeLabel("learn", globalCfg, localCfg);
+  const docsDir = getDocsDir(globalCfg, localCfg);
+
+  printStepHeader(
+    `/cf-learn config ${formatScopeLabel(scopeLabel)}`,
+    "Controls where and how /cf-learn saves your learning notes.",
+  );
+
   // a) Language
   const language = await selectLanguage(
     "What language should /cf-learn notes be written in?",
   );
-  // a) Output location
+
+  // b) Output location
   const locationChoice = await select({
     message: "Where to store learning docs?",
-    choices: [
-      { name: "In this project (docs/learn/)", value: "local" },
-      { name: "A separate folder", value: "external" },
-    ],
+    choices: injectBackChoice(
+      [
+        { name: `In this project (${docsDir}/learn/)`, value: "local" },
+        { name: "A separate folder", value: "external" },
+      ],
+      "Cancel init",
+    ),
   });
 
-  let outputDir = "docs/learn";
+  handleBack(locationChoice);
+
+  let outputDir = `${docsDir}/learn`;
   let isExternal = false;
   if (locationChoice === "external") {
     outputDir = await input({
       message: "Enter path (absolute or ~/...):",
+      default: currentLearn?.outputDir ?? undefined,
       validate: (val) => (val.length > 0 ? true : "Path cannot be empty"),
     });
     isExternal = true;
@@ -242,35 +358,30 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
     }
   }
 
-  // b) Categories
-  const existingConfig =
-    readJson<CodingFriendConfig>(localConfigPath()) ??
-    readJson<CodingFriendConfig>(globalConfigPath());
-  const existingCats = existingConfig?.learn?.categories;
-
+  // c) Categories
+  const existingCats = currentLearn?.categories;
   const defaultNames = DEFAULT_CONFIG.learn.categories
     .map((c) => c.name)
     .join(", ");
 
-  const choices: { name: string; value: string }[] = [
-    {
-      name: `Use defaults (${defaultNames})`,
-      value: "defaults",
-    },
+  const catChoices: { name: string; value: string }[] = [
+    { name: `Use defaults (${defaultNames})`, value: "defaults" },
   ];
   if (existingCats && existingCats.length > 0) {
     const existingNames = existingCats.map((c) => c.name).join(", ");
-    choices.push({
+    catChoices.push({
       name: `Keep current (${existingNames})`,
       value: "existing",
     });
   }
-  choices.push({ name: "Customize", value: "custom" });
+  catChoices.push({ name: "Customize", value: "custom" });
 
   const catChoice = await select({
     message: "Categories for organizing learning docs?",
-    choices,
+    choices: injectBackChoice(catChoices, "Cancel init"),
   });
+
+  handleBack(catChoice);
 
   let categories = DEFAULT_CONFIG.learn.categories;
   if (catChoice === "existing" && existingCats) {
@@ -288,7 +399,7 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
       'Enter categories (format: "name: description"). Empty line to finish.',
     );
     log.dim(
-      "Tip: you can also edit config.json later — see https://cf.dinhanhthi.com/docs/cli/cf-init/",
+      "Tip: you can also edit config.json later -- see https://cf.dinhanhthi.com/docs/configuration/config-json/#learning-extraction",
     );
     console.log();
     const customCats: LearnCategory[] = [];
@@ -310,40 +421,107 @@ async function setupLearnConfig(gitAvailable = true): Promise<{
     if (customCats.length > 0) categories = customCats;
   }
 
-  // c) Auto-commit (only for external + git available)
+  // d) Auto-commit (only for external + git available)
   let autoCommit = false;
   if (isExternal && gitAvailable) {
     autoCommit = await confirm({
       message: "Auto-commit learning docs to git after each /cf-learn?",
-      default: false,
+      default: currentLearn?.autoCommit ?? false,
     });
   }
 
-  // d) README index
+  // e) README index
   const indexChoice = await select({
     message: "How should learning docs be indexed?",
-    choices: [
-      { name: "No index", value: "none" },
-      { name: "Single README at root", value: "single" },
-      { name: "Per-category READMEs", value: "per-category" },
-    ],
+    choices: injectBackChoice(
+      [
+        { name: "No index", value: "none" },
+        { name: "Single README at root", value: "single" },
+        { name: "Per-category READMEs", value: "per-category" },
+      ],
+      "Cancel init",
+    ),
   });
+
+  handleBack(indexChoice);
 
   let readmeIndex: boolean | "per-category" = false;
   if (indexChoice === "single") readmeIndex = true;
   else if (indexChoice === "per-category") readmeIndex = "per-category";
 
-  return {
+  // f) One askScope() for the whole learn object
+  const learnObj = {
     language,
     outputDir,
     categories,
     autoCommit,
     readmeIndex,
-    isExternal,
   };
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped /cf-learn config.");
+    return { outputDir, autoCommit, isExternal };
+  }
+
+  // Read existing learn from target scope and merge
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  const existingConfig = readJson<CodingFriendConfig>(targetPath);
+  const existingLearn = existingConfig?.learn ?? {};
+  mergeJson(targetPath, { learn: { ...existingLearn, ...learnObj } });
+  log.success(`Saved to ${targetPath}`);
+
+  return { outputDir, autoCommit, isExternal };
 }
 
-async function setupClaudePermissions(
+async function stepShellCompletion(): Promise<void> {
+  if (hasShellCompletion()) {
+    printStepHeader(
+      `Shell tab completion ${chalk.green("[done]")}`,
+      "Enables tab-complete for cf commands in your shell.",
+    );
+    ensureShellCompletion({ silent: false });
+    return;
+  }
+
+  printStepHeader(
+    "Shell tab completion",
+    "Enables tab-complete for cf commands in your shell.",
+  );
+  ensureShellCompletion();
+}
+
+async function stepStatusline(): Promise<void> {
+  if (isStatuslineConfigured()) {
+    printStepHeader(
+      `Configure statusline ${chalk.green("[done]")}`,
+      "Shows token count, model, and session info in your terminal prompt.",
+    );
+    log.dim("Statusline already configured.");
+    return;
+  }
+
+  printStepHeader(
+    "Configure statusline",
+    "Shows token count, model, and session info in your terminal prompt.",
+  );
+
+  const hookResult = findStatuslineHookPath();
+  if (!hookResult) {
+    log.warn(
+      "coding-friend plugin not found. Install it via Claude Code first, then re-run.",
+    );
+    return;
+  }
+
+  const components = await selectStatuslineComponents();
+  saveStatuslineConfig(components);
+  writeStatuslineSettings(hookResult.hookPath);
+  log.success("Statusline configured!");
+}
+
+async function stepClaudePermissions(
   outputDir: string,
   autoCommit: boolean,
 ): Promise<void> {
@@ -363,7 +541,6 @@ async function setupClaudePermissions(
     rules.push(`Bash(cd ${homePath} && git commit:*)`);
   }
 
-  // Check existing
   const settingsPath = claudeSettingsPath();
   const settings = readJson<Record<string, unknown>>(settingsPath);
   if (!settings) {
@@ -404,245 +581,96 @@ async function setupClaudePermissions(
 
   permissions.allow = [...existing, ...missing];
   settings.permissions = permissions;
-  const {
-    readJson: _r,
-    writeJson: _w,
-    ...restImports
-  } = await import("../lib/json.js");
-  _w(settingsPath, settings);
+  writeJson(settingsPath, settings);
   log.success(`Added ${missing.length} permission rules.`);
-}
-
-// ─── Save Config ──────────────────────────────────────────────────────
-
-function isDefaultConfig(config: CodingFriendConfig): boolean {
-  if (config.language && config.language !== "en") return false;
-  if (config.learn) {
-    const l = config.learn;
-    if (l.language && l.language !== "en") return false;
-    if (l.outputDir && l.outputDir !== "docs/learn") return false;
-    if (l.autoCommit) return false;
-    if (l.readmeIndex) return false;
-    if (l.categories) {
-      const defaultNames = DEFAULT_CONFIG.learn.categories.map((c) => c.name);
-      const configNames = l.categories.map((c) => c.name);
-      if (JSON.stringify(defaultNames) !== JSON.stringify(configNames))
-        return false;
-    }
-  }
-  return true;
-}
-
-async function saveConfig(config: CodingFriendConfig): Promise<void> {
-  if (isDefaultConfig(config)) {
-    log.dim("All settings match defaults — no config file needed.");
-    return;
-  }
-
-  const target = await select({
-    message: "Save settings as global or project-only?",
-    choices: [
-      { name: "Global (all projects)", value: "global" },
-      { name: "This project only", value: "local" },
-      { name: "Both", value: "both" },
-    ],
-  });
-
-  if (target === "global" || target === "both") {
-    mergeJson(globalConfigPath(), config as Record<string, unknown>);
-    log.success(`Saved to ${globalConfigPath()}`);
-  }
-  if (target === "local" || target === "both") {
-    mergeJson(localConfigPath(), config as Record<string, unknown>);
-    log.success(`Saved to ${localConfigPath()}`);
-  }
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
 
 export async function initCommand(): Promise<void> {
-  console.log("=== 🌿 Coding Friend Init 🌿 ===");
-  console.log();
+  _stepIndex = 0;
+  printBanner();
+  showConfigHint();
 
-  // Step 1: Detect environment
+  // Detect environment
   const gitAvailable = isGitRepo();
   if (!gitAvailable) {
-    log.warn("Not inside a git repo — git-related steps will be skipped.");
+    log.warn("Not inside a git repo -- git-related steps will be skipped.");
     console.log();
   }
 
-  // Step 2: Scan
-  const resolvedOutputDir = getResolvedOutputDir();
-  const hasExternalDir =
-    checkLearnConfig() && isExternalOutputDir(resolvedOutputDir);
+  // Load raw configs for status display
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
 
-  const steps: SetupStep[] = [
-    { name: "docs", label: "Create docs folders", done: checkDocsFolders() },
-    ...(gitAvailable
-      ? [
-          {
-            name: "gitignore",
-            label: "Configure .gitignore",
-            done: checkGitignore(),
-          },
-        ]
-      : []),
-    {
-      name: "docsLanguage",
-      label: "Set docs language (plans, memory, research, ask)",
-      done: checkDocsLanguage(),
-    },
-    { name: "learn", label: "Configure /cf-learn", done: checkLearnConfig() },
-    {
-      name: "completion",
-      label: "Setup shell tab completion",
-      done: hasShellCompletion(),
-    },
-    {
-      name: "statusline",
-      label: "Configure statusline",
-      done: isStatuslineConfigured(),
-    },
-  ];
+  // Show current status
+  console.log("Current configuration:");
 
-  if (hasExternalDir && resolvedOutputDir) {
-    steps.push({
-      name: "permissions",
-      label: "Configure Claude permissions",
-      done: checkClaudePermissions(resolvedOutputDir),
-    });
-  }
+  const docsDirScope = getScopeLabel("docsDir", globalCfg, localCfg);
+  const docsDirVal = getMergedValue("docsDir", globalCfg, localCfg) as
+    | string
+    | undefined;
+  console.log(
+    `  ${formatScopeLabel(docsDirScope)}  docsDir${docsDirVal ? ` (${chalk.dim(docsDirVal)})` : ""}`,
+  );
 
-  // Step 3: Present
-  console.log("coding-friend setup status:");
-  for (const step of steps) {
-    const status = step.done
-      ? "\x1b[32m[done]\x1b[0m"
-      : "\x1b[33m[pending]\x1b[0m";
-    console.log(`  ${status} ${step.label}`);
-  }
+  const langScope = getScopeLabel("language", globalCfg, localCfg);
+  const langVal = getMergedValue("language", globalCfg, localCfg) as
+    | string
+    | undefined;
+  console.log(
+    `  ${formatScopeLabel(langScope)}  Docs language${langVal ? ` (${chalk.dim(langVal)})` : ""}`,
+  );
+
+  const learnScope = getScopeLabel("learn", globalCfg, localCfg);
+  console.log(`  ${formatScopeLabel(learnScope)}  /cf-learn config`);
+
   console.log();
 
-  const pending = steps.filter((s) => !s.done);
-  if (pending.length === 0) {
-    log.success("Everything is already configured!");
-    return;
+  // ─── Linear step flow ──────────────────────────────────────────────
+
+  // Step 1: docsDir
+  await stepDocsDir(globalCfg, localCfg);
+
+  // Re-read configs after docsDir may have been written
+  const updatedGlobal = readJson<CodingFriendConfig>(globalConfigPath());
+  const updatedLocal = readJson<CodingFriendConfig>(localConfigPath());
+  const docsDir = getDocsDir(updatedGlobal, updatedLocal);
+
+  // Step 2: .gitignore (only in git repos)
+  if (gitAvailable) {
+    await stepGitignore(docsDir);
   }
 
-  const action = await select({
-    message: `${pending.length} pending step(s). What do you want to do?`,
-    choices: [
-      { name: "Apply all pending", value: "all" },
-      { name: "Pick which to apply", value: "pick" },
-      { name: "Cancel", value: "cancel" },
-    ],
-  });
+  // Step 3: Docs language
+  await stepDocsLanguage(globalCfg, localCfg);
 
-  if (action === "cancel") {
-    log.dim("Cancelled.");
-    return;
-  }
+  // Step 4: /cf-learn config
+  const { outputDir, autoCommit, isExternal } = await stepLearnConfig(
+    updatedGlobal,
+    updatedLocal,
+    gitAvailable,
+  );
 
-  let selected = pending;
-  if (action === "pick") {
-    const picked = await checkbox({
-      message: "Which steps to apply?",
-      choices: pending.map((s) => ({ name: s.label, value: s.name })),
-    });
-    selected = pending.filter((s) => picked.includes(s.name));
-    if (selected.length === 0) {
-      log.dim("Nothing selected.");
-      return;
-    }
-  }
+  // Step 5: Shell completion
+  await stepShellCompletion();
 
-  // Step 4: Execute
-  const config: CodingFriendConfig = {};
-  let learnOutputDir = "docs/learn";
-  let learnAutoCommit = false;
-  let isExternal = false;
+  // Step 6: Statusline
+  await stepStatusline();
 
-  for (const step of selected) {
-    console.log();
-    log.step(step.label);
-
-    switch (step.name) {
-      case "docs":
-        await setupDocsFolders();
-        break;
-
-      case "gitignore":
-        await setupGitignore();
-        break;
-
-      case "docsLanguage": {
-        const lang = await setupDocsLanguage();
-        config.language = lang;
-        break;
-      }
-
-      case "learn": {
-        const learn = await setupLearnConfig(gitAvailable);
-        config.learn = {
-          ...config.learn,
-          language: learn.language,
-          outputDir: learn.outputDir,
-          categories: learn.categories,
-          autoCommit: learn.autoCommit,
-          readmeIndex: learn.readmeIndex,
-        };
-        learnOutputDir = learn.outputDir;
-        learnAutoCommit = learn.autoCommit;
-        isExternal = learn.isExternal;
-        break;
-      }
-
-      case "completion":
-        ensureShellCompletion();
-        break;
-
-      case "statusline": {
-        const hookResult = findStatuslineHookPath();
-        if (!hookResult) {
-          log.warn(
-            "coding-friend plugin not found. Install it via Claude Code first, then re-run.",
-          );
-          break;
-        }
-        const components = await selectStatuslineComponents();
-        saveStatuslineConfig(components);
-        writeStatuslineSettings(hookResult.hookPath);
-        log.success("Statusline configured!");
-        break;
-      }
-
-      case "permissions":
-        if (resolvedOutputDir) {
-          await setupClaudePermissions(resolvedOutputDir, learnAutoCommit);
-        }
-        break;
-    }
-  }
-
-  // If learn was just configured and has external dir, ask about permissions
-  if (
-    isExternal &&
-    !selected.some((s) => s.name === "permissions") &&
-    !checkClaudePermissions(resolvePath(learnOutputDir))
-  ) {
-    console.log();
-    log.step("Configure Claude permissions");
-    await setupClaudePermissions(learnOutputDir, learnAutoCommit);
-  }
-
-  // Save config
-  if (Object.keys(config).length > 0) {
-    console.log();
-    await saveConfig(config);
+  // Step 7: Claude permissions (conditional: only when external learn dir)
+  if (isExternal) {
+    printStepHeader(
+      "Configure Claude permissions",
+      "Grants Claude read/write access to your external learn folder without repeated prompts.",
+    );
+    await stepClaudePermissions(outputDir, autoCommit);
   }
 
   // Final
   console.log();
-  log.success("Setup complete!");
-  log.dim("Available commands: /cf-plan, /cf-commit, /cf-review, /cf-learn");
+  log.congrats("Setup complete!");
+  log.dim(
+    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-ship, /cf-optimize, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help",
+  );
 }

@@ -10,24 +10,13 @@
 #
 # Output:
 #   Plain text <system-reminder> block with rules, skills, and security.
-#
-# Configuration:
-#   "devRulesReminder": false in .coding-friend/config.json disables the hook.
 
 cat > /dev/null  # consume stdin
-
-# Check if hook is disabled via config
-CONFIG_FILE=".coding-friend/config.json"
-if [ -f "$CONFIG_FILE" ]; then
-  if grep -q '"devRulesReminder"[[:space:]]*:[[:space:]]*false' "$CONFIG_FILE" 2>/dev/null; then
-    exit 0
-  fi
-fi
 
 cat <<'REMINDER'
 <system-reminder>
 RULES: 1) Check skills first 2) Test before code 3) Verify before claiming 4) Respect .coding-friend/ignore 5) Conventional commits
-SKILLS: /cf-ask /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-optimize /cf-remember /cf-learn /cf-research /cf-help
+SKILLS: /cf-ask /cf-plan /cf-review /cf-commit /cf-ship /cf-fix /cf-optimize /cf-remember /cf-learn /cf-research /cf-session /cf-help
 AUTO: cf-tdd, cf-sys-debug, cf-verification, cf-auto-review
 GUIDES: Each skill loads its own custom guide on-demand.
 SIGNALS: BEFORE showing signal, CHECK if name starts with "cf-". YES → show: > ✨ **CODING FRIEND** → <name> activated. NO → STOP, no signal. /release, /commit, /deploy and all non-cf-* names must NEVER get this signal.

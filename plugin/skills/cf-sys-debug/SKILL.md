@@ -64,14 +64,14 @@ Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 cf-sys-debug is only invoked for hard bugs — always document the findings.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Check `{docsDir}` from config (default: `docs`)
-3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`:
+2. Check `{docsDir}` from `$CWD/.coding-friend/config.json` only (default: `docs`) — run `pwd` and substitute its actual output for `$CWD` (do NOT pass `$CWD` as a literal string), do NOT search sub-folders
+3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute `file_path`):
 
 ```
 WRITE SPEC
 ----------
 task: create
-file_path: {docsDir}/memory/bugs/{name}.md
+file_path: $CWD/{docsDir}/memory/bugs/{name}.md
 language: {language from config}
 content: |
   ---

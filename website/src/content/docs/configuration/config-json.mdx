@@ -8,9 +8,21 @@ keywords: [configuration, config file, settings, json]
 
 Configure Coding Friend behavior using `.coding-friend/config.json`. This file lets you customize documentation directories, enable/disable hooks, and adjust learning extraction settings.
 
+## Config File Locations
+
+- **Global**: `~/.coding-friend/config.json` -- applies to all projects
+- **Local**: `.coding-friend/config.json` -- project-specific settings
+
+## How to Edit
+
+You can edit configuration in two ways:
+
+1. **Interactive**: Run `cf config` for a menu-driven editor, or `cf init` during first-time setup
+2. **Manual**: Edit the JSON files directly at the paths above
+
 ## Configuration Schema
 
-### Documentation Directory
+### Documentation Folder Name
 
 ```json
 {
@@ -18,7 +30,7 @@ Configure Coding Friend behavior using `.coding-friend/config.json`. This file l
 }
 ```
 
-Set the root directory for all documentation (default: `docs`).
+The name of the top-level folder where all skill outputs are stored (default: `"docs"`). This is a **folder name**, not a path -- it must be a single name relative to your project root, with no slashes. All skill output subfolders sit inside it: `plans/`, `memory/`, `research/`, `learn/`, and `sessions/`.
 
 ### Hooks
 
@@ -58,24 +70,42 @@ All hooks default to `true`. Set to `false` to disable.
   "learn": {
     "language": "en",
     "outputDir": "docs/learn",
-    "categories": ["concepts", "patterns", "tools"],
-    "autoCommit": true,
-    "readmeIndex": true
+    "categories": [
+      {
+        "name": "concepts",
+        "description": "Design patterns, algorithms, architecture principles"
+      },
+      {
+        "name": "patterns",
+        "description": "Repository pattern, observer pattern"
+      },
+      {
+        "name": "languages",
+        "description": "Language-specific features, syntax, idioms"
+      },
+      { "name": "tools", "description": "Libraries, frameworks, CLI tools" },
+      { "name": "debugging", "description": "Debugging techniques, bug fixes" }
+    ],
+    "autoCommit": false,
+    "readmeIndex": false
   }
 }
 ```
 
-- `language`: Language for `/cf-learn` notes (default: falls back to top-level `language`, then `"en"`)
-- `outputDir`: Where `/cf-learn` saves files (default: `docs/learn`)
-- `categories`: Classification for learning notes (default: built-in list)
-- `autoCommit`: Automatically commit extracted learning files (default: `true`)
-- `readmeIndex`: Maintain README with index of learning docs (default: `true`)
+| Field         | Type                        | Default        | Description                                                                            |
+| ------------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| `language`    | `string`                    | `"en"`         | Language for cf-learn notes. Falls back to top-level `language`, then `"en"`           |
+| `outputDir`   | `string`                    | `"docs/learn"` | Where learning docs are saved. Absolute or `~/` paths for external storage             |
+| `categories`  | `array`                     | 5 defaults     | Each entry has `name` and `description`                                                |
+| `autoCommit`  | `boolean`                   | `false`        | Auto-commit after each `/cf-learn` (external dir only)                                 |
+| `readmeIndex` | `boolean \| "per-category"` | `false`        | `true` for single README containing all indexes or `"per-category"` for one per folder |
 
 ## Example Config
 
 ```json
 {
   "docsDir": "docs",
+  "devRulesReminder": true,
   "hooks": {
     "privacyBlock": true,
     "scoutBlock": true,
@@ -89,9 +119,15 @@ All hooks default to `true`. Set to `false` to disable.
   "learn": {
     "language": "en",
     "outputDir": "docs/learn",
-    "categories": ["concepts", "patterns", "tools", "debugging"],
-    "autoCommit": true,
-    "readmeIndex": true
+    "categories": [
+      {
+        "name": "concepts",
+        "description": "Design patterns, algorithms, architecture principles"
+      },
+      { "name": "tools", "description": "Libraries, frameworks, CLI tools" }
+    ],
+    "autoCommit": false,
+    "readmeIndex": false
   }
 }
 ```
@@ -100,10 +136,10 @@ All hooks default to `true`. Set to `false` to disable.
 
 Coding Friend supports two configuration levels:
 
-1. **Global**: `~/.coding-friend/config.json` — applies to all projects
-2. **Local**: `.coding-friend/config.json` — project-specific settings
+1. **Global**: `~/.coding-friend/config.json` -- applies to all projects
+2. **Local**: `.coding-friend/config.json` -- project-specific settings
 
-Local settings always override global settings. This lets you maintain project-specific rules while inheriting defaults globally.
+Local settings override global settings **at the property level** (top-level key merge, not deep merge). For example, if global has `{ "language": "en", "docsDir": "docs" }` and local has `{ "language": "vi" }`, the result is `{ "language": "vi", "docsDir": "docs" }`. But if local has a `learn` object, it replaces the entire global `learn` object.
 
 ## Custom Skill Guides
 
