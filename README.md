@@ -93,6 +93,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-review [target]`   | Code review in forked subagent              |
 | `/cf-commit [hint]`     | Analyze diff and create conventional commit |
 | `/cf-ship [hint]`       | Verify, commit, push, and create PR         |
+| `/cf-session`           | Save/load Claude Code sessions              |
 | `/cf-remember [topic]`  | Capture project knowledge                   |
 | `/cf-learn [topic]`     | Extract learnings for human review          |
 | `/cf-research [topic]`  | In-depth research with web search           |
@@ -106,11 +107,19 @@ Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review
 cf install           # Install the plugin into Claude Code
 cf uninstall         # Remove the plugin from Claude Code
 cf init              # Initialize workspace
+cf config            # Manage configuration (interactive menu)
 cf host [path]       # Serve learning docs at localhost:3333
 cf mcp [path]        # Setup MCP server for LLM integration
 cf statusline        # Setup statusline
 cf update            # Update plugin + CLI + statusline
+cf session save      # Save current Claude Code session
+cf session load      # Load a saved session
 cf dev on [path]     # Switch to local plugin source
+cf dev off           # Switch back to remote marketplace
+cf dev status        # Show current dev mode
+cf dev sync          # Sync local changes to cache
+cf dev restart       # Reinstall local dev plugin
+cf dev update        # Update local dev plugin
 cf help              # Show all commands
 ```
 
