@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.8.0 (unpublished)
+## v1.8.0 (2026-03-07)
 
 - Add `cf config` interactive command for editing individual settings without re-running the full setup wizard ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
 - Refactor `cf init` with styled banner, step-based wizard, and shared prompt utilities ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
