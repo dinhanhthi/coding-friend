@@ -1,4 +1,10 @@
-import { readdirSync, statSync, copyFileSync, existsSync, readFileSync } from "fs";
+import {
+  readdirSync,
+  statSync,
+  copyFileSync,
+  existsSync,
+  readFileSync,
+} from "fs";
 import { join } from "path";
 import { homedir, hostname as osHostname } from "os";
 import { readJson, writeJson } from "./json.js";
@@ -36,8 +42,10 @@ export function findLatestSession(projectPath: string): string | null {
   if (files.length === 0) return null;
 
   const sorted = files.sort((a, b) => {
-    const aMtime = (statSync(join(sessionDir, a)) as { mtimeMs: number }).mtimeMs;
-    const bMtime = (statSync(join(sessionDir, b)) as { mtimeMs: number }).mtimeMs;
+    const aMtime = (statSync(join(sessionDir, a)) as { mtimeMs: number })
+      .mtimeMs;
+    const bMtime = (statSync(join(sessionDir, b)) as { mtimeMs: number })
+      .mtimeMs;
     return bMtime - aMtime;
   });
 
@@ -48,10 +56,7 @@ export function findLatestSession(projectPath: string): string | null {
  * Extract a preview text from the first user message in a JSONL session file.
  * Returns "(preview unavailable)" on any failure.
  */
-export function buildPreviewText(
-  jsonlPath: string,
-  maxChars = 200,
-): string {
+export function buildPreviewText(jsonlPath: string, maxChars = 200): string {
   try {
     const content = readFileSync(jsonlPath, "utf-8") as string;
     const lines = content.split("\n").filter(Boolean);
@@ -84,7 +89,9 @@ export function listSyncedSessions(syncDir: string): SessionMeta[] {
 
   const entries = (readdirSync(sessionsDir) as string[]).filter((entry) => {
     const entryPath = join(sessionsDir, entry);
-    return (statSync(entryPath) as { isDirectory: () => boolean }).isDirectory();
+    return (
+      statSync(entryPath) as { isDirectory: () => boolean }
+    ).isDirectory();
   });
 
   const metas: SessionMeta[] = [];

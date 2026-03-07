@@ -41,17 +41,15 @@ export const ALL_COMPONENT_IDS: StatuslineComponent[] =
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
-  devRulesReminder?: boolean;
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
 }
 
 export const DEFAULT_CONFIG: Required<
-  Pick<CodingFriendConfig, "language" | "docsDir" | "devRulesReminder">
+  Pick<CodingFriendConfig, "language" | "docsDir">
 > & { learn: Required<LearnConfig> } = {
   language: "en",
   docsDir: "docs",
-  devRulesReminder: true,
   learn: {
     language: "en",
     outputDir: "docs/learn",

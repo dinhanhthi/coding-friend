@@ -86,7 +86,10 @@ describe("findLatestSession", () => {
       "agent-abc.jsonl",
       "real-session.jsonl",
     ] as never);
-    mockStatSync.mockReturnValue({ mtimeMs: 1000, isFile: () => true } as never);
+    mockStatSync.mockReturnValue({
+      mtimeMs: 1000,
+      isFile: () => true,
+    } as never);
 
     const result = findLatestSession("/Users/alice/git/foo");
     expect(result).toContain("real-session.jsonl");
@@ -190,10 +193,7 @@ describe("remapProjectPath", () => {
   });
 
   it("returns path unchanged when home is the same", () => {
-    const result = remapProjectPath(
-      join(homedir(), "git", "foo"),
-      homedir(),
-    );
+    const result = remapProjectPath(join(homedir(), "git", "foo"), homedir());
     expect(result).toBe(join(homedir(), "git", "foo"));
   });
 });

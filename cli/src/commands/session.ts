@@ -54,10 +54,12 @@ function formatSessionChoice(meta: SessionMeta): string {
 
 // ─── cf session save ─────────────────────────────────────────────────────────
 
-export async function sessionSaveCommand(opts: {
-  sessionId?: string;
-  label?: string;
-} = {}): Promise<void> {
+export async function sessionSaveCommand(
+  opts: {
+    sessionId?: string;
+    label?: string;
+  } = {},
+): Promise<void> {
   const syncDir = await resolveSyncDir();
   const cwd = process.cwd();
 

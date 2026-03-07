@@ -25,22 +25,15 @@ If output is not empty, integrate the returned sections:
 
 ### Step 1: Resolve Sessions Folder
 
-Read the local config to get `docsDir` (default: `docs`):
+Output goes to `{docsDir}/sessions/` (default: `docs/sessions/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
+
+- Only check `$CWD/.coding-friend/config.json` for `docsDir` — do NOT search sub-folders
+- Always resolve the sessions path as an **absolute path**: `$CWD/{docsDir}/sessions/`
+
+Create the folder if it doesn't exist:
 
 ```bash
-cat .coding-friend/config.json 2>/dev/null || echo "{}"
-cat ~/.coding-friend/config.json 2>/dev/null || echo "{}"
-```
-
-The sessions folder is `<docsDir>/sessions/` (default: `docs/sessions/`).
-
-Create it if it doesn't exist:
-
-```bash
-DOCS_DIR="docs"  # or value from config
-SESSIONS_DIR="$DOCS_DIR/sessions"
-mkdir -p "$SESSIONS_DIR"
-echo "Sessions folder: $SESSIONS_DIR"
+mkdir -p "$CWD/{docsDir}/sessions"
 ```
 
 ### Step 2: Detect Active Session

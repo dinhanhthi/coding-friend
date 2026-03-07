@@ -22,6 +22,8 @@ cf uninstall         # Completely remove plugin, marketplace, statusline, comple
                      # 💡 Interactive — asks for confirmation before acting.
 cf init              # Initialize workspace (interactive)
                      # 💡 You can run this anywhere, anytime.
+cf config            # Manage Coding Friend configuration (interactive menu)
+                     # 💡 Edit docsDir, language, learn settings, and more.
 cf host [path]       # Build and serve learning docs at localhost:3333
                      # [path] is optional, default is `docs/learn`
 cf mcp [path]        # Setup MCP server for LLM integration
