@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.9.0 (unpublished)
+
+- Add shell completion support for fish, PowerShell, and macOS bash ([#3f6768c](https://github.com/dinhanhthi/coding-friend/commit/3f6768c))
+- Add config menu options for statusline, `.gitignore`, and shell completion management ([#de711da](https://github.com/dinhanhthi/coding-friend/commit/de711da))
+- Fix version detection in `cf install` and `cf update` commands ([#babc843](https://github.com/dinhanhthi/coding-friend/commit/babc843))
+
 ## v1.8.0 (2026-03-07)
 
 - Add `cf config` interactive command for editing individual settings without re-running the full setup wizard ([#68ea924](https://github.com/dinhanhthi/coding-friend/commit/68ea924))
