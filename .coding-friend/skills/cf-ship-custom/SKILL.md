@@ -54,6 +54,8 @@ If source files changed, update corresponding website docs:
 
 Then proceed with the **standard cf-ship workflow** (verify → commit → push → PR). Use `bump <packages> to <versions>` as the commit hint.
 
+**IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
+
 ## Rules
 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
