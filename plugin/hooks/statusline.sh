@@ -183,8 +183,8 @@ elif component_enabled "version"; then
   parts+=("${BLUE}cf${RESET}")
 fi
 
-[ -n "$current_dir" ] && parts+=("${BLUE}${current_dir}${RESET}")
-[ -n "$MODEL" ] && parts+=("${CYAN}${MODEL}${RESET}")
+[ -n "$current_dir" ] && parts+=("${BLUE}📂 ${current_dir}${RESET}")
+[ -n "$MODEL" ] && parts+=("${CYAN}🧠 ${MODEL}${RESET}")
 [ -n "$branch_text" ] && parts+=("${branch_text}")
 [ -n "$ctx_text" ] && parts+=("${ctx_text}")
 [ -n "$usage_text" ] && parts+=("${usage_text}")
