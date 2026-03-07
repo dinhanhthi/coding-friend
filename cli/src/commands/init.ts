@@ -49,7 +49,13 @@ const dk = chalk.hex("#064e3b"); // dark green
 function printBanner(): void {
   console.log();
   console.log(em("  ╭───────────────────────╮"));
-  console.log(em("  │  ") + "✦" + em(" ") + chalk.bold.white("Coding Friend") + em("  ✦   │"));
+  console.log(
+    em("  │  ") +
+      "✦" +
+      em(" ") +
+      chalk.bold.white("Coding Friend") +
+      em("  ✦   │"),
+  );
   console.log(em("  │    ") + chalk.dim("Setup Wizard") + em("       │"));
   console.log(em("  ╰────────────╮──────────╯"));
   console.log(em("               ╰─▸"));
@@ -168,20 +174,29 @@ async function stepGitignore(docsDir: string): Promise<void> {
   })();
 
   if (hasBlock) {
-    printStepHeader(`Configure .gitignore ${chalk.green("[done]")}`, "Keeps AI-generated docs and config out of your git history.");
+    printStepHeader(
+      `Configure .gitignore ${chalk.green("[done]")}`,
+      "Keeps AI-generated docs and config out of your git history.",
+    );
     log.dim(".gitignore already configured.");
     return;
   }
 
-  printStepHeader("Configure .gitignore", "Keeps Coding Friend's AI-generated docs and config out of your git history. You can edit it later in .gitignore.");
+  printStepHeader(
+    "Configure .gitignore",
+    "Keeps Coding Friend's AI-generated docs and config out of your git history. You can edit it later in .gitignore.",
+  );
 
   const choice = await select({
     message: "Add coding-friend artifacts to .gitignore?",
-    choices: injectBackChoice([
-      { name: "Yes, ignore all", value: "all" },
-      { name: "Partial -- pick which to ignore", value: "partial" },
-      { name: "No -- keep everything tracked", value: "none" },
-    ], "Cancel init"),
+    choices: injectBackChoice(
+      [
+        { name: "Yes, ignore all", value: "all" },
+        { name: "Partial -- pick which to ignore", value: "partial" },
+        { name: "No -- keep everything tracked", value: "none" },
+      ],
+      "Cancel init",
+    ),
   });
 
   handleBack(choice);
@@ -267,11 +282,14 @@ async function stepDocsLanguage(
 async function selectLanguage(message: string): Promise<string> {
   const choice = await select({
     message,
-    choices: injectBackChoice([
-      { name: "English", value: "en" },
-      { name: "Vietnamese", value: "vi" },
-      { name: "Other", value: "_other" },
-    ], "Cancel init"),
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Cancel init",
+    ),
   });
 
   handleBack(choice);
@@ -282,7 +300,6 @@ async function selectLanguage(message: string): Promise<string> {
   }
   return choice;
 }
-
 
 async function stepLearnConfig(
   globalCfg: CodingFriendConfig | null,
@@ -308,10 +325,13 @@ async function stepLearnConfig(
   // b) Output location
   const locationChoice = await select({
     message: "Where to store learning docs?",
-    choices: injectBackChoice([
-      { name: `In this project (${docsDir}/learn/)`, value: "local" },
-      { name: "A separate folder", value: "external" },
-    ], "Cancel init"),
+    choices: injectBackChoice(
+      [
+        { name: `In this project (${docsDir}/learn/)`, value: "local" },
+        { name: "A separate folder", value: "external" },
+      ],
+      "Cancel init",
+    ),
   });
 
   handleBack(locationChoice);
@@ -413,11 +433,14 @@ async function stepLearnConfig(
   // e) README index
   const indexChoice = await select({
     message: "How should learning docs be indexed?",
-    choices: injectBackChoice([
-      { name: "No index", value: "none" },
-      { name: "Single README at root", value: "single" },
-      { name: "Per-category READMEs", value: "per-category" },
-    ], "Cancel init"),
+    choices: injectBackChoice(
+      [
+        { name: "No index", value: "none" },
+        { name: "Single README at root", value: "single" },
+        { name: "Per-category READMEs", value: "per-category" },
+      ],
+      "Cancel init",
+    ),
   });
 
   handleBack(indexChoice);
@@ -454,23 +477,35 @@ async function stepLearnConfig(
 
 async function stepShellCompletion(): Promise<void> {
   if (hasShellCompletion()) {
-    printStepHeader(`Shell tab completion ${chalk.green("[done]")}`, "Enables tab-complete for cf commands in your shell.");
+    printStepHeader(
+      `Shell tab completion ${chalk.green("[done]")}`,
+      "Enables tab-complete for cf commands in your shell.",
+    );
     ensureShellCompletion({ silent: false });
     return;
   }
 
-  printStepHeader("Shell tab completion", "Enables tab-complete for cf commands in your shell.");
+  printStepHeader(
+    "Shell tab completion",
+    "Enables tab-complete for cf commands in your shell.",
+  );
   ensureShellCompletion();
 }
 
 async function stepStatusline(): Promise<void> {
   if (isStatuslineConfigured()) {
-    printStepHeader(`Configure statusline ${chalk.green("[done]")}`, "Shows token count, model, and session info in your terminal prompt.");
+    printStepHeader(
+      `Configure statusline ${chalk.green("[done]")}`,
+      "Shows token count, model, and session info in your terminal prompt.",
+    );
     log.dim("Statusline already configured.");
     return;
   }
 
-  printStepHeader("Configure statusline", "Shows token count, model, and session info in your terminal prompt.");
+  printStepHeader(
+    "Configure statusline",
+    "Shows token count, model, and session info in your terminal prompt.",
+  );
 
   const hookResult = findStatuslineHookPath();
   if (!hookResult) {
@@ -625,7 +660,10 @@ export async function initCommand(): Promise<void> {
 
   // Step 7: Claude permissions (conditional: only when external learn dir)
   if (isExternal) {
-    printStepHeader("Configure Claude permissions", "Grants Claude read/write access to your external learn folder without repeated prompts.");
+    printStepHeader(
+      "Configure Claude permissions",
+      "Grants Claude read/write access to your external learn folder without repeated prompts.",
+    );
     await stepClaudePermissions(outputDir, autoCommit);
   }
 

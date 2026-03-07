@@ -129,11 +129,14 @@ async function editLanguage(
 
   const choice = await select({
     message: "What language should generated docs be written in?",
-    choices: injectBackChoice([
-      { name: "English", value: "en" },
-      { name: "Vietnamese", value: "vi" },
-      { name: "Other", value: "_other" },
-    ], "Back"),
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Back",
+    ),
   });
 
   if (choice === BACK) return;
@@ -208,11 +211,14 @@ async function editLearnLanguage(
 
   const choice = await select({
     message: "What language should /cf-learn notes be written in?",
-    choices: injectBackChoice([
-      { name: "English", value: "en" },
-      { name: "Vietnamese", value: "vi" },
-      { name: "Other", value: "_other" },
-    ], "Back"),
+    choices: injectBackChoice(
+      [
+        { name: "English", value: "en" },
+        { name: "Vietnamese", value: "vi" },
+        { name: "Other", value: "_other" },
+      ],
+      "Back",
+    ),
   });
 
   if (choice === BACK) return;
@@ -448,7 +454,13 @@ const em = chalk.hex("#10b981");
 export async function configCommand(): Promise<void> {
   console.log();
   console.log(em("  ╭───────────────────────╮"));
-  console.log(em("  │  ") + "✦" + em(" ") + chalk.bold.white("Coding Friend") + em("  ✦   │"));
+  console.log(
+    em("  │  ") +
+      "✦" +
+      em(" ") +
+      chalk.bold.white("Coding Friend") +
+      em("  ✦   │"),
+  );
   console.log(em("  │    ") + chalk.dim("Config") + em("             │"));
   console.log(em("  ╰────────────╮──────────╯"));
   console.log(em("               ╰─▸"));
@@ -479,17 +491,20 @@ export async function configCommand(): Promise<void> {
           {
             name: `docsDir ${formatScopeLabel(docsDirScope)}${docsDirVal ? ` (${docsDirVal})` : ""}`,
             value: "docsDir",
-            description: "  Top-level folder name for plans, memory, research, and sessions",
+            description:
+              "  Top-level folder name for plans, memory, research, and sessions",
           },
           {
             name: `Docs language ${formatScopeLabel(langScope)}${langVal ? ` (${langVal})` : ""}`,
             value: "language",
-            description: "  Language for /cf-plan, /cf-ask, /cf-remember generated docs",
+            description:
+              "  Language for /cf-plan, /cf-ask, /cf-remember generated docs",
           },
           {
             name: `Learn settings ${formatScopeLabel(learnScope)}`,
             value: "learn",
-            description: "  Output dir, language, categories, auto-commit, README index",
+            description:
+              "  Output dir, language, categories, auto-commit, README index",
           },
         ],
         "Exit",
