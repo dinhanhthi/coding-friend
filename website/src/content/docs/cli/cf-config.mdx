@@ -12,68 +12,21 @@ keywords: [config, configuration, settings, cf config]
 cf config
 ```
 
-## Menu Navigation
+## Available Settings
 
-The main menu shows all configurable options with their current status:
+| Setting              | Description                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| **docsDir**          | Top-level folder name for plans, memory, research, and sessions   |
+| **Docs language**    | Language for `/cf-plan`, `/cf-ask`, `/cf-remember` generated docs |
+| **Learn settings**   | Output dir, language, categories, auto-commit, README index       |
+| **Statusline**       | Choose which components to show in the Claude Code statusline     |
+| **.gitignore**       | Add or update coding-friend artifacts in `.gitignore`             |
+| **Shell completion** | Install, update, or remove tab completion for the `cf` command    |
 
-```
-? What to configure?
-  docsDir [global] (docs)
-  Docs language [both] (en)
-  Learn settings [local]
-  ──────────────────────────
-  Exit
-```
-
-### Status Labels
-
-Each option displays a scope label indicating where the value is currently set:
-
-| Label      | Meaning                                  | Color  |
-| ---------- | ---------------------------------------- | ------ |
-| `[global]` | Set only in global config                | blue   |
-| `[local]`  | Set only in local (project) config       | green  |
-| `[both]`   | Set in both global and local config      | cyan   |
-| `[-]`      | Not configured anywhere (using defaults) | yellow |
-
-### Scope Selection
-
-After editing a value, you are asked where to save it:
-
-- **Global (all projects)** -- saves to `~/.coding-friend/config.json`
-- **This project only** -- saves to `.coding-friend/config.json`
-
-Local config overrides global config at the property level.
-
-## Learn Sub-Menu
-
-Selecting "Learn settings" opens a sub-menu for `/cf-learn` configuration:
-
-```
-? Learn settings:
-  Output dir [local] (docs/learn)
-  Language [-]
-  Categories [global]
-  Auto-commit [-]
-  README index [-]
-  ──────────────────────────
-  Back
-```
-
-Each field is saved independently. When writing a learn field, the existing learn object in the target config is preserved -- only the edited field is updated.
-
-## Exiting
-
-Select "Exit" from the main menu or "Back" from the learn sub-menu to return. Changes are saved immediately after each scope selection -- there is no "save all" step.
-
-## Config File Locations
-
-- **Global**: `~/.coding-friend/config.json` -- applies to all projects
-- **Local**: `.coding-friend/config.json` -- project-specific overrides
-
-You can also edit these files manually. See [Configuration](/docs/configuration/config-json/) for the full schema.
+The first three settings support scope selection (global vs. local) — the same options available in [`cf init`](/docs/cli/cf-init/).
 
 ## See Also
 
 - [`cf init`](/docs/cli/cf-init/) -- first-time setup wizard
+- [`cf statusline`](/docs/cli/cf-statusline/) -- dedicated statusline setup command
 - [Configuration](/docs/configuration/config-json/) -- config file format and options

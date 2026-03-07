@@ -1,0 +1,49 @@
+---
+title: "cf session"
+description: "Save and load Claude Code sessions across machines."
+keywords: [session, sync, resume, cross-machine, cf session]
+---
+
+## Usage
+
+```bash
+cf session save          # Save current session to docs/sessions/
+cf session load          # Load a saved session and resume it
+```
+
+## What It Does
+
+`cf session` manages Claude Code conversation sessions for cross-machine portability. Sessions are stored in `<docsDir>/sessions/` inside your project (default: `docs/sessions/`).
+
+### `cf session save`
+
+Saves the current project's latest Claude Code session to `<docsDir>/sessions/`.
+
+| Option             | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `-s, --session-id` | Session UUID to save (default: auto-detect newest)     |
+| `-l, --label`      | Label for this session (default: `session-YYYY-MM-DD`) |
+
+If multiple recent sessions are found (modified within 60s of each other), you'll be prompted to choose which one to save.
+
+### `cf session load`
+
+Lists saved sessions from `<docsDir>/sessions/` and copies the selected one to `~/.claude/projects/` so it can be resumed.
+
+After loading, resume the session with:
+
+```bash
+claude --resume <session-id>
+```
+
+## Sessions Folder
+
+Sessions are stored in `<docsDir>/sessions/` inside your project. The `docsDir` is configured via `cf config` or `cf init` (default: `docs`). Sync this folder across machines (via git, Dropbox, etc.) to resume sessions elsewhere.
+
+## Privacy Warning
+
+Session files contain your **full conversation history**, including code, file contents, and any sensitive context. Ensure your sessions folder is not publicly accessible.
+
+## See Also
+
+- [`/cf-session`](/docs/skills/cf-session/) -- the in-conversation skill for saving sessions

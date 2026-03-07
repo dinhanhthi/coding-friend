@@ -19,11 +19,17 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall init config host mcp statusline update dev"
+  local commands="install uninstall init config host mcp statusline update dev session"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
     COMPREPLY=($(compgen -W "on off status restart sync update" -- "$cur"))
+    return
+  fi
+
+  # Subcommands for 'session'
+  if [[ "\${COMP_WORDS[1]}" == "session" && \${COMP_CWORD} -eq 2 ]]; then
+    COMPREPLY=($(compgen -W "save load" -- "$cur"))
     return
   fi
 
@@ -51,6 +57,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'statusline:Setup coding-friend statusline in Claude Code'
     'update:Update coding-friend plugin and refresh statusline'
     'dev:Switch between local and remote plugin for development'
+    'session:Save and load Claude Code sessions across machines'
   )
 
   if (( CURRENT == 2 )); then
@@ -64,6 +71,13 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'restart:Restart dev mode (re-apply local plugin)'
       'sync:Sync local plugin files without restarting'
       'update:Update local dev plugin to latest version'
+    )
+    _describe 'subcommand' subcommands
+  elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "session" ]]; then
+    local -a subcommands
+    subcommands=(
+      'save:Save current session to docs/sessions/'
+      'load:Load a saved session from docs/sessions/'
     )
     _describe 'subcommand' subcommands
   elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && ("\${words[3]}" == "on" || "\${words[3]}" == "restart" || "\${words[3]}" == "update") ]]; then
@@ -88,12 +102,15 @@ complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learni
 complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend statusline in Claude Code"
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
+complete -c cf -n "__fish_use_subcommand" -a session -d "Save and load Claude Code sessions across machines"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a on -d "Switch to local plugin source"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a off -d "Switch back to remote marketplace"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a status -d "Show current dev mode"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a restart -d "Restart dev mode"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a sync -d "Sync local plugin files"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local dev plugin"
+complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
+complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from docs/sessions/"
 `;
 
 const POWERSHELL_BLOCK = `
@@ -101,11 +118,15 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','init','config','host','mcp','statusline','update','dev')
+  $commands = @('install','uninstall','init','config','host','mcp','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
+  $sessionSubcommands = @('save','load')
   $words = $commandAst.CommandElements
   if ($words.Count -ge 2 -and $words[1].ToString() -eq 'dev') {
     $devSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'session') {
+    $sessionSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } else {
     $commands | Where-Object { $_ -like "$wordToComplete*" } |

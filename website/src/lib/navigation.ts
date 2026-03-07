@@ -48,6 +48,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf statusline", slug: "cli/cf-statusline" },
       { title: "cf update", slug: "cli/cf-update" },
       { title: "cf dev", slug: "cli/cf-dev" },
+      { title: "cf session", slug: "cli/cf-session" },
     ],
   },
   {

@@ -1,5 +1,6 @@
-import { confirm, input, select } from "@inquirer/prompts";
+import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { readJson, mergeJson } from "../lib/json.js";
 import { log } from "../lib/log.js";
 import {
@@ -9,6 +10,7 @@ import {
 } from "../lib/paths.js";
 import {
   DEFAULT_CONFIG,
+  ALL_COMPONENT_IDS,
   type CodingFriendConfig,
   type LearnCategory,
 } from "../types.js";
@@ -22,8 +24,19 @@ import {
   getMergedValue,
   applyDocsDirChange,
 } from "../lib/prompt-utils.js";
-import { existsSync } from "fs";
 import { run } from "../lib/exec.js";
+import {
+  findStatuslineHookPath,
+  isStatuslineConfigured,
+  selectStatuslineComponents,
+  saveStatuslineConfig,
+  writeStatuslineSettings,
+} from "../lib/statusline.js";
+import {
+  hasShellCompletion,
+  ensureShellCompletion,
+  removeShellCompletion,
+} from "../lib/shell-completion.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -447,6 +460,166 @@ async function learnSubMenu(): Promise<void> {
   }
 }
 
+// ─── Statusline ──────────────────────────────────────────────────────
+
+async function editStatusline(): Promise<void> {
+  const hookResult = findStatuslineHookPath();
+  if (!hookResult) {
+    log.error(
+      "coding-friend plugin not found in cache. Install it first via Claude Code.",
+    );
+    return;
+  }
+
+  log.info(`Found plugin ${chalk.green(`v${hookResult.version}`)}`);
+
+  if (isStatuslineConfigured()) {
+    log.dim("Statusline already configured.");
+    const overwrite = await confirm({
+      message: "Reconfigure statusline?",
+      default: true,
+    });
+    if (!overwrite) return;
+  }
+
+  const components = await selectStatuslineComponents();
+  saveStatuslineConfig(components);
+  writeStatuslineSettings(hookResult.hookPath);
+
+  log.success("Statusline configured!");
+  if (components.length < ALL_COMPONENT_IDS.length) {
+    log.dim(`Showing: ${components.join(", ")}`);
+  } else {
+    log.dim("Showing all components.");
+  }
+  log.dim("Restart Claude Code (or start a new session) to see it.");
+}
+
+// ─── .gitignore ──────────────────────────────────────────────────────
+
+const GITIGNORE_START = "# >>> coding-friend managed";
+const GITIGNORE_END = "# <<< coding-friend managed";
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function editGitignore(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const docsDir =
+    (localCfg?.docsDir as string | undefined) ??
+    (globalCfg?.docsDir as string | undefined) ??
+    DEFAULT_CONFIG.docsDir;
+
+  const allEntries = [
+    `${docsDir}/plans/`,
+    `${docsDir}/memory/`,
+    `${docsDir}/research/`,
+    `${docsDir}/learn/`,
+    `${docsDir}/sessions/`,
+    ".coding-friend/",
+  ];
+
+  const existing = existsSync(".gitignore")
+    ? readFileSync(".gitignore", "utf-8")
+    : "";
+
+  const hasBlock =
+    existing.includes(GITIGNORE_START) || existing.includes("# coding-friend");
+
+  if (hasBlock) {
+    log.dim(".gitignore already has a coding-friend block.");
+  }
+
+  const choice = await select({
+    message: "Add coding-friend artifacts to .gitignore?",
+    choices: injectBackChoice(
+      [
+        { name: "Yes, ignore all", value: "all" },
+        { name: "Partial — pick which to ignore", value: "partial" },
+        { name: "No — keep everything tracked", value: "none" },
+      ],
+      "Back",
+    ),
+  });
+
+  if (choice === BACK) return;
+
+  if (choice === "none") {
+    log.dim("Skipped .gitignore config.");
+    return;
+  }
+
+  let entries = allEntries;
+  if (choice === "partial") {
+    entries = await checkbox({
+      message: "Which folders to ignore?",
+      choices: allEntries.map((e) => ({ name: e, value: e })),
+    });
+    if (entries.length === 0) {
+      log.dim("Nothing selected.");
+      return;
+    }
+  }
+
+  const block = `${GITIGNORE_START}\n${entries.join("\n")}\n${GITIGNORE_END}`;
+
+  const managedBlockRe = new RegExp(
+    `${escapeRegExp(GITIGNORE_START)}[\\s\\S]*?${escapeRegExp(GITIGNORE_END)}`,
+  );
+  const legacyBlockRe = /# coding-friend\n([\w/.]+\n)*/;
+
+  let updated: string;
+  if (managedBlockRe.test(existing)) {
+    updated = existing.replace(managedBlockRe, block);
+    log.success(`Updated .gitignore: ${entries.join(", ")}`);
+  } else if (legacyBlockRe.test(existing)) {
+    updated = existing.replace(legacyBlockRe, block);
+    log.success(`Migrated .gitignore block: ${entries.join(", ")}`);
+  } else {
+    updated = existing.trimEnd() + "\n\n" + block + "\n";
+    log.success(`Added to .gitignore: ${entries.join(", ")}`);
+  }
+
+  writeFileSync(".gitignore", updated);
+}
+
+// ─── Shell Completion ────────────────────────────────────────────────
+
+async function editShellCompletion(): Promise<void> {
+  const installed = hasShellCompletion();
+
+  if (installed) {
+    const choice = await select({
+      message: "Shell tab completion is already installed.",
+      choices: injectBackChoice(
+        [
+          { name: "Update to latest", value: "update" },
+          { name: "Remove", value: "remove" },
+        ],
+        "Back",
+      ),
+    });
+
+    if (choice === BACK) return;
+
+    if (choice === "remove") {
+      if (removeShellCompletion()) {
+        log.success("Shell completion removed.");
+      } else {
+        log.warn("Could not remove shell completion.");
+      }
+      return;
+    }
+
+    ensureShellCompletion({ silent: false });
+  } else {
+    ensureShellCompletion({ silent: false });
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────
 
 const em = chalk.hex("#10b981");
@@ -484,6 +657,13 @@ export async function configCommand(): Promise<void> {
 
     const learnScope = getScopeLabel("learn", globalCfg, localCfg);
 
+    const statuslineStatus = isStatuslineConfigured()
+      ? chalk.green("configured")
+      : chalk.yellow("not configured");
+    const completionStatus = hasShellCompletion()
+      ? chalk.green("installed")
+      : chalk.yellow("not installed");
+
     const choice = await select({
       message: "What to configure?",
       choices: injectBackChoice(
@@ -506,6 +686,24 @@ export async function configCommand(): Promise<void> {
             description:
               "  Output dir, language, categories, auto-commit, README index",
           },
+          {
+            name: `Statusline (${statuslineStatus})`,
+            value: "statusline",
+            description:
+              "  Choose which components to show in the Claude Code statusline",
+          },
+          {
+            name: `.gitignore`,
+            value: "gitignore",
+            description:
+              "  Add or update coding-friend artifacts in .gitignore",
+          },
+          {
+            name: `Shell completion (${completionStatus})`,
+            value: "completion",
+            description:
+              "  Install, update, or remove tab completion for the cf command",
+          },
         ],
         "Exit",
       ),
@@ -524,6 +722,15 @@ export async function configCommand(): Promise<void> {
         break;
       case "learn":
         await learnSubMenu();
+        break;
+      case "statusline":
+        await editStatusline();
+        break;
+      case "gitignore":
+        await editGitignore(globalCfg, localCfg);
+        break;
+      case "completion":
+        await editShellCompletion();
         break;
     }
 
