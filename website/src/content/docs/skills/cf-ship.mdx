@@ -1,10 +1,10 @@
 ---
 title: "/cf-ship"
-description: "Verify, commit, push, and create PR in one command."
+description: "Verify, commit, push, and create pull-request (PR) in one command."
 keywords: [ship, deploy, pull request, push, cf-ship]
 ---
 
-The `/cf-ship` skill automates the final steps of feature delivery: running tests, creating a commit, pushing to remote, and opening a pull request.
+The `/cf-ship` skill automates the final steps of feature delivery: verifying tests and build, creating a conventional commit, pushing to remote, and opening a pull request.
 
 ## Usage
 
@@ -12,13 +12,13 @@ The `/cf-ship` skill automates the final steps of feature delivery: running test
 /cf-ship [hint]
 ```
 
-## Workflow
+## What It Does
 
-1. **Run Tests** — Verify all tests pass (unit, integration, e2e)
-2. **Create Commit** — Generate conventional commit with your hint
-3. **Push to Remote** — Push branch to origin with `-u` flag
-4. **Create PR** — Open pull request with auto-generated title and body
-5. **Report** — Show PR URL for review
+1. **Verifies** — Runs the full [`cf-verification`](/docs/skills/cf-verification/) checklist (tests, build, linter) — stops and fixes if anything fails
+2. **Commits** — If there are uncommitted changes, runs the [`/cf-commit`](/docs/skills/cf-commit/) workflow using your hint
+3. **Pushes** — Pushes the branch to origin — if the remote is ahead, rebases first then retries
+4. **Creates PR** — Opens a pull request via `gh` CLI if on a feature branch (not main/master). Falls back to a manual link if `gh` is not installed
+5. **Reports** — Shows the commit SHA, push result, and PR URL
 
 ## Examples
 
@@ -35,32 +35,33 @@ Output:
 ✓ PR created: https://github.com/yourorg/repo/pull/42
 ```
 
-## Requirements
+```bash
+/cf-ship
+# Automatically generates commit message and ships
+```
 
-- All changes staged and ready to commit
-- All tests passing
-- Branch created and has commits
-- Remote configured (usually origin)
-- GitHub credentials available (gh CLI or GITHUB_TOKEN)
-
-## Pre-Flight Checks
-
-`/cf-ship` verifies:
-
-- Working directory clean (nothing untracked left behind)
-- Tests pass before committing
-- Branch isn't already on main/master
-- Remote is reachable
-
-## PR Details
+## PR Body
 
 The generated PR includes:
 
-- Clear title based on your commit
-- Summary of changes
-- Link to related issues (if detected)
-- Test results and coverage
-- Reviewers assigned (if configured)
+```markdown
+## Summary
+
+- 1-3 bullet points describing the changes
+
+## Test plan
+
+- [ ] Tests pass
+- [ ] Manual verification done
+```
+
+## Rules
+
+- Never force pushes unless explicitly asked
+- Never pushes to main/master directly
+- Always verifies before pushing
+- Asks before pushing if there are concerns
+- No AI attribution in commits or PRs
 
 ## When to Use
 
@@ -71,8 +72,8 @@ The generated PR includes:
 
 ## Workflow Integration
 
-Pairs perfectly with:
+```bash
+/cf-plan → implement → /cf-review → /cf-commit (loop) → /cf-ship
+```
 
-- `/cf-plan` — Design first
-- `/cf-fix` — Bug resolution
-- `/cf-commit` — Manual staging
+💡 You should extend this skill with Custom Skill Guides to add additional steps before or after the standard workflow. See [Custom Skill Guides](/docs/configuration/custom-skill-guides/) for more details.

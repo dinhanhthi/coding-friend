@@ -12,15 +12,18 @@ keywords: [host, platform detection, cf host]
 
 ```bash
 cf host [path]
+
+# Example
+cf host ./my-learning-docs
 ```
 
-The default path is `docs/learn/`.
+The default path is `<project>/docs/learn/`.
 
 ## Features
 
 ### Local Server
 
-Docs are served at `localhost:3333` by default.
+Docs are served at `http://localhost:3333` by default.
 
 ### Incremental Static Regeneration (ISR)
 
@@ -29,13 +32,3 @@ The server automatically detects changes to your markdown files and regenerates 
 ### Full-Text Search
 
 Built-in search powered by [Pagefind](https://pagefind.app/). Search across all your documentation instantly.
-
-## Example
-
-```bash
-# Serve docs from docs/learn/
-cf host
-
-# Serve docs from a custom directory
-cf host ./my-learning-docs
-```

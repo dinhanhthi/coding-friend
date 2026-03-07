@@ -12,9 +12,9 @@ Interactive setup wizard for Coding Friend. Run it in the root directory of your
 cf init
 ```
 
-The wizard runs each step linearly. Steps that are already configured show `[done]` and are skipped automatically. You can run `cf init` as many times as you want.
+The wizard runs each step linearly. Steps that are already configured are skipped automatically. You can run `cf init` as many times as you want.
 
-To edit individual settings later, use [`cf config`](/docs/cli/cf-config/) instead.
+💡 To edit individual settings later, use [`cf config`](/docs/cli/cf-config/) instead.
 
 ## Config File Locations
 
@@ -29,105 +29,34 @@ Local overrides global at property level.
 
 ## Status Display
 
-Before the wizard starts, current configuration is shown with scope labels:
+Configs can be stored in two different locations - global and local. Local overrides global at the property level.
 
-```
-Current configuration:
-  [both]   docsDir (my-docs)
-  [global] Docs language (en)
-  [-]      /cf-learn config
-```
-
-| Label      | Meaning                                  | Color  |
-| ---------- | ---------------------------------------- | ------ |
-| `[global]` | Set only in global config                | blue   |
-| `[local]`  | Set only in local (project) config       | green  |
-| `[both]`   | Set in both global and local config      | cyan   |
-| `[-]`      | Not configured anywhere (using defaults) | yellow |
+- Global config: `~/.coding-friend/config.json`
+- Local config: `<project>/.coding-friend/config.json`
+- The meaning of the labels is as follows:
+  - `[global]` - set only in global config
+  - `[local]` - set only in local (project) config
+  - `[both]` - set in both global and local config
+  - `[-]` - not configured anywhere (using defaults)
 
 ## Setup Steps
 
-### Step 1: Docs folder name
-
-Sets the top-level folder name for all Coding Friend outputs (default: `"docs"`). Must be a single folder name, not a path (no slashes). After entering the name, you choose whether to save it globally or locally.
-
-The documentation subfolders are created automatically alongside the docs folder:
-
-- `{docsDir}/plans/` -- Implementation plans and task breakdowns
-- `{docsDir}/memory/` -- Project knowledge and reference docs
-- `{docsDir}/research/` -- Research findings and deep dives
-- `{docsDir}/learn/` -- Learning notes and extracted knowledge
-- `{docsDir}/sessions/` -- Session sync files
-
-**Folder rename behavior:**
-
-- Save to **local**: if the old folder exists, it is renamed to the new name; otherwise the new folder is created.
-- Save to **global**: if local config already has `docsDir` set, no folder changes are made (the project manages its own). Otherwise, the existing global folder is renamed (or a new one is created).
-
-### Step 2: Configure `.gitignore`
-
-Choose whether to add Coding Friend artifacts to `.gitignore`:
-
-- **Yes, ignore all** -- adds all folders
-- **Partial** -- pick which folders to ignore
-- **No** -- keep everything tracked
-
-This step has no scope question (`.gitignore` is always project-local).
-
-```bash
-# >>> coding-friend managed
-docs/plans/
-docs/memory/
-docs/research/
-docs/learn/
-docs/sessions/
-.coding-friend/
-# <<< coding-friend managed
-```
-
-### Step 3: Docs language
-
-Sets the language for generated docs (plans, memory, research, ask). Choose **English** (`en`), **Vietnamese** (`vi`), or **Other** (enter a custom name). After choosing, select global or local scope.
-
-### Step 4: `/cf-learn` config
-
-Configures all `/cf-learn` settings in sequence:
-
-1. **Language** -- language for learning notes
-2. **Output dir** -- local (`docs/learn/`) or external path
-3. **Categories** -- use defaults, keep current, or customize
-4. **Auto-commit** -- only shown for external dirs with git
-5. **README index** -- none, single, or per-category
-
-After configuring all fields, you choose **one** scope for the entire learn object.
-
-### Step 5: Shell completion
-
-Auto-detects your shell (`zsh`, `bash`, `fish`, PowerShell on Windows) and adds tab completion for `cf` commands. Unsupported shells are skipped with a warning. No scope question (global by nature).
-
-### Step 6: Statusline
-
-Interactive checklist to pick which components to show in the [statusline](/docs/cli/cf-statusline/).
-
-### Step 7: Claude permissions
-
-Only appears when using an **external** output directory for `/cf-learn`:
-
-- Adds `Read`, `Edit`, `Write` permission rules to `~/.claude/settings.json`
-- If auto-commit is enabled, also adds `git add` / `git commit` rules
-
-## Cancelling
-
-In steps that use a selection menu, a "Cancel init" option is available at the bottom. Selecting it exits the wizard immediately.
+1. **Step 1** - Docs folder name (default: `"docs"`), where plans, memory, research, and session docs are stored in your project.
+2. **Step 2** - Configure `.gitignore`. Keeps Coding Friend's AI-generated docs and config out of your git history. You can edit it later in `.gitignore`.
+3. **Step 3** - Docs language. Skills like `/cf-plan`, `/cf-ask`, `/cf-remember` will write docs in this language.
+4. **Step 4** - `/cf-learn` config. The settings for the learning extraction skill. You can configure the language, output directory, and categories.
+5. **Step 5** - Shell completion. Adds tab completion for `cf` commands to your shell.
+6. **Step 6** - Statusline. The statusline is a small section at the bottom of the screen that shows the current status of the Coding Friend session. You can configure it later with [`cf statusline`](/docs/cli/cf-statusline/).
+7. **Step 7** - Claude permissions. Adds `Read`, `Edit`, `Write` permission rules to `~/.claude/settings.json` if you are using an external output directory for `/cf-learn`. If auto-commit is enabled, also adds `git add` / `git commit` rules.
 
 ## Non-Git Directories
 
-`cf init` can work outside git repos. The `.gitignore` step is automatically skipped in that case.
+`cf init` can work outside git repos. All git-related steps are automatically skipped in that case.
 
 ## See Also
 
-- [`cf config`](/docs/cli/cf-config/) -- edit individual settings anytime
-- [`cf install`](/docs/cli/cf-install/) -- install the Coding Friend plugin
-- [`cf statusline`](/docs/cli/cf-statusline/) -- configure statusline independently
-- [`/cf-learn`](/docs/skills/cf-learn/) -- the learning extraction skill configured by this command
-- [Configuration](/docs/configuration/config-json/) -- config file format and options
+- [`cf config`](/docs/cli/cf-config/) - edit individual settings anytime
+- [`cf install`](/docs/cli/cf-install/) - install the Coding Friend plugin
+- [`cf statusline`](/docs/cli/cf-statusline/) - configure statusline independently
+- [`/cf-learn`](/docs/skills/cf-learn/) - the learning extraction skill configured by this command
+- [Configuration](/docs/configuration/config-json/) - config file format and options

@@ -12,9 +12,12 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 /cf-review [target]
 ```
 
+Different behavior is expected based on the value of `[target]`:
+
 - **No arguments** — reviews all uncommitted changes (`git diff` + `git diff --staged`)
 - **File or directory** — reviews that specific path
 - **Commit range** — reviews a range of commits
+- **Natural language description** — reviews all uncommitted changes, focused on the described area
 
 ## Examples
 
@@ -39,43 +42,26 @@ The `/cf-review` skill performs comprehensive code review using a dedicated suba
 ```
 
 ```bash
+# Review changes related to a specific topic
+/cf-review the changes related to the auth logic
+```
+
+```bash
 # Force a deep or quick review
 /cf-review src/auth/ --deep
 /cf-review README.md --quick
 ```
 
-## How It Works
+## Workflow
 
-### Architecture
+1. **Identify target** — Determine what to review based on `[target]` (see [Usage](#usage))
+2. **Gather diff** — Collect changes via `git diff` and assess change size
+3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
+4. **Dispatch to subagent** — Fork a [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
+5. **Apply 4-layer review** — Plan alignment, code quality, security, and testing (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
+6. **Report findings** — Organized by severity (Critical / Important / Suggestion)
 
-`/cf-review` is the entry point for a 3-component system, each with a distinct role:
-
-```
-/cf-review (entry point — workflow orchestration)
-    ↓ fork + dispatch
-cf-code-reviewer agent (execution — how to review)
-    ↓ loads
-cf-auto-review (methodology — what to check)
-```
-
-- **`/cf-review`** orchestrates the workflow: gathers the diff, detects review mode (QUICK/STANDARD/DEEP), and dispatches to the subagent
-- **[`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent** executes the review: reads code, applies the methodology, formats the report
-- **[`cf-auto-review`](/docs/skills/cf-auto-review/)** is the single source of truth for the 4-layer review methodology, security table, and confidence scoring
-
-Without `/cf-review`, Claude can still review code — it loads `cf-auto-review` directly inline, using the same methodology without a subagent.
-
-### Subagent Isolation
-
-Reviews run in a **forked subagent** ([`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer)), completely isolated from your main conversation:
-
-- **Clean context** — the reviewer starts fresh, no bias from your working session
-- **No interference** — your main workflow continues unaffected
-- **Token efficient** — isolated context means focused, cheaper analysis
-- **Structured output** — findings come back as a formatted report
-
-### Proportional Review
-
-Not every change needs a full security deep-dive. `/cf-review` automatically detects the size and sensitivity of your changes and scales accordingly:
+### Review Modes
 
 | Mode         | When                                              | What Happens                                                            |
 | ------------ | ------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -83,13 +69,9 @@ Not every change needs a full security deep-dive. `/cf-review` automatically det
 | **STANDARD** | 4–10 files or 51–300 lines                        | Full 4-layer review. All security phases, concise.                      |
 | **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
 
-**Sensitive path detection**: if any changed file matches patterns like `auth`, `crypto`, `token`, `session`, `password`, `.env`, the review always escalates to **DEEP** — regardless of change size.
-
-You can override auto-detection with `--deep` or `--quick` flags.
+If any changed file matches sensitive patterns (`auth`, `crypto`, `token`, `session`, `password`, `.env`), the review always escalates to **DEEP**. Override with `--deep` or `--quick` flags.
 
 ### 4-Layer Review
-
-The reviewer applies four layers of analysis, each focused on a different dimension:
 
 | Layer                 | Focus                                                               |
 | --------------------- | ------------------------------------------------------------------- |
@@ -98,15 +80,7 @@ The reviewer applies four layers of analysis, each focused on a different dimens
 | **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
 | **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests           |
 
-### Security Analysis (Layer 3)
-
-Security gets special treatment with a 3-phase process:
-
-1. **Context Research** — identify the project's security patterns, frameworks, auth model
-2. **Vulnerability Assessment** — check 6 categories: injection, auth/access, data exposure, crypto, config, and dependency risks
-3. **Confidence Filtering** — score each finding 0–1. Only findings above 0.8 confidence are reported, reducing false positives
-
-For **QUICK** mode, only secret scanning and obvious injection checks run. For **DEEP** mode, full data flow tracing and exploit scenarios are included.
+Security findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
 
 ## Output
 
@@ -130,6 +104,13 @@ Findings are organized by severity:
 Auth module is functional but has one critical SQL injection vulnerability.
 ```
 
+## Auto-Triggered
+
+`/cf-review` is automatically invoked by other skills — you don't always need to run it manually:
+
+- [`/cf-plan`](/docs/skills/cf-plan/) — runs `/cf-review` after all implementation tasks complete
+- [`/cf-fix`](/docs/skills/cf-fix/) — runs `/cf-review` after the fix is verified
+
 ## When to Use
 
 - **Before merging** — catch issues before they reach `main`
@@ -144,7 +125,8 @@ Auth module is functional but has one critical SQL injection vulnerability.
 `/cf-review` fits naturally into the Coding Friend pipeline:
 
 ```
-/cf-plan → implement (TDD) → /cf-review → /cf-ship
+/cf-plan → implement (TDD) → (auto) /cf-review → /cf-ship
+/cf-fix → (auto) /cf-review → /cf-commit
 ```
 
 You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/skills/cf-ship/) (which runs verification + commit + push + PR), it forms a complete quality gate before code reaches production.

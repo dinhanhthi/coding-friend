@@ -14,11 +14,11 @@ The `/cf-research` skill performs thorough technical research using web search a
 
 ## What It Does
 
-1. **Breaks Down Topic** — Identifies research questions and angles
-2. **Parallel Search** — Multiple subagents search simultaneously
-3. **Evaluates Sources** — Filters for relevance and credibility
-4. **Synthesizes Findings** — Combines results into coherent document
-5. **Saves to Research Dir** — Stores in `docs/research/` for future use
+1. **Scopes the Research** — Parses your topic, determines research type, and defines 3-5 key questions
+2. **Plans Structure** — Breaks the topic into logical parts that can be researched independently
+3. **Parallel Search** — Launches multiple subagents to research each part simultaneously
+4. **Synthesizes Findings** — Creates a summary document linking all parts with key findings
+5. **Saves to Research Dir** — Stores in `docs/research/<topic-slug>/` for future use
 
 ## Examples
 
@@ -26,49 +26,37 @@ The `/cf-research` skill performs thorough technical research using web search a
 /cf-research best practices for JWT refresh tokens
 ```
 
-```bash
-/cf-research comparing Firebase vs self-hosted auth solutions
-```
+## Research Types
 
-```bash
-/cf-research performance optimization for React applications
-```
+The skill adapts its approach based on what you're researching:
 
-## Research Coverage
-
-Comprehensive research includes:
-
-- **Official Documentation** — First-party sources from maintainers
-- **Best Practices** — Community standards and recommendations
-- **Performance Comparisons** — Benchmarks and trade-offs
-- **Case Studies** — Real-world implementations and lessons
-- **Gotchas** — Common pitfalls and how to avoid them
-- **Tooling** — Libraries, frameworks, and utilities
+- **Web topic** — A technology, library, pattern, or concept (uses WebSearch + WebFetch)
+- **Codebase** — A git repo, folder, or project (uses Read, Glob, Grep)
+- **Comparison** — Comparing multiple options or approaches (each option gets its own doc)
 
 ## Output Structure
 
+Research output uses numbered part files with a summary:
+
 ```
-docs/research/
-  ├── jwt-refresh-tokens/
-  │   ├── overview.md
-  │   ├── implementation-guide.md
-  │   ├── security-considerations.md
-  │   ├── comparison-with-alternatives.md
-  │   └── sources.md
+docs/research/<topic-slug>/
+  ├── _summary.md          # Overall summary with links to all parts
+  ├── 01-<part-name>.md    # Part 1 findings
+  ├── 02-<part-name>.md    # Part 2 findings
+  ├── 03-<part-name>.md    # Part 3 findings
   └── ...
 ```
 
+Each part document is self-contained and readable independently. The `_summary.md` provides a high-level overview, links to each part, highlights key findings, and lists open questions.
+
 ## Parallel Subagents
 
-Research leverages multiple subagents that work simultaneously on:
+Research leverages multiple subagents that work simultaneously. Each subagent:
 
-- Best practice documentation
-- Implementation guides
-- Security considerations
-- Performance benchmarks
-- Tool comparisons
-
-Results are merged into a single comprehensive document.
+- Focuses on one specific part of the topic
+- Uses WebSearch and WebFetch for web topics, or file tools for codebases
+- Writes its findings directly to a numbered part file
+- Includes code examples, source links, and specific details
 
 ## When to Use
 
@@ -81,11 +69,18 @@ Results are merged into a single comprehensive document.
 
 ## Output Quality
 
-Research documents include:
+Each part document follows a consistent template:
 
-- Summary and key takeaways
-- Detailed analysis by subtopic
-- Relevant code examples
-- Comparison tables
-- Recommended resources
-- Full source citations
+- **Key Questions** — What this part answers
+- **Findings** — Detailed analysis organized by subtopic
+- **Code Examples** — Relevant snippets when applicable
+- **Sources** — Full citations with URLs
+- **Notes** — Additional observations and caveats
+
+The summary document includes:
+
+- High-level overview of the entire research
+- Key findings (top 3-5)
+- Links to all part documents
+- Open questions for further investigation
+- Recommended next steps (e.g., "run [`/cf-plan`](/docs/skills/cf-plan/) to plan implementation")

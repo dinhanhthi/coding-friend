@@ -19,7 +19,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 3. **Brainstorm Approaches** — Launches the [`cf-planner`](/docs/reference/agents/#cf-planner) agent to generate 2–3 possible approaches, each with pros, cons, effort estimate, risk, and confidence level. Recommends one with rationale
 4. **Validate with You** — Presents key findings, approaches, and open questions. Waits for your approval before writing anything
 5. **Write & Save the Plan** — Breaks the approved approach into small, sequential tasks with specific files, expected outcomes, and verification steps. Saves to `docs/plans/`
-6. **Offer Implementation** — Asks if you want to start implementing. If yes, executes each task sequentially using the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with [TDD discipline](/docs/skills/cf-tdd/)
+6. **Offer Implementation** — Asks if you want to start implementing. If yes, executes each task sequentially using the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with [TDD discipline](/docs/skills/cf-tdd/), then automatically runs [`/cf-review`](/docs/skills/cf-review/)
 
 ## Example
 
@@ -70,4 +70,4 @@ Each plan includes:
 /cf-plan → implement (implicitly via /cf-implementer) → /cf-review → /cf-commit
 ```
 
-The plan automatically reminds you to run [`/cf-review`](/docs/skills/cf-review/) before committing, so you don't skip the review step and jump straight to [`/cf-commit`](/docs/skills/cf-commit/).
+After implementation, [`/cf-review`](/docs/skills/cf-review/) runs automatically — no need to trigger it manually before [`/cf-commit`](/docs/skills/cf-commit/).

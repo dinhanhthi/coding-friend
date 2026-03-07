@@ -175,6 +175,12 @@ Automatically invoke `/cf-review` — use the **Skill tool** with skill name `co
 
 ## Escalation
 
+If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
+
+1. **Suggest `/cf-learn`** — Ask the user: _"This bug is taking multiple attempts. Want to run `/cf-learn` to capture the debugging insights so far before continuing?"_
+2. If the user agrees, invoke `/cf-learn` via the **Skill tool** with skill name `coding-friend:cf-learn`
+3. Then proceed with the 3rd attempt
+
 If you've tried **3 fixes** and the bug persists:
 
 1. Stop fixing

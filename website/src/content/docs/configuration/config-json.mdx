@@ -6,67 +6,24 @@ keywords: [configuration, config file, settings, json]
 
 ## Overview
 
-Configure Coding Friend behavior using `.coding-friend/config.json`. This file lets you customize documentation directories, enable/disable hooks, and adjust learning extraction settings.
+Configure Coding Friend using `.coding-friend/config.json`. Two locations:
 
-## Config File Locations
+- **Global**: `~/.coding-friend/config.json` — applies to all projects
+- **Local**: `.coding-friend/config.json` — project-specific, overrides global
 
-- **Global**: `~/.coding-friend/config.json` -- applies to all projects
-- **Local**: `.coding-friend/config.json` -- project-specific settings
+Edit interactively with `cf config`, or manually edit the JSON files.
 
-## How to Edit
-
-You can edit configuration in two ways:
-
-1. **Interactive**: Run `cf config` for a menu-driven editor, or `cf init` during first-time setup
-2. **Manual**: Edit the JSON files directly at the paths above
-
-## Configuration Schema
-
-### Documentation Folder Name
+## Full Config
 
 ```json
 {
-  "docsDir": "docs"
-}
-```
-
-The name of the top-level folder where all skill outputs are stored (default: `"docs"`). This is a **folder name**, not a path -- it must be a single name relative to your project root, with no slashes. All skill output subfolders sit inside it: `plans/`, `memory/`, `research/`, `learn/`, and `sessions/`.
-
-### Hooks
-
-Control which automatic hooks run during your session:
-
-```json
-{
-  "hooks": {
-    "privacyBlock": true,
-    "scoutBlock": true,
-    "devRulesReminder": true,
-    "contextTracker": true
-  }
-}
-```
-
-All hooks default to `true`. Set to `false` to disable.
-
-### Commit Settings
-
-```json
-{
+  "language": "en",
+  "docsDir": "docs",
+  "privacyBlock": true,
+  "scoutBlock": true,
   "commit": {
-    "verify": true,
-    "conventionalCommits": true
-  }
-}
-```
-
-- `verify`: Run tests before allowing commit (default: `true`)
-- `conventionalCommits`: Enforce conventional commit format (default: `true`)
-
-### Learning Extraction
-
-```json
-{
+    "verify": true
+  },
   "learn": {
     "language": "en",
     "outputDir": "docs/learn",
@@ -88,59 +45,109 @@ All hooks default to `true`. Set to `false` to disable.
     ],
     "autoCommit": false,
     "readmeIndex": false
+  },
+  "statusline": {
+    "components": ["version", "folder", "model", "branch", "context", "usage"]
   }
 }
 ```
 
-| Field         | Type                        | Default        | Description                                                                            |
-| ------------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------- |
-| `language`    | `string`                    | `"en"`         | Language for cf-learn notes. Falls back to top-level `language`, then `"en"`           |
-| `outputDir`   | `string`                    | `"docs/learn"` | Where learning docs are saved. Absolute or `~/` paths for external storage             |
-| `categories`  | `array`                     | 5 defaults     | Each entry has `name` and `description`                                                |
-| `autoCommit`  | `boolean`                   | `false`        | Auto-commit after each `/cf-learn` (external dir only)                                 |
-| `readmeIndex` | `boolean \| "per-category"` | `false`        | `true` for single README containing all indexes or `"per-category"` for one per folder |
+## Properties
 
-## Example Config
+### `language`
 
-```json
-{
-  "docsDir": "docs",
-  "devRulesReminder": true,
-  "hooks": {
-    "privacyBlock": true,
-    "scoutBlock": true,
-    "devRulesReminder": true,
-    "contextTracker": true
-  },
-  "commit": {
-    "verify": true,
-    "conventionalCommits": true
-  },
-  "learn": {
-    "language": "en",
-    "outputDir": "docs/learn",
-    "categories": [
-      {
-        "name": "concepts",
-        "description": "Design patterns, algorithms, architecture principles"
-      },
-      { "name": "tools", "description": "Libraries, frameworks, CLI tools" }
-    ],
-    "autoCommit": false,
-    "readmeIndex": false
-  }
-}
-```
+- **Type**: `string`
+- **Default**: `"en"`
+- Language for doc-generating skills (`/cf-ask`, `/cf-remember`, `/cf-plan`, `/cf-research`)
 
-## Layered Configuration
+### `docsDir`
 
-Coding Friend supports two configuration levels:
+- **Type**: `string`
+- **Default**: `"docs"`
+- Top-level folder name where all skill outputs are stored
+- Must be a single folder name (no slashes) — all subfolders (`plans/`, `memory/`, `research/`, `sessions/`) sit inside it
 
-1. **Global**: `~/.coding-friend/config.json` -- applies to all projects
-2. **Local**: `.coding-friend/config.json` -- project-specific settings
+### `privacyBlock`
 
-Local settings override global settings **at the property level** (top-level key merge, not deep merge). For example, if global has `{ "language": "en", "docsDir": "docs" }` and local has `{ "language": "vi" }`, the result is `{ "language": "vi", "docsDir": "docs" }`. But if local has a `learn` object, it replaces the entire global `learn` object.
+- **Type**: `boolean`
+- **Default**: `true`
+- Enables the privacy-block hook that prevents reading sensitive files (`.env`, credentials, etc.)
+- Set to `false` to disable
+
+### `scoutBlock`
+
+- **Type**: `boolean`
+- **Default**: `true`
+- Enables the scout-block hook that prevents the agent from reading too many files at once
+- Set to `false` to disable
+
+### `commit`
+
+Settings for the `/cf-commit` workflow.
+
+#### `commit.verify`
+
+- **Type**: `boolean`
+- **Default**: `true`
+- Run tests before allowing commit
+- Set to `false` to skip pre-commit verification
+
+### `learn`
+
+Settings for the `/cf-learn` skill.
+
+#### `learn.language`
+
+- **Type**: `string`
+- **Default**: `"en"`
+- Language for `/cf-learn` notes
+- Falls back to top-level `language`, then `"en"`
+
+#### `learn.outputDir`
+
+- **Type**: `string`
+- **Default**: `"docs/learn"`
+- Where learning docs are saved
+- Supports absolute paths (`/path/to/dir`) or `~/` paths for external storage
+
+#### `learn.categories`
+
+- **Type**: `array` of `{ name, description }`
+- **Default**: 5 categories (concepts, patterns, languages, tools, debugging)
+- Subdirectories and their descriptions for organizing learning docs
+
+#### `learn.autoCommit`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Auto-commit after each `/cf-learn` (useful for external output dirs)
+
+#### `learn.readmeIndex`
+
+- **Type**: `boolean | "per-category"`
+- **Default**: `false`
+- `false` — no index
+- `true` — single README containing all indexes
+- `"per-category"` — one README per category folder
+
+### `statusline`
+
+Settings for the statusline display (global config only).
+
+#### `statusline.components`
+
+- **Type**: `array` of component IDs
+- **Default**: all components shown
+- Available components: `"version"`, `"folder"`, `"model"`, `"branch"`, `"context"`, `"usage"`
+- Only listed components are shown — omit a component to hide it
+
+## Layered Config
+
+Local settings override global settings **at the top-level key level** (not deep merge).
+
+- If global has `{ "language": "en", "docsDir": "docs" }` and local has `{ "language": "vi" }`, the result is `{ "language": "vi", "docsDir": "docs" }`
+- If local has a `learn` object, it **replaces** the entire global `learn` object
 
 ## Custom Skill Guides
 
-Separate from `config.json`, you can extend built-in skills with project-specific guidance. See [Custom Skill Guides](/docs/configuration/custom-skill-guides) for full documentation and examples.
+Separate from `config.json`, you can extend built-in skills with project-specific guidance. See [Custom Skill Guides](/docs/configuration/custom-skill-guides) for details.

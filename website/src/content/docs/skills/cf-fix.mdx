@@ -22,7 +22,7 @@ The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, expl
 6. **Implement Fix** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): write a failing regression test first, then fix the root cause
 7. **Verify Results** — Reviews the implementer's report, confirms the fix addresses the root cause, and ensures all tests pass with no regressions
 8. **Save Bug Knowledge** — If the fix required more than 1 attempt, documents the bug (symptom, root cause, fix, prevention) to `docs/memory/bugs/` via [`cf-writer`](/docs/agents/cf-writer/) agent with frontmatter for future recall
-9. **Review Reminder** — Asks if you want to run [`/cf-review`](/docs/skills/cf-review/) or [`/cf-commit`](/docs/skills/cf-commit/)
+9. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the fix is verified
 
 ## Example
 
@@ -55,10 +55,13 @@ Before diving deep, the skill tries these common causes first:
 - **TDD Integration** — Enforces test-first approach for bug fixes
 - **Regression Prevention** — Runs existing tests to catch side effects
 - **Knowledge Capture** — Non-trivial bugs (multiple attempts) are documented for future reference
+- **Learn Prompt** — After 2 failed attempts, suggests [`/cf-learn`](/docs/skills/cf-learn/) to capture debugging insights before continuing
 - **Minimal Changes** — Focuses on surgical fixes, not rewrites
 - **Custom Guides** — Extend behavior via `.coding-friend/skills/cf-fix-custom/SKILL.md`
 
 ## Escalation
+
+If the bug persists after **2 fix attempts**, the skill suggests running [`/cf-learn`](/docs/skills/cf-learn/) to capture debugging insights before the 3rd attempt — so the knowledge gained from investigation isn't lost.
 
 If the bug persists after **3 fix attempts**, the skill stops and escalates to the full [`cf-sys-debug`](/docs/skills/cf-sys-debug/) 5-phase diagnostic process — the bug is likely deeper than expected.
 
@@ -79,10 +82,8 @@ Fixes include:
 
 ## Recommended Workflow
 
-After the fix is verified, follow this order:
+After the fix is verified, [`/cf-review`](/docs/skills/cf-review/) runs automatically:
 
 ```
-/cf-fix → /cf-review → /cf-commit
+/cf-fix → (auto) /cf-review → /cf-commit
 ```
-
-The skill automatically reminds you to run [`/cf-review`](/docs/skills/cf-review/) before committing, so you don't skip the review step and jump straight to [`/cf-commit`](/docs/skills/cf-commit/).
