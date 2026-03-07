@@ -2,15 +2,9 @@ import { input, select } from "@inquirer/prompts";
 import { existsSync, readdirSync, statSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
-import { mergeJson } from "../lib/json.js";
 import { log } from "../lib/log.js";
+import { encodeProjectPath, claudeSessionDir } from "../lib/paths.js";
 import {
-  globalConfigPath,
-  encodeProjectPath,
-  claudeSessionDir,
-} from "../lib/paths.js";
-import {
-  findLatestSession,
   buildPreviewText,
   saveSession,
   listSyncedSessions,
@@ -22,28 +16,10 @@ import { loadConfig } from "../lib/config.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-async function resolveSyncDir(): Promise<string> {
+function resolveDocsDir(): string {
   const config = loadConfig();
-  if (config.sessionSyncDir) return config.sessionSyncDir;
-
-  log.warn("No session sync folder configured.");
-  const syncDir = await input({
-    message:
-      "Enter path to your sync folder (e.g. ~/Dropbox/cf-sessions or a git repo path):",
-    validate: (v) => v.trim().length > 0 || "Path cannot be empty",
-  });
-
-  const resolved = syncDir.startsWith("~/")
-    ? join(homedir(), syncDir.slice(2))
-    : syncDir;
-
-  mergeJson(globalConfigPath(), { sessionSyncDir: resolved });
-  log.success(`Sync folder saved to global config: ${resolved}`);
-  log.warn(
-    "Session files contain your full conversation history. Make sure this folder is private.",
-  );
-
-  return resolved;
+  const docsDir = config.docsDir ?? "docs";
+  return join(process.cwd(), docsDir);
 }
 
 function formatSessionChoice(meta: SessionMeta): string {
@@ -60,7 +36,7 @@ export async function sessionSaveCommand(
     label?: string;
   } = {},
 ): Promise<void> {
-  const syncDir = await resolveSyncDir();
+  const docsDir = resolveDocsDir();
   const cwd = process.cwd();
 
   let jsonlPath: string | null = null;
@@ -130,23 +106,23 @@ export async function sessionSaveCommand(
     sessionId,
     label,
     projectPath: cwd,
-    syncDir,
+    syncDir: docsDir,
     previewText,
   });
 
   log.success(`Session saved: "${label}"`);
-  log.dim(`  → ${join(syncDir, "sessions", sessionId)}`);
+  log.dim(`  → ${join(docsDir, "sessions", sessionId)}`);
 }
 
 // ─── cf session load ─────────────────────────────────────────────────────────
 
 export async function sessionLoadCommand(): Promise<void> {
-  const syncDir = await resolveSyncDir();
-  const sessions = listSyncedSessions(syncDir);
+  const docsDir = resolveDocsDir();
+  const sessions = listSyncedSessions(docsDir);
 
   if (sessions.length === 0) {
-    log.warn("No saved sessions found in sync folder.");
-    log.dim(`  Sync folder: ${syncDir}`);
+    log.warn("No saved sessions found.");
+    log.dim(`  Sessions dir: ${join(docsDir, "sessions")}`);
     log.dim("  Run /cf-session inside a Claude Code conversation to save one.");
     return;
   }
@@ -175,7 +151,7 @@ export async function sessionLoadCommand(): Promise<void> {
     localProjectPath = confirmed.trim() || remapped;
   }
 
-  loadSession(chosen, localProjectPath, syncDir);
+  loadSession(chosen, localProjectPath, docsDir);
 
   log.success(`Session "${chosen.label}" loaded.`);
   log.info(`To resume, run:`);

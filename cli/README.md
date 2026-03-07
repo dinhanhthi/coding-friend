@@ -40,6 +40,8 @@ cf dev status        # Show current dev mode (local or remote)
 cf dev sync          # Sync local changes to cache (no version bump needed)
 cf dev restart       # Reinstall local dev plugin (off + on)
 cf dev update        # Update local dev plugin to latest version (off + on)
+cf session save      # Save current Claude Code session to docs/sessions/
+cf session load      # Load a saved session from docs/sessions/
 cf help              # Show all commands
 ```
 
