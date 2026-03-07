@@ -44,6 +44,14 @@ program
   });
 
 program
+  .command("config")
+  .description("Manage Coding Friend configuration")
+  .action(async () => {
+    const { configCommand } = await import("./commands/config.js");
+    await configCommand();
+  });
+
+program
   .command("host")
   .description("Build and serve learning docs as a static website")
   .argument("[path]", "path to docs folder")
@@ -96,7 +104,10 @@ Session subcommands:
 session
   .command("save")
   .description("Save current Claude Code session to sync folder")
-  .option("-s, --session-id <id>", "session UUID to save (default: auto-detect newest)")
+  .option(
+    "-s, --session-id <id>",
+    "session UUID to save (default: auto-detect newest)",
+  )
   .option("-l, --label <label>", "label for this session")
   .action(async (opts) => {
     const { sessionSaveCommand } = await import("./commands/session.js");

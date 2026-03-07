@@ -42,6 +42,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf install", slug: "cli/cf-install" },
       { title: "cf uninstall", slug: "cli/cf-uninstall" },
       { title: "cf init", slug: "cli/cf-init" },
+      { title: "cf config", slug: "cli/cf-config" },
       { title: "cf host", slug: "cli/cf-host" },
       { title: "cf mcp", slug: "cli/cf-mcp" },
       { title: "cf statusline", slug: "cli/cf-statusline" },

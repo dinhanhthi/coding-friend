@@ -81,7 +81,9 @@ describe("encodeProjectPath", () => {
   });
 
   it("handles trailing slash", () => {
-    expect(encodeProjectPath("/Users/thi/git/foo/")).toBe("-Users-thi-git-foo-");
+    expect(encodeProjectPath("/Users/thi/git/foo/")).toBe(
+      "-Users-thi-git-foo-",
+    );
   });
 
   it("handles single-level path", () => {

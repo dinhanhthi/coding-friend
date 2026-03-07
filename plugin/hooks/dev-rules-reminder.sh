@@ -10,19 +10,8 @@
 #
 # Output:
 #   Plain text <system-reminder> block with rules, skills, and security.
-#
-# Configuration:
-#   "devRulesReminder": false in .coding-friend/config.json disables the hook.
 
 cat > /dev/null  # consume stdin
-
-# Check if hook is disabled via config
-CONFIG_FILE=".coding-friend/config.json"
-if [ -f "$CONFIG_FILE" ]; then
-  if grep -q '"devRulesReminder"[[:space:]]*:[[:space:]]*false' "$CONFIG_FILE" 2>/dev/null; then
-    exit 0
-  fi
-fi
 
 cat <<'REMINDER'
 <system-reminder>

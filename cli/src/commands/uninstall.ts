@@ -98,7 +98,7 @@ function nothingToRemove(d: DetectionResult): boolean {
 }
 
 export async function uninstallCommand(): Promise<void> {
-  console.log(`\n=== ${chalk.red("Coding Friend Uninstall")} ===`);
+  console.log(`\n=== 👋 ${chalk.red("Coding Friend Uninstall")} 👋 ===`);
 
   // Check claude CLI
   if (!commandExists("claude")) {

@@ -87,7 +87,8 @@ const slashCommands: Feature[] = [
   {
     command: "/cf-session",
     title: "Session",
-    description: "Save current session to docs/sessions/ to resume on another machine",
+    description:
+      "Save current session to docs/sessions/ to resume on another machine",
   },
   {
     command: "/cf-help",

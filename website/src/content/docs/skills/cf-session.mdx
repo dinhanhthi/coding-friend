@@ -1,6 +1,6 @@
 ---
 title: "/cf-session"
-description: "Save the current Claude Code session to docs/sessions/ so it can be resumed on another machine."
+description: 'Save the current Claude Code session to "docs/sessions/" so it can be resumed on another machine.'
 keywords: [session, cross-machine, resume, sync, cf-session]
 ---
 
@@ -16,7 +16,7 @@ The optional label helps you identify the session later. If omitted, it defaults
 
 ## How It Works
 
-1. **Resolves Sessions Folder** — Uses `<docsDir>/sessions/` (default: `docs/sessions/`). Creates the folder if it doesn't exist.
+1. **Resolves Sessions Folder** — Uses `docs/sessions/` in the current project. This folder is created by `cf init` — if it doesn't exist yet, the skill creates it automatically as a fallback.
 2. **Detects Active Session** — Finds the most recently modified JSONL session file for the current project.
 3. **Labels the Session** — Uses `$ARGUMENTS` as the label, or prompts you to provide one.
 4. **Builds Preview** — Extracts the first user message as a short preview for later identification.
