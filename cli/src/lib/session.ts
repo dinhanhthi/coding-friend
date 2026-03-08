@@ -4,6 +4,7 @@ import {
   copyFileSync,
   existsSync,
   readFileSync,
+  mkdirSync,
 } from "fs";
 import { join } from "path";
 import { homedir, hostname as osHostname } from "os";
@@ -137,6 +138,7 @@ export function saveSession(opts: SaveSessionOpts): void {
   const destJsonl = join(destDir, "session.jsonl");
   const destMeta = join(destDir, "meta.json");
 
+  mkdirSync(destDir, { recursive: true });
   copyFileSync(jsonlPath, destJsonl);
 
   const meta: SessionMeta = {
@@ -164,6 +166,7 @@ export function loadSession(
   const destPath = join(destDir, `${meta.sessionId}.jsonl`);
   const srcPath = join(syncDir, "sessions", meta.sessionId, "session.jsonl");
 
+  mkdirSync(destDir, { recursive: true });
   copyFileSync(srcPath, destPath);
 }
 

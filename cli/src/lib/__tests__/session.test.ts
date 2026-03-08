@@ -211,6 +211,10 @@ describe("saveSession", () => {
       previewText: "hello world",
     });
 
+    expect(mockMkdirSync).toHaveBeenCalledWith(
+      join("/tmp/sync", "sessions", "abc"),
+      { recursive: true },
+    );
     expect(mockCopyFileSync).toHaveBeenCalledWith(
       "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
       join("/tmp/sync", "sessions", "abc", "session.jsonl"),
@@ -251,6 +255,15 @@ describe("loadSession", () => {
       "abc.jsonl",
     );
 
+    const expectedDestDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      expectedEncodedPath,
+    );
+    expect(mockMkdirSync).toHaveBeenCalledWith(expectedDestDir, {
+      recursive: true,
+    });
     expect(mockCopyFileSync).toHaveBeenCalledWith(
       join("/tmp/sync", "sessions", "abc", "session.jsonl"),
       expectedDest,
