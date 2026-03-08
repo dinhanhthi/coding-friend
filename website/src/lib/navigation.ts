@@ -14,14 +14,14 @@ export const docsNavigation: NavSection[] = [
       { title: "Overview", slug: "skills/overview" },
       { title: "/cf-plan", slug: "skills/cf-plan" },
       { title: "/cf-fix", slug: "skills/cf-fix" },
-      { title: "/cf-ask", slug: "skills/cf-ask" },
+      { title: "/cf-ask", slug: "skills/cf-ask", manualOnly: true },
       { title: "/cf-optimize", slug: "skills/cf-optimize" },
       { title: "/cf-review", slug: "skills/cf-review" },
-      { title: "/cf-commit", slug: "skills/cf-commit" },
-      { title: "/cf-ship", slug: "skills/cf-ship" },
+      { title: "/cf-commit", slug: "skills/cf-commit", manualOnly: true },
+      { title: "/cf-ship", slug: "skills/cf-ship", manualOnly: true },
       { title: "/cf-remember", slug: "skills/cf-remember" },
       { title: "/cf-learn", slug: "skills/cf-learn" },
-      { title: "/cf-research", slug: "skills/cf-research" },
+      { title: "/cf-research", slug: "skills/cf-research", manualOnly: true },
       { title: "/cf-session", slug: "skills/cf-session" },
       { title: "/cf-help", slug: "skills/cf-help" },
     ],
@@ -74,7 +74,12 @@ export const docsNavigation: NavSection[] = [
 ];
 
 export function flattenNavigation() {
-  const items: { title: string; slug: string; section: string }[] = [];
+  const items: {
+    title: string;
+    slug: string;
+    section: string;
+    manualOnly?: boolean;
+  }[] = [];
   for (const section of docsNavigation) {
     for (const item of section.items) {
       items.push({ ...item, section: section.title });

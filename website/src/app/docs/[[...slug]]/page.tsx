@@ -13,6 +13,7 @@ import Callout from "@/components/docs/Callout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 import MdxLink from "@/components/docs/MdxLink";
+import Badge from "@/components/ui/Badge";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -198,9 +199,16 @@ export default async function DocPage({ params }: Props) {
       >
         <DocsBreadcrumbs items={breadcrumbs} />
 
-        <h1 className="mb-4 text-3xl font-bold text-violet-400">
-          {doc.frontmatter.title}
-        </h1>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold text-violet-400">
+            {doc.frontmatter.title}
+          </h1>
+          {currentNav?.manualOnly && (
+            <Badge className="border border-amber-500/50 bg-amber-900/30 text-amber-400">
+              Manual only
+            </Badge>
+          )}
+        </div>
 
         {doc.frontmatter.description && (
           <p className="mb-6 text-lg leading-relaxed text-slate-400">

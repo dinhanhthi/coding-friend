@@ -18,6 +18,7 @@ export interface Doc extends DocMeta {
 export interface NavItem {
   title: string;
   slug: string;
+  manualOnly?: boolean;
 }
 
 export interface NavSection {
