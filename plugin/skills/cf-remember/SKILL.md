@@ -1,7 +1,6 @@
 ---
 name: cf-remember
 description: Extract project knowledge from conversation to docs/memory
-disable-model-invocation: true
 ---
 
 # /cf-remember
