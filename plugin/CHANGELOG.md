@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.7.3 (unpublished)
+## v0.7.3 (2026-03-09)
 
 - Update bootstrap context to list scope flags for `cf install`, `cf uninstall`, `cf update` CLI commands ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
 
