@@ -20,6 +20,8 @@ _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
   local commands="install uninstall init config host mcp permission statusline update dev session"
+  local scope_flags="--user --global --project --local"
+  local update_flags="--cli --plugin --statusline --user --global --project --local"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
@@ -36,6 +38,18 @@ _cf_completions() {
   # Path completion for 'dev on|restart|update'
   if [[ "\${COMP_WORDS[1]}" == "dev" && ("$prev" == "on" || "$prev" == "restart" || "$prev" == "update") ]]; then
     COMPREPLY=($(compgen -d -- "$cur"))
+    return
+  fi
+
+  # Flag completion for install/uninstall
+  if [[ "\${COMP_WORDS[1]}" == "install" || "\${COMP_WORDS[1]}" == "uninstall" ]] && [[ "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "$scope_flags" -- "$cur"))
+    return
+  fi
+
+  # Flag completion for update
+  if [[ "\${COMP_WORDS[1]}" == "update" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "$update_flags" -- "$cur"))
     return
   fi
 
@@ -61,8 +75,31 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'session:Save and load Claude Code sessions across machines'
   )
 
+  local -a scope_flags
+  scope_flags=(
+    '--user[Install at user scope (all projects)]'
+    '--global[Install at user scope (all projects)]'
+    '--project[Install at project scope (shared via git)]'
+    '--local[Install at local scope (this machine only)]'
+  )
+
+  local -a update_flags
+  update_flags=(
+    '--cli[Update only the CLI (npm package)]'
+    '--plugin[Update only the Claude Code plugin]'
+    '--statusline[Update only the statusline]'
+    '--user[Update plugin at user scope (all projects)]'
+    '--global[Update plugin at user scope (all projects)]'
+    '--project[Update plugin at project scope]'
+    '--local[Update plugin at local scope]'
+  )
+
   if (( CURRENT == 2 )); then
     _describe 'command' commands
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "install" || "\${words[2]}" == "uninstall" ]]; then
+    _values 'flags' \$scope_flags
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "update" ]]; then
+    _values 'flags' \$update_flags
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "dev" ]]; then
     local -a subcommands
     subcommands=(
@@ -105,12 +142,27 @@ complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend 
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
 complete -c cf -n "__fish_use_subcommand" -a session -d "Save and load Claude Code sessions across machines"
+# Scope flags for install/uninstall
+complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l user -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l global -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l project -d "Project scope (shared via git)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l local -d "Local scope (this machine only)"
+# Flags for update
+complete -c cf -n "__fish_seen_subcommand_from update" -l cli -d "Update only the CLI"
+complete -c cf -n "__fish_seen_subcommand_from update" -l plugin -d "Update only the plugin"
+complete -c cf -n "__fish_seen_subcommand_from update" -l statusline -d "Update only the statusline"
+complete -c cf -n "__fish_seen_subcommand_from update" -l user -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from update" -l global -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from update" -l project -d "Project scope"
+complete -c cf -n "__fish_seen_subcommand_from update" -l local -d "Local scope"
+# Dev subcommands
 complete -c cf -n "__fish_seen_subcommand_from dev" -a on -d "Switch to local plugin source"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a off -d "Switch back to remote marketplace"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a status -d "Show current dev mode"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a restart -d "Restart dev mode"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a sync -d "Sync local plugin files"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local dev plugin"
+# Session subcommands
 complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
 complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from docs/sessions/"
 `;
@@ -123,12 +175,20 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $commands = @('install','uninstall','init','config','host','mcp','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $sessionSubcommands = @('save','load')
+  $scopeFlags = @('--user','--global','--project','--local')
+  $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')
   $words = $commandAst.CommandElements
   if ($words.Count -ge 2 -and $words[1].ToString() -eq 'dev') {
     $devSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'session') {
     $sessionSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'install' -or $words[1].ToString() -eq 'uninstall')) {
+    $scopeFlags | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'update') {
+    $updateFlags | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } else {
     $commands | Where-Object { $_ -like "$wordToComplete*" } |

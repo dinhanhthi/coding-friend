@@ -1,20 +1,28 @@
 ---
 title: "cf uninstall"
-description: "Completely remove the Coding Friend plugin from Claude Code."
-keywords: [uninstall, remove, cleanup, cf uninstall]
+description: "Remove the Coding Friend plugin from Claude Code."
+keywords: [uninstall, remove, cleanup, cf uninstall, scope]
 ---
 
 ## Overview
 
-`cf uninstall` completely removes the Coding Friend plugin, marketplace registration, statusline, and shell completion from Claude Code.
+`cf uninstall` removes the Coding Friend plugin from Claude Code. The cleanup behavior depends on the scope.
 
 ## Usage
 
 ```bash
-cf uninstall
+cf uninstall            # Interactive — asks which scope to uninstall from
+cf uninstall --user     # Uninstall from user scope (full cleanup)
+cf uninstall --global   # Same as --user
+cf uninstall --project  # Uninstall from project scope only
+cf uninstall --local    # Uninstall from local scope only
 ```
 
-## What It Removes
+## Scope-Dependent Behavior
+
+### User scope (`--user` / `--global`)
+
+Full cleanup — removes everything:
 
 1. **Plugin registration** — unregisters `coding-friend@coding-friend-marketplace` from Claude Code
 2. **Marketplace registration** — removes the `coding-friend-marketplace` entry
@@ -24,6 +32,14 @@ cf uninstall
 6. **Shell tab completion** — removes the completion block from `.zshrc` or `.bashrc`
 7. **Global config** (optional) — `~/.coding-friend/` directory (global config, custom skills) — you'll be asked whether to keep or remove it
 
+### Project scope (`--project`)
+
+Only removes the plugin registration from `.claude/settings.json`. Does not touch marketplace, cache, statusline, or shell completion.
+
+### Local scope (`--local`)
+
+Only removes the plugin registration from `.claude/settings.local.json`. Does not touch marketplace, cache, statusline, or shell completion.
+
 ## What It Does NOT Do
 
 - Does **not** uninstall the CLI itself (`coding-friend-cli`). To do that, run `npm uninstall -g coding-friend-cli` separately.
@@ -32,11 +48,17 @@ cf uninstall
 
 ## Under the Hood
 
-`cf uninstall` runs these Claude CLI commands:
+For user scope, `cf uninstall` runs:
 
 ```bash
 claude plugin uninstall coding-friend@coding-friend-marketplace
 claude plugin marketplace remove coding-friend-marketplace
 ```
 
-Then manually cleans up cache directories, statusline settings, and shell completion.
+For project/local scope:
+
+```bash
+claude plugin uninstall coding-friend@coding-friend-marketplace --scope <scope>
+```
+
+Then manually cleans up cache directories, statusline settings, and shell completion (user scope only).

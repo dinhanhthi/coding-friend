@@ -32,7 +32,8 @@ export default function InstallSection() {
             Get Started in 3 Steps
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Install once, use in every project.
+            Install once, use in every project. Supports user, project, and
+            local scopes.
           </p>
         </div>
 
