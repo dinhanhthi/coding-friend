@@ -37,6 +37,27 @@ describe("resolvePath", () => {
   it("resolves . to the base directory", () => {
     expect(resolvePath(".", "/tmp/base")).toBe("/tmp/base");
   });
+
+  it("resolves bare ~/ to the home directory", () => {
+    expect(resolvePath("~/")).toBe(homedir());
+  });
+});
+
+describe("resolvePath + encodeProjectPath integration", () => {
+  it("tilde path encodes correctly after resolution", () => {
+    const resolved = resolvePath("~/Downloads/test2");
+    const encoded = encodeProjectPath(resolved);
+    expect(encoded).toBe(
+      join(homedir(), "Downloads", "test2").replace(/\//g, "-"),
+    );
+  });
+
+  it("bare ~/ encodes to home directory, not literal tilde", () => {
+    const resolved = resolvePath("~/");
+    const encoded = encodeProjectPath(resolved);
+    expect(encoded).not.toContain("~");
+    expect(encoded).toBe(homedir().replace(/\//g, "-"));
+  });
 });
 
 describe("marketplaceCachePath", () => {

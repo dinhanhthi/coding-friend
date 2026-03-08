@@ -3,7 +3,7 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 import { log } from "../lib/log.js";
-import { encodeProjectPath, claudeSessionDir } from "../lib/paths.js";
+import { encodeProjectPath, claudeSessionDir, resolvePath } from "../lib/paths.js";
 import {
   buildPreviewText,
   saveSession,
@@ -151,6 +151,7 @@ export async function sessionLoadCommand(): Promise<void> {
     localProjectPath = confirmed.trim() || remapped;
   }
 
+  localProjectPath = resolvePath(localProjectPath);
   loadSession(chosen, localProjectPath, docsDir);
 
   log.success(`Session "${chosen.label}" loaded.`);
