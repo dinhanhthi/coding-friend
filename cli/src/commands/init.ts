@@ -3,7 +3,13 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import chalk from "chalk";
 import { run } from "../lib/exec.js";
-import { mergeJson, readJson, writeJson } from "../lib/json.js";
+import { mergeJson, readJson } from "../lib/json.js";
+import {
+  getExistingRules,
+  getMissingRules,
+  buildLearnDirRules,
+  applyPermissions,
+} from "../lib/permissions.js";
 import { log } from "../lib/log.js";
 import {
   claudeSettingsPath,
@@ -530,34 +536,18 @@ async function stepClaudePermissions(
     ? resolved.replace(homedir(), "~")
     : resolved;
 
-  const rules: string[] = [
-    `Read(${homePath}/**)`,
-    `Edit(${homePath}/**)`,
-    `Write(${homePath}/**)`,
-  ];
-
-  if (autoCommit) {
-    rules.push(`Bash(cd ${homePath} && git add:*)`);
-    rules.push(`Bash(cd ${homePath} && git commit:*)`);
-  }
-
   const settingsPath = claudeSettingsPath();
-  const settings = readJson<Record<string, unknown>>(settingsPath);
-  if (!settings) {
+  const existing = getExistingRules(settingsPath);
+
+  if (existing.length === 0 && !readJson(settingsPath)) {
     log.warn(
       "~/.claude/settings.json not found. Create it via Claude Code settings first.",
     );
     return;
   }
 
-  const permissions = (settings.permissions ?? {}) as {
-    allow?: string[];
-    deny?: string[];
-  };
-  const existing = permissions.allow ?? [];
-  const missing = rules.filter(
-    (r) => !existing.some((e) => e === r || e.includes(homePath)),
-  );
+  const learnRules = buildLearnDirRules(homePath, autoCommit);
+  const missing = getMissingRules(existing, learnRules);
 
   if (missing.length === 0) {
     log.dim("All permission rules already configured.");
@@ -566,7 +556,7 @@ async function stepClaudePermissions(
 
   console.log("\nTo avoid repeated permission prompts, add these rules:");
   for (const r of missing) {
-    console.log(`  ${r}`);
+    console.log(`  ${r.rule}`);
   }
 
   const ok = await confirm({
@@ -579,10 +569,13 @@ async function stepClaudePermissions(
     return;
   }
 
-  permissions.allow = [...existing, ...missing];
-  settings.permissions = permissions;
-  writeJson(settingsPath, settings);
+  applyPermissions(
+    settingsPath,
+    missing.map((r) => r.rule),
+    [],
+  );
   log.success(`Added ${missing.length} permission rules.`);
+  log.dim("For all plugin permissions, run: cf permission");
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
@@ -640,6 +633,12 @@ export async function initCommand(): Promise<void> {
   // Step 2: .gitignore (only in git repos)
   if (gitAvailable) {
     await stepGitignore(docsDir);
+  } else {
+    printStepHeader(
+      `Configure .gitignore ${chalk.dim("[skipped]")}`,
+      "Keeps AI-generated docs and config out of your git history.",
+    );
+    log.dim("Skipped — not inside a git repo.");
   }
 
   // Step 3: Docs language
@@ -665,6 +664,14 @@ export async function initCommand(): Promise<void> {
       "Grants Claude read/write access to your external learn folder without repeated prompts.",
     );
     await stepClaudePermissions(outputDir, autoCommit);
+  } else {
+    printStepHeader(
+      `Configure Claude permissions ${chalk.dim("[skipped]")}`,
+      "Grants Claude read/write access to your external learn folder without repeated prompts.",
+    );
+    log.dim(
+      "Skipped — learn directory is inside the project. Run cf permission for other permissions.",
+    );
   }
 
   // Final
