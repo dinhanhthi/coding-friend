@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.9.1 (unpublished)
+
+- Fix `cf session` to create destination directories before copying session files ([#99c7add](https://github.com/dinhanhthi/coding-friend/commit/99c7add))
+
 ## v1.9.0 (2026-03-08)
 
 - Add shell completion support for fish, PowerShell, and macOS bash ([#3f6768c](https://github.com/dinhanhthi/coding-friend/commit/3f6768c))
