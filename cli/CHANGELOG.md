@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.10.0 (unpublished)
+## v1.10.0 (2026-03-08)
 
 - Add `cf permission` command for managing Claude Code permission rules — interactive category-based wizard with `--all` flag for non-interactive setup ([#8033ef4](https://github.com/dinhanhthi/coding-friend/commit/8033ef4))
 - Improve `cf init` UX — show all steps with skip reasons and default to project-local config ([#ecc7554](https://github.com/dinhanhthi/coding-friend/commit/ecc7554))
