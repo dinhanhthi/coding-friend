@@ -575,7 +575,7 @@ async function stepClaudePermissions(
     [],
   );
   log.success(`Added ${missing.length} permission rules.`);
-  log.dim("For all plugin permissions, run: cf permission");
+  log.dim("For all plugin permissions, run: `cf permission`");
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
@@ -670,7 +670,7 @@ export async function initCommand(): Promise<void> {
       "Grants Claude read/write access to your external learn folder without repeated prompts.",
     );
     log.dim(
-      "Skipped — learn directory is inside the project. Run cf permission for other permissions.",
+      "Skipped — learn directory is inside the project. Run `cf permission` for other permissions.",
     );
   }
 
