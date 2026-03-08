@@ -13,14 +13,15 @@ export const PERMISSION_RULES: PermissionRule[] = [
   // Core (hooks & infrastructure)
   {
     rule: "Bash(cat:*)",
-    description: "[read-only] Read file contents · Used by: session-init hook",
+    description:
+      "[read-only] Read file contents (⚠ system-wide scope, project boundary enforced by Claude Code) · Used by: session-init hook",
     category: "Core",
     recommended: true,
   },
   {
     rule: "Bash(grep:*)",
     description:
-      "[read-only] Search file contents · Used by: session-init hook, skills",
+      "[read-only] Search file contents (⚠ system-wide scope, project boundary enforced by Claude Code) · Used by: session-init hook, skills",
     category: "Core",
     recommended: true,
   },
@@ -120,13 +121,6 @@ export const PERMISSION_RULES: PermissionRule[] = [
     category: "Testing & Build",
     recommended: true,
   },
-  {
-    rule: "Bash(npx:*)",
-    description: "[execute] Run npx commands (vitest, prettier, etc.)",
-    category: "Testing & Build",
-    recommended: true,
-  },
-
   // Web & Research
   {
     rule: "WebSearch",
@@ -194,15 +188,16 @@ export function buildLearnDirRules(
   ];
 
   if (autoCommit) {
+    const quoted = learnPath.includes(" ") ? `"${learnPath}"` : learnPath;
     rules.push({
-      rule: `Bash(cd ${learnPath} && git add:*)`,
+      rule: `Bash(cd ${quoted} && git add:*)`,
       description:
         "[modify] Stage learning docs for commit · Used by: /cf-learn auto-commit",
       category: "External Learn Directory",
       recommended: true,
     });
     rules.push({
-      rule: `Bash(cd ${learnPath} && git commit:*)`,
+      rule: `Bash(cd ${quoted} && git commit:*)`,
       description:
         "[modify] Commit learning docs · Used by: /cf-learn auto-commit",
       category: "External Learn Directory",

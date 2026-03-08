@@ -26,7 +26,8 @@ const TAG_COLORS: Record<string, (s: string) => string> = {
 function colorDescription(desc: string): string {
   const parts = desc.split(" · ");
   const main = parts[0];
-  const usedBy = parts.length === 2 ? chalk.dim("· " + parts[1]) : "";
+  const usedBy =
+    parts.length > 1 ? chalk.dim("· " + parts.slice(1).join(" · ")) : "";
 
   // Color the [tag] prefix
   const tagMatch = main.match(/^(\[[^\]]+\])\s*(.*)/);
@@ -59,8 +60,8 @@ async function interactiveFlow(
   );
   console.log();
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  let browsing = true;
+  while (browsing) {
     // Build category menu
     const categoryChoices: Array<{
       name: string;
@@ -91,7 +92,10 @@ async function interactiveFlow(
       choices: categoryChoices,
     });
 
-    if (chosen === "__apply__") break;
+    if (chosen === "__apply__") {
+      browsing = false;
+      continue;
+    }
 
     // Show permissions in the selected category
     const categoryRules = groups.get(chosen)!;
