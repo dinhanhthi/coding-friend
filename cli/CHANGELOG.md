@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.11.0 (unpublished)
+## v1.11.0 (2026-03-09)
 
 - Add scope flags (`--user`/`--global`, `--project`, `--local`) to `cf install`, `cf uninstall`, and `cf update` for installing the plugin at different Claude Code scopes ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
 - Add interactive scope prompt with TTY detection for CI/CD environments ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
