@@ -29,6 +29,8 @@ cf host [path]       # Build and serve learning docs at localhost:3333
 cf mcp [path]        # Setup MCP server for LLM integration
                      # [path] is optional, default is `docs/learn`
                      # This prints a JSON config snippet to add to your client's MCP
+cf permission        # Manage Claude Code permission rules for Coding Friend
+cf permission --all  # Apply all recommended permissions without prompts
 cf statusline        # Setup coding-friend statusline
 cf update            # Update plugin + CLI + statusline
 cf update --cli      # Update only the CLI (npm package)

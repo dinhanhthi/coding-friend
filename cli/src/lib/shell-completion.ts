@@ -19,7 +19,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall init config host mcp statusline update dev session"
+  local commands="install uninstall init config host mcp permission statusline update dev session"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
@@ -54,6 +54,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'config:Manage Coding Friend configuration'
     'host:Build and serve learning docs as a static website'
     'mcp:Setup MCP server for learning docs'
+    'permission:Manage Claude Code permission rules for Coding Friend'
     'statusline:Setup coding-friend statusline in Claude Code'
     'update:Update coding-friend plugin and refresh statusline'
     'dev:Switch between local and remote plugin for development'
@@ -99,6 +100,7 @@ complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend i
 complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
 complete -c cf -n "__fish_use_subcommand" -a host -d "Build and serve learning docs as a static website"
 complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learning docs"
+complete -c cf -n "__fish_use_subcommand" -a permission -d "Manage Claude Code permission rules"
 complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend statusline in Claude Code"
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
@@ -118,7 +120,7 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','init','config','host','mcp','statusline','update','dev','session')
+  $commands = @('install','uninstall','init','config','host','mcp','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $sessionSubcommands = @('save','load')
   $words = $commandAst.CommandElements

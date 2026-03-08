@@ -71,6 +71,15 @@ program
   });
 
 program
+  .command("permission")
+  .description("Manage Claude Code permission rules for Coding Friend")
+  .option("--all", "Apply all recommended permissions without prompts")
+  .action(async (opts) => {
+    const { permissionCommand } = await import("./commands/permission.js");
+    await permissionCommand(opts);
+  });
+
+program
   .command("statusline")
   .description("Setup coding-friend statusline in Claude Code")
   .action(async () => {

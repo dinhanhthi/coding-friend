@@ -21,9 +21,14 @@ export function globalConfigPath(): string {
   return join(homedir(), ".coding-friend", "config.json");
 }
 
-/** Path to Claude settings */
+/** Path to Claude global settings */
 export function claudeSettingsPath(): string {
   return join(homedir(), ".claude", "settings.json");
+}
+
+/** Path to Claude project-local settings (<project>/.claude/settings.local.json) */
+export function claudeLocalSettingsPath(): string {
+  return resolve(process.cwd(), ".claude", "settings.local.json");
 }
 
 /** Path to installed plugins file */

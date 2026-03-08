@@ -1,0 +1,43 @@
+---
+title: "cf permission"
+description: "Manage Claude Code permission rules for Coding Friend skills and hooks."
+keywords:
+  [permission, permissions, claude code, settings, allow rules, cf permission]
+---
+
+## Overview
+
+Interactive permission manager for Coding Friend. Configures Claude Code permission rules in your **project-local** settings (`.claude/settings.local.json`) so skills and hooks can run without repeated prompts.
+
+☝️ **Rules are scoped to the current project only** — they do not affect other projects or global Claude Code settings.
+
+```bash
+cf permission
+
+# Non-interactive mode (accept all)
+cf permission --all
+```
+
+For the full list of rules and which skills use them, see [Permissions Reference](/docs/reference/permissions/).
+
+💡 You can run it multiple times to add or remove rules.
+
+## How It Works
+
+1. Reads your current `.claude/settings.local.json` (project-local)
+2. Shows permission categories with configured/total counts
+3. Lets you drill into each category to check/uncheck individual rules
+4. Computes the diff (rules to add, rules to remove)
+5. Asks for confirmation before writing changes
+
+## Scope
+
+`cf permission` writes to **project-local** settings (`.claude/settings.local.json`), not global settings. This means permissions are scoped to the current project and won't affect other projects.
+
+For **External Learn Directory** permissions (needed when `/cf-learn` writes outside your project), use [`cf init`](/docs/cli/cf-init/) Step 7 — those are written to global settings (`~/.claude/settings.json`) since they need to apply across projects.
+
+## See Also
+
+- [Permissions Reference](/docs/reference/permissions/) — full permission list with descriptions
+- [`cf init`](/docs/cli/cf-init/) — initial setup wizard (Step 7 handles learn directory permissions)
+- [Security](/docs/reference/security/) — security model

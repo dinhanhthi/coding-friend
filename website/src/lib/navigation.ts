@@ -45,6 +45,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf config", slug: "cli/cf-config" },
       { title: "cf host", slug: "cli/cf-host" },
       { title: "cf mcp", slug: "cli/cf-mcp" },
+      { title: "cf permission", slug: "cli/cf-permission" },
       { title: "cf statusline", slug: "cli/cf-statusline" },
       { title: "cf update", slug: "cli/cf-update" },
       { title: "cf dev", slug: "cli/cf-dev" },
@@ -68,6 +69,7 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "Agents", slug: "reference/agents" },
       { title: "Hooks", slug: "reference/hooks" },
+      { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
     ],
   },
