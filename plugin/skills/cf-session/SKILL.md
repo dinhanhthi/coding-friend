@@ -1,7 +1,7 @@
 ---
 name: cf-session
 description: Save the current Claude Code conversation/session to docs/sessions/ so it can be resumed on another machine with `cf session load` + `claude --resume`
-user-invocable: true
+disable-model-invocation: true
 tools: [Bash, Read]
 ---
 
