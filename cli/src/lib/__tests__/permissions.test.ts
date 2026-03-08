@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { randomUUID } from "crypto";
 import { readJson } from "../json.js";
 import {
   PERMISSION_RULES,
@@ -16,7 +17,7 @@ import type { PermissionRule } from "../permissions.js";
 let testDir: string;
 
 beforeEach(() => {
-  testDir = join(tmpdir(), `cf-permissions-test-${Date.now()}`);
+  testDir = join(tmpdir(), `cf-permissions-test-${randomUUID()}`);
   mkdirSync(testDir, { recursive: true });
 });
 
@@ -113,6 +114,37 @@ describe("buildLearnDirRules", () => {
     for (const r of rules) {
       expect(r.category).toBe("External Learn Directory");
     }
+  });
+
+  it("quotes paths with spaces in autoCommit rules", () => {
+    const rules = buildLearnDirRules("~/my notes/learn", true);
+    expect(rules[3].rule).toBe('Bash(cd "~/my notes/learn" && git add:*)');
+    expect(rules[4].rule).toBe('Bash(cd "~/my notes/learn" && git commit:*)');
+  });
+
+  it("does not quote paths without spaces", () => {
+    const rules = buildLearnDirRules("~/notes", true);
+    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add:*)");
+  });
+});
+
+describe("getMissingRules + buildLearnDirRules integration", () => {
+  it("returns only missing learn dir rules when some already exist", () => {
+    const learnRules = buildLearnDirRules("~/notes", true);
+    const existing = [learnRules[0].rule, learnRules[2].rule]; // Read + Write
+    const missing = getMissingRules(existing, learnRules);
+    expect(missing).toHaveLength(3);
+    expect(missing.map((r) => r.rule)).toEqual([
+      "Edit(~/notes/**)",
+      "Bash(cd ~/notes && git add:*)",
+      "Bash(cd ~/notes && git commit:*)",
+    ]);
+  });
+
+  it("returns empty when all learn dir rules already exist", () => {
+    const learnRules = buildLearnDirRules("~/notes", false);
+    const existing = learnRules.map((r) => r.rule);
+    expect(getMissingRules(existing, learnRules)).toEqual([]);
   });
 });
 
