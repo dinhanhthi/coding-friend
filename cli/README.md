@@ -16,10 +16,18 @@ npm i -g coding-friend-cli
 ## Commands
 
 ```bash
-cf install           # Install the Coding Friend plugin into Claude Code
-                     # 💡 Safe to run multiple times (idempotent).
-cf uninstall         # Completely remove plugin, marketplace, statusline, completion
-                     # 💡 Interactive — asks for confirmation before acting.
+cf install              # Install plugin (interactive scope chooser)
+cf install --user       # Install at user scope (all projects)
+cf install --global     # Same as --user
+cf install --project    # Install at project scope (shared via git)
+cf install --local      # Install at local scope (this machine only)
+                        # 💡 Safe to run multiple times (idempotent).
+cf uninstall            # Uninstall plugin (interactive scope chooser)
+cf uninstall --user     # Uninstall from user scope (full cleanup)
+cf uninstall --global   # Same as --user
+cf uninstall --project  # Uninstall from project scope only
+cf uninstall --local    # Uninstall from local scope only
+                        # 💡 Interactive — asks for confirmation before acting.
 cf init              # Initialize workspace (interactive)
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
@@ -32,10 +40,12 @@ cf mcp [path]        # Setup MCP server for LLM integration
 cf permission        # Manage Claude Code permission rules for Coding Friend
 cf permission --all  # Apply all recommended permissions without prompts
 cf statusline        # Setup coding-friend statusline
-cf update            # Update plugin + CLI + statusline
-cf update --cli      # Update only the CLI (npm package)
-cf update --plugin   # Update only the Claude Code plugin
+cf update               # Update plugin + CLI + statusline
+cf update --cli         # Update only the CLI (npm package)
+cf update --plugin      # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline
+cf update --project     # Update plugin at project scope
+cf update --local       # Update plugin at local scope
 cf dev on [path]     # Switch to local plugin source for development
 cf dev off           # Switch back to remote marketplace
 cf dev status        # Show current dev mode (local or remote)

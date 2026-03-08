@@ -2,6 +2,13 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.11.0 (unpublished)
+
+- Add scope flags (`--user`/`--global`, `--project`, `--local`) to `cf install`, `cf uninstall`, and `cf update` for installing the plugin at different Claude Code scopes ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
+- Add interactive scope prompt with TTY detection for CI/CD environments ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
+- Add shell completion for scope flags across bash, zsh, fish, and PowerShell ([#173d0c6](https://github.com/dinhanhthi/coding-friend/commit/173d0c6), [#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))
+- Fix tilde path resolution in `cf session load` command ([#009cf58](https://github.com/dinhanhthi/coding-friend/commit/009cf58))
+
 ## v1.10.0 (2026-03-08)
 
 - Add `cf permission` command for managing Claude Code permission rules — interactive category-based wizard with `--all` flag for non-interactive setup ([#8033ef4](https://github.com/dinhanhthi/coding-friend/commit/8033ef4))

@@ -7,6 +7,7 @@ import { run, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
+import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -82,18 +83,33 @@ function getStatuslineVersion(): string | null {
   return match?.[1] ?? null;
 }
 
-export interface UpdateOptions {
+export interface UpdateOptions extends ScopeFlags {
   cli?: boolean;
   plugin?: boolean;
   statusline?: boolean;
 }
 
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
-  // If no flags specified, update everything
+  // If no component flags specified, update everything
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
   const doCli = updateAll || !!opts.cli;
   const doPlugin = updateAll || !!opts.plugin;
   const doStatusline = updateAll || !!opts.statusline;
+
+  // Resolve scope (only matters for plugin updates)
+  const hasScopeFlag = !!(
+    opts.user ||
+    opts.global ||
+    opts.project ||
+    opts.local
+  );
+  let scope: string | undefined;
+  if (doPlugin && hasScopeFlag) {
+    scope = await resolveScope(opts);
+  } else if (doPlugin && !hasScopeFlag) {
+    // Default to user scope for update (no interactive prompt — backward compatible)
+    scope = "user";
+  }
 
   console.log("=== 🌿 Coding Friend Update 🌿 ===");
   console.log();
@@ -150,12 +166,18 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
             "Claude CLI not found. Install it first, or run: claude plugin update coding-friend@coding-friend-marketplace",
           );
         } else {
-          log.step("Updating plugin...");
-          const result = run("claude", [
+          log.step(
+            `Updating plugin${scope && scope !== "user" ? ` (${scope} scope)` : ""}...`,
+          );
+          const updateArgs = [
             "plugin",
             "update",
             "coding-friend@coding-friend-marketplace",
-          ]);
+          ];
+          if (scope) {
+            updateArgs.push("--scope", scope);
+          }
+          const result = run("claude", updateArgs);
 
           if (result === null) {
             log.error(

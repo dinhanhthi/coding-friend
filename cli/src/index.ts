@@ -22,17 +22,25 @@ program
 program
   .command("install")
   .description("Install the Coding Friend plugin into Claude Code")
-  .action(async () => {
+  .option("--user", "Install at user scope (all projects)")
+  .option("--global", "Install at user scope (all projects)")
+  .option("--project", "Install at project scope (shared via git)")
+  .option("--local", "Install at local scope (this machine only)")
+  .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
-    await installCommand();
+    await installCommand(opts);
   });
 
 program
   .command("uninstall")
   .description("Uninstall the Coding Friend plugin from Claude Code")
-  .action(async () => {
+  .option("--user", "Uninstall from user scope (all projects)")
+  .option("--global", "Uninstall from user scope (all projects)")
+  .option("--project", "Uninstall from project scope")
+  .option("--local", "Uninstall from local scope")
+  .action(async (opts) => {
     const { uninstallCommand } = await import("./commands/uninstall.js");
-    await uninstallCommand();
+    await uninstallCommand(opts);
   });
 
 program
@@ -93,6 +101,10 @@ program
   .option("--cli", "Update only the CLI (npm package)")
   .option("--plugin", "Update only the Claude Code plugin")
   .option("--statusline", "Update only the statusline")
+  .option("--user", "Update plugin at user scope (all projects)")
+  .option("--global", "Update plugin at user scope (all projects)")
+  .option("--project", "Update plugin at project scope")
+  .option("--local", "Update plugin at local scope")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);

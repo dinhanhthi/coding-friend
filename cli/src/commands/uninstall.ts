@@ -19,6 +19,11 @@ import {
   isPluginInstalled,
   isMarketplaceRegistered,
 } from "../lib/plugin-state.js";
+import {
+  resolveScope,
+  type ScopeFlags,
+  type PluginScope,
+} from "../lib/prompt-utils.js";
 
 const MARKETPLACE_NAME = "coding-friend-marketplace";
 const PLUGIN_NAME = "coding-friend";
@@ -97,7 +102,51 @@ function nothingToRemove(d: DetectionResult): boolean {
   );
 }
 
-export async function uninstallCommand(): Promise<void> {
+/**
+ * Scoped uninstall: only removes the plugin registration at the given scope.
+ * Does not touch marketplace, cache, statusline, or shell completion.
+ */
+async function uninstallScoped(scope: PluginScope): Promise<void> {
+  const proceed = await confirm({
+    message: `Uninstall Coding Friend from ${chalk.cyan(scope)} scope?`,
+    default: false,
+  });
+
+  if (!proceed) {
+    log.info("Uninstall cancelled.");
+    return;
+  }
+
+  log.step(`Uninstalling plugin from ${scope} scope...`);
+  const result = run("claude", [
+    "plugin",
+    "uninstall",
+    PLUGIN_ID,
+    "--scope",
+    scope,
+  ]);
+  if (result === null) {
+    const fallback = run("claude", [
+      "plugin",
+      "uninstall",
+      PLUGIN_NAME,
+      "--scope",
+      scope,
+    ]);
+    if (fallback === null) {
+      log.warn(
+        "Could not uninstall plugin (may not be installed at this scope).",
+      );
+      return;
+    }
+  }
+
+  log.success(`Plugin uninstalled from ${scope} scope.`);
+  console.log();
+  log.dim("Restart Claude Code to complete the uninstall.");
+}
+
+export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
   console.log(`\n=== 👋 ${chalk.red("Coding Friend Uninstall")} 👋 ===`);
 
   // Check claude CLI
@@ -109,14 +158,24 @@ export async function uninstallCommand(): Promise<void> {
     return;
   }
 
-  // Detect dev mode
-  const detection = detect();
-
-  if (detection.devModeActive) {
+  // Check dev mode before prompting (avoid wasting user effort)
+  if (existsSync(devStatePath())) {
     log.warn("Dev mode is currently active.");
     log.dim(`Run ${chalk.bold("cf dev off")} first, then try again.`);
     return;
   }
+
+  // Resolve scope
+  const scope = await resolveScope(opts);
+
+  // For project/local scope: simple uninstall (no full cleanup)
+  if (scope === "project" || scope === "local") {
+    await uninstallScoped(scope);
+    return;
+  }
+
+  // User scope: full uninstall (existing behavior)
+  const detection = detect();
 
   if (nothingToRemove(detection)) {
     log.info("Nothing to uninstall — Coding Friend is not installed.");
