@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.10.0 (unpublished)
+
+- Add `cf permission` command for managing Claude Code permission rules — interactive category-based wizard with `--all` flag for non-interactive setup ([#8033ef4](https://github.com/dinhanhthi/coding-friend/commit/8033ef4))
+- Improve `cf init` UX — show all steps with skip reasons and default to project-local config ([#ecc7554](https://github.com/dinhanhthi/coding-friend/commit/ecc7554))
+- Fix permission rules: remove overly-broad `Bash(npx:*)`, add scope warnings for `Bash(cat:*)` and `Bash(grep:*)`, quote paths with spaces in learn directory rules ([#d272d33](https://github.com/dinhanhthi/coding-friend/commit/d272d33))
+
 ## v1.9.1 (2026-03-08)
 
 - Fix `cf session` to create destination directories before copying session files ([#99c7add](https://github.com/dinhanhthi/coding-friend/commit/99c7add))

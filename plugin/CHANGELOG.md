@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.7.2 (unpublished)
+
+- Update bootstrap context to list `cf permission` CLI command ([#8033ef4](https://github.com/dinhanhthi/coding-friend/commit/8033ef4))
+
 ## v0.7.1 (2026-03-08)
 
 - Remove manual only trigger for skills cf-optimize, cf-remember, cf-review ([#a2ea10f](https://github.com/dinhanhthi/coding-friend/commit/a2ea10f))
