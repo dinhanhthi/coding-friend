@@ -1,7 +1,6 @@
 ---
 name: cf-review
 description: Dispatch code review to a subagent
-disable-model-invocation: true
 context: fork
 agent: cf-code-reviewer
 ---
