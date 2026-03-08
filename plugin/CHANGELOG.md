@@ -2,6 +2,10 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.7.1 (unpublished)
+
+- Fix whitespace in skill docs and update `cf-dev` documentation ([#a2ea10f](https://github.com/dinhanhthi/coding-friend/commit/a2ea10f))
+
 ## v0.7.0 (2026-03-08)
 
 - Add `cf-session` skill for cross-machine session continuity ([#d0c58cd](https://github.com/dinhanhthi/coding-friend/commit/d0c58cd), [#6158bb7](https://github.com/dinhanhthi/coding-friend/commit/6158bb7))
