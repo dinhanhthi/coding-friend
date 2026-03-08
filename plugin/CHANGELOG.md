@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.7.2 (unpublished)
+## v0.7.2 (2026-03-08)
 
 - Update bootstrap context to list `cf permission` CLI command ([#8033ef4](https://github.com/dinhanhthi/coding-friend/commit/8033ef4))
 
