@@ -34,8 +34,8 @@ export async function askScope(
   return select({
     message: label,
     choices: [
-      { name: "Global (all projects)", value: "global" as const },
       { name: "This project only", value: "local" as const },
+      { name: "Global (all projects)", value: "global" as const },
       new Separator(),
       { name: "Back", value: "back" as const },
     ],
