@@ -42,6 +42,82 @@ export async function askScope(
   });
 }
 
+// ─── Plugin scope resolution ─────────────────────────────────────────
+
+export type PluginScope = "user" | "project" | "local";
+
+export interface ScopeFlags {
+  user?: boolean;
+  global?: boolean;
+  project?: boolean;
+  local?: boolean;
+}
+
+/**
+ * Interactive prompt asking which plugin scope to use.
+ */
+export async function askPluginScope(): Promise<PluginScope> {
+  return select({
+    message: "Where should the plugin be installed?",
+    choices: [
+      {
+        name: "User / Global — available in all projects",
+        value: "user" as const,
+      },
+      {
+        name: "Project — shared with team via .claude/settings.json",
+        value: "project" as const,
+      },
+      {
+        name: "Local — this machine only, not shared (gitignored)",
+        value: "local" as const,
+      },
+    ],
+  });
+}
+
+/**
+ * Resolve plugin scope from CLI flags or interactive prompt.
+ * - If a flag is provided, returns that scope.
+ * - If multiple flags are set, exits with error.
+ * - If no flags and TTY, prompts interactively.
+ * - If no flags and not TTY, exits with error.
+ */
+export async function resolveScope(opts: ScopeFlags): Promise<PluginScope> {
+  const flags: Array<{ key: string; scope: PluginScope }> = [
+    { key: "user", scope: "user" },
+    { key: "global", scope: "user" },
+    { key: "project", scope: "project" },
+    { key: "local", scope: "local" },
+  ];
+
+  const active = flags.filter((f) => opts[f.key as keyof ScopeFlags] === true);
+
+  // Deduplicate by scope value (--user and --global both map to "user")
+  const uniqueScopes = new Set(active.map((f) => f.scope));
+
+  if (uniqueScopes.size > 1) {
+    log.error(
+      "Only one scope flag can be used at a time: --user, --global, --project, or --local",
+    );
+    process.exit(1);
+  }
+
+  if (uniqueScopes.size === 1) {
+    return active[0].scope;
+  }
+
+  // No flag — prompt interactively
+  if (!process.stdin.isTTY) {
+    log.error(
+      "No scope flag provided and stdin is not interactive. Use --user (or --global), --project, or --local.",
+    );
+    process.exit(1);
+  }
+
+  return askPluginScope();
+}
+
 /**
  * Print hint about config file locations.
  */

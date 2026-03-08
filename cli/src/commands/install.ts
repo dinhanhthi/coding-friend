@@ -1,12 +1,15 @@
+import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
+import { devStatePath } from "../lib/paths.js";
 import { isMarketplaceRegistered } from "../lib/plugin-state.js";
+import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { getInstalledVersion } from "../lib/statusline.js";
 import { getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
 
-export async function installCommand(): Promise<void> {
+export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   console.log("=== 🌿 Coding Friend Install 🌿 ===");
   console.log();
 
@@ -18,7 +21,19 @@ export async function installCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Step 2: Check marketplace
+  // Step 2: Check dev mode (installing marketplace plugin would conflict)
+  if (existsSync(devStatePath())) {
+    log.warn("Dev mode is currently active.");
+    log.dim(
+      `Run ${chalk.bold("cf dev off")} first, then install. Or use ${chalk.bold("cf dev sync")} to update the dev plugin.`,
+    );
+    return;
+  }
+
+  // Step 3: Resolve scope
+  const scope = await resolveScope(opts);
+
+  // Step 4: Check marketplace (always global — no --scope support)
   if (isMarketplaceRegistered()) {
     log.success("Marketplace already registered.");
   } else {
@@ -38,15 +53,18 @@ export async function installCommand(): Promise<void> {
     log.success("Marketplace added.");
   }
 
-  // Step 3: Check plugin installation
+  // Step 5: Install plugin at the resolved scope
+  // For non-user scopes, always run install (getInstalledVersion only checks global state)
   const installedVersion = getInstalledVersion();
 
-  if (!installedVersion) {
-    log.step("Installing plugin...");
+  if (!installedVersion || scope !== "user") {
+    log.step(`Installing plugin (${chalk.cyan(scope)} scope)...`);
     const result = run("claude", [
       "plugin",
       "install",
       "coding-friend@coding-friend-marketplace",
+      "--scope",
+      scope,
     ]);
     if (result === null) {
       log.error(
@@ -76,10 +94,10 @@ export async function installCommand(): Promise<void> {
     }
   }
 
-  // Step 4: Shell completion
+  // Step 6: Shell completion
   ensureShellCompletion({ silent: false });
 
-  // Step 5: Next steps
+  // Step 7: Next steps
   console.log();
   log.info("Next steps:");
   console.log(
