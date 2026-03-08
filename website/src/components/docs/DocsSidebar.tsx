@@ -77,13 +77,30 @@ export default function DocsSidebar() {
                       <li key={item.slug}>
                         <Link
                           href={href}
-                          className={`block cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-200 ${
+                          className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors duration-200 ${
                             isActive
                               ? "font-medium text-violet-400"
                               : "hover:bg-navy-800 text-slate-400 hover:text-white"
                           }`}
                         >
                           {item.title}
+                          {item.manualOnly && (
+                            <svg
+                              className="h-3 w-3 shrink-0 opacity-50"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              aria-label="Manual only"
+                            >
+                              <title>Manual only — not auto-triggered</title>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                          )}
                         </Link>
                       </li>
                     );
