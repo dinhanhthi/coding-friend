@@ -2,9 +2,9 @@
 
 > CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
-## v0.7.1 (unpublished)
+## v0.7.1 (2026-03-08)
 
-- Fix whitespace in skill docs and update `cf-dev` documentation ([#a2ea10f](https://github.com/dinhanhthi/coding-friend/commit/a2ea10f))
+- Remove manual only trigger for skills cf-optimize, cf-remember, cf-review ([#a2ea10f](https://github.com/dinhanhthi/coding-friend/commit/a2ea10f))
 
 ## v0.7.0 (2026-03-08)
 
