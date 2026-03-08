@@ -23,12 +23,21 @@ vi.mock("../log.js", () => ({
     success: vi.fn(),
     warn: vi.fn(),
     dim: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
-import { applyDocsDirChange } from "../prompt-utils.js";
+// Mock @inquirer/prompts
+vi.mock("@inquirer/prompts", () => ({
+  select: vi.fn(),
+  confirm: vi.fn(),
+  Separator: class Separator {},
+}));
+
+import { applyDocsDirChange, resolveScope } from "../prompt-utils.js";
 import * as paths from "../paths.js";
 import { log } from "../log.js";
+import { select } from "@inquirer/prompts";
 
 let projectDir: string;
 let globalConfigDir: string;
@@ -227,5 +236,109 @@ describe("applyDocsDirChange — global scope, no local docsDir", () => {
 
     expect(existsSync(oldDir)).toBe(false);
     expect(existsSync(newPath)).toBe(true);
+  });
+});
+
+// ─── resolveScope ────────────────────────────────────────────────────
+
+const mockSelect = vi.mocked(select);
+
+describe("resolveScope", () => {
+  let mockExit: MockInstance;
+
+  beforeEach(() => {
+    mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    mockExit.mockRestore();
+  });
+
+  it("returns 'user' when --user flag is set", async () => {
+    const result = await resolveScope({ user: true });
+    expect(result).toBe("user");
+  });
+
+  it("returns 'user' when --global flag is set", async () => {
+    const result = await resolveScope({ global: true });
+    expect(result).toBe("user");
+  });
+
+  it("returns 'project' when --project flag is set", async () => {
+    const result = await resolveScope({ project: true });
+    expect(result).toBe("project");
+  });
+
+  it("returns 'local' when --local flag is set", async () => {
+    const result = await resolveScope({ local: true });
+    expect(result).toBe("local");
+  });
+
+  it("exits with error when multiple scope flags are set", async () => {
+    await resolveScope({ user: true, project: true });
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining("Only one scope flag"),
+    );
+  });
+
+  it("allows --user and --global together (both map to user scope)", async () => {
+    const result = await resolveScope({ user: true, global: true });
+    expect(result).toBe("user");
+    expect(mockExit).not.toHaveBeenCalled();
+  });
+
+  it("exits with error when --global and --local are both set", async () => {
+    await resolveScope({ global: true, local: true });
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it("prompts interactively when no flag is set and TTY is available", async () => {
+    const originalIsTTY = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: true,
+      writable: true,
+    });
+
+    mockSelect.mockResolvedValue("project" as never);
+
+    const result = await resolveScope({});
+    expect(result).toBe("project");
+    expect(mockSelect).toHaveBeenCalled();
+
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: originalIsTTY,
+      writable: true,
+    });
+  });
+
+  it("exits with error when no flag and not TTY", async () => {
+    const originalIsTTY = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: false,
+      writable: true,
+    });
+
+    await resolveScope({});
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("--user"));
+
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: originalIsTTY,
+      writable: true,
+    });
+  });
+
+  it("ignores flags that are false or undefined", async () => {
+    const result = await resolveScope({
+      user: false,
+      global: undefined,
+      project: true,
+      local: false,
+    });
+    expect(result).toBe("project");
   });
 });

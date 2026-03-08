@@ -1,7 +1,7 @@
 ---
 title: "cf install"
 description: "Install the Coding Friend plugin into Claude Code from the terminal."
-keywords: [install, setup, plugin, cf install, marketplace]
+keywords: [install, setup, plugin, cf install, marketplace, scope]
 ---
 
 ## Overview
@@ -13,24 +13,40 @@ The command is **idempotent**: you can run it as many times as you want without 
 ## Usage
 
 ```bash
-cf install
+cf install              # Interactive — asks which scope to use
+cf install --user       # Install at user scope (all projects)
+cf install --global     # Same as --user
+cf install --project    # Install at project scope (shared via git)
+cf install --local      # Install at local scope (this machine only)
 ```
+
+## Scopes
+
+| Scope       | Flag                  | Settings file                 | Shared with team | Use case                         |
+| ----------- | --------------------- | ----------------------------- | ---------------- | -------------------------------- |
+| **User**    | `--user` / `--global` | `~/.claude/settings.json`     | No               | Personal use across all projects |
+| **Project** | `--project`           | `.claude/settings.json`       | Yes (via git)    | Team-shared plugin               |
+| **Local**   | `--local`             | `.claude/settings.local.json` | No (gitignored)  | This machine only                |
 
 ## What It Does
 
 1. **Checks prerequisites** — verifies that the `claude` CLI is available
-2. **Registers marketplace** — adds the `coding-friend-marketplace` if not already registered
-3. **Installs plugin** — installs `coding-friend@coding-friend-marketplace` if not already installed
-4. **Version check** — if the plugin is already installed, compares with the latest version and suggests `cf update` if an update is available
-5. **Shell completion** — sets up tab completion for the `cf` command in your shell (bash, zsh, fish, or PowerShell)
+2. **Asks for scope** — prompts which scope to install at (or uses the flag)
+3. **Registers marketplace** — adds the `coding-friend-marketplace` if not already registered (always global)
+4. **Installs plugin** — installs `coding-friend@coding-friend-marketplace` at the chosen scope
+5. **Version check** — if the plugin is already installed, compares with the latest version and suggests `cf update` if an update is available
+6. **Shell completion** — sets up tab completion for the `cf` command in your shell (bash, zsh, fish, or PowerShell)
 
 ## Under the Hood
 
 `cf install` runs these Claude CLI commands for you:
 
 ```bash
+# Marketplace registration (always global)
 claude plugin marketplace add dinhanhthi/coding-friend
-claude plugin install coding-friend@coding-friend-marketplace
+
+# Plugin installation (with scope)
+claude plugin install coding-friend@coding-friend-marketplace --scope <scope>
 ```
 
 ## Next Steps

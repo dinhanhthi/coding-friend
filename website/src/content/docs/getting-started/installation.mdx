@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install the Coding Friend CLI and Claude Code plugin to get started.
-keywords: [installation, setup, claude code plugin, npm, cli]
+keywords: [installation, setup, claude code plugin, npm, cli, scope]
 ---
 
 ## Prerequisites
@@ -23,15 +23,24 @@ cf --version
 ## Install the Plugin
 
 ```bash
-# From the terminal
+# Interactive — asks which scope to use
 cf install
 
-# Or, if you prefer, open Claude Code and run manually:
-/plugin marketplace add dinhanhthi/coding-friend
-/plugin install coding-friend@coding-friend-marketplace
+# Or install directly at a specific scope:
+cf install --user       # All projects (default)
+cf install --project    # This project only (shared via git)
+cf install --local      # This machine only (gitignored)
 ```
 
-The plugin installs globally — install once, use in every project.
+### Scopes
+
+| Scope       | Flag                  | Use case                                                                 |
+| ----------- | --------------------- | ------------------------------------------------------------------------ |
+| **User**    | `--user` / `--global` | Personal use across all projects                                         |
+| **Project** | `--project`           | Team-shared — committed to `.claude/settings.json`                       |
+| **Local**   | `--local`             | This machine only — stored in `.claude/settings.local.json` (gitignored) |
+
+All plugin features (skills, hooks, statusline, agents) work identically across all scopes. The only difference is who has access and whether the config is version-controlled.
 
 ## Initialize Your Workspace
 

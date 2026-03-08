@@ -61,6 +61,6 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 
 ## CLI (coding-friend-cli)
 
-Install via `npm i -g coding-friend-cli`: cf install, cf uninstall, cf init, cf host, cf mcp, cf permission, cf statusline, cf update
+Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf init, cf host, cf mcp, cf permission, cf statusline, cf update [--user|--project|--local]
 
 For details on any skill, read `plugin/skills/<name>/SKILL.md`.

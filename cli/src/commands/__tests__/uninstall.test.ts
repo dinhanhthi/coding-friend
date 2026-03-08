@@ -28,6 +28,10 @@ vi.mock("../../lib/shell-completion.js", () => ({
   removeShellCompletion: vi.fn(),
 }));
 
+vi.mock("../../lib/prompt-utils.js", () => ({
+  resolveScope: vi.fn(),
+}));
+
 import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { confirm } from "@inquirer/prompts";
 import { commandExists, run } from "../../lib/exec.js";
@@ -35,6 +39,7 @@ import {
   hasShellCompletion,
   removeShellCompletion,
 } from "../../lib/shell-completion.js";
+import { resolveScope } from "../../lib/prompt-utils.js";
 import { uninstallCommand } from "../uninstall.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -46,6 +51,7 @@ const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
 const mockHasShellCompletion = vi.mocked(hasShellCompletion);
 const mockRemoveShellCompletion = vi.mocked(removeShellCompletion);
+const mockResolveScope = vi.mocked(resolveScope);
 
 const home = homedir();
 const installedPluginsFile = join(
@@ -81,6 +87,7 @@ const configDir = join(home, ".coding-friend");
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
+  mockResolveScope.mockResolvedValue("user");
 });
 
 describe("uninstallCommand", () => {
@@ -93,7 +100,7 @@ describe("uninstallCommand", () => {
     expect(mockRun).not.toHaveBeenCalled();
   });
 
-  it("exits early when dev mode is active", async () => {
+  it("exits early when dev mode is active (before scope prompt)", async () => {
     mockCommandExists.mockReturnValue(true);
     mockExistsSync.mockImplementation((p) => {
       if (p === devStateFile) return true;
@@ -106,6 +113,8 @@ describe("uninstallCommand", () => {
 
     await uninstallCommand();
 
+    // Should not even call resolveScope when dev mode is active
+    expect(mockResolveScope).not.toHaveBeenCalled();
     expect(mockConfirm).not.toHaveBeenCalled();
   });
 
@@ -140,7 +149,7 @@ describe("uninstallCommand", () => {
     expect(mockRmSync).not.toHaveBeenCalled();
   });
 
-  it("performs full uninstall when user confirms", async () => {
+  it("performs full uninstall when user confirms (user scope)", async () => {
     mockCommandExists.mockReturnValue(true);
 
     // Plugin installed
@@ -294,5 +303,81 @@ describe("uninstallCommand", () => {
       "uninstall",
       "coding-friend",
     ]);
+  });
+
+  // ─── Scoped uninstall ──────────────────────────────────────────────
+
+  it("passes --scope project when uninstalling from project scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ project: true });
+
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
+      "--scope",
+      "project",
+    ]);
+  });
+
+  it("passes --scope local when uninstalling from local scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("local");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ local: true });
+
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "uninstall",
+      "coding-friend@coding-friend-marketplace",
+      "--scope",
+      "local",
+    ]);
+  });
+
+  it("does not clean marketplace/cache/statusline for project scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ project: true });
+
+    // Should NOT remove marketplace, cache, statusline, or shell completion
+    expect(mockRun).not.toHaveBeenCalledWith("claude", [
+      "plugin",
+      "marketplace",
+      "remove",
+      expect.anything(),
+    ]);
+    expect(mockRmSync).not.toHaveBeenCalled();
+    expect(mockRemoveShellCompletion).not.toHaveBeenCalled();
+  });
+
+  it("cancels scoped uninstall when user declines", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(false);
+
+    await uninstallCommand({ project: true });
+
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("calls resolveScope with provided options", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("local");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ local: true });
+
+    expect(mockResolveScope).toHaveBeenCalledWith({ local: true });
   });
 });

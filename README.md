@@ -54,10 +54,13 @@ pnpm add -g coding-friend-cli
 ### 2. Install the plugin
 
 ```bash
-cf install
+cf install              # Interactive — asks which scope to use
+cf install --user       # All projects (default)
+cf install --project    # This project only (shared via git)
+cf install --local      # This machine only (gitignored)
 ```
 
-> The plugin is installed globally (once for all projects). You can disable it per-project if needed.
+> Supports user, project, and local scopes. All features work identically across scopes.
 
 ### 3. Initialize your project
 

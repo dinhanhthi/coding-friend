@@ -3,7 +3,11 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 import { log } from "../lib/log.js";
-import { encodeProjectPath, claudeSessionDir, resolvePath } from "../lib/paths.js";
+import {
+  encodeProjectPath,
+  claudeSessionDir,
+  resolvePath,
+} from "../lib/paths.js";
 import {
   buildPreviewText,
   saveSession,
