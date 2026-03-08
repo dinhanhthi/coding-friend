@@ -1,6 +1,7 @@
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { isMarketplaceRegistered } from "../lib/plugin-state.js";
+import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { getInstalledVersion } from "../lib/statusline.js";
 import { getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
@@ -75,13 +76,18 @@ export async function installCommand(): Promise<void> {
     }
   }
 
-  // Step 4: Next steps
+  // Step 4: Shell completion
+  ensureShellCompletion({ silent: false });
+
+  // Step 5: Next steps
   console.log();
   log.info("Next steps:");
-  log.dim(
+  console.log(
     `  ${chalk.cyan("cf init")}         Initialize workspace (docs folders, config)`,
   );
-  log.dim(`  ${chalk.cyan("cf statusline")}   Setup statusline in Claude Code`);
+  console.log(
+    `  ${chalk.cyan("cf statusline")}   Setup statusline in Claude Code to show more real-time info`,
+  );
   console.log();
   log.dim("Restart Claude Code (or start a new session) to use the plugin.");
 }
