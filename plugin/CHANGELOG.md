@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.7.5 (unpublished)
+## v0.7.5 (2026-03-09)
 
 - Make `cf-optimize` auto-invocable on performance-related conversation signals ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
 - Add performance suggestion sections to `cf-fix`, `cf-plan`, and `cf-code-reviewer` to cross-reference `/cf-optimize` ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
