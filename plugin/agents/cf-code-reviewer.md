@@ -39,6 +39,16 @@ Format:
 Overall assessment in 1-2 sentences.
 ```
 
+## Performance Suggestion
+
+If the review identifies **performance concerns** — e.g. O(n²) loops, N+1 queries, missing indexes, unnecessary re-renders, unbounded data fetching, or memory-intensive operations — add a section at the end of the report:
+
+```
+### Performance
+- [file:line] Description of concern
+  Suggestion: Consider running `/cf-optimize` on this code path for measured improvement.
+```
+
 ## Rules
 
 - Be specific — cite file paths and line numbers

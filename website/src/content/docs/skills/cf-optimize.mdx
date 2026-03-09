@@ -6,10 +6,18 @@ keywords: [optimization, performance, measurement, cf-optimize]
 
 The `/cf-optimize` skill systematically improves performance by measuring baseline metrics, analyzing bottlenecks, getting your confirmation on the approach, implementing optimizations with tests, and comparing before/after results.
 
+This is an **auto-invoked** skill — it activates automatically when it detects performance-related context in the conversation (e.g. "this is slow", "optimize", "bottleneck", "high latency"). You can also trigger it manually with `/cf-optimize`.
+
 ## Usage
 
 ```bash
 /cf-optimize [target]
+```
+
+Or simply describe a performance problem — the skill activates automatically:
+
+```
+This endpoint is taking 3 seconds to respond
 ```
 
 ## Workflow
@@ -49,7 +57,7 @@ The `/cf-optimize` skill systematically improves performance by measuring baseli
 
 - **Always Measured** — Every optimization is benchmarked before and after — no "it should be faster" claims
 - **One at a Time** — Never batches multiple optimizations, so you know exactly what helped
-- **TDD Integration** — Enforces test-first approach via the `cf-implementer` agent
+- **TDD Integration** — Enforces test-first approach via the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent
 - **Auto-Revert** — Reverts if the optimization makes things worse or breaks tests
 - **Custom Guides** — Extend behavior via `.coding-friend/skills/cf-optimize-custom/SKILL.md`
 
@@ -71,20 +79,21 @@ AFTER (3 runs avg):
 | DB queries | 15     | 1     | -93%              |
 ```
 
-## When to Use
+## When It Activates
+
+The skill auto-invokes when it detects performance-related signals:
+
+- "this is slow", "make it faster", "optimize", "speed up", "takes too long"
+- "bottleneck", "high latency", "timeout", "too many queries"
+- "memory leak", "reduce load time", "O(n²)", "N+1"
+- Performance concerns flagged by [`/cf-review`](/docs/skills/cf-review/) or [`/cf-fix`](/docs/skills/cf-fix/)
+
+It does NOT auto-invoke for minor refactors or style changes that are not performance-related.
+
+## When to Use Manually
 
 - Performance bottlenecks identified by users
 - Database queries timing out
 - Page load times slowing growth
 - API endpoints hitting rate limits
 - Memory leaks in long-running processes
-
-## Recommended Workflow
-
-After the optimization is verified, follow this order:
-
-```
-/cf-optimize → /cf-review → /cf-commit
-```
-
-The skill automatically reminds you to run [`/cf-review`](/docs/skills/cf-review/) before committing, so you don't skip the review step and jump straight to [`/cf-commit`](/docs/skills/cf-commit/).

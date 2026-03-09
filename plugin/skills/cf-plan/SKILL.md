@@ -125,6 +125,7 @@ If the user agrees, implement each task from the plan **sequentially** using the
    - If tests pass and the task is verified → mark task complete, move to next
    - If issues reported → address them before proceeding (re-dispatch or fix inline)
 3. After all tasks are done, automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+4. After review completes, if the implemented plan involved **performance-critical features** — e.g. data processing pipelines, API endpoints handling high traffic, database-heavy operations, algorithms on large datasets, or real-time processing — suggest running `/cf-optimize` on the critical code paths. Present it as an optional next step, do NOT auto-run.
 
 ## Plan Template
 

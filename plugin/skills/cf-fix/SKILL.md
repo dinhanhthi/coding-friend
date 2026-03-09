@@ -173,6 +173,14 @@ existing_file_action: skip
 
 Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
+### Step 10: Performance Suggestion (conditional)
+
+If the bug fix involved **performance-critical code** — e.g. database queries, API endpoints, loops over large datasets, memory management, caching, or I/O operations — suggest running `/cf-optimize` on the affected code path. Present it as an optional next step, do NOT auto-run.
+
+Example: _"The fix touched a database query path. Want to run `/cf-optimize` on it to verify performance hasn't regressed and look for optimization opportunities?"_
+
+If the fix was not performance-related, skip this step.
+
 ## Escalation
 
 If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:

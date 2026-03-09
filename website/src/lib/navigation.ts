@@ -6,12 +6,12 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "Installation", slug: "getting-started/installation" },
       { title: "Quick Start", slug: "getting-started/quick-start" },
+      { title: "Skills Overview", slug: "skills/overview" },
     ],
   },
   {
     title: "Skills",
     items: [
-      { title: "Overview", slug: "skills/overview" },
       { title: "/cf-plan", slug: "skills/cf-plan" },
       { title: "/cf-fix", slug: "skills/cf-fix" },
       { title: "/cf-ask", slug: "skills/cf-ask", manualOnly: true },

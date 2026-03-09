@@ -1,6 +1,7 @@
 ---
 name: cf-sys-debug
 description: Use when diagnosing bugs, investigating failures, or fixing broken behavior
+user-invocable: false
 ---
 
 # Systematic Debugging
