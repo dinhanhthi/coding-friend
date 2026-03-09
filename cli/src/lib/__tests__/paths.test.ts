@@ -9,6 +9,7 @@ import {
   encodeProjectPath,
   claudeProjectsDir,
   claudeSessionDir,
+  claudeProjectSettingsPath,
 } from "../paths.js";
 
 describe("resolvePath", () => {
@@ -122,6 +123,14 @@ describe("claudeSessionDir", () => {
   it("returns ~/.claude/projects/<encodedPath>", () => {
     expect(claudeSessionDir("-Users-alice-git-foo")).toBe(
       join(homedir(), ".claude", "projects", "-Users-alice-git-foo"),
+    );
+  });
+});
+
+describe("claudeProjectSettingsPath", () => {
+  it("returns <cwd>/.claude/settings.json", () => {
+    expect(claudeProjectSettingsPath()).toBe(
+      resolve(process.cwd(), ".claude", "settings.json"),
     );
   });
 });

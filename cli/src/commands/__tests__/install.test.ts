@@ -7,6 +7,7 @@ vi.mock("../../lib/exec.js", () => ({
 
 vi.mock("../../lib/plugin-state.js", () => ({
   isMarketplaceRegistered: vi.fn(),
+  isPluginDisabled: vi.fn(),
 }));
 
 vi.mock("../../lib/statusline.js", () => ({
@@ -33,7 +34,10 @@ vi.mock("fs", async () => {
 
 import { existsSync } from "fs";
 import { commandExists, run } from "../../lib/exec.js";
-import { isMarketplaceRegistered } from "../../lib/plugin-state.js";
+import {
+  isMarketplaceRegistered,
+  isPluginDisabled,
+} from "../../lib/plugin-state.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
 import { resolveScope } from "../../lib/prompt-utils.js";
@@ -43,6 +47,7 @@ const mockExistsSync = vi.mocked(existsSync);
 const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
 const mockIsMarketplaceRegistered = vi.mocked(isMarketplaceRegistered);
+const mockIsPluginDisabled = vi.mocked(isPluginDisabled);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
@@ -178,5 +183,22 @@ describe("installCommand", () => {
       "add",
       "dinhanhthi/coding-friend",
     ]);
+  });
+
+  it("warns when plugin is installed but disabled at scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.3");
+    mockIsPluginDisabled.mockReturnValue(true);
+
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand();
+
+    expect(mockIsPluginDisabled).toHaveBeenCalledWith("user");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("disabled"),
+    );
   });
 });

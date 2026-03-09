@@ -44,6 +44,30 @@ program
   });
 
 program
+  .command("disable")
+  .description("Disable the Coding Friend plugin without uninstalling")
+  .option("--user", "Disable at user scope (all projects)")
+  .option("--global", "Disable at user scope (all projects)")
+  .option("--project", "Disable at project scope")
+  .option("--local", "Disable at local scope")
+  .action(async (opts) => {
+    const { disableCommand } = await import("./commands/disable.js");
+    await disableCommand(opts);
+  });
+
+program
+  .command("enable")
+  .description("Re-enable the Coding Friend plugin")
+  .option("--user", "Enable at user scope (all projects)")
+  .option("--global", "Enable at user scope (all projects)")
+  .option("--project", "Enable at project scope")
+  .option("--local", "Enable at local scope")
+  .action(async (opts) => {
+    const { enableCommand } = await import("./commands/enable.js");
+    await enableCommand(opts);
+  });
+
+program
   .command("init")
   .description("Initialize coding-friend in current project")
   .action(async () => {

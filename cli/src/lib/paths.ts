@@ -26,6 +26,11 @@ export function claudeSettingsPath(): string {
   return join(homedir(), ".claude", "settings.json");
 }
 
+/** Path to Claude project settings (<project>/.claude/settings.json) */
+export function claudeProjectSettingsPath(): string {
+  return resolve(process.cwd(), ".claude", "settings.json");
+}
+
 /** Path to Claude project-local settings (<project>/.claude/settings.local.json) */
 export function claudeLocalSettingsPath(): string {
   return resolve(process.cwd(), ".claude", "settings.local.json");

@@ -28,6 +28,17 @@ cf uninstall --global   # Same as --user
 cf uninstall --project  # Uninstall from project scope only
 cf uninstall --local    # Uninstall from local scope only
                         # 💡 Interactive — asks for confirmation before acting.
+cf disable             # Disable plugin (interactive scope chooser)
+cf disable --user      # Disable at user scope (all projects)
+cf disable --global    # Same as --user
+cf disable --project   # Disable at project scope
+cf disable --local     # Disable at local scope
+                       # 💡 Plugin stays installed but won't load.
+cf enable              # Re-enable plugin (interactive scope chooser)
+cf enable --user       # Enable at user scope (all projects)
+cf enable --global     # Same as --user
+cf enable --project    # Enable at project scope
+cf enable --local      # Enable at local scope
 cf init              # Initialize workspace (interactive)
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
