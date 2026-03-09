@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.7.5 (unpublished)
+
+- Make `cf-optimize` auto-invocable on performance-related conversation signals ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
+- Add performance suggestion sections to `cf-fix`, `cf-plan`, and `cf-code-reviewer` to cross-reference `/cf-optimize` ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
+- Add `user-invocable: false` frontmatter to `cf-tdd` and `cf-sys-debug` skills ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
+
 ## v0.7.4 (2026-03-09)
 
 - Update bootstrap context and statusline to list `cf disable` and `cf enable` CLI commands ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
