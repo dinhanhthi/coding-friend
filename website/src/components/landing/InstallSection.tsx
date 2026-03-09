@@ -51,7 +51,7 @@ export default function InstallSection() {
               </div>
               <CopyButton text={installCmd} />
             </div>
-            <div className="flex border-b border-[#a0a0a01c] bg-[#23262e]">
+            <div className="bg-navy-950 flex border-b border-[#a0a0a01c]">
               {MANAGERS.map((m) => (
                 <button
                   key={m.id}

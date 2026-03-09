@@ -3,75 +3,235 @@
 import { useEffect, useRef, useState } from "react";
 import Container from "@/components/ui/Container";
 
-const steps = [
+/* ────────────────────────────────────────────────────────────
+   DATA MODEL
+   ──────────────────────────────────────────────────────────── */
+
+interface FlowNode {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface SideNode {
+  id: string;
+  label: string;
+  description: string;
+  parentId: string; // which main node it attaches to
+  kind: "auto" | "agent";
+}
+
+const mainNodes: FlowNode[] = [
   {
-    number: "01",
-    title: "Plan",
-    command: "/cf-plan Build a REST API with auth",
-    output:
-      "Creating implementation plan...\n\nExploring codebase...\nIdentifying patterns...\nDesigning approach...\n\nPlan written to docs/plans/rest-api-auth.md",
+    id: "plan",
+    label: "/cf-plan",
     description:
-      "Brainstorm your approach. Coding Friend explores the codebase, identifies patterns, and writes a structured plan.",
+      "Brainstorm your approach. Explores the codebase, identifies patterns, and writes a structured plan.",
   },
   {
-    number: "02",
-    title: "Implement",
-    command: "Write the auth middleware",
-    output:
-      "cf-tdd activated\n\nRED: Writing failing test...\n  auth.test.ts: should reject invalid tokens\n\nGREEN: Implementing...\n  auth.middleware.ts: JWT validation\n\nREFACTOR: Cleaning up...\n  All tests passing (3/3)",
+    id: "implement",
+    label: "cf-tdd",
     description:
-      "Write code with TDD enforced. Every feature starts with a failing test, then implementation, then refactor.",
+      "TDD workflow enforced. Every feature starts with a failing test, then implementation, then refactor.",
   },
   {
-    number: "03",
-    title: "Review",
-    command: "/cf-review src/auth/",
-    output:
-      "Code Review (forked subagent)\n\nSecurity: No injection vulnerabilities\nPerformance: Token caching recommended\nStyle: Consistent with codebase\nTests: 100% branch coverage\n\n2 suggestions, 0 issues",
+    id: "review",
+    label: "/cf-review",
     description:
-      "Multi-layer code review runs in a separate subagent. Checks security, performance, style, and test coverage.",
+      "Multi-layer code review in a separate subagent. Checks security, performance, style, and coverage.",
   },
   {
-    number: "04",
-    title: "Ship",
-    command: "/cf-ship Add JWT auth middleware",
-    output:
-      "Verification: All tests passing (12/12)\nCommit: feat(auth): add JWT middleware\nPush: origin/feat/jwt-auth\nPR: #42 created\n\nhttps://github.com/.../pull/42",
+    id: "commit",
+    label: "/cf-commit",
+    description:
+      "Smart conventional commit. Analyzes staged changes and writes a meaningful commit message.",
+  },
+  {
+    id: "ship",
+    label: "/cf-ship",
     description:
       "One command to verify, commit, push, and create a pull request. Smart conventional commits included.",
   },
+];
+
+const sideNodes: SideNode[] = [
+  // Agents (sky)
   {
-    number: "05",
-    title: "Learn",
-    command: "/cf-learn",
-    output:
-      "Extracting knowledge...\n\nJWT Authentication Patterns\n  Token validation flow\n  Middleware composition\n  Error handling strategies\n\nSaved to docs/learn/Web_Dev/jwt-auth.md\nHost with: cf host",
+    id: "explorer",
+    label: "cf-explorer",
+    description: "Fast codebase exploration and analysis (read-only)",
+    parentId: "plan",
+    kind: "agent",
+  },
+  {
+    id: "planner",
+    label: "cf-planner",
+    description: "Task decomposition and approach brainstorming",
+    parentId: "plan",
+    kind: "agent",
+  },
+  {
+    id: "implementer",
+    label: "cf-implementer",
+    description: "TDD implementation agent — RED, GREEN, REFACTOR",
+    parentId: "implement",
+    kind: "agent",
+  },
+  {
+    id: "code-reviewer",
+    label: "cf-code-reviewer",
+    description: "Multi-layer code review agent",
+    parentId: "review",
+    kind: "agent",
+  },
+  {
+    id: "writer",
+    label: "cf-writer",
+    description: "Lightweight doc writer for markdown file generation",
+    parentId: "ship",
+    kind: "agent",
+  },
+  // Auto-invoked skills (emerald)
+  {
+    id: "fix",
+    label: "/cf-fix",
+    description: "Auto-invoked when bugs are detected at any stage",
+    parentId: "implement",
+    kind: "auto",
+  },
+  {
+    id: "sys-debug",
+    label: "cf-sys-debug",
     description:
-      "Capture what you learned from the session. Generate docs, host as a website, or integrate with other LLM clients.",
+      "4-phase debugging — loops with /cf-fix to diagnose and resolve bugs",
+    parentId: "implement",
+    kind: "auto",
+  },
+  {
+    id: "optimize",
+    label: "/cf-optimize",
+    description: "Auto-invoked for performance optimization",
+    parentId: "review",
+    kind: "auto",
+  },
+  {
+    id: "auto-review",
+    label: "cf-auto-review",
+    description: "Review methodology auto-loaded during code review",
+    parentId: "review",
+    kind: "auto",
+  },
+  {
+    id: "verification",
+    label: "cf-verification",
+    description: "Auto-invoked gate — never claims done without tests passing",
+    parentId: "commit",
+    kind: "auto",
+  },
+  {
+    id: "learn",
+    label: "/cf-learn",
+    description:
+      "Auto-extracts knowledge after substantial work into learning notes",
+    parentId: "ship",
+    kind: "auto",
   },
 ];
 
-function renderCommand(command: string) {
-  const match = command.match(/^(\/\S+)(\s+(.*))?$/);
-  if (match) {
-    return (
-      <>
-        <span className="font-semibold text-violet-400">{match[1]}</span>
-        {match[3] && <span className="text-emerald-400"> {match[3]}</span>}
-      </>
-    );
-  }
-  return <span className="text-emerald-400">{command}</span>;
+/* ────────────────────────────────────────────────────────────
+   LAYOUT CONSTANTS  (desktop coordinate system)
+   ──────────────────────────────────────────────────────────── */
+
+const SVG_W = 960;
+const SVG_H = 390;
+const MAIN_Y = 178;
+const MAIN_X_START = 80;
+const MAIN_X_END = SVG_W - 80;
+const MAIN_SPACING = (MAIN_X_END - MAIN_X_START) / (mainNodes.length - 1);
+const NODE_W = 120;
+const NODE_H = 48;
+const SIDE_W = 140;
+const SIDE_H = 40;
+
+// Rows: agents at y=68, main at y=178, autos at y=290.
+// cf-sys-debug sits at y=340 (below fix, linked by a loop).
+const AGENT_Y = 68;
+const AUTO_Y = 290;
+const DEBUG_Y = 348;
+
+// SIDE_W=140, so centers must be ≥ 150px apart to avoid overlap.
+const sideAbsolutePos: Record<string, { x: number; y: number }> = {
+  // ── Top row: agents (left to right) ──
+  explorer: { x: 90, y: AGENT_Y }, //  parent: plan (x=80)
+  planner: { x: 250, y: AGENT_Y }, //  parent: plan (x=80)
+  implementer: { x: 400, y: AGENT_Y }, // parent: implement (x=280)
+  "code-reviewer": { x: 560, y: AGENT_Y }, // parent: review (x=480)
+  writer: { x: 830, y: AGENT_Y }, //  parent: ship (x=880)
+  // ── Bottom row: auto-invoked (left to right) ──
+  fix: { x: 140, y: AUTO_Y }, //  parent: implement (x=280)
+  "sys-debug": { x: 140, y: DEBUG_Y }, // loops with fix
+  optimize: { x: 370, y: AUTO_Y }, //  parent: review (x=480)
+  "auto-review": { x: 540, y: AUTO_Y }, //  parent: review (x=480)
+  verification: { x: 710, y: AUTO_Y }, //  parent: commit (x=680)
+  learn: { x: 860, y: AUTO_Y }, //  parent: ship (x=880)
+};
+
+function getMainPos(index: number): { x: number; y: number } {
+  return { x: MAIN_X_START + index * MAIN_SPACING, y: MAIN_Y };
 }
 
-const STEP_OFFSET = 250; // vertical offset between steps on desktop
-const CIRCLE_SIZE = 48; // w-12 h-12 = 48px
-const CARD_GAP = 40; // gap between card edge and center column
+function getSidePos(node: SideNode): { x: number; y: number } {
+  return (
+    sideAbsolutePos[node.id] ?? {
+      x: SVG_W / 2,
+      y: node.kind === "agent" ? AGENT_Y : AUTO_Y,
+    }
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   SVG HELPERS
+   ──────────────────────────────────────────────────────────── */
+
+function mainPath(i: number): string {
+  const a = getMainPos(i);
+  const b = getMainPos(i + 1);
+  const x1 = a.x + NODE_W / 2 + 4;
+  const x2 = b.x - NODE_W / 2 - 4;
+  const y = MAIN_Y;
+  const cx = (x1 + x2) / 2;
+  return `M ${x1} ${y} C ${cx} ${y} ${cx} ${y} ${x2} ${y}`;
+}
+
+function loopBackPath(): string {
+  // Segmented path from commit back to implement, between agent row and main row
+  const commitPos = getMainPos(3);
+  const implPos = getMainPos(1);
+  const x1 = commitPos.x;
+  const x2 = implPos.x;
+  const yMain = MAIN_Y - NODE_H / 2 - 6; // just above main nodes
+  const yMid = (AGENT_Y + SIDE_H / 2 + MAIN_Y - NODE_H / 2) / 2; // midpoint between rows
+  return `M ${x1} ${yMain} L ${x1} ${yMid} L ${x2} ${yMid} L ${x2} ${yMain}`;
+}
+
+function sidePath(node: SideNode): string {
+  const parentIdx = mainNodes.findIndex((n) => n.id === node.parentId);
+  const parent = getMainPos(parentIdx);
+  const side = getSidePos(node);
+  return `M ${parent.x} ${parent.y} L ${side.x} ${side.y}`;
+}
+
+/* ────────────────────────────────────────────────────────────
+   COMPONENT
+   ──────────────────────────────────────────────────────────── */
 
 export default function HowItWorks() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<HTMLDivElement>(null);
   const [isDesktop, setIsDesktop] = useState(false);
-  // Desktop detection after mount
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
     const update = () => setIsDesktop(mq.matches);
@@ -80,56 +240,120 @@ export default function HowItWorks() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  // Desktop: deterministic connector paths between circles
-  const connectorLineHeight = STEP_OFFSET - CIRCLE_SIZE;
-  const connectors = steps.slice(0, -1).map((_, i) => {
-    const top = i * STEP_OFFSET + CIRCLE_SIZE; // bottom of circle i
-    const h = connectorLineHeight;
-    const cx = 60;
-    const d = `M ${cx} 0 L ${cx} ${h}`;
-    return { d, top, height: h, index: i };
-  });
+  // Track container width to scale cards on smaller screens
+  useEffect(() => {
+    const el = graphRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      setScale(Math.min(1, w / SVG_W));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isDesktop]);
 
-  // Desktop container height
-  const containerHeight = (steps.length - 1) * STEP_OFFSET + 400;
+  // Determine which nodes are "connected" to the hovered node
+  const connectedIds = new Set<string>();
+  if (hovered) {
+    connectedIds.add(hovered);
+    // If hovering a main node, connect its side nodes
+    sideNodes.forEach((s) => {
+      if (s.parentId === hovered || s.id === hovered) {
+        connectedIds.add(s.id);
+        connectedIds.add(s.parentId);
+      }
+    });
+    // If hovering a side node, connect its parent
+    const sideMatch = sideNodes.find((s) => s.id === hovered);
+    if (sideMatch) {
+      connectedIds.add(sideMatch.parentId);
+    }
+    // Main flow neighbors
+    const mainIdx = mainNodes.findIndex((n) => n.id === hovered);
+    if (mainIdx >= 0) {
+      if (mainIdx > 0) connectedIds.add(mainNodes[mainIdx - 1].id);
+      if (mainIdx < mainNodes.length - 1)
+        connectedIds.add(mainNodes[mainIdx + 1].id);
+    }
+  }
 
-  return (
-    <section id="how-it-works" className="py-20" ref={sectionRef}>
-      <Container>
-        <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-white">
-            How The Plugin Works
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            A disciplined workflow from planning to knowledge capture.
-          </p>
-        </div>
+  const isConnected = (id: string) => !hovered || connectedIds.has(id);
+  const isActive = (id: string) => hovered === id;
 
-        <div
-          className="relative mx-auto max-w-4xl"
-          style={isDesktop ? { minHeight: `${containerHeight}px` } : undefined}
-        >
-          {/* ── Mobile: Vertical timeline line with animation ── */}
-          {!isDesktop && (
+  // ── Desktop tooltip ──
+  const tooltipNode =
+    hovered &&
+    ([...mainNodes, ...sideNodes].find((n) => n.id === hovered) ?? null);
+  const tooltipPos = (() => {
+    if (!tooltipNode) return null;
+    const mainIdx = mainNodes.findIndex((n) => n.id === tooltipNode.id);
+    if (mainIdx >= 0) {
+      const pos = getMainPos(mainIdx);
+      return { x: pos.x, y: pos.y + NODE_H / 2 + 14 };
+    }
+    const sn = sideNodes.find((n) => n.id === tooltipNode.id);
+    if (sn) {
+      const pos = getSidePos(sn);
+      const above = pos.y < MAIN_Y || sn.id === "fix";
+      return {
+        x: pos.x,
+        y: above ? pos.y - SIDE_H / 2 - 6 : pos.y + SIDE_H / 2 + 6,
+      };
+    }
+    return null;
+  })();
+
+  /* ────── DESKTOP ────── */
+  if (isDesktop) {
+    return (
+      <section id="how-it-works" className="py-20" ref={sectionRef}>
+        <Container>
+          <div className="mb-6 text-center">
+            <h2 className="text-3xl font-bold text-white">
+              Workflow in Action
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
+              Skills and agents work together automatically. Hover to explore
+              connections.
+            </p>
+          </div>
+
+          {/* Graph container */}
+          <div
+            ref={graphRef}
+            className="relative mx-auto"
+            style={{
+              maxWidth: `${SVG_W}px`,
+              aspectRatio: `${SVG_W} / ${SVG_H}`,
+            }}
+          >
+            {/* SVG connections layer */}
             <svg
-              className="pointer-events-none absolute top-0 left-5"
-              style={{
-                width: "2px",
-                height: "100%",
-                marginLeft: "-1px",
-              }}
-              preserveAspectRatio="none"
-              viewBox="0 0 2 1000"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               fill="none"
               aria-hidden="true"
             >
               <defs>
                 <filter
-                  id="mobile-glow"
+                  id="glow-v"
                   x="-200%"
-                  y="-10%"
+                  y="-200%"
                   width="500%"
-                  height="120%"
+                  height="500%"
+                >
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter
+                  id="glow-e"
+                  x="-200%"
+                  y="-200%"
+                  width="500%"
+                  height="500%"
                 >
                   <feGaussianBlur stdDeviation="3" result="blur" />
                   <feMerge>
@@ -137,215 +361,608 @@ export default function HowItWorks() {
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
+                <filter
+                  id="glow-s"
+                  x="-200%"
+                  y="-200%"
+                  width="500%"
+                  height="500%"
+                >
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter
+                  id="glow-y"
+                  x="-200%"
+                  y="-200%"
+                  width="500%"
+                  height="500%"
+                >
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                {/* Arrow marker for main flow connections */}
+                <marker
+                  id="arrow-main"
+                  viewBox="0 0 10 8"
+                  refX="9"
+                  refY="4"
+                  markerWidth="7"
+                  markerHeight="5"
+                  orient="auto"
+                >
+                  <path d="M 0 0 L 10 4 L 0 8 z" className="fill-violet-500" />
+                </marker>
+
+                {/* Arrow marker for loop-back */}
+                <marker
+                  id="arrow-loop"
+                  viewBox="0 0 10 8"
+                  refX="9"
+                  refY="4"
+                  markerWidth="8"
+                  markerHeight="6"
+                  orient="auto"
+                >
+                  <path
+                    d="M 0 0 L 10 4 L 0 8 z"
+                    className="fill-yellow-400/60"
+                  />
+                </marker>
+
+                {/* Arrow marker for fix ↔ sys-debug loop */}
+                <marker
+                  id="arrow-debug"
+                  viewBox="0 0 10 8"
+                  refX="9"
+                  refY="4"
+                  markerWidth="7"
+                  markerHeight="5"
+                  orient="auto"
+                >
+                  <path
+                    d="M 0 0 L 10 4 L 0 8 z"
+                    className="fill-yellow-400/60"
+                  />
+                </marker>
               </defs>
 
-              {/* Static dashed background */}
-              <line
-                x1="1"
-                y1="0"
-                x2="1"
-                y2="1000"
-                stroke="currentColor"
-                className="text-slate-600"
-                strokeWidth="2"
-                strokeDasharray="8 5"
-              />
-
-              {/* Animated flowing dashes */}
-              <line
-                x1="1"
-                y1="0"
-                x2="1"
-                y2="1000"
-                stroke="currentColor"
-                className="text-violet-500"
-                strokeWidth="2.5"
-                strokeDasharray="8 5"
-                strokeLinecap="round"
-              >
-                <animate
-                  attributeName="stroke-dashoffset"
-                  from="0"
-                  to="-13"
-                  dur="1s"
-                  repeatCount="indefinite"
-                />
-              </line>
-
-              {/* Traveling glow dot */}
-              <circle
-                cx="1"
-                r="5"
-                className="fill-current text-violet-400"
-                filter="url(#mobile-glow)"
-              >
-                <animate
-                  attributeName="cy"
-                  from="0"
-                  to="1000"
-                  dur="4s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-            </svg>
-          )}
-
-          {/* ── Desktop: SVG connectors (deterministic positions) ── */}
-          {isDesktop &&
-            connectors.map((c) => (
-              <svg
-                key={c.index}
-                className="pointer-events-none absolute left-1/2 z-0 overflow-visible"
-                style={{
-                  top: `${c.top}px`,
-                  width: "130px",
-                  height: `${c.height}px`,
-                  marginLeft: "-65px",
-                }}
-                viewBox={`0 0 120 ${c.height}`}
-                fill="none"
-                aria-hidden="true"
-              >
-                <defs>
-                  <filter
-                    id={`glow-${c.index}`}
-                    x="-100%"
-                    y="-100%"
-                    width="300%"
-                    height="300%"
+              {/* ── Main flow connections ── */}
+              {mainNodes.slice(0, -1).map((_, i) => {
+                const d = mainPath(i);
+                const fromId = mainNodes[i].id;
+                const toId = mainNodes[i + 1].id;
+                const dim =
+                  hovered &&
+                  !connectedIds.has(fromId) &&
+                  !connectedIds.has(toId);
+                return (
+                  <g
+                    key={`main-${i}`}
+                    className={`transition-opacity duration-300 ${dim ? "opacity-15" : "opacity-100"}`}
                   >
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
+                    {/* Static background */}
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className="text-slate-600"
+                      strokeWidth="2"
+                      strokeDasharray="8 5"
+                      markerEnd="url(#arrow-main)"
+                    />
+                    {/* Animated overlay */}
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className="zigzag-dash-animate text-violet-500"
+                      strokeWidth="2.5"
+                      strokeDasharray="8 5"
+                      strokeLinecap="round"
+                    />
+                    {/* Traveling dot */}
+                    <circle
+                      r="3"
+                      className="fill-current text-violet-400"
+                      filter="url(#glow-v)"
+                    >
+                      <animateMotion
+                        dur="2.5s"
+                        repeatCount="indefinite"
+                        path={d}
+                      />
+                    </circle>
+                  </g>
+                );
+              })}
 
-                {/* Static dashed background */}
+              {/* ── Loop-back arc (commit → implement) ── */}
+              <g
+                className={`transition-opacity duration-300 ${
+                  hovered &&
+                  !connectedIds.has("commit") &&
+                  !connectedIds.has("implement")
+                    ? "opacity-15"
+                    : "opacity-100"
+                }`}
+              >
                 <path
-                  d={c.d}
+                  d={loopBackPath()}
                   stroke="currentColor"
-                  className="text-slate-600"
-                  strokeWidth="2"
-                  strokeDasharray="8 5"
+                  className="text-yellow-500/40"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 4"
                   fill="none"
+                  markerEnd="url(#arrow-loop)"
                 />
-
-                {/* Animated flowing dashes */}
                 <path
-                  d={c.d}
+                  d={loopBackPath()}
                   stroke="currentColor"
-                  className="zigzag-dash-animate text-violet-500"
-                  strokeWidth="2.5"
-                  strokeDasharray="8 5"
+                  className="auto-dash-animate text-yellow-400/60"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 4"
                   strokeLinecap="round"
                   fill="none"
                 />
-
-                {/* Traveling glow dot */}
                 <circle
-                  r="3.5"
-                  className="fill-current text-violet-400"
-                  filter={`url(#glow-${c.index})`}
+                  r="2.5"
+                  className="fill-current text-yellow-300"
+                  filter="url(#glow-y)"
                 >
                   <animateMotion
-                    dur="2.8s"
+                    dur="3.5s"
                     repeatCount="indefinite"
-                    path={c.d}
+                    path={loopBackPath()}
                   />
                 </circle>
-              </svg>
-            ))}
+                {/* Loop label */}
+                <text
+                  x={(getMainPos(1).x + getMainPos(3).x) / 2}
+                  y={(AGENT_Y + SIDE_H / 2 + MAIN_Y - NODE_H / 2) / 2 - 8}
+                  textAnchor="middle"
+                  className="fill-yellow-400/80 text-xs font-semibold"
+                  fontFamily="monospace"
+                >
+                  iterate
+                </text>
+              </g>
 
-          {/* ── Desktop: centered circles (deterministic positions) ── */}
-          {isDesktop &&
-            steps.map((step, i) => (
+              {/* ── Fix ↔ sys-debug loop ── */}
+              {(() => {
+                const fixPos = getSidePos(
+                  sideNodes.find((n) => n.id === "fix")!,
+                );
+                const dbgPos = getSidePos(
+                  sideNodes.find((n) => n.id === "sys-debug")!,
+                );
+                const dim =
+                  hovered &&
+                  !connectedIds.has("fix") &&
+                  !connectedIds.has("sys-debug");
+                // Right-side loop: fix → right → down → sys-debug
+                const loopX = fixPos.x + SIDE_W / 2 + 16;
+                const dLoop = `M ${fixPos.x + SIDE_W / 2} ${fixPos.y} L ${loopX} ${fixPos.y} L ${loopX} ${dbgPos.y} L ${dbgPos.x + SIDE_W / 2} ${dbgPos.y}`;
+                // Left-side return: sys-debug → left → up → fix
+                const retX = fixPos.x - SIDE_W / 2 - 16;
+                const dReturn = `M ${dbgPos.x - SIDE_W / 2} ${dbgPos.y} L ${retX} ${dbgPos.y} L ${retX} ${fixPos.y} L ${fixPos.x - SIDE_W / 2} ${fixPos.y}`;
+                return (
+                  <g
+                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                  >
+                    {/* Down path */}
+                    <path
+                      d={dLoop}
+                      stroke="currentColor"
+                      className="text-yellow-500/40"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      fill="none"
+                      markerEnd="url(#arrow-debug)"
+                    />
+                    <path
+                      d={dLoop}
+                      stroke="currentColor"
+                      className="auto-dash-animate text-yellow-400/60"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                    <circle
+                      r="2.5"
+                      className="fill-current text-yellow-300"
+                      filter="url(#glow-y)"
+                    >
+                      <animateMotion
+                        dur="2.5s"
+                        repeatCount="indefinite"
+                        path={dLoop}
+                      />
+                    </circle>
+                    {/* Up return path */}
+                    <path
+                      d={dReturn}
+                      stroke="currentColor"
+                      className="text-yellow-500/40"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      fill="none"
+                      markerEnd="url(#arrow-debug)"
+                    />
+                    <path
+                      d={dReturn}
+                      stroke="currentColor"
+                      className="auto-dash-animate text-yellow-400/60"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                    <circle
+                      r="2.5"
+                      className="fill-current text-yellow-300"
+                      filter="url(#glow-y)"
+                    >
+                      <animateMotion
+                        dur="2.5s"
+                        repeatCount="indefinite"
+                        path={dReturn}
+                      />
+                    </circle>
+                  </g>
+                );
+              })()}
+
+              {/* ── Side node connections ── */}
+              {sideNodes.map((node) => {
+                // sys-debug connects via the loop above, not to parent
+                if (node.id === "sys-debug") return null;
+                const d = sidePath(node);
+                const dim = hovered && !connectedIds.has(node.id);
+                const isAuto = node.kind === "auto";
+                return (
+                  <g
+                    key={`side-${node.id}`}
+                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                  >
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className={
+                        isAuto ? "text-emerald-500/40" : "text-sky-500/40"
+                      }
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                    />
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className={`auto-dash-animate ${isAuto ? "text-emerald-500/60" : "text-sky-500/50"}`}
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      strokeLinecap="round"
+                    />
+                    <circle
+                      r="2"
+                      className={`fill-current ${isAuto ? "text-emerald-400" : "text-sky-400"}`}
+                      filter={isAuto ? "url(#glow-e)" : "url(#glow-s)"}
+                    >
+                      <animateMotion
+                        dur="2s"
+                        repeatCount="indefinite"
+                        path={d}
+                      />
+                    </circle>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* ── Main flow nodes (HTML) ── */}
+            {mainNodes.map((node, i) => {
+              const pos = getMainPos(i);
+              const w = NODE_W * scale;
+              const h = NODE_H * scale;
+              return (
+                <div
+                  key={node.id}
+                  className={`absolute z-10 flex items-center justify-center rounded-lg border font-mono transition-all duration-300 select-none ${
+                    isActive(node.id)
+                      ? "bg-navy-950 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/25"
+                      : isConnected(node.id)
+                        ? "bg-navy-950 border-violet-500/50 text-violet-400"
+                        : "bg-navy-950 border-violet-500/20 text-violet-400/40"
+                  }`}
+                  style={{
+                    width: `${w}px`,
+                    height: `${h}px`,
+                    fontSize: `${14 * scale}px`,
+                    left: `${((pos.x - NODE_W / 2) / SVG_W) * 100}%`,
+                    top: `${((pos.y - NODE_H / 2) / SVG_H) * 100}%`,
+                  }}
+                  onMouseEnter={() => setHovered(node.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  role="button"
+                  tabIndex={0}
+                  onFocus={() => setHovered(node.id)}
+                  onBlur={() => setHovered(null)}
+                  aria-label={node.description}
+                >
+                  {node.label}
+                </div>
+              );
+            })}
+
+            {/* ── Side nodes (HTML) ── */}
+            {sideNodes.map((node) => {
+              const pos = getSidePos(node);
+              const isAuto = node.kind === "auto";
+              const sw = SIDE_W * scale;
+              const sh = SIDE_H * scale;
+              return (
+                <div
+                  key={node.id}
+                  className={`absolute z-10 flex items-center justify-center rounded-md border-2 font-mono transition-all duration-300 select-none ${
+                    isAuto
+                      ? isActive(node.id)
+                        ? "bg-navy-950 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/20"
+                        : isConnected(node.id)
+                          ? "bg-navy-950 border-dashed border-emerald-500/50 text-emerald-400/90"
+                          : "bg-navy-950 border-dashed border-emerald-500/20 text-emerald-400/30"
+                      : isActive(node.id)
+                        ? "bg-navy-950 border-sky-400 text-sky-300 shadow-lg shadow-sky-500/20"
+                        : isConnected(node.id)
+                          ? "bg-navy-950 border-sky-500/50 text-sky-400/90"
+                          : "bg-navy-950 border-sky-500/20 text-sky-400/30"
+                  }`}
+                  style={{
+                    width: `${sw}px`,
+                    height: `${sh}px`,
+                    fontSize: `${13 * scale}px`,
+                    left: `${((pos.x - SIDE_W / 2) / SVG_W) * 100}%`,
+                    top: `${((pos.y - SIDE_H / 2) / SVG_H) * 100}%`,
+                  }}
+                  onMouseEnter={() => setHovered(node.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  role="button"
+                  tabIndex={0}
+                  onFocus={() => setHovered(node.id)}
+                  onBlur={() => setHovered(null)}
+                  aria-label={node.description}
+                >
+                  {node.label}
+                </div>
+              );
+            })}
+
+            {/* ── Tooltip ── */}
+            {tooltipNode && tooltipPos && (
               <div
-                key={`circle-${i}`}
-                className="ring-navy-900/30 absolute left-1/2 z-10 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white shadow-lg ring-4"
-                style={{ top: `${i * STEP_OFFSET}px` }}
+                className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-[#a0a0a01c] px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
+                style={{
+                  left: `${(tooltipPos.x / SVG_W) * 100}%`,
+                  top: `${(tooltipPos.y / SVG_H) * 100}%`,
+                  transform:
+                    tooltipPos.y < MAIN_Y || tooltipNode.id === "fix"
+                      ? "translate(-50%, -100%)"
+                      : "translate(-50%, 0%)",
+                }}
               >
-                {step.number}
+                <span
+                  className={`font-mono font-semibold ${
+                    sideNodes.find((s) => s.id === tooltipNode.id)?.kind ===
+                    "auto"
+                      ? "text-emerald-400"
+                      : sideNodes.find((s) => s.id === tooltipNode.id)?.kind ===
+                          "agent"
+                        ? "text-sky-400"
+                        : "text-violet-400"
+                  }`}
+                >
+                  {tooltipNode.label}
+                </span>
+                <p className="mt-1">{tooltipNode.description}</p>
               </div>
-            ))}
+            )}
+          </div>
 
-          {/* ── Step cards ── */}
-          {steps.map((step, i) => {
-            const isEven = i % 2 === 0;
+          {/* Legend */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-violet-500" />
+              Main flow
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full border border-dashed border-emerald-500 bg-emerald-500/20" />
+              Auto-Invoked
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-sky-500/60" />
+              Agents
+            </span>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
+  /* ────── MOBILE ────── */
+  return (
+    <section id="how-it-works" className="py-20" ref={sectionRef}>
+      <Container>
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold text-white">Workflow in Action</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
+            Skills and agents work together automatically.
+          </p>
+        </div>
+
+        {/* Legend */}
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-violet-500" />
+            Main flow
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full border border-dashed border-emerald-500 bg-emerald-500/20" />
+            Auto-Invoked
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-sky-500/60" />
+            Agents
+          </span>
+        </div>
+
+        <div className="relative mx-auto max-w-md">
+          {/* Vertical animated line */}
+          <svg
+            className="pointer-events-none absolute top-0 left-5"
+            style={{ width: "2px", height: "100%", marginLeft: "-1px" }}
+            preserveAspectRatio="none"
+            viewBox="0 0 2 1000"
+            fill="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <filter
+                id="mobile-glow"
+                x="-200%"
+                y="-10%"
+                width="500%"
+                height="120%"
+              >
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <line
+              x1="1"
+              y1="0"
+              x2="1"
+              y2="1000"
+              stroke="currentColor"
+              className="text-slate-600"
+              strokeWidth="2"
+              strokeDasharray="8 5"
+            />
+            <line
+              x1="1"
+              y1="0"
+              x2="1"
+              y2="1000"
+              stroke="currentColor"
+              className="text-violet-500"
+              strokeWidth="2.5"
+              strokeDasharray="8 5"
+              strokeLinecap="round"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                from="0"
+                to="-13"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </line>
+            <circle
+              cx="1"
+              r="5"
+              className="fill-current text-violet-400"
+              filter="url(#mobile-glow)"
+            >
+              <animate
+                attributeName="cy"
+                from="0"
+                to="1000"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </svg>
+
+          {/* Step cards */}
+          {mainNodes.map((node, i) => {
+            const children = sideNodes.filter((s) => s.parentId === node.id);
+            const agents = children.filter((c) => c.kind === "agent");
+            const autos = children.filter((c) => c.kind === "auto");
 
             return (
-              <div
-                key={step.number}
-                className={`${
-                  isDesktop ? "absolute" : "relative mb-12 pl-14 last:mb-0"
-                }`}
-                style={
-                  isDesktop
-                    ? {
-                        top: `${i * STEP_OFFSET + CIRCLE_SIZE / 4}px`,
-                        left: isEven ? "0" : "auto",
-                        right: isEven ? "auto" : "0",
-                        width: `calc(50% - ${CARD_GAP}px)`,
-                      }
-                    : undefined
-                }
-              >
-                {/* Mobile step header (circle + title inline) */}
-                {!isDesktop && (
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white shadow-lg ring-4">
-                      {step.number}
-                    </div>
-                    <h3 className="text-xl font-bold text-white">
-                      {step.title}
-                    </h3>
-                  </div>
-                )}
-
-                {/* Desktop title */}
-                {isDesktop && (
-                  <h3
-                    className={`mb-2 text-xl font-bold text-white ${
-                      isEven ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {step.title}
-                  </h3>
-                )}
-
-                <p
-                  className={`mb-4 text-sm leading-relaxed text-slate-400 ${
-                    isDesktop ? (isEven ? "text-right" : "text-left") : ""
-                  }`}
-                >
-                  {step.description}
-                </p>
-
-                {/* Terminal mockup */}
-                <div
-                  className={`overflow-hidden rounded-lg border border-[#a0a0a01c] shadow-lg ${
-                    isDesktop && isEven ? "ml-auto" : ""
-                  }`}
-                >
-                  <div className="bg-navy-950 flex items-center gap-1.5 px-4 py-2.5">
-                    <div className="h-3 w-3 rounded-full bg-red-400" />
-                    <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                    <div className="h-3 w-3 rounded-full bg-green-400" />
-                    <span className="ml-2 font-mono text-xs text-slate-400">
-                      terminal
-                    </span>
-                  </div>
-                  <div className="bg-navy-950 p-4 font-mono text-xs leading-relaxed">
-                    <div>
-                      <span className="text-slate-500">$ </span>
-                      {renderCommand(step.command)}
-                    </div>
-                    <pre className="mt-2 whitespace-pre-wrap text-slate-300">
-                      {step.output}
-                    </pre>
-                  </div>
+              <div key={node.id} className="relative mb-10 pl-14 last:mb-0">
+                {/* Circle */}
+                <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white shadow-lg ring-4">
+                  {String(i + 1).padStart(2, "0")}
                 </div>
+
+                {/* Card */}
+                <div className="bg-navy-950/80 rounded-lg border border-[#a0a0a01c] p-4">
+                  <h3 className="font-mono text-sm font-semibold text-violet-400">
+                    {node.label}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    {node.description}
+                  </p>
+
+                  {/* Connected nodes */}
+                  {(agents.length > 0 || autos.length > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {agents.map((a) => (
+                        <span
+                          key={a.id}
+                          className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] text-sky-400"
+                        >
+                          {a.label}
+                        </span>
+                      ))}
+                      {autos.map((a) => (
+                        <span
+                          key={a.id}
+                          className="rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+                        >
+                          {a.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Loop indicator for commit */}
+                {node.id === "commit" && (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-violet-400/60">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      className="shrink-0"
+                    >
+                      <path
+                        d="M 2 8 A 5 5 0 1 1 8 12"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <path
+                        d="M 6 10 L 8 12 L 6 14"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    </svg>
+                    loop back to cf-tdd
+                  </div>
+                )}
               </div>
             );
           })}
