@@ -1,6 +1,7 @@
 ---
 name: cf-tdd
 description: Use when writing new production code, adding features, or implementing changes
+user-invocable: false
 ---
 
 # Test-Driven Development

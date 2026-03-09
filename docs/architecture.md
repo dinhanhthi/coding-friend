@@ -44,7 +44,7 @@ coding-friend/
 │   │   ├── cf-ship/                 # /cf-ship — verify + commit + push + PR
 │   │   ├── cf-fix/                  # /cf-fix — quick bug fix
 │   │   ├── cf-ask/                  # /cf-ask — quick Q&A → docs/memory/
-│   │   ├── cf-optimize/             # /cf-optimize — structured optimization
+│   │   ├── cf-optimize/             # /cf-optimize — structured optimization (also auto-invoked)
 │   │   ├── cf-remember/             # /cf-remember — project knowledge → docs/memory/
 │   │   ├── cf-learn/                # /cf-learn — human learning (also auto-invoked)
 │   │   ├── cf-research/             # /cf-research — web research → docs/research/
@@ -100,19 +100,19 @@ Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected
 
 ### Task Skills (11) — User-triggered via `/slash`
 
-| Skill         | Command                 | Key Feature                                                   |
-| ------------- | ----------------------- | ------------------------------------------------------------- |
-| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                          |
-| `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                        |
-| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent                         |
-| `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                            |
-| `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                   |
-| `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures     |
-| `cf-ask`      | `/cf-ask [question]`    | Quick Q&A about codebase → docs/memory/                       |
-| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement         |
-| `cf-remember` | `/cf-remember [topic]`  | Extract project knowledge → docs/memory/                      |
-| `cf-learn`    | `/cf-learn [topic]`     | Extract learnings (configurable output, language, categories) |
-| `cf-research` | `/cf-research [topic]`  | In-depth research with web search → docs/research/            |
+| Skill         | Command                 | Key Feature                                                               |
+| ------------- | ----------------------- | ------------------------------------------------------------------------- |
+| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                                      |
+| `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                    |
+| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent                                     |
+| `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                        |
+| `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                               |
+| `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures                 |
+| `cf-ask`      | `/cf-ask [question]`    | Quick Q&A about codebase → docs/memory/                                   |
+| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement (also auto-invoked) |
+| `cf-remember` | `/cf-remember [topic]`  | Extract project knowledge → docs/memory/                                  |
+| `cf-learn`    | `/cf-learn [topic]`     | Extract learnings (configurable output, language, categories)             |
+| `cf-research` | `/cf-research [topic]`  | In-depth research with web search → docs/research/                        |
 
 ### Frontmatter Configuration
 
