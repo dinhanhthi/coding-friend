@@ -2,6 +2,13 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.12.0 (unpublished)
+
+- Add `cf disable` and `cf enable` commands to temporarily disable/enable the Coding Friend plugin without uninstalling it, with support for `--user`/`--global`, `--project`, and `--local` scope flags ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
+- Warn when running `cf install` on a plugin that is installed but disabled, suggesting `cf enable` instead ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
+- Add shared helpers (`isPluginDisabled`, `setPluginEnabled`, `settingsPathForScope`) in `plugin-state.ts` for centralized plugin state management ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
+- Add shell completion for `disable` and `enable` commands across bash, zsh, fish, and PowerShell ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
+
 ## v1.11.0 (2026-03-09)
 
 - Add scope flags (`--user`/`--global`, `--project`, `--local`) to `cf install`, `cf uninstall`, and `cf update` for installing the plugin at different Claude Code scopes ([#16ece26](https://github.com/dinhanhthi/coding-friend/commit/16ece26))

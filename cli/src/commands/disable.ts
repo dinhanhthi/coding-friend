@@ -24,7 +24,5 @@ export async function disableCommand(opts: ScopeFlags = {}): Promise<void> {
 
   log.success(`Coding Friend disabled at ${chalk.cyan(scope)} scope.`);
   log.dim("Restart Claude Code for the change to take effect.");
-  log.dim(
-    `Run ${chalk.bold(`cf enable --${scope}`)} to re-enable.`,
-  );
+  log.dim(`Run ${chalk.bold(`cf enable --${scope}`)} to re-enable.`);
 }
