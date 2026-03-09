@@ -191,3 +191,14 @@ a > code {
     stroke-dashoffset: -26;
   }
 }
+
+/* Slower dash flow for auto-invoked / agent connections */
+.auto-dash-animate {
+  animation: dash-flow-slow 2s linear infinite;
+}
+
+@keyframes dash-flow-slow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
