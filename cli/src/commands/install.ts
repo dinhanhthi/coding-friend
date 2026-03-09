@@ -2,7 +2,10 @@ import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { devStatePath } from "../lib/paths.js";
-import { isMarketplaceRegistered } from "../lib/plugin-state.js";
+import {
+  isMarketplaceRegistered,
+  isPluginDisabled,
+} from "../lib/plugin-state.js";
 import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { getInstalledVersion } from "../lib/statusline.js";
@@ -77,6 +80,13 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     log.success(
       `Plugin already installed (${chalk.green(`v${installedVersion}`)}).`,
     );
+
+    // Check if disabled
+    if (isPluginDisabled(scope)) {
+      log.warn(
+        `Plugin is installed but disabled at ${chalk.cyan(scope)} scope. Run ${chalk.bold(`cf enable --${scope}`)} to re-enable.`,
+      );
+    }
 
     // Check for updates
     const latestVersion = getLatestVersion();

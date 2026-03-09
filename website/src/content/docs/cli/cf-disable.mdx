@@ -1,0 +1,69 @@
+---
+title: "cf disable"
+description: "Disable the Coding Friend plugin without uninstalling it."
+keywords: [disable, deactivate, turn off, cf disable, scope]
+---
+
+## Overview
+
+`cf disable` temporarily disables the Coding Friend plugin without removing it. The plugin stays installed but won't load in Claude Code until you re-enable it with `cf enable`.
+
+## Usage
+
+```bash
+cf disable              # Interactive — asks which scope to disable at
+cf disable --user       # Disable at user scope (all projects)
+cf disable --global     # Same as --user
+cf disable --project    # Disable at project scope
+cf disable --local      # Disable at local scope
+```
+
+## Scopes
+
+| Scope       | Flag                                                                | Settings file                 | Effect                              |
+| ----------- | ------------------------------------------------------------------- | ----------------------------- | ----------------------------------- |
+| **User**    | <span style={{ whiteSpace: 'nowrap' }}>`--user` / `--global`</span> | `~/.claude/settings.json`     | Disables plugin across all projects |
+| **Project** | <span style={{ whiteSpace: 'nowrap' }}>`--project`</span>           | `.claude/settings.json`       | Disables plugin for this project    |
+| **Local**   | <span style={{ whiteSpace: 'nowrap' }}>`--local`</span>             | `.claude/settings.local.json` | Disables plugin on this machine     |
+
+Read more about Claude Code scopes [here](https://code.claude.com/docs/en/settings#configuration-scopes).
+
+## What It Does
+
+1. **Checks prerequisites** — verifies that the `claude` CLI is available and dev mode is not active
+2. **Asks for scope** — prompts which scope to disable at (or uses the flag)
+3. **Checks current state** — skips if the plugin is already disabled at that scope
+4. **Disables plugin** — sets `enabledPlugins["coding-friend@coding-friend-marketplace"]` to `false` in the Claude Code settings file
+
+## Under the Hood
+
+`cf disable` modifies the Claude Code settings file at the chosen scope, adding:
+
+```json
+{
+  "enabledPlugins": {
+    "coding-friend@coding-friend-marketplace": false
+  }
+}
+```
+
+This tells Claude Code to skip loading the plugin even though it's installed. Restart Claude Code for the change to take effect.
+
+## Disable vs Uninstall
+
+| Action         | Plugin installed | Plugin loads | Can re-enable quickly  |
+| -------------- | ---------------- | ------------ | ---------------------- |
+| `cf disable`   | Yes              | No           | Yes (`cf enable`)      |
+| `cf uninstall` | No               | No           | No (need `cf install`) |
+
+Use `cf disable` when you want to temporarily stop the plugin without losing your installation. Use `cf uninstall` when you want to fully remove it.
+
+## Re-enabling
+
+To re-enable the plugin, run:
+
+```bash
+cf enable --<scope>
+```
+
+If you run `cf install` while the plugin is disabled, it will warn you that the plugin is installed but disabled and suggest using `cf enable` instead.

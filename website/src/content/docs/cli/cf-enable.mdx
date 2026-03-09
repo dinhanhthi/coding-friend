@@ -1,0 +1,42 @@
+---
+title: "cf enable"
+description: "Re-enable the Coding Friend plugin after it has been disabled."
+keywords: [enable, activate, turn on, cf enable, scope]
+---
+
+## Overview
+
+`cf enable` re-enables the Coding Friend plugin after it has been disabled with `cf disable`. The plugin will load again in Claude Code after restarting.
+
+## Usage
+
+```bash
+cf enable              # Interactive — asks which scope to enable at
+cf enable --user       # Enable at user scope (all projects)
+cf enable --global     # Same as --user
+cf enable --project    # Enable at project scope
+cf enable --local      # Enable at local scope
+```
+
+## Scopes
+
+| Scope       | Flag                                                                | Settings file                 | Effect                             |
+| ----------- | ------------------------------------------------------------------- | ----------------------------- | ---------------------------------- |
+| **User**    | <span style={{ whiteSpace: 'nowrap' }}>`--user` / `--global`</span> | `~/.claude/settings.json`     | Enables plugin across all projects |
+| **Project** | <span style={{ whiteSpace: 'nowrap' }}>`--project`</span>           | `.claude/settings.json`       | Enables plugin for this project    |
+| **Local**   | <span style={{ whiteSpace: 'nowrap' }}>`--local`</span>             | `.claude/settings.local.json` | Enables plugin on this machine     |
+
+Read more about Claude Code scopes [here](https://code.claude.com/docs/en/settings#configuration-scopes).
+
+## What It Does
+
+1. **Checks prerequisites** — verifies that the `claude` CLI is available and dev mode is not active
+2. **Asks for scope** — prompts which scope to enable at (or uses the flag)
+3. **Checks current state** — skips if the plugin is already enabled at that scope
+4. **Enables plugin** — removes the `enabledPlugins` entry for the plugin from the settings file (omitted = enabled)
+
+## Under the Hood
+
+`cf enable` removes the `coding-friend@coding-friend-marketplace` key from the `enabledPlugins` object in the settings file. Since omitting a plugin from `enabledPlugins` means it's enabled by default, this effectively re-enables it.
+
+Restart Claude Code for the change to take effect.

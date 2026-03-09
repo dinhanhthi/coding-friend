@@ -19,7 +19,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall init config host mcp permission statusline update dev session"
+  local commands="install uninstall disable enable init config host mcp permission statusline update dev session"
   local scope_flags="--user --global --project --local"
   local update_flags="--cli --plugin --statusline --user --global --project --local"
 
@@ -41,8 +41,8 @@ _cf_completions() {
     return
   fi
 
-  # Flag completion for install/uninstall
-  if [[ "\${COMP_WORDS[1]}" == "install" || "\${COMP_WORDS[1]}" == "uninstall" ]] && [[ "$cur" == -* ]]; then
+  # Flag completion for install/uninstall/disable/enable
+  if [[ "\${COMP_WORDS[1]}" == "install" || "\${COMP_WORDS[1]}" == "uninstall" || "\${COMP_WORDS[1]}" == "disable" || "\${COMP_WORDS[1]}" == "enable" ]] && [[ "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "$scope_flags" -- "$cur"))
     return
   fi
@@ -64,6 +64,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
   commands=(
     'install:Install the Coding Friend plugin into Claude Code'
     'uninstall:Uninstall the Coding Friend plugin from Claude Code'
+    'disable:Disable the Coding Friend plugin without uninstalling'
+    'enable:Re-enable the Coding Friend plugin'
     'init:Initialize coding-friend in current project'
     'config:Manage Coding Friend configuration'
     'host:Build and serve learning docs as a static website'
@@ -96,7 +98,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
 
   if (( CURRENT == 2 )); then
     _describe 'command' commands
-  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "install" || "\${words[2]}" == "uninstall" ]]; then
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "install" || "\${words[2]}" == "uninstall" || "\${words[2]}" == "disable" || "\${words[2]}" == "enable" ]]; then
     _values 'flags' \$scope_flags
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "update" ]]; then
     _values 'flags' \$update_flags
@@ -133,6 +135,8 @@ const FISH_CONTENT = `# coding-friend CLI completions
 complete -c cf -f
 complete -c cf -n "__fish_use_subcommand" -a install -d "Install the Coding Friend plugin into Claude Code"
 complete -c cf -n "__fish_use_subcommand" -a uninstall -d "Uninstall the Coding Friend plugin from Claude Code"
+complete -c cf -n "__fish_use_subcommand" -a disable -d "Disable the Coding Friend plugin without uninstalling"
+complete -c cf -n "__fish_use_subcommand" -a enable -d "Re-enable the Coding Friend plugin"
 complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend in current project"
 complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
 complete -c cf -n "__fish_use_subcommand" -a host -d "Build and serve learning docs as a static website"
@@ -142,11 +146,11 @@ complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend 
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
 complete -c cf -n "__fish_use_subcommand" -a session -d "Save and load Claude Code sessions across machines"
-# Scope flags for install/uninstall
-complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l user -d "User scope (all projects)"
-complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l global -d "User scope (all projects)"
-complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l project -d "Project scope (shared via git)"
-complete -c cf -n "__fish_seen_subcommand_from install uninstall" -l local -d "Local scope (this machine only)"
+# Scope flags for install/uninstall/disable/enable
+complete -c cf -n "__fish_seen_subcommand_from install uninstall disable enable" -l user -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall disable enable" -l global -d "User scope (all projects)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall disable enable" -l project -d "Project scope (shared via git)"
+complete -c cf -n "__fish_seen_subcommand_from install uninstall disable enable" -l local -d "Local scope (this machine only)"
 # Flags for update
 complete -c cf -n "__fish_seen_subcommand_from update" -l cli -d "Update only the CLI"
 complete -c cf -n "__fish_seen_subcommand_from update" -l plugin -d "Update only the plugin"
@@ -172,7 +176,7 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','init','config','host','mcp','permission','statusline','update','dev','session')
+  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $sessionSubcommands = @('save','load')
   $scopeFlags = @('--user','--global','--project','--local')
@@ -184,7 +188,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'session') {
     $sessionSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
-  } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'install' -or $words[1].ToString() -eq 'uninstall')) {
+  } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'install' -or $words[1].ToString() -eq 'uninstall' -or $words[1].ToString() -eq 'disable' -or $words[1].ToString() -eq 'enable')) {
     $scopeFlags | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'update') {
