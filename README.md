@@ -108,40 +108,13 @@ Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review
 
 The plugin is managed by the CLI `cf` command. Learn more about the CLI in the [CLI documentation](cli/README.md).
 
-## Development
+## Plugin development
 
-From the repo root:
-
-```bash
-npm run dev            # Start all sub-projects in parallel (see ports below)
-npm run format         # Format all code across the repo
-npm run format:check   # Check formatting without modifying files
-```
-
-`npm run dev` runs these in parallel with colored output:
-
-| Sub-project | Command             | Port                                           |
-| ----------- | ------------------- | ---------------------------------------------- |
-| CLI         | `npm run watch`     | — (tsup build watch)                           |
-| Website     | `npm run dev`       | [http://localhost:3000](http://localhost:3000) |
-| Learn Host  | `npm run dev`       | [http://localhost:3333](http://localhost:3333) |
-| Learn MCP   | `npm run dev:watch` | — (tsc watch)                                  |
-
-Each sub-project has its own README with more details, check section Further Reading. For daily workflow, check [dev-release.md](docs/dev-release.md).
+For plugin developers, check [plugin-dev.md](docs/plugin-dev.md).
 
 ## Further Reading
 
-| Topic                        | Link                                                                        |
-| ---------------------------- | --------------------------------------------------------------------------- |
-| Official documentation       | [cf.dinhanhthi.com](https://cf.dinhanhthi.com)                              |
-| CLI details                  | [cli/README.md](cli/README.md)                                              |
-| Plugin development           | [plugin/README.md](plugin/README.md)                                        |
-| Website development          | [website/README.md](website/README.md)                                      |
-| Learn Host (local docs site) | [cli/lib/learn-host/README.md](cli/lib/learn-host/README.md)                |
-| Learn MCP (MCP server)       | [cli/lib/learn-mcp/README.md](cli/lib/learn-mcp/README.md)                  |
-| Workflows guide              | [docs/workflows.md](website/src/content/docs/getting-started/workflows.mdx) |
-| Release workflow             | [docs/dev-release.md](docs/dev-release.md)                                  |
-| Architecture                 | [docs/architecture.md](docs/architecture.md)                                |
+Read the [official documentation](https://cf.dinhanhthi.com).
 
 ## License
 
