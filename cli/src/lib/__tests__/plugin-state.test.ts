@@ -22,6 +22,7 @@ import {
   settingsPathForScope,
   isPluginDisabled,
   setPluginEnabled,
+  enableMarketplaceAutoUpdate,
 } from "../plugin-state.js";
 
 const mockReadJson = vi.mocked(readJson);
@@ -194,5 +195,107 @@ describe("setPluginEnabled", () => {
       "/project/.claude/settings.local.json",
       expect.any(Object),
     );
+  });
+});
+
+describe("enableMarketplaceAutoUpdate", () => {
+  it("creates extraKnownMarketplaces when settings file does not exist", () => {
+    mockReadJson.mockReturnValue(null);
+
+    const result = enableMarketplaceAutoUpdate();
+
+    expect(result).toBe(true);
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      "/home/user/.claude/settings.json",
+      {
+        extraKnownMarketplaces: {
+          "coding-friend-marketplace": {
+            source: { source: "github", repo: "dinhanhthi/coding-friend" },
+            autoUpdate: true,
+          },
+        },
+      },
+    );
+  });
+
+  it("adds autoUpdate to existing marketplace entry", () => {
+    mockReadJson.mockReturnValue({
+      extraKnownMarketplaces: {
+        "coding-friend-marketplace": {
+          source: { source: "github", repo: "dinhanhthi/coding-friend" },
+        },
+      },
+    });
+
+    const result = enableMarketplaceAutoUpdate();
+
+    expect(result).toBe(true);
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      "/home/user/.claude/settings.json",
+      {
+        extraKnownMarketplaces: {
+          "coding-friend-marketplace": {
+            source: { source: "github", repo: "dinhanhthi/coding-friend" },
+            autoUpdate: true,
+          },
+        },
+      },
+    );
+  });
+
+  it("returns true without writing when autoUpdate is already enabled", () => {
+    mockReadJson.mockReturnValue({
+      extraKnownMarketplaces: {
+        "coding-friend-marketplace": {
+          source: { source: "github", repo: "dinhanhthi/coding-friend" },
+          autoUpdate: true,
+        },
+      },
+    });
+
+    const result = enableMarketplaceAutoUpdate();
+
+    expect(result).toBe(true);
+    expect(mockWriteJson).not.toHaveBeenCalled();
+  });
+
+  it("preserves other settings when adding autoUpdate", () => {
+    mockReadJson.mockReturnValue({
+      someSetting: "value",
+      extraKnownMarketplaces: {
+        "other-marketplace": { source: { source: "github", repo: "other" } },
+        "coding-friend-marketplace": {
+          source: { source: "github", repo: "dinhanhthi/coding-friend" },
+        },
+      },
+    });
+
+    const result = enableMarketplaceAutoUpdate();
+
+    expect(result).toBe(true);
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      "/home/user/.claude/settings.json",
+      {
+        someSetting: "value",
+        extraKnownMarketplaces: {
+          "other-marketplace": { source: { source: "github", repo: "other" } },
+          "coding-friend-marketplace": {
+            source: { source: "github", repo: "dinhanhthi/coding-friend" },
+            autoUpdate: true,
+          },
+        },
+      },
+    );
+  });
+
+  it("returns false when writeJson throws", () => {
+    mockReadJson.mockReturnValue({});
+    mockWriteJson.mockImplementation(() => {
+      throw new Error("permission denied");
+    });
+
+    const result = enableMarketplaceAutoUpdate();
+
+    expect(result).toBe(false);
   });
 });

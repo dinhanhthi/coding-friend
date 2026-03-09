@@ -5,6 +5,7 @@ import { devStatePath } from "../lib/paths.js";
 import {
   isMarketplaceRegistered,
   isPluginDisabled,
+  enableMarketplaceAutoUpdate,
 } from "../lib/plugin-state.js";
 import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
@@ -56,7 +57,16 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     log.success("Marketplace added.");
   }
 
-  // Step 5: Install plugin at the resolved scope
+  // Step 5: Enable auto-update for the marketplace
+  if (enableMarketplaceAutoUpdate()) {
+    log.success("Auto-update enabled for coding-friend plugin.");
+  } else {
+    log.warn(
+      `Cannot make plugin auto-update. Please enable it manually: ${chalk.cyan("https://cf.dinhanhthi.com/docs/getting-started/installation/")}`,
+    );
+  }
+
+  // Step 6: Install plugin at the resolved scope
   // For non-user scopes, always run install (getInstalledVersion only checks global state)
   const installedVersion = getInstalledVersion();
 
@@ -104,10 +114,10 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     }
   }
 
-  // Step 6: Shell completion
+  // Step 7: Shell completion
   ensureShellCompletion({ silent: false });
 
-  // Step 7: Next steps
+  // Step 8: Next steps
   console.log();
   log.info("Next steps:");
   console.log(
