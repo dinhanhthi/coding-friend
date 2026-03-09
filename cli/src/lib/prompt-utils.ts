@@ -56,20 +56,22 @@ export interface ScopeFlags {
 /**
  * Interactive prompt asking which plugin scope to use.
  */
-export async function askPluginScope(): Promise<PluginScope> {
+export async function askPluginScope(
+  message = "Where should the plugin be installed?",
+): Promise<PluginScope> {
   return select({
-    message: "Where should the plugin be installed?",
+    message,
     choices: [
       {
         name: "User / Global — available in all projects",
         value: "user" as const,
       },
       {
-        name: "Project — shared with team via .claude/settings.json",
+        name: "Project — shared with team via <project>.claude/settings.json",
         value: "project" as const,
       },
       {
-        name: "Local — this machine only, not shared (gitignored)",
+        name: "Local — this machine only via <project>.claude/settings.local.json, not shared (gitignored)",
         value: "local" as const,
       },
     ],
@@ -83,7 +85,10 @@ export async function askPluginScope(): Promise<PluginScope> {
  * - If no flags and TTY, prompts interactively.
  * - If no flags and not TTY, exits with error.
  */
-export async function resolveScope(opts: ScopeFlags): Promise<PluginScope> {
+export async function resolveScope(
+  opts: ScopeFlags,
+  message?: string,
+): Promise<PluginScope> {
   const flags: Array<{ key: string; scope: PluginScope }> = [
     { key: "user", scope: "user" },
     { key: "global", scope: "user" },
@@ -115,7 +120,7 @@ export async function resolveScope(opts: ScopeFlags): Promise<PluginScope> {
     process.exit(1);
   }
 
-  return askPluginScope();
+  return askPluginScope(message);
 }
 
 /**

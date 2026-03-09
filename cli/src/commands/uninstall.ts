@@ -166,7 +166,10 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
   }
 
   // Resolve scope
-  const scope = await resolveScope(opts);
+  const scope = await resolveScope(
+    opts,
+    "Where should the plugin be uninstalled from?",
+  );
 
   // For project/local scope: simple uninstall (no full cleanup)
   if (scope === "project" || scope === "local") {
@@ -184,6 +187,21 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
 
   // Display what will be removed
   displayDetection(detection);
+
+  // Warn about impact on project/local scopes
+  log.warn(
+    "This removes the plugin cache and marketplace data globally.",
+  );
+  log.dim(
+    "If Coding Friend is also installed at project or local scope in other",
+  );
+  log.dim(
+    "projects, those installations may stop working.",
+  );
+  log.dim(
+    `Run ${chalk.bold("cf install --project")} in those projects to reinstall.`,
+  );
+  console.log();
 
   // Ask for confirmation
   const proceed = await confirm({
