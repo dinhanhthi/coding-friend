@@ -12,9 +12,9 @@ bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh [package-arg] [le
 
 Read the output. It tells you: which packages changed, current vs tag version, whether to bump or just update changelog, and path→package mapping.
 
-### Step B2: Confirm bump level
+### Step B2: Determine bump level
 
-If level not in args, analyze the changes and suggest patch/minor/major. Ask the user to confirm before proceeding.
+If level not in args, analyze the changes and determine patch/minor/major automatically. Do NOT ask for confirmation — proceed immediately.
 
 ### Step B3: Bump version files
 
@@ -56,6 +56,8 @@ Then proceed with the **standard cf-ship workflow** (verify → commit → push 
 
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
+**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs. Analyze, decide, and execute autonomously.
+
 ## Rules
 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
@@ -66,3 +68,7 @@ Then proceed with the **standard cf-ship workflow** (verify → commit → push 
 - NEVER add duplicate changelog entries. One feature = one bullet.
 - ALWAYS mark unreleased sections `(unpublished)`.
 - After ship: remind user to run `/release` to publish.
+
+## After
+
+**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs. Analyze, decide, and execute autonomously.
