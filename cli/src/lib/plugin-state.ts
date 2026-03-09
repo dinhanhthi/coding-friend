@@ -50,6 +50,43 @@ export function isPluginDisabled(scope: PluginScope): boolean {
   return enabled[PLUGIN_ID] === false;
 }
 
+/**
+ * Enable auto-update for the coding-friend marketplace in ~/.claude/settings.json.
+ * Adds `"autoUpdate": true` to `extraKnownMarketplaces.coding-friend-marketplace`.
+ * Returns true on success, false on error.
+ */
+export function enableMarketplaceAutoUpdate(): boolean {
+  try {
+    const filePath = claudeSettingsPath();
+    const settings = readJson<Record<string, unknown>>(filePath) ?? {};
+
+    const marketplaces = (settings.extraKnownMarketplaces ?? {}) as Record<
+      string,
+      Record<string, unknown>
+    >;
+
+    const entry = marketplaces[MARKETPLACE_NAME];
+    if (entry && entry.autoUpdate === true) {
+      return true; // already enabled
+    }
+
+    if (entry) {
+      entry.autoUpdate = true;
+    } else {
+      marketplaces[MARKETPLACE_NAME] = {
+        source: { source: "github", repo: "dinhanhthi/coding-friend" },
+        autoUpdate: true,
+      };
+    }
+
+    settings.extraKnownMarketplaces = marketplaces;
+    writeJson(filePath, settings);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Enable or disable the plugin at the given scope by modifying enabledPlugins. */
 export function setPluginEnabled(scope: PluginScope, enabled: boolean): void {
   const filePath = settingsPathForScope(scope);

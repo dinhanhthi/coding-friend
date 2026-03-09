@@ -8,6 +8,7 @@ vi.mock("../../lib/exec.js", () => ({
 vi.mock("../../lib/plugin-state.js", () => ({
   isMarketplaceRegistered: vi.fn(),
   isPluginDisabled: vi.fn(),
+  enableMarketplaceAutoUpdate: vi.fn(),
 }));
 
 vi.mock("../../lib/statusline.js", () => ({
@@ -37,6 +38,7 @@ import { commandExists, run } from "../../lib/exec.js";
 import {
   isMarketplaceRegistered,
   isPluginDisabled,
+  enableMarketplaceAutoUpdate,
 } from "../../lib/plugin-state.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
@@ -48,6 +50,7 @@ const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
 const mockIsMarketplaceRegistered = vi.mocked(isMarketplaceRegistered);
 const mockIsPluginDisabled = vi.mocked(isPluginDisabled);
+const mockEnableMarketplaceAutoUpdate = vi.mocked(enableMarketplaceAutoUpdate);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
@@ -58,6 +61,7 @@ beforeEach(() => {
   vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
   mockResolveScope.mockResolvedValue("user");
   mockExistsSync.mockReturnValue(false); // no dev mode by default
+  mockEnableMarketplaceAutoUpdate.mockReturnValue(true);
 });
 
 describe("installCommand", () => {
@@ -199,6 +203,32 @@ describe("installCommand", () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.stringContaining("disabled"),
+    );
+  });
+
+  it("calls enableMarketplaceAutoUpdate after marketplace registration", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+
+    await installCommand();
+
+    expect(mockEnableMarketplaceAutoUpdate).toHaveBeenCalled();
+  });
+
+  it("warns when auto-update cannot be enabled", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+    mockEnableMarketplaceAutoUpdate.mockReturnValue(false);
+
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand();
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("Cannot make plugin auto-update"),
     );
   });
 });
