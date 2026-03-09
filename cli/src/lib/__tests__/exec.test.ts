@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { run, commandExists, streamExec } from "../exec.js";
+import { run, runWithStderr, commandExists, streamExec } from "../exec.js";
 
 describe("run", () => {
   it("returns stdout for a successful command", () => {
@@ -25,6 +25,38 @@ describe("run", () => {
     const result = run("pwd", [], { cwd: "/tmp" });
     // /tmp may resolve to /private/tmp on macOS — check suffix
     expect(result?.endsWith("tmp")).toBe(true);
+  });
+});
+
+describe("runWithStderr", () => {
+  it("returns stdout and exitCode 0 for a successful command", () => {
+    const result = runWithStderr("echo", ["hello"]);
+    expect(result).toEqual({ stdout: "hello", stderr: "", exitCode: 0 });
+  });
+
+  it("returns exitCode and stderr for a failing command", () => {
+    // `ls` on a non-existent path writes to stderr and exits non-zero
+    const result = runWithStderr("ls", [
+      "/this-path-does-not-exist-cf-test-12345",
+    ]);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toBeTruthy();
+  });
+
+  it("returns exitCode 1 for a command that does not exist", () => {
+    const result = runWithStderr("this-command-does-not-exist-cf");
+    expect(result.exitCode).toBeGreaterThanOrEqual(1);
+  });
+
+  it("trims stdout and stderr whitespace", () => {
+    const result = runWithStderr("printf", ["  trimmed  "]);
+    expect(result.stdout).toBe("trimmed");
+  });
+
+  it("respects the cwd option", () => {
+    const result = runWithStderr("pwd", [], { cwd: "/tmp" });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.endsWith("tmp")).toBe(true);
   });
 });
 

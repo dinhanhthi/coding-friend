@@ -3,7 +3,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
 import { claudeSettingsPath } from "../lib/paths.js";
-import { run, commandExists, sleepSync } from "../lib/exec.js";
+import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
@@ -177,28 +177,38 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           if (scope) {
             updateArgs.push("--scope", scope);
           }
-          const result = run("claude", updateArgs);
+          const result = runWithStderr("claude", updateArgs);
 
-          if (result === null) {
+          if (result.exitCode !== 0) {
             log.error(
               "Plugin update failed. Try manually: claude plugin update coding-friend@coding-friend-marketplace",
             );
+            if (result.stderr) {
+              log.dim(`stderr: ${result.stderr}`);
+            }
           } else {
-            log.success("Plugin updated!");
-
             // Verify with retry — installed_plugins.json may not be written immediately
             let newVersion: string | null = currentVersion;
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
               newVersion = getInstalledVersion();
               if (newVersion !== currentVersion) break;
-              if (i < 4) sleepSync(1000);
+              if (i < 2) sleepSync(1000);
             }
 
             if (newVersion !== currentVersion) {
               log.success(`Plugin updated to ${chalk.green(`v${newVersion}`)}`);
             } else {
               log.warn(
-                "Version in installed_plugins.json unchanged. Cache may still have been updated.",
+                "Plugin command succeeded but version in installed_plugins.json is still unchanged.",
+              );
+              if (result.stdout) {
+                log.dim(`stdout: ${result.stdout}`);
+              }
+              if (result.stderr) {
+                log.dim(`stderr: ${result.stderr}`);
+              }
+              log.dim(
+                "Try manually: claude plugin update coding-friend@coding-friend-marketplace",
               );
             }
           }
