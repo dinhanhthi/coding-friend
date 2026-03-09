@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.13.0 (unpublished)
+
+- Auto-enable marketplace auto-update during `cf install` so plugins stay up-to-date without manual configuration ([#cab3d9e](https://github.com/dinhanhthi/coding-friend/commit/cab3d9e))
+
 ## v1.12.1 (2026-03-09)
 
 - Fix `cf update` reporting "Plugin updated!" before verifying that `installed_plugins.json` actually changed, causing false success on Linux where `claude plugin update` may silently fail to persist metadata ([#138ec07](https://github.com/dinhanhthi/coding-friend/commit/138ec07))
