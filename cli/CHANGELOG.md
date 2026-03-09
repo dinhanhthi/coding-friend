@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.12.0 (unpublished)
+## v1.12.0 (2026-03-09)
 
 - Add `cf disable` and `cf enable` commands to temporarily disable/enable the Coding Friend plugin without uninstalling it, with support for `--user`/`--global`, `--project`, and `--local` scope flags ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
 - Warn when running `cf install` on a plugin that is installed but disabled, suggesting `cf enable` instead ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))

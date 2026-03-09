@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.7.4 (unpublished)
+## v0.7.4 (2026-03-09)
 
 - Update bootstrap context and statusline to list `cf disable` and `cf enable` CLI commands ([#32325db](https://github.com/dinhanhthi/coding-friend/commit/32325db))
 
