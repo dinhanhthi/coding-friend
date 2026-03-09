@@ -56,17 +56,6 @@ Then proceed with the **standard cf-ship workflow** (verify → commit → push 
 
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
-## After
-
-After the standard cf-ship workflow completes successfully, automatically run `/release` if the following conditions are met:
-
-1. The current branch is `main`
-2. The working tree is clean (commit + push already done)
-
-If these conditions are met, invoke the `/release` skill immediately — do not ask the user whether to run it. The `/release` skill itself will handle user confirmation before pushing tags.
-
-If the ship created a PR (not on `main`), skip auto-release and remind the user: "Merge the PR on GitHub, then run `/release`."
-
 ## Rules
 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
@@ -76,4 +65,4 @@ If the ship created a PR (not on `main`), skip auto-release and remind the user:
 - Do NOT create git tags — that happens during `/release`.
 - NEVER add duplicate changelog entries. One feature = one bullet.
 - ALWAYS mark unreleased sections `(unpublished)`.
-- After ship on `main`: auto-trigger `/release`. After ship via PR: remind user to merge then `/release`.
+- After ship: remind user to run `/release` to publish.
