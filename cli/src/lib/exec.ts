@@ -20,6 +20,42 @@ export function run(
   }
 }
 
+export interface RunResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
+/**
+ * Run a command synchronously, capturing stdout, stderr, and exit code.
+ * Never throws — always returns a result object.
+ */
+export function runWithStderr(
+  cmd: string,
+  args: string[] = [],
+  opts?: { cwd?: string },
+): RunResult {
+  try {
+    const stdout = execFileSync(cmd, args, {
+      encoding: "utf-8",
+      cwd: opts?.cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+    return { stdout, stderr: "", exitCode: 0 };
+  } catch (err: unknown) {
+    const e = err as {
+      stdout?: string | Buffer;
+      stderr?: string | Buffer;
+      status?: number;
+    };
+    return {
+      stdout: (e.stdout ?? "").toString().trim(),
+      stderr: (e.stderr ?? "").toString().trim(),
+      exitCode: e.status ?? 1,
+    };
+  }
+}
+
 /**
  * Run a command and stream output to terminal.
  * Returns a promise that resolves with the exit code.
