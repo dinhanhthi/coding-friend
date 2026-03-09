@@ -8,8 +8,6 @@ keywords: [install, setup, plugin, cf install, marketplace, scope]
 
 `cf install` installs the Coding Friend plugin into Claude Code entirely from the terminal — no need to open Claude Code first.
 
-The command is **idempotent**: you can run it as many times as you want without issues.
-
 ## Usage
 
 ```bash
@@ -22,11 +20,15 @@ cf install --local      # Install at local scope (this machine only)
 
 ## Scopes
 
-| Scope       | Flag                  | Settings file                 | Shared with team | Use case                         |
-| ----------- | --------------------- | ----------------------------- | ---------------- | -------------------------------- |
-| **User**    | `--user` / `--global` | `~/.claude/settings.json`     | No               | Personal use across all projects |
-| **Project** | `--project`           | `.claude/settings.json`       | Yes (via git)    | Team-shared plugin               |
-| **Local**   | `--local`             | `.claude/settings.local.json` | No (gitignored)  | This machine only                |
+| Scope       | Flag                                                                 | Settings file                 | Use case                         |
+| ----------- | -------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
+| **User**    | <span style={{ whiteSpace: 'nowrap' }}>`--user` / `--global`</span> | `~/.claude/settings.json`     | Personal use across all projects |
+| **Project** | <span style={{ whiteSpace: 'nowrap' }}>`--project`</span>           | `.claude/settings.json`       | Team-shared plugin (via git)     |
+| **Local**   | <span style={{ whiteSpace: 'nowrap' }}>`--local`</span>             | `.claude/settings.local.json` | This machine only (gitignored)   |
+
+Read more about Claude Code scopes [here](https://code.claude.com/docs/en/settings#configuration-scopes).
+
+Regardless of scope, Claude Code always downloads the plugin to a shared cache directory (`~/.claude/plugins/cache/`). The scope only controls **where the plugin is referenced** — i.e., which settings file gets an entry pointing to the cached plugin. Installing at multiple scopes does not duplicate the plugin; it just adds references in different settings files. To remove the plugin from a specific scope, use `cf uninstall --<scope>`.
 
 ## What It Does
 
@@ -39,7 +41,7 @@ cf install --local      # Install at local scope (this machine only)
 
 ## Under the Hood
 
-`cf install` runs these Claude CLI commands for you:
+Basically,`cf install` runs these Claude CLI commands for you:
 
 ```bash
 # Marketplace registration (always global)

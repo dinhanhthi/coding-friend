@@ -378,6 +378,9 @@ describe("uninstallCommand", () => {
 
     await uninstallCommand({ local: true });
 
-    expect(mockResolveScope).toHaveBeenCalledWith({ local: true });
+    expect(mockResolveScope).toHaveBeenCalledWith(
+      { local: true },
+      "Where should the plugin be uninstalled from?",
+    );
   });
 });

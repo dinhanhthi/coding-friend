@@ -32,6 +32,8 @@ Full cleanup — removes everything:
 6. **Shell tab completion** — removes the completion block from `.zshrc` or `.bashrc`
 7. **Global config** (optional) — `~/.coding-friend/` directory (global config, custom skills) — you'll be asked whether to keep or remove it
 
+⚠️ **This removes the plugin cache and marketplace data globally.** If Coding Friend is also installed at project or local scope in other projects, those installations may stop working. Run `cf install --project` in those projects to reinstall.
+
 ### Project scope (`--project`)
 
 Only removes the plugin registration from `.claude/settings.json`. Does not touch marketplace, cache, statusline, or shell completion.
