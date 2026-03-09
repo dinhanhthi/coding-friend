@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.12.1 (unpublished)
+## v1.12.1 (2026-03-09)
 
 - Fix `cf update` reporting "Plugin updated!" before verifying that `installed_plugins.json` actually changed, causing false success on Linux where `claude plugin update` may silently fail to persist metadata ([#138ec07](https://github.com/dinhanhthi/coding-friend/commit/138ec07))
 - Add `runWithStderr()` helper to capture stderr and exit code from external commands for better error diagnostics ([#138ec07](https://github.com/dinhanhthi/coding-friend/commit/138ec07))
