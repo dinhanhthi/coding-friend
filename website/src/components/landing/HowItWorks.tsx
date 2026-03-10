@@ -18,6 +18,7 @@ interface SideNode {
   label: string;
   description: string;
   parentId: string; // which main node it attaches to
+  extraParents?: string[]; // additional main nodes it connects to
   kind: "auto" | "agent";
 }
 
@@ -61,6 +62,7 @@ const sideNodes: SideNode[] = [
     label: "cf-explorer",
     description: "Fast codebase exploration and analysis (read-only)",
     parentId: "plan",
+    extraParents: ["implement"],
     kind: "agent",
   },
   {
@@ -214,8 +216,9 @@ function loopBackPath(): string {
   return `M ${x1} ${yMain} L ${x1} ${yMid} L ${x2} ${yMid} L ${x2} ${yMain}`;
 }
 
-function sidePath(node: SideNode): string {
-  const parentIdx = mainNodes.findIndex((n) => n.id === node.parentId);
+function sidePath(node: SideNode, overrideParentId?: string): string {
+  const pid = overrideParentId ?? node.parentId;
+  const parentIdx = mainNodes.findIndex((n) => n.id === pid);
   const parent = getMainPos(parentIdx);
   const side = getSidePos(node);
   return `M ${parent.x} ${parent.y} L ${side.x} ${side.y}`;
@@ -258,15 +261,17 @@ export default function HowItWorks() {
     connectedIds.add(hovered);
     // If hovering a main node, connect its side nodes
     sideNodes.forEach((s) => {
-      if (s.parentId === hovered || s.id === hovered) {
+      const allParents = [s.parentId, ...(s.extraParents ?? [])];
+      if (allParents.includes(hovered) || s.id === hovered) {
         connectedIds.add(s.id);
-        connectedIds.add(s.parentId);
+        allParents.forEach((p) => connectedIds.add(p));
       }
     });
-    // If hovering a side node, connect its parent
+    // If hovering a side node, connect all its parents
     const sideMatch = sideNodes.find((s) => s.id === hovered);
     if (sideMatch) {
       connectedIds.add(sideMatch.parentId);
+      sideMatch.extraParents?.forEach((ep) => connectedIds.add(ep));
     }
     // Main flow neighbors
     const mainIdx = mainNodes.findIndex((n) => n.id === hovered);
@@ -620,47 +625,53 @@ export default function HowItWorks() {
               })()}
 
               {/* ── Side node connections ── */}
-              {sideNodes.map((node) => {
+              {sideNodes.flatMap((node) => {
                 // sys-debug connects via the loop above, not to parent
-                if (node.id === "sys-debug") return null;
-                const d = sidePath(node);
+                if (node.id === "sys-debug") return [];
+                const allParents = [
+                  node.parentId,
+                  ...(node.extraParents ?? []),
+                ];
                 const dim = hovered && !connectedIds.has(node.id);
                 const isAuto = node.kind === "auto";
-                return (
-                  <g
-                    key={`side-${node.id}`}
-                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
-                  >
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className={
-                        isAuto ? "text-emerald-500/40" : "text-sky-500/40"
-                      }
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                    />
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className={`auto-dash-animate ${isAuto ? "text-emerald-500/60" : "text-sky-500/50"}`}
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      strokeLinecap="round"
-                    />
-                    <circle
-                      r="2"
-                      className={`fill-current ${isAuto ? "text-emerald-400" : "text-sky-400"}`}
-                      filter={isAuto ? "url(#glow-e)" : "url(#glow-s)"}
+                return allParents.map((pid) => {
+                  const d = sidePath(node, pid);
+                  return (
+                    <g
+                      key={`side-${node.id}-${pid}`}
+                      className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
                     >
-                      <animateMotion
-                        dur="2s"
-                        repeatCount="indefinite"
-                        path={d}
+                      <path
+                        d={d}
+                        stroke="currentColor"
+                        className={
+                          isAuto ? "text-emerald-500/40" : "text-sky-500/40"
+                        }
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
                       />
-                    </circle>
-                  </g>
-                );
+                      <path
+                        d={d}
+                        stroke="currentColor"
+                        className={`auto-dash-animate ${isAuto ? "text-emerald-500/60" : "text-sky-500/50"}`}
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        r="2"
+                        className={`fill-current ${isAuto ? "text-emerald-400" : "text-sky-400"}`}
+                        filter={isAuto ? "url(#glow-e)" : "url(#glow-s)"}
+                      >
+                        <animateMotion
+                          dur="2s"
+                          repeatCount="indefinite"
+                          path={d}
+                        />
+                      </circle>
+                    </g>
+                  );
+                });
               })}
             </svg>
 
@@ -891,7 +902,11 @@ export default function HowItWorks() {
 
           {/* Step cards */}
           {mainNodes.map((node, i) => {
-            const children = sideNodes.filter((s) => s.parentId === node.id);
+            const children = sideNodes.filter(
+              (s) =>
+                s.parentId === node.id ||
+                s.extraParents?.includes(node.id),
+            );
             const agents = children.filter((c) => c.kind === "agent");
             const autos = children.filter((c) => c.kind === "auto");
 
