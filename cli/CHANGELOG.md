@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.15.0 (unpublished)
+## v1.15.0 (2026-03-10)
 
 - Show plugin version in `cf dev on`, `cf dev restart`, and `cf dev update` logs ([#4e1d141](https://github.com/dinhanhthi/coding-friend/commit/4e1d141))
 - Add fallback to plugin install when `cf dev update` fails to refresh cache ([#82aea4e](https://github.com/dinhanhthi/coding-friend/commit/82aea4e))
