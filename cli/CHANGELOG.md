@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.14.0 (unpublished)
+
+- Add `rate_limit` statusline component replacing old `usage` — displays current and weekly API usage with reset times ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
+- Add dependency check for `curl` and `jq` in `cf statusline` and `cf init` when `rate_limit` is selected ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
+- Auto-migrate old `usage` config to `rate_limit` in `loadStatuslineComponents` ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
+
 ## v1.13.0 (2026-03-09)
 
 - Auto-enable marketplace auto-update during `cf install` so plugins stay up-to-date without manual configuration ([#cab3d9e](https://github.com/dinhanhthi/coding-friend/commit/cab3d9e))

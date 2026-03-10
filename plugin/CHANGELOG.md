@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.8.0 (unpublished)
+
+- Add `rate_limit` statusline component showing current (5-hour) and weekly (7-day) API usage percentages with color-coded gradient and reset times ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
+- Replace old `usage` component with improved `rate_limit` — fetches from Anthropic OAuth API with 60s caching, multi-source token resolution (env, Keychain, credentials file, `secret-tool`), and cross-platform date formatting ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
+
 ## v0.7.5 (2026-03-09)
 
 - Make `cf-optimize` auto-invocable on performance-related conversation signals ([#ca86338](https://github.com/dinhanhthi/coding-friend/commit/ca86338))
