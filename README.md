@@ -32,9 +32,19 @@
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - Prompt injection defense — layered content isolation protects against malicious instructions
-- Customizable Claude Code statusline
+- ✨ Customizable Claude Code statusline with API rate limit tracking
+  ```
+  cf v0.3.0 | 📂 MyProject | 🧠 Opus 4.6 | ⎇ main | ctx 42%
+  [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+  ```
 
 For full details, visit the **[official documentation](https://cf.dinhanhthi.com)**.
+
+## How it works
+
+<p align="center">
+  <img src="assets/workflow.png" alt="Workflow" width="100%" />
+</p>
 
 ## Quick Start
 
@@ -87,6 +97,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 
 ## Commands
 
+
 | Command                 | Description                                 |
 | ----------------------- | ------------------------------------------- |
 | `/cf-plan [task]`       | Brainstorm and write implementation plan    |
@@ -101,6 +112,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-learn [topic]`     | Extract learnings for human review          |
 | `/cf-research [topic]`  | In-depth research with web search           |
 | `/cf-help [question]`   | Answer questions about Coding Friend        |
+
 
 Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`.
 

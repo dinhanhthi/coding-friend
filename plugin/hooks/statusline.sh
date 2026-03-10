@@ -20,7 +20,7 @@
 #
 # Configuration:
 #   Components can be toggled via ~/.coding-friend/config.json:
-#   { "statusline": { "components": ["version", "folder", "model", "branch", "context", "usage"] } }
+#   { "statusline": { "components": ["version", "folder", "model", "branch", "context", "rate_limit"] } }
 #   Run `cf statusline` to configure interactively.
 #   If no config exists, all components are shown by default.
 
@@ -79,7 +79,101 @@ color_for_percentage() {
   fi
 }
 
-separator="${GRAY} │ ${RESET}"
+# Convert ISO 8601 timestamp to epoch seconds (cross-platform)
+iso_to_epoch() {
+  local iso_str="$1"
+  # Try GNU date first (Linux)
+  local epoch
+  epoch=$(date -d "${iso_str}" +%s 2>/dev/null)
+  if [ -n "$epoch" ]; then echo "$epoch"; return 0; fi
+  # macOS: strip fractional seconds and timezone suffix
+  local stripped="${iso_str%%.*}"
+  stripped="${stripped%%Z}"
+  stripped="${stripped%%+*}"
+  stripped="${stripped%%-[0-9][0-9]:[0-9][0-9]}"
+  if [[ "$iso_str" == *"Z"* ]] || [[ "$iso_str" == *"+00:00"* ]] || [[ "$iso_str" == *"-00:00"* ]]; then
+    epoch=$(env TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "$stripped" +%s 2>/dev/null)
+  else
+    epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$stripped" +%s 2>/dev/null)
+  fi
+  if [ -n "$epoch" ]; then echo "$epoch"; return 0; fi
+  return 0
+}
+
+# Format a reset time from ISO string
+# style: "time" → "2:30pm", "datetime" → "mar 10, 2:30pm"
+format_reset_time() {
+  local iso_str="$1" style="$2"
+  [ -z "$iso_str" ] || [ "$iso_str" = "null" ] && return
+  local epoch
+  epoch=$(iso_to_epoch "$iso_str")
+  [ -z "$epoch" ] && return
+  local result=""
+  case "$style" in
+    time)
+      # Check macOS 24h preference
+      local time_format
+      time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
+      if [ "$time_format" = "1" ]; then
+        result=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
+        [ -z "$result" ] && result=$(date -d "@$epoch" "+%H:%M" 2>/dev/null)
+      else
+        result=$(date -j -r "$epoch" +"%l:%M%p" 2>/dev/null | sed 's/^ //; s/\.//g' | tr '[:upper:]' '[:lower:]')
+        [ -z "$result" ] && result=$(date -d "@$epoch" +"%l:%M%P" 2>/dev/null | sed 's/^ //; s/\.//g')
+      fi
+      ;;
+    datetime)
+      local dt_format
+      dt_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
+      if [ "$dt_format" = "1" ]; then
+        result=$(date -r "$epoch" +"%b %-d, %H:%M" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+        [ -z "$result" ] && result=$(date -d "@$epoch" +"%b %-d, %H:%M" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+      else
+        result=$(date -j -r "$epoch" +"%b %-d, %l:%M%p" 2>/dev/null | sed 's/  / /g; s/^ //; s/\.//g' | tr '[:upper:]' '[:lower:]')
+        [ -z "$result" ] && result=$(date -d "@$epoch" +"%b %-d, %l:%M%P" 2>/dev/null | sed 's/  / /g; s/^ //; s/\.//g')
+      fi
+      ;;
+  esac
+  printf "%s" "$result"
+}
+
+# Resolve OAuth token from various sources (macOS Keychain, credentials file, Linux secret-tool)
+get_oauth_token() {
+  # 1. Environment variable
+  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+    echo "$CLAUDE_CODE_OAUTH_TOKEN"; return 0
+  fi
+  # 2. macOS Keychain
+  if command -v security >/dev/null 2>&1; then
+    local blob
+    blob=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
+    if [ -n "$blob" ]; then
+      local token
+      token=$(echo "$blob" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
+      if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
+    fi
+  fi
+  # 3. Credentials file
+  local creds_file="${HOME}/.claude/.credentials.json"
+  if [ -f "$creds_file" ]; then
+    local token
+    token=$(jq -r '.claudeAiOauth.accessToken // empty' "$creds_file" 2>/dev/null)
+    if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
+  fi
+  # 4. Linux secret-tool
+  if command -v secret-tool >/dev/null 2>&1; then
+    local blob
+    blob=$(timeout 2 secret-tool lookup service "Claude Code-credentials" 2>/dev/null)
+    if [ -n "$blob" ]; then
+      local token
+      token=$(echo "$blob" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
+      if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
+    fi
+  fi
+  echo ""
+}
+
+separator="${GRAY} | ${RESET}"
 
 # Plugin version — read from plugin.json in CLAUDE_PLUGIN_ROOT (works for both dev and installed)
 VERSION=""
@@ -96,7 +190,7 @@ fi
 # Current folder
 current_dir=""
 if component_enabled "folder"; then
-  current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')
+  current_dir_path=$(echo "$INPUT" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//' || true)
   current_dir=$(basename "$current_dir_path")
 fi
 
@@ -128,49 +222,73 @@ if component_enabled "context"; then
   fi
 fi
 
-# Usage (percentage + reset time) — fetched from Anthropic OAuth API
-usage_text=""
-if component_enabled "usage"; then
-  utilization=""
-  resets_at=""
+# ── Fetch usage data (for "rate_limit" component) ──
+USAGE_DATA=""
+if component_enabled "rate_limit"; then
+  if command -v curl &>/dev/null && command -v jq &>/dev/null; then
+    cache_dir="/tmp/claude-${UID:-$(id -u)}"
+    cache_file="${cache_dir}/statusline-usage-cache.json"
+    cache_max_age=60
+    mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null
 
-  ACCESS_TOKEN=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || true
-
-  if [ -n "$ACCESS_TOKEN" ]; then
-    usage_json=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
-      --header @- \
-      -H "anthropic-beta: oauth-2025-04-20" \
-      -H "Content-Type: application/json" 2>/dev/null <<< "Authorization: Bearer $ACCESS_TOKEN") || true
-
-    if [ -n "$usage_json" ]; then
-      utilization=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty' 2>/dev/null | cut -d. -f1)
-      resets_at=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty' 2>/dev/null)
-    fi
-  fi
-
-  if [ -n "$utilization" ] && [[ "$utilization" =~ ^[0-9]+$ ]]; then
-    usage_color=$(color_for_percentage "$utilization")
-
-    # Reset time
-    reset_time_display=""
-    if [ -n "$resets_at" ] && [ "$resets_at" != "null" ] && [ "$resets_at" != "" ]; then
-      iso_time=$(echo "$resets_at" | sed 's/\.[0-9]*+.*$//' | sed 's/\.[0-9]*Z$//')
-      epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null) || true
-
-      if [ -n "$epoch" ]; then
-        time_format=$(defaults read -g AppleICUForce24HourTime 2>/dev/null) || true
-        if [ "$time_format" = "1" ]; then
-          reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
-        else
-          reset_time=$(date -r "$epoch" "+%I:%M %p" 2>/dev/null)
-        fi
-        [ -n "$reset_time" ] && reset_time_display=" → ${reset_time}"
+    needs_refresh=true
+    if [ -f "$cache_file" ]; then
+      cache_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null)
+      now=$(date +%s)
+      cache_age=$(( now - cache_mtime ))
+      if [ "$cache_age" -lt "$cache_max_age" ]; then
+        needs_refresh=false
+        USAGE_DATA=$(cat "$cache_file" 2>/dev/null)
       fi
     fi
 
-    usage_text="${usage_color}${utilization}%${reset_time_display}${RESET}"
-  else
-    usage_text="${YELLOW}~${RESET}"
+    if $needs_refresh; then
+      token=$(get_oauth_token)
+      if [ -n "$token" ] && [ "$token" != "null" ]; then
+        response=$(curl -s --max-time 5 \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $token" \
+          -H "anthropic-beta: oauth-2025-04-20" \
+          "https://api.anthropic.com/api/oauth/usage" 2>/dev/null) || true
+        if [ -n "$response" ] && echo "$response" | jq -e '.five_hour' >/dev/null 2>&1; then
+          USAGE_DATA="$response"
+          echo "$response" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
+        fi
+      fi
+      # Fall back to stale cache if API failed
+      if [ -z "$USAGE_DATA" ] && [ -f "$cache_file" ]; then
+        USAGE_DATA=$(cat "$cache_file" 2>/dev/null)
+      fi
+    fi
+  fi
+fi
+
+# Rate limit — single line: 5h 30% ⟳ 2:30pm │ 7d 10% ⟳ mar 15, 2:30pm
+rate_limit_line=""
+if component_enabled "rate_limit"; then
+  if ! command -v curl &>/dev/null || ! command -v jq &>/dev/null; then
+    rate_limit_line="${YELLOW}⚠ curl & jq required for rate limits${RESET}"
+  elif [ -n "$USAGE_DATA" ] && echo "$USAGE_DATA" | jq -e . >/dev/null 2>&1; then
+    rl_parts=""
+
+    # Current (5-hour window)
+    five_hour_pct=$(echo "$USAGE_DATA" | jq -r '.five_hour.utilization // 0' | awk '{printf "%.0f", $1}')
+    five_hour_reset_iso=$(echo "$USAGE_DATA" | jq -r '.five_hour.resets_at // empty')
+    five_hour_reset=$(format_reset_time "$five_hour_reset_iso" "time")
+    five_hour_color=$(color_for_percentage "$five_hour_pct")
+    rl_parts="${GRAY}[5h]${RESET} ${five_hour_color}${five_hour_pct}%${RESET}"
+    [ -n "$five_hour_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${five_hour_reset}"
+
+    # Weekly (7-day window)
+    seven_day_pct=$(echo "$USAGE_DATA" | jq -r '.seven_day.utilization // 0' | awk '{printf "%.0f", $1}')
+    seven_day_reset_iso=$(echo "$USAGE_DATA" | jq -r '.seven_day.resets_at // empty')
+    seven_day_reset=$(format_reset_time "$seven_day_reset_iso" "datetime")
+    seven_day_color=$(color_for_percentage "$seven_day_pct")
+    rl_parts+="${separator}${GRAY}[7d]${RESET} ${seven_day_color}${seven_day_pct}%${RESET}"
+    [ -n "$seven_day_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${seven_day_reset}"
+
+    rate_limit_line="$rl_parts"
   fi
 fi
 
@@ -187,7 +305,6 @@ fi
 [ -n "$MODEL" ] && parts+=("${CYAN}🧠 ${MODEL}${RESET}")
 [ -n "$branch_text" ] && parts+=("${branch_text}")
 [ -n "$ctx_text" ] && parts+=("${ctx_text}")
-[ -n "$usage_text" ] && parts+=("${usage_text}")
 
 # Join parts with separator
 output=""
@@ -199,4 +316,9 @@ for part in "${parts[@]}"; do
   fi
 done
 
-printf "%s\n" "$output"
+printf "%s" "$output"
+
+# Rate limit on a separate line (only if data is available)
+if [ -n "$rate_limit_line" ]; then
+  printf "\n%s" "$rate_limit_line"
+fi

@@ -13,23 +13,30 @@ cf statusline
 Example:
 
 ```bash
-cf v0.3.0 | MyProject | Opus 4.6 | ⎇ main | ctx 42% | 15% → 02:30
+cf v0.3.0 | 📂 MyProject | 🧠 Opus 4.6 | ⎇ main | ctx 42%
+[5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
 ```
 
 ## Available Components
 
 The statusline can show any combination of these components:
 
-| ID        | Description                                  | Example       |
-| --------- | -------------------------------------------- | ------------- |
-| `version` | Plugin version                               | `cf v0.3.0`   |
-| `folder`  | Project name                                 | `MyProject`   |
-| `model`   | Active model                                 | `Opus 4.6`    |
-| `branch`  | Git branch                                   | `⎇ main`      |
-| `context` | Context window usage (color-coded green→red) | `ctx 42%`     |
-| `usage`   | API token usage with reset time              | `15% → 02:30` |
+| ID           | Description                                      | Example                           |
+| ------------ | ------------------------------------------------ | --------------------------------- |
+| `version`    | Plugin version                                   | `cf v0.3.0`                       |
+| `folder`     | Project name                                     | `MyProject`                       |
+| `model`      | Active model                                     | `Opus 4.6`                        |
+| `branch`     | Git branch                                       | `⎇ main`                          |
+| `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                         |
+| `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…` |
 
 When you run this command, an interactive checklist lets you choose which components to display. All components are enabled by default.
+
+### Rate limit dependencies
+
+The `rate_limit` component requires **curl** and **jq** to fetch API usage data from Anthropic. If either is missing, the statusline will show a warning instead. The CLI warns you during setup if dependencies are not installed.
+
+Usage data is cached for 60 seconds to avoid excessive API calls.
 
 ## Customization
 
@@ -38,7 +45,7 @@ You can either edit `~/.coding-friend/config.json` directly, or run `cf statusli
 ```json
 {
   "statusline": {
-    "components": ["version", "folder", "model", "branch", "context", "usage"]
+    "components": ["version", "folder", "model", "branch", "context", "rate_limit"]
   }
 }
 ```

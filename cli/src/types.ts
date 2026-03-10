@@ -17,7 +17,7 @@ export type StatuslineComponent =
   | "model"
   | "branch"
   | "context"
-  | "usage";
+  | "rate_limit";
 
 export interface StatuslineConfig {
   components?: StatuslineComponent[];
@@ -32,7 +32,10 @@ export const STATUSLINE_COMPONENTS: {
   { id: "model", label: "Active model (Opus 4.6)" },
   { id: "branch", label: "Git branch (⎇ main)" },
   { id: "context", label: "Context window usage (ctx 42%)" },
-  { id: "usage", label: "API usage + reset time (15% → 02:30)" },
+  {
+    id: "rate_limit",
+    label: "Rate limit — current & weekly usage (requires curl & jq)",
+  },
 ];
 
 export const ALL_COMPONENT_IDS: StatuslineComponent[] =

@@ -1,6 +1,7 @@
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import { log } from "../lib/log.js";
+import { commandExists } from "../lib/exec.js";
 import { ALL_COMPONENT_IDS } from "../types.js";
 import {
   findStatuslineHookPath,
@@ -41,6 +42,18 @@ export async function statuslineCommand(): Promise<void> {
 
   // Step 3: Select components
   const components = await selectStatuslineComponents();
+
+  // Warn if rate_limit selected without curl/jq
+  if (components.includes("rate_limit")) {
+    const missing: string[] = [];
+    if (!commandExists("curl")) missing.push("curl");
+    if (!commandExists("jq")) missing.push("jq");
+    if (missing.length > 0) {
+      log.warn(
+        `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
+      );
+    }
+  }
 
   // Step 4: Save config + write settings
   saveStatuslineConfig(components);

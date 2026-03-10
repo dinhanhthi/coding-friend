@@ -28,6 +28,7 @@ import {
   saveStatuslineConfig,
   writeStatuslineSettings,
 } from "../lib/statusline.js";
+import { commandExists } from "../lib/exec.js";
 import {
   DEFAULT_CONFIG,
   type CodingFriendConfig,
@@ -522,6 +523,18 @@ async function stepStatusline(): Promise<void> {
   }
 
   const components = await selectStatuslineComponents();
+
+  if (components.includes("rate_limit")) {
+    const missing: string[] = [];
+    if (!commandExists("curl")) missing.push("curl");
+    if (!commandExists("jq")) missing.push("jq");
+    if (missing.length > 0) {
+      log.warn(
+        `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
+      );
+    }
+  }
+
   saveStatuslineConfig(components);
   writeStatuslineSettings(hookResult.hookPath);
   log.success("Statusline configured!");
