@@ -141,6 +141,32 @@ const sideNodes: SideNode[] = [
 ];
 
 /* ────────────────────────────────────────────────────────────
+   NODE → DOC URL MAPPING
+   ──────────────────────────────────────────────────────────── */
+
+const nodeDocUrl: Record<string, string> = {
+  // Main flow (skills)
+  plan: "/docs/skills/cf-plan/",
+  implement: "/docs/skills/cf-tdd/",
+  review: "/docs/skills/cf-review/",
+  commit: "/docs/skills/cf-commit/",
+  ship: "/docs/skills/cf-ship/",
+  // Agents
+  explorer: "/docs/reference/agents/#cf-explorer",
+  planner: "/docs/reference/agents/#cf-planner",
+  implementer: "/docs/reference/agents/#cf-implementer",
+  "code-reviewer": "/docs/reference/agents/#cf-code-reviewer",
+  writer: "/docs/reference/agents/#cf-writer",
+  // Auto-invoked skills
+  fix: "/docs/skills/cf-fix/",
+  "sys-debug": "/docs/skills/cf-sys-debug/",
+  optimize: "/docs/skills/cf-optimize/",
+  "auto-review": "/docs/skills/cf-auto-review/",
+  verification: "/docs/skills/cf-verification/",
+  learn: "/docs/skills/cf-learn/",
+};
+
+/* ────────────────────────────────────────────────────────────
    LAYOUT CONSTANTS  (desktop coordinate system)
    ──────────────────────────────────────────────────────────── */
 
@@ -234,6 +260,11 @@ export default function HowItWorks() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
+
+  const openDoc = (id: string) => {
+    const url = nodeDocUrl[id];
+    if (url) window.open(url, "_blank", "noopener");
+  };
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -683,7 +714,7 @@ export default function HowItWorks() {
               return (
                 <div
                   key={node.id}
-                  className={`absolute z-10 flex items-center justify-center rounded-lg border font-mono transition-all duration-300 select-none ${
+                  className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-lg border font-mono transition-all duration-300 select-none ${
                     isActive(node.id)
                       ? "bg-navy-950 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/25"
                       : isConnected(node.id)
@@ -697,12 +728,14 @@ export default function HowItWorks() {
                     left: `${((pos.x - NODE_W / 2) / SVG_W) * 100}%`,
                     top: `${((pos.y - NODE_H / 2) / SVG_H) * 100}%`,
                   }}
+                  onClick={() => openDoc(node.id)}
                   onMouseEnter={() => setHovered(node.id)}
                   onMouseLeave={() => setHovered(null)}
                   role="button"
                   tabIndex={0}
                   onFocus={() => setHovered(node.id)}
                   onBlur={() => setHovered(null)}
+                  onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
                   aria-label={node.description}
                 >
                   {node.label}
@@ -719,7 +752,7 @@ export default function HowItWorks() {
               return (
                 <div
                   key={node.id}
-                  className={`absolute z-10 flex items-center justify-center rounded-md border-2 font-mono transition-all duration-300 select-none ${
+                  className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-md border-2 font-mono transition-all duration-300 select-none ${
                     isAuto
                       ? isActive(node.id)
                         ? "bg-navy-950 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/20"
@@ -739,12 +772,14 @@ export default function HowItWorks() {
                     left: `${((pos.x - SIDE_W / 2) / SVG_W) * 100}%`,
                     top: `${((pos.y - SIDE_H / 2) / SVG_H) * 100}%`,
                   }}
+                  onClick={() => openDoc(node.id)}
                   onMouseEnter={() => setHovered(node.id)}
                   onMouseLeave={() => setHovered(null)}
                   role="button"
                   tabIndex={0}
                   onFocus={() => setHovered(node.id)}
                   onBlur={() => setHovered(null)}
+                  onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
                   aria-label={node.description}
                 >
                   {node.label}
@@ -798,6 +833,14 @@ export default function HowItWorks() {
               Agents
             </span>
           </div>
+          <p className="mt-2 text-center text-[11px] text-slate-500">
+            Plus utility skills:{" "}
+            <span className="font-mono text-slate-400">/cf-ask</span>,{" "}
+            <span className="font-mono text-slate-400">/cf-remember</span>,{" "}
+            <span className="font-mono text-slate-400">/cf-research</span>,{" "}
+            <span className="font-mono text-slate-400">/cf-session</span>,{" "}
+            <span className="font-mono text-slate-400">/cf-help</span>
+          </p>
         </Container>
       </section>
     );
@@ -815,7 +858,7 @@ export default function HowItWorks() {
         </div>
 
         {/* Legend */}
-        <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-full bg-violet-500" />
             Main flow
@@ -829,6 +872,14 @@ export default function HowItWorks() {
             Agents
           </span>
         </div>
+        <p className="mb-8 text-center text-[11px] text-slate-500">
+          Plus utility skills:{" "}
+          <span className="font-mono text-slate-400">/cf-ask</span>,{" "}
+          <span className="font-mono text-slate-400">/cf-remember</span>,{" "}
+          <span className="font-mono text-slate-400">/cf-research</span>,{" "}
+          <span className="font-mono text-slate-400">/cf-session</span>,{" "}
+          <span className="font-mono text-slate-400">/cf-help</span>
+        </p>
 
         <div className="relative mx-auto max-w-md">
           {/* Vertical animated line */}
@@ -904,8 +955,7 @@ export default function HowItWorks() {
           {mainNodes.map((node, i) => {
             const children = sideNodes.filter(
               (s) =>
-                s.parentId === node.id ||
-                s.extraParents?.includes(node.id),
+                s.parentId === node.id || s.extraParents?.includes(node.id),
             );
             const agents = children.filter((c) => c.kind === "agent");
             const autos = children.filter((c) => c.kind === "auto");
@@ -919,7 +969,10 @@ export default function HowItWorks() {
 
                 {/* Card */}
                 <div className="bg-navy-950/80 rounded-lg border border-[#a0a0a01c] p-4">
-                  <h3 className="font-mono text-sm font-semibold text-violet-400">
+                  <h3
+                    className="cursor-pointer font-mono text-sm font-semibold text-violet-400"
+                    onClick={() => openDoc(node.id)}
+                  >
                     {node.label}
                   </h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-400">
@@ -932,7 +985,8 @@ export default function HowItWorks() {
                       {agents.map((a) => (
                         <span
                           key={a.id}
-                          className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] text-sky-400"
+                          className="cursor-pointer rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] text-sky-400"
+                          onClick={() => openDoc(a.id)}
                         >
                           {a.label}
                         </span>
@@ -940,7 +994,8 @@ export default function HowItWorks() {
                       {autos.map((a) => (
                         <span
                           key={a.id}
-                          className="rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+                          className="cursor-pointer rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+                          onClick={() => openDoc(a.id)}
                         >
                           {a.label}
                         </span>
