@@ -7,7 +7,7 @@ interface Feature {
 }
 
 const statuslineSegments = [
-  { label: "CF version", example: "cf v0.0.1", color: "text-blue-400" },
+  { label: "CF version", example: "cf v0.3.0", color: "text-blue-400" },
   { label: "Project", example: "coding-friend", color: "text-orange-400" },
   { label: "Model", example: "Opus 4.6", color: "text-cyan-400" },
   {
@@ -25,8 +25,8 @@ const statuslineSegments = [
     color: "text-amber-400",
   },
   {
-    label: "Usage → Reset",
-    example: "19% → 12:59",
+    label: "Rate limit",
+    example: "[5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm",
     color: "text-violet-300",
   },
 ];
@@ -147,11 +147,11 @@ export default function Features() {
         {/* Slash commands */}
         <SlashCommands />
 
-        {/* Custom Guides */}
-        <CustomGuides />
-
         {/* Auto-invoked */}
         <AutoInvoked />
+
+        {/* Custom Guides */}
+        <CustomGuides />
       </Container>
     </section>
   );
@@ -366,7 +366,7 @@ const Statusline = () => {
 
             {/* Statusline */}
             <div className="flex flex-wrap items-center gap-0 gap-y-2 text-sm">
-              <span className="whitespace-nowrap text-blue-400">cf v0.0.1</span>
+              <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
                 coding-friend
@@ -378,8 +378,13 @@ const Statusline = () => {
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-amber-400">ctx 42%</span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="whitespace-nowrap text-violet-400">
-                19% → 12:59
+              <span className="whitespace-nowrap text-slate-400">
+                [5h] <span className="text-violet-400">30%</span> → 2:30pm
+              </span>
+              <span className="mx-2 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-slate-400">
+                [7d] <span className="text-violet-400">10%</span> → mar 15,
+                2:30pm
               </span>
             </div>
           </div>
