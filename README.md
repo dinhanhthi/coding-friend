@@ -97,7 +97,6 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 
 ## Commands
 
-
 | Command                 | Description                                 |
 | ----------------------- | ------------------------------------------- |
 | `/cf-plan [task]`       | Brainstorm and write implementation plan    |
@@ -112,7 +111,6 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-learn [topic]`     | Extract learnings for human review          |
 | `/cf-research [topic]`  | In-depth research with web search           |
 | `/cf-help [question]`   | Answer questions about Coding Friend        |
-
 
 Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`.
 
