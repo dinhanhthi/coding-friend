@@ -95,9 +95,11 @@ export function loadStatuslineComponents(): StatuslineComponent[] {
   const config = readJson<CodingFriendConfig>(globalConfigPath());
   const components = config?.statusline?.components;
   if (!components) return ALL_COMPONENT_IDS;
-  return components.filter((c) =>
-    ALL_COMPONENT_IDS.includes(c as StatuslineComponent),
-  );
+  return components
+    .map((c) => (c === ("usage" as string) ? "rate_limit" : c))
+    .filter((c) =>
+      ALL_COMPONENT_IDS.includes(c as StatuslineComponent),
+    ) as StatuslineComponent[];
 }
 
 /**

@@ -50,7 +50,7 @@ describe("STATUSLINE_COMPONENTS", () => {
       "model",
       "branch",
       "context",
-      "usage",
+      "rate_limit",
     ]);
   });
 
