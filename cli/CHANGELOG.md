@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.14.0 (unpublished)
+## v1.14.0 (2026-03-10)
 
 - Add `rate_limit` statusline component replacing old `usage` — displays current and weekly API usage with reset times ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
 - Add dependency check for `curl` and `jq` in `cf statusline` and `cf init` when `rate_limit` is selected ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
