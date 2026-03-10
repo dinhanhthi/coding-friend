@@ -905,11 +905,50 @@ export default function HowItWorks() {
           </div>
           <p className="mt-2 text-center text-xs text-slate-400">
             Plus utility skills:{" "}
-            <a href="/docs/skills/cf-ask/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-ask</a>,{" "}
-            <a href="/docs/skills/cf-remember/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-remember</a>,{" "}
-            <a href="/docs/skills/cf-research/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-research</a>,{" "}
-            <a href="/docs/skills/cf-session/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-session</a>,{" "}
-            <a href="/docs/skills/cf-help/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-help</a>
+            <a
+              href="/docs/skills/cf-ask/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-ask
+            </a>
+            ,{" "}
+            <a
+              href="/docs/skills/cf-remember/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-remember
+            </a>
+            ,{" "}
+            <a
+              href="/docs/skills/cf-research/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-research
+            </a>
+            ,{" "}
+            <a
+              href="/docs/skills/cf-session/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-session
+            </a>
+            ,{" "}
+            <a
+              href="/docs/skills/cf-help/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-help
+            </a>
           </p>
         </Container>
       </section>
@@ -944,11 +983,50 @@ export default function HowItWorks() {
         </div>
         <p className="mb-8 text-center text-xs text-slate-500">
           Plus utility skills:{" "}
-          <a href="/docs/skills/cf-ask/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-ask</a>,{" "}
-          <a href="/docs/skills/cf-remember/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-remember</a>,{" "}
-          <a href="/docs/skills/cf-research/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-research</a>,{" "}
-          <a href="/docs/skills/cf-session/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-session</a>,{" "}
-          <a href="/docs/skills/cf-help/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-help</a>
+          <a
+            href="/docs/skills/cf-ask/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-ask
+          </a>
+          ,{" "}
+          <a
+            href="/docs/skills/cf-remember/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-remember
+          </a>
+          ,{" "}
+          <a
+            href="/docs/skills/cf-research/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-research
+          </a>
+          ,{" "}
+          <a
+            href="/docs/skills/cf-session/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-session
+          </a>
+          ,{" "}
+          <a
+            href="/docs/skills/cf-help/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-help
+          </a>
         </p>
 
         <div className="relative mx-auto max-w-md">
