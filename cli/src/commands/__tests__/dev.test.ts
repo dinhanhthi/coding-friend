@@ -51,19 +51,26 @@ const mockExistsSync = vi.mocked(existsSync);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Simulate: first call returns dev state (for devReinstall to see "ON"),
-  // after devOffCommand runs, subsequent getDevState() returns null (so devOnCommand proceeds).
+  // Simulate readJson calls through devReinstall flow:
+  // 1. getDevState() in devReinstall → dev state (ON)
+  // 2. getLocalPluginVersion() in devReinstall → plugin.json with version
+  // 3. getDevState() in devOffCommand → dev state (so off proceeds)
+  // 4. getDevState() in devOnCommand → null (so on proceeds)
+  // 5. getLocalPluginVersion() in devOnCommand → plugin.json with version
+  // 6+ remaining calls → null
+  const devState = {
+    localPath: "/tmp/coding-friend",
+    savedAt: "2025-01-01T00:00:00.000Z",
+  };
+  const pluginJson = { version: "0.8.0" };
   let callCount = 0;
   mockReadJson.mockImplementation(() => {
     callCount++;
-    // First call: devReinstall reads state → ON
-    // After devOff clears it, devOnCommand reads state → null (proceed)
-    if (callCount <= 1) {
-      return {
-        localPath: "/tmp/coding-friend",
-        savedAt: "2025-01-01T00:00:00.000Z",
-      };
-    }
+    if (callCount === 1) return devState;
+    if (callCount === 2) return pluginJson;
+    if (callCount === 3) return devState;
+    if (callCount === 4) return null;
+    if (callCount === 5) return pluginJson;
     return null;
   });
   mockExistsSync.mockReturnValue(true);
