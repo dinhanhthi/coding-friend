@@ -37,6 +37,17 @@ function getDevState(): DevState | null {
   return readJson<DevState>(devStatePath());
 }
 
+function getLocalPluginVersion(localPath: string): string | null {
+  const pluginJsonPath = resolve(
+    localPath,
+    "plugin",
+    ".claude-plugin",
+    "plugin.json",
+  );
+  const data = readJson<{ version?: string }>(pluginJsonPath);
+  return data?.version ?? null;
+}
+
 function ensureClaude(): boolean {
   if (!commandExists("claude")) {
     log.error(
@@ -78,7 +89,12 @@ export async function devOnCommand(path?: string): Promise<void> {
     return;
   }
 
-  console.log(`\n=== ${chalk.green("Switching to local dev mode")} ===\n`);
+  const version = getLocalPluginVersion(localPath);
+  const versionLabel = version ? ` ${chalk.dim(`(v${version})`)}` : "";
+
+  console.log(
+    `\n=== ${chalk.green("Switching to local dev mode")}${versionLabel} ===\n`,
+  );
   log.info(`Local path: ${chalk.cyan(localPath)}`);
 
   // Step 1: Uninstall remote plugin (if installed)
@@ -140,7 +156,7 @@ export async function devOnCommand(path?: string): Promise<void> {
 
   console.log();
   log.success(
-    `Dev mode ${chalk.green("ON")} — using local plugin from ${chalk.cyan(localPath)}`,
+    `Dev mode ${chalk.green("ON")} — using local plugin${versionLabel} from ${chalk.cyan(localPath)}`,
   );
   log.dim("Restart Claude Code to see changes.");
 }
@@ -323,7 +339,9 @@ async function devReinstall(
   // Priority: explicit arg > saved state > cwd
   const localPath = path ?? state?.localPath;
 
-  console.log(`\n=== ${chalk.cyan(label)} ===\n`);
+  const version = localPath ? getLocalPluginVersion(localPath) : null;
+  const versionLabel = version ? ` ${chalk.dim(`(v${version})`)}` : "";
+  console.log(`\n=== ${chalk.cyan(label)}${versionLabel} ===\n`);
 
   // Turn off first (skip if already off)
   if (state) {
