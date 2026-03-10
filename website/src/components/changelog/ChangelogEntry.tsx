@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Badge from "@/components/ui/Badge";
 import type { ChangelogEntry as ChangelogEntryType } from "@/lib/types";
 
@@ -12,6 +15,7 @@ const tagLabels = {
 interface Props {
   entry: ChangelogEntryType;
   isLatest?: boolean;
+  defaultExpanded?: boolean;
 }
 
 function renderInline(text: string) {
@@ -63,7 +67,13 @@ function renderInline(text: string) {
   return result;
 }
 
-export default function ChangelogEntryCard({ entry, isLatest }: Props) {
+export default function ChangelogEntryCard({
+  entry,
+  isLatest,
+  defaultExpanded = true,
+}: Props) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
   // Group changes by tag
   const grouped = entry.changes.reduce(
     (acc, change) => {
@@ -83,15 +93,26 @@ export default function ChangelogEntryCard({ entry, isLatest }: Props) {
   ];
 
   return (
-    <div className="relative pb-12 pl-8 last:pb-0">
-      {/* Timeline dot */}
-      <div className="ring-navy-900 absolute top-1.5 left-0 h-3 w-3 rounded-full bg-violet-400 ring-4" />
+    <div className={`relative pl-7 last:pb-0 ${expanded ? "pb-10" : "pb-4"}`}>
+      {/* Toggle dot — vertically centered with the version title */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="ring-navy-900 absolute top-[5px] left-0 mt-1 flex h-3.5 w-3.5 cursor-pointer items-center justify-center rounded-full bg-violet-400 ring-[3px] transition-colors hover:bg-violet-300"
+        aria-label={expanded ? "Collapse" : "Expand"}
+      >
+        <span className="text-xs leading-none font-bold text-slate-900">
+          {expanded ? "−" : "+"}
+        </span>
+      </button>
 
       {/* Timeline line */}
-      <div className="absolute top-4 bottom-0 left-[5px] w-0.5 bg-[#a0a0a01c] last:hidden" />
+      <div className="absolute top-5 bottom-0 left-[5px] w-0.5 bg-[#a0a0a01c] last:hidden" />
 
       {/* Version header */}
-      <div className="mb-4 flex items-center gap-3">
+      <div
+        className={`flex cursor-pointer items-center gap-3 ${expanded ? "mb-4" : "mb-0"}`}
+        onClick={() => setExpanded((v) => !v)}
+      >
         <h3 className="text-xl font-bold text-white">{entry.version}</h3>
         {isLatest && (
           <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
@@ -106,30 +127,32 @@ export default function ChangelogEntryCard({ entry, isLatest }: Props) {
       </div>
 
       {/* Changes grouped by tag */}
-      <div className="space-y-4">
-        {tagOrder.map((tag) => {
-          const changes = grouped[tag];
-          if (!changes?.length) return null;
+      {expanded && (
+        <div className="space-y-4">
+          {tagOrder.map((tag) => {
+            const changes = grouped[tag];
+            if (!changes?.length) return null;
 
-          return (
-            <div key={tag}>
-              <div className="mb-2">
-                <Badge variant={tag}>{tagLabels[tag]}</Badge>
+            return (
+              <div key={tag}>
+                <div className="mb-2">
+                  <Badge variant={tag}>{tagLabels[tag]}</Badge>
+                </div>
+                <ul className="space-y-1.5">
+                  {changes.map((change, i) => (
+                    <li
+                      key={i}
+                      className="relative pl-4 leading-relaxed text-slate-200 before:absolute before:top-2 before:left-0 before:h-1.5 before:w-1.5 before:rounded-full before:bg-slate-600 before:content-['']"
+                    >
+                      {renderInline(change.text)}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-1.5">
-                {changes.map((change, i) => (
-                  <li
-                    key={i}
-                    className="relative pl-4 leading-relaxed text-slate-200 before:absolute before:top-2 before:left-0 before:h-1.5 before:w-1.5 before:rounded-full before:bg-slate-600 before:content-['']"
-                  >
-                    {renderInline(change.text)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
