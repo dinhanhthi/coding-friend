@@ -172,12 +172,91 @@ describe("updateCommand — plugin update verification", () => {
     expect(output).toContain("Plugin updated to");
   });
 
-  it("shows warning with stderr when command succeeds but version unchanged", async () => {
+  it("falls back to plugin install when update succeeds but version unchanged", async () => {
+    // Simulate: update returns success but version stays 0.7.0,
+    // then install succeeds and version changes to 0.7.2
+    let installCalled = false;
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial check
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 1)
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 2)
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 3)
+      .mockReturnValueOnce("0.7.2"); // verify after install fallback
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      if (
+        cmd === "claude" &&
+        args?.[0] === "plugin" &&
+        args?.[1] === "install"
+      ) {
+        installCalled = true;
+        return "";
+      }
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "already at the latest version",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({ plugin: true });
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(installCalled).toBe(true);
+    expect(output).toContain("Plugin updated to");
+  });
+
+  it("falls back to plugin install with correct scope", async () => {
+    mockResolveScope.mockResolvedValue("project");
+    let installArgs: string[] = [];
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 1)
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 2)
+      .mockReturnValueOnce("0.7.0") // verify after update (retry 3)
+      .mockReturnValueOnce("0.7.2"); // verify after install
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      if (
+        cmd === "claude" &&
+        args?.[0] === "plugin" &&
+        args?.[1] === "install"
+      ) {
+        installArgs = args as string[];
+        return "";
+      }
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await updateCommand({ plugin: true, project: true });
+
+    expect(installArgs).toEqual([
+      "plugin",
+      "install",
+      "coding-friend@coding-friend-marketplace",
+      "--scope",
+      "project",
+    ]);
+  });
+
+  it("shows warning when both update and install fallback fail to change version", async () => {
     mockGetInstalledVersion.mockReturnValue("0.7.0"); // never changes
     mockCommandExists.mockReturnValue(true);
     mockRun.mockImplementation((cmd) => {
       if (cmd === "gh") return "v0.7.2";
       if (cmd === "npm") return "1.0.0";
+      if (cmd === "claude") return "";
       return null;
     });
     mockRunWithStderr.mockReturnValue({
@@ -191,7 +270,6 @@ describe("updateCommand — plugin update verification", () => {
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("still unchanged");
-    expect(output).toContain("stderr: some debug info");
   });
 
   it("reports error with stderr when claude plugin update exits non-zero", async () => {
