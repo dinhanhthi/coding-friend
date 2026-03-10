@@ -195,6 +195,23 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
               if (i < 2) sleepSync(1000);
             }
 
+            // Fallback: if update didn't change version, try reinstall
+            // (marketplace cache may be stale while GitHub has the new release)
+            if (newVersion === currentVersion) {
+              log.dim("Marketplace cache may be stale. Trying reinstall...");
+              const installArgs = [
+                "plugin",
+                "install",
+                "coding-friend@coding-friend-marketplace",
+              ];
+              if (scope) {
+                installArgs.push("--scope", scope);
+              }
+              run("claude", installArgs);
+
+              newVersion = getInstalledVersion();
+            }
+
             if (newVersion !== currentVersion) {
               log.success(`Plugin updated to ${chalk.green(`v${newVersion}`)}`);
             } else {
