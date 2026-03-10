@@ -97,7 +97,8 @@ const sideNodes: SideNode[] = [
   {
     id: "fix",
     label: "/cf-fix",
-    description: "Auto-invoked when bugs are detected at any stage",
+    description:
+      "Auto-invoked when bugs are detected — calls cf-explorer for codebase analysis",
     parentId: "implement",
     kind: "auto",
   },
@@ -250,6 +251,21 @@ function sidePath(node: SideNode, overrideParentId?: string): string {
   return `M ${parent.x} ${parent.y} L ${side.x} ${side.y}`;
 }
 
+/** Direct connections between side nodes (e.g. fix → explorer) */
+const sideToSideLinks: { fromId: string; toId: string }[] = [
+  { fromId: "fix", toId: "explorer" },
+];
+
+function sideToSidePath(fromId: string, toId: string): string {
+  const from = sideNodes.find((n) => n.id === fromId)!;
+  const to = sideNodes.find((n) => n.id === toId)!;
+  const fp = getSidePos(from);
+  const tp = getSidePos(to);
+  // Start from top edge of "from" node, route left then up to left edge of "to" node
+  const edgeX = Math.max(8, Math.min(fp.x, tp.x) - SIDE_W / 2 - 20);
+  return `M ${fp.x} ${fp.y - SIDE_H / 2} L ${fp.x} ${fp.y - SIDE_H / 2 - 10} L ${edgeX} ${fp.y - SIDE_H / 2 - 10} L ${edgeX} ${tp.y} L ${tp.x - SIDE_W / 2} ${tp.y}`;
+}
+
 /* ────────────────────────────────────────────────────────────
    COMPONENT
    ──────────────────────────────────────────────────────────── */
@@ -303,6 +319,18 @@ export default function HowItWorks() {
     if (sideMatch) {
       connectedIds.add(sideMatch.parentId);
       sideMatch.extraParents?.forEach((ep) => connectedIds.add(ep));
+    }
+    // Side-to-side links
+    sideToSideLinks.forEach(({ fromId, toId }) => {
+      if (hovered === fromId || hovered === toId) {
+        connectedIds.add(fromId);
+        connectedIds.add(toId);
+      }
+    });
+    // fix ↔ sys-debug loop pair
+    if (hovered === "fix" || hovered === "sys-debug") {
+      connectedIds.add("fix");
+      connectedIds.add("sys-debug");
     }
     // Main flow neighbors
     const mainIdx = mainNodes.findIndex((n) => n.id === hovered);
@@ -704,6 +732,48 @@ export default function HowItWorks() {
                   );
                 });
               })}
+
+              {/* ── Side-to-side connections (e.g. fix → explorer) ── */}
+              {sideToSideLinks.map(({ fromId, toId }) => {
+                const d = sideToSidePath(fromId, toId);
+                const dim =
+                  hovered &&
+                  !connectedIds.has(fromId) &&
+                  !connectedIds.has(toId);
+                return (
+                  <g
+                    key={`s2s-${fromId}-${toId}`}
+                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                  >
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className="text-emerald-500/40"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                    />
+                    <path
+                      d={d}
+                      stroke="currentColor"
+                      className="auto-dash-animate text-emerald-500/60"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                      strokeLinecap="round"
+                    />
+                    <circle
+                      r="2"
+                      className="fill-current text-emerald-400"
+                      filter="url(#glow-e)"
+                    >
+                      <animateMotion
+                        dur="2s"
+                        repeatCount="indefinite"
+                        path={d}
+                      />
+                    </circle>
+                  </g>
+                );
+              })}
             </svg>
 
             {/* ── Main flow nodes (HTML) ── */}
@@ -833,13 +903,13 @@ export default function HowItWorks() {
               Agents
             </span>
           </div>
-          <p className="mt-2 text-center text-[11px] text-slate-500">
+          <p className="mt-2 text-center text-xs text-slate-400">
             Plus utility skills:{" "}
-            <span className="font-mono text-slate-400">/cf-ask</span>,{" "}
-            <span className="font-mono text-slate-400">/cf-remember</span>,{" "}
-            <span className="font-mono text-slate-400">/cf-research</span>,{" "}
-            <span className="font-mono text-slate-400">/cf-session</span>,{" "}
-            <span className="font-mono text-slate-400">/cf-help</span>
+            <a href="/docs/skills/cf-ask/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-ask</a>,{" "}
+            <a href="/docs/skills/cf-remember/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-remember</a>,{" "}
+            <a href="/docs/skills/cf-research/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-research</a>,{" "}
+            <a href="/docs/skills/cf-session/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-session</a>,{" "}
+            <a href="/docs/skills/cf-help/" target="_blank" rel="noopener" className="font-mono text-violet-400 transition-colors hover:text-violet-300">/cf-help</a>
           </p>
         </Container>
       </section>
@@ -872,13 +942,13 @@ export default function HowItWorks() {
             Agents
           </span>
         </div>
-        <p className="mb-8 text-center text-[11px] text-slate-500">
+        <p className="mb-8 text-center text-xs text-slate-500">
           Plus utility skills:{" "}
-          <span className="font-mono text-slate-400">/cf-ask</span>,{" "}
-          <span className="font-mono text-slate-400">/cf-remember</span>,{" "}
-          <span className="font-mono text-slate-400">/cf-research</span>,{" "}
-          <span className="font-mono text-slate-400">/cf-session</span>,{" "}
-          <span className="font-mono text-slate-400">/cf-help</span>
+          <a href="/docs/skills/cf-ask/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-ask</a>,{" "}
+          <a href="/docs/skills/cf-remember/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-remember</a>,{" "}
+          <a href="/docs/skills/cf-research/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-research</a>,{" "}
+          <a href="/docs/skills/cf-session/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-session</a>,{" "}
+          <a href="/docs/skills/cf-help/" target="_blank" rel="noopener" className="font-mono text-slate-400 transition-colors hover:text-slate-300">/cf-help</a>
         </p>
 
         <div className="relative mx-auto max-w-md">
