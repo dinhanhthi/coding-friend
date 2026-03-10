@@ -13,6 +13,28 @@ const tabs = [
 
 type TabKey = (typeof tabs)[number]["key"];
 
+function parseVersion(version: string): [number, number, number] {
+  const nums = version.replace(/^v/, "").split(".").map(Number);
+  return [nums[0], nums[1], nums[2]];
+}
+
+/**
+ * Returns true if the version belongs to the latest minor version group.
+ * e.g. if the latest published version is v1.14.0, all v1.14.x are expanded.
+ * Unpublished versions are always expanded.
+ */
+function isLatestMinor(version: string, entries: ChangelogEntry[]): boolean {
+  const firstPublished = entries.find((e) => !e.unpublished);
+  if (!firstPublished) return true;
+
+  const entry = entries.find((e) => e.version === version);
+  if (entry?.unpublished) return true;
+
+  const [latestMajor, latestMinor] = parseVersion(firstPublished.version);
+  const [major, minor] = parseVersion(version);
+  return major === latestMajor && minor === latestMinor;
+}
+
 interface Props {
   pluginEntries: ChangelogEntry[];
   cliEntries: ChangelogEntry[];
@@ -92,6 +114,7 @@ export default function ChangelogTabs({
               key={entry.version}
               entry={entry}
               isLatest={i === latestPublishedIdx}
+              defaultExpanded={isLatestMinor(entry.version, arr)}
             />
           );
         })}
