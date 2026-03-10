@@ -2,6 +2,11 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.15.0 (unpublished)
+
+- Show plugin version in `cf dev on`, `cf dev restart`, and `cf dev update` logs ([#4e1d141](https://github.com/dinhanhthi/coding-friend/commit/4e1d141))
+- Add fallback to plugin install when `cf dev update` fails to refresh cache ([#82aea4e](https://github.com/dinhanhthi/coding-friend/commit/82aea4e))
+
 ## v1.14.0 (2026-03-10)
 
 - Add `rate_limit` statusline component replacing old `usage` — displays current and weekly API usage with reset times ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
