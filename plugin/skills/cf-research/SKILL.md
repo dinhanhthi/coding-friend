@@ -1,6 +1,12 @@
 ---
 name: cf-research
-description: In-depth research on a topic with web search and structured output
+description: >
+  In-depth research on a topic with web search and structured output. Use when the user wants
+  deep research before building — e.g. "research this", "look into this library", "investigate
+  how X works", "compare these options", "what are the best practices for", "deep dive into",
+  "study this technology", "analyze this repo", "explore the ecosystem around". Also triggers
+  when the user needs to understand a technology, library, or architecture pattern in depth
+  before making decisions.
 disable-model-invocation: true
 ---
 

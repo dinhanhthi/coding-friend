@@ -1,6 +1,11 @@
 ---
 name: cf-ship
-description: Verify, commit, push, and create PR
+description: >
+  Verify, commit, push, and create PR. Use when the user wants to ship their work — e.g.
+  "ship it", "push and create PR", "let's ship", "deploy this", "send it", "push my changes",
+  "create a PR", "open a pull request", "ready to merge", "let's get this merged".
+  Also triggers when the user is done with a feature branch and wants the full
+  verify → commit → push → PR workflow.
 disable-model-invocation: true
 ---
 
