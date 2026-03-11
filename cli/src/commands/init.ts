@@ -95,6 +95,109 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function hasGitignoreBlock(): boolean {
+  if (!existsSync(".gitignore")) return false;
+  const content = readFileSync(".gitignore", "utf-8");
+  return (
+    content.includes(GITIGNORE_START) || content.includes("# coding-friend")
+  );
+}
+
+/**
+ * Pad a scope/status label to a consistent visible width for alignment.
+ */
+function paddedScopeLabel(scope: string): string {
+  const label = formatScopeLabel(scope);
+  // visible lengths: [-]=3, [both]=6, [done]=6, [skip]=6, [local]=7, [global]=8
+  const visibleLen = scope.length + 2;
+  return label + " ".repeat(Math.max(1, 9 - visibleLen));
+}
+
+/**
+ * Detect and display project setup status (folders + settings).
+ */
+function printSetupStatus(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+  gitAvailable: boolean,
+): {
+  allDone: boolean;
+  notLocalCount: number;
+  notConfiguredCount: number;
+  missingFolders: number;
+} {
+  const docsDir = getDocsDir(globalCfg, localCfg);
+  const subfolders = ["plans", "memory", "research", "learn", "sessions"];
+
+  // ── Folders ──
+  const folderStatus = subfolders.map((sub) => ({
+    name: `${docsDir}/${sub}`,
+    exists: existsSync(`${docsDir}/${sub}`),
+  }));
+  const foldersReady = folderStatus.filter((f) => f.exists).length;
+  const missingFolders = subfolders.length - foldersReady;
+  const allFoldersDone = missingFolders === 0;
+
+  const countColor = allFoldersDone ? chalk.green : chalk.yellow;
+  console.log(
+    `  ${chalk.bold("Folders")} ${countColor(`(${foldersReady}/${subfolders.length})`)}:`,
+  );
+  for (const f of folderStatus) {
+    const icon = f.exists ? chalk.green("✓") : chalk.red("✗");
+    const name = f.exists ? chalk.dim(f.name) : f.name;
+    console.log(`    ${icon} ${name}`);
+  }
+  console.log();
+
+  // ── Settings ──
+  const configKeys = [
+    { key: "docsDir", label: "Docs folder" },
+    { key: "language", label: "Docs language" },
+    { key: "learn", label: "/cf-learn config" },
+  ];
+
+  let notLocalCount = 0;
+  let notConfiguredCount = 0;
+
+  console.log(`  ${chalk.bold("Settings")}:`);
+  for (const s of configKeys) {
+    const scope = getScopeLabel(s.key, globalCfg, localCfg);
+    const value = getMergedValue(s.key, globalCfg, localCfg);
+    const valueStr =
+      value && typeof value === "string" ? ` (${chalk.dim(value)})` : "";
+    console.log(`    ${paddedScopeLabel(scope)}${s.label}${valueStr}`);
+
+    if (scope === "-") notConfiguredCount++;
+    if (scope === "-" || scope === "global") notLocalCount++;
+  }
+
+  // ── Setup items ──
+  const setupItems = [
+    {
+      label: ".gitignore",
+      done: !gitAvailable || hasGitignoreBlock(),
+      skipped: !gitAvailable,
+    },
+    { label: "Shell completion", done: hasShellCompletion(), skipped: false },
+    { label: "Statusline", done: isStatuslineConfigured(), skipped: false },
+  ];
+
+  for (const item of setupItems) {
+    if (item.skipped) {
+      console.log(`    ${paddedScopeLabel("skip")}${item.label}`);
+    } else if (item.done) {
+      console.log(`    ${paddedScopeLabel("done")}${item.label}`);
+    } else {
+      console.log(`    ${paddedScopeLabel("-")}${item.label}`);
+      notConfiguredCount++;
+    }
+  }
+  console.log();
+
+  const allDone = allFoldersDone && notConfiguredCount === 0;
+  return { allDone, notLocalCount, notConfiguredCount, missingFolders };
+}
+
 /**
  * Write a config value to the chosen scope.
  */
@@ -133,6 +236,34 @@ function getDocsDir(
   );
 }
 
+/**
+ * Offer a shortcut to use the existing global setting for a step.
+ * Returns true if user chose to use the global setting (caller should return early).
+ */
+async function offerGlobalShortcut(globalDisplay: string): Promise<boolean> {
+  const choice = await select({
+    message: "How to configure?",
+    choices: injectBackChoice(
+      [
+        {
+          name: `Use global setting (${globalDisplay})`,
+          value: "use_global",
+        },
+        { name: "Configure manually", value: "configure" },
+      ],
+      "Cancel init",
+    ),
+  });
+
+  handleBack(choice);
+
+  if (choice === "use_global") {
+    log.dim("Using global setting.");
+    return true;
+  }
+  return false;
+}
+
 // ─── Step Functions ───────────────────────────────────────────────────
 
 async function stepDocsDir(
@@ -148,6 +279,9 @@ async function stepDocsDir(
     `Docs folder name ${formatScopeLabel(scopeLabel)}${currentValue ? ` (${chalk.dim(currentValue)})` : ""}`,
     "Where plans, memory, research, and session docs are stored in your project.",
   );
+
+  const globalValue = globalCfg?.docsDir;
+  if (globalValue && (await offerGlobalShortcut(globalValue))) return;
 
   const value = await input({
     message: "Docs folder name:",
@@ -172,13 +306,7 @@ async function stepDocsDir(
 }
 
 async function stepGitignore(docsDir: string): Promise<void> {
-  const hasBlock = (() => {
-    if (!existsSync(".gitignore")) return false;
-    const content = readFileSync(".gitignore", "utf-8");
-    return (
-      content.includes(GITIGNORE_START) || content.includes("# coding-friend")
-    );
-  })();
+  const hasBlock = hasGitignoreBlock();
 
   if (hasBlock) {
     printStepHeader(
@@ -274,6 +402,9 @@ async function stepDocsLanguage(
     "Skills like /cf-plan, /cf-ask, /cf-remember will write docs in this language.",
   );
 
+  const globalValue = globalCfg?.language;
+  if (globalValue && (await offerGlobalShortcut(globalValue))) return;
+
   const lang = await selectLanguage(
     "What language should generated docs be written in?",
   );
@@ -323,6 +454,26 @@ async function stepLearnConfig(
     `/cf-learn config ${formatScopeLabel(scopeLabel)}`,
     "Controls where and how /cf-learn saves your learning notes.",
   );
+
+  const globalLearn = globalCfg?.learn;
+  if (globalLearn) {
+    const parts = [
+      globalLearn.language || "en",
+      globalLearn.outputDir || `${docsDir}/learn`,
+    ];
+    if (globalLearn.categories) {
+      parts.push(`${globalLearn.categories.length} categories`);
+    }
+    if (await offerGlobalShortcut(parts.join(", "))) {
+      const gOutputDir = globalLearn.outputDir || `${docsDir}/learn`;
+      const gIsExternal = !gOutputDir.startsWith(`${docsDir}/`);
+      return {
+        outputDir: gOutputDir,
+        autoCommit: globalLearn.autoCommit || false,
+        isExternal: gIsExternal,
+      };
+    }
+  }
 
   // a) Language
   const language = await selectLanguage(
@@ -609,29 +760,57 @@ export async function initCommand(): Promise<void> {
   const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   const localCfg = readJson<CodingFriendConfig>(localConfigPath());
 
-  // Show current status
-  console.log("Current configuration:");
+  // ── Detect & display setup status ──────────────────────────────────
 
-  const docsDirScope = getScopeLabel("docsDir", globalCfg, localCfg);
-  const docsDirVal = getMergedValue("docsDir", globalCfg, localCfg) as
-    | string
-    | undefined;
-  console.log(
-    `  ${formatScopeLabel(docsDirScope)}  docsDir${docsDirVal ? ` (${chalk.dim(docsDirVal)})` : ""}`,
-  );
-
-  const langScope = getScopeLabel("language", globalCfg, localCfg);
-  const langVal = getMergedValue("language", globalCfg, localCfg) as
-    | string
-    | undefined;
-  console.log(
-    `  ${formatScopeLabel(langScope)}  Docs language${langVal ? ` (${chalk.dim(langVal)})` : ""}`,
-  );
-
-  const learnScope = getScopeLabel("learn", globalCfg, localCfg);
-  console.log(`  ${formatScopeLabel(learnScope)}  /cf-learn config`);
-
+  console.log("Project status:");
   console.log();
+
+  const { allDone, notLocalCount, notConfiguredCount, missingFolders } =
+    printSetupStatus(globalCfg, localCfg, gitAvailable);
+
+  if (allDone) {
+    if (notLocalCount > 0) {
+      console.log(
+        chalk.dim(
+          `  ${notLocalCount} setting(s) inherited from global config only.`,
+        ),
+      );
+      console.log();
+    }
+    log.success("All settings configured!");
+    console.log();
+    const proceed = await confirm({
+      message: "Modify settings?",
+      default: false,
+    });
+    if (!proceed) {
+      log.dim("No changes. Run `cf init` anytime to reconfigure.");
+      return;
+    }
+  } else {
+    const parts: string[] = [];
+    if (missingFolders > 0) {
+      parts.push(`${missingFolders} folder(s) missing`);
+    }
+    if (notConfiguredCount > 0) {
+      parts.push(`${notConfiguredCount} setting(s) not configured`);
+    }
+    if (notLocalCount > 0) {
+      parts.push(`${notLocalCount} not set locally`);
+    }
+    if (parts.length > 0) {
+      console.log(`  ${chalk.yellow("⚠")} ${parts.join(" · ")}`);
+      console.log();
+    }
+    const proceed = await confirm({
+      message: "Run setup wizard?",
+      default: true,
+    });
+    if (!proceed) {
+      log.dim("Init cancelled. Run `cf init` anytime to resume.");
+      return;
+    }
+  }
 
   // ─── Linear step flow ──────────────────────────────────────────────
 
