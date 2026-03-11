@@ -2,6 +2,20 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.8.1 (unpublished)
+
+- Improve skill descriptions for `cf-remember`, `cf-learn`, `cf-review`, `cf-commit`, `cf-ship`, `cf-research`, `cf-ask`, `cf-session`, and `cf-tdd` with explicit trigger phrases and auto-invoke conditions ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
+- Clarify `cf-remember` (AI recall) vs `cf-learn` (human learning) distinction in descriptions ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add `user-invocable: true` to `cf-review` for both manual and auto-trigger support ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add refactoring triggers to `cf-tdd` description ("refactor this", "clean up", "extract") ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add Common Workflows and Troubleshooting sections to `cf-help` skill ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Extract `cf-research` templates to `references/templates.md` to avoid nested code fence parsing issues ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Extract `cf-session` inline scripts to `scripts/` directory with safe argument passing (no shell injection) ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
+- Fix `cf-sys-debug` heading: "5-Phase Process" → "4-Phase Process + Documentation" ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
+- Add `cf-session` to bootstrap context slash commands list ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add `model: haiku` to `cf-session` for cost efficiency ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add PR title format guidance and main branch guard to `cf-ship` ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+
 ## v0.8.0 (2026-03-10)
 
 - Add `rate_limit` statusline component showing current (5-hour) and weekly (7-day) API usage percentages with color-coded gradient and reset times ([#b8c1cdc](https://github.com/dinhanhthi/coding-friend/commit/b8c1cdc))
