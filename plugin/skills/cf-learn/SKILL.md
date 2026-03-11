@@ -1,6 +1,13 @@
 ---
 name: cf-learn
-description: Extract knowledge for human learning from conversation (configurable output, language, categories). Auto-invoke this skill when the conversation contains substantial new technical knowledge, problem-solving insights, or non-trivial concepts worth preserving — such as debugging breakthroughs, architecture decisions, best practices, or explanations of complex topics. Do NOT auto-invoke for trivial tasks like simple file edits, typo fixes, or routine operations.
+description: >
+  Extract knowledge for human learning from conversation (configurable output, language,
+  categories). Auto-invoke this skill when the conversation contains substantial new technical
+  knowledge, problem-solving insights, or non-trivial concepts worth preserving — such as
+  debugging breakthroughs, architecture decisions, best practices, or explanations of complex
+  topics. Do NOT auto-invoke for trivial tasks like simple file edits, typo fixes, or routine
+  operations. Unlike /cf-remember (project context for AI recall), this creates educational
+  notes for the human to learn from.
 user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
 ---

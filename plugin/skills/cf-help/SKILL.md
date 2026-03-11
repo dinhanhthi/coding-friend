@@ -95,6 +95,28 @@ If the user asks about **custom skill guides**, explain:
 - Global: `~/.coding-friend/skills/<skill-name>-custom/SKILL.md`
 - Sections: `## Before` (pre-workflow), `## Rules` (throughout), `## After` (post-workflow)
 
-## Step 4: Answer concisely
+## Step 4: Common Workflows (if workflow question)
+
+If the user asks how skills work together, present these common workflows:
+
+- **Build a feature:** `/cf-plan` → implement → `/cf-review` → `/cf-commit` → `/cf-ship`
+- **Fix a bug:** `/cf-fix` → (auto: review) → `/cf-commit`
+- **Quick question:** `/cf-ask` → answer saved to docs/memory/
+- **Deep research:** `/cf-research` → `/cf-plan` → implement
+- **End of session:** `/cf-remember` (project context for AI) + `/cf-learn` (educational notes for human)
+- **Optimize:** `/cf-optimize` → baseline → fix → measure → compare
+
+**Key distinction:** `/cf-remember` saves project knowledge for AI recall in future sessions. `/cf-learn` saves educational notes for the human to learn from.
+
+## Step 5: Troubleshooting (if troubleshooting question)
+
+Common issues:
+
+- **Skill not triggering?** Check description in SKILL.md — it may not match the user's phrasing. Use `/cf-<skill-name>` to trigger manually.
+- **Custom guide not loading?** Verify the path: `.coding-friend/skills/<skill-name>-custom/SKILL.md` and that it has `## Before`, `## Rules`, or `## After` sections.
+- **Config not applied?** Local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`. Check both.
+- **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
+
+## Step 6: Answer concisely
 
 Provide a clear, concise answer based on the information gathered. Link to specific files if the user wants to dive deeper.

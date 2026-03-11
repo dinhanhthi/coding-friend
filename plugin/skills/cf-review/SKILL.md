@@ -6,6 +6,7 @@ description: >
   "any issues with this?", "is this code ok?", "review before merge", "review the diff",
   "what do you think of these changes?". Also triggers on requests to review specific files,
   commits, or branches.
+user-invocable: true
 context: fork
 agent: cf-code-reviewer
 ---
