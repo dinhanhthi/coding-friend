@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.8.1 (unpublished)
+## v0.8.1 (2026-03-11)
 
 - Improve skill descriptions for `cf-remember`, `cf-learn`, `cf-review`, `cf-commit`, `cf-ship`, `cf-research`, `cf-ask`, `cf-session`, and `cf-tdd` with explicit trigger phrases and auto-invoke conditions ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
 - Clarify `cf-remember` (AI recall) vs `cf-learn` (human learning) distinction in descriptions ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
