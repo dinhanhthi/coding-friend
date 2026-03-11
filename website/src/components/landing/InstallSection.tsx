@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Container from "@/components/ui/Container";
 import CopyButton from "@/components/ui/CopyButton";
+import Link from "next/link";
+import { useState } from "react";
 
 const MANAGERS = [
   { id: "npm", label: "npm", install: "npm i -g" },
@@ -33,7 +34,11 @@ export default function InstallSection() {
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Install once, use in every project. Supports user, project, and
-            local scopes.
+            local scopes. More details in the{" "}
+            <Link href="/docs/cli/cf-install/" className="text-violet-400">
+              documentation
+            </Link>
+            .
           </p>
         </div>
 
