@@ -6,6 +6,7 @@ description: >
   another machine", "save my progress", "export this conversation", "sync this session",
   "bookmark this session". Pairs with `cf session load` + `claude --resume` on the target machine.
 disable-model-invocation: true
+model: haiku
 tools: [Bash, Read]
 ---
 
@@ -45,8 +46,8 @@ mkdir -p "$CWD/{docsDir}/sessions"
 Run the detection script. It outputs two lines: the full JSONL path and the session ID.
 
 ```bash
-SCRIPT_DIR="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
-OUTPUT=$(bash "$SCRIPT_DIR/detect-session.sh")
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+OUTPUT=$(bash "$CF_SESSION_SCRIPTS/detect-session.sh")
 LATEST=$(echo "$OUTPUT" | head -1)
 SESSION_ID=$(echo "$OUTPUT" | tail -1)
 echo "Detected session: $LATEST"
@@ -68,7 +69,8 @@ Use the provided label, or default to `session-YYYY-MM-DD` using today's date.
 Extract the first user message from the JSONL for preview:
 
 ```bash
-PREVIEW=$(python3 "$SCRIPT_DIR/extract-preview.py" "$LATEST")
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+PREVIEW=$(python3 "$CF_SESSION_SCRIPTS/extract-preview.py" "$LATEST")
 echo "Preview: $PREVIEW"
 ```
 
@@ -77,7 +79,8 @@ echo "Preview: $PREVIEW"
 Run the save script with all values as arguments:
 
 ```bash
-bash "$SCRIPT_DIR/save-session.sh" \
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+bash "$CF_SESSION_SCRIPTS/save-session.sh" \
   "$SESSIONS_DIR" "$SESSION_ID" "$LABEL" "$LATEST" "$PREVIEW"
 ```
 

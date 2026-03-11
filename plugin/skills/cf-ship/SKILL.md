@@ -58,12 +58,14 @@ git push
 
 ### Step 4: Create PR (if on a feature branch)
 
-Only if current branch is NOT `main` or `master`:
+**Guard:** If current branch is `main` or `master`, warn the user and skip this step — do NOT push directly to the main branch.
 
 Try `gh` first, fall back to a manual link if `gh` is not installed:
 
+**PR title:** Use conventional commit style, under 70 chars. Derive from the commit(s) on the branch.
+
 ```bash
-gh pr create --title "<title>" --body "<body>"
+gh pr create --title "<type>(<scope>): <summary>" --body "<body>"
 ```
 
 If `gh` is not available, tell the user to create the PR manually and provide the URL:
