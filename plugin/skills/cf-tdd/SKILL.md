@@ -1,6 +1,11 @@
 ---
 name: cf-tdd
-description: Use when writing new production code, adding features, or implementing changes
+description: >
+  Use when writing new production code, adding features, implementing changes, or refactoring
+  existing code — e.g. "refactor this", "clean up this code", "extract this into a module",
+  "restructure", "simplify this function", "break this up". The TDD cycle (RED → GREEN →
+  REFACTOR) applies to both new code and refactoring — existing tests must pass before AND
+  after any refactor.
 user-invocable: false
 ---
 

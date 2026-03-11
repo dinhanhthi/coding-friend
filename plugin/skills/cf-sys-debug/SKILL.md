@@ -20,7 +20,7 @@ If output is not empty, integrate the returned sections:
 
 If you've attempted 3+ fixes and the bug persists, **stop**. The problem is architectural, not local. Step back and re-examine your assumptions.
 
-## 5-Phase Process
+## 4-Phase Process + Documentation
 
 ### Phase 1: Root Cause Investigation
 

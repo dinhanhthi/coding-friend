@@ -85,7 +85,7 @@ coding-friend/
 
 ---
 
-## Skills Architecture (15 skills)
+## Skills Architecture (16 skills)
 
 ### Reference Skills (4) — Auto-loaded when relevant
 
@@ -96,23 +96,24 @@ coding-friend/
 | `cf-auto-review`  | During code review   | 4-layer: plan, quality, security, testing   |
 | `cf-verification` | Before claiming done | Gate: no claims without fresh evidence      |
 
-Note: `cf-learn` is also auto-invoked when substantial new knowledge is detected in conversation.
+Note: `cf-learn`, `cf-remember`, `cf-review`, `cf-optimize`, `cf-plan`, and `cf-fix` are also auto-invoked when relevant context is detected.
 
-### Task Skills (11) — User-triggered via `/slash`
+### Task Skills (12) — User-triggered via `/slash`
 
-| Skill         | Command                 | Key Feature                                                               |
-| ------------- | ----------------------- | ------------------------------------------------------------------------- |
-| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                                      |
-| `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                    |
-| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent                                     |
-| `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                        |
-| `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                               |
-| `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures                 |
-| `cf-ask`      | `/cf-ask [question]`    | Quick Q&A about codebase → docs/memory/                                   |
-| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement (also auto-invoked) |
-| `cf-remember` | `/cf-remember [topic]`  | Extract project knowledge → docs/memory/                                  |
-| `cf-learn`    | `/cf-learn [topic]`     | Extract learnings (configurable output, language, categories)             |
-| `cf-research` | `/cf-research [topic]`  | In-depth research with web search → docs/research/                        |
+| Skill         | Command                 | Key Feature                                                                |
+| ------------- | ----------------------- | -------------------------------------------------------------------------- |
+| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                                       |
+| `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                     |
+| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent (also auto-invoked)                  |
+| `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                         |
+| `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                                |
+| `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures                  |
+| `cf-ask`      | `/cf-ask [question]`    | Quick Q&A about codebase → docs/memory/                                    |
+| `cf-optimize` | `/cf-optimize [target]` | Structured optimization with before/after measurement (also auto-invoked)  |
+| `cf-remember` | `/cf-remember [topic]`  | Extract project knowledge for AI recall → docs/memory/ (also auto-invoked) |
+| `cf-learn`    | `/cf-learn [topic]`     | Extract learnings for human learning (configurable output, language)       |
+| `cf-research` | `/cf-research [topic]`  | In-depth research with web search → docs/research/                         |
+| `cf-session`  | `/cf-session [label]`   | Save session to docs/sessions/ for cross-machine resume                    |
 
 ### Frontmatter Configuration
 
@@ -134,11 +135,11 @@ name: cf-verification
 description: Verify before claiming work is complete
 user-invocable: false
 ---
-# Forked skill (runs in subagent)
+# Forked skill (runs in subagent, also auto-invoked)
 ---
 name: cf-review
-description: Dispatch code review to subagent
-disable-model-invocation: true
+description: Dispatch code review to a subagent. Use when the user wants code reviewed...
+user-invocable: true
 context: fork
 agent: cf-code-reviewer
 ---
@@ -298,9 +299,9 @@ stripFrontmatter(content) → markdownBody
 
 | Decision                                | Rationale                                                                                      |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 15 skills total                         | 5 reference + 10 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
+| 16 skills total                         | 4 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
-| 3 agents only                           | cf-code-reviewer, cf-implementer, cf-planner covers 90% of cases                               |
+| 6 agents                                | cf-code-reviewer, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep           |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
 | /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
 | context: fork for /cf-review            | Isolate review from main context window                                                        |

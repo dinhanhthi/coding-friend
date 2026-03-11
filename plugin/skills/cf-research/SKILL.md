@@ -1,6 +1,12 @@
 ---
 name: cf-research
-description: In-depth research on a topic with web search and structured output
+description: >
+  In-depth research on a topic with web search and structured output. Use when the user wants
+  deep research before building — e.g. "research this", "look into this library", "investigate
+  how X works", "compare these options", "what are the best practices for", "deep dive into",
+  "study this technology", "analyze this repo", "explore the ecosystem around". Also triggers
+  when the user needs to understand a technology, library, or architecture pattern in depth
+  before making decisions.
 disable-model-invocation: true
 ---
 
@@ -108,70 +114,7 @@ docs/research/<slug>/
 
 ## Research Part Template
 
-````markdown
-# <Part Title>
-
-## Key Questions
-
-- <question this part answers>
-
-## Findings
-
-### <Subtopic 1>
-
-<detailed findings with specifics>
-
-### <Subtopic 2>
-
-<detailed findings with specifics>
-
-## Code Examples
-
-```<language>
-// relevant code snippets if applicable
-```
-````
-
-## Sources
-
-- [Source title](URL)
-- [Source title](URL)
-
-## Notes
-
-- <additional observations>
-- <caveats or limitations>
-
-````
-
-## Summary Template
-
-```markdown
-# Research: <Topic>
-
-**Date:** YYYY-MM-DD
-**Scope:** <1-2 sentences describing what was researched>
-
-## Overview
-<3-5 sentence summary of the entire research>
-
-## Key Findings
-1. <most important finding>
-2. <second most important>
-3. <third most important>
-
-## Parts
-| # | Document | Description |
-|---|----------|-------------|
-| 1 | [Part name](01-part-name.md) | Brief description |
-| 2 | [Part name](02-part-name.md) | Brief description |
-
-## Open Questions
-- <things that need further investigation>
-
-## Recommended Next Steps
-- <actionable suggestions>
-````
+See `${CLAUDE_PLUGIN_ROOT}/skills/cf-research/references/templates.md` for the full Research Part Template and Summary Template. The subagent should read that file before writing.
 
 ## Rules
 

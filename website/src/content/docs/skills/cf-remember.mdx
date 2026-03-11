@@ -4,7 +4,7 @@ description: "Capture project knowledge for AI memory across sessions."
 keywords: [memory, project knowledge, documentation, cf-remember]
 ---
 
-The `/cf-remember` skill captures important project knowledge and saves it for future reference in `docs/memory/`. In subsequent sessions, the AI can read and apply this knowledge, accelerating work.
+The `/cf-remember` skill captures important project knowledge and saves it for AI recall in future sessions in `docs/memory/`. Unlike [`/cf-learn`](/docs/skills/cf-learn/) (educational notes for humans), this saves project context — conventions, decisions, feature flows, gotchas — that Coding Friend and Claude Code can reference later.
 
 ## Usage
 
@@ -75,6 +75,10 @@ Document body includes:
 - **Why** (reasoning and trade-offs)
 - **How** (code examples and implementation)
 - **Related patterns** (cross-references)
+
+## Auto-Invocation
+
+`cf-remember` also activates automatically when the conversation produces significant project knowledge worth preserving — architecture decisions, non-obvious conventions, complex feature flows, or important gotchas that would save time in future sessions. It does NOT auto-invoke for trivial changes.
 
 ## When to Use
 

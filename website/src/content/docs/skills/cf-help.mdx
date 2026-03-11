@@ -44,6 +44,26 @@ These are two different things:
 
 In short: `/cf-help` is an AI-powered assistant that explains how Coding Friend works, while `cf help` is standard CLI usage output from the `coding-friend-cli` tool.
 
+## Common Workflows
+
+If you ask how skills work together, `/cf-help` presents these common workflows:
+
+- **Build a feature:** `/cf-plan` → implement → `/cf-review` → `/cf-commit` → `/cf-ship`
+- **Fix a bug:** `/cf-fix` → (auto: review) → `/cf-commit`
+- **Quick question:** `/cf-ask` → answer saved to docs/memory/
+- **Deep research:** `/cf-research` → `/cf-plan` → implement
+- **End of session:** `/cf-remember` (project context for AI) + `/cf-learn` (educational notes for human)
+- **Optimize:** `/cf-optimize` → baseline → fix → measure → compare
+
+## Troubleshooting
+
+`/cf-help` can also answer troubleshooting questions:
+
+- **Skill not triggering?** Check description in SKILL.md — use `/cf-<skill-name>` to trigger manually.
+- **Custom guide not loading?** Verify the path: `.coding-friend/skills/<skill-name>-custom/SKILL.md`.
+- **Config not applied?** Local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`. Check both.
+- **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
+
 ## Tips
 
 - Type `/cf-help` with no arguments for a full overview of available commands
