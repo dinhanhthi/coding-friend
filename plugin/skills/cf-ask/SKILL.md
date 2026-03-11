@@ -1,6 +1,11 @@
 ---
 name: cf-ask
-description: Quick Q&A about codebase — explores code to answer, saves to docs/memory
+description: >
+  Quick Q&A about codebase — explores code to answer, saves to docs/memory. Use when the user
+  asks a focused question about the project — e.g. "how does X work?", "where is Y defined?",
+  "what's the flow for Z?", "explain this module", "how are these connected?", "what pattern
+  does this use?", "why is this done this way?". Unlike /cf-research (deep multi-doc output),
+  this gives a single focused answer.
 disable-model-invocation: true
 ---
 

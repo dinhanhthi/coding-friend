@@ -1,6 +1,15 @@
 ---
 name: cf-remember
-description: Extract project knowledge from conversation to docs/memory
+description: >
+  Extract project knowledge from conversation to docs/memory — for AI recall in future sessions.
+  Use when the user wants to save project context, capture decisions, document conventions, or
+  preserve knowledge from the current session — e.g. "remember this", "save this to memory",
+  "document what we did", "capture this decision", "write this down", "save for later",
+  "don't forget", "note this", "record this convention", "preserve this knowledge".
+  Auto-invoke when the conversation produces significant project knowledge worth preserving —
+  architecture decisions, non-obvious conventions, complex feature flows, or important gotchas
+  that would save time in future sessions. Do NOT auto-invoke for trivial changes.
+  Unlike /cf-learn (educational notes for humans), this saves project context for AI recall.
 ---
 
 # /cf-remember

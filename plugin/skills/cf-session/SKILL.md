@@ -1,7 +1,12 @@
 ---
 name: cf-session
-description: Save the current Claude Code conversation/session to docs/sessions/ so it can be resumed on another machine with `cf session load` + `claude --resume`
+description: >
+  Save the current Claude Code session to docs/sessions/ for cross-machine resume. Use when
+  the user wants to save their session — e.g. "save this session", "I want to continue on
+  another machine", "save my progress", "export this conversation", "sync this session",
+  "bookmark this session". Pairs with `cf session load` + `claude --resume` on the target machine.
 disable-model-invocation: true
+model: haiku
 tools: [Bash, Read]
 ---
 
@@ -38,33 +43,18 @@ mkdir -p "$CWD/{docsDir}/sessions"
 
 ### Step 2: Detect Active Session
 
-The current project path is the working directory. Find the most recently modified session JSONL file:
+Run the detection script. It outputs two lines: the full JSONL path and the session ID.
 
 ```bash
-CWD=$(pwd)
-# Encode project path: replace / with -
-ENCODED=$(echo "$CWD" | sed 's|/|-|g')
-SESSION_DIR="$HOME/.claude/projects/$ENCODED"
-
-if [ ! -d "$SESSION_DIR" ]; then
-  echo "ERROR: No session directory found at $SESSION_DIR"
-  exit 1
-fi
-
-# List JSONL files sorted by modification time (newest first), skip agent-* files
-LATEST=$(ls -t "$SESSION_DIR"/*.jsonl 2>/dev/null | grep -v '/agent-' | head -1)
-
-if [ -z "$LATEST" ]; then
-  echo "ERROR: No session files found in $SESSION_DIR"
-  exit 1
-fi
-
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+OUTPUT=$(bash "$CF_SESSION_SCRIPTS/detect-session.sh")
+LATEST=$(echo "$OUTPUT" | head -1)
+SESSION_ID=$(echo "$OUTPUT" | tail -1)
 echo "Detected session: $LATEST"
-SESSION_ID=$(basename "$LATEST" .jsonl)
 echo "Session ID: $SESSION_ID"
 ```
 
-If no session is found, report the error clearly and stop.
+If the script exits with an error, report it clearly and stop.
 
 ### Step 3: Get Session Label
 
@@ -79,64 +69,22 @@ Use the provided label, or default to `session-YYYY-MM-DD` using today's date.
 Extract the first user message from the JSONL for preview:
 
 ```bash
-PREVIEW=$(python3 -c "
-import json, sys
-try:
-    with open('$LATEST') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entry = json.loads(line)
-                if entry.get('type') == 'user':
-                    msg = entry.get('message', {})
-                    content = msg.get('content', '')
-                    if isinstance(content, str) and content.strip():
-                        print(content.strip()[:200])
-                        sys.exit(0)
-            except Exception:
-                continue
-    print('(preview unavailable)')
-except Exception:
-    print('(preview unavailable)')
-" 2>/dev/null || echo "(preview unavailable)")
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+PREVIEW=$(python3 "$CF_SESSION_SCRIPTS/extract-preview.py" "$LATEST")
 echo "Preview: $PREVIEW"
 ```
 
 ### Step 5: Save Session to Sessions Folder
 
+Run the save script with all values as arguments:
+
 ```bash
-SESSIONS_DIR="<from Step 1>"
-LABEL="<from Step 3>"
-SESSION_ID="<from Step 2>"
-LATEST="<from Step 2>"
-PROJECT_PATH=$(pwd)
-MACHINE=$(hostname)
-SAVED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-DEST_DIR="$SESSIONS_DIR/$SESSION_ID"
-mkdir -p "$DEST_DIR"
-
-# Copy JSONL
-cp "$LATEST" "$DEST_DIR/session.jsonl"
-
-# Write metadata
-python3 -c "
-import json
-meta = {
-    'sessionId': '$SESSION_ID',
-    'label': '$LABEL',
-    'projectPath': '$PROJECT_PATH',
-    'savedAt': '$SAVED_AT',
-    'machine': '$MACHINE',
-    'previewText': $(python3 -c "import json; print(json.dumps('$PREVIEW'))")
-}
-with open('$DEST_DIR/meta.json', 'w') as f:
-    json.dump(meta, f, indent=2)
-print('meta.json written')
-"
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
+bash "$CF_SESSION_SCRIPTS/save-session.sh" \
+  "$SESSIONS_DIR" "$SESSION_ID" "$LABEL" "$LATEST" "$PREVIEW"
 ```
+
+This copies the JSONL and writes `meta.json` with session metadata. All values are passed as command-line arguments to avoid injection.
 
 ### Step 6: Confirm Success
 

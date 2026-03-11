@@ -17,7 +17,7 @@ The `/cf-ship` skill automates the final steps of feature delivery: verifying te
 1. **Verifies** — Runs the full [`cf-verification`](/docs/skills/cf-verification/) checklist (tests, build, linter) — stops and fixes if anything fails
 2. **Commits** — If there are uncommitted changes, runs the [`/cf-commit`](/docs/skills/cf-commit/) workflow using your hint
 3. **Pushes** — Pushes the branch to origin — if the remote is ahead, rebases first then retries
-4. **Creates PR** — Opens a pull request via `gh` CLI if on a feature branch (not main/master). Falls back to a manual link if `gh` is not installed
+4. **Creates PR** — Opens a pull request via `gh` CLI if on a feature branch. If on main/master, warns and skips. PR title uses conventional commit style (under 70 chars). Falls back to a manual link if `gh` is not installed
 5. **Reports** — Shows the commit SHA, push result, and PR URL
 
 ## Examples
