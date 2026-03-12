@@ -19,13 +19,19 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall disable enable init config host mcp permission statusline update dev session"
+  local commands="install uninstall disable enable init config host mcp memory permission statusline update dev session"
   local scope_flags="--user --global --project --local"
   local update_flags="--cli --plugin --statusline --user --global --project --local"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
     COMPREPLY=($(compgen -W "on off status restart sync update" -- "$cur"))
+    return
+  fi
+
+  # Subcommands for 'memory'
+  if [[ "\${COMP_WORDS[1]}" == "memory" && \${COMP_CWORD} -eq 2 ]]; then
+    COMPREPLY=($(compgen -W "status search list mcp" -- "$cur"))
     return
   fi
 
@@ -70,6 +76,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'config:Manage Coding Friend configuration'
     'host:Build and serve learning docs as a static website'
     'mcp:Setup MCP server for learning docs'
+    'memory:AI memory system — store and search project knowledge'
     'permission:Manage Claude Code permission rules for Coding Friend'
     'statusline:Setup coding-friend statusline in Claude Code'
     'update:Update coding-friend plugin and refresh statusline'
@@ -113,6 +120,15 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'update:Update local dev plugin to latest version'
     )
     _describe 'subcommand' subcommands
+  elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "memory" ]]; then
+    local -a subcommands
+    subcommands=(
+      'status:Show memory system status'
+      'search:Search memories by query'
+      'list:List all stored memories'
+      'mcp:Show MCP server setup instructions'
+    )
+    _describe 'subcommand' subcommands
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "session" ]]; then
     local -a subcommands
     subcommands=(
@@ -141,6 +157,7 @@ complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend i
 complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
 complete -c cf -n "__fish_use_subcommand" -a host -d "Build and serve learning docs as a static website"
 complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learning docs"
+complete -c cf -n "__fish_use_subcommand" -a memory -d "AI memory system — store and search project knowledge"
 complete -c cf -n "__fish_use_subcommand" -a permission -d "Manage Claude Code permission rules"
 complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend statusline in Claude Code"
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
@@ -166,6 +183,11 @@ complete -c cf -n "__fish_seen_subcommand_from dev" -a status -d "Show current d
 complete -c cf -n "__fish_seen_subcommand_from dev" -a restart -d "Restart dev mode"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a sync -d "Sync local plugin files"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local dev plugin"
+# Memory subcommands
+complete -c cf -n "__fish_seen_subcommand_from memory" -a status -d "Show memory system status"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a search -d "Search memories by query"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List all stored memories"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a mcp -d "Show MCP server setup instructions"
 # Session subcommands
 complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
 complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from docs/sessions/"
@@ -176,14 +198,18 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','permission','statusline','update','dev','session')
+  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
+  $memorySubcommands = @('status','search','list','mcp')
   $sessionSubcommands = @('save','load')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')
   $words = $commandAst.CommandElements
   if ($words.Count -ge 2 -and $words[1].ToString() -eq 'dev') {
     $devSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'memory') {
+    $memorySubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'session') {
     $sessionSubcommands | Where-Object { $_ -like "$wordToComplete*" } |

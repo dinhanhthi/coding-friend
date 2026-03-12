@@ -167,6 +167,53 @@ session
     await sessionLoadCommand();
   });
 
+const memory = program
+  .command("memory")
+  .description("AI memory system — store and search project knowledge");
+
+program.addHelpText(
+  "after",
+  `
+Memory subcommands:
+  memory status       Show memory system status (tier, doc count)
+  memory search       Search memories by query
+  memory list         List all stored memories
+  memory mcp          Show MCP server setup instructions`,
+);
+
+memory
+  .command("status")
+  .description("Show memory system status")
+  .action(async () => {
+    const { memoryStatusCommand } = await import("./commands/memory.js");
+    await memoryStatusCommand();
+  });
+
+memory
+  .command("search")
+  .description("Search memories by query")
+  .argument("<query>", "search query")
+  .action(async (query: string) => {
+    const { memorySearchCommand } = await import("./commands/memory.js");
+    await memorySearchCommand(query);
+  });
+
+memory
+  .command("list")
+  .description("List all stored memories")
+  .action(async () => {
+    const { memoryListCommand } = await import("./commands/memory.js");
+    await memoryListCommand();
+  });
+
+memory
+  .command("mcp")
+  .description("Show MCP server setup instructions")
+  .action(async () => {
+    const { memoryMcpCommand } = await import("./commands/memory.js");
+    await memoryMcpCommand();
+  });
+
 const dev = program.command("dev").description("Development mode commands");
 
 program.addHelpText(

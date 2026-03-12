@@ -5,10 +5,12 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Resolve path to a lib package (learn-host or learn-mcp).
+ * Resolve path to a lib package (learn-host, learn-mcp, or cf-memory).
  * Lives at cli/lib/<name> in both development and production.
  */
-export function getLibPath(name: "learn-host" | "learn-mcp"): string {
+export function getLibPath(
+  name: "learn-host" | "learn-mcp" | "cf-memory",
+): string {
   // Production (bundled): __dirname = dist/ → ../lib/<name>
   const bundled = join(__dirname, "..", "lib", name);
   if (existsSync(bundled)) return bundled;
