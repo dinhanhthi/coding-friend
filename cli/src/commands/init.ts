@@ -43,6 +43,7 @@ import {
   formatScopeLabel,
   getMergedValue,
   applyDocsDirChange,
+  ensureDocsFolders,
 } from "../lib/prompt-utils.js";
 
 const GITIGNORE_START = "# >>> coding-friend managed";
@@ -281,7 +282,17 @@ async function stepDocsDir(
   );
 
   const globalValue = globalCfg?.docsDir;
-  if (globalValue && (await offerGlobalShortcut(globalValue))) return;
+  if (globalValue && (await offerGlobalShortcut(globalValue))) {
+    const DOCS_SUBFOLDERS = [
+      "plans",
+      "memory",
+      "research",
+      "learn",
+      "sessions",
+    ];
+    ensureDocsFolders(globalValue, DOCS_SUBFOLDERS);
+    return;
+  }
 
   const value = await input({
     message: "Docs folder name:",
