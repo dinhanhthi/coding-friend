@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.16.0 (unpublished)
+## v1.16.0 (2026-03-13)
 
 - Improve `cf init` to be more interactive with step-by-step guided setup ([#d5bbc9c](https://github.com/dinhanhthi/coding-friend/commit/d5bbc9c))
 - Fix `cf init` not creating docs folder when user chooses "Use global setting" shortcut for `docsDir` ([#5e12415](https://github.com/dinhanhthi/coding-friend/commit/5e12415))
