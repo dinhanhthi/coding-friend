@@ -34,7 +34,11 @@ vi.mock("@inquirer/prompts", () => ({
   Separator: class Separator {},
 }));
 
-import { applyDocsDirChange, resolveScope } from "../prompt-utils.js";
+import {
+  applyDocsDirChange,
+  ensureDocsFolders,
+  resolveScope,
+} from "../prompt-utils.js";
 import * as paths from "../paths.js";
 import { log } from "../log.js";
 import { select } from "@inquirer/prompts";
@@ -236,6 +240,45 @@ describe("applyDocsDirChange — global scope, no local docsDir", () => {
 
     expect(existsSync(oldDir)).toBe(false);
     expect(existsSync(newPath)).toBe(true);
+  });
+});
+
+// ─── ensureDocsFolders ───────────────────────────────────────────────
+
+describe("ensureDocsFolders", () => {
+  const SUBFOLDERS = ["plans", "memory", "research", "learn", "sessions"];
+
+  it("creates docs folder and all subfolders when nothing exists", () => {
+    ensureDocsFolders("docs", SUBFOLDERS);
+
+    expect(existsSync(join(projectDir, "docs"))).toBe(true);
+    for (const sub of SUBFOLDERS) {
+      expect(existsSync(join(projectDir, "docs", sub))).toBe(true);
+    }
+  });
+
+  it("creates only missing subfolders when docs folder already exists", () => {
+    makeFolder("docs");
+    mkdirSync(join(projectDir, "docs", "memory"), { recursive: true });
+
+    ensureDocsFolders("docs", SUBFOLDERS);
+
+    for (const sub of SUBFOLDERS) {
+      expect(existsSync(join(projectDir, "docs", sub))).toBe(true);
+    }
+  });
+
+  it("does not fail when docs folder and all subfolders already exist", () => {
+    makeFolder("docs");
+    for (const sub of SUBFOLDERS) {
+      mkdirSync(join(projectDir, "docs", sub), { recursive: true });
+    }
+
+    ensureDocsFolders("docs", SUBFOLDERS);
+
+    for (const sub of SUBFOLDERS) {
+      expect(existsSync(join(projectDir, "docs", sub))).toBe(true);
+    }
   });
 });
 
