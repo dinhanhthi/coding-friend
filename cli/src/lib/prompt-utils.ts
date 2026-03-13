@@ -192,6 +192,14 @@ export function getMergedValue(
   return globalCfg ? (globalCfg as Record<string, unknown>)[key] : undefined;
 }
 
+export function ensureDocsFolders(docsDir: string, subfolders: string[]): void {
+  if (!existsSync(docsDir)) {
+    run("mkdir", ["-p", docsDir]);
+    log.success(`Created "${docsDir}"`);
+  }
+  createSubfolders(docsDir, subfolders);
+}
+
 function createSubfolders(docsDir: string, subfolders: string[]): void {
   const created: string[] = [];
   for (const sub of subfolders) {
