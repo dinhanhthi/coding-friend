@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.16.0 (unpublished)
+
+- Improve `cf init` to be more interactive with step-by-step guided setup ([#d5bbc9c](https://github.com/dinhanhthi/coding-friend/commit/d5bbc9c))
+- Fix `cf init` not creating docs folder when user chooses "Use global setting" shortcut for `docsDir` ([#5e12415](https://github.com/dinhanhthi/coding-friend/commit/5e12415))
+- Add `ensureDocsFolders()` helper with regression tests for docs folder creation ([#5e12415](https://github.com/dinhanhthi/coding-friend/commit/5e12415))
+
 ## v1.15.0 (2026-03-10)
 
 - Show plugin version in `cf dev on`, `cf dev restart`, and `cf dev update` logs ([#4e1d141](https://github.com/dinhanhthi/coding-friend/commit/4e1d141))
