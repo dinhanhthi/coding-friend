@@ -112,11 +112,7 @@ export class MiniSearchBackend implements MemoryBackend {
       }));
     }
 
-    let results = this.index.search(query, {
-      boost: { title: 10, tags: 6, description: 4, content: 1 },
-      fuzzy: 0.2,
-      prefix: true,
-    });
+    let results = this.index.search(query);
 
     // Filter by type
     if (input.type) {

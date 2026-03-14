@@ -16,12 +16,28 @@ export function setupWatcher(
 ): WatcherHandle {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const watchers: fs.FSWatcher[] = [];
+  const watchedDirs = new Set<string>();
 
   function scheduleRebuild() {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       backend.rebuild().catch(() => {});
     }, debounceMs);
+  }
+
+  function watchSubdir(dirPath: string) {
+    if (watchedDirs.has(dirPath)) return;
+    watchedDirs.add(dirPath);
+    try {
+      const w = fs.watch(dirPath, { persistent: false }, (_, filename) => {
+        if (filename && filename.endsWith(".md")) {
+          scheduleRebuild();
+        }
+      });
+      watchers.push(w);
+    } catch {
+      watchedDirs.delete(dirPath);
+    }
   }
 
   // Watch the root docs dir
@@ -35,8 +51,12 @@ export function setupWatcher(
             scheduleRebuild();
             // If a new directory appeared, watch it too
             const subPath = path.join(docsDir, filename);
-            if (fs.existsSync(subPath) && fs.statSync(subPath).isDirectory()) {
-              watchSubdir(subPath);
+            try {
+              if (fs.statSync(subPath).isDirectory()) {
+                watchSubdir(subPath);
+              }
+            } catch {
+              // File may have been deleted between event and stat
             }
           }
         },
@@ -54,19 +74,6 @@ export function setupWatcher(
           watchSubdir(path.join(docsDir, entry.name));
         }
       }
-    } catch {
-      // Ignore
-    }
-  }
-
-  function watchSubdir(dirPath: string) {
-    try {
-      const w = fs.watch(dirPath, { persistent: false }, (_, filename) => {
-        if (filename && filename.endsWith(".md")) {
-          scheduleRebuild();
-        }
-      });
-      watchers.push(w);
     } catch {
       // Ignore
     }
