@@ -175,9 +175,12 @@ program.addHelpText(
   "after",
   `
 Memory subcommands:
-  memory status       Show memory system status (tier, doc count)
+  memory status       Show memory system status (tier, doc count, daemon)
   memory search       Search memories by query
   memory list         List all stored memories
+  memory start        Start the memory daemon (Tier 2)
+  memory stop         Stop the memory daemon
+  memory rebuild      Rebuild the daemon search index
   memory mcp          Show MCP server setup instructions`,
 );
 
@@ -204,6 +207,30 @@ memory
   .action(async () => {
     const { memoryListCommand } = await import("./commands/memory.js");
     await memoryListCommand();
+  });
+
+memory
+  .command("start")
+  .description("Start the memory daemon (Tier 2 — MiniSearch)")
+  .action(async () => {
+    const { memoryStartCommand } = await import("./commands/memory.js");
+    await memoryStartCommand();
+  });
+
+memory
+  .command("stop")
+  .description("Stop the memory daemon")
+  .action(async () => {
+    const { memoryStopCommand } = await import("./commands/memory.js");
+    await memoryStopCommand();
+  });
+
+memory
+  .command("rebuild")
+  .description("Rebuild the daemon search index")
+  .action(async () => {
+    const { memoryRebuildCommand } = await import("./commands/memory.js");
+    await memoryRebuildCommand();
   });
 
 memory

@@ -80,7 +80,7 @@ export class MarkdownBackend implements MemoryBackend {
       .map((d) => d.name);
   }
 
-  private getAllMeta(): MemoryMeta[] {
+  getAllMeta(): MemoryMeta[] {
     const metas: MemoryMeta[] = [];
 
     for (const category of this.getCategories()) {
@@ -217,7 +217,7 @@ export class MarkdownBackend implements MemoryBackend {
     return results.slice(0, limit);
   }
 
-  async retrieve(id: string): Promise<Memory | null> {
+  retrieveSync(id: string): Memory | null {
     const [category, slug] = id.split("/");
     if (!category || !slug) return null;
 
@@ -234,6 +234,10 @@ export class MarkdownBackend implements MemoryBackend {
       frontmatter,
       content: raw.content,
     };
+  }
+
+  async retrieve(id: string): Promise<Memory | null> {
+    return this.retrieveSync(id);
   }
 
   async list(input: ListInput): Promise<MemoryMeta[]> {

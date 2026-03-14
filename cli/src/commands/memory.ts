@@ -1,5 +1,6 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
+import { spawn } from "child_process";
 import { resolveDocsDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
@@ -46,15 +47,44 @@ function ensureBuilt(mcpDir: string): void {
   }
 }
 
+function formatUptime(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
+}
+
 export async function memoryStatusCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const docCount = countMdFiles(memoryDir);
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  // Dynamically import daemon process module to check status
+  const { isDaemonRunning, getDaemonInfo } = await import(
+    join(mcpDir, "dist/daemon/process.js")
+  );
+
+  const running = await isDaemonRunning();
+  const daemonInfo = getDaemonInfo();
+
+  const tierLabel = running
+    ? chalk.cyan("Tier 2 (MiniSearch + Daemon)")
+    : chalk.cyan("Tier 3 (Markdown)");
 
   console.log("=== 🧠 Coding Friend Memory ===");
   console.log();
-  log.info(`Tier: ${chalk.cyan("Tier 3 (Markdown)")}`);
+  log.info(`Tier: ${tierLabel}`);
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
   log.info(`Memories: ${chalk.green(String(docCount))}`);
+
+  if (running && daemonInfo) {
+    const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
+    log.info(
+      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)})`,
+    );
+  } else {
+    log.info(`Daemon: ${chalk.dim("stopped")}`);
+  }
 
   if (existsSync(memoryDir)) {
     const categories = readdirSync(memoryDir, { withFileTypes: true })
@@ -144,6 +174,105 @@ export async function memoryListCommand(): Promise<void> {
 
   if (result !== null) {
     console.log(result);
+  }
+}
+
+export async function memoryStartCommand(): Promise<void> {
+  const memoryDir = getMemoryDir();
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  const { isDaemonRunning, getDaemonInfo } = await import(
+    join(mcpDir, "dist/daemon/process.js")
+  );
+
+  if (await isDaemonRunning()) {
+    const info = getDaemonInfo();
+    log.info(`Daemon already running (PID ${info?.pid})`);
+    return;
+  }
+
+  const entryPath = join(mcpDir, "dist/daemon/entry.js");
+  if (!existsSync(entryPath)) {
+    log.error("Daemon entry point not found. Try rebuilding: npm run build");
+    process.exit(1);
+  }
+
+  log.step("Starting memory daemon...");
+
+  const child = spawn("node", [entryPath, memoryDir], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env },
+  });
+  child.unref();
+
+  // Wait for daemon to be ready (max 5 seconds)
+  for (let i = 0; i < 50; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (await isDaemonRunning()) {
+      const info = getDaemonInfo();
+      log.success(`Daemon started (PID ${info?.pid})`);
+      log.info(`Tier: ${chalk.cyan("Tier 2 (MiniSearch + Daemon)")}`);
+      return;
+    }
+  }
+
+  log.error("Daemon did not start within 5 seconds");
+  process.exit(1);
+}
+
+export async function memoryStopCommand(): Promise<void> {
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  const { stopDaemon, isDaemonRunning } = await import(
+    join(mcpDir, "dist/daemon/process.js")
+  );
+
+  if (!(await isDaemonRunning())) {
+    log.info("Daemon is not running.");
+    return;
+  }
+
+  log.step("Stopping memory daemon...");
+  const stopped = await stopDaemon();
+
+  if (stopped) {
+    log.success("Daemon stopped.");
+  } else {
+    log.error("Failed to stop daemon.");
+  }
+}
+
+export async function memoryRebuildCommand(): Promise<void> {
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  const { isDaemonRunning, getDaemonPaths } = await import(
+    join(mcpDir, "dist/daemon/process.js")
+  );
+
+  if (!(await isDaemonRunning())) {
+    log.info("Daemon is not running. Nothing to rebuild.");
+    log.dim("Start the daemon first: cf memory start");
+    return;
+  }
+
+  const { DaemonClient } = await import(
+    join(mcpDir, "dist/lib/daemon-client.js")
+  );
+
+  const paths = getDaemonPaths();
+  const client = new DaemonClient(paths.socketPath);
+
+  log.step("Rebuilding search index...");
+  const rebuilt = await client.rebuild();
+
+  if (rebuilt) {
+    log.success("Index rebuilt.");
+  } else {
+    log.error("Rebuild failed or not supported.");
   }
 }
 
