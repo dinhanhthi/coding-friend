@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { MiniSearchBackend } from "../backends/minisearch.js";
+import type { MemoryBackend } from "../lib/backend.js";
 
 export interface WatcherHandle {
   close: () => void;
@@ -11,7 +11,7 @@ export interface WatcherHandle {
  */
 export function setupWatcher(
   docsDir: string,
-  backend: MiniSearchBackend,
+  backend: Required<Pick<MemoryBackend, "rebuild">>,
   debounceMs = 500,
 ): WatcherHandle {
   let timer: ReturnType<typeof setTimeout> | null = null;

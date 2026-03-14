@@ -18,4 +18,6 @@ export interface MemoryBackend {
   delete(id: string): Promise<boolean>;
   stats(): Promise<MemoryStats>;
   close(): Promise<void>;
+  /** Rebuild the search index from source files. Optional — not all backends support it. */
+  rebuild?(): Promise<void>;
 }
