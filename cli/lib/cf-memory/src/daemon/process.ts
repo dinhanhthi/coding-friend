@@ -107,19 +107,27 @@ export interface DaemonHandle {
 
 /**
  * Start the daemon HTTP server on a Unix Domain Socket.
- * Called in the daemon child process.
+ *
+ * Signal handling is NOT registered here — the caller owns that.
+ * Use the returned `close()` to trigger graceful shutdown.
  */
 export function startDaemonServer(
   backend: MemoryBackend,
-  opts?: { idleTimeoutMs?: number; paths?: DaemonPaths },
+  opts?: {
+    idleTimeoutMs?: number;
+    paths?: DaemonPaths;
+    onShutdown?: () => void;
+  },
 ): DaemonHandle {
   const paths = opts?.paths ?? getDaemonPaths();
   const idleTimeoutMs = opts?.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
   const { socketPath, pidFile } = paths;
 
-  // Clean up stale socket
-  if (fs.existsSync(socketPath)) {
+  // Clean up stale socket (catch ENOENT instead of TOCTOU check-then-act)
+  try {
     fs.unlinkSync(socketPath);
+  } catch {
+    // No stale socket — fine
   }
 
   const app = createDaemonApp(backend);
@@ -128,6 +136,7 @@ export function startDaemonServer(
   const server = http.createServer(listener);
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let shuttingDown = false;
 
   function resetIdleTimer() {
     if (idleTimer) clearTimeout(idleTimer);
@@ -150,7 +159,11 @@ export function startDaemonServer(
   });
 
   function shutdown() {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
     if (idleTimer) clearTimeout(idleTimer);
+    opts?.onShutdown?.();
     backend.close().catch(() => {});
     server.close(() => {
       cleanupDaemonFiles(paths);
@@ -159,9 +172,6 @@ export function startDaemonServer(
     // Force exit after 5 seconds
     setTimeout(() => process.exit(1), 5000).unref();
   }
-
-  process.on("SIGTERM", shutdown);
-  process.on("SIGINT", shutdown);
 
   return { close: shutdown, server };
 }

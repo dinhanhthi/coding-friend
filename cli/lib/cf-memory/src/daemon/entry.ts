@@ -22,20 +22,13 @@ const idleTimeoutMs = process.argv[3]
   : undefined;
 
 const backend = new MiniSearchBackend(resolvedDir);
+const watcher = setupWatcher(resolvedDir, backend);
 
 const { close } = startDaemonServer(backend, {
   idleTimeoutMs,
+  onShutdown: () => watcher.close(),
 });
 
-// Watch for file changes
-const watcher = setupWatcher(resolvedDir, backend);
-
-// Clean up watcher on shutdown
-const origClose = close;
-const wrappedClose = () => {
-  watcher.close();
-  origClose();
-};
-
-process.on("SIGTERM", wrappedClose);
-process.on("SIGINT", wrappedClose);
+// Single place for signal handling — no duplicates
+process.on("SIGTERM", close);
+process.on("SIGINT", close);
