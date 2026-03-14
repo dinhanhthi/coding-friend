@@ -15,6 +15,7 @@ import {
   prepareEmbeddingText,
 } from "./embeddings.js";
 import { EMBEDDING_DIMS } from "./schema.js";
+import { applyTemporalDecay } from "../../lib/temporal-decay.js";
 
 /** RRF fusion constant — higher = more weight to individual rankings */
 const RRF_K = 60;
@@ -75,6 +76,7 @@ export function ftsSearch(
   let sql = `
     SELECT
       m.id,
+      m.updated,
       bm25(memories_fts, 10.0, 4.0, 6.0, 1.0) AS rank,
       memories_fts.title AS fts_title,
       memories_fts.description AS fts_desc,
@@ -135,10 +137,12 @@ export function ftsSearch(
       }
       if (matchedOn.length === 0) matchedOn.push("content");
 
+      const rawScore = -(row.rank as number);
+      const decayedScore = applyTemporalDecay(rawScore, String(row.updated));
+
       results.push({
         id: String(row.id),
-        // BM25 returns negative scores (lower = better), so negate
-        score: -(row.rank as number),
+        score: decayedScore,
         matchedOn,
       });
     }
@@ -175,7 +179,8 @@ export async function vecSearch(
       sql = `
         SELECT
           v.memory_id AS id,
-          v.distance
+          v.distance,
+          m.updated
         FROM vec_memories v
         JOIN memories m ON m.id = v.memory_id
         WHERE v.embedding MATCH ? AND k = ? AND m.type = ?
@@ -186,8 +191,10 @@ export async function vecSearch(
       sql = `
         SELECT
           v.memory_id AS id,
-          v.distance
+          v.distance,
+          m.updated
         FROM vec_memories v
+        JOIN memories m ON m.id = v.memory_id
         WHERE v.embedding MATCH ? AND k = ?
         ORDER BY v.distance
       `;
@@ -201,12 +208,14 @@ export async function vecSearch(
       }
     ).all(...params);
 
-    return rows.map((row) => ({
-      id: String(row.id),
-      // Convert distance to similarity score (1 - cosine_distance)
-      score: 1 - (row.distance as number),
-      matchedOn: ["semantic"],
-    }));
+    return rows.map((row) => {
+      const rawScore = 1 - (row.distance as number);
+      return {
+        id: String(row.id),
+        score: applyTemporalDecay(rawScore, String(row.updated)),
+        matchedOn: ["semantic"],
+      };
+    });
   } catch {
     // sqlite-vec not available or query failed
     return [];

@@ -49,23 +49,23 @@ If output is not empty, integrate the returned sections into this workflow:
 2. If no question provided, ask the user what they want to know
 3. Identify keywords and likely relevant areas (modules, features, patterns)
 
-### Step 2: Check Existing Memory (Frontmatter Recall)
+### Step 2: Check Existing Memory (Memory Recall)
 
-Before exploring the codebase, search existing memory docs using a **3-tier grep** on frontmatter fields. Extract 2-3 keywords from the question. Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+Before exploring the codebase, search existing memory docs. Extract 2-3 keywords from the question.
 
-**Tier 1 — Grep descriptions** (cheapest):
+**Primary method — Memory MCP tool** (if `memory_search` tool is available):
 
-Use the Grep tool to search for `^description:` lines across `{docsDir}/memory/**/*.md`. Match against question keywords.
+Call the `memory_search` MCP tool with: `{ "query": "<keywords from question>", "limit": 5 }`
 
-Example: if question mentions "config", grep for files whose `description:` line contains "config".
+If the tool call fails (MCP not configured), fall back to the grep method below.
 
-**Tier 2 — Grep tags** (if Tier 1 has no matches):
+**Fallback — 3-tier grep** (if memory MCP unavailable):
 
-Use the Grep tool to search for `^tags:` lines across `{docsDir}/memory/**/*.md`. Match against question keywords.
+Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 
-**Tier 3 — Full-text grep** (last resort, if Tier 1 and 2 have no matches):
-
-Use the Grep tool to search file content for the keywords. Use `output_mode: "files_with_matches"` to get file paths only.
+1. Grep `^description:` lines across `{docsDir}/memory/**/*.md` — match against question keywords
+2. If no match, grep `^tags:` lines across `{docsDir}/memory/**/*.md`
+3. If no match, grep file content for the keywords (`output_mode: "files_with_matches"`)
 
 **After finding matches:**
 
@@ -183,6 +183,17 @@ existing_file_action: append
 ```
 
 When appending, also instruct cf-writer to update the `updated` date in the existing frontmatter.
+
+**MCP indexing** (if `memory_store` MCP tool is available):
+
+After saving the file via cf-writer, also call `memory_store` with:
+
+- type: "fact"
+- title/description/tags from the frontmatter above
+- content: the Q&A content
+- source: "conversation"
+
+This ensures the answer is both saved as a markdown file AND indexed in the memory search system. If the MCP tool is unavailable, the markdown file alone is sufficient.
 
 **Frontmatter rules:**
 

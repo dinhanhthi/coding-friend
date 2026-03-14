@@ -59,8 +59,19 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 - `learn.language` setting applies to `/cf-learn` notes (falls back to top-level `language`, then `en`)
 - Custom skill guides: loaded on-demand per skill via `plugin/lib/load-custom-guide.sh`
 
+## Memory System
+
+The memory system provides persistent project knowledge across sessions via MCP tools:
+
+- **MCP Tools**: `memory_store`, `memory_search`, `memory_retrieve`, `memory_list`, `memory_update`, `memory_delete`
+- **3-tier search**: SQLite hybrid (FTS5 + semantic) → MiniSearch (BM25 + fuzzy) → Markdown grep
+- **Auto-capture**: PreCompact hook saves session episodes (opt-in via `memory.autoCapture`)
+- **Smart capture**: cf-fix, cf-sys-debug, cf-review, cf-ask auto-index findings in memory
+
+Memory files live in `docs/memory/` organized by type: features/ (facts), conventions/ (preferences), decisions/ (context), bugs/ (episodes), infrastructure/ (procedures).
+
 ## CLI (coding-friend-cli)
 
-Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
+Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|start|stop|rebuild|init|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
 
 For details on any skill, read `plugin/skills/<name>/SKILL.md`.

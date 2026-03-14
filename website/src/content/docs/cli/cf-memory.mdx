@@ -1,0 +1,69 @@
+---
+title: "cf memory"
+description: "Manage the AI memory system — search, list, start/stop daemon, rebuild index"
+---
+
+# cf memory
+
+Manage the persistent AI memory system. Store, search, and recall project knowledge across Claude Code sessions.
+
+## Subcommands
+
+| Command                    | Description                                                      |
+| -------------------------- | ---------------------------------------------------------------- |
+| `cf memory status`         | Show memory tier, document count, and daemon state               |
+| `cf memory search <query>` | Search memories from the command line                            |
+| `cf memory list`           | List all stored memories                                         |
+| `cf memory start`          | Start the memory daemon (enables Tier 2 search)                  |
+| `cf memory stop`           | Stop the memory daemon                                           |
+| `cf memory rebuild`        | Rebuild the search index from markdown files                     |
+| `cf memory init`           | Initialize SQLite database and import existing memories (Tier 1) |
+
+## 3-Tier Architecture
+
+The memory system gracefully degrades across three tiers:
+
+| Tier                  | Backend                    | Search                                              | Requirements                     |
+| --------------------- | -------------------------- | --------------------------------------------------- | -------------------------------- |
+| **Tier 1 (full)**     | SQLite + FTS5 + sqlite-vec | Hybrid: BM25 keyword + semantic vector + RRF fusion | `cf memory init` (installs deps) |
+| **Tier 2 (lite)**     | MiniSearch daemon          | BM25 + fuzzy matching                               | `cf memory start`                |
+| **Tier 3 (markdown)** | Direct file I/O            | Substring grep on frontmatter + content             | None (always available)          |
+
+## Examples
+
+```bash
+# Check current status
+cf memory status
+
+# Search for auth-related memories
+cf memory search "authentication flow"
+
+# Start daemon for better search
+cf memory start
+
+# Initialize full SQLite backend
+cf memory init
+
+# Rebuild index after manual file edits
+cf memory rebuild
+```
+
+## Configuration
+
+In `.coding-friend/config.json`:
+
+```json
+{
+  "memory": {
+    "tier": "auto",
+    "daemon": { "idleTimeout": 30 },
+    "autoCapture": false,
+    "autoStart": false
+  }
+}
+```
+
+- `tier`: `"auto"` (detect best available), `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3)
+- `daemon.idleTimeout`: Minutes before daemon auto-stops (default: 30)
+- `autoCapture`: Enable PreCompact auto-capture of session episodes
+- `autoStart`: Auto-start daemon when MCP server connects

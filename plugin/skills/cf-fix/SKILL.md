@@ -40,16 +40,21 @@ If output is not empty, integrate the returned sections into this workflow:
 
 ### Step 3: Recall Past Bugs + Explore Relevant Code
 
-**3a. Check existing bug docs** (frontmatter recall):
+**3a. Check existing bug docs** (memory recall):
 
 Before exploring, search for related past bugs. Extract 2-3 keywords from the bug description.
 
+**Primary — Memory MCP** (if `memory_search` tool is available):
+Call `memory_search` with: `{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
+
+**Fallback — grep** (if memory MCP unavailable):
+Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+
 1. Grep `^description:` lines across `{docsDir}/memory/bugs/**/*.md` — match against bug keywords
 2. If no match, grep `^tags:` lines across `{docsDir}/memory/bugs/**/*.md`
-3. If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns
-4. Include any relevant findings as context for the explorer
 
-Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns.
+Include any relevant findings as context for the explorer.
 
 **3b. Explore relevant code** (via cf-explorer agent):
 
@@ -140,6 +145,9 @@ content: |
   tags: [tag1, tag2, tag3]
   created: YYYY-MM-DD
   updated: YYYY-MM-DD
+  type: episode
+  importance: 3
+  source: conversation
   ---
 
   # <Bug Title>
@@ -168,6 +176,8 @@ existing_file_action: skip
 
 - `description`: factual summary for grep recall. Good: `"Race condition in webhook handler causing duplicate payment processing"`. Bad: `"Fixed a bug"`.
 - `tags`: include error type, affected module, root cause category (e.g., `[race-condition, webhooks, payments]`)
+
+**Smart capture**: If the `memory_store` MCP tool is available, also call it with the same data (type: episode, source: auto-capture). This indexes the bug in the memory search system for faster future recall.
 
 ### Step 9: Auto-Review
 

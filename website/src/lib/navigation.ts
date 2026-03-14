@@ -52,6 +52,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf update", slug: "cli/cf-update" },
       { title: "cf dev", slug: "cli/cf-dev" },
       { title: "cf session", slug: "cli/cf-session" },
+      { title: "cf memory", slug: "cli/cf-memory" },
     ],
   },
   {
@@ -73,6 +74,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Hooks", slug: "reference/hooks" },
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
+      { title: "Memory System", slug: "reference/memory-system" },
     ],
   },
 ];

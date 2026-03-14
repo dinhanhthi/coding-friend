@@ -26,6 +26,13 @@ export function getLearnMcpChangelog(): string {
   );
 }
 
+export function getCfMemoryChangelog(): string {
+  return fs.readFileSync(
+    path.join(repoRoot, "cli/lib/cf-memory/CHANGELOG.md"),
+    "utf-8",
+  );
+}
+
 function classifyChange(line: string): ChangelogChange {
   const text = line.replace(/^-\s*/, "").trim();
 

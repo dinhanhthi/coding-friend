@@ -66,6 +66,10 @@ cf dev update        # Update local dev plugin to latest version (off + on)
 cf memory status     # Show memory system status and stats
 cf memory search     # Search memories by keyword
 cf memory list       # List all memories with filtering
+cf memory start      # Start memory daemon (enables Tier 2 search)
+cf memory stop       # Stop memory daemon
+cf memory rebuild    # Rebuild search index from markdown files
+cf memory init       # Initialize SQLite backend (Tier 1) and import memories
 cf memory mcp        # Show MCP server config for clients
 cf session save      # Save current Claude Code session to docs/sessions/
 cf session load      # Load a saved session from docs/sessions/
