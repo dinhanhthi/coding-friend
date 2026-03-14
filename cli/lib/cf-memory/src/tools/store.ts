@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { MemoryBackend } from "../lib/backend.js";
 import { MEMORY_TYPES } from "../lib/types.js";
+import { checkDuplicate } from "../lib/dedup.js";
 
 export function registerStore(server: McpServer, backend: MemoryBackend): void {
   server.tool(
@@ -27,7 +28,7 @@ export function registerStore(server: McpServer, backend: MemoryBackend): void {
         .describe("Source: conversation, auto-capture, manual"),
     },
     async ({ title, description, type, tags, content, importance, source }) => {
-      const memory = await backend.store({
+      const input = {
         title,
         description,
         type,
@@ -35,16 +36,32 @@ export function registerStore(server: McpServer, backend: MemoryBackend): void {
         content,
         importance,
         source,
-      });
+      };
+
+      let dedup: Awaited<ReturnType<typeof checkDuplicate>> | null = null;
+      try {
+        dedup = await checkDuplicate(backend, input);
+      } catch {
+        // Dedup is best-effort — don't block store on search errors
+      }
+
+      const memory = await backend.store(input);
+
+      const response: Record<string, unknown> = {
+        id: memory.id,
+        title: memory.frontmatter.title,
+        stored: true,
+      };
+
+      if (dedup?.isDuplicate) {
+        response.warning = `Near-duplicate found: ${dedup.similarId} (similarity: ${dedup.similarity.toFixed(2)}). Memory stored anyway.`;
+      }
+
       return {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(
-              { id: memory.id, title: memory.frontmatter.title, stored: true },
-              null,
-              2,
-            ),
+            text: JSON.stringify(response, null, 2),
           },
         ],
       };

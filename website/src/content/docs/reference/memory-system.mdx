@@ -1,0 +1,89 @@
+---
+title: "Memory System"
+description: "Architecture overview of the persistent AI memory system"
+---
+
+# Memory System
+
+The memory system gives Claude Code persistent project memory across sessions. It stores facts, preferences, decisions, debug episodes, and procedures as markdown files, with optional indexing for fast hybrid search.
+
+## Architecture
+
+```
+Claude Code Session
+        |
++-------+--------+
+|  MCP Server     | <- stdio transport
+|  (thin client)  |
++-------+--------+
+        |
+        v
++------------------------------------+
+|     Memory Daemon                  |
+|     (Hono + Unix Domain Socket)    |
+|                                    |
+|  Tier 1: SQLite + FTS5 + vec      |
+|  Tier 2: MiniSearch (in-memory)   |
+|  Tier 3: Markdown (file grep)     |
++------------------------------------+
+        |
+        v
++------------------+
+|  docs/memory/    |
+|  (source of truth)|
++------------------+
+```
+
+## Memory Types
+
+| Type         | Question it answers             | Example                                     |
+| ------------ | ------------------------------- | ------------------------------------------- |
+| `fact`       | "How does this work?"           | "Auth module uses JWT in httpOnly cookies"  |
+| `preference` | "How does the user want it?"    | "Always use async/await, never .then()"     |
+| `context`    | "What state is the project in?" | "Migrating from REST to GraphQL"            |
+| `episode`    | "What did we do before?"        | "Debugged CORS on /api/upload"              |
+| `procedure`  | "What steps to do X?"           | "Deploy: build -> ship -> merge -> release" |
+
+## MCP Tools
+
+| Tool              | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `memory_store`    | Store a new memory                        |
+| `memory_search`   | Search memories (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID               |
+| `memory_list`     | List memories with filtering              |
+| `memory_update`   | Update existing memory                    |
+| `memory_delete`   | Delete a memory                           |
+
+## Markdown Format
+
+```yaml
+---
+title: "API Authentication Pattern"
+description: "Auth module uses JWT tokens stored in httpOnly cookies with RS256"
+type: fact
+tags: [auth, jwt, api, security]
+importance: 3
+created: 2026-03-12
+updated: 2026-03-12
+source: conversation
+---
+```
+
+Memory files live in `docs/memory/` organized by category:
+
+- `features/` - facts
+- `conventions/` - preferences
+- `decisions/` - context
+- `bugs/` - episodes
+- `infrastructure/` - procedures
+
+## Search Modes
+
+The system automatically routes queries:
+
+- **Quoted strings** or code patterns - keyword search (FTS5)
+- **Questions** (who/what/why/how) - semantic search (vector)
+- **Default** - hybrid search (FTS5 + vector, fused with RRF)
+
+Results are ranked with temporal decay (recent memories score higher) and deduplication detection warns about near-duplicate stores.

@@ -9,6 +9,7 @@ const tabs = [
   { key: "cli", label: "CLI" },
   { key: "learn-host", label: "Learn Host" },
   { key: "learn-mcp", label: "Learn MCP" },
+  { key: "cf-memory", label: "CF Memory" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -40,6 +41,7 @@ interface Props {
   cliEntries: ChangelogEntry[];
   learnHostEntries: ChangelogEntry[];
   learnMcpEntries: ChangelogEntry[];
+  cfMemoryEntries: ChangelogEntry[];
 }
 
 export default function ChangelogTabs({
@@ -47,6 +49,7 @@ export default function ChangelogTabs({
   cliEntries,
   learnHostEntries,
   learnMcpEntries,
+  cfMemoryEntries,
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("plugin");
   const tabRefs = useRef<Record<TabKey, HTMLButtonElement | null>>({
@@ -54,6 +57,7 @@ export default function ChangelogTabs({
     cli: null,
     "learn-host": null,
     "learn-mcp": null,
+    "cf-memory": null,
   });
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
@@ -62,6 +66,7 @@ export default function ChangelogTabs({
     cli: cliEntries,
     "learn-host": learnHostEntries,
     "learn-mcp": learnMcpEntries,
+    "cf-memory": cfMemoryEntries,
   };
 
   const entries = entriesMap[activeTab];
