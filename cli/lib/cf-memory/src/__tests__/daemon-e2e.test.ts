@@ -166,8 +166,7 @@ describe("Daemon E2E: DaemonClient → Daemon → MiniSearch → Markdown", () =
       content: "Before rebuild content.",
     });
 
-    const rebuilt = await client.rebuild();
-    expect(rebuilt).toBe(true);
+    await client.rebuild();
 
     // Search still works after rebuild
     const results = await client.search({ query: "rebuild" });

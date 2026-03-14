@@ -2,6 +2,7 @@ import type { MemoryBackend } from "./backend.js";
 import { DaemonClient } from "./daemon-client.js";
 import { MarkdownBackend } from "../backends/markdown.js";
 import { getDaemonPaths, isDaemonRunning } from "../daemon/process.js";
+import { areSqliteDepsAvailable } from "./lazy-install.js";
 
 export type TierName = "full" | "lite" | "markdown";
 export type TierConfig = "auto" | TierName;
@@ -29,7 +30,10 @@ export async function detectTier(configTier?: TierConfig): Promise<TierInfo> {
     return TIERS[configTier];
   }
 
-  // TODO Phase 3: check if SQLite deps are available → Tier 1
+  // Check if SQLite deps are available → Tier 1
+  if (areSqliteDepsAvailable()) {
+    return TIERS.full;
+  }
 
   // Check if daemon is running → Tier 2
   if (await isDaemonRunning()) {
@@ -50,6 +54,28 @@ export async function createBackendForTier(
   const tier = await detectTier(configTier);
 
   switch (tier.name) {
+    case "full": {
+      // Try to create SqliteBackend, fall back if it fails
+      try {
+        const { SqliteBackend } = await import("../backends/sqlite/index.js");
+        const backend = new SqliteBackend(docsDir);
+        return { backend, tier };
+      } catch {
+        // SQLite backend failed — fall through to daemon or markdown
+        if (await isDaemonRunning()) {
+          const paths = getDaemonPaths();
+          const client = new DaemonClient(paths.socketPath);
+          const alive = await client.ping();
+          if (alive) {
+            return { backend: client, tier: TIERS.lite };
+          }
+        }
+        return {
+          backend: new MarkdownBackend(docsDir),
+          tier: TIERS.markdown,
+        };
+      }
+    }
     case "lite": {
       // Use daemon client
       const paths = getDaemonPaths();
@@ -64,8 +90,6 @@ export async function createBackendForTier(
         tier: TIERS.markdown,
       };
     }
-    // TODO Phase 3: case "full" → SqliteBackend
-    case "full":
     case "markdown":
     default:
       return {

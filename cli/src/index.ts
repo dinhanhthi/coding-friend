@@ -178,6 +178,7 @@ Memory subcommands:
   memory status       Show memory system status (tier, doc count, daemon)
   memory search       Search memories by query
   memory list         List all stored memories
+  memory init         Initialize Tier 1 (install SQLite deps, import existing memories)
   memory start        Start the memory daemon (Tier 2)
   memory stop         Stop the memory daemon
   memory rebuild      Rebuild the daemon search index
@@ -207,6 +208,16 @@ memory
   .action(async () => {
     const { memoryListCommand } = await import("./commands/memory.js");
     await memoryListCommand();
+  });
+
+memory
+  .command("init")
+  .description(
+    "Initialize Tier 1 — install SQLite deps and import existing memories",
+  )
+  .action(async () => {
+    const { memoryInitCommand } = await import("./commands/memory.js");
+    await memoryInitCommand();
   });
 
 memory

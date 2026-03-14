@@ -94,3 +94,16 @@ export interface UpdateInput {
   content?: string;
   importance?: number;
 }
+
+/**
+ * Create a short excerpt from markdown content.
+ */
+export function makeExcerpt(content: string, maxLen = 160): string {
+  const text = content
+    .replace(/^#+\s.*/gm, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\n{2,}/g, " ")
+    .replace(/\n/g, " ")
+    .trim();
+  return text.length > maxLen ? text.slice(0, maxLen) + "..." : text;
+}

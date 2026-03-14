@@ -5,6 +5,7 @@ import type { MemoryBackend } from "../lib/backend.js";
 import {
   CATEGORY_TO_TYPE,
   MEMORY_CATEGORIES,
+  makeExcerpt,
   type ListInput,
   type Memory,
   type MemoryFrontmatter,
@@ -36,16 +37,6 @@ function slugify(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-}
-
-function makeExcerpt(content: string, maxLen = 160): string {
-  const text = content
-    .replace(/^#+\s.*/gm, "")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/\n{2,}/g, " ")
-    .replace(/\n/g, " ")
-    .trim();
-  return text.length > maxLen ? text.slice(0, maxLen) + "..." : text;
 }
 
 function parseFrontmatter(

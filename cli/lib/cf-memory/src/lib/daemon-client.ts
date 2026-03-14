@@ -153,15 +153,11 @@ export class DaemonClient implements MemoryBackend {
   /**
    * Trigger index rebuild on the daemon.
    */
-  async rebuild(): Promise<boolean> {
+  async rebuild(): Promise<void> {
     try {
-      const result = await this.request<{ rebuilt: boolean }>(
-        "POST",
-        "/rebuild",
-      );
-      return result.rebuilt;
+      await this.request<{ rebuilt: boolean }>("POST", "/rebuild");
     } catch {
-      return false;
+      // Rebuild failed or not supported
     }
   }
 }

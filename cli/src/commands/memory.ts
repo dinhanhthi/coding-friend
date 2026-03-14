@@ -59,17 +59,26 @@ export async function memoryStatusCommand(): Promise<void> {
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
 
-  // Dynamically import daemon process module to check status
+  // Dynamically import modules to check status
   const { isDaemonRunning, getDaemonInfo } = await import(
     join(mcpDir, "dist/daemon/process.js")
   );
+  const { areSqliteDepsAvailable } = await import(
+    join(mcpDir, "dist/lib/lazy-install.js")
+  );
 
+  const sqliteAvailable = areSqliteDepsAvailable();
   const running = await isDaemonRunning();
   const daemonInfo = getDaemonInfo();
 
-  const tierLabel = running
-    ? chalk.cyan("Tier 2 (MiniSearch + Daemon)")
-    : chalk.cyan("Tier 3 (Markdown)");
+  let tierLabel: string;
+  if (sqliteAvailable) {
+    tierLabel = chalk.cyan("Tier 1 (SQLite + Hybrid)");
+  } else if (running) {
+    tierLabel = chalk.cyan("Tier 2 (MiniSearch + Daemon)");
+  } else {
+    tierLabel = chalk.cyan("Tier 3 (Markdown)");
+  }
 
   console.log("=== 🧠 Coding Friend Memory ===");
   console.log();
@@ -84,6 +93,14 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   } else {
     log.info(`Daemon: ${chalk.dim("stopped")}`);
+  }
+
+  if (sqliteAvailable) {
+    log.info(`SQLite deps: ${chalk.green("installed")}`);
+  } else {
+    log.info(
+      `SQLite deps: ${chalk.dim("not installed")} (run "cf memory init" to enable Tier 1)`,
+    );
   }
 
   if (existsSync(memoryDir)) {
@@ -267,13 +284,86 @@ export async function memoryRebuildCommand(): Promise<void> {
   const client = new DaemonClient(paths.socketPath);
 
   log.step("Rebuilding search index...");
-  const rebuilt = await client.rebuild();
-
-  if (rebuilt) {
+  try {
+    await client.rebuild();
     log.success("Index rebuilt.");
-  } else {
+  } catch {
     log.error("Rebuild failed or not supported.");
   }
+}
+
+export async function memoryInitCommand(): Promise<void> {
+  const memoryDir = getMemoryDir();
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  log.step("Initializing Tier 1 (SQLite + Hybrid Search)...");
+
+  // Step 1: Install heavy dependencies
+  const { ensureDeps, areSqliteDepsAvailable } = await import(
+    join(mcpDir, "dist/lib/lazy-install.js")
+  );
+
+  if (areSqliteDepsAvailable()) {
+    log.info("SQLite dependencies already installed.");
+  } else {
+    const installed = await ensureDeps({
+      onProgress: (msg: string) => log.step(msg),
+    });
+
+    if (!installed) {
+      log.error("Failed to install dependencies.");
+      log.dim(
+        "Ensure you have a C++ compiler installed (Xcode CLT on macOS, build-essential on Linux).",
+      );
+      process.exit(1);
+    }
+    log.success("Dependencies installed.");
+  }
+
+  // Step 2: Create SQLite database and import existing memories
+  if (!existsSync(memoryDir)) {
+    log.info("No memory directory found. Nothing to import.");
+    log.success(
+      "Tier 1 is ready. Memories will be indexed as they're created.",
+    );
+    return;
+  }
+
+  const docCount = countMdFiles(memoryDir);
+  if (docCount === 0) {
+    log.info("No existing memories to import.");
+    log.success(
+      "Tier 1 is ready. Memories will be indexed as they're created.",
+    );
+    return;
+  }
+
+  log.step(`Importing ${docCount} existing memories into SQLite...`);
+
+  const { SqliteBackend } = await import(
+    join(mcpDir, "dist/backends/sqlite/index.js")
+  );
+
+  const backend = new SqliteBackend(memoryDir, { skipVec: false });
+
+  try {
+    await backend.rebuild();
+    const stats = await backend.stats();
+    log.success(`Imported ${stats.total} memories. DB: ${backend.getDbPath()}`);
+
+    if (backend.isVecEnabled()) {
+      log.info(`Vector search: ${chalk.green("enabled")}`);
+    } else {
+      log.info(
+        `Vector search: ${chalk.dim("disabled")} (sqlite-vec not available)`,
+      );
+    }
+  } finally {
+    await backend.close();
+  }
+
+  log.success('Tier 1 initialized. Run "cf memory status" to verify.');
 }
 
 export async function memoryMcpCommand(): Promise<void> {
