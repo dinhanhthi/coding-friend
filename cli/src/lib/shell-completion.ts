@@ -31,7 +31,7 @@ _cf_completions() {
 
   # Subcommands for 'memory'
   if [[ "\${COMP_WORDS[1]}" == "memory" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "status search list mcp" -- "$cur"))
+    COMPREPLY=($(compgen -W "status search list start stop rebuild mcp" -- "$cur"))
     return
   fi
 
@@ -126,6 +126,9 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'status:Show memory system status'
       'search:Search memories by query'
       'list:List all stored memories'
+      'start:Start the memory daemon (Tier 2)'
+      'stop:Stop the memory daemon'
+      'rebuild:Rebuild the daemon search index'
       'mcp:Show MCP server setup instructions'
     )
     _describe 'subcommand' subcommands
@@ -187,6 +190,9 @@ complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local d
 complete -c cf -n "__fish_seen_subcommand_from memory" -a status -d "Show memory system status"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a search -d "Search memories by query"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List all stored memories"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a start -d "Start the memory daemon (Tier 2)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a stop -d "Stop the memory daemon"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a rebuild -d "Rebuild the daemon search index"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a mcp -d "Show MCP server setup instructions"
 # Session subcommands
 complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
@@ -200,7 +206,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
   $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
-  $memorySubcommands = @('status','search','list','mcp')
+  $memorySubcommands = @('status','search','list','start','stop','rebuild','mcp')
   $sessionSubcommands = @('save','load')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')
