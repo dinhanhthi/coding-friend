@@ -914,7 +914,6 @@ export default function HowItWorks() {
                 </div>
               )}
             </div>
-
           </div>
 
           {/* Legend */}
@@ -1237,7 +1236,6 @@ export default function HowItWorks() {
               );
             })}
           </div>
-
         </div>
 
         {/* Memory Architecture Diagram */}

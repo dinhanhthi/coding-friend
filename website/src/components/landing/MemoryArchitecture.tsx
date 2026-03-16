@@ -245,18 +245,17 @@ export default function MemoryArchitecture() {
 
   // Tooltip
   const tooltipNode = hovered
-    ? archNodes.find((n) => n.id === hovered) ?? null
+    ? (archNodes.find((n) => n.id === hovered) ?? null)
     : null;
 
   return (
     <div className="mt-10">
       {/* Section header */}
       <div className="mb-6 text-center">
-        <h2 className="text-3xl font-bold text-white">
-        Memory Architecture
-        </h2>
+        <h2 className="text-3xl font-bold text-white">Memory Architecture</h2>
         <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-          3-tier graceful degradation — always works, even without heavy dependencies
+          3-tier graceful degradation — always works, even without heavy
+          dependencies
         </p>
       </div>
 
@@ -334,7 +333,9 @@ export default function MemoryArchitecture() {
                   <path
                     d={d}
                     stroke="currentColor"
-                    className={isGreen ? "text-emerald-600/30" : "text-amber-600/30"}
+                    className={
+                      isGreen ? "text-emerald-600/30" : "text-amber-600/30"
+                    }
                     strokeWidth="1.5"
                     strokeDasharray="6 4"
                   />
@@ -360,25 +361,26 @@ export default function MemoryArchitecture() {
                     />
                   </circle>
                   {/* Edge label */}
-                  {label && (() => {
-                    const fromNode = archNodes.find((n) => n.id === from)!;
-                    const toNode = archNodes.find((n) => n.id === to)!;
-                    const fp = getNodePos(fromNode);
-                    const tp = getNodePos(toNode);
-                    const mx = (fp.x + tp.x) / 2;
-                    const my = (fp.y + tp.y) / 2;
-                    return (
-                      <text
-                        x={mx}
-                        y={my - 10}
-                        className="fill-amber-400/70 text-xs"
-                        fontFamily="monospace"
-                        textAnchor="middle"
-                      >
-                        {label}
-                      </text>
-                    );
-                  })()}
+                  {label &&
+                    (() => {
+                      const fromNode = archNodes.find((n) => n.id === from)!;
+                      const toNode = archNodes.find((n) => n.id === to)!;
+                      const fp = getNodePos(fromNode);
+                      const tp = getNodePos(toNode);
+                      const mx = (fp.x + tp.x) / 2;
+                      const my = (fp.y + tp.y) / 2;
+                      return (
+                        <text
+                          x={mx}
+                          y={my - 10}
+                          className="fill-amber-400/70 text-xs"
+                          fontFamily="monospace"
+                          textAnchor="middle"
+                        >
+                          {label}
+                        </text>
+                      );
+                    })()}
                 </g>
               );
             })}
@@ -389,9 +391,15 @@ export default function MemoryArchitecture() {
               const t2 = getNodePos(archNodes.find((n) => n.id === "tier2")!);
               const t3 = getNodePos(archNodes.find((n) => n.id === "tier3")!);
               const y = ROW_Y[2];
-              const dim = hovered && !connectedIds.has("tier1") && !connectedIds.has("tier2") && !connectedIds.has("tier3");
+              const dim =
+                hovered &&
+                !connectedIds.has("tier1") &&
+                !connectedIds.has("tier2") &&
+                !connectedIds.has("tier3");
               return (
-                <g className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}>
+                <g
+                  className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                >
                   {/* Tier1 → Tier2 */}
                   <line
                     x1={t1.x + BOX_W / 2 + 4}
@@ -468,7 +476,7 @@ export default function MemoryArchitecture() {
               >
                 {node.tierLabel && (
                   <span
-                    className={`font-mono text-[10px] font-medium uppercase tracking-wider ${connected ? style.sublabel : "text-slate-600"}`}
+                    className={`font-mono text-[10px] font-medium tracking-wider uppercase ${connected ? style.sublabel : "text-slate-600"}`}
                   >
                     {node.tierLabel}
                   </span>
@@ -494,13 +502,15 @@ export default function MemoryArchitecture() {
             <div
               className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-amber-500/20 px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
               style={{
-                left: `${(getNodePos(tooltipNode) .x / ARCH_W) * 100}%`,
+                left: `${(getNodePos(tooltipNode).x / ARCH_W) * 100}%`,
                 top: `${((getNodePos(tooltipNode).y + getBoxH(tooltipNode) / 2 + 8) / ARCH_H) * 100}%`,
                 transform: "translate(-50%, 0)",
               }}
             >
               <span className="font-mono font-semibold text-amber-400">
-                {tooltipNode.tierLabel ? `${tooltipNode.tierLabel}: ${tooltipNode.label}` : tooltipNode.label}
+                {tooltipNode.tierLabel
+                  ? `${tooltipNode.tierLabel}: ${tooltipNode.label}`
+                  : tooltipNode.label}
               </span>
               <p className="mt-1">{tooltipNode.description}</p>
             </div>
@@ -515,7 +525,15 @@ export default function MemoryArchitecture() {
           <MobileArchCard
             node={archNodes.find((n) => n.id === "claude")!}
             icon={
-              <svg className="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="h-4 w-4 text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="2" y="3" width="20" height="14" rx="2" />
                 <path d="M8 21h8M12 17v4" />
               </svg>
@@ -529,7 +547,15 @@ export default function MemoryArchitecture() {
             <MobileArchCard
               node={archNodes.find((n) => n.id === "mcp")!}
               icon={
-                <svg className="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="h-4 w-4 text-amber-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
                 </svg>
               }
@@ -537,7 +563,15 @@ export default function MemoryArchitecture() {
             <MobileArchCard
               node={archNodes.find((n) => n.id === "daemon")!}
               icon={
-                <svg className="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="h-4 w-4 text-amber-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
                   <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
                   <line x1="6" y1="6" x2="6.01" y2="6" />
@@ -551,17 +585,52 @@ export default function MemoryArchitecture() {
 
           {/* 3 Tiers */}
           <div className="space-y-2">
-            <MobileTierCard tier={1} label="SQLite" sublabel="FTS5 + sqlite-vec + RRF" desc="Full hybrid search with semantic vectors" />
+            <MobileTierCard
+              tier={1}
+              label="SQLite"
+              sublabel="FTS5 + sqlite-vec + RRF"
+              desc="Full hybrid search with semantic vectors"
+            />
             <div className="flex items-center justify-center">
-              <span className="text-xs italic text-slate-400/70 font-mono">fallback</span>
-              <svg className="mx-1 h-3.5 w-3.5 text-slate-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>
+              <span className="font-mono text-xs text-slate-400/70 italic">
+                fallback
+              </span>
+              <svg
+                className="mx-1 h-3.5 w-3.5 text-slate-400/60"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 5v14M19 12l-7 7-7-7" />
+              </svg>
             </div>
-            <MobileTierCard tier={2} label="MiniSearch" sublabel="BM25 + fuzzy matching" desc="In-memory index, no native deps" />
+            <MobileTierCard
+              tier={2}
+              label="MiniSearch"
+              sublabel="BM25 + fuzzy matching"
+              desc="In-memory index, no native deps"
+            />
             <div className="flex items-center justify-center">
-              <span className="text-xs italic text-slate-400/70 font-mono">fallback</span>
-              <svg className="mx-1 h-3.5 w-3.5 text-slate-400/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>
+              <span className="font-mono text-xs text-slate-400/70 italic">
+                fallback
+              </span>
+              <svg
+                className="mx-1 h-3.5 w-3.5 text-slate-400/60"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 5v14M19 12l-7 7-7-7" />
+              </svg>
             </div>
-            <MobileTierCard tier={3} label="Grep" sublabel="file scan" desc="Zero deps, always available" />
+            <MobileTierCard
+              tier={3}
+              label="Grep"
+              sublabel="file scan"
+              desc="Zero deps, always available"
+            />
           </div>
 
           <MobileArrow />
@@ -571,7 +640,15 @@ export default function MemoryArchitecture() {
             node={archNodes.find((n) => n.id === "files")!}
             accent="emerald"
             icon={
-              <svg className="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="h-4 w-4 text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
                 <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                 <path d="M10 13H8M16 17H8M12 9H8" />
@@ -601,7 +678,7 @@ function MobileArchCard({
   const isAmber = accent === "amber";
   return (
     <div
-      className={`rounded-lg border p-3 transition-all duration-200 cursor-pointer ${
+      className={`cursor-pointer rounded-lg border p-3 transition-all duration-200 ${
         isAmber
           ? "border-amber-500/20 bg-amber-500/5 active:border-amber-400/40"
           : "border-emerald-500/20 bg-emerald-500/5 active:border-emerald-400/40"
@@ -648,10 +725,15 @@ function MobileTierCard({
   desc: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const opacity = tier === 1 ? "border-amber-400/40" : tier === 2 ? "border-amber-500/30" : "border-amber-600/25";
+  const opacity =
+    tier === 1
+      ? "border-amber-400/40"
+      : tier === 2
+        ? "border-amber-500/30"
+        : "border-amber-600/25";
   return (
     <div
-      className={`rounded-lg border bg-amber-500/5 p-3 transition-all duration-200 cursor-pointer active:border-amber-400/40 ${opacity}`}
+      className={`cursor-pointer rounded-lg border bg-amber-500/5 p-3 transition-all duration-200 active:border-amber-400/40 ${opacity}`}
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-center gap-2.5">
@@ -678,7 +760,7 @@ function MobileArrow({ label }: { label?: string }) {
   return (
     <div className="flex flex-col items-center py-1">
       {label && (
-        <span className="mb-1 text-xs italic text-amber-500/40 font-mono">
+        <span className="mb-1 font-mono text-xs text-amber-500/40 italic">
           {label}
         </span>
       )}
@@ -689,7 +771,11 @@ function MobileArrow({ label }: { label?: string }) {
         stroke="currentColor"
         strokeWidth="1.5"
       >
-        <path d="M10 3v14M5 12l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M10 3v14M5 12l5 5 5-5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );

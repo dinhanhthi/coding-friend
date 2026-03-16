@@ -210,7 +210,6 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
   );
 }
 
-
 export default function EcosystemSection() {
   return (
     <section id="ecosystem" className="py-20">
@@ -226,12 +225,14 @@ export default function EcosystemSection() {
         {/* Tool cards grid */}
         <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-5">
           {tools.map((tool) => (
-            <div key={tool.id} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]">
+            <div
+              key={tool.id}
+              className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]"
+            >
               <ToolCard tool={tool} />
             </div>
           ))}
         </div>
-
       </Container>
     </section>
   );
