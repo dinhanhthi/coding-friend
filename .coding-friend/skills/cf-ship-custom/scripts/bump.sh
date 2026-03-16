@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bump.sh — Update version across all files for a given package
 # Usage: bash bump.sh <package> <new_version>
-#   package: plugin | cli | learn-mcp | learn-host
+#   package: plugin | cli | learn-mcp | learn-host | cf-memory
 #   new_version: semver string (e.g. 1.2.3)
 
 set -euo pipefail
@@ -13,7 +13,7 @@ NEW_VERSION="${2:-}"
 
 if [[ -z "$PACKAGE" || -z "$NEW_VERSION" ]]; then
   echo "Usage: bash bump.sh <package> <new_version>"
-  echo "  package: plugin | cli | learn-mcp | learn-host"
+  echo "  package: plugin | cli | learn-mcp | learn-host | cf-memory"
   exit 1
 fi
 
@@ -69,9 +69,14 @@ case "$PACKAGE" in
     bump_json_version "$REPO_ROOT/cli/lib/learn-host/package.json" "$NEW_VERSION"
     echo "Done. Files updated: cli/lib/learn-host/package.json"
     ;;
+  cf-memory)
+    echo "Bumping CF Memory to $NEW_VERSION..."
+    bump_json_version "$REPO_ROOT/cli/lib/cf-memory/package.json" "$NEW_VERSION"
+    echo "Done. Files updated: cli/lib/cf-memory/package.json"
+    ;;
   *)
     echo "Error: unknown package '$PACKAGE'"
-    echo "Valid packages: plugin | cli | learn-mcp | learn-host"
+    echo "Valid packages: plugin | cli | learn-mcp | learn-host | cf-memory"
     exit 1
     ;;
 esac

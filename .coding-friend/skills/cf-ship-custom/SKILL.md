@@ -2,7 +2,7 @@
 
 This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
 
-**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host]`
+**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host|cf-memory]`
 
 ### Step B1: Get bump context
 

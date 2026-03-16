@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # release.sh — Finalize changelog and create git tag for a package
 # Usage: bash release.sh <package>
-#   package: plugin | cli | learn-mcp | learn-host
+#   package: plugin | cli | learn-mcp | learn-host | cf-memory
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ TODAY=$(date +%Y-%m-%d)
 
 if [[ -z "$PACKAGE" ]]; then
   echo "Usage: bash release.sh <package>"
-  echo "  package: plugin | cli | learn-mcp | learn-host"
+  echo "  package: plugin | cli | learn-mcp | learn-host | cf-memory"
   exit 1
 fi
 
@@ -41,9 +41,14 @@ case "$PACKAGE" in
     CHANGELOG="$REPO_ROOT/cli/lib/learn-host/CHANGELOG.md"
     TAG="learn-host-v${VERSION}"
     ;;
+  cf-memory)
+    VERSION=$(get_version "$REPO_ROOT/cli/lib/cf-memory/package.json")
+    CHANGELOG="$REPO_ROOT/cli/lib/cf-memory/CHANGELOG.md"
+    TAG="cf-memory-v${VERSION}"
+    ;;
   *)
     echo "Error: unknown package '$PACKAGE'"
-    echo "Valid packages: plugin | cli | learn-mcp | learn-host"
+    echo "Valid packages: plugin | cli | learn-mcp | learn-host | cf-memory"
     exit 1
     ;;
 esac
