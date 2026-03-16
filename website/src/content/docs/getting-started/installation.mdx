@@ -59,8 +59,27 @@ If auto-update could not be enabled during installation (e.g., due to file permi
 
 Restart Claude Code to load the plugin. You should see the Coding Friend statusline at the bottom.
 
+## Enable AI Memory (Optional)
+
+Coding Friend includes a [memory system](/docs/reference/memory-system/) that lets the AI store and recall project knowledge across sessions — codebase facts, conventions, debug episodes, and more.
+
+**Basic memory** (Tier 3) works automatically after `cf init` — skills like [`/cf-remember`](/docs/skills/cf-remember/) and [`/cf-ask`](/docs/skills/cf-ask/) save knowledge to `docs/memory/` as markdown files.
+
+For **better search**, you can upgrade to a higher tier:
+
+```bash
+# Tier 2 — Start a lightweight daemon with fuzzy search
+cf memory start
+
+# Tier 1 — Initialize SQLite with hybrid search (keyword + semantic)
+cf memory init
+```
+
+Check current status anytime with `cf memory status`. Read more about [`cf memory`](/docs/cli/cf-memory/).
+
 ## Next Steps
 
 - Read the [Quick Start](/docs/getting-started/quick-start/) guide
 - Explore available [Skills](/docs/skills/overview/)
 - Learn about [CLI Commands](/docs/cli/overview/)
+- Set up [AI Memory](/docs/reference/memory-system/) for cross-session knowledge

@@ -3,9 +3,28 @@ title: "Memory System"
 description: "Architecture overview of the persistent AI memory system"
 ---
 
-# Memory System
+The memory system gives Claude Code persistent project memory across sessions. It stores facts, preferences, decisions, debug episodes, and procedures as markdown files in `docs/memory/`, with optional indexing for fast hybrid search.
 
-The memory system gives Claude Code persistent project memory across sessions. It stores facts, preferences, decisions, debug episodes, and procedures as markdown files, with optional indexing for fast hybrid search.
+## How It Works
+
+There are two ways to capture memories:
+
+1. **Manually** — use the [`/cf-remember`](/docs/skills/cf-remember/) skill during a session. Tell Claude what to remember and it writes a markdown file to `docs/memory/`, categorized and indexed automatically.
+
+2. **Automatically** — when `memory.autoCapture` is enabled in `.coding-friend/config.json`, a PreCompact hook fires before Claude Code compacts the session context. It captures a summary of the current session (main task, key decisions, findings) as an [`episode`](#memory-types) memory.
+
+Other skills also auto-capture when they find notable insights:
+- [`/cf-fix`](/docs/skills/cf-fix/) captures bug root causes
+- [`/cf-review`](/docs/skills/cf-review/) captures architectural patterns
+- [`/cf-sys-debug`](/docs/skills/cf-sys-debug/) captures debugging breakthroughs
+
+All captured memories are plain markdown files — human-readable, git-trackable, and never locked in.
+
+### [`/cf-remember`](/docs/skills/cf-remember/) vs [`cf memory`](/docs/cli/cf-memory/)
+
+- **`/cf-remember`** is a skill you use _inside a Claude Code session_. Say `/cf-remember` and describe what to save. Claude analyzes the conversation, picks the right category, and writes a markdown file with proper frontmatter. It also calls the `memory_store` MCP tool to index the memory for fast search.
+
+- **`cf memory`** is a CLI command you run _in your terminal_. It manages the memory system itself.
 
 ## Architecture
 
@@ -34,28 +53,72 @@ Claude Code Session
 +------------------+
 ```
 
+### MCP Integration
+
+The MCP (Model Context Protocol) server is the bridge between Claude Code and the memory backends. It runs as a [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically when it needs memory tools. You don't need to start it manually.
+
+The MCP server exposes 6 tools that Claude Code calls during sessions:
+
+| Tool | Purpose |
+| --- | --- |
+| `memory_store` | Store a new memory |
+| `memory_search` | Search memories (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID |
+| `memory_list` | List memories with filtering |
+| `memory_update` | Update existing memory |
+| `memory_delete` | Delete a memory |
+
+When you use `/cf-remember`, Claude calls `memory_store` behind the scenes. When a skill needs context from past sessions, it calls `memory_search`. You never interact with these tools directly — they're part of the automatic workflow.
+
+To configure the MCP server for your project, run `cf memory mcp` to get the configuration snippet for your Claude Code settings.
+
+### 3-Tier Graceful Degradation
+
+The system automatically detects and uses the best available backend:
+
+- **Tier 1: SQLite** — Full-power hybrid search with [FTS5 full-text](https://www.sqlite.org/fts5.html) + [sqlite-vec](https://github.com/asg017/sqlite-vec) semantic vectors, fused with Reciprocal Rank Fusion (RRF). Requires `cf memory init` to install native dependencies.
+- **Tier 2: MiniSearch** — In-memory BM25 index with fuzzy matching. Activates via the daemon (`cf memory start`) when SQLite deps aren't installed.
+- **Tier 3: Markdown** — Zero-dependency fallback. For each file, it checks frontmatter (title, description, tags) first — if that matches, it stops there. It only reads the full file content for files whose frontmatter didn't match. Always available, no setup needed.
+
+Tier detection happens automatically:
+
+```
+SQLite deps available?  → Tier 1
+Daemon running?         → Tier 2
+Otherwise               → Tier 3
+```
+
 ## Memory Types
 
-| Type         | Question it answers             | Example                                     |
-| ------------ | ------------------------------- | ------------------------------------------- |
-| `fact`       | "How does this work?"           | "Auth module uses JWT in httpOnly cookies"  |
-| `preference` | "How does the user want it?"    | "Always use async/await, never .then()"     |
-| `context`    | "What state is the project in?" | "Migrating from REST to GraphQL"            |
-| `episode`    | "What did we do before?"        | "Debugged CORS on /api/upload"              |
-| `procedure`  | "What steps to do X?"           | "Deploy: build -> ship -> merge -> release" |
+| Type | Category* | Question it answers | Example |
+| --- | --- | --- | --- |
+| `fact` | `features/` | "How does this work?" | "Auth module uses JWT in httpOnly cookies" |
+| `preference` | `conventions/` | "How does the user want it?" | "Always use async/await, never .then()" |
+| `context` | `decisions/` | "What state is the project in?" | "Migrating from REST to GraphQL" |
+| `episode` | `bugs/` | "What did we do before?" | "Debugged CORS on /api/upload" |
+| `procedure` | `infrastructure/` | "What steps to do X?" | "Deploy: build -> ship -> merge -> release" |
 
-## MCP Tools
+\*Category is the subfolder inside `docs/memory/` where the markdown file is stored. Each type maps to a folder so memories are organized on disk and can be browsed or edited manually.
 
-| Tool              | Purpose                                   |
-| ----------------- | ----------------------------------------- |
-| `memory_store`    | Store a new memory                        |
-| `memory_search`   | Search memories (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID               |
-| `memory_list`     | List memories with filtering              |
-| `memory_update`   | Update existing memory                    |
-| `memory_delete`   | Delete a memory                           |
+## Memory Importance
+
+Importance is a integer from 1 to 5 (default: 3). It is used for filtering and future ranking features.
+
+- 1: Low importance
+- 2: Medium importance
+- 3: High importance
+- 4: Very high importance
+- 5: Critical importance
+
+Importance is set automatically for auto-captured sessions (episodes) to 2, and manually saved memories default to 3. It can be overridden by setting the `importance` field in the frontmatter. You can also use `/cf-remember` to set the importance to a specific value. For example,
+
+```bash
+/cf-remember this is critical, importance 5
+```
 
 ## Markdown Format
+
+Every memory is a markdown file with YAML frontmatter:
 
 ```yaml
 ---
@@ -68,22 +131,30 @@ created: 2026-03-12
 updated: 2026-03-12
 source: conversation
 ---
+
+The auth module uses RS256-signed JWT tokens...
 ```
 
-Memory files live in `docs/memory/` organized by category:
+### Fields
 
-- `features/` - facts
-- `conventions/` - preferences
-- `decisions/` - context
-- `bugs/` - episodes
-- `infrastructure/` - procedures
+- **`title`** — Short, descriptive name
+- **`description`** — One-line searchable summary (under 100 chars, grep-friendly). This is critical for search quality — be specific. Good: `"Config management via .coding-friend/config.json with local/global override"`. Bad: `"How we manage config"`.
+- **`type`** — One of `fact`, `preference`, `context`, `episode`, `procedure`
+- **`tags`** — Keywords for filtering and search ranking
+- **`importance`** — Integer from 1 to 5 (default: 3). Indicates how critical this memory is.
+- **`created`** / **`updated`** — ISO date strings
+- **`source`** — Where this memory came from: `conversation` (manual via `/cf-remember`) or `auto-capture` (automatic via PreCompact hook)
 
 ## Search Modes
 
-The system automatically routes queries:
+The system automatically routes queries based on the input:
 
-- **Quoted strings** or code patterns - keyword search (FTS5)
-- **Questions** (who/what/why/how) - semantic search (vector)
-- **Default** - hybrid search (FTS5 + vector, fused with RRF)
+- **Quoted strings** or code patterns — keyword search (FTS5)
+- **Questions** (who/what/why/how) — semantic search (vector similarity)
+- **Default** — hybrid search (FTS5 + vector, fused with RRF)
 
-Results are ranked with temporal decay (recent memories score higher) and deduplication detection warns about near-duplicate stores.
+Results are ranked with:
+
+- **BM25 scoring** with weighted columns: title (10x), tags (6x), description (4x), content (1x)
+- **Temporal decay** — recent memories score higher (90-day half-life, retaining 70% base score)
+- **Deduplication** — warns when storing near-duplicate content (Jaccard similarity)
