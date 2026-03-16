@@ -474,10 +474,10 @@ function formatSize(bytes: number): string {
 }
 
 function formatDate(raw: string): string {
-  // Normalize various date formats to YYYY-MM-DD
+  // Normalize various date formats to YYYY-MM-DD HH:MM
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
-  return d.toISOString().slice(0, 10);
+  return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
 function dirSize(dir: string): number {
@@ -606,7 +606,7 @@ async function memoryListProjectsCommand(): Promise<void> {
   const idxW = String(projects.length).length;
 
   // Header
-  const header = `${"#".padStart(idxW)}  ${"SIZE".padStart(10)}  ${"MEMS".padStart(4)}  ${"PROJECT ID".padEnd(12)}  ${"UPDATED".padEnd(10)}  PATH`;
+  const header = `${"#".padStart(idxW)}  ${"SIZE".padStart(10)}  ${"MEMS".padStart(4)}  ${"PROJECT ID".padEnd(12)}  ${"UPDATED".padEnd(16)}  PATH`;
   console.log(chalk.bold(header));
   console.log(chalk.dim("-".repeat(header.length + 10)));
 
@@ -616,8 +616,8 @@ async function memoryListProjectsCommand(): Promise<void> {
     const memCount = chalk.green(String(p.memories).padStart(4));
     const idStr = chalk.cyan(p.id.padEnd(12));
     const dateStr = p.lastUpdated
-      ? formatDate(p.lastUpdated).padEnd(10)
-      : chalk.dim("n/a".padEnd(10));
+      ? formatDate(p.lastUpdated).padEnd(16)
+      : chalk.dim("n/a".padEnd(16));
     const pathStr = p.sourceDir
       ? chalk.dim(p.sourceDir)
       : chalk.dim("(unknown)");
