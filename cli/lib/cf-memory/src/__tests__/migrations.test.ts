@@ -9,6 +9,7 @@ import {
   type DatabaseLike,
 } from "../backends/sqlite/migrations.js";
 import { SCHEMA_VERSION } from "../backends/sqlite/schema.js";
+import { DEFAULT_TRANSFORMERS_MODEL } from "../backends/sqlite/embeddings.js";
 
 /**
  * In-memory mock database for testing schema logic without better-sqlite3.
@@ -215,25 +216,25 @@ describe("getMetadata() and setMetadata()", () => {
 describe("checkEmbeddingMismatch()", () => {
   it("returns mismatched=false when model and dims match", () => {
     const db = createMetadataMockDb();
-    setMetadata(db, "embedding_model", "all-MiniLM-L6-v2");
+    setMetadata(db, "embedding_model", DEFAULT_TRANSFORMERS_MODEL);
     setMetadata(db, "embedding_dims", "384");
 
-    const result = checkEmbeddingMismatch(db, "all-MiniLM-L6-v2", 384);
+    const result = checkEmbeddingMismatch(db, DEFAULT_TRANSFORMERS_MODEL, 384);
     expect(result.mismatched).toBe(false);
-    expect(result.storedModel).toBe("all-MiniLM-L6-v2");
+    expect(result.storedModel).toBe(DEFAULT_TRANSFORMERS_MODEL);
     expect(result.storedDims).toBe(384);
-    expect(result.currentModel).toBe("all-MiniLM-L6-v2");
+    expect(result.currentModel).toBe(DEFAULT_TRANSFORMERS_MODEL);
     expect(result.currentDims).toBe(384);
   });
 
   it("returns mismatched=true when model changed", () => {
     const db = createMetadataMockDb();
-    setMetadata(db, "embedding_model", "all-MiniLM-L6-v2");
+    setMetadata(db, "embedding_model", DEFAULT_TRANSFORMERS_MODEL);
     setMetadata(db, "embedding_dims", "384");
 
     const result = checkEmbeddingMismatch(db, "nomic-embed-text", 768);
     expect(result.mismatched).toBe(true);
-    expect(result.storedModel).toBe("all-MiniLM-L6-v2");
+    expect(result.storedModel).toBe(DEFAULT_TRANSFORMERS_MODEL);
     expect(result.storedDims).toBe(384);
     expect(result.currentModel).toBe("nomic-embed-text");
     expect(result.currentDims).toBe(768);
@@ -258,8 +259,30 @@ describe("checkEmbeddingMismatch()", () => {
   it("returns mismatched=false when only partial metadata exists", () => {
     const db = createMetadataMockDb();
     // Only model set, no dims -- treat as fresh
-    setMetadata(db, "embedding_model", "all-MiniLM-L6-v2");
-    const result = checkEmbeddingMismatch(db, "all-MiniLM-L6-v2", 384);
+    setMetadata(db, "embedding_model", DEFAULT_TRANSFORMERS_MODEL);
+    const result = checkEmbeddingMismatch(db, DEFAULT_TRANSFORMERS_MODEL, 384);
+    expect(result.mismatched).toBe(false);
+  });
+
+  it("v1→v2 migration default matches DEFAULT_TRANSFORMERS_MODEL (no false positive)", () => {
+    // Regression: migration used to store "all-MiniLM-L6-v2" but pipeline
+    // resolves to "Xenova/all-MiniLM-L6-v2", causing a spurious mismatch warning
+    const db = createMockDb();
+    // Simulate fresh v0 database → migrate to v2
+    migrate(db);
+
+    // The migration should have stored the full qualified model name
+    // that matches what EmbeddingPipeline.modelName returns
+    const metaDb = createMetadataMockDb();
+    // Simulate what migrateV1ToV2 stores
+    setMetadata(metaDb, "embedding_model", "Xenova/all-MiniLM-L6-v2");
+    setMetadata(metaDb, "embedding_dims", "384");
+
+    const result = checkEmbeddingMismatch(
+      metaDb,
+      DEFAULT_TRANSFORMERS_MODEL,
+      384,
+    );
     expect(result.mismatched).toBe(false);
   });
 });

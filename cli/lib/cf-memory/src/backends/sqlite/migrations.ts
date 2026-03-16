@@ -63,10 +63,10 @@ function migrateV0ToV1(db: DatabaseLike): void {
 function migrateV1ToV2(db: DatabaseLike): void {
   // better-sqlite3 Database.exec — runs SQL, not shell commands
   db.exec(SCHEMA_V2_METADATA);
-  // Insert default embedding metadata
+  // Insert default embedding metadata (must match DEFAULT_TRANSFORMERS_MODEL)
   db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(
     "embedding_model",
-    "all-MiniLM-L6-v2",
+    "Xenova/all-MiniLM-L6-v2",
   );
   db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(
     "embedding_dims",
