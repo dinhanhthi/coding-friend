@@ -4,6 +4,7 @@ import { MarkdownBackend } from "../backends/markdown.js";
 import { getDaemonPaths, isDaemonRunning } from "../daemon/process.js";
 import { areSqliteDepsAvailable } from "./lazy-install.js";
 import type { EmbeddingConfig } from "../backends/sqlite/embeddings.js";
+import type { SqliteBackendOptions } from "../backends/sqlite/index.js";
 
 export type TierName = "full" | "lite" | "markdown";
 export type TierConfig = "auto" | TierName;
@@ -52,6 +53,7 @@ export async function createBackendForTier(
   docsDir: string,
   configTier?: TierConfig,
   embeddingConfig?: Partial<EmbeddingConfig>,
+  sqliteOptions?: Pick<SqliteBackendOptions, "dbPath">,
 ): Promise<{ backend: MemoryBackend; tier: TierInfo }> {
   const tier = await detectTier(configTier);
 
@@ -60,10 +62,10 @@ export async function createBackendForTier(
       // Try to create SqliteBackend, fall back if it fails
       try {
         const { SqliteBackend } = await import("../backends/sqlite/index.js");
-        const backend = new SqliteBackend(
-          docsDir,
-          embeddingConfig ? { embedding: embeddingConfig } : undefined,
-        );
+        const backend = new SqliteBackend(docsDir, {
+          ...(embeddingConfig ? { embedding: embeddingConfig } : {}),
+          ...sqliteOptions,
+        });
         return { backend, tier };
       } catch {
         // SQLite backend failed — fall through to daemon or markdown
