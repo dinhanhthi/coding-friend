@@ -70,6 +70,12 @@ const slashCommands: Feature[] = [
     description: "Verify, commit, push, and create PR in one command",
   },
   {
+    command: "/cf-onboard",
+    title: "Onboard",
+    description:
+      "Scan project and bootstrap memory with architecture and conventions",
+  },
+  {
     command: "/cf-remember",
     title: "Remember",
     description: "Capture project knowledge for AI memory across sessions",

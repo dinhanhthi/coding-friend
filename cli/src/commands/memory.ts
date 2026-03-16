@@ -424,6 +424,9 @@ export async function memoryInitCommand(): Promise<void> {
   }
 
   log.success('Tier 1 initialized. Run "cf memory status" to verify.');
+  log.info(
+    `Tip: Run ${chalk.cyan("/cf-onboard")} in Claude Code to populate memory with project knowledge.`,
+  );
 }
 
 export async function memoryMcpCommand(): Promise<void> {

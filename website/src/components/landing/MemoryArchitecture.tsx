@@ -369,8 +369,7 @@ export default function MemoryArchitecture() {
                 (from === "tier1" && to === "files") ||
                 (from === "tier2" && to === "files") ||
                 (from === "tier3" && to === "files");
-              const dim =
-                hovered && !(from === hovered || to === hovered);
+              const dim = hovered && !(from === hovered || to === hovered);
 
               return (
                 <g
@@ -420,8 +419,7 @@ export default function MemoryArchitecture() {
                       // Rotate label to follow diagonal lines
                       const dx = x2 - x1;
                       const dy = y2 - y1;
-                      let angle =
-                        Math.atan2(dy, dx) * (180 / Math.PI);
+                      let angle = Math.atan2(dy, dx) * (180 / Math.PI);
                       if (angle > 90) angle -= 180;
                       if (angle < -90) angle += 180;
                       const shouldRotate =
@@ -456,13 +454,9 @@ export default function MemoryArchitecture() {
               const t3 = getNodePos(archNodes.find((n) => n.id === "tier3")!);
               const y = ROW_Y[2];
               const dimT1D =
-                hovered &&
-                hovered !== "tier1" &&
-                hovered !== "daemon";
+                hovered && hovered !== "tier1" && hovered !== "daemon";
               const dimDT3 =
-                hovered &&
-                hovered !== "daemon" &&
-                hovered !== "tier3";
+                hovered && hovered !== "daemon" && hovered !== "tier3";
               return (
                 <>
                   {/* Tier 1 → Daemon */}
