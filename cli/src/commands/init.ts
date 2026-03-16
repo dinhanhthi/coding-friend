@@ -1,9 +1,11 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
+import { join } from "path";
 import chalk from "chalk";
 import { run } from "../lib/exec.js";
-import { mergeJson, readJson } from "../lib/json.js";
+import { mergeJson, readJson, writeJson } from "../lib/json.js";
+import { getLibPath } from "../lib/lib-path.js";
 import {
   getExistingRules,
   getMissingRules,
@@ -181,6 +183,7 @@ function printSetupStatus(
     },
     { label: "Shell completion", done: hasShellCompletion(), skipped: false },
     { label: "Statusline", done: isStatuslineConfigured(), skipped: false },
+    { label: "CF Memory MCP", done: isMemoryMcpConfigured(), skipped: false },
   ];
 
   for (const item of setupItems) {
@@ -702,6 +705,108 @@ async function stepStatusline(): Promise<void> {
   log.success("Statusline configured!");
 }
 
+function isMemoryMcpConfigured(): boolean {
+  const mcpPath = join(process.cwd(), ".mcp.json");
+  const config = readJson<Record<string, unknown>>(mcpPath);
+  if (!config) return false;
+  const servers = config.mcpServers as Record<string, unknown> | undefined;
+  return servers != null && "coding-friend-memory" in servers;
+}
+
+async function stepMemory(docsDir: string): Promise<void> {
+  if (isMemoryMcpConfigured()) {
+    printStepHeader(
+      `CF Memory MCP ${chalk.green("[done]")}`,
+      "Connects the memory system to Claude Code via MCP.",
+    );
+    log.dim("Memory MCP already configured in .mcp.json.");
+    return;
+  }
+
+  printStepHeader(
+    "CF Memory MCP",
+    "Connects the memory system to Claude Code via MCP so skills can store and search memories.",
+  );
+
+  const choice = await select({
+    message: "Configure CF Memory MCP server?",
+    choices: injectBackChoice(
+      [
+        { name: "Yes, add to .mcp.json", value: "yes" },
+        {
+          name: "No, I'll configure it later (cf memory mcp)",
+          value: "no",
+        },
+      ],
+      "Cancel init",
+    ),
+  });
+
+  handleBack(choice);
+
+  if (choice === "no") {
+    log.dim("Skipped. Run `cf memory mcp` anytime to get the config.");
+    return;
+  }
+
+  // Build MCP server path
+  let serverPath: string;
+  try {
+    const mcpDir = getLibPath("cf-memory");
+    serverPath = join(mcpDir, "dist", "index.js");
+    if (!existsSync(serverPath)) {
+      log.warn(
+        "cf-memory not built yet. Run `cd cli/lib/cf-memory && npm install && npm run build` first.",
+      );
+      return;
+    }
+  } catch {
+    log.warn(
+      "cf-memory package not found. Install the CLI first: npm i -g coding-friend-cli",
+    );
+    return;
+  }
+
+  const memoryDir = join(process.cwd(), docsDir, "memory");
+  const mcpPath = join(process.cwd(), ".mcp.json");
+  const existing = readJson<Record<string, unknown>>(mcpPath) ?? {};
+  const servers =
+    (existing.mcpServers as Record<string, unknown> | undefined) ?? {};
+
+  writeJson(mcpPath, {
+    ...existing,
+    mcpServers: {
+      ...servers,
+      "coding-friend-memory": {
+        command: "node",
+        args: [serverPath, memoryDir],
+      },
+    },
+  });
+  log.success(`Added coding-friend-memory to .mcp.json`);
+
+  // Ask about autoCapture
+  const autoCapture = await confirm({
+    message:
+      "Enable auto-capture? (saves session summaries to memory before context compaction)",
+    default: false,
+  });
+
+  if (autoCapture) {
+    const scope = await askScope();
+    if (scope !== "back") {
+      const targetPath =
+        scope === "global" ? globalConfigPath() : localConfigPath();
+      const existingConfig = readJson<CodingFriendConfig>(targetPath);
+      const existingMemory = existingConfig?.memory ?? {};
+      mergeJson(targetPath, {
+        memory: { ...existingMemory, autoCapture: true },
+      });
+      log.success(`Saved to ${targetPath}`);
+    }
+  }
+}
+
 async function stepClaudePermissions(
   outputDir: string,
   autoCommit: boolean,
@@ -860,7 +965,10 @@ export async function initCommand(): Promise<void> {
   // Step 6: Statusline
   await stepStatusline();
 
-  // Step 7: Claude permissions (conditional: only when external learn dir)
+  // Step 7: CF Memory MCP
+  await stepMemory(docsDir);
+
+  // Step 8: Claude permissions (conditional: only when external learn dir)
   if (isExternal) {
     printStepHeader(
       "Configure Claude permissions",
