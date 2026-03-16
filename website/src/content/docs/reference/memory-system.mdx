@@ -3,196 +3,157 @@ title: "Memory System"
 description: "Architecture overview of the persistent AI memory system"
 ---
 
-The memory system gives Claude Code persistent project memory across sessions. It stores facts, preferences, decisions, debug episodes, and procedures as markdown files in `docs/memory/`, with optional indexing for fast hybrid search.
+Persistent project memory for Claude Code across sessions. Stores knowledge as markdown files in `docs/memory/`, with optional hybrid search indexing.
 
-The system uses a **3-tier graceful degradation** architecture. It automatically detects available dependencies and picks the best backend:
+## Core Concepts
 
-```
-Tier 1 (Full):     SQLite + FTS5 + sqlite-vec + Transformers.js
-Tier 2 (Lite):     MiniSearch daemon (in-memory BM25 + fuzzy)
-Tier 3 (Markdown): Pure file I/O (grep/substring)
-```
+- **Markdown is source of truth** — every memory is a `.md` file with YAML frontmatter, git-trackable and human-editable
+- **SQLite is a cache** — rebuilding from markdown never loses data
+- **3-tier graceful degradation** — always works, regardless of what you install
+- **Local-only** — no data leaves your machine
 
-**The core idea**: regardless of what you install, the system **always works**. Tier 3 needs zero dependencies — just read/write markdown files. Install more dependencies and the system automatically upgrades to a higher tier.
+## 3-Tier Architecture
 
-**Key design decision**: Markdown files are the **source of truth**, not SQLite. SQLite is just a cache/index. This means:
-- Rebuilding SQLite from markdown never loses data
-- All changes are tracked via git
-- Humans can read and edit memories directly
+The system detects available dependencies and picks the best backend automatically:
 
-### Tier comparison
-
-| Aspect | Tier 1 (Full) | Tier 2 (Lite) | Tier 3 (Markdown) |
+| | Tier 1 (Full) | Tier 2 (Lite) | Tier 3 (Markdown) |
 | --- | --- | --- | --- |
-| **Dependencies** | SQLite, sqlite-vec, Transformers.js | MiniSearch (~7KB) | None |
-| **Search** | FTS5 + vector + RRF | BM25 + fuzzy + prefix | grep/substring |
-| **Index** | SQLite (on disk) | In-memory (rebuild ~&lt;1s) | None |
-| **Latency** | &lt;50ms | &lt;10ms | &lt;5ms (but LLM must reason) |
-| **Semantic search** | Yes (vector embeddings) | No | No |
-| **Startup** | ~2-3s (first time: loads model) | ~1s | Instant |
-| **Max scale** | 100K+ memories | ~10K memories | ~1K memories |
+| **What** | SQLite + FTS5 + sqlite-vec | MiniSearch daemon | Pure file I/O |
+| **Search** | Hybrid: keyword + semantic + RRF fusion | BM25 + fuzzy + prefix | grep/substring |
+| **Semantic** | Yes (vector embeddings) | No | No |
+| **Dependencies** | better-sqlite3, sqlite-vec, Transformers.js | MiniSearch (~7KB) | None |
+| **Index** | On disk (SQLite file) | In-memory (rebuilds in &lt;1s) | None |
+| **Latency** | &lt;50ms | &lt;10ms | &lt;5ms (LLM reasons over results) |
+| **Scale** | 100K+ memories | ~10K | ~1K |
+| **Setup** | `cf memory init` | `cf memory start` | Nothing |
 
-## How It Works
-
-There are two ways to capture memories:
-
-1. **Manually** — use the [`/cf-remember`](/docs/skills/cf-remember/) skill during a session. Tell Claude what to remember and it writes a markdown file to `docs/memory/`, categorized and indexed automatically.
-
-2. **Automatically** — when `memory.autoCapture` is enabled in `.coding-friend/config.json`, a PreCompact hook fires before Claude Code compacts the session context. It captures a summary of the current session (main task, key decisions, findings) as an [`episode`](#memory-types) memory.
-
-Other skills also auto-capture when they find notable insights:
-
-- [`/cf-fix`](/docs/skills/cf-fix/) captures bug root causes
-- [`/cf-review`](/docs/skills/cf-review/) captures architectural patterns
-- [`/cf-sys-debug`](/docs/skills/cf-sys-debug/) captures debugging breakthroughs
-
-All captured memories are plain markdown files — human-readable, git-trackable, and never locked in.
-
-### [`/cf-remember`](/docs/skills/cf-remember/) vs [`cf memory`](/docs/cli/cf-memory/)
-
-- **`/cf-remember`** is a skill you use _inside a Claude Code session_. Say `/cf-remember` and describe what to save. Claude analyzes the conversation, picks the right category, and writes a markdown file with proper frontmatter. It also calls the `memory_store` MCP tool to index the memory for fast search.
-
-- **`cf memory`** is a CLI command you run _in your terminal_. It manages the memory system itself.
-
-### How Search Works
-
-When Claude searches your memories (via `memory_search`), the system routes the query through the best available backend:
-
-#### Step 1: Query Routing
-
-The query is analyzed to pick the best search mode:
-
-- **Quoted strings** or code patterns (e.g., `"auth middleware"`, `config.db.host`) — **keyword search** (FTS5 BM25)
-- **Questions** starting with who/what/why/how/when/where — **semantic search** (vector similarity)
-- **Everything else** — **hybrid search** (both keyword + semantic, fused with RRF)
-
-#### Step 2: Keyword Search (FTS5)
-
-FTS5 performs full-text search with BM25 ranking. Fields are weighted:
-
-| Field       | Weight | Why                                               |
-| ----------- | ------ | ------------------------------------------------- |
-| title       | 10x    | Most specific — exact match here is strong signal |
-| tags        | 6x     | Curated keywords the user chose                   |
-| description | 4x     | One-line summary                                  |
-| content     | 1x     | Full body text (broad match)                      |
-
-#### Step 3: Semantic Search (Embeddings)
-
-For semantic search, the system converts both the query and each stored memory into **embedding vectors** — high-dimensional numeric representations that capture meaning, not just keywords.
-
-**How embeddings work:**
-
-1. When you **store** a memory, the system combines its title + description + tags + content into a single text block
-2. This text is passed to an **embedding model** (see [Embedding Models](#embedding-models) below) which outputs a vector of N dimensions (e.g., 384 floats for the default model)
-3. The vector is stored in a **sqlite-vec** table alongside the memory ID
-4. Embeddings are **cached by content hash** — unchanged content is never re-embedded
-
-When you **search**, the query text goes through the same embedding model to produce a query vector. Then **cosine similarity** finds the stored vectors closest to the query — meaning semantically similar content is returned even if no keywords match.
-
-#### Step 4: Fusion (RRF)
-
-In hybrid mode, both keyword and semantic results are merged using **Reciprocal Rank Fusion** (RRF, k=60). Each result gets a score based on its rank in each list, and the final ranking combines both signals.
-
-#### Step 5: Post-processing
-
-- **Temporal decay** — Recent memories score higher. A 90-day half-life retains 70% of the base score.
-- **Type/tag filtering** — Optional filters narrow results before returning.
-
-## Architecture
+### How tiers connect
 
 ```
-Claude Code Session
-        |
-+-------+--------+
-|  MCP Server     | <- stdio transport
-|  (routing hub)  |
-+-------+--------+
-        |
-   detectTier()
-   /    |    \
-  v     v     v
-Tier1  Daemon  Tier3
-(direct) |   (direct)
-         v
-       Tier2
-      MiniSearch
-
-All tiers read/write:
-+------------------+
-|  docs/memory/    |
-|  (source of truth)|
-+------------------+
+Claude Code
+    |
+MCP Server (stdio transport)
+    |
+detectTier()
+ /     |      \
+v      v       v
+Tier 1  Daemon   Tier 3
+(direct)  |    (direct)
+          v
+        Tier 2
 ```
 
-The MCP server selects **one** backend based on `detectTier()`. It connects **directly** to Tier 1 (SQLite) and Tier 3 (Markdown). Only Tier 2 (MiniSearch) goes through the daemon — an HTTP server on a Unix Domain Socket that keeps the in-memory index alive across requests.
+- **Tier 1 & 3**: MCP server connects **directly** to the backend (no daemon)
+- **Tier 2**: MCP server connects to a **Hono HTTP daemon** over Unix Domain Socket (UDS), which keeps the MiniSearch index in RAM
 
-### MCP Integration
+### Key technologies
 
-The MCP (Model Context Protocol) server is the bridge between Claude Code and the memory backends. It runs as a [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically when it needs memory tools. You don't need to start it manually.
+- **[FTS5](https://www.sqlite.org/fts5.html)** — SQLite's built-in full-text search engine, uses BM25 ranking algorithm
+- **[sqlite-vec](https://github.com/asg017/sqlite-vec)** — SQLite extension for vector storage and cosine similarity search
+- **[MiniSearch](https://lucaong.github.io/minisearch/)** — Lightweight (~7KB) in-memory search with BM25 + fuzzy matching
+- **[Hono](https://hono.dev/)** — Ultra-lightweight (~14KB) HTTP framework powering the Tier 2 daemon
+- **Unix Domain Socket (UDS)** — IPC transport for daemon communication (10-50x faster than TCP, no port conflicts)
+- **[Transformers.js](https://huggingface.co/docs/transformers.js)** — Runs ML embedding models in Node.js (no Python/GPU needed)
+- **WAL mode** — SQLite Write-Ahead Logging for concurrent reads/writes without blocking
 
-The MCP server exposes 6 tools that Claude Code calls during sessions:
+## Capturing Memories
 
-| Tool              | Purpose                                   |
-| ----------------- | ----------------------------------------- |
-| `memory_store`    | Store a new memory                        |
-| `memory_search`   | Search memories (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID               |
-| `memory_list`     | List memories with filtering              |
-| `memory_update`   | Update existing memory                    |
-| `memory_delete`   | Delete a memory                           |
+Two ways to store memories:
 
-When you use `/cf-remember`, Claude calls `memory_store` behind the scenes. When a skill needs context from past sessions, it calls `memory_search`. You never interact with these tools directly — they're part of the automatic workflow.
+1. **Manually** — `/cf-remember` inside a Claude Code session
+   - Claude picks the right category and writes a markdown file
+   - Also indexes via `memory_store` MCP tool
+2. **Automatically** — when `memory.autoCapture` is enabled
+   - PreCompact hook captures session summaries as `episode` memories
+   - Skills auto-capture notable findings:
+     - `/cf-fix` — bug root causes
+     - `/cf-review` — architectural patterns
+     - `/cf-sys-debug` — debugging breakthroughs
 
-To configure the MCP server for your project, run `cf memory mcp` to get the configuration snippet for your Claude Code settings.
+### `/cf-remember` vs `cf memory`
 
-### 3-Tier Graceful Degradation
+| | `/cf-remember` | `cf memory` |
+| --- | --- | --- |
+| **Where** | Inside Claude Code session | Terminal CLI |
+| **Does** | Saves knowledge from conversation | Manages the memory system |
+| **Examples** | `/cf-remember auth uses JWT` | `cf memory status`, `cf memory rebuild` |
 
-The system automatically detects and uses the best available backend:
+## MCP Integration
 
-- **Tier 1: SQLite** — Full-power hybrid search with [FTS5 full-text](https://www.sqlite.org/fts5.html) + [sqlite-vec](https://github.com/asg017/sqlite-vec) semantic vectors, fused with Reciprocal Rank Fusion (RRF). Requires `cf memory init` to install native dependencies. MCP server connects **directly** — no daemon needed.
-- **Tier 2: MiniSearch** — In-memory BM25 index with fuzzy matching. Runs inside a [Hono](https://hono.dev/) daemon on a Unix Domain Socket. Activates via `cf memory start` when SQLite deps aren't installed. The daemon keeps the index in RAM and auto-rebuilds when files change.
-- **Tier 3: Markdown** — Zero-dependency fallback. For each file, it checks frontmatter (title, description, tags) first — if that matches, it stops there. It only reads the full file content for files whose frontmatter didn't match. MCP server connects **directly** — always available, no setup needed.
+The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically.
 
-Tier detection happens automatically:
+### 6 Tools
 
-```
-SQLite deps available?  → Tier 1 (MCP → direct → SqliteBackend)
-Daemon running?         → Tier 2 (MCP → HTTP/UDS → Daemon → MiniSearchBackend)
-Otherwise               → Tier 3 (MCP → direct → MarkdownBackend)
-```
+| Tool | Purpose |
+| --- | --- |
+| `memory_store` | Store a new memory |
+| `memory_search` | Search (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID |
+| `memory_list` | List memories with filtering |
+| `memory_update` | Update existing memory |
+| `memory_delete` | Delete a memory |
+
+You never call these directly — skills like `/cf-remember` and `/cf-fix` use them behind the scenes.
+
+Run `cf memory mcp` to get the MCP configuration snippet for your project.
+
+## Search Pipeline
+
+When Claude calls `memory_search`, the query goes through this pipeline (Tier 1):
+
+### 1. Query routing
+
+The system auto-detects intent:
+
+- **Quoted strings** or code patterns (`"auth middleware"`, `config.db.host`) — keyword only
+- **Questions** (how/why/what) — semantic only
+- **Everything else** — hybrid (both + fusion)
+
+### 2. Keyword search (FTS5 + BM25)
+
+Full-text search with weighted fields:
+
+| Field | Weight | Reason |
+| --- | --- | --- |
+| title | 10x | Most specific signal |
+| tags | 6x | Curated keywords |
+| description | 4x | One-line summary |
+| content | 1x | Broad match |
+
+### 3. Semantic search (embeddings)
+
+- Text is converted to a **vector** (array of floats) by an embedding model
+- Stored vectors are compared using **cosine similarity** — finds meaning, not just keywords
+- Example: searching "login verification" finds a memory titled "JWT authentication"
+- Vectors cached by content hash — unchanged content is never re-embedded
+
+### 4. Fusion (RRF)
+
+In hybrid mode, keyword and semantic results are merged with **Reciprocal Rank Fusion** (k=60):
+
+- Each result scored by rank position: `score = 1/(60 + rank)`
+- Scores from both lists are summed
+- Final ranking combines both keyword precision and semantic understanding
+
+### 5. Post-processing
+
+- **Temporal decay** — recent memories score higher (90-day half-life, floor at 70%)
+- **Deduplication** — warns on near-duplicate content (Jaccard similarity)
+- **Type/tag filtering** — optional filters narrow results
 
 ## Memory Types
 
-| Type         | Category\*        | Question it answers             | Example                                     |
-| ------------ | ----------------- | ------------------------------- | ------------------------------------------- |
-| `fact`       | `features/`       | "How does this work?"           | "Auth module uses JWT in httpOnly cookies"  |
-| `preference` | `conventions/`    | "How does the user want it?"    | "Always use async/await, never .then()"     |
-| `context`    | `decisions/`      | "What state is the project in?" | "Migrating from REST to GraphQL"            |
-| `episode`    | `bugs/`           | "What did we do before?"        | "Debugged CORS on /api/upload"              |
-| `procedure`  | `infrastructure/` | "What steps to do X?"           | "Deploy: build -> ship -> merge -> release" |
+| Type | Folder | Answers | Example |
+| --- | --- | --- | --- |
+| `fact` | `features/` | "How does this work?" | "Auth uses JWT in httpOnly cookies" |
+| `preference` | `conventions/` | "How does the user want it?" | "Always async/await, never .then()" |
+| `context` | `decisions/` | "What state is the project in?" | "Migrating REST to GraphQL" |
+| `episode` | `bugs/` | "What did we do before?" | "Fixed CORS on /api/upload" |
+| `procedure` | `infrastructure/` | "What steps to do X?" | "Deploy: build, ship, merge, release" |
 
-\*Category is the subfolder inside `docs/memory/` where the markdown file is stored. Each type maps to a folder so memories are organized on disk and can be browsed or edited manually.
-
-## Memory Importance
-
-Importance is a integer from 1 to 5 (default: 3). It is used for filtering and future ranking features.
-
-- 1: Low importance
-- 2: Medium importance
-- 3: High importance
-- 4: Very high importance
-- 5: Critical importance
-
-Importance is set automatically for auto-captured sessions (episodes) to 2, and manually saved memories default to 3. It can be overridden by setting the `importance` field in the frontmatter. You can also use `/cf-remember` to set the importance to a specific value. For example,
-
-```bash
-/cf-remember this is critical, importance 5
-```
+Each type maps to a subfolder in `docs/memory/` for easy browsing.
 
 ## Markdown Format
-
-Every memory is a markdown file with YAML frontmatter:
 
 ```yaml
 ---
@@ -210,61 +171,39 @@ The auth module uses RS256-signed JWT tokens...
 
 ### Fields
 
-- **`title`** — Short, descriptive name
-- **`description`** — One-line searchable summary (under 100 chars, grep-friendly). This is critical for search quality — be specific. Good: `"Config management via .coding-friend/config.json with local/global override"`. Bad: `"How we manage config"`.
-- **`type`** — One of `fact`, `preference`, `context`, `episode`, `procedure`
-- **`tags`** — Keywords for filtering and search ranking
-- **`importance`** — Integer from 1 to 5 (default: 3). Indicates how critical this memory is.
+- **`title`** — short, descriptive name
+- **`description`** — one-line searchable summary (&lt;100 chars). Critical for search quality. Good: `"JWT auth with httpOnly cookies and RS256"`. Bad: `"How auth works"`.
+- **`type`** — one of: `fact`, `preference`, `context`, `episode`, `procedure`
+- **`tags`** — keywords for filtering and search ranking
+- **`importance`** — 1 (low) to 5 (critical), default 3. Auto-captured episodes default to 2.
 - **`created`** / **`updated`** — ISO date strings
-- **`source`** — Where this memory came from: `conversation` (manual via `/cf-remember`) or `auto-capture` (automatic via PreCompact hook)
-
-## Search Modes
-
-The system automatically routes queries based on the input:
-
-- **Quoted strings** or code patterns — keyword search (FTS5)
-- **Questions** (who/what/why/how) — semantic search (vector similarity)
-- **Default** — hybrid search (FTS5 + vector, fused with RRF)
-
-Results are ranked with:
-
-- **BM25 scoring** with weighted columns: title (10x), tags (6x), description (4x), content (1x)
-- **Temporal decay** — recent memories score higher (90-day half-life, retaining 70% base score)
-- **Deduplication** — warns when storing near-duplicate content (Jaccard similarity)
+- **`source`** — `conversation` (manual) or `auto-capture` (automatic)
 
 ## Embedding Models
 
-Semantic search in Tier 1 requires an **embedding model** to convert text into vectors. CF Memory supports two providers:
+Semantic search (Tier 1) needs an embedding model to convert text into vectors.
 
-### Providers
+### Two providers
 
-**Transformers.js** (default) — Runs locally in the Node.js process. No external service needed. The model is downloaded once (~23 MB) and cached in `~/.coding-friend/memory/node_modules/`.
+- **Transformers.js** (default) — runs in Node.js, no external service, model auto-downloaded (~23 MB)
+- **Ollama** (optional) — uses a local [Ollama](https://ollama.com/) server, supports more models, falls back to Transformers.js if unavailable
 
-**Ollama** (optional) — Uses a locally running [Ollama](https://ollama.com/) server. Faster for repeated queries and supports a wider range of models. The embedding model runs on the Ollama server, not in the Node.js process.
+### Recommended models
 
-### Default Model
-
-Both providers default to **all-MiniLM-L6-v2** (384 dimensions) — a compact model optimized for short text similarity. This covers most use cases well.
-
-### Recommended Models
-
-| Model                      | Dims | Size    | Provider        | Notes                                                   |
-| -------------------------- | ---- | ------- | --------------- | ------------------------------------------------------- |
-| `all-minilm:l6-v2`         | 384  | ~23 MB  | Ollama          | **Default** — fast, good for short text                 |
-| `nomic-embed-text`         | 768  | ~274 MB | Ollama          | **Recommended upgrade** — better semantic understanding |
-| `mxbai-embed-large`        | 1024 | ~670 MB | Ollama          | Best quality, good for large memory collections         |
-| `snowflake-arctic-embed:s` | 384  | ~67 MB  | Ollama          | Alternative small model                                 |
-| `bge-base-en-v1.5`         | 768  | ~130 MB | Ollama          | Good general-purpose, English-optimized                 |
-| `Xenova/all-MiniLM-L6-v2`  | 384  | ~23 MB  | Transformers.js | Default (auto-downloaded)                               |
+| Model | Dims | Size | Provider | Notes |
+| --- | --- | --- | --- | --- |
+| `Xenova/all-MiniLM-L6-v2` | 384 | ~23 MB | Transformers.js | **Default** — auto-downloaded |
+| `all-minilm:l6-v2` | 384 | ~23 MB | Ollama | Same model via Ollama |
+| `nomic-embed-text` | 768 | ~274 MB | Ollama | **Recommended upgrade** |
+| `mxbai-embed-large` | 1024 | ~670 MB | Ollama | Best quality |
+| `snowflake-arctic-embed:s` | 384 | ~67 MB | Ollama | Alternative small model |
+| `bge-base-en-v1.5` | 768 | ~130 MB | Ollama | English-optimized |
 
 ### Using Ollama
 
 1. [Install Ollama](https://ollama.com/download)
-2. Pull an embedding model:
-   ```bash
-   ollama pull nomic-embed-text
-   ```
-3. Configure in `.coding-friend/config.json`:
+2. Pull a model: `ollama pull nomic-embed-text`
+3. Configure:
    ```json
    {
      "memory": {
@@ -275,27 +214,22 @@ Both providers default to **all-MiniLM-L6-v2** (384 dimensions) — a compact mo
      }
    }
    ```
-4. Rebuild to re-embed existing memories with the new model:
-   ```bash
-   cf memory rebuild
-   ```
+4. Rebuild existing memories: `cf memory rebuild`
 
-If Ollama is not running or the model is unavailable, the system automatically falls back to Transformers.js.
+### Changing models
 
-### Changing Models
+When switching to a model with different dimensions (e.g., 384 to 768):
 
-When you switch to a model with **different dimensions** (e.g., 384 → 768), existing embeddings become incompatible. The system detects this automatically:
+1. System detects dimension mismatch on startup
+2. Vector search is **disabled** (keyword search still works)
+3. Run `cf memory rebuild` to re-embed all memories
+4. Vector search re-enabled with new dimensions
 
-1. On startup, CF Memory checks if the configured model's dimensions match the stored embeddings
-2. If mismatched, **vector search is disabled** and a warning is logged
-3. Run `cf memory rebuild` to re-embed all memories with the new model
-4. After rebuild, vector search is re-enabled with the new dimensions
-
-Markdown files are never affected — they remain the source of truth regardless of embedding changes.
+Markdown files are never affected — they remain source of truth.
 
 ### Configuration
 
-Configure embedding settings in `.coding-friend/config.json`:
+In `.coding-friend/config.json`:
 
 ```json
 {
@@ -309,12 +243,16 @@ Configure embedding settings in `.coding-friend/config.json`:
 }
 ```
 
-Or via environment variables (useful for MCP server configuration):
+Or via environment variables:
 
-| Variable                      | Default                  | Description                    |
-| ----------------------------- | ------------------------ | ------------------------------ |
-| `MEMORY_EMBEDDING_PROVIDER`   | `"transformers"`         | `"transformers"` or `"ollama"` |
-| `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Model name                     |
-| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL              |
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MEMORY_EMBEDDING_PROVIDER` | `"transformers"` | `"transformers"` or `"ollama"` |
+| `MEMORY_EMBEDDING_MODEL` | (provider default) | Model name |
+| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL |
 
-See [`config.json` reference](/docs/configuration/config-json#memory) for all memory configuration options.
+See [`config.json` reference](/docs/configuration/config-json#memory) for all memory options.
+
+## Configuration
+
+Check out the [configuration reference](/docs/configuration/config-json#memory) for all memory options.
