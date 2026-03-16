@@ -16,16 +16,16 @@ Persistent project memory for Claude Code across sessions. Stores knowledge as m
 
 The system detects available dependencies and picks the best backend automatically:
 
-| | Tier 1 (Full) | Tier 2 (Lite) | Tier 3 (Markdown) |
-| --- | --- | --- | --- |
-| **What** | SQLite + FTS5 + sqlite-vec | MiniSearch daemon | Pure file I/O |
-| **Search** | Hybrid: keyword + semantic + RRF fusion | BM25 + fuzzy + prefix | grep/substring |
-| **Semantic** | Yes (vector embeddings) | No | No |
-| **Dependencies** | better-sqlite3, sqlite-vec, Transformers.js | MiniSearch (~7KB) | None |
-| **Index** | On disk (SQLite file) | In-memory (rebuilds in &lt;1s) | None |
-| **Latency** | &lt;50ms | &lt;10ms | &lt;5ms (LLM reasons over results) |
-| **Scale** | 100K+ memories | ~10K | ~1K |
-| **Setup** | `cf memory init` | `cf memory start` | Nothing |
+|                  | Tier 1 (Full)                               | Tier 2 (Lite)                  | Tier 3 (Markdown)                  |
+| ---------------- | ------------------------------------------- | ------------------------------ | ---------------------------------- |
+| **What**         | SQLite + FTS5 + sqlite-vec                  | MiniSearch daemon              | Pure file I/O                      |
+| **Search**       | Hybrid: keyword + semantic + RRF fusion     | BM25 + fuzzy + prefix          | grep/substring                     |
+| **Semantic**     | Yes (vector embeddings)                     | No                             | No                                 |
+| **Dependencies** | better-sqlite3, sqlite-vec, Transformers.js | MiniSearch (~7KB)              | None                               |
+| **Index**        | On disk (SQLite file)                       | In-memory (rebuilds in &lt;1s) | None                               |
+| **Latency**      | &lt;50ms                                    | &lt;10ms                       | &lt;5ms (LLM reasons over results) |
+| **Scale**        | 100K+ memories                              | ~10K                           | ~1K                                |
+| **Setup**        | `cf memory init`                            | `cf memory start`              | Nothing                            |
 
 ### How tiers connect
 
@@ -58,25 +58,38 @@ Tier 1  Daemon   Tier 3
 
 ## Capturing Memories
 
-Two ways to store memories:
+Three ways to store memories:
 
-1. **Manually** — `/cf-remember` inside a Claude Code session
+1. **Bootstrap** — `/cf-onboard` inside a Claude Code session
+   - Scans the entire project (README, configs, source code) and populates memory with architecture, conventions, tech stack, key features
+   - Safe to run multiple times — updates existing memories, never duplicates
+   - Recommended for new projects or after major refactors
+2. **Manually** — `/cf-remember` inside a Claude Code session
    - Claude picks the right category and writes a markdown file
    - Also indexes via `memory_store` MCP tool
-2. **Automatically** — when `memory.autoCapture` is enabled
+3. **Automatically** — when `memory.autoCapture` is enabled
    - PreCompact hook captures session summaries as `episode` memories
    - Skills auto-capture notable findings:
      - `/cf-fix` — bug root causes
      - `/cf-review` — architectural patterns
      - `/cf-sys-debug` — debugging breakthroughs
 
+### `/cf-onboard` vs `/cf-remember`
+
+|                    | `/cf-onboard`                                       | `/cf-remember`                      |
+| ------------------ | --------------------------------------------------- | ----------------------------------- |
+| **When**           | First time, or to refresh project knowledge         | After a coding session              |
+| **Source**         | Scans the codebase directly                         | Extracts from conversation          |
+| **Scope**          | Whole project (architecture, conventions, features) | Specific topic from current session |
+| **Typical output** | 10-15 memories across all categories                | 1-3 memories per invocation         |
+
 ### `/cf-remember` vs `cf memory`
 
-| | `/cf-remember` | `cf memory` |
-| --- | --- | --- |
-| **Where** | Inside Claude Code session | Terminal CLI |
-| **Does** | Saves knowledge from conversation | Manages the memory system |
-| **Examples** | `/cf-remember auth uses JWT` | `cf memory status`, `cf memory rebuild` |
+|              | `/cf-remember`                    | `cf memory`                             |
+| ------------ | --------------------------------- | --------------------------------------- |
+| **Where**    | Inside Claude Code session        | Terminal CLI                            |
+| **Does**     | Saves knowledge from conversation | Manages the memory system               |
+| **Examples** | `/cf-remember auth uses JWT`      | `cf memory status`, `cf memory rebuild` |
 
 ## MCP Integration
 
@@ -84,14 +97,14 @@ The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server brid
 
 ### 6 Tools
 
-| Tool | Purpose |
-| --- | --- |
-| `memory_store` | Store a new memory |
-| `memory_search` | Search (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID |
-| `memory_list` | List memories with filtering |
-| `memory_update` | Update existing memory |
-| `memory_delete` | Delete a memory |
+| Tool              | Purpose                          |
+| ----------------- | -------------------------------- |
+| `memory_store`    | Store a new memory               |
+| `memory_search`   | Search (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID      |
+| `memory_list`     | List memories with filtering     |
+| `memory_update`   | Update existing memory           |
+| `memory_delete`   | Delete a memory                  |
 
 You never call these directly — skills like `/cf-remember` and `/cf-fix` use them behind the scenes.
 
@@ -113,12 +126,12 @@ The system auto-detects intent:
 
 Full-text search with weighted fields:
 
-| Field | Weight | Reason |
-| --- | --- | --- |
-| title | 10x | Most specific signal |
-| tags | 6x | Curated keywords |
-| description | 4x | One-line summary |
-| content | 1x | Broad match |
+| Field       | Weight | Reason               |
+| ----------- | ------ | -------------------- |
+| title       | 10x    | Most specific signal |
+| tags        | 6x     | Curated keywords     |
+| description | 4x     | One-line summary     |
+| content     | 1x     | Broad match          |
 
 ### 3. Semantic search (embeddings)
 
@@ -143,13 +156,13 @@ In hybrid mode, keyword and semantic results are merged with **Reciprocal Rank F
 
 ## Memory Types
 
-| Type | Folder | Answers | Example |
-| --- | --- | --- | --- |
-| `fact` | `features/` | "How does this work?" | "Auth uses JWT in httpOnly cookies" |
-| `preference` | `conventions/` | "How does the user want it?" | "Always async/await, never .then()" |
-| `context` | `decisions/` | "What state is the project in?" | "Migrating REST to GraphQL" |
-| `episode` | `bugs/` | "What did we do before?" | "Fixed CORS on /api/upload" |
-| `procedure` | `infrastructure/` | "What steps to do X?" | "Deploy: build, ship, merge, release" |
+| Type         | Folder            | Answers                         | Example                               |
+| ------------ | ----------------- | ------------------------------- | ------------------------------------- |
+| `fact`       | `features/`       | "How does this work?"           | "Auth uses JWT in httpOnly cookies"   |
+| `preference` | `conventions/`    | "How does the user want it?"    | "Always async/await, never .then()"   |
+| `context`    | `decisions/`      | "What state is the project in?" | "Migrating REST to GraphQL"           |
+| `episode`    | `bugs/`           | "What did we do before?"        | "Fixed CORS on /api/upload"           |
+| `procedure`  | `infrastructure/` | "What steps to do X?"           | "Deploy: build, ship, merge, release" |
 
 Each type maps to a subfolder in `docs/memory/` for easy browsing.
 
@@ -190,14 +203,14 @@ Semantic search (Tier 1) needs an embedding model to convert text into vectors.
 
 ### Recommended models
 
-| Model | Dims | Size | Provider | Notes |
-| --- | --- | --- | --- | --- |
-| `Xenova/all-MiniLM-L6-v2` | 384 | ~23 MB | Transformers.js | **Default** — auto-downloaded |
-| `all-minilm:l6-v2` | 384 | ~23 MB | Ollama | Same model via Ollama |
-| `nomic-embed-text` | 768 | ~274 MB | Ollama | **Recommended upgrade** |
-| `mxbai-embed-large` | 1024 | ~670 MB | Ollama | Best quality |
-| `snowflake-arctic-embed:s` | 384 | ~67 MB | Ollama | Alternative small model |
-| `bge-base-en-v1.5` | 768 | ~130 MB | Ollama | English-optimized |
+| Model                      | Dims | Size    | Provider        | Notes                         |
+| -------------------------- | ---- | ------- | --------------- | ----------------------------- |
+| `Xenova/all-MiniLM-L6-v2`  | 384  | ~23 MB  | Transformers.js | **Default** — auto-downloaded |
+| `all-minilm:l6-v2`         | 384  | ~23 MB  | Ollama          | Same model via Ollama         |
+| `nomic-embed-text`         | 768  | ~274 MB | Ollama          | **Recommended upgrade**       |
+| `mxbai-embed-large`        | 1024 | ~670 MB | Ollama          | Best quality                  |
+| `snowflake-arctic-embed:s` | 384  | ~67 MB  | Ollama          | Alternative small model       |
+| `bge-base-en-v1.5`         | 768  | ~130 MB | Ollama          | English-optimized             |
 
 ### Using Ollama
 
@@ -245,11 +258,11 @@ In `.coding-friend/config.json`:
 
 Or via environment variables:
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `MEMORY_EMBEDDING_PROVIDER` | `"transformers"` | `"transformers"` or `"ollama"` |
-| `MEMORY_EMBEDDING_MODEL` | (provider default) | Model name |
-| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL |
+| Variable                      | Default                  | Description                    |
+| ----------------------------- | ------------------------ | ------------------------------ |
+| `MEMORY_EMBEDDING_PROVIDER`   | `"transformers"`         | `"transformers"` or `"ollama"` |
+| `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Model name                     |
+| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL              |
 
 See [`config.json` reference](/docs/configuration/config-json#memory) for all memory options.
 

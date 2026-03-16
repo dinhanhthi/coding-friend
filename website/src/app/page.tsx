@@ -2,7 +2,7 @@ import Hero from "@/components/landing/Hero";
 import StatsSection from "@/components/landing/StatsSection";
 import EcosystemSection from "@/components/landing/EcosystemSection";
 import DifferentiatorSection from "@/components/landing/DifferentiatorSection";
-import Features from "@/components/landing/Features";
+import Skills from "@/components/landing/Skills";
 import HowItWorks from "@/components/landing/HowItWorks";
 import InstallSection from "@/components/landing/InstallSection";
 
@@ -39,7 +39,7 @@ export default function Home() {
       <EcosystemSection />
       <DifferentiatorSection />
       <HowItWorks />
-      <Features />
+      <Skills />
       <InstallSection />
     </>
   );

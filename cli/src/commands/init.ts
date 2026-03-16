@@ -805,6 +805,10 @@ async function stepMemory(docsDir: string): Promise<void> {
       log.success(`Saved to ${targetPath}`);
     }
   }
+
+  log.info(
+    `Tip: Run ${chalk.cyan("/cf-onboard")} in Claude Code to populate memory with project knowledge.`,
+  );
 }
 
 async function stepClaudePermissions(
@@ -989,6 +993,6 @@ export async function initCommand(): Promise<void> {
   console.log();
   log.congrats("Setup complete!");
   log.dim(
-    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-ship, /cf-optimize, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help",
+    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-ship, /cf-optimize, /cf-onboard, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help",
   );
 }

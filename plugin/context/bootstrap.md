@@ -23,7 +23,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ### Slash Commands
 
-/cf-ask, /cf-plan, /cf-review, /cf-commit, /cf-ship, /cf-fix, /cf-optimize, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help
+/cf-ask, /cf-plan, /cf-review, /cf-commit, /cf-ship, /cf-fix, /cf-optimize, /cf-onboard, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help
 
 ### Auto-Invoked
 
@@ -66,7 +66,7 @@ The memory system provides persistent project knowledge across sessions via MCP 
 - **MCP Tools**: `memory_store`, `memory_search`, `memory_retrieve`, `memory_list`, `memory_update`, `memory_delete`
 - **3-tier search**: SQLite hybrid (FTS5 + semantic) → MiniSearch (BM25 + fuzzy) → Markdown grep
 - **Auto-capture**: PreCompact hook saves session episodes (opt-in via `memory.autoCapture`)
-- **Smart capture**: cf-fix, cf-sys-debug, cf-review, cf-ask auto-index findings in memory
+- **Smart capture**: cf-fix, cf-sys-debug, cf-review, cf-ask, cf-onboard auto-index findings in memory
 
 Memory files live in `docs/memory/` organized by type: features/ (facts), conventions/ (preferences), decisions/ (context), bugs/ (episodes), infrastructure/ (procedures).
 

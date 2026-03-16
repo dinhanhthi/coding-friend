@@ -7,16 +7,16 @@ Manage the persistent AI memory system. Store, search, and recall project knowle
 
 ## Subcommands
 
-| Command                    | Description                                             |
-| -------------------------- | ------------------------------------------------------- |
-| `cf memory status`         | Show current tier, document count, daemon state         |
-| `cf memory search <query>` | Search memories from the terminal                       |
-| `cf memory list`           | List all stored memories                                |
-| `cf memory init`           | Install Tier 1 deps and import existing memories        |
-| `cf memory start`          | Start the Tier 2 daemon                                 |
-| `cf memory stop`           | Stop the Tier 2 daemon                                  |
-| `cf memory rebuild`        | Re-index all memories from markdown files               |
-| `cf memory mcp`            | Print MCP server config for Claude Code                 |
+| Command                    | Description                                      |
+| -------------------------- | ------------------------------------------------ |
+| `cf memory status`         | Show current tier, document count, daemon state  |
+| `cf memory search <query>` | Search memories from the terminal                |
+| `cf memory list`           | List all stored memories                         |
+| `cf memory init`           | Install Tier 1 deps and import existing memories |
+| `cf memory start`          | Start the Tier 2 daemon                          |
+| `cf memory stop`           | Stop the Tier 2 daemon                           |
+| `cf memory rebuild`        | Re-index all memories from markdown files        |
+| `cf memory mcp`            | Print MCP server config for Claude Code          |
 
 ## `init`
 
@@ -60,10 +60,12 @@ cf memory search "authentication flow"
 These commands manage the **Tier 2 daemon** — a background Hono HTTP server that keeps a MiniSearch index in RAM.
 
 **When you need them:**
+
 - You **don't** have Tier 1 (haven't run `cf memory init`)
 - You want better search than Tier 3 grep (fuzzy matching, BM25 ranking)
 
 **When you don't need them:**
+
 - Tier 1 is enabled — the MCP server connects directly to SQLite, no daemon involved
 - You're fine with Tier 3 (small memory collection, &lt;100 files)
 
@@ -78,6 +80,7 @@ cf memory stop
 ```
 
 **How it works:**
+
 - Daemon runs detached (survives terminal close)
 - Listens on Unix Domain Socket at `~/.coding-friend/memory/daemon.sock`
 - Auto-rebuilds index when files in `docs/memory/` change (file watcher)
@@ -89,12 +92,14 @@ cf memory stop
 Re-reads all markdown files and rebuilds the search index from scratch.
 
 **When to run:**
+
 - After **manually editing** markdown files in `docs/memory/` (outside of Claude Code)
 - After **switching embedding models** (e.g., default 384d to Ollama 768d) — existing vectors become incompatible
 - After **pulling changes** from git that include new/modified memory files
 - If search results seem **stale or wrong**
 
 **What it does depends on your tier:**
+
 - **Tier 1**: Drops and recreates SQLite FTS5 index + re-generates all vector embeddings
 - **Tier 2**: Sends rebuild command to daemon, which re-reads files and rebuilds MiniSearch index
 - **Tier 3**: No index to rebuild (always reads files directly)
@@ -143,13 +148,13 @@ In `.coding-friend/config.json`:
 }
 ```
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `tier` | `"auto"` | `"auto"`, `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3) |
-| `docsDir` | `"docs/memory"` | Where markdown memory files are stored |
-| `daemon.idleTimeout` | `30` | Minutes before daemon auto-stops |
-| `autoCapture` | `false` | Auto-save session summaries on context compaction |
-| `autoStart` | `false` | Auto-start daemon when MCP server connects |
-| `embedding.provider` | `"transformers"` | `"transformers"` or `"ollama"` |
-| `embedding.model` | `"Xenova/all-MiniLM-L6-v2"` | Embedding model name |
-| `embedding.ollamaUrl` | `"http://localhost:11434"` | Ollama server URL |
+| Option                | Default                     | Description                                                           |
+| --------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `tier`                | `"auto"`                    | `"auto"`, `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3) |
+| `docsDir`             | `"docs/memory"`             | Where markdown memory files are stored                                |
+| `daemon.idleTimeout`  | `30`                        | Minutes before daemon auto-stops                                      |
+| `autoCapture`         | `false`                     | Auto-save session summaries on context compaction                     |
+| `autoStart`           | `false`                     | Auto-start daemon when MCP server connects                            |
+| `embedding.provider`  | `"transformers"`            | `"transformers"` or `"ollama"`                                        |
+| `embedding.model`     | `"Xenova/all-MiniLM-L6-v2"` | Embedding model name                                                  |
+| `embedding.ollamaUrl` | `"http://localhost:11434"`  | Ollama server URL                                                     |

@@ -103,6 +103,14 @@ cf memory init       # Initialize SQLite with hybrid search (Tier 1)
 cf memory status     # Check current tier and document count
 ```
 
+Then bootstrap memory with project knowledge inside Claude Code:
+
+```
+/cf-onboard This is a Next.js app with PostgreSQL and Stripe
+```
+
+This scans your project and creates ~10-15 memories covering architecture, conventions, and key features. Safe to run multiple times.
+
 Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
 
 ### 6. Host your learning docs (optional)
@@ -124,6 +132,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-fix [bug]`         | Quick bug fix workflow                      |
 | `/cf-ask [question]`    | Quick Q&A about codebase                    |
 | `/cf-optimize [target]` | Structured optimization with measurement    |
+| `/cf-onboard [desc]`    | Scan project and bootstrap memory           |
 | `/cf-review [target]`   | Code review in forked subagent              |
 | `/cf-commit [hint]`     | Analyze diff and create conventional commit |
 | `/cf-ship [hint]`       | Verify, commit, push, and create PR         |
