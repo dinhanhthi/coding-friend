@@ -1,9 +1,5 @@
 # Changelog (Learn Host)
 
-## v0.2.2 (2026-03-16)
-
-- Improve `cf init` to be more interactive with step-by-step guided setup ([#d5bbc9c](https://github.com/dinhanhthi/coding-friend/commit/d5bbc9c))
-
 ## v0.2.1 (2026-03-05)
 
 - Fix TOC heading text stripping markdown links from slug generation ([#9a8fb5c](https://github.com/dinhanhthi/coding-friend/commit/9a8fb5c))
