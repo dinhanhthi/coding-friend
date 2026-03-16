@@ -4,12 +4,13 @@ import {
   SCHEMA_VERSION,
   PRAGMA_SETTINGS,
   EMBEDDING_DIMS,
+  SCHEMA_V2_METADATA,
   getVecTableSQL,
 } from "../backends/sqlite/schema.js";
 
 describe("Schema constants", () => {
-  it("SCHEMA_VERSION is 1", () => {
-    expect(SCHEMA_VERSION).toBe(1);
+  it("SCHEMA_VERSION is 2", () => {
+    expect(SCHEMA_VERSION).toBe(2);
   });
 
   it("EMBEDDING_DIMS is 384 (all-MiniLM-L6-v2)", () => {
@@ -115,5 +116,13 @@ describe("getVecTableSQL()", () => {
   it("supports custom dimensions", () => {
     const sql = getVecTableSQL(768);
     expect(sql).toContain("float[768]");
+  });
+});
+
+describe("SCHEMA_V2_METADATA", () => {
+  it("creates metadata table with key-value structure", () => {
+    expect(SCHEMA_V2_METADATA).toContain("CREATE TABLE IF NOT EXISTS metadata");
+    expect(SCHEMA_V2_METADATA).toContain("key TEXT PRIMARY KEY");
+    expect(SCHEMA_V2_METADATA).toContain("value TEXT NOT NULL");
   });
 });

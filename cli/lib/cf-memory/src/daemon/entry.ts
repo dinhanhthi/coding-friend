@@ -31,6 +31,33 @@ const idleTimeoutMs =
 const tierArg = process.argv.find((a) => a.startsWith("--tier="));
 const requestedTier = tierArg?.split("=")[1];
 
+// Parse embedding flags from any position
+const embeddingProviderArg = process.argv.find((a) =>
+  a.startsWith("--embedding-provider="),
+);
+const embeddingModelArg = process.argv.find((a) =>
+  a.startsWith("--embedding-model="),
+);
+const embeddingOllamaUrlArg = process.argv.find((a) =>
+  a.startsWith("--embedding-ollama-url="),
+);
+
+// Use substring to avoid truncating values that contain "="
+function flagValue(arg: string): string {
+  return arg.substring(arg.indexOf("=") + 1);
+}
+
+const embeddingConfig = {
+  ...(embeddingProviderArg && {
+    provider: flagValue(embeddingProviderArg) as "transformers" | "ollama",
+  }),
+  ...(embeddingModelArg && { model: flagValue(embeddingModelArg) }),
+  ...(embeddingOllamaUrlArg && {
+    ollamaUrl: flagValue(embeddingOllamaUrlArg),
+  }),
+};
+const hasEmbeddingConfig = Object.keys(embeddingConfig).length > 0;
+
 async function createBackend(): Promise<MemoryBackend> {
   // Use SqliteBackend if requested or if deps are available and not forced to lite
   if (
@@ -39,7 +66,10 @@ async function createBackend(): Promise<MemoryBackend> {
   ) {
     try {
       const { SqliteBackend } = await import("../backends/sqlite/index.js");
-      return new SqliteBackend(resolvedDir);
+      return new SqliteBackend(
+        resolvedDir,
+        hasEmbeddingConfig ? { embedding: embeddingConfig } : undefined,
+      );
     } catch (err) {
       process.stderr.write(
         `[cf-memory] SqliteBackend failed, falling back to MiniSearch: ${err instanceof Error ? err.message : String(err)}\n`,

@@ -10,7 +10,7 @@
  */
 
 /** Current schema version — bump when adding migrations */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Embedding dimensions for all-MiniLM-L6-v2 */
 export const EMBEDDING_DIMS = 384;
@@ -85,8 +85,16 @@ export const SCHEMA_V1: string[] = [
   )`,
 
   // Insert schema version
-  `INSERT INTO schema_version (version) VALUES (${SCHEMA_VERSION})`,
+  `INSERT INTO schema_version (version) VALUES (1)`,
 ];
+
+/**
+ * SQL to create the metadata table (added in schema v2).
+ */
+export const SCHEMA_V2_METADATA = `CREATE TABLE IF NOT EXISTS metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+)`;
 
 /**
  * PRAGMA settings for optimal performance.

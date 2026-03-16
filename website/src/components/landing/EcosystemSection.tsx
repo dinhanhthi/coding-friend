@@ -184,7 +184,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         </span>
       )}
       <div
-        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow}`}
+        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow} transition-all duration-200 hover:scale-105`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className={c.text}>{tool.icon}</div>

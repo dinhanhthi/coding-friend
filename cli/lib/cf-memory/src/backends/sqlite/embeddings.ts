@@ -8,7 +8,6 @@
  * Embeddings are cached by content hash in the SQLite embedding_cache table.
  */
 import crypto from "node:crypto";
-import { EMBEDDING_DIMS } from "./schema.js";
 import type { DatabaseLike } from "./migrations.js";
 
 export type EmbeddingProvider = "transformers" | "ollama";
@@ -20,9 +19,46 @@ export interface EmbeddingConfig {
   depsDir?: string;
 }
 
-const DEFAULT_TRANSFORMERS_MODEL = "Xenova/all-MiniLM-L6-v2";
-const DEFAULT_OLLAMA_MODEL = "all-minilm:l6-v2";
+export const DEFAULT_TRANSFORMERS_MODEL = "Xenova/all-MiniLM-L6-v2";
+export const DEFAULT_OLLAMA_MODEL = "all-minilm:l6-v2";
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
+
+/** Default embedding dimensions (all-MiniLM-L6-v2) */
+export const DEFAULT_EMBEDDING_DIMS = 384;
+
+/** Known model name to embedding dimension mapping */
+export const MODEL_DIMS: Record<string, number> = {
+  // Transformers.js models
+  "Xenova/all-MiniLM-L6-v2": 384,
+  "Xenova/all-MiniLM-L12-v2": 384,
+  // Ollama models
+  "all-minilm:l6-v2": 384,
+  "all-minilm": 384,
+  "nomic-embed-text": 768,
+  "mxbai-embed-large": 1024,
+  "snowflake-arctic-embed:s": 384,
+  "snowflake-arctic-embed:m": 768,
+  "snowflake-arctic-embed:l": 1024,
+  "bge-small-en-v1.5": 384,
+  "bge-base-en-v1.5": 768,
+  "bge-large-en-v1.5": 1024,
+};
+
+/**
+ * Resolve embedding dimensions for a model.
+ * Returns known dims for recognized models, DEFAULT_EMBEDDING_DIMS otherwise.
+ */
+export function resolveModelDims(
+  model: string | undefined,
+  _provider: EmbeddingProvider,
+): number {
+  if (model === undefined) return DEFAULT_EMBEDDING_DIMS;
+  if (model in MODEL_DIMS) return MODEL_DIMS[model];
+  process.stderr.write(
+    `[cf-memory] Unknown embedding model "${model}" — assuming ${DEFAULT_EMBEDDING_DIMS} dims\n`,
+  );
+  return DEFAULT_EMBEDDING_DIMS;
+}
 
 /**
  * Compute a content hash for embedding cache lookups.
@@ -68,10 +104,25 @@ export class EmbeddingPipeline {
   }
 
   /**
-   * Get the expected embedding dimensions.
+   * Get the expected embedding dimensions based on the configured model.
    */
   get dims(): number {
-    return EMBEDDING_DIMS;
+    const model =
+      this.config.model ??
+      (this.config.provider === "ollama"
+        ? DEFAULT_OLLAMA_MODEL
+        : DEFAULT_TRANSFORMERS_MODEL);
+    return resolveModelDims(model, this.config.provider);
+  }
+
+  /**
+   * Get the resolved model name (configured or default for provider).
+   */
+  get modelName(): string {
+    if (this.config.provider === "ollama") {
+      return this.config.model ?? DEFAULT_OLLAMA_MODEL;
+    }
+    return this.config.model ?? DEFAULT_TRANSFORMERS_MODEL;
   }
 
   /**
@@ -115,7 +166,7 @@ export class EmbeddingPipeline {
   /**
    * Generate an embedding for the given text.
    *
-   * Returns a Float32Array of EMBEDDING_DIMS dimensions.
+   * Returns a Float32Array with dimensions matching the configured model.
    */
   async embed(text: string): Promise<Float32Array> {
     await this.ensureModel();
@@ -184,7 +235,7 @@ export class EmbeddingCache {
   /**
    * Get a cached embedding by content hash.
    */
-  get(hash: string): Float32Array | null {
+  get(hash: string, dims: number): Float32Array | null {
     const row = this.db
       .prepare("SELECT embedding FROM embedding_cache WHERE content_hash = ?")
       .get(hash) as { embedding: Buffer } | undefined;
@@ -192,7 +243,9 @@ export class EmbeddingCache {
     if (!row) return null;
     // Copy to a fresh Buffer to avoid alignment issues with pooled ArrayBuffers
     const buf = Buffer.from(row.embedding);
-    return new Float32Array(buf.buffer, buf.byteOffset, EMBEDDING_DIMS);
+    // Validate buffer size matches requested dims (stale cache from model change)
+    if (buf.byteLength < dims * Float32Array.BYTES_PER_ELEMENT) return null;
+    return new Float32Array(buf.buffer, buf.byteOffset, dims);
   }
 
   /**
