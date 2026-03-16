@@ -47,7 +47,8 @@ Configs can be stored in two different locations - global and local. Local overr
 4. **Step 4** - `/cf-learn` config. The settings for the learning extraction skill. You can configure the language, output directory, and categories.
 5. **Step 5** - Shell completion. Adds tab completion for `cf` commands to your shell.
 6. **Step 6** - Statusline. The statusline is a small section at the bottom of the screen that shows the current status of the Coding Friend session. You can configure it later with [`cf statusline`](/docs/cli/cf-statusline/).
-7. **Step 7** - Claude permissions. Adds `Read`, `Edit`, `Write` permission rules to `~/.claude/settings.json` if you are using an external output directory for `/cf-learn`. If auto-commit is enabled, also adds `git add` / `git commit` rules. For comprehensive permission management covering all skills and hooks, use [`cf permission`](/docs/cli/cf-permission/) or see the [Permissions Reference](/docs/reference/permissions/).
+7. **Step 7** - [CF Memory](/docs/reference/memory-system/) MCP. Adds the `coding-friend-memory` MCP server to your project's `.mcp.json` so Claude Code can store and search memories during sessions. Optionally enables `memory.autoCapture` to save session summaries before context compaction. You can configure it later with [`cf memory mcp`](/docs/cli/cf-memory/).
+8. **Step 8** - Claude permissions. Adds `Read`, `Edit`, `Write` permission rules to `~/.claude/settings.json` if you are using an external output directory for `/cf-learn`. If auto-commit is enabled, also adds `git add` / `git commit` rules. For comprehensive permission management covering all skills and hooks, use [`cf permission`](/docs/cli/cf-permission/) or see the [Permissions Reference](/docs/reference/permissions/).
 
 ## Non-Git Directories
 
