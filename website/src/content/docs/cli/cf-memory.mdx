@@ -88,9 +88,12 @@ cf memory rm --project-id 912d2bfd5ad5
 
 # Remove all project databases
 cf memory rm --all
+
+# Remove orphaned projects (source dir missing or 0 memories)
+cf memory rm --prune
 ```
 
-Both commands ask for confirmation before deleting.
+All commands ask for confirmation before deleting.
 
 ## `start` / `stop`
 

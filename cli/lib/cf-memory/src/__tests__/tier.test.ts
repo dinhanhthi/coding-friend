@@ -19,12 +19,20 @@ afterEach(() => {
 });
 
 describe("detectTier()", () => {
-  it("returns Tier 3 (markdown) when no daemon is running", async () => {
-    const tier = await detectTier();
-    // Without a daemon running, should detect Tier 3
-    expect(tier.name).toBe("markdown");
-    expect(tier.number).toBe(3);
-    expect(tier.label).toContain("Tier 3");
+  it("returns Tier 3 (markdown) when no daemon is running and no sqlite deps", async () => {
+    const lazyInstall = await import("../lib/lazy-install.js");
+    const sqliteSpy = vi
+      .spyOn(lazyInstall, "areSqliteDepsAvailable")
+      .mockReturnValue(false);
+    try {
+      const tier = await detectTier();
+      // Without a daemon running and no SQLite deps, should detect Tier 3
+      expect(tier.name).toBe("markdown");
+      expect(tier.number).toBe(3);
+      expect(tier.label).toContain("Tier 3");
+    } finally {
+      sqliteSpy.mockRestore();
+    }
   });
 
   it("respects config override to markdown", async () => {
@@ -101,18 +109,45 @@ describe("createBackendForTier()", () => {
     await backend.close();
   });
 
-  it("falls back to MarkdownBackend when daemon not available for lite tier", async () => {
-    const { backend, tier } = await createBackendForTier(testDir, "auto");
-    // Since no daemon is running, should fall back to markdown
-    expect(tier.name).toBe("markdown");
-    expect(backend).toBeInstanceOf(MarkdownBackend);
+  it("auto tier falls back to markdown when no daemon and no sqlite deps", async () => {
+    const lazyInstall = await import("../lib/lazy-install.js");
+    const sqliteSpy = vi
+      .spyOn(lazyInstall, "areSqliteDepsAvailable")
+      .mockReturnValue(false);
+    try {
+      const { backend, tier } = await createBackendForTier(testDir, "auto");
+      expect(tier.name).toBe("markdown");
+      expect(backend).toBeInstanceOf(MarkdownBackend);
+      await backend.close();
+    } finally {
+      sqliteSpy.mockRestore();
+    }
+  });
+
+  it("auto tier creates SqliteBackend when sqlite deps available", async () => {
+    const lazyInstall = await import("../lib/lazy-install.js");
+    if (!lazyInstall.areSqliteDepsAvailable()) return; // skip if deps not installed
+    const dbPath = join(testDir, "db.sqlite");
+    const { backend, tier } = await createBackendForTier(
+      testDir,
+      "auto",
+      undefined,
+      { dbPath },
+    );
+    expect(tier.name).toBe("full");
     await backend.close();
   });
 
   it("full tier falls back to markdown when SQLite deps not available", async () => {
     // Without lazy-installed deps, SqliteBackend will fail to construct
     // and createBackendForTier should fall back to markdown
-    const { backend, tier } = await createBackendForTier(testDir, "full");
+    const dbPath = join(testDir, "db.sqlite");
+    const { backend, tier } = await createBackendForTier(
+      testDir,
+      "full",
+      undefined,
+      { dbPath },
+    );
     // Falls back because better-sqlite3 is not installed in test env
     expect(["markdown", "full"]).toContain(tier.name);
     await backend.close();
@@ -170,6 +205,11 @@ describe("createBackendForTier()", () => {
 
   it("lite tier falls back to markdown when daemon is unreachable mid-session", async () => {
     // Simulate: tier detection says "lite" but daemon socket is gone
+    // Must also mock SQLite deps away so auto tier picks "lite" over "full"
+    const lazyInstall = await import("../lib/lazy-install.js");
+    const sqliteSpy = vi
+      .spyOn(lazyInstall, "areSqliteDepsAvailable")
+      .mockReturnValue(false);
     const daemonProcess = await import("../daemon/process.js");
     const spy = vi
       .spyOn(daemonProcess, "isDaemonRunning")
@@ -190,6 +230,7 @@ describe("createBackendForTier()", () => {
       expect(created).toBeInstanceOf(MarkdownBackend);
       await created.close();
     } finally {
+      sqliteSpy.mockRestore();
       spy.mockRestore();
       pathsSpy.mockRestore();
     }
@@ -219,11 +260,13 @@ describe("createBackendForTier() with embeddingConfig", () => {
       provider: "ollama" as const,
       model: "nomic-embed-text",
     };
+    const dbPath = join(testDir, "db.sqlite");
     // Full tier will fail (no sqlite deps in test env) and fall back
     const { backend, tier } = await createBackendForTier(
       testDir,
       "full",
       embeddingConfig,
+      { dbPath },
     );
     // Falls back because better-sqlite3 is not installed in test env
     expect(["markdown", "full"]).toContain(tier.name);

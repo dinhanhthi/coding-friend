@@ -639,11 +639,76 @@ async function memoryListProjectsCommand(): Promise<void> {
 export async function memoryRmCommand(opts: {
   projectId?: string;
   all?: boolean;
+  prune?: boolean;
 }): Promise<void> {
   const baseDir = getProjectsBaseDir();
 
   if (!existsSync(baseDir)) {
     log.info("No memory projects found. Nothing to remove.");
+    return;
+  }
+
+  if (opts.prune) {
+    const mcpDir = getLibPath("cf-memory");
+    ensureBuilt(mcpDir);
+
+    const dirs = readdirSync(baseDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+      .map((d) => d.name);
+
+    const orphaned: { id: string; reason: string; size: number }[] = [];
+    for (const id of dirs) {
+      const projectDir = join(baseDir, id);
+      const info = getProjectInfo(projectDir, id, mcpDir);
+
+      if (info.sourceDir && !existsSync(info.sourceDir)) {
+        orphaned.push({
+          id,
+          reason: `source dir missing: ${info.sourceDir}`,
+          size: info.size,
+        });
+      } else if (info.memories === 0) {
+        orphaned.push({
+          id,
+          reason: info.sourceDir
+            ? `0 memories (${info.sourceDir})`
+            : "unknown path, 0 memories",
+          size: info.size,
+        });
+      }
+    }
+
+    if (orphaned.length === 0) {
+      log.success("No orphaned projects found.");
+      return;
+    }
+
+    const totalSize = orphaned.reduce((sum, o) => sum + o.size, 0);
+    log.warn(
+      `Found ${orphaned.length} orphaned project(s) (${formatSize(totalSize)}):`,
+    );
+    console.log();
+    for (const o of orphaned) {
+      console.log(`  ${chalk.cyan(o.id)}  ${chalk.dim(o.reason)}`);
+    }
+    console.log();
+
+    const ok = await confirm({
+      message: `Delete ${orphaned.length} orphaned project(s)?`,
+      default: false,
+    });
+
+    if (!ok) {
+      log.info("Cancelled.");
+      return;
+    }
+
+    for (const o of orphaned) {
+      rmSync(join(baseDir, o.id), { recursive: true, force: true });
+    }
+    log.success(
+      `Deleted ${orphaned.length} orphaned project(s) (${formatSize(totalSize)}).`,
+    );
     return;
   }
 
@@ -723,7 +788,7 @@ export async function memoryRmCommand(opts: {
     return;
   }
 
-  log.error("Specify --project-id <id> or --all.");
+  log.error("Specify --project-id <id>, --all, or --prune.");
   log.dim('Run "cf memory list --projects" to see available projects.');
   process.exit(1);
 }
