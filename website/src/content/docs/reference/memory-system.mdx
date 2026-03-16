@@ -5,6 +5,33 @@ description: "Architecture overview of the persistent AI memory system"
 
 The memory system gives Claude Code persistent project memory across sessions. It stores facts, preferences, decisions, debug episodes, and procedures as markdown files in `docs/memory/`, with optional indexing for fast hybrid search.
 
+The system uses a **3-tier graceful degradation** architecture. It automatically detects available dependencies and picks the best backend:
+
+```
+Tier 1 (Full):     SQLite + FTS5 + sqlite-vec + Transformers.js
+Tier 2 (Lite):     MiniSearch daemon (in-memory BM25 + fuzzy)
+Tier 3 (Markdown): Pure file I/O (grep/substring)
+```
+
+**The core idea**: regardless of what you install, the system **always works**. Tier 3 needs zero dependencies — just read/write markdown files. Install more dependencies and the system automatically upgrades to a higher tier.
+
+**Key design decision**: Markdown files are the **source of truth**, not SQLite. SQLite is just a cache/index. This means:
+- Rebuilding SQLite from markdown never loses data
+- All changes are tracked via git
+- Humans can read and edit memories directly
+
+### Tier comparison
+
+| Aspect | Tier 1 (Full) | Tier 2 (Lite) | Tier 3 (Markdown) |
+| --- | --- | --- | --- |
+| **Dependencies** | SQLite, sqlite-vec, Transformers.js | MiniSearch (~7KB) | None |
+| **Search** | FTS5 + vector + RRF | BM25 + fuzzy + prefix | grep/substring |
+| **Index** | SQLite (on disk) | In-memory (rebuild ~&lt;1s) | None |
+| **Latency** | &lt;50ms | &lt;10ms | &lt;5ms (but LLM must reason) |
+| **Semantic search** | Yes (vector embeddings) | No | No |
+| **Startup** | ~2-3s (first time: loads model) | ~1s | Instant |
+| **Max scale** | 100K+ memories | ~10K memories | ~1K memories |
+
 ## How It Works
 
 There are two ways to capture memories:
@@ -79,25 +106,26 @@ Claude Code Session
         |
 +-------+--------+
 |  MCP Server     | <- stdio transport
-|  (thin client)  |
+|  (routing hub)  |
 +-------+--------+
         |
-        v
-+------------------------------------+
-|     Memory Daemon                  |
-|     (Hono + Unix Domain Socket)    |
-|                                    |
-|  Tier 1: SQLite + FTS5 + vec      |
-|  Tier 2: MiniSearch (in-memory)   |
-|  Tier 3: Markdown (file grep)     |
-+------------------------------------+
-        |
-        v
+   detectTier()
+   /    |    \
+  v     v     v
+Tier1  Daemon  Tier3
+(direct) |   (direct)
+         v
+       Tier2
+      MiniSearch
+
+All tiers read/write:
 +------------------+
 |  docs/memory/    |
 |  (source of truth)|
 +------------------+
 ```
+
+The MCP server selects **one** backend based on `detectTier()`. It connects **directly** to Tier 1 (SQLite) and Tier 3 (Markdown). Only Tier 2 (MiniSearch) goes through the daemon — an HTTP server on a Unix Domain Socket that keeps the in-memory index alive across requests.
 
 ### MCP Integration
 
@@ -122,16 +150,16 @@ To configure the MCP server for your project, run `cf memory mcp` to get the con
 
 The system automatically detects and uses the best available backend:
 
-- **Tier 1: SQLite** — Full-power hybrid search with [FTS5 full-text](https://www.sqlite.org/fts5.html) + [sqlite-vec](https://github.com/asg017/sqlite-vec) semantic vectors, fused with Reciprocal Rank Fusion (RRF). Requires `cf memory init` to install native dependencies.
-- **Tier 2: MiniSearch** — In-memory BM25 index with fuzzy matching. Activates via the daemon (`cf memory start`) when SQLite deps aren't installed.
-- **Tier 3: Markdown** — Zero-dependency fallback. For each file, it checks frontmatter (title, description, tags) first — if that matches, it stops there. It only reads the full file content for files whose frontmatter didn't match. Always available, no setup needed.
+- **Tier 1: SQLite** — Full-power hybrid search with [FTS5 full-text](https://www.sqlite.org/fts5.html) + [sqlite-vec](https://github.com/asg017/sqlite-vec) semantic vectors, fused with Reciprocal Rank Fusion (RRF). Requires `cf memory init` to install native dependencies. MCP server connects **directly** — no daemon needed.
+- **Tier 2: MiniSearch** — In-memory BM25 index with fuzzy matching. Runs inside a [Hono](https://hono.dev/) daemon on a Unix Domain Socket. Activates via `cf memory start` when SQLite deps aren't installed. The daemon keeps the index in RAM and auto-rebuilds when files change.
+- **Tier 3: Markdown** — Zero-dependency fallback. For each file, it checks frontmatter (title, description, tags) first — if that matches, it stops there. It only reads the full file content for files whose frontmatter didn't match. MCP server connects **directly** — always available, no setup needed.
 
 Tier detection happens automatically:
 
 ```
-SQLite deps available?  → Tier 1
-Daemon running?         → Tier 2
-Otherwise               → Tier 3
+SQLite deps available?  → Tier 1 (MCP → direct → SqliteBackend)
+Daemon running?         → Tier 2 (MCP → HTTP/UDS → Daemon → MiniSearchBackend)
+Otherwise               → Tier 3 (MCP → direct → MarkdownBackend)
 ```
 
 ## Memory Types
