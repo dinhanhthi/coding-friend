@@ -1,0 +1,31 @@
+{
+  "name": "coding-friend-cf-memory",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "cf-memory": "./dist/bin/cf-memory.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsc --watch --preserveWatchOutput",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "gray-matter": "^4.0.3",
+    "hono": "^4.12.7",
+    "minisearch": "^7.2.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.15",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.0"
+  }
+}

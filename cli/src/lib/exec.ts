@@ -7,12 +7,13 @@ import { execFileSync, spawn, type SpawnOptions } from "child_process";
 export function run(
   cmd: string,
   args: string[] = [],
-  opts?: { cwd?: string },
+  opts?: { cwd?: string; env?: NodeJS.ProcessEnv },
 ): string | null {
   try {
     return execFileSync(cmd, args, {
       encoding: "utf-8",
       cwd: opts?.cwd,
+      env: opts?.env,
       stdio: ["pipe", "pipe", "pipe"],
     }).trim();
   } catch {

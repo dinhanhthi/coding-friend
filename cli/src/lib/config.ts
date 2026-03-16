@@ -32,3 +32,25 @@ export function resolveDocsDir(explicitPath?: string): string {
 
   return resolvePath("docs/learn");
 }
+
+/**
+ * Resolve the docs directory for memory commands.
+ * Priority: explicit arg > config.memory.docsDir > config.docsDir + "/memory" > default "docs/memory"
+ */
+export function resolveMemoryDir(explicitPath?: string): string {
+  if (explicitPath) {
+    return resolvePath(explicitPath);
+  }
+
+  const config = loadConfig();
+
+  if (config.memory?.docsDir) {
+    return resolvePath(config.memory.docsDir);
+  }
+
+  if (config.docsDir) {
+    return resolvePath(`${config.docsDir}/memory`);
+  }
+
+  return resolvePath("docs/memory");
+}

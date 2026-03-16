@@ -63,6 +63,18 @@ cf dev status        # Show current dev mode (local or remote)
 cf dev sync          # Sync local changes to cache (no version bump needed)
 cf dev restart       # Reinstall local dev plugin (off + on)
 cf dev update        # Update local dev plugin to latest version (off + on)
+cf memory status     # Show memory system status and stats
+cf memory search     # Search memories by keyword
+cf memory list              # List all memories in current project
+cf memory list --projects   # List all project databases with size and metadata
+cf memory rm --project-id <id>  # Remove a specific project database
+cf memory rm --all          # Remove all project databases
+cf memory rm --prune        # Remove orphaned projects (source dir missing or 0 memories)
+cf memory start      # Start memory daemon (enables Tier 2 search)
+cf memory stop       # Stop memory daemon
+cf memory rebuild    # Rebuild search index from markdown files
+cf memory init       # Initialize SQLite backend (Tier 1) and import memories
+cf memory mcp        # Show MCP server config for clients
 cf session save      # Save current Claude Code session to docs/sessions/
 cf session load      # Load a saved session from docs/sessions/
 cf help              # Show all commands

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Container from "@/components/ui/Container";
+import MemoryArchitecture from "./MemoryArchitecture";
 
 /* ────────────────────────────────────────────────────────────
    DATA MODEL
@@ -382,345 +383,414 @@ export default function HowItWorks() {
             </p>
           </div>
 
-          {/* Graph container */}
+          {/* CF Memory frame */}
           <div
-            ref={graphRef}
-            className="relative mx-auto"
-            style={{
-              maxWidth: `${SVG_W}px`,
-              aspectRatio: `${SVG_W} / ${SVG_H}`,
-            }}
+            className="relative mx-auto rounded-xl border border-amber-500/20 bg-amber-500/2 p-4 pt-0 pb-0"
+            style={{ maxWidth: `${SVG_W + 32}px` }}
           >
-            {/* SVG connections layer */}
-            <svg
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-              fill="none"
-              aria-hidden="true"
-            >
-              <defs>
-                <filter
-                  id="glow-v"
-                  x="-200%"
-                  y="-200%"
-                  width="500%"
-                  height="500%"
-                >
-                  <feGaussianBlur stdDeviation="4" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                <filter
-                  id="glow-e"
-                  x="-200%"
-                  y="-200%"
-                  width="500%"
-                  height="500%"
-                >
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                <filter
-                  id="glow-s"
-                  x="-200%"
-                  y="-200%"
-                  width="500%"
-                  height="500%"
-                >
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                <filter
-                  id="glow-y"
-                  x="-200%"
-                  y="-200%"
-                  width="500%"
-                  height="500%"
-                >
-                  <feGaussianBlur stdDeviation="4" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-
-                {/* Arrow marker for main flow connections */}
-                <marker
-                  id="arrow-main"
-                  viewBox="0 0 10 8"
-                  refX="9"
-                  refY="4"
-                  markerWidth="7"
-                  markerHeight="5"
-                  orient="auto"
-                >
-                  <path d="M 0 0 L 10 4 L 0 8 z" className="fill-violet-500" />
-                </marker>
-
-                {/* Arrow marker for loop-back */}
-                <marker
-                  id="arrow-loop"
-                  viewBox="0 0 10 8"
-                  refX="9"
-                  refY="4"
-                  markerWidth="8"
-                  markerHeight="6"
-                  orient="auto"
-                >
-                  <path
-                    d="M 0 0 L 10 4 L 0 8 z"
-                    className="fill-yellow-400/60"
-                  />
-                </marker>
-
-                {/* Arrow marker for fix ↔ sys-debug loop */}
-                <marker
-                  id="arrow-debug"
-                  viewBox="0 0 10 8"
-                  refX="9"
-                  refY="4"
-                  markerWidth="7"
-                  markerHeight="5"
-                  orient="auto"
-                >
-                  <path
-                    d="M 0 0 L 10 4 L 0 8 z"
-                    className="fill-yellow-400/60"
-                  />
-                </marker>
-              </defs>
-
-              {/* ── Main flow connections ── */}
-              {mainNodes.slice(0, -1).map((_, i) => {
-                const d = mainPath(i);
-                const fromId = mainNodes[i].id;
-                const toId = mainNodes[i + 1].id;
-                const dim =
-                  hovered &&
-                  !connectedIds.has(fromId) &&
-                  !connectedIds.has(toId);
-                return (
-                  <g
-                    key={`main-${i}`}
-                    className={`transition-opacity duration-300 ${dim ? "opacity-15" : "opacity-100"}`}
-                  >
-                    {/* Static background */}
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className="text-slate-600"
-                      strokeWidth="2"
-                      strokeDasharray="8 5"
-                      markerEnd="url(#arrow-main)"
-                    />
-                    {/* Animated overlay */}
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className="zigzag-dash-animate text-violet-500"
-                      strokeWidth="2.5"
-                      strokeDasharray="8 5"
-                      strokeLinecap="round"
-                    />
-                    {/* Traveling dot */}
-                    <circle
-                      r="3"
-                      className="fill-current text-violet-400"
-                      filter="url(#glow-v)"
-                    >
-                      <animateMotion
-                        dur="2.5s"
-                        repeatCount="indefinite"
-                        path={d}
-                      />
-                    </circle>
-                  </g>
-                );
-              })}
-
-              {/* ── Loop-back arc (commit → implement) ── */}
-              <g
-                className={`transition-opacity duration-300 ${
-                  hovered &&
-                  !connectedIds.has("commit") &&
-                  !connectedIds.has("implement")
-                    ? "opacity-15"
-                    : "opacity-100"
-                }`}
+            {/* CF Memory tag */}
+            <span className="absolute top-1.5 left-3.5 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-sm text-amber-400">
+              <svg
+                className="h-3 w-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  d={loopBackPath()}
-                  stroke="currentColor"
-                  className="text-yellow-500/40"
-                  strokeWidth="1.5"
-                  strokeDasharray="6 4"
-                  fill="none"
-                  markerEnd="url(#arrow-loop)"
-                />
-                <path
-                  d={loopBackPath()}
-                  stroke="currentColor"
-                  className="auto-dash-animate text-yellow-400/60"
-                  strokeWidth="1.5"
-                  strokeDasharray="6 4"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <circle
-                  r="2.5"
-                  className="fill-current text-yellow-300"
-                  filter="url(#glow-y)"
-                >
-                  <animateMotion
-                    dur="3.5s"
-                    repeatCount="indefinite"
-                    path={loopBackPath()}
-                  />
-                </circle>
-                {/* Loop label */}
-                <text
-                  x={(getMainPos(1).x + getMainPos(3).x) / 2}
-                  y={(AGENT_Y + SIDE_H / 2 + MAIN_Y - NODE_H / 2) / 2 - 8}
-                  textAnchor="middle"
-                  className="fill-yellow-400/80 text-xs font-semibold"
-                  fontFamily="monospace"
-                >
-                  iterate
-                </text>
-              </g>
+                <path d="M12 2a4 4 0 0 1 4 4v2H8V6a4 4 0 0 1 4-4z" />
+                <rect x="3" y="8" width="18" height="14" rx="2" />
+                <path d="M9 14h6" />
+              </svg>
+              CF Memory
+            </span>
 
-              {/* ── Fix ↔ sys-debug loop ── */}
-              {(() => {
-                const fixPos = getSidePos(
-                  sideNodes.find((n) => n.id === "fix")!,
-                );
-                const dbgPos = getSidePos(
-                  sideNodes.find((n) => n.id === "sys-debug")!,
-                );
-                const dim =
-                  hovered &&
-                  !connectedIds.has("fix") &&
-                  !connectedIds.has("sys-debug");
-                // Right-side loop: fix → right → down → sys-debug
-                const loopX = fixPos.x + SIDE_W / 2 + 16;
-                const dLoop = `M ${fixPos.x + SIDE_W / 2} ${fixPos.y} L ${loopX} ${fixPos.y} L ${loopX} ${dbgPos.y} L ${dbgPos.x + SIDE_W / 2} ${dbgPos.y}`;
-                // Left-side return: sys-debug → left → up → fix
-                const retX = fixPos.x - SIDE_W / 2 - 16;
-                const dReturn = `M ${dbgPos.x - SIDE_W / 2} ${dbgPos.y} L ${retX} ${dbgPos.y} L ${retX} ${fixPos.y} L ${fixPos.x - SIDE_W / 2} ${fixPos.y}`;
-                return (
-                  <g
-                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+            {/* Graph container */}
+            <div
+              ref={graphRef}
+              className="relative mx-auto"
+              style={{
+                maxWidth: `${SVG_W}px`,
+                aspectRatio: `${SVG_W} / ${SVG_H}`,
+              }}
+            >
+              {/* SVG connections layer */}
+              <svg
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+                fill="none"
+                aria-hidden="true"
+              >
+                <defs>
+                  <filter
+                    id="glow-v"
+                    x="-200%"
+                    y="-200%"
+                    width="500%"
+                    height="500%"
                   >
-                    {/* Down path */}
-                    <path
-                      d={dLoop}
-                      stroke="currentColor"
-                      className="text-yellow-500/40"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      fill="none"
-                      markerEnd="url(#arrow-debug)"
-                    />
-                    <path
-                      d={dLoop}
-                      stroke="currentColor"
-                      className="auto-dash-animate text-yellow-400/60"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                    <circle
-                      r="2.5"
-                      className="fill-current text-yellow-300"
-                      filter="url(#glow-y)"
-                    >
-                      <animateMotion
-                        dur="2.5s"
-                        repeatCount="indefinite"
-                        path={dLoop}
-                      />
-                    </circle>
-                    {/* Up return path */}
-                    <path
-                      d={dReturn}
-                      stroke="currentColor"
-                      className="text-yellow-500/40"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      fill="none"
-                      markerEnd="url(#arrow-debug)"
-                    />
-                    <path
-                      d={dReturn}
-                      stroke="currentColor"
-                      className="auto-dash-animate text-yellow-400/60"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                    <circle
-                      r="2.5"
-                      className="fill-current text-yellow-300"
-                      filter="url(#glow-y)"
-                    >
-                      <animateMotion
-                        dur="2.5s"
-                        repeatCount="indefinite"
-                        path={dReturn}
-                      />
-                    </circle>
-                  </g>
-                );
-              })()}
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter
+                    id="glow-e"
+                    x="-200%"
+                    y="-200%"
+                    width="500%"
+                    height="500%"
+                  >
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter
+                    id="glow-s"
+                    x="-200%"
+                    y="-200%"
+                    width="500%"
+                    height="500%"
+                  >
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <filter
+                    id="glow-y"
+                    x="-200%"
+                    y="-200%"
+                    width="500%"
+                    height="500%"
+                  >
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
 
-              {/* ── Side node connections ── */}
-              {sideNodes.flatMap((node) => {
-                // sys-debug connects via the loop above, not to parent
-                if (node.id === "sys-debug") return [];
-                const allParents = [
-                  node.parentId,
-                  ...(node.extraParents ?? []),
-                ];
-                const dim = hovered && !connectedIds.has(node.id);
-                const isAuto = node.kind === "auto";
-                return allParents.map((pid) => {
-                  const d = sidePath(node, pid);
+                  {/* Arrow marker for main flow connections */}
+                  <marker
+                    id="arrow-main"
+                    viewBox="0 0 10 8"
+                    refX="9"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="5"
+                    orient="auto"
+                  >
+                    <path
+                      d="M 0 0 L 10 4 L 0 8 z"
+                      className="fill-violet-500"
+                    />
+                  </marker>
+
+                  {/* Arrow marker for loop-back */}
+                  <marker
+                    id="arrow-loop"
+                    viewBox="0 0 10 8"
+                    refX="9"
+                    refY="4"
+                    markerWidth="8"
+                    markerHeight="6"
+                    orient="auto"
+                  >
+                    <path
+                      d="M 0 0 L 10 4 L 0 8 z"
+                      className="fill-yellow-400/60"
+                    />
+                  </marker>
+
+                  {/* Arrow marker for fix ↔ sys-debug loop */}
+                  <marker
+                    id="arrow-debug"
+                    viewBox="0 0 10 8"
+                    refX="9"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="5"
+                    orient="auto"
+                  >
+                    <path
+                      d="M 0 0 L 10 4 L 0 8 z"
+                      className="fill-yellow-400/60"
+                    />
+                  </marker>
+                </defs>
+
+                {/* ── Main flow connections ── */}
+                {mainNodes.slice(0, -1).map((_, i) => {
+                  const d = mainPath(i);
+                  const fromId = mainNodes[i].id;
+                  const toId = mainNodes[i + 1].id;
+                  const dim =
+                    hovered &&
+                    !connectedIds.has(fromId) &&
+                    !connectedIds.has(toId);
                   return (
                     <g
-                      key={`side-${node.id}-${pid}`}
+                      key={`main-${i}`}
+                      className={`transition-opacity duration-300 ${dim ? "opacity-15" : "opacity-100"}`}
+                    >
+                      {/* Static background */}
+                      <path
+                        d={d}
+                        stroke="currentColor"
+                        className="text-slate-600"
+                        strokeWidth="2"
+                        strokeDasharray="8 5"
+                        markerEnd="url(#arrow-main)"
+                      />
+                      {/* Animated overlay */}
+                      <path
+                        d={d}
+                        stroke="currentColor"
+                        className="zigzag-dash-animate text-violet-500"
+                        strokeWidth="2.5"
+                        strokeDasharray="8 5"
+                        strokeLinecap="round"
+                      />
+                      {/* Traveling dot */}
+                      <circle
+                        r="3"
+                        className="fill-current text-violet-400"
+                        filter="url(#glow-v)"
+                      >
+                        <animateMotion
+                          dur="2.5s"
+                          repeatCount="indefinite"
+                          path={d}
+                        />
+                      </circle>
+                    </g>
+                  );
+                })}
+
+                {/* ── Loop-back arc (commit → implement) ── */}
+                <g
+                  className={`transition-opacity duration-300 ${
+                    hovered &&
+                    !connectedIds.has("commit") &&
+                    !connectedIds.has("implement")
+                      ? "opacity-15"
+                      : "opacity-100"
+                  }`}
+                >
+                  <path
+                    d={loopBackPath()}
+                    stroke="currentColor"
+                    className="text-yellow-500/40"
+                    strokeWidth="1.5"
+                    strokeDasharray="6 4"
+                    fill="none"
+                    markerEnd="url(#arrow-loop)"
+                  />
+                  <path
+                    d={loopBackPath()}
+                    stroke="currentColor"
+                    className="auto-dash-animate text-yellow-400/60"
+                    strokeWidth="1.5"
+                    strokeDasharray="6 4"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <circle
+                    r="2.5"
+                    className="fill-current text-yellow-300"
+                    filter="url(#glow-y)"
+                  >
+                    <animateMotion
+                      dur="3.5s"
+                      repeatCount="indefinite"
+                      path={loopBackPath()}
+                    />
+                  </circle>
+                  {/* Loop label */}
+                  <text
+                    x={(getMainPos(1).x + getMainPos(3).x) / 2}
+                    y={(AGENT_Y + SIDE_H / 2 + MAIN_Y - NODE_H / 2) / 2 - 8}
+                    textAnchor="middle"
+                    className="fill-yellow-400/80 text-xs font-semibold"
+                    fontFamily="monospace"
+                  >
+                    iterate
+                  </text>
+                </g>
+
+                {/* ── Fix ↔ sys-debug loop ── */}
+                {(() => {
+                  const fixPos = getSidePos(
+                    sideNodes.find((n) => n.id === "fix")!,
+                  );
+                  const dbgPos = getSidePos(
+                    sideNodes.find((n) => n.id === "sys-debug")!,
+                  );
+                  const dim =
+                    hovered &&
+                    !connectedIds.has("fix") &&
+                    !connectedIds.has("sys-debug");
+                  // Right-side loop: fix → right → down → sys-debug
+                  const loopX = fixPos.x + SIDE_W / 2 + 16;
+                  const dLoop = `M ${fixPos.x + SIDE_W / 2} ${fixPos.y} L ${loopX} ${fixPos.y} L ${loopX} ${dbgPos.y} L ${dbgPos.x + SIDE_W / 2} ${dbgPos.y}`;
+                  // Left-side return: sys-debug → left → up → fix
+                  const retX = fixPos.x - SIDE_W / 2 - 16;
+                  const dReturn = `M ${dbgPos.x - SIDE_W / 2} ${dbgPos.y} L ${retX} ${dbgPos.y} L ${retX} ${fixPos.y} L ${fixPos.x - SIDE_W / 2} ${fixPos.y}`;
+                  return (
+                    <g
+                      className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                    >
+                      {/* Down path */}
+                      <path
+                        d={dLoop}
+                        stroke="currentColor"
+                        className="text-yellow-500/40"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        fill="none"
+                        markerEnd="url(#arrow-debug)"
+                      />
+                      <path
+                        d={dLoop}
+                        stroke="currentColor"
+                        className="auto-dash-animate text-yellow-400/60"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <circle
+                        r="2.5"
+                        className="fill-current text-yellow-300"
+                        filter="url(#glow-y)"
+                      >
+                        <animateMotion
+                          dur="2.5s"
+                          repeatCount="indefinite"
+                          path={dLoop}
+                        />
+                      </circle>
+                      {/* Up return path */}
+                      <path
+                        d={dReturn}
+                        stroke="currentColor"
+                        className="text-yellow-500/40"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        fill="none"
+                        markerEnd="url(#arrow-debug)"
+                      />
+                      <path
+                        d={dReturn}
+                        stroke="currentColor"
+                        className="auto-dash-animate text-yellow-400/60"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <circle
+                        r="2.5"
+                        className="fill-current text-yellow-300"
+                        filter="url(#glow-y)"
+                      >
+                        <animateMotion
+                          dur="2.5s"
+                          repeatCount="indefinite"
+                          path={dReturn}
+                        />
+                      </circle>
+                    </g>
+                  );
+                })()}
+
+                {/* ── Side node connections ── */}
+                {sideNodes.flatMap((node) => {
+                  // sys-debug connects via the loop above, not to parent
+                  if (node.id === "sys-debug") return [];
+                  const allParents = [
+                    node.parentId,
+                    ...(node.extraParents ?? []),
+                  ];
+                  const dim = hovered && !connectedIds.has(node.id);
+                  const isAuto = node.kind === "auto";
+                  return allParents.map((pid) => {
+                    const d = sidePath(node, pid);
+                    return (
+                      <g
+                        key={`side-${node.id}-${pid}`}
+                        className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                      >
+                        <path
+                          d={d}
+                          stroke="currentColor"
+                          className={
+                            isAuto ? "text-emerald-500/40" : "text-sky-500/40"
+                          }
+                          strokeWidth="1.5"
+                          strokeDasharray="4 4"
+                        />
+                        <path
+                          d={d}
+                          stroke="currentColor"
+                          className={`auto-dash-animate ${isAuto ? "text-emerald-500/60" : "text-sky-500/50"}`}
+                          strokeWidth="1.5"
+                          strokeDasharray="4 4"
+                          strokeLinecap="round"
+                        />
+                        <circle
+                          r="2"
+                          className={`fill-current ${isAuto ? "text-emerald-400" : "text-sky-400"}`}
+                          filter={isAuto ? "url(#glow-e)" : "url(#glow-s)"}
+                        >
+                          <animateMotion
+                            dur="2s"
+                            repeatCount="indefinite"
+                            path={d}
+                          />
+                        </circle>
+                      </g>
+                    );
+                  });
+                })}
+
+                {/* ── Side-to-side connections (e.g. fix → explorer) ── */}
+                {sideToSideLinks.map(({ fromId, toId }) => {
+                  const d = sideToSidePath(fromId, toId);
+                  const dim =
+                    hovered &&
+                    !connectedIds.has(fromId) &&
+                    !connectedIds.has(toId);
+                  return (
+                    <g
+                      key={`s2s-${fromId}-${toId}`}
                       className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
                     >
                       <path
                         d={d}
                         stroke="currentColor"
-                        className={
-                          isAuto ? "text-emerald-500/40" : "text-sky-500/40"
-                        }
+                        className="text-emerald-500/40"
                         strokeWidth="1.5"
                         strokeDasharray="4 4"
                       />
                       <path
                         d={d}
                         stroke="currentColor"
-                        className={`auto-dash-animate ${isAuto ? "text-emerald-500/60" : "text-sky-500/50"}`}
+                        className="auto-dash-animate text-emerald-500/60"
                         strokeWidth="1.5"
                         strokeDasharray="4 4"
                         strokeLinecap="round"
                       />
                       <circle
                         r="2"
-                        className={`fill-current ${isAuto ? "text-emerald-400" : "text-sky-400"}`}
-                        filter={isAuto ? "url(#glow-e)" : "url(#glow-s)"}
+                        className="fill-current text-emerald-400"
+                        filter="url(#glow-e)"
                       >
                         <animateMotion
                           dur="2s"
@@ -730,162 +800,120 @@ export default function HowItWorks() {
                       </circle>
                     </g>
                   );
-                });
-              })}
+                })}
+              </svg>
 
-              {/* ── Side-to-side connections (e.g. fix → explorer) ── */}
-              {sideToSideLinks.map(({ fromId, toId }) => {
-                const d = sideToSidePath(fromId, toId);
-                const dim =
-                  hovered &&
-                  !connectedIds.has(fromId) &&
-                  !connectedIds.has(toId);
+              {/* ── Main flow nodes (HTML) ── */}
+              {mainNodes.map((node, i) => {
+                const pos = getMainPos(i);
+                const w = NODE_W * scale;
+                const h = NODE_H * scale;
                 return (
-                  <g
-                    key={`s2s-${fromId}-${toId}`}
-                    className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
+                  <div
+                    key={node.id}
+                    className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-lg border font-mono transition-all duration-300 select-none ${
+                      isActive(node.id)
+                        ? "bg-navy-950 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/25"
+                        : isConnected(node.id)
+                          ? "bg-navy-950 border-violet-500/50 text-violet-400"
+                          : "bg-navy-950 border-violet-500/20 text-violet-400/40"
+                    }`}
+                    style={{
+                      width: `${w}px`,
+                      height: `${h}px`,
+                      fontSize: `${14 * scale}px`,
+                      left: `${((pos.x - NODE_W / 2) / SVG_W) * 100}%`,
+                      top: `${((pos.y - NODE_H / 2) / SVG_H) * 100}%`,
+                    }}
+                    onClick={() => openDoc(node.id)}
+                    onMouseEnter={() => setHovered(node.id)}
+                    onMouseLeave={() => setHovered(null)}
+                    role="button"
+                    tabIndex={0}
+                    onFocus={() => setHovered(node.id)}
+                    onBlur={() => setHovered(null)}
+                    onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
+                    aria-label={node.description}
                   >
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className="text-emerald-500/40"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                    />
-                    <path
-                      d={d}
-                      stroke="currentColor"
-                      className="auto-dash-animate text-emerald-500/60"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                      strokeLinecap="round"
-                    />
-                    <circle
-                      r="2"
-                      className="fill-current text-emerald-400"
-                      filter="url(#glow-e)"
-                    >
-                      <animateMotion
-                        dur="2s"
-                        repeatCount="indefinite"
-                        path={d}
-                      />
-                    </circle>
-                  </g>
+                    {node.label}
+                  </div>
                 );
               })}
-            </svg>
 
-            {/* ── Main flow nodes (HTML) ── */}
-            {mainNodes.map((node, i) => {
-              const pos = getMainPos(i);
-              const w = NODE_W * scale;
-              const h = NODE_H * scale;
-              return (
+              {/* ── Side nodes (HTML) ── */}
+              {sideNodes.map((node) => {
+                const pos = getSidePos(node);
+                const isAuto = node.kind === "auto";
+                const sw = SIDE_W * scale;
+                const sh = SIDE_H * scale;
+                return (
+                  <div
+                    key={node.id}
+                    className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-md border-2 font-mono transition-all duration-300 select-none ${
+                      isAuto
+                        ? isActive(node.id)
+                          ? "bg-navy-950 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/20"
+                          : isConnected(node.id)
+                            ? "bg-navy-950 border-dashed border-emerald-500/50 text-emerald-400/90"
+                            : "bg-navy-950 border-dashed border-emerald-500/20 text-emerald-400/30"
+                        : isActive(node.id)
+                          ? "bg-navy-950 border-sky-400 text-sky-300 shadow-lg shadow-sky-500/20"
+                          : isConnected(node.id)
+                            ? "bg-navy-950 border-sky-500/50 text-sky-400/90"
+                            : "bg-navy-950 border-sky-500/20 text-sky-400/30"
+                    }`}
+                    style={{
+                      width: `${sw}px`,
+                      height: `${sh}px`,
+                      fontSize: `${13 * scale}px`,
+                      left: `${((pos.x - SIDE_W / 2) / SVG_W) * 100}%`,
+                      top: `${((pos.y - SIDE_H / 2) / SVG_H) * 100}%`,
+                    }}
+                    onClick={() => openDoc(node.id)}
+                    onMouseEnter={() => setHovered(node.id)}
+                    onMouseLeave={() => setHovered(null)}
+                    role="button"
+                    tabIndex={0}
+                    onFocus={() => setHovered(node.id)}
+                    onBlur={() => setHovered(null)}
+                    onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
+                    aria-label={node.description}
+                  >
+                    {node.label}
+                  </div>
+                );
+              })}
+
+              {/* ── Tooltip ── */}
+              {tooltipNode && tooltipPos && (
                 <div
-                  key={node.id}
-                  className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-lg border font-mono transition-all duration-300 select-none ${
-                    isActive(node.id)
-                      ? "bg-navy-950 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/25"
-                      : isConnected(node.id)
-                        ? "bg-navy-950 border-violet-500/50 text-violet-400"
-                        : "bg-navy-950 border-violet-500/20 text-violet-400/40"
-                  }`}
+                  className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-[#a0a0a01c] px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
                   style={{
-                    width: `${w}px`,
-                    height: `${h}px`,
-                    fontSize: `${14 * scale}px`,
-                    left: `${((pos.x - NODE_W / 2) / SVG_W) * 100}%`,
-                    top: `${((pos.y - NODE_H / 2) / SVG_H) * 100}%`,
+                    left: `${(tooltipPos.x / SVG_W) * 100}%`,
+                    top: `${(tooltipPos.y / SVG_H) * 100}%`,
+                    transform:
+                      tooltipPos.y < MAIN_Y || tooltipNode.id === "fix"
+                        ? "translate(-50%, -100%)"
+                        : "translate(-50%, 0%)",
                   }}
-                  onClick={() => openDoc(node.id)}
-                  onMouseEnter={() => setHovered(node.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  role="button"
-                  tabIndex={0}
-                  onFocus={() => setHovered(node.id)}
-                  onBlur={() => setHovered(null)}
-                  onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
-                  aria-label={node.description}
                 >
-                  {node.label}
+                  <span
+                    className={`font-mono font-semibold ${
+                      sideNodes.find((s) => s.id === tooltipNode.id)?.kind ===
+                      "auto"
+                        ? "text-emerald-400"
+                        : sideNodes.find((s) => s.id === tooltipNode.id)
+                              ?.kind === "agent"
+                          ? "text-sky-400"
+                          : "text-violet-400"
+                    }`}
+                  >
+                    {tooltipNode.label}
+                  </span>
+                  <p className="mt-1">{tooltipNode.description}</p>
                 </div>
-              );
-            })}
-
-            {/* ── Side nodes (HTML) ── */}
-            {sideNodes.map((node) => {
-              const pos = getSidePos(node);
-              const isAuto = node.kind === "auto";
-              const sw = SIDE_W * scale;
-              const sh = SIDE_H * scale;
-              return (
-                <div
-                  key={node.id}
-                  className={`absolute z-10 flex cursor-pointer items-center justify-center rounded-md border-2 font-mono transition-all duration-300 select-none ${
-                    isAuto
-                      ? isActive(node.id)
-                        ? "bg-navy-950 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/20"
-                        : isConnected(node.id)
-                          ? "bg-navy-950 border-dashed border-emerald-500/50 text-emerald-400/90"
-                          : "bg-navy-950 border-dashed border-emerald-500/20 text-emerald-400/30"
-                      : isActive(node.id)
-                        ? "bg-navy-950 border-sky-400 text-sky-300 shadow-lg shadow-sky-500/20"
-                        : isConnected(node.id)
-                          ? "bg-navy-950 border-sky-500/50 text-sky-400/90"
-                          : "bg-navy-950 border-sky-500/20 text-sky-400/30"
-                  }`}
-                  style={{
-                    width: `${sw}px`,
-                    height: `${sh}px`,
-                    fontSize: `${13 * scale}px`,
-                    left: `${((pos.x - SIDE_W / 2) / SVG_W) * 100}%`,
-                    top: `${((pos.y - SIDE_H / 2) / SVG_H) * 100}%`,
-                  }}
-                  onClick={() => openDoc(node.id)}
-                  onMouseEnter={() => setHovered(node.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  role="button"
-                  tabIndex={0}
-                  onFocus={() => setHovered(node.id)}
-                  onBlur={() => setHovered(null)}
-                  onKeyDown={(e) => e.key === "Enter" && openDoc(node.id)}
-                  aria-label={node.description}
-                >
-                  {node.label}
-                </div>
-              );
-            })}
-
-            {/* ── Tooltip ── */}
-            {tooltipNode && tooltipPos && (
-              <div
-                className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-[#a0a0a01c] px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
-                style={{
-                  left: `${(tooltipPos.x / SVG_W) * 100}%`,
-                  top: `${(tooltipPos.y / SVG_H) * 100}%`,
-                  transform:
-                    tooltipPos.y < MAIN_Y || tooltipNode.id === "fix"
-                      ? "translate(-50%, -100%)"
-                      : "translate(-50%, 0%)",
-                }}
-              >
-                <span
-                  className={`font-mono font-semibold ${
-                    sideNodes.find((s) => s.id === tooltipNode.id)?.kind ===
-                    "auto"
-                      ? "text-emerald-400"
-                      : sideNodes.find((s) => s.id === tooltipNode.id)?.kind ===
-                          "agent"
-                        ? "text-sky-400"
-                        : "text-violet-400"
-                  }`}
-                >
-                  {tooltipNode.label}
-                </span>
-                <p className="mt-1">{tooltipNode.description}</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Legend */}
@@ -950,6 +978,9 @@ export default function HowItWorks() {
               /cf-help
             </a>
           </p>
+
+          {/* Memory Architecture Diagram */}
+          <MemoryArchitecture />
         </Container>
       </section>
     );
@@ -1029,162 +1060,186 @@ export default function HowItWorks() {
           </a>
         </p>
 
-        <div className="relative mx-auto max-w-md">
-          {/* Vertical animated line */}
-          <svg
-            className="pointer-events-none absolute top-0 left-5"
-            style={{ width: "2px", height: "100%", marginLeft: "-1px" }}
-            preserveAspectRatio="none"
-            viewBox="0 0 2 1000"
-            fill="none"
-            aria-hidden="true"
-          >
-            <defs>
-              <filter
-                id="mobile-glow"
-                x="-200%"
-                y="-10%"
-                width="500%"
-                height="120%"
-              >
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <line
-              x1="1"
-              y1="0"
-              x2="1"
-              y2="1000"
+        {/* CF Memory frame */}
+        <div className="relative mx-auto max-w-md rounded-xl border border-amber-500/20 bg-amber-500/2 px-3 pt-14 pb-8">
+          {/* CF Memory tag */}
+          <span className="absolute top-2.5 left-3 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-xs text-amber-400">
+            <svg
+              className="h-2.5 w-2.5"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
-              className="text-slate-600"
               strokeWidth="2"
-              strokeDasharray="8 5"
-            />
-            <line
-              x1="1"
-              y1="0"
-              x2="1"
-              y2="1000"
-              stroke="currentColor"
-              className="text-violet-500"
-              strokeWidth="2.5"
-              strokeDasharray="8 5"
               strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <animate
-                attributeName="stroke-dashoffset"
-                from="0"
-                to="-13"
-                dur="1s"
-                repeatCount="indefinite"
-              />
-            </line>
-            <circle
-              cx="1"
-              r="5"
-              className="fill-current text-violet-400"
-              filter="url(#mobile-glow)"
+              <path d="M12 2a4 4 0 0 1 4 4v2H8V6a4 4 0 0 1 4-4z" />
+              <rect x="3" y="8" width="18" height="14" rx="2" />
+              <path d="M9 14h6" />
+            </svg>
+            CF Memory
+          </span>
+
+          <div className="relative">
+            {/* Vertical animated line */}
+            <svg
+              className="pointer-events-none absolute top-0 left-5"
+              style={{ width: "2px", height: "100%", marginLeft: "-1px" }}
+              preserveAspectRatio="none"
+              viewBox="0 0 2 1000"
+              fill="none"
+              aria-hidden="true"
             >
-              <animate
-                attributeName="cy"
-                from="0"
-                to="1000"
-                dur="4s"
-                repeatCount="indefinite"
+              <defs>
+                <filter
+                  id="mobile-glow"
+                  x="-200%"
+                  y="-10%"
+                  width="500%"
+                  height="120%"
+                >
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <line
+                x1="1"
+                y1="0"
+                x2="1"
+                y2="1000"
+                stroke="currentColor"
+                className="text-slate-600"
+                strokeWidth="2"
+                strokeDasharray="8 5"
               />
-            </circle>
-          </svg>
+              <line
+                x1="1"
+                y1="0"
+                x2="1"
+                y2="1000"
+                stroke="currentColor"
+                className="text-violet-500"
+                strokeWidth="2.5"
+                strokeDasharray="8 5"
+                strokeLinecap="round"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="0"
+                  to="-13"
+                  dur="1s"
+                  repeatCount="indefinite"
+                />
+              </line>
+              <circle
+                cx="1"
+                r="5"
+                className="fill-current text-violet-400"
+                filter="url(#mobile-glow)"
+              >
+                <animate
+                  attributeName="cy"
+                  from="0"
+                  to="1000"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+            </svg>
 
-          {/* Step cards */}
-          {mainNodes.map((node, i) => {
-            const children = sideNodes.filter(
-              (s) =>
-                s.parentId === node.id || s.extraParents?.includes(node.id),
-            );
-            const agents = children.filter((c) => c.kind === "agent");
-            const autos = children.filter((c) => c.kind === "auto");
+            {/* Step cards */}
+            {mainNodes.map((node, i) => {
+              const children = sideNodes.filter(
+                (s) =>
+                  s.parentId === node.id || s.extraParents?.includes(node.id),
+              );
+              const agents = children.filter((c) => c.kind === "agent");
+              const autos = children.filter((c) => c.kind === "auto");
 
-            return (
-              <div key={node.id} className="relative mb-10 pl-14 last:mb-0">
-                {/* Circle */}
-                <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white shadow-lg ring-4">
-                  {String(i + 1).padStart(2, "0")}
-                </div>
+              return (
+                <div key={node.id} className="relative mb-10 pl-14 last:mb-0">
+                  {/* Circle */}
+                  <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white shadow-lg ring-4">
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
 
-                {/* Card */}
-                <div className="bg-navy-950/80 rounded-lg border border-[#a0a0a01c] p-4">
-                  <h3
-                    className="cursor-pointer font-mono text-sm font-semibold text-violet-400"
-                    onClick={() => openDoc(node.id)}
-                  >
-                    {node.label}
-                  </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                    {node.description}
-                  </p>
+                  {/* Card */}
+                  <div className="bg-navy-950/80 rounded-lg border border-[#a0a0a01c] p-4">
+                    <h3
+                      className="cursor-pointer font-mono text-sm font-semibold text-violet-400"
+                      onClick={() => openDoc(node.id)}
+                    >
+                      {node.label}
+                    </h3>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                      {node.description}
+                    </p>
 
-                  {/* Connected nodes */}
-                  {(agents.length > 0 || autos.length > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {agents.map((a) => (
-                        <span
-                          key={a.id}
-                          className="cursor-pointer rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] text-sky-400"
-                          onClick={() => openDoc(a.id)}
-                        >
-                          {a.label}
-                        </span>
-                      ))}
-                      {autos.map((a) => (
-                        <span
-                          key={a.id}
-                          className="cursor-pointer rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
-                          onClick={() => openDoc(a.id)}
-                        >
-                          {a.label}
-                        </span>
-                      ))}
+                    {/* Connected nodes */}
+                    {(agents.length > 0 || autos.length > 0) && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {agents.map((a) => (
+                          <span
+                            key={a.id}
+                            className="cursor-pointer rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] text-sky-400"
+                            onClick={() => openDoc(a.id)}
+                          >
+                            {a.label}
+                          </span>
+                        ))}
+                        {autos.map((a) => (
+                          <span
+                            key={a.id}
+                            className="cursor-pointer rounded-md border border-dashed border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400"
+                            onClick={() => openDoc(a.id)}
+                          >
+                            {a.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Loop indicator for commit */}
+                  {node.id === "commit" && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-violet-400/60">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        className="shrink-0"
+                      >
+                        <path
+                          d="M 2 8 A 5 5 0 1 1 8 12"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                        <path
+                          d="M 6 10 L 8 12 L 6 14"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </svg>
+                      loop back to cf-tdd
                     </div>
                   )}
                 </div>
-
-                {/* Loop indicator for commit */}
-                {node.id === "commit" && (
-                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-violet-400/60">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      className="shrink-0"
-                    >
-                      <path
-                        d="M 2 8 A 5 5 0 1 1 8 12"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        fill="none"
-                      />
-                      <path
-                        d="M 6 10 L 8 12 L 6 14"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                      />
-                    </svg>
-                    loop back to cf-tdd
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+
+        {/* Memory Architecture Diagram */}
+        <MemoryArchitecture />
       </Container>
     </section>
   );

@@ -102,6 +102,16 @@ This skill is automatically invoked by other skills — you don't always need to
    mkdir -p /tmp/coding-friend && touch /tmp/coding-friend/reviewed
    ```
 
+9. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
+
+   If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
+   - type: "fact"
+   - importance: 3
+   - source: "auto-capture"
+   - title/description/tags/content summarizing the insight
+
+   Skip if the review was routine with no notable findings.
+
    Then display one of the following banners depending on whether **Critical Issues** were found:
 
    **If NO critical issues were found** — show this (replace placeholders):

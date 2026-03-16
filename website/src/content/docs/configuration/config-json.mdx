@@ -48,6 +48,19 @@ Edit interactively with `cf config`, or manually edit the JSON files.
   },
   "statusline": {
     "components": ["version", "folder", "model", "branch", "context", "usage"]
+  },
+  "memory": {
+    "tier": "auto",
+    "embedding": {
+      "provider": "transformers",
+      "model": "Xenova/all-MiniLM-L6-v2",
+      "ollamaUrl": "http://localhost:11434"
+    },
+    "daemon": {
+      "idleTimeout": 30
+    },
+    "autoCapture": false,
+    "autoStart": false
   }
 }
 ```
@@ -140,6 +153,67 @@ Settings for the statusline display (global config only).
 - **Default**: all components shown
 - Available components: `"version"`, `"folder"`, `"model"`, `"branch"`, `"context"`, `"usage"`
 - Only listed components are shown — omit a component to hide it
+
+### `memory`
+
+Settings for the [memory system](/docs/reference/memory-system/).
+
+#### `memory.tier`
+
+- **Type**: `"auto" | "full" | "lite" | "markdown"`
+- **Default**: `"auto"`
+- Force a specific search tier instead of auto-detection
+- `"auto"` — detect best available (SQLite → MiniSearch → Markdown)
+- `"full"` — require SQLite + hybrid search (fails if deps not installed)
+- `"lite"` — use MiniSearch daemon only
+- `"markdown"` — file-based fallback only
+
+#### `memory.embedding`
+
+Settings for the embedding model used in Tier 1 semantic search. See [Embedding Models](/docs/reference/memory-system#embedding-models) for details.
+
+#### `memory.embedding.provider`
+
+- **Type**: `"transformers" | "ollama"`
+- **Default**: `"transformers"`
+- `"transformers"` — local [Transformers.js](https://huggingface.co/docs/transformers.js) model, no external service needed
+- `"ollama"` — local [Ollama](https://ollama.com/) server, supports more models
+
+#### `memory.embedding.model`
+
+- **Type**: `string`
+- **Default**: `"Xenova/all-MiniLM-L6-v2"` (transformers) or `"all-minilm:l6-v2"` (ollama)
+- The embedding model to use for vector generation
+- Changing to a model with different dimensions requires `cf memory rebuild`
+
+#### `memory.embedding.ollamaUrl`
+
+- **Type**: `string`
+- **Default**: `"http://localhost:11434"`
+- URL of the Ollama server (only used when `provider` is `"ollama"`)
+
+#### `memory.daemon`
+
+Settings for the Tier 2 MiniSearch daemon.
+
+#### `memory.daemon.idleTimeout`
+
+- **Type**: `number` (minutes)
+- **Default**: `30`
+- Auto-shutdown the daemon after this many minutes of inactivity
+
+#### `memory.autoCapture`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Enable automatic memory capture via PreCompact hook
+- When enabled, session summaries are saved as `episode` memories before context compaction
+
+#### `memory.autoStart`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Auto-start the daemon when the MCP server connects
 
 ## Layered Config
 

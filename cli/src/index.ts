@@ -167,6 +167,111 @@ session
     await sessionLoadCommand();
   });
 
+const memory = program
+  .command("memory")
+  .description("AI memory system — store and search project knowledge");
+
+program.addHelpText(
+  "after",
+  `
+Memory subcommands:
+  memory status       Show memory system status (tier, doc count, daemon)
+  memory search       Search memories by query
+  memory list         List memories in current project (--projects for all DBs)
+  memory rm           Remove a project database (--project-id <id>, --all, or --prune)
+  memory init         Initialize Tier 1 (install SQLite deps, import existing memories)
+  memory start        Start the memory daemon (Tier 2)
+  memory stop         Stop the memory daemon
+  memory rebuild      Rebuild the daemon search index
+  memory mcp          Show MCP server setup instructions`,
+);
+
+memory
+  .command("status")
+  .description("Show memory system status")
+  .action(async () => {
+    const { memoryStatusCommand } = await import("./commands/memory.js");
+    await memoryStatusCommand();
+  });
+
+memory
+  .command("search")
+  .description("Search memories by query")
+  .argument("<query>", "search query")
+  .action(async (query: string) => {
+    const { memorySearchCommand } = await import("./commands/memory.js");
+    await memorySearchCommand(query);
+  });
+
+memory
+  .command("list")
+  .description(
+    "List memories in current project, or all projects with --projects",
+  )
+  .option("--projects", "List all project databases with size and metadata")
+  .action(async (opts: { projects?: boolean }) => {
+    const { memoryListCommand } = await import("./commands/memory.js");
+    await memoryListCommand(opts);
+  });
+
+memory
+  .command("init")
+  .description(
+    "Initialize Tier 1 — install SQLite deps and import existing memories",
+  )
+  .action(async () => {
+    const { memoryInitCommand } = await import("./commands/memory.js");
+    await memoryInitCommand();
+  });
+
+memory
+  .command("start")
+  .description("Start the memory daemon (Tier 2 — MiniSearch)")
+  .action(async () => {
+    const { memoryStartCommand } = await import("./commands/memory.js");
+    await memoryStartCommand();
+  });
+
+memory
+  .command("stop")
+  .description("Stop the memory daemon")
+  .action(async () => {
+    const { memoryStopCommand } = await import("./commands/memory.js");
+    await memoryStopCommand();
+  });
+
+memory
+  .command("rebuild")
+  .description("Rebuild the daemon search index")
+  .action(async () => {
+    const { memoryRebuildCommand } = await import("./commands/memory.js");
+    await memoryRebuildCommand();
+  });
+
+memory
+  .command("mcp")
+  .description("Show MCP server setup instructions")
+  .action(async () => {
+    const { memoryMcpCommand } = await import("./commands/memory.js");
+    await memoryMcpCommand();
+  });
+
+memory
+  .command("rm")
+  .description("Remove a project database")
+  .option("--project-id <id>", "Project ID to remove")
+  .option("--all", "Remove all project databases")
+  .option(
+    "--prune",
+    "Remove orphaned projects (source dir missing or 0 memories)",
+  )
+  .action(
+    async (opts: { projectId?: string; all?: boolean; prune?: boolean }) => {
+      const { memoryRmCommand } = await import("./commands/memory.js");
+      await memoryRmCommand(opts);
+    },
+  );
+
 const dev = program.command("dev").description("Development mode commands");
 
 program.addHelpText(

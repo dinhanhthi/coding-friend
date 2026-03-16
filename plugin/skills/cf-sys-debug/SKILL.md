@@ -24,15 +24,20 @@ If you've attempted 3+ fixes and the bug persists, **stop**. The problem is arch
 
 ### Phase 1: Root Cause Investigation
 
-**1a. Check existing bug docs** (frontmatter recall):
+**1a. Check existing bug docs** (memory recall):
 
 Before investigating, search for related past bugs. Extract 2-3 keywords from the bug description.
 
+**Primary — Memory MCP** (if `memory_search` tool is available):
+Call `memory_search` with: `{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
+
+**Fallback — grep** (if memory MCP unavailable):
+Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+
 1. Grep `^description:` lines across `{docsDir}/memory/bugs/**/*.md` — match against bug keywords
 2. If no match, grep `^tags:` lines across `{docsDir}/memory/bugs/**/*.md`
-3. If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns that save investigation time
 
-Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns that save investigation time.
 
 **1b. Investigate:**
 
@@ -81,6 +86,9 @@ content: |
   tags: [tag1, tag2, tag3]
   created: YYYY-MM-DD
   updated: YYYY-MM-DD
+  type: episode
+  importance: 4
+  source: conversation
   ---
 
   # <Bug Title>
@@ -112,6 +120,8 @@ existing_file_action: skip
 
 - `description`: factual summary for grep recall. Good: `"Circular dependency in plugin loader causing silent init failure"`. Bad: `"Hard bug fixed"`.
 - `tags`: include error type, affected module, root cause category (e.g., `[circular-dependency, plugin-loader, initialization]`)
+
+**Smart capture**: If the `memory_store` MCP tool is available, also call it with the same data (type: episode, importance: 4, source: auto-capture). This indexes the bug for faster future recall.
 
 ## Common Traps
 
