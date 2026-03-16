@@ -13,3 +13,8 @@
 - Add deduplication detection and temporal decay scoring
 - Add frontmatter migration script for existing `docs/memory/` files
 - Migrate `/cf-remember` and Frontmatter Recall to use `memory_search` MCP tool
+- Add `cf memory rm` and `cf memory ls` commands for project database management [#1da99b1](https://github.com/dinhanhthi/coding-friend/commit/1da99b1)
+- Add dynamic embedding dimensions support and config wiring [#b7f6eba](https://github.com/dinhanhthi/coding-friend/commit/b7f6eba)
+- Fix correct embedding model name in v1→v2 migration [#04d3c19](https://github.com/dinhanhthi/coding-friend/commit/04d3c19)
+- Fix empty project directories created on SQLite backend failure [#4ab7570](https://github.com/dinhanhthi/coding-friend/commit/4ab7570)
+- Fix unit tests creating orphaned SQLite databases [#ec0bfee](https://github.com/dinhanhthi/coding-friend/commit/ec0bfee)
