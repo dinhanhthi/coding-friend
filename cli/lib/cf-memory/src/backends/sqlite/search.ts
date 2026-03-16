@@ -14,7 +14,6 @@ import {
   contentHash,
   prepareEmbeddingText,
 } from "./embeddings.js";
-import { EMBEDDING_DIMS } from "./schema.js";
 import { applyTemporalDecay } from "../../lib/temporal-decay.js";
 
 /** RRF fusion constant — higher = more weight to individual rankings */

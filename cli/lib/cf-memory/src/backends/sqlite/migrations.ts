@@ -8,6 +8,7 @@
 import {
   SCHEMA_V1,
   SCHEMA_VERSION,
+  SCHEMA_V2_METADATA,
   PRAGMA_SETTINGS,
   getVecTableSQL,
 } from "./schema.js";
@@ -57,15 +58,101 @@ function migrateV0ToV1(db: DatabaseLike): void {
 }
 
 /**
+ * Migrate from schema v1 to v2: add metadata table.
+ */
+function migrateV1ToV2(db: DatabaseLike): void {
+  // better-sqlite3 Database.exec — runs SQL, not shell commands
+  db.exec(SCHEMA_V2_METADATA);
+  // Insert default embedding metadata
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(
+    "embedding_model",
+    "all-MiniLM-L6-v2",
+  );
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(
+    "embedding_dims",
+    "384",
+  );
+  // Update schema version
+  db.prepare("UPDATE schema_version SET version = ?").run(2);
+}
+
+/**
+ * Get a metadata value by key. Returns null if not found.
+ */
+export function getMetadata(db: DatabaseLike, key: string): string | null {
+  const row = db
+    .prepare("SELECT value FROM metadata WHERE key = ?")
+    .get(key) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
+/**
+ * Set a metadata key-value pair (insert or update).
+ */
+export function setMetadata(
+  db: DatabaseLike,
+  key: string,
+  value: string,
+): void {
+  db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run(
+    key,
+    value,
+  );
+}
+
+/**
+ * Check if the current embedding model/dims differ from what is stored.
+ * Returns mismatched=false for fresh databases (no metadata yet).
+ */
+export function checkEmbeddingMismatch(
+  db: DatabaseLike,
+  currentModel: string,
+  currentDims: number,
+): {
+  mismatched: boolean;
+  storedModel: string | null;
+  storedDims: number | null;
+  currentModel: string;
+  currentDims: number;
+} {
+  const storedModel = getMetadata(db, "embedding_model");
+  const storedDimsStr = getMetadata(db, "embedding_dims");
+  const storedDims =
+    storedDimsStr !== null ? parseInt(storedDimsStr, 10) : null;
+
+  // Fresh database or partial metadata -- not a mismatch
+  if (storedModel === null || storedDims === null) {
+    return {
+      mismatched: false,
+      storedModel,
+      storedDims,
+      currentModel,
+      currentDims,
+    };
+  }
+
+  const mismatched = storedModel !== currentModel || storedDims !== currentDims;
+
+  return {
+    mismatched,
+    storedModel,
+    storedDims,
+    currentModel,
+    currentDims,
+  };
+}
+
+/**
  * Try to create the sqlite-vec virtual table.
  * Returns true if successful, false if extension not loaded.
  */
-export function createVecTable(db: DatabaseLike): boolean {
+export function createVecTable(db: DatabaseLike, dims?: number): boolean {
   try {
-    db.exec(getVecTableSQL());
+    // better-sqlite3 Database.exec -- runs SQL, not shell commands
+    db.exec(getVecTableSQL(dims));
     return true;
   } catch {
-    // sqlite-vec extension not loaded — vector search disabled
+    // sqlite-vec extension not loaded -- vector search disabled
     return false;
   }
 }
@@ -93,8 +180,9 @@ export function migrate(db: DatabaseLike): {
     migrateV0ToV1(db);
   }
 
-  // Future migrations would go here:
-  // if (currentVersion < 2) migrateV1ToV2(db);
+  if (currentVersion < 2) {
+    migrateV1ToV2(db);
+  }
 
   return { version: SCHEMA_VERSION, migrated: true };
 }

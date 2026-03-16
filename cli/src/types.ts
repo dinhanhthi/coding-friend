@@ -50,6 +50,7 @@ export interface MemoryConfig {
   embedding?: {
     provider?: "transformers" | "ollama";
     model?: string;
+    ollamaUrl?: string;
   };
   autoCapture?: boolean;
   autoStart?: boolean;

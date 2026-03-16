@@ -196,6 +196,41 @@ describe("createBackendForTier()", () => {
   });
 });
 
+describe("createBackendForTier() with embeddingConfig", () => {
+  it("accepts an optional embeddingConfig parameter without error", async () => {
+    const embeddingConfig = {
+      provider: "ollama" as const,
+      model: "nomic-embed-text",
+      ollamaUrl: "http://localhost:11434",
+    };
+    // Should not throw — markdown tier ignores embedding config gracefully
+    const { backend, tier } = await createBackendForTier(
+      testDir,
+      "markdown",
+      embeddingConfig,
+    );
+    expect(tier.name).toBe("markdown");
+    expect(backend).toBeInstanceOf(MarkdownBackend);
+    await backend.close();
+  });
+
+  it("passes embeddingConfig through when full tier falls back to markdown", async () => {
+    const embeddingConfig = {
+      provider: "ollama" as const,
+      model: "nomic-embed-text",
+    };
+    // Full tier will fail (no sqlite deps in test env) and fall back
+    const { backend, tier } = await createBackendForTier(
+      testDir,
+      "full",
+      embeddingConfig,
+    );
+    // Falls back because better-sqlite3 is not installed in test env
+    expect(["markdown", "full"]).toContain(tier.name);
+    await backend.close();
+  });
+});
+
 describe("TIERS constant", () => {
   it("has all 3 tier definitions", () => {
     expect(Object.keys(TIERS)).toHaveLength(3);

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { spawn } from "child_process";
-import { resolveDocsDir } from "../lib/config.js";
+import { resolveDocsDir, loadConfig } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
@@ -217,7 +217,17 @@ export async function memoryStartCommand(): Promise<void> {
 
   log.step("Starting memory daemon...");
 
-  const child = spawn("node", [entryPath, memoryDir], {
+  // Build daemon args with embedding config from config.json
+  const args = [entryPath, memoryDir];
+  const config = loadConfig();
+  const embedding = config.memory?.embedding;
+  if (embedding?.provider)
+    args.push(`--embedding-provider=${embedding.provider}`);
+  if (embedding?.model) args.push(`--embedding-model=${embedding.model}`);
+  if (embedding?.ollamaUrl)
+    args.push(`--embedding-ollama-url=${embedding.ollamaUrl}`);
+
+  const child = spawn("node", args, {
     detached: true,
     stdio: "ignore",
     env: { ...process.env },
@@ -263,16 +273,54 @@ export async function memoryStopCommand(): Promise<void> {
 }
 
 export async function memoryRebuildCommand(): Promise<void> {
+  const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
 
+  // Try direct rebuild for Tier 1 (SQLite)
+  const { areSqliteDepsAvailable } = await import(
+    join(mcpDir, "dist/lib/lazy-install.js")
+  );
+
+  if (areSqliteDepsAvailable()) {
+    log.step("Rebuilding SQLite index + embeddings...");
+
+    const { SqliteBackend } = await import(
+      join(mcpDir, "dist/backends/sqlite/index.js")
+    );
+
+    // Pass embedding config from config.json
+    const config = loadConfig();
+    const embedding = config.memory?.embedding;
+    const opts = embedding ? { embedding, skipVec: false } : { skipVec: false };
+    const backend = new SqliteBackend(memoryDir, opts);
+
+    try {
+      await backend.rebuild();
+      const stats = await backend.stats();
+      log.success(`Rebuilt: ${stats.total} memories indexed.`);
+
+      if (backend.isVecEnabled()) {
+        log.info(`Vector search: ${chalk.green("enabled")}`);
+      }
+      if (!backend.isRebuildNeeded()) {
+        log.info("Embedding dimensions: up to date");
+      }
+    } finally {
+      await backend.close();
+    }
+    return;
+  }
+
+  // Fall back to daemon rebuild
   const { isDaemonRunning, getDaemonPaths } = await import(
     join(mcpDir, "dist/daemon/process.js")
   );
 
   if (!(await isDaemonRunning())) {
-    log.info("Daemon is not running. Nothing to rebuild.");
-    log.dim("Start the daemon first: cf memory start");
+    log.info("No SQLite deps and daemon not running. Nothing to rebuild.");
+    log.dim("Install Tier 1 deps: cf memory init");
+    log.dim("Or start the daemon: cf memory start");
     return;
   }
 
@@ -283,7 +331,7 @@ export async function memoryRebuildCommand(): Promise<void> {
   const paths = getDaemonPaths();
   const client = new DaemonClient(paths.socketPath);
 
-  log.step("Rebuilding search index...");
+  log.step("Rebuilding search index via daemon...");
   try {
     await client.rebuild();
     log.success("Index rebuilt.");
@@ -345,7 +393,12 @@ export async function memoryInitCommand(): Promise<void> {
     join(mcpDir, "dist/backends/sqlite/index.js")
   );
 
-  const backend = new SqliteBackend(memoryDir, { skipVec: false });
+  const config = loadConfig();
+  const embedding = config.memory?.embedding;
+  const backend = new SqliteBackend(memoryDir, {
+    skipVec: false,
+    ...(embedding && { embedding }),
+  });
 
   try {
     await backend.rebuild();

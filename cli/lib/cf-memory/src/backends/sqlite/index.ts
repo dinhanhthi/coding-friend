@@ -28,7 +28,13 @@ import {
   type UpdateInput,
 } from "../../lib/types.js";
 import { loadDepSync } from "../../lib/lazy-install.js";
-import { migrate, createVecTable, type DatabaseLike } from "./migrations.js";
+import {
+  migrate,
+  createVecTable,
+  checkEmbeddingMismatch,
+  setMetadata,
+  type DatabaseLike,
+} from "./migrations.js";
 import {
   EmbeddingPipeline,
   EmbeddingCache,
@@ -62,6 +68,7 @@ export class SqliteBackend implements MemoryBackend {
   private pipeline: EmbeddingPipeline | null = null;
   private cache: EmbeddingCache | null = null;
   private vecEnabled = false;
+  private needsEmbeddingRebuild = false;
   private dbPath: string;
 
   constructor(
@@ -99,6 +106,21 @@ export class SqliteBackend implements MemoryBackend {
         depsDir: opts?.depsDir,
       });
       this.cache = new EmbeddingCache(this.db);
+
+      // Check if embedding model changed
+      const mismatch = checkEmbeddingMismatch(
+        this.db,
+        this.pipeline.modelName,
+        this.pipeline.dims,
+      );
+      if (mismatch.mismatched) {
+        process.stderr.write(
+          `[cf-memory] Embedding model changed: ${mismatch.storedModel} (${mismatch.storedDims}d) → ${mismatch.currentModel} (${mismatch.currentDims}d)\n` +
+            `[cf-memory] Vector search disabled. Run "cf memory rebuild" to re-embed.\n`,
+        );
+        this.vecEnabled = false;
+        this.needsEmbeddingRebuild = true;
+      }
     }
   }
 
@@ -141,6 +163,10 @@ export class SqliteBackend implements MemoryBackend {
 
   isVecEnabled(): boolean {
     return this.vecEnabled;
+  }
+
+  isRebuildNeeded(): boolean {
+    return this.needsEmbeddingRebuild;
   }
 
   async store(input: StoreInput): Promise<Memory> {
@@ -344,6 +370,17 @@ export class SqliteBackend implements MemoryBackend {
    * 2. Async pass: generate embeddings (non-transactional, failures logged)
    */
   async rebuild(): Promise<void> {
+    // If embedding model changed, recreate vec table with new dimensions
+    if (this.needsEmbeddingRebuild && this.pipeline) {
+      try {
+        this.db.prepare("DROP TABLE IF EXISTS vec_memories").run();
+        createVecTable(this.db, this.pipeline.dims);
+        this.vecEnabled = true;
+      } catch {
+        // Vec setup failed
+      }
+    }
+
     // Read all markdown files first
     const metas = this.markdown.getAllMeta();
     const memories: Array<{ memory: Memory; hash: string }> = [];
@@ -397,6 +434,13 @@ export class SqliteBackend implements MemoryBackend {
           );
         }
       }
+    }
+
+    // Update metadata with current embedding model info
+    if (this.pipeline) {
+      setMetadata(this.db, "embedding_model", this.pipeline.modelName);
+      setMetadata(this.db, "embedding_dims", String(this.pipeline.dims));
+      this.needsEmbeddingRebuild = false;
     }
   }
 
@@ -467,7 +511,7 @@ export class SqliteBackend implements MemoryBackend {
     if (!this.pipeline || !this.cache) return;
 
     // Check cache first
-    let embedding = this.cache.get(hash);
+    let embedding = this.cache.get(hash, this.pipeline.dims);
     if (!embedding) {
       const text = prepareEmbeddingText({
         title: memory.frontmatter.title,
@@ -476,7 +520,7 @@ export class SqliteBackend implements MemoryBackend {
         content: memory.content,
       });
       embedding = await this.pipeline.embed(text);
-      this.cache.set(hash, embedding, "all-MiniLM-L6-v2");
+      this.cache.set(hash, embedding, this.pipeline.modelName);
     }
 
     // Store in vec table — use byteOffset/byteLength for correct Float32Array handling

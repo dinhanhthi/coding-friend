@@ -5,13 +5,33 @@ import { registerAllTools } from "./server.js";
 import { registerAllResources } from "./resources/index.js";
 import { createBackendForTier } from "./lib/tier.js";
 import type { TierConfig } from "./lib/tier.js";
+import type { EmbeddingConfig } from "./backends/sqlite/embeddings.js";
 
 const rawDir =
   process.argv[2] ?? process.env.MEMORY_DOCS_DIR ?? "./docs/memory";
 const docsDir = path.resolve(rawDir);
 const tierConfig = (process.env.MEMORY_TIER ?? "auto") as TierConfig;
 
-const { backend, tier } = await createBackendForTier(docsDir, tierConfig);
+// Embedding config from environment variables
+const embeddingConfig: Partial<EmbeddingConfig> | undefined = (() => {
+  const provider = process.env.MEMORY_EMBEDDING_PROVIDER as
+    | EmbeddingConfig["provider"]
+    | undefined;
+  const model = process.env.MEMORY_EMBEDDING_MODEL;
+  const ollamaUrl = process.env.MEMORY_EMBEDDING_OLLAMA_URL;
+  if (!provider && !model && !ollamaUrl) return undefined;
+  return {
+    ...(provider && { provider }),
+    ...(model && { model }),
+    ...(ollamaUrl && { ollamaUrl }),
+  };
+})();
+
+const { backend, tier } = await createBackendForTier(
+  docsDir,
+  tierConfig,
+  embeddingConfig,
+);
 
 const server = new McpServer({
   name: "coding-friend-memory",

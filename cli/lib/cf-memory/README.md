@@ -48,6 +48,71 @@ Detection: Tier 1 → Tier 2 → Tier 3 (first available wins).
 
 Memories are stored as Markdown files with YAML frontmatter in `docs/memory/<category>/`.
 
+## Embedding Models
+
+Tier 1 (SQLite) uses embedding models to generate vectors for semantic search. Two providers are supported:
+
+### Providers
+
+| Provider            | How it works                                    | Default model                    | Pros                                         | Cons                                             |
+| ------------------- | ----------------------------------------------- | -------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| **Transformers.js** | Runs in-process via `@huggingface/transformers` | `Xenova/all-MiniLM-L6-v2` (384d) | Zero config, no external service             | Slower first load (~5s), limited model selection |
+| **Ollama**          | Calls local Ollama server API                   | `all-minilm:l6-v2` (384d)        | Fast, wide model selection, GPU acceleration | Requires Ollama running separately               |
+
+### Recommended Models
+
+| Model                      | Dims | Size    | Notes                                                                 |
+| -------------------------- | ---- | ------- | --------------------------------------------------------------------- |
+| `all-minilm:l6-v2`         | 384  | ~23 MB  | **Default** — fast, good for small-to-medium collections              |
+| `nomic-embed-text`         | 768  | ~274 MB | **Recommended upgrade** — significantly better semantic understanding |
+| `mxbai-embed-large`        | 1024 | ~670 MB | Best quality, suitable for large collections (100+ memories)          |
+| `snowflake-arctic-embed:s` | 384  | ~67 MB  | Alternative compact model                                             |
+| `snowflake-arctic-embed:m` | 768  | ~250 MB | Good balance of quality and speed                                     |
+| `bge-base-en-v1.5`         | 768  | ~130 MB | Strong English-language model                                         |
+| `bge-large-en-v1.5`        | 1024 | ~670 MB | Top-tier English model                                                |
+
+### Using Ollama for Embeddings
+
+1. Install Ollama: https://ollama.com/download
+2. Pull a model:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+3. Configure in `.coding-friend/config.json`:
+   ```json
+   {
+     "memory": {
+       "embedding": {
+         "provider": "ollama",
+         "model": "nomic-embed-text"
+       }
+     }
+   }
+   ```
+4. If you have existing memories, rebuild to re-embed:
+   ```bash
+   cf memory rebuild
+   ```
+
+If Ollama is not running or the configured model is missing, the system falls back to Transformers.js automatically.
+
+### Changing Models
+
+When you switch to a model with different dimensions (e.g., 384 → 768):
+
+1. The system detects the mismatch on startup
+2. Vector search is **disabled** with a warning
+3. Run `cf memory rebuild` to re-embed all memories
+4. Vector search is re-enabled with the new dimensions
+
+Markdown files are unaffected — they remain the source of truth.
+
+### Dynamic Dimensions
+
+CF Memory includes a lookup table of known models and their dimensions. For models not in the table, it defaults to 384 dimensions. If you use an exotic model, the system logs a warning suggesting you verify dimensions.
+
+Known models include: all-MiniLM-L6-v2 (384d), nomic-embed-text (768d), mxbai-embed-large (1024d), snowflake-arctic-embed variants, and BGE variants.
+
 ## Project Structure
 
 ```
@@ -199,17 +264,20 @@ The `cf` CLI exposes memory commands that use this package:
 | `cf memory list`           | List all stored memories                                          |
 | `cf memory start`          | Start the MiniSearch daemon (Tier 2)                              |
 | `cf memory stop`           | Stop the daemon                                                   |
-| `cf memory rebuild`        | Rebuild daemon search index                                       |
+| `cf memory rebuild`        | Rebuild search index (Tier 1 direct or via daemon)                |
 | `cf memory init`           | Install Tier 1 deps + import existing memories into SQLite        |
 | `cf memory mcp`            | Print MCP server config for use in Claude Desktop / other clients |
 
 ## Environment Variables
 
-| Variable          | Default                  | Description                                      |
-| ----------------- | ------------------------ | ------------------------------------------------ |
-| `MEMORY_DOCS_DIR` | `./docs/memory`          | Path to memory storage directory                 |
-| `MEMORY_TIER`     | `auto`                   | Force a tier: `auto`, `full`, `lite`, `markdown` |
-| `OLLAMA_HOST`     | `http://localhost:11434` | Ollama server URL (for embeddings)               |
+| Variable                      | Default                  | Description                                       |
+| ----------------------------- | ------------------------ | ------------------------------------------------- |
+| `MEMORY_DOCS_DIR`             | `./docs/memory`          | Path to memory storage directory                  |
+| `MEMORY_TIER`                 | `auto`                   | Force a tier: `auto`, `full`, `lite`, `markdown`  |
+| `MEMORY_EMBEDDING_PROVIDER`   | `transformers`           | Embedding provider: `transformers` or `ollama`    |
+| `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Embedding model name (e.g., `nomic-embed-text`)   |
+| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL                                 |
+| `OLLAMA_HOST`                 | `http://localhost:11434` | Ollama server URL (used by Ollama auto-detection) |
 
 ## Versioning
 
