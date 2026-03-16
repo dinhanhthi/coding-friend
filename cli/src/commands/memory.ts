@@ -183,7 +183,7 @@ export async function memoryListCommand(opts: {
       "This folder has no memories yet. Use --projects to list all project databases.",
     );
     log.dim(
-      'Or run "cf init" to set up this project, then "/cf-onboard" in Claude Code.',
+      'Or run "cf init" to set up this project, then "/cf-scan" in Claude Code.',
     );
     return;
   }
@@ -454,7 +454,7 @@ export async function memoryInitCommand(): Promise<void> {
 
   log.success('Tier 1 initialized. Run "cf memory status" to verify.');
   log.info(
-    `Tip: Run ${chalk.cyan("/cf-onboard")} in Claude Code to populate memory with project knowledge.`,
+    `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
   );
 }
 

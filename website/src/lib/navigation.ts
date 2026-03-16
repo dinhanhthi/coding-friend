@@ -16,7 +16,7 @@ export const docsNavigation: NavSection[] = [
       { title: "/cf-fix", slug: "skills/cf-fix" },
       { title: "/cf-ask", slug: "skills/cf-ask", manualOnly: true },
       { title: "/cf-optimize", slug: "skills/cf-optimize" },
-      { title: "/cf-onboard", slug: "skills/cf-onboard", manualOnly: true },
+      { title: "/cf-scan", slug: "skills/cf-scan", manualOnly: true },
       { title: "/cf-review", slug: "skills/cf-review" },
       { title: "/cf-commit", slug: "skills/cf-commit", manualOnly: true },
       { title: "/cf-ship", slug: "skills/cf-ship", manualOnly: true },

@@ -79,7 +79,7 @@ The system detects available dependencies and picks the best backend automatical
 
 Three ways to store memories:
 
-1. **Bootstrap** — `/cf-onboard` inside a Claude Code session
+1. **Bootstrap** — `/cf-scan` inside a Claude Code session
    - Scans the entire project (README, configs, source code) and populates memory with architecture, conventions, tech stack, key features
    - Safe to run multiple times — updates existing memories, never duplicates
    - Recommended for new projects or after major refactors
@@ -93,9 +93,9 @@ Three ways to store memories:
      - `/cf-review` — architectural patterns
      - `/cf-sys-debug` — debugging breakthroughs
 
-### `/cf-onboard` vs `/cf-remember`
+### `/cf-scan` vs `/cf-remember`
 
-|                    | `/cf-onboard`                                       | `/cf-remember`                      |
+|                    | `/cf-scan`                                          | `/cf-remember`                      |
 | ------------------ | --------------------------------------------------- | ----------------------------------- |
 | **When**           | First time, or to refresh project knowledge         | After a coding session              |
 | **Source**         | Scans the codebase directly                         | Extracts from conversation          |
