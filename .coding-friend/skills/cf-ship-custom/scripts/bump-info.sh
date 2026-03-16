@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bump-info.sh — Print version bump context for LLM to act on
 # Usage: bash bump-info.sh [package] [level]
-#   package: plugin | cli | learn-mcp | learn-host | (empty = auto-detect)
+#   package: plugin | cli | learn-mcp | learn-host | cf-memory | (empty = auto-detect)
 #   level:   patch | minor | major | (empty = LLM decides)
 
 set -euo pipefail
@@ -26,12 +26,14 @@ PLUGIN_TAG=$(get_latest_tag 'v[0-9]')
 CLI_TAG=$(get_latest_tag 'cli-v')
 MCP_TAG=$(get_latest_tag 'learn-mcp-v')
 HOST_TAG=$(get_latest_tag 'learn-host-v')
+CFMEM_TAG=$(get_latest_tag 'cf-memory-v')
 
 # --- Current file versions ---
 PLUGIN_VER=$(grep '"version"' "$REPO_ROOT/plugin/.claude-plugin/plugin.json" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 CLI_VER=$(grep '"version"' "$REPO_ROOT/cli/package.json" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 MCP_VER=$(grep '"version"' "$REPO_ROOT/cli/lib/learn-mcp/package.json" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 HOST_VER=$(grep '"version"' "$REPO_ROOT/cli/lib/learn-host/package.json" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+CFMEM_VER=$(grep '"version"' "$REPO_ROOT/cli/lib/cf-memory/package.json" | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 
 # --- Detect changed packages (if no filter) ---
 check_changes() {
@@ -69,22 +71,25 @@ if [ -n "$FILTER_PKG" ]; then
     cli)       print_pkg "cli"        "$CLI_TAG"    "$CLI_VER"    "yes" ;;
     learn-mcp) print_pkg "learn-mcp"  "$MCP_TAG"    "$MCP_VER"    "yes" ;;
     learn-host)print_pkg "learn-host" "$HOST_TAG"   "$HOST_VER"   "yes" ;;
+    cf-memory) print_pkg "cf-memory"  "$CFMEM_TAG"  "$CFMEM_VER"  "yes" ;;
     *) echo "Unknown package: $FILTER_PKG"; exit 1 ;;
   esac
 else
   PLUGIN_CHANGED=$(check_changes "$PLUGIN_TAG" "plugin/" ".claude-plugin/" ".claude/" ".agents/")
-  CLI_CHANGED=$(check_changes "$CLI_TAG" "cli/" ":(exclude)cli/lib/learn-host/" ":(exclude)cli/lib/learn-mcp/" 2>/dev/null || check_changes "$CLI_TAG" "cli/")
+  CLI_CHANGED=$(check_changes "$CLI_TAG" "cli/" ":(exclude)cli/lib/learn-host/" ":(exclude)cli/lib/learn-mcp/" ":(exclude)cli/lib/cf-memory/" 2>/dev/null || check_changes "$CLI_TAG" "cli/")
   MCP_CHANGED=$(check_changes "$MCP_TAG" "cli/lib/learn-mcp/")
   HOST_CHANGED=$(check_changes "$HOST_TAG" "cli/lib/learn-host/")
+  CFMEM_CHANGED=$(check_changes "$CFMEM_TAG" "cli/lib/cf-memory/")
 
   [ -n "$PLUGIN_CHANGED" ] && print_pkg "plugin"     "$PLUGIN_TAG" "$PLUGIN_VER" "$PLUGIN_CHANGED"
   [ -n "$CLI_CHANGED" ]    && print_pkg "cli"        "$CLI_TAG"    "$CLI_VER"    "$CLI_CHANGED"
   [ -n "$MCP_CHANGED" ]    && print_pkg "learn-mcp"  "$MCP_TAG"    "$MCP_VER"    "$MCP_CHANGED"
   [ -n "$HOST_CHANGED" ]   && print_pkg "learn-host" "$HOST_TAG"   "$HOST_VER"   "$HOST_CHANGED"
+  [ -n "$CFMEM_CHANGED" ]  && print_pkg "cf-memory"  "$CFMEM_TAG"  "$CFMEM_VER"  "$CFMEM_CHANGED"
 
-  if [ -z "$PLUGIN_CHANGED$CLI_CHANGED$MCP_CHANGED$HOST_CHANGED" ]; then
+  if [ -z "$PLUGIN_CHANGED$CLI_CHANGED$MCP_CHANGED$HOST_CHANGED$CFMEM_CHANGED" ]; then
     echo "No package changes detected since last tags."
-    echo "Tags: plugin=$PLUGIN_TAG  cli=$CLI_TAG  learn-mcp=$MCP_TAG  learn-host=$HOST_TAG"
+    echo "Tags: plugin=$PLUGIN_TAG  cli=$CLI_TAG  learn-mcp=$MCP_TAG  learn-host=$HOST_TAG  cf-memory=$CFMEM_TAG"
   fi
 fi
 
@@ -96,6 +101,7 @@ echo "  plugin/ .claude-plugin/ .claude/ .agents/  → plugin"
 echo "  cli/ (excl. learn-*)                        → cli"
 echo "  cli/lib/learn-mcp/                          → learn-mcp"
 echo "  cli/lib/learn-host/                         → learn-host"
+echo "  cli/lib/cf-memory/                          → cf-memory"
 echo "  website/ changes do NOT count as plugin changes"
 echo ""
 echo "Bump script: bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <new_version>"
