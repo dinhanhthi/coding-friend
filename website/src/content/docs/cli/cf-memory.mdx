@@ -7,16 +7,18 @@ Manage the persistent AI memory system. Store, search, and recall project knowle
 
 ## Subcommands
 
-| Command                    | Description                                      |
-| -------------------------- | ------------------------------------------------ |
-| `cf memory status`         | Show current tier, document count, daemon state  |
-| `cf memory search <query>` | Search memories from the terminal                |
-| `cf memory list`           | List all stored memories                         |
-| `cf memory init`           | Install Tier 1 deps and import existing memories |
-| `cf memory start`          | Start the Tier 2 daemon                          |
-| `cf memory stop`           | Stop the Tier 2 daemon                           |
-| `cf memory rebuild`        | Re-index all memories from markdown files        |
-| `cf memory mcp`            | Print MCP server config for Claude Code          |
+| Command                     | Description                                       |
+| --------------------------- | ------------------------------------------------- |
+| `cf memory status`          | Show current tier, document count, daemon state   |
+| `cf memory search <query>`  | Search memories from the terminal                 |
+| `cf memory list`            | List memories in current project                  |
+| `cf memory list --projects` | List all project databases with size and metadata |
+| `cf memory rm`              | Remove a project database                         |
+| `cf memory init`            | Install Tier 1 deps and import existing memories  |
+| `cf memory start`           | Start the Tier 2 daemon                           |
+| `cf memory stop`            | Stop the Tier 2 daemon                            |
+| `cf memory rebuild`         | Re-index all memories from markdown files         |
+| `cf memory mcp`             | Print MCP server config for Claude Code           |
 
 ## `init`
 
@@ -54,6 +56,41 @@ cf memory search "authentication flow"
 #     Auth module uses JWT tokens in httpOnly cookies
 #     id: features/jwt-auth | type: fact | matched: title, content
 ```
+
+## `list --projects`
+
+Lists all project databases stored in `~/.coding-friend/memory/projects/`, sorted by size (largest first). Shows size, memory count, project ID, last updated date, and source directory path.
+
+Without `--projects`, `cf memory list` shows individual memories in the current project. If run in a folder without memories, it suggests using `--projects` or setting up the project first.
+
+```bash
+cf memory list --projects
+# → Scanning 5 project(s)...
+#
+#     5.7 MB    47 memories  912d2bfd5ad5  2026-03-16
+#             /Users/you/project-a/docs/memory
+#
+#   213.1 KB     0 memories  0a1d7ea4a615  n/a
+#             /Users/you/project-b/docs/memory
+#
+# Total: 5 project(s), 6.5 MB
+```
+
+The source directory path is tracked automatically when a project's memory system is used. Older projects that haven't been accessed since this feature was added will show "(unknown path)" until their next use.
+
+## `rm`
+
+Removes project database(s) from `~/.coding-friend/memory/projects/`. Markdown source files in `docs/memory/` are **not affected** — only the SQLite index is deleted. You can always rebuild with `cf memory rebuild`.
+
+```bash
+# Remove a specific project by ID (from `cf memory ls`)
+cf memory rm --project-id 912d2bfd5ad5
+
+# Remove all project databases
+cf memory rm --all
+```
+
+Both commands ask for confirmation before deleting.
 
 ## `start` / `stop`
 

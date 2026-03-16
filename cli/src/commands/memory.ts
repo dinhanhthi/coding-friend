@@ -1,6 +1,9 @@
-import { existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { createHash } from "crypto";
+import { existsSync, readdirSync, statSync, rmSync } from "fs";
+import { join, resolve, sep } from "path";
+import { homedir } from "os";
 import { spawn } from "child_process";
+import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
@@ -165,13 +168,24 @@ export async function memorySearchCommand(query: string): Promise<void> {
   }
 }
 
-export async function memoryListCommand(): Promise<void> {
+export async function memoryListCommand(opts: {
+  projects?: boolean;
+}): Promise<void> {
+  if (opts.projects) {
+    return memoryListProjectsCommand();
+  }
+
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
-    log.error(`Memory dir not found: ${memoryDir}`);
-    log.dim("Run `cf init` to create project folders.");
-    process.exit(1);
+    log.info(`No memory directory found at: ${memoryDir}`);
+    log.dim(
+      "This folder has no memories yet. Use --projects to list all project databases.",
+    );
+    log.dim(
+      'Or run "cf init" to set up this project, then "/cf-onboard" in Claude Code.',
+    );
+    return;
   }
 
   const mcpDir = getLibPath("cf-memory");
@@ -185,12 +199,27 @@ export async function memoryListCommand(): Promise<void> {
       import { MarkdownBackend } from "${join(mcpDir, "dist/backends/markdown.js")}";
       const backend = new MarkdownBackend("${memoryDir}");
       const metas = await backend.list({});
-      for (const m of metas) {
-        console.log(\`\${m.frontmatter.type.padEnd(12)} \${m.id}\`);
-        console.log(\`             \${m.frontmatter.title}\`);
-        console.log();
-      }
-      console.log(\`Total: \${metas.length} memories\`);
+      if (metas.length === 0) { console.log("No memories found."); process.exit(0); }
+
+      // Compute column widths
+      const idxW = String(metas.length).length;
+      const typeW = Math.max(4, ...metas.map(m => m.frontmatter.type.length));
+      const idW = Math.max(2, ...metas.map(m => m.id.length));
+
+      // Header
+      const hdr = "#".padStart(idxW) + "  " + "TYPE".padEnd(typeW) + "  " + "ID".padEnd(idW) + "  " + "TITLE";
+      console.log(hdr);
+      console.log("-".repeat(hdr.length + 10));
+
+      metas.forEach((m, i) => {
+        const idx = String(i + 1).padStart(idxW);
+        const type = m.frontmatter.type.padEnd(typeW);
+        const id = m.id.padEnd(idW);
+        console.log(idx + "  " + type + "  " + id + "  " + m.frontmatter.title);
+      });
+
+      console.log();
+      console.log("Total: " + metas.length + " memories");
       `,
     ],
     { cwd: memoryDir },
@@ -427,6 +456,276 @@ export async function memoryInitCommand(): Promise<void> {
   log.info(
     `Tip: Run ${chalk.cyan("/cf-onboard")} in Claude Code to populate memory with project knowledge.`,
   );
+}
+
+// ─── Helpers for list --projects / rm ──────────────────────────────────────────
+
+function getProjectsBaseDir(): string {
+  const home = homedir();
+  return join(home, ".coding-friend", "memory", "projects");
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function formatDate(raw: string): string {
+  // Normalize various date formats to YYYY-MM-DD
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toISOString().slice(0, 10);
+}
+
+function dirSize(dir: string): number {
+  let total = 0;
+  if (!existsSync(dir)) return 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, entry.name);
+    if (entry.isFile()) {
+      total += statSync(p).size;
+    } else if (entry.isDirectory()) {
+      total += dirSize(p);
+    }
+  }
+  return total;
+}
+
+interface ProjectInfo {
+  id: string;
+  sourceDir: string | null;
+  memories: number;
+  size: number;
+  lastUpdated: string | null;
+}
+
+function getProjectInfo(
+  projectDir: string,
+  projectId: string,
+  mcpDir: string,
+  knownSourceDir?: string,
+): ProjectInfo {
+  const dbPath = join(projectDir, "db.sqlite");
+  const size = dirSize(projectDir);
+  const info: ProjectInfo = {
+    id: projectId,
+    sourceDir: null,
+    memories: 0,
+    size,
+    lastUpdated: null,
+  };
+
+  if (!existsSync(dbPath)) return info;
+
+  // Try to read metadata from SQLite
+  // If knownSourceDir is provided and source_dir is missing, backfill it
+  try {
+    const backfillDir = knownSourceDir
+      ? JSON.stringify(knownSourceDir)
+      : "null";
+    const result = run(
+      "node",
+      [
+        "-e",
+        `
+        const path = require("path");
+        const mod = require(path.join(${JSON.stringify(mcpDir)}, "dist/lib/lazy-install.js"));
+        if (!mod.areSqliteDepsAvailable()) { console.log(JSON.stringify({})); process.exit(0); }
+        const Database = require(mod.getDepsDir() + "/node_modules/better-sqlite3");
+        const backfill = ${backfillDir};
+        const db = new Database(${JSON.stringify(dbPath)}, { readonly: !backfill });
+        const getMeta = (key) => { try { const r = db.prepare("SELECT value FROM metadata WHERE key = ?").get(key); return r?.value ?? null; } catch { return null; } };
+        let sourceDir = getMeta("source_dir");
+        if (!sourceDir && backfill) {
+          try { db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run("source_dir", backfill); sourceDir = backfill; } catch {}
+        }
+        const count = (() => { try { const r = db.prepare("SELECT COUNT(*) as c FROM memories").get(); return r?.c ?? 0; } catch { return 0; } })();
+        const lastUpdated = (() => { try { const r = db.prepare("SELECT updated FROM memories ORDER BY updated DESC LIMIT 1").get(); return r?.updated ?? null; } catch { return null; } })();
+        console.log(JSON.stringify({ sourceDir, memories: count, lastUpdated }));
+        db.close();
+        `,
+      ],
+      { cwd: projectDir },
+    );
+    if (result) {
+      const parsed = JSON.parse(result.trim());
+      info.sourceDir = parsed.sourceDir ?? null;
+      info.memories = parsed.memories ?? 0;
+      info.lastUpdated = parsed.lastUpdated ?? null;
+    }
+  } catch {
+    // Ignore — will show defaults
+  }
+
+  return info;
+}
+
+async function memoryListProjectsCommand(): Promise<void> {
+  const baseDir = getProjectsBaseDir();
+  const mcpDir = getLibPath("cf-memory");
+  ensureBuilt(mcpDir);
+
+  if (!existsSync(baseDir)) {
+    log.info("No memory projects found.");
+    log.dim('Run "cf memory init" in a project to create one.');
+    return;
+  }
+
+  const dirs = readdirSync(baseDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+    .map((d) => d.name);
+
+  if (dirs.length === 0) {
+    log.info("No memory projects found.");
+    return;
+  }
+
+  // Compute hash of the current project's memoryDir so we can backfill source_dir
+  const currentMemoryDir = resolve(getMemoryDir());
+  const currentHash = createHash("sha256")
+    .update(currentMemoryDir)
+    .digest("hex")
+    .slice(0, 12);
+
+  log.step(`Scanning ${dirs.length} project(s)...\n`);
+
+  const projects: ProjectInfo[] = [];
+  for (const id of dirs) {
+    // If this project matches the current directory, pass the path for backfill
+    const knownDir = id === currentHash ? currentMemoryDir : undefined;
+    projects.push(getProjectInfo(join(baseDir, id), id, mcpDir, knownDir));
+  }
+
+  // Sort by size descending
+  projects.sort((a, b) => b.size - a.size);
+
+  const totalSize = projects.reduce((sum, p) => sum + p.size, 0);
+  const idxW = String(projects.length).length;
+
+  // Header
+  const header = `${"#".padStart(idxW)}  ${"SIZE".padStart(10)}  ${"MEMS".padStart(4)}  ${"PROJECT ID".padEnd(12)}  ${"UPDATED".padEnd(10)}  PATH`;
+  console.log(chalk.bold(header));
+  console.log(chalk.dim("-".repeat(header.length + 10)));
+
+  projects.forEach((p, i) => {
+    const idx = chalk.dim(String(i + 1).padStart(idxW));
+    const sizeStr = chalk.yellow(formatSize(p.size).padStart(10));
+    const memCount = chalk.green(String(p.memories).padStart(4));
+    const idStr = chalk.cyan(p.id.padEnd(12));
+    const dateStr = p.lastUpdated
+      ? formatDate(p.lastUpdated).padEnd(10)
+      : chalk.dim("n/a".padEnd(10));
+    const pathStr = p.sourceDir
+      ? chalk.dim(p.sourceDir)
+      : chalk.dim("(unknown)");
+
+    console.log(
+      `${idx}  ${sizeStr}  ${memCount}  ${idStr}  ${dateStr}  ${pathStr}`,
+    );
+  });
+
+  console.log();
+  console.log(
+    chalk.bold(
+      `Total: ${projects.length} project(s), ${formatSize(totalSize)}`,
+    ),
+  );
+  console.log();
+}
+
+export async function memoryRmCommand(opts: {
+  projectId?: string;
+  all?: boolean;
+}): Promise<void> {
+  const baseDir = getProjectsBaseDir();
+
+  if (!existsSync(baseDir)) {
+    log.info("No memory projects found. Nothing to remove.");
+    return;
+  }
+
+  if (opts.all) {
+    const dirs = readdirSync(baseDir, { withFileTypes: true }).filter(
+      (d) => d.isDirectory() && !d.name.startsWith("."),
+    );
+
+    if (dirs.length === 0) {
+      log.info("No memory projects found. Nothing to remove.");
+      return;
+    }
+
+    const totalSize = dirs.reduce(
+      (sum, d) => sum + dirSize(join(baseDir, d.name)),
+      0,
+    );
+
+    log.warn(
+      `This will delete ALL ${dirs.length} project database(s) (${formatSize(totalSize)}).`,
+    );
+    log.warn("Markdown source files in docs/memory/ will NOT be affected.");
+    console.log();
+
+    const ok = await confirm({
+      message: "Are you sure you want to delete all memory databases?",
+      default: false,
+    });
+
+    if (!ok) {
+      log.info("Cancelled.");
+      return;
+    }
+
+    for (const d of dirs) {
+      rmSync(join(baseDir, d.name), { recursive: true, force: true });
+    }
+    log.success(`Deleted ${dirs.length} project database(s).`);
+    return;
+  }
+
+  if (opts.projectId) {
+    const projectDir = join(baseDir, opts.projectId);
+
+    // Prevent path traversal (e.g. --project-id "../../..")
+    const resolved = resolve(projectDir);
+    if (!resolved.startsWith(resolve(baseDir) + sep)) {
+      log.error("Invalid project ID.");
+      process.exit(1);
+    }
+
+    if (!existsSync(projectDir)) {
+      log.error(`Project "${opts.projectId}" not found.`);
+      log.dim('Run "cf memory list --projects" to see available projects.');
+      process.exit(1);
+    }
+
+    const size = dirSize(projectDir);
+    log.warn(
+      `This will delete project "${opts.projectId}" (${formatSize(size)}).`,
+    );
+    log.warn("Markdown source files in docs/memory/ will NOT be affected.");
+    console.log();
+
+    const ok = await confirm({
+      message: `Delete project ${opts.projectId}?`,
+      default: false,
+    });
+
+    if (!ok) {
+      log.info("Cancelled.");
+      return;
+    }
+
+    rmSync(projectDir, { recursive: true, force: true });
+    log.success(`Deleted project "${opts.projectId}".`);
+    return;
+  }
+
+  log.error("Specify --project-id <id> or --all.");
+  log.dim('Run "cf memory list --projects" to see available projects.');
+  process.exit(1);
 }
 
 export async function memoryMcpCommand(): Promise<void> {

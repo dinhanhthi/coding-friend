@@ -31,7 +31,7 @@ _cf_completions() {
 
   # Subcommands for 'memory'
   if [[ "\${COMP_WORDS[1]}" == "memory" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "status search list init start stop rebuild mcp" -- "$cur"))
+    COMPREPLY=($(compgen -W "status search list rm init start stop rebuild mcp" -- "$cur"))
     return
   fi
 
@@ -125,7 +125,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
     subcommands=(
       'status:Show memory system status'
       'search:Search memories by query'
-      'list:List all stored memories'
+      'list:List memories (--projects for all DBs)'
+      'rm:Remove a project database'
       'init:Initialize Tier 1 (SQLite + Hybrid Search)'
       'start:Start the memory daemon (Tier 2)'
       'stop:Stop the memory daemon'
@@ -190,7 +191,8 @@ complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local d
 # Memory subcommands
 complete -c cf -n "__fish_seen_subcommand_from memory" -a status -d "Show memory system status"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a search -d "Search memories by query"
-complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List all stored memories"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List memories (--projects for all DBs)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a rm -d "Remove a project database"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a init -d "Initialize Tier 1 (SQLite + Hybrid Search)"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a start -d "Start the memory daemon (Tier 2)"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a stop -d "Stop the memory daemon"
@@ -208,7 +210,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
   $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
-  $memorySubcommands = @('status','search','list','init','start','stop','rebuild','mcp')
+  $memorySubcommands = @('status','search','list','rm','init','start','stop','rebuild','mcp')
   $sessionSubcommands = @('save','load')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')

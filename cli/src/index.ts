@@ -177,7 +177,8 @@ program.addHelpText(
 Memory subcommands:
   memory status       Show memory system status (tier, doc count, daemon)
   memory search       Search memories by query
-  memory list         List all stored memories
+  memory list         List memories in current project (--projects for all DBs)
+  memory rm           Remove a project database (--project-id <id> or --all)
   memory init         Initialize Tier 1 (install SQLite deps, import existing memories)
   memory start        Start the memory daemon (Tier 2)
   memory stop         Stop the memory daemon
@@ -204,10 +205,13 @@ memory
 
 memory
   .command("list")
-  .description("List all stored memories")
-  .action(async () => {
+  .description(
+    "List memories in current project, or all projects with --projects",
+  )
+  .option("--projects", "List all project databases with size and metadata")
+  .action(async (opts: { projects?: boolean }) => {
     const { memoryListCommand } = await import("./commands/memory.js");
-    await memoryListCommand();
+    await memoryListCommand(opts);
   });
 
 memory
@@ -250,6 +254,16 @@ memory
   .action(async () => {
     const { memoryMcpCommand } = await import("./commands/memory.js");
     await memoryMcpCommand();
+  });
+
+memory
+  .command("rm")
+  .description("Remove a project database")
+  .option("--project-id <id>", "Project ID to remove")
+  .option("--all", "Remove all project databases")
+  .action(async (opts: { projectId?: string; all?: boolean }) => {
+    const { memoryRmCommand } = await import("./commands/memory.js");
+    await memoryRmCommand(opts);
   });
 
 const dev = program.command("dev").description("Development mode commands");
