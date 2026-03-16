@@ -1,10 +1,10 @@
 {
   "name": "coding-friend",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "private": true,
   "scripts": {
-    "dev": "printf '\\n  \\033[1m📦 Dev servers starting...\\033[0m\\n\\n  \\033[36m■\\033[0m CLI watch      → tsup (no port)\\n  \\033[35m■\\033[0m Website       → http://localhost:3000\\n  \\033[33m■\\033[0m Learn Host    → http://localhost:3333\\n  \\033[32m■\\033[0m Learn MCP     → tsc watch (no port)\\n\\n' && concurrently --names 'CLI,WEBSITE,LEARN-HOST,LEARN-MCP' --prefix-colors 'cyan,magenta,yellow,green' --prefix '[{name}]' --prefix-length 12 'cd cli && npm run watch' 'cd website && npm run dev' 'cd cli/lib/learn-host && npm run dev' 'cd cli/lib/learn-mcp && npm run dev:watch'",
+    "dev": "printf '\\n  \\033[1m📦 Dev servers starting...\\033[0m\\n\\n  \\033[36m■\\033[0m CLI watch      → tsup (no port)\\n  \\033[35m■\\033[0m Website       → http://localhost:3000\\n  \\033[33m■\\033[0m Learn Host    → http://localhost:3333\\n  \\033[32m■\\033[0m Learn MCP     → tsc watch (no port)\\n  \\033[38;5;208m■\\033[0m CF Memory     → tsc watch (no port)\\n\\n' && concurrently --names 'CLI,WEBSITE,LEARN-HOST,LEARN-MCP,CF-MEMORY' --prefix-colors 'cyan,magenta,yellow,green,#FFA500' --prefix '[{name}]' --prefix-length 12 'cd cli && npm run watch' 'cd website && npm run dev' 'cd cli/lib/learn-host && npm run dev' 'cd cli/lib/learn-mcp && npm run dev:watch' 'cd cli/lib/cf-memory && npm run dev:watch'",
     "format": "prettier --write --ignore-path .prettierignore --ignore-path .prettierignore-root . && cd website && npx prettier --write . && cd ../cli/lib/learn-host && npx prettier --write .",
     "format:check": "prettier --check --ignore-path .prettierignore --ignore-path .prettierignore-root . && cd website && npx prettier --check . && cd ../cli/lib/learn-host && npx prettier --check ."
   },

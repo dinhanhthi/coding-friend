@@ -202,3 +202,14 @@ a > code {
     stroke-dashoffset: -16;
   }
 }
+
+/* Memory architecture diagram dash animation */
+.mem-dash-animate {
+  animation: dash-flow-mem 1.8s linear infinite;
+}
+
+@keyframes dash-flow-mem {
+  to {
+    stroke-dashoffset: -20;
+  }
+}

@@ -116,6 +116,9 @@ content: |
   tags: [tag1, tag2, tag3]
   created: YYYY-MM-DD
   updated: YYYY-MM-DD
+  type: "<type based on category>"
+  importance: 3
+  source: conversation
   ---
 
   # <Title>
@@ -150,6 +153,18 @@ existing_file_action: append
 - When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+
+**MCP integration** (if `memory_store` MCP tool is available):
+
+After the cf-writer saves the file, also call `memory_store` to index the memory:
+
+- type: infer from category (features → fact, conventions → preference, decisions → context, bugs → episode, infrastructure → procedure)
+- title/description/tags from the frontmatter above
+- content: the full markdown content
+- importance: 3 (default)
+- source: "conversation"
+
+This ensures the memory is both saved as a markdown file AND indexed for fast search. If the MCP tool is unavailable, the markdown file alone is sufficient — the memory system's file watcher will pick it up when the daemon is running.
 
 ### Step 5: Confirm
 

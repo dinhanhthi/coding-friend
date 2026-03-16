@@ -2,6 +2,20 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.17.0 (unpublished)
+
+- Add memory system with 3-tier architecture: Tier 1 (SQLite + Hybrid Search), Tier 2 (MiniSearch + Daemon), Tier 3 (Markdown) ([#fd601f2](https://github.com/dinhanhthi/coding-friend/commit/fd601f2), [#7fe84ed](https://github.com/dinhanhthi/coding-friend/commit/7fe84ed), [#7b7d8a1](https://github.com/dinhanhthi/coding-friend/commit/7b7d8a1), [#68522bd](https://github.com/dinhanhthi/coding-friend/commit/68522bd))
+- Add `cf memory` CLI commands: `status`, `search`, `list`, `rm`, `init`, `start`, `stop`, `rebuild`, `mcp` ([#fd601f2](https://github.com/dinhanhthi/coding-friend/commit/fd601f2))
+- Add `cf memory list --projects` to list all project databases with size and metadata ([#1da99b1](https://github.com/dinhanhthi/coding-friend/commit/1da99b1))
+- Add `cf memory rm --prune` to remove orphaned projects (source dir missing or 0 memories) ([#ec0bfee](https://github.com/dinhanhthi/coding-friend/commit/ec0bfee))
+- Show hour and minute in `cf memory list --projects` Updated column ([#1d5dd88](https://github.com/dinhanhthi/coding-friend/commit/1d5dd88))
+- Add memory settings to `cf config` ([#5da3085](https://github.com/dinhanhthi/coding-friend/commit/5da3085))
+- Support dynamic embedding dimensions and wire embedding config through tiers ([#b7f6eba](https://github.com/dinhanhthi/coding-friend/commit/b7f6eba))
+- Fix unit tests creating orphaned SQLite databases in `~/.coding-friend/memory/projects/` by adding `sqliteOptions` parameter to `createBackendForTier()` ([#ec0bfee](https://github.com/dinhanhthi/coding-friend/commit/ec0bfee))
+- Fix empty project directories created on SQLite backend failure ([#4ab7570](https://github.com/dinhanhthi/coding-friend/commit/4ab7570))
+- Fix embedding model name in v1→v2 migration ([#04d3c19](https://github.com/dinhanhthi/coding-friend/commit/04d3c19))
+- Fix memory dir resolving to `docs/learn/memory` instead of `docs/memory` ([#929f798](https://github.com/dinhanhthi/coding-friend/commit/929f798))
+
 ## v1.16.0 (2026-03-13)
 
 - Improve `cf init` to be more interactive with step-by-step guided setup ([#d5bbc9c](https://github.com/dinhanhthi/coding-friend/commit/d5bbc9c))

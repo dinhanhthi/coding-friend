@@ -41,11 +41,27 @@ export const STATUSLINE_COMPONENTS: {
 export const ALL_COMPONENT_IDS: StatuslineComponent[] =
   STATUSLINE_COMPONENTS.map((c) => c.id);
 
+export interface MemoryConfig {
+  tier?: "auto" | "full" | "lite" | "markdown";
+  docsDir?: string;
+  daemon?: {
+    idleTimeout?: number;
+  };
+  embedding?: {
+    provider?: "transformers" | "ollama";
+    model?: string;
+    ollamaUrl?: string;
+  };
+  autoCapture?: boolean;
+  autoStart?: boolean;
+}
+
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
+  memory?: MemoryConfig;
 }
 
 export const DEFAULT_CONFIG: Required<

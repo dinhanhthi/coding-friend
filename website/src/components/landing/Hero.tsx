@@ -48,6 +48,10 @@ export default function Hero() {
             <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 font-mono text-orange-300">
               Learn MCP
             </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-mono text-amber-300">
+              CF Memory
+            </span>
           </div>
 
           {/* Alpha notice */}

@@ -54,6 +54,32 @@ const tools = [
     href: "/docs/cli/overview/",
   },
   {
+    id: "cf-memory",
+    name: "CF Memory",
+    subtitle: "cf memory",
+    tagline: "AI Memory System",
+    description:
+      "Persistent memory for AI sessions — store, search, and recall project knowledge across conversations with hybrid search (BM25 + semantic).",
+    color: "amber",
+    isPrincipal: false,
+    icon: (
+      <svg
+        className="h-8 w-8"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75m16.5 3.75v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75"
+        />
+      </svg>
+    ),
+    href: "/docs/cli/cf-memory/",
+  },
+  {
     id: "learn-host",
     name: "Learn Host",
     subtitle: "cf host",
@@ -139,6 +165,13 @@ const colorMap: Record<
     badge: "bg-orange-500/20 text-orange-300 border-orange-500/30",
     glow: "shadow-orange-500/10",
   },
+  amber: {
+    border: "border-amber-500/30",
+    bg: "bg-amber-500/5",
+    text: "text-amber-400",
+    badge: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    glow: "shadow-amber-500/10",
+  },
 };
 
 function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
@@ -151,7 +184,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         </span>
       )}
       <div
-        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow}`}
+        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow} transition-all duration-200 hover:scale-105`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className={c.text}>{tool.icon}</div>
@@ -177,12 +210,6 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
   );
 }
 
-const learnFlow = [
-  { label: "/cf-learn", color: "text-violet-400", desc: "Capture knowledge" },
-  { label: "cf host", color: "text-emerald-400", desc: "Browse as website" },
-  { label: "cf mcp", color: "text-orange-400", desc: "Feed into any LLM" },
-];
-
 export default function EcosystemSection() {
   return (
     <section id="ecosystem" className="py-20">
@@ -190,52 +217,21 @@ export default function EcosystemSection() {
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold text-white">The Ecosystem</h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Four tools, one cohesive workflow. The plugin is the heart — the
+            Five tools, one cohesive workflow. The plugin is the heart — the
             rest amplify what you build.
           </p>
         </div>
 
         {/* Tool cards grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-5">
           {tools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} />
+            <div
+              key={tool.id}
+              className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]"
+            >
+              <ToolCard tool={tool} />
+            </div>
           ))}
-        </div>
-
-        {/* Learn flow diagram */}
-        <div className="mt-12">
-          <p className="mb-5 text-center text-sm font-medium tracking-wide text-slate-400 uppercase">
-            The <span className="font-mono">/cf-learn</span> pipeline
-          </p>
-          <div className="mx-auto flex max-w-xl flex-col items-center sm:flex-row sm:justify-center">
-            {learnFlow.map((step, i) => (
-              <div key={step.label} className="contents">
-                <div className="bg-navy-950/50 flex flex-col items-center gap-1 rounded-xl border border-[#a0a0a03a] px-5 py-3 text-center">
-                  <code
-                    className={`border-none! text-sm! font-semibold ${step.color}`}
-                  >
-                    {step.label}
-                  </code>
-                  <span className="text-xs text-slate-400">{step.desc}</span>
-                </div>
-                {i < learnFlow.length - 1 && (
-                  <svg
-                    className="my-2 h-4 w-4 shrink-0 rotate-90 text-slate-600 sm:mx-3 sm:my-0 sm:rotate-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       </Container>
     </section>

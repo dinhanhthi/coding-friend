@@ -16,6 +16,7 @@ export const docsNavigation: NavSection[] = [
       { title: "/cf-fix", slug: "skills/cf-fix" },
       { title: "/cf-ask", slug: "skills/cf-ask", manualOnly: true },
       { title: "/cf-optimize", slug: "skills/cf-optimize" },
+      { title: "/cf-onboard", slug: "skills/cf-onboard", manualOnly: true },
       { title: "/cf-review", slug: "skills/cf-review" },
       { title: "/cf-commit", slug: "skills/cf-commit", manualOnly: true },
       { title: "/cf-ship", slug: "skills/cf-ship", manualOnly: true },
@@ -52,6 +53,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf update", slug: "cli/cf-update" },
       { title: "cf dev", slug: "cli/cf-dev" },
       { title: "cf session", slug: "cli/cf-session" },
+      { title: "cf memory", slug: "cli/cf-memory" },
     ],
   },
   {
@@ -73,6 +75,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Hooks", slug: "reference/hooks" },
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
+      { title: "Memory System", slug: "reference/memory-system" },
     ],
   },
 ];

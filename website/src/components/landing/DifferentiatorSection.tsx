@@ -14,14 +14,18 @@ Saved → docs/learn/Web_Dev/jwt-auth.md
 $ cf host          # Browse as website
 $ cf mcp           # Feed into any LLM`;
 
-const competitors = [
-  {
-    name: "Other tools",
-    config: "Complex setup",
-    learn: "Manual docs",
-    rules: "Rigid rules",
-  },
-];
+const cfMemoryExample = `$ cf memory status
+Tier 1 (SQLite + Hybrid Search)
+  Memories: 47  │  Daemon: running
+  Index: FTS5 + sqlite-vec (384d)
+
+$ cf memory search "auth middleware"
+┌─ 0.94  Auth middleware uses JWT httpOnly
+├─ 0.87  CORS fix: missing Origin header
+└─ 0.81  Session rotation on refresh
+
+Skills auto-recall relevant memories
+before every task via MCP.`;
 
 const simplicity = [
   {
@@ -107,21 +111,104 @@ const simplicity = [
   },
 ];
 
+const memoryStrengths = [
+  {
+    title: "3-tier graceful degradation",
+    description:
+      "SQLite + vectors when available, MiniSearch in-memory as fallback, pure grep as baseline. Always works, even offline.",
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L12 12.75 6.429 9.75m11.142 0l4.179 2.25L12 17.25 2.25 12l4.179-2.25m11.142 0L12 7.5"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "Hybrid search (BM25 + semantic)",
+    description:
+      "Keyword precision meets semantic understanding. Find memories even when you paraphrase — RRF fusion ranks the best results.",
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "Auto-capture from skills",
+    description:
+      "cf-fix, cf-sys-debug, cf-review, and cf-ask automatically store debug episodes, architectural insights, and solutions.",
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "100% local, markdown source of truth",
+    description:
+      "No cloud, no API keys. Your memories live as plain markdown files you can read, edit, and version-control.",
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+        />
+      </svg>
+    ),
+  },
+];
+
 export default function DifferentiatorSection() {
   return (
     <section id="why-coding-friend" className="bg-navy-950/30 py-20">
-      <Container>
+      <Container className="max-w-5xl!">
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold text-white">
             What Makes It Different
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Two principles that set Coding Friend apart from every other AI
+            Three principles that set Coding Friend apart from every other AI
             workflow tool.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {/* Differentiator 1: Simplicity */}
           <div className="bg-navy-950/50 flex flex-col gap-6 rounded-2xl border border-[#a0a0a03a] p-7">
             <div className="flex items-center gap-3">
@@ -163,10 +250,10 @@ export default function DifferentiatorSection() {
                     {item.icon}
                   </div>
                   <div>
-                    <p className="flex items-center gap-2 text-sm font-medium text-white">
+                    <p className="mb-1 flex flex-col items-start gap-1 text-sm font-medium text-white md:flex-row md:items-center md:gap-2">
                       {item.title}
                       {"comingSoon" in item && item.comingSoon && (
-                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide text-yellow-400">
+                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide whitespace-nowrap text-yellow-400">
                           coming soon
                         </span>
                       )}
@@ -176,6 +263,26 @@ export default function DifferentiatorSection() {
                 </div>
               ))}
             </div>
+
+            <a
+              href="/docs/getting-started/installation/"
+              className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-sky-400 transition-colors hover:text-sky-300"
+            >
+              Read more
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </a>
           </div>
 
           {/* Differentiator 2: cf-learn */}
@@ -235,24 +342,27 @@ export default function DifferentiatorSection() {
                       </div>
                     );
                   }
-                  if (line.includes("→")) {
-                    const [before, after] = line.split("→");
+                  if (line.includes("\u2192")) {
+                    const [before, after] = line.split("\u2192");
                     return (
                       <div key={i} className="text-emerald-400">
                         {before}
-                        <span className="text-slate-500">→</span>
+                        <span className="text-slate-500">{"\u2192"}</span>
                         {after}
                       </div>
                     );
                   }
-                  if (line.includes("📄")) {
+                  if (line.includes("\uD83D\uDCC4")) {
                     return (
                       <div key={i} className="text-white">
                         {line}
                       </div>
                     );
                   }
-                  if (line.includes("├──") || line.includes("└──")) {
+                  if (
+                    line.includes("\u251C\u2500\u2500") ||
+                    line.includes("\u2514\u2500\u2500")
+                  ) {
                     return (
                       <div key={i} className="text-slate-400">
                         {line}
@@ -283,6 +393,178 @@ export default function DifferentiatorSection() {
                 </span>
               ))}
             </div>
+
+            <a
+              href="/docs/skills/cf-learn/"
+              className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 transition-colors hover:text-violet-300"
+            >
+              Read more
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </a>
+          </div>
+
+          {/* Differentiator 3: CF Memory */}
+          <div className="bg-navy-950/50 rounded-2xl border border-[#a0a0a03a] p-7 ring-1 ring-amber-500/10 md:col-span-2">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-amber-500/10 p-2.5">
+                <svg
+                  className="h-6 w-6 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75m16.5 3.75v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">CF Memory</h3>
+                <p className="text-sm text-amber-400">
+                  AI that remembers your project.
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm leading-relaxed text-slate-400">
+              Every AI session starts from scratch — repeating the same
+              mistakes, forgetting past decisions, losing debug knowledge.{" "}
+              <span className="font-medium text-white">CF Memory</span> gives
+              your AI persistent, searchable memory across sessions — so it{" "}
+              <em className="text-white">learns</em> from your project over
+              time.
+            </p>
+
+            {/* Two-column content */}
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Left: Terminal */}
+              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#a0a0a01c]">
+                <div className="bg-navy-950 flex items-center gap-1.5 px-4 py-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
+                  <span className="ml-2 font-mono text-xs text-slate-500">
+                    terminal
+                  </span>
+                </div>
+                <pre className="bg-navy-950 min-h-0 flex-1 overflow-x-auto p-4! pt-0! font-mono text-xs leading-relaxed text-slate-300">
+                  {cfMemoryExample.split("\n").map((line, i) => {
+                    if (line.startsWith("$")) {
+                      const parts = line.split(" ");
+                      const cmd = parts.slice(1).join(" ");
+                      return (
+                        <div key={i}>
+                          <span className="text-slate-500">$ </span>
+                          <span className="text-amber-400">{cmd}</span>
+                        </div>
+                      );
+                    }
+                    if (line.startsWith("Tier")) {
+                      return (
+                        <div key={i} className="font-semibold text-amber-300">
+                          {line}
+                        </div>
+                      );
+                    }
+                    if (line.includes("0.9") || line.includes("0.8")) {
+                      const scoreMatch = line.match(
+                        /([\u250C\u251C\u2514]\u2500\s*)([\d.]+)(\s+)(.*)/,
+                      );
+                      if (scoreMatch) {
+                        return (
+                          <div key={i}>
+                            <span className="text-slate-600">
+                              {scoreMatch[1]}
+                            </span>
+                            <span className="text-emerald-400">
+                              {scoreMatch[2]}
+                            </span>
+                            <span>{scoreMatch[3]}</span>
+                            <span className="text-slate-300">
+                              {scoreMatch[4]}
+                            </span>
+                          </div>
+                        );
+                      }
+                    }
+                    if (line.startsWith("Skills")) {
+                      return (
+                        <div key={i} className="text-slate-500 italic">
+                          {line}
+                        </div>
+                      );
+                    }
+                    if (line.includes("\u2502")) {
+                      return (
+                        <div key={i} className="text-slate-400">
+                          {line}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={i} className="text-slate-500">
+                        {line}
+                      </div>
+                    );
+                  })}
+                </pre>
+              </div>
+
+              {/* Right: Strength points */}
+              <div className="flex flex-col gap-4">
+                {memoryStrengths.map((item) => (
+                  <div key={item.title} className="flex items-start gap-3">
+                    <div className="mt-0.5 shrink-0 rounded-md bg-amber-500/10 p-1.5 text-amber-400">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <a
+              href="/docs/cli/cf-memory/"
+              className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-amber-400 transition-colors hover:text-amber-300"
+            >
+              Read more
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </a>
           </div>
         </div>
       </Container>

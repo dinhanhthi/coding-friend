@@ -28,6 +28,7 @@
 - Ensures verification before claiming done
 - Smart conventional commits and code review
 - Captures project knowledge across sessions (`/cf-remember`)
+- ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
 - ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — host as a local website (`cf host`) or setup MCP server (`cf mcp`) for other LLM clients
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
@@ -42,8 +43,16 @@ For full details, visit the **[official documentation](https://cf.dinhanhthi.com
 
 ## How it works
 
+Main workflow:
+
 <p align="center">
   <img src="assets/workflow.png" alt="Workflow" width="100%" />
+</p>
+
+Memory architecture (read more about it [here](https://cf.dinhanhthi.com/docs/reference/memory-system/)):
+
+<p align="center">
+  <img src="assets/memory.png" alt="Memory Architecture" width="100%" />
 </p>
 
 ## Quick Start
@@ -84,7 +93,27 @@ This sets up workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `d
 
 Restart to load the plugin, then use slash commands like `/cf-plan`, `/cf-fix`, `/cf-commit`, etc.
 
-### 5. Host your learning docs (optional)
+### 5. Enable AI memory (optional)
+
+The memory system stores project knowledge (facts, conventions, debug episodes) and recalls them automatically in future sessions. Basic memory works immediately, but you can enable better search:
+
+```bash
+cf memory start      # Start daemon with fuzzy search (Tier 2)
+cf memory init       # Initialize SQLite with hybrid search (Tier 1)
+cf memory status     # Check current tier and document count
+```
+
+Then bootstrap memory with project knowledge inside Claude Code:
+
+```
+/cf-onboard This is a Next.js app with PostgreSQL and Stripe
+```
+
+This scans your project and creates ~10-15 memories covering architecture, conventions, and key features. Safe to run multiple times.
+
+Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
+
+### 6. Host your learning docs (optional)
 
 The `/cf-learn` skill generates learning notes from your coding sessions. You can browse them as a website or expose them to other LLM clients:
 
@@ -103,6 +132,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-fix [bug]`         | Quick bug fix workflow                      |
 | `/cf-ask [question]`    | Quick Q&A about codebase                    |
 | `/cf-optimize [target]` | Structured optimization with measurement    |
+| `/cf-onboard [desc]`    | Scan project and bootstrap memory           |
 | `/cf-review [target]`   | Code review in forked subagent              |
 | `/cf-commit [hint]`     | Analyze diff and create conventional commit |
 | `/cf-ship [hint]`       | Verify, commit, push, and create PR         |
