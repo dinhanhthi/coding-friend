@@ -30,21 +30,40 @@ The system detects available dependencies and picks the best backend automatical
 ### How tiers connect
 
 ```
-Claude Code
-    |
-MCP Server (stdio transport)
-    |
-detectTier()
- /     |      \
-v      v       v
-Tier 1  Daemon   Tier 3
-(direct)  |    (direct)
-          v
-        Tier 2
+                        Claude Code
+                            │
+                  ┌─────────┴────-─────┐
+                  │ MCP Server (stdio) │
+                  └─────────┬─────-────┘
+                            │
+                     detectTier()
+                            │
+         ┌──────────────────┼────────────────-──┐
+         │                  │                   │
+    Tier 1 (Full)     Tier 2 (Lite)     Tier 3 (Markdown)
+         │                  │                   │
+┌────────┴─────────┐        │             grep/ripgrep
+│  SqliteBackend   │        │                   │
+│  (in-process)    │        ▼                   │
+│                  │  ┌────────────────┐        │
+│  better-sqlite3  │  │    Daemon      │        │
+│  sqlite-vec      │  │ (Unix socket)  │        │
+│  FTS5 + RRF      │  │                │        │
+│                  │  │   MiniSearch   │        │
+│                  │  │  (in-memory)   │        │
+└────────┬─────────┘  └───────┬────────┘        │
+         │                    │                 │
+         └────────────────────┼─────────────────┘
+                              ▼
+                   ┌────────────────────┐
+                   │  docs/memory/*.md  │
+                   │ (source of truth)  │
+                   └────────────────────┘
 ```
 
-- **Tier 1 & 3**: MCP server connects **directly** to the backend (no daemon)
+- **Tier 1 & 3**: MCP server connects **directly** to the backend — no daemon needed
 - **Tier 2**: MCP server connects to a **Hono HTTP daemon** over Unix Domain Socket (UDS), which keeps the MiniSearch index in RAM
+- **All tiers** read/write the same `docs/memory/*.md` markdown files (source of truth). SQLite is a rebuildable cache.
 
 ### Key technologies
 
