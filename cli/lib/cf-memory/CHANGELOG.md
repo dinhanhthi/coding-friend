@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.0.1 (unpublished)
+## v0.0.1 (2026-03-16)
 
 - Add persistent memory system — MCP server with 6 tools (`memory_store`, `memory_search`, `memory_retrieve`, `memory_list`, `memory_update`, `memory_delete`) + 2 resources (`memory://index`, `memory://stats`)
 - Add 3-tier graceful degradation: SQLite + hybrid search (Tier 1) → MiniSearch daemon + BM25/fuzzy (Tier 2) → Markdown file I/O (Tier 3)
