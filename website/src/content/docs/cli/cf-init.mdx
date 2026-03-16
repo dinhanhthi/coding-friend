@@ -41,7 +41,7 @@ Configs can be stored in two different locations - global and local. Local overr
 
 ## Setup Steps
 
-1. **Step 1** - Docs folder name (default: `"docs"`), where plans, memory, research, and session docs are stored in your project.
+1. **Step 1** - Docs folder name (default: `"docs"`), where plans, [memory](/docs/reference/memory-system/), research, and session docs are stored in your project.
 2. **Step 2** - Configure `.gitignore`. Keeps Coding Friend's AI-generated docs and config out of your git history. You can edit it later in `.gitignore`.
 3. **Step 3** - Docs language. Skills like `/cf-plan`, `/cf-ask`, `/cf-remember` will write docs in this language.
 4. **Step 4** - `/cf-learn` config. The settings for the learning extraction skill. You can configure the language, output directory, and categories.
@@ -57,8 +57,10 @@ Configs can be stored in two different locations - global and local. Local overr
 
 - [`cf config`](/docs/cli/cf-config/) - edit individual settings anytime
 - [`cf install`](/docs/cli/cf-install/) - install the Coding Friend plugin
+- [`cf memory`](/docs/cli/cf-memory/) - manage the AI memory system (search, daemon, SQLite)
 - [`cf permission`](/docs/cli/cf-permission/) - manage all Claude Code permissions
 - [`cf statusline`](/docs/cli/cf-statusline/) - configure statusline independently
 - [`/cf-learn`](/docs/skills/cf-learn/) - the learning extraction skill configured by this command
+- [Memory System](/docs/reference/memory-system/) - architecture and configuration
 - [Permissions Reference](/docs/reference/permissions/) - full permission list and explanations
 - [Configuration](/docs/configuration/config-json/) - config file format and options
