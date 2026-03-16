@@ -27,43 +27,33 @@ const archNodes: ArchNode[] = [
     row: 0,
     col: 1,
   },
-  // Row 1: MCP + Daemon
+  // Row 1: Routing hub (centered)
   {
     id: "mcp",
     label: "MCP Server",
     sublabel: "stdio",
     description:
-      "Thin MCP client exposing memory_store, memory_search, memory_status tools via stdio transport.",
+      "Central routing hub. Detects the best available backend (SQLite \u2192 Daemon \u2192 Grep) and routes all 6 memory tools directly to it.",
     row: 1,
-    col: 0,
+    col: 1,
   },
-  {
-    id: "daemon",
-    label: "Memory Daemon",
-    sublabel: "Hono + UDS",
-    description:
-      "Lightweight background process (Hono server on Unix Domain Socket). Manages backends and handles concurrent requests.",
-    row: 1,
-    col: 2,
-  },
-  // Row 2: 3 Tiers
+  // Row 2: Tier 1 (direct) | Daemon (Tier 2 host) | Tier 3 (direct)
   {
     id: "tier1",
     tierLabel: "Tier 1",
     label: "SQLite",
     sublabel: "FTS5 + vectors",
     description:
-      "Full-power search: FTS5 full-text + sqlite-vec semantic vectors, fused with Reciprocal Rank Fusion (RRF).",
+      "Full-power search: FTS5 full-text + sqlite-vec semantic vectors, fused with Reciprocal Rank Fusion (RRF). Used directly by MCP server.",
     row: 2,
     col: 0,
   },
   {
-    id: "tier2",
-    tierLabel: "Tier 2",
-    label: "MiniSearch",
-    sublabel: "BM25 + fuzzy",
+    id: "daemon",
+    label: "Daemon",
+    sublabel: "Hono + UDS",
     description:
-      "In-memory BM25 index with fuzzy matching. Activates when SQLite deps aren't installed.",
+      "Background Hono server on Unix Domain Socket. Only used for Tier 2 \u2014 hosts the MiniSearch index in-memory for fast BM25 + fuzzy search.",
     row: 2,
     col: 1,
   },
@@ -73,18 +63,29 @@ const archNodes: ArchNode[] = [
     label: "Grep",
     sublabel: "file scan",
     description:
-      "Zero-dependency fallback. Scans markdown files directly with pattern matching. Always available.",
+      "Zero-dependency fallback. Scans markdown files directly with pattern matching. Always available. Used directly by MCP server.",
     row: 2,
     col: 2,
   },
-  // Row 3: Storage
+  // Row 3: Tier 2 (under daemon)
+  {
+    id: "tier2",
+    tierLabel: "Tier 2",
+    label: "MiniSearch",
+    sublabel: "BM25 + fuzzy",
+    description:
+      "In-memory BM25 index with fuzzy matching. Runs inside the Daemon process. Activates when SQLite deps aren\u2019t installed but daemon is running.",
+    row: 3,
+    col: 1,
+  },
+  // Row 4: Storage
   {
     id: "files",
     label: "Markdown Files",
     sublabel: "docs/memory/*.md",
     description:
       "Source of truth. Human-readable markdown with YAML frontmatter. Git-trackable, portable, never locked in.",
-    row: 3,
+    row: 4,
     col: 1,
   },
 ];
@@ -92,10 +93,10 @@ const archNodes: ArchNode[] = [
 // Connections between nodes
 const connections: { from: string; to: string; label?: string }[] = [
   { from: "claude", to: "mcp" },
+  { from: "mcp", to: "tier1", label: "direct" },
   { from: "mcp", to: "daemon", label: "HTTP/UDS" },
-  { from: "daemon", to: "tier1" },
+  { from: "mcp", to: "tier3", label: "direct" },
   { from: "daemon", to: "tier2" },
-  { from: "daemon", to: "tier3" },
   { from: "tier1", to: "files" },
   { from: "tier2", to: "files" },
   { from: "tier3", to: "files" },
@@ -106,32 +107,30 @@ const connections: { from: string; to: string; label?: string }[] = [
    ──────────────────────────────────────────────────────────── */
 
 const ARCH_W = 700;
-const ARCH_H = 420;
+const ARCH_H = 520;
 const BOX_W = 160;
 const BOX_H = 62;
 const TIER_BOX_H = 72; // taller for 3-row tier nodes
 
-// Row Y positions
+// Row Y positions (5 rows)
 const ROW_Y: Record<number, number> = {
-  0: 40, // Claude Code
-  1: 150, // MCP + Daemon
-  2: 260, // Tiers
-  3: 370, // Files
+  0: 35, // Claude Code
+  1: 130, // MCP Server (centered hub)
+  2: 240, // Tier 1 | Daemon | Tier 3
+  3: 345, // Tier 2 (under daemon)
+  4: 450, // Markdown Files
 };
 
 // Column X positions per row
 function getNodePos(node: ArchNode): { x: number; y: number } {
   const y = ROW_Y[node.row];
-  // Row 0, 3: centered (col=1)
-  if (node.row === 0 || node.row === 3) return { x: ARCH_W / 2, y };
-  // Row 1: 2 nodes spread
-  if (node.row === 1) {
-    const positions = [ARCH_W * 0.25, 0, ARCH_W * 0.75]; // col 0, 1(unused), 2
+  // Row 2: 3 nodes evenly spaced
+  if (node.row === 2) {
+    const positions = [ARCH_W * 0.17, ARCH_W * 0.5, ARCH_W * 0.83];
     return { x: positions[node.col], y };
   }
-  // Row 2: 3 tiers evenly
-  const positions = [ARCH_W * 0.17, ARCH_W * 0.5, ARCH_W * 0.83];
-  return { x: positions[node.col], y };
+  // All other rows: centered
+  return { x: ARCH_W / 2, y };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -142,29 +141,78 @@ function getBoxH(node: ArchNode): number {
   return node.tierLabel ? TIER_BOX_H : BOX_H;
 }
 
-function connectionPath(fromId: string, toId: string): string {
+/**
+ * Compute connection start/end points with edge-to-edge routing.
+ * Specific connections use box edges instead of center-bottom/center-top.
+ */
+function getConnectionEndpoints(fromId: string, toId: string) {
   const fromNode = archNodes.find((n) => n.id === fromId)!;
   const toNode = archNodes.find((n) => n.id === toId)!;
   const from = getNodePos(fromNode);
   const to = getNodePos(toNode);
 
-  // Same row → horizontal connection (right edge → left edge)
+  // Same row → right edge to left edge
   if (fromNode.row === toNode.row) {
-    const x1 = from.x + BOX_W / 2;
-    const y1 = from.y;
-    const x2 = to.x - BOX_W / 2;
-    const y2 = to.y;
-    return `M ${x1} ${y1} L ${x2} ${y2}`;
+    return {
+      x1: from.x + BOX_W / 2,
+      y1: from.y,
+      x2: to.x - BOX_W / 2,
+      y2: to.y,
+    };
   }
 
-  // Different rows → vertical L-shaped segments
-  const x1 = from.x;
-  const y1 = from.y + getBoxH(fromNode) / 2;
-  const x2 = to.x;
-  const y2 = to.y - getBoxH(toNode) / 2;
+  // MCP → Tier 1: left edge of MCP → top edge of Tier 1
+  if (fromId === "mcp" && toId === "tier1") {
+    return {
+      x1: from.x - BOX_W / 2,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y - getBoxH(toNode) / 2,
+    };
+  }
 
-  const yMid = (y1 + y2) / 2;
-  return `M ${x1} ${y1} L ${x1} ${yMid} L ${x2} ${yMid} L ${x2} ${y2}`;
+  // MCP → Tier 3: right edge of MCP → top edge of Tier 3
+  if (fromId === "mcp" && toId === "tier3") {
+    return {
+      x1: from.x + BOX_W / 2,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y - getBoxH(toNode) / 2,
+    };
+  }
+
+  // Tier 1 → Files: bottom edge of Tier 1 → left edge of Files
+  if (fromId === "tier1" && toId === "files") {
+    return {
+      x1: from.x,
+      y1: from.y + getBoxH(fromNode) / 2,
+      x2: to.x - BOX_W / 2,
+      y2: to.y,
+    };
+  }
+
+  // Tier 3 → Files: bottom edge of Tier 3 → right edge of Files
+  if (fromId === "tier3" && toId === "files") {
+    return {
+      x1: from.x,
+      y1: from.y + getBoxH(fromNode) / 2,
+      x2: to.x + BOX_W / 2,
+      y2: to.y,
+    };
+  }
+
+  // Default: center-bottom → center-top
+  return {
+    x1: from.x,
+    y1: from.y + getBoxH(fromNode) / 2,
+    x2: to.x,
+    y2: to.y - getBoxH(toNode) / 2,
+  };
+}
+
+function connectionPath(fromId: string, toId: string): string {
+  const { x1, y1, x2, y2 } = getConnectionEndpoints(fromId, toId);
+  return `M ${x1} ${y1} L ${x2} ${y2}`;
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -322,7 +370,7 @@ export default function MemoryArchitecture() {
                 (from === "tier2" && to === "files") ||
                 (from === "tier3" && to === "files");
               const dim =
-                hovered && !connectedIds.has(from) && !connectedIds.has(to);
+                hovered && !(from === hovered || to === hovered);
 
               return (
                 <g
@@ -363,19 +411,35 @@ export default function MemoryArchitecture() {
                   {/* Edge label */}
                   {label &&
                     (() => {
-                      const fromNode = archNodes.find((n) => n.id === from)!;
-                      const toNode = archNodes.find((n) => n.id === to)!;
-                      const fp = getNodePos(fromNode);
-                      const tp = getNodePos(toNode);
-                      const mx = (fp.x + tp.x) / 2;
-                      const my = (fp.y + tp.y) / 2;
+                      const { x1, y1, x2, y2 } = getConnectionEndpoints(
+                        from,
+                        to,
+                      );
+                      const mx = (x1 + x2) / 2;
+                      const my = (y1 + y2) / 2;
+                      // Rotate label to follow diagonal lines
+                      const dx = x2 - x1;
+                      const dy = y2 - y1;
+                      let angle =
+                        Math.atan2(dy, dx) * (180 / Math.PI);
+                      if (angle > 90) angle -= 180;
+                      if (angle < -90) angle += 180;
+                      const shouldRotate =
+                        Math.abs(angle) > 5 && Math.abs(angle) < 80;
+                      // For near-vertical lines, place label at true midpoint
+                      const ly = shouldRotate ? my - 8 : my;
                       return (
                         <text
                           x={mx}
-                          y={my - 10}
+                          y={ly}
                           className="fill-amber-400/70 text-xs"
                           fontFamily="monospace"
                           textAnchor="middle"
+                          transform={
+                            shouldRotate
+                              ? `rotate(${angle}, ${mx}, ${ly})`
+                              : undefined
+                          }
                         >
                           {label}
                         </text>
@@ -385,64 +449,73 @@ export default function MemoryArchitecture() {
               );
             })}
 
-            {/* Degradation arrows between tiers */}
+            {/* Degradation arrows: Tier 1 → Daemon (Tier 2) → Tier 3 */}
             {(() => {
               const t1 = getNodePos(archNodes.find((n) => n.id === "tier1")!);
-              const t2 = getNodePos(archNodes.find((n) => n.id === "tier2")!);
+              const dm = getNodePos(archNodes.find((n) => n.id === "daemon")!);
               const t3 = getNodePos(archNodes.find((n) => n.id === "tier3")!);
               const y = ROW_Y[2];
-              const dim =
+              const dimT1D =
                 hovered &&
-                !connectedIds.has("tier1") &&
-                !connectedIds.has("tier2") &&
-                !connectedIds.has("tier3");
+                hovered !== "tier1" &&
+                hovered !== "daemon";
+              const dimDT3 =
+                hovered &&
+                hovered !== "daemon" &&
+                hovered !== "tier3";
               return (
-                <g
-                  className={`transition-opacity duration-300 ${dim ? "opacity-10" : "opacity-100"}`}
-                >
-                  {/* Tier1 → Tier2 */}
-                  <line
-                    x1={t1.x + BOX_W / 2 + 4}
-                    y1={y}
-                    x2={t2.x - BOX_W / 2 - 4}
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-slate-400/70"
-                    strokeWidth="1.5"
-                    strokeDasharray="5 3"
-                    markerEnd="url(#mem-arrow)"
-                  />
-                  <text
-                    x={(t1.x + t2.x) / 2}
-                    y={y - 8}
-                    textAnchor="middle"
-                    className="fill-slate-300/70 text-[11px] italic"
-                    fontFamily="monospace"
+                <>
+                  {/* Tier 1 → Daemon */}
+                  <g
+                    className={`transition-opacity duration-300 ${dimT1D ? "opacity-10" : "opacity-100"}`}
                   >
-                    fallback
-                  </text>
-                  {/* Tier2 → Tier3 */}
-                  <line
-                    x1={t2.x + BOX_W / 2 + 4}
-                    y1={y}
-                    x2={t3.x - BOX_W / 2 - 4}
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-slate-400/70"
-                    strokeWidth="1.5"
-                    strokeDasharray="5 3"
-                    markerEnd="url(#mem-arrow)"
-                  />
-                  <text
-                    x={(t2.x + t3.x) / 2}
-                    y={y - 8}
-                    textAnchor="middle"
-                    className="fill-slate-300/70 text-[11px] italic"
-                    fontFamily="monospace"
+                    <line
+                      x1={t1.x + BOX_W / 2 + 4}
+                      y1={y}
+                      x2={dm.x - BOX_W / 2 - 4}
+                      y2={y}
+                      stroke="currentColor"
+                      className="text-slate-400/70"
+                      strokeWidth="1.5"
+                      strokeDasharray="5 3"
+                      markerEnd="url(#mem-arrow)"
+                    />
+                    <text
+                      x={(t1.x + dm.x) / 2}
+                      y={y - 8}
+                      textAnchor="middle"
+                      className="fill-slate-300/70 text-[11px] italic"
+                      fontFamily="monospace"
+                    >
+                      fallback
+                    </text>
+                  </g>
+                  {/* Daemon → Tier 3 */}
+                  <g
+                    className={`transition-opacity duration-300 ${dimDT3 ? "opacity-10" : "opacity-100"}`}
                   >
-                    fallback
-                  </text>
-                </g>
+                    <line
+                      x1={dm.x + BOX_W / 2 + 4}
+                      y1={y}
+                      x2={t3.x - BOX_W / 2 - 4}
+                      y2={y}
+                      stroke="currentColor"
+                      className="text-slate-400/70"
+                      strokeWidth="1.5"
+                      strokeDasharray="5 3"
+                      markerEnd="url(#mem-arrow)"
+                    />
+                    <text
+                      x={(dm.x + t3.x) / 2}
+                      y={y - 8}
+                      textAnchor="middle"
+                      className="fill-slate-300/70 text-[11px] italic"
+                      fontFamily="monospace"
+                    >
+                      fallback
+                    </text>
+                  </g>
+                </>
               );
             })()}
           </svg>
@@ -542,94 +615,50 @@ export default function MemoryArchitecture() {
 
           <MobileArrow />
 
-          {/* MCP + Daemon row */}
-          <div className="grid grid-cols-2 gap-2">
-            <MobileArchCard
-              node={archNodes.find((n) => n.id === "mcp")!}
-              icon={
-                <svg
-                  className="h-4 w-4 text-amber-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-                </svg>
-              }
-            />
-            <MobileArchCard
-              node={archNodes.find((n) => n.id === "daemon")!}
-              icon={
-                <svg
-                  className="h-4 w-4 text-amber-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                  <line x1="6" y1="6" x2="6.01" y2="6" />
-                  <line x1="6" y1="18" x2="6.01" y2="18" />
-                </svg>
-              }
-            />
-          </div>
+          {/* MCP Server (full width — routing hub) */}
+          <MobileArchCard
+            node={archNodes.find((n) => n.id === "mcp")!}
+            icon={
+              <svg
+                className="h-4 w-4 text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+              </svg>
+            }
+          />
 
-          <MobileArrow label="graceful degradation" />
+          <MobileArrow label="selects best backend" />
 
-          {/* 3 Tiers */}
+          {/* 3 Tiers with route labels */}
           <div className="space-y-2">
             <MobileTierCard
               tier={1}
               label="SQLite"
               sublabel="FTS5 + sqlite-vec + RRF"
               desc="Full hybrid search with semantic vectors"
+              route="direct"
             />
-            <div className="flex items-center justify-center">
-              <span className="font-mono text-xs text-slate-400/70 italic">
-                fallback
-              </span>
-              <svg
-                className="mx-1 h-3.5 w-3.5 text-slate-400/60"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 5v14M19 12l-7 7-7-7" />
-              </svg>
-            </div>
+            <MobileFallback />
             <MobileTierCard
               tier={2}
               label="MiniSearch"
               sublabel="BM25 + fuzzy matching"
-              desc="In-memory index, no native deps"
+              desc="In-memory index hosted by background daemon (Hono + UDS)"
+              route="via Daemon"
             />
-            <div className="flex items-center justify-center">
-              <span className="font-mono text-xs text-slate-400/70 italic">
-                fallback
-              </span>
-              <svg
-                className="mx-1 h-3.5 w-3.5 text-slate-400/60"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 5v14M19 12l-7 7-7-7" />
-              </svg>
-            </div>
+            <MobileFallback />
             <MobileTierCard
               tier={3}
               label="Grep"
               sublabel="file scan"
               desc="Zero deps, always available"
+              route="direct"
             />
           </div>
 
@@ -718,11 +747,13 @@ function MobileTierCard({
   label,
   sublabel,
   desc,
+  route,
 }: {
   tier: number;
   label: string;
   sublabel: string;
   desc: string;
+  route?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const opacity =
@@ -740,18 +771,42 @@ function MobileTierCard({
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
           {tier}
         </span>
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <span className="font-mono text-sm font-semibold text-amber-300">
             {label}
           </span>
           <span className="text-xs text-amber-400/50">{sublabel}</span>
         </div>
+        {route && (
+          <span className="shrink-0 rounded-full border border-slate-600/40 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+            {route}
+          </span>
+        )}
       </div>
       <div
         className={`overflow-hidden transition-all duration-200 ${expanded ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
       >
         <p className="text-sm leading-relaxed text-slate-400">{desc}</p>
       </div>
+    </div>
+  );
+}
+
+function MobileFallback() {
+  return (
+    <div className="flex items-center justify-center">
+      <span className="font-mono text-xs text-slate-400/70 italic">
+        fallback
+      </span>
+      <svg
+        className="mx-1 h-3.5 w-3.5 text-slate-400/60"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M12 5v14M19 12l-7 7-7-7" />
+      </svg>
     </div>
   );
 }
