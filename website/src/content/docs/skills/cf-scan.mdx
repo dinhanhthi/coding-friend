@@ -1,15 +1,15 @@
 ---
-title: "/cf-onboard"
+title: "/cf-scan"
 description: "Scan project and bootstrap memory with architecture, conventions, and key features."
-keywords: [memory, onboard, bootstrap, project scan, cf-onboard]
+keywords: [memory, scan, bootstrap, project scan, cf-scan]
 ---
 
-The `/cf-onboard` skill scans your project and populates the memory system with initial knowledge — architecture, conventions, tech stack, key features, and infrastructure. Unlike [`/cf-remember`](/docs/skills/cf-remember/) (which extracts from conversations), this reads the codebase directly.
+The `/cf-scan` skill scans your project and populates the memory system with knowledge — architecture, conventions, tech stack, key features, and infrastructure. Unlike [`/cf-remember`](/docs/skills/cf-remember/) (which extracts from conversations), this reads the codebase directly.
 
 ## Usage
 
 ```bash
-/cf-onboard [project description]
+/cf-scan [project description]
 ```
 
 The optional `[project description]` guides the scan. Without it, the skill infers everything from the codebase.
@@ -27,13 +27,13 @@ The optional `[project description]` guides the scan. Without it, the skill infe
 
 ```bash
 # Scan with no context
-/cf-onboard
+/cf-scan
 
 # Guide the scan with a description
-/cf-onboard This is a Next.js e-commerce app with Stripe payments and PostgreSQL
+/cf-scan This is a Next.js e-commerce app with Stripe payments and PostgreSQL
 
 # Focus on a specific area
-/cf-onboard Focus on the API layer and auth system
+/cf-scan Focus on the API layer and auth system
 ```
 
 ## Idempotent
@@ -42,22 +42,22 @@ Safe to run multiple times. On subsequent runs:
 
 - **Existing memories** are updated (not duplicated)
 - **New discoveries** create new memories
-- **Source field** is set to `onboard` to distinguish from conversation-based memories
+- **Source field** is set to `scan` to distinguish from conversation-based memories
 
 ## When to Run
 
-- **First time** — After `cf init` and `cf memory init`, run `/cf-onboard` to bootstrap project knowledge
+- **First time** — After `cf init` and `cf memory init`, run `/cf-scan` to bootstrap project knowledge
 - **After major refactors** — Re-run to refresh architecture and convention memories
-- **New team member** — Run to quickly onboard the AI to your project
+- **Anytime** — Scan a specific aspect of your codebase whenever you need fresh context
 
 ## Comparison with `/cf-remember`
 
-|            | `/cf-onboard`           | `/cf-remember`             |
+|            | `/cf-scan`              | `/cf-remember`             |
 | ---------- | ----------------------- | -------------------------- |
 | **Source** | Scans codebase directly | Extracts from conversation |
 | **Scope**  | Whole project           | Specific topic             |
 | **Output** | 10-15 memories          | 1-3 memories               |
-| **When**   | First time or refresh   | After coding sessions      |
+| **When**   | Anytime                 | After coding sessions      |
 
 ## Memory Categories
 
@@ -72,7 +72,7 @@ The skill distributes memories across the standard categories:
 
 ## Custom Guide
 
-Extend with `.coding-friend/skills/cf-onboard-custom/SKILL.md`:
+Extend with `.coding-friend/skills/cf-scan-custom/SKILL.md`:
 
 ```markdown
 ## Before

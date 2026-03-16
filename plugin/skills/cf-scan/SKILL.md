@@ -1,16 +1,17 @@
 ---
-name: cf-onboard
+name: cf-scan
 description: >
-  Scan project and populate memory with initial knowledge — architecture, conventions, tech stack,
+  Scan project and populate memory with knowledge — architecture, conventions, tech stack,
   key features, infrastructure. Use when a project has no memories yet, or when the user wants to
-  refresh/rebuild project understanding — e.g. "onboard", "scan the project", "bootstrap memory",
-  "initialize memory with project knowledge", "populate memory", "build project understanding".
+  refresh/rebuild project understanding — e.g. "scan the project", "scan the codebase",
+  "bootstrap memory", "initialize memory with project knowledge", "populate memory",
+  "build project understanding", "scan this aspect", "analyze the project".
   This is a token-heavy operation — always warn the user before proceeding.
 user-invocable: true
 argument-hint: "[project description]"
 ---
 
-# /cf-onboard
+# /cf-scan
 
 Scan the project and bootstrap the memory system. User input: **$ARGUMENTS**
 
@@ -33,7 +34,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Load Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-onboard`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan`
 
 If output is not empty, integrate the returned sections into this workflow:
 
@@ -217,7 +218,7 @@ content: |
   updated: YYYY-MM-DD
   type: "<type based on category>"
   importance: 3
-  source: onboard
+  source: scan
   ---
 
   # <Title>
@@ -243,16 +244,16 @@ existing_file_action: overwrite
 
 **Frontmatter rules:**
 
-- `source: onboard` (not "conversation") — this distinguishes onboarded memories from manually captured ones
+- `source: scan` (not "conversation") — this distinguishes scanned memories from manually captured ones
 - `description` must be factual, searchable, under 100 chars
 - When updating: set `task: update`, update `updated` date, do NOT change `created`
-- `existing_file_action: overwrite` — onboard always replaces full content (not append)
+- `existing_file_action: overwrite` — scan always replaces full content (not append)
 
 **4d. Index via MCP:**
 
 After each cf-writer saves a file, call `memory_store` (for new) or `memory_update` (for existing) to index in SQLite:
 
-- For `memory_store`: pass `title`, `description`, `type`, `tags`, `content`, `importance`: 3, `source`: "onboard"
+- For `memory_store`: pass `title`, `description`, `type`, `tags`, `content`, `importance`: 3, `source`: "scan"
 - For `memory_update`: pass `id` (e.g. "features/auth-module"), `content` (full markdown body), `tags` (merged array if changed)
 
 ### Step 5: Summary
@@ -260,7 +261,7 @@ After each cf-writer saves a file, call `memory_store` (for new) or `memory_upda
 Print a summary table:
 
 ```
-## Onboarding Complete
+## Scan Complete
 
 | # | Category | Title | Action | Description |
 |---|----------|-------|--------|-------------|
@@ -273,7 +274,7 @@ Total: X memories (Y created, Z updated)
 
 Then suggest next steps:
 
-> - Run `/cf-onboard` again anytime to refresh project knowledge
+> - Run `/cf-scan` again anytime to refresh project knowledge
 > - Use `/cf-remember` to capture specific knowledge from conversations
 > - Use `/cf-ask` to query the memory system
 
@@ -281,9 +282,9 @@ Then suggest next steps:
 
 `$ARGUMENTS` is an optional free-form project description. Examples:
 
-- `/cf-onboard` — scan with no additional context
-- `/cf-onboard This is a Next.js e-commerce app with Stripe payments and PostgreSQL` — use description to guide scan
-- `/cf-onboard Focus on the API layer and auth system` — narrow the scan focus
+- `/cf-scan` — scan with no additional context
+- `/cf-scan This is a Next.js e-commerce app with Stripe payments and PostgreSQL` — use description to guide scan
+- `/cf-scan Focus on the API layer and auth system` — narrow the scan focus
 
 When provided, include `$ARGUMENTS` in every explorer prompt so the scan is guided by the user's context.
 
