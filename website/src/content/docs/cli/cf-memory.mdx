@@ -3,48 +3,124 @@ title: "cf memory"
 description: "Manage the AI memory system — search, list, start/stop daemon, rebuild index"
 ---
 
-Manage the persistent AI memory system. Store, search, and recall project knowledge across Claude Code sessions. Read more about the memory system [here](/docs/reference/memory-system/).
+Manage the persistent AI memory system. Store, search, and recall project knowledge across Claude Code sessions. See [Memory System](/docs/reference/memory-system/) for architecture details.
 
 ## Subcommands
 
-| Command                    | Description                                                      |
-| -------------------------- | ---------------------------------------------------------------- |
-| `cf memory status`         | Show memory tier, document count, and daemon state               |
-| `cf memory search <query>` | Search memories from the command line                            |
-| `cf memory list`           | List all stored memories                                         |
-| `cf memory start`          | Start the memory daemon (enables Tier 2 search)                  |
-| `cf memory stop`           | Stop the memory daemon                                           |
-| `cf memory rebuild`        | Rebuild the search index from markdown files                     |
-| `cf memory init`           | Initialize SQLite database and import existing memories (Tier 1) |
-| `cf memory mcp`            | Print MCP server configuration for Claude Code settings          |
+| Command                    | Description                                             |
+| -------------------------- | ------------------------------------------------------- |
+| `cf memory status`         | Show current tier, document count, daemon state         |
+| `cf memory search <query>` | Search memories from the terminal                       |
+| `cf memory list`           | List all stored memories                                |
+| `cf memory init`           | Install Tier 1 deps and import existing memories        |
+| `cf memory start`          | Start the Tier 2 daemon                                 |
+| `cf memory stop`           | Stop the Tier 2 daemon                                  |
+| `cf memory rebuild`        | Re-index all memories from markdown files               |
+| `cf memory mcp`            | Print MCP server config for Claude Code                 |
 
-## 3-Tier Architecture
+## `init`
 
-The memory system gracefully degrades across three tiers:
+Sets up **Tier 1** (SQLite + hybrid search). This is a one-time setup:
 
-| Tier                  | Backend                    | Search                                              | Requirements                     |
-| --------------------- | -------------------------- | --------------------------------------------------- | -------------------------------- |
-| **Tier 1 (full)**     | SQLite + FTS5 + sqlite-vec | Hybrid: BM25 keyword + semantic vector + RRF fusion | `cf memory init` (installs deps) |
-| **Tier 2 (lite)**     | MiniSearch daemon          | BM25 + fuzzy matching                               | `cf memory start`                |
-| **Tier 3 (markdown)** | Direct file I/O            | Substring grep on frontmatter + content             | None (always available)          |
+1. **Installs native dependencies** into `~/.coding-friend/memory/node_modules/`:
+   - `better-sqlite3` — SQLite driver (requires C++ compiler)
+   - `sqlite-vec` — vector search extension
+   - `@huggingface/transformers` — embedding model (~23 MB download)
+2. **Creates SQLite database** at `~/.coding-friend/memory/projects/<hash>/db.sqlite`
+3. **Imports existing memories** — reads all markdown files from `docs/memory/`, indexes them into SQLite (FTS5 full-text + vector embeddings)
+4. **Reports status** — shows how many memories were imported and whether vector search is enabled
 
-## Examples
+If you have no existing memories, it still sets up the database — future memories will be indexed as they're created.
+
+**Prerequisites**: C++ compiler (Xcode CLT on macOS, `build-essential` on Linux).
 
 ```bash
-# Check current status
-cf memory status
-
-# Search for auth-related memories
-cf memory search "authentication flow"
-
-# Start daemon for better search
-cf memory start
-
-# Initialize full SQLite backend
 cf memory init
+# Installing dependencies...
+# Importing 42 existing memories into SQLite...
+# Imported 42 memories. Vector search: enabled
+# Tier 1 initialized.
+```
 
-# Rebuild index after manual file edits
+## `search`
+
+Searches memories directly from the terminal using the **Markdown backend** (Tier 3 substring matching). This is a quick CLI convenience — it does not use SQLite or the daemon.
+
+For full hybrid search (keyword + semantic), use Claude Code's `memory_search` MCP tool inside a session, which automatically routes through the best available tier.
+
+```bash
+cf memory search "authentication flow"
+# [0.85] JWT Authentication Pattern
+#     Auth module uses JWT tokens in httpOnly cookies
+#     id: features/jwt-auth | type: fact | matched: title, content
+```
+
+## `start` / `stop`
+
+These commands manage the **Tier 2 daemon** — a background Hono HTTP server that keeps a MiniSearch index in RAM.
+
+**When you need them:**
+- You **don't** have Tier 1 (haven't run `cf memory init`)
+- You want better search than Tier 3 grep (fuzzy matching, BM25 ranking)
+
+**When you don't need them:**
+- Tier 1 is enabled — the MCP server connects directly to SQLite, no daemon involved
+- You're fine with Tier 3 (small memory collection, &lt;100 files)
+
+```bash
+# Start daemon (enables Tier 2)
+cf memory start
+# Daemon started (PID 12345)
+# Tier: Tier 2 (MiniSearch + Daemon)
+
+# Stop daemon (falls back to Tier 3)
+cf memory stop
+```
+
+**How it works:**
+- Daemon runs detached (survives terminal close)
+- Listens on Unix Domain Socket at `~/.coding-friend/memory/daemon.sock`
+- Auto-rebuilds index when files in `docs/memory/` change (file watcher)
+- Auto-stops after idle timeout (default: 30 min, configurable)
+- Memory footprint: 25-40 MB idle, 40-80 MB active
+
+## `rebuild`
+
+Re-reads all markdown files and rebuilds the search index from scratch.
+
+**When to run:**
+- After **manually editing** markdown files in `docs/memory/` (outside of Claude Code)
+- After **switching embedding models** (e.g., default 384d to Ollama 768d) — existing vectors become incompatible
+- After **pulling changes** from git that include new/modified memory files
+- If search results seem **stale or wrong**
+
+**What it does depends on your tier:**
+- **Tier 1**: Drops and recreates SQLite FTS5 index + re-generates all vector embeddings
+- **Tier 2**: Sends rebuild command to daemon, which re-reads files and rebuilds MiniSearch index
+- **Tier 3**: No index to rebuild (always reads files directly)
+
+```bash
 cf memory rebuild
+# Rebuilding SQLite index + embeddings...
+# Rebuilt: 42 memories indexed.
+# Vector search: enabled
+# Embedding dimensions: up to date
+```
+
+## `status`
+
+Shows the current state of the memory system:
+
+```bash
+cf memory status
+# === 🧠 Coding Friend Memory ===
+#
+# Tier: Tier 1 (SQLite + Hybrid)
+# Memory dir: docs/memory
+# Memories: 42
+# Daemon: stopped (not needed — Tier 1 uses SQLite directly)
+# SQLite deps: installed
+# Categories: features (12), conventions (8), decisions (6), bugs (10), infrastructure (6)
 ```
 
 ## Configuration
@@ -55,14 +131,25 @@ In `.coding-friend/config.json`:
 {
   "memory": {
     "tier": "auto",
+    "docsDir": "docs/memory",
     "daemon": { "idleTimeout": 30 },
     "autoCapture": false,
-    "autoStart": false
+    "autoStart": false,
+    "embedding": {
+      "provider": "transformers",
+      "model": "Xenova/all-MiniLM-L6-v2"
+    }
   }
 }
 ```
 
-- `tier`: `"auto"` (detect best available), `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3)
-- `daemon.idleTimeout`: Minutes before daemon auto-stops (default: 30)
-- `autoCapture`: Enable PreCompact auto-capture of session episodes
-- `autoStart`: Auto-start daemon when MCP server connects
+| Option | Default | Description |
+| --- | --- | --- |
+| `tier` | `"auto"` | `"auto"`, `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3) |
+| `docsDir` | `"docs/memory"` | Where markdown memory files are stored |
+| `daemon.idleTimeout` | `30` | Minutes before daemon auto-stops |
+| `autoCapture` | `false` | Auto-save session summaries on context compaction |
+| `autoStart` | `false` | Auto-start daemon when MCP server connects |
+| `embedding.provider` | `"transformers"` | `"transformers"` or `"ollama"` |
+| `embedding.model` | `"Xenova/all-MiniLM-L6-v2"` | Embedding model name |
+| `embedding.ollamaUrl` | `"http://localhost:11434"` | Ollama server URL |
