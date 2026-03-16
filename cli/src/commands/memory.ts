@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { spawn } from "child_process";
-import { resolveDocsDir, loadConfig } from "../lib/config.js";
+import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
@@ -21,8 +21,7 @@ function countMdFiles(dir: string): number {
 }
 
 function getMemoryDir(path?: string): string {
-  const docsDir = resolveDocsDir(path);
-  return join(docsDir, "memory");
+  return resolveMemoryDir(path);
 }
 
 function ensureBuilt(mcpDir: string): void {
