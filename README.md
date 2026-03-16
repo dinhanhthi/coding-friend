@@ -44,11 +44,13 @@ For full details, visit the **[official documentation](https://cf.dinhanhthi.com
 ## How it works
 
 Main workflow:
+
 <p align="center">
   <img src="assets/workflow.png" alt="Workflow" width="100%" />
 </p>
 
 Memory architecture (read more about it [here](https://cf.dinhanhthi.com/docs/reference/memory-system/)):
+
 <p align="center">
   <img src="assets/memory.png" alt="Memory Architecture" width="100%" />
 </p>

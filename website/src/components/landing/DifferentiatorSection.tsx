@@ -250,10 +250,10 @@ export default function DifferentiatorSection() {
                     {item.icon}
                   </div>
                   <div>
-                    <p className="flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-2 text-sm font-medium text-white mb-1">
+                    <p className="mb-1 flex flex-col items-start gap-1 text-sm font-medium text-white md:flex-row md:items-center md:gap-2">
                       {item.title}
                       {"comingSoon" in item && item.comingSoon && (
-                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide text-yellow-400 whitespace-nowrap">
+                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide whitespace-nowrap text-yellow-400">
                           coming soon
                         </span>
                       )}
@@ -269,8 +269,18 @@ export default function DifferentiatorSection() {
               className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-sky-400 transition-colors hover:text-sky-300"
             >
               Read more
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </a>
           </div>
@@ -389,8 +399,18 @@ export default function DifferentiatorSection() {
               className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 transition-colors hover:text-violet-300"
             >
               Read more
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </a>
           </div>
@@ -531,8 +551,18 @@ export default function DifferentiatorSection() {
               className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-amber-400 transition-colors hover:text-amber-300"
             >
               Read more
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </a>
           </div>

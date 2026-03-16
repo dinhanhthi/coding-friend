@@ -14,6 +14,7 @@ There are two ways to capture memories:
 2. **Automatically** — when `memory.autoCapture` is enabled in `.coding-friend/config.json`, a PreCompact hook fires before Claude Code compacts the session context. It captures a summary of the current session (main task, key decisions, findings) as an [`episode`](#memory-types) memory.
 
 Other skills also auto-capture when they find notable insights:
+
 - [`/cf-fix`](/docs/skills/cf-fix/) captures bug root causes
 - [`/cf-review`](/docs/skills/cf-review/) captures architectural patterns
 - [`/cf-sys-debug`](/docs/skills/cf-sys-debug/) captures debugging breakthroughs
@@ -59,14 +60,14 @@ The MCP (Model Context Protocol) server is the bridge between Claude Code and th
 
 The MCP server exposes 6 tools that Claude Code calls during sessions:
 
-| Tool | Purpose |
-| --- | --- |
-| `memory_store` | Store a new memory |
-| `memory_search` | Search memories (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID |
-| `memory_list` | List memories with filtering |
-| `memory_update` | Update existing memory |
-| `memory_delete` | Delete a memory |
+| Tool              | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `memory_store`    | Store a new memory                        |
+| `memory_search`   | Search memories (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID               |
+| `memory_list`     | List memories with filtering              |
+| `memory_update`   | Update existing memory                    |
+| `memory_delete`   | Delete a memory                           |
 
 When you use `/cf-remember`, Claude calls `memory_store` behind the scenes. When a skill needs context from past sessions, it calls `memory_search`. You never interact with these tools directly — they're part of the automatic workflow.
 
@@ -90,13 +91,13 @@ Otherwise               → Tier 3
 
 ## Memory Types
 
-| Type | Category* | Question it answers | Example |
-| --- | --- | --- | --- |
-| `fact` | `features/` | "How does this work?" | "Auth module uses JWT in httpOnly cookies" |
-| `preference` | `conventions/` | "How does the user want it?" | "Always use async/await, never .then()" |
-| `context` | `decisions/` | "What state is the project in?" | "Migrating from REST to GraphQL" |
-| `episode` | `bugs/` | "What did we do before?" | "Debugged CORS on /api/upload" |
-| `procedure` | `infrastructure/` | "What steps to do X?" | "Deploy: build -> ship -> merge -> release" |
+| Type         | Category\*        | Question it answers             | Example                                     |
+| ------------ | ----------------- | ------------------------------- | ------------------------------------------- |
+| `fact`       | `features/`       | "How does this work?"           | "Auth module uses JWT in httpOnly cookies"  |
+| `preference` | `conventions/`    | "How does the user want it?"    | "Always use async/await, never .then()"     |
+| `context`    | `decisions/`      | "What state is the project in?" | "Migrating from REST to GraphQL"            |
+| `episode`    | `bugs/`           | "What did we do before?"        | "Debugged CORS on /api/upload"              |
+| `procedure`  | `infrastructure/` | "What steps to do X?"           | "Deploy: build -> ship -> merge -> release" |
 
 \*Category is the subfolder inside `docs/memory/` where the markdown file is stored. Each type maps to a folder so memories are organized on disk and can be browsed or edited manually.
 
@@ -131,7 +132,6 @@ created: 2026-03-12
 updated: 2026-03-12
 source: conversation
 ---
-
 The auth module uses RS256-signed JWT tokens...
 ```
 
