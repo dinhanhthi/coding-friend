@@ -65,7 +65,10 @@ cf dev restart       # Reinstall local dev plugin (off + on)
 cf dev update        # Update local dev plugin to latest version (off + on)
 cf memory status     # Show memory system status and stats
 cf memory search     # Search memories by keyword
-cf memory list       # List all memories with filtering
+cf memory list              # List all memories in current project
+cf memory list --projects   # List all project databases with size and metadata
+cf memory rm --project-id <id>  # Remove a specific project database
+cf memory rm --all          # Remove all project databases
 cf memory start      # Start memory daemon (enables Tier 2 search)
 cf memory stop       # Stop memory daemon
 cf memory rebuild    # Rebuild search index from markdown files

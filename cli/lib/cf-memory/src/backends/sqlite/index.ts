@@ -32,6 +32,7 @@ import {
   migrate,
   createVecTable,
   checkEmbeddingMismatch,
+  getMetadata,
   setMetadata,
   type DatabaseLike,
 } from "./migrations.js";
@@ -92,6 +93,12 @@ export class SqliteBackend implements MemoryBackend {
 
     // Run migrations
     migrate(this.db);
+
+    // Store the resolved docsDir so `cf memory list --projects` can display the source path
+    const resolvedDir = path.resolve(docsDir);
+    if (getMetadata(this.db, "source_dir") !== resolvedDir) {
+      setMetadata(this.db, "source_dir", resolvedDir);
+    }
 
     // Try to set up vector search
     if (!opts?.skipVec) {

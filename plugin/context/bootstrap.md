@@ -72,6 +72,6 @@ Memory files live in `docs/memory/` organized by type: features/ (facts), conven
 
 ## CLI (coding-friend-cli)
 
-Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|start|stop|rebuild|init|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
+Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|rm|start|stop|rebuild|init|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
 
 For details on any skill, read `plugin/skills/<name>/SKILL.md`.
