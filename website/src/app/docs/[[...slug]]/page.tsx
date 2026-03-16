@@ -14,6 +14,7 @@ import CodeBlock from "@/components/docs/CodeBlock";
 import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 import MdxLink from "@/components/docs/MdxLink";
 import Badge from "@/components/ui/Badge";
+import CopyForAiButton from "@/components/docs/CopyForAiButton";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -203,6 +204,10 @@ export default async function DocPage({ params }: Props) {
           <h1 className="text-3xl font-bold text-violet-400">
             {doc.frontmatter.title}
           </h1>
+          <CopyForAiButton
+            content={doc.content}
+            title={doc.frontmatter.title}
+          />
           {currentNav?.manualOnly && (
             <Badge className="border border-amber-500/50 bg-amber-900/30 text-amber-400">
               Manual only
