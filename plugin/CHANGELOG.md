@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.9.0 (unpublished)
+
+- Add `/cf-onboard` skill for project memory bootstrap — scans project and populates memory with architecture, conventions, and features ([#0ed475e](https://github.com/dinhanhthi/coding-friend/commit/0ed475e))
+- Add memory MCP setup step to `cf init` ([#382b872](https://github.com/dinhanhthi/coding-friend/commit/382b872))
+- Add `cf memory` subcommands to bootstrap context and shell completion ([#1da99b1](https://github.com/dinhanhthi/coding-friend/commit/1da99b1))
+
 ## v0.8.1 (2026-03-11)
 
 - Improve skill descriptions for `cf-remember`, `cf-learn`, `cf-review`, `cf-commit`, `cf-ship`, `cf-research`, `cf-ask`, `cf-session`, and `cf-tdd` with explicit trigger phrases and auto-invoke conditions ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
