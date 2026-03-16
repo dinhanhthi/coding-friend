@@ -90,8 +90,14 @@ export async function memoryStatusCommand(): Promise<void> {
     log.info(
       `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)})`,
     );
+  } else if (sqliteAvailable) {
+    log.info(
+      `Daemon: ${chalk.dim("stopped")} ${chalk.dim("(not needed — Tier 1 uses SQLite directly)")}`,
+    );
   } else {
-    log.info(`Daemon: ${chalk.dim("stopped")}`);
+    log.info(
+      `Daemon: ${chalk.dim("stopped")} ${chalk.dim('(run "cf memory start" for Tier 2 search)')}`,
+    );
   }
 
   if (sqliteAvailable) {
@@ -115,6 +121,8 @@ export async function memoryStatusCommand(): Promise<void> {
       log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
     }
   }
+  console.log();
+  log.dim(`Docs: https://cf.dinhanhthi.com/docs/reference/memory-system/`);
   console.log();
 }
 
