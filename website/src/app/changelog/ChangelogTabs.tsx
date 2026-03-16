@@ -116,7 +116,7 @@ export default function ChangelogTabs({
           const latestPublishedIdx = arr.findIndex((e) => !e.unpublished);
           return (
             <ChangelogEntryCard
-              key={entry.version}
+              key={`${activeTab}-${entry.version}`}
               entry={entry}
               isLatest={i === latestPublishedIdx}
               defaultExpanded={isLatestMinor(entry.version, arr)}
