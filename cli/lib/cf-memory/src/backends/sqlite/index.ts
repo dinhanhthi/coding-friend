@@ -84,11 +84,10 @@ export class SqliteBackend implements MemoryBackend {
       const depsDir = opts?.depsDir ?? this.getDefaultDepsDir();
       const hash = projectHash(docsDir);
       const projectDir = path.join(depsDir, "projects", hash);
-      fs.mkdirSync(projectDir, { recursive: true });
       this.dbPath = path.join(projectDir, "db.sqlite");
     }
 
-    // Open database using lazily-installed better-sqlite3
+    // Open database — defers mkdirSync until after dep check to avoid empty dirs
     this.db = this.openDatabase(opts?.depsDir);
 
     // Run migrations
@@ -138,6 +137,7 @@ export class SqliteBackend implements MemoryBackend {
     const DbConstructor =
       (Database as unknown as { default: { new (path: string): DatabaseLike } })
         .default ?? Database;
+    fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
     return new DbConstructor(this.dbPath);
   }
 
