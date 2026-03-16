@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.9.0 (unpublished)
+## v0.9.0 (2026-03-16)
 
 - Add `/cf-onboard` skill for project memory bootstrap — scans project and populates memory with architecture, conventions, and features ([#0ed475e](https://github.com/dinhanhthi/coding-friend/commit/0ed475e))
 - Add memory MCP setup step to `cf init` ([#382b872](https://github.com/dinhanhthi/coding-friend/commit/382b872))

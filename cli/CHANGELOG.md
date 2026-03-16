@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.17.0 (unpublished)
+## v1.17.0 (2026-03-16)
 
 - Add memory system with 3-tier architecture: Tier 1 (SQLite + Hybrid Search), Tier 2 (MiniSearch + Daemon), Tier 3 (Markdown) ([#fd601f2](https://github.com/dinhanhthi/coding-friend/commit/fd601f2), [#7fe84ed](https://github.com/dinhanhthi/coding-friend/commit/7fe84ed), [#7b7d8a1](https://github.com/dinhanhthi/coding-friend/commit/7b7d8a1), [#68522bd](https://github.com/dinhanhthi/coding-friend/commit/68522bd))
 - Add `cf memory` CLI commands: `status`, `search`, `list`, `rm`, `init`, `start`, `stop`, `rebuild`, `mcp` ([#fd601f2](https://github.com/dinhanhthi/coding-friend/commit/fd601f2))

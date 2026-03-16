@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.2.2 (unpublished)
+## v0.2.2 (2026-03-16)
 
 - Improve `cf init` to be more interactive with step-by-step guided setup ([#d5bbc9c](https://github.com/dinhanhthi/coding-friend/commit/d5bbc9c))
 
