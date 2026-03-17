@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.11.0 (unpublished)
+## v0.11.0 (2026-03-17)
 
 - Add CF Memory priority to skills and agents — memory-aware skills now prioritize recall before task execution [#2f5724e](https://github.com/dinhanhthi/coding-friend/commit/2f5724e)
 - Add built-in security-review skill to `cf-review` workflow [#812794a](https://github.com/dinhanhthi/coding-friend/commit/812794a)
