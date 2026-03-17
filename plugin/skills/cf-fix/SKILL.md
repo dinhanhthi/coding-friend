@@ -177,7 +177,23 @@ existing_file_action: skip
 - `description`: factual summary for grep recall. Good: `"Race condition in webhook handler causing duplicate payment processing"`. Bad: `"Fixed a bug"`.
 - `tags`: include error type, affected module, root cause category (e.g., `[race-condition, webhooks, payments]`)
 
-**Smart capture**: If the `memory_store` MCP tool is available, also call it with the same data (type: episode, source: auto-capture). This indexes the bug in the memory search system for faster future recall.
+### Step 8b: Index in CF Memory (MANDATORY)
+
+**This step is REQUIRED — do NOT skip it.**
+
+After the cf-writer saves the bug doc, you MUST call the `memory_store` MCP tool to index it in the database. This is a separate action from writing the file — the cf-writer agent does NOT do this.
+
+Call `memory_store` with:
+
+- `title`: from the frontmatter title
+- `description`: from the frontmatter description
+- `type`: `episode`
+- `tags`: from the frontmatter tags
+- `content`: the full markdown content (including frontmatter)
+- `importance`: 3 (default)
+- `source`: "auto-capture"
+
+If the MCP tool is unavailable, log a warning to the user but do NOT fail silently.
 
 ### Step 9: Auto-Review
 
