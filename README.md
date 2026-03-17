@@ -32,6 +32,7 @@
 - ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — host as a local website (`cf host`) or setup MCP server (`cf mcp`) for other LLM clients
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
+- ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
 - Prompt injection defense — layered content isolation protects against malicious instructions
 - ✨ Customizable Claude Code statusline with API rate limit tracking
   ```
