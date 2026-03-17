@@ -8,17 +8,17 @@ interface Feature {
 
 const statuslineSegments = [
   { label: "CF version", example: "cf v0.3.0", color: "text-blue-400" },
-  { label: "Project", example: "coding-friend", color: "text-orange-400" },
-  { label: "Model", example: "Opus 4.6", color: "text-cyan-400" },
   {
-    label: "Git branch",
+    label: "Project + Branch",
     example: (
       <>
-        <span className="text-green-400">⎇</span>main
+        coding-friend{" "}
+        <span className="text-green-400">(⎇ main)</span>
       </>
     ),
-    color: "text-green-400",
+    color: "text-orange-400",
   },
+  { label: "Model", example: "Opus (1M)", color: "text-cyan-400" },
   {
     label: "Context",
     example: "ctx 42%",
@@ -370,18 +370,19 @@ const Statusline = () => {
             {/* Separator */}
             <div className="my-3 border-t border-slate-700/60" />
 
-            {/* Statusline */}
+            {/* Statusline — Line 1 */}
             <div className="flex flex-wrap items-center gap-0 gap-y-2 text-sm">
               <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
-                coding-friend
+                coding-friend{" "}
+                <span className="text-green-400">(⎇ main)</span>
               </span>
               <span className="mx-2 text-slate-600">│</span>
-              <span className="whitespace-nowrap text-cyan-400">Opus 4.6</span>
-              <span className="mx-2 text-slate-600">│</span>
-              <span className="whitespace-nowrap text-green-400">⎇ main</span>
-              <span className="mx-2 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
+            </div>
+            {/* Statusline — Line 2 */}
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-sm">
               <span className="whitespace-nowrap text-amber-400">ctx 42%</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-slate-400">
