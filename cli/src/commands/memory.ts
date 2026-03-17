@@ -449,7 +449,11 @@ function formatSize(bytes: number): string {
 }
 
 function formatDate(raw: string): string {
-  // Normalize various date formats to YYYY-MM-DD HH:MM
+  // If already "YYYY-MM-DD HH:MM", return as-is
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw)) return raw;
+  // If date-only "YYYY-MM-DD", return without fake time
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  // Otherwise try to parse and normalize
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   return d.toISOString().slice(0, 16).replace("T", " ");
