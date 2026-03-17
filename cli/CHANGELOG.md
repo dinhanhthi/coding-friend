@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.17.2 (unpublished)
+
+- Fix `cf memory list` date formatting — preserve original format instead of normalizing with fake timestamps [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
+
 ## v1.17.1 (2026-03-17)
 
 - Refactor `cf memory start` to use shared `spawnDaemon()` from cf-memory lib, reducing code duplication [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
