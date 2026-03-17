@@ -177,6 +177,57 @@ export function startDaemonServer(
 }
 
 /**
+ * Spawn the daemon as a detached background process (if not already running).
+ *
+ * Resolves `daemon/entry.js` relative to this file so it works from both
+ * the MCP server and the CLI without hardcoding paths.
+ */
+export async function spawnDaemon(
+  docsDir: string,
+  embeddingConfig?: {
+    provider?: string;
+    model?: string;
+    ollamaUrl?: string;
+  },
+): Promise<{ pid: number } | null> {
+  if (await isDaemonRunning()) return null;
+
+  const { spawn } = await import("node:child_process");
+  const { fileURLToPath } = await import("node:url");
+
+  const thisDir = path.dirname(fileURLToPath(import.meta.url));
+  const entryPath = path.join(thisDir, "entry.js");
+
+  if (!fs.existsSync(entryPath)) return null;
+
+  const args = [entryPath, docsDir];
+  if (embeddingConfig?.provider)
+    args.push(`--embedding-provider=${embeddingConfig.provider}`);
+  if (embeddingConfig?.model)
+    args.push(`--embedding-model=${embeddingConfig.model}`);
+  if (embeddingConfig?.ollamaUrl)
+    args.push(`--embedding-ollama-url=${embeddingConfig.ollamaUrl}`);
+
+  const child = spawn("node", args, {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env },
+  });
+  child.unref();
+
+  // Wait for daemon to be ready (max 3 seconds)
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (await isDaemonRunning()) {
+      const info = getDaemonInfo();
+      return info ? { pid: info.pid } : null;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Stop the daemon by sending SIGTERM.
  */
 export async function stopDaemon(paths?: DaemonPaths): Promise<boolean> {
