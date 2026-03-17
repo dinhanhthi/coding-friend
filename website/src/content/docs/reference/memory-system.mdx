@@ -75,6 +75,34 @@ The system detects available dependencies and picks the best backend automatical
 - **[Transformers.js](https://huggingface.co/docs/transformers.js)** — Runs ML embedding models in Node.js (no Python/GPU needed)
 - **WAL mode** — SQLite Write-Ahead Logging for concurrent reads/writes without blocking
 
+## Write & Sync
+
+### How writes work
+
+When you use MCP tools (`memory_store`, `memory_update`, `memory_delete`), the backend writes to **both markdown and SQLite in a single call**:
+
+1. Write markdown file (source of truth)
+2. Upsert/delete SQLite row (immediate)
+3. Generate embedding vector (async, non-blocking)
+
+No sync mechanism is needed — both storage layers are updated atomically by the same function.
+
+### When markdown is edited directly
+
+If you edit markdown files outside the MCP tools (e.g., in your editor, via git), **SQLite is not automatically updated**. The MCP server process has no file watcher.
+
+To sync SQLite after manual edits:
+
+```bash
+cf memory rebuild
+```
+
+This scans all markdown files and rebuilds the entire SQLite index (rows + embeddings) from scratch.
+
+:::note
+The Tier 2 daemon (`cf memory start`) includes a file watcher that auto-rebuilds on markdown changes. But in Tier 1 (SQLite via MCP), there is no watcher — you must rebuild manually.
+:::
+
 ## Capturing Memories
 
 Three ways to store memories:
@@ -93,28 +121,26 @@ Three ways to store memories:
      - `/cf-review` — architectural patterns
      - `/cf-sys-debug` — debugging breakthroughs
 
-### `/cf-scan` vs `/cf-remember`
+`/cf-scan` vs `/cf-remember`:
 
-|                    | `/cf-scan`                                          | `/cf-remember`                      |
-| ------------------ | --------------------------------------------------- | ----------------------------------- |
-| **When**           | First time, or to refresh project knowledge         | After a coding session              |
-| **Source**         | Scans the codebase directly                         | Extracts from conversation          |
-| **Scope**          | Whole project (architecture, conventions, features) | Specific topic from current session |
-| **Typical output** | 10-15 memories across all categories                | 1-3 memories per invocation         |
+|                    | [`/cf-scan`](/docs/skills/cf-scan/)                                                                   | [`/cf-remember`](/docs/skills/cf-remember/) |
+| ------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **When**           | First time, or to refresh project knowledge, or anytime you want to "scan" some aspect of the project | After a coding session                      |
+| **Source**         | Scans the codebase directly                                                                           | Extracts from conversation                  |
+| **Scope**          | Whole project (architecture, conventions, features)                                                   | Specific topic from current session         |
+| **Typical output** | 10-15 memories across all categories                                                                  | 1-3 memories per invocation                 |
 
-### `/cf-remember` vs `cf memory`
+`/cf-remember` vs `cf memory`:
 
-|              | `/cf-remember`                    | `cf memory`                             |
-| ------------ | --------------------------------- | --------------------------------------- |
-| **Where**    | Inside Claude Code session        | Terminal CLI                            |
-| **Does**     | Saves knowledge from conversation | Manages the memory system               |
-| **Examples** | `/cf-remember auth uses JWT`      | `cf memory status`, `cf memory rebuild` |
+|              | [`/cf-remember`](/docs/skills/cf-remember/) | [`cf memory`](/docs/reference/memory-system/#mcp-integration) |
+| ------------ | ------------------------------------------- | ------------------------------------------------------------- |
+| **Where**    | Inside Claude Code session                  | Terminal CLI                                                  |
+| **Does**     | Saves knowledge from conversation           | Manages the memory system                                     |
+| **Examples** | `/cf-remember auth uses JWT`                | `cf memory status`, `cf memory rebuild`                       |
 
 ## MCP Integration
 
 The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically.
-
-### 6 Tools
 
 | Tool              | Purpose                          |
 | ----------------- | -------------------------------- |
@@ -133,45 +159,15 @@ Run `cf memory mcp` to get the MCP configuration snippet for your project.
 
 When Claude calls `memory_search`, the query goes through this pipeline (Tier 1):
 
-### 1. Query routing
+1. **Query routing** — auto-detects intent: quoted strings/code patterns → keyword only, questions (how/why/what) → semantic only, everything else → hybrid (both + fusion)
 
-The system auto-detects intent:
+2. **Keyword search (FTS5 + BM25)** — full-text search with weighted fields: title (10x), tags (6x), description (4x), content (1x)
 
-- **Quoted strings** or code patterns (`"auth middleware"`, `config.db.host`) — keyword only
-- **Questions** (how/why/what) — semantic only
-- **Everything else** — hybrid (both + fusion)
+3. **Semantic search (embeddings)** — text converted to vectors by an embedding model, compared using cosine similarity. Finds meaning, not just keywords (e.g., "login verification" matches "JWT authentication"). Vectors cached by content hash.
 
-### 2. Keyword search (FTS5 + BM25)
+4. **Fusion (RRF)** — in hybrid mode, keyword and semantic results merged with Reciprocal Rank Fusion (k=60). Each result scored by rank position `1/(60 + rank)`, scores from both lists summed.
 
-Full-text search with weighted fields:
-
-| Field       | Weight | Reason               |
-| ----------- | ------ | -------------------- |
-| title       | 10x    | Most specific signal |
-| tags        | 6x     | Curated keywords     |
-| description | 4x     | One-line summary     |
-| content     | 1x     | Broad match          |
-
-### 3. Semantic search (embeddings)
-
-- Text is converted to a **vector** (array of floats) by an embedding model
-- Stored vectors are compared using **cosine similarity** — finds meaning, not just keywords
-- Example: searching "login verification" finds a memory titled "JWT authentication"
-- Vectors cached by content hash — unchanged content is never re-embedded
-
-### 4. Fusion (RRF)
-
-In hybrid mode, keyword and semantic results are merged with **Reciprocal Rank Fusion** (k=60):
-
-- Each result scored by rank position: `score = 1/(60 + rank)`
-- Scores from both lists are summed
-- Final ranking combines both keyword precision and semantic understanding
-
-### 5. Post-processing
-
-- **Temporal decay** — recent memories score higher (90-day half-life, floor at 70%)
-- **Deduplication** — warns on near-duplicate content (Jaccard similarity)
-- **Type/tag filtering** — optional filters narrow results
+5. **Post-processing** — temporal decay (90-day half-life, floor at 70%), deduplication (Jaccard similarity), optional type/tag filtering
 
 ## Memory Types
 
@@ -201,8 +197,6 @@ source: conversation
 The auth module uses RS256-signed JWT tokens...
 ```
 
-### Fields
-
 - **`title`** — short, descriptive name
 - **`description`** — one-line searchable summary (&lt;100 chars). Critical for search quality. Good: `"JWT auth with httpOnly cookies and RS256"`. Bad: `"How auth works"`.
 - **`type`** — one of: `fact`, `preference`, `context`, `episode`, `procedure`
@@ -213,14 +207,10 @@ The auth module uses RS256-signed JWT tokens...
 
 ## Embedding Models
 
-Semantic search (Tier 1) needs an embedding model to convert text into vectors.
-
-### Two providers
+Semantic search (Tier 1) needs an embedding model to convert text into vectors. Two providers available:
 
 - **Transformers.js** (default) — runs in Node.js, no external service, model auto-downloaded (~23 MB)
 - **Ollama** (optional) — uses a local [Ollama](https://ollama.com/) server, supports more models, falls back to Transformers.js if unavailable
-
-### Recommended models
 
 | Model                      | Dims | Size    | Provider        | Notes                         |
 | -------------------------- | ---- | ------- | --------------- | ----------------------------- |
@@ -231,37 +221,7 @@ Semantic search (Tier 1) needs an embedding model to convert text into vectors.
 | `snowflake-arctic-embed:s` | 384  | ~67 MB  | Ollama          | Alternative small model       |
 | `bge-base-en-v1.5`         | 768  | ~130 MB | Ollama          | English-optimized             |
 
-### Using Ollama
-
-1. [Install Ollama](https://ollama.com/download)
-2. Pull a model: `ollama pull nomic-embed-text`
-3. Configure:
-   ```json
-   {
-     "memory": {
-       "embedding": {
-         "provider": "ollama",
-         "model": "nomic-embed-text"
-       }
-     }
-   }
-   ```
-4. Rebuild existing memories: `cf memory rebuild`
-
-### Changing models
-
-When switching to a model with different dimensions (e.g., 384 to 768):
-
-1. System detects dimension mismatch on startup
-2. Vector search is **disabled** (keyword search still works)
-3. Run `cf memory rebuild` to re-embed all memories
-4. Vector search re-enabled with new dimensions
-
-Markdown files are never affected — they remain source of truth.
-
-### Embedding Model Configuration
-
-In `.coding-friend/config.json`:
+To use Ollama: [install it](https://ollama.com/download), pull a model (`ollama pull nomic-embed-text`), then configure in `.coding-friend/config.json`:
 
 ```json
 {
@@ -275,15 +235,11 @@ In `.coding-friend/config.json`:
 }
 ```
 
-Or via environment variables:
+Run `cf memory rebuild` after setup to embed existing memories.
 
-| Variable                      | Default                  | Description                    |
-| ----------------------------- | ------------------------ | ------------------------------ |
-| `MEMORY_EMBEDDING_PROVIDER`   | `"transformers"`         | `"transformers"` or `"ollama"` |
-| `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Model name                     |
-| `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL              |
+When switching to a model with different dimensions (e.g., 384 → 768), vector search is auto-disabled until you run `cf memory rebuild`. Keyword search still works. Markdown files are never affected.
 
-See [`config.json` reference](/docs/configuration/config-json#memory) for all memory options.
+Environment variables: `MEMORY_EMBEDDING_PROVIDER` (`"transformers"` or `"ollama"`), `MEMORY_EMBEDDING_MODEL`, `MEMORY_EMBEDDING_OLLAMA_URL` (default `http://localhost:11434`). See [`config.json` reference](/docs/configuration/config-json#memory) for all options.
 
 ## Configuration
 
