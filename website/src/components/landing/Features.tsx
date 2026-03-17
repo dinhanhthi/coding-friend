@@ -17,8 +17,7 @@ interface FeatureTab {
   content: React.ReactNode;
 }
 
-// const TAB_DURATION = 8000; // ms per tab
-const TAB_DURATION = 80000000; // ms per tab // ###Thi
+const TAB_DURATION = 8000; // ms per tab
 
 /* ────────────────────────────────────────────────────────────
    ICONS (Heroicons outline, 20×20)
@@ -708,6 +707,130 @@ function SkillsAgentsContent() {
 }
 
 /* ────────────────────────────────────────────────────────────
+   BORDER PROGRESS OVERLAY
+   ──────────────────────────────────────────────────────────── */
+
+function BorderProgressOverlay({
+  containerRef,
+  tabsRowRef,
+  activeIdx,
+  progress,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  tabsRowRef: React.RefObject<HTMLDivElement | null>;
+  activeIdx: number;
+  progress: number;
+}) {
+  const [dims, setDims] = useState<{
+    containerW: number;
+    containerH: number;
+    tabsRowH: number;
+    tabLeft: number;
+    tabWidth: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const tabsRow = tabsRowRef.current;
+    if (!container || !tabsRow) return;
+
+    const update = () => {
+      const activeButton = tabsRow.children[activeIdx] as HTMLElement | undefined;
+      if (!activeButton) return;
+      setDims({
+        containerW: container.offsetWidth,
+        containerH: container.offsetHeight,
+        tabsRowH: tabsRow.offsetHeight,
+        tabLeft: activeButton.offsetLeft,
+        tabWidth: activeButton.offsetWidth,
+      });
+    };
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [containerRef, tabsRowRef, activeIdx]);
+
+  if (!dims) return null;
+
+  const { containerW, containerH, tabsRowH, tabLeft, tabWidth } = dims;
+  const r = 12; // tab corner radius (rounded-t-xl)
+  const br = 12; // body panel corner radius (rounded-xl)
+
+  const bodyY = tabsRowH;
+
+  // Top path (animated): body top-left → around active tab → body top-right corner
+  const topPath = [
+    `M 0,${bodyY}`,
+    `L ${tabLeft},${bodyY}`,
+    `L ${tabLeft},${r}`,
+    `Q ${tabLeft},0 ${tabLeft + r},0`,
+    `L ${tabLeft + tabWidth - r},0`,
+    `Q ${tabLeft + tabWidth},0 ${tabLeft + tabWidth},${r}`,
+    `L ${tabLeft + tabWidth},${bodyY}`,
+    `L ${containerW - br},${bodyY}`,
+    `Q ${containerW},${bodyY} ${containerW},${bodyY + br}`,
+  ].join(" ");
+
+  // Body border path (static): right side → bottom → left side
+  const bodyBorderPath = [
+    `M ${containerW},${bodyY + br}`,
+    `L ${containerW},${containerH - br}`,
+    `Q ${containerW},${containerH} ${containerW - br},${containerH}`,
+    `L ${br},${containerH}`,
+    `Q 0,${containerH} 0,${containerH - br}`,
+    `L 0,${bodyY}`,
+  ].join(" ");
+
+  return (
+    <svg
+      width={containerW}
+      height={containerH}
+      className="pointer-events-none absolute top-0 left-0 z-50"
+      style={{ overflow: "visible" }}
+    >
+      {/* Static body border (always visible) */}
+      <path
+        d={bodyBorderPath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.7)"
+        strokeWidth="0.5"
+      />
+      {/* Dim top track */}
+      <path
+        d={topPath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.08)"
+        strokeWidth="0.5"
+      />
+      {/* Glow (top only) */}
+      <path
+        d={topPath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.12)"
+        strokeWidth="1"
+        strokeLinecap="round"
+        pathLength={1000}
+        strokeDasharray={1000}
+        strokeDashoffset={1000 - progress * 1000}
+      />
+      {/* Bright progress (top only) */}
+      <path
+        d={topPath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.7)"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        pathLength={1000}
+        strokeDasharray={1000}
+        strokeDashoffset={1000 - progress * 1000}
+      />
+    </svg>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
    TABS CONFIG
    ──────────────────────────────────────────────────────────── */
 
@@ -789,6 +912,8 @@ export default function Features() {
   const [progress, setProgress] = useState(0);
   const startTimeRef = useRef<number>(0);
   const animRef = useRef<number>(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const tabsRowRef = useRef<HTMLDivElement>(null);
 
   const goToTab = useCallback((idx: number) => {
     setActiveIdx(idx);
@@ -824,8 +949,6 @@ export default function Features() {
     return () => cancelAnimationFrame(animRef.current);
   }, [paused, activeIdx]);
 
-  const activeTab = tabs[activeIdx];
-
   return (
     <section id="features" className="bg-navy-950/30 py-20">
       <Container>
@@ -838,12 +961,21 @@ export default function Features() {
 
         {/* Tab cards + body — seamlessly connected */}
         <div
+          ref={wrapperRef}
           className="relative mx-auto max-w-4xl"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
+          {/* Border progress overlay */}
+          <BorderProgressOverlay
+            containerRef={wrapperRef}
+            tabsRowRef={tabsRowRef}
+            activeIdx={activeIdx}
+            progress={progress}
+          />
+
           {/* Tab cards row */}
-          <div className="relative z-10 flex gap-1.5 overflow-x-auto sm:gap-2">
+          <div ref={tabsRowRef} className="relative z-10 flex gap-1.5 overflow-x-auto sm:gap-2">
             {tabs.map((tab, idx) => {
               const isActive = idx === activeIdx;
               const c = tabColorMap[tab.color];
@@ -851,15 +983,13 @@ export default function Features() {
                 <button
                   key={tab.id}
                   onClick={() => goToTab(idx)}
-                  className={`group relative flex shrink-0 cursor-pointer flex-col items-center gap-1.5 px-4 py-3 text-sm font-medium transition-all duration-300 sm:min-w-[140px] sm:px-5 sm:py-3.5 ${
+                  className={`group relative flex shrink-0 cursor-pointer flex-col items-center gap-1.5 rounded-t-xl px-4 py-3 text-sm font-medium transition-all duration-300 sm:min-w-[140px] sm:px-5 sm:py-3.5 ${
                     isActive
-                      ? `${c.active} bg-navy-950/50 rounded-t-xl border border-b-0 border-[#a0a0a05d]`
-                      : `${c.inactive} border-transparent opacity-50`
+                      ? `${c.active} bg-navy-950/50`
+                      : `${c.inactive} opacity-50`
                   }`}
                 >
-                  {isActive && (
-                    <div className="absolute bottom-0 left-0 z-50 h-1 w-full bg-[#262A32]"></div>
-                  )}
+
                   <span
                     className={`transition-transform duration-300 ${isActive ? "scale-110" : "scale-100"}`}
                   >
@@ -867,22 +997,13 @@ export default function Features() {
                   </span>
                   <span className="whitespace-nowrap">{tab.label}</span>
 
-                  {/* Progress bar at bottom of active card */}
-                  {isActive && (
-                    <span className="absolute bottom-0 h-0.5 overflow-hidden rounded-full">
-                      <span
-                        className={`absolute inset-y-0 left-0 ${c.bar} rounded-full transition-none`}
-                        style={{ width: `${progress * 100}%` }}
-                      />
-                    </span>
-                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* Body panel — pulled up 1px so active tab overlaps the top border */}
-          <div className="bg-navy-950/50 -mt-px rounded-tr-xl rounded-b-xl border border-[#a0a0a05d] p-6 sm:p-8">
+          {/* Body panel */}
+          <div className="bg-navy-950/50 rounded-tr-xl rounded-b-xl p-6 sm:p-8">
             <div className="overflow-hidden">
               <div
                 className="flex transition-transform duration-500 ease-out"

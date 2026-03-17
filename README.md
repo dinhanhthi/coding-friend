@@ -56,6 +56,12 @@ Memory architecture (read more about it [here](https://cf.dinhanhthi.com/docs/re
   <img src="assets/memory.png" alt="Memory Architecture" width="100%" />
 </p>
 
+The Learning Notes taken from your coding sessions with the help of the `/cf-learn` skill and `cf host` command:
+
+<p align="center">
+  <img src="website/public/cf-host.png" alt="Learning Notes" width="100%" />
+</p>
+
 ## Quick Start
 
 ### 1. Install the CLI
