@@ -1,5 +1,9 @@
 # CF Memory Changelog
 
+## v0.1.1 (unpublished)
+
+- Fix `today()` to capture full timestamp (`YYYY-MM-DD HH:MM`) instead of date-only for memory created/updated fields [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
+
 ## v0.1.0 (2026-03-17)
 
 - Auto-start daemon from MCP server for file watching — daemon spawns automatically when Tier 1 or 2 is detected, no manual `cf memory start` needed [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
