@@ -117,6 +117,7 @@ pre {
   border: 1px solid #a0a0a06b;
   font-size: 85%;
   padding: 2px 5px !important;
+  border-radius: 4px;
 }
 
 a > code {
