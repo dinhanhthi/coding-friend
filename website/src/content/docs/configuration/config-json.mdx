@@ -162,11 +162,12 @@ Settings for the [memory system](/docs/reference/memory-system/).
 
 - **Type**: `"auto" | "full" | "lite" | "markdown"`
 - **Default**: `"auto"`
-- Force a specific search tier instead of auto-detection
-- `"auto"` — detect best available (SQLite → MiniSearch → Markdown)
-- `"full"` — require SQLite + hybrid search (fails if deps not installed)
-- `"lite"` — use MiniSearch daemon only
-- `"markdown"` — file-based fallback only
+- Controls which search backend the MCP server uses — this does **not** start or stop the daemon
+- `"auto"` — detect best available at startup: SQLite installed → Tier 1, daemon running → Tier 2, otherwise → Tier 3
+- `"full"` — require Tier 1 (SQLite + hybrid search). Fails if deps not installed via `cf memory init`
+- `"lite"` — require Tier 2 (MiniSearch daemon). Fails if daemon not running via `cf memory start`
+- `"markdown"` — force Tier 3 (grep over markdown files). Always works, no setup needed
+- Use this to force a specific tier for testing or to skip auto-detection (e.g., `"markdown"` to use Tier 3 even when SQLite is installed)
 
 #### `memory.embedding`
 
