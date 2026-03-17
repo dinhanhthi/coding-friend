@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.11.0 (unpublished)
+
+- Add CF Memory priority to skills and agents — memory-aware skills now prioritize recall before task execution [#2f5724e](https://github.com/dinhanhthi/coding-friend/commit/2f5724e)
+- Add built-in security-review skill to `cf-review` workflow [#812794a](https://github.com/dinhanhthi/coding-friend/commit/812794a)
+- Force `cf-planner` agent to always use opus model [#79a94b8](https://github.com/dinhanhthi/coding-friend/commit/79a94b8)
+- Compact statusline layout with brighter green levels [#1d7bef1](https://github.com/dinhanhthi/coding-friend/commit/1d7bef1)
+
 ## v0.10.0 (2026-03-17)
 
 - Rename `/cf-onboard` to `/cf-scan` — scans project and bootstraps memory with architecture, conventions, and features [#387afda](https://github.com/dinhanhthi/coding-friend/commit/387afda)
