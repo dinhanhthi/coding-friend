@@ -64,20 +64,44 @@ This skill is automatically invoked by other skills — you don't always need to
 
    If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
 
-4. **Read changed files** in full — do not review only the diff, understand the context.
+4. **Gather context** (conditional — based on review mode):
+   - **QUICK mode**: Skip this step entirely.
+   - **STANDARD mode**: Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<area being reviewed — e.g. auth, API, database>", "limit": 5 }`. Use results as context hints for the review.
+   - **DEEP mode**: Launch the **cf-explorer agent** to understand callers, dependencies, and data flows around the changed files. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
-5. **Apply 4-layer review** (load the `cf-auto-review` skill):
+     > Explore the codebase context around these changed files: [list changed files]
+     >
+     > Questions to answer:
+     >
+     > 1. What calls these files/functions? (callers, entry points)
+     > 2. What do these files depend on? (downstream effects)
+     > 3. What conventions and patterns exist in the surrounding code?
+     > 4. Are there related tests that should be checked?
+
+     **Note:** cf-explorer already checks memory internally — do NOT call `memory_search` separately when using cf-explorer.
+
+   Memory and explorer results are **hints** — always verify against actual code.
+
+5. **Read changed files** in full — do not review only the diff, understand the context.
+
+6. **Apply 4-layer review** (load the `cf-auto-review` skill):
    - Layer 1: Plan alignment
    - Layer 2: Code quality
    - Layer 3: Security (depth scaled by mode — see `cf-auto-review` skill)
    - Layer 4: Testing
 
-6. **Report findings** with severity levels:
+7. **Security review** (built-in):
+
+   After the 4-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
+
+   Merge any findings from `/security-review` into the report — deduplicate with Layer 3 results, keeping the higher-severity entry when both flag the same issue.
+
+8. **Report findings** with severity levels:
    - **Critical**: Must fix before merge
    - **Important**: Should fix
    - **Suggestion**: Consider
 
-7. **Format the report:**
+9. **Format the report:**
 
    ```
    ## Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
@@ -96,44 +120,45 @@ This skill is automatically invoked by other skills — you don't always need to
    <1-2 sentence overall assessment>
    ```
 
-8. **Mark review complete and display status:**
+10. **Mark review complete and display status:**
 
-   ```bash
-   mkdir -p /tmp/coding-friend && touch /tmp/coding-friend/reviewed
-   ```
+```bash
+mkdir -p /tmp/coding-friend && touch /tmp/coding-friend/reviewed
+```
 
-9. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
+11. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
 
-   If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
-   - type: "fact"
-   - importance: 3
-   - source: "auto-capture"
-   - title/description/tags/content summarizing the insight
+If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
 
-   Skip if the review was routine with no notable findings.
+- type: "fact"
+- importance: 3
+- source: "auto-capture"
+- title/description/tags/content summarizing the insight
 
-   Then display one of the following banners depending on whether **Critical Issues** were found:
+Skip if the review was routine with no notable findings.
 
-   **If NO critical issues were found** — show this (replace placeholders):
+Then display one of the following banners depending on whether **Critical Issues** were found:
 
-   ```
-   ╔══════════════════════════════════════════════════╗
-   ║  ✅  Code Review Complete                        ║
-   ╚══════════════════════════════════════════════════╝
-   ```
+**If NO critical issues were found** — show this (replace placeholders):
 
-   > Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
-   >
-   > You're clear to commit. Run `/cf-commit` when ready.
+```
+╔══════════════════════════════════════════════════╗
+║  ✅  Code Review Complete                        ║
+╚══════════════════════════════════════════════════╝
+```
 
-   **If critical issues were found** — show this (replace placeholders), then wait for the user's answer:
+> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
+>
+> You're clear to commit. Run `/cf-commit` when ready.
 
-   ```
-   ╔══════════════════════════════════════════════════╗
-   ║  ⚠️  Review Complete — Action Needed             ║
-   ╚══════════════════════════════════════════════════╝
-   ```
+**If critical issues were found** — show this (replace placeholders), then wait for the user's answer:
 
-   > Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
-   >
-   > Resolve the critical issues listed above. Shall I help fix them now?
+```
+╔══════════════════════════════════════════════════╗
+║  ⚠️  Review Complete — Action Needed             ║
+╚══════════════════════════════════════════════════╝
+```
+
+> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
+>
+> Resolve the critical issues listed above. Shall I help fix them now?
