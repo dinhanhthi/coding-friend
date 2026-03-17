@@ -27,6 +27,22 @@ The system detects available dependencies and picks the best backend automatical
 | **Scale**        | 100K+ memories                              | ~10K                           | ~1K                                |
 | **Setup**        | `cf memory init`                            | `cf memory start`              | Nothing                            |
 
+### Tier selection
+
+By default (`memory.tier: "auto"`), the MCP server picks the best available tier at startup:
+
+1. SQLite database exists and deps installed? → **Tier 1**
+2. Daemon running? → **Tier 2**
+3. Otherwise → **Tier 3** (always available — just reads markdown files)
+
+You can force a specific tier in `.coding-friend/config.json`:
+
+```json
+{ "memory": { "tier": "markdown" } }
+```
+
+This is useful for testing (e.g., force Tier 3 even when SQLite is installed) or when you want to skip auto-detection. See [`memory.tier`](/docs/configuration/config-json#memorytier) for all values.
+
 ### How tiers connect
 
 ```
