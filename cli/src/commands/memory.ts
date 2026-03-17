@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import { existsSync, readdirSync, statSync, rmSync } from "fs";
 import { join, resolve, sep } from "path";
 import { homedir } from "os";
-import { spawn } from "child_process";
+
 import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run } from "../lib/exec.js";
@@ -235,7 +235,7 @@ export async function memoryStartCommand(): Promise<void> {
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
 
-  const { isDaemonRunning, getDaemonInfo } = await import(
+  const { isDaemonRunning, getDaemonInfo, spawnDaemon } = await import(
     join(mcpDir, "dist/daemon/process.js")
   );
 
@@ -245,44 +245,19 @@ export async function memoryStartCommand(): Promise<void> {
     return;
   }
 
-  const entryPath = join(mcpDir, "dist/daemon/entry.js");
-  if (!existsSync(entryPath)) {
-    log.error("Daemon entry point not found. Try rebuilding: npm run build");
-    process.exit(1);
-  }
-
   log.step("Starting memory daemon...");
 
-  // Build daemon args with embedding config from config.json
-  const args = [entryPath, memoryDir];
   const config = loadConfig();
   const embedding = config.memory?.embedding;
-  if (embedding?.provider)
-    args.push(`--embedding-provider=${embedding.provider}`);
-  if (embedding?.model) args.push(`--embedding-model=${embedding.model}`);
-  if (embedding?.ollamaUrl)
-    args.push(`--embedding-ollama-url=${embedding.ollamaUrl}`);
+  const result = await spawnDaemon(memoryDir, embedding);
 
-  const child = spawn("node", args, {
-    detached: true,
-    stdio: "ignore",
-    env: { ...process.env },
-  });
-  child.unref();
-
-  // Wait for daemon to be ready (max 5 seconds)
-  for (let i = 0; i < 50; i++) {
-    await new Promise((r) => setTimeout(r, 100));
-    if (await isDaemonRunning()) {
-      const info = getDaemonInfo();
-      log.success(`Daemon started (PID ${info?.pid})`);
-      log.info(`Tier: ${chalk.cyan("Tier 2 (MiniSearch + Daemon)")}`);
-      return;
-    }
+  if (result) {
+    log.success(`Daemon started (PID ${result.pid})`);
+    log.info(`Watching ${chalk.cyan(memoryDir)} for changes`);
+  } else {
+    log.error("Daemon did not start within 3 seconds");
+    process.exit(1);
   }
-
-  log.error("Daemon did not start within 5 seconds");
-  process.exit(1);
 }
 
 export async function memoryStopCommand(): Promise<void> {

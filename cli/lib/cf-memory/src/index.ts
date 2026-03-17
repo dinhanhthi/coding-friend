@@ -33,6 +33,14 @@ const { backend, tier } = await createBackendForTier(
   embeddingConfig,
 );
 
+// Auto-start daemon for file watching (Tier 1 & 2)
+// Daemon watches docs/memory/ for external changes (git pull, manual edits)
+// and rebuilds the search index automatically.
+if (tier.name !== "markdown") {
+  const { spawnDaemon } = await import("./daemon/process.js");
+  spawnDaemon(docsDir, embeddingConfig).catch(() => {});
+}
+
 const server = new McpServer({
   name: "coding-friend-memory",
   version: "0.0.1",
