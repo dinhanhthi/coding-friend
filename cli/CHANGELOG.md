@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.17.1 (unpublished)
+## v1.17.1 (2026-03-17)
 
 - Refactor `cf memory start` to use shared `spawnDaemon()` from cf-memory lib, reducing code duplication [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
 - Add tip to daemon status output when running `cf memory status` [#fc5ba80](https://github.com/dinhanhthi/coding-friend/commit/fc5ba80)
