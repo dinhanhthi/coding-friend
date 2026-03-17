@@ -51,9 +51,9 @@ YELLOW=$'\033[0;33m'
 RESET=$'\033[0m'
 
 # Usage color gradient: green → red
-LEVEL_1=$'\033[38;5;22m'   # dark green
-LEVEL_2=$'\033[38;5;28m'   # soft green
-LEVEL_3=$'\033[38;5;34m'   # medium green
+LEVEL_1=$'\033[38;5;40m'   # bright green
+LEVEL_2=$'\033[38;5;34m'   # medium green
+LEVEL_3=$'\033[38;5;76m'   # light green
 LEVEL_4=$'\033[38;5;100m'  # green-yellowish
 LEVEL_5=$'\033[38;5;142m'  # olive
 LEVEL_6=$'\033[38;5;178m'  # muted yellow
@@ -201,6 +201,10 @@ if component_enabled "model"; then
   if [ -z "$MODEL" ]; then
     MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null)
   fi
+  # Shorten model names: "Opus 4.6 (1M context)" → "Opus (1M)"
+  if [ -n "$MODEL" ]; then
+    MODEL=$(echo "$MODEL" | sed -E 's/([A-Za-z]+) [0-9]+(\.[0-9]+)? \(([0-9]+[KMG]?) context\)/\1 (\3)/')
+  fi
 fi
 
 # Git branch
@@ -301,10 +305,15 @@ elif component_enabled "version"; then
   parts+=("${BLUE}cf${RESET}")
 fi
 
-[ -n "$current_dir" ] && parts+=("${BLUE}📂 ${current_dir}${RESET}")
+if [ -n "$current_dir" ]; then
+  folder_part="${BLUE}📂 ${current_dir}"
+  if [ -n "$branch_text" ]; then
+    folder_part+=" (${branch_text}${BLUE})"
+  fi
+  folder_part+="${RESET}"
+  parts+=("$folder_part")
+fi
 [ -n "$MODEL" ] && parts+=("${CYAN}🧠 ${MODEL}${RESET}")
-[ -n "$branch_text" ] && parts+=("${branch_text}")
-[ -n "$ctx_text" ] && parts+=("${ctx_text}")
 
 # Join parts with separator
 output=""
@@ -318,7 +327,18 @@ done
 
 printf "%s" "$output"
 
-# Rate limit on a separate line (only if data is available)
+# Second line: context + rate limit
+second_line=""
+if [ -n "$ctx_text" ]; then
+  second_line="$ctx_text"
+fi
 if [ -n "$rate_limit_line" ]; then
-  printf "\n%s" "$rate_limit_line"
+  if [ -n "$second_line" ]; then
+    second_line+="${separator}${rate_limit_line}"
+  else
+    second_line="$rate_limit_line"
+  fi
+fi
+if [ -n "$second_line" ]; then
+  printf "\n%s" "$second_line"
 fi

@@ -35,8 +35,8 @@
 - Prompt injection defense — layered content isolation protects against malicious instructions
 - ✨ Customizable Claude Code statusline with API rate limit tracking
   ```
-  cf v0.3.0 | 📂 MyProject | 🧠 Opus 4.6 | ⎇ main | ctx 42%
-  [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+  cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
+  ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   ```
 
 For full details, visit the **[official documentation](https://cf.dinhanhthi.com)**.
