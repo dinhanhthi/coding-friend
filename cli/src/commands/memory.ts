@@ -91,7 +91,7 @@ export async function memoryStatusCommand(): Promise<void> {
   if (running && daemonInfo) {
     const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
     log.info(
-      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)})`,
+      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop"')}`,
     );
   } else if (sqliteAvailable) {
     log.info(
