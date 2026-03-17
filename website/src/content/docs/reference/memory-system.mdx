@@ -115,9 +115,11 @@ cf memory rebuild
 
 This scans all markdown files and rebuilds the entire SQLite index (rows + embeddings) from scratch.
 
-:::note
-The Tier 2 daemon (`cf memory start`) includes a file watcher that auto-rebuilds on markdown changes. But in Tier 1 (SQLite via MCP), there is no watcher — you must rebuild manually.
-:::
+<Callout type="info">
+  The Tier 2 daemon (`cf memory start`) includes a file watcher that
+  auto-rebuilds on markdown changes. But in Tier 1 (SQLite via MCP), there is no
+  watcher — you must rebuild manually.
+</Callout>
 
 ## Capturing Memories
 
