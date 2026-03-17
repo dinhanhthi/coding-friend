@@ -126,7 +126,7 @@ export default function Skills() {
         <div className="flex flex-col gap-8 py-12">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-white">
-              <span className="font-mono">/slash</span> Commands
+              <span className="font-mono">/slash</span> Skills
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               Manual triggering with natural language. Coding Friend handles the

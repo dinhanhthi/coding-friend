@@ -14,12 +14,12 @@
 - Force `cf-planner` agent to always use opus model [#79a94b8](https://github.com/dinhanhthi/coding-friend/commit/79a94b8)
 - Compact statusline layout with brighter green levels [#1d7bef1](https://github.com/dinhanhthi/coding-friend/commit/1d7bef1)
 
-## v0.10.0 (2026-03-17)
+## v0.10 (2026-03-17)
 
 - Rename `/cf-onboard` to `/cf-scan` — scans project and bootstraps memory with architecture, conventions, and features [#387afda](https://github.com/dinhanhthi/coding-friend/commit/387afda)
 - Add `cf-memory` support to release and ship skills [#c73b14e](https://github.com/dinhanhthi/coding-friend/commit/c73b14e)
 
-## v0.9.0 (2026-03-16)
+## v0.9 (2026-03-16)
 
 - Add `/cf-onboard` skill for project memory bootstrap — scans project and populates memory with architecture, conventions, and features ([#0ed475e](https://github.com/dinhanhthi/coding-friend/commit/0ed475e))
 - Migrate /cf-remember and Frontmatter Recall to use memory_search MCP tool
