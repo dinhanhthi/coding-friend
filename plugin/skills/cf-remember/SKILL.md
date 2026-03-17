@@ -154,19 +154,31 @@ existing_file_action: append
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
-**MCP integration** (if `memory_store` MCP tool is available):
+### Step 5: Index in CF Memory (MANDATORY)
 
-After the cf-writer saves the file, also call `memory_store` to index the memory:
+**This step is REQUIRED — do NOT skip it.**
 
-- type: infer from category (features → fact, conventions → preference, decisions → context, bugs → episode, infrastructure → procedure)
-- title/description/tags from the frontmatter above
-- content: the full markdown content
-- importance: 3 (default)
-- source: "conversation"
+After the cf-writer agent completes and the markdown file is saved, you MUST call the `memory_store` MCP tool to index the memory in the database. This is a separate action from writing the file — the cf-writer agent does NOT do this.
 
-This ensures the memory is both saved as a markdown file AND indexed for fast search. If the MCP tool is unavailable, the markdown file alone is sufficient — the memory system's file watcher will pick it up when the daemon is running.
+**If creating a new memory** — call `memory_store` with:
 
-### Step 5: Confirm
+- `title`: from the frontmatter title
+- `description`: from the frontmatter description
+- `type`: infer from category (features → `fact`, conventions → `preference`, decisions → `context`, bugs → `episode`, infrastructure → `procedure`)
+- `tags`: from the frontmatter tags
+- `content`: the full markdown content (including frontmatter)
+- `importance`: 3 (default)
+- `source`: "conversation"
+
+**If updating an existing memory** — call `memory_update` with:
+
+- `id`: the memory ID (e.g., `features/auth-module` — derived from `{category}/{name}`)
+- `content`: the updated full markdown content
+- `tags`: updated tags array (if changed)
+
+If the MCP tools are unavailable, log a warning to the user but do NOT fail silently — the user should know the memory was saved as a file but NOT indexed.
+
+### Step 6: Confirm
 
 Read back the cf-writer agent's output and show the user what was saved and where.
 

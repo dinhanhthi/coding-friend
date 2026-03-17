@@ -184,23 +184,36 @@ existing_file_action: append
 
 When appending, also instruct cf-writer to update the `updated` date in the existing frontmatter.
 
-**MCP indexing** (if `memory_store` MCP tool is available):
-
-After saving the file via cf-writer, also call `memory_store` with:
-
-- type: "fact"
-- title/description/tags from the frontmatter above
-- content: the Q&A content
-- source: "conversation"
-
-This ensures the answer is both saved as a markdown file AND indexed in the memory search system. If the MCP tool is unavailable, the markdown file alone is sufficient.
-
 **Frontmatter rules:**
 
 - `description`: factual, searchable summary under 100 chars. Good: `"JWT auth flow with refresh tokens and OAuth2 integration"`. Bad: `"About auth"`.
 - `tags`: 3-5 keywords as array
 
-### Step 7: Confirm
+### Step 7: Index in CF Memory (MANDATORY)
+
+**This step is REQUIRED — do NOT skip it.**
+
+After the cf-writer agent completes and the file is saved, you MUST call the `memory_store` MCP tool to index the memory in the database. This is a separate action from writing the file — the cf-writer agent does NOT do this.
+
+**If creating a new memory** — call `memory_store` with:
+
+- `title`: from the frontmatter title
+- `description`: from the frontmatter description
+- `type`: `fact`
+- `tags`: from the frontmatter tags
+- `content`: the full markdown content (including frontmatter)
+- `importance`: 3 (default)
+- `source`: "conversation"
+
+**If updating an existing memory** — call `memory_update` with:
+
+- `id`: the memory ID (e.g., `features/auth-module` — derived from `{category}/{name}`)
+- `content`: the updated full markdown content
+- `tags`: updated tags array (if changed)
+
+If the MCP tools are unavailable, log a warning to the user but do NOT fail silently — the user should know the memory was saved as a file but NOT indexed.
+
+### Step 8: Confirm
 
 Show the user where the Q&A was saved (new file or appended to existing).
 
