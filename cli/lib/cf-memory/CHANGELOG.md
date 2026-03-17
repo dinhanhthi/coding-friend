@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.1.1 (unpublished)
+## v0.1.1 (2026-03-17)
 
 - Fix `today()` to capture full timestamp (`YYYY-MM-DD HH:MM`) instead of date-only for memory created/updated fields [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
 
