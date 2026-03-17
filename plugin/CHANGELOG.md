@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.10.0 (unpublished)
+
+- Rename `/cf-onboard` to `/cf-scan` — scans project and bootstraps memory with architecture, conventions, and features [#387afda](https://github.com/dinhanhthi/coding-friend/commit/387afda)
+- Add `cf-memory` support to release and ship skills [#c73b14e](https://github.com/dinhanhthi/coding-friend/commit/c73b14e)
+
 ## v0.9.0 (2026-03-16)
 
 - Add `/cf-onboard` skill for project memory bootstrap — scans project and populates memory with architecture, conventions, and features ([#0ed475e](https://github.com/dinhanhthi/coding-friend/commit/0ed475e))

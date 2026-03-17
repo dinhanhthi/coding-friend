@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.17.1 (unpublished)
+
+- Refactor `cf memory start` to use shared `spawnDaemon()` from cf-memory lib, reducing code duplication [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
+- Add tip to daemon status output when running `cf memory status` [#fc5ba80](https://github.com/dinhanhthi/coding-friend/commit/fc5ba80)
+- Rename `/cf-onboard` to `/cf-scan` in CLI init command [#387afda](https://github.com/dinhanhthi/coding-friend/commit/387afda)
+
 ## v1.17.0 (2026-03-16)
 
 - Add memory system with 3-tier architecture: Tier 1 (SQLite + Hybrid Search), Tier 2 (MiniSearch + Daemon), Tier 3 (Markdown) ([#fd601f2](https://github.com/dinhanhthi/coding-friend/commit/fd601f2), [#7fe84ed](https://github.com/dinhanhthi/coding-friend/commit/7fe84ed), [#7b7d8a1](https://github.com/dinhanhthi/coding-friend/commit/7b7d8a1), [#68522bd](https://github.com/dinhanhthi/coding-friend/commit/68522bd))
