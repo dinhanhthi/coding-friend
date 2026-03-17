@@ -1,5 +1,10 @@
 # CF Memory Changelog
 
+## v0.1.0 (unpublished)
+
+- Auto-start daemon from MCP server for file watching — daemon spawns automatically when Tier 1 or 2 is detected, no manual `cf memory start` needed [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
+- Add `spawnDaemon()` function to `daemon/process.ts` with dynamic path resolution via `import.meta.url` [#2211b84](https://github.com/dinhanhthi/coding-friend/commit/2211b84)
+
 ## v0.0.1 (2026-03-16)
 
 - Add persistent memory system — MCP server with 6 tools (`memory_store`, `memory_search`, `memory_retrieve`, `memory_list`, `memory_update`, `memory_delete`) + 2 resources (`memory://index`, `memory://stats`)
