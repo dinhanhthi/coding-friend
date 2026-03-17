@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.11.1 (unpublished)
+## v0.11.1 (2026-03-17)
 
 - Make `memory_store` MCP calls mandatory and explicit in `cf-remember`, `cf-ask`, `cf-fix`, `cf-sys-debug` — split into separate MANDATORY steps to prevent skipping [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
 - Add `cf-remember` to smart capture list in bootstrap context [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)

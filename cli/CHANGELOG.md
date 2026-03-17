@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.17.2 (unpublished)
+## v1.17.2 (2026-03-17)
 
 - Fix `cf memory list` date formatting — preserve original format instead of normalizing with fake timestamps [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
 
