@@ -8,8 +8,10 @@ import { useState } from "react";
 
 const navLinks = [
   { label: "Install", href: "/docs/getting-started/installation/" },
-  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Why", href: "/#why-coding-friend" },
+  { label: "How", href: "/#how-it-works" },
   { label: "Features", href: "/#features" },
+  { label: "Skills", href: "/#skills" },
   { label: "Docs", href: "/docs/" },
   { label: "Changelog", href: "/changelog/" },
 ];
