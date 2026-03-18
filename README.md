@@ -105,7 +105,7 @@ Restart to load the plugin, then use slash commands like `/cf-plan`, `/cf-fix`, 
 The memory system stores project knowledge (facts, conventions, debug episodes) and recalls them automatically in future sessions. Basic memory works immediately, but you can enable better search:
 
 ```bash
-cf memory start      # Start daemon with fuzzy search (Tier 2)
+cf memory start-daemon  # Start daemon with fuzzy search (Tier 2)
 cf memory init       # Initialize SQLite with hybrid search (Tier 1)
 cf memory status     # Check current tier and document count
 ```

@@ -180,8 +180,8 @@ Memory subcommands:
   memory list         List memories in current project (--projects for all DBs)
   memory rm           Remove a project database (--project-id <id>, --all, or --prune)
   memory init         Initialize Tier 1 (install SQLite deps, import existing memories)
-  memory start        Start the memory daemon (Tier 2)
-  memory stop         Stop the memory daemon
+  memory start-daemon  Start the memory daemon (Tier 2)
+  memory stop-daemon   Stop the memory daemon
   memory rebuild      Rebuild the daemon search index
   memory mcp          Show MCP server setup instructions`,
 );
@@ -225,19 +225,19 @@ memory
   });
 
 memory
-  .command("start")
+  .command("start-daemon")
   .description("Start the memory daemon (Tier 2 — MiniSearch)")
   .action(async () => {
-    const { memoryStartCommand } = await import("./commands/memory.js");
-    await memoryStartCommand();
+    const { memoryStartDaemonCommand } = await import("./commands/memory.js");
+    await memoryStartDaemonCommand();
   });
 
 memory
-  .command("stop")
+  .command("stop-daemon")
   .description("Stop the memory daemon")
   .action(async () => {
-    const { memoryStopCommand } = await import("./commands/memory.js");
-    await memoryStopCommand();
+    const { memoryStopDaemonCommand } = await import("./commands/memory.js");
+    await memoryStopDaemonCommand();
   });
 
 memory

@@ -91,7 +91,7 @@ export async function memoryStatusCommand(): Promise<void> {
   if (running && daemonInfo) {
     const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
     log.info(
-      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop"')}`,
+      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop-daemon"')}`,
     );
   } else if (sqliteAvailable) {
     log.info(
@@ -99,7 +99,7 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   } else {
     log.info(
-      `Daemon: ${chalk.dim("stopped")} ${chalk.dim('(run "cf memory start" for Tier 2 search)')}`,
+      `Daemon: ${chalk.dim("stopped")} ${chalk.dim('(run "cf memory start-daemon" for Tier 2 search)')}`,
     );
   }
 
@@ -230,7 +230,7 @@ export async function memoryListCommand(opts: {
   }
 }
 
-export async function memoryStartCommand(): Promise<void> {
+export async function memoryStartDaemonCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
@@ -260,7 +260,7 @@ export async function memoryStartCommand(): Promise<void> {
   }
 }
 
-export async function memoryStopCommand(): Promise<void> {
+export async function memoryStopDaemonCommand(): Promise<void> {
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
 
@@ -331,7 +331,7 @@ export async function memoryRebuildCommand(): Promise<void> {
   if (!(await isDaemonRunning())) {
     log.info("No SQLite deps and daemon not running. Nothing to rebuild.");
     log.dim("Install Tier 1 deps: cf memory init");
-    log.dim("Or start the daemon: cf memory start");
+    log.dim("Or start the daemon: cf memory start-daemon");
     return;
   }
 
