@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.1.2 (unpublished)
+## v0.1.2 (2026-03-18)
 
 - Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` in documentation [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
 
