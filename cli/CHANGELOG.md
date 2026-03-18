@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.17.3 (unpublished)
+## v1.17.3 (2026-03-18)
 
 - Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` to clarify these commands manage only the daemon, not the entire memory system [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
 
