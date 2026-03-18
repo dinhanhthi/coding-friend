@@ -29,8 +29,8 @@ export default function InstallSection() {
     <section id="install" className="py-20">
       <Container>
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold text-white">
-            Get Started in 3 Steps
+          <h2 className="text-3xl font-bold tracking-[-0.02em] [text-wrap:balance] text-white">
+            Get started in 3 steps
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Install once, use in every project. Supports user, project, and

@@ -374,8 +374,8 @@ export default function HowItWorks() {
       <section id="how-it-works" className="py-20" ref={sectionRef}>
         <Container>
           <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-white">
-              Workflow in Action
+            <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+              Workflow in action
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               Skills and agents work together automatically. Hover to explore
@@ -991,7 +991,9 @@ export default function HowItWorks() {
     <section id="how-it-works" className="py-20" ref={sectionRef}>
       <Container>
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold text-white">Workflow in Action</h2>
+          <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+            Workflow in action
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Skills and agents work together automatically.
           </p>

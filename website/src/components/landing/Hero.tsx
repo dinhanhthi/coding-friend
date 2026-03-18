@@ -18,14 +18,14 @@ export default function Hero() {
             className="mx-auto mb-4"
             priority
           />
-          <p className="mb-4 text-sm font-medium tracking-wide text-slate-400 uppercase">
+          <p className="mb-4 text-sm font-medium tracking-wider text-slate-500 uppercase">
             Claude Code Plugin
           </p>
-          <h1 className="text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] [text-wrap:balance] text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
             <span className="text-violet-400">Workflows</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
             A lean toolkit that enforces TDD, systematic debugging, smart
             commits, code review, and knowledge capture across your engineering
             workflow.

@@ -199,8 +199,8 @@ export default function DifferentiatorSection() {
     <section id="why-coding-friend" className="bg-navy-950/30 py-20">
       <Container className="max-w-5xl!">
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold text-white">
-            What Makes It Different
+          <h2 className="text-3xl font-bold tracking-[-0.02em] [text-wrap:balance] text-white">
+            What makes it different
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Three principles that set Coding Friend apart from every other AI

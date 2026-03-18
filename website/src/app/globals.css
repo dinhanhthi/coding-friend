@@ -2,23 +2,23 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
 
-  /* Warm slate scale (dark palette) */
-  --color-navy-800: #31353f;
-  --color-navy-900: #2a2d38;
-  --color-navy-950: #23262e;
+  /* Dark scale — subtle cool depth, not flat neutral */
+  --color-navy-800: #2f3038;
+  --color-navy-900: #282a31;
+  --color-navy-950: #21222a;
 
   /* Violet accent */
   --color-accent: #7c3aed;
   --color-accent-light: #a78bfa;
   --color-accent-dark: #6d28d9;
 
-  --color-surface: #2a2d38;
-  --color-surface-secondary: #31353f;
-  --color-border: rgba(160, 160, 160, 0.11);
-  --color-text: #f8fafc;
-  --color-text-muted: #94a3b8;
+  --color-surface: #282a31;
+  --color-surface-secondary: #2f3038;
+  --color-border: rgba(160, 160, 160, 0.12);
+  --color-text: #f5f5f7;
+  --color-text-muted: #9898a4;
   --color-link: #58adfb;
 }
 
@@ -54,6 +54,17 @@ html {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Subtle grain noise overlay — breaks digital flatness */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* Hide scrollbar utility */
