@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.17.3 (unpublished)
+
+- Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` to clarify these commands manage only the daemon, not the entire memory system [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
+
 ## v1.17.2 (2026-03-17)
 
 - Fix `cf memory list` date formatting — preserve original format instead of normalizing with fake timestamps [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
