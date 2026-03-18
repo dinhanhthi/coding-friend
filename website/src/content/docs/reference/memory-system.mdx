@@ -25,7 +25,7 @@ The system detects available dependencies and picks the best backend automatical
 | **Index**        | On disk (SQLite file)                       | In-memory (rebuilds in &lt;1s) | None                               |
 | **Latency**      | &lt;50ms                                    | &lt;10ms                       | &lt;5ms (LLM reasons over results) |
 | **Scale**        | 100K+ memories                              | ~10K                           | ~1K                                |
-| **Setup**        | `cf memory init`                            | `cf memory start`              | Nothing                            |
+| **Setup**        | `cf memory init`                            | `cf memory start-daemon`       | Nothing                            |
 
 ### Tier selection
 
@@ -116,7 +116,7 @@ cf memory rebuild
 This scans all markdown files and rebuilds the entire SQLite index (rows + embeddings) from scratch.
 
 <Callout type="info">
-  The Tier 2 daemon (`cf memory start`) includes a file watcher that
+  The Tier 2 daemon (`cf memory start-daemon`) includes a file watcher that
   auto-rebuilds on markdown changes. But in Tier 1 (SQLite via MCP), there is no
   watcher — you must rebuild manually.
 </Callout>

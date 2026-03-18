@@ -165,7 +165,7 @@ Settings for the [memory system](/docs/reference/memory-system/).
 - Controls which search backend the MCP server uses — this does **not** start or stop the daemon
 - `"auto"` — detect best available at startup: SQLite installed → Tier 1, daemon running → Tier 2, otherwise → Tier 3
 - `"full"` — require Tier 1 (SQLite + hybrid search). Fails if deps not installed via `cf memory init`
-- `"lite"` — require Tier 2 (MiniSearch daemon). Fails if daemon not running via `cf memory start`
+- `"lite"` — require Tier 2 (MiniSearch daemon). Fails if daemon not running via `cf memory start-daemon`
 - `"markdown"` — force Tier 3 (grep over markdown files). Always works, no setup needed
 - Use this to force a specific tier for testing or to skip auto-detection (e.g., `"markdown"` to use Tier 3 even when SQLite is installed)
 

@@ -1,6 +1,6 @@
 ---
 title: "cf memory"
-description: "Manage the AI memory system — search, list, start/stop daemon, rebuild index"
+description: "Manage the AI memory system — search, list, daemon, rebuild index"
 ---
 
 Manage the persistent AI memory system. Store, search, and recall project knowledge across Claude Code sessions. See [Memory System](/docs/reference/memory-system/) for architecture details.
@@ -15,8 +15,8 @@ Manage the persistent AI memory system. Store, search, and recall project knowle
 | `cf memory list --projects` | List all project databases with size and metadata |
 | `cf memory rm`              | Remove a project database                         |
 | `cf memory init`            | Install Tier 1 deps and import existing memories  |
-| `cf memory start`           | Start the Tier 2 daemon                           |
-| `cf memory stop`            | Stop the Tier 2 daemon                            |
+| `cf memory start-daemon`    | Start the Tier 2 daemon                           |
+| `cf memory stop-daemon`     | Stop the Tier 2 daemon                            |
 | `cf memory rebuild`         | Re-index all memories from markdown files         |
 | `cf memory mcp`             | Print MCP server config for Claude Code           |
 
@@ -95,7 +95,7 @@ cf memory rm --prune
 
 All commands ask for confirmation before deleting.
 
-## `start` or `stop`
+## `start-daemon` or `stop-daemon`
 
 These commands manage the **Tier 2 daemon** — a background Hono HTTP server that keeps a MiniSearch index in RAM.
 
@@ -111,12 +111,12 @@ These commands manage the **Tier 2 daemon** — a background Hono HTTP server th
 
 ```bash
 # Start daemon (enables Tier 2)
-cf memory start
+cf memory start-daemon
 # Daemon started (PID 12345)
 # Tier: Tier 2 (MiniSearch + Daemon)
 
 # Stop daemon (falls back to Tier 3)
-cf memory stop
+cf memory stop-daemon
 ```
 
 **How it works:**

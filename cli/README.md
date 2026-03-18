@@ -70,8 +70,8 @@ cf memory list --projects   # List all project databases with size and metadata
 cf memory rm --project-id <id>  # Remove a specific project database
 cf memory rm --all          # Remove all project databases
 cf memory rm --prune        # Remove orphaned projects (source dir missing or 0 memories)
-cf memory start      # Start memory daemon (enables Tier 2 search)
-cf memory stop       # Stop memory daemon
+cf memory start-daemon  # Start memory daemon (enables Tier 2 search)
+cf memory stop-daemon   # Stop memory daemon
 cf memory rebuild    # Rebuild search index from markdown files
 cf memory init       # Initialize SQLite backend (Tier 1) and import memories
 cf memory mcp        # Show MCP server config for clients
