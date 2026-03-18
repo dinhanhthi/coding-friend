@@ -13,7 +13,7 @@ interface ButtonProps {
 const variants = {
   primary: "bg-violet-500 text-white hover:bg-violet-400",
   secondary: "border border-[#a0a0a05d] text-slate-300 hover:bg-navy-800",
-  ghost: "text-violet-400 hover:text-violet-200",
+  ghost: "text-violet-400 hover:text-violet-300",
 };
 
 const sizes = {
@@ -31,7 +31,7 @@ export default function Button({
   onClick,
   external,
 }: ButtonProps) {
-  const classes = `inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-200 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
+  const classes = `inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all duration-200 cursor-pointer active:scale-[0.97] ${variants[variant]} ${sizes[size]} ${className}`;
 
   if (href) {
     if (external) {

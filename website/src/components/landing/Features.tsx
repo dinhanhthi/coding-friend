@@ -735,7 +735,9 @@ function BorderProgressOverlay({
     if (!container || !tabsRow) return;
 
     const update = () => {
-      const activeButton = tabsRow.children[activeIdx] as HTMLElement | undefined;
+      const activeButton = tabsRow.children[activeIdx] as
+        | HTMLElement
+        | undefined;
       if (!activeButton) return;
       setDims({
         containerW: container.offsetWidth,
@@ -787,7 +789,7 @@ function BorderProgressOverlay({
     <svg
       width={containerW}
       height={containerH}
-      className="pointer-events-none absolute top-0 left-0 z-50"
+      className="pointer-events-none absolute top-0 left-0 z-40"
       style={{ overflow: "visible" }}
     >
       {/* Static body border (always visible) */}
@@ -953,7 +955,9 @@ export default function Features() {
     <section id="features" className="bg-navy-950/30 py-20">
       <Container>
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold text-white">Features</h2>
+          <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+            Features
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Beyond skills — the tools and systems that power your workflow.
           </p>
@@ -975,7 +979,10 @@ export default function Features() {
           />
 
           {/* Tab cards row */}
-          <div ref={tabsRowRef} className="relative z-10 flex gap-1.5 overflow-x-auto sm:gap-2">
+          <div
+            ref={tabsRowRef}
+            className="relative z-10 flex gap-1.5 overflow-x-auto sm:gap-2"
+          >
             {tabs.map((tab, idx) => {
               const isActive = idx === activeIdx;
               const c = tabColorMap[tab.color];
@@ -989,14 +996,12 @@ export default function Features() {
                       : `${c.inactive} opacity-50`
                   }`}
                 >
-
                   <span
                     className={`transition-transform duration-300 ${isActive ? "scale-110" : "scale-100"}`}
                   >
                     {tab.icon}
                   </span>
                   <span className="whitespace-nowrap">{tab.label}</span>
-
                 </button>
               );
             })}

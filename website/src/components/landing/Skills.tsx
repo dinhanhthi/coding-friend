@@ -104,7 +104,7 @@ const autoSkills: Skill[] = [
 
 function SkillCard({ skill }: { skill: Skill }) {
   return (
-    <div className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:border-violet-400/50 hover:shadow-lg">
+    <div className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5">
       <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-sm font-medium whitespace-nowrap text-violet-400">
         {skill.command}
       </code>
@@ -125,8 +125,8 @@ export default function Skills() {
         {/* Slash commands */}
         <div className="flex flex-col gap-8 py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">
-              <span className="font-mono">/slash</span> Skills
+            <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+              <span className="font-mono">/slash</span> skills
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               Manual triggering with natural language. Coding Friend handles the
@@ -143,8 +143,8 @@ export default function Skills() {
         {/* Auto-invoked */}
         <div className="flex flex-col gap-8 py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">
-              Auto-Invoked Skills
+            <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+              Auto-invoked skills
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               These skills activate automatically when relevant. No slash
@@ -161,8 +161,8 @@ export default function Skills() {
         {/* Custom Guides */}
         <div className="flex flex-col gap-8 py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">
-              Custom Skill Guides
+            <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
+              Custom skill guides
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               Extend any built-in skill with your own rules. Add steps before,

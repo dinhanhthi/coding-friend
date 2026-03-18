@@ -6,12 +6,12 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const interBold = fetch(
-    "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+  const outfitBold = fetch(
+    "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4deyC4E.ttf",
   ).then((res) => res.arrayBuffer());
 
-  const interRegular = fetch(
-    "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+  const outfitRegular = fetch(
+    "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4E.ttf",
   ).then((res) => res.arrayBuffer());
 
   return new ImageResponse(
@@ -23,7 +23,7 @@ export default async function Image() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(to bottom, #0a0e27, #0f1629, #111827)",
+        background: "linear-gradient(to bottom, #1e1f26, #21222a, #282a31)",
         position: "relative",
       }}
     >
@@ -91,7 +91,7 @@ export default async function Image() {
             textTransform: "uppercase",
             letterSpacing: "0.1em",
             marginBottom: 16,
-            fontFamily: "Inter",
+            fontFamily: "Outfit",
           }}
         >
           Claude Code Plugin
@@ -105,7 +105,7 @@ export default async function Image() {
             color: "#ffffff",
             textAlign: "center",
             lineHeight: 1.15,
-            fontFamily: "Inter",
+            fontFamily: "Outfit",
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
@@ -124,7 +124,7 @@ export default async function Image() {
             maxWidth: 700,
             lineHeight: 1.5,
             marginTop: 24,
-            fontFamily: "Inter",
+            fontFamily: "Outfit",
           }}
         >
           A lean toolkit that enforces TDD, systematic debugging, smart commits,
@@ -136,14 +136,14 @@ export default async function Image() {
       ...size,
       fonts: [
         {
-          name: "Inter",
-          data: await interRegular,
+          name: "Outfit",
+          data: await outfitRegular,
           style: "normal",
           weight: 400,
         },
         {
-          name: "Inter",
-          data: await interBold,
+          name: "Outfit",
+          data: await outfitBold,
           style: "normal",
           weight: 700,
         },

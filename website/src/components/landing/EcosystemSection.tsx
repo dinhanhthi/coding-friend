@@ -184,7 +184,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         </span>
       )}
       <div
-        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:shadow-lg hover:${c.border} hover:${c.glow} transition-all duration-200 hover:scale-105`}
+        className={`bg-navy-950/40 flex h-full flex-col gap-3 rounded-xl border border-[#a0a0a03a] p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:${c.border} hover:${c.glow}`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className={c.text}>{tool.icon}</div>
@@ -215,7 +215,9 @@ export default function EcosystemSection() {
     <section id="ecosystem" className="py-20">
       <Container>
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold text-white">The Ecosystem</h2>
+          <h2 className="text-3xl font-bold tracking-[-0.02em] [text-wrap:balance] text-white">
+            The Ecosystem
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Five tools, one cohesive workflow. The plugin is the heart — the
             rest amplify what you build.
