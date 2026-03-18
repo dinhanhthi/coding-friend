@@ -1,5 +1,9 @@
 # CF Memory Changelog
 
+## v0.1.2 (unpublished)
+
+- Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` in documentation [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
+
 ## v0.1.1 (2026-03-17)
 
 - Fix `today()` to capture full timestamp (`YYYY-MM-DD HH:MM`) instead of date-only for memory created/updated fields [#31e0824](https://github.com/dinhanhthi/coding-friend/commit/31e0824)
