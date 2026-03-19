@@ -1,9 +1,16 @@
 import { ImageResponse } from "next/og";
 
-export const alt =
-  "Coding Friend - Disciplined Engineering Workflows for Claude Code";
+export const alt = "Coding Friend — Claude Code Plugin";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+const badges = [
+  { label: "Plugin", color: "#a78bfa", borderColor: "#7c3aed", bgColor: "rgba(139, 92, 246, 0.15)" },
+  { label: "CLI", color: "#7dd3fc", borderColor: "#0ea5e9", bgColor: "rgba(14, 165, 233, 0.15)" },
+  { label: "Learn Host", color: "#6ee7b7", borderColor: "#10b981", bgColor: "rgba(16, 185, 129, 0.15)" },
+  { label: "Learn MCP", color: "#fdba74", borderColor: "#f97316", bgColor: "rgba(249, 115, 22, 0.15)" },
+  { label: "CF Memory", color: "#fcd34d", borderColor: "#f59e0b", bgColor: "rgba(245, 158, 11, 0.15)" },
+];
 
 export default async function Image() {
   const outfitBold = fetch(
@@ -52,10 +59,10 @@ export default async function Image() {
       >
         {/* Logo - green rounded square with sparkle */}
         <svg
-          width="80"
-          height="80"
+          width="72"
+          height="72"
           viewBox="0 0 64 64"
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 16 }}
         >
           <defs>
             <linearGradient
@@ -82,25 +89,10 @@ export default async function Image() {
           />
         </svg>
 
-        {/* Plugin label */}
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 500,
-            color: "#94a3b8",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginBottom: 16,
-            fontFamily: "Outfit",
-          }}
-        >
-          Claude Code Plugin
-        </div>
-
         {/* Title */}
         <div
           style={{
-            fontSize: 56,
+            fontSize: 52,
             fontWeight: 700,
             color: "#ffffff",
             textAlign: "center",
@@ -111,24 +103,69 @@ export default async function Image() {
             justifyContent: "center",
           }}
         >
-          <span>Disciplined Engineering&nbsp;</span>
-          <span style={{ color: "#a78bfa" }}>Workflows</span>
+          <span>Coding&nbsp;</span>
+          <span style={{ color: "#a78bfa" }}>Friend</span>
+        </div>
+
+        {/* Subtitle */}
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 400,
+            color: "#94a3b8",
+            textAlign: "center",
+            marginTop: 8,
+            fontFamily: "Outfit",
+          }}
+        >
+          Disciplined Engineering Workflows for Claude Code
+        </div>
+
+        {/* Ecosystem badges */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 10,
+            marginTop: 32,
+          }}
+        >
+          {badges.map((badge) => (
+            <div
+              key={badge.label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontSize: 15,
+                fontWeight: 500,
+                fontFamily: "Outfit",
+                color: badge.color,
+                background: badge.bgColor,
+                border: `1.5px solid ${badge.borderColor}40`,
+                borderRadius: 999,
+                padding: "6px 18px",
+              }}
+            >
+              {badge.label}
+            </div>
+          ))}
         </div>
 
         {/* Description */}
         <div
           style={{
-            fontSize: 22,
+            fontSize: 18,
             color: "#cbd5e1",
             textAlign: "center",
-            maxWidth: 700,
+            maxWidth: 680,
             lineHeight: 1.5,
-            marginTop: 24,
+            marginTop: 28,
             fontFamily: "Outfit",
           }}
         >
-          A lean toolkit that enforces TDD, systematic debugging, smart commits,
-          code review, and knowledge capture.
+          TDD · Systematic Debugging · Smart Commits · Code Review · Knowledge
+          Capture
         </div>
       </div>
     </div>,
