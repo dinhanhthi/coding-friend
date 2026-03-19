@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import { existsSync, readdirSync, statSync, rmSync } from "fs";
 import { join, resolve, sep } from "path";
 import { homedir } from "os";
@@ -562,19 +561,19 @@ async function memoryListProjectsCommand(): Promise<void> {
     return;
   }
 
-  // Compute hash of the current project's memoryDir so we can backfill source_dir
+  // Encode current project's memoryDir to match project directory name
   const currentMemoryDir = resolve(getMemoryDir());
-  const currentHash = createHash("sha256")
-    .update(currentMemoryDir)
-    .digest("hex")
-    .slice(0, 12);
+  const { projectId } = await import(
+    join(mcpDir, "dist/backends/sqlite/index.js")
+  );
+  const currentProjectId = projectId(currentMemoryDir);
 
   log.step(`Scanning ${dirs.length} project(s)...\n`);
 
   const projects: ProjectInfo[] = [];
   for (const id of dirs) {
     // If this project matches the current directory, pass the path for backfill
-    const knownDir = id === currentHash ? currentMemoryDir : undefined;
+    const knownDir = id === currentProjectId ? currentMemoryDir : undefined;
     projects.push(getProjectInfo(join(baseDir, id), id, mcpDir, knownDir));
   }
 

@@ -7,11 +7,10 @@
  * Markdown files remain the source of truth. SQLite is a derived index
  * that can be rebuilt from markdown at any time.
  *
- * DB path: ~/.coding-friend/memory/projects/{12-char-sha256}/db.sqlite
+ * DB path: ~/.coding-friend/memory/projects/{encoded-path}/db.sqlite
  */
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
 import type { MemoryBackend } from "../../lib/backend.js";
 import { MarkdownBackend } from "../markdown.js";
 import {
@@ -46,14 +45,17 @@ import {
 import { hybridSearch } from "./search.js";
 
 /**
- * Compute a short hash of the docsDir path for project isolation.
+ * Derive the project root from a docsDir path by stripping known suffixes.
+ * Then encode it into a filesystem-safe directory name for project isolation.
+ * Uses the same encoding as Claude Code's project directories:
+ * resolve + strip known suffixes + strip trailing slashes + replace all "/" with "-"
+ * e.g. /Users/thi/git/foo/docs/memory → -Users-thi-git-foo
  */
-function projectHash(docsDir: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(path.resolve(docsDir))
-    .digest("hex")
-    .slice(0, 12);
+export function projectId(docsDir: string): string {
+  let resolved = path.resolve(docsDir).replace(/\/+$/, "");
+  // Strip known memory directory suffixes to get the project root
+  resolved = resolved.replace(/\/docs\/memory$/, "").replace(/\/memory$/, "");
+  return resolved.replace(/\//g, "-");
 }
 
 export interface SqliteBackendOptions {
@@ -83,8 +85,8 @@ export class SqliteBackend implements MemoryBackend {
       this.dbPath = opts.dbPath;
     } else {
       const depsDir = opts?.depsDir ?? this.getDefaultDepsDir();
-      const hash = projectHash(docsDir);
-      const projectDir = path.join(depsDir, "projects", hash);
+      const id = projectId(docsDir);
+      const projectDir = path.join(depsDir, "projects", id);
       this.dbPath = path.join(projectDir, "db.sqlite");
     }
 
