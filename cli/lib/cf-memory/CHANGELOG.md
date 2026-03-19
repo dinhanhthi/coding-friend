@@ -1,7 +1,8 @@
 # CF Memory Changelog
 
-## v0.1.2 (2026-03-18)
+## v0.1.2 (unpublished)
 
+- Use path-based project IDs instead of SHA256 hashes for human-readable project directories (e.g. `-Users-thi-git-foo` instead of `a1b2c3d4e5f6`) [#9c4cac0](https://github.com/dinhanhthi/coding-friend/commit/9c4cac0)
 - Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` in documentation [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
 
 ## v0.1.1 (2026-03-17)
