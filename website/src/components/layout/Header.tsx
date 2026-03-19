@@ -12,7 +12,7 @@ const navLinks = [
   { label: "How", href: "/#how-it-works" },
   { label: "Features", href: "/#features" },
   { label: "Skills", href: "/#skills" },
-  { label: "Docs", href: "/docs/" },
+  { label: "Docs", href: "/docs/getting-started/installation/" },
   { label: "Changelog", href: "/changelog/" },
 ];
 
@@ -31,6 +31,7 @@ export default function Header() {
     if (pathname === "/") {
       e.preventDefault();
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+      window.history.pushState(null, "", `/#${hash}`);
     } else {
       e.preventDefault();
       router.push(href);
