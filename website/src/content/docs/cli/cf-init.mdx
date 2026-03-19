@@ -6,15 +6,20 @@ keywords: [init, initialization, project setup, cf init]
 
 ## Overview
 
-Interactive setup wizard for Coding Friend. Run it in the root directory of your project:
+Interactive setup for Coding Friend. Run it in the root directory of your project:
 
 ```bash
 cf init
 ```
 
-The wizard runs each step linearly. Steps that are already configured are skipped automatically. You can run `cf init` as many times as you want.
+`cf init` has two modes depending on whether the project has been initialized before:
 
-💡 To edit individual settings later, use [`cf config`](/docs/cli/cf-config/) instead.
+- **First run** (no `.coding-friend/` directory) — runs a linear step-by-step wizard that walks you through all settings in order.
+- **Subsequent runs** (`.coding-friend/` directory exists) — shows an interactive menu where you pick which setting to configure or reconfigure. Each menu item shows its current status.
+
+You can run `cf init` as many times as you want.
+
+💡 To edit individual settings later, you can also use [`cf config`](/docs/cli/cf-config/).
 
 ## Config File Locations
 
@@ -49,6 +54,26 @@ Configs can be stored in two different locations - global and local. Local overr
 6. **Step 6** - Statusline. The statusline is a small section at the bottom of the screen that shows the current status of the Coding Friend session. You can configure it later with [`cf statusline`](/docs/cli/cf-statusline/).
 7. **Step 7** - [CF Memory](/docs/reference/memory-system/) MCP. Adds the `coding-friend-memory` MCP server to your project's `.mcp.json` so Claude Code can store and search memories during sessions. Optionally enables `memory.autoCapture` to save session summaries before context compaction. You can configure it later with [`cf memory mcp`](/docs/cli/cf-memory/).
 8. **Step 8** - Claude permissions. Offers to apply all recommended Coding Friend permissions (Tier 1 static rules + Tier 2 plugin script rules). You choose the scope: project-level (`.claude/settings.local.json`) or user-level (`~/.claude/settings.json`). If you configured an external `/cf-learn` output directory, external learn directory rules are also included. For fine-grained control, use [`cf permission`](/docs/cli/cf-permission/) or see the [Permissions Reference](/docs/reference/permissions/).
+
+## Interactive Menu (Returning Users)
+
+When `.coding-friend/` already exists, `cf init` shows an interactive menu instead of running the wizard:
+
+```
+? Which setting to configure? (Use arrow keys)
+❯ Docs folder [local] (docs)
+  .gitignore (configured)
+  Docs language [global] (en)
+  /cf-learn config [local]
+  Shell completion (installed)
+  Statusline (configured)
+  CF Memory MCP (configured)
+  Permissions (12/14 rules)
+  ──────────────
+  Exit
+```
+
+Select any item to reconfigure it, then return to the menu. Choose **Exit** when done.
 
 ## Non-Git Directories
 
