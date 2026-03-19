@@ -1,12 +1,16 @@
 ---
-title: "Context Usage"
-description: "Approximate token costs for each skill and agent when loaded into context."
-keywords: [tokens, context, usage, cost, tier, context window, token count]
+title: "Context Footprint"
+description: "Approximate token footprint for each skill and agent when loaded into context."
+keywords: [tokens, context, footprint, cost, tier, context window, token count]
 ---
 
 ## How It Works
 
-When you invoke a skill (e.g., `/cf-plan`), its full `SKILL.md` file is loaded into the conversation context. This consumes part of your context window. The amount varies by skill — some are lightweight, others need more instructions.
+When you invoke a skill (e.g., `/cf-plan`), its full `SKILL.md` file is **injected into the conversation prompt**. This is the skill's **context footprint** — the amount of your context window it occupies just by being loaded.
+
+:::note
+The context footprint measures only the tokens **inserted into the prompt** when a skill or agent is loaded. It does **not** reflect the total tokens consumed during execution, which depends on how much code is read, how many tool calls are made, and how long the conversation runs.
+:::
 
 **Bootstrap context** (~1,300 tokens) is loaded every session automatically. This includes the list of available skills, agents, activation signals, and conventions.
 
@@ -14,13 +18,13 @@ When you invoke a skill (e.g., `/cf-plan`), its full `SKILL.md` file is loaded i
 
 ## Tier System
 
-Each skill and agent is classified into a tier based on approximate token count:
+Each skill and agent is classified into a tier based on the approximate token count of its definition:
 
 | Tier   | Icon     | Token Range          | Meaning                              |
 | ------ | -------- | -------------------- | ------------------------------------ |
-| Low    | `⚡`     | < 1,000 tokens       | Lightweight — minimal context impact |
-| Medium | `⚡⚡`   | 1,000 – 2,500 tokens | Moderate — standard context usage    |
-| High   | `⚡⚡⚡` | > 2,500 tokens       | Heavy — significant context usage    |
+| Low    | `⚡`     | < 1,000 tokens       | Lightweight — small prompt footprint |
+| Medium | `⚡⚡`   | 1,000 – 2,500 tokens | Moderate — standard prompt footprint |
+| High   | `⚡⚡⚡` | > 2,500 tokens       | Heavy — large prompt footprint       |
 
 ## Skills
 
@@ -53,7 +57,7 @@ Each skill and agent is classified into a tier based on approximate token count:
 
 ## Agents
 
-Agents run in **forked sessions** — they get their own context window and don't consume your main conversation's context. Token counts here refer to the agent's system prompt size.
+Agents run in **forked sessions** — they get their own context window and don't consume your main conversation's context. Token counts here refer to the size of the agent's system prompt injected into its forked context.
 
 | Agent              | Context | Approx. Tokens | Model  | Purpose                 |
 | ------------------ | ------- | -------------- | ------ | ----------------------- |
@@ -68,5 +72,6 @@ Agents run in **forked sessions** — they get their own context window and don'
 
 - Token counts are approximate, calculated using `@lenml/tokenizer-claude`. Actual Anthropic token counts may vary by ~20-30%.
 - Tier classification is what matters — small variations in exact count don't change the tier.
-- Custom skill guides (`.coding-friend/skills/<name>-custom/SKILL.md`) add to the skill's token cost when loaded.
+- These numbers reflect only the **prompt injection size** (the skill/agent definition loaded into context), not the total tokens used during execution.
+- Custom skill guides (`.coding-friend/skills/<name>-custom/SKILL.md`) add to the skill's prompt footprint when loaded.
 - Bootstrap context (~1,300 tokens) is always present regardless of which skill you use.

@@ -34,76 +34,76 @@ You can also configure permissions during initial setup via [`cf init`](/docs/cl
 
 These permissions power the **session-init** hook, **statusline** hook, **memory-capture** hook, and are used by multiple skills for file searching, text processing, and directory creation.
 
-| Rule | What it enables |
-| ---- | --------------- |
-| `Bash(cat *)` | **Session-init hook** reads the bootstrap context file. ⚠️ System-wide scope — Claude Code's own project scoping restricts actual access. |
-| `Bash(grep *)` | **Session-init hook** extracts config values and ignore patterns. `/cf-fix`, `/cf-ask`, `/cf-review` use grep for frontmatter and sensitive path searches. ⚠️ System-wide scope. |
-| `Bash(sed *)` | **Session-init hook** parses JSON config values and escapes output. |
-| `Bash(tr *)` | **Session-init hook** converts ignore patterns into regex alternation. |
-| `Bash(wc *)` | `/cf-review` counts changed files/lines for review depth. `cf-verification` verifies test output completeness. |
-| `Bash(mkdir *)` | `/cf-learn`, `/cf-remember`, `/cf-ask`, `/cf-research` create output directories on first use. |
-| `Bash(find *)` | `/cf-learn` lists existing learning files. |
-| `Bash(ls *)` | **Statusline hook** and **session-init hook** list files. |
-| `Bash(jq *)` | **Statusline hook**, **session-init hook**, and **memory-capture hook** parse JSON. |
-| `Bash(date *)` | **Statusline hook** formats timestamps. |
-| `Bash(pwd)` | **Session-init hook** and `/cf-learn` get current directory. |
-| `Bash(stat *)` | **Statusline hook** checks cache freshness. |
-| `Bash(node -e *)` | **Memory-capture hook** parses JSON inline. |
-| `Bash(touch /tmp/coding-friend/*)` | `/cf-review` creates temp marker files for mark-reviewed tracking. |
+| Rule                               | What it enables                                                                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bash(cat *)`                      | **Session-init hook** reads the bootstrap context file. ⚠️ System-wide scope — Claude Code's own project scoping restricts actual access.                                        |
+| `Bash(grep *)`                     | **Session-init hook** extracts config values and ignore patterns. `/cf-fix`, `/cf-ask`, `/cf-review` use grep for frontmatter and sensitive path searches. ⚠️ System-wide scope. |
+| `Bash(sed *)`                      | **Session-init hook** parses JSON config values and escapes output.                                                                                                              |
+| `Bash(tr *)`                       | **Session-init hook** converts ignore patterns into regex alternation.                                                                                                           |
+| `Bash(wc *)`                       | `/cf-review` counts changed files/lines for review depth. `cf-verification` verifies test output completeness.                                                                   |
+| `Bash(mkdir *)`                    | `/cf-learn`, `/cf-remember`, `/cf-ask`, `/cf-research` create output directories on first use.                                                                                   |
+| `Bash(find *)`                     | `/cf-learn` lists existing learning files.                                                                                                                                       |
+| `Bash(ls *)`                       | **Statusline hook** and **session-init hook** list files.                                                                                                                        |
+| `Bash(jq *)`                       | **Statusline hook**, **session-init hook**, and **memory-capture hook** parse JSON.                                                                                              |
+| `Bash(date *)`                     | **Statusline hook** formats timestamps.                                                                                                                                          |
+| `Bash(pwd)`                        | **Session-init hook** and `/cf-learn` get current directory.                                                                                                                     |
+| `Bash(stat *)`                     | **Statusline hook** checks cache freshness.                                                                                                                                      |
+| `Bash(node -e *)`                  | **Memory-capture hook** parses JSON inline.                                                                                                                                      |
+| `Bash(touch /tmp/coding-friend/*)` | `/cf-review` creates temp marker files for mark-reviewed tracking.                                                                                                               |
 
 ### Git Operations
 
 These permissions control what Coding Friend can do with your git repository. They range from read-only inspection to remote operations that push code.
 
-| Rule | What it enables |
-| ---- | --------------- |
-| `Bash(git status *)` | **Read-only.** `/cf-commit`, `/cf-review`, `cf-verification` check working tree status. |
-| `Bash(git diff *)` | **Read-only.** `/cf-commit` reads staged/unstaged diffs and scans for secrets. `/cf-review` performs 4-layer code review. `cf-verification` checks for uncommitted changes. |
-| `Bash(git log *)` | **Read-only.** `/cf-commit` matches commit style. `/cf-review` reads context. `cf-sys-debug` finds when bugs were introduced. |
-| `Bash(git branch *)` | **Read-only.** `/cf-ship` and `cf-sys-debug` list/manage branches. |
-| `Bash(git rev-parse *)` | **Read-only.** Hooks and `/cf-commit` check git repo state. |
-| `Bash(git add *)` | **Modifies staging area.** `/cf-commit` stages individual files (never `git add .` or `-A`). |
-| `Bash(git reset HEAD *)` | **Modifies staging area.** `/cf-commit` unstages files when secrets are detected in staged content. |
-| `Bash(git commit *)` | **Creates commits.** `/cf-commit` creates conventional commits. `/cf-ship` calls `/cf-commit` as part of its flow. |
-| `Bash(git push *)` | **Pushes to remote.** `/cf-ship` pushes your branch. Only `/cf-ship` uses this. |
-| `Bash(git pull *)` | **Pulls from remote.** `/cf-ship` pulls with rebase only when push fails due to newer remote commits. |
+| Rule                     | What it enables                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bash(git status *)`     | **Read-only.** `/cf-commit`, `/cf-review`, `cf-verification` check working tree status.                                                                                     |
+| `Bash(git diff *)`       | **Read-only.** `/cf-commit` reads staged/unstaged diffs and scans for secrets. `/cf-review` performs 4-layer code review. `cf-verification` checks for uncommitted changes. |
+| `Bash(git log *)`        | **Read-only.** `/cf-commit` matches commit style. `/cf-review` reads context. `cf-sys-debug` finds when bugs were introduced.                                               |
+| `Bash(git branch *)`     | **Read-only.** `/cf-ship` and `cf-sys-debug` list/manage branches.                                                                                                          |
+| `Bash(git rev-parse *)`  | **Read-only.** Hooks and `/cf-commit` check git repo state.                                                                                                                 |
+| `Bash(git add *)`        | **Modifies staging area.** `/cf-commit` stages individual files (never `git add .` or `-A`).                                                                                |
+| `Bash(git reset HEAD *)` | **Modifies staging area.** `/cf-commit` unstages files when secrets are detected in staged content.                                                                         |
+| `Bash(git commit *)`     | **Creates commits.** `/cf-commit` creates conventional commits. `/cf-ship` calls `/cf-commit` as part of its flow.                                                          |
+| `Bash(git push *)`       | **Pushes to remote.** `/cf-ship` pushes your branch. Only `/cf-ship` uses this.                                                                                             |
+| `Bash(git pull *)`       | **Pulls from remote.** `/cf-ship` pulls with rebase only when push fails due to newer remote commits.                                                                       |
 
 ### GitHub CLI
 
-| Rule | What it enables |
-| ---- | --------------- |
+| Rule            | What it enables                                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `Bash(gh pr *)` | **Creates GitHub PRs.** `/cf-ship` runs `gh pr create` after pushing. Only creates a PR if you're not on main/master. |
 
 ### Testing & Build
 
 These permissions let Coding Friend run your project's test suite and build scripts.
 
-| Rule | What it enables |
-| ---- | --------------- |
+| Rule               | What it enables                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bash(npm test *)` | `cf-tdd` runs tests in the RED-GREEN-REFACTOR cycle. `cf-verification` runs the full test suite. `/cf-fix` runs failing tests to reproduce and confirm fixes. |
-| `Bash(npm run *)` | `cf-verification` runs `npm run build` and `npm run lint` as completion gates. Also used for `npm run format`. |
-| `Bash(npx *)` | `cf-verification` runs tools like `eslint` and `tsc` directly via npx. |
+| `Bash(npm run *)`  | `cf-verification` runs `npm run build` and `npm run lint` as completion gates. Also used for `npm run format`.                                                |
+| `Bash(npx *)`      | `cf-verification` runs tools like `eslint` and `tsc` directly via npx.                                                                                        |
 
 ### MCP Memory
 
 These permissions control access to Coding Friend's [memory system](/docs/reference/memory/). All tools are namespaced to `mcp__coding-friend-memory__*`.
 
-| Rule | What it enables |
-| ---- | --------------- |
-| `mcp__coding-friend-memory__memory_search` | **Read-only.** Search project memories. Used by: cf-explorer agent, all skills. |
-| `mcp__coding-friend-memory__memory_list` | **Read-only.** List all memories. Used by: `/cf-scan`. |
-| `mcp__coding-friend-memory__memory_retrieve` | **Read-only.** Get a specific memory by ID. Used by: skills. |
-| `mcp__coding-friend-memory__memory_store` | **Write.** Create new memory. Used by: `/cf-remember`, `/cf-scan`, `/cf-ask`. |
-| `mcp__coding-friend-memory__memory_update` | **Modify.** Update existing memory. Used by: `/cf-remember`, `/cf-scan`. |
-| `mcp__coding-friend-memory__memory_delete` | **Modify.** Delete a memory. Used by: `/cf-scan`. |
+| Rule                                         | What it enables                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `mcp__coding-friend-memory__memory_search`   | **Read-only.** Search project memories. Used by: cf-explorer agent, all skills. |
+| `mcp__coding-friend-memory__memory_list`     | **Read-only.** List all memories. Used by: `/cf-scan`.                          |
+| `mcp__coding-friend-memory__memory_retrieve` | **Read-only.** Get a specific memory by ID. Used by: skills.                    |
+| `mcp__coding-friend-memory__memory_store`    | **Write.** Create new memory. Used by: `/cf-remember`, `/cf-scan`, `/cf-ask`.   |
+| `mcp__coding-friend-memory__memory_update`   | **Modify.** Update existing memory. Used by: `/cf-remember`, `/cf-scan`.        |
+| `mcp__coding-friend-memory__memory_delete`   | **Modify.** Delete a memory. Used by: `/cf-scan`.                               |
 
 ### Web & Research
 
 Used exclusively by [`/cf-research`](/docs/skills/cf-research/). These are **not recommended by default** — enable them only if you use the research skill.
 
-| Rule | What it enables |
-| ---- | --------------- |
-| `WebSearch` | `/cf-research` searches the web for up-to-date information. Subagents perform focused searches on different aspects. |
+| Rule                 | What it enables                                                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WebSearch`          | `/cf-research` searches the web for up-to-date information. Subagents perform focused searches on different aspects.                                    |
 | `WebFetch(domain:*)` | `/cf-research` fetches web pages. Content from external sources is treated as **untrusted data**; embedded prompt injections are discarded and flagged. |
 
 ### External Learn Directory
