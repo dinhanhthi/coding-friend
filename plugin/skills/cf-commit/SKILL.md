@@ -29,10 +29,7 @@ If output is not empty, integrate the returned sections into this workflow:
 ### Step 1: Analyze Changes
 
 ```bash
-git status
-git diff
-git diff --staged
-git log --oneline -5
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-commit/scripts/analyze-changes.sh"
 ```
 
 ### Step 2: Identify Conversation-Related Changes
@@ -69,15 +66,16 @@ If any check fails, fix the issue FIRST. Do not commit broken code.
 **Secret scan** — after staging, check for accidental secrets:
 
 ```bash
-SECRETS=$(git diff --cached | grep -c -iE "(api[_-]?key|token|password|secret|private[_-]?key|credential)" || echo 0)
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-commit/scripts/scan-secrets.sh"
 ```
+
+The script prints `SECRETS=<count>` and, if `SECRETS > 0`, shows matching lines with context.
 
 If `SECRETS > 0`:
 
-1. Show matches with context: `git diff --cached | grep -iE -C2 "(api[_-]?key|token|password|secret|private[_-]?key|credential)"`
-2. Review each match — variable names like `getApiKey()` or `TOKEN_TYPE` are OK, actual secret values are NOT
-3. If real secrets found: unstage the file (`git reset HEAD <file>`), suggest adding to `.gitignore`
-4. If all matches are false positives (code references, not actual secrets): proceed
+1. Review each match — variable names like `getApiKey()` or `TOKEN_TYPE` are OK, actual secret values are NOT
+2. If real secrets found: unstage the file (`git reset HEAD <file>`), suggest adding to `.gitignore`
+3. If all matches are false positives (code references, not actual secrets): proceed
 
 ### Step 5: Write Commit Message
 
