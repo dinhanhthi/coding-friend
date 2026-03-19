@@ -305,17 +305,25 @@ describe("STATIC_RULES", () => {
 describe("buildPluginScriptRules", () => {
   it("returns version-independent rules with absolute path for Bash", () => {
     const rules = buildPluginScriptRules();
-    expect(rules.length).toBe(3); // 1 Bash + 1 Read plugin + 1 Read config
-    const bashRule = rules.find((r) => r.rule.startsWith("Bash("));
-    expect(bashRule).toBeDefined();
-    expect(bashRule!.rule).toContain("coding-friend-marketplace/coding-friend");
-    // Bash rules must use absolute path (~ is NOT expanded for Bash rules)
-    expect(bashRule!.rule).not.toContain("~");
-    expect(bashRule!.rule).toMatch(/^Bash\(bash \//); // starts with absolute path
-    // Uses /* * pattern for glob matching
-    expect(bashRule!.rule).toMatch(/\/\* \*\)$/);
-    // Should NOT contain a specific version number
-    expect(bashRule!.rule).not.toMatch(/\/\d+\.\d+\.\d+\//);
+    expect(rules.length).toBe(4); // 2 Bash (unquoted + quoted) + 1 Read plugin + 1 Read config
+    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
+    expect(bashRules).toHaveLength(2);
+
+    // Unquoted rule: Bash(bash /absolute/path/*)
+    const unquoted = bashRules[0];
+    expect(unquoted.rule).toContain("coding-friend-marketplace/coding-friend");
+    expect(unquoted.rule).not.toContain("~");
+    expect(unquoted.rule).toMatch(/^Bash\(bash \//); // starts with absolute path
+    expect(unquoted.rule).toMatch(/\/\*\)$/); // ends with /*)
+    expect(unquoted.rule).not.toMatch(/\/\d+\.\d+\.\d+\//);
+
+    // Quoted rule: Bash(bash "/absolute/path/*)
+    const quoted = bashRules[1];
+    expect(quoted.rule).toContain("coding-friend-marketplace/coding-friend");
+    expect(quoted.rule).not.toContain("~");
+    expect(quoted.rule).toMatch(/^Bash\(bash "\//); // starts with bash "/
+    expect(quoted.rule).toMatch(/\/\*\)$/); // ends with /*)
+    expect(quoted.rule).not.toMatch(/\/\d+\.\d+\.\d+\//);
   });
 
   it("Read rules use tilde path (Read expands ~)", () => {
@@ -337,7 +345,7 @@ describe("buildPluginScriptRules", () => {
   it("includes Read rules for plugin files and global config", () => {
     const rules = buildPluginScriptRules();
     const readRules = rules.filter((r) => r.rule.startsWith("Read("));
-    expect(readRules.length).toBe(2);
+    expect(readRules).toHaveLength(2);
     expect(
       readRules.some((r) => r.rule.includes("coding-friend-marketplace")),
     ).toBe(true);
@@ -355,7 +363,7 @@ describe("getAllRules", () => {
   it("includes plugin rules", () => {
     const all = getAllRules();
     const pluginRules = all.filter((r) => r.category === "Plugin Scripts");
-    expect(pluginRules.length).toBe(3);
+    expect(pluginRules.length).toBe(4);
     expect(all.length).toBe(STATIC_RULES.length + pluginRules.length);
   });
 

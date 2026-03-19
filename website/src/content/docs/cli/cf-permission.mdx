@@ -56,7 +56,7 @@ Use `--project` or `--user` to skip the prompt.
 Coding Friend organizes permissions into two tiers:
 
 - **Tier 1 (Static)** — Path-independent rules like `Bash(git add *)`, `Bash(npm test *)`, MCP memory tools. These are stable across plugin updates.
-- **Tier 2 (Plugin Scripts)** — A single wide rule that covers all Coding Friend plugin scripts (e.g., `Bash(bash ~/.claude/plugins/cache/.../coding-friend *)`). This pattern is version-independent, so permissions survive plugin updates automatically — no refresh needed.
+- **Tier 2 (Plugin Scripts)** — Two wide rules that cover all Coding Friend plugin scripts, handling both quoted and unquoted path invocations. These patterns are version-independent, so permissions survive plugin updates automatically — no refresh needed.
 
 When adding Plugin Script permissions, `cf permission` shows a warning explaining the wide pattern and asks for confirmation.
 

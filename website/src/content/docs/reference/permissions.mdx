@@ -118,7 +118,7 @@ Use `--project` or `--user` to skip the interactive scope prompt.
 ## Permission Tiers
 
 - **Tier 1 (Static)** — Path-independent rules: shell utilities (`cat`, `grep`, `jq`, `ls`...), git operations, npm test/build, MCP memory tools, web research. These never change between plugin versions.
-- **Tier 2 (Plugin Scripts)** — A single wide rule that covers all Coding Friend plugin scripts across all versions. The actual rule pattern is `Bash(bash $HOME/.claude/plugins/cache/coding-friend-marketplace/coding-friend/* *)` (where `$HOME` is your home directory). This is version-independent, so permissions survive plugin updates automatically without needing refresh.
+- **Tier 2 (Plugin Scripts)** — Two wide rules that cover all Coding Friend plugin scripts across all versions, handling both quoted and unquoted path invocations. The rule patterns are `Bash(bash $HOME/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*)` and `Bash(bash "$HOME/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*)` (where `$HOME` is your home directory). These are version-independent, so permissions survive plugin updates automatically without needing refresh.
 
 ## Security Notes
 
