@@ -258,7 +258,9 @@ export default function DifferentiatorSection() {
                         </span>
                       )}
                     </p>
-                    <p className="text-base text-slate-500">{item.description}</p>
+                    <p className="text-base text-slate-500">
+                      {item.description}
+                    </p>
                   </div>
                 </div>
               ))}

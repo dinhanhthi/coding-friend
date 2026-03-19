@@ -523,7 +523,9 @@ function MemoryContent() {
             >
               {t.tier}
             </span>
-            <p className={`mt-1 text-base font-semibold ${t.color}`}>{t.name}</p>
+            <p className={`mt-1 text-base font-semibold ${t.color}`}>
+              {t.name}
+            </p>
             <p className="mt-1 text-sm text-slate-400">{t.desc}</p>
           </div>
         ))}
