@@ -47,10 +47,10 @@ export default function InstallSection() {
           <div className="overflow-hidden rounded-xl border border-[#a0a0a01c]">
             <div className="bg-navy-950/50 flex items-center justify-between border-b border-[#a0a0a01c] px-5 py-3">
               <div className="flex items-center gap-3">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white">
                   1
                 </span>
-                <span className="text-sm font-medium text-white">
+                <span className="text-base font-medium text-white">
                   Install CLI
                 </span>
               </div>
@@ -61,7 +61,7 @@ export default function InstallSection() {
                 <button
                   key={m.id}
                   onClick={() => setActive(m.id)}
-                  className={`cursor-pointer px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`cursor-pointer px-4 py-2 text-base font-medium transition-colors ${
                     active === m.id
                       ? "border-b-2 border-violet-400 text-violet-400"
                       : "text-slate-400 hover:text-slate-200"
@@ -71,7 +71,7 @@ export default function InstallSection() {
                 </button>
               ))}
             </div>
-            <pre className="bg-navy-950 overflow-x-auto font-mono text-sm leading-relaxed text-slate-300">
+            <pre className="bg-navy-950 overflow-x-auto font-mono text-base leading-relaxed text-slate-300">
               <code className="hljs rounded-none!">{installCmd}</code>
             </pre>
           </div>
@@ -84,16 +84,16 @@ export default function InstallSection() {
             >
               <div className="bg-navy-950/50 flex items-center justify-between border-b border-[#a0a0a01c] px-5 py-3">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white">
                     {s.step}
                   </span>
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-base font-medium text-white">
                     {s.title}
                   </span>
                 </div>
                 <CopyButton text={s.code} />
               </div>
-              <pre className="bg-navy-950 overflow-x-auto font-mono text-sm leading-relaxed text-slate-300">
+              <pre className="bg-navy-950 overflow-x-auto font-mono text-base leading-relaxed text-slate-300">
                 <code className="hljs rounded-none!">{s.code}</code>
               </pre>
             </div>

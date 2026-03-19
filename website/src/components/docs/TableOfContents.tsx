@@ -12,7 +12,7 @@ function renderText(text: string) {
   const parts = stripped.split(/(`[^`]+`)/g);
   return parts.map((part, i) =>
     part.startsWith("`") && part.endsWith("`") ? (
-      <code key={i} className="rounded bg-slate-700/60 px-1 py-0.5 text-xs">
+      <code key={i} className="rounded bg-slate-700/60 px-1 py-0.5 text-sm">
         {part.slice(1, -1)}
       </code>
     ) : (
@@ -49,7 +49,7 @@ export default function TableOfContents({ headings }: Props) {
   return (
     <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-56 shrink-0 overflow-y-auto lg:block">
       <div className="p-4">
-        <h4 className="mb-3 border-b border-slate-600 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+        <h4 className="mb-3 border-b border-slate-600 pb-2 text-sm font-semibold tracking-wider text-slate-400 uppercase">
           On this page
         </h4>
         <ul className="space-y-1.5">
@@ -57,7 +57,7 @@ export default function TableOfContents({ headings }: Props) {
             <li key={h.id}>
               <a
                 href={`#${h.id}`}
-                className={`block text-sm transition-colors duration-200 ${
+                className={`block text-base transition-colors duration-200 ${
                   h.level === 3 ? "pl-3" : ""
                 } ${
                   activeId === h.id

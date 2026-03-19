@@ -437,7 +437,7 @@ export default function MemoryArchitecture() {
                         <text
                           x={mx}
                           y={ly}
-                          className="fill-amber-400/70 text-xs"
+                          className="fill-amber-400/70 text-sm"
                           fontFamily="monospace"
                           textAnchor="middle"
                           transform={
@@ -556,13 +556,13 @@ export default function MemoryArchitecture() {
                   </span>
                 )}
                 <span
-                  className={`font-mono text-sm font-semibold ${connected ? style.text : style.textDim}`}
+                  className={`font-mono text-base font-semibold ${connected ? style.text : style.textDim}`}
                 >
                   {node.label}
                 </span>
                 {node.sublabel && (
                   <span
-                    className={`mt-0.5 text-xs ${connected ? style.sublabel : "text-slate-600"}`}
+                    className={`mt-0.5 text-sm ${connected ? style.sublabel : "text-slate-600"}`}
                   >
                     {node.sublabel}
                   </span>
@@ -574,7 +574,7 @@ export default function MemoryArchitecture() {
           {/* Tooltip */}
           {tooltipNode && (
             <div
-              className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-amber-500/20 px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
+              className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-amber-500/20 px-3 py-2 text-center text-sm leading-relaxed text-slate-300 shadow-xl"
               style={{
                 left: `${(getNodePos(tooltipNode).x / ARCH_W) * 100}%`,
                 top: `${((getNodePos(tooltipNode).y + getBoxH(tooltipNode) / 2 + 8) / ARCH_H) * 100}%`,
@@ -719,13 +719,13 @@ function MobileArchCard({
         {icon}
         <div className="flex flex-col">
           <span
-            className={`font-mono text-sm font-semibold ${isAmber ? "text-amber-300" : "text-emerald-300"}`}
+            className={`font-mono text-base font-semibold ${isAmber ? "text-amber-300" : "text-emerald-300"}`}
           >
             {node.label}
           </span>
           {node.sublabel && (
             <span
-              className={`text-xs ${isAmber ? "text-amber-400/50" : "text-emerald-400/50"}`}
+              className={`text-sm ${isAmber ? "text-amber-400/50" : "text-emerald-400/50"}`}
             >
               {node.sublabel}
             </span>
@@ -735,7 +735,7 @@ function MobileArchCard({
       <div
         className={`overflow-hidden transition-all duration-200 ${expanded ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
       >
-        <p className="text-sm leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-slate-400">
           {node.description}
         </p>
       </div>
@@ -769,14 +769,14 @@ function MobileTierCard({
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-center gap-2.5">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-sm font-bold text-amber-400">
           {tier}
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="font-mono text-sm font-semibold text-amber-300">
+          <span className="font-mono text-base font-semibold text-amber-300">
             {label}
           </span>
-          <span className="text-xs text-amber-400/50">{sublabel}</span>
+          <span className="text-sm text-amber-400/50">{sublabel}</span>
         </div>
         {route && (
           <span className="shrink-0 rounded-full border border-slate-600/40 px-2 py-0.5 font-mono text-[10px] text-slate-400">
@@ -787,7 +787,7 @@ function MobileTierCard({
       <div
         className={`overflow-hidden transition-all duration-200 ${expanded ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
       >
-        <p className="text-sm leading-relaxed text-slate-400">{desc}</p>
+        <p className="text-base leading-relaxed text-slate-400">{desc}</p>
       </div>
     </div>
   );
@@ -796,7 +796,7 @@ function MobileTierCard({
 function MobileFallback() {
   return (
     <div className="flex items-center justify-center">
-      <span className="font-mono text-xs text-slate-400/70 italic">
+      <span className="font-mono text-sm text-slate-400/70 italic">
         fallback
       </span>
       <svg
@@ -816,7 +816,7 @@ function MobileArrow({ label }: { label?: string }) {
   return (
     <div className="flex flex-col items-center py-1">
       {label && (
-        <span className="mb-1 font-mono text-xs text-amber-500/40 italic">
+        <span className="mb-1 font-mono text-sm text-amber-500/40 italic">
           {label}
         </span>
       )}

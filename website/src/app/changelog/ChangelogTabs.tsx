@@ -98,7 +98,7 @@ export default function ChangelogTabs({
                 tabRefs.current[tab.key] = el;
               }}
               onClick={() => setActiveTab(tab.key)}
-              className={`relative z-10 cursor-pointer rounded-full px-5 py-2 text-sm font-medium transition-colors duration-200 ${
+              className={`relative z-10 cursor-pointer rounded-full px-5 py-2 text-base font-medium transition-colors duration-200 ${
                 activeTab === tab.key
                   ? "text-violet-400"
                   : "text-slate-400 hover:text-white"

@@ -179,7 +179,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
   return (
     <a href={tool.href} className="group relative cursor-pointer">
       {tool.isPrincipal && (
-        <span className="absolute -top-px left-4 z-10 -translate-y-1/2 rounded-full border border-yellow-400/50 bg-yellow-400/15 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-yellow-300 uppercase backdrop-blur-sm">
+        <span className="absolute -top-px left-4 z-10 -translate-y-1/2 rounded-full border border-yellow-400/50 bg-yellow-400/15 px-2.5 py-0.5 text-sm font-semibold tracking-wide text-yellow-300 uppercase backdrop-blur-sm">
           Principal
         </span>
       )}
@@ -189,7 +189,7 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
         <div className="flex items-start justify-between gap-3">
           <div className={c.text}>{tool.icon}</div>
           <span
-            className={`self-start rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium ${c.badge}`}
+            className={`self-start rounded-full border px-2.5 py-0.5 font-mono text-sm font-medium ${c.badge}`}
           >
             {tool.subtitle}
           </span>
@@ -199,10 +199,10 @@ function ToolCard({ tool }: { tool: (typeof tools)[0] }) {
           <h3 className="mb-1 text-base font-semibold text-white">
             {tool.name}
           </h3>
-          <p className="text-xs font-medium text-slate-400">{tool.tagline}</p>
+          <p className="text-sm font-medium text-slate-400">{tool.tagline}</p>
         </div>
 
-        <p className="text-sm leading-relaxed text-slate-400">
+        <p className="text-base leading-relaxed text-slate-400">
           {tool.description}
         </p>
       </div>

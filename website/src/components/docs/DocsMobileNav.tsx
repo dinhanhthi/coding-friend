@@ -17,7 +17,7 @@ export default function DocsMobileNav() {
     >
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-slate-300"
+        className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-base font-medium text-slate-300"
       >
         <span>Navigation</span>
         <svg
@@ -39,7 +39,7 @@ export default function DocsMobileNav() {
         <nav className="max-h-[60vh] space-y-4 overflow-y-auto px-4 pb-4">
           {docsNavigation.map((section) => (
             <div key={section.title}>
-              <div className="mb-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <div className="mb-1 text-sm font-semibold tracking-wider text-slate-400 uppercase">
                 {section.title}
               </div>
               <ul className="space-y-0.5">
@@ -54,7 +54,7 @@ export default function DocsMobileNav() {
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className={`block cursor-pointer rounded-md px-3 py-1.5 text-sm ${
+                        className={`block cursor-pointer rounded-md px-3 py-1.5 text-base ${
                           isActive
                             ? "bg-violet-900/20 font-medium text-violet-300"
                             : "text-slate-400"
@@ -74,7 +74,7 @@ export default function DocsMobileNav() {
               href="/llms.txt"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-xs text-slate-500 transition-colors hover:text-slate-300"
+              className="flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-300"
             >
               <svg
                 className="h-3.5 w-3.5"

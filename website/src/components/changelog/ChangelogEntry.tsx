@@ -36,7 +36,7 @@ function renderInline(text: string) {
       result.push(
         <code
           key={match.index}
-          className="rounded bg-slate-800 px-1 py-0.5 font-mono text-sm text-violet-300"
+          className="rounded bg-slate-800 px-1 py-0.5 font-mono text-base text-violet-300"
         >
           {match[1]}
         </code>,
@@ -100,7 +100,7 @@ export default function ChangelogEntryCard({
         className="ring-navy-900 absolute top-[5px] left-0 mt-1 flex h-3.5 w-3.5 cursor-pointer items-center justify-center rounded-full bg-violet-400 ring-[3px] transition-colors hover:bg-violet-300"
         aria-label={expanded ? "Collapse" : "Expand"}
       >
-        <span className="text-xs leading-none font-bold text-slate-900">
+        <span className="text-sm leading-none font-bold text-slate-900">
           {expanded ? "−" : "+"}
         </span>
       </button>
@@ -115,12 +115,12 @@ export default function ChangelogEntryCard({
       >
         <h3 className="text-xl font-bold text-white">{entry.version}</h3>
         {isLatest && (
-          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-sm font-medium text-emerald-400">
             Latest
           </span>
         )}
         {entry.unpublished && (
-          <span className="rounded-full border border-dashed border-slate-300/30 bg-slate-500/10 px-2.5 py-0.5 text-xs tracking-wide text-slate-300">
+          <span className="rounded-full border border-dashed border-slate-300/30 bg-slate-500/10 px-2.5 py-0.5 text-sm tracking-wide text-slate-300">
             Unpublished
           </span>
         )}

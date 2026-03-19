@@ -76,7 +76,7 @@ export default function PackageManagerTabs({
             <button
               key={m.id}
               onClick={() => setActive(m.id)}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+              className={`px-4 py-2 text-base font-medium transition-colors ${
                 active === m.id
                   ? "border-b-2 border-violet-400 text-violet-400"
                   : "text-slate-400 hover:text-slate-200"
@@ -94,7 +94,7 @@ export default function PackageManagerTabs({
           {copied ? <CheckIcon /> : <CopyIcon />}
         </button>
       </div>
-      <pre className="m-0 overflow-x-auto bg-[var(--color-navy-950)] p-4 text-sm leading-relaxed text-slate-300">
+      <pre className="m-0 overflow-x-auto bg-[var(--color-navy-950)] p-4 text-base leading-relaxed text-slate-300">
         <code ref={codeRef} className="hljs">
           {command}
         </code>
