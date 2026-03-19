@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.12.0 (unpublished)
+
+- Add token usage visibility across UI with tier icons and documentation [#4227860](https://github.com/dinhanhthi/coding-friend/commit/4227860)
+- Extract hardcoded bash commands into scripts for skills [#4338b91](https://github.com/dinhanhthi/coding-friend/commit/4338b91)
+
 ## v0.11.1 (2026-03-17)
 
 - Make `memory_store` MCP calls mandatory and explicit in `cf-remember`, `cf-ask`, `cf-fix`, `cf-sys-debug` — split into separate MANDATORY steps to prevent skipping [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
