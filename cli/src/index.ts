@@ -111,7 +111,6 @@ program
     "--project",
     "Save to project-level settings (.claude/settings.local.json)",
   )
-  .option("--refresh", "Refresh plugin script paths (after plugin update)")
   .action(async (opts) => {
     const { permissionCommand } = await import("./commands/permission.js");
     await permissionCommand(opts);

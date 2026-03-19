@@ -9,7 +9,8 @@ import {
   getExistingRules,
   applyPermissions,
   groupByCategory,
-  refreshPluginPermissions,
+  cleanupStalePluginRules,
+  logPluginScriptWarning,
 } from "../lib/permissions.js";
 import type { PermissionRule } from "../lib/permissions.js";
 
@@ -178,41 +179,9 @@ export async function permissionCommand(opts: {
   all?: boolean;
   user?: boolean;
   project?: boolean;
-  refresh?: boolean;
 }): Promise<void> {
   console.log("=== 🌿 Coding Friend Permissions 🌿 ===");
   console.log();
-
-  // Handle --refresh: only update plugin script paths
-  if (opts.refresh) {
-    if (opts.all) {
-      log.warn(
-        "--refresh ignores --all. Use `cf permission --all` separately to add new rules.",
-      );
-    }
-    const paths = [
-      { path: claudeLocalSettingsPath(), scope: "project" },
-      { path: claudeSettingsPath(), scope: "user" },
-    ];
-
-    let refreshed = false;
-    for (const { path, scope } of paths) {
-      const result = refreshPluginPermissions(path);
-      if (result) {
-        log.success(
-          `Refreshed ${result.updated} plugin permissions in ${scope} settings.`,
-        );
-        refreshed = true;
-      }
-    }
-
-    if (!refreshed) {
-      log.dim(
-        "No plugin script permissions found to refresh. Run `cf permission` first to set up permissions.",
-      );
-    }
-    return;
-  }
 
   // Resolve scope
   const {
@@ -222,7 +191,7 @@ export async function permissionCommand(opts: {
   } = await resolveSettingsPath(opts);
 
   const existing = getExistingRules(settingsPath);
-  const allRules = getAllRules("glob");
+  const allRules = getAllRules();
   const allRuleStrings = allRules.map((r) => r.rule);
 
   // Track which existing rules are managed by us (in our registry)
@@ -263,9 +232,31 @@ export async function permissionCommand(opts: {
     for (const r of toAdd) {
       console.log(`  ${chalk.green("+")} ${r}`);
     }
+
+    // Warn about wide plugin script rule
+    if (pluginCount > 0) {
+      console.log();
+      logPluginScriptWarning(log, chalk);
+    }
     console.log();
 
+    const ok = !process.stdin.isTTY || await confirm({
+      message: `Apply ${toAdd.length} permission rules to ${settingsLabel}?`,
+      default: true,
+    });
+    if (!ok) {
+      log.dim("Skipped.");
+      return;
+    }
+
     applyPermissions(settingsPath, toAdd, []);
+
+    // Clean up stale old-format per-script rules
+    const cleaned = cleanupStalePluginRules(settingsPath);
+    if (cleaned > 0) {
+      log.dim(`Removed ${cleaned} stale old-format plugin rules.`);
+    }
+
     log.success(`Added ${toAdd.length} permission rules to ${settingsLabel}.`);
     return;
   }

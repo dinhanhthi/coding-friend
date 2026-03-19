@@ -118,12 +118,12 @@ Use `--project` or `--user` to skip the interactive scope prompt.
 ## Permission Tiers
 
 - **Tier 1 (Static)** — Path-independent rules: shell utilities (`cat`, `grep`, `jq`, `ls`...), git operations, npm test/build, MCP memory tools, web research. These never change between plugin versions.
-- **Tier 2 (Plugin Scripts)** — Rules for executing Coding Friend's shell scripts (analyze-changes.sh, scan-secrets.sh, etc.). These use a glob pattern (`*`) for the version segment so they survive plugin updates. When you run `cf update`, Tier 2 permissions are automatically refreshed.
+- **Tier 2 (Plugin Scripts)** — A single wide rule that covers all Coding Friend plugin scripts across all versions. The actual rule pattern is `Bash(bash $HOME/.claude/plugins/cache/coding-friend-marketplace/coding-friend/* *)` (where `$HOME` is your home directory). This is version-independent, so permissions survive plugin updates automatically without needing refresh.
 
 ## Security Notes
 
-- All permission rules use **granular patterns** (e.g., `Bash(git add *)` instead of `Bash(git *)`) to minimize the scope of each rule.
-- Plugin script rules are scoped to the exact path: `~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*/skills/...`.
+- All Tier 1 rules use **granular patterns** (e.g., `Bash(git add *)` instead of `Bash(git *)`) to minimize the scope of each rule.
+- The Tier 2 plugin script rule is scoped to the Coding Friend plugin cache directory only — it cannot execute scripts outside of `~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/`.
 - MCP memory tools are namespaced: `mcp__coding-friend-memory__*` — only Coding Friend's memory MCP server is affected.
 - ⚠️ Some Core rules (`Bash(cat *)`, `Bash(grep *)`) are **system-wide in scope** — they allow the command on any path. Claude Code's own project-scoping feature restricts actual access to the current project directory.
 - Web permissions (`WebSearch`, `WebFetch`) are **not recommended by default** — they are opt-in for users of `/cf-research`.
