@@ -5,11 +5,36 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const badges = [
-  { label: "Plugin", color: "#a78bfa", borderColor: "#7c3aed", bgColor: "rgba(139, 92, 246, 0.15)" },
-  { label: "CLI", color: "#7dd3fc", borderColor: "#0ea5e9", bgColor: "rgba(14, 165, 233, 0.15)" },
-  { label: "Learn Host", color: "#6ee7b7", borderColor: "#10b981", bgColor: "rgba(16, 185, 129, 0.15)" },
-  { label: "Learn MCP", color: "#fdba74", borderColor: "#f97316", bgColor: "rgba(249, 115, 22, 0.15)" },
-  { label: "CF Memory", color: "#fcd34d", borderColor: "#f59e0b", bgColor: "rgba(245, 158, 11, 0.15)" },
+  {
+    label: "Plugin",
+    color: "#a78bfa",
+    borderColor: "#7c3aed",
+    bgColor: "rgba(139, 92, 246, 0.15)",
+  },
+  {
+    label: "CLI",
+    color: "#7dd3fc",
+    borderColor: "#0ea5e9",
+    bgColor: "rgba(14, 165, 233, 0.15)",
+  },
+  {
+    label: "Learn Host",
+    color: "#6ee7b7",
+    borderColor: "#10b981",
+    bgColor: "rgba(16, 185, 129, 0.15)",
+  },
+  {
+    label: "Learn MCP",
+    color: "#fdba74",
+    borderColor: "#f97316",
+    bgColor: "rgba(249, 115, 22, 0.15)",
+  },
+  {
+    label: "CF Memory",
+    color: "#fcd34d",
+    borderColor: "#f59e0b",
+    bgColor: "rgba(245, 158, 11, 0.15)",
+  },
 ];
 
 export default async function Image() {
