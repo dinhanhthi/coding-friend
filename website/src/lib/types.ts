@@ -19,6 +19,7 @@ export interface NavItem {
   title: string;
   slug: string;
   manualOnly?: boolean;
+  tier?: "low" | "medium" | "high";
 }
 
 export interface NavSection {

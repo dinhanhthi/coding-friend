@@ -41,34 +41,39 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Slash Commands (user triggers with /)
 
-- `/cf-ask [question]` — Quick Q&A about codebase → docs/memory/
-- `/cf-plan [task]` — Brainstorm and write implementation plan
-- `/cf-review [target]` — Dispatch code review to subagent
-- `/cf-commit [hint]` — Analyze diff and create conventional commit
-- `/cf-ship [hint]` — Verify, commit, push, and create PR
-- `/cf-fix [bug]` — Quick bug fix workflow
-- `/cf-optimize [target]` — Structured optimization with before/after measurement
-- `/cf-remember [topic]` — Extract project knowledge to docs/memory/
-- `/cf-learn [topic]` — Extract learnings (configurable output, language, categories)
-- `/cf-research [topic]` — In-depth research with web search → docs/research/
-- `/cf-session [label]` — Save current session to sync folder for cross-machine resume
-- `/cf-help [question]` — This skill — answer questions about Coding Friend
+- `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/
+- `/cf-plan [task]` — ⚡⚡ — Brainstorm and write implementation plan
+- `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
+- `/cf-commit [hint]` — ⚡ — Analyze diff and create conventional commit
+- `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR
+- `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
+- `/cf-optimize [target]` — ⚡⚡ — Structured optimization with before/after measurement
+- `/cf-scan [description]` — ⚡⚡⚡ — Scan project and bootstrap memory
+- `/cf-remember [topic]` — ⚡⚡ — Extract project knowledge to docs/memory/
+- `/cf-learn [topic]` — ⚡⚡ — Extract learnings (configurable output, language, categories)
+- `/cf-research [topic]` — ⚡⚡ — In-depth research with web search → docs/research/
+- `/cf-session [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
+- `/cf-help [question]` — ⚡⚡ — This skill — answer questions about Coding Friend
 
 ### Auto-Invoked Skills (activate automatically when relevant)
 
-- **cf-tdd** — When writing new code: RED → GREEN → REFACTOR
-- **cf-sys-debug** — When debugging: investigate → analyze → test → fix
-- **cf-auto-review** — When reviewing code: plan, quality, security, testing
-- **cf-verification** — Before claiming done: run, read output, verify
+- **cf-tdd** — ⚡⚡ — When writing new code: RED → GREEN → REFACTOR
+- **cf-sys-debug** — ⚡⚡ — When debugging: investigate → analyze → test → fix
+- **cf-auto-review** — ⚡ — When reviewing code: plan, quality, security, testing
+- **cf-verification** — ⚡ — Before claiming done: run, read output, verify
 
-### Agents
+### Agents (run in forked sessions — separate context window)
 
-- **cf-code-reviewer** — Multi-layer code review in forked context
-- **cf-implementer** — TDD implementation subagent
-- **cf-explorer** — Codebase exploration and analysis (read-only)
-- **cf-planner** — Task decomposition and approach brainstorming
-- **cf-writer** — Lightweight doc writer for markdown file generation
-- **cf-writer-deep** — Deep reasoning doc writer for nuanced technical content
+- **cf-code-reviewer** — ⚡ — Multi-layer code review in forked context
+- **cf-implementer** — ⚡ — TDD implementation subagent
+- **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
+- **cf-planner** — ⚡ — Task decomposition and approach brainstorming
+- **cf-writer** — ⚡ — Lightweight doc writer for markdown file generation
+- **cf-writer-deep** — ⚡ — Deep reasoning doc writer for nuanced technical content
+
+### Context Window Usage
+
+Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,000 tokens), `⚡⚡` = medium (1,000–2,500), `⚡⚡⚡` = high (>2,500). Bootstrap context (~1,300 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, read `plugin/generated/token-counts.json` or see https://cf.dinhanhthi.com/docs/reference/context-usage/.
 
 ## Step 3: Read specific files (if detailed question)
 
