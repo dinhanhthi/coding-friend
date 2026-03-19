@@ -9,9 +9,9 @@ interface TokenBadgeProps {
 }
 
 const tierLabel: Record<Tier, string> = {
-  low: "Low context usage (<1K tokens)",
-  medium: "Medium context usage (1K–2.5K tokens)",
-  high: "High context usage (>2.5K tokens)",
+  low: "Low context footprint — ~<1K tokens injected into prompt",
+  medium: "Medium context footprint — ~1K–2.5K tokens injected into prompt",
+  high: "High context footprint — ~>2.5K tokens injected into prompt",
 };
 
 const tierCount: Record<Tier, number> = { low: 1, medium: 2, high: 3 };
