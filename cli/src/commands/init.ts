@@ -12,6 +12,8 @@ import {
   getMissingRules,
   buildLearnDirRules,
   applyPermissions,
+  cleanupStalePluginRules,
+  logPluginScriptWarning,
 } from "../lib/permissions.js";
 import { log } from "../lib/log.js";
 import {
@@ -181,7 +183,7 @@ function printSetupStatus(
   // ── Setup items ──
   const projectRules = getExistingRules(claudeLocalSettingsPath());
   const userRules = getExistingRules(claudeSettingsPath());
-  const allRules = getAllRules("glob");
+  const allRules = getAllRules();
   const allRuleStrings = allRules.map((r) => r.rule);
   const configuredRuleCount = new Set([
     ...projectRules.filter((r) => allRuleStrings.includes(r)),
@@ -859,7 +861,7 @@ async function stepClaudePermissions(
   const existing = getExistingRules(settingsPath);
 
   // Collect all rules: base + learn dir (if external)
-  const allRules = getAllRules("glob");
+  const allRules = getAllRules();
   const recommended = allRules.filter((r) => r.recommended);
   let allToAdd = recommended;
 
@@ -883,6 +885,13 @@ async function stepClaudePermissions(
   for (const r of missing) {
     console.log(`  ${chalk.green("+")} ${r.rule}`);
   }
+
+  // Warn if the wide plugin script rule is being added
+  const hasPluginRule = missing.some((r) => r.category === "Plugin Scripts");
+  if (hasPluginRule) {
+    console.log();
+    logPluginScriptWarning(log, chalk);
+  }
   console.log();
 
   const ok = await confirm({
@@ -900,6 +909,13 @@ async function stepClaudePermissions(
     missing.map((r) => r.rule),
     [],
   );
+
+  // Clean up stale old-format per-script rules
+  const cleaned = cleanupStalePluginRules(settingsPath);
+  if (cleaned > 0) {
+    log.dim(`Removed ${cleaned} stale old-format plugin rules.`);
+  }
+
   log.success(`Added ${missing.length} permission rules.`);
   log.dim("Fine-tune later with: `cf permission` or `cf config` → Permissions");
 }
@@ -946,7 +962,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
 
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
-    const allRules = getAllRules("glob");
+    const allRules = getAllRules();
     const allRuleStrings = allRules.map((r) => r.rule);
     const configuredRuleCount = new Set([
       ...projectRules.filter((r) => allRuleStrings.includes(r)),

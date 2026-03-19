@@ -53,7 +53,6 @@ cf permission --all        # Apply all recommended permissions without prompts
 cf permission --user       # Save to user-level settings (~/.claude/settings.json)
 cf permission --project    # Save to project-level settings (.claude/settings.local.json)
 cf permission --all --user # Apply all recommended permissions to user settings
-cf permission --refresh    # Refresh plugin script paths (after plugin update)
 cf statusline        # Setup coding-friend statusline
 cf update               # Update plugin + CLI + statusline
 cf update --cli         # Update only the CLI (npm package)

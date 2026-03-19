@@ -1,7 +1,5 @@
-import { existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { homedir } from "os";
 import { readJson, writeJson } from "./json.js";
-import { pluginCachePath } from "./paths.js";
 
 export interface PermissionRule {
   rule: string;
@@ -266,106 +264,57 @@ export const STATIC_RULES: PermissionRule[] = [
   },
 ];
 
-// ─── Tier 2: Path-dependent rules (plugin scripts) ─────────────────
+// ─── Tier 2: Plugin rules (version-independent) ────────────────────
 
-const PLUGIN_CACHE_GLOB =
-  "~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*";
-
-/** Plugin script paths relative to plugin root. */
-const PLUGIN_SCRIPTS: Array<{ path: string; description: string }> = [
-  {
-    path: "lib/load-custom-guide.sh",
-    description: "[execute] Load custom skill guides · Used by: all skills",
-  },
-  {
-    path: "skills/cf-commit/scripts/analyze-changes.sh",
-    description:
-      "[execute] Analyze git changes for commit · Used by: /cf-commit",
-  },
-  {
-    path: "skills/cf-commit/scripts/scan-secrets.sh",
-    description:
-      "[execute] Scan staged changes for secrets · Used by: /cf-commit",
-  },
-  {
-    path: "skills/cf-review/scripts/gather-diff.sh",
-    description: "[execute] Gather diff for review · Used by: /cf-review",
-  },
-  {
-    path: "skills/cf-review/scripts/assess-changes.sh",
-    description:
-      "[execute] Assess change size/sensitivity · Used by: /cf-review",
-  },
-  {
-    path: "skills/cf-review/scripts/mark-reviewed.sh",
-    description: "[execute] Mark review as complete · Used by: /cf-review",
-  },
-  {
-    path: "skills/cf-learn/scripts/list-learn-files.sh",
-    description: "[execute] List existing learn files · Used by: /cf-learn",
-  },
-  {
-    path: "skills/cf-session/scripts/detect-session.sh",
-    description: "[execute] Detect current session · Used by: /cf-session",
-  },
-  {
-    path: "skills/cf-session/scripts/save-session.sh",
-    description: "[execute] Save session state · Used by: /cf-session",
-  },
-];
+/** Tilde path for Read rules (Read expands ~ automatically). */
+const PLUGIN_CACHE_TILDE =
+  "~/.claude/plugins/cache/coding-friend-marketplace/coding-friend";
 
 /**
  * Build Tier 2 permission rules for plugin scripts.
- * - 'glob' mode: uses wildcard * for version segment (stable across updates)
- * - 'concrete' mode: uses actual plugin path (fallback if glob matching has bugs)
+ * Uses a single wide rule that covers all plugin scripts across all versions,
+ * so permissions survive automatic plugin updates without needing refresh.
+ *
+ * Bash rules use absolute path because ~ is NOT expanded in Bash() rules.
+ * Read rules use ~ because Read() rules DO expand ~ (gitignore spec).
  */
-export function buildPluginScriptRules(
-  mode: "glob" | "concrete",
-  pluginPath?: string,
-): PermissionRule[] {
-  const base =
-    mode === "concrete" && pluginPath ? pluginPath : PLUGIN_CACHE_GLOB;
+export function buildPluginScriptRules(): PermissionRule[] {
+  // Bash rules require absolute path — ~ is not expanded for Bash()
+  const absBase = `${homedir()}/.claude/plugins/cache/coding-friend-marketplace/coding-friend`;
 
-  const rules: PermissionRule[] = PLUGIN_SCRIPTS.map((script) => ({
-    rule: `Bash(bash ${base}/${script.path} *)`,
-    description: script.description,
-    category: "Plugin Scripts",
-    recommended: true,
-  }));
-
-  // Read access to plugin files and user global config
-  rules.push({
-    rule: `Read(~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/**)`,
-    description: "[read-only] Read plugin files · Used by: hooks, agents",
-    category: "Plugin Scripts",
-    recommended: true,
-  });
-  rules.push({
-    rule: "Read(~/.coding-friend/**)",
-    description:
-      "[read-only] Read user global config · Used by: session-init hook, /cf-learn",
-    category: "Plugin Scripts",
-    recommended: true,
-  });
-
-  return rules;
+  return [
+    {
+      rule: `Bash(bash ${absBase}/* *)`,
+      description:
+        "[execute] Run Coding Friend plugin scripts · Used by: all skills",
+      category: "Plugin Scripts",
+      recommended: true,
+    },
+    {
+      rule: `Read(${PLUGIN_CACHE_TILDE}/**)`,
+      description: "[read-only] Read plugin files · Used by: hooks, agents",
+      category: "Plugin Scripts",
+      recommended: true,
+    },
+    {
+      rule: "Read(~/.coding-friend/**)",
+      description:
+        "[read-only] Read user global config · Used by: session-init hook, /cf-learn",
+      category: "Plugin Scripts",
+      recommended: true,
+    },
+  ];
 }
 
 /**
  * Get all permission rules: Tier 1 (static) + Tier 2 (plugin scripts).
  */
-export function getAllRules(
-  pluginScriptMode: "glob" | "concrete" = "glob",
-  pluginPath?: string,
-): PermissionRule[] {
-  return [
-    ...STATIC_RULES,
-    ...buildPluginScriptRules(pluginScriptMode, pluginPath),
-  ];
+export function getAllRules(): PermissionRule[] {
+  return [...STATIC_RULES, ...buildPluginScriptRules()];
 }
 
-/** Backward-compatible alias — returns all rules with glob-mode plugin paths. */
-export const PERMISSION_RULES: PermissionRule[] = getAllRules("glob");
+/** Backward-compatible alias. */
+export const PERMISSION_RULES: PermissionRule[] = getAllRules();
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -481,62 +430,48 @@ export function groupByCategory(
   return groups;
 }
 
-// ─── Plugin path detection ──────────────────────────────────────────
+// ─── Migration ──────────────────────────────────────────────────────
 
-/** Pattern that identifies Coding Friend plugin-path permissions. */
-const PLUGIN_PATH_PATTERN =
+/** Pattern that identifies old per-script plugin-path permissions. */
+const OLD_PLUGIN_PATH_PATTERN =
   "/.claude/plugins/cache/coding-friend-marketplace/coding-friend/";
 
 /**
- * Detect the installed plugin version directory.
- * Returns the full path (e.g. ~/.claude/plugins/cache/.../0.11.1) or null.
+ * Remove stale old-format per-script plugin rules from a settings file.
+ * Old rules had individual paths like ".../coding-friend/0.11.1/lib/load-custom-guide.sh *"
+ * or glob "*\/" in the middle. The new format uses a single wide rule.
+ * Returns the count of removed rules, or 0 if none found.
  */
-export function getInstalledPluginPath(): string | null {
-  const base = pluginCachePath();
-  if (!existsSync(base)) return null;
+export function cleanupStalePluginRules(settingsPath: string): number {
+  const existing = getExistingRules(settingsPath);
+  const currentRules = new Set(getAllRules().map((r) => r.rule));
 
-  const entries = readdirSync(base, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort((a, b) => semverCompare(b, a)); // latest version first
+  // Find old plugin-path rules that are NOT in the current rule set
+  const stale = existing.filter(
+    (r) => r.includes(OLD_PLUGIN_PATH_PATTERN) && !currentRules.has(r),
+  );
 
-  if (entries.length === 0) return null;
-  return join(base, entries[0]);
+  if (stale.length === 0) return 0;
+
+  applyPermissions(settingsPath, [], stale);
+  return stale.length;
 }
 
-/** Returns 1 if a > b, -1 if a < b, 0 if equal. */
-function semverCompare(a: string, b: string): number {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (diff !== 0) return diff > 0 ? 1 : -1;
-  }
-  return 0;
-}
+// ─── Shared UI helpers ──────────────────────────────────────────────
 
 /**
- * Refresh Tier 2 (plugin-path) permissions in a settings file.
- * Replaces old versioned paths with current plugin path.
- * Returns count of updated rules, or null if no plugin rules found.
+ * Log the warning about the wide plugin script permission pattern.
+ * Shared between permission.ts and init.ts to keep the text consistent.
  */
-export function refreshPluginPermissions(
-  settingsPath: string,
-): { updated: number } | null {
-  const existing = getExistingRules(settingsPath);
-  const pluginRules = existing.filter((r) => r.includes(PLUGIN_PATH_PATTERN));
-
-  if (pluginRules.length === 0) return null;
-
-  const pluginPath = getInstalledPluginPath();
-  if (!pluginPath) return null;
-
-  // Build new concrete rules
-  const newRules = buildPluginScriptRules("concrete", pluginPath);
-  const newRuleStrings = newRules.map((r) => r.rule);
-
-  // Remove old plugin-path rules, add new ones
-  applyPermissions(settingsPath, newRuleStrings, pluginRules);
-
-  return { updated: newRuleStrings.length };
+export function logPluginScriptWarning(
+  log: { warn: (msg: string) => void; dim: (msg: string) => void },
+  chalk: { bold: (s: string) => string },
+): void {
+  log.warn(
+    `Plugin script rule uses a ${chalk.bold("wide pattern")} that allows executing any script in the Coding Friend plugin cache.`,
+  );
+  log.dim(
+    "This is scoped to Coding Friend only and survives plugin updates automatically.",
+  );
 }
+

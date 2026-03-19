@@ -14,7 +14,7 @@ import {
   getAllRules,
   applyPermissions,
   groupByCategory,
-  refreshPluginPermissions,
+  cleanupStalePluginRules,
 } from "../permissions.js";
 import type { PermissionRule } from "../permissions.js";
 
@@ -303,43 +303,39 @@ describe("STATIC_RULES", () => {
 });
 
 describe("buildPluginScriptRules", () => {
-  it("glob mode returns rules with wildcard version segment", () => {
-    const rules = buildPluginScriptRules("glob");
-    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
-    for (const rule of bashRules) {
-      expect(rule.rule).toContain("coding-friend-marketplace/coding-friend/*/");
-    }
+  it("returns version-independent rules with absolute path for Bash", () => {
+    const rules = buildPluginScriptRules();
+    expect(rules.length).toBe(3); // 1 Bash + 1 Read plugin + 1 Read config
+    const bashRule = rules.find((r) => r.rule.startsWith("Bash("));
+    expect(bashRule).toBeDefined();
+    expect(bashRule!.rule).toContain("coding-friend-marketplace/coding-friend");
+    // Bash rules must use absolute path (~ is NOT expanded for Bash rules)
+    expect(bashRule!.rule).not.toContain("~");
+    expect(bashRule!.rule).toMatch(/^Bash\(bash \//); // starts with absolute path
+    // Uses /* * pattern for glob matching
+    expect(bashRule!.rule).toMatch(/\/\* \*\)$/);
+    // Should NOT contain a specific version number
+    expect(bashRule!.rule).not.toMatch(/\/\d+\.\d+\.\d+\//);
   });
 
-  it("concrete mode uses provided plugin path", () => {
-    const rules = buildPluginScriptRules(
-      "concrete",
-      "/home/user/.claude/plugins/cache/coding-friend-marketplace/coding-friend/0.11.1",
-    );
-    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
-    for (const rule of bashRules) {
-      expect(rule.rule).toContain("/0.11.1/");
-      expect(rule.rule).not.toContain("*/");
-    }
-  });
-
-  it("concrete mode falls back to glob when no pluginPath", () => {
-    const rules = buildPluginScriptRules("concrete");
-    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
-    for (const rule of bashRules) {
-      expect(rule.rule).toContain("*/");
+  it("Read rules use tilde path (Read expands ~)", () => {
+    const rules = buildPluginScriptRules();
+    const readRules = rules.filter((r) => r.rule.startsWith("Read("));
+    for (const rule of readRules) {
+      expect(rule.rule).toContain("~");
+      expect(rule.rule).not.toMatch(/^Read\(\/Users\//);
     }
   });
 
   it("all rules have category Plugin Scripts", () => {
-    const rules = buildPluginScriptRules("glob");
+    const rules = buildPluginScriptRules();
     for (const rule of rules) {
       expect(rule.category).toBe("Plugin Scripts");
     }
   });
 
   it("includes Read rules for plugin files and global config", () => {
-    const rules = buildPluginScriptRules("glob");
+    const rules = buildPluginScriptRules();
     const readRules = rules.filter((r) => r.rule.startsWith("Read("));
     expect(readRules.length).toBe(2);
     expect(
@@ -350,55 +346,29 @@ describe("buildPluginScriptRules", () => {
 });
 
 describe("getAllRules", () => {
-  it("combines static and plugin script rules", () => {
-    const all = getAllRules("glob");
-    const pluginRules = all.filter((r) => r.category === "Plugin Scripts");
+  it("always includes static rules", () => {
+    const all = getAllRules();
     const staticRules = all.filter((r) => r.category !== "Plugin Scripts");
-
     expect(staticRules.length).toBe(STATIC_RULES.length);
-    expect(pluginRules.length).toBeGreaterThan(0);
-    expect(all.length).toBe(staticRules.length + pluginRules.length);
+  });
+
+  it("includes plugin rules", () => {
+    const all = getAllRules();
+    const pluginRules = all.filter((r) => r.category === "Plugin Scripts");
+    expect(pluginRules.length).toBe(3);
+    expect(all.length).toBe(STATIC_RULES.length + pluginRules.length);
   });
 
   it("has no duplicate rules across tiers", () => {
-    const all = getAllRules("glob");
+    const all = getAllRules();
     const ruleStrings = all.map((r) => r.rule);
     const unique = new Set(ruleStrings);
     expect(unique.size).toBe(ruleStrings.length);
   });
 });
 
-describe("refreshPluginPermissions", () => {
-  it("returns null when no plugin-path rules exist", () => {
-    const file = join(testDir, "settings.json");
-    writeFileSync(
-      file,
-      JSON.stringify({
-        permissions: { allow: ["Bash(git status *)", "WebSearch"] },
-      }),
-    );
-    expect(refreshPluginPermissions(file)).toBeNull();
-  });
-
-  it("returns null when settings file does not exist", () => {
-    expect(
-      refreshPluginPermissions(join(testDir, "nonexistent.json")),
-    ).toBeNull();
-  });
-
-  it("preserves non-plugin rules when refreshing", () => {
-    // Create a fake plugin cache directory
-    const fakeCache = join(
-      testDir,
-      ".claude",
-      "plugins",
-      "cache",
-      "coding-friend-marketplace",
-      "coding-friend",
-      "0.12.0",
-    );
-    mkdirSync(fakeCache, { recursive: true });
-
+describe("cleanupStalePluginRules", () => {
+  it("removes old per-script plugin rules", () => {
     const file = join(testDir, "settings.json");
     writeFileSync(
       file,
@@ -406,24 +376,60 @@ describe("refreshPluginPermissions", () => {
         permissions: {
           allow: [
             "Bash(git status *)",
-            "Bash(bash /old/.claude/plugins/cache/coding-friend-marketplace/coding-friend/0.11.0/lib/load-custom-guide.sh *)",
+            "Bash(bash /home/user/.claude/plugins/cache/coding-friend-marketplace/coding-friend/0.11.1/lib/load-custom-guide.sh *)",
+            "Bash(bash /home/user/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*/skills/cf-commit/scripts/analyze-changes.sh *)",
           ],
         },
       }),
     );
 
-    // refreshPluginPermissions uses pluginCachePath() from paths.ts which reads real fs,
-    // so this test just verifies the function handles missing real plugin gracefully
-    const result = refreshPluginPermissions(file);
-    // It should find the plugin-path rule but may not find installed plugin
-    // depending on the test environment — either null or { updated: N } is acceptable
-    if (result) {
-      expect(result.updated).toBeGreaterThan(0);
-    }
+    const removed = cleanupStalePluginRules(file);
+    expect(removed).toBe(2);
 
-    // Non-plugin rule should always be preserved
-    const existing = readJson<Record<string, unknown>>(file);
-    const allow = (existing?.permissions as { allow: string[] }).allow;
+    const result = readJson<Record<string, unknown>>(file);
+    const allow = (result?.permissions as { allow: string[] }).allow;
     expect(allow).toContain("Bash(git status *)");
+    expect(allow).toHaveLength(1);
+  });
+
+  it("preserves current managed rules", () => {
+    const currentRules = getAllRules();
+    const pluginRule = currentRules.find(
+      (r) => r.category === "Plugin Scripts" && r.rule.startsWith("Bash("),
+    );
+
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: {
+          allow: [pluginRule!.rule, "Bash(git status *)"],
+        },
+      }),
+    );
+
+    const removed = cleanupStalePluginRules(file);
+    expect(removed).toBe(0);
+
+    const result = readJson<Record<string, unknown>>(file);
+    const allow = (result?.permissions as { allow: string[] }).allow;
+    expect(allow).toHaveLength(2);
+  });
+
+  it("returns 0 when no stale rules exist", () => {
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: { allow: ["Bash(git status *)", "WebSearch"] },
+      }),
+    );
+
+    expect(cleanupStalePluginRules(file)).toBe(0);
+  });
+
+  it("returns 0 for non-existent file", () => {
+    expect(cleanupStalePluginRules(join(testDir, "nope.json"))).toBe(0);
   });
 });
+

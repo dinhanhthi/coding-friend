@@ -32,9 +32,6 @@ cf permission --user       # ~/.claude/settings.json (all projects)
 
 # Combine: apply all to user scope
 cf permission --all --user
-
-# Refresh plugin script paths after a plugin update
-cf permission --refresh
 ```
 
 ## How It Works
@@ -59,9 +56,9 @@ Use `--project` or `--user` to skip the prompt.
 Coding Friend organizes permissions into two tiers:
 
 - **Tier 1 (Static)** — Path-independent rules like `Bash(git add *)`, `Bash(npm test *)`, MCP memory tools. These are stable across plugin updates.
-- **Tier 2 (Plugin Scripts)** — Rules for executing plugin shell scripts (e.g., `bash ~/.claude/plugins/cache/.../analyze-changes.sh *`). These use a version-independent glob pattern (`*`) so they survive plugin updates automatically.
+- **Tier 2 (Plugin Scripts)** — A single wide rule that covers all Coding Friend plugin scripts (e.g., `Bash(bash ~/.claude/plugins/cache/.../coding-friend *)`). This pattern is version-independent, so permissions survive plugin updates automatically — no refresh needed.
 
-When you run `cf update`, plugin script permissions are automatically refreshed if any were configured. You can also refresh manually with `cf permission --refresh`.
+When adding Plugin Script permissions, `cf permission` shows a warning explaining the wide pattern and asks for confirmation.
 
 ## Also Available In
 

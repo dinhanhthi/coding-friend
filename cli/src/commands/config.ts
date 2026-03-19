@@ -975,7 +975,7 @@ async function editPermissions(): Promise<void> {
   const userPath = claudeSettingsPath();
   const projectRules = getExistingRules(projectPath);
   const userRules = getExistingRules(userPath);
-  const allRules = getAllRules("glob");
+  const allRules = getAllRules();
   const allRuleStrings = allRules.map((r) => r.rule);
 
   const projectManaged = projectRules.filter((r) =>
@@ -1083,7 +1083,7 @@ export async function configCommand(): Promise<void> {
 
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
-    const allRules = getAllRules("glob");
+    const allRules = getAllRules();
     const allRuleStrings = allRules.map((r) => r.rule);
     const configuredCount = new Set([
       ...projectRules.filter((r) => allRuleStrings.includes(r)),
