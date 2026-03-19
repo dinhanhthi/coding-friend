@@ -7,24 +7,39 @@ keywords:
 
 ## Overview
 
-Interactive permission manager for Coding Friend. Configures Claude Code permission rules in your **project-local** settings (`.claude/settings.local.json`) so skills and hooks can run without repeated prompts.
-
-☝️ **Rules are scoped to the current project only** — they do not affect other projects or global Claude Code settings.
+Interactive permission manager for Coding Friend. Configures Claude Code permission rules so skills and hooks can run without repeated prompts.
 
 ```bash
 cf permission
-
-# Non-interactive mode (accept all)
-cf permission --all
 ```
 
 For the full list of rules and which skills use them, see [Permissions Reference](/docs/reference/permissions/).
 
 💡 You can run it multiple times to add or remove rules.
 
+## Usage
+
+```bash
+# Interactive — browse categories and pick rules
+cf permission
+
+# Apply all recommended permissions without prompts
+cf permission --all
+
+# Choose scope explicitly
+cf permission --project    # .claude/settings.local.json (default)
+cf permission --user       # ~/.claude/settings.json (all projects)
+
+# Combine: apply all to user scope
+cf permission --all --user
+
+# Refresh plugin script paths after a plugin update
+cf permission --refresh
+```
+
 ## How It Works
 
-1. Reads your current `.claude/settings.local.json` (project-local)
+1. Asks where to save permissions (project or user scope)
 2. Shows permission categories with configured/total counts
 3. Lets you drill into each category to check/uncheck individual rules
 4. Computes the diff (rules to add, rules to remove)
@@ -32,12 +47,30 @@ For the full list of rules and which skills use them, see [Permissions Reference
 
 ## Scope
 
-`cf permission` writes to **project-local** settings (`.claude/settings.local.json`), not global settings. This means permissions are scoped to the current project and won't affect other projects.
+By default, `cf permission` asks you to choose between:
 
-For **External Learn Directory** permissions (needed when `/cf-learn` writes outside your project), use [`cf init`](/docs/cli/cf-init/) Step 7 — those are written to global settings (`~/.claude/settings.json`) since they need to apply across projects.
+- **Project** (`.claude/settings.local.json`) — scoped to this project only, gitignored
+- **User** (`~/.claude/settings.json`) — applies to all projects
+
+Use `--project` or `--user` to skip the prompt.
+
+## Permission Tiers
+
+Coding Friend organizes permissions into two tiers:
+
+- **Tier 1 (Static)** — Path-independent rules like `Bash(git add *)`, `Bash(npm test *)`, MCP memory tools. These are stable across plugin updates.
+- **Tier 2 (Plugin Scripts)** — Rules for executing plugin shell scripts (e.g., `bash ~/.claude/plugins/cache/.../analyze-changes.sh *`). These use a version-independent glob pattern (`*`) so they survive plugin updates automatically.
+
+When you run `cf update`, plugin script permissions are automatically refreshed if any were configured. You can also refresh manually with `cf permission --refresh`.
+
+## Also Available In
+
+- **`cf init`** — Step 8 offers to apply all recommended permissions during initial setup
+- **`cf config`** → Permissions — same options accessible from the config menu
 
 ## See Also
 
 - [Permissions Reference](/docs/reference/permissions/) — full permission list with descriptions
-- [`cf init`](/docs/cli/cf-init/) — initial setup wizard (Step 7 handles learn directory permissions)
+- [`cf init`](/docs/cli/cf-init/) — initial setup wizard (Step 8 handles permissions)
+- [`cf config`](/docs/cli/cf-config/) — edit settings including permissions
 - [Security](/docs/reference/security/) — security model

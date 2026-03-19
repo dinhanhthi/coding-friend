@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
-import { claudeSettingsPath } from "../lib/paths.js";
+import { claudeLocalSettingsPath, claudeSettingsPath } from "../lib/paths.js";
 import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
@@ -281,7 +281,26 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     }
   }
 
-  // Step 5: Ensure shell completion
+  // Step 5: Refresh plugin permissions (if any were configured)
+  if (doPlugin) {
+    const { refreshPluginPermissions } = await import("../lib/permissions.js");
+
+    const paths = [
+      { path: claudeLocalSettingsPath(), scope: "project" },
+      { path: claudeSettingsPath(), scope: "user" },
+    ];
+
+    for (const { path, scope } of paths) {
+      const result = refreshPluginPermissions(path);
+      if (result) {
+        log.success(
+          `Refreshed ${result.updated} plugin permissions in ${scope} settings.`,
+        );
+      }
+    }
+  }
+
+  // Step 6: Ensure shell completion
   ensureShellCompletion({ silent: false });
 
   console.log();

@@ -23,7 +23,7 @@ export default function CopyForAiButton({
   return (
     <button
       onClick={handleCopy}
-      className="group/ai relative cursor-pointer rounded-md p-1.5 opacity-60 transition-all duration-200 hover:opacity-100 hover:bg-slate-700/40"
+      className="group/ai relative cursor-pointer rounded-md p-1.5 opacity-60 transition-all duration-200 hover:bg-slate-700/40 hover:opacity-100"
       aria-label="Copy page content for AI"
     >
       {copied ? (
@@ -47,7 +47,16 @@ export default function CopyForAiButton({
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <rect x="9" y="9" width="13" height="13" rx="2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+          <rect
+            x="9"
+            y="9"
+            width="13"
+            height="13"
+            rx="2"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

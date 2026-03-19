@@ -42,7 +42,19 @@ Read more about `cf install` [here](/docs/cli/cf-install/).
 cf init
 ```
 
-This will guide you through the configuration of Coding Friend. Read more about `cf init` [here](/docs/cli/cf-init/).
+This will guide you through the configuration of Coding Friend, including setting up [permissions](/docs/reference/permissions/) so skills and hooks can run without repeated prompts. Read more about `cf init` [here](/docs/cli/cf-init/).
+
+If you skip permissions during `cf init`, or want to manage them separately:
+
+```bash
+# Interactive — browse categories and pick rules
+cf permission
+
+# Or apply all recommended permissions at once
+cf permission --all
+```
+
+Read more about [`cf permission`](/docs/cli/cf-permission/).
 
 ## Auto-Update
 

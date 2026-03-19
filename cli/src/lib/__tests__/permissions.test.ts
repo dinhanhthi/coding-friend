@@ -6,11 +6,15 @@ import { randomUUID } from "crypto";
 import { readJson } from "../json.js";
 import {
   PERMISSION_RULES,
+  STATIC_RULES,
   getExistingRules,
   getMissingRules,
   buildLearnDirRules,
+  buildPluginScriptRules,
+  getAllRules,
   applyPermissions,
   groupByCategory,
+  refreshPluginPermissions,
 } from "../permissions.js";
 import type { PermissionRule } from "../permissions.js";
 
@@ -48,10 +52,10 @@ describe("getExistingRules", () => {
     writeFileSync(
       file,
       JSON.stringify({
-        permissions: { allow: ["Bash(git add:*)", "WebSearch"] },
+        permissions: { allow: ["Bash(git add *)", "WebSearch"] },
       }),
     );
-    expect(getExistingRules(file)).toEqual(["Bash(git add:*)", "WebSearch"]);
+    expect(getExistingRules(file)).toEqual(["Bash(git add *)", "WebSearch"]);
   });
 
   it("returns empty array when file does not exist", () => {
@@ -105,8 +109,8 @@ describe("buildLearnDirRules", () => {
   it("generates 5 rules with autoCommit", () => {
     const rules = buildLearnDirRules("~/notes", true);
     expect(rules).toHaveLength(5);
-    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add:*)");
-    expect(rules[4].rule).toBe("Bash(cd ~/notes && git commit:*)");
+    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add *)");
+    expect(rules[4].rule).toBe("Bash(cd ~/notes && git commit *)");
   });
 
   it("all rules have category 'External Learn Directory'", () => {
@@ -118,13 +122,13 @@ describe("buildLearnDirRules", () => {
 
   it("quotes paths with spaces in autoCommit rules", () => {
     const rules = buildLearnDirRules("~/my notes/learn", true);
-    expect(rules[3].rule).toBe('Bash(cd "~/my notes/learn" && git add:*)');
-    expect(rules[4].rule).toBe('Bash(cd "~/my notes/learn" && git commit:*)');
+    expect(rules[3].rule).toBe('Bash(cd "~/my notes/learn" && git add *)');
+    expect(rules[4].rule).toBe('Bash(cd "~/my notes/learn" && git commit *)');
   });
 
   it("does not quote paths without spaces", () => {
     const rules = buildLearnDirRules("~/notes", true);
-    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add:*)");
+    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add *)");
   });
 });
 
@@ -136,8 +140,8 @@ describe("getMissingRules + buildLearnDirRules integration", () => {
     expect(missing).toHaveLength(3);
     expect(missing.map((r) => r.rule)).toEqual([
       "Edit(~/notes/**)",
-      "Bash(cd ~/notes && git add:*)",
-      "Bash(cd ~/notes && git commit:*)",
+      "Bash(cd ~/notes && git add *)",
+      "Bash(cd ~/notes && git commit *)",
     ]);
   });
 
@@ -153,11 +157,11 @@ describe("applyPermissions", () => {
     const file = join(testDir, "settings.json");
     writeFileSync(file, JSON.stringify({ permissions: {} }));
 
-    applyPermissions(file, ["Bash(git add:*)", "WebSearch"], []);
+    applyPermissions(file, ["Bash(git add *)", "WebSearch"], []);
 
     const result = readJson<Record<string, unknown>>(file);
     const allow = (result?.permissions as { allow: string[] }).allow;
-    expect(allow).toEqual(["Bash(git add:*)", "WebSearch"]);
+    expect(allow).toEqual(["Bash(git add *)", "WebSearch"]);
   });
 
   it("removes rules from existing settings", () => {
@@ -211,11 +215,11 @@ describe("applyPermissions", () => {
   it("creates settings file when it does not exist", () => {
     const file = join(testDir, "new-settings.json");
 
-    applyPermissions(file, ["Bash(git add:*)"], []);
+    applyPermissions(file, ["Bash(git add *)"], []);
 
     const result = readJson<Record<string, unknown>>(file);
     const allow = (result?.permissions as { allow: string[] }).allow;
-    expect(allow).toEqual(["Bash(git add:*)"]);
+    expect(allow).toEqual(["Bash(git add *)"]);
   });
 
   it("preserves other settings keys", () => {
@@ -266,5 +270,160 @@ describe("groupByCategory", () => {
 
   it("returns empty map for empty input", () => {
     expect(groupByCategory([])).toEqual(new Map());
+  });
+});
+
+describe("STATIC_RULES", () => {
+  it("has no duplicate rules", () => {
+    const ruleStrings = STATIC_RULES.map((r) => r.rule);
+    const unique = new Set(ruleStrings);
+    expect(unique.size).toBe(ruleStrings.length);
+  });
+
+  it("does not contain plugin cache paths", () => {
+    for (const rule of STATIC_RULES) {
+      expect(rule.rule).not.toContain(".claude/plugins/cache");
+    }
+  });
+
+  it("uses space-star syntax, not colon-star", () => {
+    for (const rule of STATIC_RULES) {
+      if (rule.rule.startsWith("Bash(")) {
+        expect(rule.rule).not.toMatch(/:\*\)$/);
+      }
+    }
+  });
+
+  it("includes MCP memory tools", () => {
+    const mcpRules = STATIC_RULES.filter((r) =>
+      r.rule.startsWith("mcp__coding-friend-memory__"),
+    );
+    expect(mcpRules.length).toBeGreaterThanOrEqual(6);
+  });
+});
+
+describe("buildPluginScriptRules", () => {
+  it("glob mode returns rules with wildcard version segment", () => {
+    const rules = buildPluginScriptRules("glob");
+    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
+    for (const rule of bashRules) {
+      expect(rule.rule).toContain("coding-friend-marketplace/coding-friend/*/");
+    }
+  });
+
+  it("concrete mode uses provided plugin path", () => {
+    const rules = buildPluginScriptRules(
+      "concrete",
+      "/home/user/.claude/plugins/cache/coding-friend-marketplace/coding-friend/0.11.1",
+    );
+    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
+    for (const rule of bashRules) {
+      expect(rule.rule).toContain("/0.11.1/");
+      expect(rule.rule).not.toContain("*/");
+    }
+  });
+
+  it("concrete mode falls back to glob when no pluginPath", () => {
+    const rules = buildPluginScriptRules("concrete");
+    const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
+    for (const rule of bashRules) {
+      expect(rule.rule).toContain("*/");
+    }
+  });
+
+  it("all rules have category Plugin Scripts", () => {
+    const rules = buildPluginScriptRules("glob");
+    for (const rule of rules) {
+      expect(rule.category).toBe("Plugin Scripts");
+    }
+  });
+
+  it("includes Read rules for plugin files and global config", () => {
+    const rules = buildPluginScriptRules("glob");
+    const readRules = rules.filter((r) => r.rule.startsWith("Read("));
+    expect(readRules.length).toBe(2);
+    expect(
+      readRules.some((r) => r.rule.includes("coding-friend-marketplace")),
+    ).toBe(true);
+    expect(readRules.some((r) => r.rule.includes(".coding-friend"))).toBe(true);
+  });
+});
+
+describe("getAllRules", () => {
+  it("combines static and plugin script rules", () => {
+    const all = getAllRules("glob");
+    const pluginRules = all.filter((r) => r.category === "Plugin Scripts");
+    const staticRules = all.filter((r) => r.category !== "Plugin Scripts");
+
+    expect(staticRules.length).toBe(STATIC_RULES.length);
+    expect(pluginRules.length).toBeGreaterThan(0);
+    expect(all.length).toBe(staticRules.length + pluginRules.length);
+  });
+
+  it("has no duplicate rules across tiers", () => {
+    const all = getAllRules("glob");
+    const ruleStrings = all.map((r) => r.rule);
+    const unique = new Set(ruleStrings);
+    expect(unique.size).toBe(ruleStrings.length);
+  });
+});
+
+describe("refreshPluginPermissions", () => {
+  it("returns null when no plugin-path rules exist", () => {
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: { allow: ["Bash(git status *)", "WebSearch"] },
+      }),
+    );
+    expect(refreshPluginPermissions(file)).toBeNull();
+  });
+
+  it("returns null when settings file does not exist", () => {
+    expect(
+      refreshPluginPermissions(join(testDir, "nonexistent.json")),
+    ).toBeNull();
+  });
+
+  it("preserves non-plugin rules when refreshing", () => {
+    // Create a fake plugin cache directory
+    const fakeCache = join(
+      testDir,
+      ".claude",
+      "plugins",
+      "cache",
+      "coding-friend-marketplace",
+      "coding-friend",
+      "0.12.0",
+    );
+    mkdirSync(fakeCache, { recursive: true });
+
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: {
+          allow: [
+            "Bash(git status *)",
+            "Bash(bash /old/.claude/plugins/cache/coding-friend-marketplace/coding-friend/0.11.0/lib/load-custom-guide.sh *)",
+          ],
+        },
+      }),
+    );
+
+    // refreshPluginPermissions uses pluginCachePath() from paths.ts which reads real fs,
+    // so this test just verifies the function handles missing real plugin gracefully
+    const result = refreshPluginPermissions(file);
+    // It should find the plugin-path rule but may not find installed plugin
+    // depending on the test environment — either null or { updated: N } is acceptable
+    if (result) {
+      expect(result.updated).toBeGreaterThan(0);
+    }
+
+    // Non-plugin rule should always be preserved
+    const existing = readJson<Record<string, unknown>>(file);
+    const allow = (existing?.permissions as { allow: string[] }).allow;
+    expect(allow).toContain("Bash(git status *)");
   });
 });
