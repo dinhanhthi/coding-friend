@@ -474,4 +474,3 @@ export function logPluginScriptWarning(
     "This is scoped to Coding Friend only and survives plugin updates automatically.",
   );
 }
-

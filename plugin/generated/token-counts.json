@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-03-19T22:43:58.026Z",
+  "tokenizer": "@lenml/tokenizer-claude",
+  "tiers": {
+    "low": {
+      "label": "Low",
+      "maxTokens": 1000,
+      "icon": "⚡"
+    },
+    "medium": {
+      "label": "Medium",
+      "maxTokens": 2500,
+      "icon": "⚡⚡"
+    },
+    "high": {
+      "label": "High",
+      "icon": "⚡⚡⚡"
+    }
+  },
+  "bootstrap": {
+    "tokens": 1283,
+    "tier": "medium"
+  },
+  "skills": {
+    "cf-ask": {
+      "tokens": 2275,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-auto-review": {
+      "tokens": 986,
+      "tier": "low",
+      "type": "auto"
+    },
+    "cf-commit": {
+      "tokens": 944,
+      "tier": "low",
+      "type": "slash"
+    },
+    "cf-fix": {
+      "tokens": 2441,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-help": {
+      "tokens": 1798,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-learn": {
+      "tokens": 2455,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-optimize": {
+      "tokens": 1592,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-plan": {
+      "tokens": 1779,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-remember": {
+      "tokens": 2281,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-research": {
+      "tokens": 1448,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-review": {
+      "tokens": 1742,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-scan": {
+      "tokens": 3226,
+      "tier": "high",
+      "type": "slash"
+    },
+    "cf-session": {
+      "tokens": 1004,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-ship": {
+      "tokens": 760,
+      "tier": "low",
+      "type": "slash"
+    },
+    "cf-sys-debug": {
+      "tokens": 1665,
+      "tier": "medium",
+      "type": "auto"
+    },
+    "cf-tdd": {
+      "tokens": 1038,
+      "tier": "medium",
+      "type": "auto"
+    },
+    "cf-verification": {
+      "tokens": 570,
+      "tier": "low",
+      "type": "auto"
+    }
+  },
+  "agents": {
+    "cf-code-reviewer": {
+      "tokens": 414,
+      "tier": "low",
+      "model": "opus"
+    },
+    "cf-explorer": {
+      "tokens": 809,
+      "tier": "low",
+      "model": "haiku"
+    },
+    "cf-implementer": {
+      "tokens": 303,
+      "tier": "low",
+      "model": "opus"
+    },
+    "cf-planner": {
+      "tokens": 610,
+      "tier": "low",
+      "model": "opus"
+    },
+    "cf-writer-deep": {
+      "tokens": 894,
+      "tier": "low",
+      "model": "sonnet"
+    },
+    "cf-writer": {
+      "tokens": 914,
+      "tier": "low",
+      "model": "haiku"
+    }
+  }
+}

@@ -240,10 +240,12 @@ export async function permissionCommand(opts: {
     }
     console.log();
 
-    const ok = !process.stdin.isTTY || await confirm({
-      message: `Apply ${toAdd.length} permission rules to ${settingsLabel}?`,
-      default: true,
-    });
+    const ok =
+      !process.stdin.isTTY ||
+      (await confirm({
+        message: `Apply ${toAdd.length} permission rules to ${settingsLabel}?`,
+        default: true,
+      }));
     if (!ok) {
       log.dim("Skipped.");
       return;

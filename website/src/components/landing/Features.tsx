@@ -1,6 +1,8 @@
 "use client";
 
 import Container from "@/components/ui/Container";
+import TokenBadge from "@/components/ui/TokenBadge";
+import type { Tier } from "@/lib/token-data";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -619,27 +621,34 @@ function SkillsAgentsContent() {
             Manual triggering with natural language
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {[
-              "/cf-plan",
-              "/cf-fix",
-              "/cf-ask",
-              "/cf-review",
-              "/cf-commit",
-              "/cf-ship",
-              "/cf-optimize",
-              "/cf-scan",
-              "/cf-remember",
-              "/cf-learn",
-              "/cf-research",
-              "/cf-session",
-              "/cf-help",
-            ].map((cmd) => (
-              <code
-                key={cmd}
-                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-sm text-violet-300"
-              >
-                {cmd}
-              </code>
+            {(
+              [
+                { cmd: "/cf-plan", tier: "medium" },
+                { cmd: "/cf-fix", tier: "medium" },
+                { cmd: "/cf-ask", tier: "medium" },
+                { cmd: "/cf-review", tier: "medium" },
+                { cmd: "/cf-commit", tier: "low" },
+                { cmd: "/cf-ship", tier: "low" },
+                { cmd: "/cf-optimize", tier: "medium" },
+                { cmd: "/cf-scan", tier: "high" },
+                { cmd: "/cf-remember", tier: "medium" },
+                { cmd: "/cf-learn", tier: "medium" },
+                { cmd: "/cf-research", tier: "medium" },
+                { cmd: "/cf-session", tier: "medium" },
+                { cmd: "/cf-help", tier: "medium" },
+              ] as { cmd: string; tier: Tier }[]
+            ).map(({ cmd, tier }) => (
+              <span key={cmd} className="group inline-flex items-center gap-1">
+                <code className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-sm text-violet-300">
+                  {cmd}
+                </code>
+                <TokenBadge
+                  tier={tier}
+                  size="sm"
+                  variant="ghost"
+                  showTooltip={false}
+                />
+              </span>
             ))}
           </div>
           <div className="mt-4 border-t border-violet-500/10 pt-3">
@@ -685,10 +694,16 @@ function SkillsAgentsContent() {
                 desc: "Deep reasoning for nuanced content",
               },
             ].map((agent) => (
-              <div key={agent.name} className="flex items-start gap-2">
+              <div key={agent.name} className="group flex items-center gap-2">
                 <code className="shrink-0 text-sm font-medium text-sky-400">
                   {agent.name}
                 </code>
+                <TokenBadge
+                  tier="low"
+                  size="sm"
+                  variant="ghost"
+                  showTooltip={false}
+                />
                 <span className="text-sm text-slate-500">{agent.desc}</span>
               </div>
             ))}

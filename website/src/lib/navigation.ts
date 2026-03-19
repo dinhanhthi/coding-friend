@@ -12,28 +12,53 @@ export const docsNavigation: NavSection[] = [
   {
     title: "Skills",
     items: [
-      { title: "/cf-plan", slug: "skills/cf-plan" },
-      { title: "/cf-fix", slug: "skills/cf-fix" },
-      { title: "/cf-ask", slug: "skills/cf-ask", manualOnly: true },
-      { title: "/cf-optimize", slug: "skills/cf-optimize" },
-      { title: "/cf-scan", slug: "skills/cf-scan", manualOnly: true },
-      { title: "/cf-review", slug: "skills/cf-review" },
-      { title: "/cf-commit", slug: "skills/cf-commit", manualOnly: true },
-      { title: "/cf-ship", slug: "skills/cf-ship", manualOnly: true },
-      { title: "/cf-remember", slug: "skills/cf-remember" },
-      { title: "/cf-learn", slug: "skills/cf-learn" },
-      { title: "/cf-research", slug: "skills/cf-research", manualOnly: true },
-      { title: "/cf-session", slug: "skills/cf-session" },
-      { title: "/cf-help", slug: "skills/cf-help" },
+      { title: "/cf-plan", slug: "skills/cf-plan", tier: "medium" },
+      { title: "/cf-fix", slug: "skills/cf-fix", tier: "medium" },
+      {
+        title: "/cf-ask",
+        slug: "skills/cf-ask",
+        manualOnly: true,
+        tier: "medium",
+      },
+      { title: "/cf-optimize", slug: "skills/cf-optimize", tier: "medium" },
+      {
+        title: "/cf-scan",
+        slug: "skills/cf-scan",
+        manualOnly: true,
+        tier: "high",
+      },
+      { title: "/cf-review", slug: "skills/cf-review", tier: "medium" },
+      {
+        title: "/cf-commit",
+        slug: "skills/cf-commit",
+        manualOnly: true,
+        tier: "low",
+      },
+      {
+        title: "/cf-ship",
+        slug: "skills/cf-ship",
+        manualOnly: true,
+        tier: "low",
+      },
+      { title: "/cf-remember", slug: "skills/cf-remember", tier: "medium" },
+      { title: "/cf-learn", slug: "skills/cf-learn", tier: "medium" },
+      {
+        title: "/cf-research",
+        slug: "skills/cf-research",
+        manualOnly: true,
+        tier: "medium",
+      },
+      { title: "/cf-session", slug: "skills/cf-session", tier: "medium" },
+      { title: "/cf-help", slug: "skills/cf-help", tier: "medium" },
     ],
   },
   {
     title: "Auto-Invoked",
     items: [
-      { title: "cf-tdd", slug: "skills/cf-tdd" },
-      { title: "cf-sys-debug", slug: "skills/cf-sys-debug" },
-      { title: "cf-auto-review", slug: "skills/cf-auto-review" },
-      { title: "cf-verification", slug: "skills/cf-verification" },
+      { title: "cf-tdd", slug: "skills/cf-tdd", tier: "medium" },
+      { title: "cf-sys-debug", slug: "skills/cf-sys-debug", tier: "medium" },
+      { title: "cf-auto-review", slug: "skills/cf-auto-review", tier: "low" },
+      { title: "cf-verification", slug: "skills/cf-verification", tier: "low" },
     ],
   },
   {
@@ -76,6 +101,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
       { title: "Memory System", slug: "reference/memory-system" },
+      { title: "Context Usage", slug: "reference/context-usage" },
     ],
   },
 ];
@@ -86,6 +112,7 @@ export function flattenNavigation() {
     slug: string;
     section: string;
     manualOnly?: boolean;
+    tier?: "low" | "medium" | "high";
   }[] = [];
   for (const section of docsNavigation) {
     for (const item of section.items) {

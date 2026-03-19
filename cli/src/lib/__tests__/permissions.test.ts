@@ -432,4 +432,3 @@ describe("cleanupStalePluginRules", () => {
     expect(cleanupStalePluginRules(join(testDir, "nope.json"))).toBe(0);
   });
 });
-

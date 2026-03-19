@@ -1,9 +1,12 @@
 import Container from "@/components/ui/Container";
+import TokenBadge from "@/components/ui/TokenBadge";
+import type { Tier } from "@/lib/token-data";
 
 interface Skill {
   command: string;
   title: string;
   description: string;
+  tier: Tier;
 }
 
 const slashCommands: Skill[] = [
@@ -12,70 +15,83 @@ const slashCommands: Skill[] = [
     title: "Plan",
     description:
       "Brainstorm and create implementation plans with structured exploration",
+    tier: "medium",
   },
   {
     command: "/cf-fix",
     title: "Fix",
     description:
       "Quick bug fix workflow with problem verification and approach confirmation",
+    tier: "medium",
   },
   {
     command: "/cf-ask",
     title: "Ask",
     description: "Quick Q&A about your codebase with persistent memory",
+    tier: "medium",
   },
   {
     command: "/cf-optimize",
     title: "Optimize",
     description: "Structured optimization with before/after measurement",
+    tier: "medium",
   },
   {
     command: "/cf-review",
     title: "Review",
     description: "Multi-layer code review in a forked subagent",
+    tier: "medium",
   },
   {
     command: "/cf-commit",
     title: "Commit",
     description: "Smart conventional commits with diff analysis",
+    tier: "low",
   },
   {
     command: "/cf-ship",
     title: "Ship",
     description: "Verify, commit, push, and create PR in one command",
+    tier: "low",
   },
   {
     command: "/cf-scan",
     title: "Scan",
     description:
       "Scan project and bootstrap memory with architecture and conventions",
+    tier: "high",
   },
   {
     command: "/cf-remember",
     title: "Remember",
     description: "Capture project knowledge for AI memory across sessions",
+    tier: "medium",
   },
   {
     command: "/cf-learn",
     title: "Learn",
     description: "Extract human learning docs from vibe coding sessions",
+    tier: "medium",
   },
   {
     command: "/cf-research",
     title: "Research",
     description: "In-depth research with web search and parallel subagents",
+    tier: "medium",
   },
   {
     command: "/cf-session",
     title: "Session",
     description:
       "Save current session to docs/sessions/ to resume on another machine",
+    tier: "medium",
   },
   {
     command: "/cf-help",
     title: "Help",
     description:
       "Answer questions about Coding Friend — skills, agents, workflows",
+    tier: "medium",
   },
 ];
 
@@ -84,30 +100,37 @@ const autoSkills: Skill[] = [
     command: "cf-tdd",
     title: "TDD Workflow",
     description: "Enforces test-driven development: RED, GREEN, REFACTOR",
+    tier: "medium",
   },
   {
     command: "cf-sys-debug",
     title: "Systematic Debug",
     description: "4-phase debugging methodology for systematic problem solving",
+    tier: "medium",
   },
   {
     command: "cf-auto-review",
     title: "Code Review",
     description: "Multi-layer review checklist automatically applied",
+    tier: "low",
   },
   {
     command: "cf-verification",
     title: "Verification Gate",
     description: "Ensures tests pass before claiming work is done",
+    tier: "low",
   },
 ];
 
 function SkillCard({ skill }: { skill: Skill }) {
   return (
     <div className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5">
-      <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
-        {skill.command}
-      </code>
+      <div className="flex items-center justify-between">
+        <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
+          {skill.command}
+        </code>
+        <TokenBadge tier={skill.tier} size="lg" variant="ghost" />
+      </div>
       <h3 className="mt-3 text-base font-semibold whitespace-nowrap text-white">
         {skill.title}
       </h3>
