@@ -91,8 +91,10 @@ File path: `{outputDir}/{category}/{name}.md`
 Before creating a new file, check if a relevant file already exists in the target category:
 
 ```bash
-find {outputDir} -name "*.md" -not -name "README.md" | sort
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
 ```
+
+Replace `/absolute/path/to/outputDir` with the resolved absolute path from Step 0 before running.
 
 For each potentially relevant file, read its first 20 lines to understand what it covers. If the new knowledge fits an existing file, **append** to it instead of creating a new one.
 

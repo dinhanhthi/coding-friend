@@ -43,18 +43,19 @@ This skill is automatically invoked by other skills — you don't always need to
 2. **Gather the diff:**
 
    ```bash
-   git diff HEAD
-   git diff --staged
-   git log --oneline -10
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
    ```
 
 3. **Assess change size** to determine review depth:
 
+   Run the bundled script (one permission prompt instead of many):
+
    ```bash
-   FILES_CHANGED=$(git diff --name-only HEAD | wc -l | tr -d ' ')
-   LINES_CHANGED=$(git diff --stat HEAD | tail -1 | grep -oE '[0-9]+ insertion|[0-9]+ deletion' | grep -oE '[0-9]+' | paste -sd+ - | bc)
-   SENSITIVE=$(git diff --name-only HEAD | grep -ciE "(auth|security|crypto|token|session|middleware|api/|login|password|secret|\.env)" || echo 0)
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/assess-changes.sh"
    ```
+
+   The script prints `KEY=value` lines: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, and `MODE`.
+   Use the `MODE` value directly — no further calculation needed.
 
    | Mode         | Condition                                          | Behavior                                                                |
    | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -123,7 +124,7 @@ This skill is automatically invoked by other skills — you don't always need to
 10. **Mark review complete and display status:**
 
 ```bash
-mkdir -p /tmp/coding-friend && touch /tmp/coding-friend/reviewed
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
 ```
 
 11. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
