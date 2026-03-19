@@ -75,8 +75,10 @@ function printBanner(): void {
 }
 
 let _stepIndex = 0;
+let _suppressStepHeaders = false;
 
 function printStepHeader(label: string, description?: string): void {
+  if (_suppressStepHeaders) return;
   _stepIndex++;
   const line = chalk.hex("#10b981")("─".repeat(44));
   console.log();
@@ -902,6 +904,170 @@ async function stepClaudePermissions(
   log.dim("Fine-tune later with: `cf permission` or `cf config` → Permissions");
 }
 
+// ─── Interactive Menu (returning users) ───────────────────────────────
+
+async function initMenu(gitAvailable: boolean): Promise<void> {
+  while (true) {
+    // Re-read configs each iteration to reflect changes from previous step
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+    const docsDir = getDocsDir(globalCfg, localCfg);
+
+    // Compute status for each menu item
+    const docsDirScope = getScopeLabel("docsDir", globalCfg, localCfg);
+    const docsDirVal = getMergedValue("docsDir", globalCfg, localCfg) as
+      | string
+      | undefined;
+
+    const langScope = getScopeLabel("language", globalCfg, localCfg);
+    const langVal = getMergedValue("language", globalCfg, localCfg) as
+      | string
+      | undefined;
+
+    const learnScope = getScopeLabel("learn", globalCfg, localCfg);
+
+    const gitignoreStatus = !gitAvailable
+      ? chalk.dim("skipped")
+      : hasGitignoreBlock()
+        ? chalk.green("configured")
+        : chalk.yellow("not configured");
+
+    const completionStatus = hasShellCompletion()
+      ? chalk.green("installed")
+      : chalk.yellow("not installed");
+
+    const statuslineStatus = isStatuslineConfigured()
+      ? chalk.green("configured")
+      : chalk.yellow("not configured");
+
+    const memoryStatus = isMemoryMcpConfigured()
+      ? chalk.green("configured")
+      : chalk.yellow("not configured");
+
+    const projectRules = getExistingRules(claudeLocalSettingsPath());
+    const userRules = getExistingRules(claudeSettingsPath());
+    const allRules = getAllRules("glob");
+    const allRuleStrings = allRules.map((r) => r.rule);
+    const configuredRuleCount = new Set([
+      ...projectRules.filter((r) => allRuleStrings.includes(r)),
+      ...userRules.filter((r) => allRuleStrings.includes(r)),
+    ]).size;
+    const permissionStatus =
+      configuredRuleCount > 0
+        ? chalk.green(`${configuredRuleCount}/${allRules.length}`)
+        : chalk.yellow(`0/${allRules.length}`);
+
+    // Build menu choices
+    const choices: {
+      name: string;
+      value: string;
+      description?: string;
+      disabled?: boolean | string;
+    }[] = [
+      {
+        name: `Docs folder ${formatScopeLabel(docsDirScope)}${docsDirVal ? ` (${docsDirVal})` : ""}`,
+        value: "docsDir",
+        description:
+          "  Where plans, memory, research, and session docs are stored",
+      },
+      {
+        name: `.gitignore (${gitignoreStatus})`,
+        value: "gitignore",
+        description: "  Add or update coding-friend artifacts in .gitignore",
+        ...(gitAvailable ? {} : { disabled: "not in a git repo" }),
+      },
+      {
+        name: `Docs language ${formatScopeLabel(langScope)}${langVal ? ` (${langVal})` : ""}`,
+        value: "language",
+        description:
+          "  Language for /cf-plan, /cf-ask, /cf-remember generated docs",
+      },
+      {
+        name: `/cf-learn config ${formatScopeLabel(learnScope)}`,
+        value: "learn",
+        description:
+          "  Output dir, language, categories, auto-commit, README index",
+      },
+      {
+        name: `Shell completion (${completionStatus})`,
+        value: "completion",
+        description: "  Tab-complete for cf commands in your shell",
+      },
+      {
+        name: `Statusline (${statuslineStatus})`,
+        value: "statusline",
+        description:
+          "  Token count, model, and session info in your terminal prompt",
+      },
+      {
+        name: `CF Memory MCP (${memoryStatus})`,
+        value: "memory",
+        description: "  Connect the memory system to Claude Code via MCP",
+      },
+      {
+        name: `Permissions (${permissionStatus} rules)`,
+        value: "permissions",
+        description:
+          "  Grant Coding Friend skills/hooks the permissions they need",
+      },
+    ];
+
+    const choice = await select({
+      message: "Which setting to configure?",
+      choices: injectBackChoice(choices, "Exit"),
+    });
+
+    if (choice === BACK) {
+      log.dim("Done. Run `cf init` anytime to reconfigure.");
+      return;
+    }
+
+    // Suppress step headers in menu mode — user already selected from menu
+    _suppressStepHeaders = true;
+
+    switch (choice) {
+      case "docsDir":
+        await stepDocsDir(globalCfg, localCfg);
+        break;
+      case "gitignore":
+        await stepGitignore(docsDir);
+        break;
+      case "language":
+        await stepDocsLanguage(globalCfg, localCfg);
+        break;
+      case "learn":
+        await stepLearnConfig(globalCfg, localCfg, gitAvailable);
+        break;
+      case "completion":
+        await stepShellCompletion();
+        break;
+      case "statusline":
+        await stepStatusline();
+        break;
+      case "memory":
+        await stepMemory(docsDir);
+        break;
+      case "permissions": {
+        const learnCfg = (localCfg?.learn ?? globalCfg?.learn) as
+          | CodingFriendConfig["learn"]
+          | undefined;
+        const learnOutputDir = learnCfg?.outputDir || `${docsDir}/learn`;
+        const learnIsExternal = !learnOutputDir.startsWith(`${docsDir}/`);
+        const learnAutoCommit = learnCfg?.autoCommit || false;
+        await stepClaudePermissions(
+          learnIsExternal ? learnOutputDir : null,
+          learnAutoCommit,
+        );
+        break;
+      }
+    }
+
+    _suppressStepHeaders = false;
+
+    console.log();
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────
 
 export async function initCommand(): Promise<void> {
@@ -916,6 +1082,9 @@ export async function initCommand(): Promise<void> {
     console.log();
   }
 
+  // Check if project has been initialized before
+  const alreadyInitialized = existsSync(join(process.cwd(), ".coding-friend"));
+
   // Load raw configs for status display
   const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   const localCfg = readJson<CodingFriendConfig>(localConfigPath());
@@ -927,6 +1096,42 @@ export async function initCommand(): Promise<void> {
 
   const { allDone, notLocalCount, notConfiguredCount, missingFolders } =
     printSetupStatus(globalCfg, localCfg, gitAvailable);
+
+  if (alreadyInitialized) {
+    // ── Returning user: show interactive menu ──────────────────────
+    if (allDone) {
+      if (notLocalCount > 0) {
+        console.log(
+          chalk.dim(
+            `  ${notLocalCount} setting(s) inherited from global config only.`,
+          ),
+        );
+        console.log();
+      }
+      log.success("All settings configured!");
+      console.log();
+    } else {
+      const parts: string[] = [];
+      if (missingFolders > 0) {
+        parts.push(`${missingFolders} folder(s) missing`);
+      }
+      if (notConfiguredCount > 0) {
+        parts.push(`${notConfiguredCount} setting(s) not configured`);
+      }
+      if (notLocalCount > 0) {
+        parts.push(`${notLocalCount} not set locally`);
+      }
+      if (parts.length > 0) {
+        console.log(`  ${chalk.yellow("⚠")} ${parts.join(" · ")}`);
+        console.log();
+      }
+    }
+
+    await initMenu(gitAvailable);
+    return;
+  }
+
+  // ── First-time user: run linear wizard ────────────────────────────
 
   if (allDone) {
     if (notLocalCount > 0) {
@@ -1018,6 +1223,11 @@ export async function initCommand(): Promise<void> {
     "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
   );
   await stepClaudePermissions(isExternal ? outputDir : null, autoCommit);
+
+  // Ensure .coding-friend/config.json exists as init marker
+  if (!existsSync(localConfigPath())) {
+    writeJson(localConfigPath(), {});
+  }
 
   // Final
   console.log();
