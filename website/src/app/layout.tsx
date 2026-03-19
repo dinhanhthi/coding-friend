@@ -4,15 +4,17 @@ import Footer from "@/components/layout/Footer";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
 
+const siteTitle = "Coding Friend — Claude Code Plugin";
+const siteDescription =
+  "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture — as a Claude Code plugin.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
-    default:
-      "Coding Friend - Disciplined Engineering Workflows for Claude Code",
+    default: siteTitle,
     template: "%s | Coding Friend",
   },
-  description:
-    "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
+  description: siteDescription,
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
@@ -20,15 +22,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Coding Friend",
-    title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
-    description:
-      "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
+    title: siteTitle,
+    description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Coding Friend - Disciplined Engineering Workflows for Claude Code",
-    description:
-      "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
+    title: siteTitle,
+    description: siteDescription,
   },
   alternates: {
     canonical: "https://cf.dinhanhthi.com",
