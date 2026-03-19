@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.18.0 (unpublished)
+## v1.18.0 (2026-03-20)
 
 - Fix permission rules to support both quoted and unquoted script invocations — prevents repeated permission prompts for `/cf-review`, `/cf-commit`, and other skills [#e690da7](https://github.com/dinhanhthi/coding-friend/commit/e690da7)
 - Fix permissions to use absolute path + wide glob pattern for plugin script rules [#57ad562](https://github.com/dinhanhthi/coding-friend/commit/57ad562)

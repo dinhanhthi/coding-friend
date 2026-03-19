@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.12.0 (unpublished)
+## v0.12.0 (2026-03-20)
 
 - Add token usage visibility across UI with tier icons and documentation [#4227860](https://github.com/dinhanhthi/coding-friend/commit/4227860)
 - Extract hardcoded bash commands into scripts for skills [#4338b91](https://github.com/dinhanhthi/coding-friend/commit/4338b91)
