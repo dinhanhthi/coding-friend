@@ -6,7 +6,7 @@ interface Props {
 
 export default function DocsBreadcrumbs({ items }: Props) {
   return (
-    <nav className="mb-6 flex items-center gap-1.5 text-sm text-slate-400">
+    <nav className="mb-6 flex items-center gap-1.5 text-base text-slate-400">
       <Link href="/docs/" className="transition-colors hover:text-violet-400">
         Docs
       </Link>

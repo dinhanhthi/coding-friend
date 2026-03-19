@@ -40,7 +40,7 @@ function normalizePagefindUrl(url: string): string {
 function ExcerptMarkup({ html }: { html: string }) {
   return (
     <p
-      className="mt-0.5 line-clamp-2 text-sm text-slate-400 [&_mark]:bg-transparent [&_mark]:text-yellow-200!"
+      className="mt-0.5 line-clamp-2 text-base text-slate-400 [&_mark]:bg-transparent [&_mark]:text-yellow-200!"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -202,9 +202,9 @@ export default function PagefindSearch() {
             value={query}
             onValueChange={setQuery}
             placeholder="Search documentation..."
-            className="flex-1 bg-transparent py-3 text-sm text-white placeholder-slate-500 outline-none"
+            className="flex-1 bg-transparent py-3 text-base text-white placeholder-slate-500 outline-none"
           />
-          <kbd className="rounded border border-[#a0a0a01c] px-1.5 py-0.5 text-xs text-slate-500">
+          <kbd className="rounded border border-[#a0a0a01c] px-1.5 py-0.5 text-sm text-slate-500">
             ESC
           </kbd>
         </div>
@@ -212,18 +212,18 @@ export default function PagefindSearch() {
         {/* Results */}
         <Command.List className="max-h-[50vh] overflow-y-auto">
           {loading && (
-            <Command.Loading className="px-4 py-6 text-center text-sm text-slate-400">
+            <Command.Loading className="px-4 py-6 text-center text-base text-slate-400">
               Searching...
             </Command.Loading>
           )}
 
           {!ready && query.trim() && (
-            <p className="px-4 py-6 text-center text-sm text-slate-400">
+            <p className="px-4 py-6 text-center text-base text-slate-400">
               Search index not available. Run a production build first.
             </p>
           )}
 
-          <Command.Empty className="px-4 py-6 text-center text-sm text-slate-400">
+          <Command.Empty className="px-4 py-6 text-center text-base text-slate-400">
             {query.trim() ? (
               <>No results found for &ldquo;{query}&rdquo;</>
             ) : (

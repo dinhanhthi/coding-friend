@@ -135,7 +135,7 @@ const statuslineSegments = [
 function StatuslineContent() {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-relaxed text-slate-400">
+      <p className="text-base leading-relaxed text-slate-400">
         Always know what&apos;s happening. Your terminal statusline, upgraded
         with real-time project context — version, branch, model, context usage,
         and rate limits at a glance. Read more about it{" "}
@@ -157,13 +157,13 @@ function StatuslineContent() {
             <span className="h-3 w-3 rounded-full bg-red-500/80" />
             <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
             <span className="h-3 w-3 rounded-full bg-green-500/80" />
-            <span className="ml-3 font-mono text-xs text-slate-500">
+            <span className="ml-3 font-mono text-sm text-slate-500">
               claude — coding-friend
             </span>
           </div>
 
           {/* Terminal content */}
-          <div className="rounded-lg bg-[#1a1b26] px-5 py-4 font-mono text-sm leading-relaxed select-none">
+          <div className="rounded-lg bg-[#1a1b26] px-5 py-4 font-mono text-base leading-relaxed select-none">
             <div className="flex justify-between">
               <span>
                 <span className="font-bold text-cyan-400">➜</span>{" "}
@@ -172,7 +172,7 @@ function StatuslineContent() {
               <span className="text-blue-400">[12:47:44]</span>
             </div>
             <div className="h-3" />
-            <pre className="text-sm leading-snug">
+            <pre className="text-base leading-snug">
               <span className="text-violet-400">{"    ✻\n"}</span>
               <span className="text-violet-400">{"    |\n"}</span>
               <span className="text-violet-400">{"   ▟█▙"}</span>
@@ -197,7 +197,7 @@ function StatuslineContent() {
               </span>
             </div>
             <div className="my-3 border-t border-slate-700/60" />
-            <div className="flex flex-wrap items-center gap-0 gap-y-2 text-sm">
+            <div className="flex flex-wrap items-center gap-0 gap-y-2 text-base">
               <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
@@ -206,7 +206,7 @@ function StatuslineContent() {
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
             </div>
-            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-sm">
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-base">
               <span className="whitespace-nowrap text-amber-400">ctx 42%</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-slate-400">
@@ -229,17 +229,17 @@ function StatuslineContent() {
             key={seg.label}
             className="bg-navy-950/80 flex items-center gap-2 rounded-lg border border-[#a0a0a05d] px-3 py-2"
           >
-            <span className={`font-mono text-sm font-medium ${seg.color}`}>
+            <span className={`font-mono text-base font-medium ${seg.color}`}>
               {seg.example}
             </span>
-            <span className="text-sm text-slate-500">{seg.label}</span>
+            <span className="text-base text-slate-500">{seg.label}</span>
           </div>
         ))}
       </div>
 
       <p className="text-center text-slate-500">
         Run{" "}
-        <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-xs text-violet-400">
+        <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-sm text-violet-400">
           cf statusline
         </code>{" "}
         to set up in seconds.
@@ -255,7 +255,7 @@ function StatuslineContent() {
 function LearnHostContent() {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-relaxed text-slate-400">
+      <p className="text-base leading-relaxed text-slate-400">
         <Link className="text-emerald-400" href="/docs/skills/cf-learn">
           <code>/cf-learn</code>
         </Link>{" "}
@@ -268,7 +268,7 @@ function LearnHostContent() {
       </p>
 
       {/* Pipeline flow */}
-      <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center justify-center gap-3 text-base">
         {[
           {
             label: "/cf-learn",
@@ -313,7 +313,7 @@ function LearnHostContent() {
               >
                 {step.label}
               </code>
-              <p className="mt-0.5 text-xs text-slate-500">{step.desc}</p>
+              <p className="mt-0.5 text-sm text-slate-500">{step.desc}</p>
             </div>
           </div>
         ))}
@@ -339,7 +339,7 @@ function LearnHostContent() {
         ].map((tag) => (
           <span
             key={tag}
-            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300"
+            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-sm text-emerald-300"
           >
             {tag}
           </span>
@@ -371,7 +371,7 @@ Restoring session context...
 function SessionContent() {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-relaxed text-slate-400">
+      <p className="text-base leading-relaxed text-slate-400">
         Save your Claude Code session to a portable markdown file and resume it
         on any machine. Perfect for switching between desktop and laptop, or
         handing off work to a teammate.
@@ -385,9 +385,9 @@ function SessionContent() {
               /cf-session
             </code>
           </Link>
-          <p className="mt-1.5 text-sm text-slate-400">
+          <p className="mt-1.5 text-base text-slate-400">
             Save current session context, messages, and file changes to{" "}
-            <code className="text-xs text-slate-300">docs/sessions/</code>.
+            <code className="text-sm text-slate-300">docs/sessions/</code>.
           </p>
         </div>
         <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 text-center">
@@ -396,7 +396,7 @@ function SessionContent() {
               cf session load
             </code>
           </Link>
-          <p className="mt-1.5 text-sm text-slate-400">
+          <p className="mt-1.5 text-base text-slate-400">
             Restore a saved session on any machine — pick up exactly where you
             left off
           </p>
@@ -410,11 +410,11 @@ function SessionContent() {
             <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
             <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
             <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
-            <span className="ml-2 font-mono text-xs text-slate-500">
+            <span className="ml-2 font-mono text-sm text-slate-500">
               terminal
             </span>
           </div>
-          <pre className="overflow-x-auto p-4! pt-0! pb-4 font-mono text-xs leading-relaxed text-slate-300">
+          <pre className="overflow-x-auto p-4! pt-0! pb-4 font-mono text-sm leading-relaxed text-slate-300">
             {sessionSaveExample.split("\n").map((line, i) => {
               if (line.startsWith("$")) {
                 const parts = line.split(" ");
@@ -477,7 +477,7 @@ function SessionContent() {
 function MemoryContent() {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-relaxed text-slate-400">
+      <p className="text-base leading-relaxed text-slate-400">
         Every AI session starts from scratch — repeating mistakes, forgetting
         decisions.{" "}
         <Link
@@ -519,12 +519,12 @@ function MemoryContent() {
             className={`rounded-xl border ${t.border} bg-navy-950/60 p-4 text-center`}
           >
             <span
-              className={`font-mono text-xs font-medium uppercase ${t.color}`}
+              className={`font-mono text-sm font-medium uppercase ${t.color}`}
             >
               {t.tier}
             </span>
-            <p className={`mt-1 text-sm font-semibold ${t.color}`}>{t.name}</p>
-            <p className="mt-1 text-xs text-slate-400">{t.desc}</p>
+            <p className={`mt-1 text-base font-semibold ${t.color}`}>{t.name}</p>
+            <p className="mt-1 text-sm text-slate-400">{t.desc}</p>
           </div>
         ))}
       </div>
@@ -568,8 +568,8 @@ function MemoryContent() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-white">{item.title}</p>
-              <p className="mt-0.5 text-xs text-slate-400">{item.desc}</p>
+              <p className="text-base font-medium text-white">{item.title}</p>
+              <p className="mt-0.5 text-sm text-slate-400">{item.desc}</p>
             </div>
           </div>
         ))}
@@ -585,7 +585,7 @@ function MemoryContent() {
 function SkillsAgentsContent() {
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-relaxed text-slate-400">
+      <p className="text-base leading-relaxed text-slate-400">
         <Link
           className="text-violet-400 hover:underline hover:underline-offset-3"
           href="/docs/skills/overview/"
@@ -610,10 +610,10 @@ function SkillsAgentsContent() {
       <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
         {/* Skills column */}
         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
-          <h4 className="text-sm font-semibold text-violet-400">
+          <h4 className="text-base font-semibold text-violet-400">
             13 Slash Commands
           </h4>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             Manual triggering with natural language
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -634,17 +634,17 @@ function SkillsAgentsContent() {
             ].map((cmd) => (
               <code
                 key={cmd}
-                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300"
+                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-sm text-violet-300"
               >
                 {cmd}
               </code>
             ))}
           </div>
           <div className="mt-4 border-t border-violet-500/10 pt-3">
-            <h4 className="text-sm font-semibold text-slate-300">
+            <h4 className="text-base font-semibold text-slate-300">
               4 Auto-Invoked Skills
             </h4>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-sm text-slate-500">
               Activate automatically when relevant — TDD, debugging,
               verification, code review
             </p>
@@ -653,10 +653,10 @@ function SkillsAgentsContent() {
 
         {/* Agents column */}
         <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-5">
-          <h4 className="text-sm font-semibold text-sky-400">
+          <h4 className="text-base font-semibold text-sky-400">
             6 Specialized Agents
           </h4>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             Autonomous subprocesses for parallel work
           </p>
           <div className="mt-3 flex flex-col gap-2">
@@ -684,17 +684,17 @@ function SkillsAgentsContent() {
               },
             ].map((agent) => (
               <div key={agent.name} className="flex items-start gap-2">
-                <code className="shrink-0 text-xs font-medium text-sky-400">
+                <code className="shrink-0 text-sm font-medium text-sky-400">
                   {agent.name}
                 </code>
-                <span className="text-xs text-slate-500">{agent.desc}</span>
+                <span className="text-sm text-slate-500">{agent.desc}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-base text-slate-500">
         Skills orchestrate agents behind the scenes —{" "}
         <code className="text-violet-400">/cf-review</code> dispatches{" "}
         <code className="text-sky-400">cf-code-reviewer</code>,{" "}
@@ -990,7 +990,7 @@ export default function Features() {
                 <button
                   key={tab.id}
                   onClick={() => goToTab(idx)}
-                  className={`group relative flex shrink-0 cursor-pointer flex-col items-center gap-1.5 rounded-t-xl px-4 py-3 text-sm font-medium transition-all duration-300 sm:min-w-[140px] sm:px-5 sm:py-3.5 ${
+                  className={`group relative flex shrink-0 cursor-pointer flex-col items-center gap-1.5 rounded-t-xl px-4 py-3 text-base font-medium transition-all duration-300 sm:min-w-[140px] sm:px-5 sm:py-3.5 ${
                     isActive
                       ? `${c.active} bg-navy-950/50`
                       : `${c.inactive} opacity-50`

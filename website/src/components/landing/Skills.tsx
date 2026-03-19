@@ -105,13 +105,13 @@ const autoSkills: Skill[] = [
 function SkillCard({ skill }: { skill: Skill }) {
   return (
     <div className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5">
-      <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-sm font-medium whitespace-nowrap text-violet-400">
+      <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
         {skill.command}
       </code>
       <h3 className="mt-3 text-base font-semibold whitespace-nowrap text-white">
         {skill.title}
       </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-slate-400">
+      <p className="mt-1.5 text-base leading-relaxed text-slate-400">
         {skill.description}
       </p>
     </div>
@@ -175,12 +175,12 @@ export default function Skills() {
 
             <div className="relative overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] shadow-2xl shadow-violet-500/10">
               <div className="flex items-center gap-2 border-b border-slate-700/60 px-4 py-2.5">
-                <span className="font-mono text-xs text-slate-500">
+                <span className="font-mono text-sm text-slate-500">
                   .coding-friend/skills/cf-commit-custom/SKILL.md
                 </span>
               </div>
 
-              <div className="px-5 py-4 font-mono text-sm leading-relaxed">
+              <div className="px-5 py-4 font-mono text-base leading-relaxed">
                 <div>
                   <span className="font-bold text-emerald-400">## Before</span>
                 </div>
@@ -229,18 +229,18 @@ export default function Skills() {
                 className={`bg-navy-950/50 rounded-xl border ${item.borderColor} p-4 text-center`}
               >
                 <code
-                  className={`border-none! text-sm! font-bold ${item.color}`}
+                  className={`border-none! text-base! font-bold ${item.color}`}
                 >
                   {item.section}
                 </code>
-                <p className="mt-2 text-sm text-slate-400">{item.desc}</p>
+                <p className="mt-2 text-base text-slate-400">{item.desc}</p>
               </div>
             ))}
           </div>
 
           <p className="text-center text-slate-500">
             Create{" "}
-            <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-xs text-violet-400">
+            <code className="rounded border border-[#a0a0a05d] px-2 py-0.5 text-sm text-violet-400">
               .coding-friend/skills/&lt;skill-name&gt;-custom/SKILL.md
             </code>{" "}
             to customize any skill.

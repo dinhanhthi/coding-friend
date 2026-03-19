@@ -389,7 +389,7 @@ export default function HowItWorks() {
             style={{ maxWidth: `${SVG_W + 32}px` }}
           >
             {/* CF Memory tag */}
-            <span className="absolute top-1.5 left-3.5 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-sm text-amber-400">
+            <span className="absolute top-1.5 left-3.5 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-base text-amber-400">
               <svg
                 className="h-3 w-3"
                 viewBox="0 0 24 24"
@@ -617,7 +617,7 @@ export default function HowItWorks() {
                     x={(getMainPos(1).x + getMainPos(3).x) / 2}
                     y={(AGENT_Y + SIDE_H / 2 + MAIN_Y - NODE_H / 2) / 2 - 8}
                     textAnchor="middle"
-                    className="fill-yellow-400/80 text-xs font-semibold"
+                    className="fill-yellow-400/80 text-sm font-semibold"
                     fontFamily="monospace"
                   >
                     iterate
@@ -887,7 +887,7 @@ export default function HowItWorks() {
               {/* ── Tooltip ── */}
               {tooltipNode && tooltipPos && (
                 <div
-                  className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-[#a0a0a01c] px-3 py-2 text-center text-xs leading-relaxed text-slate-300 shadow-xl"
+                  className="bg-navy-950 pointer-events-none absolute z-20 w-56 rounded-lg border border-[#a0a0a01c] px-3 py-2 text-center text-sm leading-relaxed text-slate-300 shadow-xl"
                   style={{
                     left: `${(tooltipPos.x / SVG_W) * 100}%`,
                     top: `${(tooltipPos.y / SVG_H) * 100}%`,
@@ -917,7 +917,7 @@ export default function HowItWorks() {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400">
             <span className="flex items-center gap-2">
               <span className="inline-block h-2.5 w-2.5 rounded-full bg-violet-500" />
               Main flow
@@ -931,7 +931,7 @@ export default function HowItWorks() {
               Agents
             </span>
           </div>
-          <p className="mt-2 text-center text-xs text-slate-400">
+          <p className="mt-2 text-center text-sm text-slate-400">
             Plus utility skills:{" "}
             <a
               href="/docs/skills/cf-ask/"
@@ -1000,7 +1000,7 @@ export default function HowItWorks() {
         </div>
 
         {/* Legend */}
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-full bg-violet-500" />
             Main flow
@@ -1014,7 +1014,7 @@ export default function HowItWorks() {
             Agents
           </span>
         </div>
-        <p className="mb-8 text-center text-xs text-slate-500">
+        <p className="mb-8 text-center text-sm text-slate-500">
           Plus utility skills:{" "}
           <a
             href="/docs/skills/cf-ask/"
@@ -1065,7 +1065,7 @@ export default function HowItWorks() {
         {/* CF Memory frame */}
         <div className="relative mx-auto max-w-md rounded-xl border border-amber-500/20 bg-amber-500/2 px-3 pt-14 pb-8">
           {/* CF Memory tag */}
-          <span className="absolute top-2.5 left-3 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-xs text-amber-400">
+          <span className="absolute top-2.5 left-3 flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-mono text-sm text-amber-400">
             <svg
               className="h-2.5 w-2.5"
               viewBox="0 0 24 24"
@@ -1164,19 +1164,19 @@ export default function HowItWorks() {
               return (
                 <div key={node.id} className="relative mb-10 pl-14 last:mb-0">
                   {/* Circle */}
-                  <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-xs font-bold text-white shadow-lg ring-4">
+                  <div className="ring-navy-900/30 absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-sm font-bold text-white shadow-lg ring-4">
                     {String(i + 1).padStart(2, "0")}
                   </div>
 
                   {/* Card */}
                   <div className="bg-navy-950/80 rounded-lg border border-[#a0a0a01c] p-4">
                     <h3
-                      className="cursor-pointer font-mono text-sm font-semibold text-violet-400"
+                      className="cursor-pointer font-mono text-base font-semibold text-violet-400"
                       onClick={() => openDoc(node.id)}
                     >
                       {node.label}
                     </h3>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    <p className="mt-1 text-sm leading-relaxed text-slate-400">
                       {node.description}
                     </p>
 

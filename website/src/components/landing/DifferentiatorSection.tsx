@@ -231,13 +231,13 @@ export default function DifferentiatorSection() {
                 <h3 className="text-xl font-bold text-white">
                   Radical Simplicity
                 </h3>
-                <p className="text-sm text-sky-400">
+                <p className="text-base text-sky-400">
                   Install once. Start using immediately.
                 </p>
               </div>
             </div>
 
-            <p className="text-sm leading-relaxed text-slate-400">
+            <p className="text-base leading-relaxed text-slate-400">
               Most workflow tools require complex setup or hours of
               configuration. Coding Friend is the opposite — install once, use
               everywhere, with plain text skills you can read and edit anytime.
@@ -250,15 +250,15 @@ export default function DifferentiatorSection() {
                     {item.icon}
                   </div>
                   <div>
-                    <p className="mb-1 flex flex-col items-start gap-1 text-sm font-medium text-white md:flex-row md:items-center md:gap-2">
+                    <p className="mb-1 flex flex-col items-start gap-1 text-base font-medium text-white md:flex-row md:items-center md:gap-2">
                       {item.title}
                       {"comingSoon" in item && item.comingSoon && (
-                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-xs font-medium tracking-wide whitespace-nowrap text-yellow-400">
+                        <span className="rounded-full border border-yellow-400/20 px-1.5 py-0.5 text-sm font-medium tracking-wide whitespace-nowrap text-yellow-400">
                           coming soon
                         </span>
                       )}
                     </p>
-                    <p className="text-sm text-slate-500">{item.description}</p>
+                    <p className="text-base text-slate-500">{item.description}</p>
                   </div>
                 </div>
               ))}
@@ -266,7 +266,7 @@ export default function DifferentiatorSection() {
 
             <a
               href="/docs/getting-started/installation/"
-              className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-sky-400 transition-colors hover:text-sky-300"
+              className="mt-auto inline-flex items-center gap-1.5 text-base font-medium text-sky-400 transition-colors hover:text-sky-300"
             >
               Read more
               <svg
@@ -305,13 +305,13 @@ export default function DifferentiatorSection() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">/cf-learn</h3>
-                <p className="text-sm text-violet-400">
+                <p className="text-base text-violet-400">
                   Your knowledge, amplified.
                 </p>
               </div>
             </div>
 
-            <p className="text-sm leading-relaxed text-slate-400">
+            <p className="text-base leading-relaxed text-slate-400">
               Vibe-coding is fast — but you risk learning nothing. Every session
               generates insights you never write down.{" "}
               <span className="font-medium text-white">/cf-learn</span> captures
@@ -326,11 +326,11 @@ export default function DifferentiatorSection() {
                 <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                 <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
                 <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
-                <span className="ml-2 font-mono text-xs text-slate-500">
+                <span className="ml-2 font-mono text-sm text-slate-500">
                   terminal
                 </span>
               </div>
-              <pre className="bg-navy-950 overflow-x-auto p-4! pt-0! font-mono text-xs leading-relaxed text-slate-300">
+              <pre className="bg-navy-950 overflow-x-auto p-4! pt-0! font-mono text-sm leading-relaxed text-slate-300">
                 {cfLearnExample.split("\n").map((line, i) => {
                   if (line.startsWith("$")) {
                     const parts = line.split(" ");
@@ -387,7 +387,7 @@ export default function DifferentiatorSection() {
               ].map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-300"
+                  className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-sm text-violet-300"
                 >
                   {tag}
                 </span>
@@ -396,7 +396,7 @@ export default function DifferentiatorSection() {
 
             <a
               href="/docs/skills/cf-learn/"
-              className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 transition-colors hover:text-violet-300"
+              className="mt-auto inline-flex items-center gap-1.5 text-base font-medium text-violet-400 transition-colors hover:text-violet-300"
             >
               Read more
               <svg
@@ -436,13 +436,13 @@ export default function DifferentiatorSection() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">CF Memory</h3>
-                <p className="text-sm text-amber-400">
+                <p className="text-base text-amber-400">
                   AI that remembers your project.
                 </p>
               </div>
             </div>
 
-            <p className="mt-4 text-sm leading-relaxed text-slate-400">
+            <p className="mt-4 text-base leading-relaxed text-slate-400">
               Every AI session starts from scratch — repeating the same
               mistakes, forgetting past decisions, losing debug knowledge.{" "}
               <span className="font-medium text-white">CF Memory</span> gives
@@ -459,11 +459,11 @@ export default function DifferentiatorSection() {
                   <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
                   <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
                   <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
-                  <span className="ml-2 font-mono text-xs text-slate-500">
+                  <span className="ml-2 font-mono text-sm text-slate-500">
                     terminal
                   </span>
                 </div>
-                <pre className="bg-navy-950 min-h-0 flex-1 overflow-x-auto p-4! pt-0! font-mono text-xs leading-relaxed text-slate-300">
+                <pre className="bg-navy-950 min-h-0 flex-1 overflow-x-auto p-4! pt-0! font-mono text-sm leading-relaxed text-slate-300">
                   {cfMemoryExample.split("\n").map((line, i) => {
                     if (line.startsWith("$")) {
                       const parts = line.split(" ");
@@ -534,10 +534,10 @@ export default function DifferentiatorSection() {
                       {item.icon}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-base font-medium text-white">
                         {item.title}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-base text-slate-500">
                         {item.description}
                       </p>
                     </div>
@@ -548,7 +548,7 @@ export default function DifferentiatorSection() {
 
             <a
               href="/docs/cli/cf-memory/"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-amber-400 transition-colors hover:text-amber-300"
+              className="mt-6 inline-flex items-center gap-1.5 text-base font-medium text-amber-400 transition-colors hover:text-amber-300"
             >
               Read more
               <svg

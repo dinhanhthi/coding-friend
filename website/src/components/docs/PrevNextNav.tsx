@@ -25,8 +25,8 @@ export default function PrevNextNav({ prev, next }: Props) {
           href={toHref(prev.slug)}
           className="group flex-1 cursor-pointer rounded-lg border border-[#a0a0a01c] p-4 transition-colors hover:border-violet-400/50"
         >
-          <div className="mb-1 text-xs text-slate-400">Previous</div>
-          <div className="text-sm font-medium text-white transition-colors group-hover:text-violet-400">
+          <div className="mb-1 text-sm text-slate-400">Previous</div>
+          <div className="text-base font-medium text-white transition-colors group-hover:text-violet-400">
             {prev.title}
           </div>
         </Link>
@@ -38,8 +38,8 @@ export default function PrevNextNav({ prev, next }: Props) {
           href={toHref(next.slug)}
           className="group flex-1 cursor-pointer rounded-lg border border-[#a0a0a01c] p-4 text-right transition-colors hover:border-violet-400/50"
         >
-          <div className="mb-1 text-xs text-slate-400">Next</div>
-          <div className="text-sm font-medium text-white transition-colors group-hover:text-violet-400">
+          <div className="mb-1 text-sm text-slate-400">Next</div>
+          <div className="text-base font-medium text-white transition-colors group-hover:text-violet-400">
             {next.title}
           </div>
         </Link>

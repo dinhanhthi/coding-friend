@@ -47,7 +47,7 @@ export default function DocsSidebar() {
             <div key={section.title}>
               <button
                 onClick={() => toggleSection(section.title)}
-                className="flex w-full cursor-pointer items-center justify-between text-xs font-semibold tracking-wider text-slate-400 uppercase transition-colors hover:text-white"
+                className="flex w-full cursor-pointer items-center justify-between text-sm font-semibold tracking-wider text-slate-400 uppercase transition-colors hover:text-white"
               >
                 {section.title}
                 <svg
@@ -77,7 +77,7 @@ export default function DocsSidebar() {
                       <li key={item.slug}>
                         <Link
                           href={href}
-                          className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors duration-200 ${
+                          className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-base transition-colors duration-200 ${
                             isActive
                               ? "font-medium text-violet-400"
                               : "hover:bg-navy-800 text-slate-400 hover:text-white"
@@ -113,7 +113,7 @@ export default function DocsSidebar() {
       </nav>
 
       <div className="border-t border-[#a0a0a01c] px-6 py-4">
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-base text-slate-500">
           <svg
             className="h-3.5 w-3.5 shrink-0"
             fill="none"

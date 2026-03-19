@@ -18,7 +18,7 @@ export default function Hero() {
             className="mx-auto mb-4"
             priority
           />
-          <p className="mb-4 text-sm font-medium tracking-wider text-slate-500 uppercase">
+          <p className="mb-4 text-base font-medium tracking-wider text-slate-500 uppercase">
             Claude Code Plugin
           </p>
           <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] [text-wrap:balance] text-white sm:text-5xl lg:text-6xl">
@@ -32,7 +32,7 @@ export default function Hero() {
           </p>
 
           {/* Ecosystem pills */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-base">
             <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
               Plugin
             </span>
@@ -55,7 +55,7 @@ export default function Hero() {
           </div>
 
           {/* Alpha notice */}
-          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-400">
+          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-base text-yellow-400">
             <svg
               className="h-4 w-4 shrink-0"
               fill="none"

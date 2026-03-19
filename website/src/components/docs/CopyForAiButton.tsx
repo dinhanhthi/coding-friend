@@ -55,7 +55,7 @@ export default function CopyForAiButton({
           />
         </svg>
       )}
-      <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded bg-slate-800 px-2 py-1 text-xs whitespace-nowrap text-slate-200 opacity-0 shadow-lg transition-opacity group-hover/ai:opacity-100">
+      <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded bg-slate-800 px-2 py-1 text-sm whitespace-nowrap text-slate-200 opacity-0 shadow-lg transition-opacity group-hover/ai:opacity-100">
         {copied ? "Copied!" : "Copy for AI"}
       </span>
     </button>
