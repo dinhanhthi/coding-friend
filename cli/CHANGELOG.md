@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.17.3 (unpublished)
+## v1.17.4 (2026-03-19)
 
 - Use path-based project IDs in `cf memory list --projects` for consistent identification with cf-memory backend [#9c4cac0](https://github.com/dinhanhthi/coding-friend/commit/9c4cac0)
 - Rename `cf memory start`/`stop` to `cf memory start-daemon`/`stop-daemon` to clarify these commands manage only the daemon, not the entire memory system [#acbe789](https://github.com/dinhanhthi/coding-friend/commit/acbe789)
