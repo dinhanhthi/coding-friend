@@ -2,6 +2,14 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.18.0 (unpublished)
+
+- Fix permission rules to support both quoted and unquoted script invocations — prevents repeated permission prompts for `/cf-review`, `/cf-commit`, and other skills [#e690da7](https://github.com/dinhanhthi/coding-friend/commit/e690da7)
+- Fix permissions to use absolute path + wide glob pattern for plugin script rules [#57ad562](https://github.com/dinhanhthi/coding-friend/commit/57ad562)
+- Add interactive menu mode to `cf init` for already-initialized projects [#491dc0e](https://github.com/dinhanhthi/coding-friend/commit/491dc0e)
+- Display Permissions in `cf init` status and add config counts [#7c2f849](https://github.com/dinhanhthi/coding-friend/commit/7c2f849)
+- Add token usage visibility across UI with tier icons and documentation [#4227860](https://github.com/dinhanhthi/coding-friend/commit/4227860)
+
 ## v1.17.4 (2026-03-19)
 
 - Use path-based project IDs in `cf memory list --projects` for consistent identification with cf-memory backend [#9c4cac0](https://github.com/dinhanhthi/coding-friend/commit/9c4cac0)
