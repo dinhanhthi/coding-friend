@@ -7,6 +7,7 @@ import { run } from "../lib/exec.js";
 import { mergeJson, readJson, writeJson } from "../lib/json.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
+  getAllRules,
   getExistingRules,
   getMissingRules,
   buildLearnDirRules,
@@ -14,6 +15,7 @@ import {
 } from "../lib/permissions.js";
 import { log } from "../lib/log.js";
 import {
+  claudeLocalSettingsPath,
   claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
@@ -175,6 +177,15 @@ function printSetupStatus(
   }
 
   // ── Setup items ──
+  const projectRules = getExistingRules(claudeLocalSettingsPath());
+  const userRules = getExistingRules(claudeSettingsPath());
+  const allRules = getAllRules("glob");
+  const allRuleStrings = allRules.map((r) => r.rule);
+  const configuredRuleCount = new Set([
+    ...projectRules.filter((r) => allRuleStrings.includes(r)),
+    ...userRules.filter((r) => allRuleStrings.includes(r)),
+  ]).size;
+
   const setupItems = [
     {
       label: ".gitignore",
@@ -184,6 +195,11 @@ function printSetupStatus(
     { label: "Shell completion", done: hasShellCompletion(), skipped: false },
     { label: "Statusline", done: isStatuslineConfigured(), skipped: false },
     { label: "CF Memory MCP", done: isMemoryMcpConfigured(), skipped: false },
+    {
+      label: `Permissions (${configuredRuleCount}/${allRules.length} rules)`,
+      done: configuredRuleCount > 0,
+      skipped: false,
+    },
   ];
 
   for (const item of setupItems) {
@@ -812,44 +828,68 @@ async function stepMemory(docsDir: string): Promise<void> {
 }
 
 async function stepClaudePermissions(
-  outputDir: string,
+  externalLearnDir: string | null,
   autoCommit: boolean,
 ): Promise<void> {
-  const resolved = resolvePath(outputDir);
-  const homePath = resolved.startsWith(homedir())
-    ? resolved.replace(homedir(), "~")
-    : resolved;
+  // Ask scope
+  const scope = await select({
+    message: "Where should permissions be saved?",
+    choices: [
+      {
+        name: "Project — .claude/settings.local.json (this project only, gitignored)",
+        value: "project" as const,
+      },
+      {
+        name: "User — ~/.claude/settings.json (all projects)",
+        value: "user" as const,
+      },
+      { name: "Skip", value: "skip" as const },
+    ],
+  });
 
-  const settingsPath = claudeSettingsPath();
+  if (scope === "skip") {
+    log.dim("Skipped. Run `cf permission` later to configure.");
+    return;
+  }
+
+  const settingsPath =
+    scope === "user" ? claudeSettingsPath() : claudeLocalSettingsPath();
   const existing = getExistingRules(settingsPath);
 
-  if (existing.length === 0 && !readJson(settingsPath)) {
-    log.warn(
-      "~/.claude/settings.json not found. Create it via Claude Code settings first.",
-    );
-    return;
+  // Collect all rules: base + learn dir (if external)
+  const allRules = getAllRules("glob");
+  const recommended = allRules.filter((r) => r.recommended);
+  let allToAdd = recommended;
+
+  if (externalLearnDir) {
+    const resolved = resolvePath(externalLearnDir);
+    const homePath = resolved.startsWith(homedir())
+      ? resolved.replace(homedir(), "~")
+      : resolved;
+    const learnRules = buildLearnDirRules(homePath, autoCommit);
+    allToAdd = [...recommended, ...learnRules];
   }
 
-  const learnRules = buildLearnDirRules(homePath, autoCommit);
-  const missing = getMissingRules(existing, learnRules);
+  const missing = getMissingRules(existing, allToAdd);
 
   if (missing.length === 0) {
-    log.dim("All permission rules already configured.");
+    log.dim("All recommended permission rules already configured.");
     return;
   }
 
-  console.log("\nTo avoid repeated permission prompts, add these rules:");
+  log.step(`${missing.length} permission rules to add:`);
   for (const r of missing) {
-    console.log(`  ${r.rule}`);
+    console.log(`  ${chalk.green("+")} ${r.rule}`);
   }
+  console.log();
 
   const ok = await confirm({
-    message: "Add these to ~/.claude/settings.json?",
+    message: `Add all ${missing.length} recommended rules?`,
     default: true,
   });
 
   if (!ok) {
-    log.dim("Skipped. You'll get prompted each time.");
+    log.dim("Skipped. Run `cf permission` later to configure interactively.");
     return;
   }
 
@@ -859,7 +899,7 @@ async function stepClaudePermissions(
     [],
   );
   log.success(`Added ${missing.length} permission rules.`);
-  log.dim("For all plugin permissions, run: `cf permission`");
+  log.dim("Fine-tune later with: `cf permission` or `cf config` → Permissions");
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
@@ -972,22 +1012,12 @@ export async function initCommand(): Promise<void> {
   // Step 7: CF Memory MCP
   await stepMemory(docsDir);
 
-  // Step 8: Claude permissions (conditional: only when external learn dir)
-  if (isExternal) {
-    printStepHeader(
-      "Configure Claude permissions",
-      "Grants Claude read/write access to your external learn folder without repeated prompts.",
-    );
-    await stepClaudePermissions(outputDir, autoCommit);
-  } else {
-    printStepHeader(
-      `Configure Claude permissions ${chalk.dim("[skipped]")}`,
-      "Grants Claude read/write access to your external learn folder without repeated prompts.",
-    );
-    log.dim(
-      "Skipped — learn directory is inside the project. Run `cf permission` for other permissions.",
-    );
-  }
+  // Step 8: Claude permissions
+  printStepHeader(
+    "Configure Claude permissions",
+    "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
+  );
+  await stepClaudePermissions(isExternal ? outputDir : null, autoCommit);
 
   // Final
   console.log();

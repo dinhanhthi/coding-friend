@@ -59,6 +59,12 @@ _cf_completions() {
     return
   fi
 
+  # Flag completion for permission
+  if [[ "\${COMP_WORDS[1]}" == "permission" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--all --user --project --refresh" -- "$cur"))
+    return
+  fi
+
   COMPREPLY=($(compgen -W "$commands" -- "$cur"))
 }
 complete -o default -F _cf_completions cf
@@ -109,6 +115,15 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _values 'flags' \$scope_flags
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "update" ]]; then
     _values 'flags' \$update_flags
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "permission" ]]; then
+    local -a permission_flags
+    permission_flags=(
+      '--all[Apply all recommended permissions without prompts]'
+      '--user[Save to user-level settings]'
+      '--project[Save to project-level settings]'
+      '--refresh[Refresh plugin script paths after update]'
+    )
+    _values 'flags' \$permission_flags
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "dev" ]]; then
     local -a subcommands
     subcommands=(
@@ -181,6 +196,11 @@ complete -c cf -n "__fish_seen_subcommand_from update" -l user -d "User scope (a
 complete -c cf -n "__fish_seen_subcommand_from update" -l global -d "User scope (all projects)"
 complete -c cf -n "__fish_seen_subcommand_from update" -l project -d "Project scope"
 complete -c cf -n "__fish_seen_subcommand_from update" -l local -d "Local scope"
+# Flags for permission
+complete -c cf -n "__fish_seen_subcommand_from permission" -l all -d "Apply all recommended permissions"
+complete -c cf -n "__fish_seen_subcommand_from permission" -l user -d "Save to user-level settings"
+complete -c cf -n "__fish_seen_subcommand_from permission" -l project -d "Save to project-level settings"
+complete -c cf -n "__fish_seen_subcommand_from permission" -l refresh -d "Refresh plugin script paths"
 # Dev subcommands
 complete -c cf -n "__fish_seen_subcommand_from dev" -a on -d "Switch to local plugin source"
 complete -c cf -n "__fish_seen_subcommand_from dev" -a off -d "Switch back to remote marketplace"
@@ -226,6 +246,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'install' -or $words[1].ToString() -eq 'uninstall' -or $words[1].ToString() -eq 'disable' -or $words[1].ToString() -eq 'enable')) {
     $scopeFlags | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'permission') {
+    @('--all','--user','--project','--refresh') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'update') {
     $updateFlags | Where-Object { $_ -like "$wordToComplete*" } |

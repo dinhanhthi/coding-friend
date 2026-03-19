@@ -2,12 +2,14 @@ import { checkbox, confirm, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
 import { log } from "../lib/log.js";
-import { claudeLocalSettingsPath } from "../lib/paths.js";
+import { claudeLocalSettingsPath, claudeSettingsPath } from "../lib/paths.js";
 import {
-  PERMISSION_RULES,
+  STATIC_RULES,
+  getAllRules,
   getExistingRules,
   applyPermissions,
   groupByCategory,
+  refreshPluginPermissions,
 } from "../lib/permissions.js";
 import type { PermissionRule } from "../lib/permissions.js";
 
@@ -36,6 +38,53 @@ function colorDescription(desc: string): string {
     return `${colorFn(tagMatch[1])} ${tagMatch[2]} ${usedBy}`;
   }
   return `${main} ${usedBy}`;
+}
+
+/**
+ * Resolve which settings file to use based on flags or interactive prompt.
+ */
+async function resolveSettingsPath(opts: {
+  user?: boolean;
+  project?: boolean;
+}): Promise<{ path: string; label: string; scope: string }> {
+  if (opts.user && opts.project) {
+    log.error("Cannot use both --user and --project. Pick one.");
+    process.exit(1);
+  }
+
+  if (opts.user) {
+    const p = claudeSettingsPath();
+    return { path: p, label: p.replace(homedir(), "~"), scope: "user" };
+  }
+
+  if (opts.project) {
+    const p = claudeLocalSettingsPath();
+    return { path: p, label: p.replace(homedir(), "~"), scope: "project" };
+  }
+
+  // Interactive: ask user
+  if (!process.stdin.isTTY) {
+    // Non-interactive: default to project
+    const p = claudeLocalSettingsPath();
+    return { path: p, label: p.replace(homedir(), "~"), scope: "project" };
+  }
+
+  const scope = await select({
+    message: "Where should permissions be saved?",
+    choices: [
+      {
+        name: "Project — .claude/settings.local.json (this project only, gitignored)",
+        value: "project" as const,
+      },
+      {
+        name: "User — ~/.claude/settings.json (all projects)",
+        value: "user" as const,
+      },
+    ],
+  });
+
+  const p = scope === "user" ? claudeSettingsPath() : claudeLocalSettingsPath();
+  return { path: p, label: p.replace(homedir(), "~"), scope };
 }
 
 /**
@@ -127,23 +176,60 @@ async function interactiveFlow(
 
 export async function permissionCommand(opts: {
   all?: boolean;
+  user?: boolean;
+  project?: boolean;
+  refresh?: boolean;
 }): Promise<void> {
   console.log("=== 🌿 Coding Friend Permissions 🌿 ===");
   console.log();
 
-  // Project-local settings — scoped to this project only
-  const settingsPath = claudeLocalSettingsPath();
-  const settingsLabel = settingsPath.replace(homedir(), "~");
+  // Handle --refresh: only update plugin script paths
+  if (opts.refresh) {
+    if (opts.all) {
+      log.warn(
+        "--refresh ignores --all. Use `cf permission --all` separately to add new rules.",
+      );
+    }
+    const paths = [
+      { path: claudeLocalSettingsPath(), scope: "project" },
+      { path: claudeSettingsPath(), scope: "user" },
+    ];
+
+    let refreshed = false;
+    for (const { path, scope } of paths) {
+      const result = refreshPluginPermissions(path);
+      if (result) {
+        log.success(
+          `Refreshed ${result.updated} plugin permissions in ${scope} settings.`,
+        );
+        refreshed = true;
+      }
+    }
+
+    if (!refreshed) {
+      log.dim(
+        "No plugin script permissions found to refresh. Run `cf permission` first to set up permissions.",
+      );
+    }
+    return;
+  }
+
+  // Resolve scope
+  const {
+    path: settingsPath,
+    label: settingsLabel,
+    scope,
+  } = await resolveSettingsPath(opts);
 
   const existing = getExistingRules(settingsPath);
-  const allRules = PERMISSION_RULES;
+  const allRules = getAllRules("glob");
   const allRuleStrings = allRules.map((r) => r.rule);
 
   // Track which existing rules are managed by us (in our registry)
   const managedExisting = existing.filter((r) => allRuleStrings.includes(r));
   const unmanagedExisting = existing.filter((r) => !allRuleStrings.includes(r));
 
-  log.dim(`Settings: ${settingsLabel} (project-local)`);
+  log.dim(`Settings: ${settingsLabel} (${scope})`);
   log.dim(
     `Current: ${managedExisting.length}/${allRules.length} Coding Friend rules configured`,
   );
@@ -166,14 +252,21 @@ export async function permissionCommand(opts: {
       return;
     }
 
-    console.log("Adding recommended permissions:");
+    // Count by tier
+    const staticSet = new Set(STATIC_RULES.map((r) => r.rule));
+    const staticCount = toAdd.filter((r) => staticSet.has(r)).length;
+    const pluginCount = toAdd.length - staticCount;
+
+    console.log(
+      `Adding ${chalk.bold(toAdd.length)} recommended permissions${pluginCount > 0 ? ` (${staticCount} static + ${pluginCount} plugin scripts)` : ""}:`,
+    );
     for (const r of toAdd) {
       console.log(`  ${chalk.green("+")} ${r}`);
     }
     console.log();
 
     applyPermissions(settingsPath, toAdd, []);
-    log.success(`Added ${toAdd.length} permission rules.`);
+    log.success(`Added ${toAdd.length} permission rules to ${settingsLabel}.`);
     return;
   }
 
@@ -213,6 +306,6 @@ export async function permissionCommand(opts: {
 
   applyPermissions(settingsPath, toAdd, toRemove);
   log.success(
-    `Done — added ${toAdd.length}, removed ${toRemove.length} rules.`,
+    `Done — added ${toAdd.length}, removed ${toRemove.length} rules in ${settingsLabel}.`,
   );
 }

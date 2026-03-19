@@ -4,6 +4,8 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { readJson, mergeJson } from "../lib/json.js";
 import { log } from "../lib/log.js";
 import {
+  claudeLocalSettingsPath,
+  claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
   resolvePath,
@@ -37,6 +39,7 @@ import {
   ensureShellCompletion,
   removeShellCompletion,
 } from "../lib/shell-completion.js";
+import { getAllRules, getExistingRules } from "../lib/permissions.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -964,6 +967,75 @@ async function editShellCompletion(): Promise<void> {
   }
 }
 
+// ─── Permissions ─────────────────────────────────────────────────────
+
+async function editPermissions(): Promise<void> {
+  // Detect current state in both scopes
+  const projectPath = claudeLocalSettingsPath();
+  const userPath = claudeSettingsPath();
+  const projectRules = getExistingRules(projectPath);
+  const userRules = getExistingRules(userPath);
+  const allRules = getAllRules("glob");
+  const allRuleStrings = allRules.map((r) => r.rule);
+
+  const projectManaged = projectRules.filter((r) =>
+    allRuleStrings.includes(r),
+  ).length;
+  const userManaged = userRules.filter((r) =>
+    allRuleStrings.includes(r),
+  ).length;
+
+  console.log(
+    chalk.dim(
+      `  Project: ${projectManaged}/${allRules.length} rules · User: ${userManaged}/${allRules.length} rules`,
+    ),
+  );
+  console.log();
+
+  const choice = await select({
+    message: "Permissions action:",
+    choices: injectBackChoice(
+      [
+        {
+          name: "Run full permission setup (interactive)",
+          value: "interactive",
+          description: "  Opens `cf permission` — pick categories and rules",
+        },
+        {
+          name: "Apply all recommended (project scope)",
+          value: "all-project",
+          description:
+            "  Quick: adds all recommended rules to .claude/settings.local.json",
+        },
+        {
+          name: "Apply all recommended (user scope)",
+          value: "all-user",
+          description:
+            "  Quick: adds all recommended rules to ~/.claude/settings.json",
+        },
+      ],
+      "Back",
+    ),
+  });
+
+  if (choice === BACK) return;
+
+  // Dynamic import to avoid circular dependency
+  const { permissionCommand } = await import("./permission.js");
+
+  switch (choice) {
+    case "interactive":
+      await permissionCommand({});
+      break;
+    case "all-project":
+      await permissionCommand({ all: true, project: true });
+      break;
+    case "all-user":
+      await permissionCommand({ all: true, user: true });
+      break;
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────
 
 const em = chalk.hex("#10b981");
@@ -1009,6 +1081,19 @@ export async function configCommand(): Promise<void> {
       ? chalk.green("installed")
       : chalk.yellow("not installed");
 
+    const projectRules = getExistingRules(claudeLocalSettingsPath());
+    const userRules = getExistingRules(claudeSettingsPath());
+    const allRules = getAllRules("glob");
+    const allRuleStrings = allRules.map((r) => r.rule);
+    const configuredCount = new Set([
+      ...projectRules.filter((r) => allRuleStrings.includes(r)),
+      ...userRules.filter((r) => allRuleStrings.includes(r)),
+    ]).size;
+    const permissionStatus =
+      configuredCount > 0
+        ? chalk.green(`${configuredCount}/${allRules.length}`)
+        : chalk.yellow(`0/${allRules.length}`);
+
     const choice = await select({
       message: "What to configure?",
       choices: injectBackChoice(
@@ -1050,6 +1135,12 @@ export async function configCommand(): Promise<void> {
               "  Add or update coding-friend artifacts in .gitignore",
           },
           {
+            name: `Permissions (${permissionStatus} rules)`,
+            value: "permissions",
+            description:
+              "  Manage Claude Code permissions for Coding Friend skills and hooks",
+          },
+          {
             name: `Shell completion (${completionStatus})`,
             value: "completion",
             description:
@@ -1082,6 +1173,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "gitignore":
         await editGitignore(globalCfg, localCfg);
+        break;
+      case "permissions":
+        await editPermissions();
         break;
       case "completion":
         await editShellCompletion();

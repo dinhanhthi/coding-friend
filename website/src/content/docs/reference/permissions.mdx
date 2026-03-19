@@ -20,9 +20,13 @@ cf permission
 
 # Or apply all recommended permissions at once
 cf permission --all
+
+# Choose scope: project (default) or user
+cf permission --all --project
+cf permission --all --user
 ```
 
-You can also configure permissions during initial setup via [`cf init`](/docs/cli/cf-init/) (Step 7).
+You can also configure permissions during initial setup via [`cf init`](/docs/cli/cf-init/) (Step 8), or from [`cf config`](/docs/cli/cf-config/) → Permissions.
 
 ## Permission Categories
 
@@ -32,27 +36,27 @@ These permissions power the **session-init** hook (bootstrap context, project ty
 
 | Rule            | What it enables                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Bash(cat:*)`   | **Session-init hook** reads the bootstrap context file that configures available skills, agents, and rules for the session. ⚠️ This rule allows `cat` on any file system-wide — Claude Code's own project scoping restricts actual access to the project directory.                                                                                                                                                                                                                            |
-| `Bash(grep:*)`  | **Session-init hook** extracts config values from `.coding-friend/config.json` and reads `.coding-friend/ignore` patterns. `/cf-fix` and `/cf-ask` use grep to search existing docs by frontmatter (`^description:`, `^tags:`) before creating duplicates. `/cf-review` greps for sensitive paths (auth, security, crypto) to determine review depth. ⚠️ This rule allows `grep` on any file system-wide — Claude Code's own project scoping restricts actual access to the project directory. |
-| `Bash(sed:*)`   | **Session-init hook** parses JSON config values and escapes output for context injection.                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `Bash(tr:*)`    | **Session-init hook** converts newline-separated `.coding-friend/ignore` patterns into pipe-separated regex alternation for pattern matching.                                                                                                                                                                                                                                                                                                                                                  |
-| `Bash(wc:*)`    | `/cf-review` counts changed files and lines to decide review depth (QUICK / STANDARD / DEEP mode). `cf-verification` uses it to verify test output completeness.                                                                                                                                                                                                                                                                                                                               |
-| `Bash(mkdir:*)` | `/cf-learn` creates the learn output directory (e.g., `docs/learn/`). `/cf-remember` and `/cf-ask` create the memory directory (e.g., `docs/memory/`). `/cf-research` creates research subfolders for each topic. These directories are created on first use if they don't exist.                                                                                                                                                                                                              |
+| `Bash(cat *)`   | **Session-init hook** reads the bootstrap context file that configures available skills, agents, and rules for the session. ⚠️ This rule allows `cat` on any file system-wide — Claude Code's own project scoping restricts actual access to the project directory.                                                                                                                                                                                                                            |
+| `Bash(grep *)`  | **Session-init hook** extracts config values from `.coding-friend/config.json` and reads `.coding-friend/ignore` patterns. `/cf-fix` and `/cf-ask` use grep to search existing docs by frontmatter (`^description:`, `^tags:`) before creating duplicates. `/cf-review` greps for sensitive paths (auth, security, crypto) to determine review depth. ⚠️ This rule allows `grep` on any file system-wide — Claude Code's own project scoping restricts actual access to the project directory. |
+| `Bash(sed *)`   | **Session-init hook** parses JSON config values and escapes output for context injection.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `Bash(tr *)`    | **Session-init hook** converts newline-separated `.coding-friend/ignore` patterns into pipe-separated regex alternation for pattern matching.                                                                                                                                                                                                                                                                                                                                                  |
+| `Bash(wc *)`    | `/cf-review` counts changed files and lines to decide review depth (QUICK / STANDARD / DEEP mode). `cf-verification` uses it to verify test output completeness.                                                                                                                                                                                                                                                                                                                               |
+| `Bash(mkdir *)` | `/cf-learn` creates the learn output directory (e.g., `docs/learn/`). `/cf-remember` and `/cf-ask` create the memory directory (e.g., `docs/memory/`). `/cf-research` creates research subfolders for each topic. These directories are created on first use if they don't exist.                                                                                                                                                                                                              |
 
 ### Git Operations
 
 These permissions control what Coding Friend can do with your git repository. They range from read-only inspection to remote operations that push code.
 
-| Rule                   | What it enables                                                                                                                                                                                                                                                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Bash(git status:*)`   | **Read-only.** `/cf-commit` checks for untracked and modified files before deciding what to stage. `/cf-review` and `cf-verification` inspect the working tree to ensure no uncommitted changes are missed.                                                                                                                                                  |
-| `Bash(git diff:*)`     | **Read-only.** `/cf-commit` reads both staged (`--staged`) and unstaged diffs to understand what's being committed, and scans staged content (`--cached`) for accidental secrets. `/cf-review` reads diffs to perform the 4-layer code review (plan alignment, code quality, security, testing). `cf-verification` checks for remaining uncommitted changes. |
-| `Bash(git log:*)`      | **Read-only.** `/cf-commit` reads the last 5 commits to match your existing commit message style. `/cf-review` reads the last 10 commits for context. `cf-sys-debug` checks the last 20 commits and recent diffs to find when a bug was introduced.                                                                                                          |
-| `Bash(git add:*)`      | **Modifies staging area.** `/cf-commit` stages individual files (never `git add .` or `git add -A`) — only files relevant to the current task. If secrets are detected in staged content, it runs `git reset HEAD <file>` to unstage them.                                                                                                                   |
-| `Bash(git commit:*)`   | **Creates commits.** `/cf-commit` creates conventional commits (`feat:`, `fix:`, `refactor:`, etc.) with a clear "why" message. `/cf-ship` calls `/cf-commit` as part of its verify-commit-push flow.                                                                                                                                                        |
-| `Bash(git push:*)`     | **Pushes to remote.** `/cf-ship` runs `git push -u origin <branch>` to push your branch. If the push fails due to remote changes, it pulls with rebase first. Only `/cf-ship` uses this — no other skill pushes code.                                                                                                                                        |
-| `Bash(git pull:*)`     | **Pulls from remote.** `/cf-ship` runs `git pull --rebase` only when a push fails because the remote has newer commits. This is a fallback, not a routine operation.                                                                                                                                                                                         |
-| `Bash(gh pr create:*)` | **Creates GitHub PRs.** `/cf-ship` runs `gh pr create` with a title and body after pushing. Only creates a PR if you're not on main/master. This is the only skill that interacts with GitHub.                                                                                                                                                               |
+| Rule                 | What it enables                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Bash(git status *)` | **Read-only.** `/cf-commit` checks for untracked and modified files before deciding what to stage. `/cf-review` and `cf-verification` inspect the working tree to ensure no uncommitted changes are missed.                                                                                                                                                  |
+| `Bash(git diff *)`   | **Read-only.** `/cf-commit` reads both staged (`--staged`) and unstaged diffs to understand what's being committed, and scans staged content (`--cached`) for accidental secrets. `/cf-review` reads diffs to perform the 4-layer code review (plan alignment, code quality, security, testing). `cf-verification` checks for remaining uncommitted changes. |
+| `Bash(git log *)`    | **Read-only.** `/cf-commit` reads the last 5 commits to match your existing commit message style. `/cf-review` reads the last 10 commits for context. `cf-sys-debug` checks the last 20 commits and recent diffs to find when a bug was introduced.                                                                                                          |
+| `Bash(git add *)`    | **Modifies staging area.** `/cf-commit` stages individual files (never `git add .` or `git add -A`) — only files relevant to the current task. If secrets are detected in staged content, it runs `git reset HEAD <file>` to unstage them.                                                                                                                   |
+| `Bash(git commit *)` | **Creates commits.** `/cf-commit` creates conventional commits (`feat:`, `fix:`, `refactor:`, etc.) with a clear "why" message. `/cf-ship` calls `/cf-commit` as part of its verify-commit-push flow.                                                                                                                                                        |
+| `Bash(git push *)`   | **Pushes to remote.** `/cf-ship` runs `git push -u origin <branch>` to push your branch. If the push fails due to remote changes, it pulls with rebase first. Only `/cf-ship` uses this — no other skill pushes code.                                                                                                                                        |
+| `Bash(git pull *)`   | **Pulls from remote.** `/cf-ship` runs `git pull --rebase` only when a push fails because the remote has newer commits. This is a fallback, not a routine operation.                                                                                                                                                                                         |
+| `Bash(gh pr *)`      | **Creates GitHub PRs.** `/cf-ship` runs `gh pr create` with a title and body after pushing. Only creates a PR if you're not on main/master. This is the only skill that interacts with GitHub.                                                                                                                                                               |
 
 ### Testing & Build
 
@@ -60,8 +64,8 @@ These permissions let Coding Friend run your project's test suite and build scri
 
 | Rule               | What it enables                                                                                                                                                                                                                                                                                                                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Bash(npm test:*)` | `cf-tdd` runs tests in the RED-GREEN-REFACTOR cycle — first to confirm a test fails, then to confirm it passes, then to verify all tests still pass after refactoring. `cf-verification` runs the full test suite before claiming work is complete. `/cf-fix` runs the failing test to reproduce the bug, then re-runs it after the fix to confirm resolution. |
-| `Bash(npm run:*)`  | `cf-verification` runs `npm run build` and `npm run lint` as part of the completion gate — no work is marked done unless build and lint pass. Also used for `npm run format` if your project has a format script (e.g., Prettier).                                                                                                                             |
+| `Bash(npm test *)` | `cf-tdd` runs tests in the RED-GREEN-REFACTOR cycle — first to confirm a test fails, then to confirm it passes, then to verify all tests still pass after refactoring. `cf-verification` runs the full test suite before claiming work is complete. `/cf-fix` runs the failing test to reproduce the bug, then re-runs it after the fix to confirm resolution. |
+| `Bash(npm run *)`  | `cf-verification` runs `npm run build` and `npm run lint` as part of the completion gate — no work is marked done unless build and lint pass. Also used for `npm run format` if your project has a format script (e.g., Prettier).                                                                                                                             |
 
 ### Web & Research
 
@@ -81,38 +85,47 @@ These rules are only needed when [`/cf-learn`](/docs/skills/cf-learn/) is config
 | `Read(~/path/**)`                 | `/cf-learn` reads existing markdown files in the external directory to check for duplicates before creating new notes, and to append to existing files when a topic already has a note. |
 | `Edit(~/path/**)`                 | `/cf-learn` edits existing learning notes — e.g., appending new sections to an existing topic file rather than creating a duplicate.                                                    |
 | `Write(~/path/**)`                | `/cf-learn` creates new markdown files with YAML frontmatter (title, description, tags, date) for topics that don't have an existing note.                                              |
-| `Bash(cd ~/path && git add:*)`    | Only if `learn.autoCommit` is enabled in config. `/cf-learn` stages newly created or updated learning notes in the external directory's git repo.                                       |
-| `Bash(cd ~/path && git commit:*)` | Only if `learn.autoCommit` is enabled in config. `/cf-learn` commits the staged learning notes with a conventional commit message in the external directory's git repo.                 |
+| `Bash(cd ~/path && git add *)`    | Only if `learn.autoCommit` is enabled in config. `/cf-learn` stages newly created or updated learning notes in the external directory's git repo.                                       |
+| `Bash(cd ~/path && git commit *)` | Only if `learn.autoCommit` is enabled in config. `/cf-learn` commits the staged learning notes with a conventional commit message in the external directory's git repo.                 |
 
 ## Manual Setup
 
-If you prefer to manage permissions manually, edit `.claude/settings.local.json` in your project root:
+If you prefer to manage permissions manually, edit `.claude/settings.local.json` (project) or `~/.claude/settings.json` (user):
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)",
-      "Bash(grep:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(npm test:*)"
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npm test *)"
     ]
   }
 }
 ```
 
-## Project-Local vs Global Scope
+## Project vs User Scope
 
-- **Project-local** (`.claude/settings.local.json`) — applies only to this project. This is where `cf permission` writes rules, keeping permissions scoped and safe.
-- **Global** (`~/.claude/settings.json`) — applies to all projects. Only used for External Learn Directory rules (configured via [`cf init`](/docs/cli/cf-init/) Step 7), since those need to work across projects.
+`cf permission` supports both scopes:
 
-`cf permission` manages project-local rules only. Global rules (External Learn Directory) are managed by `cf init`.
+- **Project** (`.claude/settings.local.json`) — applies only to this project, gitignored. Default when running interactively.
+- **User** (`~/.claude/settings.json`) — applies to all projects. Useful if you use Coding Friend across many repos.
+
+Use `--project` or `--user` to skip the interactive scope prompt.
+
+## Permission Tiers
+
+- **Tier 1 (Static)** — Path-independent rules: shell utilities (`cat`, `grep`, `jq`, `ls`...), git operations, npm test/build, MCP memory tools, web research. These never change between plugin versions.
+- **Tier 2 (Plugin Scripts)** — Rules for executing Coding Friend's shell scripts (analyze-changes.sh, scan-secrets.sh, etc.). These use a glob pattern (`*`) for the version segment so they survive plugin updates. When you run `cf update`, Tier 2 permissions are automatically refreshed.
 
 ## Security Notes
 
-- All permission rules use **granular patterns** (e.g., `Bash(git add:*)` instead of `Bash(git:*)`) to minimize the scope of each rule.
-- ⚠️ Some Core rules (`Bash(cat:*)`, `Bash(grep:*)`) are **system-wide in scope** — they allow the command on any path. Claude Code's own project-scoping feature restricts actual access to the current project directory. These rules are necessary because hooks and skills may read files outside the project tree (e.g., plugin cache, global config).
+- All permission rules use **granular patterns** (e.g., `Bash(git add *)` instead of `Bash(git *)`) to minimize the scope of each rule.
+- Plugin script rules are scoped to the exact path: `~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/*/skills/...`.
+- MCP memory tools are namespaced: `mcp__coding-friend-memory__*` — only Coding Friend's memory MCP server is affected.
+- ⚠️ Some Core rules (`Bash(cat *)`, `Bash(grep *)`) are **system-wide in scope** — they allow the command on any path. Claude Code's own project-scoping feature restricts actual access to the current project directory.
 - Web permissions (`WebSearch`, `WebFetch`) are **not recommended by default** — they are opt-in for users of `/cf-research`.
 - `cf permission` only manages rules it knows about. Your existing custom rules are never modified or removed.
 - See [Security](/docs/reference/security/) for more on Coding Friend's security model.
@@ -120,5 +133,6 @@ If you prefer to manage permissions manually, edit `.claude/settings.local.json`
 ## See Also
 
 - [`cf permission`](/docs/cli/cf-permission/) — CLI command for managing these permissions
-- [`cf init`](/docs/cli/cf-init/) — initial setup wizard (Step 7 configures learn directory permissions)
+- [`cf init`](/docs/cli/cf-init/) — initial setup wizard (Step 8 configures permissions)
+- [`cf config`](/docs/cli/cf-config/) — edit settings including permissions
 - [Security](/docs/reference/security/) — security model and threat protection

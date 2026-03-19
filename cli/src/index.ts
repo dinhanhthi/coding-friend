@@ -106,6 +106,12 @@ program
   .command("permission")
   .description("Manage Claude Code permission rules for Coding Friend")
   .option("--all", "Apply all recommended permissions without prompts")
+  .option("--user", "Save to user-level settings (~/.claude/settings.json)")
+  .option(
+    "--project",
+    "Save to project-level settings (.claude/settings.local.json)",
+  )
+  .option("--refresh", "Refresh plugin script paths (after plugin update)")
   .action(async (opts) => {
     const { permissionCommand } = await import("./commands/permission.js");
     await permissionCommand(opts);
