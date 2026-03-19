@@ -272,8 +272,13 @@ const PLUGIN_CACHE_TILDE =
 
 /**
  * Build Tier 2 permission rules for plugin scripts.
- * Uses a single wide rule that covers all plugin scripts across all versions,
- * so permissions survive automatic plugin updates without needing refresh.
+ * Uses two Bash rules (unquoted + quoted paths) to cover all plugin scripts
+ * across all versions, so permissions survive automatic plugin updates.
+ *
+ * Claude Code may invoke scripts with or without quotes around the path
+ * (e.g. `bash /path/script.sh` vs `bash "/path/script.sh"`), and the
+ * permission matcher treats quotes as literal characters — so both
+ * variants need their own rule.
  *
  * Bash rules use absolute path because ~ is NOT expanded in Bash() rules.
  * Read rules use ~ because Read() rules DO expand ~ (gitignore spec).
@@ -284,9 +289,16 @@ export function buildPluginScriptRules(): PermissionRule[] {
 
   return [
     {
-      rule: `Bash(bash ${absBase}/* *)`,
+      rule: `Bash(bash ${absBase}/*)`,
       description:
-        "[execute] Run Coding Friend plugin scripts · Used by: all skills",
+        "[execute] Run Coding Friend plugin scripts (unquoted) · Used by: all skills",
+      category: "Plugin Scripts",
+      recommended: true,
+    },
+    {
+      rule: `Bash(bash "${absBase}/*)`,
+      description:
+        "[execute] Run Coding Friend plugin scripts (quoted) · Used by: all skills",
       category: "Plugin Scripts",
       recommended: true,
     },
@@ -468,7 +480,7 @@ export function logPluginScriptWarning(
   chalk: { bold: (s: string) => string },
 ): void {
   log.warn(
-    `Plugin script rule uses a ${chalk.bold("wide pattern")} that allows executing any script in the Coding Friend plugin cache.`,
+    `Plugin script rules use ${chalk.bold("wide patterns")} that allow executing any script in the Coding Friend plugin cache.`,
   );
   log.dim(
     "This is scoped to Coding Friend only and survives plugin updates automatically.",
