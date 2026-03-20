@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.19.0 (unpublished)
+
+- Add `cf status` command — unified dashboard showing versions, plugin state, memory system status, and configuration [#96b97b0](https://github.com/dinhanhthi/coding-friend/commit/96b97b0)
+- Add interactive memory configuration wizard (`cf memory init`) and `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)
+- Add `detectPluginScope()` for accurate scope detection with local > project > user priority [#96b97b0](https://github.com/dinhanhthi/coding-friend/commit/96b97b0)
+
 ## v1.18.0 (2026-03-20)
 
 - Fix permission rules to support both quoted and unquoted script invocations — prevents repeated permission prompts for `/cf-review`, `/cf-commit`, and other skills [#e690da7](https://github.com/dinhanhthi/coding-friend/commit/e690da7)

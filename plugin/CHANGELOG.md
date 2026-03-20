@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.12.2 (unpublished)
+
+- Update bootstrap context to include `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)
+
 ## v0.12.1 (2026-03-20)
 
 - Add detailed agent descriptions and enhance `cf-tdd` trigger phrases [#c9e9164](https://github.com/dinhanhthi/coding-friend/commit/c9e9164)
