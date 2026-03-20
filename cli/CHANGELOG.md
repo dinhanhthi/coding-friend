@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.19.0 (unpublished)
+## v1.19.0 (2026-03-20)
 
 - Add `cf status` command — unified dashboard showing versions, plugin state, memory system status, and configuration [#96b97b0](https://github.com/dinhanhthi/coding-friend/commit/96b97b0)
 - Add interactive memory configuration wizard (`cf memory init`) and `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)
