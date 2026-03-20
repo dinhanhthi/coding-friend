@@ -33,7 +33,7 @@ For each matched implementation file:
 Append a **Doc Sync** section to the review report:
 
 ```
-### Doc Sync
+### 📄 Doc Sync
 
 | Source | Doc | Status |
 |---|---|---|
