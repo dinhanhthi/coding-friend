@@ -68,7 +68,7 @@ export default function Header() {
               const isActive = !isAnchor && pathname.startsWith(link.href);
               return (
                 <Link
-                  key={link.href}
+                  key={link.label}
                   href={link.href}
                   onClick={
                     isAnchor
@@ -156,7 +156,7 @@ export default function Header() {
             const isAnchor = link.href.includes("#");
             return (
               <Link
-                key={link.href}
+                key={link.label}
                 href={link.href}
                 onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                   setMobileOpen(false);

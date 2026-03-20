@@ -12,7 +12,7 @@ When you invoke a skill (e.g., `/cf-plan`), its full `SKILL.md` file is **inject
 The context footprint measures only the tokens **inserted into the prompt** when a skill or agent is loaded. It does **not** reflect the total tokens consumed during execution, which depends on how much code is read, how many tool calls are made, and how long the conversation runs.
 :::
 
-**Bootstrap context** (~1,300 tokens) is loaded every session automatically. This includes the list of available skills, agents, activation signals, and conventions.
+**Bootstrap context** (<BootstrapTokens />) is loaded every session automatically. This includes the list of available skills, agents, activation signals, and conventions.
 
 **Agents** run in forked sessions with their own context window, so they don't consume your main conversation's context.
 
@@ -30,43 +30,17 @@ Each skill and agent is classified into a tier based on the approximate token co
 
 ### Slash Commands
 
-| Command                                     | Context  | Approx. Tokens | Description                          |
-| ------------------------------------------- | -------- | -------------- | ------------------------------------ |
-| [`/cf-scan`](/docs/skills/cf-scan/)         | `⚡⚡⚡` | ~3,200         | Scan project and bootstrap memory    |
-| [`/cf-learn`](/docs/skills/cf-learn/)       | `⚡⚡`   | ~2,500         | Extract human learning docs          |
-| [`/cf-fix`](/docs/skills/cf-fix/)           | `⚡⚡`   | ~2,400         | Quick bug fix workflow               |
-| [`/cf-remember`](/docs/skills/cf-remember/) | `⚡⚡`   | ~2,300         | Capture project knowledge            |
-| [`/cf-ask`](/docs/skills/cf-ask/)           | `⚡⚡`   | ~2,300         | Quick Q&A about codebase             |
-| [`/cf-help`](/docs/skills/cf-help/)         | `⚡⚡`   | ~1,800         | Answer questions about Coding Friend |
-| [`/cf-plan`](/docs/skills/cf-plan/)         | `⚡⚡`   | ~1,800         | Brainstorm and plan                  |
-| [`/cf-review`](/docs/skills/cf-review/)     | `⚡⚡`   | ~1,700         | Multi-layer code review              |
-| [`/cf-optimize`](/docs/skills/cf-optimize/) | `⚡⚡`   | ~1,600         | Structured optimization              |
-| [`/cf-research`](/docs/skills/cf-research/) | `⚡⚡`   | ~1,400         | In-depth research                    |
-| [`/cf-session`](/docs/skills/cf-session/)   | `⚡⚡`   | ~1,000         | Save/load sessions                   |
-| [`/cf-commit`](/docs/skills/cf-commit/)     | `⚡`     | ~900           | Smart conventional commits           |
-| [`/cf-ship`](/docs/skills/cf-ship/)         | `⚡`     | ~800           | Verify, commit, push, PR             |
+<SlashCommandsTable />
 
 ### Auto-Invoked Skills
 
-| Skill                                              | Context | Approx. Tokens | Activates When       |
-| -------------------------------------------------- | ------- | -------------- | -------------------- |
-| [`cf-sys-debug`](/docs/skills/cf-sys-debug/)       | `⚡⚡`  | ~1,700         | Debugging issues     |
-| [`cf-tdd`](/docs/skills/cf-tdd/)                   | `⚡⚡`  | ~1,000         | Writing new code     |
-| [`cf-auto-review`](/docs/skills/cf-auto-review/)   | `⚡`    | ~1,000         | Reviewing code       |
-| [`cf-verification`](/docs/skills/cf-verification/) | `⚡`    | ~600           | Before claiming done |
+<AutoSkillsTable />
 
 ## Agents
 
 Agents run in **forked sessions** — they get their own context window and don't consume your main conversation's context. Token counts here refer to the size of the agent's system prompt injected into its forked context.
 
-| Agent              | Context | Approx. Tokens | Model  | Purpose                 |
-| ------------------ | ------- | -------------- | ------ | ----------------------- |
-| `cf-writer`        | `⚡`    | ~900           | Haiku  | Lightweight doc writing |
-| `cf-writer-deep`   | `⚡`    | ~900           | Sonnet | Deep reasoning docs     |
-| `cf-explorer`      | `⚡`    | ~800           | Haiku  | Codebase exploration    |
-| `cf-planner`       | `⚡`    | ~600           | Opus   | Task decomposition      |
-| `cf-code-reviewer` | `⚡`    | ~400           | Opus   | Multi-layer review      |
-| `cf-implementer`   | `⚡`    | ~300           | Opus   | TDD implementation      |
+<AgentsTable />
 
 ## Notes
 
@@ -74,4 +48,4 @@ Agents run in **forked sessions** — they get their own context window and don'
 - Tier classification is what matters — small variations in exact count don't change the tier.
 - These numbers reflect only the **prompt injection size** (the skill/agent definition loaded into context), not the total tokens used during execution.
 - Custom skill guides (`.coding-friend/skills/<name>-custom/SKILL.md`) add to the skill's prompt footprint when loaded.
-- Bootstrap context (~1,300 tokens) is always present regardless of which skill you use.
+- Bootstrap context (<BootstrapTokens />) is always present regardless of which skill you use.

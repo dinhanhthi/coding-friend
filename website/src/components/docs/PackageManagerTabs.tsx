@@ -69,8 +69,8 @@ export default function PackageManagerTabs({
   };
 
   return (
-    <div className="not-prose my-4 overflow-hidden rounded-lg border border-[var(--color-border)]">
-      <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-navy-950)]">
+    <div className="not-prose border-border my-4 overflow-hidden rounded-lg border">
+      <div className="border-border bg-navy-950 flex items-center justify-between border-b">
         <div className="flex">
           {MANAGERS.map((m) => (
             <button
@@ -94,7 +94,7 @@ export default function PackageManagerTabs({
           {copied ? <CheckIcon /> : <CopyIcon />}
         </button>
       </div>
-      <pre className="m-0 overflow-x-auto bg-[var(--color-navy-950)] p-4 text-base leading-relaxed text-slate-300">
+      <pre className="bg-navy-950 m-0 overflow-x-auto p-4 text-base leading-relaxed text-slate-300">
         <code ref={codeRef} className="hljs">
           {command}
         </code>

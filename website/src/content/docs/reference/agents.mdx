@@ -11,14 +11,7 @@ Coding Friend includes 6 specialized agents, each optimized for specific enginee
 
 ## Agent Reference
 
-| Agent              | Model         | Context | Purpose                                                  |
-| ------------------ | ------------- | ------- | -------------------------------------------------------- |
-| `cf-explorer`      | Claude Haiku  | `⚡`    | Read-only codebase exploration and context gathering     |
-| `cf-code-reviewer` | Claude Opus   | `⚡`    | Multi-layer code review with deep reasoning              |
-| `cf-implementer`   | Claude Opus   | `⚡`    | TDD-driven implementation with test-first approach       |
-| `cf-planner`       | Inherited     | `⚡`    | Task decomposition, approach brainstorming, and planning |
-| `cf-writer`        | Claude Haiku  | `⚡`    | Lightweight document writing and markdown generation     |
-| `cf-writer-deep`   | Claude Sonnet | `⚡`    | Deep reasoning for nuanced technical documentation       |
+<AgentRefTable />
 
 Context column shows the prompt footprint of the agent's system prompt (`⚡` = low). Agents run in forked sessions with their own context window. See [Context Footprint](/docs/reference/context-usage/) for details.
 
