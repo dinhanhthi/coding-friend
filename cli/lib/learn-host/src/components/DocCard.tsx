@@ -43,7 +43,10 @@ export default function DocCard({ doc }: { doc: DocMeta }) {
           )}
         </div>
         <span className="text-xs text-slate-400">
-          {doc.frontmatter.updated || doc.frontmatter.created}
+          {doc.frontmatter.updated &&
+          doc.frontmatter.updated !== doc.frontmatter.created
+            ? doc.frontmatter.updated
+            : doc.frontmatter.created}
         </span>
       </div>
     </div>

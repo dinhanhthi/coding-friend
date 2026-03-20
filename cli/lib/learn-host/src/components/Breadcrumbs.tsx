@@ -22,7 +22,7 @@ export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
               {crumb.label}
             </Link>
           ) : (
-            <span className="text-slate-700 dark:text-slate-300">
+            <span className="text-slate-800 dark:text-slate-200">
               {crumb.label}
             </span>
           )}
