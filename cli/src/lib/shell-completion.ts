@@ -31,7 +31,7 @@ _cf_completions() {
 
   # Subcommands for 'memory'
   if [[ "\${COMP_WORDS[1]}" == "memory" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "status search list rm init start-daemon stop-daemon rebuild mcp" -- "$cur"))
+    COMPREPLY=($(compgen -W "status search list rm init config start-daemon stop-daemon rebuild mcp" -- "$cur"))
     return
   fi
 
@@ -141,7 +141,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'search:Search memories by query'
       'list:List memories (--projects for all DBs)'
       'rm:Remove a project database'
-      'init:Initialize Tier 1 (SQLite + Hybrid Search)'
+      'init:Initialize memory system (interactive wizard)'
+      'config:Configure memory system settings'
       'start-daemon:Start the memory daemon (Tier 2)'
       'stop-daemon:Stop the memory daemon'
       'rebuild:Rebuild the daemon search index'
@@ -211,7 +212,8 @@ complete -c cf -n "__fish_seen_subcommand_from memory" -a status -d "Show memory
 complete -c cf -n "__fish_seen_subcommand_from memory" -a search -d "Search memories by query"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List memories (--projects for all DBs)"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a rm -d "Remove a project database"
-complete -c cf -n "__fish_seen_subcommand_from memory" -a init -d "Initialize Tier 1 (SQLite + Hybrid Search)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a init -d "Initialize memory system (interactive wizard)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a config -d "Configure memory system settings"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a start-daemon -d "Start the memory daemon (Tier 2)"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a stop-daemon -d "Stop the memory daemon"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a rebuild -d "Rebuild the daemon search index"
@@ -228,7 +230,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
   $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
-  $memorySubcommands = @('status','search','list','rm','init','start-daemon','stop-daemon','rebuild','mcp')
+  $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')
