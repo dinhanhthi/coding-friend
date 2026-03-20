@@ -45,9 +45,10 @@ export default async function DocPage({
               {doc.frontmatter.created && (
                 <span>Created: {doc.frontmatter.created}</span>
               )}
-              {doc.frontmatter.updated && (
-                <span>Updated: {doc.frontmatter.updated}</span>
-              )}
+              {doc.frontmatter.updated &&
+                doc.frontmatter.updated !== doc.frontmatter.created && (
+                  <span>Updated: {doc.frontmatter.updated}</span>
+                )}
             </div>
           )}
           {doc.frontmatter.tags.length > 0 && (

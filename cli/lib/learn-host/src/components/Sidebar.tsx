@@ -23,7 +23,7 @@ export default function Sidebar({
             <Link
               key={cat.name}
               href={`/${cat.name}/`}
-              className={`flex items-center justify-between rounded-full py-1.5 pr-2 pl-4 text-sm capitalize transition-colors duration-200 ${
+              className={`flex items-center justify-between rounded-full py-1.5 pr-2 pl-4 text-[0.938rem] capitalize transition-colors duration-200 ${
                 isActive
                   ? "font-medium text-amber-700 dark:text-amber-400"
                   : "dark:hover:bg-navy-800/70 text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
