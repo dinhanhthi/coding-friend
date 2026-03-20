@@ -87,6 +87,29 @@ export function enableMarketplaceAutoUpdate(): boolean {
   }
 }
 
+/**
+ * Detect the effective plugin scope by checking which settings files exist.
+ * Returns the highest-priority scope whose settings file exists,
+ * or "user" as the default. Priority: local > project > user.
+ */
+export function detectPluginScope(): PluginScope {
+  // Check from highest to lowest priority
+  const scopeOrder: PluginScope[] = ["local", "project", "user"];
+  for (const scope of scopeOrder) {
+    const settings = readJson<Record<string, unknown>>(
+      settingsPathForScope(scope),
+    );
+    if (!settings) continue;
+    const enabled = settings.enabledPlugins as
+      | Record<string, boolean>
+      | undefined;
+    // If the plugin is explicitly mentioned at this scope, it's the active scope
+    if (enabled && PLUGIN_ID in enabled) return scope;
+  }
+  // Default: plugin installed at user scope (the default install scope)
+  return "user";
+}
+
 /** Enable or disable the plugin at the given scope by modifying enabledPlugins. */
 export function setPluginEnabled(scope: PluginScope, enabled: boolean): void {
   const filePath = settingsPathForScope(scope);

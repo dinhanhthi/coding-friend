@@ -1,0 +1,72 @@
+---
+title: "cf status"
+description: "Show comprehensive Coding Friend status — versions, plugin state, memory, and config."
+keywords: [status, version, plugin, memory, config, cf status, dashboard]
+---
+
+## Usage
+
+```bash
+cf status
+```
+
+No flags or arguments — just run it to see a full dashboard.
+
+## What It Shows
+
+### Versions
+
+Current vs latest versions for both the plugin and CLI, with indicators:
+
+- **✔ up to date** — you're on the latest version
+- **⚠ update available** — a newer version exists (run `cf update`)
+- **not installed** — plugin is not detected
+- **latest unavailable** — couldn't reach GitHub/npm to check
+
+### Plugin
+
+- **Scope** — where the plugin is installed (`user`, `project`, or `local`)
+- **Status** — whether the plugin is `enabled` or `disabled`
+- **Auto-update** — whether automatic updates are enabled
+- **Dev mode** — whether you're using a local plugin source (`cf dev on`)
+- **Permissions** — count of allowed permission rules (run `cf permission` for details)
+
+### Memory
+
+- **Tier** — current search tier (Tier 1: SQLite, Tier 2: Daemon, Tier 3: Markdown)
+- **Daemon** — whether the memory daemon is running, with PID and uptime
+- **Documents** — number of memory files in the current project
+
+Run `cf memory status` for full memory details.
+
+### Config
+
+Shows both global (`~/.coding-friend/config.json`) and local (`.coding-friend/config.json`) config values. When a local key overrides a global key, it's marked with **(overrides global)**.
+
+## Example Output
+
+```
+📦 Versions
+  Plugin     0.12.1 → 0.12.1 ✔ up to date
+  CLI        1.1.0  → 1.1.0  ✔ up to date
+
+🔧 Plugin
+  Scope        user
+  Status       enabled
+  Auto-update  on
+  Dev mode     off
+  Permissions  12 rules → Run "cf permission" for details
+
+🧠 Memory
+  Tier         Tier 1 (SQLite + Hybrid)
+  Daemon       stopped
+  Documents    42 files
+  → Run "cf memory status" for details
+
+⚙️ Config (global: ~/.coding-friend/config.json)
+  language     en
+  docsDir      docs
+
+⚙️ Config (local: .coding-friend/config.json)
+  language     vi (overrides global)
+```

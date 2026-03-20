@@ -19,7 +19,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall disable enable init config host mcp memory permission statusline update dev session"
+  local commands="install uninstall disable enable init config host mcp memory permission statusline update status dev session"
   local scope_flags="--user --global --project --local"
   local update_flags="--cli --plugin --statusline --user --global --project --local"
 
@@ -87,6 +87,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'statusline:Setup coding-friend statusline in Claude Code'
     'update:Update coding-friend plugin and refresh statusline'
     'dev:Switch between local and remote plugin for development'
+    'status:Show comprehensive Coding Friend status'
     'session:Save and load Claude Code sessions across machines'
   )
 
@@ -182,6 +183,7 @@ complete -c cf -n "__fish_use_subcommand" -a permission -d "Manage Claude Code p
 complete -c cf -n "__fish_use_subcommand" -a statusline -d "Setup coding-friend statusline in Claude Code"
 complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plugin and refresh statusline"
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
+complete -c cf -n "__fish_use_subcommand" -a status -d "Show comprehensive Coding Friend status"
 complete -c cf -n "__fish_use_subcommand" -a session -d "Save and load Claude Code sessions across machines"
 # Scope flags for install/uninstall/disable/enable
 complete -c cf -n "__fish_seen_subcommand_from install uninstall disable enable" -l user -d "User scope (all projects)"
@@ -228,7 +230,7 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','dev','session')
+  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','status','dev','session')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
