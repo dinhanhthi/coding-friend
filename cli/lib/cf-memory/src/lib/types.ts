@@ -71,6 +71,7 @@ export interface StoreInput {
   content: string;
   importance?: number;
   source?: string;
+  index_only?: boolean;
 }
 
 export interface SearchInput {

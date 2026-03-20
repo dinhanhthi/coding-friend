@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, existsSync, readFileSync } from "fs";
+import { mkdirSync, rmSync, existsSync, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import matter from "gray-matter";
@@ -83,6 +83,46 @@ describe("MarkdownBackend", () => {
       expect(m1.slug).toBe("api-authentication-pattern");
       expect(m2.slug).not.toBe(m1.slug);
       expect(m2.slug).toContain("api-authentication-pattern-");
+    });
+
+    it("index_only=true returns Memory without writing when file exists", async () => {
+      // Pre-create the file via normal store
+      const original = await backend.store(sampleInput);
+      const filePath = join(
+        testDir,
+        "features",
+        "api-authentication-pattern.md",
+      );
+      expect(existsSync(filePath)).toBe(true);
+
+      // Snapshot file content before index_only call
+      const contentBefore = readFileSync(filePath, "utf-8");
+
+      // Now store with index_only — should NOT create a second file
+      const indexed = await backend.store({ ...sampleInput, index_only: true });
+
+      // Should return clean slug (no timestamp suffix)
+      expect(indexed.slug).toBe("api-authentication-pattern");
+      expect(indexed.id).toBe("features/api-authentication-pattern");
+      expect(indexed.category).toBe("features");
+      expect(indexed.frontmatter.title).toBe(sampleInput.title);
+      expect(indexed.frontmatter.type).toBe(sampleInput.type);
+      expect(indexed.content).toBe(sampleInput.content);
+
+      // Verify no duplicate file was created (only one .md file in features/)
+      const files = readdirSync(join(testDir, "features")).filter((f: string) =>
+        f.endsWith(".md"),
+      );
+      expect(files.length).toBe(1);
+
+      // Verify existing file was not modified
+      expect(readFileSync(filePath, "utf-8")).toBe(contentBefore);
+    });
+
+    it("index_only=true throws when file does not exist", async () => {
+      await expect(
+        backend.store({ ...sampleInput, index_only: true }),
+      ).rejects.toThrow(/index_only.*file not found/i);
     });
 
     it("respects custom importance and source", async () => {

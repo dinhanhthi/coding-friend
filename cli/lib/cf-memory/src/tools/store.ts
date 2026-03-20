@@ -26,8 +26,23 @@ export function registerStore(server: McpServer, backend: MemoryBackend): void {
         .string()
         .optional()
         .describe("Source: conversation, auto-capture, manual"),
+      index_only: z
+        .boolean()
+        .optional()
+        .describe(
+          "When true, skip file creation and return a Memory object for indexing. File must already exist on disk.",
+        ),
     },
-    async ({ title, description, type, tags, content, importance, source }) => {
+    async ({
+      title,
+      description,
+      type,
+      tags,
+      content,
+      importance,
+      source,
+      index_only,
+    }) => {
       const input = {
         title,
         description,
@@ -36,13 +51,16 @@ export function registerStore(server: McpServer, backend: MemoryBackend): void {
         content,
         importance,
         source,
+        index_only,
       };
 
       let dedup: Awaited<ReturnType<typeof checkDuplicate>> | null = null;
-      try {
-        dedup = await checkDuplicate(backend, input);
-      } catch {
-        // Dedup is best-effort — don't block store on search errors
+      if (!index_only) {
+        try {
+          dedup = await checkDuplicate(backend, input);
+        } catch {
+          // Dedup is best-effort — don't block store on search errors
+        }
       }
 
       const memory = await backend.store(input);
