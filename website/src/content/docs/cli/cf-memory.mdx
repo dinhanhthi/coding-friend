@@ -7,42 +7,67 @@ Manage the persistent AI memory system. Store, search, and recall project knowle
 
 ## Subcommands
 
-| Command                     | Description                                       |
-| --------------------------- | ------------------------------------------------- |
-| `cf memory status`          | Show current tier, document count, daemon state   |
-| `cf memory search <query>`  | Search memories from the terminal                 |
-| `cf memory list`            | List memories in current project                  |
-| `cf memory list --projects` | List all project databases with size and metadata |
-| `cf memory rm`              | Remove a project database                         |
-| `cf memory init`            | Install Tier 1 deps and import existing memories  |
-| `cf memory start-daemon`    | Start the Tier 2 daemon                           |
-| `cf memory stop-daemon`     | Stop the Tier 2 daemon                            |
-| `cf memory rebuild`         | Re-index all memories from markdown files         |
-| `cf memory mcp`             | Print MCP server config for Claude Code           |
+| Command                     | Description                                         |
+| --------------------------- | --------------------------------------------------- |
+| `cf memory status`          | Show current tier, document count, daemon state     |
+| `cf memory search <query>`  | Search memories from the terminal                   |
+| `cf memory list`            | List memories in current project                    |
+| `cf memory list --projects` | List all project databases with size and metadata   |
+| `cf memory rm`              | Remove a project database                           |
+| `cf memory init`            | Interactive setup wizard (or config menu on re-run) |
+| `cf memory config`          | Configure memory system settings                    |
+| `cf memory start-daemon`    | Start the Tier 2 daemon                             |
+| `cf memory stop-daemon`     | Stop the Tier 2 daemon                              |
+| `cf memory rebuild`         | Re-index all memories from markdown files           |
+| `cf memory mcp`             | Print MCP server config for Claude Code             |
 
 ## `init`
 
-Sets up **Tier 1** (SQLite + hybrid search). This is a one-time setup:
+Interactive setup wizard for the memory system. On first run, it walks you through each setting step by step. On subsequent runs (when a database already exists), it opens the config menu instead — same as `cf memory config`.
 
-1. **Installs native dependencies** into `~/.coding-friend/memory/node_modules/`:
-   - `better-sqlite3` — SQLite driver (requires C++ compiler)
-   - `sqlite-vec` — vector search extension
-   - `@huggingface/transformers` — embedding model (~23 MB download)
-2. **Creates SQLite database** at `~/.coding-friend/memory/projects/<hash>/db.sqlite`
-3. **Imports existing memories** — reads all markdown files from `docs/memory/`, indexes them into SQLite (FTS5 full-text + vector embeddings)
-4. **Reports status** — shows how many memories were imported and whether vector search is enabled
+**First-time wizard steps:**
 
-If you have no existing memories, it still sets up the database — future memories will be indexed as they're created.
+1. **Search tier** — auto, full (Tier 1), lite (Tier 2), or markdown (Tier 3)
+2. **Embedding provider** — Transformers.js or Ollama (with health check and fallback)
+3. **Auto-capture** — auto-save session context on context compaction
+4. **Auto-start daemon** — start daemon when MCP server connects
+5. **Daemon timeout** — idle timeout in minutes
+6. **Install deps & import** — installs SQLite deps (for Tier 1) and imports existing memories
 
-**Prerequisites**: C++ compiler (Xcode CLT on macOS, `build-essential` on Linux).
+Each setting asks whether to save to global or local config.
+
+**Prerequisites for Tier 1**: C++ compiler (Xcode CLT on macOS, `build-essential` on Linux).
 
 ```bash
 cf memory init
-# Installing dependencies...
+# 🧠 Memory Setup
+# Step 1/5: Search tier
+# ? Memory search tier: full
+# Step 2/5: Embedding provider
+# ? Embedding provider: ollama
+# ...
 # Importing 42 existing memories into SQLite...
-# Imported 42 memories. Vector search: enabled
-# Tier 1 initialized.
+# Memory initialized!
 ```
+
+## `config`
+
+Opens an interactive menu to modify memory settings at any time. Same settings as the init wizard, but in a menu you can navigate freely.
+
+```bash
+cf memory config
+# 🧠 Memory Config
+# ? Memory settings:
+#   Tier [global] (auto)
+#   Auto-capture [local] (true)
+#   Auto-start daemon [-]
+#   Embedding [global] (ollama/nomic-embed-text)
+#   Daemon timeout [-]
+#  ──────────────
+#   Done
+```
+
+Also accessible via `cf config > Memory settings`.
 
 ## `search`
 
@@ -57,7 +82,7 @@ cf memory search "authentication flow"
 #     id: features/jwt-auth | type: fact | matched: title, content
 ```
 
-## `list --projects`
+## List all projects
 
 Lists all project databases stored in `~/.coding-friend/memory/projects/`, sorted by size (largest first). Shows size, memory count, project ID, last updated date, and source directory path.
 
@@ -95,7 +120,7 @@ cf memory rm --prune
 
 All commands ask for confirmation before deleting.
 
-## `start-daemon` or `stop-daemon`
+## Start and stop the daemon
 
 These commands manage the **Tier 2 daemon** — a background Hono HTTP server that keeps a MiniSearch index in RAM.
 
@@ -162,9 +187,11 @@ cf memory status
 #
 # Tier: Tier 1 (SQLite + Hybrid)
 # Memory dir: docs/memory
-# Memories: 42
+# Memories in this dir: 42
 # Daemon: stopped (not needed — Tier 1 uses SQLite directly)
 # SQLite deps: installed
+# Embedding: nomic-embed-text (ollama)
+# Auto-capture: on
 # Categories: features (12), conventions (8), decisions (6), bugs (10), infrastructure (6)
 ```
 
@@ -172,11 +199,12 @@ cf memory status
 
 In `.coding-friend/config.json`:
 
+Memory files are stored in `{docsDir}/memory/` (default: `docs/memory/`), where `docsDir` is the top-level config option. This cannot be overridden per-memory — all memory files always live under the project's docs folder.
+
 ```json
 {
   "memory": {
     "tier": "auto",
-    "docsDir": "docs/memory",
     "daemon": { "idleTimeout": 30 },
     "autoCapture": false,
     "autoStart": false,
@@ -191,7 +219,6 @@ In `.coding-friend/config.json`:
 | Option                | Default                     | Description                                                           |
 | --------------------- | --------------------------- | --------------------------------------------------------------------- |
 | `tier`                | `"auto"`                    | `"auto"`, `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3) |
-| `docsDir`             | `"docs/memory"`             | Where markdown memory files are stored                                |
 | `daemon.idleTimeout`  | `30`                        | Minutes before daemon auto-stops                                      |
 | `autoCapture`         | `false`                     | Auto-save session summaries on context compaction                     |
 | `autoStart`           | `false`                     | Auto-start daemon when MCP server connects                            |

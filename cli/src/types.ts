@@ -43,7 +43,6 @@ export const ALL_COMPONENT_IDS: StatuslineComponent[] =
 
 export interface MemoryConfig {
   tier?: "auto" | "full" | "lite" | "markdown";
-  docsDir?: string;
   daemon?: {
     idleTimeout?: number;
   };

@@ -7,6 +7,18 @@ import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
+import {
+  memoryConfigMenu,
+  editMemoryTier,
+  editMemoryAutoCapture,
+  editMemoryAutoStart,
+  editMemoryEmbedding,
+  editMemoryDaemonTimeout,
+} from "../lib/memory-prompts.js";
+import { readJson } from "../lib/json.js";
+import { globalConfigPath, localConfigPath } from "../lib/paths.js";
+import { showConfigHint } from "../lib/prompt-utils.js";
+import type { CodingFriendConfig } from "../types.js";
 import chalk from "chalk";
 
 function countMdFiles(dir: string): number {
@@ -85,7 +97,7 @@ export async function memoryStatusCommand(): Promise<void> {
   console.log();
   log.info(`Tier: ${tierLabel}`);
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
-  log.info(`Memories: ${chalk.green(String(docCount))}`);
+  log.info(`Memories in this dir: ${chalk.green(String(docCount))}`);
 
   if (running && daemonInfo) {
     const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
@@ -109,6 +121,21 @@ export async function memoryStatusCommand(): Promise<void> {
       `SQLite deps: ${chalk.dim("not installed")} (run "cf memory init" to enable Tier 1)`,
     );
   }
+
+  const config = loadConfig();
+  const embeddingConfig = config.memory?.embedding;
+  if (embeddingConfig?.provider || embeddingConfig?.model) {
+    const provider = embeddingConfig.provider ?? "transformers";
+    const model =
+      embeddingConfig.model ??
+      (provider === "ollama" ? "all-minilm:l6-v2" : "Xenova/all-MiniLM-L6-v2");
+    log.info(`Embedding: ${chalk.cyan(model)} ${chalk.dim(`(${provider})`)}`);
+  }
+
+  const autoCapture = config.memory?.autoCapture ?? false;
+  log.info(
+    `Auto-capture: ${autoCapture ? chalk.green("on") : chalk.dim("off")}`,
+  );
 
   if (existsSync(memoryDir)) {
     const categories = readdirSync(memoryDir, { withFileTypes: true })
@@ -350,14 +377,127 @@ export async function memoryRebuildCommand(): Promise<void> {
   }
 }
 
+function getDbPath(memoryDir: string): string | null {
+  try {
+    // Compute the same path SqliteBackend would use
+    const resolved = resolve(memoryDir).replace(/\/+$/, "");
+    const stripped = resolved
+      .replace(/\/docs\/memory$/, "")
+      .replace(/\/memory$/, "");
+    const id = stripped.replace(/\//g, "-");
+    const home = homedir();
+    const dbPath = join(
+      home,
+      ".coding-friend",
+      "memory",
+      "projects",
+      id,
+      "db.sqlite",
+    );
+    return existsSync(dbPath) ? dbPath : null;
+  } catch {
+    return null;
+  }
+}
+
+const em = chalk.hex("#10b981");
+
 export async function memoryInitCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
   ensureBuilt(mcpDir);
 
-  log.step("Initializing Tier 1 (SQLite + Hybrid Search)...");
+  const dbExists = getDbPath(memoryDir) !== null;
 
-  // Step 1: Install heavy dependencies
+  if (dbExists) {
+    // Re-run: show config menu (like `cf init` returning users flow)
+    console.log();
+    log.info(
+      "Memory already initialized. Opening config menu to adjust settings.",
+    );
+    log.dim('To re-import memories, run "cf memory rebuild".');
+    console.log();
+    await memoryConfigMenu({ exitLabel: "Done" });
+    return;
+  }
+
+  // First-time: step-by-step wizard
+  console.log();
+  console.log(em("  ╭───────────────────────╮"));
+  console.log(
+    em("  │  ") +
+      "🧠" +
+      em(" ") +
+      chalk.bold.white("Memory Setup") +
+      em("     │"),
+  );
+  console.log(em("  ╰────────────╮──────────╯"));
+  console.log(em("               ╰─▸"));
+  console.log();
+
+  showConfigHint();
+
+  // Step 1: Tier
+  log.step("Step 1/5: Search tier");
+  await editMemoryTier(
+    readJson<CodingFriendConfig>(globalConfigPath()),
+    readJson<CodingFriendConfig>(localConfigPath()),
+  );
+  console.log();
+
+  // Step 2: Embedding
+  log.step("Step 2/5: Embedding provider");
+  await editMemoryEmbedding(
+    readJson<CodingFriendConfig>(globalConfigPath()),
+    readJson<CodingFriendConfig>(localConfigPath()),
+  );
+  console.log();
+
+  // Step 3: Auto-capture
+  log.step("Step 3/5: Auto-capture");
+  await editMemoryAutoCapture(
+    readJson<CodingFriendConfig>(globalConfigPath()),
+    readJson<CodingFriendConfig>(localConfigPath()),
+  );
+  console.log();
+
+  // Step 4: Auto-start daemon
+  log.step("Step 4/5: Auto-start daemon");
+  await editMemoryAutoStart(
+    readJson<CodingFriendConfig>(globalConfigPath()),
+    readJson<CodingFriendConfig>(localConfigPath()),
+  );
+  console.log();
+
+  // Step 5: Daemon timeout
+  log.step("Step 5/5: Daemon idle timeout");
+  await editMemoryDaemonTimeout(
+    readJson<CodingFriendConfig>(globalConfigPath()),
+    readJson<CodingFriendConfig>(localConfigPath()),
+  );
+  console.log();
+
+  // Install deps and import
+  const config = loadConfig();
+  const tier = config.memory?.tier ?? "auto";
+
+  if (tier === "markdown") {
+    log.success(
+      'Memory initialized with Tier 3 (markdown). Run "cf memory status" to verify.',
+    );
+    return;
+  }
+
+  if (tier === "lite") {
+    log.success(
+      'Memory initialized. Run "cf memory start-daemon" to enable Tier 2 search.',
+    );
+    return;
+  }
+
+  // Tier 1 (full or auto): install SQLite deps
+  log.step("Installing SQLite dependencies...");
+
   const { ensureDeps, areSqliteDepsAvailable } = await import(
     join(mcpDir, "dist/lib/lazy-install.js")
   );
@@ -370,30 +510,31 @@ export async function memoryInitCommand(): Promise<void> {
     });
 
     if (!installed) {
-      log.error("Failed to install dependencies.");
+      log.error("Failed to install SQLite dependencies.");
       log.dim(
         "Ensure you have a C++ compiler installed (Xcode CLT on macOS, build-essential on Linux).",
       );
-      process.exit(1);
+      log.dim(
+        'Memory will fall back to a lower tier. You can retry later with "cf memory init".',
+      );
+      return;
     }
     log.success("Dependencies installed.");
   }
 
-  // Step 2: Create SQLite database and import existing memories
+  // Import existing memories
   if (!existsSync(memoryDir)) {
-    log.info("No memory directory found. Nothing to import.");
-    log.success(
-      "Tier 1 is ready. Memories will be indexed as they're created.",
+    log.info(
+      "No memory directory found. Memories will be indexed as they're created.",
     );
+    log.success('Memory initialized. Run "cf memory status" to verify.');
     return;
   }
 
   const docCount = countMdFiles(memoryDir);
   if (docCount === 0) {
     log.info("No existing memories to import.");
-    log.success(
-      "Tier 1 is ready. Memories will be indexed as they're created.",
-    );
+    log.success('Memory initialized. Run "cf memory status" to verify.');
     return;
   }
 
@@ -403,7 +544,6 @@ export async function memoryInitCommand(): Promise<void> {
     join(mcpDir, "dist/backends/sqlite/index.js")
   );
 
-  const config = loadConfig();
   const embedding = config.memory?.embedding;
   const backend = new SqliteBackend(memoryDir, {
     skipVec: false,
@@ -414,22 +554,37 @@ export async function memoryInitCommand(): Promise<void> {
     await backend.rebuild();
     const stats = await backend.stats();
     log.success(`Imported ${stats.total} memories. DB: ${backend.getDbPath()}`);
-
-    if (backend.isVecEnabled()) {
-      log.info(`Vector search: ${chalk.green("enabled")}`);
-    } else {
-      log.info(
-        `Vector search: ${chalk.dim("disabled")} (sqlite-vec not available)`,
-      );
-    }
+    log.info(
+      `Vector search: ${backend.isVecEnabled() ? chalk.green("enabled") : chalk.dim("disabled (sqlite-vec not available)")}`,
+    );
   } finally {
     await backend.close();
   }
 
-  log.success('Tier 1 initialized. Run "cf memory status" to verify.');
+  console.log();
+  log.success('Memory initialized! Run "cf memory status" to verify.');
   log.info(
     `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
   );
+}
+
+export async function memoryConfigCommand(): Promise<void> {
+  console.log();
+  console.log(em("  ╭───────────────────────╮"));
+  console.log(
+    em("  │  ") +
+      "🧠" +
+      em(" ") +
+      chalk.bold.white("Memory Config") +
+      em("    │"),
+  );
+  console.log(em("  ╰────────────╮──────────╯"));
+  console.log(em("               ╰─▸"));
+  console.log();
+
+  showConfigHint();
+
+  await memoryConfigMenu({ exitLabel: "Done" });
 }
 
 // ─── Helpers for list --projects / rm ──────────────────────────────────────────

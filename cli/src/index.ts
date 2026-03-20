@@ -184,7 +184,8 @@ Memory subcommands:
   memory search       Search memories by query
   memory list         List memories in current project (--projects for all DBs)
   memory rm           Remove a project database (--project-id <id>, --all, or --prune)
-  memory init         Initialize Tier 1 (install SQLite deps, import existing memories)
+  memory init         Initialize memory system (interactive wizard)
+  memory config       Configure memory system settings
   memory start-daemon  Start the memory daemon (Tier 2)
   memory stop-daemon   Stop the memory daemon
   memory rebuild      Rebuild the daemon search index
@@ -222,11 +223,19 @@ memory
 memory
   .command("init")
   .description(
-    "Initialize Tier 1 — install SQLite deps and import existing memories",
+    "Initialize memory system — interactive wizard (first time) or config menu",
   )
   .action(async () => {
     const { memoryInitCommand } = await import("./commands/memory.js");
     await memoryInitCommand();
+  });
+
+memory
+  .command("config")
+  .description("Configure memory system settings")
+  .action(async () => {
+    const { memoryConfigCommand } = await import("./commands/memory.js");
+    await memoryConfigCommand();
   });
 
 memory
