@@ -1,4 +1,17 @@
 ---
+name: cf-planner
+description: >
+  Task decomposition and approach brainstorming agent. Use this agent when you need to break
+  down a complex task into actionable steps, compare implementation approaches, or design
+  a plan before coding. Dispatched by cf-plan for approach analysis. Trigger this agent when
+  the task requires evaluating multiple strategies, weighing trade-offs, estimating effort,
+  or structuring a multi-step implementation — e.g. "how should we approach this", "what's
+  the best way to build", "break this down into tasks", "design the architecture", "plan the
+  migration", "compare approaches", "evaluate options", "structure this work". This agent
+  takes codebase context (usually from cf-explorer) and produces 2-3 approaches with pros,
+  cons, effort estimates, risk levels, and a recommended path. It does NOT implement — only
+  plans. Do NOT use this agent for simple questions, single-file changes, or tasks that don't
+  need upfront planning.
 model: opus
 ---
 

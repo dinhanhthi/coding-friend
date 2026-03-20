@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T06:53:37.701Z",
+  "generatedAt": "2026-03-20T07:25:46.535Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -98,7 +98,7 @@
       "type": "auto"
     },
     "cf-tdd": {
-      "tokens": 1251,
+      "tokens": 1146,
       "tier": "medium",
       "type": "auto"
     },
@@ -115,7 +115,7 @@
       "model": "opus"
     },
     "cf-explorer": {
-      "tokens": 809,
+      "tokens": 882,
       "tier": "low",
       "model": "haiku"
     },
@@ -130,13 +130,13 @@
       "model": "opus"
     },
     "cf-writer-deep": {
-      "tokens": 894,
+      "tokens": 989,
       "tier": "low",
       "model": "sonnet"
     },
     "cf-writer": {
-      "tokens": 914,
-      "tier": "low",
+      "tokens": 1000,
+      "tier": "medium",
       "model": "haiku"
     }
   }

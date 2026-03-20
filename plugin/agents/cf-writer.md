@@ -1,6 +1,14 @@
 ---
 name: cf-writer
-description: Lightweight document writer for skills that generate markdown files. Use this agent when a skill (cf-learn, cf-remember, etc.) needs to write or update markdown documents. Handles straightforward content — simple concepts, factual notes, conventions, tool usage, project memory. For content requiring deep reasoning about nuanced technical concepts or very long context, use cf-writer-deep instead.
+description: >
+  Lightweight document writer for skills that generate markdown files. Dispatched by cf-learn,
+  cf-remember, cf-scan, cf-fix, and cf-ask for writing docs, memory files, and notes. Trigger
+  this agent when a skill needs to write or update markdown documents — e.g. "write the doc",
+  "save to memory", "create a note", "write the summary", "generate the markdown", "update
+  the doc file". Handles straightforward content — simple concepts, factual notes, conventions,
+  tool usage, project memory. Runs on Haiku for speed. For content requiring deep reasoning
+  about nuanced technical concepts or very long context, use cf-writer-deep instead. Do NOT
+  use this agent for code implementation or codebase exploration.
 model: haiku
 tools: Read, Write, Edit, Glob, Bash
 ---

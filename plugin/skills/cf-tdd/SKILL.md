@@ -2,10 +2,15 @@
 name: cf-tdd
 description: >
   Use when writing new production code, adding features, implementing changes, or refactoring
-  existing code — e.g. "refactor this", "clean up this code", "extract this into a module",
-  "restructure", "simplify this function", "break this up". The TDD cycle (RED → GREEN →
-  REFACTOR) applies to both new code and refactoring — existing tests must pass before AND
-  after any refactor.
+  existing code — e.g. "implement this", "build this feature", "create a function", "add a new
+  endpoint", "write the implementation", "refactor this", "clean up this code", "extract into
+  a module", "simplify this function", "scaffold", "write a test", "add tests", "create a
+  component", "implement the API", "add a route", "write a service", "create the handler".
+  Also auto-invoke when the conversation transitions from planning/discussion to actual code
+  writing — any time production code is about to be written, this skill MUST be loaded first.
+  This is the MANDATORY gate for all code writing in the project. Do NOT auto-invoke for
+  documentation-only changes, config edits, non-code file updates, or when the user is only
+  asking questions about code without requesting changes.
 user-invocable: false
 ---
 
