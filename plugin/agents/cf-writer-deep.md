@@ -1,6 +1,15 @@
 ---
 name: cf-writer-deep
-description: Document writer for content requiring deep reasoning about nuanced technical concepts, very long context, or complex multi-concept synthesis. Use this agent instead of cf-writer when the content involves advanced architecture explanations, subtle debugging insights, or topics that need careful technical analysis to explain well.
+description: >
+  Deep reasoning document writer for nuanced technical content, complex multi-concept
+  synthesis, or very long context. Dispatched by cf-learn when deep reasoning is enabled, and
+  by skills needing thorough technical explanations. Trigger this agent instead of cf-writer
+  when the content involves advanced architecture explanations, subtle debugging insights,
+  complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write
+  a detailed explanation", "document this architecture", "explain this complex concept",
+  "write deep analysis", "create technical documentation". Runs on Sonnet for deeper reasoning
+  than Haiku. Do NOT use this agent for simple notes, factual memory entries, or quick
+  summaries — use cf-writer instead.
 model: sonnet
 tools: Read, Write, Edit, Glob, Bash
 ---
