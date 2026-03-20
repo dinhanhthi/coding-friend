@@ -43,10 +43,6 @@ export function getBootstrapTokens(): TokenEntry {
   return tokenCounts.bootstrap as TokenEntry;
 }
 
-export function getTierIcon(tier: Tier): string {
-  return (tokenCounts.tiers as Record<Tier, TierDef>)[tier].icon;
-}
-
 export function getTierDef(tier: Tier): TierDef {
   return (tokenCounts.tiers as Record<Tier, TierDef>)[tier];
 }

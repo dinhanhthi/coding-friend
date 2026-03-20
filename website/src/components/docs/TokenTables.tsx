@@ -1,9 +1,10 @@
 import {
   getAllTokenData,
-  getTierIcon,
+  type Tier,
   type SkillTokenEntry,
   type AgentTokenEntry,
 } from "@/lib/token-data";
+import TokenBadge from "@/components/ui/TokenBadge";
 
 /* ────────────────────────────────────────────────────────────
    METADATA — human-curated descriptions for each table row.
@@ -164,6 +165,51 @@ export function BootstrapTokens() {
   return <>{approxTokens(tokens)} tokens</>;
 }
 
+const tierSystemRows: { tier: Tier; range: string; meaning: string }[] = [
+  {
+    tier: "low",
+    range: "< 1,000 tokens",
+    meaning: "Lightweight — small prompt footprint",
+  },
+  {
+    tier: "medium",
+    range: "1,000 – 2,500 tokens",
+    meaning: "Moderate — standard prompt footprint",
+  },
+  {
+    tier: "high",
+    range: "> 2,500 tokens",
+    meaning: "Heavy — large prompt footprint",
+  },
+];
+
+export function TierSystemTable() {
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Icon</th>
+          <th>Token Range</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tierSystemRows.map(({ tier, range, meaning }) => (
+          <tr key={tier}>
+            <td>{tier.charAt(0).toUpperCase() + tier.slice(1)}</td>
+            <td>
+              <TokenBadge tier={tier} showTooltip={false} />
+            </td>
+            <td>{range}</td>
+            <td>{meaning}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export function SlashCommandsTable() {
   const data = getAllTokenData();
   const skills = data.skills as Record<string, SkillTokenEntry>;
@@ -189,7 +235,7 @@ export function SlashCommandsTable() {
               <a href={`/docs/skills/${name}/`}>{`/${name}`}</a>
             </td>
             <td>
-              <code>{getTierIcon(entry.tier)}</code>
+              <TokenBadge tier={entry.tier} />
             </td>
             <td>{approxTokens(entry.tokens)}</td>
             <td>{slashCommandMeta[name] ?? name}</td>
@@ -225,7 +271,7 @@ export function AutoSkillsTable() {
               <a href={`/docs/skills/${name}/`}>{name}</a>
             </td>
             <td>
-              <code>{getTierIcon(entry.tier)}</code>
+              <TokenBadge tier={entry.tier} />
             </td>
             <td>{approxTokens(entry.tokens)}</td>
             <td>{autoSkillMeta[name] ?? name}</td>
@@ -262,7 +308,7 @@ export function AgentsTable() {
               <code>{name}</code>
             </td>
             <td>
-              <code>{getTierIcon(entry.tier)}</code>
+              <TokenBadge tier={entry.tier} />
             </td>
             <td>{approxTokens(entry.tokens)}</td>
             <td>{modelDisplayName[entry.model] ?? entry.model}</td>
@@ -310,7 +356,7 @@ export function OverviewSlashCommandsTable() {
               <td>{meta?.description ?? slashCommandMeta[name] ?? name}</td>
               <td>{meta?.triggeredBy ?? "slash"}</td>
               <td>
-                <code>{getTierIcon(entry.tier)}</code>
+                <TokenBadge tier={entry.tier} />
               </td>
             </tr>
           );
@@ -352,7 +398,7 @@ export function OverviewAutoSkillsTable() {
               <td>{meta?.activatesWhen ?? name}</td>
               <td>{meta?.whatItDoes ?? name}</td>
               <td>
-                <code>{getTierIcon(entry.tier)}</code>
+                <TokenBadge tier={entry.tier} />
               </td>
             </tr>
           );
@@ -393,7 +439,7 @@ export function AgentRefTable() {
             </td>
             <td>Claude {modelDisplayName[entry.model] ?? entry.model}</td>
             <td>
-              <code>{getTierIcon(entry.tier)}</code>
+              <TokenBadge tier={entry.tier} />
             </td>
             <td>{agentRefMeta[name] ?? agentMeta[name] ?? name}</td>
           </tr>

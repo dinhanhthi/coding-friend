@@ -78,7 +78,7 @@ export default function DocsSidebar() {
                       <li key={item.slug}>
                         <Link
                           href={href}
-                          className={`group flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-base transition-colors duration-200 ${
+                          className={`group flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-base transition-colors duration-200 ${
                             isActive
                               ? "font-medium text-violet-400"
                               : "hover:bg-navy-800 text-slate-400 hover:text-white"
