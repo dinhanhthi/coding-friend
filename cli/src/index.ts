@@ -139,6 +139,14 @@ program
     await updateCommand(opts);
   });
 
+program
+  .command("status")
+  .description("Show comprehensive Coding Friend status")
+  .action(async () => {
+    const { statusCommand } = await import("./commands/status.js");
+    await statusCommand();
+  });
+
 const session = program
   .command("session")
   .description("Save and load Claude Code sessions across machines");

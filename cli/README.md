@@ -79,6 +79,8 @@ cf memory rebuild    # Rebuild search index from markdown files
 cf memory init       # Initialize memory system (interactive wizard)
 cf memory config     # Configure memory system settings
 cf memory mcp        # Show MCP server config for clients
+cf status            # Show comprehensive Coding Friend status
+                     # (versions, plugin, memory, config)
 cf session save      # Save current Claude Code session to docs/sessions/
 cf session load      # Load a saved session from docs/sessions/
 cf help              # Show all commands

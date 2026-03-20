@@ -71,6 +71,16 @@ If auto-update could not be enabled during installation (e.g., due to file permi
 
 Restart Claude Code to load the plugin. You should see the Coding Friend statusline at the bottom.
 
+## Verify Your Setup
+
+After restarting, run the status command to verify everything is configured correctly:
+
+```bash
+cf status
+```
+
+This shows a compact dashboard with your plugin version, CLI version, memory tier, and config — all in one place. If anything is missing or misconfigured, the output will help you identify what to fix.
+
 ## Enable AI Memory (Optional)
 
 Coding Friend includes a [memory system](/docs/reference/memory-system/) that lets the AI store and recall project knowledge across sessions — codebase facts, conventions, debug episodes, and more.

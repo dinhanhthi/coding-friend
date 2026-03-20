@@ -23,14 +23,14 @@ export function semverCompare(a: string, b: string): number {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getCliVersion(): string {
+export function getCliVersion(): string {
   const pkg = JSON.parse(
     readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
   );
   return pkg.version;
 }
 
-function getLatestCliVersion(): string | null {
+export function getLatestCliVersion(): string | null {
   return run("npm", ["view", "coding-friend-cli", "version"]);
 }
 
