@@ -10,32 +10,13 @@ Coding Friend provides a comprehensive toolkit of 17 skills that automate common
 
 Interactive skills you trigger directly. Some also **auto-invoke** — they activate automatically when relevant context is detected, without needing you to type the command.
 
-| Command                                     | Description                                                 | Triggered by | Context  |
-| ------------------------------------------- | ----------------------------------------------------------- | ------------ | -------- |
-| [`/cf-plan`](/docs/skills/cf-plan/)         | Brainstorm and create structured implementation plans       | slash + auto | `⚡⚡`   |
-| [`/cf-fix`](/docs/skills/cf-fix/)           | Quick bug fix workflow with problem verification            | slash + auto | `⚡⚡`   |
-| [`/cf-ask`](/docs/skills/cf-ask/)           | Quick Q&A about your codebase with persistent memory        | slash        | `⚡⚡`   |
-| [`/cf-optimize`](/docs/skills/cf-optimize/) | Structured optimization with before/after measurement       | slash + auto | `⚡⚡`   |
-| [`/cf-scan`](/docs/skills/cf-scan/)         | Scan project and bootstrap memory with project knowledge    | slash        | `⚡⚡⚡` |
-| [`/cf-review`](/docs/skills/cf-review/)     | Multi-layer code review in a forked subagent                | slash + auto | `⚡⚡`   |
-| [`/cf-commit`](/docs/skills/cf-commit/)     | Smart conventional commits with diff analysis               | slash        | `⚡`     |
-| [`/cf-ship`](/docs/skills/cf-ship/)         | Verify, commit, push, and create PR in one command          | slash        | `⚡`     |
-| [`/cf-remember`](/docs/skills/cf-remember/) | Capture project knowledge for AI memory across sessions     | slash + auto | `⚡⚡`   |
-| [`/cf-learn`](/docs/skills/cf-learn/)       | Extract human learning docs from coding sessions            | slash + auto | `⚡⚡`   |
-| [`/cf-research`](/docs/skills/cf-research/) | In-depth research with web search and parallel subagents    | slash        | `⚡⚡`   |
-| [`/cf-session`](/docs/skills/cf-session/)   | Save session to docs/sessions/ to resume on another machine | slash        | `⚡⚡`   |
-| [`/cf-help`](/docs/skills/cf-help/)         | Answer questions about Coding Friend                        | slash + auto | `⚡⚡`   |
+<OverviewSlashCommandsTable />
 
 ## Auto-Invoked Skills
 
 These skills activate automatically and **cannot** be triggered manually. They have no slash command.
 
-| Skill                                              | Activates When                | What It Does                                                                                        | Context |
-| -------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------- | ------- |
-| [`cf-tdd`](/docs/skills/cf-tdd/)                   | Writing new code              | Enforces test-driven development: RED → GREEN → REFACTOR                                            | `⚡⚡`  |
-| [`cf-sys-debug`](/docs/skills/cf-sys-debug/)       | Debugging issues              | Guides 4-phase systematic debugging + documentation: Investigate, Analyze, Test, Fix, then Document | `⚡⚡`  |
-| [`cf-auto-review`](/docs/skills/cf-auto-review/)   | Reviewing code changes        | Applies multi-layer review checklist (correctness, security, performance, maintainability, tests)   | `⚡`    |
-| [`cf-verification`](/docs/skills/cf-verification/) | Before claiming task complete | Ensures tests pass, changes verified, no regressions introduced                                     | `⚡`    |
+<OverviewAutoSkillsTable />
 
 Context column shows the approximate prompt footprint (tokens injected when loaded): `⚡` = low, `⚡⚡` = medium, `⚡⚡⚡` = high. See [Context Footprint](/docs/reference/context-usage/) for details.
 

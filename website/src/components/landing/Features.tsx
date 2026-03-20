@@ -802,9 +802,7 @@ function BorderProgressOverlay({
     `Q ${containerW},${containerH} ${containerW - br},${containerH}`,
     `L ${br},${containerH}`,
     `Q 0,${containerH} 0,${containerH - br}`,
-    ...(isFirstTab
-      ? [`L 0,${bodyY}`]
-      : [`L 0,${bodyY + br}`]),
+    ...(isFirstTab ? [`L 0,${bodyY}`] : [`L 0,${bodyY + br}`]),
   ].join(" ");
 
   return (
@@ -1030,7 +1028,9 @@ export default function Features() {
           </div>
 
           {/* Body panel */}
-          <div className={`bg-navy-950/50 rounded-b-xl p-6 sm:p-8 ${activeIdx === 0 ? "rounded-tr-xl" : "rounded-t-xl"}`}>
+          <div
+            className={`bg-navy-950/50 rounded-b-xl p-6 sm:p-8 ${activeIdx === 0 ? "rounded-tr-xl" : "rounded-t-xl"}`}
+          >
             <div className="overflow-hidden">
               <div
                 className="flex transition-transform duration-500 ease-out"

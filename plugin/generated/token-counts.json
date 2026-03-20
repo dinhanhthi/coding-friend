@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T06:21:09.431Z",
+  "generatedAt": "2026-03-20T06:53:37.701Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,7 +18,7 @@
     }
   },
   "bootstrap": {
-    "tokens": 1283,
+    "tokens": 1376,
     "tier": "medium"
   },
   "skills": {
@@ -98,7 +98,7 @@
       "type": "auto"
     },
     "cf-tdd": {
-      "tokens": 1038,
+      "tokens": 1251,
       "tier": "medium",
       "type": "auto"
     },
@@ -110,7 +110,7 @@
   },
   "agents": {
     "cf-code-reviewer": {
-      "tokens": 414,
+      "tokens": 647,
       "tier": "low",
       "model": "opus"
     },
@@ -120,12 +120,12 @@
       "model": "haiku"
     },
     "cf-implementer": {
-      "tokens": 303,
+      "tokens": 560,
       "tier": "low",
       "model": "opus"
     },
     "cf-planner": {
-      "tokens": 610,
+      "tokens": 824,
       "tier": "low",
       "model": "opus"
     },

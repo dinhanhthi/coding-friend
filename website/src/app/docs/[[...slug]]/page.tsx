@@ -13,6 +13,15 @@ import Callout from "@/components/docs/Callout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 import MdxLink from "@/components/docs/MdxLink";
+import {
+  BootstrapTokens,
+  SlashCommandsTable,
+  AutoSkillsTable,
+  AgentsTable,
+  OverviewSlashCommandsTable,
+  OverviewAutoSkillsTable,
+  AgentRefTable,
+} from "@/components/docs/TokenTables";
 import Badge from "@/components/ui/Badge";
 import TokenBadge from "@/components/ui/TokenBadge";
 import CopyForAiButton from "@/components/docs/CopyForAiButton";
@@ -109,6 +118,13 @@ const mdxComponents = {
   PackageManagerTabs,
   pre: CodeBlock,
   a: MdxLink,
+  BootstrapTokens,
+  SlashCommandsTable,
+  AutoSkillsTable,
+  AgentsTable,
+  OverviewSlashCommandsTable,
+  OverviewAutoSkillsTable,
+  AgentRefTable,
 };
 
 export async function generateStaticParams() {
