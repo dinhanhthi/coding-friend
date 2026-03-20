@@ -39,6 +39,27 @@ cf dev on /path/to/coding-friend
 
 ⚠️ When you have breaking version changes, you have to run `cf dev update`.
 
+## Token counts
+
+Each skill and agent consumes context tokens when loaded. The script `scripts/generate-token-counts.ts` measures this and writes the result to `plugin/generated/token-counts.json`.
+
+```bash
+npm run generate:tokens
+```
+
+**What it does:**
+
+1. Reads every `SKILL.md` in `plugin/skills/<name>/`
+2. Reads every agent `.md` in `plugin/agents/`
+3. Reads the bootstrap context (`plugin/context/bootstrap.md`)
+4. Counts tokens using `@lenml/tokenizer-claude`
+5. Assigns a context tier: `⚡` low (<1,000), `⚡⚡` medium (1,000–2,500), `⚡⚡⚡` high (>2,500)
+6. Writes everything to `plugin/generated/token-counts.json`
+
+The website imports this JSON (via `website/src/lib/token-data.ts`) to display context footprint info on skill and agent doc pages.
+
+**When to run:** after any `SKILL.md` or agent `.md` file is added, removed, or modified — and before release to keep website data in sync.
+
 ## Release Workflow
 
 ### Packages

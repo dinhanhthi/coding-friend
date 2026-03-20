@@ -1,3 +1,33 @@
+/**
+ * Generate token counts for all plugin skills, agents, and bootstrap context.
+ *
+ * What it does:
+ *   1. Reads every SKILL.md in plugin/skills/<name>/
+ *   2. Reads every agent .md in plugin/agents/
+ *   3. Reads the bootstrap context (plugin/context/bootstrap.md)
+ *   4. Counts tokens for each using @lenml/tokenizer-claude
+ *   5. Assigns a context tier: ⚡ low (<1,000), ⚡⚡ medium (1,000–2,500), ⚡⚡⚡ high (>2,500)
+ *   6. Writes the result to plugin/generated/token-counts.json
+ *
+ * Output JSON structure:
+ *   - generatedAt: ISO timestamp
+ *   - tokenizer: tokenizer package used
+ *   - tiers: tier definitions with thresholds
+ *   - bootstrap: { tokens, tier }
+ *   - skills: { [name]: { tokens, tier, type: "slash" | "auto" } }
+ *   - agents: { [name]: { tokens, tier, model } }
+ *
+ * When to run:
+ *   - After any SKILL.md or agent .md file is added, removed, or modified
+ *   - Before release, to keep website token data in sync
+ *
+ * Usage:
+ *   npm run generate:tokens
+ *
+ * The website imports the generated JSON (via website/src/lib/token-data.ts)
+ * to display context footprint info on skill and agent doc pages.
+ */
+
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
 import { join, basename, dirname } from "path";
 import { fileURLToPath } from "url";
