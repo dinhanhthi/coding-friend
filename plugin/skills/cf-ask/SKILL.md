@@ -204,6 +204,7 @@ After the cf-writer agent completes and the file is saved, you MUST call the `me
 - `content`: the full markdown content (including frontmatter)
 - `importance`: 3 (default)
 - `source`: "conversation"
+- `index_only`: true
 
 **If updating an existing memory** — call `memory_update` with:
 

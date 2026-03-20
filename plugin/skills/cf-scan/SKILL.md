@@ -253,7 +253,7 @@ existing_file_action: overwrite
 
 After each cf-writer saves a file, call `memory_store` (for new) or `memory_update` (for existing) to index in SQLite:
 
-- For `memory_store`: pass `title`, `description`, `type`, `tags`, `content`, `importance`: 3, `source`: "scan"
+- For `memory_store`: pass `title`, `description`, `type`, `tags`, `content`, `importance`: 3, `source`: "scan", `index_only`: true
 - For `memory_update`: pass `id` (e.g. "features/auth-module"), `content` (full markdown body), `tags` (merged array if changed)
 
 ### Step 5: Summary

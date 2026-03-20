@@ -192,6 +192,7 @@ Call `memory_store` with:
 - `content`: the full markdown content (including frontmatter)
 - `importance`: 3 (default)
 - `source`: "auto-capture"
+- `index_only`: true
 
 If the MCP tool is unavailable, log a warning to the user but do NOT fail silently.
 

@@ -112,18 +112,11 @@ export class MarkdownBackend implements MemoryBackend {
       fs.mkdirSync(catDir, { recursive: true });
     }
 
-    let slug = slugify(input.title);
+    const slug = slugify(input.title);
     const filePath = path.join(catDir, `${slug}.md`);
-
-    // Handle duplicate slugs
-    if (fs.existsSync(filePath)) {
-      slug = `${slug}-${Date.now()}`;
-    }
-
-    const finalPath = path.join(catDir, `${slug}.md`);
     const now = today();
 
-    const frontmatter: MemoryFrontmatter = {
+    const buildFrontmatter = (): MemoryFrontmatter => ({
       title: input.title,
       description: input.description,
       type: input.type,
@@ -132,7 +125,30 @@ export class MarkdownBackend implements MemoryBackend {
       created: now,
       updated: now,
       source: input.source ?? "conversation",
-    };
+    });
+
+    // index_only: verify file exists, return Memory from input without writing
+    if (input.index_only) {
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`index_only: file not found for "${category}/${slug}"`);
+      }
+      return {
+        id: `${category}/${slug}`,
+        slug,
+        category,
+        frontmatter: buildFrontmatter(),
+        content: input.content,
+      };
+    }
+
+    // Handle duplicate slugs
+    let finalSlug = slug;
+    if (fs.existsSync(filePath)) {
+      finalSlug = `${slug}-${Date.now()}`;
+    }
+
+    const finalPath = path.join(catDir, `${finalSlug}.md`);
+    const frontmatter = buildFrontmatter();
 
     const doc = matter.stringify(
       input.content,
@@ -141,8 +157,8 @@ export class MarkdownBackend implements MemoryBackend {
     fs.writeFileSync(finalPath, doc, "utf-8");
 
     return {
-      id: `${category}/${slug}`,
-      slug,
+      id: `${category}/${finalSlug}`,
+      slug: finalSlug,
       category,
       frontmatter,
       content: input.content,
