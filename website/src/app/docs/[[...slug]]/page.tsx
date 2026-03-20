@@ -15,6 +15,7 @@ import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 import MdxLink from "@/components/docs/MdxLink";
 import {
   BootstrapTokens,
+  TierSystemTable,
   SlashCommandsTable,
   AutoSkillsTable,
   AgentsTable,
@@ -119,6 +120,7 @@ const mdxComponents = {
   pre: CodeBlock,
   a: MdxLink,
   BootstrapTokens,
+  TierSystemTable,
   SlashCommandsTable,
   AutoSkillsTable,
   AgentsTable,
