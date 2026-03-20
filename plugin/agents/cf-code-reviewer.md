@@ -36,19 +36,19 @@ Categorize findings:
 Format:
 
 ```
-## Code Review (<QUICK|STANDARD|DEEP> mode)
+## 🔍 Code Review (<QUICK|STANDARD|DEEP> mode)
 
-### Critical
+### 🚨 Critical
 - [file:line] Description
   For security findings: **[Category]** (confidence: 0.X) — exploit scenario + recommendation
 
-### Important
+### ⚠️ Important
 - [file:line] Description
 
-### Suggestions
+### 💡 Suggestions
 - Description
 
-### Summary
+### 📋 Summary
 Overall assessment in 1-2 sentences.
 ```
 
@@ -57,7 +57,7 @@ Overall assessment in 1-2 sentences.
 If the review identifies **performance concerns** — e.g. O(n²) loops, N+1 queries, missing indexes, unnecessary re-renders, unbounded data fetching, or memory-intensive operations — add a section at the end of the report:
 
 ```
-### Performance
+### ⚡ Performance
 - [file:line] Description of concern
   Suggestion: Consider running `/cf-optimize` on this code path for measured improvement.
 ```

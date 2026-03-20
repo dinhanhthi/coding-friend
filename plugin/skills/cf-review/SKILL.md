@@ -105,19 +105,19 @@ This skill is automatically invoked by other skills — you don't always need to
 9. **Format the report:**
 
    ```
-   ## Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
+   ## 🔍 Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
 
-   ### Critical Issues
+   ### 🚨 Critical Issues
    - <issue> at <file>:<line>
      For security: **[Category]** (confidence: 0.X) — exploit scenario + recommendation
 
-   ### Important Issues
+   ### ⚠️ Important Issues
    - <issue> at <file>:<line>
 
-   ### Suggestions
+   ### 💡 Suggestions
    - <suggestion>
 
-   ### Summary
+   ### 📋 Summary
    <1-2 sentence overall assessment>
    ```
 

@@ -30,14 +30,14 @@ Recommended development workflow (Read more: [Plugin README](plugin/README.md)):
 cf dev on /path/to/coding-friend
 
 # Inner loop (repeat as many times as needed)
-# 1. Edit files
-# 2. cf dev sync
-# 3. Restart Claude Code and test
-
-# When feature is done — bump version once and commit
+# 1. Go to root and run `npm run dev` (cli, website, mcp, host, memory are running)
+# 2. Modify something
+# 3. - If changes are related to plugin -> run `cf dev sync`
+#    - If plugin version is upgraded -> run `cf dev update`
+#    - If changes are related to CLI -> do nothing, `npm run dev` is working under the hook
+#      - If there is new in cli -> run `cf init` and refresh autocompletion
+# 4. When feature is done — bump version once and commit
 ```
-
-⚠️ When you have breaking version changes, you have to run `cf dev update`.
 
 ## Token counts
 
@@ -66,7 +66,7 @@ The website imports this JSON (via `website/src/lib/token-data.ts`) to display c
 
 | Package    | Version file                                              | Changelog                         | Tag pattern     |
 | ---------- | --------------------------------------------------------- | --------------------------------- | --------------- |
-| Plugin     | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md`             | `v*`            |
+| Plugin     | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md`             | `v`\*           |
 | CLI        | `cli/package.json`                                        | `cli/CHANGELOG.md`                | `cli-v*`        |
 | Learn MCP  | `cli/lib/learn-mcp/package.json`                          | `cli/lib/learn-mcp/CHANGELOG.md`  | `learn-mcp-v*`  |
 | Learn Host | `cli/lib/learn-host/package.json`                         | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
