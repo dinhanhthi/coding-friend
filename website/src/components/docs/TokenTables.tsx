@@ -114,8 +114,7 @@ const overviewAutoMeta: Record<
 > = {
   "cf-tdd": {
     activatesWhen: "Writing new code",
-    whatItDoes:
-      "Enforces test-driven development: RED → GREEN → REFACTOR",
+    whatItDoes: "Enforces test-driven development: RED → GREEN → REFACTOR",
   },
   "cf-sys-debug": {
     activatesWhen: "Debugging issues",
@@ -392,9 +391,7 @@ export function AgentRefTable() {
             <td>
               <code>{name}</code>
             </td>
-            <td>
-              Claude {modelDisplayName[entry.model] ?? entry.model}
-            </td>
+            <td>Claude {modelDisplayName[entry.model] ?? entry.model}</td>
             <td>
               <code>{getTierIcon(entry.tier)}</code>
             </td>
