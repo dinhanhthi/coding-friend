@@ -57,7 +57,7 @@ export default function TableOfContents({ headings }: Props) {
             <li key={h.id}>
               <a
                 href={`#${h.id}`}
-                className={`block text-base transition-colors duration-200 ${
+                className={`block text-sm/5 transition-colors duration-200 ${
                   h.level === 3 ? "pl-3" : ""
                 } ${
                   activeId === h.id
