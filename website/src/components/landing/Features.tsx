@@ -620,21 +620,24 @@ function SkillsAgentsContent() {
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {[
-                "/cf-plan",
-                "/cf-fix",
-                "/cf-ask",
-                "/cf-review",
-                "/cf-commit",
-                "/cf-ship",
-                "/cf-optimize",
-                "/cf-scan",
-                "/cf-remember",
-                "/cf-learn",
-                "/cf-research",
-                "/cf-session",
-                "/cf-help",
-              ].map((cmd) => (
-              <code key={cmd} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-sm text-violet-300">
+              "/cf-plan",
+              "/cf-fix",
+              "/cf-ask",
+              "/cf-review",
+              "/cf-commit",
+              "/cf-ship",
+              "/cf-optimize",
+              "/cf-scan",
+              "/cf-remember",
+              "/cf-learn",
+              "/cf-research",
+              "/cf-session",
+              "/cf-help",
+            ].map((cmd) => (
+              <code
+                key={cmd}
+                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-sm text-violet-300"
+              >
                 {cmd}
               </code>
             ))}
