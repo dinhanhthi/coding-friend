@@ -86,7 +86,7 @@ export default function ChangelogTabs({
     <>
       {/* Tab toggle */}
       <div className="mb-12 flex justify-center">
-        <div className="bg-navy-950/50 relative inline-flex rounded-full border border-[#a0a0a01c] p-1">
+        <div className="scrollbar-none bg-navy-950/50 relative inline-flex max-w-full overflow-x-auto rounded-full border border-[#a0a0a01c] p-1">
           <div
             className="bg-navy-800 absolute top-1 bottom-1 rounded-full shadow-sm transition-all duration-300 ease-in-out"
             style={{ left: indicator.left, width: indicator.width }}
@@ -98,7 +98,7 @@ export default function ChangelogTabs({
                 tabRefs.current[tab.key] = el;
               }}
               onClick={() => setActiveTab(tab.key)}
-              className={`relative z-10 cursor-pointer rounded-full px-5 py-2 text-base font-medium transition-colors duration-200 ${
+              className={`relative z-10 shrink-0 cursor-pointer rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 sm:px-5 sm:text-base ${
                 activeTab === tab.key
                   ? "text-violet-400"
                   : "text-slate-400 hover:text-white"
