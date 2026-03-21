@@ -761,7 +761,9 @@ export default function ComparisonSection() {
                   >
                     {tab.icon}
                   </span>
-                  <span className="hidden whitespace-nowrap sm:inline">{tab.label}</span>
+                  <span className="hidden whitespace-nowrap sm:inline">
+                    {tab.label}
+                  </span>
                 </button>
               );
             })}
@@ -786,7 +788,9 @@ export default function ComparisonSection() {
                     style={{ width: `${100 / tabs.length}%` }}
                   >
                     <div className="mb-4 sm:hidden">
-                      <h3 className={`text-xl font-bold ${tabColorMap[tab.color].active}`}>
+                      <h3
+                        className={`text-xl font-bold ${tabColorMap[tab.color].active}`}
+                      >
                         {tab.label}
                       </h3>
                       <hr className="mt-2 border-slate-700/50" />
