@@ -1,0 +1,63 @@
+{
+  "name": "cf-tdd",
+  "type": "skill",
+  "description": "TDD workflow",
+  "criteria": [
+    {
+      "name": "red_before_green",
+      "weight": 0.3,
+      "description": "A failing test is written and demonstrated before any production code",
+      "scoring": {
+        "0": "Production code written first with no failing test phase",
+        "1": "Test written first but never shown to fail (jumped straight to passing)",
+        "2": "Failing test shown but production code was partially written beforehand",
+        "3": "Clear RED phase: test written, run, shown failing, then production code written to pass it"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "(FAIL|failed|failing|✗|✘|×)",
+        "target": "output"
+      }
+    },
+    {
+      "name": "test_quality",
+      "weight": 0.25,
+      "description": "Tests are meaningful, testing behavior rather than implementation details",
+      "scoring": {
+        "0": "Tests are trivial (e.g., testing that true is true) or test implementation details",
+        "1": "Tests cover happy path only with no edge cases or error scenarios",
+        "2": "Tests cover main behavior and some edge cases but miss error handling",
+        "3": "Tests cover behavior comprehensively: happy path, edge cases, and error scenarios"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "\\.(test|spec)\\.(ts|js|tsx|jsx)$",
+        "target": "changed_files"
+      }
+    },
+    {
+      "name": "minimal_code",
+      "weight": 0.25,
+      "description": "Production code is the minimum needed to pass the tests (no speculative code)",
+      "scoring": {
+        "0": "Large amounts of unused or speculative code beyond what tests require",
+        "1": "Some extra code that is not exercised by any test",
+        "2": "Code is mostly minimal but includes minor anticipatory abstractions",
+        "3": "Every line of production code is driven by a test — no unused code paths"
+      }
+    },
+    {
+      "name": "refactor_step",
+      "weight": 0.2,
+      "description": "After GREEN, code is refactored while keeping tests passing",
+      "scoring": {
+        "0": "No refactoring step — code left in first-pass state",
+        "1": "Minor cleanup attempted but tests not re-run after refactoring",
+        "2": "Meaningful refactoring done and tests pass, but some duplication remains",
+        "3": "Clean refactoring improves structure/readability, all tests verified passing afterward"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "The RED-GREEN-REFACTOR cycle should be visible in the output. Multiple cycles for complex features are expected. Score each cycle if multiple are present and average."
+}

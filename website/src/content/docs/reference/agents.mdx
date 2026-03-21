@@ -19,7 +19,7 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 ### cf-explorer
 
-The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets.
+The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it checks project memory first for cached exploration results, then maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets. The memory-first approach reduces token usage when the same codebase areas are explored multiple times in a session.
 
 Used by:
 
@@ -51,7 +51,9 @@ cf-fix (diagnose root cause → confirm → dispatch cf-implementer)
 
 Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, and formatting the report.
 
-The review **methodology** (4-layer checklist, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
+The review **methodology** (two-pass: quick scan + deep 4-layer analysis, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
+
+**Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
 
 ```
 /cf-review (workflow orchestration)
@@ -66,6 +68,8 @@ cf-auto-review (methodology — what to check)
 Dispatched by [`/cf-plan [task]`](/docs/skills/cf-plan/), [`/cf-fix [bug]`](/docs/skills/cf-fix/), and [`/cf-optimize [target]`](/docs/skills/cf-optimize/) for test-first implementation. Also dispatched by [`cf-tdd`](/docs/skills/cf-tdd/) for substantial implementations (3+ files).
 
 The agent runs in an isolated context and follows strict RED → GREEN → REFACTOR discipline. Skills pass it a detailed prompt with task context, file paths, and test patterns, then review the agent's report.
+
+**Output quality gates**: Reports must include specific files created/modified, actual test output (not just "tests pass"), TDD compliance evidence (RED → GREEN → REFACTOR steps), decisions made, and any concerns.
 
 ```
 /cf-plan (clarify → explore → plan → approve)
@@ -88,6 +92,8 @@ cf-implementer (RED → GREEN → REFACTOR → report)
 ### cf-planner
 
 Invoked by [`/cf-plan [task]`](/docs/skills/cf-plan/) after the cf-explorer gathers codebase context. Takes the exploration report and designs 2-3 implementation approaches with pros, cons, effort, risk, and confidence levels. Recommends one approach and breaks it into sequential tasks.
+
+**Output quality gates**: Plans must include at least 2 approaches (or explain why alternatives were ruled out), concrete file paths for every task, a verify step for each task, and at least 1 risk with mitigation.
 
 ### cf-writer
 

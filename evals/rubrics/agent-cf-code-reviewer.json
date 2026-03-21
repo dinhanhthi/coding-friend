@@ -1,0 +1,58 @@
+{
+  "name": "agent-cf-code-reviewer",
+  "type": "agent",
+  "description": "Multi-layer review",
+  "criteria": [
+    {
+      "name": "issue_detection",
+      "weight": 0.3,
+      "description": "Detects real bugs, security issues, and logic errors in the code",
+      "scoring": {
+        "0": "Misses all known issues seeded in the test code",
+        "1": "Finds only obvious surface issues (formatting, naming) but misses logic bugs",
+        "2": "Finds most significant issues but misses subtle bugs or security concerns",
+        "3": "Finds all significant issues including subtle logic errors and security vulnerabilities"
+      }
+    },
+    {
+      "name": "precision",
+      "weight": 0.25,
+      "description": "Low false positive rate — reported issues are genuine problems",
+      "scoring": {
+        "0": "More than half of reported issues are false positives or misunderstandings",
+        "1": "Several false positives that waste reviewer time to triage",
+        "2": "One or two borderline false positives mixed with genuine issues",
+        "3": "Every reported issue is a genuine concern — zero false positives"
+      }
+    },
+    {
+      "name": "severity_accuracy",
+      "weight": 0.2,
+      "description": "Issue severity ratings accurately reflect their real-world impact",
+      "scoring": {
+        "0": "Severity ratings are essentially random or all the same level",
+        "1": "Some effort at severity but critical issues marked as minor or vice versa",
+        "2": "Severity is mostly accurate with one issue mis-rated by one level",
+        "3": "Severity ratings precisely match the actual risk and impact of each issue"
+      }
+    },
+    {
+      "name": "actionability",
+      "weight": 0.25,
+      "description": "Each issue includes a specific fix suggestion with file:line reference",
+      "scoring": {
+        "0": "Issues are vague observations with no file references or fix suggestions",
+        "1": "Issues reference files but lack line numbers or specific fix suggestions",
+        "2": "Most issues have file:line refs and suggestions but some are vague",
+        "3": "Every issue has precise file:line reference with a concrete, implementable fix suggestion"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "[a-zA-Z0-9_/.-]+:\\d+",
+        "target": "output"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Multi-layer review should cover: correctness, security, performance, and maintainability. The reviewer agent does deeper analysis than cf-auto-review. For clean code, a concise 'no significant issues' is better than fabricated findings."
+}

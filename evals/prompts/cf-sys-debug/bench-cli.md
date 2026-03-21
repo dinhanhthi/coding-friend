@@ -1,0 +1,1 @@
+The CLI tool crashes with "Cannot read properties of null" when processing certain JSON files. The error seems to come from the transform module but I can't figure out exactly where. Debug this systematically.

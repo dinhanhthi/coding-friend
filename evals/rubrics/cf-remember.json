@@ -1,0 +1,63 @@
+{
+  "name": "cf-remember",
+  "type": "skill",
+  "description": "Extract project knowledge to docs/memory/",
+  "criteria": [
+    {
+      "name": "relevance",
+      "weight": 0.3,
+      "description": "Captured knowledge is relevant to the project and worth remembering",
+      "scoring": {
+        "0": "Stored information is irrelevant to the project or already obvious from code",
+        "1": "Information is tangentially relevant but not worth persisting long-term",
+        "2": "Information is relevant but could be discovered easily from code/docs",
+        "3": "Information captures non-obvious project knowledge that would be lost between sessions"
+      }
+    },
+    {
+      "name": "accuracy",
+      "weight": 0.3,
+      "description": "Stored information is factually correct",
+      "scoring": {
+        "0": "Contains significant factual errors about the project",
+        "1": "Mostly correct but one important detail is wrong or outdated",
+        "2": "Accurate but some claims are imprecise or could be misinterpreted",
+        "3": "Every statement is accurate, precise, and verifiable against the codebase"
+      }
+    },
+    {
+      "name": "retrievability",
+      "weight": 0.2,
+      "description": "Memory file is named and organized so it can be found when needed",
+      "scoring": {
+        "0": "File has a cryptic name and no clear topic — impossible to find later",
+        "1": "File name is somewhat descriptive but content lacks structure",
+        "2": "Good file name and structure but could benefit from better headings or keywords",
+        "3": "Clear, descriptive file name with well-structured content and good searchability"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "docs/memory/[a-z0-9-]+\\.md$",
+        "target": "changed_files"
+      }
+    },
+    {
+      "name": "no_duplicates",
+      "weight": 0.2,
+      "description": "Does not duplicate information already stored in existing memory files",
+      "scoring": {
+        "0": "Creates a file that is essentially a copy of an existing memory file",
+        "1": "Significant overlap with existing memory (>50% duplicate content)",
+        "2": "Minor overlap with existing memory but adds meaningful new information",
+        "3": "Entirely new information or meaningfully updates/replaces an existing file"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "check_duplicate_titles",
+        "target": "docs/memory/"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Memory files should be concise — not full documentation, but enough to jog context. If updating existing memory, the update should be additive or a clear improvement, not a regression."
+}

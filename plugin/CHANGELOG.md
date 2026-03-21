@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.13.0 (unpublished)
+
+- Improve skills and agents with enhanced instructions for evaluation and benchmarking [#bb1352b](https://github.com/dinhanhthi/coding-friend/commit/bb1352b)
+- Add `index_only` option to `memory_store` calls in `cf-scan`, `cf-ask`, `cf-remember`, `cf-fix`, `cf-sys-debug` to prevent duplicate file creation [#7f56711](https://github.com/dinhanhthi/coding-friend/commit/7f56711)
+- Add emoji to heading in reports of `cf-review` and `cf-code-reviewer` [#48fda77](https://github.com/dinhanhthi/coding-friend/commit/48fda77)
+
 ## v0.12.2 (2026-03-20)
 
 - Update bootstrap context to include `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)

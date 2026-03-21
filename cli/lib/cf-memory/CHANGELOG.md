@@ -1,5 +1,9 @@
 # CF Memory Changelog
 
+## v0.2.0 (unpublished)
+
+- Add `index_only` option to `memory_store` MCP tool — skip file writing when file already exists on disk, enabling clean separation between file creation and indexing [#7f56711](https://github.com/dinhanhthi/coding-friend/commit/7f56711)
+
 ## v0.1.3 (2026-03-19)
 
 - Use path-based project IDs instead of SHA256 hashes for human-readable project directories (e.g. `-Users-thi-git-foo` instead of `a1b2c3d4e5f6`) [#9c4cac0](https://github.com/dinhanhthi/coding-friend/commit/9c4cac0)

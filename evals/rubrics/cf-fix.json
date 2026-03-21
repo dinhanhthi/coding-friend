@@ -1,0 +1,63 @@
+{
+  "name": "cf-fix",
+  "type": "skill",
+  "description": "Quick bug fix workflow",
+  "criteria": [
+    {
+      "name": "root_cause_identification",
+      "weight": 0.3,
+      "description": "Correctly identifies the root cause rather than treating symptoms",
+      "scoring": {
+        "0": "Root cause not identified; fix addresses wrong issue entirely",
+        "1": "Treats a symptom rather than the underlying cause",
+        "2": "Identifies root cause but explanation is incomplete or partially wrong",
+        "3": "Precisely identifies and explains the root cause with supporting evidence"
+      }
+    },
+    {
+      "name": "fix_correctness",
+      "weight": 0.3,
+      "description": "The applied fix actually resolves the bug without introducing new issues",
+      "scoring": {
+        "0": "Fix does not resolve the bug or makes it worse",
+        "1": "Fix partially resolves the bug but leaves edge cases broken",
+        "2": "Fix resolves the bug but the approach is fragile or suboptimal",
+        "3": "Fix cleanly resolves the bug with a robust, maintainable approach"
+      }
+    },
+    {
+      "name": "test_coverage",
+      "weight": 0.2,
+      "description": "A test is added that reproduces the bug and verifies the fix",
+      "scoring": {
+        "0": "No test added for the bug fix",
+        "1": "Test added but does not actually reproduce the original bug",
+        "2": "Test reproduces the bug but misses important edge cases",
+        "3": "Test clearly reproduces the bug, verifies the fix, and covers edge cases"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "test_files_exist",
+        "target": "changed_files"
+      }
+    },
+    {
+      "name": "no_regressions",
+      "weight": 0.2,
+      "description": "Existing tests still pass after the fix",
+      "scoring": {
+        "0": "Multiple existing tests now fail",
+        "1": "One or two existing tests fail due to the change",
+        "2": "All tests pass but fix changes behavior in untested areas",
+        "3": "All existing tests pass and fix is scoped tightly to the bug"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "npm test",
+        "target": "exit_code"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "TDD approach expected: write failing test first, then fix. Score red_before_green as part of test_coverage if the test was written before the fix."
+}

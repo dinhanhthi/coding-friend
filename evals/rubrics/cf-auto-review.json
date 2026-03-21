@@ -1,0 +1,63 @@
+{
+  "name": "cf-auto-review",
+  "type": "skill",
+  "description": "Review methodology",
+  "criteria": [
+    {
+      "name": "four_layer_coverage",
+      "weight": 0.3,
+      "description": "Review covers all 4 layers: correctness, security, performance, maintainability",
+      "scoring": {
+        "0": "Only covers one layer (e.g., only style/formatting comments)",
+        "1": "Covers two layers but completely ignores the others",
+        "2": "Covers three layers but misses one with relevant issues",
+        "3": "All four layers addressed: correctness, security, performance, and maintainability"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "(correctness|security|performance|maintainability|Correctness|Security|Performance|Maintainability)",
+        "target": "output"
+      }
+    },
+    {
+      "name": "issue_quality",
+      "weight": 0.3,
+      "description": "Reported issues are real, significant, and well-explained",
+      "scoring": {
+        "0": "Issues are nitpicks or style preferences with no real impact",
+        "1": "Mix of real issues and noise — hard to tell which matter",
+        "2": "Issues are real and significant but explanations could be clearer",
+        "3": "Every issue is significant, clearly explained, and includes the potential impact"
+      }
+    },
+    {
+      "name": "no_false_positives",
+      "weight": 0.2,
+      "description": "Does not flag correct, idiomatic code as problematic",
+      "scoring": {
+        "0": "Majority of findings are false positives or misunderstandings of the code",
+        "1": "Several false positives that undermine trust in the review",
+        "2": "One or two borderline false positives but otherwise accurate",
+        "3": "Zero false positives — every finding is a genuine concern"
+      }
+    },
+    {
+      "name": "severity_accuracy",
+      "weight": 0.2,
+      "description": "Issue severity levels (critical/warning/info) accurately reflect actual impact",
+      "scoring": {
+        "0": "Severity levels are random or inverted (critical for style, info for security bugs)",
+        "1": "Most issues are labeled the same severity regardless of actual impact",
+        "2": "Severity is mostly accurate but one issue is over- or under-rated",
+        "3": "Severity levels precisely match the actual impact of each issue"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "[a-zA-Z0-9_/.-]+:\\d+",
+        "target": "output"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Auto-review is triggered automatically, not by the user. It should be efficient and not over-report. Clean code with no issues should produce a short 'no issues found' report rather than fabricating problems."
+}

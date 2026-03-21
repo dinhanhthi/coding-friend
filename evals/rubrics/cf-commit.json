@@ -1,0 +1,58 @@
+{
+  "name": "cf-commit",
+  "type": "skill",
+  "description": "Smart conventional commit",
+  "criteria": [
+    {
+      "name": "format_compliance",
+      "weight": 0.3,
+      "description": "Commit message follows conventional commit format",
+      "scoring": {
+        "0": "No conventional commit format at all (missing type prefix)",
+        "1": "Partial format (has type but missing scope or malformed description)",
+        "2": "Correct format but scope could be more specific or accurate",
+        "3": "Perfect conventional commit format with accurate type, scope, and description"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "^(feat|fix|refactor|test|docs|chore)(\\(.+\\))?!?: .+",
+        "target": "commit_message"
+      }
+    },
+    {
+      "name": "scope_accuracy",
+      "weight": 0.25,
+      "description": "Scope correctly identifies the affected package or area",
+      "scoring": {
+        "0": "No scope provided when one is clearly needed",
+        "1": "Scope is too broad or generic (e.g., 'app' when 'cli' is more accurate)",
+        "2": "Scope is reasonable but a more precise one exists",
+        "3": "Scope precisely identifies the affected package/module/area"
+      }
+    },
+    {
+      "name": "message_clarity",
+      "weight": 0.25,
+      "description": "Subject line clearly communicates the why/what of the change",
+      "scoring": {
+        "0": "Subject is vague or misleading (e.g., 'update stuff', 'fix things')",
+        "1": "Subject describes what changed but not why it matters",
+        "2": "Subject is clear but could be more concise or specific",
+        "3": "Subject is concise, specific, and immediately communicates the purpose"
+      }
+    },
+    {
+      "name": "body_quality",
+      "weight": 0.2,
+      "description": "Commit body provides useful context when the change warrants it",
+      "scoring": {
+        "0": "Complex change with no body explaining rationale",
+        "1": "Body exists but is redundant with subject or lacks useful detail",
+        "2": "Body provides context but misses key motivation or impact details",
+        "3": "Body clearly explains why the change was made and any notable implications"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Simple changes (typos, formatting) may not need a body — score body_quality as 3 if omission is appropriate. Breaking changes must use ! suffix or BREAKING CHANGE footer."
+}

@@ -1,0 +1,52 @@
+{
+  "name": "cf-session",
+  "type": "skill",
+  "description": "Save/load Claude Code sessions",
+  "criteria": [
+    {
+      "name": "session_saved_correctly",
+      "weight": 0.4,
+      "description": "Session state is captured completely and accurately when saving",
+      "scoring": {
+        "0": "Save fails or produces an empty/corrupt file",
+        "1": "Session saved but missing critical context (current task, modified files, etc.)",
+        "2": "Session saved with main context but some details lost (e.g., partial file list)",
+        "3": "Session saved with complete context: current task, modified files, decisions made, and next steps"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "file_exists",
+        "target": "session_file"
+      }
+    },
+    {
+      "name": "session_loaded_correctly",
+      "weight": 0.4,
+      "description": "Loading a session restores enough context to continue work without re-explaining",
+      "scoring": {
+        "0": "Load fails or restored context is unusable",
+        "1": "Session loads but requires significant re-explanation of the task",
+        "2": "Session loads with main context intact but some details need clarification",
+        "3": "Session loads seamlessly — can continue work exactly where it left off"
+      }
+    },
+    {
+      "name": "format_valid",
+      "weight": 0.2,
+      "description": "Session file uses valid format and is parseable",
+      "scoring": {
+        "0": "File is not valid YAML/JSON — parse errors",
+        "1": "File parses but has structural issues (missing required fields)",
+        "2": "File parses correctly and has required fields but some optional fields missing",
+        "3": "File is valid, well-structured, and includes all expected fields"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "yaml_validate",
+        "target": "session_file"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "When evaluating load, the test should save a session, start a new conversation, load it, and verify the agent can continue the task. Session files should be human-readable."
+}

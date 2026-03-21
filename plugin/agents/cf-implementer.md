@@ -49,12 +49,13 @@ You are a TDD implementer. You write code using strict test-driven development.
 
 ### 5. Report
 
-When done, provide:
+When done, provide (all items are REQUIRED — do not omit any):
 
-- What was implemented
-- Tests written and their results
-- Any decisions made and why
-- Any concerns or follow-up items
+- **What was implemented** — specific files created/modified with brief description
+- **Tests written and their results** — include the actual test output (pass/fail counts, any failures). Do NOT just say "tests pass" without showing evidence.
+- **TDD compliance evidence** — confirm you followed RED → GREEN → REFACTOR. If you deviated, explain why.
+- **Decisions made** — any non-obvious choices and their rationale
+- **Concerns or follow-up items** — anything the caller should review or address
 
 ## Rules
 
