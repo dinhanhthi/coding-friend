@@ -1,0 +1,63 @@
+{
+  "name": "agent-cf-planner",
+  "type": "agent",
+  "description": "Task decomposition and approach brainstorming",
+  "criteria": [
+    {
+      "name": "approach_diversity",
+      "weight": 0.25,
+      "description": "Generates multiple distinct approaches rather than just one",
+      "scoring": {
+        "0": "Only one approach presented with no alternatives considered",
+        "1": "Two approaches but they are minor variations of the same idea",
+        "2": "Two genuinely different approaches with some trade-off analysis",
+        "3": "Three or more meaningfully different approaches with clear differentiation"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "(Approach|Option|Alternative|Strategy)\\s*(\\d|[A-C]|One|Two|Three)",
+        "target": "output"
+      }
+    },
+    {
+      "name": "pros_cons_depth",
+      "weight": 0.25,
+      "description": "Each approach has substantive pros and cons analysis",
+      "scoring": {
+        "0": "No pros/cons analysis for any approach",
+        "1": "Pros/cons listed but they are generic (e.g., 'faster' / 'harder') without specifics",
+        "2": "Good pros/cons for some approaches but superficial for others",
+        "3": "Every approach has specific, project-relevant pros and cons with concrete trade-offs"
+      }
+    },
+    {
+      "name": "task_actionability",
+      "weight": 0.25,
+      "description": "Tasks in the recommended approach are specific enough to implement directly",
+      "scoring": {
+        "0": "Tasks are vague (e.g., 'implement the feature') with no file or function targets",
+        "1": "Some tasks are actionable but others require further decomposition",
+        "2": "Most tasks are actionable with target files but some lack specificity",
+        "3": "Every task specifies target files, expected changes, and verification steps"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "count_tasks",
+        "target": "output"
+      }
+    },
+    {
+      "name": "risk_coverage",
+      "weight": 0.25,
+      "description": "Identifies risks, dependencies, and potential blockers for the recommended approach",
+      "scoring": {
+        "0": "No risks or dependencies mentioned",
+        "1": "One obvious risk mentioned but no mitigation or dependency analysis",
+        "2": "Key risks identified with mitigations but missing dependency analysis",
+        "3": "Comprehensive risk analysis with mitigations, dependencies mapped, and fallback plan"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Planner should explore the codebase before planning to ground approaches in reality. A recommendation for which approach to use should be included with clear reasoning. Small tasks may only warrant 2 approaches."
+}

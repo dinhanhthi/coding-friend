@@ -1,0 +1,58 @@
+{
+  "name": "cf-verification",
+  "type": "skill",
+  "description": "Completion gate",
+  "criteria": [
+    {
+      "name": "all_checks_run",
+      "weight": 0.3,
+      "description": "All relevant verification checks are executed (tests, build, lint, format)",
+      "scoring": {
+        "0": "No verification checks run — just claimed 'done'",
+        "1": "Only one check run (e.g., only tests but no build or lint)",
+        "2": "Most checks run but one relevant check was skipped",
+        "3": "All applicable checks run: tests, build, lint, and format verification"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "npm test && npm run build && npm run lint",
+        "target": "exit_code"
+      }
+    },
+    {
+      "name": "no_false_passes",
+      "weight": 0.35,
+      "description": "Does not report passing when there are actual failures",
+      "scoring": {
+        "0": "Reports all-clear when there are obvious test failures or build errors",
+        "1": "Reports passing but ignores warnings that indicate real problems",
+        "2": "Correctly reports failures but mischaracterizes their severity",
+        "3": "Accurately reports all results — failures, warnings, and passes — with correct severity"
+      }
+    },
+    {
+      "name": "clear_report",
+      "weight": 0.2,
+      "description": "Verification results are presented in a clear, scannable format",
+      "scoring": {
+        "0": "Raw command output dumped with no summary",
+        "1": "Some summary but hard to quickly determine pass/fail status",
+        "2": "Clear pass/fail for each check but missing details on failures",
+        "3": "Clear pass/fail status for each check with concise failure details and suggested fixes"
+      }
+    },
+    {
+      "name": "actionable_failures",
+      "weight": 0.15,
+      "description": "When checks fail, the report provides actionable next steps",
+      "scoring": {
+        "0": "Failures reported with no guidance on how to fix them",
+        "1": "Generic advice given (e.g., 'fix the tests') without specifics",
+        "2": "Specific failures identified but fix suggestions could be more actionable",
+        "3": "Each failure includes the specific error, affected file/line, and a concrete fix suggestion"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Verification is the final gate before claiming a task is done. The most critical criterion is no_false_passes — a verification that claims green when it is red is worse than no verification at all."
+}

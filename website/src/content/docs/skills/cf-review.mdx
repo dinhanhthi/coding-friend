@@ -60,7 +60,7 @@ Different behavior is expected based on the value of `[target]`:
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
 4. **Dispatch to subagent** — Fork a [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
-5. **Apply 4-layer review** — Plan alignment, code quality, security, and testing (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
+5. **Apply two-pass review** — Quick scan for obvious issues, then deep 4-layer analysis (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
 6. **Report findings** — Organized by severity (Critical / Important / Suggestion)
 
 ### Review Modes

@@ -1,12 +1,12 @@
 ---
 title: "cf-auto-review"
-description: "Single source of truth for the 4-layer code review methodology."
+description: "Single source of truth for the two-pass code review methodology."
 keywords: [code review, review methodology, checklist, security]
 ---
 
-Context footprint: `⚡` (low) — [what does this mean?](/docs/reference/context-usage/)
+Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
-The `cf-auto-review` skill is the **single source of truth** for Coding Friend's review methodology. It defines the 4-layer review process, security vulnerability categories, confidence scoring, and severity levels used by all review components.
+The `cf-auto-review` skill is the **single source of truth** for Coding Friend's review methodology. It defines a two-pass review process (quick scan + deep 4-layer analysis), security vulnerability categories, confidence scoring, and severity levels used by all review components.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ cf-auto-review (methodology — what to check)
 | -------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------- |
 | [`/cf-review`](/docs/skills/cf-review/)                        | Entry point. Gathers diff, detects review mode, dispatches to subagent | `cf-review/SKILL.md`         |
 | [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) | Execution. Reads code, applies methodology, formats report             | `agents/cf-code-reviewer.md` |
-| `cf-auto-review`                                               | Methodology. The complete 4-layer checklist and security table         | `cf-auto-review/SKILL.md`    |
+| `cf-auto-review`                                               | Methodology. Two-pass review (quick scan + 4-layer deep)               | `cf-auto-review/SKILL.md`    |
 
 The `cf-code-reviewer` agent loads `cf-auto-review` at review time — it doesn't duplicate the methodology, it references it. This keeps the review methodology in one place.
 
@@ -38,7 +38,20 @@ Automatically loaded when:
 - Claude reviews code changes inline (without `/cf-review`)
 - Assessing code quality before merge or commit
 
-## Review Layers
+## Two-Pass Review
+
+### Pass 1: Quick Scan
+
+Before the deep review, a fast structural scan catches high-confidence issues:
+
+1. **Obvious bugs** — null dereferences, unclosed resources, missing returns, off-by-one errors
+2. **Structural issues** — missing imports, unused variables, broken type signatures
+3. **Naming red flags** — single-letter variables in non-trivial code, misleading names
+4. **Forgotten artifacts** — TODO/FIXME/HACK comments, console.log, debug code, commented-out code
+
+Findings are reported immediately as **Critical** or **Important**.
+
+### Pass 2: Deep 4-Layer Review
 
 ### Layer 1: Plan Alignment
 
