@@ -4,7 +4,7 @@ import { homedir } from "os";
 
 import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
-import { run } from "../lib/exec.js";
+import { run, runWithStderr } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
@@ -38,12 +38,24 @@ function getMemoryDir(path?: string): string {
   return resolveMemoryDir(path);
 }
 
+const MAX_ERROR_LINES = 30;
+
+function truncateError(text: string): string {
+  const lines = text.split("\n");
+  if (lines.length <= MAX_ERROR_LINES) return text;
+  const head = lines.slice(0, 20);
+  const tail = lines.slice(-8);
+  const skipped = lines.length - 28;
+  return [...head, `  ... (${skipped} lines omitted) ...`, ...tail].join("\n");
+}
+
 function ensureBuilt(mcpDir: string): void {
   if (!existsSync(join(mcpDir, "node_modules"))) {
     log.step("Installing memory server dependencies (one-time setup)...");
-    const result = run("npm", ["install", "--silent"], { cwd: mcpDir });
-    if (result === null) {
+    const result = runWithStderr("npm", ["install"], { cwd: mcpDir });
+    if (result.exitCode !== 0) {
       log.error("Failed to install dependencies");
+      if (result.stderr) log.error(truncateError(result.stderr));
       process.exit(1);
     }
     log.success("Done.");
@@ -51,9 +63,10 @@ function ensureBuilt(mcpDir: string): void {
 
   if (!existsSync(join(mcpDir, "dist"))) {
     log.step("Building memory server...");
-    const result = run("npm", ["run", "build", "--silent"], { cwd: mcpDir });
-    if (result === null) {
+    const result = runWithStderr("npm", ["run", "build"], { cwd: mcpDir });
+    if (result.exitCode !== 0) {
       log.error("Failed to build memory server");
+      if (result.stderr) log.error(truncateError(result.stderr));
       process.exit(1);
     }
     log.success("Done.");

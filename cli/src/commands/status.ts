@@ -51,16 +51,27 @@ function formatScalar(value: unknown): string {
   return String(value);
 }
 
-function pad(label: string, width: number): string {
-  return `  ${label}${" ".repeat(Math.max(1, width - label.length))}`;
+function pad(
+  label: string,
+  width: number,
+  color?: (s: string) => string,
+): string {
+  const displayed = color ? color(label) : label;
+  return `  ${displayed}${" ".repeat(Math.max(1, width - label.length))}`;
 }
 
 /**
  * Print a single sub-property line with indentation.
  */
-function subLine(key: string, value: string, overrides: string): void {
+function subLine(
+  key: string,
+  value: string,
+  overrides: string,
+  color?: (s: string) => string,
+): void {
+  const displayed = color ? color(key) : key;
   console.log(
-    `    ${key}${" ".repeat(Math.max(1, CONFIG_SUB_COL - key.length))}${value}${overrides}`,
+    `    ${displayed}${" ".repeat(Math.max(1, CONFIG_SUB_COL - key.length))}${value}${overrides}`,
   );
 }
 
@@ -83,7 +94,7 @@ function printConfig(
 
     // Nested objects → group header + indented sub-properties
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      console.log(pad(key, CONFIG_KEY_COL) + chalk.dim("─") + overrides);
+      console.log(pad(key, CONFIG_KEY_COL, chalk.cyan) + chalk.dim("─") + overrides);
       const nested = value as Record<string, unknown>;
       const nestedOther =
         otherConfig && typeof otherConfig[key] === "object"
@@ -104,7 +115,7 @@ function printConfig(
                 : String(c),
             )
             .join(", ");
-          subLine(subKey, names, subOverrides);
+          subLine(subKey, names, subOverrides, chalk.cyan);
           continue;
         }
 
@@ -120,7 +131,7 @@ function printConfig(
           const inline = innerEntries
             .map(([k, v]) => `${k}: ${formatScalar(v)}`)
             .join(", ");
-          subLine(subKey, inline, subOverrides);
+          subLine(subKey, inline, subOverrides, chalk.cyan);
           continue;
         }
 
@@ -130,11 +141,12 @@ function printConfig(
             subKey,
             subVal.map((v) => formatScalar(v)).join(", "),
             subOverrides,
+            chalk.cyan,
           );
           continue;
         }
 
-        subLine(subKey, formatScalar(subVal), subOverrides);
+        subLine(subKey, formatScalar(subVal), subOverrides, chalk.cyan);
       }
       continue;
     }
@@ -142,14 +154,14 @@ function printConfig(
     // Top-level arrays → comma-separated
     if (Array.isArray(value)) {
       console.log(
-        `${pad(key, CONFIG_KEY_COL)}${value.map((v) => formatScalar(v)).join(", ")}${overrides}`,
+        `${pad(key, CONFIG_KEY_COL, chalk.cyan)}${value.map((v) => formatScalar(v)).join(", ")}${overrides}`,
       );
       continue;
     }
 
     // Top-level scalars
     console.log(
-      `${pad(key, CONFIG_KEY_COL)}${formatScalar(value)}${overrides}`,
+      `${pad(key, CONFIG_KEY_COL, chalk.cyan)}${formatScalar(value)}${overrides}`,
     );
   }
 }

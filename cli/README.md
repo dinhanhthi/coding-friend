@@ -5,7 +5,25 @@ CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-frien
 ## Requirements
 
 - Node.js >= 18
+- npm (included with Node.js, but on some Linux distros you may need to install it separately)
 - The [coding-friend plugin](https://github.com/dinhanhthi/coding-friend) installed in Claude Code
+
+### Additional requirements for `cf memory init`
+
+The memory system's Tier 1 (SQLite) uses native Node.js modules that require compilation. On **Linux** (Ubuntu/Debian), install the following system packages before running `cf memory init`:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential python3
+```
+
+On **macOS**, install Xcode Command Line Tools:
+
+```bash
+xcode-select --install
+```
+
+Without these, `cf memory init` will fail when installing SQLite dependencies (`better-sqlite3`, `sqlite-vec`). If you don't need Tier 1, you can choose the **lite** (Tier 2) or **markdown** (Tier 3) tier during init — these have no native dependencies.
 
 ## Install
 
@@ -55,6 +73,8 @@ cf permission --project    # Save to project-level settings (.claude/settings.lo
 cf permission --all --user # Apply all recommended permissions to user settings
 cf statusline        # Setup coding-friend statusline
 cf update               # Update plugin + CLI + statusline
+                        # 💡 If update fails, open Claude Code (`claude`) and run:
+                        #    /plugins → Installed → coding-friend → Update now → /reload-plugins
 cf update --cli         # Update only the CLI (npm package)
 cf update --plugin      # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline

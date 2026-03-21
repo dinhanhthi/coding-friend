@@ -265,8 +265,36 @@ The `cf` CLI exposes memory commands that use this package:
 | `cf memory start-daemon`   | Start the MiniSearch daemon (Tier 2)                              |
 | `cf memory stop-daemon`    | Stop the daemon                                                   |
 | `cf memory rebuild`        | Rebuild search index (Tier 1 direct or via daemon)                |
-| `cf memory init`           | Install Tier 1 deps + import existing memories into SQLite        |
+| `cf memory init`           | Install Tier 1 deps + import existing memories into SQLite (see [prerequisites](#prerequisites-for-tier-1-on-linux)) |
 | `cf memory mcp`            | Print MCP server config for use in Claude Desktop / other clients |
+
+## Prerequisites for Tier 1 on Linux
+
+Tier 1 uses `better-sqlite3` and `sqlite-vec`, which are native Node.js modules requiring C++ compilation. On a fresh Linux install, you need build tools before running `cf memory init`:
+
+**Ubuntu/Debian:**
+
+```bash
+sudo apt update
+sudo apt install -y build-essential python3
+```
+
+**Fedora/RHEL:**
+
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install python3
+```
+
+**Arch Linux:**
+
+```bash
+sudo pacman -S base-devel python
+```
+
+If these are missing, `cf memory init` will fail at the "Installing SQLite dependencies" step. You can still use Tier 2 (lite) or Tier 3 (markdown) without native dependencies — choose them during the init wizard.
+
+**macOS** users need Xcode Command Line Tools: `xcode-select --install`.
 
 ## Environment Variables
 
