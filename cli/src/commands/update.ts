@@ -225,7 +225,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
                 log.dim(`stderr: ${result.stderr}`);
               }
               log.dim(
-                "Try manually: claude plugin update coding-friend@coding-friend-marketplace",
+                "Try manually in Claude Code: /plugins → Installed → coding-friend → Update now → /reload-plugins",
               );
             }
           }
