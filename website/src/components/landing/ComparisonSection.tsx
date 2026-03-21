@@ -8,8 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
    TAB TYPES & CONSTANTS
    ──────────────────────────────────────────────────────────── */
 
-// const TAB_DURATION = 10000;
-const TAB_DURATION = 1000000;
+const TAB_DURATION = 10000;
 
 interface ComparisonTab {
   id: string;

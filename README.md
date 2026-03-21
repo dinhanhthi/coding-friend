@@ -155,6 +155,14 @@ Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review
 
 The plugin is managed by the CLI `cf` command. Learn more about the CLI in the [CLI documentation](cli/README.md).
 
+## Evaluation
+
+We measure whether Coding Friend actually improves Claude Code's output through controlled A/B tests — the same prompts run against benchmark repos with and without the plugin. Results are scored against rubrics on a 0-3 scale. The goal is honest measurement, not marketing.
+
+**Key findings**: cf-fix (+1.10), cf-tdd (+0.87), and cf-review (+0.47) show clear improvements. Several skills show no difference from baseline Claude, and that is documented faithfully.
+
+For methodology, full results, and how to run evals, see [evals/README.md](evals/README.md).
+
 ## Plugin development
 
 For plugin developers, check [plugin-dev.md](docs/plugin-dev.md).
