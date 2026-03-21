@@ -63,13 +63,35 @@ If output is not empty, integrate the returned sections into this workflow:
 
 ### Step 3: Execute Research (Parallel)
 
+#### 3a. Codebase exploration (only for "Codebase" research type)
+
+If the research type determined in Step 1 is **Codebase**, launch the **cf-explorer agent** first to gather structural context about the codebase being researched.
+
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+
+> Explore the codebase to gather context for this research: [topic from $ARGUMENTS]
+>
+> Questions to answer:
+>
+> 1. What is the project structure and organization?
+> 2. What are the key modules, entry points, and their responsibilities?
+> 3. What frameworks, libraries, and patterns are used?
+> 4. How does data flow through the system?
+> 5. What are the main dependencies between modules?
+
+Wait for the cf-explorer to return its findings. Pass the exploration report as additional context to each research subagent in Step 3b.
+
+**Note:** cf-explorer already checks memory internally — do NOT call `memory_search` separately when using cf-explorer.
+
+#### 3b. Research parts (Parallel)
+
 For each part identified in Step 2:
 
 1. **Launch a subagent** (using the **Agent tool**) to research that specific part
 2. Each subagent should:
    - Use **WebSearch** to find up-to-date information
    - Use **WebFetch** to read relevant pages, docs, READMEs
-   - Read local files if researching a codebase (use Read, Glob, Grep)
+   - If researching a codebase: use the cf-explorer findings from Step 3a as primary context, and Read/Glob/Grep for targeted follow-ups only
    - Write findings to its designated markdown file
 3. Run subagents **in parallel** when parts are independent
 4. Each subagent writes its output file directly to the research subfolder
@@ -79,6 +101,8 @@ For each part identified in Step 2:
 > Research the following topic in depth: [PART DESCRIPTION]
 > Key questions to answer: [QUESTIONS]
 > Use WebSearch and WebFetch to find current information.
+> [If codebase research]: Codebase context from explorer:
+> [include the full exploration report returned by the cf-explorer agent]
 > Write your findings to: [FILE PATH]
 > Format: use the Research Part Template below.
 > Be thorough — include code examples, links to sources, and specific details.
@@ -120,6 +144,7 @@ See `${CLAUDE_PLUGIN_ROOT}/skills/cf-research/references/templates.md` for the f
 
 - Do NOT implement anything. This skill is for RESEARCH only.
 - Always use **WebSearch** for web topics — do not rely solely on training data.
+- For **Codebase** research, always use the **cf-explorer agent** for initial exploration — do not do heavy codebase reading in the main conversation or in research subagents.
 - Split large topics into parts and use **parallel subagents** to avoid context overflow.
 - Each part document should be **self-contained** and readable independently.
 - Include **sources with URLs** for all web-sourced information.
