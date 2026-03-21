@@ -1,6 +1,6 @@
 {
   "name": "coding-friend-cli",
-  "version": "1.20.0",
+  "version": "1.20.1",
   "description": "CLI for coding-friend — host learning docs, setup MCP server, initialize projects",
   "type": "module",
   "bin": {
