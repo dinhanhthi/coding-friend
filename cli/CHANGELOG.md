@@ -2,6 +2,12 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.20.0 (2026-03-21)
+
+- Colorize config property keys in `cf status` output for better visual hierarchy [#e83b93c](https://github.com/dinhanhthi/coding-friend/commit/e83b93c)
+- Show detailed error messages when `npm install` or build fails on `cf memory init` [#83c34e6](https://github.com/dinhanhthi/coding-friend/commit/83c34e6)
+- Improve `cf update` error message with manual update instructions when marketplace cache is stale [#4e98252](https://github.com/dinhanhthi/coding-friend/commit/4e98252)
+
 ## v1.19.0 (2026-03-20)
 
 - Add `cf status` command — unified dashboard showing versions, plugin state, memory system status, and configuration [#96b97b0](https://github.com/dinhanhthi/coding-friend/commit/96b97b0)

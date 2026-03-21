@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.2.0 (unpublished)
+## v0.2.0 (2026-03-21)
 
 - Add `index_only` option to `memory_store` MCP tool — skip file writing when file already exists on disk, enabling clean separation between file creation and indexing [#7f56711](https://github.com/dinhanhthi/coding-friend/commit/7f56711)
 
