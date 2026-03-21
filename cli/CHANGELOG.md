@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.20.1 (unpublished)
+## v1.20.1 (2026-03-22)
 
 - Fix postinstall script failing on Windows — replace Unix shell syntax (`test -f`, `|| true`) with cross-platform `node -e` invocation [#d786f08](https://github.com/dinhanhthi/coding-friend/commit/d786f08)
 - Auto-start memory daemon when running `cf memory init` [#2acda01](https://github.com/dinhanhthi/coding-friend/commit/2acda01)
