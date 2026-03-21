@@ -4,7 +4,7 @@ CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-frien
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 - npm (included with Node.js, but on some Linux distros you may need to install it separately)
 - The [coding-friend plugin](https://github.com/dinhanhthi/coding-friend) installed in Claude Code
 
