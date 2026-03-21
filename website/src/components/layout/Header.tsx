@@ -12,6 +12,7 @@ const navLinks = [
   { label: "How", href: "/#how-it-works" },
   { label: "Features", href: "/#features" },
   { label: "Skills", href: "/#skills" },
+  { label: "Agents", href: "/#agents" },
   { label: "Docs", href: "/docs/getting-started/installation/" },
   { label: "Changelog", href: "/changelog/" },
 ];

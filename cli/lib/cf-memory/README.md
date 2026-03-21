@@ -257,16 +257,16 @@ Users don't need to manually configure the MCP server. `cf init` includes a "CF 
 
 The `cf` CLI exposes memory commands that use this package:
 
-| Command                    | Description                                                       |
-| -------------------------- | ----------------------------------------------------------------- |
-| `cf memory status`         | Show current tier, daemon status, memory count                    |
-| `cf memory search <query>` | Search memories from the terminal                                 |
-| `cf memory list`           | List all stored memories                                          |
-| `cf memory start-daemon`   | Start the MiniSearch daemon (Tier 2)                              |
-| `cf memory stop-daemon`    | Stop the daemon                                                   |
-| `cf memory rebuild`        | Rebuild search index (Tier 1 direct or via daemon)                |
+| Command                    | Description                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `cf memory status`         | Show current tier, daemon status, memory count                                                                       |
+| `cf memory search <query>` | Search memories from the terminal                                                                                    |
+| `cf memory list`           | List all stored memories                                                                                             |
+| `cf memory start-daemon`   | Start the MiniSearch daemon (Tier 2)                                                                                 |
+| `cf memory stop-daemon`    | Stop the daemon                                                                                                      |
+| `cf memory rebuild`        | Rebuild search index (Tier 1 direct or via daemon)                                                                   |
 | `cf memory init`           | Install Tier 1 deps + import existing memories into SQLite (see [prerequisites](#prerequisites-for-tier-1-on-linux)) |
-| `cf memory mcp`            | Print MCP server config for use in Claude Desktop / other clients |
+| `cf memory mcp`            | Print MCP server config for use in Claude Desktop / other clients                                                    |
 
 ## Prerequisites for Tier 1 on Linux
 

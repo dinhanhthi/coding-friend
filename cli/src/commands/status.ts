@@ -94,7 +94,9 @@ function printConfig(
 
     // Nested objects → group header + indented sub-properties
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      console.log(pad(key, CONFIG_KEY_COL, chalk.cyan) + chalk.dim("─") + overrides);
+      console.log(
+        pad(key, CONFIG_KEY_COL, chalk.cyan) + chalk.dim("─") + overrides,
+      );
       const nested = value as Record<string, unknown>;
       const nestedOther =
         otherConfig && typeof otherConfig[key] === "object"
