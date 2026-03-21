@@ -1,0 +1,63 @@
+{
+  "name": "agent-cf-writer",
+  "type": "agent",
+  "description": "Lightweight doc writer (haiku) for markdown file generation",
+  "criteria": [
+    {
+      "name": "structure_quality",
+      "weight": 0.25,
+      "description": "Document has proper markdown structure with clear headings and organization",
+      "scoring": {
+        "0": "No structure — a flat wall of text with no headings or sections",
+        "1": "Has headings but hierarchy is wrong (h3 before h2) or sections are disorganized",
+        "2": "Good heading hierarchy and sections but some content is in the wrong section",
+        "3": "Clean heading hierarchy, logical section flow, and content properly organized"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "^#{1,3}\\s+.+",
+        "target": "output_file"
+      }
+    },
+    {
+      "name": "accuracy",
+      "weight": 0.3,
+      "description": "Document content is factually correct and consistent with the codebase",
+      "scoring": {
+        "0": "Document contains significant factual errors or describes non-existent features",
+        "1": "Mostly correct but contains one important inaccuracy",
+        "2": "Accurate on all facts but some descriptions are imprecise",
+        "3": "Every statement is accurate, precise, and verifiable against the codebase"
+      }
+    },
+    {
+      "name": "conciseness",
+      "weight": 0.25,
+      "description": "Document is appropriately concise without unnecessary verbosity",
+      "scoring": {
+        "0": "Document is extremely verbose with excessive repetition and filler",
+        "1": "Content is padded — same point made multiple ways unnecessarily",
+        "2": "Mostly concise but a few sections could be tightened",
+        "3": "Every sentence adds value — no filler, no redundancy, appropriate level of detail"
+      },
+      "automated_check": {
+        "type": "command",
+        "command": "word_count",
+        "target": "output_file"
+      }
+    },
+    {
+      "name": "token_efficiency",
+      "weight": 0.2,
+      "description": "Uses haiku model efficiently — achieves quality without excessive token usage",
+      "scoring": {
+        "0": "Output quality does not justify the token usage — inefficient generation",
+        "1": "Some wasted tokens on irrelevant content or overly verbose exploration",
+        "2": "Reasonable token efficiency but could have been more focused",
+        "3": "Optimal token usage — focused generation producing quality output efficiently"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Writer uses haiku for cost efficiency. Expected to produce clean, focused markdown documents. Quality bar is 'good enough' documentation — not literature. Prioritize accuracy over prose quality."
+}

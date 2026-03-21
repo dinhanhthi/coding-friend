@@ -141,6 +141,12 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 
 Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
 
+## Completion Protocol
+
+- **DONE** — Optimization verified with measurements. Show: before/after comparison table, % improvement, files changed.
+- **DONE_WITH_CONCERNS** — Optimization applied but improvement is marginal (< 5%) or has trade-offs. Show: numbers + trade-off analysis.
+- **BLOCKED** — Cannot optimize. Show: why (can't measure, no clear bottleneck, would require architectural change). Suggest next action.
+
 ## Rules
 
 - ALWAYS measure before AND after — no "it should be faster" claims

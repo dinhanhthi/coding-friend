@@ -16,7 +16,22 @@ If output is not empty, integrate the returned sections:
 - `## Rules` → apply as additional rules throughout
 - `## After` → apply after the review completes
 
-## 4-Layer Review
+## Two-Pass Review
+
+### Pass 1: Quick Scan
+
+Before the deep review, do a fast structural scan of the diff:
+
+1. **Obvious bugs**: Null dereferences, unclosed resources, missing returns, off-by-one errors
+2. **Structural issues**: Missing imports, unused variables, broken type signatures
+3. **Naming red flags**: Single-letter variables in non-trivial code, misleading names
+4. **Forgotten artifacts**: TODO/FIXME/HACK comments, console.log, debug code, commented-out code
+
+Report any findings immediately as **Critical** or **Important** — these are high-confidence, low-effort catches that don't need the deep 4-layer analysis.
+
+### Pass 2: Deep 4-Layer Review
+
+Now apply the full methodology:
 
 ### Layer 1: Plan Alignment
 

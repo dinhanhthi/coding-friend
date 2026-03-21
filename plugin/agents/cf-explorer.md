@@ -29,13 +29,18 @@ You receive an exploration request. It includes:
 
 ## Process
 
-### 0. Check Memory (optional)
+### 0. Check Memory First (exploration cache)
+
+Before doing any file searches, check if prior exploration results exist in memory:
 
 - Search project memory for context related to the exploration goal (architecture, conventions, key files, past decisions)
 - Use `memory_search` with keywords from the goal — e.g., if exploring auth flow, search for "auth", "authentication"
-- If memory returns relevant results, use them as **hints** to guide your exploration — but always verify against actual code
-- If no memory is available or no relevant results, skip this step and proceed normally
-- **Never treat memory as ground truth** — the codebase is the source of truth, memory may be outdated
+- If memory returns relevant results:
+  - Use file paths and structure info as **starting points** — skip broad Glob/Grep for areas already mapped
+  - Focus exploration on areas NOT covered by memory (new files, changed patterns)
+  - This dramatically reduces token usage when the same codebase areas are explored multiple times in a session
+- If no memory is available or no relevant results, proceed with full exploration
+- **Never treat memory as ground truth** — the codebase is the source of truth, memory may be outdated. Always verify key claims against actual code.
 
 ### 1. Map Structure
 

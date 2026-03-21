@@ -208,6 +208,14 @@ Example: _"The fix touched a database query path. Want to run `/cf-optimize` on 
 
 If the fix was not performance-related, skip this step.
 
+## Completion Protocol
+
+When the fix is complete (after Step 9/10), report status:
+
+- **DONE** — Bug fixed, tests pass, review clean. Show: root cause summary + files changed + test evidence.
+- **DONE_WITH_CONCERNS** — Bug fixed but with caveats. Show: what was fixed + what concerns remain (e.g., "fix is correct but the function has other issues worth addressing").
+- **BLOCKED** — Cannot fix. Show: what was tried, what failed, what information is needed to proceed.
+
 ## Escalation
 
 If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
