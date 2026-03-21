@@ -25,6 +25,14 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
+### Step 0.5: Check Memory
+
+Before exploring the codebase, check if project memory already has relevant context:
+
+1. If `memory_search` tool is available, search for keywords related to the task (e.g., architecture, conventions, prior plans, related features)
+2. If memory returns relevant results, use them as **starting context** for the exploration — this avoids redundant exploration
+3. If no memory is available or no relevant results, skip this step
+
 ### Step 1: Clarify Before Exploring
 
 BEFORE reading code or researching, identify what you don't know:
@@ -161,6 +169,14 @@ If the user agrees, implement each task from the plan **sequentially** using the
 
 After implementation: consider running `/cf-review` → then `/cf-commit`
 ```
+
+## Completion Protocol
+
+After the plan is saved (or after implementation if the user chose to implement):
+
+- **DONE** — Plan created and saved. Show: task count, risk summary, recommended next step.
+- **DONE_WITH_CONCERNS** — Plan created but has open questions or high-risk items. Show: what needs user decision before proceeding.
+- **BLOCKED** — Cannot create a meaningful plan. Show: what information is missing, what assumptions couldn't be verified.
 
 ## Rules
 

@@ -54,6 +54,14 @@ next-env.d.ts
 # Pagefind (generated at build time)
 _pagefind/
 
+# Evals
+evals/results/
+evals/analysis/
+evals/benchmarks/*/node_modules/
+evals/benchmarks/*/package-lock.json
+
 # Website
 website/public/llms.txt
 website/public/llms-full.txt
+
+.understand-anything/

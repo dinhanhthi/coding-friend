@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T07:25:46.535Z",
+  "generatedAt": "2026-03-21T12:06:38.086Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,28 +18,28 @@
     }
   },
   "bootstrap": {
-    "tokens": 1376,
+    "tokens": 1378,
     "tier": "medium"
   },
   "skills": {
     "cf-ask": {
-      "tokens": 2275,
+      "tokens": 2283,
       "tier": "medium",
       "type": "slash"
     },
     "cf-auto-review": {
-      "tokens": 986,
-      "tier": "low",
+      "tokens": 1157,
+      "tier": "medium",
       "type": "auto"
     },
     "cf-commit": {
-      "tokens": 944,
-      "tier": "low",
+      "tokens": 1037,
+      "tier": "medium",
       "type": "slash"
     },
     "cf-fix": {
-      "tokens": 2441,
-      "tier": "medium",
+      "tokens": 2572,
+      "tier": "high",
       "type": "slash"
     },
     "cf-help": {
@@ -53,32 +53,32 @@
       "type": "slash"
     },
     "cf-optimize": {
-      "tokens": 1592,
+      "tokens": 1692,
       "tier": "medium",
       "type": "slash"
     },
     "cf-plan": {
-      "tokens": 1779,
+      "tokens": 1990,
       "tier": "medium",
       "type": "slash"
     },
     "cf-remember": {
-      "tokens": 2281,
+      "tokens": 2289,
       "tier": "medium",
       "type": "slash"
     },
     "cf-research": {
-      "tokens": 1448,
+      "tokens": 1549,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review": {
-      "tokens": 1742,
+      "tokens": 1758,
       "tier": "medium",
       "type": "slash"
     },
     "cf-scan": {
-      "tokens": 3226,
+      "tokens": 3323,
       "tier": "high",
       "type": "slash"
     },
@@ -93,7 +93,7 @@
       "type": "slash"
     },
     "cf-sys-debug": {
-      "tokens": 1665,
+      "tokens": 1673,
       "tier": "medium",
       "type": "auto"
     },
@@ -110,22 +110,22 @@
   },
   "agents": {
     "cf-code-reviewer": {
-      "tokens": 647,
+      "tokens": 790,
       "tier": "low",
       "model": "opus"
     },
     "cf-explorer": {
-      "tokens": 882,
+      "tokens": 953,
       "tier": "low",
       "model": "haiku"
     },
     "cf-implementer": {
-      "tokens": 560,
+      "tokens": 658,
       "tier": "low",
       "model": "opus"
     },
     "cf-planner": {
-      "tokens": 824,
+      "tokens": 969,
       "tier": "low",
       "model": "opus"
     },

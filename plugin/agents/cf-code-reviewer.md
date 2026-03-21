@@ -62,6 +62,15 @@ If the review identifies **performance concerns** — e.g. O(n²) loops, N+1 que
   Suggestion: Consider running `/cf-optimize` on this code path for measured improvement.
 ```
 
+## Output Quality Gates
+
+Your review MUST include:
+
+1. **At least one finding** — if the code is genuinely clean, report it as a Suggestion-level acknowledgment. An empty review is never valid.
+2. **Specific file:line references** for every Critical and Important finding — generic comments without location are not actionable.
+3. **"Why" for every finding** — explain the impact, not just the pattern violation.
+4. **Summary with confidence** — state your overall confidence in the review (how much of the context did you read?).
+
 ## Rules
 
 - Be specific — cite file paths and line numbers
