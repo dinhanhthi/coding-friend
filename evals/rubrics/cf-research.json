@@ -1,0 +1,69 @@
+{
+  "name": "cf-research",
+  "type": "skill",
+  "description": "In-depth research with web search",
+  "criteria": [
+    {
+      "name": "source_diversity",
+      "weight": 0.2,
+      "description": "Research draws from multiple independent sources, not just one",
+      "scoring": {
+        "0": "Only one source consulted or all information is from model knowledge",
+        "1": "Two sources but from the same origin (e.g., two pages of the same docs)",
+        "2": "Three or more sources but heavily weighted toward one",
+        "3": "Multiple diverse sources (docs, articles, GitHub issues, benchmarks) with balanced coverage"
+      }
+    },
+    {
+      "name": "depth",
+      "weight": 0.25,
+      "description": "Research goes beyond surface-level summaries to provide real understanding",
+      "scoring": {
+        "0": "Only restates what could be found in a single Google snippet",
+        "1": "Covers basic facts but lacks nuance, trade-offs, or implementation details",
+        "2": "Good depth on main topic but glosses over important subtopics",
+        "3": "Thorough analysis covering nuances, trade-offs, edge cases, and practical implications"
+      }
+    },
+    {
+      "name": "synthesis_quality",
+      "weight": 0.25,
+      "description": "Information is synthesized into coherent insights rather than listed as raw findings",
+      "scoring": {
+        "0": "Raw dump of copied text with no synthesis or organization",
+        "1": "Organized into sections but each section is just a source summary",
+        "2": "Some synthesis across sources but conclusions are not well-supported",
+        "3": "Sources are cross-referenced, contradictions noted, and coherent conclusions drawn"
+      }
+    },
+    {
+      "name": "actionability",
+      "weight": 0.15,
+      "description": "Research concludes with actionable recommendations for the project",
+      "scoring": {
+        "0": "No recommendations or next steps provided",
+        "1": "Generic recommendations not tailored to the project context",
+        "2": "Recommendations are relevant but lack specificity on implementation",
+        "3": "Concrete recommendations with specific implementation steps for this project"
+      }
+    },
+    {
+      "name": "citation_accuracy",
+      "weight": 0.15,
+      "description": "Sources are properly cited and claims are attributable",
+      "scoring": {
+        "0": "No sources cited — impossible to verify any claims",
+        "1": "Some sources cited but key claims are unattributed",
+        "2": "Most claims have sources but some URLs are broken or citations are vague",
+        "3": "All major claims have specific, verifiable citations with working URLs"
+      },
+      "automated_check": {
+        "type": "regex",
+        "pattern": "https?://[^\\s)]+",
+        "target": "output"
+      }
+    }
+  ],
+  "pass_threshold": 2.0,
+  "notes": "Research output should be saved to docs/research/. The report file should be well-structured markdown. Topics with limited online information should be scored on effort and honesty about gaps rather than penalized for source count."
+}

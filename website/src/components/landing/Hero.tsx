@@ -21,7 +21,7 @@ export default function Hero() {
           <p className="mb-4 text-base font-medium tracking-wider text-slate-500 uppercase">
             Claude Code Plugin
           </p>
-          <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] [text-wrap:balance] text-white sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] text-balance text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
             <span className="text-violet-400">Workflows</span>
           </h1>

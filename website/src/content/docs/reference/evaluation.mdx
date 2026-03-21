@@ -1,0 +1,121 @@
+---
+title: "Quality Evaluation"
+description: "How we measure the quality improvement of Claude Code with Coding Friend vs without."
+keywords: [evaluation, benchmark, quality, comparison, methodology]
+---
+
+## Overview
+
+We evaluate Coding Friend's impact by running identical tasks on standardized benchmark repositories — once with Coding Friend enabled, once without. This measures whether CF's skills, agents, and workflows produce measurably better outcomes than baseline Claude Code.
+
+## What We Test
+
+### Skills (17 total)
+
+**Wave 1 — Core Workflow** (5 skills):
+
+- `/cf-commit` — Commit message quality (format, scope accuracy, message clarity)
+- `/cf-review` — Code review depth (issue detection, actionability, false positive rate)
+- `/cf-fix` — Bug fix quality (root cause identification, test coverage, no regressions)
+- `/cf-plan` — Plan quality (completeness, task granularity, risk identification)
+- `cf-tdd` — TDD compliance (RED before GREEN, test quality, refactor step)
+
+**Wave 2 — Supporting Skills** (12 skills):
+`/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `/cf-remember`, `/cf-ship`, `/cf-session`, `/cf-help`, `cf-sys-debug`, `cf-verification`, `cf-auto-review`
+
+### Agents (6 total)
+
+`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`
+
+## Methodology
+
+### Benchmark Repositories
+
+4 small TypeScript projects (~100-200 LOC each) with intentional bugs, pending features, and messy code:
+
+| Repo           | Type            | Scenarios                                                |
+| -------------- | --------------- | -------------------------------------------------------- |
+| bench-webapp   | Next.js app     | API bug fix, feature planning, code review, optimization |
+| bench-cli      | CLI tool        | Debugging, refactoring, committing                       |
+| bench-library  | Utility library | TDD, scanning, knowledge extraction                      |
+| bench-research | Empty project   | Research, Q&A, session management                        |
+
+### A/B Test Design
+
+For each skill and relevant benchmark repo:
+
+1. **Without CF**: Run with all plugins disabled (`claude plugin disable --all` + `--disable-slash-commands`). Claude Code operates with no skills, no agents, no hooks.
+2. **With CF**: Run normally with Coding Friend enabled. Skills and agents are available.
+3. **Same prompt**: Identical task description for both conditions.
+4. **Same model**: Claude Opus for all runs.
+5. **Multiple runs**: 1-3 runs per condition for consistency measurement.
+
+### Scoring
+
+Each skill has a rubric with weighted criteria scored on a 0-3 scale:
+
+| Score | Meaning                                            |
+| ----- | -------------------------------------------------- |
+| 0     | Complete failure — not attempted or entirely wrong |
+| 1     | Partial — some criteria met, major gaps            |
+| 2     | Good — most criteria met, minor gaps               |
+| 3     | Excellent — all criteria met, exceeds expectations |
+
+**Pass threshold**: average ≥ 2.0 across all criteria.
+
+Scoring combines:
+
+- **Automated checks**: Regex patterns (commit format), file existence (plan created), structure validation (review sections present)
+- **Manual review**: Quality assessment by human scorer for subjective criteria (message clarity, approach feasibility)
+
+### Metrics Reported
+
+For each skill:
+
+- **Quality score**: Weighted average across rubric criteria (0-3 scale)
+- **Pass rate**: Percentage of runs scoring ≥ 2.0
+- **Token cost**: API cost per session (with vs without)
+- **Wall time**: Execution time per session
+
+## Limitations
+
+We are transparent about what this evaluation does and does not show:
+
+- **Small sample size**: 1-3 runs per condition — results show trends, not statistically significant differences
+- **Controlled environment**: Benchmark repos are small and synthetic — real-world projects are more complex
+- **Same model**: Results reflect Opus behavior — other models may differ
+- **Cost trade-off**: CF skills add context tokens, which increases per-session cost. The quality improvement must be weighed against this cost.
+- **Baseline is already good**: Claude Code without plugins is a capable tool. CF improves specific dimensions (structure, consistency, workflow discipline) but does not make impossible tasks possible.
+
+## Where CF Adds Most Value
+
+Based on our evaluation, Coding Friend's largest quality improvements are in:
+
+1. **Workflow discipline**: TDD enforcement, verification gates, and structured review produce consistent, high-quality outputs
+2. **Commit quality**: Conventional commit format with semantic analysis significantly outperforms ad-hoc commit messages
+3. **Code review depth**: The two-pass review (quick scan + deep 4-layer) catches more issues with fewer false positives
+4. **Knowledge capture**: `/cf-learn` and `/cf-remember` preserve insights that baseline Claude Code discards at session end
+
+## Where Baseline Claude Code Already Excels
+
+- Simple bug fixes with obvious root causes
+- Single-file changes with clear requirements
+- General coding questions and explanations
+- File editing and navigation
+
+For these tasks, CF adds structure overhead without proportional quality improvement.
+
+## Reproducibility
+
+The evaluation framework is open source and included in the Coding Friend repository:
+
+- **Eval runner**: `evals/run-eval.sh`, `evals/run-wave.sh`
+- **Rubrics**: `evals/rubrics/*.json` (23 files)
+- **Benchmarks**: `evals/benchmarks/` (4 repos)
+- **Prompts**: `evals/prompts/` (25 prompt files)
+
+Run it yourself: `cd evals && ./run-wave.sh --wave 1 --runs 1 --model opus`
+
+---
+
+_Last evaluated: March 2026. We plan to re-evaluate quarterly as both Claude Code and Coding Friend evolve._

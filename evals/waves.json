@@ -1,0 +1,27 @@
+{
+  "wave1": {
+    "skills": {
+      "cf-commit": { "repos": ["bench-webapp", "bench-cli", "bench-library"] },
+      "cf-review": { "repos": ["bench-webapp", "bench-cli"] },
+      "cf-fix": { "repos": ["bench-webapp", "bench-cli"] },
+      "cf-plan": { "repos": ["bench-webapp", "bench-library"] },
+      "cf-tdd": { "repos": ["bench-library", "bench-cli"] }
+    }
+  },
+  "wave2": {
+    "skills": {
+      "cf-optimize": { "repos": ["bench-webapp"] },
+      "cf-research": { "repos": ["bench-research"] },
+      "cf-ask": { "repos": ["bench-webapp", "bench-library"] },
+      "cf-scan": { "repos": ["bench-webapp", "bench-cli"] },
+      "cf-learn": { "repos": ["bench-webapp"] },
+      "cf-remember": { "repos": ["bench-webapp"] },
+      "cf-ship": { "repos": ["bench-webapp"] },
+      "cf-session": { "repos": ["bench-webapp"] },
+      "cf-help": { "repos": ["bench-webapp"] },
+      "cf-sys-debug": { "repos": ["bench-cli"] },
+      "cf-verification": { "repos": ["bench-webapp"] },
+      "cf-auto-review": { "repos": ["bench-webapp"] }
+    }
+  }
+}
