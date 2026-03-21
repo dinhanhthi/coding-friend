@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
 import type { Tier } from "@/lib/token-data";
@@ -79,7 +80,10 @@ function AgentCard({ agent }: { agent: Agent }) {
     modelColors[agent.model] ?? "text-slate-400 border-slate-400/30";
 
   return (
-    <div className="group bg-navy-950/50 flex flex-col rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5">
+    <Link
+      href={`/docs/reference/agents/#${agent.name}`}
+      className="group bg-navy-950/50 flex flex-col rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5"
+    >
       <div className="flex items-center justify-between">
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
           {agent.name}
@@ -109,7 +113,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           {agent.model}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 

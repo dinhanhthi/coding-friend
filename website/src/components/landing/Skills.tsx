@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
 import type { Tier } from "@/lib/token-data";
@@ -122,9 +123,17 @@ const autoSkills: Skill[] = [
   },
 ];
 
+function skillHref(command: string): string {
+  const name = command.startsWith("/") ? command.slice(1) : command;
+  return `/docs/skills/${name}/`;
+}
+
 function SkillCard({ skill }: { skill: Skill }) {
   return (
-    <div className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5">
+    <Link
+      href={skillHref(skill.command)}
+      className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5"
+    >
       <div className="flex items-center justify-between">
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
           {skill.command}
@@ -137,7 +146,7 @@ function SkillCard({ skill }: { skill: Skill }) {
       <p className="mt-1.5 text-base leading-relaxed text-slate-400">
         {skill.description}
       </p>
-    </div>
+    </Link>
   );
 }
 
