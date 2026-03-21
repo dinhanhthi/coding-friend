@@ -270,6 +270,7 @@ describe("updateCommand — plugin update verification", () => {
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("still unchanged");
+    expect(output).toContain("/plugins");
   });
 
   it("reports error with stderr when claude plugin update exits non-zero", async () => {
