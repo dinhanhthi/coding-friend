@@ -55,6 +55,8 @@ cf permission --project    # Save to project-level settings (.claude/settings.lo
 cf permission --all --user # Apply all recommended permissions to user settings
 cf statusline        # Setup coding-friend statusline
 cf update               # Update plugin + CLI + statusline
+                        # 💡 If update fails, open Claude Code (`claude`) and run:
+                        #    /plugins → Installed → coding-friend → Update now → /reload-plugins
 cf update --cli         # Update only the CLI (npm package)
 cf update --plugin      # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline
