@@ -42,6 +42,14 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
+### Step 0.5: Context Budget Check
+
+Before proceeding, assess context budget:
+
+- If context is above 50%, prefer **selective reads** (Read with offset/limit) over full file reads
+- Limit cf-explorer exploration depth — map structure broadly but only deep-read files directly relevant to memory creation
+- If context is above 70%, warn the user that scan quality may degrade and suggest running in a fresh session
+
 ### Step 1: Warn and Confirm
 
 **This step is mandatory — do NOT skip.**

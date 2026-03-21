@@ -36,6 +36,14 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
+### Step 0.5: Context Budget Check
+
+Research is token-intensive due to web fetches and parallel subagents. Before proceeding:
+
+- If context is above 50%, reduce the number of research parts (Step 2) to 2-3 instead of 4-5
+- Prefer passing file paths to subagents rather than embedding full content in prompts
+- If context is above 70%, warn the user that research depth may be limited and suggest running in a fresh session
+
 ### Step 1: Scope the Research
 
 1. Parse `$ARGUMENTS` to understand what to research

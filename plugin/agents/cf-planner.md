@@ -77,6 +77,15 @@ Provide a structured plan:
 - <risk and mitigation>
 ```
 
+## Output Quality Gates
+
+Your plan MUST include:
+
+1. **At least 2 approaches** — a single approach means you haven't explored alternatives. If only one approach is viable, explain why others were ruled out.
+2. **Concrete file paths** for every task — "update the service layer" is not actionable, "update `src/services/auth.ts`" is.
+3. **Verify step for every task** — each task needs a way to confirm it's done (test command, manual check, expected output).
+4. **Risk section** — at least 1 risk with mitigation. If you see no risks, you haven't thought hard enough.
+
 ## Rules
 
 - Do NOT implement. Only plan.

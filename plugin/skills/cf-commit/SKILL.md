@@ -104,3 +104,9 @@ git commit -m "<message>"
 ```
 
 Show the commit result to the user.
+
+## Completion Protocol
+
+- **DONE** — Commit created. Show: commit hash, message, files committed.
+- **DONE_WITH_CONCERNS** — Commit created but with caveats (e.g., some tests skipped, unrelated changes exist). Show: what was committed + concerns.
+- **BLOCKED** — Cannot commit. Show: why (tests failing, no changes, secret detected). Suggest next action.
