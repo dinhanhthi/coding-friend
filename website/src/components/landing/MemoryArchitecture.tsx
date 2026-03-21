@@ -594,7 +594,7 @@ export default function MemoryArchitecture() {
 
       {/* Mobile architecture diagram */}
       <div className="block md:hidden">
-        <div className="space-y-3 px-2">
+        <div className="space-y-3 rounded-xl border border-amber-500/20 bg-amber-500/2 p-4">
           {/* Source */}
           <MobileArchCard
             node={archNodes.find((n) => n.id === "claude")!}
@@ -779,7 +779,7 @@ function MobileTierCard({
           <span className="text-sm text-amber-400/50">{sublabel}</span>
         </div>
         {route && (
-          <span className="shrink-0 rounded-full border border-slate-600/40 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+          <span className="shrink-0 rounded-full border border-slate-600/40 px-2 py-0.5 font-mono text-xs text-slate-400">
             {route}
           </span>
         )}

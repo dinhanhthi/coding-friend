@@ -13,10 +13,12 @@ export default function StatsSection() {
         <div className="flex flex-row items-center justify-between gap-8 px-4 text-center sm:gap-16 md:justify-center md:gap-24 lg:gap-32">
           {stats.map((stat) => (
             <div key={stat.label}>
-              <div className="text-4xl font-bold text-violet-400">
+              <div className="text-2xl font-bold text-violet-400 sm:text-4xl">
                 {stat.value}
               </div>
-              <div className="mt-1 text-slate-400">{stat.label}</div>
+              <div className="mt-1 text-sm text-slate-400 sm:text-base">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>

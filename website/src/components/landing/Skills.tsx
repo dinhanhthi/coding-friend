@@ -207,7 +207,7 @@ export default function Skills() {
 
             <div className="relative overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] shadow-2xl shadow-violet-500/10">
               <div className="flex items-center gap-2 border-b border-slate-700/60 px-4 py-2.5">
-                <span className="font-mono text-sm text-slate-500">
+                <span className="truncate font-mono text-sm text-slate-500">
                   .coding-friend/skills/cf-commit-custom/SKILL.md
                 </span>
               </div>
