@@ -1,5 +1,10 @@
 # Changelog (Learn Host)
 
+## v0.3.0 (unpublished)
+
+- Improve date display — show only updated date when different from created date, hide if same [#1fc2e65](https://github.com/dinhanhthi/coding-friend/commit/1fc2e65)
+- Increase sidebar font size for better readability [#1fc2e65](https://github.com/dinhanhthi/coding-friend/commit/1fc2e65)
+
 ## v0.2.1 (2026-03-05)
 
 - Fix TOC heading text stripping markdown links from slug generation ([#9a8fb5c](https://github.com/dinhanhthi/coding-friend/commit/9a8fb5c))
