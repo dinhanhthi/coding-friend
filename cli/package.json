@@ -38,7 +38,7 @@
     "directory": "cli"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.0.0",

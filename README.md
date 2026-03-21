@@ -66,6 +66,8 @@ The Learning Notes taken from your coding sessions with the help of the `/cf-lea
 
 ### 1. Install the CLI
 
+Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com/claude-code).
+
 ```bash
 # npm
 npm i -g coding-friend-cli
