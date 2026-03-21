@@ -1,6 +1,6 @@
 # Changelog (Learn Host)
 
-## v0.3.0 (unpublished)
+## v0.3.0 (2026-03-21)
 
 - Improve date display — show only updated date when different from created date, hide if same [#1fc2e65](https://github.com/dinhanhthi/coding-friend/commit/1fc2e65)
 - Increase sidebar font size for better readability [#1fc2e65](https://github.com/dinhanhthi/coding-friend/commit/1fc2e65)
