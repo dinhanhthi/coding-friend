@@ -151,7 +151,7 @@ export default function PagefindSearch() {
         aria-label="Search docs"
       >
         <svg
-          className="h-5 w-5"
+          className="h-6 w-6"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
