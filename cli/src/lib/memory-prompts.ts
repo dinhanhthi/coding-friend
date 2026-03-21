@@ -147,7 +147,7 @@ export async function editMemoryAutoStart(
 
   const value = await confirm({
     message: "Auto-start memory daemon when MCP server connects?",
-    default: currentValue ?? false,
+    default: currentValue ?? true,
   });
 
   const scope = await askScope();
