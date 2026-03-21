@@ -24,6 +24,10 @@ describe("detectTier()", () => {
     const sqliteSpy = vi
       .spyOn(lazyInstall, "areSqliteDepsAvailable")
       .mockReturnValue(false);
+    const daemonProcess = await import("../daemon/process.js");
+    const daemonSpy = vi
+      .spyOn(daemonProcess, "isDaemonRunning")
+      .mockResolvedValue(false);
     try {
       const tier = await detectTier();
       // Without a daemon running and no SQLite deps, should detect Tier 3
@@ -32,6 +36,7 @@ describe("detectTier()", () => {
       expect(tier.label).toContain("Tier 3");
     } finally {
       sqliteSpy.mockRestore();
+      daemonSpy.mockRestore();
     }
   });
 
@@ -58,11 +63,16 @@ describe("detectTier()", () => {
     const sqliteSpy = vi
       .spyOn(lazyInstall, "areSqliteDepsAvailable")
       .mockReturnValue(false);
+    const daemonProcess = await import("../daemon/process.js");
+    const daemonSpy = vi
+      .spyOn(daemonProcess, "isDaemonRunning")
+      .mockResolvedValue(false);
     try {
       const tier = await detectTier("auto");
       expect(tier.name).toBe("markdown");
     } finally {
       sqliteSpy.mockRestore();
+      daemonSpy.mockRestore();
     }
   });
 
@@ -114,6 +124,10 @@ describe("createBackendForTier()", () => {
     const sqliteSpy = vi
       .spyOn(lazyInstall, "areSqliteDepsAvailable")
       .mockReturnValue(false);
+    const daemonProcess = await import("../daemon/process.js");
+    const daemonSpy = vi
+      .spyOn(daemonProcess, "isDaemonRunning")
+      .mockResolvedValue(false);
     try {
       const { backend, tier } = await createBackendForTier(testDir, "auto");
       expect(tier.name).toBe("markdown");
@@ -121,6 +135,7 @@ describe("createBackendForTier()", () => {
       await backend.close();
     } finally {
       sqliteSpy.mockRestore();
+      daemonSpy.mockRestore();
     }
   });
 
