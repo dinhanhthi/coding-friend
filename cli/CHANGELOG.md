@@ -2,6 +2,11 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.20.1 (unpublished)
+
+- Fix postinstall script failing on Windows — replace Unix shell syntax (`test -f`, `|| true`) with cross-platform `node -e` invocation [#d786f08](https://github.com/dinhanhthi/coding-friend/commit/d786f08)
+- Auto-start memory daemon when running `cf memory init` [#2acda01](https://github.com/dinhanhthi/coding-friend/commit/2acda01)
+
 ## v1.20.0 (2026-03-21)
 
 - Colorize config property keys in `cf status` output for better visual hierarchy [#e83b93c](https://github.com/dinhanhthi/coding-friend/commit/e83b93c)
