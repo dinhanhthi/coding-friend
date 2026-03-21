@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.2.1 (unpublished)
+## v0.2.1 (2026-03-22)
 
 - Fix flaky tier detection tests — mock `isDaemonRunning` to prevent local daemon from affecting test results [#d786f08](https://github.com/dinhanhthi/coding-friend/commit/d786f08)
 
