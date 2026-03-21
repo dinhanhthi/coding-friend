@@ -4,6 +4,7 @@ import EcosystemSection from "@/components/landing/EcosystemSection";
 import DifferentiatorSection from "@/components/landing/DifferentiatorSection";
 import Features from "@/components/landing/Features";
 import Skills from "@/components/landing/Skills";
+import Agents from "@/components/landing/Agents";
 import HowItWorks from "@/components/landing/HowItWorks";
 import InstallSection from "@/components/landing/InstallSection";
 
@@ -42,6 +43,7 @@ export default function Home() {
       <HowItWorks />
       <Features />
       <Skills />
+      <Agents />
       <InstallSection />
     </>
   );
