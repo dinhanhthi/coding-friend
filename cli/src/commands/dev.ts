@@ -7,6 +7,7 @@ import {
   copyFileSync,
 } from "fs";
 import { resolve, join } from "path";
+import { homedir } from "os";
 import { readJson, writeJson } from "../lib/json.js";
 import {
   devStatePath,
@@ -316,7 +317,7 @@ export async function devSyncCommand(): Promise<void> {
     return;
   }
 
-  const shortDest = cacheVersionDir.replace(process.env.HOME ?? "", "~");
+  const shortDest = cacheVersionDir.replace(homedir(), "~");
   log.step(`Syncing ${chalk.cyan(pluginSrcDir)} → ${chalk.dim(shortDest)}`);
 
   // Copy plugin/ contents directly into cache version dir

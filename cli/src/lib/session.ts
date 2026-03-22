@@ -109,22 +109,33 @@ export function listSyncedSessions(syncDir: string): SessionMeta[] {
 
 /**
  * Remap an original project path to the current machine by replacing the home prefix.
+ * Handles Unix paths (/Users/<name>, /home/<name>) and Windows paths (C:\Users\<name>).
  */
 export function remapProjectPath(
   originalPath: string,
   currentHome: string,
 ): string {
-  // Detect original home: leading /Users/<name> or /home/<name>
-  const homePattern = /^(\/(?:Users|home)\/[^/]+)(\/.*)?$/;
-  const match = originalPath.match(homePattern);
-  if (!match) return originalPath;
+  // Unix: /Users/<name> or /home/<name>
+  const unixPattern = /^(\/(?:Users|home)\/[^/]+)(\/.*)?$/;
+  const unixMatch = originalPath.match(unixPattern);
+  if (unixMatch) {
+    const origHomeDir = unixMatch[1];
+    const rest = unixMatch[2] ?? "";
+    if (origHomeDir === currentHome) return originalPath;
+    return currentHome + rest;
+  }
 
-  const origHomeDir = match[1];
-  const rest = match[2] ?? "";
+  // Windows: C:\Users\<name> (case-insensitive drive letter)
+  const winPattern = /^([A-Za-z]:\\Users\\[^\\]+)(\\.*)?$/;
+  const winMatch = originalPath.match(winPattern);
+  if (winMatch) {
+    const origHomeDir = winMatch[1];
+    const rest = winMatch[2] ?? "";
+    if (origHomeDir === currentHome) return originalPath;
+    return currentHome + rest;
+  }
 
-  if (origHomeDir === currentHome) return originalPath;
-
-  return currentHome + rest;
+  return originalPath;
 }
 
 /**

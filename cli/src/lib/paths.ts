@@ -1,12 +1,12 @@
 import { homedir } from "os";
-import { resolve, join } from "path";
+import { resolve, join, isAbsolute } from "path";
 
 /**
  * Resolve a path that may be absolute, start with ~/, or be relative.
  * Relative paths are resolved from the given base (defaults to cwd).
  */
 export function resolvePath(p: string, base: string = process.cwd()): string {
-  if (p.startsWith("/")) return p;
+  if (isAbsolute(p)) return p;
   if (p.startsWith("~/")) return join(homedir(), p.slice(2));
   return resolve(base, p);
 }
@@ -93,11 +93,12 @@ export function globalConfigDir(): string {
 /**
  * Encode an absolute project path to Claude Code's directory name format.
  * Claude Code stores sessions under ~/.claude/projects/<encodedPath>/
- * Encoding: replace all "/" with "-"
+ * Encoding: replace all path separators ("/" and "\") and colons with "-"
  * e.g. /Users/thi/git/foo → -Users-thi-git-foo
+ * e.g. C:\Users\thi\git\foo → C--Users-thi-git-foo
  */
 export function encodeProjectPath(absolutePath: string): string {
-  return absolutePath.replace(/\//g, "-");
+  return absolutePath.replace(/[\\/:]/g, "-");
 }
 
 /** Path to Claude Code's projects directory (~/.claude/projects) */
