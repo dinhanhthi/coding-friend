@@ -385,13 +385,6 @@ const skillScores = [
     delta: "+19%",
   },
   {
-    name: "cf-commit",
-    label: "Commit messages",
-    withCF: 2.78,
-    withoutCF: 2.55,
-    delta: "+9%",
-  },
-  {
     name: "cf-tdd",
     label: "TDD compliance",
     withCF: 2.6,
@@ -461,16 +454,16 @@ function QualityScoresContent() {
       {/* Overall average */}
       <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center justify-center gap-12 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
         <div className="text-center">
-          <div className="text-2xl font-bold text-violet-400">2.90</div>
+          <div className="text-2xl font-bold text-violet-400">2.87</div>
           <div className="text-sm text-slate-400">With CF avg</div>
         </div>
         <div className="text-lg text-slate-600">vs</div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-slate-500">2.45</div>
+          <div className="text-2xl font-bold text-slate-500">2.05</div>
           <div className="text-sm text-slate-400">Without CF avg</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-emerald-400">+18%</div>
+          <div className="text-2xl font-bold text-emerald-400">+40%</div>
           <div className="text-sm text-slate-400">improvement</div>
         </div>
       </div>
