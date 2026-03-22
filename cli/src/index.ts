@@ -367,4 +367,14 @@ dev
     await devUpdateCommand(path);
   });
 
-program.parse();
+// Post-command: check for CLI updates (cached, 24h TTL)
+// Skips for 'update' command (handles its own) and version/help flags
+program.hook("postAction", async () => {
+  const topCmd = process.argv[2];
+  if (topCmd === "update") return;
+
+  const { checkAndNotifyCliUpdate } = await import("./lib/update-check.js");
+  checkAndNotifyCliUpdate(pkg.version);
+});
+
+await program.parseAsync();
