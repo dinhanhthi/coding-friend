@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.20.2 (unpublished)
+
+- Fix Windows compatibility: `commandExists()` uses `where` instead of Unix-only `which`, `resolvePath()` handles Windows drive letters, `encodeProjectPath()` handles backslashes and colons, `buildStatuslineCommand()` quotes paths for spaces in usernames, `remapProjectPath()` supports `C:\Users\` paths, and `devSyncCommand()` uses `homedir()` instead of `process.env.HOME` [#2e67ea7](https://github.com/dinhanhthi/coding-friend/commit/2e67ea7)
+
 ## v1.20.1 (2026-03-22)
 
 - Fix postinstall script failing on Windows — replace Unix shell syntax (`test -f`, `|| true`) with cross-platform `node -e` invocation [#d786f08](https://github.com/dinhanhthi/coding-friend/commit/d786f08)
