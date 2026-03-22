@@ -188,6 +188,15 @@ const statuslineSegments = [
     color: "text-orange-400",
   },
   { label: "Model", example: "Opus (1M)", color: "text-cyan-400" },
+  {
+    label: "Account",
+    example: (
+      <>
+        👤 Thi Dinh <span className="text-slate-500">(thi@…)</span>
+      </>
+    ),
+    color: "text-cyan-400",
+  },
   { label: "Context", example: "ctx 42%", color: "text-amber-400" },
   {
     label: "Rate limit",
@@ -201,8 +210,8 @@ function StatuslineContent() {
     <div className="flex flex-col gap-6">
       <p className="text-base leading-relaxed text-slate-400">
         Always know what&apos;s happening. Your terminal statusline, upgraded
-        with real-time project context — version, branch, model, context usage,
-        and rate limits at a glance. Read more about it{" "}
+        with real-time project context — version, branch, model, account,
+        context usage, and rate limits at a glance. Read more about it{" "}
         <Link
           className="text-violet-400 hover:underline hover:underline-offset-3"
           href="/docs/cli/cf-statusline"
@@ -269,6 +278,16 @@ function StatuslineContent() {
               </span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-base">
+              <span className="whitespace-nowrap text-cyan-400">
+                👤 Thi Dinh{" "}
+                <span className="text-slate-500">(anhthi.dinh@septeo.com)</span>
+              </span>
+              <span className="mx-2 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-blue-400">
+                🏢 anhthi.dinh@septeo.com&apos;s Organization
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-0 gap-y-1 text-base">
               <span className="whitespace-nowrap text-amber-400">ctx 42%</span>

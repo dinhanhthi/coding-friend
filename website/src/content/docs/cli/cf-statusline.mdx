@@ -14,6 +14,7 @@ Example:
 
 ```bash
 cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
+👤 Thi Dinh (anhthi.dinh@septeo.com) | 🏢 anhthi.dinh@septeo.com's Organization
 ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
 ```
 
@@ -27,16 +28,17 @@ The statusline can show any combination of these components:
 | `folder`     | Project name                                     | `MyProject`                      |
 | `model`      | Active model                                     | `Opus 4.6`                       |
 | `branch`     | Git branch                                       | `⎇ main`                         |
+| `account`    | Account name, email & org (from `~/.claude.json`)    | `👤 Thi (thi@…) \| 🏢 Org`      |
 | `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                        |
 | `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…` |
 
 When you run this command, an interactive checklist lets you choose which components to display. All components are enabled by default.
 
-### Rate limit dependencies
+### Dependencies
 
-The `rate_limit` component requires **curl** and **jq** to fetch API usage data from Anthropic. If either is missing, the statusline will show a warning instead. The CLI warns you during setup if dependencies are not installed.
+The `rate_limit` component requires **curl** and **jq** to fetch API usage data from Anthropic. If dependencies are missing, the statusline will show a warning instead. The CLI warns you during setup.
 
-Usage data is cached for 60 seconds to avoid excessive API calls.
+The `account` component reads from `~/.claude.json` (requires **jq**, already needed by other components). Falls back to `claude auth status --json` if the file is unavailable. Usage data is cached for 60 seconds.
 
 ## Customization
 
@@ -50,6 +52,7 @@ You can either edit `~/.coding-friend/config.json` directly, or run `cf statusli
       "folder",
       "model",
       "branch",
+      "account",
       "context",
       "rate_limit"
     ]

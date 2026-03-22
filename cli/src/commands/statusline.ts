@@ -43,7 +43,7 @@ export async function statuslineCommand(): Promise<void> {
   // Step 3: Select components
   const components = await selectStatuslineComponents();
 
-  // Warn if rate_limit selected without curl/jq
+  // Warn about missing dependencies
   if (components.includes("rate_limit")) {
     const missing: string[] = [];
     if (!commandExists("curl")) missing.push("curl");
@@ -53,6 +53,15 @@ export async function statuslineCommand(): Promise<void> {
         `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
       );
     }
+  }
+  if (
+    components.includes("account") &&
+    !components.includes("rate_limit") &&
+    !commandExists("jq")
+  ) {
+    log.warn(
+      "Account info requires jq. Install it first, or the statusline will skip account info.",
+    );
   }
 
   // Step 4: Save config + write settings

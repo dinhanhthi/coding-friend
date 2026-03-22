@@ -2,12 +2,14 @@
 # Statusline: Show session info in Claude Code status bar.
 #
 # Displays a compact status line with: plugin version, current directory,
-# active model, git branch, context window usage, and API usage percentage
+# active model, git branch, account info, context window usage, and API usage percentage
 # with color-coded gradient (green→red) and reset time.
 #
 # Context window usage is read from the stdin JSON (context_window.used_percentage)
-# provided by Claude Code. API usage is fetched from Anthropic's OAuth API using
-# the access token that Claude Code stores in the macOS Keychain.
+# provided by Claude Code. Account info is read from ~/.claude.json (oauthAccount),
+# with fallback to `claude auth status --json`.
+# API usage is fetched from Anthropic's OAuth API using the access token that
+# Claude Code stores in the macOS Keychain.
 # Time format respects macOS 24h preference (AppleICUForce24HourTime).
 #
 # Setup:
@@ -20,7 +22,7 @@
 #
 # Configuration:
 #   Components can be toggled via ~/.coding-friend/config.json:
-#   { "statusline": { "components": ["version", "folder", "model", "branch", "context", "rate_limit"] } }
+#   { "statusline": { "components": ["version", "folder", "model", "branch", "account", "context", "rate_limit"] } }
 #   Run `cf statusline` to configure interactively.
 #   If no config exists, all components are shown by default.
 
@@ -226,6 +228,60 @@ if component_enabled "context"; then
   fi
 fi
 
+# ── Read account data (for "account" component) ──
+# Priority: 1) ~/.claude.json (fast local read)  2) claude auth status --json (subprocess fallback)
+acct_email=""
+acct_name=""
+acct_org=""
+if component_enabled "account" && command -v jq &>/dev/null; then
+  # Source 1: ~/.claude.json (fast local read, no network call)
+  CLAUDE_JSON="$HOME/.claude.json"
+  if [ -f "$CLAUDE_JSON" ]; then
+    # Extract all fields in a single jq call
+    acct_fields=$(jq -r '.oauthAccount | "\(.emailAddress // "")\t\(.displayName // "")\t\(.organizationName // "")"' "$CLAUDE_JSON" 2>/dev/null)
+    if [ -n "$acct_fields" ]; then
+      acct_email=$(echo "$acct_fields" | cut -f1)
+      acct_name=$(echo "$acct_fields" | cut -f2)
+      acct_org=$(echo "$acct_fields" | cut -f3)
+    fi
+  fi
+
+  # Source 2: fallback to `claude auth status --json` if no email found
+  if [ -z "$acct_email" ] && command -v claude &>/dev/null; then
+    auth_data=$(timeout 3 claude auth status --json 2>/dev/null) || true
+    if [ -n "$auth_data" ] && echo "$auth_data" | jq -e '.loggedIn == true' >/dev/null 2>&1; then
+      # Extract email and org in a single jq call
+      auth_fields=$(echo "$auth_data" | jq -r '"\(.email // "")\t\(.orgName // "")"' 2>/dev/null)
+      if [ -n "$auth_fields" ]; then
+        acct_email=$(echo "$auth_fields" | cut -f1)
+        [ -z "$acct_org" ] && acct_org=$(echo "$auth_fields" | cut -f2)
+      fi
+    fi
+  fi
+fi
+
+# Build account line
+account_line=""
+if component_enabled "account"; then
+  acct_parts=""
+  if [ -n "$acct_name" ]; then
+    acct_parts="${CYAN}${acct_name}${RESET}"
+    [ -n "$acct_email" ] && acct_parts+=" ${GRAY}(${acct_email})${RESET}"
+  elif [ -n "$acct_email" ]; then
+    acct_parts="${CYAN}${acct_email}${RESET}"
+  fi
+
+  if [ -n "$acct_org" ]; then
+    if [ -n "$acct_parts" ]; then
+      acct_parts+="${separator}${BLUE}🏢 ${acct_org}${RESET}"
+    else
+      acct_parts="${BLUE}🏢 ${acct_org}${RESET}"
+    fi
+  fi
+
+  [ -n "$acct_parts" ] && account_line="👤 ${acct_parts}"
+fi
+
 # ── Fetch usage data (for "rate_limit" component) ──
 USAGE_DATA=""
 if component_enabled "rate_limit"; then
@@ -327,18 +383,23 @@ done
 
 printf "%s" "$output"
 
-# Second line: context + rate limit
-second_line=""
+# Second line: account info
+if [ -n "$account_line" ]; then
+  printf "\n%s" "$account_line"
+fi
+
+# Third line: context + rate limit
+third_line=""
 if [ -n "$ctx_text" ]; then
-  second_line="$ctx_text"
+  third_line="$ctx_text"
 fi
 if [ -n "$rate_limit_line" ]; then
-  if [ -n "$second_line" ]; then
-    second_line+="${separator}${rate_limit_line}"
+  if [ -n "$third_line" ]; then
+    third_line+="${separator}${rate_limit_line}"
   else
-    second_line="$rate_limit_line"
+    third_line="$rate_limit_line"
   fi
 fi
-if [ -n "$second_line" ]; then
-  printf "\n%s" "$second_line"
+if [ -n "$third_line" ]; then
+  printf "\n%s" "$third_line"
 fi

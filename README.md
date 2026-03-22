@@ -36,9 +36,10 @@
 - ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
 - Prompt injection defense — layered content isolation protects against malicious instructions
 - CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
-- ✨ Customizable Claude Code statusline with API rate limit tracking
+- ✨ Customizable Claude Code statusline with account info & API rate limit tracking
   ```
   cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
+  👤 Thi Dinh (anhthi.dinh@septeo.com) | 🏢 anhthi.dinh@septeo.com's Organization
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   ```
 
