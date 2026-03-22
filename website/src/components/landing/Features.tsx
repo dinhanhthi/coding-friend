@@ -108,6 +108,54 @@ const SkillsAgentsIcon = () => (
   </svg>
 );
 
+const SecurityIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.5}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+    />
+  </svg>
+);
+
+const CustomSkillsIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.5}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
+    />
+  </svg>
+);
+
+const ResearchIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.5}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
+    />
+  </svg>
+);
+
 /* ────────────────────────────────────────────────────────────
    STATUSLINE CONTENT
    ──────────────────────────────────────────────────────────── */
@@ -259,12 +307,16 @@ function LearnHostContent() {
         <Link className="text-emerald-400" href="/docs/skills/cf-learn">
           <code>/cf-learn</code>
         </Link>{" "}
-        extracts human-readable knowledge from your coding sessions. Then{" "}
+        extracts human-readable knowledge from your coding sessions. Then serve
+        them as a searchable website with{" "}
         <Link className="text-emerald-400" href="/docs/cli/cf-host">
           <code>cf host</code>
+        </Link>
+        , or expose them to other LLM clients via{" "}
+        <Link className="text-emerald-400" href="/docs/cli/cf-mcp">
+          <code>cf mcp</code>
         </Link>{" "}
-        turns those docs into a searchable static website you can browse locally
-        or deploy anywhere.
+        as an MCP server.
       </p>
 
       {/* Pipeline flow */}
@@ -283,8 +335,8 @@ function LearnHostContent() {
             border: "border-slate-500/30",
           },
           {
-            label: "cf host",
-            desc: "Static website",
+            label: "cf host / cf mcp",
+            desc: "Website or MCP server",
             color: "text-emerald-400",
             border: "border-emerald-500/30",
           },
@@ -335,6 +387,7 @@ function LearnHostContent() {
           "Categorized by topic",
           "Full-text search",
           "Tag-based filtering",
+          "MCP for LLM clients",
           "Deploy anywhere",
         ].map((tag) => (
           <span
@@ -709,6 +762,336 @@ function SkillsAgentsContent() {
 }
 
 /* ────────────────────────────────────────────────────────────
+   SECURITY CONTENT
+   ──────────────────────────────────────────────────────────── */
+
+function SecurityContent() {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-base leading-relaxed text-slate-400">
+        External content — web pages, MCP tools, fetched files — can contain
+        hidden instructions targeting your AI assistant. Coding Friend&apos;s{" "}
+        <Link
+          className="text-rose-400 hover:underline hover:underline-offset-3"
+          href="/docs/reference/security/"
+        >
+          content isolation
+        </Link>{" "}
+        layers enforce strict boundaries between trusted instructions and
+        untrusted data.
+      </p>
+
+      {/* Defense layers */}
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          {
+            layer: "Layer 1",
+            name: "Isolation",
+            desc: "External content flagged as untrusted data — never treated as instructions",
+            color: "text-rose-400",
+            border: "border-rose-500/30",
+          },
+          {
+            layer: "Layer 2",
+            name: "Extraction",
+            desc: "Only facts and information extracted — embedded commands discarded",
+            color: "text-amber-400",
+            border: "border-amber-500/30",
+          },
+          {
+            layer: "Layer 3",
+            name: "Alert",
+            desc: "Suspicious content flagged to user — prompt injection attempts exposed",
+            color: "text-emerald-400",
+            border: "border-emerald-500/30",
+          },
+        ].map((t) => (
+          <div
+            key={t.layer}
+            className={`rounded-xl border ${t.border} bg-navy-950/60 p-4 text-center`}
+          >
+            <span
+              className={`font-mono text-sm font-medium uppercase ${t.color}`}
+            >
+              {t.layer}
+            </span>
+            <p className={`mt-1 text-base font-semibold ${t.color}`}>
+              {t.name}
+            </p>
+            <p className="mt-1 text-sm text-slate-400">{t.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          {
+            title: "Never follows fetched instructions",
+            desc: '"Run this command" or "ignore previous instructions" in web content? Blocked and flagged.',
+          },
+          {
+            title: "No data exfiltration",
+            desc: "Project secrets, API keys, and code are never sent to external endpoints from fetched content.",
+          },
+          {
+            title: "Enforced at every skill",
+            desc: "Content isolation rules are loaded into every skill and agent — not optional, always active.",
+          },
+          {
+            title: "Works with WebFetch & MCP",
+            desc: "All external sources — web pages, MCP tools, external APIs — treated as untrusted by default.",
+          },
+        ].map((item) => (
+          <div
+            key={item.title}
+            className="flex items-start gap-3 rounded-lg border border-rose-500/10 bg-rose-500/5 p-3"
+          >
+            <div className="mt-0.5 shrink-0 rounded-md bg-rose-500/10 p-1.5 text-rose-400">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-base font-medium text-white">{item.title}</p>
+              <p className="mt-0.5 text-sm text-slate-400">{item.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   CUSTOM SKILLS CONTENT
+   ──────────────────────────────────────────────────────────── */
+
+function CustomSkillsContent() {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-base leading-relaxed text-slate-400">
+        Every built-in skill can be extended with your own rules — add
+        pre-workflow steps, enforce extra constraints, or run post-workflow
+        actions.{" "}
+        <Link
+          className="text-cyan-400 hover:underline hover:underline-offset-3"
+          href="/docs/reference/custom-guides/"
+        >
+          No forking required
+        </Link>
+        .
+      </p>
+
+      {/* File structure mockup */}
+      <div className="relative mx-auto w-full max-w-2xl">
+        <div className="overflow-hidden rounded-2xl border border-[#a0a0a05d] bg-[#1e1e2e] shadow-2xl shadow-cyan-500/5">
+          <div className="flex items-center gap-1.5 px-4 py-2.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
+            <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
+            <span className="ml-2 font-mono text-sm text-slate-500">
+              .coding-friend/skills/cf-commit-custom/SKILL.md
+            </span>
+          </div>
+          <pre className="overflow-x-auto p-4! pt-0! pb-4 font-mono text-sm leading-relaxed text-slate-300">
+            <span className="text-cyan-400">{"## Before\n"}</span>
+            {"Run `npm run lint` before analyzing the diff.\n\n"}
+            <span className="text-cyan-400">{"## Rules\n"}</span>
+            {
+              "- Always include the ticket number from branch name\n- Use scope format: feat(api): description\n\n"
+            }
+            <span className="text-cyan-400">{"## After\n"}</span>
+            {"Run `npm run format` after committing."}
+          </pre>
+        </div>
+      </div>
+
+      {/* Three sections explained */}
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          {
+            section: "## Before",
+            desc: "Steps to run before the skill starts its main workflow",
+            color: "text-violet-400",
+            border: "border-violet-500/30",
+          },
+          {
+            section: "## Rules",
+            desc: "Additional constraints enforced throughout the entire skill execution",
+            color: "text-cyan-400",
+            border: "border-cyan-500/30",
+          },
+          {
+            section: "## After",
+            desc: "Actions to run after the skill completes its workflow",
+            color: "text-emerald-400",
+            border: "border-emerald-500/30",
+          },
+        ].map((t) => (
+          <div
+            key={t.section}
+            className={`rounded-xl border ${t.border} bg-navy-950/60 p-4 text-center`}
+          >
+            <code className={`text-base font-medium ${t.color}`}>
+              {t.section}
+            </code>
+            <p className="mt-2 text-sm text-slate-400">{t.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        {[
+          "Per-project or global",
+          "Works with any skill",
+          "Git-trackable",
+          "No plugin forking",
+        ].map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-sm text-cyan-300"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+   RESEARCH CONTENT
+   ──────────────────────────────────────────────────────────── */
+
+function ResearchContent() {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-base leading-relaxed text-slate-400">
+        Deep research powered by web search and parallel subagents.{" "}
+        <Link
+          className="text-orange-400 hover:underline hover:underline-offset-3"
+          href="/docs/skills/cf-research/"
+        >
+          <code>/cf-research</code>
+        </Link>{" "}
+        explores multiple sources simultaneously, synthesizes findings, and
+        produces structured reports saved to{" "}
+        <code className="text-sm text-slate-300">docs/research/</code>.
+      </p>
+
+      {/* Pipeline */}
+      <div className="flex flex-wrap items-center justify-center gap-3 text-base">
+        {[
+          {
+            label: "/cf-research",
+            desc: "Define topic",
+            color: "text-orange-400",
+            border: "border-orange-500/30",
+          },
+          {
+            label: "Parallel agents",
+            desc: "Web search + analysis",
+            color: "text-sky-400",
+            border: "border-sky-500/30",
+          },
+          {
+            label: "docs/research/",
+            desc: "Structured report",
+            color: "text-emerald-400",
+            border: "border-emerald-500/30",
+          },
+        ].map((step, i) => (
+          <div key={step.label} className="flex items-center gap-3">
+            {i > 0 && (
+              <svg
+                className="h-4 w-4 shrink-0 text-slate-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            )}
+            <div
+              className={`rounded-lg border ${step.border} bg-navy-950/60 px-3 py-2 text-center`}
+            >
+              <code
+                className={`border-none! text-base! font-medium ${step.color}`}
+              >
+                {step.label}
+              </code>
+              <p className="mt-0.5 text-sm text-slate-500">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Capabilities grid */}
+      <div className="mx-auto grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          {
+            title: "Parallel web search",
+            desc: "Multiple subagents search different angles simultaneously — faster and more thorough than sequential research.",
+          },
+          {
+            title: "Source synthesis",
+            desc: "Findings from multiple sources are cross-referenced and synthesized into a coherent analysis.",
+          },
+          {
+            title: "Structured output",
+            desc: "Reports include summary, key findings, source links, and actionable recommendations.",
+          },
+          {
+            title: "Saved to docs/research/",
+            desc: "Every research session produces a markdown file — searchable, git-trackable, and always available.",
+          },
+        ].map((item) => (
+          <div
+            key={item.title}
+            className="flex items-start gap-3 rounded-lg border border-orange-500/10 bg-orange-500/5 p-3"
+          >
+            <div className="mt-0.5 shrink-0 rounded-md bg-orange-500/10 p-1.5 text-orange-400">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-base font-medium text-white">{item.title}</p>
+              <p className="mt-0.5 text-sm text-slate-400">{item.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
    BORDER PROGRESS OVERLAY
    ──────────────────────────────────────────────────────────── */
 
@@ -850,11 +1233,18 @@ const tabs: FeatureTab[] = [
     content: <StatuslineContent />,
   },
   {
-    id: "learn-host",
-    label: "Learn Host",
+    id: "learn-mcp",
+    label: "Learn & MCP",
     color: "emerald",
     icon: <LearnHostIcon />,
     content: <LearnHostContent />,
+  },
+  {
+    id: "research",
+    label: "Research",
+    color: "orange",
+    icon: <ResearchIcon />,
+    content: <ResearchContent />,
   },
   {
     id: "sessions",
@@ -869,6 +1259,20 @@ const tabs: FeatureTab[] = [
     color: "amber",
     icon: <MemoryIcon />,
     content: <MemoryContent />,
+  },
+  {
+    id: "security",
+    label: "Security",
+    color: "rose",
+    icon: <SecurityIcon />,
+    content: <SecurityContent />,
+  },
+  {
+    id: "custom-skills",
+    label: "Custom Skills",
+    color: "cyan",
+    icon: <CustomSkillsIcon />,
+    content: <CustomSkillsContent />,
   },
   {
     id: "skills-agents",
@@ -906,6 +1310,21 @@ const tabColorMap: Record<
     active: "text-amber-300",
     inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
     bar: "bg-amber-400",
+  },
+  rose: {
+    active: "text-rose-300",
+    inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
+    bar: "bg-rose-400",
+  },
+  cyan: {
+    active: "text-cyan-300",
+    inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
+    bar: "bg-cyan-400",
+  },
+  orange: {
+    active: "text-orange-300",
+    inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
+    bar: "bg-orange-400",
   },
 };
 

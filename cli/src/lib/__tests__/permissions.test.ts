@@ -489,15 +489,15 @@ describe("extractTag", () => {
   });
 
   it("extracts [modify] tag", () => {
-    expect(extractTag("[modify] Stage files for commit · Used by: /cf-commit")).toBe(
-      "[modify]",
-    );
+    expect(
+      extractTag("[modify] Stage files for commit · Used by: /cf-commit"),
+    ).toBe("[modify]");
   });
 
   it("extracts [remote] tag", () => {
-    expect(extractTag("[remote] Push commits to remote · Used by: /cf-ship")).toBe(
-      "[remote]",
-    );
+    expect(
+      extractTag("[remote] Push commits to remote · Used by: /cf-ship"),
+    ).toBe("[remote]");
   });
 
   it("extracts [execute] tag", () => {
@@ -507,15 +507,15 @@ describe("extractTag", () => {
   });
 
   it("extracts [network] tag", () => {
-    expect(extractTag("[network] Perform web searches · Used by: /cf-research")).toBe(
-      "[network]",
-    );
+    expect(
+      extractTag("[network] Perform web searches · Used by: /cf-research"),
+    ).toBe("[network]");
   });
 
   it("extracts [write] tag", () => {
-    expect(extractTag("[write] Create directories · Used by: docs folder setup")).toBe(
-      "[write]",
-    );
+    expect(
+      extractTag("[write] Create directories · Used by: docs folder setup"),
+    ).toBe("[write]");
   });
 
   it("returns null for description without tag", () => {

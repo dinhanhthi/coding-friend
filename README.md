@@ -29,11 +29,12 @@
 - Smart conventional commits and code review
 - Captures project knowledge across sessions (`/cf-remember`)
 - ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
-- ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — host as a local website (`cf host`) or setup MCP server (`cf mcp`) for other LLM clients
+- ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — browse as a searchable website (`cf host`) or share with other LLM clients via MCP server (`cf mcp`)
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
 - Prompt injection defense — layered content isolation protects against malicious instructions
+- CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
 - ✨ Customizable Claude Code statusline with API rate limit tracking
   ```
   cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
