@@ -120,6 +120,23 @@ describe("PowerShell on Windows", () => {
     );
     expect(content).toContain("Register-ArgumentCompleter");
   });
+
+  it("creates PowerShell profile dir if missing", async () => {
+    mockEnv("", "win32", testDir);
+    vi.stubEnv("USERPROFILE", testDir);
+    const psProfile = join(
+      testDir,
+      "Documents",
+      "PowerShell",
+      "Microsoft.PowerShell_profile.ps1",
+    );
+    const { ensureShellCompletion } = await loadModule();
+    ensureShellCompletion({ silent: true });
+    expect(existsSync(psProfile)).toBe(true);
+    expect(readFileSync(psProfile, "utf-8")).toContain(
+      "Register-ArgumentCompleter",
+    );
+  });
 });
 
 describe("unsupported shell", () => {
