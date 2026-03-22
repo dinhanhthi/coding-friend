@@ -318,7 +318,7 @@ describe("ensureStatusline", () => {
     writeFileSync(
       settingsFile,
       JSON.stringify({
-        statusLine: { type: "command", command: `bash ${hookPath}` },
+        statusLine: { type: "command", command: `bash "${hookPath}"` },
       }),
     );
 

@@ -87,5 +87,6 @@ export function sleepSync(ms: number): void {
  * Check if a command exists on PATH.
  */
 export function commandExists(cmd: string): boolean {
-  return run("which", [cmd]) !== null;
+  const checker = process.platform === "win32" ? "where" : "which";
+  return run(checker, [cmd]) !== null;
 }

@@ -1,4 +1,5 @@
 import { existsSync, readdirSync } from "fs";
+import { join } from "path";
 import { checkbox } from "@inquirer/prompts";
 import { readJson, writeJson, mergeJson } from "./json.js";
 import {
@@ -72,7 +73,7 @@ export function findStatuslineHookPath(): {
   // Prefer the installed version (respects dev/prod state)
   const installed = getInstalledVersion();
   if (installed) {
-    const hookPath = `${cachePath}/${installed}/hooks/statusline.sh`;
+    const hookPath = join(cachePath, installed, "hooks", "statusline.sh");
     if (existsSync(hookPath)) return { hookPath, version: installed };
   }
 
@@ -80,7 +81,7 @@ export function findStatuslineHookPath(): {
   const latest = findLatestVersion();
   if (!latest) return null;
 
-  const hookPath = `${cachePath}/${latest}/hooks/statusline.sh`;
+  const hookPath = join(cachePath, latest, "hooks", "statusline.sh");
   if (!existsSync(hookPath)) return null;
 
   return { hookPath, version: latest };
@@ -131,6 +132,16 @@ export function saveStatuslineConfig(components: StatuslineComponent[]): void {
 }
 
 /**
+ * Build the statusline bash command from a hook path.
+ * Normalizes backslashes to forward slashes for bash compatibility on Windows
+ * and quotes the path to handle spaces in usernames.
+ */
+function buildStatuslineCommand(hookPath: string): string {
+  const normalized = hookPath.replace(/\\/g, "/");
+  return `bash "${normalized}"`;
+}
+
+/**
  * Write the statusline hook command to Claude Code settings.
  */
 export function writeStatuslineSettings(hookPath: string): void {
@@ -138,7 +149,7 @@ export function writeStatuslineSettings(hookPath: string): void {
   const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
   settings.statusLine = {
     type: "command",
-    command: `bash ${hookPath}`,
+    command: buildStatuslineCommand(hookPath),
   };
   writeJson(settingsPath, settings);
 }
@@ -154,7 +165,7 @@ export function ensureStatusline(): string | null {
   const settingsPath = claudeSettingsPath();
   const settings = readJson<Record<string, unknown>>(settingsPath) ?? {};
   const current = (settings.statusLine as { command?: string })?.command;
-  const expected = `bash ${info.hookPath}`;
+  const expected = buildStatuslineCommand(info.hookPath);
 
   if (current === expected) return null;
 
