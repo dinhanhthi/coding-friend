@@ -15,6 +15,7 @@ import {
   applyPermissions,
   groupByCategory,
   cleanupStalePluginRules,
+  extractTag,
 } from "../permissions.js";
 import type { PermissionRule } from "../permissions.js";
 
@@ -300,6 +301,45 @@ describe("STATIC_RULES", () => {
     );
     expect(mcpRules.length).toBeGreaterThanOrEqual(6);
   });
+
+  it("includes compound cd+git rules for read-only git commands", () => {
+    const compoundGitRules = STATIC_RULES.filter((r) =>
+      r.rule.startsWith("Bash(cd * && git "),
+    );
+    const expectedCmds = [
+      "Bash(cd * && git status *)",
+      "Bash(cd * && git diff *)",
+      "Bash(cd * && git log *)",
+      "Bash(cd * && git branch *)",
+      "Bash(cd * && git rev-parse *)",
+    ];
+    for (const cmd of expectedCmds) {
+      expect(compoundGitRules.map((r) => r.rule)).toContain(cmd);
+    }
+    expect(compoundGitRules).toHaveLength(expectedCmds.length);
+  });
+
+  it("compound cd+git rules are all in Git category and recommended", () => {
+    const compoundGitRules = STATIC_RULES.filter((r) =>
+      r.rule.startsWith("Bash(cd * && git "),
+    );
+    for (const rule of compoundGitRules) {
+      expect(rule.category).toBe("Git");
+      expect(rule.recommended).toBe(true);
+    }
+  });
+
+  it("compound cd+git rules do not include write operations", () => {
+    const compoundGitRules = STATIC_RULES.filter((r) =>
+      r.rule.startsWith("Bash(cd * && git "),
+    );
+    const writeCommands = ["add", "commit", "push", "pull", "reset"];
+    for (const rule of compoundGitRules) {
+      for (const cmd of writeCommands) {
+        expect(rule.rule).not.toContain(`git ${cmd}`);
+      }
+    }
+  });
 });
 
 describe("buildPluginScriptRules", () => {
@@ -438,5 +478,58 @@ describe("cleanupStalePluginRules", () => {
 
   it("returns 0 for non-existent file", () => {
     expect(cleanupStalePluginRules(join(testDir, "nope.json"))).toBe(0);
+  });
+});
+
+describe("extractTag", () => {
+  it("extracts [read-only] tag from description", () => {
+    expect(
+      extractTag("[read-only] Check working tree status · Used by: /cf-commit"),
+    ).toBe("[read-only]");
+  });
+
+  it("extracts [modify] tag", () => {
+    expect(extractTag("[modify] Stage files for commit · Used by: /cf-commit")).toBe(
+      "[modify]",
+    );
+  });
+
+  it("extracts [remote] tag", () => {
+    expect(extractTag("[remote] Push commits to remote · Used by: /cf-ship")).toBe(
+      "[remote]",
+    );
+  });
+
+  it("extracts [execute] tag", () => {
+    expect(extractTag("[execute] Run test suites · Used by: cf-tdd")).toBe(
+      "[execute]",
+    );
+  });
+
+  it("extracts [network] tag", () => {
+    expect(extractTag("[network] Perform web searches · Used by: /cf-research")).toBe(
+      "[network]",
+    );
+  });
+
+  it("extracts [write] tag", () => {
+    expect(extractTag("[write] Create directories · Used by: docs folder setup")).toBe(
+      "[write]",
+    );
+  });
+
+  it("returns null for description without tag", () => {
+    expect(extractTag("Some description without a tag")).toBeNull();
+  });
+
+  it("returns null for empty string", () => {
+    expect(extractTag("")).toBeNull();
+  });
+
+  it("every STATIC_RULES description has a valid tag", () => {
+    for (const rule of STATIC_RULES) {
+      const tag = extractTag(rule.description);
+      expect(tag).not.toBeNull();
+    }
   });
 });
