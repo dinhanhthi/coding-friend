@@ -8,12 +8,27 @@ keywords: [cli, command line, coding-friend-cli, cf command]
 
 ```bash
 npm i -g coding-friend-cli
-
-# Check
-cf --version
 ```
 
-The binary is available as `cf`.
+Check with `cf --version`. The binary is available as `cf`.
+
+## Updating the CLI
+
+```bash
+# Update everything (plugin + CLI + statusline)
+cf update
+
+# Update only the CLI
+cf update --cli
+```
+
+The CLI also **automatically checks for updates** after each command (cached every 24 hours). When a new version is available, it displays a notification and auto-updates in place. No manual action needed — the next time you run any `cf` command, the latest version will be used.
+
+You can also update manually via npm:
+
+```bash
+npm install -g coding-friend-cli@latest
+```
 
 ## Commands
 

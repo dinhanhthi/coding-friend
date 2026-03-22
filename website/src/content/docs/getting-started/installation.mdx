@@ -75,7 +75,9 @@ This will scan your project and extract the knowledge into the memory system. Re
 
 ## Auto-Update
 
-Auto-update is **automatically enabled** when you run `cf install`. This ensures the Coding Friend plugin stays up to date without manual intervention.
+### Plugin Auto-Update
+
+Auto-update for the **plugin** is automatically enabled when you run `cf install`. This ensures the Coding Friend plugin stays up to date without manual intervention.
 
 If auto-update could not be enabled during installation (e.g., due to file permission issues), you can enable it manually:
 
@@ -83,6 +85,28 @@ If auto-update could not be enabled during installation (e.g., due to file permi
 2. Go to **Marketplace**
 3. Select `coding-friend-marketplace`
 4. Enable **auto-update**
+
+### CLI Auto-Update
+
+The CLI **automatically checks for new versions** after each command you run (with a 24-hour cache). When a new version is available:
+
+1. A notification is displayed with the available version
+2. The CLI auto-updates itself via npm
+
+No manual action needed — the next time you run any `cf` command, the latest version will be used.
+
+To update manually at any time:
+
+```bash
+# Update everything (plugin + CLI + statusline)
+cf update
+
+# Update only the CLI
+cf update --cli
+
+# Or via npm directly
+npm install -g coding-friend-cli@latest
+```
 
 ## Restart Claude Code
 
