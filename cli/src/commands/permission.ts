@@ -11,6 +11,7 @@ import {
   groupByCategory,
   cleanupStalePluginRules,
   logPluginScriptWarning,
+  extractTag,
 } from "../lib/permissions.js";
 import type { PermissionRule } from "../lib/permissions.js";
 
@@ -151,12 +152,17 @@ async function interactiveFlow(
     const categoryRules = groups.get(chosen)!;
     const selected = await checkbox({
       message: `${chosen} permissions:`,
-      choices: categoryRules.map((rule) => ({
-        name: rule.rule,
-        value: rule.rule,
-        checked: enabled.has(rule.rule),
-        description: colorDescription(rule.description),
-      })),
+      choices: categoryRules.map((rule) => {
+        const tag = extractTag(rule.description);
+        const colorFn = tag ? (TAG_COLORS[tag] ?? chalk.cyan) : chalk.cyan;
+        const prefix = tag ? `${colorFn(tag)} ` : "";
+        return {
+          name: `${prefix}${rule.rule}`,
+          value: rule.rule,
+          checked: enabled.has(rule.rule),
+          description: colorDescription(rule.description),
+        };
+      }),
     });
 
     // Update enabled set for this category

@@ -176,6 +176,43 @@ export const STATIC_RULES: PermissionRule[] = [
     recommended: true,
   },
 
+  // Git Compound Commands (cd + read-only git, used by subagents like /cf-review)
+  {
+    rule: "Bash(cd * && git status *)",
+    description:
+      "[read-only] Check working tree status in another dir · Used by: /cf-review subagent",
+    category: "Git",
+    recommended: true,
+  },
+  {
+    rule: "Bash(cd * && git diff *)",
+    description:
+      "[read-only] View file changes in another dir · Used by: /cf-review subagent",
+    category: "Git",
+    recommended: true,
+  },
+  {
+    rule: "Bash(cd * && git log *)",
+    description:
+      "[read-only] View commit history in another dir · Used by: /cf-review subagent",
+    category: "Git",
+    recommended: true,
+  },
+  {
+    rule: "Bash(cd * && git branch *)",
+    description:
+      "[read-only] List branches in another dir · Used by: /cf-review subagent",
+    category: "Git",
+    recommended: true,
+  },
+  {
+    rule: "Bash(cd * && git rev-parse *)",
+    description:
+      "[read-only] Check git repo state in another dir · Used by: /cf-review subagent",
+    category: "Git",
+    recommended: true,
+  },
+
   // GitHub CLI
   {
     rule: "Bash(gh pr *)",
@@ -440,6 +477,15 @@ export function groupByCategory(
     groups.set(rule.category, list);
   }
   return groups;
+}
+
+/**
+ * Extract the [tag] prefix from a permission rule description.
+ * Returns the tag string (e.g. "[read-only]") or null if none found.
+ */
+export function extractTag(description: string): string | null {
+  const match = description.match(/^(\[[^\]]+\])/);
+  return match ? match[1] : null;
 }
 
 // ─── Migration ──────────────────────────────────────────────────────
