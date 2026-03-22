@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.20.2 (unpublished)
+## v1.20.2 (2026-03-22)
 
 - Fix Windows compatibility: `commandExists()` uses `where` instead of Unix-only `which`, `resolvePath()` handles Windows drive letters, `encodeProjectPath()` handles backslashes and colons, `buildStatuslineCommand()` quotes paths for spaces in usernames, `remapProjectPath()` supports `C:\Users\` paths, and `devSyncCommand()` uses `homedir()` instead of `process.env.HOME` [#2e67ea7](https://github.com/dinhanhthi/coding-friend/commit/2e67ea7)
 
