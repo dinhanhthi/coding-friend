@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "fs";
 import { homedir } from "os";
-import { basename, join } from "path";
+import { basename, dirname, join } from "path";
 import { log } from "./log.js";
 
 const MARKER_START = "# >>> coding-friend CLI completion >>>";
@@ -419,6 +419,8 @@ export function ensureShellCompletion(opts?: { silent?: boolean }): boolean {
     }
   }
 
+  const rcDir = dirname(rcPath);
+  if (!existsSync(rcDir)) mkdirSync(rcDir, { recursive: true });
   appendFileSync(rcPath, newBlock);
   if (!opts?.silent) {
     log.success(`Tab completion added to ~/${rcName}`);
