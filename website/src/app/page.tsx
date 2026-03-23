@@ -43,9 +43,9 @@ export default function Home() {
       </div>
       <EcosystemSection />
       <div className="bg-navy-950/50">
-        <Features />
+        <ComparisonSection />
       </div>
-      <ComparisonSection />
+      <Features />
       <div className="bg-navy-950/50">
         <HowItWorks />
       </div>
