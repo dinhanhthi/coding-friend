@@ -36,3 +36,8 @@ export function validatePhone(phone: string): boolean {
   const phoneRegex = /^\+?[\d\s\-()]{7,15}$/;
   return phoneRegex.test(phone.trim());
 }
+
+export function validatePhone(phone: string): boolean {
+  const phoneRegex = /^\+?[\d\s\-()]{7,15}$/;
+  return phoneRegex.test(phone.trim());
+}

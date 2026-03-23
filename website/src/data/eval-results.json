@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "lastUpdated": "2026-03-23",
+    "runsPerCondition": 3,
+    "rubricScale": "0-3",
+    "passThreshold": 2.0
+  },
+  "models": {
+    "haiku": {
+      "label": "Haiku",
+      "modelId": "claude-haiku-4-5-20251001",
+      "evalSessions": 0,
+      "skills": {
+        "cf-fix": { "withCF": 0, "withoutCF": 0 },
+        "cf-review": { "withCF": 0, "withoutCF": 0 },
+        "cf-tdd": { "withCF": 0, "withoutCF": 0 }
+      },
+      "average": { "withCF": 0, "withoutCF": 0 }
+    },
+    "sonnet": {
+      "label": "Sonnet",
+      "modelId": "claude-sonnet-4-6",
+      "evalSessions": 22,
+      "skills": {
+        "cf-fix": { "withCF": 3.0, "withoutCF": 1.9 },
+        "cf-review": { "withCF": 3.0, "withoutCF": 2.53 },
+        "cf-tdd": { "withCF": 2.6, "withoutCF": 1.73 }
+      },
+      "average": { "withCF": 2.87, "withoutCF": 2.05 }
+    },
+    "opus": {
+      "label": "Opus",
+      "modelId": "claude-opus-4-6",
+      "evalSessions": 0,
+      "skills": {
+        "cf-fix": { "withCF": 0, "withoutCF": 0 },
+        "cf-review": { "withCF": 0, "withoutCF": 0 },
+        "cf-tdd": { "withCF": 0, "withoutCF": 0 }
+      },
+      "average": { "withCF": 0, "withoutCF": 0 }
+    }
+  },
+  "featuredSkills": [
+    { "key": "cf-fix", "label": "Bug Fix" },
+    { "key": "cf-review", "label": "Code Review" },
+    { "key": "cf-tdd", "label": "TDD" }
+  ],
+  "stats": {
+    "skillCount": "19+",
+    "agentCount": "6",
+    "topDelta": "+58%",
+    "topDeltaLabel": "Bug Fix Quality"
+  }
+}

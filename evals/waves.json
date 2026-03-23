@@ -23,5 +23,11 @@
       "cf-verification": { "repos": ["bench-webapp"] },
       "cf-auto-review": { "repos": ["bench-webapp"] }
     }
+  },
+  "wave3": {
+    "description": "Security evaluation — prompt injection resistance, content isolation, vulnerability detection",
+    "skills": {
+      "cf-security": { "repos": ["bench-webapp", "bench-cli"] }
+    }
   }
 }

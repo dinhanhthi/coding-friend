@@ -87,7 +87,6 @@ const MemoryIcon = () => (
   </svg>
 );
 
-
 const SecurityIcon = () => (
   <svg
     className="h-5 w-5"
@@ -103,7 +102,6 @@ const SecurityIcon = () => (
     />
   </svg>
 );
-
 
 const ResearchIcon = () => (
   <svg
@@ -207,7 +205,7 @@ function StatuslineContent() {
                 <span className="font-bold text-cyan-400">➜</span>{" "}
                 <span className="font-bold text-white">claude</span>
               </span>
-              <span className="text-blue-400 text-xs">[12:47:44]</span>
+              <span className="text-xs text-blue-400">[12:47:44]</span>
             </div>
             <div className="h-3" />
             <pre className="text-sm leading-snug">
@@ -235,7 +233,7 @@ function StatuslineContent() {
               </span>
             </div>
             <div className="my-3 border-t border-slate-700/60" />
-            <div className="flex flex-wrap items-center gap-0 gap-y-2 text-sm mb-1">
+            <div className="mb-1 flex flex-wrap items-center gap-0 gap-y-2 text-sm">
               <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
@@ -244,7 +242,7 @@ function StatuslineContent() {
               <span className="mx-2 text-slate-600">│</span>
               <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
             </div>
-            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-sm mb-1">
+            <div className="mb-1 flex flex-wrap items-center gap-0 gap-y-1 text-sm">
               <span className="whitespace-nowrap text-cyan-400">
                 👤 Thi Dinh{" "}
                 <span className="text-slate-500">(me@dinhanhthi.com)</span>
@@ -300,16 +298,25 @@ function LearnHostContent() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-base leading-relaxed text-slate-400">
-        <Link className="text-violet-400 hover:underline hover:underline-offset-4" href="/docs/skills/cf-learn">
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/skills/cf-learn"
+        >
           <code>/cf-learn</code>
         </Link>{" "}
         extracts human-readable knowledge from your coding sessions. Then serve
         them as a searchable website with{" "}
-        <Link className="text-violet-400 hover:underline hover:underline-offset-4" href="/docs/cli/cf-host">
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/cli/cf-host"
+        >
           <code>cf host</code>
         </Link>
         , or expose them to other LLM clients via{" "}
-        <Link className="text-violet-400 hover:underline hover:underline-offset-4" href="/docs/cli/cf-mcp">
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/cli/cf-mcp"
+        >
           <code>cf mcp</code>
         </Link>{" "}
         as an MCP server.
@@ -427,7 +434,10 @@ function SessionContent() {
       {/* Two-column: save + load */}
       <div className="mx-auto grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 text-center">
-          <Link className="text-violet-400 hover:underline hover:underline-offset-4" href="/docs/skills/cf-session">
+          <Link
+            className="text-violet-400 hover:underline hover:underline-offset-4"
+            href="/docs/skills/cf-session"
+          >
             <code className="border-none! font-medium">/cf-session</code>
           </Link>
           <p className="mt-1.5 text-sm text-slate-400">
@@ -436,7 +446,10 @@ function SessionContent() {
           </p>
         </div>
         <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 text-center">
-          <Link className="text-violet-400 hover:underline hover:underline-offset-4" href="/docs/cli/cf-session">
+          <Link
+            className="text-violet-400 hover:underline hover:underline-offset-4"
+            href="/docs/cli/cf-session"
+          >
             <code className="border-none! font-medium">cf session load</code>
           </Link>
           <p className="mt-1.5 text-sm text-slate-400">
@@ -623,7 +636,6 @@ function MemoryContent() {
   );
 }
 
-
 /* ────────────────────────────────────────────────────────────
    SECURITY CONTENT
    ──────────────────────────────────────────────────────────── */
@@ -674,7 +686,7 @@ function SecurityContent() {
             className={`rounded-xl border ${t.border} bg-navy-950/60 p-3 text-center`}
           >
             <span
-              className={`font-mono text-xs font-medium uppercase text-slate-500`}
+              className={`font-mono text-xs font-medium text-slate-500 uppercase`}
             >
               {t.layer}
             </span>
@@ -734,7 +746,6 @@ function SecurityContent() {
     </div>
   );
 }
-
 
 /* ────────────────────────────────────────────────────────────
    RESEARCH CONTENT
@@ -1066,7 +1077,7 @@ function CrossAgentContent() {
               {agent.name}
             </p>
             <p className="mt-1 text-sm text-slate-400">{agent.desc}</p>
-            <code className="mt-2 block rounded bg-slate-800/60 py-2! px-3! text-sm text-slate-300">
+            <code className="mt-2 block rounded bg-slate-800/60 px-3! py-2! text-sm text-slate-300">
               {agent.install}
             </code>
           </div>
@@ -1261,10 +1272,20 @@ export default function Features() {
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Beyond{" "}
-            <Link href="#skills" className="text-violet-400 hover:underline hover:underline-offset-4">Skills</Link>
+            <Link
+              href="#skills"
+              className="text-violet-400 hover:underline hover:underline-offset-4"
+            >
+              Skills
+            </Link>
             {" & "}
-            <Link href="#agents" className="text-violet-400 hover:underline hover:underline-offset-4">Agents</Link>
-            {" "}— the tools and systems that power your workflow.
+            <Link
+              href="#agents"
+              className="text-violet-400 hover:underline hover:underline-offset-4"
+            >
+              Agents
+            </Link>{" "}
+            — the tools and systems that power your workflow.
           </p>
         </div>
 
@@ -1276,7 +1297,7 @@ export default function Features() {
           onMouseLeave={() => setPaused(false)}
         >
           {/* ── Mobile: horizontal icon-only tabs ── */}
-          <div className="scrollbar-none flex items-center gap-1 overflow-x-auto px-1 py-1 md:hidden mb-2">
+          <div className="scrollbar-none mb-2 flex items-center gap-1 overflow-x-auto px-1 py-1 md:hidden">
             {tabs.map((tab, idx) => {
               const isActive = idx === activeIdx;
               const c = tabColorMap[tab.color];
@@ -1364,7 +1385,7 @@ export default function Features() {
             </div>
 
             {/* Body panel */}
-            <div className="bg-navy-950/50 min-w-0 flex-1 rounded-xl p-6 border border-white/6">
+            <div className="bg-navy-950/50 min-w-0 flex-1 rounded-xl border border-white/6 p-6">
               <div className="mb-4">
                 <h3
                   className={`text-xl font-bold ${tabColorMap[tabs[activeIdx].color].active}`}

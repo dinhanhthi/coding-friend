@@ -66,3 +66,5 @@ website/public/llms.txt
 website/public/llms-full.txt
 
 .understand-anything/
+
+evals/.plugin-state.tmp
