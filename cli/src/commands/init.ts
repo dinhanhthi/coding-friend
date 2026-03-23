@@ -136,7 +136,14 @@ function printSetupStatus(
   missingFolders: number;
 } {
   const docsDir = getDocsDir(globalCfg, localCfg);
-  const subfolders = ["plans", "memory", "research", "learn", "sessions"];
+  const subfolders = [
+    "plans",
+    "memory",
+    "research",
+    "learn",
+    "sessions",
+    "reviews",
+  ];
 
   // ── Folders ──
   const folderStatus = subfolders.map((sub) => ({
@@ -312,6 +319,7 @@ async function stepDocsDir(
       "research",
       "learn",
       "sessions",
+      "reviews",
     ];
     ensureDocsFolders(globalValue, DOCS_SUBFOLDERS);
     return;
@@ -334,7 +342,14 @@ async function stepDocsDir(
     return;
   }
 
-  const DOCS_SUBFOLDERS = ["plans", "memory", "research", "learn", "sessions"];
+  const DOCS_SUBFOLDERS = [
+    "plans",
+    "memory",
+    "research",
+    "learn",
+    "sessions",
+    "reviews",
+  ];
   applyDocsDirChange(value, currentValue, scope, DOCS_SUBFOLDERS);
   writeToScope(scope, { docsDir: value });
 }
@@ -381,6 +396,7 @@ async function stepGitignore(docsDir: string): Promise<void> {
     `${docsDir}/research/`,
     `${docsDir}/learn/`,
     `${docsDir}/sessions/`,
+    `${docsDir}/reviews/`,
     ".coding-friend/",
   ];
 
@@ -1249,6 +1265,6 @@ export async function initCommand(): Promise<void> {
   console.log();
   log.congrats("Setup complete!");
   log.dim(
-    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help",
+    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help",
   );
 }

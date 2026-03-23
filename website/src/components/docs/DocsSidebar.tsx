@@ -107,6 +107,7 @@ export default function DocsSidebar() {
                               tier={item.tier}
                               size="sm"
                               variant="ghost"
+                              showTooltip={false}
                             />
                           )}
                         </Link>

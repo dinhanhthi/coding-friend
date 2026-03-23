@@ -1,0 +1,108 @@
+---
+title: "/cf-review-in"
+description: "Collect external review results and apply fixes."
+keywords:
+  [
+    code review,
+    collect review,
+    import review,
+    external review,
+    cf-review-in,
+    cross-agent,
+  ]
+---
+
+Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
+
+The `/cf-review-in` skill reads review results written by an external AI agent (generated via [`/cf-review-out`](/docs/skills/cf-review-out/)), presents the findings, and offers to fix any issues found.
+
+## Usage
+
+```bash
+/cf-review-in <label>
+```
+
+- **With label** — reads `docs/reviews/results/<label>-result.md`
+- **No arguments** — lists available results and asks which one to collect
+
+## Examples
+
+```bash
+# Collect results for a specific review
+/cf-review-in fix-auth-bypass
+
+# Browse available results
+/cf-review-in
+```
+
+## Workflow
+
+1. **Find results** — Look for `docs/reviews/results/<label>-result.md`
+2. **Parse findings** — Extract Critical/Important/Suggestion issues from the result file
+3. **Present report** — Display findings in the standard review format
+4. **Read original context** — Load the prompt file to understand what was reviewed
+5. **Offer fixes** — If critical or important issues found, offer to fix them using TDD
+6. **Update status** — Mark the prompt as `collected` in its frontmatter
+
+## Output
+
+Findings are presented in the same format as [`/cf-review`](/docs/skills/cf-review/):
+
+```
+## External Review: fix-auth-bypass
+
+> Review by Gemini 2.5 Pro
+
+### Critical Issues
+- Missing input validation at api/handlers.ts:42
+
+### Important Issues
+- Error handling could be more specific at lib/auth.ts:18
+
+### Suggestions
+- Consider extracting shared logic into a utility function
+
+### Summary
+Code is generally well-structured with one input validation gap.
+```
+
+## Result File Format
+
+The external agent should write results matching this format:
+
+```markdown
+---
+label: fix-auth-bypass
+date: 2026-03-23
+type: review-result
+reviewer: Gemini 2.5 Pro
+---
+
+# Review Result: fix-auth-bypass
+
+## Critical Issues
+
+**[Critical] api/handlers.ts:42 — Missing input validation**
+User input is passed directly to database query without sanitization.
+
+## Important Issues
+
+(none)
+
+## Suggestions
+
+**[Suggestion] lib/utils.ts:15 — Extract shared validation**
+The validation pattern is repeated in 3 files.
+
+## Summary
+
+One critical security issue found. Overall code quality is good.
+```
+
+## Part of the Workflow
+
+`/cf-review-out` and `/cf-review-in` form a complete external review pipeline:
+
+```
+implement (TDD) → /cf-review-out → (external agent reviews) → /cf-review-in → fix issues → /cf-commit
+```

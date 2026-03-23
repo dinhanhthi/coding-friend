@@ -23,7 +23,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ### Slash Commands
 
-/cf-ask, /cf-plan, /cf-review, /cf-commit, /cf-ship, /cf-fix, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help
+/cf-ask, /cf-plan, /cf-review, /cf-review-out, /cf-review-in, /cf-commit, /cf-ship, /cf-fix, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-research, /cf-session, /cf-help
 
 ### Auto-Invoked
 
