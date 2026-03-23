@@ -36,14 +36,23 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Hero has its own gradient bg */}
       <Hero />
-      <StatsSection />
+      <div className="bg-navy-950/50">
+        <StatsSection />
+      </div>
       <EcosystemSection />
-      <Features />
+      <div className="bg-navy-950/50">
+        <Features />
+      </div>
       <ComparisonSection />
-      <HowItWorks />
+      <div className="bg-navy-950/50">
+        <HowItWorks />
+      </div>
       <Skills />
-      <Agents />
+      <div className="bg-navy-950/50">
+        <Agents />
+      </div>
       <InstallSection />
     </div>
   );
