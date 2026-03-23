@@ -20,6 +20,8 @@ const slashCommandMeta: Record<string, string> = {
   "cf-help": "Answer questions about Coding Friend",
   "cf-plan": "Brainstorm and plan",
   "cf-review": "Multi-layer code review",
+  "cf-review-out": "Generate review prompt for external AI",
+  "cf-review-in": "Collect external review results",
   "cf-optimize": "Structured optimization",
   "cf-research": "In-depth research",
   "cf-session": "Save/load sessions",
