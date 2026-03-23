@@ -37,10 +37,11 @@ cf permission --all --user
 ## How It Works
 
 1. Asks where to save permissions (project or user scope)
-2. Shows permission categories with configured/total counts
-3. Lets you drill into each category to check/uncheck individual rules
+2. Shows permission categories with progress indicators (e.g., "3/5 ✓")
+3. Lets you drill into each category to check/uncheck individual rules — each rule has a colored tag prefix indicating its type (`[read-only]`, `[modify]`, `[write]`, `[remote]`, `[execute]`, `[network]`)
 4. Computes the diff (rules to add, rules to remove)
 5. Asks for confirmation before writing changes
+6. Automatically cleans up stale old-format per-script rules
 
 ## Scope
 

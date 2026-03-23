@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.14.0 (unpublished)
+
+- Add `/cf-review-out` and `/cf-review-in` skills for cross-agent code review [#9d42044](https://github.com/dinhanhthi/coding-friend/commit/9d42044)
+- Add account info component to statusline with `~/.claude.json` fallback [#fd9ee3d](https://github.com/dinhanhthi/coding-friend/commit/fd9ee3d)
+- Remove org from statusline [#dd77eac](https://github.com/dinhanhthi/coding-friend/commit/dd77eac)
+- Update missing new skills in bootstrap context [#453228f](https://github.com/dinhanhthi/coding-friend/commit/453228f)
+
 ## v0.13.0 (2026-03-21)
 
 - Improve skills and agents with enhanced instructions for evaluation and benchmarking [#bb1352b](https://github.com/dinhanhthi/coding-friend/commit/bb1352b)
