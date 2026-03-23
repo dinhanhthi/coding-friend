@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.14.0 (unpublished)
+## v0.14.0 (2026-03-23)
 
 - Add `/cf-review-out` and `/cf-review-in` skills for cross-agent code review [#9d42044](https://github.com/dinhanhthi/coding-friend/commit/9d42044)
 - Add account info component to statusline with `~/.claude.json` fallback [#fd9ee3d](https://github.com/dinhanhthi/coding-friend/commit/fd9ee3d)
