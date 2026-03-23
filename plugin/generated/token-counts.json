@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T12:06:38.086Z",
+  "generatedAt": "2026-03-23T07:31:40.336Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,7 +18,7 @@
     }
   },
   "bootstrap": {
-    "tokens": 1378,
+    "tokens": 1392,
     "tier": "medium"
   },
   "skills": {
@@ -68,13 +68,23 @@
       "type": "slash"
     },
     "cf-research": {
-      "tokens": 1549,
+      "tokens": 1884,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review": {
       "tokens": 1758,
       "tier": "medium",
+      "type": "slash"
+    },
+    "cf-review-in": {
+      "tokens": 1085,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-review-out": {
+      "tokens": 983,
+      "tier": "low",
       "type": "slash"
     },
     "cf-scan": {

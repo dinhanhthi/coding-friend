@@ -156,6 +156,22 @@ const ResearchIcon = () => (
   </svg>
 );
 
+const CrossAgentIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.5}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+    />
+  </svg>
+);
+
 /* ────────────────────────────────────────────────────────────
    STATUSLINE CONTENT
    ──────────────────────────────────────────────────────────── */
@@ -1221,6 +1237,139 @@ function BorderProgressOverlay({
 }
 
 /* ────────────────────────────────────────────────────────────
+   CROSS-AGENT REVIEW CONTENT
+   ──────────────────────────────────────────────────────────── */
+
+function CrossAgentContent() {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-base leading-relaxed text-slate-400">
+        Get a second opinion on your code from a completely different AI model.{" "}
+        <Link
+          className="text-teal-400 hover:underline hover:underline-offset-3"
+          href="/docs/skills/cf-review-out/"
+        >
+          /cf-review-out
+        </Link>{" "}
+        generates a complete review prompt that any AI agent — Gemini, Codex,
+        ChatGPT, or a human — can use to independently review your code. Collect
+        results with{" "}
+        <Link
+          className="text-teal-400 hover:underline hover:underline-offset-3"
+          href="/docs/skills/cf-review-in/"
+        >
+          /cf-review-in
+        </Link>
+        .
+      </p>
+
+      {/* Flow diagram */}
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-center gap-3 sm:gap-4">
+        {[
+          {
+            label: "/cf-review-out",
+            icon: "M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z",
+            color: "text-violet-400",
+            border: "border-violet-500/30",
+          },
+          {
+            label: "Any AI agent",
+            icon: "M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5",
+            color: "text-teal-400",
+            border: "border-teal-500/30",
+          },
+          {
+            label: "Writes result",
+            icon: "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10",
+            color: "text-amber-400",
+            border: "border-amber-500/30",
+          },
+          {
+            label: "/cf-review-in",
+            icon: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+            color: "text-emerald-400",
+            border: "border-emerald-500/30",
+          },
+        ].map((step, i) => (
+          <div key={step.label} className="flex items-center gap-3 sm:gap-4">
+            <div
+              className={`flex flex-col items-center gap-2 rounded-xl border ${step.border} bg-navy-950/60 p-3 sm:p-4`}
+            >
+              <svg
+                className={`h-6 w-6 ${step.color}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d={step.icon}
+                />
+              </svg>
+              <span className="hidden text-center text-xs text-slate-400 sm:block">
+                {step.label}
+              </span>
+            </div>
+            {i < 3 && <span className="text-slate-600">&rarr;</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Supported agents */}
+      <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          {
+            name: "Gemini CLI",
+            desc: "Google\u2019s Gemini models via CLI. Uses your configured default model.",
+            install: "npm i -g @google/gemini-cli",
+            color: "text-blue-400",
+            border: "border-blue-500/20",
+          },
+          {
+            name: "Codex CLI",
+            desc: "OpenAI\u2019s Codex models via CLI. Uses your configured default model.",
+            install: "npm i -g @openai/codex",
+            color: "text-green-400",
+            border: "border-green-500/20",
+          },
+        ].map((agent) => (
+          <div
+            key={agent.name}
+            className={`rounded-xl border ${agent.border} bg-navy-950/60 p-4`}
+          >
+            <p className={`text-base font-semibold ${agent.color}`}>
+              {agent.name}
+            </p>
+            <p className="mt-1 text-sm text-slate-400">{agent.desc}</p>
+            <code className="mt-2 block rounded bg-slate-800/60 px-2 py-1 text-xs text-slate-300">
+              {agent.install}
+            </code>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        {[
+          "Any AI agent",
+          "File-based, no coupling",
+          "Second opinion",
+          "Async by design",
+        ].map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-sm text-teal-300"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
    TABS CONFIG
    ──────────────────────────────────────────────────────────── */
 
@@ -1266,6 +1415,13 @@ const tabs: FeatureTab[] = [
     color: "rose",
     icon: <SecurityIcon />,
     content: <SecurityContent />,
+  },
+  {
+    id: "cross-agent",
+    label: "Cross-Agent Review",
+    color: "teal",
+    icon: <CrossAgentIcon />,
+    content: <CrossAgentContent />,
   },
   {
     id: "custom-skills",
@@ -1325,6 +1481,11 @@ const tabColorMap: Record<
     active: "text-orange-300",
     inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
     bar: "bg-orange-400",
+  },
+  teal: {
+    active: "text-teal-300",
+    inactive: "text-slate-500 hover:text-slate-300 hover:border-slate-600",
+    bar: "bg-teal-400",
   },
 };
 
