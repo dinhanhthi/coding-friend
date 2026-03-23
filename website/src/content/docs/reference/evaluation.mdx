@@ -10,18 +10,17 @@ We evaluate Coding Friend's impact by running identical tasks on standardized be
 
 ## What We Test
 
-### Skills (17 total)
+### Skills (11 total)
 
-**Wave 1 — Core Workflow** (5 skills):
+**Wave 1 — Core Workflow** (4 skills):
 
-- `/cf-commit` — Commit message quality (format, scope accuracy, message clarity)
 - `/cf-review` — Code review depth (issue detection, actionability, false positive rate)
 - `/cf-fix` — Bug fix quality (root cause identification, test coverage, no regressions)
 - `/cf-plan` — Plan quality (completeness, task granularity, risk identification)
 - `cf-tdd` — TDD compliance (RED before GREEN, test quality, refactor step)
 
-**Wave 2 — Supporting Skills** (12 skills):
-`/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `/cf-remember`, `/cf-ship`, `/cf-session`, `/cf-help`, `cf-sys-debug`, `cf-verification`, `cf-auto-review`
+**Wave 2 — Supporting Skills** (7 skills):
+`/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `cf-sys-debug`, `cf-auto-review`
 
 ### Agents (6 total)
 
@@ -36,9 +35,9 @@ We evaluate Coding Friend's impact by running identical tasks on standardized be
 | Repo           | Type            | Scenarios                                                |
 | -------------- | --------------- | -------------------------------------------------------- |
 | bench-webapp   | Next.js app     | API bug fix, feature planning, code review, optimization |
-| bench-cli      | CLI tool        | Debugging, refactoring, committing                       |
+| bench-cli      | CLI tool        | Debugging, refactoring, TDD                              |
 | bench-library  | Utility library | TDD, scanning, knowledge extraction                      |
-| bench-research | Empty project   | Research, Q&A, session management                        |
+| bench-research | Empty project   | Research, Q&A                                            |
 
 ### A/B Test Design
 
@@ -65,7 +64,7 @@ Each skill has a rubric with weighted criteria scored on a 0-3 scale:
 
 Scoring combines:
 
-- **Automated checks**: Regex patterns (commit format), file existence (plan created), structure validation (review sections present)
+- **Automated checks**: Regex patterns (review structure), file existence (plan created), structure validation (severity sections present)
 - **Manual review**: Quality assessment by human scorer for subjective criteria (message clarity, approach feasibility)
 
 ### Metrics Reported
@@ -92,9 +91,8 @@ We are transparent about what this evaluation does and does not show:
 Based on our evaluation, Coding Friend's largest quality improvements are in:
 
 1. **Workflow discipline**: TDD enforcement, verification gates, and structured review produce consistent, high-quality outputs
-2. **Commit quality**: Conventional commit format with semantic analysis significantly outperforms ad-hoc commit messages
-3. **Code review depth**: The two-pass review (quick scan + deep 4-layer) catches more issues with fewer false positives
-4. **Knowledge capture**: `/cf-learn` and `/cf-remember` preserve insights that baseline Claude Code discards at session end
+2. **Code review depth**: The two-pass review (quick scan + deep 4-layer) catches more issues with fewer false positives
+3. **Knowledge capture**: `/cf-learn` preserves insights that baseline Claude Code discards at session end
 
 ## Where Baseline Claude Code Already Excels
 
@@ -110,9 +108,9 @@ For these tasks, CF adds structure overhead without proportional quality improve
 The evaluation framework is open source and included in the Coding Friend repository:
 
 - **Eval runner**: `evals/run-eval.sh`, `evals/run-wave.sh`
-- **Rubrics**: `evals/rubrics/*.json` (23 files)
+- **Rubrics**: `evals/rubrics/*.json`
 - **Benchmarks**: `evals/benchmarks/` (4 repos)
-- **Prompts**: `evals/prompts/` (25 prompt files)
+- **Prompts**: `evals/prompts/`
 
 Run it yourself: `cd evals && ./run-wave.sh --wave 1 --runs 1 --model opus`
 

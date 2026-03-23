@@ -86,19 +86,19 @@ test_waves_json_has_wave2() {
 test_waves_json_wave1_has_skills() {
   local count
   count=$(jq '.wave1.skills | keys | length' "$EVALS_DIR/waves.json" 2>/dev/null)
-  assert_eq "5" "$count" "wave1 should have 5 skills"
+  assert_eq "4" "$count" "wave1 should have 4 skills"
 }
 
 test_waves_json_wave2_has_skills() {
   local count
   count=$(jq '.wave2.skills | keys | length' "$EVALS_DIR/waves.json" 2>/dev/null)
-  assert_eq "12" "$count" "wave2 should have 12 skills"
+  assert_eq "7" "$count" "wave2 should have 7 skills"
 }
 
 test_waves_json_skill_has_repos() {
   local count
-  count=$(jq '.wave1.skills["cf-commit"].repos | length' "$EVALS_DIR/waves.json" 2>/dev/null)
-  assert_eq "3" "$count" "cf-commit should have 3 repos"
+  count=$(jq '.wave1.skills["cf-review"].repos | length' "$EVALS_DIR/waves.json" 2>/dev/null)
+  assert_eq "2" "$count" "cf-review should have 2 repos"
 }
 
 # ============================================================
@@ -191,10 +191,10 @@ test_run_eval_output_path_structure() {
   output=$("$EVALS_DIR/run-eval.sh" \
     --prompt /dev/null \
     --condition with-cf \
-    --skill cf-commit \
+    --skill cf-review \
     --repo /tmp \
     --dry-run 2>&1) || true
-  assert_contains "$output" "results/cf-commit/with-cf/"
+  assert_contains "$output" "results/cf-review/with-cf/"
 }
 
 test_run_eval_budget_flag() {
@@ -232,7 +232,7 @@ test_run_wave_help() {
 test_run_wave_dry_run_wave1() {
   local output
   output=$("$EVALS_DIR/run-wave.sh" --wave 1 --dry-run 2>&1) || true
-  assert_contains "$output" "cf-commit" || return 1
+  assert_contains "$output" "cf-review" || return 1
   assert_contains "$output" "with-cf" || return 1
   assert_contains "$output" "without-cf" || return 1
 }
@@ -245,15 +245,15 @@ test_run_wave_dry_run_shows_count() {
 
 test_run_wave_skill_filter() {
   local output
-  output=$("$EVALS_DIR/run-wave.sh" --wave 1 --skill cf-commit --dry-run 2>&1) || true
-  assert_contains "$output" "cf-commit" || return 1
-  assert_not_contains "$output" "cf-review" "skill filter should exclude cf-review" || return 1
+  output=$("$EVALS_DIR/run-wave.sh" --wave 1 --skill cf-review --dry-run 2>&1) || true
+  assert_contains "$output" "cf-review" || return 1
+  assert_not_contains "$output" "cf-fix" "skill filter should exclude cf-fix" || return 1
 }
 
 test_run_wave_all() {
   local output
   output=$("$EVALS_DIR/run-wave.sh" --wave all --dry-run 2>&1) || true
-  assert_contains "$output" "cf-commit" || return 1
+  assert_contains "$output" "cf-review" || return 1
   assert_contains "$output" "cf-optimize" || return 1
 }
 
@@ -276,27 +276,27 @@ test_score_help() {
   assert_contains "$output" "--wave" || return 1
 }
 
-test_score_rubric_exists_cf_commit() {
-  assert_file_exists "$EVALS_DIR/rubrics/cf-commit.json"
+test_score_rubric_exists_cf_review() {
+  assert_file_exists "$EVALS_DIR/rubrics/cf-review.json"
 }
 
-test_score_rubric_valid_cf_commit() {
-  jq empty "$EVALS_DIR/rubrics/cf-commit.json" 2>/dev/null
+test_score_rubric_valid_cf_review() {
+  jq empty "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null
 }
 
 test_score_rubric_has_criteria() {
   local count
-  count=$(jq '.criteria | length' "$EVALS_DIR/rubrics/cf-commit.json" 2>/dev/null)
-  [[ "$count" -gt 0 ]] || { echo "    cf-commit rubric should have at least 1 criterion"; return 1; }
+  count=$(jq '.criteria | length' "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null)
+  [[ "$count" -gt 0 ]] || { echo "    cf-review rubric should have at least 1 criterion"; return 1; }
 }
 
 test_score_with_fixture() {
   # Create a fixture result to score
-  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-commit/with-cf"
+  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-review/with-cf"
   mkdir -p "$fixture_dir"
   cat > "$fixture_dir/test-fixture.json" <<'FIXTURE'
 {
-  "result": "feat(auth): add OAuth2 login flow\n\nImplement Google OAuth2 authentication with session management.",
+  "result": "## Code Review\n\n### Critical\n- **api.ts:42** fetchUser missing error handling\n\n### Important\n- **cache.ts:15** Memory leak in cache module",
   "cost_usd": 0.05,
   "duration_ms": 12000,
   "num_turns": 3
@@ -304,12 +304,12 @@ test_score_with_fixture() {
 FIXTURE
 
   local output exit_code=0
-  output=$("$EVALS_DIR/score.sh" --skill cf-commit --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || exit_code=$?
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || exit_code=$?
 
   # Clean up
   rm -rf "$EVALS_DIR/tests/fixtures"
 
-  assert_contains "$output" "cf-commit" || return 1
+  assert_contains "$output" "cf-review" || return 1
 }
 
 # ============================================================
@@ -367,8 +367,8 @@ main() {
   run_test test_score_exists
   run_test test_score_executable
   run_test test_score_help
-  run_test test_score_rubric_exists_cf_commit
-  run_test test_score_rubric_valid_cf_commit
+  run_test test_score_rubric_exists_cf_review
+  run_test test_score_rubric_valid_cf_review
   run_test test_score_rubric_has_criteria
   run_test test_score_with_fixture
 
