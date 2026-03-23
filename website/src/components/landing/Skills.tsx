@@ -53,8 +53,7 @@ const slashCommands: Skill[] = [
   {
     command: "/cf-review-in",
     title: "Review In",
-    description:
-      "Collect and act on review results from an external AI agent",
+    description: "Collect and act on review results from an external AI agent",
     tier: "medium",
   },
   {

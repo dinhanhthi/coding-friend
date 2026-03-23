@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 # run-wave.sh — Run a wave of evals across skills, repos, and conditions
+#
+# Middle-level script: runs all skill×repo×condition combinations for a single
+# wave with a single model. Use run-full-eval.sh to orchestrate across multiple
+# models and waves automatically.
+#
+# Usage:
+#   ./run-wave.sh --wave <1|2|3|security|all> [--runs N] [--model MODEL] [--skill NAME] [--dry-run]
 
 set -euo pipefail
 
@@ -54,10 +61,11 @@ done
 
 # Determine which wave keys to process
 case "$WAVE" in
-  1)   WAVE_KEYS=("wave1") ;;
-  2)   WAVE_KEYS=("wave2") ;;
-  all) WAVE_KEYS=("wave1" "wave2") ;;
-  *)   die "Invalid wave: $WAVE (must be 1, 2, or all)" ;;
+  1)        WAVE_KEYS=("wave1") ;;
+  2)        WAVE_KEYS=("wave2") ;;
+  3|security) WAVE_KEYS=("wave3") ;;
+  all)      WAVE_KEYS=("wave1" "wave2" "wave3") ;;
+  *)        die "Invalid wave: $WAVE (must be 1, 2, 3, security, or all)" ;;
 esac
 
 # Collect all run combinations

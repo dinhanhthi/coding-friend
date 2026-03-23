@@ -56,10 +56,11 @@ if [[ -n "$SKILL" ]]; then
   SKILLS_TO_SCORE+=("$SKILL")
 elif [[ -n "$WAVE" ]]; then
   case "$WAVE" in
-    1)   WAVE_KEYS=("wave1") ;;
-    2)   WAVE_KEYS=("wave2") ;;
-    all) WAVE_KEYS=("wave1" "wave2") ;;
-    *)   die "Invalid wave: $WAVE" ;;
+    1)        WAVE_KEYS=("wave1") ;;
+    2)        WAVE_KEYS=("wave2") ;;
+    3|security) WAVE_KEYS=("wave3") ;;
+    all)      WAVE_KEYS=("wave1" "wave2" "wave3") ;;
+    *)        die "Invalid wave: $WAVE" ;;
   esac
   for wave_key in "${WAVE_KEYS[@]}"; do
     while IFS= read -r s; do
