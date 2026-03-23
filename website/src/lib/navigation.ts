@@ -29,6 +29,18 @@ export const docsNavigation: NavSection[] = [
       },
       { title: "/cf-review", slug: "skills/cf-review", tier: "medium" },
       {
+        title: "/cf-review-out",
+        slug: "skills/cf-review-out",
+        manualOnly: true,
+        tier: "medium",
+      },
+      {
+        title: "/cf-review-in",
+        slug: "skills/cf-review-in",
+        manualOnly: true,
+        tier: "medium",
+      },
+      {
         title: "/cf-commit",
         slug: "skills/cf-commit",
         manualOnly: true,
