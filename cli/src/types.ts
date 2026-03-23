@@ -16,6 +16,7 @@ export type StatuslineComponent =
   | "folder"
   | "model"
   | "branch"
+  | "account"
   | "context"
   | "rate_limit";
 
@@ -31,6 +32,10 @@ export const STATUSLINE_COMPONENTS: {
   { id: "folder", label: "Project name (MyProject)" },
   { id: "model", label: "Active model (Opus 4.6)" },
   { id: "branch", label: "Git branch (⎇ main)" },
+  {
+    id: "account",
+    label: "Account info — name, email & org (from ~/.claude.json)",
+  },
   { id: "context", label: "Context window usage (ctx 42%)" },
   {
     id: "rate_limit",
