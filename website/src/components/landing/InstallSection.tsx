@@ -26,7 +26,7 @@ export default function InstallSection() {
   const installCmd = `${manager.install} ${PKG}`;
 
   return (
-    <section id="install" className="py-20">
+    <section id="install" className="py-10 md:py-16 lg:py-20">
       <Container>
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold tracking-[-0.02em] text-balance text-white">
@@ -35,7 +35,10 @@ export default function InstallSection() {
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
             Install once, use in every project. Supports user, project, and
             local scopes. More details in the{" "}
-            <Link href="/docs/cli/cf-install/" className="text-violet-400">
+            <Link
+              href="/docs/cli/cf-install/"
+              className="text-violet-400 hover:underline hover:underline-offset-4"
+            >
               documentation
             </Link>
             .

@@ -31,7 +31,7 @@ export default function Home() {
   };
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -45,6 +45,6 @@ export default function Home() {
       <Skills />
       <Agents />
       <InstallSection />
-    </>
+    </div>
   );
 }

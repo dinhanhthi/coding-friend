@@ -371,7 +371,7 @@ export default function HowItWorks() {
   /* ────── DESKTOP ────── */
   if (isDesktop) {
     return (
-      <section id="how-it-works" className="py-20" ref={sectionRef}>
+      <section id="how-it-works" className="py-10 md:py-16 lg:py-20" ref={sectionRef}>
         <Container>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
@@ -988,7 +988,7 @@ export default function HowItWorks() {
 
   /* ────── MOBILE ────── */
   return (
-    <section id="how-it-works" className="py-20" ref={sectionRef}>
+    <section id="how-it-works" className="py-10 md:py-16 lg:py-20" ref={sectionRef}>
       <Container>
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
