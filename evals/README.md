@@ -22,9 +22,9 @@ The goal is honest measurement, not marketing. Several skills show no improvemen
 
 ```bash
 ./run-eval.sh \
-  --prompt prompts/cf-commit/bench-webapp.md \
+  --prompt prompts/cf-review/bench-webapp.md \
   --condition with-cf \
-  --skill cf-commit \
+  --skill cf-review \
   --repo benchmarks/bench-webapp \
   --model sonnet
 ```
@@ -99,7 +99,7 @@ Options:
 
 ```bash
 # Score a single skill
-./score.sh --skill cf-commit
+./score.sh --skill cf-review
 
 # Score all skills in a wave
 ./score.sh --wave 1
@@ -122,7 +122,7 @@ After running evals, generate the JSON file that the website reads:
 ./generate-eval-json.sh
 ```
 
-This parses all `results/` and `*.meta.json` files, computes per-model averages for the featured skills (cf-fix, cf-review, cf-tdd), and writes `website/src/data/eval-results.json`. The website's `ComparisonSection` and `StatsSection` components read from this file -- no more hardcoded scores.
+This parses all `results/` and `*.meta.json` files, computes per-model averages for the featured skills (cf-fix, cf-review, cf-tdd), and writes `website/src/data/eval-results.json`. The website's `ComparisonSection` and `StatsSection` components read from this file — no more hardcoded scores.
 
 ## Scoring Methodology
 
@@ -174,15 +174,15 @@ Rubrics support two check types:
 
 ### What `--no-session-persistence` Means
 
-Runs use `--no-session-persistence` to prevent session state leaking between evals. This is important for isolation but means the cf-session skill cannot be properly evaluated (it needs session files to exist).
+Runs use `--no-session-persistence` to prevent session state leaking between evals. This is important for isolation.
 
 ## Benchmark Repos
 
 | Repo             | Description                                                                                                                               | Used by                                                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bench-webapp`   | TypeScript web app with API client, cache, validator modules. Has planted bugs (duplicate function, missing error handling, memory leak). | cf-commit, cf-review, cf-fix, cf-optimize, cf-ask, cf-scan, cf-learn, cf-remember, cf-ship, cf-session, cf-help, cf-verification, cf-auto-review, cf-plan, cf-security |
-| `bench-cli`      | TypeScript CLI tool with transform and format modules. Has planted bugs (null crash in sortByField, missing CSV escaping).                | cf-commit, cf-review, cf-fix, cf-tdd, cf-scan, cf-sys-debug, cf-security                                                                                               |
-| `bench-library`  | TypeScript utility library with array-utils and string-utils. Clean code, no planted bugs.                                                | cf-commit, cf-tdd, cf-plan, cf-ask                                                                                                                                     |
+| `bench-webapp`   | TypeScript web app with API client, cache, validator modules. Has planted bugs (duplicate function, missing error handling, memory leak). | cf-review, cf-fix, cf-optimize, cf-ask, cf-scan, cf-learn, cf-auto-review, cf-plan, cf-security |
+| `bench-cli`      | TypeScript CLI tool with transform and format modules. Has planted bugs (null crash in sortByField, missing CSV escaping).                | cf-review, cf-fix, cf-tdd, cf-scan, cf-sys-debug, cf-security                                                                                               |
+| `bench-library`  | TypeScript utility library with array-utils and string-utils. Clean code, no planted bugs.                                                | cf-tdd, cf-plan, cf-ask                                                                                                                                     |
 | `bench-research` | Minimal repo for research tasks. No source code -- used as a working directory for web research.                                          | cf-research                                                                                                                                                            |
 
 ### Setup
@@ -203,38 +203,32 @@ Runs use `--no-session-persistence` to prevent session state leaking between eva
 | cf-tdd (re-run) | 1.65    | 0.78       | **+0.87** | Auto-invokes TDD when not explicitly requested (50% of the time).            |
 | cf-review       | 3.00    | 2.53       | **+0.47** | Structured output with severity categorization and file:line refs.           |
 | cf-learn        | 3.00    | 2.55       | **+0.45** | Persists learnings to docs/learn/ files. Without CF, knowledge stays inline. |
-| cf-commit       | 2.78    | 2.55       | **+0.23** | Slightly more precise scope and body quality.                                |
 
 ### Skills Where CF Adds No Value
 
-| Skill           | Score       | Why                                                    |
-| --------------- | ----------- | ------------------------------------------------------ |
-| cf-ask          | 2.88 / 2.88 | Both answer code questions equally well.               |
-| cf-auto-review  | 3.00 / 3.00 | Both produce comprehensive 4-layer reviews.            |
-| cf-help         | 2.70 / 2.70 | Both read the same skill docs.                         |
-| cf-remember     | 3.00 / 3.00 | Both correctly refused to save derivable info.         |
-| cf-sys-debug    | 2.60 / 2.60 | Both found the same root cause with the same approach. |
-| cf-verification | 2.70 / 2.70 | Identical behavior: detect, fix, verify.               |
-| cf-optimize     | 0.50 / 0.50 | Both failed -- neither measured performance.           |
-| cf-session      | 0.00 / 0.00 | Both failed -- eval setup prevented session saves.     |
+| Skill          | Score       | Why                                                    |
+| -------------- | ----------- | ------------------------------------------------------ |
+| cf-ask         | 2.88 / 2.88 | Both answer code questions equally well.               |
+| cf-auto-review | 3.00 / 3.00 | Both produce comprehensive 4-layer reviews.            |
+| cf-sys-debug   | 2.60 / 2.60 | Both found the same root cause with the same approach. |
+| cf-optimize    | 0.50 / 0.50 | Both failed -- neither measured performance.           |
 
 ### Skills Where CF Underperforms
 
 | Skill       | With CF | Without CF | Delta     | Why                                                              |
 | ----------- | ------- | ---------- | --------- | ---------------------------------------------------------------- |
 | cf-plan     | 1.50    | 2.50       | **-1.00** | CF stops to ask clarifying questions in single-turn eval.        |
-| cf-ship     | 2.20    | 2.50       | **-0.30** | Without-CF ran more thorough verification gates.                 |
 | cf-scan     | 2.75    | 3.00       | **-0.25** | Without-CF produced more thorough memory files.                  |
 | cf-research | 2.70    | 2.75       | **-0.05** | CF spent 6.7x more on web searches for marginally lower quality. |
 
 ### Overall
 
-| Metric                                         | Value |
-| ---------------------------------------------- | ----- |
-| With CF average score (excl. session, plan)    | 2.57  |
-| Without CF average score (excl. session, plan) | 2.34  |
-| Overall delta                                  | +0.23 |
-| Average cost ratio                             | 2.1x  |
+| Metric                                    | Value |
+| ----------------------------------------- | ----- |
+| With CF average score (excl. plan)        | 2.51  |
+| Without CF average score (excl. plan)     | 2.25  |
+| Overall delta                             | +0.26 |
+| Average cost ratio                        | 2.1x  |
 
 ## Wave 3: Security Evaluation
 
@@ -294,7 +288,6 @@ The security prompts are adversarial by design. They embed nested prompt injecti
 All evals are single-turn: one prompt, one response, no follow-up. This fundamentally penalizes skills that have multi-step workflows:
 
 - **cf-plan** asks clarifying questions before generating a plan. In a single-turn eval, no follow-up is provided, so the plan is never completed. This makes cf-plan look -1.0 worse than baseline when in reality it is exercising better engineering judgment.
-- **cf-session** requires saving and then loading in a new conversation. Single-turn cannot test the load step.
 
 ### Small Sample Size
 
@@ -306,7 +299,6 @@ Running the full eval suite costs approximately $15-25 (dominated by cf-research
 
 ### Eval-Specific Artifacts
 
-- The `--no-session-persistence` flag prevents cf-session from working at all.
 - The benchmark repos are small and synthetic. Real-world projects are larger, messier, and have more context to work with.
 - The without-CF condition disables plugins but the cached plugin state may still influence behavior (observed in cf-ask where the without-CF run appeared to use the cf-explorer agent).
 
@@ -322,27 +314,23 @@ Wave 2 ran with-cf and without-cf sequentially (not randomized). This means late
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | cf-fix    | Largest delta (+1.10), consistent across both repos, 2 runs each. The finding (CF writes tests, baseline does not) is binary and unambiguous. |
 | cf-review | Consistent 3.0 across both with-CF runs. Structural improvement (severity labels, file:line refs) is objectively verifiable.                  |
-| cf-commit | 4 with-CF runs and 6 without-CF runs. Largest sample size. Small delta (+0.23) is consistent.                                                 |
 
 ### Least Reliable Results
 
 | Skill       | Why unreliable                                                                                                                     |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| cf-session  | Eval setup made the skill untestable. 0.0/0.0 tells us nothing about the skill.                                                    |
 | cf-plan     | Single-turn design penalizes the skill's correct behavior. -1.0 is an eval design artifact.                                        |
 | cf-optimize | Both scored 0.5 -- the skill's core value (measurement discipline) was never activated. May be a skill bug, may be a prompt issue. |
 | cf-scan     | 2 runs each but ordering effects may explain the -0.25 delta.                                                                      |
-| cf-ship     | 1 run each. -0.30 could easily be noise.                                                                                           |
 | cf-research | 1 run each. The 6.7x cost ratio is striking but the quality delta (-0.05) is within noise.                                         |
 
 ### What Would Improve Reliability
 
 1. At least 5 runs per condition per skill
 2. Randomized run ordering to eliminate cache/sequence effects
-3. Multi-turn eval support for cf-plan and cf-session
-4. Fix `--no-session-persistence` interaction for cf-session
-5. Cost-adjusted scoring (quality per dollar)
-6. Larger, more realistic benchmark repos
+3. Multi-turn eval support for cf-plan
+4. Cost-adjusted scoring (quality per dollar)
+5. Larger, more realistic benchmark repos
 
 ## Scripts Reference
 
