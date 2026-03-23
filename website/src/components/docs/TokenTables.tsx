@@ -330,10 +330,7 @@ export function OverviewSlashCommandsTable() {
 
   const slashSkills = Object.entries(skills)
     .filter(([, v]) => v.type === "slash")
-    .sort(([a], [b]) => {
-      const order = Object.keys(overviewSlashMeta);
-      return order.indexOf(a) - order.indexOf(b);
-    });
+    .sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <table>
@@ -372,10 +369,7 @@ export function OverviewAutoSkillsTable() {
 
   const autoSkills = Object.entries(skills)
     .filter(([, v]) => v.type === "auto")
-    .sort(([a], [b]) => {
-      const order = Object.keys(overviewAutoMeta);
-      return order.indexOf(a) - order.indexOf(b);
-    });
+    .sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <table>
@@ -416,9 +410,8 @@ export function AgentRefTable() {
   const data = getAllTokenData();
   const agents = data.agents as Record<string, AgentTokenEntry>;
 
-  const order = Object.keys(agentRefMeta);
-  const sortedAgents = Object.entries(agents).sort(
-    ([a], [b]) => order.indexOf(a) - order.indexOf(b),
+  const sortedAgents = Object.entries(agents).sort(([a], [b]) =>
+    a.localeCompare(b),
   );
 
   return (
