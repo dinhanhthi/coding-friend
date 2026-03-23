@@ -8,7 +8,7 @@ const stats = [
 
 export default function StatsSection() {
   return (
-    <section className="bg-navy-950/50 border-b border-[#a0a0a01c]">
+    <section className="border-b border-[#a0a0a01c]">
       <Container className="py-8">
         <div className="flex flex-row items-center justify-between gap-8 px-4 text-center sm:gap-16 md:justify-center md:gap-24 lg:gap-32">
           {stats.map((stat) => (

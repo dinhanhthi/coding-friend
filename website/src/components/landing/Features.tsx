@@ -1253,7 +1253,7 @@ export default function Features() {
   }, [paused, activeIdx]);
 
   return (
-    <section id="features" className="bg-navy-950/30 py-10 md:py-16 lg:py-20">
+    <section id="features" className="py-10 md:py-16 lg:py-20">
       <Container>
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">

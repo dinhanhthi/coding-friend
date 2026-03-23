@@ -703,7 +703,7 @@ export default function ComparisonSection() {
   }, [paused, activeIdx]);
 
   return (
-    <section className="bg-navy-950/30 border-b border-[#a0a0a01c] py-16">
+    <section className="border-b border-[#a0a0a01c] py-16">
       <Container>
         <div className="mb-10 text-center">
           <h2 className="text-3xl font-bold text-white">
