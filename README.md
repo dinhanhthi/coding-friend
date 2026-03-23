@@ -39,7 +39,7 @@
 - ✨ Customizable Claude Code statusline with account info & API rate limit tracking
   ```
   cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
-  👤 Thi Dinh (anhthi.dinh@septeo.com) | 🏢 anhthi.dinh@septeo.com's Organization
+  👤 Thi Dinh (me@dinhanhthi.com)
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   ```
 

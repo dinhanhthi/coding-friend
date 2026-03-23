@@ -232,17 +232,15 @@ fi
 # Priority: 1) ~/.claude.json (fast local read)  2) claude auth status --json (subprocess fallback)
 acct_email=""
 acct_name=""
-acct_org=""
 if component_enabled "account" && command -v jq &>/dev/null; then
   # Source 1: ~/.claude.json (fast local read, no network call)
   CLAUDE_JSON="$HOME/.claude.json"
   if [ -f "$CLAUDE_JSON" ]; then
     # Extract all fields in a single jq call
-    acct_fields=$(jq -r '.oauthAccount | "\(.emailAddress // "")\t\(.displayName // "")\t\(.organizationName // "")"' "$CLAUDE_JSON" 2>/dev/null)
+    acct_fields=$(jq -r '.oauthAccount | "\(.emailAddress // "")\t\(.displayName // "")"' "$CLAUDE_JSON" 2>/dev/null)
     if [ -n "$acct_fields" ]; then
       acct_email=$(echo "$acct_fields" | cut -f1)
       acct_name=$(echo "$acct_fields" | cut -f2)
-      acct_org=$(echo "$acct_fields" | cut -f3)
     fi
   fi
 
@@ -250,12 +248,7 @@ if component_enabled "account" && command -v jq &>/dev/null; then
   if [ -z "$acct_email" ] && command -v claude &>/dev/null; then
     auth_data=$(timeout 3 claude auth status --json 2>/dev/null) || true
     if [ -n "$auth_data" ] && echo "$auth_data" | jq -e '.loggedIn == true' >/dev/null 2>&1; then
-      # Extract email and org in a single jq call
-      auth_fields=$(echo "$auth_data" | jq -r '"\(.email // "")\t\(.orgName // "")"' 2>/dev/null)
-      if [ -n "$auth_fields" ]; then
-        acct_email=$(echo "$auth_fields" | cut -f1)
-        [ -z "$acct_org" ] && acct_org=$(echo "$auth_fields" | cut -f2)
-      fi
+      acct_email=$(echo "$auth_data" | jq -r '.email // ""' 2>/dev/null)
     fi
   fi
 fi
@@ -269,14 +262,6 @@ if component_enabled "account"; then
     [ -n "$acct_email" ] && acct_parts+=" ${GRAY}(${acct_email})${RESET}"
   elif [ -n "$acct_email" ]; then
     acct_parts="${CYAN}${acct_email}${RESET}"
-  fi
-
-  if [ -n "$acct_org" ]; then
-    if [ -n "$acct_parts" ]; then
-      acct_parts+="${separator}${BLUE}🏢 ${acct_org}${RESET}"
-    else
-      acct_parts="${BLUE}🏢 ${acct_org}${RESET}"
-    fi
   fi
 
   [ -n "$acct_parts" ] && account_line="👤 ${acct_parts}"
