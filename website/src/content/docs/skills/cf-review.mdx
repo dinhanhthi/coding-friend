@@ -91,18 +91,18 @@ Findings are organized by severity:
 ```
 ## Code Review: src/auth/ (DEEP mode)
 
-### Critical Issues
+### 🚨 Critical Issues
 - Unsanitized SQL in query builder at db/queries.ts:42
   [Injection] (confidence: 0.95) — attacker can bypass auth via crafted email field
   → Use parameterized queries instead of string interpolation
 
-### Important Issues
+### ⚠️ Important Issues
 - Missing rate limit on login endpoint at api/auth.ts:18
 
-### Suggestions
+### 💡 Suggestions
 - Consider extracting validation logic into shared util
 
-### Summary
+### 📋 Summary
 Auth module is functional but has one critical SQL injection vulnerability.
 ```
 

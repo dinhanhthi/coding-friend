@@ -44,6 +44,20 @@ const slashCommands: Skill[] = [
     tier: "medium",
   },
   {
+    command: "/cf-review-out",
+    title: "Review Out",
+    description:
+      "Generate a review prompt for an external AI agent (Gemini, Codex, etc.)",
+    tier: "low",
+  },
+  {
+    command: "/cf-review-in",
+    title: "Review In",
+    description:
+      "Collect and act on review results from an external AI agent",
+    tier: "medium",
+  },
+  {
     command: "/cf-commit",
     title: "Commit",
     description: "Smart conventional commits with diff analysis",
