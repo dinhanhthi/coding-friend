@@ -10,14 +10,14 @@ Hooks are lifecycle functions that execute automatically at specific points in y
 
 ## Hook Reference
 
-| Hook                 | Trigger          | Purpose                                                         |
-| -------------------- | ---------------- | --------------------------------------------------------------- |
-| `session-init`       | SessionStart     | Initialize session state and load configuration                 |
-| `dev-rules-reminder` | UserPromptSubmit | Remind developers of project rules before each prompt           |
-| `privacy-block`      | PreToolUse       | Block access to sensitive files (.env, .pem, SSH keys)          |
-| `scout-block`        | PreToolUse       | Block access to files matching `.coding-friend/ignore` patterns |
-| `statusline`         | SessionStart     | Configure editor statusline with project info                   |
-| `context-tracker`    | PostToolUse      | Track tool usage and context for performance analysis           |
+| Hook                 | Trigger          | Purpose                                                                 |
+| -------------------- | ---------------- | ----------------------------------------------------------------------- |
+| `session-init`       | SessionStart     | Initialize session state and load configuration                         |
+| `dev-rules-reminder` | UserPromptSubmit | Remind developers of project rules before each prompt                   |
+| `privacy-block`      | PreToolUse       | Block access to sensitive files (.env, .pem, SSH keys)                  |
+| `scout-block`        | PreToolUse       | Block access to files matching `.coding-friend/ignore` patterns         |
+| `statusline`         | SessionStart     | Configure editor statusline with project info, account, and rate limits |
+| `context-tracker`    | PostToolUse      | Track tool usage and context for performance analysis                   |
 
 ## How Hooks Work
 
@@ -39,6 +39,42 @@ Enable or disable hooks in [`.coding-friend/config.json`](/docs/configuration/co
 ```
 
 All hooks default to enabled. Set to `false` to disable specific hooks for your project.
+
+## Statusline Hook
+
+The `statusline` hook configures your editor's status bar with live project information. It supports the following components:
+
+| Component    | Description                                          |
+| ------------ | ---------------------------------------------------- |
+| `version`    | Plugin version from `plugin.json`                    |
+| `folder`     | Current working directory name                       |
+| `model`      | Active Claude model                                  |
+| `branch`     | Current git branch                                   |
+| `account`    | Account email and display name from `~/.claude.json` |
+| `context`    | Context window usage percentage                      |
+| `rate_limit` | API rate limit usage for 5-hour and 7-day windows    |
+
+### Component Configuration
+
+Toggle individual components in [`.coding-friend/config.json`](/docs/configuration/config-json/):
+
+```json
+{
+  "statusline": {
+    "components": {
+      "version": true,
+      "folder": true,
+      "model": true,
+      "branch": true,
+      "account": true,
+      "context": true,
+      "rate_limit": true
+    }
+  }
+}
+```
+
+All components default to enabled. The `rate_limit` component caches API responses for 5 minutes to avoid excessive requests.
 
 ## Security Hooks
 
