@@ -27,7 +27,7 @@ export default function ChangelogPage() {
   const cfMemoryEntries = parseChangelog(getCfMemoryChangelog());
 
   return (
-    <div className="min-h-screen py-16 sm:py-20">
+    <div className="min-h-screen py-10 md:py-16 lg:py-20">
       <Container>
         <div className="mx-auto max-w-3xl">
           {/* Header */}
