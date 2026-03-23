@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.21.0 (unpublished)
+## v1.21.0 (2026-03-23)
 
 - Add colored tag prefix to permission options in `cf permission` [#a9bd9c8](https://github.com/dinhanhthi/coding-friend/commit/a9bd9c8)
 - Add automatic version check and auto-update after commands [#e9b468d](https://github.com/dinhanhthi/coding-friend/commit/e9b468d)
