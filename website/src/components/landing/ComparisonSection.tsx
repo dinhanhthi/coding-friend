@@ -67,15 +67,19 @@ function BarGroup({
   const withH = (withCF / MAX_SCORE) * BAR_HEIGHT;
   const withoutH = (withoutCF / MAX_SCORE) * BAR_HEIGHT;
   const hasData = withCF > 0 || withoutCF > 0;
+  const isNegative = hasData && withCF < withoutCF;
+  const isNeutral = hasData && withCF === withoutCF;
 
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Delta badge */}
       <span
         className={`rounded-full px-2.5 py-0.5 text-sm font-medium ${
-          hasData
-            ? "bg-emerald-500/10 text-emerald-400"
-            : "bg-slate-700/50 text-slate-500"
+          !hasData || isNeutral
+            ? "bg-slate-700/50 text-slate-500"
+            : isNegative
+              ? "bg-red-500/10 text-red-400"
+              : "bg-emerald-500/10 text-emerald-400"
         }`}
       >
         {hasData ? delta : "—"}
@@ -214,7 +218,9 @@ export default function ComparisonSection() {
                 <div className="text-sm text-slate-400">Without CF avg</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-400">
+                <div
+                  className={`text-2xl font-bold ${avg.withCF < avg.withoutCF ? "text-red-400" : avg.withCF === avg.withoutCF ? "text-slate-500" : "text-emerald-400"}`}
+                >
                   {avg.improvement}
                 </div>
                 <div className="text-sm text-slate-400">improvement</div>
