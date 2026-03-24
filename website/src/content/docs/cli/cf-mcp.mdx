@@ -1,12 +1,12 @@
 ---
 title: "cf mcp"
-description: "Setup MCP server for integrating learning docs with other LLM clients."
-keywords: [mcp, model context protocol, cf mcp]
+description: "Setup MCP servers for learning docs and memory system."
+keywords: [mcp, model context protocol, cf mcp, memory mcp, learn mcp]
 ---
 
 ## Overview
 
-`cf mcp` generates a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server configuration for your learning documentation. Use this to integrate your docs with other LLM clients like ChatGPT, Claude web, or other AI tools.
+`cf mcp` generates [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server configurations for both **learning documentation** and **memory system**. Use this to integrate with other LLM clients like ChatGPT, Claude web, or other AI tools.
 
 ## Usage
 
@@ -14,8 +14,18 @@ keywords: [mcp, model context protocol, cf mcp]
 cf mcp [path]
 ```
 
-The default path is `<project>/docs/learn/`.
+The optional `path` argument overrides the learning docs folder (default: `<project>/docs/learn/`).
 
 ## Output
 
-The command prints a JSON configuration object that you can paste into your MCP client setup. This enables those tools to access and search your learning documentation in real time.
+The command prints JSON configuration for two MCP servers:
+
+### Learn MCP
+
+Configuration for the learning documentation server. Provides tools to search, read, create, and manage learning docs.
+
+### Memory MCP
+
+Configuration for the project memory server. Provides tools to store, search, list, update, and delete project memories.
+
+**Important:** The Memory MCP path is project-specific (points to `docs/memory/` in your project). Always use a **local** `.mcp.json` per project — do not add it to the global `~/.claude/.mcp.json`, as it will only work for one project.
