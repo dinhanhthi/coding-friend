@@ -26,8 +26,8 @@ RUBRICS_DIR="$SCRIPT_DIR/rubrics"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
 
 # Featured skills shown on the landing page comparison chart
-FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd")
-FEATURED_LABELS=("Bug Fix" "Code Review" "TDD")
+FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd" "cf-security")
+FEATURED_LABELS=("Bug Fix" "Code Review" "TDD" "Security")
 
 # All supported models
 ALL_MODELS=("haiku" "sonnet" "opus")
