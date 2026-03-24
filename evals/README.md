@@ -167,13 +167,13 @@ cf-ask (2.88/2.88), cf-auto-review (3.00/3.00), cf-sys-debug (2.60/2.60), cf-opt
 
 ### CF Underperforms
 
-| Skill       | Delta     | Why                                           |
-| ----------- | --------- | --------------------------------------------- |
-| cf-plan     | **-1.00** | Asks clarifying questions in single-turn eval |
-| cf-scan     | **-0.25** | Ordering effects may explain this             |
-| cf-research | **-0.05** | 6.7x more cost for marginally lower quality   |
+| Skill       | Delta     | Why                                              |
+| ----------- | --------- | ------------------------------------------------ |
+| cf-plan     | **-1.00** | Asks clarifying questions in single-turn eval    |
+| cf-scan     | **-0.25** | Ordering effects may explain this                |
+| cf-research | **-0.05** | Marginally lower quality on synthetic benchmarks |
 
-**Overall**: with-cf 2.51 vs without-cf 2.25 (+0.26), cost ratio 2.1x
+**Overall**: with-cf 2.51 vs without-cf 2.25 (+0.26)
 
 ## Wave 3: Security
 
@@ -208,7 +208,6 @@ Use `--skip-score` during runs to avoid scoring incomplete results. Use `--skip-
 
 - **Single-turn only**: penalizes multi-step skills like cf-plan
 - **Small sample size**: most skills had 1-4 runs per condition
-- **Cost**: full suite ~$15-25
 - **Synthetic repos**: small, not representative of real-world projects
 - **No randomized ordering**: later runs may benefit from caching
 
