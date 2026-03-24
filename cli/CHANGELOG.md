@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.21.1 (unpublished)
+## v1.21.1 (2026-03-24)
 
 - Fix `cf memory init` to install SQLite dependencies for returning users [#6c4483c](https://github.com/dinhanhthi/coding-friend/commit/6c4483c)
 
