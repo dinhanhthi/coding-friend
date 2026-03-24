@@ -164,76 +164,101 @@ print_header() {
 }
 
 # Process each skill
+# Results layout: results/<date>/<model>/<skill>/<condition>--<timestamp>.json
+# Analysis layout: analysis/<date>/<model>/<skill>-<condition>-scores.json
 score_all() {
   print_header
 
-  for skill in "${SKILLS_TO_SCORE[@]}"; do
-    local rubric_file="$RUBRICS_DIR/${skill}.json"
-    if [[ ! -f "$rubric_file" ]]; then
-      echo -e "${YELLOW}⚠️  WARN: No rubric found for $skill${NC}" >&2
-      continue
-    fi
+  # Discover all date/model combinations from results
+  local date_model_pairs=()
+  while IFS= read -r model_dir; do
+    local run_date model_name
+    run_date=$(basename "$(dirname "$model_dir")")
+    model_name=$(basename "$model_dir")
+    date_model_pairs+=("$run_date|$model_name")
+  done < <(find "$RESULTS_DIR" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | sort)
 
-    # Process each condition
-    for condition in with-cf without-cf; do
-      local condition_dir="$RESULTS_DIR/$skill/$condition"
-      if [[ ! -d "$condition_dir" ]]; then
+  # Deduplicate
+  local unique_pairs=($(printf '%s\n' "${date_model_pairs[@]}" | sort -u))
+
+  if [[ ${#unique_pairs[@]} -eq 0 ]]; then
+    echo -e "${YELLOW}⚠️  No results found in $RESULTS_DIR${NC}" >&2
+    return
+  fi
+
+  for pair in "${unique_pairs[@]}"; do
+    IFS='|' read -r run_date model_name <<< "$pair"
+    echo -e "${BLUE}📅 $run_date / 🤖 $model_name${NC}"
+
+    for skill in "${SKILLS_TO_SCORE[@]}"; do
+      local rubric_file="$RUBRICS_DIR/${skill}.json"
+      if [[ ! -f "$rubric_file" ]]; then
+        echo -e "${YELLOW}⚠️  WARN: No rubric found for $skill${NC}" >&2
         continue
       fi
 
-      local result_files=()
-      while IFS= read -r f; do
-        # Skip meta files
-        [[ "$f" == *.meta.json ]] && continue
-        result_files+=("$f")
-      done < <(find "$condition_dir" -name '*.json' -type f 2>/dev/null | sort)
-
-      if [[ ${#result_files[@]} -eq 0 ]]; then
+      local skill_dir="$RESULTS_DIR/$run_date/$model_name/$skill"
+      if [[ ! -d "$skill_dir" ]]; then
         continue
       fi
 
-      local all_scores="[]"
-      local total_passed=0
-      local total_checks=0
+      # Process each condition
+      for condition in with-cf without-cf; do
+        local result_files=()
+        while IFS= read -r f; do
+          [[ "$f" == *.meta.json ]] && continue
+          result_files+=("$f")
+        done < <(find "$skill_dir" -name "${condition}--*.json" -type f 2>/dev/null | sort)
 
-      for result_file in "${result_files[@]}"; do
-        local score_json
-        score_json=$(score_result "$result_file" "$rubric_file" "$skill")
-        all_scores=$(echo "$all_scores" | jq --argjson s "$score_json" '. + [$s]')
-
-        local fp ft
-        fp=$(echo "$score_json" | jq '.passed_checks')
-        ft=$(echo "$score_json" | jq '.total_checks')
-        total_passed=$((total_passed + fp))
-        total_checks=$((total_checks + ft))
-      done
-
-      # Calculate pass rate
-      local pass_rate="N/A"
-      local status="--"
-      local status_color="$DIM"
-      local status_icon="➖"
-      if [[ $total_checks -gt 0 ]]; then
-        pass_rate=$(awk "BEGIN { printf \"%.0f%%\", ($total_passed / $total_checks) * 100 }")
-        if [[ $total_passed -eq $total_checks ]]; then
-          status="PASS"
-          status_color="$GREEN"
-          status_icon="✅"
-        else
-          status="PARTIAL"
-          status_color="$YELLOW"
-          status_icon="🔶"
+        if [[ ${#result_files[@]} -eq 0 ]]; then
+          continue
         fi
-      fi
 
-      printf "${status_color}%-15s %-12s %-8s %-8s %-15s %s %s${NC}\n" \
-        "$skill" "$condition" "${#result_files[@]}" "$total_checks" "$pass_rate" "$status_icon" "$status"
+        local all_scores="[]"
+        local total_passed=0
+        local total_checks=0
 
-      # Write scores to analysis dir
-      mkdir -p "$ANALYSIS_DIR"
-      local scores_file="$ANALYSIS_DIR/${skill}-${condition}-scores.json"
-      echo "$all_scores" | jq '.' > "$scores_file"
+        for result_file in "${result_files[@]}"; do
+          local score_json
+          score_json=$(score_result "$result_file" "$rubric_file" "$skill")
+          all_scores=$(echo "$all_scores" | jq --argjson s "$score_json" '. + [$s]')
+
+          local fp ft
+          fp=$(echo "$score_json" | jq '.passed_checks')
+          ft=$(echo "$score_json" | jq '.total_checks')
+          total_passed=$((total_passed + fp))
+          total_checks=$((total_checks + ft))
+        done
+
+        # Calculate pass rate
+        local pass_rate="N/A"
+        local status="--"
+        local status_color="$DIM"
+        local status_icon="➖"
+        if [[ $total_checks -gt 0 ]]; then
+          pass_rate=$(awk "BEGIN { printf \"%.0f%%\", ($total_passed / $total_checks) * 100 }")
+          if [[ $total_passed -eq $total_checks ]]; then
+            status="PASS"
+            status_color="$GREEN"
+            status_icon="✅"
+          else
+            status="PARTIAL"
+            status_color="$YELLOW"
+            status_icon="🔶"
+          fi
+        fi
+
+        printf "${status_color}%-15s %-12s %-8s %-8s %-15s %s %s${NC}\n" \
+          "$skill" "$condition" "${#result_files[@]}" "$total_checks" "$pass_rate" "$status_icon" "$status"
+
+        # Write scores to analysis dir: analysis/<date>/<model>/
+        local analysis_out="$ANALYSIS_DIR/$run_date/$model_name"
+        mkdir -p "$analysis_out"
+        local scores_file="$analysis_out/${skill}-${condition}-scores.json"
+        echo "$all_scores" | jq '.' > "$scores_file"
+      done
     done
+    echo ""
   done
 }
 

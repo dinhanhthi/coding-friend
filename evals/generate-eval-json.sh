@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # generate-eval-json.sh — Parse eval results and generate website JSON data file
 #
-# Reads results/<skill>/<condition>/*.json and *.meta.json files,
+# Reads results/<date>/<model>/<skill>/<condition>--<timestamp>.json files,
 # computes per-model averages for featured skills, and writes
 # website/src/data/eval-results.json
 #
@@ -41,50 +41,36 @@ die() {
 }
 
 # Count eval sessions for a given model across all results
+# New layout: results/<date>/<model>/<skill>/<condition>--<timestamp>.meta.json
 count_sessions() {
   local model="$1"
-  local count=0
-  for meta_file in $(find "$RESULTS_DIR" -name "*.meta.json" 2>/dev/null); do
-    local file_model
-    file_model=$(jq -r '.model // ""' "$meta_file" 2>/dev/null || echo "")
-    if [[ "$file_model" == "$model" ]]; then
-      count=$((count + 1))
-    fi
-  done
-  echo "$count"
+  find "$RESULTS_DIR" -path "*/$model/*" -name "*.meta.json" -type f 2>/dev/null | wc -l | tr -d ' '
 }
 
 # Compute average score for a skill+condition+model combination
 # Uses rubric weights for automated checks, falls back to pass rate
+# New layout: results/<date>/<model>/<skill>/<condition>--<timestamp>.json
 compute_skill_score() {
   local skill="$1"
   local condition="$2"
   local model="$3"
 
-  local condition_dir="$RESULTS_DIR/$skill/$condition"
-  if [[ ! -d "$condition_dir" ]]; then
-    echo "0"
-    return
-  fi
-
   local rubric_file="$RUBRICS_DIR/${skill}.json"
   local total_score=0
   local file_count=0
 
-  for result_file in "$condition_dir"/*.json; do
-    [[ "$result_file" == *.meta.json ]] && continue
-    [[ ! -f "$result_file" ]] && continue
+  # Find all result files for this skill+condition+model across all dates
+  local result_files=()
+  while IFS= read -r f; do
+    result_files+=("$f")
+  done < <(find "$RESULTS_DIR" -path "*/$model/$skill/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
 
-    # Check if this result is from the requested model
-    local meta_file="${result_file%.json}.meta.json"
-    if [[ -f "$meta_file" ]]; then
-      local file_model
-      file_model=$(jq -r '.model // "sonnet"' "$meta_file" 2>/dev/null || echo "sonnet")
-      if [[ "$file_model" != "$model" ]]; then
-        continue
-      fi
-    fi
+  if [[ ${#result_files[@]} -eq 0 ]]; then
+    echo "0"
+    return
+  fi
 
+  for result_file in "${result_files[@]}"; do
     # Extract result text
     local result_text
     result_text=$(jq -r '.result // ""' "$result_file" 2>/dev/null || echo "")
