@@ -192,7 +192,11 @@ WALL_TIME=$((END_TIME - START_TIME))
 
 # Handle failure
 if [[ $EXIT_CODE -ne 0 ]]; then
-  echo -e "${RED}❌ [ERROR] skill=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
+  if [[ "$WAVE" == "3" ]]; then
+    echo -e "${RED}❌ [ERROR] scenario=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
+  else
+    echo -e "${RED}❌ [ERROR] skill=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
+  fi
   # Write error info into the output file if it's empty
   if [[ ! -s "$OUTPUT_FILE" ]]; then
     cat > "$OUTPUT_FILE" <<EOF
@@ -236,4 +240,8 @@ if [[ -n "$REPO_HEAD" ]]; then
 fi
 
 # Print summary
-echo -e "${GREEN}✅ [DONE]${NC} skill=${BOLD}$SKILL${NC} condition=${BOLD}$CONDITION${NC} time=${YELLOW}${WALL_TIME}s${NC} output=${DIM}$OUTPUT_FILE${NC}"
+if [[ "$WAVE" == "3" ]]; then
+  echo -e "${GREEN}✅ [DONE]${NC} scenario=${BOLD}$SKILL${NC} condition=${BOLD}$CONDITION${NC} time=${YELLOW}${WALL_TIME}s${NC} output=${DIM}$OUTPUT_FILE${NC}"
+else
+  echo -e "${GREEN}✅ [DONE]${NC} skill=${BOLD}$SKILL${NC} condition=${BOLD}$CONDITION${NC} time=${YELLOW}${WALL_TIME}s${NC} output=${DIM}$OUTPUT_FILE${NC}"
+fi
