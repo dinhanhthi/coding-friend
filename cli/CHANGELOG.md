@@ -2,6 +2,14 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.22.0 (unpublished)
+
+- Add MCP status display to `cf memory status` showing configuration scope (local/global/not configured) [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
+- Show both Learn MCP and Memory MCP in `cf mcp` with color-coded sections [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
+- Add MCP setup option to `cf memory config` menu for interactive `.mcp.json` configuration [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
+- Include MCP configuration step in `cf memory init` wizard with automatic setup prompt [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
+- Extract shared MCP configuration functions to `memory-prompts.ts` to eliminate duplication [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
+
 ## v1.21.1 (2026-03-24)
 
 - Fix `cf memory init` to install SQLite dependencies for returning users [#6c4483c](https://github.com/dinhanhthi/coding-friend/commit/6c4483c)

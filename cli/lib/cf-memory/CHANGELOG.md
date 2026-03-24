@@ -1,5 +1,11 @@
 # CF Memory Changelog
 
+## v0.2.2 (unpublished)
+
+- Add NaN guard for `MEMORY_DAEMON_IDLE_TIMEOUT` env var to prevent invalid timeout values [#d4401fa](https://github.com/dinhanhthi/coding-friend/commit/d4401fa)
+- Fix `ping()` to use raw request instead of triggering daemon respawn during tier detection [#d4401fa](https://github.com/dinhanhthi/coding-friend/commit/d4401fa)
+- Pass `daemonOptions` consistently in index.ts instead of inline object [#d4401fa](https://github.com/dinhanhthi/coding-friend/commit/d4401fa)
+
 ## v0.2.1 (2026-03-22)
 
 - Fix flaky tier detection tests — mock `isDaemonRunning` to prevent local daemon from affecting test results [#d786f08](https://github.com/dinhanhthi/coding-friend/commit/d786f08)
