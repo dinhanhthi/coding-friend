@@ -15,7 +15,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "(FAIL|failed|failing|✗|✘|×|RED|test.*(fail|broke)|assert|expect)",
+        "pattern": "(FAIL|failed|failing|✗|✘|×|RED phase|test.*(fail|broke))",
         "target": "output"
       }
     },
