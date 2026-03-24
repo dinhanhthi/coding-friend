@@ -5,6 +5,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
+
 # Defaults
 PROMPT_FILE=""
 CONDITION=""
@@ -34,7 +44,7 @@ USAGE
 }
 
 die() {
-  echo "ERROR: $1" >&2
+  echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
 }
 
@@ -127,9 +137,9 @@ fi
 
 # Dry run: show command and output path, then exit
 if [[ "$DRY_RUN" == true ]]; then
-  echo "Command: ${CMD[*]}"
-  echo "Working directory: $REPO"
-  echo "Output: $OUTPUT_FILE"
+  echo -e "${CYAN}🔍 Command:${NC} ${CMD[*]}"
+  echo -e "${CYAN}📂 Working directory:${NC} $REPO"
+  echo -e "${CYAN}📄 Output:${NC} $OUTPUT_FILE"
   exit 0
 fi
 
@@ -165,7 +175,7 @@ WALL_TIME=$((END_TIME - START_TIME))
 
 # Handle failure
 if [[ $EXIT_CODE -ne 0 ]]; then
-  echo "[ERROR] skill=$SKILL condition=$CONDITION exit_code=$EXIT_CODE" >&2
+  echo -e "${RED}❌ [ERROR] skill=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
   # Write error info into the output file if it's empty
   if [[ ! -s "$OUTPUT_FILE" ]]; then
     cat > "$OUTPUT_FILE" <<EOF
@@ -207,4 +217,4 @@ if [[ -n "$REPO_HEAD" ]]; then
 fi
 
 # Print summary
-echo "[DONE] skill=$SKILL condition=$CONDITION time=${WALL_TIME}s output=$OUTPUT_FILE"
+echo -e "${GREEN}✅ [DONE]${NC} skill=${BOLD}$SKILL${NC} condition=${BOLD}$CONDITION${NC} time=${YELLOW}${WALL_TIME}s${NC} output=${DIM}$OUTPUT_FILE${NC}"

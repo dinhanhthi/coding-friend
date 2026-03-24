@@ -20,6 +20,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
+
 # Defaults
 MODELS=("haiku" "sonnet" "opus")
 RUNS=3
@@ -57,7 +68,7 @@ USAGE
 }
 
 die() {
-  echo "ERROR: $1" >&2
+  echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
 }
 
@@ -126,41 +137,42 @@ calc_total() {
 
 TOTAL_RUNS=$(calc_total)
 
-echo "=========================================="
-echo "  CODING FRIEND — Full Evaluation Suite"
-echo "=========================================="
-echo ""
-echo "  Models:  ${MODELS[*]}"
-echo "  Waves:   ${WAVE_ARGS[*]}"
-echo "  Runs:    $RUNS per combination"
-echo "  Total:   ~$TOTAL_RUNS eval runs"
-[[ -n "$SKILL_FILTER" ]] && echo "  Skill:   $SKILL_FILTER"
-[[ -n "$BUDGET" ]] && echo "  Budget:  \$$BUDGET per run"
+echo -e "${MAGENTA}${BOLD}"
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║  🧪 CODING FRIEND — Full Eval Suite ║"
+echo "  ╚══════════════════════════════════════╝"
+echo -e "${NC}"
+echo -e "  🤖 Models:  ${BOLD}${MODELS[*]}${NC}"
+echo -e "  🌊 Waves:   ${BOLD}${WAVE_ARGS[*]}${NC}"
+echo -e "  🔄 Runs:    ${BOLD}$RUNS${NC} per combination"
+echo -e "  📊 Total:   ${BOLD}~$TOTAL_RUNS${NC} eval runs"
+[[ -n "$SKILL_FILTER" ]] && echo -e "  🎯 Skill:   ${BOLD}$SKILL_FILTER${NC}"
+[[ -n "$BUDGET" ]] && echo -e "  💰 Budget:  ${BOLD}\$$BUDGET${NC} per run"
 echo ""
 
 if [[ "$DRY_RUN" == true ]]; then
-  echo "[DRY RUN] Would execute:"
+  echo -e "${CYAN}🔍 [DRY RUN] Would execute:${NC}"
   echo ""
   for model in "${MODELS[@]}"; do
     for wave_num in "${WAVE_ARGS[@]}"; do
       local_args=(--wave "$wave_num" --runs "$RUNS" --model "$model" --dry-run)
       [[ -n "$SKILL_FILTER" ]] && local_args+=(--skill "$SKILL_FILTER")
-      echo "--- $model / wave $wave_num ---"
+      echo -e "${BLUE}--- 🤖 $model / 🌊 wave $wave_num ---${NC}"
       "$SCRIPT_DIR/run-wave.sh" "${local_args[@]}" 2>/dev/null || true
       echo ""
     done
   done
-  echo "[DRY RUN] After runs: score.sh + generate-eval-json.sh"
+  echo -e "${CYAN}🔍 [DRY RUN] After runs: score.sh + generate-eval-json.sh${NC}"
   exit 0
 fi
 
 # Step 1: Setup benchmarks
 if [[ "$SKIP_SETUP" == false ]]; then
-  echo "=== Step 1: Setting up benchmarks ==="
+  echo -e "${BOLD}📦 === Step 1: Setting up benchmarks ===${NC}"
   "$SCRIPT_DIR/setup-benchmarks.sh"
   echo ""
 else
-  echo "=== Step 1: Skipped (--skip-setup) ==="
+  echo -e "${DIM}⏭ === Step 1: Skipped (--skip-setup) ===${NC}"
   echo ""
 fi
 
@@ -171,13 +183,14 @@ MODEL_IDX=0
 
 for model in "${MODELS[@]}"; do
   MODEL_IDX=$((MODEL_IDX + 1))
-  echo "=========================================="
-  echo "  Model $MODEL_IDX/${#MODELS[@]}: $model"
-  echo "=========================================="
-  echo ""
+  echo -e "${MAGENTA}${BOLD}"
+  echo "  ┌──────────────────────────────────────┐"
+  echo "  │  🤖 Model $MODEL_IDX/${#MODELS[@]}: $model"
+  echo "  └──────────────────────────────────────┘"
+  echo -e "${NC}"
 
   for wave_num in "${WAVE_ARGS[@]}"; do
-    echo "--- Wave $wave_num ---"
+    echo -e "${BLUE}--- 🌊 Wave $wave_num ---${NC}"
     RUN_CMD=("$SCRIPT_DIR/run-wave.sh"
       --wave "$wave_num"
       --runs "$RUNS"
@@ -186,9 +199,9 @@ for model in "${MODELS[@]}"; do
     [[ -n "$SKILL_FILTER" ]] && RUN_CMD+=(--skill "$SKILL_FILTER")
 
     if "${RUN_CMD[@]}"; then
-      echo "  Wave $wave_num complete for $model"
+      echo -e "  ${GREEN}✔ Wave $wave_num complete for $model${NC}"
     else
-      echo "  Wave $wave_num had errors for $model" >&2
+      echo -e "  ${RED}✘ Wave $wave_num had errors for $model${NC}" >&2
       TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
     fi
     echo ""
@@ -200,19 +213,19 @@ WALL_TIME=$((END_TIME - START_TIME))
 
 # Step 3: Score results
 if [[ "$SKIP_SCORE" == false ]]; then
-  echo "=== Step 3: Scoring results ==="
+  echo -e "${BOLD}📝 === Step 3: Scoring results ===${NC}"
   for wave_num in "${WAVE_ARGS[@]}"; do
-    echo "--- Scoring wave $wave_num ---"
+    echo -e "${BLUE}--- 📊 Scoring wave $wave_num ---${NC}"
     "$SCRIPT_DIR/score.sh" --wave "$wave_num" || true
     echo ""
   done
 
   # Step 4: Generate website JSON
-  echo "=== Step 4: Generating website data ==="
+  echo -e "${BOLD}🌐 === Step 4: Generating website data ===${NC}"
   "$SCRIPT_DIR/generate-eval-json.sh"
   echo ""
 else
-  echo "=== Step 3-4: Skipped (--skip-score) ==="
+  echo -e "${DIM}⏭ === Step 3-4: Skipped (--skip-score) ===${NC}"
   echo ""
 fi
 
@@ -221,17 +234,22 @@ HOURS=$((WALL_TIME / 3600))
 MINUTES=$(( (WALL_TIME % 3600) / 60 ))
 SECONDS=$((WALL_TIME % 60))
 
-echo "=========================================="
-echo "  COMPLETE"
-echo "=========================================="
-echo ""
-echo "  Duration:  ${HOURS}h ${MINUTES}m ${SECONDS}s"
-echo "  Models:    ${MODELS[*]}"
-echo "  Errors:    $TOTAL_ERRORS"
-echo "  Results:   $SCRIPT_DIR/results/"
-echo "  Scores:    $SCRIPT_DIR/analysis/"
-echo "  Website:   website/src/data/eval-results.json"
+echo -e "${GREEN}${BOLD}"
+echo "  ╔══════════════════════════════════════╗"
+echo "  ║           🎉 COMPLETE               ║"
+echo "  ╚══════════════════════════════════════╝"
+echo -e "${NC}"
+echo -e "  ⏱  Duration:  ${BOLD}${HOURS}h ${MINUTES}m ${SECONDS}s${NC}"
+echo -e "  🤖 Models:    ${BOLD}${MODELS[*]}${NC}"
+if [[ $TOTAL_ERRORS -eq 0 ]]; then
+  echo -e "  ✅ Errors:    ${GREEN}0${NC}"
+else
+  echo -e "  ❌ Errors:    ${RED}$TOTAL_ERRORS${NC}"
+fi
+echo -e "  📂 Results:   ${DIM}$SCRIPT_DIR/results/${NC}"
+echo -e "  📊 Scores:    ${DIM}$SCRIPT_DIR/analysis/${NC}"
+echo -e "  🌐 Website:   ${DIM}website/src/data/eval-results.json${NC}"
 echo ""
 if [[ $TOTAL_ERRORS -gt 0 ]]; then
-  echo "  WARNING: $TOTAL_ERRORS wave(s) had errors. Check logs above."
+  echo -e "  ${YELLOW}⚠️  WARNING: $TOTAL_ERRORS wave(s) had errors. Check logs above.${NC}"
 fi

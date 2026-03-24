@@ -11,6 +11,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
 WAVES_FILE="$SCRIPT_DIR/waves.json"
 BENCHMARKS_DIR="$SCRIPT_DIR/benchmarks"
 
@@ -39,7 +49,7 @@ USAGE
 }
 
 die() {
-  echo "ERROR: $1" >&2
+  echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
 }
 
@@ -99,21 +109,21 @@ done
 TOTAL=${#COMBINATIONS[@]}
 
 if [[ "$DRY_RUN" == true ]]; then
-  echo "=== Dry Run: $TOTAL total runs ==="
+  echo -e "${CYAN}🔍 === Dry Run: $TOTAL total runs ===${NC}"
   echo ""
   local_idx=0
   for combo in "${COMBINATIONS[@]}"; do
     IFS='|' read -r skill repo condition run_num repo_path prompt_file <<< "$combo"
     local_idx=$((local_idx + 1))
-    echo "[$local_idx/$TOTAL] $skill $condition on $repo (run $run_num/$RUNS)"
+    echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(run $run_num/$RUNS)${NC}"
   done
   echo ""
-  echo "total=$TOTAL runs=$RUNS model=$MODEL"
+  echo -e "  📊 total=${BOLD}$TOTAL${NC} runs=${BOLD}$RUNS${NC} model=${BOLD}$MODEL${NC}"
   exit 0
 fi
 
 # Execute runs
-echo "=== Running $TOTAL eval runs ==="
+echo -e "${BOLD}🚀 === Running $TOTAL eval runs ===${NC}"
 echo ""
 
 IDX=0
@@ -122,15 +132,15 @@ for combo in "${COMBINATIONS[@]}"; do
   IFS='|' read -r skill repo condition run_num repo_path prompt_file <<< "$combo"
   IDX=$((IDX + 1))
 
-  echo "[$IDX/$TOTAL] Running $skill $condition on $repo (run $run_num/$RUNS)..."
+  echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(run $run_num/$RUNS)${NC}..."
 
   # Check that repo and prompt exist
   if [[ ! -d "$repo_path" ]]; then
-    echo "  SKIP: benchmark repo not found at $repo_path" >&2
+    echo -e "  ${YELLOW}⏭ SKIP: benchmark repo not found at $repo_path${NC}" >&2
     continue
   fi
   if [[ ! -f "$prompt_file" ]]; then
-    echo "  SKIP: prompt file not found at $prompt_file" >&2
+    echo -e "  ${YELLOW}⏭ SKIP: prompt file not found at $prompt_file${NC}" >&2
     continue
   fi
 
@@ -144,12 +154,16 @@ for combo in "${COMBINATIONS[@]}"; do
   )
 
   if "${RUN_CMD[@]}"; then
-    echo "  OK"
+    echo -e "  ${GREEN}✔ OK${NC}"
   else
-    echo "  FAILED (continuing)" >&2
+    echo -e "  ${RED}✘ FAILED (continuing)${NC}" >&2
     ERRORS=$((ERRORS + 1))
   fi
 done
 
 echo ""
-echo "=== Complete: $((IDX - ERRORS))/$IDX succeeded, $ERRORS errors ==="
+if [[ $ERRORS -eq 0 ]]; then
+  echo -e "${GREEN}🎉 === Complete: $((IDX - ERRORS))/$IDX succeeded, 0 errors ===${NC}"
+else
+  echo -e "${YELLOW}⚠️  === Complete: $((IDX - ERRORS))/$IDX succeeded, ${RED}$ERRORS errors${NC}${YELLOW} ===${NC}"
+fi

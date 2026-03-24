@@ -4,6 +4,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
 RUBRICS_DIR="$SCRIPT_DIR/rubrics"
 RESULTS_DIR="$SCRIPT_DIR/results"
 ANALYSIS_DIR="$SCRIPT_DIR/analysis"
@@ -30,7 +40,7 @@ USAGE
 }
 
 die() {
-  echo "ERROR: $1" >&2
+  echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
 }
 
@@ -147,8 +157,10 @@ score_result() {
 
 # Print summary table header
 print_header() {
+  echo -e "${BOLD}${CYAN}"
   printf "%-15s %-12s %-8s %-8s %-15s %s\n" "SKILL" "CONDITION" "FILES" "CHECKS" "PASS_RATE" "STATUS"
-  printf "%-15s %-12s %-8s %-8s %-15s %s\n" "-----" "---------" "-----" "------" "---------" "------"
+  printf "%-15s %-12s %-8s %-8s %-15s %s\n" "─────" "─────────" "─────" "──────" "─────────" "──────"
+  echo -e "${NC}"
 }
 
 # Process each skill
@@ -158,7 +170,7 @@ score_all() {
   for skill in "${SKILLS_TO_SCORE[@]}"; do
     local rubric_file="$RUBRICS_DIR/${skill}.json"
     if [[ ! -f "$rubric_file" ]]; then
-      echo "WARN: No rubric found for $skill" >&2
+      echo -e "${YELLOW}⚠️  WARN: No rubric found for $skill${NC}" >&2
       continue
     fi
 
@@ -199,17 +211,23 @@ score_all() {
       # Calculate pass rate
       local pass_rate="N/A"
       local status="--"
+      local status_color="$DIM"
+      local status_icon="➖"
       if [[ $total_checks -gt 0 ]]; then
         pass_rate=$(awk "BEGIN { printf \"%.0f%%\", ($total_passed / $total_checks) * 100 }")
         if [[ $total_passed -eq $total_checks ]]; then
           status="PASS"
+          status_color="$GREEN"
+          status_icon="✅"
         else
           status="PARTIAL"
+          status_color="$YELLOW"
+          status_icon="🔶"
         fi
       fi
 
-      printf "%-15s %-12s %-8s %-8s %-15s %s\n" \
-        "$skill" "$condition" "${#result_files[@]}" "$total_checks" "$pass_rate" "$status"
+      printf "${status_color}%-15s %-12s %-8s %-8s %-15s %s %s${NC}\n" \
+        "$skill" "$condition" "${#result_files[@]}" "$total_checks" "$pass_rate" "$status_icon" "$status"
 
       # Write scores to analysis dir
       mkdir -p "$ANALYSIS_DIR"
