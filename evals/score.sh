@@ -5,7 +5,7 @@
 # It does NOT use LLM-as-judge scoring. For website data generation with LLM scoring,
 # use generate-eval-json.sh instead. The two scripts intentionally diverge:
 #   - score.sh: detailed regex-only diagnostics → analysis/ directory
-#   - generate-eval-json.sh: LLM + regex scoring → website JSON
+#   - generate-eval-json.sh: LLM-as-judge scoring → website JSON
 
 set -euo pipefail
 

@@ -123,20 +123,14 @@ Each run: repo reset -> claude -p -> capture JSON -> repo reset. Uses `--no-sess
 
 Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0-3. Pass threshold: **2.0**.
 
-**Two-layer scoring pipeline**:
-
-1. **LLM-as-judge (primary)** — `llm-score.sh` sends each result + rubric to Haiku for 0-3 scoring per criterion. Scores are cached as `.llm-score.json` files. Use `--no-llm` with `generate-eval-json.sh` to skip.
-2. **Regex checks (fallback)** — Pattern matching for structural markers. Criteria without checks get benefit-of-the-doubt (2/3).
+**LLM-as-judge scoring** — `llm-score.sh` sends each result + rubric to Haiku for 0-3 scoring per criterion. Scores are cached as `.llm-score.json` files so re-runs are instant.
 
 ```bash
 # Score a single result with LLM judge
 ./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
 
-# Re-generate website JSON (uses LLM scores if available)
+# Re-generate website JSON (uses cached scores, generates missing ones)
 ./generate-eval-json.sh
-
-# Re-generate without LLM scoring
-./generate-eval-json.sh --no-llm
 ```
 
 ## Benchmark Repos
