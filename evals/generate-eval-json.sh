@@ -6,8 +6,7 @@
 # website/src/data/eval-results.json
 #
 # Usage:
-#   ./generate-eval-json.sh              # use LLM-as-judge scoring (Haiku) + regex fallback
-#   ./generate-eval-json.sh --no-llm     # skip LLM-as-judge, use regex only
+#   ./generate-eval-json.sh
 
 set -euo pipefail
 
@@ -35,15 +34,12 @@ MODEL_LABELS='{"haiku":"Haiku","sonnet":"Sonnet","opus":"Opus"}'
 MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","opus":"claude-opus-4-6"}'
 
 # Parse arguments
-USE_LLM_SCORING="true"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --no-llm) USE_LLM_SCORING="false"; shift ;;
-    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-llm]"; exit 0 ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh"; exit 0 ;;
     *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
 done
-export USE_LLM_SCORING
 
 die() {
   echo -e "${RED}❌ ERROR: $1${NC}" >&2
@@ -99,61 +95,8 @@ llm_score_result() {
   echo "$llm_output" | jq -r '.weighted_average // empty' 2>/dev/null
 }
 
-# Score a single result file using regex checks (fallback)
-regex_score_result() {
-  local result_file="$1"
-  local rubric_file="$2"
-
-  local result_text
-  result_text=$(jq -r '.result // ""' "$result_file" 2>/dev/null || echo "")
-  if [[ -z "$result_text" ]]; then
-    echo ""
-    return
-  fi
-
-  local num_criteria passed_weight total_weight
-  num_criteria=$(jq '.criteria | length' "$rubric_file")
-  passed_weight=0
-  total_weight=0
-
-  local idx=0
-  while [[ $idx -lt $num_criteria ]]; do
-    local weight has_check
-    weight=$(jq -r ".criteria[$idx].weight" "$rubric_file")
-    has_check=$(jq ".criteria[$idx].automated_check // null | type" "$rubric_file")
-
-    total_weight=$(awk "BEGIN { printf \"%.4f\", $total_weight + $weight }")
-
-    if [[ "$has_check" == '"object"' ]]; then
-      local check_type check_pattern
-      check_type=$(jq -r ".criteria[$idx].automated_check.type" "$rubric_file")
-      check_pattern=$(jq -r '.criteria['"$idx"'].automated_check.pattern // ""' "$rubric_file")
-
-      if [[ "$check_type" == "regex" && -n "$check_pattern" ]]; then
-        if echo "$result_text" | grep -qE "$check_pattern" 2>/dev/null; then
-          passed_weight=$(awk "BEGIN { printf \"%.4f\", $passed_weight + $weight }")
-        fi
-      else
-        # Unsupported check type — benefit of the doubt
-        passed_weight=$(awk "BEGIN { printf \"%.4f\", $passed_weight + ($weight * 0.667) }")
-      fi
-    else
-      # No automated check — benefit of the doubt (score 2/3)
-      passed_weight=$(awk "BEGIN { printf \"%.4f\", $passed_weight + ($weight * 0.667) }")
-    fi
-
-    idx=$((idx + 1))
-  done
-
-  if (( $(awk "BEGIN { print ($total_weight > 0) }") )); then
-    awk "BEGIN { printf \"%.2f\", ($passed_weight / $total_weight) * 3 }"
-  else
-    echo ""
-  fi
-}
-
 # Compute average score for a skill+condition+model combination
-# Prefers LLM-as-judge scoring (Haiku), falls back to regex checks
+# Uses LLM-as-judge scoring (Haiku) only — no regex fallback
 # Layout: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
 compute_skill_score() {
   local skill="$1"
@@ -182,27 +125,13 @@ compute_skill_score() {
     return
   fi
 
-  local use_llm=false
-  if [[ -x "$SCRIPT_DIR/llm-score.sh" && "${USE_LLM_SCORING:-true}" != "false" ]]; then
-    use_llm=true
-  fi
-
   for result_file in "${result_files[@]}"; do
     if [[ ! -f "$rubric_file" ]]; then
       continue
     fi
 
     local score=""
-
-    # Try LLM scoring first
-    if [[ "$use_llm" == true ]]; then
-      score=$(llm_score_result "$result_file" "$rubric_file")
-    fi
-
-    # Fall back to regex scoring
-    if [[ -z "$score" ]]; then
-      score=$(regex_score_result "$result_file" "$rubric_file")
-    fi
+    score=$(llm_score_result "$result_file" "$rubric_file")
 
     if [[ -n "$score" ]]; then
       total_score=$(awk "BEGIN { printf \"%.4f\", $total_score + $score }")
@@ -346,11 +275,7 @@ build_json() {
     }' > "$OUTPUT_FILE"
 
   echo -e "${GREEN}✅ Generated:${NC} ${DIM}$OUTPUT_FILE${NC}"
-  if [[ "$USE_LLM_SCORING" == "true" && -x "$SCRIPT_DIR/llm-score.sh" ]]; then
-    echo -e "  📏 Scoring: ${CYAN}LLM-as-judge (Haiku)${NC} with regex fallback"
-  else
-    echo -e "  📏 Scoring: ${DIM}regex-only${NC}"
-  fi
+  echo -e "  📏 Scoring: ${CYAN}LLM-as-judge (Haiku)${NC}"
   echo ""
   echo -e "${BOLD}📊 Summary:${NC}"
   for model in "${ALL_MODELS[@]}"; do
