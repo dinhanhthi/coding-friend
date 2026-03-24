@@ -1,9 +1,10 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { resolveDocsDir } from "../lib/config.js";
+import { resolveDocsDir, resolveMemoryDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
+import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
 import chalk from "chalk";
 
 function countMdFiles(dir: string): number {
@@ -36,7 +37,7 @@ export async function mcpCommand(path?: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log("=== 🌿 Coding Friend MCP 🌿 ===");
+  console.log(chalk.green.bold("=== 📚 Learn MCP ==="));
   log.info(`Docs folder: ${chalk.cyan(docsDir)}`);
   log.info(`Found: ${chalk.green(docCount)} docs`);
   console.log();
@@ -100,4 +101,31 @@ Write:
   improve-doc        Get improvement suggestions
   track-knowledge    Record understanding level (remembered/needs-review/new)
 `);
+
+  // Memory MCP section
+  printMemoryMcp();
+}
+
+function printMemoryMcp(): void {
+  const memoryDir = resolveMemoryDir();
+  let mcpDir: string;
+  try {
+    mcpDir = getLibPath("cf-memory");
+  } catch {
+    log.dim(
+      'Memory MCP: cf-memory package not found. Run "cf memory init" to set it up.',
+    );
+    return;
+  }
+
+  ensureMemoryBuilt(mcpDir);
+
+  const serverPath = join(mcpDir, "dist", "index.js");
+
+  console.log();
+  console.log(chalk.magenta.bold("=== 🧠 Memory MCP ==="));
+  log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
+  console.log();
+
+  printMemoryMcpConfig(serverPath, memoryDir);
 }

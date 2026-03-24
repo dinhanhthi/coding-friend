@@ -1,7 +1,11 @@
 import type { MemoryBackend } from "./backend.js";
 import { DaemonClient } from "./daemon-client.js";
 import { MarkdownBackend } from "../backends/markdown.js";
-import { getDaemonPaths, isDaemonRunning } from "../daemon/process.js";
+import {
+  getDaemonPaths,
+  isDaemonRunning,
+  spawnDaemon,
+} from "../daemon/process.js";
 import { areSqliteDepsAvailable } from "./lazy-install.js";
 import type { EmbeddingConfig } from "../backends/sqlite/embeddings.js";
 import type { SqliteBackendOptions } from "../backends/sqlite/index.js";
@@ -46,6 +50,20 @@ export async function detectTier(configTier?: TierConfig): Promise<TierInfo> {
   return TIERS.markdown;
 }
 
+/** Build a respawn callback that DaemonClient can call when the daemon is gone. */
+function makeRespawn(
+  docsDir: string,
+  embeddingConfig?: Partial<EmbeddingConfig>,
+  idleTimeoutMs?: number,
+): () => Promise<boolean> {
+  return async () => {
+    const result = await spawnDaemon(docsDir, embeddingConfig, {
+      idleTimeoutMs,
+    });
+    return result !== null;
+  };
+}
+
 /**
  * Create the appropriate backend for the detected tier.
  */
@@ -54,8 +72,14 @@ export async function createBackendForTier(
   configTier?: TierConfig,
   embeddingConfig?: Partial<EmbeddingConfig>,
   sqliteOptions?: Pick<SqliteBackendOptions, "dbPath">,
+  daemonOptions?: { idleTimeoutMs?: number },
 ): Promise<{ backend: MemoryBackend; tier: TierInfo }> {
   const tier = await detectTier(configTier);
+  const respawn = makeRespawn(
+    docsDir,
+    embeddingConfig,
+    daemonOptions?.idleTimeoutMs,
+  );
 
   switch (tier.name) {
     case "full": {
@@ -71,7 +95,7 @@ export async function createBackendForTier(
         // SQLite backend failed — fall through to daemon or markdown
         if (await isDaemonRunning()) {
           const paths = getDaemonPaths();
-          const client = new DaemonClient(paths.socketPath);
+          const client = new DaemonClient(paths.socketPath, { respawn });
           const alive = await client.ping();
           if (alive) {
             return { backend: client, tier: TIERS.lite };
@@ -86,7 +110,7 @@ export async function createBackendForTier(
     case "lite": {
       // Use daemon client
       const paths = getDaemonPaths();
-      const client = new DaemonClient(paths.socketPath);
+      const client = new DaemonClient(paths.socketPath, { respawn });
       const alive = await client.ping();
       if (alive) {
         return { backend: client, tier };

@@ -11,13 +11,32 @@ import type {
   UpdateInput,
 } from "./types.js";
 
+export interface DaemonClientOptions {
+  /** Called to respawn the daemon when a connection fails. */
+  respawn?: () => Promise<boolean>;
+}
+
 /**
  * MemoryBackend implementation that talks to the daemon over UDS.
+ *
+ * When a `respawn` callback is provided, connection errors automatically
+ * trigger a single respawn attempt followed by a retry of the original request.
  */
 export class DaemonClient implements MemoryBackend {
-  constructor(private socketPath: string) {}
+  private respawn?: () => Promise<boolean>;
 
-  private request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  constructor(
+    private socketPath: string,
+    opts?: DaemonClientOptions,
+  ) {
+    this.respawn = opts?.respawn;
+  }
+
+  private rawRequest<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       const options: http.RequestOptions = {
         socketPath: this.socketPath,
@@ -66,6 +85,27 @@ export class DaemonClient implements MemoryBackend {
       }
       req.end();
     });
+  }
+
+  /**
+   * Send a request to the daemon. On connection error (ECONNREFUSED, ENOENT),
+   * attempt to respawn the daemon once and retry.
+   */
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
+    try {
+      return await this.rawRequest<T>(method, path, body);
+    } catch (err) {
+      if (!this.respawn || !isConnectionError(err)) throw err;
+
+      const ok = await this.respawn();
+      if (!ok) throw err;
+
+      return this.rawRequest<T>(method, path, body);
+    }
   }
 
   async store(input: StoreInput): Promise<Memory> {
@@ -143,7 +183,11 @@ export class DaemonClient implements MemoryBackend {
    */
   async ping(): Promise<boolean> {
     try {
-      const result = await this.request<{ status: string }>("GET", "/health");
+      // Use rawRequest — ping checks liveness, must not trigger respawn
+      const result = await this.rawRequest<{ status: string }>(
+        "GET",
+        "/health",
+      );
       return result.status === "ok";
     } catch {
       return false;
@@ -160,4 +204,11 @@ export class DaemonClient implements MemoryBackend {
       // Rebuild failed or not supported
     }
   }
+}
+
+/** Connection-level errors that indicate the daemon process is gone. */
+function isConnectionError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const code = (err as NodeJS.ErrnoException).code;
+  return code === "ECONNREFUSED" || code === "ENOENT" || code === "ECONNRESET";
 }
