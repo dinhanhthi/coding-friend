@@ -21,6 +21,8 @@ CONDITION=""
 SKILL=""
 REPO=""
 MODEL="sonnet"
+WAVE=""
+BENCH_REPO=""
 BUDGET=""
 DRY_RUN=false
 
@@ -37,6 +39,8 @@ Options:
   --skill <name>           Skill name (used for organizing results)
   --repo <path>            Working directory for the eval run
   --model <model>          Model to use (default: sonnet)
+  --wave <1|2|3>           Wave number (used for organizing results)
+  --bench-repo <name>      Benchmark repo name, e.g. bench-webapp (used for organizing results)
   --budget <amount>        Max budget in USD per run (passed as --max-budget-usd)
   --dry-run                Show the command that would be executed without running it
   --help                   Show this help message
@@ -79,6 +83,8 @@ while [[ $# -gt 0 ]]; do
     --skill)    SKILL="$2"; shift 2 ;;
     --repo)     REPO="$2"; shift 2 ;;
     --model)    MODEL="$2"; shift 2 ;;
+    --wave)     WAVE="$2"; shift 2 ;;
+    --bench-repo) BENCH_REPO="$2"; shift 2 ;;
     --budget)   BUDGET="$2"; shift 2 ;;
     --dry-run)  DRY_RUN=true; shift ;;
     --help)     usage; exit 0 ;;
@@ -97,10 +103,20 @@ if [[ "$CONDITION" != "with-cf" && "$CONDITION" != "without-cf" ]]; then
   die "Invalid condition: $CONDITION (must be 'with-cf' or 'without-cf')"
 fi
 
+# Derive bench-repo from repo path if not provided
+if [[ -z "$BENCH_REPO" && -n "$REPO" ]]; then
+  BENCH_REPO=$(basename "$REPO")
+fi
+
 # Generate timestamp and date for output file
 TIMESTAMP=$(date +%Y-%m-%dT%H-%M-%S)
 RUN_DATE=$(date +%Y-%m-%d)
-OUTPUT_DIR="$SCRIPT_DIR/results/$RUN_DATE/$MODEL/$SKILL"
+
+# Build output path: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
+OUTPUT_DIR="$SCRIPT_DIR/results/$RUN_DATE/$MODEL"
+[[ -n "$WAVE" ]] && OUTPUT_DIR="$OUTPUT_DIR/wave-$WAVE"
+OUTPUT_DIR="$OUTPUT_DIR/$SKILL"
+[[ -n "$BENCH_REPO" ]] && OUTPUT_DIR="$OUTPUT_DIR/$BENCH_REPO"
 OUTPUT_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.json"
 META_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.meta.json"
 
@@ -196,7 +212,9 @@ cat > "$META_FILE" <<EOF
   "skill": "$SKILL",
   "condition": "$CONDITION",
   "repo": "$REPO",
+  "bench_repo": "$BENCH_REPO",
   "model": "$MODEL",
+  "wave": "$WAVE",
   "wall_time_seconds": $WALL_TIME,
   "timestamp": "$TIMESTAMP",
   "exit_code": $EXIT_CODE

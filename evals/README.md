@@ -6,7 +6,7 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 
 ```bash
 # Run eval for a single model (most common), runs=3
-./run-full-eval.sh --model sonnet
+./run-full-eval.sh --model sonnet # options: haiku, sonnet, opus
 
 # Run in number of runs
 ./run-full-eval.sh --model sonnet --runs 2
@@ -18,10 +18,10 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 ./run-full-eval.sh
 
 # Specific wave only
-./run-full-eval.sh --model sonnet --wave security
+./run-full-eval.sh --model sonnet --wave security # options: 1, 2, 3 (alias "security"), all (default)
 
 # Multiple models
-./run-full-eval.sh --model sonnet --model opus
+./run-full-eval.sh --model sonnet --model opus # options: haiku, sonnet, opus
 
 # Quick run (1 per combo)
 ./run-full-eval.sh --model sonnet --runs 1
@@ -36,25 +36,33 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 Options for `run-full-eval.sh`:
 
 
-| Option                        | Default                   | Description                        |
-| ----------------------------- | ------------------------- | ---------------------------------- |
-| `--model <name>`              | all (haiku, sonnet, opus) | Model to use. Repeat for multiple. |
-| `--runs <N>`                  | 3                         | Runs per combination               |
-| `--wave <1|2|3|security|all>` | all                       | Which wave(s) to run               |
-| `--skill <name>`              |                           | Run only this skill                |
-| `--budget <amount>`           |                           | Max cost per run in USD            |
-| `--dry-run`                   |                           | Preview all runs without executing |
-| `--skip-setup`                |                           | Skip benchmark repo setup          |
-| `--skip-score`                |                           | Skip scoring and JSON generation   |
+| Option              | Default                   | Description                        |
+| ------------------- | ------------------------- | ---------------------------------- |
+| `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple. |
+| `--runs <N>`        | 3                         | Runs per combination               |
+| `--wave <1          | 2                         | 3                                  |
+| `--skill <name>`    |                           | Run only this skill                |
+| `--budget <amount>` |                           | Max cost per run in USD            |
+| `--dry-run`         |                           | Preview all runs without executing |
+| `--skip-setup`      |                           | Skip benchmark repo setup          |
+| `--skip-score`      |                           | Skip scoring and JSON generation   |
 
 
 ## Output Structure
 
 ```
-results/<date>/<model>/<skill>/<condition>--<timestamp>.json       # raw Claude output
-results/<date>/<model>/<skill>/<condition>--<timestamp>.meta.json  # metadata (model, wall_time, etc.)
-analysis/<date>/<model>/<skill>-<condition>-scores.json            # scoring results
-website/src/data/eval-results.json                                 # aggregated website data
+results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json       # raw Claude output
+results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.meta.json  # metadata
+analysis/<date>/<model>/wave-<N>/<skill>-<bench-repo>-<condition>-scores.json            # scoring results
+website/src/data/eval-results.json                                                       # aggregated website data
+```
+
+Example:
+```
+results/2026-03-24/sonnet/wave-1/cf-review/bench-webapp/with-cf--2026-03-24T14-32-15.json
+results/2026-03-24/sonnet/wave-1/cf-review/bench-webapp/with-cf--2026-03-24T14-32-15.meta.json
+results/2026-03-24/sonnet/wave-1/cf-fix/bench-cli/without-cf--2026-03-24T14-32-15.json
+analysis/2026-03-24/sonnet/wave-1/cf-review-bench-webapp-with-cf-scores.json
 ```
 
 ## Data Flow
@@ -66,9 +74,9 @@ run-full-eval.sh                          <- top level: all models, all waves
   │   └── run-wave.sh × N waves              <- one model, one wave
   │       └── for each skill × repo × condition:
   │           └── run-eval.sh                <- single eval run
-  │               └── results/<date>/<model>/<skill>/<condition>--<timestamp>.json
+  │               └── results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
   ├── score.sh --wave all                     (automated scoring)
-  │   └── analysis/<date>/<model>/<skill>-<condition>-scores.json
+  │   └── analysis/<date>/<model>/wave-<N>/<skill>-<bench-repo>-<condition>-scores.json
   └── generate-eval-json.sh                   (website data)
       └── website/src/data/eval-results.json
 ```
