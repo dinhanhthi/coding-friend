@@ -1,13 +1,16 @@
 /**
  * Shared memory prompt helpers — used by both `cf config > memory` and `cf memory config/init`.
  */
+import { existsSync } from "fs";
+import { homedir } from "os";
 import { confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { join } from "path";
-import { readJson, mergeJson } from "./json.js";
+import { readJson, mergeJson, writeJson } from "./json.js";
 import { log } from "./log.js";
 import { globalConfigPath, localConfigPath } from "./paths.js";
 import { getLibPath } from "./lib-path.js";
+import { resolveMemoryDir } from "./config.js";
 import type { CodingFriendConfig } from "../types.js";
 import {
   BACK,
@@ -303,6 +306,100 @@ export async function editMemoryDaemonTimeout(
   });
 }
 
+// ─── MCP setup ──────────────────────────────────────────────────────
+
+/**
+ * Write the coding-friend-memory MCP entry into `.mcp.json` (merge, don't overwrite).
+ */
+export function writeMemoryMcpEntry(
+  serverPath: string,
+  memoryDir: string,
+): void {
+  const mcpPath = join(process.cwd(), ".mcp.json");
+  const existing = readJson<Record<string, unknown>>(mcpPath) ?? {};
+  const servers =
+    (existing.mcpServers as Record<string, unknown> | undefined) ?? {};
+
+  writeJson(mcpPath, {
+    ...existing,
+    mcpServers: {
+      ...servers,
+      "coding-friend-memory": {
+        command: "node",
+        args: [serverPath, memoryDir],
+      },
+    },
+  });
+  log.success("Added coding-friend-memory to .mcp.json");
+}
+
+export function getMemoryMcpStatus(): {
+  configured: boolean;
+  scope: "local" | "global" | null;
+} {
+  const localMcpPath = join(process.cwd(), ".mcp.json");
+  const localMcp = readJson<Record<string, unknown>>(localMcpPath);
+  const localServers = localMcp?.mcpServers as
+    | Record<string, unknown>
+    | undefined;
+  if (localServers != null && "coding-friend-memory" in localServers) {
+    return { configured: true, scope: "local" };
+  }
+
+  const globalMcpPath = join(homedir(), ".claude", ".mcp.json");
+  const globalMcp = readJson<Record<string, unknown>>(globalMcpPath);
+  const globalServers = globalMcp?.mcpServers as
+    | Record<string, unknown>
+    | undefined;
+  if (globalServers != null && "coding-friend-memory" in globalServers) {
+    return { configured: true, scope: "global" };
+  }
+
+  return { configured: false, scope: null };
+}
+
+export async function editMemoryMcp(): Promise<void> {
+  const status = getMemoryMcpStatus();
+
+  if (status.configured) {
+    const label =
+      status.scope === "local"
+        ? chalk.green("configured") + chalk.dim(" (local .mcp.json)")
+        : chalk.green("configured") +
+          chalk.dim(" (global ~/.claude/.mcp.json)") +
+          " " +
+          chalk.yellow("⚠ only works for one project");
+    log.info(`MCP: ${label}`);
+
+    const reconfigure = await confirm({
+      message: "Reconfigure Memory MCP in local .mcp.json?",
+      default: false,
+    });
+    if (!reconfigure) return;
+  }
+
+  let mcpDir: string;
+  try {
+    mcpDir = getLibPath("cf-memory");
+  } catch {
+    log.warn(
+      "cf-memory package not found. Install the CLI first: npm i -g coding-friend-cli",
+    );
+    return;
+  }
+
+  const serverPath = join(mcpDir, "dist", "index.js");
+  if (!existsSync(serverPath)) {
+    log.warn(
+      'cf-memory not built yet. Run "cf memory mcp" after building to get the config.',
+    );
+    return;
+  }
+
+  const memoryDir = resolveMemoryDir();
+  writeMemoryMcpEntry(serverPath, memoryDir);
+}
+
 // ─── Memory config menu (shared by cf config > memory and cf memory config) ──
 
 export async function memoryConfigMenu(opts?: {
@@ -361,6 +458,16 @@ export async function memoryConfigMenu(opts?: {
         : embeddingVal.provider
       : "";
 
+    const mcpStatus = getMemoryMcpStatus();
+    const mcpLabel = mcpStatus.configured
+      ? mcpStatus.scope === "local"
+        ? chalk.green("configured") + chalk.dim(" (.mcp.json)")
+        : chalk.green("configured") +
+          chalk.dim(" (global)") +
+          " " +
+          chalk.yellow("⚠")
+      : chalk.dim("not configured");
+
     const choice = await select({
       message: "Memory settings:",
       choices: injectBackChoice(
@@ -385,6 +492,10 @@ export async function memoryConfigMenu(opts?: {
             name: `Daemon timeout ${formatScopeLabel(daemonScope)}${daemonVal?.idleTimeout ? ` (${daemonVal.idleTimeout / 60000}min)` : ""}`,
             value: "daemon",
           },
+          {
+            name: `MCP setup (${mcpLabel})`,
+            value: "mcp",
+          },
         ],
         opts?.exitLabel ?? "Back",
       ),
@@ -407,6 +518,9 @@ export async function memoryConfigMenu(opts?: {
         break;
       case "daemon":
         await editMemoryDaemonTimeout(globalCfg, localCfg);
+        break;
+      case "mcp":
+        await editMemoryMcp();
         break;
     }
   }
