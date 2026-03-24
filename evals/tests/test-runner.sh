@@ -551,18 +551,16 @@ test_generate_eval_json_rejects_unknown_flags() {
   assert_eq "1" "$exit_code" "should fail with unknown flag"
 }
 
-test_generate_eval_json_accepts_no_llm() {
-  # Should not error on --no-llm (actual run may fail if no results, but arg parsing should succeed)
-  local output
-  output=$("$EVALS_DIR/generate-eval-json.sh" --no-llm 2>&1) || true
-  # If it got past arg parsing, it either succeeded or failed on results — not on the flag
-  assert_not_contains "$output" "Unknown argument" "should accept --no-llm flag"
+test_generate_eval_json_rejects_no_llm() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --no-llm 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should reject --no-llm flag (LLM-only scoring)"
 }
 
 test_generate_eval_json_help() {
   local output
   output=$("$EVALS_DIR/generate-eval-json.sh" --help 2>&1) || true
-  assert_contains "$output" "--no-llm" "help should mention --no-llm flag"
+  assert_contains "$output" "generate-eval-json" "help should show script name"
 }
 
 # ============================================================
@@ -719,7 +717,7 @@ main() {
   echo "--- generate-eval-json.sh ---"
   run_test test_generate_eval_json_exists
   run_test test_generate_eval_json_rejects_unknown_flags
-  run_test test_generate_eval_json_accepts_no_llm
+  run_test test_generate_eval_json_rejects_no_llm
   run_test test_generate_eval_json_help
 
   echo ""
