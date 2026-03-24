@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# llm-score.sh — Use Claude as an LLM-as-judge to score eval results
+# llm-score.sh — LLM-as-judge scoring for eval results against rubrics
 #
-# Replaces primitive regex matching with quality-aware LLM scoring.
-# Sends rubric criteria + eval output to Haiku, gets structured JSON scores.
+# The ONLY scoring method used for website data. Sends rubric criteria + eval
+# output + full conversation log to Haiku, gets structured JSON scores.
+# No regex or pattern matching — quality evaluation only.
 #
 # Usage:
 #   ./llm-score.sh --result <result.json> --rubric <rubric.json> [--model haiku] [--dry-run]
@@ -97,14 +98,16 @@ Scoring levels:
 done
 
 # Load conversation context if available
+# The conversation log is critical for with-CF results where workflow discipline
+# (skill activations, agent dispatches, TDD cycles) happens mid-conversation.
 CONVERSATION_CONTEXT=""
 if [[ -n "$CONVERSATION_FILE" && -f "$CONVERSATION_FILE" && -s "$CONVERSATION_FILE" ]]; then
-  # Truncate to first ~200 lines to stay within budget (line-based to avoid mid-UTF-8 truncation)
-  CONVERSATION_TEXT=$(head -n 200 "$CONVERSATION_FILE")
+  # Truncate to first ~500 lines to capture workflow steps (line-based to avoid mid-UTF-8 truncation)
+  CONVERSATION_TEXT=$(head -n 500 "$CONVERSATION_FILE")
   CONVERSATION_CONTEXT="
-## Full Conversation Log (for additional context)
+## Full Conversation Log (CRITICAL for scoring — shows workflow steps)
 
-This is the full conversation log showing all intermediate steps, tool calls, and analysis done during the eval. Use this to assess quality when the final output is a summary.
+This conversation log shows all intermediate steps: skill activations, agent dispatches, TDD cycles, tool calls, and analysis. For with-CF results, the workflow discipline visible here (e.g., cf-tdd auto-activating, tests written before code, verification gates) is as important as the final output. Score based on the FULL work done, not just the final summary.
 
 \`\`\`
 ${CONVERSATION_TEXT}
@@ -122,7 +125,8 @@ Score the following eval output against each rubric criterion on a 0-3 scale.
 - Evaluate the QUALITY and SUBSTANCE of the output, not just surface patterns.
 - Both detailed outputs and summary outputs can score well if they demonstrate the required quality.
 - A shorter summary that correctly identifies key issues can score as well as a verbose output.
-- If a conversation log is provided, use it to understand the FULL work done (not just the final summary).
+- If a conversation log is provided, use it to understand the FULL work done (not just the final summary). The conversation log is essential — it shows workflow steps like skill activations, agent dispatches, TDD cycles, and verification gates that may not appear in the final output.
+- When evaluating with-CF results, look for evidence of workflow discipline in the conversation: tests written before code, structured review output, verification steps, agent coordination. These are the key differentiators being measured.
 - Do NOT penalize for brevity if the content is substantive.
 - Do NOT reward for verbosity if the content is shallow.
 - Score each criterion independently based on its description and scoring levels.

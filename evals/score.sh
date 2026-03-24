@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# score.sh — Score eval results using rubric-defined automated checks
+# score.sh — DIAGNOSTIC TOOL: regex-based structural checks (NOT used for final scoring)
 #
-# NOTE: This is a diagnostic tool showing per-file regex check pass/fail details.
-# It does NOT use LLM-as-judge scoring. For website data generation with LLM scoring,
-# use generate-eval-json.sh instead. The two scripts intentionally diverge:
-#   - score.sh: detailed regex-only diagnostics → analysis/ directory
-#   - generate-eval-json.sh: LLM-as-judge scoring → website JSON
+# This script runs simple regex checks against eval results for quick debugging.
+# It does NOT contribute to website scores or final evaluation results.
+#
+# For actual scoring, use generate-eval-json.sh which uses LLM-as-judge (Haiku)
+# to evaluate results against rubrics. The two scripts serve different purposes:
+#   - score.sh: quick diagnostic regex checks → analysis/ directory (debugging only)
+#   - generate-eval-json.sh: LLM-as-judge rubric scoring → website JSON (official scores)
 
 set -euo pipefail
 
