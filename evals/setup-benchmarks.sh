@@ -7,10 +7,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BENCH_DIR="$SCRIPT_DIR/benchmarks"
 
-echo "=== Setting up benchmark repos ==="
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
+
+echo -e "${BOLD}📦 === Setting up benchmark repos ===${NC}"
+echo ""
 
 # bench-webapp: stage validator.ts as "newly added" for commit scenario
-echo "[bench-webapp] Setting up staged changes..."
+echo -e "${BLUE}🔧 [bench-webapp]${NC} Setting up staged changes..."
 cd "$BENCH_DIR/bench-webapp"
 git reset --hard HEAD 2>/dev/null || true
 git clean -fd 2>/dev/null || true
@@ -23,10 +32,10 @@ export function validatePhone(phone: string): boolean {
 }
 CODE
 git add src/lib/validator.ts
-echo "  Staged: validator.ts with new validatePhone function"
+echo -e "  ${GREEN}✔ Staged: validator.ts with new validatePhone function${NC}"
 
 # bench-cli: format.ts has comment change for commit scenario
-echo "[bench-cli] Setting up staged changes..."
+echo -e "${BLUE}🔧 [bench-cli]${NC} Setting up staged changes..."
 cd "$BENCH_DIR/bench-cli"
 git reset --hard HEAD 2>/dev/null || true
 git clean -fd 2>/dev/null || true
@@ -35,10 +44,10 @@ sed -i '' '1i\
 // Added CSV header support and improved column alignment
 ' src/format.ts
 git add src/format.ts
-echo "  Staged: format.ts with header comment"
+echo -e "  ${GREEN}✔ Staged: format.ts with header comment${NC}"
 
 # bench-library: add a small change for commit scenario
-echo "[bench-library] Setting up staged changes..."
+echo -e "${BLUE}🔧 [bench-library]${NC} Setting up staged changes..."
 cd "$BENCH_DIR/bench-library"
 git reset --hard HEAD 2>/dev/null || true
 git clean -fd 2>/dev/null || true
@@ -49,11 +58,11 @@ export function flatten<T>(arr: T[][]): T[] {
 }
 CODE
 git add src/array-utils.ts
-echo "  Staged: array-utils.ts with new flatten function"
+echo -e "  ${GREEN}✔ Staged: array-utils.ts with new flatten function${NC}"
 
 # bench-research: no changes needed
-echo "[bench-research] No setup needed"
+echo -e "${DIM}⏭ [bench-research] No setup needed${NC}"
 
 echo ""
-echo "=== All benchmarks ready ==="
-echo "Run: ./run-wave.sh --wave 1 --runs 1 --model opus"
+echo -e "${GREEN}🎉 === All benchmarks ready ===${NC}"
+echo -e "Run: ${CYAN}./run-wave.sh --wave 1 --runs 1 --model opus${NC}"

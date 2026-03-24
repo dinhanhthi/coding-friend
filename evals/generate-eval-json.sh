@@ -13,6 +13,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
 RESULTS_DIR="$SCRIPT_DIR/results"
 RUBRICS_DIR="$SCRIPT_DIR/rubrics"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
@@ -27,7 +36,7 @@ MODEL_LABELS='{"haiku":"Haiku","sonnet":"Sonnet","opus":"Opus"}'
 MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","opus":"claude-opus-4-6"}'
 
 die() {
-  echo "ERROR: $1" >&2
+  echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
 }
 
@@ -245,15 +254,15 @@ build_json() {
       }
     }' > "$OUTPUT_FILE"
 
-  echo "Generated: $OUTPUT_FILE"
+  echo -e "${GREEN}✅ Generated:${NC} ${DIM}$OUTPUT_FILE${NC}"
   echo ""
-  echo "Summary:"
+  echo -e "${BOLD}📊 Summary:${NC}"
   for model in "${ALL_MODELS[@]}"; do
     local sessions avg_with avg_without
     sessions=$(echo "$models_json" | jq -r ".\"$model\".evalSessions")
     avg_with=$(echo "$models_json" | jq -r ".\"$model\".average.withCF")
     avg_without=$(echo "$models_json" | jq -r ".\"$model\".average.withoutCF")
-    printf "  %-8s sessions=%-4s  avg_with_cf=%-6s  avg_without_cf=%-6s\n" "$model" "$sessions" "$avg_with" "$avg_without"
+    printf "  🤖 ${BOLD}%-8s${NC} sessions=${CYAN}%-4s${NC}  avg_with_cf=${GREEN}%-6s${NC}  avg_without_cf=${DIM}%-6s${NC}\n" "$model" "$sessions" "$avg_with" "$avg_without"
   done
 }
 
