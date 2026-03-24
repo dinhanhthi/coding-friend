@@ -62,10 +62,9 @@ Each skill has a rubric with weighted criteria scored 0-3:
 
 **Pass threshold**: average ≥ 2.0.
 
-**Two-layer scoring pipeline**:
+**LLM-as-judge scoring**:
 
-1. **LLM-as-judge (primary)** — Each eval result is scored by Claude Haiku using the full rubric. Haiku reads the eval output and scores each criterion 0-3 with a brief justification. Scores are cached as `.llm-score.json` alongside results so re-runs are instant.
-2. **Regex checks (fallback)** — If LLM scoring is unavailable or disabled (`--no-llm`), pattern-matching checks validate structural markers (e.g., file:line references, test keywords, pass/fail indicators). Criteria without automated checks receive a benefit-of-the-doubt score of 2/3.
+Each eval result is scored by Claude Haiku using the full rubric. Haiku reads the eval output and scores each criterion 0-3 with a brief justification. Scores are cached as `.llm-score.json` alongside results so re-runs are instant.
 
 The LLM judge evaluates the **full conversation** (not just the final summary), which is especially important for skills like `cf-review` that dispatch subagents — the detailed findings happen mid-conversation.
 
@@ -100,8 +99,7 @@ cd evals && ./run-full-eval.sh
 ./run-full-eval.sh --model sonnet --wave 3
 
 # Re-score existing results (no re-running evals)
-./generate-eval-json.sh          # with LLM scoring
-./generate-eval-json.sh --no-llm # regex-only scoring
+./generate-eval-json.sh
 
 # Score a single result with LLM judge
 ./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
