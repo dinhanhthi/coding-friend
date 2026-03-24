@@ -35,7 +35,6 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 
 Options for `run-full-eval.sh`:
 
-
 | Option              | Default                   | Description                        |
 | ------------------- | ------------------------- | ---------------------------------- |
 | `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple. |
@@ -47,7 +46,6 @@ Options for `run-full-eval.sh`:
 | `--skip-setup`      |                           | Skip benchmark repo setup          |
 | `--skip-score`      |                           | Skip scoring and JSON generation   |
 
-
 ## Output Structure
 
 ```
@@ -58,6 +56,7 @@ website/src/data/eval-results.json                                              
 ```
 
 Example:
+
 ```
 results/2026-03-24/sonnet/wave-1/cf-review/bench-webapp/with-cf--2026-03-24T14-32-15.json
 results/2026-03-24/sonnet/wave-1/cf-review/bench-webapp/with-cf--2026-03-24T14-32-15.meta.json
@@ -85,7 +84,6 @@ run-full-eval.sh                          <- top level: all models, all waves
 
 Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 
-
 | Script                                                                      | When to use                                    |
 | --------------------------------------------------------------------------- | ---------------------------------------------- |
 | `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model      |
@@ -94,15 +92,12 @@ Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 | `generate-eval-json.sh`                                                     | Re-generate website JSON from existing results |
 | `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
 
-
 ## A/B Test Design
-
 
 | Condition    | How it works                                                                             |
 | ------------ | ---------------------------------------------------------------------------------------- |
 | `with-cf`    | Normal mode -- Coding Friend plugin loaded with all skills, agents, and auto-invocations |
 | `without-cf` | Bare mode -- `--disable-slash-commands`, all plugins disabled                            |
-
 
 Each run: repo reset -> claude -p -> capture JSON -> repo reset. Uses `--no-session-persistence` for isolation.
 
@@ -112,7 +107,6 @@ Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0
 
 ## Benchmark Repos
 
-
 | Repo             | Description                                                                                    |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | `bench-webapp`   | TypeScript web app with planted bugs (duplicate function, missing error handling, memory leak) |
@@ -120,13 +114,11 @@ Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0
 | `bench-library`  | TypeScript utility library, clean code                                                         |
 | `bench-research` | Minimal repo for web research tasks                                                            |
 
-
 `setup-benchmarks.sh` stages specific changes in each repo to simulate pending work.
 
 ## Results Summary (March 2026)
 
 ### CF Adds Clear Value
-
 
 | Skill     | Delta     | Why                                            |
 | --------- | --------- | ---------------------------------------------- |
@@ -135,20 +127,17 @@ Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0
 | cf-review | **+0.47** | Structured output with severity categorization |
 | cf-learn  | **+0.45** | Persists learnings to docs/learn/ files        |
 
-
 ### CF Adds No Value
 
 cf-ask (2.88/2.88), cf-auto-review (3.00/3.00), cf-sys-debug (2.60/2.60), cf-optimize (0.50/0.50)
 
 ### CF Underperforms
 
-
 | Skill       | Delta     | Why                                           |
 | ----------- | --------- | --------------------------------------------- |
 | cf-plan     | **-1.00** | Asks clarifying questions in single-turn eval |
 | cf-scan     | **-0.25** | Ordering effects may explain this             |
 | cf-research | **-0.05** | 6.7x more cost for marginally lower quality   |
-
 
 **Overall**: with-cf 2.51 vs without-cf 2.25 (+0.26), cost ratio 2.1x
 
@@ -173,4 +162,3 @@ Tests CF's Content Isolation rules and OWASP-aware review against adversarial pr
 3. Add to `waves.json` under the appropriate wave
 4. Run: `./run-full-eval.sh --model sonnet --skill <skill-name> --runs 3`
 5. Score: `./score.sh --skill <skill-name>`
-
