@@ -4,14 +4,42 @@ description: Install the Coding Friend CLI and Claude Code plugin to get started
 keywords: [installation, setup, claude code plugin, npm, cli, scope]
 ---
 
-## Prerequisites
+## Option A: One-Prompt Install
+
+If you already have [Claude Code](https://claude.com/claude-code) running, paste the prompt below and Claude will walk you through everything — checking prerequisites, installing the CLI and plugin, and initializing your workspace.
+
+```text
+Install the "coding-friend-cli" npm package globally and set up the Coding Friend
+plugin for Claude Code. Follow these steps in order, checking each one before
+moving to the next:
+
+1. Check that Node.js >= 20 is installed (run: `node -v`). If not, stop and tell
+   me to install Node.js 20+ first.
+2. Install the CLI globally (run: `npm i -g coding-friend-cli`).
+3. Verify it works (run: `cf --version`). Show me the version.
+4. Install the plugin (run: `cf install --user`).
+5. Initialize the workspace in the current project (run: `cf init`). When cf init
+   asks questions, explain each option to me and let me choose.
+6. Show a short summary of what was installed and remind me to restart Claude
+   Code to load the plugin.
+```
+
+<Callout type="info">
+  After the install, restart Claude Code (or run `/exit` then reopen) to load the plugin.
+</Callout>
+
+---
+
+## Option B: Manual Install
+
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+ installed
 - [Claude Code](https://claude.com/claude-code) installed
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
 - (Optional) [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
 
-## Install the CLI
+### Install the CLI
 
 <PackageManagerTabs package="coding-friend-cli" />
 
@@ -29,7 +57,7 @@ This gives you the `cf` command globally. Verify with:
 cf --version
 ```
 
-## Install the Plugin
+### Install the Plugin
 
 ```bash
 # Interactive — asks which scope to use
@@ -43,7 +71,7 @@ cf install --local      # This machine only (gitignored)
 
 Read more about `cf install` [here](/docs/cli/cf-install/).
 
-## Initialize Your Workspace and Configure Coding Friend
+### Initialize Your Workspace and Configure Coding Friend
 
 ```bash
 # In each project, run the following first
@@ -64,7 +92,7 @@ cf permission --all
 
 Read more about [`cf permission`](/docs/cli/cf-permission/) and [permissions](/docs/reference/permissions/).
 
-## Scan your project
+### Scan your project
 
 ```bash
 # Enter claude code then run

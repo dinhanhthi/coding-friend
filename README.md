@@ -67,43 +67,44 @@ The Learning Notes taken from your coding sessions with the help of the `/cf-lea
 
 ## Quick Start
 
-### 1. Install the CLI
+### Option A: One-Prompt Install
+
+Already have [Claude Code](https://claude.com/claude-code) running? Paste this prompt and Claude will handle the rest:
+
+```text
+Install the "coding-friend-cli" npm package globally and set up the Coding Friend
+plugin for Claude Code. Follow these steps in order, checking each one before
+moving to the next:
+
+1. Check that Node.js >= 20 is installed (run: `node -v`). If not, stop and tell
+   me to install Node.js 20+ first.
+2. Install the CLI globally (run: `npm i -g coding-friend-cli`).
+3. Verify it works (run: `cf --version`). Show me the version.
+4. Install the plugin (run: `cf install --user`).
+5. Initialize the workspace in the current project (run: `cf init`). When cf init
+   asks questions, explain each option to me and let me choose.
+6. Show a short summary of what was installed and remind me to restart Claude
+   Code to load the plugin.
+```
+
+After the install, restart Claude Code (or run `/exit` then reopen) to load the plugin.
+
+### Option B: Manual Install
 
 Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com/claude-code).
 
 ```bash
-# npm
+# 1. Install the CLI
 npm i -g coding-friend-cli
 
-# yarn
-yarn global add coding-friend-cli
+# 2. Install the plugin
+cf install
 
-# pnpm
-pnpm add -g coding-friend-cli
-```
-
-### 2. Install the plugin
-
-```bash
-cf install              # Interactive — asks which scope to use
-cf install --user       # All projects (default)
-cf install --project    # This project only (shared via git)
-cf install --local      # This machine only (gitignored)
-```
-
-> Supports user, project, and local scopes. All features work identically across scopes.
-
-### 3. Initialize your project
-
-```bash
+# 3. Initialize your workspace
 cf init
+
+# 4. Restart Claude Code
 ```
-
-This sets up workspace folders (`docs/plans`, `docs/memory`, `docs/research`, `docs/learn`) and optionally adds them to `.gitignore`.
-
-### 4. Restart Claude Code
-
-Restart to load the plugin, then use slash commands like `/cf-plan`, `/cf-fix`, `/cf-commit`, etc.
 
 ### 5. Enable AI memory (optional)
 
