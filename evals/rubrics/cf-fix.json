@@ -59,5 +59,5 @@
     }
   ],
   "pass_threshold": 2.0,
-  "notes": "TDD approach expected: write failing test first, then fix. Score red_before_green as part of test_coverage if the test was written before the fix."
+  "notes": "The CF workflow advantage: cf-tdd auto-activates during bug fixes, enforcing test-before-fix discipline. Without CF, the AI typically fixes the bug directly without writing a reproducing test first. Check the conversation log for evidence of TDD workflow (RED phase before fix). Score test_coverage higher when a failing test is demonstrated before the fix is applied."
 }
