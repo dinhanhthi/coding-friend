@@ -22,11 +22,15 @@
         "cf-tdd": {
           "withCF": 0,
           "withoutCF": 0
+        },
+        "cf-security": {
+          "withCF": 0,
+          "withoutCF": 0
         }
       },
       "average": {
-        "withCF": 0.00,
-        "withoutCF": 0.00
+        "withCF": 0.0,
+        "withoutCF": 0.0
       }
     },
     "sonnet": {
@@ -36,20 +40,24 @@
       "skills": {
         "cf-fix": {
           "withCF": 2.23,
-          "withoutCF": 1.90
+          "withoutCF": 1.9
         },
         "cf-review": {
           "withCF": 1.38,
           "withoutCF": 2.38
         },
         "cf-tdd": {
-          "withCF": 1.80,
+          "withCF": 1.8,
           "withoutCF": 1.53
+        },
+        "cf-security": {
+          "withCF": 1.88,
+          "withoutCF": 2.07
         }
       },
       "average": {
-        "withCF": 1.80,
-        "withoutCF": 1.94
+        "withCF": 1.82,
+        "withoutCF": 1.97
       }
     },
     "opus": {
@@ -68,11 +76,15 @@
         "cf-tdd": {
           "withCF": 0,
           "withoutCF": 0
+        },
+        "cf-security": {
+          "withCF": 0,
+          "withoutCF": 0
         }
       },
       "average": {
-        "withCF": 0.00,
-        "withoutCF": 0.00
+        "withCF": 0.0,
+        "withoutCF": 0.0
       }
     }
   },
@@ -88,6 +100,10 @@
     {
       "key": "cf-tdd",
       "label": "TDD"
+    },
+    {
+      "key": "cf-security",
+      "label": "Security"
     }
   ],
   "stats": {
