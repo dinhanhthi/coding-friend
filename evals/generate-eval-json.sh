@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# generate-eval-json.sh — Parse eval results and generate website JSON data file
+# generate-eval-json.sh — Generate website JSON from LLM-as-judge scoring
 #
-# Reads results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json files,
-# computes per-model averages for featured skills, and writes
-# website/src/data/eval-results.json
+# Reads eval results and scores them using LLM-as-judge (Haiku) against rubrics.
+# Each result is scored with both the final output AND the full conversation log,
+# which is critical for with-CF results where workflow discipline (skill activations,
+# agent dispatches, TDD cycles) is visible mid-conversation.
+#
+# No time/cost metrics, no regex scoring — LLM rubric evaluation only.
 #
 # Usage:
 #   ./generate-eval-json.sh
@@ -96,7 +99,8 @@ llm_score_result() {
 }
 
 # Compute average score for a skill+condition+model combination
-# Uses LLM-as-judge scoring (Haiku) only — no regex fallback
+# Uses LLM-as-judge scoring (Haiku) only — no regex, no time/cost metrics
+# The LLM judge evaluates both final output and conversation log (for workflow context)
 # Layout: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
 compute_skill_score() {
   local skill="$1"

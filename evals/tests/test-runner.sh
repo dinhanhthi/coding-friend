@@ -635,6 +635,105 @@ test_rubric_cf_fix_no_command_checks() {
 }
 
 # ============================================================
+# Conversation-aware scoring tests
+# ============================================================
+
+test_llm_score_dry_run_includes_conversation_context() {
+  local tmp_result tmp_rubric tmp_conv
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  tmp_conv=$(mktemp /tmp/llm-score-conv-XXXXXX.txt)
+  echo '{"result": "Fixed the bug"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  echo "cf-tdd activated. Writing failing test first..." > "$tmp_conv"
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --conversation "$tmp_conv" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric" "$tmp_conv"
+  assert_contains "$output" "cf-tdd activated" "conversation content should appear in prompt" || return 1
+  assert_contains "$output" "workflow steps" "prompt should mention workflow steps" || return 1
+}
+
+test_llm_score_dry_run_workflow_evaluation_instructions() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test output"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "workflow discipline" "prompt should instruct evaluation of workflow discipline" || return 1
+  assert_contains "$output" "conversation log" "prompt should reference conversation log importance" || return 1
+}
+
+test_generate_eval_json_description_mentions_llm_only() {
+  local header
+  header=$(head -10 "$EVALS_DIR/generate-eval-json.sh")
+  assert_contains "$header" "LLM-as-judge" "script header should mention LLM-as-judge" || return 1
+  assert_contains "$header" "LLM rubric evaluation only" "script header should clarify LLM-only evaluation" || return 1
+}
+
+test_score_sh_describes_diagnostic_only() {
+  local header
+  header=$(head -10 "$EVALS_DIR/score.sh")
+  assert_contains "$header" "DIAGNOSTIC" "score.sh should describe itself as diagnostic" || return 1
+  assert_contains "$header" "NOT used for final scoring" "score.sh should clarify it's not used for final scoring" || return 1
+}
+
+test_rubric_cf_fix_notes_mention_workflow() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null)
+  assert_contains "$notes" "workflow" "cf-fix rubric notes should mention workflow" || return 1
+  assert_contains "$notes" "cf-tdd" "cf-fix rubric notes should reference cf-tdd auto-activation" || return 1
+}
+
+test_rubric_cf_tdd_notes_mention_auto_activation() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-tdd.json" 2>/dev/null)
+  assert_contains "$notes" "auto-activates" "cf-tdd notes should mention auto-activation" || return 1
+  assert_contains "$notes" "conversation log" "cf-tdd notes should reference conversation log" || return 1
+}
+
+test_rubric_cf_review_notes_mention_agent_dispatch() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null)
+  assert_contains "$notes" "cf-code-reviewer" "cf-review notes should mention agent dispatch" || return 1
+}
+
+test_rubric_cf_security_notes_mention_content_isolation() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-security.json" 2>/dev/null)
+  assert_contains "$notes" "Content Isolation" "cf-security notes should mention Content Isolation" || return 1
+  assert_contains "$notes" "OWASP" "cf-security notes should mention OWASP" || return 1
+}
+
+test_readme_mentions_no_time_cost() {
+  local content
+  content=$(cat "$EVALS_DIR/README.md")
+  assert_contains "$content" "No time or cost" "README should state no time/cost in scoring" || return 1
+}
+
+test_readme_mentions_workflow_orchestration() {
+  local content
+  content=$(cat "$EVALS_DIR/README.md")
+  assert_contains "$content" "workflow orchestration" "README should mention workflow orchestration" || return 1
+}
+
+# ============================================================
 # README.md test
 # ============================================================
 
@@ -730,6 +829,19 @@ main() {
   run_test test_rubric_cf_fix_valid
   run_test test_rubric_cf_tdd_valid
   run_test test_rubric_cf_fix_no_command_checks
+
+  echo ""
+  echo "--- conversation-aware scoring ---"
+  run_test test_llm_score_dry_run_includes_conversation_context
+  run_test test_llm_score_dry_run_workflow_evaluation_instructions
+  run_test test_generate_eval_json_description_mentions_llm_only
+  run_test test_score_sh_describes_diagnostic_only
+  run_test test_rubric_cf_fix_notes_mention_workflow
+  run_test test_rubric_cf_tdd_notes_mention_auto_activation
+  run_test test_rubric_cf_review_notes_mention_agent_dispatch
+  run_test test_rubric_cf_security_notes_mention_content_isolation
+  run_test test_readme_mentions_no_time_cost
+  run_test test_readme_mentions_workflow_orchestration
 
   echo ""
   echo "--- README ---"
