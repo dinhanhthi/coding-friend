@@ -25,8 +25,8 @@
         }
       },
       "average": {
-        "withCF": 0.0,
-        "withoutCF": 0.0
+        "withCF": 0.00,
+        "withoutCF": 0.00
       }
     },
     "sonnet": {
@@ -36,20 +36,20 @@
       "skills": {
         "cf-fix": {
           "withCF": 2.23,
-          "withoutCF": 1.9
+          "withoutCF": 1.90
         },
         "cf-review": {
-          "withCF": 1.88,
-          "withoutCF": 2.5
+          "withCF": 1.38,
+          "withoutCF": 2.38
         },
         "cf-tdd": {
-          "withCF": 1.8,
+          "withCF": 1.80,
           "withoutCF": 1.53
         }
       },
       "average": {
-        "withCF": 1.97,
-        "withoutCF": 1.98
+        "withCF": 1.80,
+        "withoutCF": 1.94
       }
     },
     "opus": {
@@ -71,8 +71,8 @@
         }
       },
       "average": {
-        "withCF": 0.0,
-        "withoutCF": 0.0
+        "withCF": 0.00,
+        "withoutCF": 0.00
       }
     }
   },

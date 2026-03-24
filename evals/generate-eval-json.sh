@@ -6,10 +6,8 @@
 # website/src/data/eval-results.json
 #
 # Usage:
-#   ./generate-eval-json.sh [--model <model>] [--all] [--no-llm]
-#   ./generate-eval-json.sh --all          # process all models found in results
-#   ./generate-eval-json.sh --model sonnet # process only sonnet results
-#   ./generate-eval-json.sh --no-llm       # skip LLM-as-judge, use regex only
+#   ./generate-eval-json.sh              # use LLM-as-judge scoring (Haiku) + regex fallback
+#   ./generate-eval-json.sh --no-llm     # skip LLM-as-judge, use regex only
 
 set -euo pipefail
 
@@ -41,7 +39,8 @@ USE_LLM_SCORING="true"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-llm) USE_LLM_SCORING="false"; shift ;;
-    *) shift ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-llm]"; exit 0 ;;
+    *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
 done
 export USE_LLM_SCORING
@@ -72,8 +71,14 @@ llm_score_result() {
   # Check for cached LLM score
   local cache_file="${result_file%.json}.llm-score.json"
   if [[ -f "$cache_file" ]]; then
-    jq -r '.weighted_average // empty' "$cache_file" 2>/dev/null
-    return 0
+    local cached_score
+    cached_score=$(jq -r '.weighted_average // empty' "$cache_file" 2>/dev/null)
+    if [[ -n "$cached_score" ]]; then
+      echo "$cached_score"
+      return 0
+    fi
+    # Corrupt or empty cache — remove and regenerate
+    rm -f "$cache_file"
   fi
 
   # Also try conversation file for richer context
@@ -86,8 +91,10 @@ llm_score_result() {
   local llm_output
   llm_output=$("$llm_score_script" "${score_args[@]}" 2>/dev/null) || return 1
 
-  # Cache the LLM score for future runs
-  echo "$llm_output" > "$cache_file"
+  # Atomic cache write: write to temp then rename
+  local tmp_cache
+  tmp_cache=$(mktemp "${cache_file}.tmp.XXXXXX" 2>/dev/null) || return 1
+  echo "$llm_output" > "$tmp_cache" && mv "$tmp_cache" "$cache_file" || rm -f "$tmp_cache"
 
   echo "$llm_output" | jq -r '.weighted_average // empty' 2>/dev/null
 }
@@ -281,10 +288,11 @@ build_json() {
       '. + [{"key": $key, "label": $label}]')
   done
 
-  # Compute top delta — find the skill with the best improvement across models
+  # Compute top delta — find the skill with the best delta across models
   local top_delta="+0%"
-  local top_delta_label="Bug Fix Quality"
-  local best_delta_num=0
+  local top_delta_label=""
+  local best_delta_num=""
+  local has_data=false
 
   for model in "${ALL_MODELS[@]}"; do
     for i in "${!FEATURED_SKILLS[@]}"; do
@@ -294,16 +302,24 @@ build_json() {
       s_with=$(echo "$models_json" | jq -r ".\"$model\".skills.\"$skill\".withCF // 0")
       s_without=$(echo "$models_json" | jq -r ".\"$model\".skills.\"$skill\".withoutCF // 0")
       if (( $(awk "BEGIN { print ($s_with > 0 && $s_without > 0) }") )); then
+        has_data=true
         local delta_num
         delta_num=$(awk "BEGIN { printf \"%.0f\", (($s_with - $s_without) / $s_without) * 100 }")
-        if (( delta_num > best_delta_num )); then
+        if [[ -z "$best_delta_num" ]] || (( delta_num > best_delta_num )); then
           best_delta_num=$delta_num
-          top_delta=$(awk "BEGIN { printf \"+%.0f%%\", $delta_num }")
           top_delta_label="$skill_label Quality"
         fi
       fi
     done
   done
+
+  if [[ "$has_data" == true && -n "$best_delta_num" ]]; then
+    if (( best_delta_num >= 0 )); then
+      top_delta="+${best_delta_num}%"
+    else
+      top_delta="${best_delta_num}%"
+    fi
+  fi
 
   # Build final JSON
   jq -n \

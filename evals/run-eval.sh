@@ -198,7 +198,7 @@ WALL_TIME=$((END_TIME - START_TIME))
 # 2. Extract all assistant text into a conversation log
 if [[ -s "$STREAM_FILE" ]]; then
   # Extract the last result-type message (contains result, cost_usd, duration_ms, etc.)
-  RESULT_LINE=$(grep '"type":"result"' "$STREAM_FILE" | tail -1 || true)
+  RESULT_LINE=$(jq -c 'select(.type == "result")' "$STREAM_FILE" 2>/dev/null | tail -1 || true)
   if [[ -n "$RESULT_LINE" ]]; then
     echo "$RESULT_LINE" > "$OUTPUT_FILE"
   else

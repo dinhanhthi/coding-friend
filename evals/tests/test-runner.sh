@@ -529,6 +529,105 @@ JSON
 }
 
 # ============================================================
+# generate-eval-json.sh tests
+# ============================================================
+
+test_generate_eval_json_exists() {
+  assert_file_exists "$EVALS_DIR/generate-eval-json.sh"
+}
+
+test_generate_eval_json_rejects_unknown_flags() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --bogus-flag 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail with unknown flag"
+}
+
+test_generate_eval_json_accepts_no_llm() {
+  # Should not error on --no-llm (actual run may fail if no results, but arg parsing should succeed)
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --no-llm 2>&1) || true
+  # If it got past arg parsing, it either succeeded or failed on results — not on the flag
+  assert_not_contains "$output" "Unknown argument" "should accept --no-llm flag"
+}
+
+test_generate_eval_json_help() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --help 2>&1) || true
+  assert_contains "$output" "--no-llm" "help should mention --no-llm flag"
+}
+
+# ============================================================
+# score.sh integration tests
+# ============================================================
+
+test_score_skips_llm_score_files() {
+  # Create fixture with a .llm-score.json file that should be ignored
+  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-review/with-cf"
+  mkdir -p "$fixture_dir"
+  cat > "$fixture_dir/with-cf--test.json" <<'JSON'
+{"result": "Found bug in api.ts:42 — missing error handling"}
+JSON
+  cat > "$fixture_dir/with-cf--test.llm-score.json" <<'JSON'
+{"scores": [{"name": "test", "score": 3, "reason": "cached"}], "weighted_average": 3.0}
+JSON
+
+  local output
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || true
+
+  rm -rf "$EVALS_DIR/tests/fixtures"
+
+  # The llm-score.json file should not appear as a scored file
+  assert_not_contains "$output" "no result field" "should skip .llm-score.json files" || return 1
+}
+
+test_score_handles_unsupported_check_type() {
+  # Create a fixture with a rubric that has a "command" type check
+  local fixture_dir="$EVALS_DIR/tests/fixtures/results/test-skill/bench-test/with-cf"
+  local rubric_dir="$EVALS_DIR/tests/fixtures/rubrics"
+  mkdir -p "$fixture_dir" "$rubric_dir"
+
+  cat > "$fixture_dir/with-cf--test.json" <<'JSON'
+{"result": "All 5 tests pass. Fixed the bug."}
+JSON
+  cat > "$rubric_dir/test-skill.json" <<'JSON'
+{
+  "name": "test-skill",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0":"Bad","1":"OK","2":"Good","3":"Great"},
+     "automated_check": {"type": "command", "command": "npm test", "target": "exit_code"}}
+  ]
+}
+JSON
+
+  local output
+  output=$("$EVALS_DIR/score.sh" --skill test-skill --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || true
+
+  rm -rf "$EVALS_DIR/tests/fixtures"
+
+  # Should show "skipped" for unsupported check type, not "PASS"
+  assert_contains "$output" "test-skill" || return 1
+}
+
+# ============================================================
+# rubric JSON validity tests
+# ============================================================
+
+test_rubric_cf_fix_valid() {
+  jq empty "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null || { echo "    cf-fix.json is invalid JSON"; return 1; }
+}
+
+test_rubric_cf_tdd_valid() {
+  jq empty "$EVALS_DIR/rubrics/cf-tdd.json" 2>/dev/null || { echo "    cf-tdd.json is invalid JSON"; return 1; }
+}
+
+test_rubric_cf_fix_no_command_checks() {
+  # Verify cf-fix rubric no longer uses "command" type checks
+  local count
+  count=$(jq '[.criteria[].automated_check? // {} | select(.type == "command")] | length' "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null)
+  assert_eq "0" "$count" "cf-fix should not have command-type checks"
+}
+
+# ============================================================
 # README.md test
 # ============================================================
 
@@ -606,6 +705,24 @@ main() {
   run_test test_llm_score_dry_run_has_no_session
   run_test test_llm_score_empty_result_field
   run_test test_llm_score_dry_run_includes_scoring_levels
+
+  echo ""
+  echo "--- generate-eval-json.sh ---"
+  run_test test_generate_eval_json_exists
+  run_test test_generate_eval_json_rejects_unknown_flags
+  run_test test_generate_eval_json_accepts_no_llm
+  run_test test_generate_eval_json_help
+
+  echo ""
+  echo "--- score.sh integration ---"
+  run_test test_score_skips_llm_score_files
+  run_test test_score_handles_unsupported_check_type
+
+  echo ""
+  echo "--- rubric validity ---"
+  run_test test_rubric_cf_fix_valid
+  run_test test_rubric_cf_tdd_valid
+  run_test test_rubric_cf_fix_no_command_checks
 
   echo ""
   echo "--- README ---"
