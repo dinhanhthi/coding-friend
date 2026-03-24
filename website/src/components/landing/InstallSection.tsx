@@ -69,7 +69,7 @@ export default function InstallSection() {
             Install once, use in every project. Supports user, project, and
             local scopes. More details in the{" "}
             <Link
-              href="/docs/cli/cf-install/"
+              href="/docs/getting-started/installation/"
               className="text-violet-400 hover:underline hover:underline-offset-4"
             >
               documentation
