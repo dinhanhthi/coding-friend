@@ -91,9 +91,9 @@ llm_score_result() {
   local llm_output
   llm_output=$("$llm_score_script" "${score_args[@]}" 2>/dev/null) || return 1
 
-  # Atomic cache write: write to temp then rename
+  # Atomic cache write: write to temp in same dir then rename (ensures same filesystem)
   local tmp_cache
-  tmp_cache=$(mktemp "${cache_file}.tmp.XXXXXX" 2>/dev/null) || return 1
+  tmp_cache=$(mktemp -p "$(dirname "$cache_file")" ".llm-score.tmp.XXXXXX" 2>/dev/null) || return 1
   echo "$llm_output" > "$tmp_cache" && mv "$tmp_cache" "$cache_file" || rm -f "$tmp_cache"
 
   echo "$llm_output" | jq -r '.weighted_average // empty' 2>/dev/null
