@@ -26,6 +26,8 @@ Run one wave per session (avoids context window limits), then generate scores:
 ./generate-eval-json.sh
 ```
 
+⚠️ Be careful not to run multiple waves in parallel. Shared `.plugin-state.tmp` and benchmark repos cause race conditions. Run sequentially with `&&` instead.
+
 Other common patterns:
 
 ```bash
@@ -220,6 +222,7 @@ A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 model
 - **Synthetic repos**: small, not representative of real-world projects
 - **No randomized ordering**: later runs may benefit from caching
 - **No time/cost comparison**: we intentionally exclude these — workflow quality matters more than speed
+- **No concurrent waves**: do NOT run multiple waves in parallel (e.g., `--wave 2` and `--wave 3` simultaneously). Shared `.plugin-state.tmp` and benchmark repos cause race conditions. Run sequentially with `&&` instead
 
 ## Adding a New Eval
 
