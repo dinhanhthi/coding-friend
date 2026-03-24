@@ -116,7 +116,11 @@ if [[ "$DRY_RUN" == true ]]; then
     IFS='|' read -r skill repo condition run_num repo_path prompt_file wave_key <<< "$combo"
     local wave_num="${wave_key#wave}"
     local_idx=$((local_idx + 1))
-    echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(wave $wave_num, run $run_num/$RUNS)${NC}"
+    if [[ "$wave_num" == "3" ]]; then
+      echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} scenario ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(wave $wave_num, run $run_num/$RUNS)${NC}"
+    else
+      echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(wave $wave_num, run $run_num/$RUNS)${NC}"
+    fi
   done
   echo ""
   echo -e "  📊 total=${BOLD}$TOTAL${NC} runs=${BOLD}$RUNS${NC} model=${BOLD}$MODEL${NC}"
@@ -134,7 +138,11 @@ for combo in "${COMBINATIONS[@]}"; do
   WAVE_NUM="${wave_key#wave}"
   IDX=$((IDX + 1))
 
-  echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(wave $WAVE_NUM, run $run_num/$RUNS)${NC}..."
+  if [[ "$WAVE_NUM" == "3" ]]; then
+    echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running scenario ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(wave $WAVE_NUM, run $run_num/$RUNS)${NC}..."
+  else
+    echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(wave $WAVE_NUM, run $run_num/$RUNS)${NC}..."
+  fi
 
   # Check that repo and prompt exist
   if [[ ! -d "$repo_path" ]]; then
