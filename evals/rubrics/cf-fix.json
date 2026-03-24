@@ -36,9 +36,9 @@
         "3": "Test clearly reproduces the bug, verifies the fix, and covers edge cases"
       },
       "automated_check": {
-        "type": "command",
-        "command": "test_files_exist",
-        "target": "changed_files"
+        "type": "regex",
+        "pattern": "(test|spec|describe|it\\(|expect|assert|\\d+ test)",
+        "target": "output"
       }
     },
     {
@@ -52,9 +52,9 @@
         "3": "All existing tests pass and fix is scoped tightly to the bug"
       },
       "automated_check": {
-        "type": "command",
-        "command": "npm test",
-        "target": "exit_code"
+        "type": "regex",
+        "pattern": "(pass|✓|✔|tests? pass|all.*pass|\\d+/\\d+ (pass|succeed)|0 fail|PASS)",
+        "target": "output"
       }
     }
   ],

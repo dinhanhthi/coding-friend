@@ -119,6 +119,7 @@ OUTPUT_DIR="$OUTPUT_DIR/$SKILL"
 [[ -n "$BENCH_REPO" ]] && OUTPUT_DIR="$OUTPUT_DIR/$BENCH_REPO"
 OUTPUT_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.json"
 META_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.meta.json"
+CONVERSATION_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.conversation.txt"
 
 # Build the claude command
 CMD=(claude -p)
@@ -142,7 +143,7 @@ if [[ "$CONDITION" == "without-cf" ]]; then
 fi
 
 # Common flags
-CMD+=(--output-format json)
+CMD+=(--output-format stream-json)
 CMD+=(--dangerously-skip-permissions)
 CMD+=(--model "$MODEL")
 CMD+=(--no-session-persistence)
@@ -157,6 +158,7 @@ if [[ "$DRY_RUN" == true ]]; then
   echo -e "${CYAN}🔍 Command:${NC} ${CMD[*]}"
   echo -e "${CYAN}📂 Working directory:${NC} $REPO"
   echo -e "${CYAN}📄 Output:${NC} $OUTPUT_FILE"
+  echo -e "${CYAN}💬 Conversation:${NC} $CONVERSATION_FILE"
   exit 0
 fi
 
@@ -182,13 +184,46 @@ fi
 # Record start time
 START_TIME=$(date +%s)
 
-# Run the eval
+# Run the eval (stream-json captures all events)
+STREAM_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.stream.jsonl"
 EXIT_CODE=0
-"${CMD[@]}" > "$OUTPUT_FILE" 2>/dev/null || EXIT_CODE=$?
+"${CMD[@]}" > "$STREAM_FILE" 2>/dev/null || EXIT_CODE=$?
 
 # Record end time and calculate wall time
 END_TIME=$(date +%s)
 WALL_TIME=$((END_TIME - START_TIME))
+
+# Post-process stream-json output:
+# 1. Extract the final "result" message as the main JSON output (backward compatible)
+# 2. Extract all assistant text into a conversation log
+if [[ -s "$STREAM_FILE" ]]; then
+  # Extract the last result-type message (contains result, cost_usd, duration_ms, etc.)
+  RESULT_LINE=$(grep '"type":"result"' "$STREAM_FILE" | tail -1 || true)
+  if [[ -n "$RESULT_LINE" ]]; then
+    echo "$RESULT_LINE" > "$OUTPUT_FILE"
+  else
+    # Fallback: if no result type found, copy stream as-is
+    cp "$STREAM_FILE" "$OUTPUT_FILE"
+  fi
+
+  # Extract all assistant text messages into conversation log.
+  # stream-json emits lines like: {"type":"assistant","message":{"content":[{"type":"text","text":"..."}],...}}
+  # We extract the text from each assistant message content block.
+  jq -r '
+    select(.type == "assistant")
+    | .message.content[]?
+    | select(.type == "text")
+    | .text
+  ' "$STREAM_FILE" > "$CONVERSATION_FILE" 2>/dev/null || true
+
+  # Clean up stream file (it can be large)
+  rm -f "$STREAM_FILE"
+else
+  # Empty stream file — create empty outputs
+  touch "$OUTPUT_FILE"
+  touch "$CONVERSATION_FILE"
+  rm -f "$STREAM_FILE"
+fi
 
 # Handle failure
 if [[ $EXIT_CODE -ne 0 ]]; then
