@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.14.1 (unpublished)
+## v0.14.1 (2026-03-24)
 
 - Clarify changelog entry rules to reflect net changes per version in `cf-ship-custom` guide [#55a6135](https://github.com/dinhanhthi/coding-friend/commit/55a6135)
 
