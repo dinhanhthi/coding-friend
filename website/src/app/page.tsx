@@ -43,9 +43,10 @@ export default function Home() {
       </div>
       <EcosystemSection />
       <div className="bg-navy-950/50">
-        <ComparisonSection />
+        {/* <ComparisonSection /> */}
+        <Features />
       </div>
-      <Features />
+      {/* <Features /> */}
       <div className="bg-navy-950/50">
         <HowItWorks />
       </div>
