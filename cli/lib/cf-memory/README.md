@@ -229,6 +229,8 @@ node dist/daemon/entry.js ./docs/memory 1800000 --tier=lite
 
 The daemon runs a Hono HTTP server on a Unix Domain Socket at `~/.coding-friend/memory/daemon.sock`, with PID tracking at `~/.coding-friend/memory/daemon.pid`.
 
+**Auto-reconnect:** If the daemon dies (e.g., idle timeout expires), the `DaemonClient` automatically respawns it on the next request. This means mid-session daemon restarts are transparent — no manual intervention needed.
+
 ### Lazy dependencies (Tier 1)
 
 Heavy dependencies for Tier 1 (SQLite + embeddings) are installed on-demand into `~/.coding-friend/memory/node_modules/`, not in this package's `node_modules/`. These include:
@@ -302,6 +304,7 @@ If these are missing, `cf memory init` will fail at the "Installing SQLite depen
 | ----------------------------- | ------------------------ | ------------------------------------------------- |
 | `MEMORY_DOCS_DIR`             | `./docs/memory`          | Path to memory storage directory                  |
 | `MEMORY_TIER`                 | `auto`                   | Force a tier: `auto`, `full`, `lite`, `markdown`  |
+| `MEMORY_DAEMON_IDLE_TIMEOUT`  | `1800000` (30 min)       | Daemon idle timeout in ms (`0` = never auto-stop) |
 | `MEMORY_EMBEDDING_PROVIDER`   | `transformers`           | Embedding provider: `transformers` or `ollama`    |
 | `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Embedding model name (e.g., `nomic-embed-text`)   |
 | `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL                                 |
