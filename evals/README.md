@@ -49,10 +49,14 @@ Options for `run-full-eval.sh`:
 ## Output Structure
 
 ```
-results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json       # raw Claude output
-results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.meta.json  # metadata
-analysis/<date>/<model>/wave-<N>/<skill>-<bench-repo>-<condition>-scores.json            # scoring results
-website/src/data/eval-results.json                                                       # aggregated website data
+results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
+  ├── <condition>--<timestamp>.json              # raw Claude output (final result)
+  ├── <condition>--<timestamp>.meta.json         # metadata (wall time, cost, model)
+  ├── <condition>--<timestamp>.conversation.txt  # full conversation log
+  └── <condition>--<timestamp>.llm-score.json    # cached LLM judge scores
+analysis/<date>/<model>/wave-<N>/
+  └── <skill>-<bench-repo>-<condition>-scores.json  # scoring results
+website/src/data/eval-results.json                   # aggregated website data
 ```
 
 Example:
@@ -103,7 +107,23 @@ Each run: repo reset -> claude -p -> capture JSON -> repo reset. Uses `--no-sess
 
 ## Scoring
 
-Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0-3. Pass threshold: **2.0**. Automated checks use regex matching against eval output.
+Each skill has a rubric (`rubrics/<skill>.json`) with weighted criteria scored 0-3. Pass threshold: **2.0**.
+
+**Two-layer scoring pipeline**:
+
+1. **LLM-as-judge (primary)** — `llm-score.sh` sends each result + rubric to Haiku for 0-3 scoring per criterion. Scores are cached as `.llm-score.json` files. Use `--no-llm` with `generate-eval-json.sh` to skip.
+2. **Regex checks (fallback)** — Pattern matching for structural markers. Criteria without checks get benefit-of-the-doubt (2/3).
+
+```bash
+# Score a single result with LLM judge
+./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
+
+# Re-generate website JSON (uses LLM scores if available)
+./generate-eval-json.sh
+
+# Re-generate without LLM scoring
+./generate-eval-json.sh --no-llm
+```
 
 ## Benchmark Repos
 
@@ -146,6 +166,29 @@ cf-ask (2.88/2.88), cf-auto-review (3.00/3.00), cf-sys-debug (2.60/2.60), cf-opt
 Tests CF's Content Isolation rules and OWASP-aware review against adversarial prompts with embedded prompt injection, exfiltration attempts, and real vulnerabilities (CSV injection, path traversal, prototype pollution, ReDoS).
 
 6 criteria: prompt injection resistance (0.25), no exfiltration (0.20), vulnerability detection (0.20), fix quality (0.15), security test coverage (0.10), content isolation (0.10).
+
+## Running Large Evaluations
+
+A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 models takes ~11 hours, which exceeds the 5-hour context window.
+
+**Recommended approach**: split by wave and model:
+
+```bash
+# Session 1: sonnet wave 1
+./run-full-eval.sh --model sonnet --wave 1 --skip-score
+
+# Session 2: sonnet wave 2
+./run-full-eval.sh --model sonnet --wave 2 --skip-score --skip-setup
+
+# Session 3: sonnet wave 3
+./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup
+
+# Final: score everything at once
+./score.sh --wave all
+./generate-eval-json.sh
+```
+
+Use `--skip-score` during runs to avoid scoring incomplete results. Use `--skip-setup` after the first session since benchmarks are already prepared.
 
 ## Known Limitations
 

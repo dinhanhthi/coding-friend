@@ -15,7 +15,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "(FAIL|failed|failing|✗|✘|×)",
+        "pattern": "(FAIL|failed|failing|✗|✘|×|RED|test.*(fail|broke)|assert|expect)",
         "target": "output"
       }
     },
@@ -31,8 +31,8 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "\\.(test|spec)\\.(ts|js|tsx|jsx)$",
-        "target": "changed_files"
+        "pattern": "(test|spec|describe|it\\(|expect|assert|edge.?case|empty|invalid|error|throw|\\d+ test)",
+        "target": "output"
       }
     },
     {

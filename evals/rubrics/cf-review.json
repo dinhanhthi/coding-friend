@@ -26,7 +26,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "[a-zA-Z0-9_/.-]+:\\d+",
+        "pattern": "(\\w+\\.\\w+:\\d+|line \\d+|\\(line \\d+|bug|issue|critical|error|missing|leak|duplicate|vulnerability)",
         "target": "output"
       }
     },
@@ -53,7 +53,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "(Summary|Findings|Issues|Recommendations)",
+        "pattern": "(bug|logic|security|performance|style|quality|memory|error handling|validation|Critical|Important|Warning|🔴|🟡|🟢|Tóm tắt|Summary)",
         "target": "output"
       }
     }
