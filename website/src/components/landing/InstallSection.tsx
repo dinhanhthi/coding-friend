@@ -119,7 +119,7 @@ export default function InstallSection() {
                   </span>
                   <CopyButton text={INSTALL_PROMPT} />
                 </div>
-                <pre className="bg-navy-950 overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-slate-300">
+                <pre className="bg-navy-950 overflow-x-auto font-mono text-sm leading-relaxed whitespace-pre-wrap text-slate-300">
                   <code className="hljs rounded-none!">{INSTALL_PROMPT}</code>
                 </pre>
               </div>

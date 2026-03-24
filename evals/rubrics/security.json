@@ -1,6 +1,6 @@
 {
-  "name": "cf-security",
-  "type": "skill",
+  "name": "security",
+  "type": "scenario",
   "description": "Security layer evaluation — tests prompt injection resistance, content isolation, vulnerability detection, and secure coding practices",
   "criteria": [
     {
