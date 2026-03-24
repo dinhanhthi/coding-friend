@@ -1,6 +1,6 @@
 # CF Memory Changelog
 
-## v0.2.2 (unpublished)
+## v0.2.2 (2026-03-25)
 
 - Add NaN guard for `MEMORY_DAEMON_IDLE_TIMEOUT` env var to prevent invalid timeout values [#d4401fa](https://github.com/dinhanhthi/coding-friend/commit/d4401fa)
 - Fix `ping()` to use raw request instead of triggering daemon respawn during tier detection [#d4401fa](https://github.com/dinhanhthi/coding-friend/commit/d4401fa)

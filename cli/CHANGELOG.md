@@ -2,7 +2,7 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
-## v1.22.0 (unpublished)
+## v1.22.0 (2026-03-25)
 
 - Add MCP status display to `cf memory status` showing configuration scope (local/global/not configured) [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
 - Show both Learn MCP and Memory MCP in `cf mcp` with color-coded sections [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
