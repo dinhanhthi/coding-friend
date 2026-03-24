@@ -5,7 +5,7 @@
   "criteria": [
     {
       "name": "structure_quality",
-      "weight": 0.25,
+      "weight": 0.3,
       "description": "Document has proper markdown structure with clear headings and organization",
       "scoring": {
         "0": "No structure — a flat wall of text with no headings or sections",
@@ -21,7 +21,7 @@
     },
     {
       "name": "accuracy",
-      "weight": 0.3,
+      "weight": 0.4,
       "description": "Document content is factually correct and consistent with the codebase",
       "scoring": {
         "0": "Document contains significant factual errors or describes non-existent features",
@@ -32,7 +32,7 @@
     },
     {
       "name": "conciseness",
-      "weight": 0.25,
+      "weight": 0.3,
       "description": "Document is appropriately concise without unnecessary verbosity",
       "scoring": {
         "0": "Document is extremely verbose with excessive repetition and filler",
@@ -45,19 +45,8 @@
         "command": "word_count",
         "target": "output_file"
       }
-    },
-    {
-      "name": "token_efficiency",
-      "weight": 0.2,
-      "description": "Uses haiku model efficiently — achieves quality without excessive token usage",
-      "scoring": {
-        "0": "Output quality does not justify the token usage — inefficient generation",
-        "1": "Some wasted tokens on irrelevant content or overly verbose exploration",
-        "2": "Reasonable token efficiency but could have been more focused",
-        "3": "Optimal token usage — focused generation producing quality output efficiently"
-      }
     }
   ],
   "pass_threshold": 2.0,
-  "notes": "Writer uses haiku for cost efficiency. Expected to produce clean, focused markdown documents. Quality bar is 'good enough' documentation — not literature. Prioritize accuracy over prose quality."
+  "notes": "Writer uses haiku. Expected to produce clean, focused markdown documents. Quality bar is 'good enough' documentation — not literature. Prioritize accuracy over prose quality."
 }
