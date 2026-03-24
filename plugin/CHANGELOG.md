@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.14.1 (unpublished)
+
+- Clarify changelog entry rules to reflect net changes per version in `cf-ship-custom` guide [#55a6135](https://github.com/dinhanhthi/coding-friend/commit/55a6135)
+
 ## v0.14.0 (2026-03-23)
 
 - Add `/cf-review-out` and `/cf-review-in` skills for cross-agent code review [#9d42044](https://github.com/dinhanhthi/coding-friend/commit/9d42044)
