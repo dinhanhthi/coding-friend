@@ -415,6 +415,43 @@ function getDbPath(memoryDir: string): string | null {
 
 const em = chalk.hex("#10b981");
 
+/**
+ * Check if SQLite deps are installed; if not, install them.
+ * Returns true if deps are available after the check, false on failure.
+ */
+async function ensureSqliteDepsIfNeeded(mcpDir: string): Promise<boolean> {
+  const config = loadConfig();
+  const tier = config.memory?.tier ?? "auto";
+
+  // Only Tier 1 (full/auto) needs SQLite deps
+  if (tier === "markdown" || tier === "lite") return true;
+
+  const { ensureDeps, areSqliteDepsAvailable } = await import(
+    join(mcpDir, "dist/lib/lazy-install.js")
+  );
+
+  if (areSqliteDepsAvailable()) return true;
+
+  log.step("Installing SQLite dependencies...");
+  const installed = await ensureDeps({
+    onProgress: (msg: string) => log.step(msg),
+  });
+
+  if (!installed) {
+    log.error("Failed to install SQLite dependencies.");
+    log.dim(
+      "Ensure you have a C++ compiler installed (Xcode CLT on macOS, build-essential on Linux).",
+    );
+    log.dim(
+      'Memory will fall back to a lower tier. You can retry later with "cf memory init".',
+    );
+    return false;
+  }
+
+  log.success("Dependencies installed.");
+  return true;
+}
+
 export async function memoryInitCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
@@ -431,6 +468,10 @@ export async function memoryInitCommand(): Promise<void> {
     log.dim('To re-import memories, run "cf memory rebuild".');
     console.log();
     await memoryConfigMenu({ exitLabel: "Done" });
+
+    // Ensure SQLite deps are present even for returning users (they may have
+    // been lost, e.g. after a reinstall or on a new machine syncing configs).
+    await ensureSqliteDepsIfNeeded(mcpDir);
     return;
   }
 
@@ -509,31 +550,8 @@ export async function memoryInitCommand(): Promise<void> {
   }
 
   // Tier 1 (full or auto): install SQLite deps
-  log.step("Installing SQLite dependencies...");
-
-  const { ensureDeps, areSqliteDepsAvailable } = await import(
-    join(mcpDir, "dist/lib/lazy-install.js")
-  );
-
-  if (areSqliteDepsAvailable()) {
-    log.info("SQLite dependencies already installed.");
-  } else {
-    const installed = await ensureDeps({
-      onProgress: (msg: string) => log.step(msg),
-    });
-
-    if (!installed) {
-      log.error("Failed to install SQLite dependencies.");
-      log.dim(
-        "Ensure you have a C++ compiler installed (Xcode CLT on macOS, build-essential on Linux).",
-      );
-      log.dim(
-        'Memory will fall back to a lower tier. You can retry later with "cf memory init".',
-      );
-      return;
-    }
-    log.success("Dependencies installed.");
-  }
+  const depsOk = await ensureSqliteDepsIfNeeded(mcpDir);
+  if (!depsOk) return;
 
   // Import existing memories
   if (!existsSync(memoryDir)) {
