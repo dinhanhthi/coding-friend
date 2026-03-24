@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md)
 
+## v1.21.1 (unpublished)
+
+- Fix `cf memory init` to install SQLite dependencies for returning users [#6c4483c](https://github.com/dinhanhthi/coding-friend/commit/6c4483c)
+
 ## v1.21.0 (2026-03-23)
 
 - Add colored tag prefix to permission options in `cf permission` [#a9bd9c8](https://github.com/dinhanhthi/coding-friend/commit/a9bd9c8)
