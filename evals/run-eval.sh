@@ -143,7 +143,7 @@ if [[ "$CONDITION" == "without-cf" ]]; then
 fi
 
 # Common flags
-CMD+=(--output-format stream-json)
+CMD+=(--output-format stream-json --verbose)
 CMD+=(--dangerously-skip-permissions)
 CMD+=(--model "$MODEL")
 CMD+=(--no-session-persistence)
@@ -186,8 +186,9 @@ START_TIME=$(date +%s)
 
 # Run the eval (stream-json captures all events)
 STREAM_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.stream.jsonl"
+STDERR_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.stderr.tmp"
 EXIT_CODE=0
-"${CMD[@]}" > "$STREAM_FILE" 2>/dev/null || EXIT_CODE=$?
+"${CMD[@]}" > "$STREAM_FILE" 2>"$STDERR_FILE" || EXIT_CODE=$?
 
 # Record end time and calculate wall time
 END_TIME=$(date +%s)
@@ -227,23 +228,35 @@ fi
 
 # Handle failure
 if [[ $EXIT_CODE -ne 0 ]]; then
+  STDERR_CONTENT=""
+  if [[ -s "$STDERR_FILE" ]]; then
+    STDERR_CONTENT=$(tail -5 "$STDERR_FILE" | sed 's/^/    /')
+  fi
   if [[ "$WAVE" == "3" ]]; then
     echo -e "${RED}❌ [ERROR] scenario=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
   else
     echo -e "${RED}❌ [ERROR] skill=$SKILL condition=$CONDITION exit_code=$EXIT_CODE${NC}" >&2
   fi
+  if [[ -n "$STDERR_CONTENT" ]]; then
+    echo -e "${DIM}${STDERR_CONTENT}${NC}" >&2
+  fi
   # Write error info into the output file if it's empty
   if [[ ! -s "$OUTPUT_FILE" ]]; then
+    STDERR_JSON=$(cat "$STDERR_FILE" 2>/dev/null | tail -5 | jq -Rs . 2>/dev/null || echo '""')
     cat > "$OUTPUT_FILE" <<EOF
 {
   "error": true,
   "exit_code": $EXIT_CODE,
   "skill": "$SKILL",
-  "condition": "$CONDITION"
+  "condition": "$CONDITION",
+  "stderr": $STDERR_JSON
 }
 EOF
   fi
 fi
+
+# Clean up stderr temp file
+rm -f "$STDERR_FILE"
 
 # Write metadata
 cat > "$META_FILE" <<EOF
