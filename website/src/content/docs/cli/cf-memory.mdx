@@ -153,7 +153,8 @@ cf memory stop-daemon
 - Daemon runs detached (survives terminal close)
 - Listens on Unix Domain Socket at `~/.coding-friend/memory/daemon.sock`
 - Auto-rebuilds index when files in `docs/memory/` change (file watcher)
-- Auto-stops after idle timeout (default: 30 min, configurable)
+- Auto-stops after idle timeout (default: 30 min, configurable via `daemon.idleTimeout`)
+- **Auto-reconnect** — if the daemon stops (e.g., idle timeout), the MCP server automatically respawns it on the next memory request. No manual restart needed.
 - Memory footprint: 25-40 MB idle, 40-80 MB active
 
 ## `rebuild`

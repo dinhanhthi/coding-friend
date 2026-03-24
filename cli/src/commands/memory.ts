@@ -359,7 +359,8 @@ export async function memoryStartDaemonCommand(): Promise<void> {
 
   const config = loadConfig();
   const embedding = config.memory?.embedding;
-  const result = await spawnDaemon(memoryDir, embedding);
+  const idleTimeoutMs = config.memory?.daemon?.idleTimeout;
+  const result = await spawnDaemon(memoryDir, embedding, { idleTimeoutMs });
 
   if (result) {
     log.success(`Daemon started (PID ${result.pid})`);
