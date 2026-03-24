@@ -59,6 +59,16 @@ assert_file_exists() {
   fi
 }
 
+FIXTURES_DIR=""
+setup_fixtures() {
+  FIXTURES_DIR="$EVALS_DIR/tests/fixtures"
+  rm -rf "$FIXTURES_DIR"
+}
+cleanup_fixtures() {
+  [[ -n "$FIXTURES_DIR" ]] && rm -rf "$FIXTURES_DIR"
+  FIXTURES_DIR=""
+}
+
 # ============================================================
 # waves.json tests
 # ============================================================
@@ -303,8 +313,10 @@ test_score_rubric_has_criteria() {
 }
 
 test_score_with_fixture() {
-  # Create a fixture result to score
-  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-review/with-cf"
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/cf-review/with-cf"
   mkdir -p "$fixture_dir"
   cat > "$fixture_dir/test-fixture.json" <<'FIXTURE'
 {
@@ -316,10 +328,7 @@ test_score_with_fixture() {
 FIXTURE
 
   local output exit_code=0
-  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || exit_code=$?
-
-  # Clean up
-  rm -rf "$EVALS_DIR/tests/fixtures"
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$FIXTURES_DIR/results" 2>&1) || exit_code=$?
 
   assert_contains "$output" "cf-review" || return 1
 }
@@ -561,8 +570,10 @@ test_generate_eval_json_help() {
 # ============================================================
 
 test_score_skips_llm_score_files() {
-  # Create fixture with a .llm-score.json file that should be ignored
-  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-review/with-cf"
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/cf-review/with-cf"
   mkdir -p "$fixture_dir"
   cat > "$fixture_dir/with-cf--test.json" <<'JSON'
 {"result": "Found bug in api.ts:42 — missing error handling"}
@@ -572,18 +583,18 @@ JSON
 JSON
 
   local output
-  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || true
-
-  rm -rf "$EVALS_DIR/tests/fixtures"
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$FIXTURES_DIR/results" 2>&1) || true
 
   # The llm-score.json file should not appear as a scored file
   assert_not_contains "$output" "no result field" "should skip .llm-score.json files" || return 1
 }
 
 test_score_handles_unsupported_check_type() {
-  # Create a fixture with a rubric that has a "command" type check
-  local fixture_dir="$EVALS_DIR/tests/fixtures/results/test-skill/bench-test/with-cf"
-  local rubric_dir="$EVALS_DIR/tests/fixtures/rubrics"
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/test-skill/bench-test/with-cf"
+  local rubric_dir="$FIXTURES_DIR/rubrics"
   mkdir -p "$fixture_dir" "$rubric_dir"
 
   cat > "$fixture_dir/with-cf--test.json" <<'JSON'
@@ -600,9 +611,7 @@ JSON
 JSON
 
   local output
-  output=$("$EVALS_DIR/score.sh" --skill test-skill --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || true
-
-  rm -rf "$EVALS_DIR/tests/fixtures"
+  output=$("$EVALS_DIR/score.sh" --skill test-skill --results-dir "$FIXTURES_DIR/results" 2>&1) || true
 
   # Should show "skipped" for unsupported check type, not "PASS"
   assert_contains "$output" "test-skill" || return 1
