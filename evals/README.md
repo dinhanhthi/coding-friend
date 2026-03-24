@@ -33,6 +33,20 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 ./run-full-eval.sh --model sonnet --budget 0.50
 ```
 
+In order to save the tokens,
+
+```bash
+# Session 1
+./run-full-eval.sh --model sonnet --wave 1 --skip-score
+
+# Session 2
+./run-full-eval.sh --model sonnet --wave 2 --skip-score --skip-setup
+
+# Session 3 (wave 3 + scoring)
+./run-full-eval.sh --model sonnet --wave 3 --skip-setup
+
+```
+
 Options for `run-full-eval.sh`:
 
 | Option              | Default                   | Description                        |
