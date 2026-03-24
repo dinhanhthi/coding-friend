@@ -46,7 +46,7 @@ For each skill and relevant benchmark repo:
 1. **Without CF**: Run with all plugins disabled (`claude plugin disable --all` + `--disable-slash-commands`). Claude Code operates with no skills, no agents, no hooks.
 2. **With CF**: Run normally with Coding Friend enabled. Skills and agents are available.
 3. **Same prompt**: Identical task description for both conditions.
-4. **Same model**: Claude Opus for all runs.
+4. **Same model**: Using the same model for all runs. We check Claude Haiku, Claude Sonnet, and Claude Opus.
 5. **Multiple runs**: 1-3 runs per condition for consistency measurement.
 
 ### Scoring
@@ -107,12 +107,18 @@ For these tasks, CF adds structure overhead without proportional quality improve
 
 The evaluation framework is open source and included in the Coding Friend repository:
 
-- **Eval runner**: `evals/run-eval.sh`, `evals/run-wave.sh`
+- **Eval runner**: `evals/run-full-eval.sh` (orchestrates everything)
 - **Rubrics**: `evals/rubrics/*.json`
 - **Benchmarks**: `evals/benchmarks/` (4 repos)
 - **Prompts**: `evals/prompts/`
 
-Run it yourself: `cd evals && ./run-wave.sh --wave 1 --runs 1 --model opus`
+Run it yourself:
+
+```bash
+cd evals && ./run-full-eval.sh --model sonnet
+```
+
+Results are saved to `evals/results/<date>/<model>/<skill>/`, organized by run date and model for easy comparison across runs.
 
 ---
 
