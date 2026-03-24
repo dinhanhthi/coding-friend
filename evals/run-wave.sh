@@ -99,7 +99,7 @@ for wave_key in "${WAVE_KEYS[@]}"; do
 
       for condition in with-cf without-cf; do
         for run_num in $(seq 1 "$RUNS"); do
-          COMBINATIONS+=("$skill|$repo|$condition|$run_num|$REPO_PATH|$PROMPT_FILE")
+          COMBINATIONS+=("$skill|$repo|$condition|$run_num|$REPO_PATH|$PROMPT_FILE|$wave_key")
         done
       done
     done
@@ -113,9 +113,10 @@ if [[ "$DRY_RUN" == true ]]; then
   echo ""
   local_idx=0
   for combo in "${COMBINATIONS[@]}"; do
-    IFS='|' read -r skill repo condition run_num repo_path prompt_file <<< "$combo"
+    IFS='|' read -r skill repo condition run_num repo_path prompt_file wave_key <<< "$combo"
+    local wave_num="${wave_key#wave}"
     local_idx=$((local_idx + 1))
-    echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(run $run_num/$RUNS)${NC}"
+    echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(wave $wave_num, run $run_num/$RUNS)${NC}"
   done
   echo ""
   echo -e "  📊 total=${BOLD}$TOTAL${NC} runs=${BOLD}$RUNS${NC} model=${BOLD}$MODEL${NC}"
@@ -129,10 +130,11 @@ echo ""
 IDX=0
 ERRORS=0
 for combo in "${COMBINATIONS[@]}"; do
-  IFS='|' read -r skill repo condition run_num repo_path prompt_file <<< "$combo"
+  IFS='|' read -r skill repo condition run_num repo_path prompt_file wave_key <<< "$combo"
+  WAVE_NUM="${wave_key#wave}"
   IDX=$((IDX + 1))
 
-  echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(run $run_num/$RUNS)${NC}..."
+  echo -e "${BLUE}▶ [$IDX/$TOTAL]${NC} Running ${BOLD}$skill${NC} $condition on ${CYAN}$repo${NC} ${DIM}(wave $WAVE_NUM, run $run_num/$RUNS)${NC}..."
 
   # Check that repo and prompt exist
   if [[ ! -d "$repo_path" ]]; then
@@ -151,6 +153,8 @@ for combo in "${COMBINATIONS[@]}"; do
     --skill "$skill"
     --repo "$repo_path"
     --model "$MODEL"
+    --wave "$WAVE_NUM"
+    --bench-repo "$repo"
   )
 
   if "${RUN_CMD[@]}"; then

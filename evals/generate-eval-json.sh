@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # generate-eval-json.sh — Parse eval results and generate website JSON data file
 #
-# Reads results/<date>/<model>/<skill>/<condition>--<timestamp>.json files,
+# Reads results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json files,
 # computes per-model averages for featured skills, and writes
 # website/src/data/eval-results.json
 #
@@ -41,7 +41,7 @@ die() {
 }
 
 # Count eval sessions for a given model across all results
-# New layout: results/<date>/<model>/<skill>/<condition>--<timestamp>.meta.json
+# Layout: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.meta.json
 count_sessions() {
   local model="$1"
   find "$RESULTS_DIR" -path "*/$model/*" -name "*.meta.json" -type f 2>/dev/null | wc -l | tr -d ' '
@@ -49,7 +49,7 @@ count_sessions() {
 
 # Compute average score for a skill+condition+model combination
 # Uses rubric weights for automated checks, falls back to pass rate
-# New layout: results/<date>/<model>/<skill>/<condition>--<timestamp>.json
+# Layout: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
 compute_skill_score() {
   local skill="$1"
   local condition="$2"
@@ -59,11 +59,18 @@ compute_skill_score() {
   local total_score=0
   local file_count=0
 
-  # Find all result files for this skill+condition+model across all dates
+  # Find all result files for this skill+condition+model across all dates, waves, and repos
   local result_files=()
   while IFS= read -r f; do
     result_files+=("$f")
-  done < <(find "$RESULTS_DIR" -path "*/$model/$skill/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
+  done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/*/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
+
+  # Fallback: try legacy layout (without wave/repo dirs)
+  if [[ ${#result_files[@]} -eq 0 ]]; then
+    while IFS= read -r f; do
+      result_files+=("$f")
+    done < <(find "$RESULTS_DIR" -path "*/$model/$skill/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
+  fi
 
   if [[ ${#result_files[@]} -eq 0 ]]; then
     echo "0"

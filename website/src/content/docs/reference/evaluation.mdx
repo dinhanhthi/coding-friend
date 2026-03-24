@@ -6,11 +6,11 @@ keywords: [evaluation, benchmark, quality, comparison, methodology]
 
 ## Overview
 
-We evaluate Coding Friend's impact by running identical tasks on standardized benchmark repositories — once with Coding Friend enabled, once without. This measures whether CF's skills, agents, and workflows produce measurably better outcomes than baseline Claude Code.
+We run identical tasks on benchmark repositories — once with Coding Friend enabled, once without — and score the results against rubrics. This measures whether CF's skills and workflows produce better outcomes than baseline Claude Code.
 
 ## What We Test
 
-### Skills (11 total)
+The evaluation is organized into 3 waves. Each wave tests **skills** (slash commands and auto-invoked workflows). Agents (`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`) are not tested directly — they are evaluated indirectly when skills dispatch them during runs.
 
 **Wave 1 — Core Workflow** (4 skills):
 
@@ -20,11 +20,12 @@ We evaluate Coding Friend's impact by running identical tasks on standardized be
 - `cf-tdd` — TDD compliance (RED before GREEN, test quality, refactor step)
 
 **Wave 2 — Supporting Skills** (7 skills):
+
 `/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `cf-sys-debug`, `cf-auto-review`
 
-### Agents (6 total)
+**Wave 3 — Security**:
 
-`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`
+Tests CF's security behavior using adversarial prompts with embedded prompt injection, exfiltration attempts, and real vulnerabilities (CSV injection, path traversal, prototype pollution, ReDoS). Evaluates how CF's Content Isolation rules and OWASP-aware review layer handle security-sensitive scenarios. 6 criteria: prompt injection resistance, no exfiltration, vulnerability detection, fix quality, security test coverage, content isolation.
 
 ## Methodology
 
@@ -43,15 +44,14 @@ We evaluate Coding Friend's impact by running identical tasks on standardized be
 
 For each skill and relevant benchmark repo:
 
-1. **Without CF**: Run with all plugins disabled (`claude plugin disable --all` + `--disable-slash-commands`). Claude Code operates with no skills, no agents, no hooks.
-2. **With CF**: Run normally with Coding Friend enabled. Skills and agents are available.
-3. **Same prompt**: Identical task description for both conditions.
-4. **Same model**: Using the same model for all runs. We check Claude Haiku, Claude Sonnet, and Claude Opus.
-5. **Multiple runs**: 1-3 runs per condition for consistency measurement.
+1. **Without CF**: All plugins disabled — no skills, no agents, no hooks.
+2. **With CF**: Coding Friend enabled normally.
+3. **Same prompt, same model** for both conditions. We test Claude Haiku, Sonnet, and Opus.
+4. **1-3 runs** per condition for consistency measurement.
 
 ### Scoring
 
-Each skill has a rubric with weighted criteria scored on a 0-3 scale:
+Each skill has a rubric with weighted criteria scored 0-3:
 
 | Score | Meaning                                            |
 | ----- | -------------------------------------------------- |
@@ -60,66 +60,40 @@ Each skill has a rubric with weighted criteria scored on a 0-3 scale:
 | 2     | Good — most criteria met, minor gaps               |
 | 3     | Excellent — all criteria met, exceeds expectations |
 
-**Pass threshold**: average ≥ 2.0 across all criteria.
-
-Scoring combines:
-
-- **Automated checks**: Regex patterns (review structure), file existence (plan created), structure validation (severity sections present)
-- **Manual review**: Quality assessment by human scorer for subjective criteria (message clarity, approach feasibility)
-
-### Metrics Reported
-
-For each skill:
-
-- **Quality score**: Weighted average across rubric criteria (0-3 scale)
-- **Pass rate**: Percentage of runs scoring ≥ 2.0
-- **Token cost**: API cost per session (with vs without)
-- **Wall time**: Execution time per session
+**Pass threshold**: average ≥ 2.0. Scoring combines automated regex checks and manual human review.
 
 ## Limitations
 
-We are transparent about what this evaluation does and does not show:
+- **Small sample size**: 1-3 runs per condition — trends, not statistical significance
+- **Synthetic repos**: Small benchmark projects, not representative of real-world complexity
+- **Cost trade-off**: CF adds context tokens, increasing per-session cost
+- **Baseline is already good**: CF improves structure and consistency, but doesn't make impossible tasks possible
 
-- **Small sample size**: 1-3 runs per condition — results show trends, not statistically significant differences
-- **Controlled environment**: Benchmark repos are small and synthetic — real-world projects are more complex
-- **Same model**: Results reflect Opus behavior — other models may differ
-- **Cost trade-off**: CF skills add context tokens, which increases per-session cost. The quality improvement must be weighed against this cost.
-- **Baseline is already good**: Claude Code without plugins is a capable tool. CF improves specific dimensions (structure, consistency, workflow discipline) but does not make impossible tasks possible.
+## Where CF Helps Most
 
-## Where CF Adds Most Value
+1. **Workflow discipline**: TDD enforcement, verification gates, structured review
+2. **Code review depth**: Two-pass review catches more issues with fewer false positives
+3. **Knowledge capture**: `/cf-learn` preserves insights that baseline Claude Code discards
 
-Based on our evaluation, Coding Friend's largest quality improvements are in:
+## Where Baseline Claude Code Is Enough
 
-1. **Workflow discipline**: TDD enforcement, verification gates, and structured review produce consistent, high-quality outputs
-2. **Code review depth**: The two-pass review (quick scan + deep 4-layer) catches more issues with fewer false positives
-3. **Knowledge capture**: `/cf-learn` preserves insights that baseline Claude Code discards at session end
-
-## Where Baseline Claude Code Already Excels
-
-- Simple bug fixes with obvious root causes
-- Single-file changes with clear requirements
-- General coding questions and explanations
-- File editing and navigation
-
-For these tasks, CF adds structure overhead without proportional quality improvement.
+Simple bug fixes, single-file changes, general coding questions, file navigation — CF adds overhead without proportional improvement.
 
 ## Reproducibility
-
-The evaluation framework is open source and included in the Coding Friend repository:
-
-- **Eval runner**: `evals/run-full-eval.sh` (orchestrates everything)
-- **Rubrics**: `evals/rubrics/*.json`
-- **Benchmarks**: `evals/benchmarks/` (4 repos)
-- **Prompts**: `evals/prompts/`
-
-Run it yourself:
 
 ```bash
 cd evals && ./run-full-eval.sh --model sonnet
 ```
 
-Results are saved to `evals/results/<date>/<model>/<skill>/`, organized by run date and model for easy comparison across runs.
+Results are organized by date, model, wave, skill, and benchmark repo:
+
+```
+evals/results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
+evals/analysis/<date>/<model>/wave-<N>/
+```
+
+See [`evals/README.md`](https://github.com/dinhanhthi/coding-friend/blob/main/evals/README.md) for full options.
 
 ---
 
-_Last evaluated: March 2026. We plan to re-evaluate quarterly as both Claude Code and Coding Friend evolve._
+_Last evaluated: March 2026. Re-evaluated quarterly._
