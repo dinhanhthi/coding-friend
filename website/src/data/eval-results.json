@@ -35,21 +35,21 @@
       "evalSessions": 115,
       "skills": {
         "cf-fix": {
-          "withCF": 1.2,
-          "withoutCF": 1.2
+          "withCF": 2.23,
+          "withoutCF": 1.9
         },
         "cf-review": {
-          "withCF": 1.25,
-          "withoutCF": 1.62
+          "withCF": 1.88,
+          "withoutCF": 2.5
         },
         "cf-tdd": {
-          "withCF": 0.9,
-          "withoutCF": 0.9
+          "withCF": 1.8,
+          "withoutCF": 1.53
         }
       },
       "average": {
-        "withCF": 1.12,
-        "withoutCF": 1.24
+        "withCF": 1.97,
+        "withoutCF": 1.98
       }
     },
     "opus": {
@@ -93,7 +93,7 @@
   "stats": {
     "skillCount": "19+",
     "agentCount": "6",
-    "topDelta": "+0%",
-    "topDeltaLabel": "Bug Fix Quality"
+    "topDelta": "+18%",
+    "topDeltaLabel": "TDD Quality"
   }
 }

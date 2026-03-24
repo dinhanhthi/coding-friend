@@ -60,7 +60,14 @@ Each skill has a rubric with weighted criteria scored 0-3:
 | 2     | Good — most criteria met, minor gaps               |
 | 3     | Excellent — all criteria met, exceeds expectations |
 
-**Pass threshold**: average ≥ 2.0. Scoring combines automated regex checks and manual human review.
+**Pass threshold**: average ≥ 2.0.
+
+**Two-layer scoring pipeline**:
+
+1. **LLM-as-judge (primary)** — Each eval result is scored by Claude Haiku using the full rubric. Haiku reads the eval output and scores each criterion 0-3 with a brief justification. Scores are cached as `.llm-score.json` alongside results so re-runs are instant.
+2. **Regex checks (fallback)** — If LLM scoring is unavailable or disabled (`--no-llm`), pattern-matching checks validate structural markers (e.g., file:line references, test keywords, pass/fail indicators). Criteria without automated checks receive a benefit-of-the-doubt score of 2/3.
+
+The LLM judge evaluates the **full conversation** (not just the final summary), which is especially important for skills like `cf-review` that dispatch subagents — the detailed findings happen mid-conversation.
 
 ## Limitations
 
@@ -82,15 +89,37 @@ Simple bug fixes, single-file changes, general coding questions, file navigation
 ## Reproducibility
 
 ```bash
-cd evals && ./run-full-eval.sh --model sonnet
+# Full eval (all waves, all models)
+cd evals && ./run-full-eval.sh
+
+# Single model
+./run-full-eval.sh --model sonnet
+
+# Run waves independently (recommended for long evals)
+./run-full-eval.sh --model sonnet --wave 1
+./run-full-eval.sh --model sonnet --wave 2
+./run-full-eval.sh --model sonnet --wave 3
+
+# Re-score existing results (no re-running evals)
+./generate-eval-json.sh          # with LLM scoring
+./generate-eval-json.sh --no-llm # regex-only scoring
+
+# Score a single result with LLM judge
+./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
 ```
 
 Results are organized by date, model, wave, skill, and benchmark repo:
 
 ```
 evals/results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
+  ├── with-cf--<timestamp>.json              # eval output (final result)
+  ├── with-cf--<timestamp>.meta.json         # metadata (wall time, cost, model)
+  ├── with-cf--<timestamp>.conversation.txt  # full conversation log
+  └── with-cf--<timestamp>.llm-score.json    # cached LLM judge scores
 evals/analysis/<date>/<model>/wave-<N>/
 ```
+
+**Tip**: Running all 3 waves for all models in a single session may exceed the 5-hour context window. Run one wave per model per session, or use `--wave` to split across sessions.
 
 See [`evals/README.md`](https://github.com/dinhanhthi/coding-friend/blob/main/evals/README.md) for full options.
 

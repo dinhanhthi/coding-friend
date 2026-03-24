@@ -124,19 +124,30 @@ score_result() {
       check_target=$(jq -r ".criteria[$idx].automated_check.target" "$rubric_file")
 
       local passed=0
-      if [[ "$check_type" == "regex" ]]; then
+      if [[ "$check_type" == "regex" && -n "$check_pattern" ]]; then
         # Determine what content to check against
         local target_content="$result_text"
         passed=$(check_regex "$check_pattern" "$target_content")
+      else
+        # Unsupported check type (e.g. "command") — mark as skipped
+        passed=-1
       fi
 
-      checks=$(echo "$checks" | jq \
-        --arg name "$crit_name" \
-        --arg weight "$crit_weight" \
-        --arg type "$check_type" \
-        --arg pattern "$check_pattern" \
-        --argjson passed "$passed" \
-        '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": $pattern, "passed": ($passed == 1)}]')
+      if [[ $passed -eq -1 ]]; then
+        checks=$(echo "$checks" | jq \
+          --arg name "$crit_name" \
+          --arg weight "$crit_weight" \
+          --arg type "$check_type" \
+          '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": "N/A", "passed": null, "skipped": true}]')
+      else
+        checks=$(echo "$checks" | jq \
+          --arg name "$crit_name" \
+          --arg weight "$crit_weight" \
+          --arg type "$check_type" \
+          --arg pattern "$check_pattern" \
+          --argjson passed "$passed" \
+          '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": $pattern, "passed": ($passed == 1)}]')
+      fi
     fi
 
     idx=$((idx + 1))
