@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-03-23",
+    "lastUpdated": "2026-03-24",
     "runsPerCondition": 3,
     "rubricScale": "0-3",
     "passThreshold": 2.0
@@ -11,44 +11,89 @@
       "modelId": "claude-haiku-4-5-20251001",
       "evalSessions": 0,
       "skills": {
-        "cf-fix": { "withCF": 0, "withoutCF": 0 },
-        "cf-review": { "withCF": 0, "withoutCF": 0 },
-        "cf-tdd": { "withCF": 0, "withoutCF": 0 }
+        "cf-fix": {
+          "withCF": 0,
+          "withoutCF": 0
+        },
+        "cf-review": {
+          "withCF": 0,
+          "withoutCF": 0
+        },
+        "cf-tdd": {
+          "withCF": 0,
+          "withoutCF": 0
+        }
       },
-      "average": { "withCF": 0, "withoutCF": 0 }
+      "average": {
+        "withCF": 0.00,
+        "withoutCF": 0.00
+      }
     },
     "sonnet": {
       "label": "Sonnet",
       "modelId": "claude-sonnet-4-6",
-      "evalSessions": 22,
+      "evalSessions": 115,
       "skills": {
-        "cf-fix": { "withCF": 3.0, "withoutCF": 1.9 },
-        "cf-review": { "withCF": 3.0, "withoutCF": 2.53 },
-        "cf-tdd": { "withCF": 2.6, "withoutCF": 1.73 }
+        "cf-fix": {
+          "withCF": 1.20,
+          "withoutCF": 1.20
+        },
+        "cf-review": {
+          "withCF": 1.25,
+          "withoutCF": 1.62
+        },
+        "cf-tdd": {
+          "withCF": 0.90,
+          "withoutCF": 0.90
+        }
       },
-      "average": { "withCF": 2.87, "withoutCF": 2.05 }
+      "average": {
+        "withCF": 1.12,
+        "withoutCF": 1.24
+      }
     },
     "opus": {
       "label": "Opus",
       "modelId": "claude-opus-4-6",
       "evalSessions": 0,
       "skills": {
-        "cf-fix": { "withCF": 0, "withoutCF": 0 },
-        "cf-review": { "withCF": 0, "withoutCF": 0 },
-        "cf-tdd": { "withCF": 0, "withoutCF": 0 }
+        "cf-fix": {
+          "withCF": 0,
+          "withoutCF": 0
+        },
+        "cf-review": {
+          "withCF": 0,
+          "withoutCF": 0
+        },
+        "cf-tdd": {
+          "withCF": 0,
+          "withoutCF": 0
+        }
       },
-      "average": { "withCF": 0, "withoutCF": 0 }
+      "average": {
+        "withCF": 0.00,
+        "withoutCF": 0.00
+      }
     }
   },
   "featuredSkills": [
-    { "key": "cf-fix", "label": "Bug Fix" },
-    { "key": "cf-review", "label": "Code Review" },
-    { "key": "cf-tdd", "label": "TDD" }
+    {
+      "key": "cf-fix",
+      "label": "Bug Fix"
+    },
+    {
+      "key": "cf-review",
+      "label": "Code Review"
+    },
+    {
+      "key": "cf-tdd",
+      "label": "TDD"
+    }
   ],
   "stats": {
     "skillCount": "19+",
     "agentCount": "6",
-    "topDelta": "+58%",
+    "topDelta": "+0%",
     "topDeltaLabel": "Bug Fix Quality"
   }
 }
