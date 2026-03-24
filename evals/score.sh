@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 # score.sh — Score eval results using rubric-defined automated checks
+#
+# NOTE: This is a diagnostic tool showing per-file regex check pass/fail details.
+# It does NOT use LLM-as-judge scoring. For website data generation with LLM scoring,
+# use generate-eval-json.sh instead. The two scripts intentionally diverge:
+#   - score.sh: detailed regex-only diagnostics → analysis/ directory
+#   - generate-eval-json.sh: LLM + regex scoring → website JSON
 
 set -euo pipefail
 
@@ -258,6 +264,7 @@ score_all() {
             local result_files=()
             while IFS= read -r f; do
               [[ "$f" == *.meta.json ]] && continue
+              [[ "$f" == *.llm-score.json ]] && continue
               result_files+=("$f")
             done < <(find "$repo_dir" -maxdepth 1 -name "${condition}--*.json" -type f 2>/dev/null | sort)
 
