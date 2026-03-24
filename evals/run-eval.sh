@@ -97,11 +97,12 @@ if [[ "$CONDITION" != "with-cf" && "$CONDITION" != "without-cf" ]]; then
   die "Invalid condition: $CONDITION (must be 'with-cf' or 'without-cf')"
 fi
 
-# Generate timestamp for output file
+# Generate timestamp and date for output file
 TIMESTAMP=$(date +%Y-%m-%dT%H-%M-%S)
-OUTPUT_DIR="$SCRIPT_DIR/results/$SKILL/$CONDITION"
-OUTPUT_FILE="$OUTPUT_DIR/${TIMESTAMP}.json"
-META_FILE="$OUTPUT_DIR/${TIMESTAMP}.meta.json"
+RUN_DATE=$(date +%Y-%m-%d)
+OUTPUT_DIR="$SCRIPT_DIR/results/$RUN_DATE/$MODEL/$SKILL"
+OUTPUT_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.json"
+META_FILE="$OUTPUT_DIR/${CONDITION}--${TIMESTAMP}.meta.json"
 
 # Build the claude command
 CMD=(claude -p)
