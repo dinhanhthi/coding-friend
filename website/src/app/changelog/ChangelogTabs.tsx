@@ -7,9 +7,6 @@ import type { ChangelogEntry } from "@/lib/types";
 const tabs = [
   { key: "plugin", label: "Plugin" },
   { key: "cli", label: "CLI" },
-  { key: "learn-host", label: "Learn Host" },
-  { key: "learn-mcp", label: "Learn MCP" },
-  { key: "cf-memory", label: "CF Memory" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -39,34 +36,19 @@ function isLatestMinor(version: string, entries: ChangelogEntry[]): boolean {
 interface Props {
   pluginEntries: ChangelogEntry[];
   cliEntries: ChangelogEntry[];
-  learnHostEntries: ChangelogEntry[];
-  learnMcpEntries: ChangelogEntry[];
-  cfMemoryEntries: ChangelogEntry[];
 }
 
-export default function ChangelogTabs({
-  pluginEntries,
-  cliEntries,
-  learnHostEntries,
-  learnMcpEntries,
-  cfMemoryEntries,
-}: Props) {
+export default function ChangelogTabs({ pluginEntries, cliEntries }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("plugin");
   const tabRefs = useRef<Record<TabKey, HTMLButtonElement | null>>({
     plugin: null,
     cli: null,
-    "learn-host": null,
-    "learn-mcp": null,
-    "cf-memory": null,
   });
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
   const entriesMap: Record<TabKey, ChangelogEntry[]> = {
     plugin: pluginEntries,
     cli: cliEntries,
-    "learn-host": learnHostEntries,
-    "learn-mcp": learnMcpEntries,
-    "cf-memory": cfMemoryEntries,
   };
 
   const entries = entriesMap[activeTab];
