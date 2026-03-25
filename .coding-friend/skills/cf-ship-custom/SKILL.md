@@ -2,7 +2,7 @@
 
 This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
 
-**Args** (optional): `[patch|minor|major] [plugin|cli|learn-mcp|learn-host|cf-memory]`
+**Args** (optional): `[patch|minor|major] [plugin|cli]`
 
 ### Step B1: Get bump context
 
@@ -70,7 +70,6 @@ Then proceed with the **standard cf-ship workflow** (verify → commit → push 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
 - NEVER bump if file version > tag version — only update changelog.
 - ALWAYS keep `plugin/.claude-plugin/plugin.json` + root `package.json` in sync.
-- ALWAYS keep `cli/lib/learn-mcp/package.json` + `src/index.ts` McpServer version in sync.
 - Do NOT create git tags — that happens during `/release`.
 - NEVER add duplicate changelog entries. One feature = one bullet. Entries must reflect net changes vs the previous released version — do NOT list intermediate additions/removals that cancel each other out within the same version.
 - ALWAYS mark unreleased sections `(unpublished)`.
