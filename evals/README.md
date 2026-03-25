@@ -24,6 +24,7 @@ Run one wave per session (avoids context window limits), then generate scores:
 
 # Session 4: generate final scores from all collected results
 ./generate-eval-json.sh --no-budget
+./generate-eval-json.sh --model sonnet --no-budget
 ```
 
 ⚠️ Be careful not to run multiple waves in parallel. Shared `.plugin-state.tmp` and benchmark repos cause race conditions. Run sequentially with `&&` instead.
@@ -130,7 +131,7 @@ Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 | `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model      |
 | `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change  |
 | `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website) |
-| `generate-eval-json.sh [--no-budget]`                                       | Re-generate website JSON from existing results |
+| `generate-eval-json.sh [--no-budget] [--model <name>]`                      | Re-generate website JSON from existing results |
 | `llm-score.sh --result <path> --rubric <path> [--no-budget]`                | Score a single result file with LLM judge      |
 | `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
 
