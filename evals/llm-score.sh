@@ -201,7 +201,13 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 
 # Call claude and capture output
-RAW_OUTPUT=$(echo "$PROMPT" | "${CLAUDE_CMD[@]}" 2>/dev/null) || die "Claude API call failed"
+CLAUDE_STDERR=$(mktemp)
+RAW_OUTPUT=$(echo "$PROMPT" | "${CLAUDE_CMD[@]}" 2>"$CLAUDE_STDERR") || {
+  CLAUDE_ERR=$(cat "$CLAUDE_STDERR")
+  rm -f "$CLAUDE_STDERR"
+  die "Claude API call failed: ${CLAUDE_ERR:-no details}"
+}
+rm -f "$CLAUDE_STDERR"
 
 # Check for error responses (e.g., budget exceeded, API errors)
 ERROR_SUBTYPE=$(echo "$RAW_OUTPUT" | jq -r '.subtype // empty' 2>/dev/null)
@@ -210,10 +216,15 @@ if [[ -n "$ERROR_SUBTYPE" && "$ERROR_SUBTYPE" == error_* ]]; then
 fi
 
 # The output from --output-format json wraps the result; extract the actual content
-# With --output-format json and --json-schema, claude returns a JSON object with a "result" field
-RESULT_JSON=$(echo "$RAW_OUTPUT" | jq -r '.result // empty' 2>/dev/null || echo "")
+# With --json-schema, claude returns structured data in .structured_output (not .result)
+RESULT_JSON=$(echo "$RAW_OUTPUT" | jq '.structured_output // empty' 2>/dev/null || echo "")
 
-if [[ -z "$RESULT_JSON" ]]; then
+if [[ -z "$RESULT_JSON" || "$RESULT_JSON" == "null" ]]; then
+  # Fallback: try .result (text output without --json-schema)
+  RESULT_JSON=$(echo "$RAW_OUTPUT" | jq -r '.result // empty' 2>/dev/null || echo "")
+fi
+
+if [[ -z "$RESULT_JSON" || "$RESULT_JSON" == "null" ]]; then
   # Maybe the output IS the result directly (no wrapper)
   RESULT_JSON="$RAW_OUTPUT"
 fi
