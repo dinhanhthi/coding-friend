@@ -139,7 +139,7 @@ TOTAL_RUNS=$(calc_total)
 
 echo -e "${MAGENTA}${BOLD}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║  🧪 CODING FRIEND — Full Eval Suite ║"
+echo "  ║  🧪 CODING FRIEND — Full Eval Suite  ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  🤖 Models:  ${BOLD}${MODELS[*]}${NC}"
@@ -236,7 +236,7 @@ SECONDS=$((WALL_TIME % 60))
 
 echo -e "${GREEN}${BOLD}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║           🎉 COMPLETE               ║"
+echo "  ║           🎉 COMPLETE                ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  ⏱  Duration:  ${BOLD}${HOURS}h ${MINUTES}m ${SECONDS}s${NC}"

@@ -23,7 +23,7 @@ Run one wave per session (avoids context window limits), then generate scores:
 ./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup
 
 # Session 4: generate final scores from all collected results
-./generate-eval-json.sh
+./generate-eval-json.sh --no-budget
 ```
 
 ⚠️ Be careful not to run multiple waves in parallel. Shared `.plugin-state.tmp` and benchmark repos cause race conditions. Run sequentially with `&&` instead.
@@ -62,16 +62,16 @@ Other common patterns:
 Options for `run-full-eval.sh`:
 
 
-| Option              | Default                   | Description                        |
-| ------------------- | ------------------------- | ---------------------------------- |
-| `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple. |
-| `--runs <N>`        | 3                         | Runs per combination               |
-| `--wave <1          | 2                         | 3                                  |
-| `--skill <name>`    |                           | Run only this skill                |
-| `--budget <amount>` |                           | Max cost per run in USD            |
-| `--dry-run`         |                           | Preview all runs without executing |
-| `--skip-setup`      |                           | Skip benchmark repo setup          |
-| `--skip-score`      |                           | Skip scoring and JSON generation   |
+| Option              | Default                   | Description                                          |
+| ------------------- | ------------------------- | ---------------------------------------------------- |
+| `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple.                   |
+| `--runs <N>`        | 3                         | Runs per combination                                 |
+| `--wave <N>`        | all                       | Wave to run: `1`, `2`, `3`, `security` (=3), or `all`|
+| `--skill <name>`    |                           | Run only this skill                                  |
+| `--budget <amount>` |                           | Max cost per run in USD                              |
+| `--dry-run`         |                           | Preview all runs without executing                   |
+| `--skip-setup`      |                           | Skip benchmark repo setup                            |
+| `--skip-score`      |                           | Skip scoring and JSON generation                     |
 
 
 ## Output Structure
@@ -125,14 +125,14 @@ run-full-eval.sh                          <- top level: all models, all waves
 Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 
 
-| Script                                                                      | When to use                                    |
-| --------------------------------------------------------------------------- | ---------------------------------------------- |
-| `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model      |
-| `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change  |
-| `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website) |
-| `generate-eval-json.sh`                                                     | Re-generate website JSON from existing results |
-| `llm-score.sh --result <path> --rubric <path>`                              | Score a single result file with LLM judge      |
-| `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
+| Script                                                                      | When to use                                        |
+| --------------------------------------------------------------------------- | -------------------------------------------------- |
+| `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model          |
+| `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change      |
+| `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website)     |
+| `generate-eval-json.sh [--no-budget]`                                       | Re-generate website JSON from existing results     |
+| `llm-score.sh --result <path> --rubric <path> [--no-budget]`                | Score a single result file with LLM judge          |
+| `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos                   |
 
 
 ## A/B Test Design
@@ -157,11 +157,17 @@ Scores are cached as `.llm-score.json` files so re-runs are instant. There are n
 **No time or cost metrics** — scoring focuses exclusively on output quality. Time and cost are captured in `.meta.json` for reference but are not part of the evaluation scores.
 
 ```bash
-# Score a single result with LLM judge
+# Score a single result with LLM judge (default: $0.05 budget limit per call)
 ./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
+
+# Score without budget limit (for Claude Code subscription users)
+./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json --no-budget
 
 # Re-generate website JSON (uses cached scores, generates missing ones)
 ./generate-eval-json.sh
+
+# Re-generate without budget limit (for Claude Code subscription users)
+./generate-eval-json.sh --no-budget
 ```
 
 ## Benchmark Repos
@@ -176,35 +182,6 @@ Scores are cached as `.llm-score.json` files so re-runs are instant. There are n
 
 
 `setup-benchmarks.sh` stages specific changes in each repo to simulate pending work.
-
-## Results Summary (March 2026)
-
-### CF Adds Clear Value (Workflow Orchestration)
-
-
-| Skill     | Delta     | Workflow advantage                                                    |
-| --------- | --------- | --------------------------------------------------------------------- |
-| cf-fix    | **+1.10** | `cf-tdd` auto-activates → test written before fix → regression caught |
-| cf-tdd    | **+0.87** | RED-GREEN-REFACTOR enforced even when prompt doesn't ask for TDD      |
-| cf-review | **+0.47** | `cf-code-reviewer` agent dispatched → structured severity output      |
-| cf-learn  | **+0.45** | `cf-writer` agent persists learnings → docs/learn/ created            |
-
-
-### CF Adds No Value
-
-cf-ask (2.88/2.88), cf-auto-review (3.00/3.00), cf-sys-debug (2.60/2.60), cf-optimize (0.50/0.50)
-
-### CF Underperforms
-
-
-| Skill       | Delta     | Why                                              |
-| ----------- | --------- | ------------------------------------------------ |
-| cf-plan     | **-1.00** | Asks clarifying questions in single-turn eval    |
-| cf-scan     | **-0.25** | Ordering effects may explain this                |
-| cf-research | **-0.05** | Marginally lower quality on synthetic benchmarks |
-
-
-**Overall**: with-cf 2.51 vs without-cf 2.25 (+0.26)
 
 ## Wave 3: Security
 
@@ -229,12 +206,13 @@ A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 model
 ./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup
 
 # Final: generate LLM-as-judge scores from all results
-./generate-eval-json.sh
+./generate-eval-json.sh --no-budget
 ```
 
 - `--skip-score` avoids scoring incomplete results (wait until all waves are done)
 - `--skip-setup` reuses benchmark repos prepared in session 1
 - `generate-eval-json.sh` scores all results using LLM-as-judge and writes the website JSON
+- `--no-budget` to ignore the budget limit for llm scoring (useful when you use Claude subscription)
 
 ## Known Limitations
 

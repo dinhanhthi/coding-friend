@@ -460,7 +460,7 @@ JSON
   assert_contains "$output" "--output-format json" "dry-run should show --output-format json" || return 1
 }
 
-test_llm_score_dry_run_shows_budget() {
+test_llm_score_dry_run_shows_budget_default() {
   local tmp_result tmp_rubric
   tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
   tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
@@ -476,7 +476,45 @@ JSON
   local output
   output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
   rm -f "$tmp_result" "$tmp_rubric"
-  assert_contains "$output" "--max-budget-usd" "dry-run should show budget flag"
+  assert_contains "$output" "--max-budget-usd 0.05" "default budget should be 0.05"
+}
+
+test_llm_score_dry_run_no_budget_flag() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --no-budget --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_not_contains "$output" "--max-budget-usd" "--no-budget should remove budget limit"
+}
+
+test_llm_score_dry_run_custom_budget() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --budget 0.10 --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--max-budget-usd 0.10" "should show custom budget"
 }
 
 test_llm_score_dry_run_has_no_session() {
@@ -561,6 +599,12 @@ test_generate_eval_json_help() {
   local output
   output=$("$EVALS_DIR/generate-eval-json.sh" --help 2>&1) || true
   assert_contains "$output" "generate-eval-json" "help should show script name"
+}
+
+test_generate_eval_json_accepts_no_budget() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --no-budget --help 2>&1) || true
+  assert_contains "$output" "generate-eval-json" "--no-budget should be accepted"
 }
 
 # ============================================================
@@ -807,7 +851,9 @@ main() {
   run_test test_llm_score_custom_model
   run_test test_llm_score_dry_run_shows_prompt
   run_test test_llm_score_dry_run_shows_json_schema
-  run_test test_llm_score_dry_run_shows_budget
+  run_test test_llm_score_dry_run_shows_budget_default
+  run_test test_llm_score_dry_run_no_budget_flag
+  run_test test_llm_score_dry_run_custom_budget
   run_test test_llm_score_dry_run_has_no_session
   run_test test_llm_score_empty_result_field
   run_test test_llm_score_dry_run_includes_scoring_levels
@@ -818,6 +864,7 @@ main() {
   run_test test_generate_eval_json_rejects_unknown_flags
   run_test test_generate_eval_json_rejects_no_llm
   run_test test_generate_eval_json_help
+  run_test test_generate_eval_json_accepts_no_budget
 
   echo ""
   echo "--- score.sh integration ---"
