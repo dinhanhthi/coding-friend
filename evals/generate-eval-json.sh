@@ -8,8 +8,18 @@
 #
 # No time/cost metrics, no regex scoring — LLM rubric evaluation only.
 #
+# By default, processes waves 1 and 2 only. Wave 3 (security) is excluded because
+# synthetic benchmarks don't adequately capture CF's security value. Use --wave 3
+# explicitly to include it.
+#
 # Usage:
-#   ./generate-eval-json.sh
+#   ./generate-eval-json.sh                              # Score all models, waves 1-2
+#   ./generate-eval-json.sh --model sonnet               # Score only Sonnet, waves 1-2
+#   ./generate-eval-json.sh --model sonnet --no-budget   # Sonnet, no API budget limit
+#   ./generate-eval-json.sh --wave 2                     # Score only wave 2 skills, merge into existing JSON
+#   ./generate-eval-json.sh --wave 3                     # Score only wave 3 (security), merge into existing JSON
+#   ./generate-eval-json.sh --model sonnet --wave 2      # Sonnet + wave 2 only
+#   ./generate-eval-json.sh --wave 1 --wave 3            # Score waves 1 and 3
 
 set -euo pipefail
 
@@ -31,8 +41,9 @@ WAVES_FILE="$SCRIPT_DIR/waves.json"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
 
 # Featured skills shown on the landing page comparison chart
-FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd" "cf-security")
-FEATURED_LABELS=("Bug Fix" "Code Review" "TDD" "Security")
+# Security (wave 3) excluded — synthetic benchmarks don't capture CF's security value
+FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd")
+FEATURED_LABELS=("Bug Fix" "Code Review" "TDD")
 
 # All supported models
 ALL_MODELS=("haiku" "sonnet" "opus")
@@ -42,13 +53,16 @@ MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","op
 # Options
 NO_BUDGET=false
 SELECTED_MODELS=()
+SELECTED_WAVES=()
+USER_SPECIFIED_WAVES=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-budget) NO_BUDGET=true; shift ;;
     --model) SELECTED_MODELS+=("$2"); shift 2 ;;
-    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget] [--model <name>]..."; exit 0 ;;
+    --wave) SELECTED_WAVES+=("$2"); USER_SPECIFIED_WAVES=true; shift 2 ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget] [--model <name>]... [--wave <N>]..."; exit 0 ;;
     *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
 done
@@ -64,9 +78,81 @@ if [[ ${#SELECTED_MODELS[@]} -gt 0 ]]; then
   ALL_MODELS=("${SELECTED_MODELS[@]}")
 fi
 
+# Default to waves 1 and 2 (exclude wave 3/security) when no --wave specified
+if [[ ${#SELECTED_WAVES[@]} -eq 0 ]]; then
+  SELECTED_WAVES=("1" "2")
+fi
+
+# Validate wave numbers
+for w in "${SELECTED_WAVES[@]}"; do
+  if ! [[ "$w" =~ ^[0-9]+$ ]]; then
+    echo -e "${RED}❌ Wave must be an integer: $w${NC}" >&2
+    exit 1
+  fi
+  if ! jq -e ".wave${w}" "$WAVES_FILE" >/dev/null 2>&1; then
+    echo -e "${RED}❌ Unknown wave: $w (check $WAVES_FILE)${NC}" >&2
+    exit 1
+  fi
+done
+
+# Build ALL_SKILLS and ALL_SKILL_LABELS from waves.json (for detailedResults)
+# These include every skill across all waves, not just featured ones
+ALL_SKILLS=()
+ALL_SKILL_LABELS=()
+WAVE_NUMBERS=()
+while IFS= read -r wn; do
+  WAVE_NUMBERS+=("$wn")
+done < <(jq -r 'keys[] | select(startswith("wave")) | ltrimstr("wave")' "$WAVES_FILE" 2>/dev/null | sort -n)
+
+for wn in "${WAVE_NUMBERS[@]}"; do
+  while IFS= read -r skill_name; do
+    [[ -z "$skill_name" ]] && continue
+    # Skip if already added (skill could appear in multiple waves)
+    local_found=false
+    for existing in "${ALL_SKILLS[@]+"${ALL_SKILLS[@]}"}"; do
+      [[ "$existing" == "$skill_name" ]] && local_found=true && break
+    done
+    "$local_found" && continue
+    ALL_SKILLS+=("$skill_name")
+    # Generate label: cf-fix → Fix, cf-auto-review → Auto Review
+    ALL_SKILL_LABELS+=("$(echo "$skill_name" | sed 's/^cf-//' | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')")
+  done < <(jq -r ".wave${wn}.skills | keys[]" "$WAVES_FILE" 2>/dev/null)
+done
+
 die() {
   echo -e "${RED}❌ ERROR: $1${NC}" >&2
   exit 1
+}
+
+# Get the rubric file for a specific result file, supporting per-repo overrides.
+# Looks for <skill>--<repo>.json first, falls back to <skill>.json.
+get_rubric_for_file() {
+  local skill="$1"
+  local result_file="$2"
+  local repo_name
+  repo_name=$(basename "$(dirname "$result_file")")
+
+  local specific="$RUBRICS_DIR/${skill}--${repo_name}.json"
+  if [[ -f "$specific" ]]; then
+    echo "$specific"
+  else
+    echo "$RUBRICS_DIR/${skill}.json"
+  fi
+}
+
+# Check if a skill belongs to any of the selected waves (or all if no filter)
+skill_in_selected_waves() {
+  local skill="$1"
+  # No wave filter → include all skills
+  if [[ ${#SELECTED_WAVES[@]} -eq 0 ]]; then
+    return 0
+  fi
+  for w in "${SELECTED_WAVES[@]}"; do
+    if jq -e ".wave${w}.skills.\"${skill}\"" "$WAVES_FILE" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 # Count eval sessions for a given model across all results
@@ -138,7 +224,6 @@ compute_skill_score() {
   local condition="$2"
   local model="$3"
 
-  local rubric_file="$RUBRICS_DIR/${skill}.json"
   local total_score=0
   local file_count=0
 
@@ -164,6 +249,10 @@ compute_skill_score() {
   echo -e "      ${DIM}${#result_files[@]} file(s) to score${NC}" >&2
 
   for result_file in "${result_files[@]}"; do
+    # Use per-repo rubric when available (e.g., cf-security--bench-cli.json)
+    local rubric_file
+    rubric_file=$(get_rubric_for_file "$skill" "$result_file")
+
     if [[ ! -f "$rubric_file" ]]; then
       echo -e "      ${YELLOW}⚠ No rubric file: ${DIM}${rubric_file}${NC}" >&2
       continue
@@ -172,6 +261,14 @@ compute_skill_score() {
     local basename
     basename=$(basename "$result_file")
     local score=""
+
+    # Skip error results (e.g., aborted executions) — they have no .result to score
+    local result_subtype
+    result_subtype=$(jq -r '.subtype // ""' "$result_file" 2>/dev/null || echo "")
+    if [[ "$result_subtype" == error_* ]]; then
+      echo -e "      ⏭ ${DIM}${basename}${NC} → ${YELLOW}skipped${NC} ${DIM}(${result_subtype})${NC}" >&2
+      continue
+    fi
 
     # Check if cached
     local cache_file="${result_file%.json}.llm-score.json"
@@ -248,6 +345,12 @@ build_json() {
       local skill_label="${FEATURED_LABELS[$i]}"
       local skill_num=$((i + 1))
       local total_skills=${#FEATURED_SKILLS[@]}
+
+      # Skip if wave filter is active and skill is not in selected waves
+      if ! skill_in_selected_waves "$skill"; then
+        echo -e "  ${DIM}▸ [$skill_num/$total_skills] ${skill} (${skill_label}) — skipped (not in wave ${SELECTED_WAVES[*]})${NC}"
+        continue
+      fi
 
       echo -e "  ${MAGENTA}▸ [$skill_num/$total_skills] ${BOLD}${skill}${NC} ${DIM}(${skill_label})${NC}"
 
@@ -347,19 +450,25 @@ build_json() {
   echo -e "${DIM}▸ Building detailed results (per-skill/per-repo/per-criteria)...${NC}"
 
   # Build detailedResults from cached .llm-score.json files and rubric metadata
+  # Uses ALL_SKILLS (from waves.json) — not just FEATURED_SKILLS
   local detailed_json="{}"
 
   for model in "${ALL_MODELS[@]}"; do
-    for i in "${!FEATURED_SKILLS[@]}"; do
-      local skill="${FEATURED_SKILLS[$i]}"
-      local skill_label="${FEATURED_LABELS[$i]}"
+    for i in "${!ALL_SKILLS[@]}"; do
+      local skill="${ALL_SKILLS[$i]}"
+      local skill_label="${ALL_SKILL_LABELS[$i]}"
       local rubric_file="$RUBRICS_DIR/${skill}.json"
+
+      # Skip if wave filter is active and skill is not in selected waves
+      if ! skill_in_selected_waves "$skill"; then
+        continue
+      fi
 
       # Determine wave number from waves.json
       local wave_num=0
       if [[ -f "$WAVES_FILE" ]]; then
-        for wn in 1 2 3; do
-          if echo "$(cat "$WAVES_FILE")" | jq -e ".wave${wn}.skills.\"${skill}\"" >/dev/null 2>&1; then
+        for wn in "${WAVE_NUMBERS[@]}"; do
+          if jq -e ".wave${wn}.skills.\"${skill}\"" "$WAVES_FILE" >/dev/null 2>&1; then
             wave_num=$wn
             break
           fi
@@ -389,9 +498,26 @@ build_json() {
         continue
       fi
 
-      # Build per-repo data
+      # Build per-repo data and per-repo criteria overrides
       local repos_json="{}"
+      local repo_criteria_json="{}"
       for repo in "${repos[@]}"; do
+        # Check for repo-specific rubric (e.g., cf-security--bench-cli.json)
+        local repo_rubric="$RUBRICS_DIR/${skill}--${repo}.json"
+        if [[ -f "$repo_rubric" ]]; then
+          local rc_meta
+          rc_meta=$(jq '[.criteria[] | {
+            (.name): {
+              weight: .weight,
+              label: (.name | split("_") | map(( .[0:1] | ascii_upcase ) + .[1:]) | join(" "))
+            }
+          }] | add // {}' "$repo_rubric")
+          repo_criteria_json=$(echo "$repo_criteria_json" | jq \
+            --arg repo "$repo" \
+            --argjson criteria "$rc_meta" \
+            '.[$repo] = $criteria')
+        fi
+
         for condition in "with-cf" "without-cf"; do
           local cond_key
           if [[ "$condition" == "with-cf" ]]; then cond_key="withCF"; else cond_key="withoutCF"; fi
@@ -452,15 +578,17 @@ build_json() {
         --argjson wave "$wave_num" \
         --arg label "$skill_label" \
         --argjson criteria "$criteria_meta" \
+        --argjson repoCriteria "$repo_criteria_json" \
         --argjson repos "$repos_json" \
-        '.[$model][$skill] = {"wave": $wave, "label": $label, "criteria": $criteria, "repos": $repos}')
+        '.[$model][$skill] = {"wave": $wave, "label": $label, "criteria": $criteria, "repoCriteria": $repoCriteria, "repos": $repos}')
     done
   done
 
   echo -e "${DIM}▸ Writing final JSON...${NC}"
 
-  # Build final JSON
-  jq -n \
+  # Build new JSON
+  local new_json
+  new_json=$(jq -n \
     --arg date "$today" \
     --argjson models "$models_json" \
     --argjson featured "$featured_json" \
@@ -483,7 +611,20 @@ build_json() {
         "topDeltaLabel": $topDeltaLabel
       },
       "detailedResults": $detailed
-    }' > "$OUTPUT_FILE"
+    }')
+
+  # When --wave filter is explicitly specified, merge only detailedResults into existing output file
+  # This preserves models, featuredSkills, stats from previous runs
+  if [[ "$USER_SPECIFIED_WAVES" == true && -f "$OUTPUT_FILE" ]]; then
+    local existing_json
+    existing_json=$(cat "$OUTPUT_FILE")
+    # Only merge detailedResults (additive per-skill keys) and update timestamp
+    jq -n --argjson existing "$existing_json" --argjson new "$new_json" \
+      '$existing | .detailedResults *= $new.detailedResults | .meta.lastUpdated = $new.meta.lastUpdated' \
+      > "$OUTPUT_FILE"
+  else
+    echo "$new_json" > "$OUTPUT_FILE"
+  fi
 
   echo ""
   echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

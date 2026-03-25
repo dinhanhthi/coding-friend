@@ -555,6 +555,30 @@ JSON
   assert_eq "1" "$exit_code" "should fail when result field is empty"
 }
 
+test_llm_score_error_during_execution() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  # Simulate a result file from a failed Claude API execution (no .result field)
+  cat > "$tmp_result" <<'JSON'
+{"type":"result","subtype":"error_during_execution","is_error":false,"stop_reason":"tool_use","errors":["Error: Request was aborted"],"duration_ms":147461}
+JSON
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local exit_code=0
+  local stderr_output
+  stderr_output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" 2>&1 >/dev/null) || exit_code=$?
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_eq "1" "$exit_code" "should fail when result has error_during_execution subtype" || return 1
+  assert_contains "$stderr_output" "error_during_execution" "error message should mention error_during_execution subtype" || return 1
+}
+
 test_llm_score_dry_run_includes_scoring_levels() {
   local tmp_result tmp_rubric
   tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
@@ -605,6 +629,29 @@ test_generate_eval_json_accepts_no_budget() {
   local output
   output=$("$EVALS_DIR/generate-eval-json.sh" --no-budget --help 2>&1) || true
   assert_contains "$output" "generate-eval-json" "--no-budget should be accepted"
+}
+
+test_generate_eval_json_detailed_uses_all_waves_skills() {
+  # detailedResults must include ALL skills from waves.json, not just FEATURED_SKILLS
+  local script_content
+  script_content=$(cat "$EVALS_DIR/generate-eval-json.sh")
+  # The detailed results loop should use ALL_SKILLS (from waves.json), not FEATURED_SKILLS
+  assert_contains "$script_content" "ALL_SKILLS" \
+    "generate-eval-json.sh should have ALL_SKILLS variable for detailed results" || return 1
+  assert_not_contains "$(grep 'for.*ALL_SKILLS' "$EVALS_DIR/generate-eval-json.sh" | head -1)" "FEATURED" \
+    "detailed results loop should iterate ALL_SKILLS, not FEATURED_SKILLS" || return 1
+}
+
+test_generate_eval_json_accepts_wave_filter() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --wave 2 --help 2>&1) || true
+  assert_contains "$output" "generate-eval-json" "--wave should be accepted" || return 1
+}
+
+test_generate_eval_json_rejects_invalid_wave() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --wave 99 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail for invalid wave number"
 }
 
 # ============================================================
@@ -856,6 +903,7 @@ main() {
   run_test test_llm_score_dry_run_custom_budget
   run_test test_llm_score_dry_run_has_no_session
   run_test test_llm_score_empty_result_field
+  run_test test_llm_score_error_during_execution
   run_test test_llm_score_dry_run_includes_scoring_levels
 
   echo ""
@@ -865,6 +913,9 @@ main() {
   run_test test_generate_eval_json_rejects_no_llm
   run_test test_generate_eval_json_help
   run_test test_generate_eval_json_accepts_no_budget
+  run_test test_generate_eval_json_detailed_uses_all_waves_skills
+  run_test test_generate_eval_json_accepts_wave_filter
+  run_test test_generate_eval_json_rejects_invalid_wave
 
   echo ""
   echo "--- score.sh integration ---"

@@ -9,10 +9,10 @@
     "sonnet": {
       "label": "Sonnet",
       "modelId": "claude-sonnet-4-6",
-      "evalSessions": 114,
+      "evalSessions": 129,
       "skills": {
         "cf-fix": {
-          "withCF": 2.9,
+          "withCF": 2.90,
           "withoutCF": 1.23
         },
         "cf-review": {
@@ -22,15 +22,11 @@
         "cf-tdd": {
           "withCF": 2.15,
           "withoutCF": 0.21
-        },
-        "cf-security": {
-          "withCF": 2.9,
-          "withoutCF": 2.9
         }
       },
       "average": {
-        "withCF": 2.65,
-        "withoutCF": 1.72
+        "withCF": 2.57,
+        "withoutCF": 1.33
       }
     }
   },
@@ -46,10 +42,6 @@
     {
       "key": "cf-tdd",
       "label": "TDD"
-    },
-    {
-      "key": "cf-security",
-      "label": "Security"
     }
   ],
   "stats": {
@@ -84,7 +76,7 @@
         "repos": {
           "bench-cli": {
             "withCF": {
-              "avgScore": 2.8,
+              "avgScore": 2.80,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 3,
@@ -106,7 +98,7 @@
           },
           "bench-webapp": {
             "withCF": {
-              "avgScore": 3.0,
+              "avgScore": 3.00,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 3,
@@ -116,7 +108,7 @@
               }
             },
             "withoutCF": {
-              "avgScore": 0.9,
+              "avgScore": 0.90,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 1.67,
@@ -220,7 +212,7 @@
         "repos": {
           "bench-cli": {
             "withCF": {
-              "avgScore": 2.0,
+              "avgScore": 2.00,
               "runCount": 3,
               "criteria": {
                 "red_before_green": 2.33,
@@ -242,7 +234,7 @@
           },
           "bench-library": {
             "withCF": {
-              "avgScore": 2.3,
+              "avgScore": 2.30,
               "runCount": 3,
               "criteria": {
                 "red_before_green": 3,
