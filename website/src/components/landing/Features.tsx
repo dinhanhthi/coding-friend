@@ -199,62 +199,61 @@ function StatuslineContent() {
           </div>
 
           {/* Terminal content */}
-          <div className="rounded-lg bg-[#1a1b26] px-5 py-4 font-mono text-sm leading-relaxed select-none">
+          <div className="rounded-lg bg-[#1a1b26] px-4 py-3 font-mono text-xs leading-relaxed select-none">
             <div className="flex justify-between">
               <span>
                 <span className="font-bold text-cyan-400">➜</span>{" "}
                 <span className="font-bold text-white">claude</span>
               </span>
-              <span className="text-xs text-blue-400">[12:47:44]</span>
+              <span className="text-[10px] text-blue-400">[12:47:44]</span>
             </div>
-            <div className="h-3" />
-            <pre className="text-sm leading-snug">
-              <span className="text-violet-400">{"    ✻\n"}</span>
-              <span className="text-violet-400">{"    |\n"}</span>
-              <span className="text-violet-400">{"   ▟█▙"}</span>
-              {"     "}
+            <div className="h-2" />
+            <pre className="text-[11px] leading-snug">
+              <span className="text-violet-400">{"   ✻\n"}</span>
+              <span className="text-violet-400">{"   |\n"}</span>
+              <span className="text-violet-400">{"  ▟█▙"}</span>
+              {"    "}
               <span className="font-bold text-white">Claude Code</span>
               {" v2.1.50\n"}
               <span className="text-orange-400">{" ▐▛███▜▌"}</span>
-              {"   "}
+              {"  "}
               <span className="text-slate-400">Opus 4.6 · Claude Max</span>
               {"\n"}
-              <span className="text-orange-400">{"▝▜█████▛▘"}</span>
-              {"  "}
+              <span className="text-orange-400">{"▝▜█████▛▘"}</span>{" "}
               <span className="text-slate-400">~/git/coding-friend</span>
               {"\n"}
-              <span className="text-orange-400">{"  ▘▘ ▝▝"}</span>
+              <span className="text-orange-400">{" ▘▘ ▝▝"}</span>
             </pre>
-            <div className="my-3 border-t border-slate-700/60" />
+            <div className="my-2 border-t border-slate-700/60" />
             <div className="text-white">
               <span className="font-bold text-white">❯</span>{" "}
               <span className="text-slate-400">
                 Try &quot;how do I log an error?&quot;
               </span>
             </div>
-            <div className="my-3 border-t border-slate-700/60" />
-            <div className="mb-1 flex flex-wrap items-center gap-0 gap-y-2 text-sm">
+            <div className="my-2 border-t border-slate-700/60" />
+            <div className="mb-0.5 flex flex-wrap items-center gap-0 gap-y-1.5 text-xs">
               <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
-              <span className="mx-2 text-slate-600">│</span>
+              <span className="mx-1.5 text-slate-600">│</span>
               <span className="whitespace-nowrap text-orange-400">
                 coding-friend <span className="text-green-400">(⎇ main)</span>
               </span>
-              <span className="mx-2 text-slate-600">│</span>
+              <span className="mx-1.5 text-slate-600">│</span>
               <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
             </div>
-            <div className="mb-1 flex flex-wrap items-center gap-0 gap-y-1 text-sm">
+            <div className="mb-0.5 flex flex-wrap items-center gap-0 gap-y-1 text-xs">
               <span className="whitespace-nowrap text-cyan-400">
                 👤 Thi Dinh{" "}
                 <span className="text-slate-500">(me@dinhanhthi.com)</span>
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-sm">
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs">
               <span className="whitespace-nowrap text-amber-400">ctx 42%</span>
-              <span className="mx-2 text-slate-600">│</span>
+              <span className="mx-1.5 text-slate-600">│</span>
               <span className="whitespace-nowrap text-slate-400">
                 [5h] <span className="text-violet-400">30%</span> → 2:30pm
               </span>
-              <span className="mx-2 text-slate-600">│</span>
+              <span className="mx-1.5 text-slate-600">│</span>
               <span className="whitespace-nowrap text-slate-400">
                 [7d] <span className="text-violet-400">10%</span> → mar 15,
                 2:30pm
