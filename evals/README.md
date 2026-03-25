@@ -62,16 +62,16 @@ Other common patterns:
 Options for `run-full-eval.sh`:
 
 
-| Option              | Default                   | Description                                          |
-| ------------------- | ------------------------- | ---------------------------------------------------- |
-| `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple.                   |
-| `--runs <N>`        | 3                         | Runs per combination                                 |
-| `--wave <N>`        | all                       | Wave to run: `1`, `2`, `3`, `security` (=3), or `all`|
-| `--skill <name>`    |                           | Run only this skill                                  |
-| `--budget <amount>` |                           | Max cost per run in USD                              |
-| `--dry-run`         |                           | Preview all runs without executing                   |
-| `--skip-setup`      |                           | Skip benchmark repo setup                            |
-| `--skip-score`      |                           | Skip scoring and JSON generation                     |
+| Option              | Default                   | Description                                           |
+| ------------------- | ------------------------- | ----------------------------------------------------- |
+| `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple.                    |
+| `--runs <N>`        | 3                         | Runs per combination                                  |
+| `--wave <N>`        | all                       | Wave to run: `1`, `2`, `3`, `security` (=3), or `all` |
+| `--skill <name>`    |                           | Run only this skill                                   |
+| `--budget <amount>` |                           | Max cost per run in USD                               |
+| `--dry-run`         |                           | Preview all runs without executing                    |
+| `--skip-setup`      |                           | Skip benchmark repo setup                             |
+| `--skip-score`      |                           | Skip scoring and JSON generation                      |
 
 
 ## Output Structure
@@ -125,14 +125,14 @@ run-full-eval.sh                          <- top level: all models, all waves
 Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 
 
-| Script                                                                      | When to use                                        |
-| --------------------------------------------------------------------------- | -------------------------------------------------- |
-| `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model          |
-| `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change      |
-| `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website)     |
-| `generate-eval-json.sh [--no-budget]`                                       | Re-generate website JSON from existing results     |
-| `llm-score.sh --result <path> --rubric <path> [--no-budget]`                | Score a single result file with LLM judge          |
-| `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos                   |
+| Script                                                                      | When to use                                    |
+| --------------------------------------------------------------------------- | ---------------------------------------------- |
+| `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model      |
+| `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change  |
+| `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website) |
+| `generate-eval-json.sh [--no-budget]`                                       | Re-generate website JSON from existing results |
+| `llm-score.sh --result <path> --rubric <path> [--no-budget]`                | Score a single result file with LLM judge      |
+| `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
 
 
 ## A/B Test Design

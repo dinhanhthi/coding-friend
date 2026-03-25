@@ -96,8 +96,16 @@ llm_score_result() {
     score_args+=(--conversation "$conv_file")
   fi
 
-  local llm_output
-  llm_output=$("$llm_score_script" "${score_args[@]}" 2>/dev/null) || return 1
+  local llm_output llm_stderr
+  llm_stderr=$(mktemp)
+  llm_output=$("$llm_score_script" "${score_args[@]}" 2>"$llm_stderr") || {
+    local err_msg
+    err_msg=$(cat "$llm_stderr")
+    rm -f "$llm_stderr"
+    echo "$err_msg" >&2
+    return 1
+  }
+  rm -f "$llm_stderr"
 
   # Atomic cache write: write to temp in same dir then rename (ensures same filesystem)
   local tmp_cache
@@ -159,15 +167,24 @@ compute_skill_score() {
       echo -ne "      🔄 ${DIM}${basename}${NC} " >&2
     fi
 
-    score=$(llm_score_result "$result_file" "$rubric_file")
+    local score_stderr
+    score_stderr=$(mktemp)
+    score=$(llm_score_result "$result_file" "$rubric_file" 2>"$score_stderr")
 
     if [[ -n "$score" ]]; then
       total_score=$(awk "BEGIN { printf \"%.4f\", $total_score + $score }")
       file_count=$((file_count + 1))
       echo -e "→ ${GREEN}${score}${NC}" >&2
     else
-      echo -e "→ ${RED}failed${NC}" >&2
+      local err_detail
+      err_detail=$(cat "$score_stderr")
+      if [[ -n "$err_detail" ]]; then
+        echo -e "→ ${RED}failed${NC} ${DIM}(${err_detail})${NC}" >&2
+      else
+        echo -e "→ ${RED}failed${NC} ${DIM}(unknown error)${NC}" >&2
+      fi
     fi
+    rm -f "$score_stderr"
   done
 
   local avg_score="0"
