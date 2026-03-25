@@ -80,6 +80,10 @@ The LLM judge evaluates the **full conversation** (not just the final summary), 
 
 Detailed per-skill, per-repository, per-criteria breakdown. Click a skill to expand.
 
+<Callout type="info">
+Some results may show **negative deltas** (baseline outperforming CF). This is expected given the simplicity of our benchmark repositories (~100-200 LOC each). For straightforward tasks on small codebases, CF's workflow orchestration can add overhead without proportional benefit. In larger, more complex codebases — where multi-file coordination, layered testing, and disciplined workflows matter most — CF's structured approach (TDD enforcement, agent dispatch, automated review) delivers significantly stronger results.
+</Callout>
+
 <FullEvalResults />
 
 ## Limitations

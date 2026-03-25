@@ -105,10 +105,12 @@ function RepoSection({
   repoName,
   data,
   criteria,
+  repoCriteria,
 }: {
   repoName: string;
   data: RepoData;
   criteria: DetailedSkill["criteria"];
+  repoCriteria?: Record<string, Record<string, { weight: number; label: string }>> | null;
 }) {
   const withCF = data.withCF as ConditionData | undefined;
   const withoutCF = data.withoutCF as ConditionData | undefined;
@@ -118,6 +120,10 @@ function RepoSection({
   const avgWith = withCF?.avgScore ?? 0;
   const avgWithout = withoutCF?.avgScore ?? 0;
   const runs = withCF?.runCount ?? withoutCF?.runCount ?? 0;
+
+  // Use per-repo criteria when available (e.g., bench-cli may have different
+  // criteria than bench-webapp if certain criteria aren't tested in that repo)
+  const effectiveCriteria = repoCriteria?.[repoName] ?? criteria;
 
   return (
     <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-4">
@@ -150,7 +156,7 @@ function RepoSection({
           </tr>
         </thead>
         <tbody>
-          {Object.entries(criteria).map(([key, meta]) => (
+          {Object.entries(effectiveCriteria).map(([key, meta]) => (
             <CriteriaRow
               key={key}
               label={meta.label}
@@ -248,6 +254,7 @@ function SkillCard({
               repoName={repoName}
               data={repoData as RepoData}
               criteria={skill.criteria}
+              repoCriteria={(skill as Record<string, unknown>).repoCriteria as Record<string, Record<string, { weight: number; label: string }>> | undefined}
             />
           ))}
         </div>
