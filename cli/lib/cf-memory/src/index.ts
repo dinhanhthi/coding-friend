@@ -1,4 +1,6 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerAllTools } from "./server.js";
@@ -6,6 +8,11 @@ import { registerAllResources } from "./resources/index.js";
 import { createBackendForTier } from "./lib/tier.js";
 import type { TierConfig } from "./lib/tier.js";
 import type { EmbeddingConfig } from "./backends/sqlite/embeddings.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const cliPkg = JSON.parse(
+  readFileSync(path.resolve(__dirname, "../../../package.json"), "utf-8"),
+);
 
 const rawDir =
   process.argv[2] ?? process.env.MEMORY_DOCS_DIR ?? "./docs/memory";
@@ -55,7 +62,7 @@ if (tier.name !== "markdown") {
 
 const server = new McpServer({
   name: "coding-friend-memory",
-  version: "0.0.1",
+  version: cliPkg.version,
 });
 
 registerAllTools(server, backend);

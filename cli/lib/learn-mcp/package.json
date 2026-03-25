@@ -1,6 +1,5 @@
 {
   "name": "coding-friend-learn-mcp",
-  "version": "0.0.3",
   "private": true,
   "type": "module",
   "bin": {

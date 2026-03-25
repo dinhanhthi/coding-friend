@@ -2,7 +2,7 @@
 name: release
 description: Finalize changelogs, create git tags, and push to trigger CI/CD releases
 disable-model-invocation: true
-argument-hint: "[plugin|cli|learn-mcp|learn-host|cf-memory|all]"
+argument-hint: "[plugin|cli|all]"
 model: haiku
 ---
 
@@ -12,19 +12,18 @@ Finalize and publish releases. Hint: **$ARGUMENTS**
 
 ## Packages
 
-| Package        | Version file                        | Changelog                         | Tag pattern     | CI/CD trigger                |
-| -------------- | ----------------------------------- | --------------------------------- | --------------- | ---------------------------- |
-| **Plugin**     | `plugin/.claude-plugin/plugin.json` | `plugin/CHANGELOG.md`             | `v*`            | GitHub Release               |
-| **CLI**        | `cli/package.json`                  | `cli/CHANGELOG.md`                | `cli-v*`        | npm publish + GitHub Release |
-| **Learn MCP**  | `cli/lib/learn-mcp/package.json`    | `cli/lib/learn-mcp/CHANGELOG.md`  | `learn-mcp-v*`  | GitHub Release               |
-| **Learn Host** | `cli/lib/learn-host/package.json`   | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` | GitHub Release               |
-| **CF Memory**  | `cli/lib/cf-memory/package.json`    | `cli/lib/cf-memory/CHANGELOG.md`  | `cf-memory-v*`  | GitHub Release               |
+| Package    | Version file                        | Changelog             | Tag pattern | CI/CD trigger                |
+| ---------- | ----------------------------------- | --------------------- | ----------- | ---------------------------- |
+| **Plugin** | `plugin/.claude-plugin/plugin.json` | `plugin/CHANGELOG.md` | `v*`        | GitHub Release               |
+| **CLI**    | `cli/package.json`                  | `cli/CHANGELOG.md`    | `cli-v*`    | npm publish + GitHub Release |
+
+> **Note:** Learn MCP, Learn Host, and CF Memory are bundled libs inside CLI — their changes are versioned and released as part of the CLI package.
 
 ## Helper script
 
 ```bash
 bash .claude/skills/release/scripts/release.sh <package>
-# package: plugin | cli | learn-mcp | learn-host | cf-memory
+# package: plugin | cli
 ```
 
 The script: reads version from package files, replaces `(unpublished)` with today's date in changelog. Does NOT create tags or push.
@@ -49,12 +48,12 @@ If NOT on `main`, tell the user:
 
 ### Step 2: Detect packages to release
 
-If `$ARGUMENTS` names a specific package (`plugin`, `cli`, `learn-mcp`, `learn-host`, `cf-memory`), use **only** that package — still verify its changelog has an `(unpublished)` section before proceeding.
+If `$ARGUMENTS` names a specific package (`plugin`, `cli`), use **only** that package — still verify its changelog has an `(unpublished)` section before proceeding.
 
-If `$ARGUMENTS` is `all` or empty, scan all 5 changelogs for `(unpublished)` sections:
+If `$ARGUMENTS` is `all` or empty, scan all changelogs for `(unpublished)` sections:
 
 ```bash
-grep -l "(unpublished)" plugin/CHANGELOG.md cli/CHANGELOG.md cli/lib/learn-mcp/CHANGELOG.md cli/lib/learn-host/CHANGELOG.md cli/lib/cf-memory/CHANGELOG.md 2>/dev/null
+grep -l "(unpublished)" plugin/CHANGELOG.md cli/CHANGELOG.md 2>/dev/null
 ```
 
 If no packages have `(unpublished)` sections, tell the user there's nothing to release.
@@ -109,11 +108,8 @@ git tag <tag2>
 
 **Tag ordering**: Always create and push tags in this fixed priority order (skip any that aren't part of this release):
 
-1. `cf-memory-v*`
-2. `learn-mcp-v*`
-3. `learn-host-v*`
-4. `cli-v*`
-5. `v*` (plugin — always last)
+1. `cli-v*`
+2. `v*` (plugin — always last)
 
 ### Step 7: Push
 
@@ -133,11 +129,8 @@ If confirmed:
 git push origin main
 
 # Then push each tag individually in priority order (skip missing):
-# 1. cf-memory-v*
-# 2. learn-mcp-v*
-# 3. learn-host-v*
-# 4. cli-v*
-# 5. v* (plugin — always last)
+# 1. cli-v*
+# 2. v* (plugin — always last)
 git push origin <tag1>
 git push origin <tag2>
 # ... one per package, in the order above

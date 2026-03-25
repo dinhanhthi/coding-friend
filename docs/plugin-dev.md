@@ -64,12 +64,12 @@ The website imports this JSON (via `website/src/lib/token-data.ts`) to display c
 
 ### Packages
 
-| Package    | Version file                                              | Changelog                         | Tag pattern     |
-| ---------- | --------------------------------------------------------- | --------------------------------- | --------------- |
-| Plugin     | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md`             | `v`\*           |
-| CLI        | `cli/package.json`                                        | `cli/CHANGELOG.md`                | `cli-v*`        |
-| Learn MCP  | `cli/lib/learn-mcp/package.json`                          | `cli/lib/learn-mcp/CHANGELOG.md`  | `learn-mcp-v*`  |
-| Learn Host | `cli/lib/learn-host/package.json`                         | `cli/lib/learn-host/CHANGELOG.md` | `learn-host-v*` |
+| Package | Version file                                              | Changelog             | Tag pattern |
+| ------- | --------------------------------------------------------- | --------------------- | ----------- |
+| Plugin  | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md` | `v*`        |
+| CLI     | `cli/package.json`                                        | `cli/CHANGELOG.md`    | `cli-v*`    |
+
+> Learn MCP, Learn Host, and CF Memory are bundled libs inside CLI — versioned and released as part of CLI.
 
 ### Normal Workflow with release process
 

@@ -312,4 +312,4 @@ If these are missing, `cf memory init` will fail at the "Installing SQLite depen
 
 ## Versioning
 
-Part of the [coding-friend](https://github.com/dinhanhthi/coding-friend) monorepo. Tagged independently as `cf-memory-v*`. Changelog: [CHANGELOG.md](./CHANGELOG.md).
+Part of the [coding-friend](https://github.com/dinhanhthi/coding-friend) monorepo. Versioned and released as part of the CLI package. Changelog: [`cli/CHANGELOG.md`](../../CHANGELOG.md).

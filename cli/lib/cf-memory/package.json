@@ -1,6 +1,5 @@
 {
   "name": "coding-friend-cf-memory",
-  "version": "0.2.2",
   "private": true,
   "type": "module",
   "bin": {
