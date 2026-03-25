@@ -27,6 +27,7 @@ DIM='\033[2m'
 NC='\033[0m' # No Color
 RESULTS_DIR="$SCRIPT_DIR/results"
 RUBRICS_DIR="$SCRIPT_DIR/rubrics"
+WAVES_FILE="$SCRIPT_DIR/waves.json"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
 
 # Featured skills shown on the landing page comparison chart
@@ -343,6 +344,119 @@ build_json() {
     fi
   fi
 
+  echo -e "${DIM}▸ Building detailed results (per-skill/per-repo/per-criteria)...${NC}"
+
+  # Build detailedResults from cached .llm-score.json files and rubric metadata
+  local detailed_json="{}"
+
+  for model in "${ALL_MODELS[@]}"; do
+    for i in "${!FEATURED_SKILLS[@]}"; do
+      local skill="${FEATURED_SKILLS[$i]}"
+      local skill_label="${FEATURED_LABELS[$i]}"
+      local rubric_file="$RUBRICS_DIR/${skill}.json"
+
+      # Determine wave number from waves.json
+      local wave_num=0
+      if [[ -f "$WAVES_FILE" ]]; then
+        for wn in 1 2 3; do
+          if echo "$(cat "$WAVES_FILE")" | jq -e ".wave${wn}.skills.\"${skill}\"" >/dev/null 2>&1; then
+            wave_num=$wn
+            break
+          fi
+        done
+      fi
+
+      # Build criteria metadata from rubric — capitalize first letter of each word
+      local criteria_meta="{}"
+      if [[ -f "$rubric_file" ]]; then
+        criteria_meta=$(jq '[.criteria[] | {
+          (.name): {
+            weight: .weight,
+            label: (.name | split("_") | map(( .[0:1] | ascii_upcase ) + .[1:]) | join(" "))
+          }
+        }] | add // {}' "$rubric_file")
+      fi
+
+      # Find all repos for this skill+model
+      local repos=()
+      while IFS= read -r repo_dir; do
+        [[ -z "$repo_dir" ]] && continue
+        repos+=("$(basename "$repo_dir")")
+      done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/*" -name "*.llm-score.json" -type f 2>/dev/null \
+        | sed 's|/[^/]*$||' | sort -u)
+
+      if [[ ${#repos[@]} -eq 0 ]]; then
+        continue
+      fi
+
+      # Build per-repo data
+      local repos_json="{}"
+      for repo in "${repos[@]}"; do
+        for condition in "with-cf" "without-cf"; do
+          local cond_key
+          if [[ "$condition" == "with-cf" ]]; then cond_key="withCF"; else cond_key="withoutCF"; fi
+
+          local score_files=()
+          while IFS= read -r sf; do
+            [[ -z "$sf" ]] && continue
+            score_files+=("$sf")
+          done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/$repo/${condition}--*.llm-score.json" -type f 2>/dev/null | sort)
+
+          if [[ ${#score_files[@]} -eq 0 ]]; then continue; fi
+
+          local total_avg=0
+          local criteria_totals="{}"
+          local run_count=0
+
+          for sf in "${score_files[@]}"; do
+            local wavg
+            wavg=$(jq -r '.weighted_average // 0' "$sf")
+            total_avg=$(awk "BEGIN { printf \"%.4f\", $total_avg + $wavg }")
+
+            local per_criteria
+            per_criteria=$(jq '[.scores[] | {(.name): .score}] | add // {}' "$sf")
+
+            # Full outer merge to handle new keys
+            if [[ "$criteria_totals" == "{}" ]]; then
+              criteria_totals="$per_criteria"
+            else
+              criteria_totals=$(echo "$criteria_totals" | jq --argjson new "$per_criteria" '
+                . as $old | ($old + $new) | to_entries | map(
+                  .key as $k | .value = (($old[$k] // 0) + ($new[$k] // 0))
+                ) | from_entries')
+            fi
+
+            run_count=$((run_count + 1))
+          done
+
+          local avg_score=0
+          if [[ $run_count -gt 0 ]]; then
+            avg_score=$(awk "BEGIN { printf \"%.2f\", $total_avg / $run_count }")
+            criteria_totals=$(echo "$criteria_totals" | jq --argjson n "$run_count" '
+              to_entries | map(.value = ((.value / $n) * 100 | round) / 100) | from_entries')
+          fi
+
+          repos_json=$(echo "$repos_json" | jq \
+            --arg repo "$repo" \
+            --arg cond "$cond_key" \
+            --argjson avg "$avg_score" \
+            --argjson runs "$run_count" \
+            --argjson criteria "$criteria_totals" \
+            '.[$repo][$cond] = {"avgScore": $avg, "runCount": $runs, "criteria": $criteria}')
+        done
+      done
+
+      detailed_json=$(echo "$detailed_json" | jq \
+        --arg model "$model" \
+        --arg skill "$skill" \
+        --argjson wave "$wave_num" \
+        --arg label "$skill_label" \
+        --argjson criteria "$criteria_meta" \
+        --argjson repos "$repos_json" \
+        '.[$model][$skill] = {"wave": $wave, "label": $label, "criteria": $criteria, "repos": $repos}')
+    done
+  done
+
   echo -e "${DIM}▸ Writing final JSON...${NC}"
 
   # Build final JSON
@@ -352,6 +466,7 @@ build_json() {
     --argjson featured "$featured_json" \
     --arg topDelta "$top_delta" \
     --arg topDeltaLabel "$top_delta_label" \
+    --argjson detailed "$detailed_json" \
     '{
       "meta": {
         "lastUpdated": $date,
@@ -366,7 +481,8 @@ build_json() {
         "agentCount": "6",
         "topDelta": $topDelta,
         "topDeltaLabel": $topDeltaLabel
-      }
+      },
+      "detailedResults": $detailed
     }' > "$OUTPUT_FILE"
 
   echo ""
