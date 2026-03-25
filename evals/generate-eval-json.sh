@@ -173,6 +173,14 @@ compute_skill_score() {
     basename=$(basename "$result_file")
     local score=""
 
+    # Skip error results (e.g., aborted executions) — they have no .result to score
+    local result_subtype
+    result_subtype=$(jq -r '.subtype // ""' "$result_file" 2>/dev/null || echo "")
+    if [[ "$result_subtype" == error_* ]]; then
+      echo -e "      ⏭ ${DIM}${basename}${NC} → ${YELLOW}skipped${NC} ${DIM}(${result_subtype})${NC}" >&2
+      continue
+    fi
+
     # Check if cached
     local cache_file="${result_file%.json}.llm-score.json"
     if [[ -f "$cache_file" ]]; then
