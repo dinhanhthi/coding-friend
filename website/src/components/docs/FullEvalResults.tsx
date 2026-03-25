@@ -159,9 +159,8 @@ function RepoSection({
                 withCF?.criteria?.[key as keyof typeof withCF.criteria] ?? 0
               }
               withoutCF={
-                withoutCF?.criteria?.[
-                  key as keyof typeof withoutCF.criteria
-                ] ?? 0
+                withoutCF?.criteria?.[key as keyof typeof withoutCF.criteria] ??
+                0
               }
             />
           ))}
@@ -181,9 +180,7 @@ function SkillCard({
   const [open, setOpen] = useState(false);
 
   const repos = Object.entries(skill.repos);
-  const allWith = repos.map(
-    ([, r]) => (r as RepoData).withCF?.avgScore ?? 0,
-  );
+  const allWith = repos.map(([, r]) => (r as RepoData).withCF?.avgScore ?? 0);
   const allWithout = repos.map(
     ([, r]) => (r as RepoData).withoutCF?.avgScore ?? 0,
   );
@@ -213,9 +210,7 @@ function SkillCard({
             <span className="font-mono text-sm font-semibold text-violet-400">
               {skillKey}
             </span>
-            <span className="ml-2 text-sm text-slate-400">
-              — {skill.label}
-            </span>
+            <span className="ml-2 text-sm text-slate-400">— {skill.label}</span>
             <span className="ml-2 rounded bg-slate-700/50 px-1.5 py-0.5 text-xs text-slate-500">
               Wave {skill.wave}
             </span>
