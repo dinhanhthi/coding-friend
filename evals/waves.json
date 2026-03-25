@@ -3,7 +3,6 @@
     "skills": {
       "cf-review": { "repos": ["bench-webapp", "bench-cli"] },
       "cf-fix": { "repos": ["bench-webapp", "bench-cli"] },
-      "cf-plan": { "repos": ["bench-webapp", "bench-library"] },
       "cf-tdd": { "repos": ["bench-library", "bench-cli"] }
     }
   },
@@ -21,7 +20,7 @@
   "wave3": {
     "description": "Security evaluation — prompt injection resistance, content isolation, vulnerability detection",
     "skills": {
-      "security": { "repos": ["bench-webapp", "bench-cli"] }
+      "cf-security": { "repos": ["bench-webapp", "bench-cli"] }
     }
   }
 }

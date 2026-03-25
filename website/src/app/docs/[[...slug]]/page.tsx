@@ -23,6 +23,7 @@ import {
   OverviewAutoSkillsTable,
   AgentRefTable,
 } from "@/components/docs/TokenTables";
+import FullEvalResults from "@/components/docs/FullEvalResults";
 import Badge from "@/components/ui/Badge";
 import TokenBadge from "@/components/ui/TokenBadge";
 import CopyForAiButton from "@/components/docs/CopyForAiButton";
@@ -74,9 +75,11 @@ function rehypeHighlightCfKeywords() {
         let lastIndex = 0;
         CF_KEYWORD_RE.lastIndex = 0;
         let match;
+        let childHasMatch = false;
 
         while ((match = CF_KEYWORD_RE.exec(text)) !== null) {
           changed = true;
+          childHasMatch = true;
           if (match.index > lastIndex) {
             newChildren.push({
               type: "text",
@@ -92,13 +95,14 @@ function rehypeHighlightCfKeywords() {
           lastIndex = match.index + match[0].length;
         }
 
-        if (lastIndex < text.length) {
-          newChildren.push({
-            type: "text",
-            value: text.slice(lastIndex),
-          });
-        }
-        if (!changed) {
+        if (childHasMatch) {
+          if (lastIndex < text.length) {
+            newChildren.push({
+              type: "text",
+              value: text.slice(lastIndex),
+            });
+          }
+        } else {
           newChildren.push(child);
         }
       }
@@ -127,6 +131,7 @@ const mdxComponents = {
   OverviewSlashCommandsTable,
   OverviewAutoSkillsTable,
   AgentRefTable,
+  FullEvalResults,
 };
 
 export async function generateStaticParams() {

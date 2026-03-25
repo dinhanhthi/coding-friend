@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# generate-eval-json.sh — Parse eval results and generate website JSON data file
+# generate-eval-json.sh — Generate website JSON from LLM-as-judge scoring
 #
-# Reads results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json files,
-# computes per-model averages for featured skills, and writes
-# website/src/data/eval-results.json
+# Reads eval results and scores them using LLM-as-judge (Haiku) against rubrics.
+# Each result is scored with both the final output AND the full conversation log,
+# which is critical for with-CF results where workflow discipline (skill activations,
+# agent dispatches, TDD cycles) is visible mid-conversation.
+#
+# No time/cost metrics, no regex scoring — LLM rubric evaluation only.
 #
 # Usage:
-#   ./generate-eval-json.sh [--model <model>] [--all]
-#   ./generate-eval-json.sh --all          # process all models found in results
-#   ./generate-eval-json.sh --model sonnet # process only sonnet results
+#   ./generate-eval-json.sh
 
 set -euo pipefail
 
@@ -17,23 +18,51 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m' # No Color
 RESULTS_DIR="$SCRIPT_DIR/results"
 RUBRICS_DIR="$SCRIPT_DIR/rubrics"
+WAVES_FILE="$SCRIPT_DIR/waves.json"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
 
 # Featured skills shown on the landing page comparison chart
-FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd")
-FEATURED_LABELS=("Bug Fix" "Code Review" "TDD")
+FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd" "cf-security")
+FEATURED_LABELS=("Bug Fix" "Code Review" "TDD" "Security")
 
 # All supported models
 ALL_MODELS=("haiku" "sonnet" "opus")
 MODEL_LABELS='{"haiku":"Haiku","sonnet":"Sonnet","opus":"Opus"}'
 MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","opus":"claude-opus-4-6"}'
+
+# Options
+NO_BUDGET=false
+SELECTED_MODELS=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-budget) NO_BUDGET=true; shift ;;
+    --model) SELECTED_MODELS+=("$2"); shift 2 ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget] [--model <name>]..."; exit 0 ;;
+    *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
+  esac
+done
+
+# Override ALL_MODELS if specific models were selected
+if [[ ${#SELECTED_MODELS[@]} -gt 0 ]]; then
+  for m in "${SELECTED_MODELS[@]}"; do
+    if ! echo "$MODEL_LABELS" | jq -e ".\"$m\"" >/dev/null 2>&1; then
+      echo -e "${RED}❌ Unknown model: $m (valid: ${ALL_MODELS[*]})${NC}" >&2
+      exit 1
+    fi
+  done
+  ALL_MODELS=("${SELECTED_MODELS[@]}")
+fi
 
 die() {
   echo -e "${RED}❌ ERROR: $1${NC}" >&2
@@ -47,8 +76,62 @@ count_sessions() {
   find "$RESULTS_DIR" -path "*/$model/*" -name "*.meta.json" -type f 2>/dev/null | wc -l | tr -d ' '
 }
 
+# Score a single result file using LLM-as-judge (Haiku)
+# Returns weighted average score on 0-3 scale, or empty on failure
+llm_score_result() {
+  local result_file="$1"
+  local rubric_file="$2"
+
+  local llm_score_script="$SCRIPT_DIR/llm-score.sh"
+  if [[ ! -x "$llm_score_script" ]]; then
+    return 1
+  fi
+
+  # Check for cached LLM score
+  local cache_file="${result_file%.json}.llm-score.json"
+  if [[ -f "$cache_file" ]]; then
+    local cached_score
+    cached_score=$(jq -r '.weighted_average // empty' "$cache_file" 2>/dev/null)
+    if [[ -n "$cached_score" ]]; then
+      echo "$cached_score"
+      return 0
+    fi
+    # Corrupt or empty cache — remove and regenerate
+    rm -f "$cache_file"
+  fi
+
+  # Also try conversation file for richer context
+  local conv_file="${result_file%.json}.conversation.txt"
+  local score_args=(--result "$result_file" --rubric "$rubric_file")
+  if [[ "$NO_BUDGET" == true ]]; then
+    score_args+=(--no-budget)
+  fi
+  if [[ -f "$conv_file" ]]; then
+    score_args+=(--conversation "$conv_file")
+  fi
+
+  local llm_output llm_stderr
+  llm_stderr=$(mktemp)
+  llm_output=$("$llm_score_script" "${score_args[@]}" 2>"$llm_stderr") || {
+    local err_msg
+    err_msg=$(cat "$llm_stderr")
+    rm -f "$llm_stderr"
+    echo "$err_msg" >&2
+    return 1
+  }
+  rm -f "$llm_stderr"
+
+  # Atomic cache write: write to temp in same dir then rename (ensures same filesystem)
+  local tmp_cache
+  tmp_cache=$(mktemp -p "$(dirname "$cache_file")" ".llm-score.tmp.XXXXXX" 2>/dev/null) || return 1
+  echo "$llm_output" > "$tmp_cache" && mv "$tmp_cache" "$cache_file" || rm -f "$tmp_cache"
+
+  echo "$llm_output" | jq -r '.weighted_average // empty' 2>/dev/null
+}
+
 # Compute average score for a skill+condition+model combination
-# Uses rubric weights for automated checks, falls back to pass rate
+# Uses LLM-as-judge scoring (Haiku) only — no regex, no time/cost metrics
+# The LLM judge evaluates both final output and conversation log (for workflow context)
 # Layout: results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
 compute_skill_score() {
   local skill="$1"
@@ -63,77 +146,66 @@ compute_skill_score() {
   local result_files=()
   while IFS= read -r f; do
     result_files+=("$f")
-  done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/*/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
+  done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/*/${condition}--*.json" ! -name "*.meta.json" ! -name "*.llm-score.json" -type f 2>/dev/null | sort)
 
   # Fallback: try legacy layout (without wave/repo dirs)
   if [[ ${#result_files[@]} -eq 0 ]]; then
     while IFS= read -r f; do
       result_files+=("$f")
-    done < <(find "$RESULTS_DIR" -path "*/$model/$skill/${condition}--*.json" ! -name "*.meta.json" -type f 2>/dev/null | sort)
+    done < <(find "$RESULTS_DIR" -path "*/$model/$skill/${condition}--*.json" ! -name "*.meta.json" ! -name "*.llm-score.json" -type f 2>/dev/null | sort)
   fi
 
   if [[ ${#result_files[@]} -eq 0 ]]; then
+    echo -e "      ${DIM}(no result files found)${NC}" >&2
     echo "0"
     return
   fi
 
+  echo -e "      ${DIM}${#result_files[@]} file(s) to score${NC}" >&2
+
   for result_file in "${result_files[@]}"; do
-    # Extract result text
-    local result_text
-    result_text=$(jq -r '.result // ""' "$result_file" 2>/dev/null || echo "")
-    if [[ -z "$result_text" ]]; then
+    if [[ ! -f "$rubric_file" ]]; then
+      echo -e "      ${YELLOW}⚠ No rubric file: ${DIM}${rubric_file}${NC}" >&2
       continue
     fi
 
-    # Score using rubric automated checks
-    if [[ -f "$rubric_file" ]]; then
-      local num_criteria passed_weight total_weight
-      num_criteria=$(jq '.criteria | length' "$rubric_file")
-      passed_weight=0
-      total_weight=0
+    local basename
+    basename=$(basename "$result_file")
+    local score=""
 
-      local idx=0
-      while [[ $idx -lt $num_criteria ]]; do
-        local weight has_check
-        weight=$(jq -r ".criteria[$idx].weight" "$rubric_file")
-        has_check=$(jq ".criteria[$idx].automated_check // null | type" "$rubric_file")
-
-        total_weight=$(awk "BEGIN { printf \"%.4f\", $total_weight + $weight }")
-
-        if [[ "$has_check" == '"object"' ]]; then
-          local check_type check_pattern
-          check_type=$(jq -r ".criteria[$idx].automated_check.type" "$rubric_file")
-          check_pattern=$(jq -r ".criteria[$idx].automated_check.pattern" "$rubric_file")
-
-          if [[ "$check_type" == "regex" ]]; then
-            if echo "$result_text" | grep -qE "$check_pattern" 2>/dev/null; then
-              passed_weight=$(awk "BEGIN { printf \"%.4f\", $passed_weight + $weight }")
-            fi
-          fi
-        else
-          # No automated check — give benefit of the doubt (score 2/3)
-          passed_weight=$(awk "BEGIN { printf \"%.4f\", $passed_weight + ($weight * 0.667) }")
-        fi
-
-        idx=$((idx + 1))
-      done
-
-      # Normalize to 0-3 scale
-      if (( $(awk "BEGIN { print ($total_weight > 0) }") )); then
-        local score
-        score=$(awk "BEGIN { printf \"%.2f\", ($passed_weight / $total_weight) * 3 }")
-        total_score=$(awk "BEGIN { printf \"%.4f\", $total_score + $score }")
-      fi
+    # Check if cached
+    local cache_file="${result_file%.json}.llm-score.json"
+    if [[ -f "$cache_file" ]]; then
+      echo -ne "      📋 ${DIM}${basename}${NC} " >&2
+    else
+      echo -ne "      🔄 ${DIM}${basename}${NC} " >&2
     fi
 
-    file_count=$((file_count + 1))
+    local score_stderr
+    score_stderr=$(mktemp)
+    score=$(llm_score_result "$result_file" "$rubric_file" 2>"$score_stderr")
+
+    if [[ -n "$score" ]]; then
+      total_score=$(awk "BEGIN { printf \"%.4f\", $total_score + $score }")
+      file_count=$((file_count + 1))
+      echo -e "→ ${GREEN}${score}${NC}" >&2
+    else
+      local err_detail
+      err_detail=$(cat "$score_stderr")
+      if [[ -n "$err_detail" ]]; then
+        echo -e "→ ${RED}failed${NC} ${DIM}(${err_detail})${NC}" >&2
+      else
+        echo -e "→ ${RED}failed${NC} ${DIM}(unknown error)${NC}" >&2
+      fi
+    fi
+    rm -f "$score_stderr"
   done
 
+  local avg_score="0"
   if [[ $file_count -gt 0 ]]; then
-    awk "BEGIN { printf \"%.2f\", $total_score / $file_count }"
-  else
-    echo "0"
+    avg_score=$(awk "BEGIN { printf \"%.2f\", $total_score / $file_count }")
   fi
+  echo "$avg_score"
 }
 
 # Build the JSON output
@@ -141,14 +213,29 @@ build_json() {
   local today
   today=$(date +%Y-%m-%d)
 
+  echo ""
+  echo -e "${BOLD}🚀 Generating eval results JSON${NC}"
+  echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "  📂 Results: ${DIM}${RESULTS_DIR}${NC}"
+  echo -e "  📐 Rubrics: ${DIM}${RUBRICS_DIR}${NC}"
+  echo -e "  📝 Output:  ${DIM}${OUTPUT_FILE}${NC}"
+  echo -e "  🤖 Models:  ${CYAN}${ALL_MODELS[*]}${NC}"
+  echo -e "  🎯 Skills:  ${CYAN}${FEATURED_SKILLS[*]}${NC}"
+  echo ""
+
   # Start building models object
   local models_json="{}"
+  local model_idx=0
+  local total_models=${#ALL_MODELS[@]}
 
   for model in "${ALL_MODELS[@]}"; do
+    model_idx=$((model_idx + 1))
     local label model_id sessions
     label=$(echo "$MODEL_LABELS" | jq -r ".\"$model\"")
     model_id=$(echo "$MODEL_IDS" | jq -r ".\"$model\"")
     sessions=$(count_sessions "$model")
+
+    echo -e "${BOLD}${BLUE}━━━ [$model_idx/$total_models] 🤖 Model: ${label} ${NC}${DIM}($model_id, $sessions sessions)${NC}"
 
     # Compute scores for each featured skill
     local skills_json="{}"
@@ -158,9 +245,19 @@ build_json() {
 
     for i in "${!FEATURED_SKILLS[@]}"; do
       local skill="${FEATURED_SKILLS[$i]}"
+      local skill_label="${FEATURED_LABELS[$i]}"
+      local skill_num=$((i + 1))
+      local total_skills=${#FEATURED_SKILLS[@]}
+
+      echo -e "  ${MAGENTA}▸ [$skill_num/$total_skills] ${BOLD}${skill}${NC} ${DIM}(${skill_label})${NC}"
+
       local with_score without_score
+      echo -e "    ${CYAN}◆ with-cf${NC}" >&2
       with_score=$(compute_skill_score "$skill" "with-cf" "$model")
+      echo -e "    ${CYAN}◇ without-cf${NC}" >&2
       without_score=$(compute_skill_score "$skill" "without-cf" "$model")
+
+      echo -e "    ${GREEN}✓ Result: with=${BOLD}${with_score}${NC} ${DIM}/ without=${without_score}${NC}"
 
       skills_json=$(echo "$skills_json" | jq \
         --arg skill "$skill" \
@@ -180,6 +277,9 @@ build_json() {
       avg_without=$(awk "BEGIN { printf \"%.2f\", $without_total / $skill_count }")
     fi
 
+    echo -e "  ${GREEN}📊 ${label} averages: with=${BOLD}${avg_with}${NC}${GREEN} / without=${avg_without}${NC}"
+    echo ""
+
     # Add this model to models_json
     models_json=$(echo "$models_json" | jq \
       --arg model "$model" \
@@ -198,6 +298,8 @@ build_json() {
       }')
   done
 
+  echo -e "${DIM}▸ Building featured skills array...${NC}"
+
   # Build featured skills array
   local featured_json="[]"
   for i in "${!FEATURED_SKILLS[@]}"; do
@@ -207,21 +309,155 @@ build_json() {
       '. + [{"key": $key, "label": $label}]')
   done
 
-  # Compute top delta from best-performing model (sonnet by default)
-  local best_model="sonnet"
-  local top_delta="+58%"
-  local top_delta_label="Bug Fix Quality"
+  echo -e "${DIM}▸ Computing top delta across models...${NC}"
 
-  # Try to compute from actual data
+  # Compute top delta — find the skill with the best delta across models
+  local top_delta="+0%"
+  local top_delta_label=""
+  local best_delta_num=""
+  local has_data=false
+
   for model in "${ALL_MODELS[@]}"; do
-    local fix_with fix_without
-    fix_with=$(echo "$models_json" | jq -r ".\"$model\".skills.\"cf-fix\".withCF // 0")
-    fix_without=$(echo "$models_json" | jq -r ".\"$model\".skills.\"cf-fix\".withoutCF // 0")
-    if (( $(awk "BEGIN { print ($fix_with > 0 && $fix_without > 0) }") )); then
-      top_delta=$(awk "BEGIN { printf \"+%.0f%%\", (($fix_with - $fix_without) / $fix_without) * 100 }")
-      break
-    fi
+    for i in "${!FEATURED_SKILLS[@]}"; do
+      local skill="${FEATURED_SKILLS[$i]}"
+      local skill_label="${FEATURED_LABELS[$i]}"
+      local s_with s_without
+      s_with=$(echo "$models_json" | jq -r ".\"$model\".skills.\"$skill\".withCF // 0")
+      s_without=$(echo "$models_json" | jq -r ".\"$model\".skills.\"$skill\".withoutCF // 0")
+      if (( $(awk "BEGIN { print ($s_with > 0 && $s_without > 0) }") )); then
+        has_data=true
+        local delta_num
+        delta_num=$(awk "BEGIN { printf \"%.0f\", (($s_with - $s_without) / $s_without) * 100 }")
+        if [[ -z "$best_delta_num" ]] || (( delta_num > best_delta_num )); then
+          best_delta_num=$delta_num
+          top_delta_label="$skill_label Quality"
+        fi
+      fi
+    done
   done
+
+  if [[ "$has_data" == true && -n "$best_delta_num" ]]; then
+    if (( best_delta_num >= 0 )); then
+      top_delta="+${best_delta_num}%"
+    else
+      top_delta="${best_delta_num}%"
+    fi
+  fi
+
+  echo -e "${DIM}▸ Building detailed results (per-skill/per-repo/per-criteria)...${NC}"
+
+  # Build detailedResults from cached .llm-score.json files and rubric metadata
+  local detailed_json="{}"
+
+  for model in "${ALL_MODELS[@]}"; do
+    for i in "${!FEATURED_SKILLS[@]}"; do
+      local skill="${FEATURED_SKILLS[$i]}"
+      local skill_label="${FEATURED_LABELS[$i]}"
+      local rubric_file="$RUBRICS_DIR/${skill}.json"
+
+      # Determine wave number from waves.json
+      local wave_num=0
+      if [[ -f "$WAVES_FILE" ]]; then
+        for wn in 1 2 3; do
+          if echo "$(cat "$WAVES_FILE")" | jq -e ".wave${wn}.skills.\"${skill}\"" >/dev/null 2>&1; then
+            wave_num=$wn
+            break
+          fi
+        done
+      fi
+
+      # Build criteria metadata from rubric — capitalize first letter of each word
+      local criteria_meta="{}"
+      if [[ -f "$rubric_file" ]]; then
+        criteria_meta=$(jq '[.criteria[] | {
+          (.name): {
+            weight: .weight,
+            label: (.name | split("_") | map(( .[0:1] | ascii_upcase ) + .[1:]) | join(" "))
+          }
+        }] | add // {}' "$rubric_file")
+      fi
+
+      # Find all repos for this skill+model
+      local repos=()
+      while IFS= read -r repo_dir; do
+        [[ -z "$repo_dir" ]] && continue
+        repos+=("$(basename "$repo_dir")")
+      done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/*" -name "*.llm-score.json" -type f 2>/dev/null \
+        | sed 's|/[^/]*$||' | sort -u)
+
+      if [[ ${#repos[@]} -eq 0 ]]; then
+        continue
+      fi
+
+      # Build per-repo data
+      local repos_json="{}"
+      for repo in "${repos[@]}"; do
+        for condition in "with-cf" "without-cf"; do
+          local cond_key
+          if [[ "$condition" == "with-cf" ]]; then cond_key="withCF"; else cond_key="withoutCF"; fi
+
+          local score_files=()
+          while IFS= read -r sf; do
+            [[ -z "$sf" ]] && continue
+            score_files+=("$sf")
+          done < <(find "$RESULTS_DIR" -path "*/$model/*/$skill/$repo/${condition}--*.llm-score.json" -type f 2>/dev/null | sort)
+
+          if [[ ${#score_files[@]} -eq 0 ]]; then continue; fi
+
+          local total_avg=0
+          local criteria_totals="{}"
+          local run_count=0
+
+          for sf in "${score_files[@]}"; do
+            local wavg
+            wavg=$(jq -r '.weighted_average // 0' "$sf")
+            total_avg=$(awk "BEGIN { printf \"%.4f\", $total_avg + $wavg }")
+
+            local per_criteria
+            per_criteria=$(jq '[.scores[] | {(.name): .score}] | add // {}' "$sf")
+
+            # Full outer merge to handle new keys
+            if [[ "$criteria_totals" == "{}" ]]; then
+              criteria_totals="$per_criteria"
+            else
+              criteria_totals=$(echo "$criteria_totals" | jq --argjson new "$per_criteria" '
+                . as $old | ($old + $new) | to_entries | map(
+                  .key as $k | .value = (($old[$k] // 0) + ($new[$k] // 0))
+                ) | from_entries')
+            fi
+
+            run_count=$((run_count + 1))
+          done
+
+          local avg_score=0
+          if [[ $run_count -gt 0 ]]; then
+            avg_score=$(awk "BEGIN { printf \"%.2f\", $total_avg / $run_count }")
+            criteria_totals=$(echo "$criteria_totals" | jq --argjson n "$run_count" '
+              to_entries | map(.value = ((.value / $n) * 100 | round) / 100) | from_entries')
+          fi
+
+          repos_json=$(echo "$repos_json" | jq \
+            --arg repo "$repo" \
+            --arg cond "$cond_key" \
+            --argjson avg "$avg_score" \
+            --argjson runs "$run_count" \
+            --argjson criteria "$criteria_totals" \
+            '.[$repo][$cond] = {"avgScore": $avg, "runCount": $runs, "criteria": $criteria}')
+        done
+      done
+
+      detailed_json=$(echo "$detailed_json" | jq \
+        --arg model "$model" \
+        --arg skill "$skill" \
+        --argjson wave "$wave_num" \
+        --arg label "$skill_label" \
+        --argjson criteria "$criteria_meta" \
+        --argjson repos "$repos_json" \
+        '.[$model][$skill] = {"wave": $wave, "label": $label, "criteria": $criteria, "repos": $repos}')
+    done
+  done
+
+  echo -e "${DIM}▸ Writing final JSON...${NC}"
 
   # Build final JSON
   jq -n \
@@ -230,6 +466,7 @@ build_json() {
     --argjson featured "$featured_json" \
     --arg topDelta "$top_delta" \
     --arg topDeltaLabel "$top_delta_label" \
+    --argjson detailed "$detailed_json" \
     '{
       "meta": {
         "lastUpdated": $date,
@@ -244,10 +481,14 @@ build_json() {
         "agentCount": "6",
         "topDelta": $topDelta,
         "topDeltaLabel": $topDeltaLabel
-      }
+      },
+      "detailedResults": $detailed
     }' > "$OUTPUT_FILE"
 
+  echo ""
+  echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${GREEN}✅ Generated:${NC} ${DIM}$OUTPUT_FILE${NC}"
+  echo -e "  📏 Scoring: ${CYAN}LLM-as-judge (Haiku)${NC}"
   echo ""
   echo -e "${BOLD}📊 Summary:${NC}"
   for model in "${ALL_MODELS[@]}"; do

@@ -6,15 +6,15 @@
 # JSON data file.
 #
 # Usage:
-#   ./run-full-eval.sh                        # Run all models, 3 runs each
-#   ./run-full-eval.sh --model sonnet         # Run only sonnet
-#   ./run-full-eval.sh --runs 1               # Quick run (1 per combo)
-#   ./run-full-eval.sh --wave 1               # Only wave 1
-#   ./run-full-eval.sh --wave security        # Only security wave
-#   ./run-full-eval.sh --dry-run              # Preview without executing
-#   ./run-full-eval.sh --skip-setup           # Skip benchmark setup
-#   ./run-full-eval.sh --skip-score           # Skip scoring step
-#   ./run-full-eval.sh --budget 0.50          # Budget cap per run in USD
+#   ./run-full-eval.sh                                               # Run all models, 3 runs each
+#   ./run-full-eval.sh --model sonnet --model haiku --model opus     # Run only sonnet, haiku, and opus
+#   ./run-full-eval.sh --runs 1                                      # Quick run (1 per combo)
+#   ./run-full-eval.sh --wave 1                                      # Only wave 1
+#   ./run-full-eval.sh --wave security                               # Only security wave
+#   ./run-full-eval.sh --dry-run                                     # Preview without executing
+#   ./run-full-eval.sh --skip-setup                                  # Skip benchmark setup
+#   ./run-full-eval.sh --skip-score                                  # Skip scoring step
+#   ./run-full-eval.sh --budget 0.50                                 # Budget cap per run in USD
 
 set -euo pipefail
 
@@ -139,7 +139,7 @@ TOTAL_RUNS=$(calc_total)
 
 echo -e "${MAGENTA}${BOLD}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║  🧪 CODING FRIEND — Full Eval Suite ║"
+echo "  ║  🧪 CODING FRIEND — Full Eval Suite  ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  🤖 Models:  ${BOLD}${MODELS[*]}${NC}"
@@ -236,7 +236,7 @@ SECONDS=$((WALL_TIME % 60))
 
 echo -e "${GREEN}${BOLD}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║           🎉 COMPLETE               ║"
+echo "  ║           🎉 COMPLETE                ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  ⏱  Duration:  ${BOLD}${HOURS}h ${MINUTES}m ${SECONDS}s${NC}"

@@ -15,7 +15,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "(FAIL|failed|failing|✗|✘|×)",
+        "pattern": "(FAIL|failed|failing|✗|✘|×|RED phase|test.*(fail|broke))",
         "target": "output"
       }
     },
@@ -31,8 +31,8 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "\\.(test|spec)\\.(ts|js|tsx|jsx)$",
-        "target": "changed_files"
+        "pattern": "(test|spec|describe|it\\(|expect|assert|edge.?case|empty|invalid|error|throw|\\d+ test)",
+        "target": "output"
       }
     },
     {
@@ -59,5 +59,5 @@
     }
   ],
   "pass_threshold": 2.0,
-  "notes": "The RED-GREEN-REFACTOR cycle should be visible in the output. Multiple cycles for complex features are expected. Score each cycle if multiple are present and average."
+  "notes": "The CF workflow advantage: cf-tdd auto-activates even when the prompt doesn't mention TDD, enforcing RED-GREEN-REFACTOR discipline. Without CF, the AI typically writes production code first and tests afterward (or skips tests entirely). Check the conversation log for the full TDD cycle — the discipline should be visible in the workflow steps, not just the final output. Multiple cycles for complex features are expected."
 }

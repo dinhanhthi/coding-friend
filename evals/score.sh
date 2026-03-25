@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
-# score.sh — Score eval results using rubric-defined automated checks
+# score.sh — DIAGNOSTIC TOOL: regex-based structural checks (NOT used for final scoring)
+#
+# This script runs simple regex checks against eval results for quick debugging.
+# It does NOT contribute to website scores or final evaluation results.
+#
+# For actual scoring, use generate-eval-json.sh which uses LLM-as-judge (Haiku)
+# to evaluate results against rubrics. The two scripts serve different purposes:
+#   - score.sh: quick diagnostic regex checks → analysis/ directory (debugging only)
+#   - generate-eval-json.sh: LLM-as-judge rubric scoring → website JSON (official scores)
 
 set -euo pipefail
 
@@ -124,19 +132,30 @@ score_result() {
       check_target=$(jq -r ".criteria[$idx].automated_check.target" "$rubric_file")
 
       local passed=0
-      if [[ "$check_type" == "regex" ]]; then
+      if [[ "$check_type" == "regex" && -n "$check_pattern" ]]; then
         # Determine what content to check against
         local target_content="$result_text"
         passed=$(check_regex "$check_pattern" "$target_content")
+      else
+        # Unsupported check type (e.g. "command") — mark as skipped
+        passed=-1
       fi
 
-      checks=$(echo "$checks" | jq \
-        --arg name "$crit_name" \
-        --arg weight "$crit_weight" \
-        --arg type "$check_type" \
-        --arg pattern "$check_pattern" \
-        --argjson passed "$passed" \
-        '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": $pattern, "passed": ($passed == 1)}]')
+      if [[ $passed -eq -1 ]]; then
+        checks=$(echo "$checks" | jq \
+          --arg name "$crit_name" \
+          --arg weight "$crit_weight" \
+          --arg type "$check_type" \
+          '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": "N/A", "passed": null, "skipped": true}]')
+      else
+        checks=$(echo "$checks" | jq \
+          --arg name "$crit_name" \
+          --arg weight "$crit_weight" \
+          --arg type "$check_type" \
+          --arg pattern "$check_pattern" \
+          --argjson passed "$passed" \
+          '. + [{"name": $name, "weight": ($weight | tonumber), "type": $type, "pattern": $pattern, "passed": ($passed == 1)}]')
+      fi
     fi
 
     idx=$((idx + 1))
@@ -247,6 +266,7 @@ score_all() {
             local result_files=()
             while IFS= read -r f; do
               [[ "$f" == *.meta.json ]] && continue
+              [[ "$f" == *.llm-score.json ]] && continue
               result_files+=("$f")
             done < <(find "$repo_dir" -maxdepth 1 -name "${condition}--*.json" -type f 2>/dev/null | sort)
 

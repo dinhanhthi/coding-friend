@@ -138,9 +138,13 @@ If the review found **architectural insights** or **recurring patterns** worth p
 
 Skip if the review was routine with no notable findings.
 
-Then display one of the following banners depending on whether **Critical Issues** were found:
+12. **Final output** — display the full report followed by the status banner in a **single message**.
 
-**If NO critical issues were found** — show this (replace placeholders):
+**IMPORTANT**: The structured report from step 9 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
+
+Display the formatted report from step 9 first, then append the appropriate banner:
+
+**If NO critical issues were found:**
 
 ```
 ╔══════════════════════════════════════════════════╗
@@ -152,7 +156,7 @@ Then display one of the following banners depending on whether **Critical Issues
 >
 > You're clear to commit. Run `/cf-commit` when ready.
 
-**If critical issues were found** — show this (replace placeholders), then wait for the user's answer:
+**If critical issues were found** — show the banner, then wait for the user's answer:
 
 ```
 ╔══════════════════════════════════════════════════╗

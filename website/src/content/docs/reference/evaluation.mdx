@@ -6,11 +6,17 @@ keywords: [evaluation, benchmark, quality, comparison, methodology]
 
 ## Overview
 
-We run identical tasks on benchmark repositories — once with Coding Friend enabled, once without — and score the results against rubrics. This measures whether CF's skills and workflows produce better outcomes than baseline Claude Code.
+We run identical tasks on benchmark repositories — once with Coding Friend enabled, once without — and score the results against rubrics using an **LLM judge** (Claude Haiku). This measures whether CF's workflow orchestration produces better outcomes than baseline Claude Code.
+
+The key insight: CF's skills and agents **auto-activate and coordinate** — `cf-tdd` enforces RED-GREEN-REFACTOR, `cf-fix` drives test-driven bug fixing, `cf-review` dispatches a dedicated reviewer agent. Without CF, the default AI often produces correct code but misses the disciplined workflow steps that catch edge cases and enforce test coverage.
+
+**No time or cost metrics** — we measure output quality only. Scoring uses LLM-as-judge exclusively (no regex or pattern matching).
 
 ## What We Test
 
-The evaluation is organized into 3 waves. Each wave tests **skills** (slash commands and auto-invoked workflows). Agents (`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`) are not tested directly — they are evaluated indirectly when skills dispatch them during runs.
+We test how CF's **workflow orchestration** — skills auto-activating, agents being dispatched, discipline being enforced — improves output quality compared to bare Claude Code given the same task.
+
+The evaluation is organized into 3 waves. Each wave tests **skills** (slash commands and auto-invoked workflows). Agents (`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`) are not tested directly — they are evaluated indirectly when skills dispatch them during runs. This is intentional: we're testing the **orchestration**, not individual components.
 
 **Wave 1 — Core Workflow** (4 skills):
 
@@ -60,20 +66,33 @@ Each skill has a rubric with weighted criteria scored 0-3:
 | 2     | Good — most criteria met, minor gaps               |
 | 3     | Excellent — all criteria met, exceeds expectations |
 
-**Pass threshold**: average ≥ 2.0. Scoring combines automated regex checks and manual human review.
+**Pass threshold**: average ≥ 2.0.
+
+**LLM-as-judge scoring only**:
+
+Each eval result is scored by Claude Haiku using the full rubric. Haiku reads the eval output and scores each criterion 0-3 with a brief justification. Scores are cached as `.llm-score.json` alongside results so re-runs are instant. No regex or pattern matching contributes to the final scores.
+
+The LLM judge evaluates the **full conversation** (not just the final summary), which is critical for with-CF results where workflow discipline is visible mid-conversation — skill activations, agent dispatches, TDD cycles, verification steps. This ensures the scoring captures the full value of CF's orchestration, not just the final output.
+
+**No time or cost metrics**: We intentionally exclude execution time and API cost from scoring. The evaluation focuses exclusively on output quality against rubrics. Time and cost data are captured in metadata files for reference but do not influence scores.
+
+## Full Results
+
+Detailed per-skill, per-repository, per-criteria breakdown. Click a skill to expand.
+
+<FullEvalResults />
 
 ## Limitations
 
 - **Small sample size**: 1-3 runs per condition — trends, not statistical significance
 - **Synthetic repos**: Small benchmark projects, not representative of real-world complexity
-- **Cost trade-off**: CF adds context tokens, increasing per-session cost
 - **Baseline is already good**: CF improves structure and consistency, but doesn't make impossible tasks possible
 
 ## Where CF Helps Most
 
-1. **Workflow discipline**: TDD enforcement, verification gates, structured review
-2. **Code review depth**: Two-pass review catches more issues with fewer false positives
-3. **Knowledge capture**: `/cf-learn` preserves insights that baseline Claude Code discards
+1. **Workflow orchestration**: Skills auto-activate and coordinate — `cf-tdd` triggers during bug fixes, `cf-auto-review` applies OWASP checklists during security tasks, `cf-verification` gates completion
+2. **Discipline enforcement**: TDD cycles, structured review output, test-before-fix — things the default AI skips when not explicitly asked
+3. **Agent dispatch**: `cf-review` spawns a dedicated `cf-code-reviewer` agent, `cf-fix` activates `cf-tdd` for test-driven fixing — multi-agent coordination that bare Claude doesn't do
 
 ## Where Baseline Claude Code Is Enough
 
@@ -81,16 +100,41 @@ Simple bug fixes, single-file changes, general coding questions, file navigation
 
 ## Reproducibility
 
+⚠️ Be careful, both `run-full-eval.sh` and `generate-eval-json.sh` takes a long time to run and also a lot of tokens to run.
+
 ```bash
-cd evals && ./run-full-eval.sh --model sonnet
+# Full eval (all waves, all models)
+cd evals && ./run-full-eval.sh
+
+# Single model
+./run-full-eval.sh --model sonnet
+
+# Run waves independently (recommended for long evals)
+# ⚠️ Don't run multiple waves in parallel
+./run-full-eval.sh --model sonnet --wave 1 --skip-score
+./run-full-eval.sh --model sonnet --wave 2 --skip-score --skip-setup
+./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup
+
+# Re-score existing results (no re-running evals)
+# Use --no-budget for Claude Code subscription users (default: $0.05 limit per scoring call)
+./generate-eval-json.sh --no-budget
+
+# Score a single result with LLM judge
+./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json --no-budget
 ```
 
 Results are organized by date, model, wave, skill, and benchmark repo:
 
 ```
 evals/results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
-evals/analysis/<date>/<model>/wave-<N>/
+  ├── with-cf--<timestamp>.json              # eval output (final result)
+  ├── with-cf--<timestamp>.meta.json         # metadata (wall time, model — not used in scoring)
+  ├── with-cf--<timestamp>.conversation.txt  # full conversation log (used by LLM judge)
+  └── with-cf--<timestamp>.llm-score.json    # cached LLM judge scores
+evals/analysis/<date>/<model>/wave-<N>/                    # diagnostic regex checks (not used for scoring)
 ```
+
+**Tip**: Running all 3 waves for all models in a single session may exceed the 5-hour context window. Run one wave per model per session with `--skip-score`, then score all results at the end with `generate-eval-json.sh --no-budget`.
 
 See [`evals/README.md`](https://github.com/dinhanhthi/coding-friend/blob/main/evals/README.md) for full options.
 
