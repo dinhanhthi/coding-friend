@@ -9,7 +9,12 @@
 # No time/cost metrics, no regex scoring — LLM rubric evaluation only.
 #
 # Usage:
-#   ./generate-eval-json.sh
+#   ./generate-eval-json.sh                              # Score all models, all waves
+#   ./generate-eval-json.sh --model sonnet               # Score only Sonnet
+#   ./generate-eval-json.sh --model sonnet --no-budget   # Sonnet, no API budget limit
+#   ./generate-eval-json.sh --wave 2                     # Score only wave 2 skills, merge into existing JSON
+#   ./generate-eval-json.sh --model sonnet --wave 2      # Sonnet + wave 2 only
+#   ./generate-eval-json.sh --wave 1 --wave 3            # Score waves 1 and 3
 
 set -euo pipefail
 
