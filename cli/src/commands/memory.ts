@@ -79,10 +79,13 @@ export function printMemoryMcpConfig(
   serverPath: string,
   memoryDir: string,
 ): void {
-  console.log(`Add this to your MCP client config:
+  console.log(chalk.dim("Add this to your MCP client config:"));
+  console.log();
 
---- Claude Code (.mcp.json in project root) ---
-
+  console.log(
+    chalk.yellow.bold("--- Claude Code (.mcp.json in project root) ---"),
+  );
+  console.log(`
 {
   "mcpServers": {
     "coding-friend-memory": {
@@ -90,10 +93,15 @@ export function printMemoryMcpConfig(
       "args": ["${serverPath}", "${memoryDir}"]
     }
   }
-}
+}`);
+  console.log();
 
---- Claude Desktop / Claude Chat (claude_desktop_config.json) ---
-
+  console.log(
+    chalk.yellow.bold(
+      "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
+    ),
+  );
+  console.log(`
 {
   "mcpServers": {
     "coding-friend-memory": {
@@ -101,27 +109,46 @@ export function printMemoryMcpConfig(
       "args": ["${serverPath}", "${memoryDir}"]
     }
   }
-}
+}`);
+  console.log();
 
---- Generic MCP client ---
-
+  console.log(chalk.yellow.bold("--- Generic MCP client ---"));
+  console.log(`
 Server command: node ${serverPath} ${memoryDir}
-Transport: stdio
+Transport: stdio`);
+  console.log();
 
---- Available tools ---
+  console.log(chalk.yellow.bold("--- Available tools ---"));
+  console.log();
+  console.log(
+    `  ${chalk.white("memory_store")}       ${chalk.dim("Store a new memory")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory_search")}      ${chalk.dim("Search memories (keyword match)")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory_retrieve")}    ${chalk.dim("Get a specific memory by ID")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory_list")}        ${chalk.dim("List memories with filtering")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory_update")}      ${chalk.dim("Update existing memory")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory_delete")}      ${chalk.dim("Delete a memory")}`,
+  );
+  console.log();
 
-  memory_store       Store a new memory
-  memory_search      Search memories (keyword match)
-  memory_retrieve    Get a specific memory by ID
-  memory_list        List memories with filtering
-  memory_update      Update existing memory
-  memory_delete      Delete a memory
-
---- Resources ---
-
-  memory://index     Browse all memories
-  memory://stats     Storage statistics
-`);
+  console.log(chalk.yellow.bold("--- Resources ---"));
+  console.log();
+  console.log(
+    `  ${chalk.white("memory://index")}     ${chalk.dim("Browse all memories")}`,
+  );
+  console.log(
+    `  ${chalk.white("memory://stats")}     ${chalk.dim("Storage statistics")}`,
+  );
+  console.log();
   log.warn(
     "Note: The memory path is project-specific. Use local .mcp.json (per project), not global ~/.claude/.mcp.json.",
   );

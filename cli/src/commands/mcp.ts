@@ -68,10 +68,15 @@ export async function mcpCommand(path?: string): Promise<void> {
 
   const serverPath = join(mcpDir, "dist", "index.js");
 
-  console.log(`Add this to your MCP client config:
+  console.log(chalk.dim("Add this to your MCP client config:"));
+  console.log();
 
---- Claude Desktop / Claude Chat (claude_desktop_config.json) ---
-
+  console.log(
+    chalk.yellow.bold(
+      "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
+    ),
+  );
+  console.log(`
 {
   "mcpServers": {
     "coding-friend-learn": {
@@ -79,28 +84,48 @@ export async function mcpCommand(path?: string): Promise<void> {
       "args": ["${serverPath}", "${docsDir}"]
     }
   }
-}
+}`);
+  console.log();
 
---- Generic MCP client ---
-
+  console.log(chalk.yellow.bold("--- Generic MCP client ---"));
+  console.log(`
 Server command: node ${serverPath} ${docsDir}
-Transport: stdio
+Transport: stdio`);
+  console.log();
 
---- Available tools ---
-
-Read:
-  list-categories    List all categories with doc counts
-  list-docs          List docs, filter by category/tag
-  read-doc           Read full content of a doc
-  search-docs        Full-text search across all docs
-  get-review-list    Docs that need review
-
-Write:
-  create-doc         Create new learning doc
-  update-doc         Append content or update tags
-  improve-doc        Get improvement suggestions
-  track-knowledge    Record understanding level (remembered/needs-review/new)
-`);
+  console.log(chalk.yellow.bold("--- Available tools ---"));
+  console.log();
+  console.log(chalk.cyan.bold("Read:"));
+  console.log(
+    `  ${chalk.white("list-categories")}    ${chalk.dim("List all categories with doc counts")}`,
+  );
+  console.log(
+    `  ${chalk.white("list-docs")}          ${chalk.dim("List docs, filter by category/tag")}`,
+  );
+  console.log(
+    `  ${chalk.white("read-doc")}           ${chalk.dim("Read full content of a doc")}`,
+  );
+  console.log(
+    `  ${chalk.white("search-docs")}        ${chalk.dim("Full-text search across all docs")}`,
+  );
+  console.log(
+    `  ${chalk.white("get-review-list")}    ${chalk.dim("Docs that need review")}`,
+  );
+  console.log();
+  console.log(chalk.cyan.bold("Write:"));
+  console.log(
+    `  ${chalk.white("create-doc")}         ${chalk.dim("Create new learning doc")}`,
+  );
+  console.log(
+    `  ${chalk.white("update-doc")}         ${chalk.dim("Append content or update tags")}`,
+  );
+  console.log(
+    `  ${chalk.white("improve-doc")}        ${chalk.dim("Get improvement suggestions")}`,
+  );
+  console.log(
+    `  ${chalk.white("track-knowledge")}    ${chalk.dim("Record understanding level (remembered/needs-review/new)")}`,
+  );
+  console.log();
 
   // Memory MCP section
   printMemoryMcp();
