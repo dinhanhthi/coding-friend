@@ -631,6 +631,29 @@ test_generate_eval_json_accepts_no_budget() {
   assert_contains "$output" "generate-eval-json" "--no-budget should be accepted"
 }
 
+test_generate_eval_json_detailed_uses_all_waves_skills() {
+  # detailedResults must include ALL skills from waves.json, not just FEATURED_SKILLS
+  local script_content
+  script_content=$(cat "$EVALS_DIR/generate-eval-json.sh")
+  # The detailed results loop should use ALL_SKILLS (from waves.json), not FEATURED_SKILLS
+  assert_contains "$script_content" "ALL_SKILLS" \
+    "generate-eval-json.sh should have ALL_SKILLS variable for detailed results" || return 1
+  assert_not_contains "$(grep 'for.*ALL_SKILLS' "$EVALS_DIR/generate-eval-json.sh" | head -1)" "FEATURED" \
+    "detailed results loop should iterate ALL_SKILLS, not FEATURED_SKILLS" || return 1
+}
+
+test_generate_eval_json_accepts_wave_filter() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --wave 2 --help 2>&1) || true
+  assert_contains "$output" "generate-eval-json" "--wave should be accepted" || return 1
+}
+
+test_generate_eval_json_rejects_invalid_wave() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --wave 99 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail for invalid wave number"
+}
+
 # ============================================================
 # score.sh integration tests
 # ============================================================
@@ -890,6 +913,9 @@ main() {
   run_test test_generate_eval_json_rejects_no_llm
   run_test test_generate_eval_json_help
   run_test test_generate_eval_json_accepts_no_budget
+  run_test test_generate_eval_json_detailed_uses_all_waves_skills
+  run_test test_generate_eval_json_accepts_wave_filter
+  run_test test_generate_eval_json_rejects_invalid_wave
 
   echo ""
   echo "--- score.sh integration ---"
