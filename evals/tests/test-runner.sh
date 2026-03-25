@@ -555,6 +555,30 @@ JSON
   assert_eq "1" "$exit_code" "should fail when result field is empty"
 }
 
+test_llm_score_error_during_execution() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  # Simulate a result file from a failed Claude API execution (no .result field)
+  cat > "$tmp_result" <<'JSON'
+{"type":"result","subtype":"error_during_execution","is_error":false,"stop_reason":"tool_use","errors":["Error: Request was aborted"],"duration_ms":147461}
+JSON
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local exit_code=0
+  local stderr_output
+  stderr_output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" 2>&1 >/dev/null) || exit_code=$?
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_eq "1" "$exit_code" "should fail when result has error_during_execution subtype" || return 1
+  assert_contains "$stderr_output" "error_during_execution" "error message should mention error_during_execution subtype" || return 1
+}
+
 test_llm_score_dry_run_includes_scoring_levels() {
   local tmp_result tmp_rubric
   tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
@@ -856,6 +880,7 @@ main() {
   run_test test_llm_score_dry_run_custom_budget
   run_test test_llm_score_dry_run_has_no_session
   run_test test_llm_score_empty_result_field
+  run_test test_llm_score_error_during_execution
   run_test test_llm_score_dry_run_includes_scoring_levels
 
   echo ""

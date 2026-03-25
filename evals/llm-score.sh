@@ -65,6 +65,12 @@ done
 [[ ! -f "$RESULT_FILE" ]] && die "Result file not found: $RESULT_FILE"
 [[ ! -f "$RUBRIC_FILE" ]] && die "Rubric file not found: $RUBRIC_FILE"
 
+# Check if the result file is an error response (e.g., aborted execution)
+RESULT_SUBTYPE=$(jq -r '.subtype // ""' "$RESULT_FILE" 2>/dev/null || echo "")
+if [[ "$RESULT_SUBTYPE" == error_* ]]; then
+  die "Result file has subtype '$RESULT_SUBTYPE' — eval did not complete successfully"
+fi
+
 # Extract result text
 RESULT_TEXT=$(jq -r '.result // ""' "$RESULT_FILE" 2>/dev/null || echo "")
 [[ -z "$RESULT_TEXT" ]] && die "Result file has empty or missing .result field"
