@@ -12,7 +12,7 @@
       "evalSessions": 114,
       "skills": {
         "cf-fix": {
-          "withCF": 2.90,
+          "withCF": 2.9,
           "withoutCF": 1.23
         },
         "cf-review": {
@@ -24,8 +24,8 @@
           "withoutCF": 0.21
         },
         "cf-security": {
-          "withCF": 2.90,
-          "withoutCF": 2.90
+          "withCF": 2.9,
+          "withoutCF": 2.9
         }
       },
       "average": {
