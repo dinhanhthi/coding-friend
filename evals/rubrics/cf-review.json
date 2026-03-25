@@ -26,7 +26,7 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "[a-zA-Z0-9_/.-]+:\\d+",
+        "pattern": "(\\w+\\.\\w+:\\d+|line \\d+|\\(line \\d+)",
         "target": "output"
       }
     },
@@ -53,11 +53,11 @@
       },
       "automated_check": {
         "type": "regex",
-        "pattern": "(Summary|Findings|Issues|Recommendations)",
+        "pattern": "(bug|logic|security|performance|style|quality|memory|error handling|validation|Critical|Important|Warning|🔴|🟡|🟢|Tóm tắt|Summary)",
         "target": "output"
       }
     }
   ],
   "pass_threshold": 2.0,
-  "notes": "Review output should be structured with clear sections. Severity levels (critical/warning/info) should be accurate. Small PRs naturally have fewer findings — adjust expectations accordingly."
+  "notes": "The CF workflow advantage: cf-review dispatches a dedicated cf-code-reviewer agent that applies a multi-layer review methodology (plan alignment, code quality, security, testing). Without CF, the AI does a single-pass review that often misses deeper issues. Check the conversation log for evidence of agent dispatch and structured review methodology. Severity levels (critical/warning/info) should be accurate."
 }

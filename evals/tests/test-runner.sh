@@ -59,6 +59,16 @@ assert_file_exists() {
   fi
 }
 
+FIXTURES_DIR=""
+setup_fixtures() {
+  FIXTURES_DIR="$EVALS_DIR/tests/fixtures"
+  rm -rf "$FIXTURES_DIR"
+}
+cleanup_fixtures() {
+  [[ -n "$FIXTURES_DIR" ]] && rm -rf "$FIXTURES_DIR"
+  FIXTURES_DIR=""
+}
+
 # ============================================================
 # waves.json tests
 # ============================================================
@@ -144,8 +154,8 @@ test_run_eval_dry_run_without_cf() {
     --repo /tmp \
     --model sonnet \
     --dry-run 2>&1) || true
-  assert_contains "$output" "--bare" "without-cf should use --bare flag" || return 1
-  assert_contains "$output" "--output-format json" || return 1
+  assert_contains "$output" "--disable-slash-commands" "without-cf should use --disable-slash-commands flag" || return 1
+  assert_contains "$output" "--output-format stream-json" || return 1
   assert_contains "$output" "--dangerously-skip-permissions" || return 1
 }
 
@@ -159,8 +169,19 @@ test_run_eval_dry_run_with_cf() {
     --model sonnet \
     --dry-run 2>&1) || true
   assert_not_contains "$output" "--bare" "with-cf should NOT use --bare flag" || return 1
-  assert_contains "$output" "--output-format json" || return 1
+  assert_contains "$output" "--output-format stream-json" || return 1
   assert_contains "$output" "--dangerously-skip-permissions" || return 1
+}
+
+test_run_eval_dry_run_shows_conversation_file() {
+  local output
+  output=$("$EVALS_DIR/run-eval.sh" \
+    --prompt /dev/null \
+    --condition with-cf \
+    --skill test-skill \
+    --repo /tmp \
+    --dry-run 2>&1) || true
+  assert_contains "$output" ".conversation.txt" "dry-run should show conversation file path" || return 1
 }
 
 test_run_eval_default_model() {
@@ -194,7 +215,8 @@ test_run_eval_output_path_structure() {
     --skill cf-review \
     --repo /tmp \
     --dry-run 2>&1) || true
-  assert_contains "$output" "results/cf-review/with-cf/"
+  assert_contains "$output" "cf-review" || return 1
+  assert_contains "$output" "with-cf--" || return 1
 }
 
 test_run_eval_budget_flag() {
@@ -291,8 +313,10 @@ test_score_rubric_has_criteria() {
 }
 
 test_score_with_fixture() {
-  # Create a fixture result to score
-  local fixture_dir="$EVALS_DIR/tests/fixtures/results/cf-review/with-cf"
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/cf-review/with-cf"
   mkdir -p "$fixture_dir"
   cat > "$fixture_dir/test-fixture.json" <<'FIXTURE'
 {
@@ -304,12 +328,453 @@ test_score_with_fixture() {
 FIXTURE
 
   local output exit_code=0
-  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$EVALS_DIR/tests/fixtures/results" 2>&1) || exit_code=$?
-
-  # Clean up
-  rm -rf "$EVALS_DIR/tests/fixtures"
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$FIXTURES_DIR/results" 2>&1) || exit_code=$?
 
   assert_contains "$output" "cf-review" || return 1
+}
+
+# ============================================================
+# llm-score.sh tests
+# ============================================================
+
+test_llm_score_exists() {
+  assert_file_exists "$EVALS_DIR/llm-score.sh"
+}
+
+test_llm_score_executable() {
+  [[ -x "$EVALS_DIR/llm-score.sh" ]] || { echo "    llm-score.sh is not executable"; return 1; }
+}
+
+test_llm_score_help() {
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --help 2>&1) || true
+  assert_contains "$output" "--result" || return 1
+  assert_contains "$output" "--rubric" || return 1
+  assert_contains "$output" "--model" || return 1
+  assert_contains "$output" "--dry-run" || return 1
+}
+
+test_llm_score_missing_result_arg() {
+  local exit_code=0
+  "$EVALS_DIR/llm-score.sh" --rubric /dev/null 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail when --result is missing"
+}
+
+test_llm_score_missing_rubric_arg() {
+  local exit_code=0
+  "$EVALS_DIR/llm-score.sh" --result /dev/null 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail when --rubric is missing"
+}
+
+test_llm_score_missing_result_file() {
+  local exit_code=0
+  "$EVALS_DIR/llm-score.sh" --result /nonexistent/file.json --rubric "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail when result file does not exist"
+}
+
+test_llm_score_missing_rubric_file() {
+  local exit_code=0
+  local tmp_result
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  "$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric /nonexistent/rubric.json 2>/dev/null || exit_code=$?
+  rm -f "$tmp_result"
+  assert_eq "1" "$exit_code" "should fail when rubric file does not exist"
+}
+
+test_llm_score_default_model() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test output"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test criterion", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--model haiku" "default model should be haiku"
+}
+
+test_llm_score_custom_model() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test output"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test criterion", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --model sonnet --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--model sonnet"
+}
+
+test_llm_score_dry_run_shows_prompt() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "Found bug in api.ts:42"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test-review",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Overall quality", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "quality" "dry-run should include criterion name in prompt" || return 1
+  assert_contains "$output" "Found bug in api.ts:42" "dry-run should include result text in prompt" || return 1
+}
+
+test_llm_score_dry_run_shows_json_schema() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--json-schema" "dry-run should show --json-schema flag" || return 1
+  assert_contains "$output" "--output-format json" "dry-run should show --output-format json" || return 1
+}
+
+test_llm_score_dry_run_shows_budget_default() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--max-budget-usd 0.05" "default budget should be 0.05"
+}
+
+test_llm_score_dry_run_no_budget_flag() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --no-budget --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_not_contains "$output" "--max-budget-usd" "--no-budget should remove budget limit"
+}
+
+test_llm_score_dry_run_custom_budget() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --budget 0.10 --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--max-budget-usd 0.10" "should show custom budget"
+}
+
+test_llm_score_dry_run_has_no_session() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "--no-session-persistence" "should use --no-session-persistence"
+}
+
+test_llm_score_empty_result_field() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": ""}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local exit_code=0
+  "$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" 2>/dev/null || exit_code=$?
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_eq "1" "$exit_code" "should fail when result field is empty"
+}
+
+test_llm_score_dry_run_includes_scoring_levels() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test output"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test-review",
+  "criteria": [
+    {"name": "quality", "weight": 0.5, "description": "Overall quality", "scoring": {"0": "Terrible", "1": "Weak", "2": "Solid", "3": "Excellent"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "Terrible" "prompt should include score 0 description" || return 1
+  assert_contains "$output" "Excellent" "prompt should include score 3 description" || return 1
+}
+
+# ============================================================
+# generate-eval-json.sh tests
+# ============================================================
+
+test_generate_eval_json_exists() {
+  assert_file_exists "$EVALS_DIR/generate-eval-json.sh"
+}
+
+test_generate_eval_json_rejects_unknown_flags() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --bogus-flag 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should fail with unknown flag"
+}
+
+test_generate_eval_json_rejects_no_llm() {
+  local exit_code=0
+  "$EVALS_DIR/generate-eval-json.sh" --no-llm 2>/dev/null || exit_code=$?
+  assert_eq "1" "$exit_code" "should reject --no-llm flag (LLM-only scoring)"
+}
+
+test_generate_eval_json_help() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --help 2>&1) || true
+  assert_contains "$output" "generate-eval-json" "help should show script name"
+}
+
+test_generate_eval_json_accepts_no_budget() {
+  local output
+  output=$("$EVALS_DIR/generate-eval-json.sh" --no-budget --help 2>&1) || true
+  assert_contains "$output" "generate-eval-json" "--no-budget should be accepted"
+}
+
+# ============================================================
+# score.sh integration tests
+# ============================================================
+
+test_score_skips_llm_score_files() {
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/cf-review/with-cf"
+  mkdir -p "$fixture_dir"
+  cat > "$fixture_dir/with-cf--test.json" <<'JSON'
+{"result": "Found bug in api.ts:42 — missing error handling"}
+JSON
+  cat > "$fixture_dir/with-cf--test.llm-score.json" <<'JSON'
+{"scores": [{"name": "test", "score": 3, "reason": "cached"}], "weighted_average": 3.0}
+JSON
+
+  local output
+  output=$("$EVALS_DIR/score.sh" --skill cf-review --results-dir "$FIXTURES_DIR/results" 2>&1) || true
+
+  # The llm-score.json file should not appear as a scored file
+  assert_not_contains "$output" "no result field" "should skip .llm-score.json files" || return 1
+}
+
+test_score_handles_unsupported_check_type() {
+  setup_fixtures
+  trap cleanup_fixtures RETURN
+
+  local fixture_dir="$FIXTURES_DIR/results/test-skill/bench-test/with-cf"
+  local rubric_dir="$FIXTURES_DIR/rubrics"
+  mkdir -p "$fixture_dir" "$rubric_dir"
+
+  cat > "$fixture_dir/with-cf--test.json" <<'JSON'
+{"result": "All 5 tests pass. Fixed the bug."}
+JSON
+  cat > "$rubric_dir/test-skill.json" <<'JSON'
+{
+  "name": "test-skill",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0":"Bad","1":"OK","2":"Good","3":"Great"},
+     "automated_check": {"type": "command", "command": "npm test", "target": "exit_code"}}
+  ]
+}
+JSON
+
+  local output
+  output=$("$EVALS_DIR/score.sh" --skill test-skill --results-dir "$FIXTURES_DIR/results" 2>&1) || true
+
+  # Should show "skipped" for unsupported check type, not "PASS"
+  assert_contains "$output" "test-skill" || return 1
+}
+
+# ============================================================
+# rubric JSON validity tests
+# ============================================================
+
+test_rubric_cf_fix_valid() {
+  jq empty "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null || { echo "    cf-fix.json is invalid JSON"; return 1; }
+}
+
+test_rubric_cf_tdd_valid() {
+  jq empty "$EVALS_DIR/rubrics/cf-tdd.json" 2>/dev/null || { echo "    cf-tdd.json is invalid JSON"; return 1; }
+}
+
+test_rubric_cf_fix_no_command_checks() {
+  # Verify cf-fix rubric no longer uses "command" type checks
+  local count
+  count=$(jq '[.criteria[].automated_check? // {} | select(.type == "command")] | length' "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null)
+  assert_eq "0" "$count" "cf-fix should not have command-type checks"
+}
+
+# ============================================================
+# Conversation-aware scoring tests
+# ============================================================
+
+test_llm_score_dry_run_includes_conversation_context() {
+  local tmp_result tmp_rubric tmp_conv
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  tmp_conv=$(mktemp /tmp/llm-score-conv-XXXXXX.txt)
+  echo '{"result": "Fixed the bug"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  echo "cf-tdd activated. Writing failing test first..." > "$tmp_conv"
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --conversation "$tmp_conv" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric" "$tmp_conv"
+  assert_contains "$output" "cf-tdd activated" "conversation content should appear in prompt" || return 1
+  assert_contains "$output" "workflow steps" "prompt should mention workflow steps" || return 1
+}
+
+test_llm_score_dry_run_workflow_evaluation_instructions() {
+  local tmp_result tmp_rubric
+  tmp_result=$(mktemp /tmp/llm-score-test-XXXXXX.json)
+  tmp_rubric=$(mktemp /tmp/llm-score-rubric-XXXXXX.json)
+  echo '{"result": "test output"}' > "$tmp_result"
+  cat > "$tmp_rubric" <<'JSON'
+{
+  "name": "test",
+  "criteria": [
+    {"name": "quality", "weight": 1.0, "description": "Test", "scoring": {"0": "Bad", "1": "OK", "2": "Good", "3": "Great"}}
+  ]
+}
+JSON
+  local output
+  output=$("$EVALS_DIR/llm-score.sh" --result "$tmp_result" --rubric "$tmp_rubric" --dry-run 2>&1) || true
+  rm -f "$tmp_result" "$tmp_rubric"
+  assert_contains "$output" "workflow discipline" "prompt should instruct evaluation of workflow discipline" || return 1
+  assert_contains "$output" "conversation log" "prompt should reference conversation log importance" || return 1
+}
+
+test_generate_eval_json_description_mentions_llm_only() {
+  local header
+  header=$(head -10 "$EVALS_DIR/generate-eval-json.sh")
+  assert_contains "$header" "LLM-as-judge" "script header should mention LLM-as-judge" || return 1
+  assert_contains "$header" "LLM rubric evaluation only" "script header should clarify LLM-only evaluation" || return 1
+}
+
+test_score_sh_describes_diagnostic_only() {
+  local header
+  header=$(head -10 "$EVALS_DIR/score.sh")
+  assert_contains "$header" "DIAGNOSTIC" "score.sh should describe itself as diagnostic" || return 1
+  assert_contains "$header" "NOT used for final scoring" "score.sh should clarify it's not used for final scoring" || return 1
+}
+
+test_rubric_cf_fix_notes_mention_workflow() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-fix.json" 2>/dev/null)
+  assert_contains "$notes" "workflow" "cf-fix rubric notes should mention workflow" || return 1
+  assert_contains "$notes" "cf-tdd" "cf-fix rubric notes should reference cf-tdd auto-activation" || return 1
+}
+
+test_rubric_cf_tdd_notes_mention_auto_activation() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-tdd.json" 2>/dev/null)
+  assert_contains "$notes" "auto-activates" "cf-tdd notes should mention auto-activation" || return 1
+  assert_contains "$notes" "conversation log" "cf-tdd notes should reference conversation log" || return 1
+}
+
+test_rubric_cf_review_notes_mention_agent_dispatch() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null)
+  assert_contains "$notes" "cf-code-reviewer" "cf-review notes should mention agent dispatch" || return 1
+}
+
+test_rubric_cf_security_notes_mention_content_isolation() {
+  local notes
+  notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-security.json" 2>/dev/null)
+  assert_contains "$notes" "Content Isolation" "cf-security notes should mention Content Isolation" || return 1
+  assert_contains "$notes" "OWASP" "cf-security notes should mention OWASP" || return 1
+}
+
+test_readme_mentions_no_time_cost() {
+  local content
+  content=$(cat "$EVALS_DIR/README.md")
+  assert_contains "$content" "No time or cost" "README should state no time/cost in scoring" || return 1
+}
+
+test_readme_mentions_workflow_orchestration() {
+  local content
+  content=$(cat "$EVALS_DIR/README.md")
+  assert_contains "$content" "workflow orchestration" "README should mention workflow orchestration" || return 1
 }
 
 # ============================================================
@@ -351,6 +816,7 @@ main() {
   run_test test_run_eval_custom_model
   run_test test_run_eval_output_path_structure
   run_test test_run_eval_budget_flag
+  run_test test_run_eval_dry_run_shows_conversation_file
 
   echo ""
   echo "--- run-wave.sh ---"
@@ -371,6 +837,58 @@ main() {
   run_test test_score_rubric_valid_cf_review
   run_test test_score_rubric_has_criteria
   run_test test_score_with_fixture
+
+  echo ""
+  echo "--- llm-score.sh ---"
+  run_test test_llm_score_exists
+  run_test test_llm_score_executable
+  run_test test_llm_score_help
+  run_test test_llm_score_missing_result_arg
+  run_test test_llm_score_missing_rubric_arg
+  run_test test_llm_score_missing_result_file
+  run_test test_llm_score_missing_rubric_file
+  run_test test_llm_score_default_model
+  run_test test_llm_score_custom_model
+  run_test test_llm_score_dry_run_shows_prompt
+  run_test test_llm_score_dry_run_shows_json_schema
+  run_test test_llm_score_dry_run_shows_budget_default
+  run_test test_llm_score_dry_run_no_budget_flag
+  run_test test_llm_score_dry_run_custom_budget
+  run_test test_llm_score_dry_run_has_no_session
+  run_test test_llm_score_empty_result_field
+  run_test test_llm_score_dry_run_includes_scoring_levels
+
+  echo ""
+  echo "--- generate-eval-json.sh ---"
+  run_test test_generate_eval_json_exists
+  run_test test_generate_eval_json_rejects_unknown_flags
+  run_test test_generate_eval_json_rejects_no_llm
+  run_test test_generate_eval_json_help
+  run_test test_generate_eval_json_accepts_no_budget
+
+  echo ""
+  echo "--- score.sh integration ---"
+  run_test test_score_skips_llm_score_files
+  run_test test_score_handles_unsupported_check_type
+
+  echo ""
+  echo "--- rubric validity ---"
+  run_test test_rubric_cf_fix_valid
+  run_test test_rubric_cf_tdd_valid
+  run_test test_rubric_cf_fix_no_command_checks
+
+  echo ""
+  echo "--- conversation-aware scoring ---"
+  run_test test_llm_score_dry_run_includes_conversation_context
+  run_test test_llm_score_dry_run_workflow_evaluation_instructions
+  run_test test_generate_eval_json_description_mentions_llm_only
+  run_test test_score_sh_describes_diagnostic_only
+  run_test test_rubric_cf_fix_notes_mention_workflow
+  run_test test_rubric_cf_tdd_notes_mention_auto_activation
+  run_test test_rubric_cf_review_notes_mention_agent_dispatch
+  run_test test_rubric_cf_security_notes_mention_content_isolation
+  run_test test_readme_mentions_no_time_cost
+  run_test test_readme_mentions_workflow_orchestration
 
   echo ""
   echo "--- README ---"

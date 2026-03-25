@@ -114,7 +114,7 @@ if [[ "$DRY_RUN" == true ]]; then
   local_idx=0
   for combo in "${COMBINATIONS[@]}"; do
     IFS='|' read -r skill repo condition run_num repo_path prompt_file wave_key <<< "$combo"
-    local wave_num="${wave_key#wave}"
+    wave_num="${wave_key#wave}"
     local_idx=$((local_idx + 1))
     if [[ "$wave_num" == "3" ]]; then
       echo -e "  ${DIM}[$local_idx/$TOTAL]${NC} scenario ${BOLD}$skill${NC} $condition on ${BLUE}$repo${NC} ${DIM}(wave $wave_num, run $run_num/$RUNS)${NC}"
