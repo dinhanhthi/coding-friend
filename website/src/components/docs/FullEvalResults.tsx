@@ -270,8 +270,11 @@ export default function FullEvalResults() {
   const modelMeta =
     evalData.models[activeModel as keyof typeof evalData.models];
 
+  // Filter out wave 3 (security) — not included in public results
+  const filteredSkills = skills.filter(([, skill]) => skill.wave !== 3);
+
   // Group by wave
-  const byWave = skills.reduce(
+  const byWave = filteredSkills.reduce(
     (acc, [key, skill]) => {
       const wave = skill.wave;
       if (!acc[wave]) acc[wave] = [];

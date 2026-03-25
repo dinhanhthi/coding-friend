@@ -8,11 +8,16 @@
 #
 # No time/cost metrics, no regex scoring — LLM rubric evaluation only.
 #
+# By default, processes waves 1 and 2 only. Wave 3 (security) is excluded because
+# synthetic benchmarks don't adequately capture CF's security value. Use --wave 3
+# explicitly to include it.
+#
 # Usage:
-#   ./generate-eval-json.sh                              # Score all models, all waves
-#   ./generate-eval-json.sh --model sonnet               # Score only Sonnet
+#   ./generate-eval-json.sh                              # Score all models, waves 1-2
+#   ./generate-eval-json.sh --model sonnet               # Score only Sonnet, waves 1-2
 #   ./generate-eval-json.sh --model sonnet --no-budget   # Sonnet, no API budget limit
 #   ./generate-eval-json.sh --wave 2                     # Score only wave 2 skills, merge into existing JSON
+#   ./generate-eval-json.sh --wave 3                     # Score only wave 3 (security), merge into existing JSON
 #   ./generate-eval-json.sh --model sonnet --wave 2      # Sonnet + wave 2 only
 #   ./generate-eval-json.sh --wave 1 --wave 3            # Score waves 1 and 3
 
@@ -36,8 +41,9 @@ WAVES_FILE="$SCRIPT_DIR/waves.json"
 OUTPUT_FILE="$SCRIPT_DIR/../website/src/data/eval-results.json"
 
 # Featured skills shown on the landing page comparison chart
-FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd" "cf-security")
-FEATURED_LABELS=("Bug Fix" "Code Review" "TDD" "Security")
+# Security (wave 3) excluded — synthetic benchmarks don't capture CF's security value
+FEATURED_SKILLS=("cf-fix" "cf-review" "cf-tdd")
+FEATURED_LABELS=("Bug Fix" "Code Review" "TDD")
 
 # All supported models
 ALL_MODELS=("haiku" "sonnet" "opus")
@@ -48,13 +54,14 @@ MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","op
 NO_BUDGET=false
 SELECTED_MODELS=()
 SELECTED_WAVES=()
+USER_SPECIFIED_WAVES=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-budget) NO_BUDGET=true; shift ;;
     --model) SELECTED_MODELS+=("$2"); shift 2 ;;
-    --wave) SELECTED_WAVES+=("$2"); shift 2 ;;
+    --wave) SELECTED_WAVES+=("$2"); USER_SPECIFIED_WAVES=true; shift 2 ;;
     --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget] [--model <name>]... [--wave <N>]..."; exit 0 ;;
     *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
@@ -69,6 +76,11 @@ if [[ ${#SELECTED_MODELS[@]} -gt 0 ]]; then
     fi
   done
   ALL_MODELS=("${SELECTED_MODELS[@]}")
+fi
+
+# Default to waves 1 and 2 (exclude wave 3/security) when no --wave specified
+if [[ ${#SELECTED_WAVES[@]} -eq 0 ]]; then
+  SELECTED_WAVES=("1" "2")
 fi
 
 # Validate wave numbers
@@ -601,9 +613,9 @@ build_json() {
       "detailedResults": $detailed
     }')
 
-  # When --wave filter is active, merge only detailedResults into existing output file
+  # When --wave filter is explicitly specified, merge only detailedResults into existing output file
   # This preserves models, featuredSkills, stats from previous runs
-  if [[ ${#SELECTED_WAVES[@]} -gt 0 && -f "$OUTPUT_FILE" ]]; then
+  if [[ "$USER_SPECIFIED_WAVES" == true && -f "$OUTPUT_FILE" ]]; then
     local existing_json
     existing_json=$(cat "$OUTPUT_FILE")
     # Only merge detailedResults (additive per-skill keys) and update timestamp
