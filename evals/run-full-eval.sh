@@ -5,12 +5,18 @@
 # for each model (haiku, sonnet, opus), score results, and generate the website
 # JSON data file.
 #
+# By default, runs waves 1 and 2 only. Wave 3 (security) is excluded from
+# default runs because synthetic benchmarks don't adequately capture CF's
+# security value. Use --wave 3 or --wave security to run it explicitly.
+#
 # Usage:
-#   ./run-full-eval.sh                                               # Run all models, 3 runs each
+#   ./run-full-eval.sh                                               # Run all models, waves 1-2, 3 runs each
 #   ./run-full-eval.sh --model sonnet --model haiku --model opus     # Run only sonnet, haiku, and opus
 #   ./run-full-eval.sh --runs 1                                      # Quick run (1 per combo)
 #   ./run-full-eval.sh --wave 1                                      # Only wave 1
+#   ./run-full-eval.sh --wave 3                                      # Only wave 3 (security, excluded by default)
 #   ./run-full-eval.sh --wave security                               # Only security wave
+#   ./run-full-eval.sh --wave all                                    # All waves including security
 #   ./run-full-eval.sh --dry-run                                     # Preview without executing
 #   ./run-full-eval.sh --skip-setup                                  # Skip benchmark setup
 #   ./run-full-eval.sh --skip-score                                  # Skip scoring step
@@ -34,7 +40,7 @@ NC='\033[0m' # No Color
 # Defaults
 MODELS=("haiku" "sonnet" "opus")
 RUNS=3
-WAVE="all"
+WAVE="default"
 DRY_RUN=false
 SKIP_SETUP=false
 SKIP_SCORE=false
@@ -51,7 +57,7 @@ Usage:
 Options:
   --model <name>     Run only this model (haiku, sonnet, opus). Repeat for multiple.
   --runs <N>         Number of runs per combination (default: 3)
-  --wave <1|2|3|security|all>  Which wave(s) to run (default: all)
+  --wave <1|2|3|security|all>  Which wave(s) to run (default: 1+2, security excluded)
   --skill <name>     Run only this skill
   --budget <amount>  Max budget in USD per run
   --dry-run          Show what would be executed without running
@@ -60,9 +66,10 @@ Options:
   --help             Show this help message
 
 Examples:
-  ./run-full-eval.sh                             # Full eval, all models, 3 runs
+  ./run-full-eval.sh                             # Full eval, waves 1-2, all models, 3 runs
   ./run-full-eval.sh --model sonnet --runs 1     # Quick sonnet eval
-  ./run-full-eval.sh --wave security --runs 3    # Only security wave
+  ./run-full-eval.sh --wave security --runs 3    # Only security wave (excluded by default)
+  ./run-full-eval.sh --wave all                  # All waves including security
   ./run-full-eval.sh --dry-run                   # Preview all runs
 USAGE
 }
@@ -106,10 +113,11 @@ fi
 # Map wave arg to run-wave.sh format
 WAVE_ARGS=()
 case "$WAVE" in
-  1|2)       WAVE_ARGS=("$WAVE") ;;
+  1|2)        WAVE_ARGS=("$WAVE") ;;
   3|security) WAVE_ARGS=("3") ;;
-  all)       WAVE_ARGS=("1" "2" "3") ;;
-  *)         die "Invalid wave: $WAVE (must be 1, 2, 3, security, or all)" ;;
+  all)        WAVE_ARGS=("1" "2" "3") ;;
+  default)    WAVE_ARGS=("1" "2") ;;
+  *)          die "Invalid wave: $WAVE (must be 1, 2, 3, security, or all)" ;;
 esac
 
 # Calculate total runs for summary
