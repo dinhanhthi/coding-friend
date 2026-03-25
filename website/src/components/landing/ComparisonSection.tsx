@@ -3,7 +3,7 @@
 import Container from "@/components/ui/Container";
 import evalData from "@/data/eval-results.json";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type ModelKey = keyof typeof evalData.models;
 
@@ -123,6 +123,22 @@ export default function ComparisonSection() {
   const model = evalData.models[activeModel];
   const hasData = model?.evalSessions > 0;
 
+  const tabRefs = useRef<Record<ModelKey, HTMLButtonElement | null>>(
+    Object.fromEntries(MODEL_TABS.map((t) => [t.key, null])) as Record<ModelKey, HTMLButtonElement | null>,
+  );
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const updateIndicator = useCallback(() => {
+    const btn = tabRefs.current[activeModel];
+    if (btn) {
+      setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
+  }, [activeModel]);
+
+  useEffect(() => {
+    updateIndicator();
+  }, [updateIndicator]);
+
   return (
     <section className="border-b border-[#a0a0a01c] py-16">
       <Container>
@@ -141,27 +157,36 @@ export default function ComparisonSection() {
 
         <div className="mx-auto max-w-2xl">
           {/* Model tabs */}
-          <div className="mb-8 flex items-center justify-center gap-1 rounded-lg bg-slate-800/50 p-1 sm:mx-auto sm:w-fit">
-            {MODEL_TABS.map((tab) => {
-              const tabModel = evalData.models[tab.key];
-              const tabHasData = tabModel?.evalSessions > 0;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveModel(tab.key)}
-                  className={`relative rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
-                    activeModel === tab.key
-                      ? "bg-violet-500/20 text-violet-300"
-                      : "text-slate-400 hover:text-slate-300"
-                  }`}
-                >
-                  {tab.label}
-                  {!tabHasData && (
-                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-slate-600" />
-                  )}
-                </button>
-              );
-            })}
+          <div className="mb-8 flex justify-center">
+            <div className="bg-navy-950/50 relative inline-flex rounded-full border border-[#a0a0a01c] p-1">
+              <div
+                className="bg-navy-800 absolute top-1 bottom-1 rounded-full shadow-sm transition-all duration-300 ease-in-out"
+                style={{ left: indicator.left, width: indicator.width }}
+              />
+              {MODEL_TABS.map((tab) => {
+                const tabModel = evalData.models[tab.key];
+                const tabHasData = tabModel?.evalSessions > 0;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={(el) => {
+                      tabRefs.current[tab.key] = el;
+                    }}
+                    onClick={() => setActiveModel(tab.key)}
+                    className={`relative z-10 cursor-pointer rounded-full px-5 py-2 text-sm font-medium transition-colors duration-200 ${
+                      activeModel === tab.key
+                        ? "text-violet-400"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {tab.label}
+                    {!tabHasData && (
+                      <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-slate-600" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* No data state */}
