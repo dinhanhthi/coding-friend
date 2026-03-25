@@ -217,7 +217,7 @@ A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 model
 
 ## Known Limitations
 
-- **Single-turn only**: penalizes multi-step skills like cf-plan
+- **Single-turn only**: penalizes multi-step skills (cf-plan excluded for this reason)
 - **Small sample size**: most skills had 1-4 runs per condition
 - **Synthetic repos**: small, not representative of real-world projects
 - **No randomized ordering**: later runs may benefit from caching

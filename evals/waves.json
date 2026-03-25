@@ -3,7 +3,6 @@
     "skills": {
       "cf-review": { "repos": ["bench-webapp", "bench-cli"] },
       "cf-fix": { "repos": ["bench-webapp", "bench-cli"] },
-      "cf-plan": { "repos": ["bench-webapp", "bench-library"] },
       "cf-tdd": { "repos": ["bench-library", "bench-cli"] }
     }
   },
