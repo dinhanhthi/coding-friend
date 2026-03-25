@@ -30,6 +30,8 @@ Options:
   --rubric <path>         Path to rubric JSON file (required)
   --conversation <path>   Path to conversation log file (optional, provides richer context)
   --model <name>          Model to use for judging (default: haiku)
+  --budget <amount>       Max cost per scoring call in USD (default: 0.05)
+  --no-budget             Disable budget limit (for subscription users)
   --dry-run               Show the command and prompt without calling the API
   --help                  Show this help message
 USAGE
@@ -47,6 +49,8 @@ while [[ $# -gt 0 ]]; do
     --rubric)    RUBRIC_FILE="$2"; shift 2 ;;
     --conversation) CONVERSATION_FILE="$2"; shift 2 ;;
     --model)     MODEL="$2"; shift 2 ;;
+    --budget)    BUDGET="$2"; shift 2 ;;
+    --no-budget) BUDGET=""; shift ;;
     --dry-run)   DRY_RUN=true; shift ;;
     --help)      usage; exit 0 ;;
     *)           die "Unknown argument: $1" ;;
@@ -177,8 +181,10 @@ CLAUDE_CMD=(
   --json-schema "$JSON_SCHEMA"
   --no-session-persistence
   --dangerously-skip-permissions
-  --max-budget-usd "$BUDGET"
 )
+if [[ -n "$BUDGET" ]]; then
+  CLAUDE_CMD+=(--max-budget-usd "$BUDGET")
+fi
 
 if [[ "$DRY_RUN" == true ]]; then
   echo "=== DRY RUN ==="
@@ -196,6 +202,12 @@ fi
 
 # Call claude and capture output
 RAW_OUTPUT=$(echo "$PROMPT" | "${CLAUDE_CMD[@]}" 2>/dev/null) || die "Claude API call failed"
+
+# Check for error responses (e.g., budget exceeded, API errors)
+ERROR_SUBTYPE=$(echo "$RAW_OUTPUT" | jq -r '.subtype // empty' 2>/dev/null)
+if [[ -n "$ERROR_SUBTYPE" && "$ERROR_SUBTYPE" == error_* ]]; then
+  die "Claude returned error: $ERROR_SUBTYPE (raw: ${RAW_OUTPUT:0:300})"
+fi
 
 # The output from --output-format json wraps the result; extract the actual content
 # With --output-format json and --json-schema, claude returns a JSON object with a "result" field

@@ -102,15 +102,16 @@ cd evals && ./run-full-eval.sh
 ./run-full-eval.sh --model sonnet
 
 # Run waves independently (recommended for long evals)
-./run-full-eval.sh --model sonnet --wave 1
-./run-full-eval.sh --model sonnet --wave 2
-./run-full-eval.sh --model sonnet --wave 3
+./run-full-eval.sh --model sonnet --wave 1 --skip-score
+./run-full-eval.sh --model sonnet --wave 2 --skip-score --skip-setup
+./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup
 
 # Re-score existing results (no re-running evals)
-./generate-eval-json.sh
+# Use --no-budget for Claude Code subscription users (default: $0.05 limit per scoring call)
+./generate-eval-json.sh --no-budget
 
 # Score a single result with LLM judge
-./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json
+./llm-score.sh --result results/.../with-cf--*.json --rubric rubrics/cf-review.json --no-budget
 ```
 
 Results are organized by date, model, wave, skill, and benchmark repo:
@@ -124,7 +125,7 @@ evals/results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
 evals/analysis/<date>/<model>/wave-<N>/                    # diagnostic regex checks (not used for scoring)
 ```
 
-**Tip**: Running all 3 waves for all models in a single session may exceed the 5-hour context window. Run one wave per model per session, or use `--wave` to split across sessions.
+**Tip**: Running all 3 waves for all models in a single session may exceed the 5-hour context window. Run one wave per model per session with `--skip-score`, then score all results at the end with `generate-eval-json.sh --no-budget`.
 
 See [`evals/README.md`](https://github.com/dinhanhthi/coding-friend/blob/main/evals/README.md) for full options.
 

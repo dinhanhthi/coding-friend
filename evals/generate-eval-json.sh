@@ -38,10 +38,14 @@ ALL_MODELS=("haiku" "sonnet" "opus")
 MODEL_LABELS='{"haiku":"Haiku","sonnet":"Sonnet","opus":"Opus"}'
 MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","opus":"claude-opus-4-6"}'
 
+# Options
+NO_BUDGET=false
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --help|-h) echo "Usage: ./generate-eval-json.sh"; exit 0 ;;
+    --no-budget) NO_BUDGET=true; shift ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget]"; exit 0 ;;
     *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
 done
@@ -85,6 +89,9 @@ llm_score_result() {
   # Also try conversation file for richer context
   local conv_file="${result_file%.json}.conversation.txt"
   local score_args=(--result "$result_file" --rubric "$rubric_file")
+  if [[ "$NO_BUDGET" == true ]]; then
+    score_args+=(--no-budget)
+  fi
   if [[ -f "$conv_file" ]]; then
     score_args+=(--conversation "$conv_file")
   fi
