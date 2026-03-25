@@ -18,7 +18,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 DIM='\033[2m'
@@ -125,29 +127,47 @@ compute_skill_score() {
   fi
 
   if [[ ${#result_files[@]} -eq 0 ]]; then
+    echo -e "      ${DIM}(no result files found)${NC}" >&2
     echo "0"
     return
   fi
 
+  echo -e "      ${DIM}${#result_files[@]} file(s) to score${NC}" >&2
+
   for result_file in "${result_files[@]}"; do
     if [[ ! -f "$rubric_file" ]]; then
+      echo -e "      ${YELLOW}⚠ No rubric file: ${DIM}${rubric_file}${NC}" >&2
       continue
     fi
 
+    local basename
+    basename=$(basename "$result_file")
     local score=""
+
+    # Check if cached
+    local cache_file="${result_file%.json}.llm-score.json"
+    if [[ -f "$cache_file" ]]; then
+      echo -ne "      📋 ${DIM}${basename}${NC} " >&2
+    else
+      echo -ne "      🔄 ${DIM}${basename}${NC} " >&2
+    fi
+
     score=$(llm_score_result "$result_file" "$rubric_file")
 
     if [[ -n "$score" ]]; then
       total_score=$(awk "BEGIN { printf \"%.4f\", $total_score + $score }")
       file_count=$((file_count + 1))
+      echo -e "→ ${GREEN}${score}${NC}" >&2
+    else
+      echo -e "→ ${RED}failed${NC}" >&2
     fi
   done
 
+  local avg_score="0"
   if [[ $file_count -gt 0 ]]; then
-    awk "BEGIN { printf \"%.2f\", $total_score / $file_count }"
-  else
-    echo "0"
+    avg_score=$(awk "BEGIN { printf \"%.2f\", $total_score / $file_count }")
   fi
+  echo "$avg_score"
 }
 
 # Build the JSON output
@@ -155,14 +175,29 @@ build_json() {
   local today
   today=$(date +%Y-%m-%d)
 
+  echo ""
+  echo -e "${BOLD}🚀 Generating eval results JSON${NC}"
+  echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "  📂 Results: ${DIM}${RESULTS_DIR}${NC}"
+  echo -e "  📐 Rubrics: ${DIM}${RUBRICS_DIR}${NC}"
+  echo -e "  📝 Output:  ${DIM}${OUTPUT_FILE}${NC}"
+  echo -e "  🤖 Models:  ${CYAN}${ALL_MODELS[*]}${NC}"
+  echo -e "  🎯 Skills:  ${CYAN}${FEATURED_SKILLS[*]}${NC}"
+  echo ""
+
   # Start building models object
   local models_json="{}"
+  local model_idx=0
+  local total_models=${#ALL_MODELS[@]}
 
   for model in "${ALL_MODELS[@]}"; do
+    model_idx=$((model_idx + 1))
     local label model_id sessions
     label=$(echo "$MODEL_LABELS" | jq -r ".\"$model\"")
     model_id=$(echo "$MODEL_IDS" | jq -r ".\"$model\"")
     sessions=$(count_sessions "$model")
+
+    echo -e "${BOLD}${BLUE}━━━ [$model_idx/$total_models] 🤖 Model: ${label} ${NC}${DIM}($model_id, $sessions sessions)${NC}"
 
     # Compute scores for each featured skill
     local skills_json="{}"
@@ -172,9 +207,19 @@ build_json() {
 
     for i in "${!FEATURED_SKILLS[@]}"; do
       local skill="${FEATURED_SKILLS[$i]}"
+      local skill_label="${FEATURED_LABELS[$i]}"
+      local skill_num=$((i + 1))
+      local total_skills=${#FEATURED_SKILLS[@]}
+
+      echo -e "  ${MAGENTA}▸ [$skill_num/$total_skills] ${BOLD}${skill}${NC} ${DIM}(${skill_label})${NC}"
+
       local with_score without_score
+      echo -e "    ${CYAN}◆ with-cf${NC}" >&2
       with_score=$(compute_skill_score "$skill" "with-cf" "$model")
+      echo -e "    ${CYAN}◇ without-cf${NC}" >&2
       without_score=$(compute_skill_score "$skill" "without-cf" "$model")
+
+      echo -e "    ${GREEN}✓ Result: with=${BOLD}${with_score}${NC} ${DIM}/ without=${without_score}${NC}"
 
       skills_json=$(echo "$skills_json" | jq \
         --arg skill "$skill" \
@@ -194,6 +239,9 @@ build_json() {
       avg_without=$(awk "BEGIN { printf \"%.2f\", $without_total / $skill_count }")
     fi
 
+    echo -e "  ${GREEN}📊 ${label} averages: with=${BOLD}${avg_with}${NC}${GREEN} / without=${avg_without}${NC}"
+    echo ""
+
     # Add this model to models_json
     models_json=$(echo "$models_json" | jq \
       --arg model "$model" \
@@ -212,6 +260,8 @@ build_json() {
       }')
   done
 
+  echo -e "${DIM}▸ Building featured skills array...${NC}"
+
   # Build featured skills array
   local featured_json="[]"
   for i in "${!FEATURED_SKILLS[@]}"; do
@@ -220,6 +270,8 @@ build_json() {
       --arg label "${FEATURED_LABELS[$i]}" \
       '. + [{"key": $key, "label": $label}]')
   done
+
+  echo -e "${DIM}▸ Computing top delta across models...${NC}"
 
   # Compute top delta — find the skill with the best delta across models
   local top_delta="+0%"
@@ -254,6 +306,8 @@ build_json() {
     fi
   fi
 
+  echo -e "${DIM}▸ Writing final JSON...${NC}"
+
   # Build final JSON
   jq -n \
     --arg date "$today" \
@@ -278,6 +332,8 @@ build_json() {
       }
     }' > "$OUTPUT_FILE"
 
+  echo ""
+  echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${GREEN}✅ Generated:${NC} ${DIM}$OUTPUT_FILE${NC}"
   echo -e "  📏 Scoring: ${CYAN}LLM-as-judge (Haiku)${NC}"
   echo ""

@@ -61,6 +61,7 @@ Other common patterns:
 
 Options for `run-full-eval.sh`:
 
+
 | Option              | Default                   | Description                        |
 | ------------------- | ------------------------- | ---------------------------------- |
 | `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple. |
@@ -71,6 +72,7 @@ Options for `run-full-eval.sh`:
 | `--dry-run`         |                           | Preview all runs without executing |
 | `--skip-setup`      |                           | Skip benchmark repo setup          |
 | `--skip-score`      |                           | Skip scoring and JSON generation   |
+
 
 ## Output Structure
 
@@ -98,21 +100,30 @@ analysis/2026-03-24/sonnet/wave-1/cf-review-bench-webapp-with-cf-scores.json
 
 ```
 run-full-eval.sh                          <- top level: all models, all waves
-  ├── setup-benchmarks.sh                     (prepare repos)
+  ├── 📜 setup-benchmarks.sh                     (prepare benchmark repos)
   ├── for each model (haiku, sonnet, opus):
-  │   └── run-wave.sh × N waves              <- one model, one wave
+  │   └── 📜 run-wave.sh × N waves              <- one model, one wave
   │       └── for each skill × repo × condition:
-  │           └── run-eval.sh                <- single eval run
-  │               └── results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/<condition>--<timestamp>.json
-  ├── score.sh --wave all                     (diagnostic regex checks, NOT used for final scores)
+  │           └── 📜 run-eval.sh                <- single eval run (claude -p → capture output)
+  │               └── results/<date>/<model>/wave-<N>/<skill>/<bench-repo>/
+  │                     ├── <condition>--<timestamp>.json              (raw result)
+  │                     ├── <condition>--<timestamp>.meta.json         (metadata)
+  │                     └── <condition>--<timestamp>.conversation.txt  (conversation log)
+  ├── 📜 score.sh --wave all                     (diagnostic regex checks, NOT used for final scores)
   │   └── analysis/<date>/<model>/wave-<N>/<skill>-<bench-repo>-<condition>-scores.json
-  └── generate-eval-json.sh                   (LLM-as-judge scoring → website data)
-      └── website/src/data/eval-results.json
+  └── 📜 generate-eval-json.sh                   (LLM-as-judge scoring → website data)
+      ├── for each model × skill × condition:
+      │   └── 📜 llm-score.sh                   <- scores one result file against its rubric
+      │       ├── reads: result .json + rubric + conversation .txt
+      │       ├── calls claude (Haiku) with rubric criteria for 0-3 scoring
+      │       └── caches: <condition>--<timestamp>.llm-score.json  (skipped on re-runs)
+      └── website/src/data/eval-results.json  (aggregated website data)
 ```
 
 ## Lower-Level Scripts
 
 Rarely needed directly -- `run-full-eval.sh` calls these automatically.
+
 
 | Script                                                                      | When to use                                    |
 | --------------------------------------------------------------------------- | ---------------------------------------------- |
@@ -120,14 +131,18 @@ Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 | `run-eval.sh --prompt ... --condition with-cf --skill cf-review --repo ...` | Debug a single prompt or test a rubric change  |
 | `score.sh --wave all`                                                       | Diagnostic regex checks (not used for website) |
 | `generate-eval-json.sh`                                                     | Re-generate website JSON from existing results |
+| `llm-score.sh --result <path> --rubric <path>`                              | Score a single result file with LLM judge      |
 | `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
 
+
 ## A/B Test Design
+
 
 | Condition    | How it works                                                                             |
 | ------------ | ---------------------------------------------------------------------------------------- |
 | `with-cf`    | Normal mode -- Coding Friend plugin loaded with all skills, agents, and auto-invocations |
 | `without-cf` | Bare mode -- `--disable-slash-commands`, all plugins disabled                            |
+
 
 Each run: repo reset -> claude -p -> capture JSON -> repo reset. Uses `--no-session-persistence` for isolation.
 
@@ -151,6 +166,7 @@ Scores are cached as `.llm-score.json` files so re-runs are instant. There are n
 
 ## Benchmark Repos
 
+
 | Repo             | Description                                                                                    |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | `bench-webapp`   | TypeScript web app with planted bugs (duplicate function, missing error handling, memory leak) |
@@ -158,18 +174,21 @@ Scores are cached as `.llm-score.json` files so re-runs are instant. There are n
 | `bench-library`  | TypeScript utility library, clean code                                                         |
 | `bench-research` | Minimal repo for web research tasks                                                            |
 
+
 `setup-benchmarks.sh` stages specific changes in each repo to simulate pending work.
 
 ## Results Summary (March 2026)
 
 ### CF Adds Clear Value (Workflow Orchestration)
 
-| Skill     | Delta     | Workflow advantage                                                     |
-| --------- | --------- | ---------------------------------------------------------------------- |
+
+| Skill     | Delta     | Workflow advantage                                                    |
+| --------- | --------- | --------------------------------------------------------------------- |
 | cf-fix    | **+1.10** | `cf-tdd` auto-activates → test written before fix → regression caught |
-| cf-tdd    | **+0.87** | RED-GREEN-REFACTOR enforced even when prompt doesn't ask for TDD       |
-| cf-review | **+0.47** | `cf-code-reviewer` agent dispatched → structured severity output       |
+| cf-tdd    | **+0.87** | RED-GREEN-REFACTOR enforced even when prompt doesn't ask for TDD      |
+| cf-review | **+0.47** | `cf-code-reviewer` agent dispatched → structured severity output      |
 | cf-learn  | **+0.45** | `cf-writer` agent persists learnings → docs/learn/ created            |
+
 
 ### CF Adds No Value
 
@@ -177,11 +196,13 @@ cf-ask (2.88/2.88), cf-auto-review (3.00/3.00), cf-sys-debug (2.60/2.60), cf-opt
 
 ### CF Underperforms
 
+
 | Skill       | Delta     | Why                                              |
 | ----------- | --------- | ------------------------------------------------ |
 | cf-plan     | **-1.00** | Asks clarifying questions in single-turn eval    |
 | cf-scan     | **-0.25** | Ordering effects may explain this                |
 | cf-research | **-0.05** | Marginally lower quality on synthetic benchmarks |
+
 
 **Overall**: with-cf 2.51 vs without-cf 2.25 (+0.26)
 
@@ -231,3 +252,4 @@ A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 model
 3. Add to `waves.json` under the appropriate wave
 4. Run: `./run-full-eval.sh --model sonnet --skill <skill-name> --runs 3`
 5. Re-generate scores: `./generate-eval-json.sh`
+
