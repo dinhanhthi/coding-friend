@@ -62,7 +62,6 @@ Other common patterns:
 
 Options for `run-full-eval.sh`:
 
-
 | Option              | Default                   | Description                                           |
 | ------------------- | ------------------------- | ----------------------------------------------------- |
 | `--model <name>`    | all (haiku, sonnet, opus) | Model to use. Repeat for multiple.                    |
@@ -73,7 +72,6 @@ Options for `run-full-eval.sh`:
 | `--dry-run`         |                           | Preview all runs without executing                    |
 | `--skip-setup`      |                           | Skip benchmark repo setup                             |
 | `--skip-score`      |                           | Skip scoring and JSON generation                      |
-
 
 ## Output Structure
 
@@ -125,7 +123,6 @@ run-full-eval.sh                          <- top level: all models, all waves
 
 Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 
-
 | Script                                                                      | When to use                                    |
 | --------------------------------------------------------------------------- | ---------------------------------------------- |
 | `run-wave.sh --wave 1 --model sonnet --runs 3`                              | Run a specific wave with a specific model      |
@@ -135,15 +132,12 @@ Rarely needed directly -- `run-full-eval.sh` calls these automatically.
 | `llm-score.sh --result <path> --rubric <path> [--no-budget]`                | Score a single result file with LLM judge      |
 | `setup-benchmarks.sh`                                                       | Manually prepare benchmark repos               |
 
-
 ## A/B Test Design
-
 
 | Condition    | How it works                                                                             |
 | ------------ | ---------------------------------------------------------------------------------------- |
 | `with-cf`    | Normal mode -- Coding Friend plugin loaded with all skills, agents, and auto-invocations |
 | `without-cf` | Bare mode -- `--disable-slash-commands`, all plugins disabled                            |
-
 
 Each run: repo reset -> claude -p -> capture JSON -> repo reset. Uses `--no-session-persistence` for isolation.
 
@@ -173,14 +167,12 @@ Scores are cached as `.llm-score.json` files so re-runs are instant. There are n
 
 ## Benchmark Repos
 
-
 | Repo             | Description                                                                                    |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | `bench-webapp`   | TypeScript web app with planted bugs (duplicate function, missing error handling, memory leak) |
 | `bench-cli`      | TypeScript CLI with planted bugs (null crash in sortByField, missing CSV escaping)             |
 | `bench-library`  | TypeScript utility library, clean code                                                         |
 | `bench-research` | Minimal repo for web research tasks                                                            |
-
 
 `setup-benchmarks.sh` stages specific changes in each repo to simulate pending work.
 
@@ -231,4 +223,3 @@ A full eval (3 waves × 1 model × 3 runs) takes ~3.5 hours. Running all 3 model
 3. Add to `waves.json` under the appropriate wave
 4. Run: `./run-full-eval.sh --model sonnet --skill <skill-name> --runs 3`
 5. Re-generate scores: `./generate-eval-json.sh`
-
