@@ -4,33 +4,18 @@ import type { ChangelogEntry, ChangelogChange } from "./types";
 
 const repoRoot = path.join(process.cwd(), "..");
 
+function readChangelogSafe(relativePath: string): string {
+  const filePath = path.join(repoRoot, relativePath);
+  if (!fs.existsSync(filePath)) return "";
+  return fs.readFileSync(filePath, "utf-8");
+}
+
 export function getPluginChangelog(): string {
-  return fs.readFileSync(path.join(repoRoot, "plugin/CHANGELOG.md"), "utf-8");
+  return readChangelogSafe("plugin/CHANGELOG.md");
 }
 
 export function getCliChangelog(): string {
-  return fs.readFileSync(path.join(repoRoot, "cli/CHANGELOG.md"), "utf-8");
-}
-
-export function getLearnHostChangelog(): string {
-  return fs.readFileSync(
-    path.join(repoRoot, "cli/lib/learn-host/CHANGELOG.md"),
-    "utf-8",
-  );
-}
-
-export function getLearnMcpChangelog(): string {
-  return fs.readFileSync(
-    path.join(repoRoot, "cli/lib/learn-mcp/CHANGELOG.md"),
-    "utf-8",
-  );
-}
-
-export function getCfMemoryChangelog(): string {
-  return fs.readFileSync(
-    path.join(repoRoot, "cli/lib/cf-memory/CHANGELOG.md"),
-    "utf-8",
-  );
+  return readChangelogSafe("cli/CHANGELOG.md");
 }
 
 function classifyChange(line: string): ChangelogChange {
