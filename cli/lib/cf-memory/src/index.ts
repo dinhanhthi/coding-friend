@@ -12,6 +12,13 @@ const rawDir =
 const docsDir = path.resolve(rawDir);
 const tierConfig = (process.env.MEMORY_TIER ?? "auto") as TierConfig;
 
+// Daemon idle timeout from env (in milliseconds, 0 = disable)
+const idleTimeoutMs = (() => {
+  if (!process.env.MEMORY_DAEMON_IDLE_TIMEOUT) return undefined;
+  const parsed = parseInt(process.env.MEMORY_DAEMON_IDLE_TIMEOUT, 10);
+  return isNaN(parsed) ? undefined : parsed;
+})();
+
 // Embedding config from environment variables
 const embeddingConfig: Partial<EmbeddingConfig> | undefined = (() => {
   const provider = process.env.MEMORY_EMBEDDING_PROVIDER as
@@ -27,10 +34,15 @@ const embeddingConfig: Partial<EmbeddingConfig> | undefined = (() => {
   };
 })();
 
+const daemonOptions =
+  idleTimeoutMs !== undefined ? { idleTimeoutMs } : undefined;
+
 const { backend, tier } = await createBackendForTier(
   docsDir,
   tierConfig,
   embeddingConfig,
+  undefined,
+  daemonOptions,
 );
 
 // Auto-start daemon for file watching (Tier 1 & 2)
@@ -38,7 +50,7 @@ const { backend, tier } = await createBackendForTier(
 // and rebuilds the search index automatically.
 if (tier.name !== "markdown") {
   const { spawnDaemon } = await import("./daemon/process.js");
-  spawnDaemon(docsDir, embeddingConfig).catch(() => {});
+  spawnDaemon(docsDir, embeddingConfig, daemonOptions).catch(() => {});
 }
 
 const server = new McpServer({

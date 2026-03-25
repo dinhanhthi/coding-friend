@@ -199,9 +199,10 @@ Settings for the Tier 2 MiniSearch daemon.
 
 #### `memory.daemon.idleTimeout`
 
-- **Type**: `number` (minutes)
-- **Default**: `30`
-- Auto-shutdown the daemon after this many minutes of inactivity
+- **Type**: `number` (milliseconds)
+- **Default**: `1800000` (30 minutes)
+- Auto-shutdown the daemon after this many milliseconds of inactivity. Set to `0` to disable auto-shutdown. The `cf memory config` wizard prompts in minutes and converts automatically.
+- If the daemon stops due to idle timeout, it is **automatically respawned** on the next memory request — no manual restart needed.
 
 #### `memory.autoCapture`
 

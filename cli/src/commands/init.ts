@@ -51,6 +51,10 @@ import {
   applyDocsDirChange,
   ensureDocsFolders,
 } from "../lib/prompt-utils.js";
+import {
+  getMemoryMcpStatus,
+  writeMemoryMcpEntry,
+} from "../lib/memory-prompts.js";
 
 const GITIGNORE_START = "# >>> coding-friend managed";
 const GITIGNORE_END = "# <<< coding-friend managed";
@@ -741,16 +745,9 @@ async function stepStatusline(): Promise<void> {
   log.success("Statusline configured!");
 }
 
-function isMemoryMcpConfigured(): boolean {
-  const mcpPath = join(process.cwd(), ".mcp.json");
-  const config = readJson<Record<string, unknown>>(mcpPath);
-  if (!config) return false;
-  const servers = config.mcpServers as Record<string, unknown> | undefined;
-  return servers != null && "coding-friend-memory" in servers;
-}
-
 async function stepMemory(docsDir: string): Promise<void> {
-  if (isMemoryMcpConfigured()) {
+  const mcpStatus = getMemoryMcpStatus();
+  if (mcpStatus.configured) {
     printStepHeader(
       `CF Memory MCP ${chalk.green("[done]")}`,
       "Connects the memory system to Claude Code via MCP.",
@@ -804,22 +801,7 @@ async function stepMemory(docsDir: string): Promise<void> {
   }
 
   const memoryDir = join(process.cwd(), docsDir, "memory");
-  const mcpPath = join(process.cwd(), ".mcp.json");
-  const existing = readJson<Record<string, unknown>>(mcpPath) ?? {};
-  const servers =
-    (existing.mcpServers as Record<string, unknown> | undefined) ?? {};
-
-  writeJson(mcpPath, {
-    ...existing,
-    mcpServers: {
-      ...servers,
-      "coding-friend-memory": {
-        command: "node",
-        args: [serverPath, memoryDir],
-      },
-    },
-  });
-  log.success(`Added coding-friend-memory to .mcp.json`);
+  writeMemoryMcpEntry(serverPath, memoryDir);
 
   // Ask about autoCapture
   const autoCapture = await confirm({

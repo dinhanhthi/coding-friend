@@ -14,6 +14,8 @@ import {
   editMemoryAutoStart,
   editMemoryEmbedding,
   editMemoryDaemonTimeout,
+  getMemoryMcpStatus,
+  writeMemoryMcpEntry,
 } from "../lib/memory-prompts.js";
 import { readJson } from "../lib/json.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
@@ -49,7 +51,7 @@ function truncateError(text: string): string {
   return [...head, `  ... (${skipped} lines omitted) ...`, ...tail].join("\n");
 }
 
-function ensureBuilt(mcpDir: string): void {
+export function ensureMemoryBuilt(mcpDir: string): void {
   if (!existsSync(join(mcpDir, "node_modules"))) {
     log.step("Installing memory server dependencies (one-time setup)...");
     const result = runWithStderr("npm", ["install"], { cwd: mcpDir });
@@ -73,6 +75,59 @@ function ensureBuilt(mcpDir: string): void {
   }
 }
 
+export function printMemoryMcpConfig(
+  serverPath: string,
+  memoryDir: string,
+): void {
+  console.log(`Add this to your MCP client config:
+
+--- Claude Code (.mcp.json in project root) ---
+
+{
+  "mcpServers": {
+    "coding-friend-memory": {
+      "command": "node",
+      "args": ["${serverPath}", "${memoryDir}"]
+    }
+  }
+}
+
+--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---
+
+{
+  "mcpServers": {
+    "coding-friend-memory": {
+      "command": "node",
+      "args": ["${serverPath}", "${memoryDir}"]
+    }
+  }
+}
+
+--- Generic MCP client ---
+
+Server command: node ${serverPath} ${memoryDir}
+Transport: stdio
+
+--- Available tools ---
+
+  memory_store       Store a new memory
+  memory_search      Search memories (keyword match)
+  memory_retrieve    Get a specific memory by ID
+  memory_list        List memories with filtering
+  memory_update      Update existing memory
+  memory_delete      Delete a memory
+
+--- Resources ---
+
+  memory://index     Browse all memories
+  memory://stats     Storage statistics
+`);
+  log.warn(
+    "Note: The memory path is project-specific. Use local .mcp.json (per project), not global ~/.claude/.mcp.json.",
+  );
+  console.log();
+}
+
 function formatUptime(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;
   if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
@@ -83,7 +138,7 @@ export async function memoryStatusCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const docCount = countMdFiles(memoryDir);
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   // Dynamically import modules to check status
   const { isDaemonRunning, getDaemonInfo } = await import(
@@ -145,6 +200,22 @@ export async function memoryStatusCommand(): Promise<void> {
     log.info(`Embedding: ${chalk.cyan(model)} ${chalk.dim(`(${provider})`)}`);
   }
 
+  // MCP status
+  const mcpStatus = getMemoryMcpStatus();
+  if (mcpStatus.configured && mcpStatus.scope === "local") {
+    log.info(
+      `MCP: ${chalk.green("configured")} ${chalk.dim("(local .mcp.json)")}`,
+    );
+  } else if (mcpStatus.configured && mcpStatus.scope === "global") {
+    log.info(
+      `MCP: ${chalk.green("configured")} ${chalk.dim("(global ~/.claude/.mcp.json)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
+    );
+  } else {
+    log.info(
+      `MCP: ${chalk.dim("not configured")} ${chalk.dim('(run "cf memory init" or add manually via "cf memory mcp")')}`,
+    );
+  }
+
   const autoCapture = config.memory?.autoCapture ?? false;
   log.info(
     `Auto-capture: ${autoCapture ? chalk.green("on") : chalk.dim("off")}`,
@@ -178,7 +249,7 @@ export async function memorySearchCommand(query: string): Promise<void> {
   }
 
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   // Use the MarkdownBackend directly for CLI search
   // Pass query via env var to prevent command injection
@@ -228,7 +299,7 @@ export async function memoryListCommand(opts: {
   }
 
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   const result = run(
     "node",
@@ -272,7 +343,7 @@ export async function memoryListCommand(opts: {
 export async function memoryStartDaemonCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   const { isDaemonRunning, getDaemonInfo, spawnDaemon } = await import(
     join(mcpDir, "dist/daemon/process.js")
@@ -288,7 +359,8 @@ export async function memoryStartDaemonCommand(): Promise<void> {
 
   const config = loadConfig();
   const embedding = config.memory?.embedding;
-  const result = await spawnDaemon(memoryDir, embedding);
+  const idleTimeoutMs = config.memory?.daemon?.idleTimeout;
+  const result = await spawnDaemon(memoryDir, embedding, { idleTimeoutMs });
 
   if (result) {
     log.success(`Daemon started (PID ${result.pid})`);
@@ -301,7 +373,7 @@ export async function memoryStartDaemonCommand(): Promise<void> {
 
 export async function memoryStopDaemonCommand(): Promise<void> {
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   const { stopDaemon, isDaemonRunning } = await import(
     join(mcpDir, "dist/daemon/process.js")
@@ -325,7 +397,7 @@ export async function memoryStopDaemonCommand(): Promise<void> {
 export async function memoryRebuildCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   // Try direct rebuild for Tier 1 (SQLite)
   const { areSqliteDepsAvailable } = await import(
@@ -452,10 +524,47 @@ async function ensureSqliteDepsIfNeeded(mcpDir: string): Promise<boolean> {
   return true;
 }
 
+async function setupMemoryMcp(
+  memoryDir: string,
+  mcpDir: string,
+): Promise<void> {
+  const mcpStatus = getMemoryMcpStatus();
+  if (mcpStatus.configured && mcpStatus.scope === "local") {
+    log.info(`MCP: ${chalk.green("already configured")} in .mcp.json`);
+    return;
+  }
+
+  console.log();
+  log.step("MCP setup");
+  log.dim(
+    "The Memory MCP connects Claude Code to the memory system so skills can store and search memories.",
+  );
+
+  const addMcp = await confirm({
+    message: "Add coding-friend-memory to .mcp.json?",
+    default: true,
+  });
+
+  if (!addMcp) {
+    log.dim('Skipped. Run "cf memory mcp" anytime to get the config.');
+    return;
+  }
+
+  const serverPath = join(mcpDir, "dist", "index.js");
+  if (!existsSync(serverPath)) {
+    log.warn(
+      "cf-memory not built yet. Run `cf memory mcp` after building to get the config.",
+    );
+    return;
+  }
+
+  writeMemoryMcpEntry(serverPath, memoryDir);
+}
+
 export async function memoryInitCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   const dbExists = getDbPath(memoryDir) !== null;
 
@@ -536,6 +645,7 @@ export async function memoryInitCommand(): Promise<void> {
   const tier = config.memory?.tier ?? "auto";
 
   if (tier === "markdown") {
+    await setupMemoryMcp(memoryDir, mcpDir);
     log.success(
       'Memory initialized with Tier 3 (markdown). Run "cf memory status" to verify.',
     );
@@ -543,6 +653,7 @@ export async function memoryInitCommand(): Promise<void> {
   }
 
   if (tier === "lite") {
+    await setupMemoryMcp(memoryDir, mcpDir);
     log.success(
       'Memory initialized. Run "cf memory start-daemon" to enable Tier 2 search.',
     );
@@ -558,6 +669,7 @@ export async function memoryInitCommand(): Promise<void> {
     log.info(
       "No memory directory found. Memories will be indexed as they're created.",
     );
+    await setupMemoryMcp(memoryDir, mcpDir);
     log.success('Memory initialized. Run "cf memory status" to verify.');
     return;
   }
@@ -565,6 +677,7 @@ export async function memoryInitCommand(): Promise<void> {
   const docCount = countMdFiles(memoryDir);
   if (docCount === 0) {
     log.info("No existing memories to import.");
+    await setupMemoryMcp(memoryDir, mcpDir);
     log.success('Memory initialized. Run "cf memory status" to verify.');
     return;
   }
@@ -591,6 +704,9 @@ export async function memoryInitCommand(): Promise<void> {
   } finally {
     await backend.close();
   }
+
+  // Configure MCP
+  await setupMemoryMcp(memoryDir, mcpDir);
 
   console.log();
   log.success('Memory initialized! Run "cf memory status" to verify.');
@@ -730,7 +846,7 @@ function getProjectInfo(
 async function memoryListProjectsCommand(): Promise<void> {
   const baseDir = getProjectsBaseDir();
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   if (!existsSync(baseDir)) {
     log.info("No memory projects found.");
@@ -814,7 +930,7 @@ export async function memoryRmCommand(opts: {
 
   if (opts.prune) {
     const mcpDir = getLibPath("cf-memory");
-    ensureBuilt(mcpDir);
+    ensureMemoryBuilt(mcpDir);
 
     const dirs = readdirSync(baseDir, { withFileTypes: true })
       .filter((d) => d.isDirectory() && !d.name.startsWith("."))
@@ -960,40 +1076,8 @@ export async function memoryRmCommand(opts: {
 export async function memoryMcpCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
-  ensureBuilt(mcpDir);
+  ensureMemoryBuilt(mcpDir);
 
   const serverPath = join(mcpDir, "dist", "index.js");
-
-  console.log(`Add this to your MCP client config:
-
---- Claude Desktop / Claude Chat (claude_desktop_config.json) ---
-
-{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "node",
-      "args": ["${serverPath}", "${memoryDir}"]
-    }
-  }
-}
-
---- Generic MCP client ---
-
-Server command: node ${serverPath} ${memoryDir}
-Transport: stdio
-
---- Available tools ---
-
-  memory_store       Store a new memory
-  memory_search      Search memories (keyword match)
-  memory_retrieve    Get a specific memory by ID
-  memory_list        List memories with filtering
-  memory_update      Update existing memory
-  memory_delete      Delete a memory
-
---- Resources ---
-
-  memory://index     Browse all memories
-  memory://stats     Storage statistics
-`);
+  printMemoryMcpConfig(serverPath, memoryDir);
 }

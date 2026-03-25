@@ -189,6 +189,9 @@ export async function spawnDaemon(
     model?: string;
     ollamaUrl?: string;
   },
+  opts?: {
+    idleTimeoutMs?: number;
+  },
 ): Promise<{ pid: number } | null> {
   if (await isDaemonRunning()) return null;
 
@@ -201,6 +204,10 @@ export async function spawnDaemon(
   if (!fs.existsSync(entryPath)) return null;
 
   const args = [entryPath, docsDir];
+  // Pass idle timeout as positional arg (entry.js expects it as argv[3])
+  if (opts?.idleTimeoutMs !== undefined) {
+    args.push(String(opts.idleTimeoutMs));
+  }
   if (embeddingConfig?.provider)
     args.push(`--embedding-provider=${embeddingConfig.provider}`);
   if (embeddingConfig?.model)
