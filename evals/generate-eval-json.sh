@@ -40,15 +40,28 @@ MODEL_IDS='{"haiku":"claude-haiku-4-5-20251001","sonnet":"claude-sonnet-4-6","op
 
 # Options
 NO_BUDGET=false
+SELECTED_MODELS=()
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-budget) NO_BUDGET=true; shift ;;
-    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget]"; exit 0 ;;
+    --model) SELECTED_MODELS+=("$2"); shift 2 ;;
+    --help|-h) echo "Usage: ./generate-eval-json.sh [--no-budget] [--model <name>]..."; exit 0 ;;
     *) echo -e "${RED}❌ Unknown argument: $1${NC}" >&2; exit 1 ;;
   esac
 done
+
+# Override ALL_MODELS if specific models were selected
+if [[ ${#SELECTED_MODELS[@]} -gt 0 ]]; then
+  for m in "${SELECTED_MODELS[@]}"; do
+    if ! echo "$MODEL_LABELS" | jq -e ".\"$m\"" >/dev/null 2>&1; then
+      echo -e "${RED}❌ Unknown model: $m (valid: ${ALL_MODELS[*]})${NC}" >&2
+      exit 1
+    fi
+  done
+  ALL_MODELS=("${SELECTED_MODELS[@]}")
+fi
 
 die() {
   echo -e "${RED}❌ ERROR: $1${NC}" >&2
