@@ -94,6 +94,8 @@ Simple bug fixes, single-file changes, general coding questions, file navigation
 
 ## Reproducibility
 
+⚠️ Be careful, both `run-full-eval.sh` and `generate-eval-json.sh` takes a long time to run and also a lot of tokens to run.
+
 ```bash
 # Full eval (all waves, all models)
 cd evals && ./run-full-eval.sh
@@ -102,6 +104,7 @@ cd evals && ./run-full-eval.sh
 ./run-full-eval.sh --model sonnet
 
 # Run waves independently (recommended for long evals)
+# ⚠️ Don't run multiple waves in parallel
 ./run-full-eval.sh --model sonnet --wave 1 --skip-score
 ./run-full-eval.sh --model sonnet --wave 2 --skip-score --skip-setup
 ./run-full-eval.sh --model sonnet --wave 3 --skip-score --skip-setup

@@ -6,85 +6,31 @@
     "passThreshold": 2.0
   },
   "models": {
-    "haiku": {
-      "label": "Haiku",
-      "modelId": "claude-haiku-4-5-20251001",
-      "evalSessions": 0,
-      "skills": {
-        "cf-fix": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-review": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-tdd": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-security": {
-          "withCF": 0,
-          "withoutCF": 0
-        }
-      },
-      "average": {
-        "withCF": 0.00,
-        "withoutCF": 0.00
-      }
-    },
     "sonnet": {
       "label": "Sonnet",
       "modelId": "claude-sonnet-4-6",
       "evalSessions": 114,
       "skills": {
         "cf-fix": {
-          "withCF": 0,
-          "withoutCF": 0
+          "withCF": 2.90,
+          "withoutCF": 1.23
         },
         "cf-review": {
-          "withCF": 0,
-          "withoutCF": 0
+          "withCF": 2.67,
+          "withoutCF": 2.55
         },
         "cf-tdd": {
-          "withCF": 0,
-          "withoutCF": 0
+          "withCF": 2.15,
+          "withoutCF": 0.21
         },
         "cf-security": {
-          "withCF": 0,
-          "withoutCF": 0
+          "withCF": 2.90,
+          "withoutCF": 2.90
         }
       },
       "average": {
-        "withCF": 0.00,
-        "withoutCF": 0.00
-      }
-    },
-    "opus": {
-      "label": "Opus",
-      "modelId": "claude-opus-4-6",
-      "evalSessions": 0,
-      "skills": {
-        "cf-fix": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-review": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-tdd": {
-          "withCF": 0,
-          "withoutCF": 0
-        },
-        "cf-security": {
-          "withCF": 0,
-          "withoutCF": 0
-        }
-      },
-      "average": {
-        "withCF": 0.00,
-        "withoutCF": 0.00
+        "withCF": 2.65,
+        "withoutCF": 1.72
       }
     }
   },
@@ -109,7 +55,7 @@
   "stats": {
     "skillCount": "19+",
     "agentCount": "6",
-    "topDelta": "+0%",
-    "topDeltaLabel": ""
+    "topDelta": "+924%",
+    "topDeltaLabel": "TDD Quality"
   }
 }
