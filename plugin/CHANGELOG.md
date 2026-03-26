@@ -2,6 +2,14 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.15.2 (2026-03-26)
+
+- Fix `auto-approve` hook overriding Claude Code's `allowedTools` for MCP tools and built-in tools — unknown non-Bash tools now pass through to Claude Code's own permission system instead of LLM classification [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
+- Expand `ALWAYS_ALLOW_TOOLS` with 14 safe built-in Claude Code tools (`Skill`, `ToolSearch`, `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList`/`TaskOutput`/`TaskStop`, `SendMessage`, `EnterPlanMode`/`ExitPlanMode`, `ListMcpResourcesTool`, `ReadMcpResourceTool`, `AskUserQuestion`) [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
+- Auto-approve coding-friend plugin scripts with `fs.realpathSync()` validation — resolves symlinks and verifies script exists on disk [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
+- Restrict `cf` CLI auto-approval to known safe subcommands only — prevents collision with Cloud Foundry CLI and other `cf` binaries [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
+- Remove unused `/release` skill (already integrated into `cf-ship-custom`) [#a35d7aa](https://github.com/dinhanhthi/coding-friend/commit/a35d7aa)
+
 ## v0.15.1 (2026-03-26)
 
 - Fix `auto-approve.cjs` hook not executable — add missing execute permission [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
