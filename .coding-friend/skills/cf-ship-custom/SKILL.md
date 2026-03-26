@@ -70,13 +70,12 @@ After the commit is pushed, create git tags and push them to trigger CI/CD:
 # Create tags (one per released package)
 git tag <tag>
 
-# Push each tag individually in priority order (skip missing):
-# 1. cli-v* (first)
-# 2. v* (plugin — always last)
+# Push each tag individually — plugin tag MUST be pushed last.
+# Order: 1. cli-v* (first)  2. v* (plugin — always last)
 git push origin <tag>
 ```
 
-**IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually.
+**IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually. When both CLI and plugin tags exist, **always push the plugin tag (`v*`) last** — the plugin GitHub Release workflow updates the marketplace cache, which must include the latest CLI version.
 
 ### Step B8: Print summary
 
