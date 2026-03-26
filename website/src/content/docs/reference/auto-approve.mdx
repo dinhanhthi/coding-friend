@@ -1,0 +1,92 @@
+---
+title: "Auto-Approve"
+description: "Smart permission gate that auto-approves safe tool calls and blocks destructive ones."
+keywords: [auto-approve, permissions, hooks, security, PreToolUse]
+---
+
+## Overview
+
+The `auto-approve` hook is a PreToolUse hook that reduces permission prompts by classifying tool calls into three categories:
+
+- **Allow** — Safe, read-only operations are auto-approved without prompting
+- **Deny** — Destructive operations are blocked immediately
+- **Ask** — Ambiguous operations show the normal permission prompt
+
+This is **not** the same as `--dangerously-skip-permissions` (which skips all prompts) or `--enable-auto-mode` (which requires Team/Enterprise plans). Auto-approve provides a middle ground: smart classification available to all Coding Friend users.
+
+## Enable
+
+Auto-approve is **off by default**. Enable it in `.coding-friend/config.json`:
+
+```json
+{
+  "autoApprove": true
+}
+```
+
+## How It Works
+
+The hook uses a two-tier classification system:
+
+### Tier 1: Rule-Based (instant)
+
+Pattern matching runs first. It covers the vast majority of tool calls with zero latency.
+
+**Auto-approved (allow):**
+
+| Tool        | Condition                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Read`      | Any file (privacy-block handles sensitive files separately)                                                                                                                                                                                                                                                                           |
+| `Glob`      | Any pattern                                                                                                                                                                                                                                                                                                                           |
+| `Grep`      | Any search                                                                                                                                                                                                                                                                                                                            |
+| `TodoWrite` | Always safe                                                                                                                                                                                                                                                                                                                           |
+| `Agent`     | Always safe                                                                                                                                                                                                                                                                                                                           |
+| `Bash`      | Read-only commands: `ls`, `cat`, `head`, `tail`, `wc`, `file`, `which`, `echo`, `pwd`, `date`, `tree`, `git status`, `git log`, `git diff`, `git branch`, `git show`, `git remote`, `git tag`, `npm test`, `npx jest`, `npx vitest`, `npx tsc --noEmit` (only simple commands — pipes, redirects, and chains are never auto-approved) |
+
+**Blocked (deny):**
+
+| Tool   | Condition                                             |
+| ------ | ----------------------------------------------------- |
+| `Bash` | `rm -rf /` or `~` or `$HOME`                          |
+| `Bash` | `git push --force`, `git push -f`, `git reset --hard` |
+| `Bash` | `chmod 777`                                           |
+| `Bash` | `curl ... \| bash`, `wget ... \| sh`                  |
+| `Bash` | `mkfs`, `dd if=`, fork bombs, `> /dev/sda`            |
+| `Bash` | `shutdown`, `reboot`, `sudo rm`                       |
+| `Bash` | `kill -9`, `pkill`                                    |
+
+**User prompted (ask):**
+
+| Tool        | Condition                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `Write`     | Always — file creation needs user awareness                                                  |
+| `Edit`      | Always — file modification needs user awareness                                              |
+| `WebFetch`  | Always                                                                                       |
+| `WebSearch` | Always                                                                                       |
+| `Bash`      | `git push` (non-force), `npm install`, `npm publish`, `docker`, `curl`, `wget`, `ssh`, `scp` |
+
+### Tier 2: LLM Fallback (~2-5s)
+
+For Bash commands and unknown tools not matching any rule, the hook calls `claude --print -m sonnet` to classify the action. The LLM responds with one of: `SAFE`, `DANGEROUS`, or `NEEDS_REVIEW`.
+
+- Timeout: 10 seconds
+- If the LLM is unavailable, times out, or returns an unexpected response, the hook falls back to **ask** (fail-open)
+
+## Comparison
+
+| Feature              | Auto-Approve Hook          | `--enable-auto-mode` | `--dangerously-skip-permissions` |
+| -------------------- | -------------------------- | -------------------- | -------------------------------- |
+| Availability         | All Coding Friend users    | Team/Enterprise only | All users                        |
+| Safe operations      | Auto-approve               | Auto-approve         | Auto-approve                     |
+| Dangerous operations | Block                      | Block                | Auto-approve                     |
+| Ambiguous operations | Ask user                   | AI decides           | Auto-approve                     |
+| Classifier           | Rules + Sonnet             | Sonnet 4.6           | None                             |
+| Latency              | ~0ms (rules) / ~2-5s (LLM) | Small overhead       | None                             |
+| Customizable         | On/off toggle              | No                   | No                               |
+
+## Safety Design
+
+- **Fail-open**: Any error (malformed input, config issues, LLM failure) results in normal behavior — the permission prompt is shown as usual
+- **Deny patterns checked first**: Destructive commands are caught before any allow/ask matching
+- **Runs after security hooks**: `privacy-block` and `scout-block` execute first and can block before auto-approve runs
+- **No override of deny rules**: Even when auto-approve says "allow", deny rules in Claude Code settings still take precedence

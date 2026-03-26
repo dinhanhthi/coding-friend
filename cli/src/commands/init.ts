@@ -946,6 +946,13 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       ? chalk.green("configured")
       : chalk.yellow("not configured");
 
+    const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
+    const autoApproveVal = getMergedValue(
+      "autoApprove",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
     const allRules = getAllRules();
@@ -1007,6 +1014,12 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         description: "  Connect the memory system to Claude Code via MCP",
       },
       {
+        name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
+        value: "autoApprove",
+        description:
+          "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
+      },
+      {
         name: `Permissions (${permissionStatus} rules)`,
         value: "permissions",
         description:
@@ -1049,6 +1062,23 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       case "memory":
         await stepMemory(docsDir);
         break;
+      case "autoApprove": {
+        const autoApproveChoice = await confirm({
+          message:
+            "Enable auto-approve? (auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous)",
+          default: autoApproveVal ?? false,
+        });
+        const autoApproveTargetScope = await askScope();
+        if (autoApproveTargetScope !== "back") {
+          const targetPath =
+            autoApproveTargetScope === "global"
+              ? globalConfigPath()
+              : localConfigPath();
+          mergeJson(targetPath, { autoApprove: autoApproveChoice });
+          log.success(`Saved to ${targetPath}`);
+        }
+        break;
+      }
       case "permissions": {
         const learnCfg = (localCfg?.learn ?? globalCfg?.learn) as
           | CodingFriendConfig["learn"]
