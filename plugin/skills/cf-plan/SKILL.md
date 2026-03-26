@@ -33,16 +33,32 @@ Before exploring the codebase, check if project memory already has relevant cont
 2. If memory returns relevant results, use them as **starting context** for the exploration — this avoids redundant exploration
 3. If no memory is available or no relevant results, skip this step
 
-### Step 1: Clarify Before Exploring
+### Step 1: Discovery & Brainstorm
 
-BEFORE reading code or researching, identify what you don't know:
+BEFORE reading code or researching, run a focused discovery session. The goal is to deeply understand the problem, challenge assumptions, and ensure we build the right thing — not just build something.
+
+Use the `AskUserQuestion` tool for each interaction below. Do NOT batch all questions into one message — ask in focused rounds.
+
+**Round 1 — Understand the problem:**
 
 1. Read the request. List things that are **ambiguous or unclear**
 2. List **assumptions** you're about to make
-3. **ASK the user** to confirm or correct — do NOT proceed with unverified assumptions
-4. If the request involves external tools/APIs/libraries, ask the user which ones they prefer — do NOT guess
+3. Ask probing questions to fully understand the user's true objectives, constraints, and success criteria — don't just accept the surface-level request
+4. If the request involves external tools/APIs/libraries, ask which ones they prefer — do NOT guess
 
-Only proceed after the user confirms your understanding.
+**Round 2 — Challenge & explore alternatives:**
+
+5. Once you understand the goal, **challenge the initial approach**. Question whether the proposed solution is the best path. Often the best solution differs from what was originally envisioned
+6. Consider multiple angles: impact on end users, developer experience, operations, and business objectives
+7. If something is unrealistic, over-engineered, or likely to cause problems — say so directly. Be brutally honest about feasibility and trade-offs. Your job is to prevent costly mistakes
+8. Apply **YAGNI**, **KISS**, and **DRY** — push back on unnecessary complexity
+
+**Round 3 — Converge (if needed):**
+
+9. If the discovery rounds surfaced new alternatives or concerns, present 2-3 viable approaches with brief pros/cons and ask the user which direction to pursue
+10. If the original request was clear and straightforward, skip this round
+
+Only proceed after the user confirms your understanding and direction. If the user wants to skip brainstorming (e.g., "just plan it", "I already know what I want"), respect that and move on.
 
 ### Step 2: Explore Codebase (via cf-explorer agent)
 
@@ -181,7 +197,7 @@ After the plan is saved (or after implementation if the user chose to implement)
 ## Rules
 
 - **Plan first, implement second** — never start coding before the plan is saved and the user approves.
-- **Ask first, plan second** — never proceed with unclear requirements.
+- **Brainstorm first, plan second** — question everything, challenge assumptions, explore alternatives before committing to an approach. Use `AskUserQuestion` to probe — never assume.
 - **Delegate exploration** — always use the cf-explorer agent for codebase exploration, then the cf-planner agent for approach brainstorming. Never do heavy codebase reading in the main conversation.
 - **Delegate implementation** — use the cf-implementer agent for task execution. If the agent fails after a reasonable attempt, fall back to implementing inline following TDD discipline (load cf-tdd).
 - When uncertain, say so. State your confidence level and ask.
