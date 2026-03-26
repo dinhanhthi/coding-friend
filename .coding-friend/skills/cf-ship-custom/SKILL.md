@@ -1,6 +1,6 @@
 ## Before
 
-This is a **version bump + ship** operation. Run these steps BEFORE the standard cf-ship workflow.
+This is a **version bump + ship + release** operation. Run these steps BEFORE the standard cf-ship workflow.
 
 **Args** (optional): `[patch|minor|major] [plugin|cli]`
 
@@ -26,7 +26,7 @@ bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <new_version
 
 ### Step B4: Update changelogs
 
-For each affected package, collect commits since its last tag and write entries under `## v{version} (unpublished)`. Use backticks for inline code references (skill names like `cf-plan`, agent names like `cf-code-reviewer`, commands like `/cf-commit`, file names, config keys, CLI commands, technical identifiers). Append commit links `[#hash](repo/commit/hash)`. Deduplicate against existing entries.
+For each affected package, collect commits since its last tag and write entries under `## v{version} (TODAY'S DATE)` — e.g. `## v0.15.0 (2026-03-26)`. Use `date +%Y-%m-%d` to get today's date. Use backticks for inline code references (skill names like `cf-plan`, agent names like `cf-code-reviewer`, commands like `/cf-commit`, file names, config keys, CLI commands, technical identifiers). Append commit links `[#hash](repo/commit/hash)`. Deduplicate against existing entries.
 
 **CRITICAL — Net changes only:** Changelog entries must reflect the **net difference vs the previous released version**, NOT individual commits. Before writing entries, consolidate all commits for the version and determine what actually changed end-to-end:
 
@@ -51,30 +51,56 @@ If source files changed, update corresponding website docs:
 - `cli/src/commands/{name}.ts` → `website/src/content/docs/cli/cf-{name}.mdx`
 - `plugin/hooks/*.sh` → `website/src/content/docs/reference/hooks.mdx`
 
-### Step B6: Print summary table
+### Step B6: Ship (commit + push)
 
-```
-| Package | Old | New | Changelog            |
-|---------|-----|-----|----------------------|
-| plugin  | ... | ... | v... (unpublished)   |
-```
-
-Then proceed with the **standard cf-ship workflow** (verify → commit → push → PR). Use `bump <packages> to <versions>` as the commit hint.
+Proceed with the **standard cf-ship workflow** (verify → commit → push). Use `bump <packages> to <versions>` as the commit hint.
 
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
-**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs. Analyze, decide, and execute autonomously.
+### Step B7: Create tags and push
+
+After the commit is pushed, create git tags and push them to trigger CI/CD:
+
+**Tag patterns:**
+
+- Plugin: `v{version}` (e.g. `v0.15.0`) → GitHub Release
+- CLI: `cli-v{version}` (e.g. `cli-v1.24.0`) → npm publish + GitHub Release
+
+```bash
+# Create tags (one per released package)
+git tag <tag>
+
+# Push each tag individually in priority order (skip missing):
+# 1. cli-v* (first)
+# 2. v* (plugin — always last)
+git push origin <tag>
+```
+
+**IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually.
+
+### Step B8: Print summary
+
+```
+Released:
+  Plugin v0.15.0   → tag v0.15.0 pushed → GitHub Release will be created
+  CLI v1.24.0      → tag cli-v1.24.0 pushed → npm publish + GitHub Release
+
+Check CI/CD status:
+  https://github.com/dinhanhthi/coding-friend/actions
+```
+
+**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs, not for tagging. Analyze, decide, and execute autonomously.
 
 ## Rules
 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
 - NEVER bump if file version > tag version — only update changelog.
 - ALWAYS keep `plugin/.claude-plugin/plugin.json` + root `package.json` in sync.
-- Do NOT create git tags — that happens during `/release`.
 - NEVER add duplicate changelog entries. One feature = one bullet. Entries must reflect net changes vs the previous released version — do NOT list intermediate additions/removals that cancel each other out within the same version.
-- ALWAYS mark unreleased sections `(unpublished)`.
-- After ship: remind user to run `/release` to publish.
+- Changelog sections use today's date directly — NEVER use `(unpublished)`.
+- If a tag already exists, do NOT force-create tags — error and stop.
+- NEVER push tags without user confirmation (ask once before pushing all tags).
 
 ## After
 
-**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs. Analyze, decide, and execute autonomously.
+**NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs, not for tagging. Analyze, decide, and execute autonomously.
