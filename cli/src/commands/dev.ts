@@ -15,7 +15,7 @@ import {
   pluginCachePath,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import {
   isPluginInstalled,
   isMarketplaceRegistered,
@@ -91,11 +91,13 @@ export async function devOnCommand(path?: string): Promise<void> {
   }
 
   const version = getLocalPluginVersion(localPath);
-  const versionLabel = version ? ` ${chalk.dim(`(v${version})`)}` : "";
+  const versionLabel = version ? ` (v${version})` : "";
 
-  console.log(
-    `\n=== ${chalk.green("Switching to local dev mode")}${versionLabel} ===\n`,
-  );
+  console.log();
+  printBanner(`Switching to local dev mode${versionLabel}`, {
+    color: chalk.green,
+  });
+  console.log();
   log.info(`Local path: ${chalk.cyan(localPath)}`);
 
   // Step 1: Uninstall remote plugin (if installed)
@@ -171,9 +173,11 @@ export async function devOffCommand(): Promise<void> {
 
   if (!ensureClaude()) return;
 
-  console.log(
-    `\n=== ${chalk.yellow("Switching back to remote marketplace")} ===\n`,
-  );
+  console.log();
+  printBanner("Switching back to remote marketplace", {
+    color: chalk.yellow,
+  });
+  console.log();
 
   // Step 1: Uninstall local plugin
   if (isPluginInstalled()) {
@@ -341,8 +345,10 @@ async function devReinstall(
   const localPath = path ?? state?.localPath;
 
   const version = localPath ? getLocalPluginVersion(localPath) : null;
-  const versionLabel = version ? ` ${chalk.dim(`(v${version})`)}` : "";
-  console.log(`\n=== ${chalk.cyan(label)}${versionLabel} ===\n`);
+  const bannerTitle = version ? `${label} (v${version})` : label;
+  console.log();
+  printBanner(bannerTitle, { color: chalk.cyan });
+  console.log();
 
   // Turn off first (skip if already off)
   if (state) {

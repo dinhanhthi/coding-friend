@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { resolveDocsDir } from "../lib/config.js";
 import { run, streamExec } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 
 function countMdFiles(dir: string): number {
@@ -47,7 +47,7 @@ export async function hostCommand(
 
   const catCount = countCategories(docsDir);
 
-  console.log("=== 🌿 Coding Friend Host 🌿 ===");
+  printBanner("✨ Coding Friend Host ✨");
   log.info(`Docs folder: ${docsDir}`);
   log.info(`Found: ${docCount} docs in ${catCount} categories`);
   console.log();
