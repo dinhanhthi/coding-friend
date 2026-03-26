@@ -10,11 +10,30 @@ export const log = {
   dim: (msg: string) => console.log(chalk.dim(msg)),
 };
 
+/** Count the visual width of a string in terminal columns. */
+function visualWidth(str: string): number {
+  // Match emoji sequences (including modifiers, ZWJ sequences, keycap, flags)
+  const emojiRe =
+    /\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3/gu;
+  let width = 0;
+  let lastIndex = 0;
+  for (const m of str.matchAll(emojiRe)) {
+    // Characters before this emoji: 1 column each
+    width += m.index! - lastIndex;
+    // Each emoji takes 2 terminal columns
+    width += 2;
+    lastIndex = m.index! + m[0].length;
+  }
+  // Remaining characters after last emoji
+  width += str.length - lastIndex;
+  return width;
+}
+
 /**
- * Print a boxed banner with green border.
+ * Print a boxed banner with colored border.
  * Example output:
  *   ┌──────────────────────────────────┐
- *   │   ✨ Coding Friend Update ✨     │
+ *   │   ✨ Coding Friend Update ✨    │
  *   └──────────────────────────────────┘
  */
 export function printBanner(
@@ -25,10 +44,10 @@ export function printBanner(
   const padding = 3;
   const pad = " ".repeat(padding);
   const inner = `${pad}${title}${pad}`;
-  const width = inner.length;
-  const top = `┌${"─".repeat(width)}┐`;
+  const vw = visualWidth(inner);
+  const top = `┌${"─".repeat(vw)}┐`;
   const mid = `│${inner}│`;
-  const bot = `└${"─".repeat(width)}┘`;
+  const bot = `└${"─".repeat(vw)}┘`;
   console.log(colorFn(top));
   console.log(colorFn(mid));
   console.log(colorFn(bot));
