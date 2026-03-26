@@ -3,8 +3,11 @@
  * PreToolUse hook: Auto-approve safe tool calls, prompt for risky ones.
  *
  * Two-tier classification:
- *   Tier 1 (rules)  — pattern-based allow/deny/ask/unknown
- *   Tier 2 (LLM)    — `claude --print -m sonnet` fallback for unknowns
+ *   Tier 1 (rules)  — pattern-based allow/deny/ask/passthrough/unknown
+ *   Tier 2 (LLM)    — `claude --print -m sonnet` fallback for unknown Bash commands
+ *
+ * Unrecognized non-Bash tools (MCP, etc.) get "passthrough" — the hook outputs {}
+ * and lets Claude Code's own permission system (allowedTools) handle them.
  *
  * Integration contract:
  *   stdin  – JSON with tool_name, tool_input
@@ -21,6 +24,7 @@
 "use strict";
 
 const fs = require("fs");
+const path = require("path");
 const cp = require("child_process");
 
 // ---------------------------------------------------------------------------
@@ -34,6 +38,21 @@ const ALWAYS_ALLOW_TOOLS = new Set([
   "Grep",
   "TodoWrite",
   "Agent",
+  // Claude Code built-in tools — safe, no side effects
+  "Skill",
+  "ToolSearch",
+  "TaskCreate",
+  "TaskUpdate",
+  "TaskGet",
+  "TaskList",
+  "TaskOutput",
+  "TaskStop",
+  "SendMessage",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "ListMcpResourcesTool",
+  "ReadMcpResourceTool",
+  "AskUserQuestion",
 ]);
 
 /** Tools that always need user confirmation */
@@ -115,6 +134,87 @@ const BASH_ASK_PREFIXES = [
 ];
 
 /**
+ * Plugin root directory — derived from this script's location.
+ * In production: ~/.claude/plugins/cache/coding-friend-marketplace/coding-friend/<version>
+ * In development: /path/to/coding-friend/plugin
+ */
+const PLUGIN_ROOT = path.resolve(__dirname, "..");
+
+/**
+ * Extract the script path from a bash command string (after "bash ").
+ * Handles unquoted, double-quoted, and single-quoted paths.
+ * @param {string} afterBash — the part after "bash "
+ * @returns {string|null}
+ */
+function extractBashScriptPath(afterBash) {
+  const s = afterBash.trimStart();
+  if (s.startsWith('"')) {
+    const end = s.indexOf('"', 1);
+    return end > 0 ? s.slice(1, end) : null;
+  }
+  if (s.startsWith("'")) {
+    const end = s.indexOf("'", 1);
+    return end > 0 ? s.slice(1, end) : null;
+  }
+  return s.split(/\s/)[0] || null;
+}
+
+/**
+ * Known safe `cf` CLI subcommands (coding-friend-cli).
+ * Only these are auto-approved — avoids collision with other `cf` binaries
+ * (e.g. Cloud Foundry CLI which also uses `cf push`, `cf delete`, etc.).
+ */
+const CF_SAFE_SUBCOMMANDS = new Set([
+  "install",
+  "uninstall",
+  "disable",
+  "enable",
+  "init",
+  "config",
+  "host",
+  "mcp",
+  "permission",
+  "statusline",
+  "update",
+  "status",
+  "session",
+  "memory",
+  "dev",
+]);
+
+/**
+ * Check if a Bash command is a coding-friend related command.
+ * Only approves:
+ *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
+ *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
+ * Must be a simple command (no shell operators) — caller checks this.
+ */
+function isCodingFriendBash(trimmed) {
+  // cf CLI commands — only known safe subcommands
+  if (trimmed.startsWith("cf ") || trimmed.startsWith("cf\t")) {
+    const afterCf = trimmed.slice(trimmed.indexOf("f") + 1).trim();
+    const subcommand = afterCf.split(/\s/)[0];
+    return CF_SAFE_SUBCOMMANDS.has(subcommand);
+  }
+
+  // Only allow bash scripts from the plugin's own directory
+  if (!(trimmed.startsWith("bash ") || trimmed.startsWith("bash\t")))
+    return false;
+
+  const afterBash = trimmed.slice(trimmed.indexOf(" ") + 1);
+  const scriptPath = extractBashScriptPath(afterBash);
+  if (!scriptPath) return false;
+
+  // Resolve symlinks and verify the file exists on disk (fail-closed)
+  try {
+    const resolved = fs.realpathSync(scriptPath);
+    return resolved.startsWith(PLUGIN_ROOT + path.sep);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if a trimmed command matches a prefix.
  * Matches: exact, prefix + space, prefix + tab.
  */
@@ -129,7 +229,7 @@ function matchesPrefix(trimmed, prefix) {
  * Classify a tool call using rules only.
  * @param {string} toolName
  * @param {object} toolInput
- * @returns {"allow"|"deny"|"ask"|"unknown"}
+ * @returns {"allow"|"deny"|"ask"|"unknown"|"passthrough"}
  */
 function classifyByRules(toolName, toolInput) {
   // Always-allow tools
@@ -157,6 +257,9 @@ function classifyByRules(toolName, toolInput) {
       for (const prefix of BASH_ALLOW_PREFIXES) {
         if (matchesPrefix(trimmed, prefix)) return "allow";
       }
+
+      // Coding-friend related commands (scripts, cf CLI) — safe when simple
+      if (isCodingFriendBash(trimmed)) return "allow";
     }
 
     // Check ask prefixes
@@ -168,8 +271,9 @@ function classifyByRules(toolName, toolInput) {
     return "unknown";
   }
 
-  // Unrecognized tool → unknown
-  return "unknown";
+  // Unrecognized non-Bash tool → passthrough (let Claude Code handle it)
+  // This ensures MCP tools and other tools already in allowedTools are not blocked.
+  return "passthrough";
 }
 
 // ---------------------------------------------------------------------------
@@ -221,7 +325,14 @@ Respond with exactly one word: SAFE, DANGEROUS, or NEEDS_REVIEW.`;
 // ---------------------------------------------------------------------------
 // Exports for testing
 // ---------------------------------------------------------------------------
-module.exports = { classifyByRules, classifyWithLLM, SHELL_OPERATOR_PATTERN };
+module.exports = {
+  classifyByRules,
+  classifyWithLLM,
+  isCodingFriendBash,
+  extractBashScriptPath,
+  SHELL_OPERATOR_PATTERN,
+  PLUGIN_ROOT,
+};
 
 // ---------------------------------------------------------------------------
 // Main — only runs when executed directly
@@ -294,7 +405,14 @@ function main() {
     // Tier 1: Rule-based
     let decision = classifyByRules(toolName, toolInput);
 
-    // Tier 2: LLM fallback for unknowns
+    // Passthrough: tool not recognized — let Claude Code's own permission system handle it.
+    // This avoids overriding allowedTools for MCP tools and other pre-approved tools.
+    if (decision === "passthrough") {
+      process.stdout.write("{}");
+      process.exit(0);
+    }
+
+    // Tier 2: LLM fallback for unknown Bash commands only
     if (decision === "unknown") {
       decision = classifyWithLLM(toolName, toolInput);
     }
