@@ -148,9 +148,9 @@ You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/sk
 
 After the 4-layer review, `/cf-review` automatically invokes Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) — a dedicated security audit skill from Anthropic. This means every `/cf-review` run gets **two layers of security analysis**:
 
-| Pass                   | Source                                                                                    | Focus                                                            |
-| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **Layer 3**            | Coding Friend's 4-layer review                                                           | Injection, auth bypasses, secrets, data flow — confidence-scored |
+| Pass                   | Source                                                                                   | Focus                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Layer 3**            | Coding Friend's 4-layer review                                                           | Injection, auth bypasses, secrets, data flow — confidence-scored       |
 | **`/security-review`** | [Anthropic's security-review](https://github.com/anthropics/claude-code-security-review) | Multi-phase vulnerability hunting with strict false-positive filtering |
 
 Findings from both passes are **merged and deduplicated** — when both flag the same issue, the higher-severity entry is kept. This gives you comprehensive security coverage without running a separate command.

