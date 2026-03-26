@@ -242,8 +242,11 @@ function main() {
         try {
           const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
           if (config.autoApprove === true) enabled = true;
-        } catch {
+        } catch (err) {
           // Malformed config — fail open
+          process.stderr.write(
+            `[auto-approve] config parse error: ${err && err.message ? err.message : err}\n`,
+          );
         }
       }
       if (!enabled) {
@@ -256,7 +259,10 @@ function main() {
     let input = "";
     try {
       input = fs.readFileSync(0, "utf8");
-    } catch {
+    } catch (err) {
+      process.stderr.write(
+        `[auto-approve] stdin read error: ${err && err.message ? err.message : err}\n`,
+      );
       process.stdout.write("{}");
       process.exit(0);
     }
@@ -269,7 +275,10 @@ function main() {
     let parsed;
     try {
       parsed = JSON.parse(input);
-    } catch {
+    } catch (err) {
+      process.stderr.write(
+        `[auto-approve] JSON parse error: ${err && err.message ? err.message : err}\n`,
+      );
       process.stdout.write("{}");
       process.exit(0);
     }
@@ -307,8 +316,11 @@ function main() {
     } else {
       process.exit(0);
     }
-  } catch {
-    // Unexpected error — fail open
+  } catch (err) {
+    // Unexpected error — fail open, but log to stderr for debugging
+    process.stderr.write(
+      `[auto-approve] unexpected error: ${err && err.message ? err.message : err}\n`,
+    );
     process.stdout.write("{}");
     process.exit(0);
   }
