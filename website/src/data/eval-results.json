@@ -12,7 +12,7 @@
       "evalSessions": 129,
       "skills": {
         "cf-fix": {
-          "withCF": 2.90,
+          "withCF": 2.9,
           "withoutCF": 1.23
         },
         "cf-review": {
@@ -76,7 +76,7 @@
         "repos": {
           "bench-cli": {
             "withCF": {
-              "avgScore": 2.80,
+              "avgScore": 2.8,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 3,
@@ -98,7 +98,7 @@
           },
           "bench-webapp": {
             "withCF": {
-              "avgScore": 3.00,
+              "avgScore": 3.0,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 3,
@@ -108,7 +108,7 @@
               }
             },
             "withoutCF": {
-              "avgScore": 0.90,
+              "avgScore": 0.9,
               "runCount": 3,
               "criteria": {
                 "root_cause_identification": 1.67,
@@ -212,7 +212,7 @@
         "repos": {
           "bench-cli": {
             "withCF": {
-              "avgScore": 2.00,
+              "avgScore": 2.0,
               "runCount": 3,
               "criteria": {
                 "red_before_green": 2.33,
@@ -234,7 +234,7 @@
           },
           "bench-library": {
             "withCF": {
-              "avgScore": 2.30,
+              "avgScore": 2.3,
               "runCount": 3,
               "criteria": {
                 "red_before_green": 3,

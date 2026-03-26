@@ -209,7 +209,11 @@ function printSetupStatus(
     },
     { label: "Shell completion", done: hasShellCompletion(), skipped: false },
     { label: "Statusline", done: isStatuslineConfigured(), skipped: false },
-    { label: "CF Memory MCP", done: isMemoryMcpConfigured(), skipped: false },
+    {
+      label: "CF Memory MCP",
+      done: getMemoryMcpStatus().configured,
+      skipped: false,
+    },
     {
       label: `Permissions (${configuredRuleCount}/${allRules.length} rules)`,
       done: configuredRuleCount > 0,
@@ -954,7 +958,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       ? chalk.green("configured")
       : chalk.yellow("not configured");
 
-    const memoryStatus = isMemoryMcpConfigured()
+    const memoryStatus = getMemoryMcpStatus().configured
       ? chalk.green("configured")
       : chalk.yellow("not configured");
 
