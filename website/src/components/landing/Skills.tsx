@@ -12,11 +12,16 @@ interface Skill {
 
 const slashCommands: Skill[] = [
   {
-    command: "/cf-plan",
-    title: "Plan",
-    description:
-      "Brainstorm and create implementation plans with structured exploration",
+    command: "/cf-ask",
+    title: "Ask",
+    description: "Quick Q&A about your codebase with persistent memory",
     tier: "medium",
+  },
+  {
+    command: "/cf-commit",
+    title: "Commit",
+    description: "Smart conventional commits with diff analysis",
+    tier: "low",
   },
   {
     command: "/cf-fix",
@@ -26,9 +31,16 @@ const slashCommands: Skill[] = [
     tier: "medium",
   },
   {
-    command: "/cf-ask",
-    title: "Ask",
-    description: "Quick Q&A about your codebase with persistent memory",
+    command: "/cf-help",
+    title: "Help",
+    description:
+      "Answer questions about Coding Friend — skills, agents, workflows",
+    tier: "medium",
+  },
+  {
+    command: "/cf-learn",
+    title: "Learn",
+    description: "Extract human learning docs from vibe coding sessions",
     tier: "medium",
   },
   {
@@ -38,9 +50,34 @@ const slashCommands: Skill[] = [
     tier: "medium",
   },
   {
+    command: "/cf-plan",
+    title: "Plan",
+    description:
+      "Brainstorm and create implementation plans with structured exploration",
+    tier: "medium",
+  },
+  {
+    command: "/cf-remember",
+    title: "Remember",
+    description: "Capture project knowledge for AI memory across sessions",
+    tier: "medium",
+  },
+  {
+    command: "/cf-research",
+    title: "Research",
+    description: "In-depth research with web search and parallel subagents",
+    tier: "medium",
+  },
+  {
     command: "/cf-review",
     title: "Review",
     description: "Multi-layer code review in a forked subagent",
+    tier: "medium",
+  },
+  {
+    command: "/cf-review-in",
+    title: "Review In",
+    description: "Collect and act on review results from an external AI agent",
     tier: "medium",
   },
   {
@@ -51,47 +88,11 @@ const slashCommands: Skill[] = [
     tier: "low",
   },
   {
-    command: "/cf-review-in",
-    title: "Review In",
-    description: "Collect and act on review results from an external AI agent",
-    tier: "medium",
-  },
-  {
-    command: "/cf-commit",
-    title: "Commit",
-    description: "Smart conventional commits with diff analysis",
-    tier: "low",
-  },
-  {
-    command: "/cf-ship",
-    title: "Ship",
-    description: "Verify, commit, push, and create PR in one command",
-    tier: "low",
-  },
-  {
     command: "/cf-scan",
     title: "Scan",
     description:
       "Scan project and bootstrap memory with architecture and conventions",
     tier: "high",
-  },
-  {
-    command: "/cf-remember",
-    title: "Remember",
-    description: "Capture project knowledge for AI memory across sessions",
-    tier: "medium",
-  },
-  {
-    command: "/cf-learn",
-    title: "Learn",
-    description: "Extract human learning docs from vibe coding sessions",
-    tier: "medium",
-  },
-  {
-    command: "/cf-research",
-    title: "Research",
-    description: "In-depth research with web search and parallel subagents",
-    tier: "medium",
   },
   {
     command: "/cf-session",
@@ -101,20 +102,19 @@ const slashCommands: Skill[] = [
     tier: "medium",
   },
   {
-    command: "/cf-help",
-    title: "Help",
-    description:
-      "Answer questions about Coding Friend — skills, agents, workflows",
-    tier: "medium",
+    command: "/cf-ship",
+    title: "Ship",
+    description: "Verify, commit, push, and create PR in one command",
+    tier: "low",
   },
 ];
 
 const autoSkills: Skill[] = [
   {
-    command: "cf-tdd",
-    title: "TDD Workflow",
-    description: "Enforces test-driven development: RED, GREEN, REFACTOR",
-    tier: "medium",
+    command: "cf-auto-review",
+    title: "Code Review",
+    description: "Multi-layer review checklist automatically applied",
+    tier: "low",
   },
   {
     command: "cf-sys-debug",
@@ -123,10 +123,10 @@ const autoSkills: Skill[] = [
     tier: "medium",
   },
   {
-    command: "cf-auto-review",
-    title: "Code Review",
-    description: "Multi-layer review checklist automatically applied",
-    tier: "low",
+    command: "cf-tdd",
+    title: "TDD Workflow",
+    description: "Enforces test-driven development: RED, GREEN, REFACTOR",
+    tier: "medium",
   },
   {
     command: "cf-verification",

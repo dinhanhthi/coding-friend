@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-26T20:45:56.392Z",
+  "generatedAt": "2026-03-26T22:39:23.293Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -58,8 +58,8 @@
       "type": "slash"
     },
     "cf-plan": {
-      "tokens": 2312,
-      "tier": "medium",
+      "tokens": 3572,
+      "tier": "high",
       "type": "slash"
     },
     "cf-remember": {

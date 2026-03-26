@@ -14,15 +14,6 @@ interface Agent {
 
 const agents: Agent[] = [
   {
-    name: "cf-explorer",
-    title: "Explorer",
-    description:
-      "Maps project structure, searches files, reads code, and returns structured reports with findings and dependencies.",
-    model: "Haiku",
-    tier: "low",
-    usedBy: ["/cf-plan", "/cf-ask", "/cf-fix"],
-  },
-  {
     name: "cf-code-reviewer",
     title: "Code Reviewer",
     description:
@@ -30,6 +21,15 @@ const agents: Agent[] = [
     model: "Opus",
     tier: "low",
     usedBy: ["/cf-review", "/cf-ship"],
+  },
+  {
+    name: "cf-explorer",
+    title: "Explorer",
+    description:
+      "Maps project structure, searches files, reads code, and returns structured reports with findings and dependencies.",
+    model: "Haiku",
+    tier: "low",
+    usedBy: ["/cf-plan", "/cf-ask", "/cf-fix"],
   },
   {
     name: "cf-implementer",
