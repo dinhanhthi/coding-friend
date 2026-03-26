@@ -37,6 +37,15 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scout-block.cjs"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs"
+          }
+        ]
       }
     ],
     "PostToolUse": [

@@ -34,6 +34,7 @@
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
+- ✨ Smart auto-approve — two-tier hook (rules + Sonnet LLM) auto-approves safe tool calls, blocks destructive ones, and only prompts when it matters. Available to all users, opt-in via config
 - Prompt injection defense — layered content isolation protects against malicious instructions
 - CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
 - ✨ Customizable Claude Code statusline with account info & API rate limit tracking
@@ -43,7 +44,7 @@
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   ```
 
-For full details, visit the **[official documentation](https://cf.dinhanhthi.com)**.
+For full details, visit the **[official website](https://cf.dinhanhthi.com/#features)**.
 
 ## How it works
 

@@ -119,6 +119,22 @@ const ResearchIcon = () => (
   </svg>
 );
 
+const AutoApproveIcon = () => (
+  <svg
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.5}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+    />
+  </svg>
+);
+
 const CrossAgentIcon = () => (
   <svg
     className="h-5 w-5"
@@ -970,6 +986,125 @@ function CapsuleBorderProgress({
 }
 
 /* ────────────────────────────────────────────────────────────
+   AUTO-APPROVE CONTENT
+   ──────────────────────────────────────────────────────────── */
+
+function AutoApproveContent() {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-base leading-relaxed text-slate-400">
+        Tired of approving every{" "}
+        <code className="text-slate-300">git status</code> and{" "}
+        <code className="text-slate-300">ls</code>? The{" "}
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/reference/auto-approve/"
+        >
+          auto-approve hook
+        </Link>{" "}
+        classifies tool calls into{" "}
+        <strong className="text-cyan-300">allow</strong>,{" "}
+        <strong className="text-rose-300">deny</strong>, or{" "}
+        <strong className="text-amber-300">ask</strong> — so you only get
+        prompted when it matters.
+      </p>
+
+      {/* Two-tier diagram */}
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          {
+            tier: "Tier 1",
+            name: "Rule-Based",
+            desc: "Instant pattern matching — read-only commands auto-approved, destructive ones blocked",
+            color: "text-cyan-400",
+            border: "border-cyan-500/30",
+            speed: "~0ms",
+          },
+          {
+            tier: "Tier 2",
+            name: "LLM Fallback",
+            desc: "Sonnet classifies ambiguous commands — only triggered when rules can't decide",
+            color: "text-violet-400",
+            border: "border-violet-500/30",
+            speed: "~2-5s",
+          },
+        ].map((t) => (
+          <div
+            key={t.tier}
+            className={`rounded-xl border ${t.border} bg-navy-950/60 p-4 text-center`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-mono text-xs font-medium text-slate-500 uppercase">
+                {t.tier}
+              </span>
+              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                {t.speed}
+              </span>
+            </div>
+            <p className={`mt-1 text-base font-semibold ${t.color}`}>
+              {t.name}
+            </p>
+            <p className="mt-2 text-sm text-slate-400">{t.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Decision examples */}
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          {
+            decision: "Allow",
+            examples: ["git status", "ls -la", "npm test", "Read files"],
+            color: "text-cyan-400",
+            border: "border-cyan-500/20",
+            bg: "bg-cyan-500/5",
+          },
+          {
+            decision: "Deny",
+            examples: ["rm -rf /", "git push --force", "curl | bash"],
+            color: "text-rose-400",
+            border: "border-rose-500/20",
+            bg: "bg-rose-500/5",
+          },
+          {
+            decision: "Ask",
+            examples: ["Write files", "git push", "npm install"],
+            color: "text-amber-400",
+            border: "border-amber-500/20",
+            bg: "bg-amber-500/5",
+          },
+        ].map((d) => (
+          <div
+            key={d.decision}
+            className={`rounded-xl border ${d.border} ${d.bg} p-3`}
+          >
+            <p className={`text-sm font-semibold ${d.color}`}>{d.decision}</p>
+            <ul className="mt-2 space-y-1">
+              {d.examples.map((ex) => (
+                <li key={ex} className="text-sm text-slate-400">
+                  <code className="text-xs text-slate-300">{ex}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        {["Opt-in", "Fail-open", "Shell-safe", "All users"].map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-sm text-cyan-300"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
    CROSS-AGENT REVIEW CONTENT
    ──────────────────────────────────────────────────────────── */
 
@@ -1148,6 +1283,13 @@ const tabs: FeatureTab[] = [
     color: "rose",
     icon: <SecurityIcon />,
     content: <SecurityContent />,
+  },
+  {
+    id: "auto-approve",
+    label: "Auto-Approve",
+    color: "cyan",
+    icon: <AutoApproveIcon />,
+    content: <AutoApproveContent />,
   },
   {
     id: "cross-agent",
