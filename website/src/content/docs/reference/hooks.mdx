@@ -1,7 +1,7 @@
 ---
 title: "Hooks"
-description: "7 lifecycle hooks that run automatically during your session."
-keywords: [hooks, lifecycle, automation, pre-commit, post-commit]
+description: "8 lifecycle hooks that run automatically during your session."
+keywords: [hooks, lifecycle, automation, pre-commit, post-commit, auto-approve]
 ---
 
 ## Overview
@@ -17,6 +17,7 @@ Hooks are lifecycle functions that execute automatically at specific points in y
 | `privacy-block`      | PreToolUse       | Block access to sensitive files (.env, .pem, SSH keys)                  |
 | `scout-block`        | PreToolUse       | Block access to files matching `.coding-friend/ignore` patterns         |
 | `statusline`         | SessionStart     | Configure editor statusline with project info, account, and rate limits |
+| `auto-approve`       | PreToolUse       | Auto-approve safe tool calls, block destructive ones (opt-in)           |
 | `context-tracker`    | PostToolUse      | Track tool usage and context for performance analysis                   |
 
 ## How Hooks Work
@@ -79,3 +80,7 @@ All components default to enabled. The `rate_limit` component caches API respons
 ## Security Hooks
 
 [`privacy-block`](/docs/configuration/privacy/) and `scout-block` form Coding Friend's first line of defense against accidental credential exposure and inappropriate file access. See the [security reference](/docs/reference/security/) for the full defense-in-depth model.
+
+## Auto-Approve Hook
+
+The `auto-approve` hook reduces permission prompts by automatically approving safe tool calls and blocking destructive ones. See the [dedicated auto-approve reference](/docs/reference/auto-approve/) for details on classification tiers, rules, and configuration.

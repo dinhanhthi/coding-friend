@@ -61,6 +61,10 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 - `learn.language` setting applies to `/cf-learn` notes (falls back to top-level `language`, then `en`)
 - Custom skill guides: loaded on-demand per skill via `plugin/lib/load-custom-guide.sh`
 
+## Auto-Approve
+
+- **Auto-approve**: PreToolUse hook auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous (opt-in via `autoApprove` in config)
+
 ## Memory System
 
 The memory system provides persistent project knowledge across sessions via MCP tools:

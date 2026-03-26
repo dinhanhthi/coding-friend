@@ -494,6 +494,30 @@ async function learnSubMenu(): Promise<void> {
   }
 }
 
+// ─── Auto-Approve ────────────────────────────────────────────────────
+
+async function editAutoApprove(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Enable auto-approve? (auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { autoApprove: value });
+}
+
 // ─── Statusline ──────────────────────────────────────────────────────
 
 async function editStatusline(): Promise<void> {
@@ -749,6 +773,13 @@ export async function configCommand(): Promise<void> {
     const learnScope = getScopeLabel("learn", globalCfg, localCfg);
     const memoryScope = getScopeLabel("memory", globalCfg, localCfg);
 
+    const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
+    const autoApproveVal = getMergedValue(
+      "autoApprove",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
     const statuslineStatus = isStatuslineConfigured()
       ? chalk.green("configured")
       : chalk.yellow("not configured");
@@ -798,6 +829,12 @@ export async function configCommand(): Promise<void> {
               "  Tier, auto-capture, auto-start, embedding provider, daemon timeout",
           },
           {
+            name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
+            value: "autoApprove",
+            description:
+              "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
+          },
+          {
             name: `Statusline (${statuslineStatus})`,
             value: "statusline",
             description:
@@ -842,6 +879,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "memory":
         await memoryConfigMenu();
+        break;
+      case "autoApprove":
+        await editAutoApprove(globalCfg, localCfg);
         break;
       case "statusline":
         await editStatusline();

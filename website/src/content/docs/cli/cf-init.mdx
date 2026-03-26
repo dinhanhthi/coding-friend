@@ -53,7 +53,8 @@ Configs can be stored in two different locations - global and local. Local overr
 5. **Step 5** - Shell completion. Adds tab completion for `cf` commands to your shell.
 6. **Step 6** - Statusline. The statusline is a small section at the bottom of the screen that shows the current status of the Coding Friend session. You can configure it later with [`cf statusline`](/docs/cli/cf-statusline/).
 7. **Step 7** - [CF Memory](/docs/reference/memory-system/) MCP. Adds the `coding-friend-memory` MCP server to your project's `.mcp.json` so Claude Code can store and search memories during sessions. Optionally enables `memory.autoCapture` to save session summaries before context compaction. You can configure it later with [`cf memory mcp`](/docs/cli/cf-memory/).
-8. **Step 8** - Claude permissions. Offers to apply all recommended Coding Friend permissions (Tier 1 static rules + Tier 2 plugin script rules). You choose the scope: project-level (`.claude/settings.local.json`) or user-level (`~/.claude/settings.json`). If you configured an external `/cf-learn` output directory, external learn directory rules are also included. For fine-grained control, use [`cf permission`](/docs/cli/cf-permission/) or see the [Permissions Reference](/docs/reference/permissions/).
+8. **Step 8** - [Auto-approve](/docs/reference/auto-approve/). Opt-in hook that auto-approves safe tool calls (read-only commands), blocks destructive ones, and prompts for ambiguous operations. Uses two-tier classification: rule-based + Sonnet LLM fallback.
+9. **Step 9** - Claude permissions. Offers to apply all recommended Coding Friend permissions (Tier 1 static rules + Tier 2 plugin script rules). You choose the scope: project-level (`.claude/settings.local.json`) or user-level (`~/.claude/settings.json`). If you configured an external `/cf-learn` output directory, external learn directory rules are also included. For fine-grained control, use [`cf permission`](/docs/cli/cf-permission/) or see the [Permissions Reference](/docs/reference/permissions/).
 
 ## Interactive Menu (Returning Users)
 
@@ -68,6 +69,7 @@ When `.coding-friend/` already exists, `cf init` shows an interactive menu inste
   Shell completion (installed)
   Statusline (configured)
   CF Memory MCP (configured)
+  Auto-approve [-]
   Permissions (12/14 rules)
   ──────────────
   Exit
