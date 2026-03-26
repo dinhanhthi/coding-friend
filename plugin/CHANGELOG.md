@@ -2,7 +2,7 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## v0.14.2 (unpublished)
+## v0.14.2 (2026-03-26)
 
 - Internal: consolidate independent versioning for bundled libs [#93b77cb](https://github.com/dinhanhthi/coding-friend/commit/93b77cb)
 
