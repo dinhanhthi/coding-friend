@@ -34,7 +34,7 @@ The evaluation is organized into 2 waves. Each wave tests **skills** (slash comm
 CF includes security features (Content Isolation, OWASP-aware review, prompt injection resistance), but we exclude security from the benchmark because our synthetic repos are too simple to produce meaningful results:
 
 1. **Simple benchmarks yield identical scores.** On ~100-200 LOC repos with obvious vulnerabilities, both baseline Claude and CF consistently detect and fix the same issues. After many test runs, the scores converge — there's nothing useful to show.
-2. **CF's extra prompting hurts on trivial cases.** CF injects additional security-focused instructions (Content Isolation rules, OWASP checklists). On simple benchmarks where the baseline already scores perfectly, this overhead can produce false positives or unnecessary warnings — making CF appear *worse* despite being more thorough.
+2. **CF's extra prompting hurts on trivial cases.** CF injects additional security-focused instructions (Content Isolation rules, OWASP checklists). On simple benchmarks where the baseline already scores perfectly, this overhead can produce false positives or unnecessary warnings — making CF appear _worse_ despite being more thorough.
 
 CF's security value shows up in complex, real-world codebases where vulnerabilities hide across multi-file interactions and dependency chains — not in synthetic ~100 LOC repos.
 
@@ -86,7 +86,13 @@ The LLM judge evaluates the **full conversation** (not just the final summary), 
 Detailed per-skill, per-repository, per-criteria breakdown. Click a skill to expand.
 
 <Callout type="info">
-Some results may show **negative deltas** (baseline outperforming CF). This is expected given the simplicity of our benchmark repositories (~100-200 LOC each). For straightforward tasks on small codebases, CF's workflow orchestration can add overhead without proportional benefit. In larger, more complex codebases — where multi-file coordination, layered testing, and disciplined workflows matter most — CF's structured approach (TDD enforcement, agent dispatch, automated review) delivers significantly stronger results.
+  Some results may show **negative deltas** (baseline outperforming CF). This is
+  expected given the simplicity of our benchmark repositories (~100-200 LOC
+  each). For straightforward tasks on small codebases, CF's workflow
+  orchestration can add overhead without proportional benefit. In larger, more
+  complex codebases — where multi-file coordination, layered testing, and
+  disciplined workflows matter most — CF's structured approach (TDD enforcement,
+  agent dispatch, automated review) delivers significantly stronger results.
 </Callout>
 
 <FullEvalResults />

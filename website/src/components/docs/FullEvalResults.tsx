@@ -110,7 +110,10 @@ function RepoSection({
   repoName: string;
   data: RepoData;
   criteria: DetailedSkill["criteria"];
-  repoCriteria?: Record<string, Record<string, { weight: number; label: string }>> | null;
+  repoCriteria?: Record<
+    string,
+    Record<string, { weight: number; label: string }>
+  > | null;
 }) {
   const withCF = data.withCF as ConditionData | undefined;
   const withoutCF = data.withoutCF as ConditionData | undefined;
@@ -254,7 +257,14 @@ function SkillCard({
               repoName={repoName}
               data={repoData as RepoData}
               criteria={skill.criteria}
-              repoCriteria={(skill as Record<string, unknown>).repoCriteria as Record<string, Record<string, { weight: number; label: string }>> | undefined}
+              repoCriteria={
+                (skill as Record<string, unknown>).repoCriteria as
+                  | Record<
+                      string,
+                      Record<string, { weight: number; label: string }>
+                    >
+                  | undefined
+              }
             />
           ))}
         </div>
