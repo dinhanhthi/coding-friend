@@ -6,6 +6,7 @@ import {
   marketplaceCachePath,
   marketplaceClonePath,
   globalConfigDir,
+  memoryDepsDir,
   encodeProjectPath,
   claudeProjectsDir,
   claudeSessionDir,
@@ -92,6 +93,12 @@ describe("marketplaceClonePath", () => {
 describe("globalConfigDir", () => {
   it("returns ~/.coding-friend", () => {
     expect(globalConfigDir()).toBe(join(homedir(), ".coding-friend"));
+  });
+});
+
+describe("memoryDepsDir", () => {
+  it("returns ~/.coding-friend/memory", () => {
+    expect(memoryDepsDir()).toBe(join(homedir(), ".coding-friend", "memory"));
   });
 });
 
