@@ -16,7 +16,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 
 ## Workflow
 
-1. **Clarify Before Exploring** — Lists ambiguities and assumptions, asks you to confirm before proceeding. If the task involves external tools or libraries, asks which ones you prefer — no guessing
+1. **Discovery & Brainstorm** — Runs a focused discovery session in rounds: first asks probing questions to deeply understand your objectives and constraints, then challenges your initial approach with brutal honesty about feasibility and trade-offs (applying YAGNI/KISS/DRY), and finally presents 2–3 alternatives if needed. Respects your choice to skip brainstorming
 2. **Codebase Exploration** — Launches the [`cf-explorer`](/docs/reference/agents/#cf-explorer) agent to gather context: project structure, affected files, existing patterns, and relevant tests
 3. **Brainstorm Approaches** — Launches the [`cf-planner`](/docs/reference/agents/#cf-planner) agent to generate 2–3 possible approaches, each with pros, cons, effort estimate, risk, and confidence level. Recommends one with rationale
 4. **Validate with You** — Presents key findings, approaches, and open questions. Waits for your approval before writing anything
@@ -31,7 +31,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 
 The skill will:
 
-- Ask which auth library and rate limiting strategy you prefer
+- Ask probing questions about your requirements, challenge assumptions, and suggest alternatives if needed
 - Explore your existing API structure and auth setup
 - Propose 2–3 approaches with trade-offs
 - Present findings and wait for your approval
