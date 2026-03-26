@@ -111,6 +111,7 @@ export const docsNavigation: NavSection[] = [
     items: [
       { title: "Agents", slug: "reference/agents" },
       { title: "Hooks", slug: "reference/hooks" },
+      { title: "Auto-Approve", slug: "reference/auto-approve" },
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
       { title: "Memory System", slug: "reference/memory-system" },

@@ -66,6 +66,7 @@ export interface CodingFriendConfig {
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
   memory?: MemoryConfig;
+  autoApprove?: boolean;
 }
 
 export const DEFAULT_CONFIG: Required<
