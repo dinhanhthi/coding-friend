@@ -73,7 +73,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Context Window Usage
 
-Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,000 tokens), `⚡⚡` = medium (1,000–2,500), `⚡⚡⚡` = high (>2,500). Bootstrap context (~1,300 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, read `plugin/generated/token-counts.json` or see https://cf.dinhanhthi.com/docs/reference/context-usage/.
+Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,000 tokens), `⚡⚡` = medium (1,000–2,500), `⚡⚡⚡` = high (>2,500). Bootstrap context (~1,300 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, see https://cf.dinhanhthi.com/docs/reference/context-usage/.
 
 ## Step 3: Read specific files (if detailed question)
 

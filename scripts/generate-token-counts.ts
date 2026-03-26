@@ -7,7 +7,7 @@
  *   3. Reads the bootstrap context (plugin/context/bootstrap.md)
  *   4. Counts tokens for each using @lenml/tokenizer-claude
  *   5. Assigns a context tier: ⚡ low (<1,000), ⚡⚡ medium (1,000–2,500), ⚡⚡⚡ high (>2,500)
- *   6. Writes the result to plugin/generated/token-counts.json
+ *   6. Writes the result to website/src/generated/token-counts.json
  *
  * Output JSON structure:
  *   - generatedAt: ISO timestamp
@@ -34,7 +34,14 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_DIR = join(__dirname, "..", "plugin");
-const OUTPUT_PATH = join(PLUGIN_DIR, "generated", "token-counts.json");
+const OUTPUT_PATH = join(
+  __dirname,
+  "..",
+  "website",
+  "src",
+  "generated",
+  "token-counts.json",
+);
 
 const AUTO_SKILLS = new Set([
   "cf-tdd",

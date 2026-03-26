@@ -1,4 +1,21 @@
-import type { NavSection } from "./types";
+import type { NavItem, NavSection } from "./types";
+import { getAllTokenData, type SkillTokenEntry } from "./token-data";
+
+/** Build a skill-name → tier lookup from token-counts.json (once at module load). */
+const skillTiers: Record<string, NavItem["tier"]> = (() => {
+  const data = getAllTokenData();
+  const skills = data.skills as Record<string, SkillTokenEntry>;
+  const map: Record<string, NavItem["tier"]> = {};
+  for (const [name, entry] of Object.entries(skills)) {
+    map[name] = entry.tier;
+  }
+  return map;
+})();
+
+/** Return tier for a skill slug like "skills/cf-plan". */
+function tierOf(slug: string): NavItem["tier"] {
+  return skillTiers[slug.replace("skills/", "")];
+}
 
 export const docsNavigation: NavSection[] = [
   {
@@ -16,61 +33,105 @@ export const docsNavigation: NavSection[] = [
         title: "/cf-ask",
         slug: "skills/cf-ask",
         manualOnly: true,
-        tier: "medium",
+        tier: tierOf("skills/cf-ask"),
       },
       {
         title: "/cf-commit",
         slug: "skills/cf-commit",
         manualOnly: true,
-        tier: "low",
+        tier: tierOf("skills/cf-commit"),
       },
-      { title: "/cf-fix", slug: "skills/cf-fix", tier: "medium" },
-      { title: "/cf-help", slug: "skills/cf-help", tier: "medium" },
-      { title: "/cf-learn", slug: "skills/cf-learn", tier: "medium" },
-      { title: "/cf-optimize", slug: "skills/cf-optimize", tier: "medium" },
-      { title: "/cf-plan", slug: "skills/cf-plan", tier: "medium" },
-      { title: "/cf-remember", slug: "skills/cf-remember", tier: "medium" },
+      {
+        title: "/cf-fix",
+        slug: "skills/cf-fix",
+        tier: tierOf("skills/cf-fix"),
+      },
+      {
+        title: "/cf-help",
+        slug: "skills/cf-help",
+        tier: tierOf("skills/cf-help"),
+      },
+      {
+        title: "/cf-learn",
+        slug: "skills/cf-learn",
+        tier: tierOf("skills/cf-learn"),
+      },
+      {
+        title: "/cf-optimize",
+        slug: "skills/cf-optimize",
+        tier: tierOf("skills/cf-optimize"),
+      },
+      {
+        title: "/cf-plan",
+        slug: "skills/cf-plan",
+        tier: tierOf("skills/cf-plan"),
+      },
+      {
+        title: "/cf-remember",
+        slug: "skills/cf-remember",
+        tier: tierOf("skills/cf-remember"),
+      },
       {
         title: "/cf-research",
         slug: "skills/cf-research",
         manualOnly: true,
-        tier: "medium",
+        tier: tierOf("skills/cf-research"),
       },
-      { title: "/cf-review", slug: "skills/cf-review", tier: "medium" },
+      {
+        title: "/cf-review",
+        slug: "skills/cf-review",
+        tier: tierOf("skills/cf-review"),
+      },
       {
         title: "/cf-review-in",
         slug: "skills/cf-review-in",
         manualOnly: true,
-        tier: "medium",
+        tier: tierOf("skills/cf-review-in"),
       },
       {
         title: "/cf-review-out",
         slug: "skills/cf-review-out",
         manualOnly: true,
-        tier: "medium",
+        tier: tierOf("skills/cf-review-out"),
       },
       {
         title: "/cf-scan",
         slug: "skills/cf-scan",
         manualOnly: true,
-        tier: "high",
+        tier: tierOf("skills/cf-scan"),
       },
-      { title: "/cf-session", slug: "skills/cf-session", tier: "medium" },
+      {
+        title: "/cf-session",
+        slug: "skills/cf-session",
+        tier: tierOf("skills/cf-session"),
+      },
       {
         title: "/cf-ship",
         slug: "skills/cf-ship",
         manualOnly: true,
-        tier: "low",
+        tier: tierOf("skills/cf-ship"),
       },
     ],
   },
   {
     title: "Auto-Invoked Skills",
     items: [
-      { title: "cf-auto-review", slug: "skills/cf-auto-review", tier: "low" },
-      { title: "cf-sys-debug", slug: "skills/cf-sys-debug", tier: "medium" },
-      { title: "cf-tdd", slug: "skills/cf-tdd", tier: "medium" },
-      { title: "cf-verification", slug: "skills/cf-verification", tier: "low" },
+      {
+        title: "cf-auto-review",
+        slug: "skills/cf-auto-review",
+        tier: tierOf("skills/cf-auto-review"),
+      },
+      {
+        title: "cf-sys-debug",
+        slug: "skills/cf-sys-debug",
+        tier: tierOf("skills/cf-sys-debug"),
+      },
+      { title: "cf-tdd", slug: "skills/cf-tdd", tier: tierOf("skills/cf-tdd") },
+      {
+        title: "cf-verification",
+        slug: "skills/cf-verification",
+        tier: tierOf("skills/cf-verification"),
+      },
     ],
   },
   {
