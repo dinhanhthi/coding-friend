@@ -8,6 +8,7 @@ import {
   globalConfigDir,
   marketplaceCachePath,
   marketplaceClonePath,
+  memoryDepsDir,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
@@ -57,6 +58,7 @@ interface DetectionResult {
   statuslineConfigured: boolean;
   shellCompletionExists: boolean;
   globalConfigExists: boolean;
+  memoryDepsExists: boolean;
   devModeActive: boolean;
 }
 
@@ -69,6 +71,7 @@ function detect(): DetectionResult {
     statuslineConfigured: hasStatuslineReference(),
     shellCompletionExists: hasShellCompletion(),
     globalConfigExists: existsSync(globalConfigDir()),
+    memoryDepsExists: existsSync(memoryDepsDir()),
     devModeActive: existsSync(devStatePath()),
   };
 }
@@ -87,6 +90,9 @@ function displayDetection(d: DetectionResult): void {
   console.log(
     `    ${check(d.globalConfigExists)} Global config (~/.coding-friend/)`,
   );
+  console.log(
+    `    ${check(d.memoryDepsExists)} Memory dependencies (~/.coding-friend/memory/)`,
+  );
   console.log();
 }
 
@@ -98,7 +104,8 @@ function nothingToRemove(d: DetectionResult): boolean {
     !d.cloneExists &&
     !d.statuslineConfigured &&
     !d.shellCompletionExists &&
-    !d.globalConfigExists
+    !d.globalConfigExists &&
+    !d.memoryDepsExists
   );
 }
 
@@ -221,6 +228,16 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
     });
   }
 
+  // Ask about memory deps (only if not already covered by global config removal)
+  let removeMemory = false;
+  if (detection.memoryDepsExists && !removeConfig) {
+    removeMemory = await confirm({
+      message:
+        "Also remove memory dependencies? (better-sqlite3, sqlite-vec, @huggingface/transformers)",
+      default: false,
+    });
+  }
+
   console.log();
 
   // Execute removal in order
@@ -310,6 +327,17 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
     }
   }
 
+  // 8. Remove memory deps (if user opted in and not already removed with global config)
+  if (removeMemory && !removeConfig) {
+    log.step("Removing memory dependencies...");
+    try {
+      rmSync(memoryDepsDir(), { recursive: true, force: true });
+    } catch {
+      log.warn("Could not remove ~/.coding-friend/memory/ directory.");
+      errors++;
+    }
+  }
+
   // Summary
   console.log();
   if (errors === 0) {
@@ -322,6 +350,15 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
     log.dim("Global config kept at ~/.coding-friend/");
   }
 
+  if (!removeMemory && !removeConfig && detection.memoryDepsExists) {
+    log.dim("Memory dependencies kept at ~/.coding-friend/memory/");
+  }
+
   console.log();
   log.dim("Restart Claude Code to complete the uninstall.");
+
+  // Guide user to remove the CLI globally
+  console.log();
+  log.dim("To also remove the CLI tool globally, run:");
+  console.log(`  ${chalk.bold("npm uninstall -g coding-friend-cli")}`);
 }

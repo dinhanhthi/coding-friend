@@ -90,6 +90,11 @@ export function globalConfigDir(): string {
   return join(homedir(), ".coding-friend");
 }
 
+/** Memory dependencies directory (~/.coding-friend/memory) */
+export function memoryDepsDir(): string {
+  return join(homedir(), ".coding-friend", "memory");
+}
+
 /**
  * Encode an absolute project path to Claude Code's directory name format.
  * Claude Code stores sessions under ~/.claude/projects/<encodedPath>/

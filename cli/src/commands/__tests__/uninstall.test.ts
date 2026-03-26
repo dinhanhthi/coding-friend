@@ -83,6 +83,7 @@ const clonePath = join(
   "coding-friend-marketplace",
 );
 const configDir = join(home, ".coding-friend");
+const memoryDepsDir = join(home, ".coding-friend", "memory");
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -382,5 +383,142 @@ describe("uninstallCommand", () => {
       { local: true },
       "Where should the plugin be uninstalled from?",
     );
+  });
+
+  // ─── Memory cleanup ─────────────────────────────────────────────────
+
+  it("detects and displays memory deps in detection output", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === memoryDepsDir) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // Confirm uninstall, decline config removal, decline memory removal
+    mockConfirm
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false);
+
+    await uninstallCommand();
+
+    // Memory deps dir detection should appear in console output
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("Memory dependencies");
+  });
+
+  it("removes memory deps dir when user opts in (without removing global config)", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === memoryDepsDir) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // Confirm uninstall, decline config removal, confirm memory removal
+    mockConfirm
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    await uninstallCommand();
+
+    expect(mockRmSync).toHaveBeenCalledWith(memoryDepsDir, {
+      recursive: true,
+      force: true,
+    });
+  });
+
+  it("skips memory prompt when user already chose to remove global config", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === memoryDepsDir) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      const pathStr = p.toString();
+      if (pathStr.includes(".claude")) return true;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // Confirm uninstall, confirm config removal (memory is inside config dir, no separate prompt)
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await uninstallCommand();
+
+    // Should only have 2 confirm calls (uninstall + config), NOT 3 (no separate memory prompt)
+    expect(mockConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps memory deps when user declines memory removal", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === memoryDepsDir) return true;
+      if (p === configDir) return true;
+      if (p === devStateFile) return false;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+
+    // Confirm uninstall, decline config removal, decline memory removal
+    mockConfirm
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false);
+
+    await uninstallCommand();
+
+    expect(mockRmSync).not.toHaveBeenCalledWith(
+      memoryDepsDir,
+      expect.anything(),
+    );
+  });
+
+  it("shows npm uninstall guidance after uninstall completes", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockImplementation((p) => {
+      if (p === cachePath) return true;
+      if (p === devStateFile) return false;
+      return false;
+    });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    mockHasShellCompletion.mockReturnValue(false);
+    mockConfirm.mockResolvedValueOnce(true);
+
+    await uninstallCommand();
+
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("npm uninstall -g coding-friend-cli");
+  });
+
+  it("does not show npm uninstall guidance for project/local scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ project: true });
+
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).not.toContain("npm uninstall -g coding-friend-cli");
   });
 });
