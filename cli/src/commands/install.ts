@@ -1,6 +1,6 @@
 import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { devStatePath } from "../lib/paths.js";
 import {
   isMarketplaceRegistered,
@@ -14,7 +14,7 @@ import { getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
 
 export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
-  console.log("=== 🌿 Coding Friend Install 🌿 ===");
+  printBanner("✨ Coding Friend Install ✨");
   console.log();
 
   // Step 1: Check claude CLI

@@ -5,7 +5,7 @@ import { homedir } from "os";
 import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   memoryConfigMenu,
@@ -188,7 +188,7 @@ export async function memoryStatusCommand(): Promise<void> {
     tierLabel = chalk.cyan("Tier 3 (Markdown)");
   }
 
-  console.log("=== 🧠 Coding Friend Memory ===");
+  printBanner("🧠 Coding Friend Memory");
   console.log();
   log.info(`Tier: ${tierLabel}`);
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
@@ -512,8 +512,6 @@ function getDbPath(memoryDir: string): string | null {
   }
 }
 
-const em = chalk.hex("#10b981");
-
 /**
  * Check if SQLite deps are installed; if not, install them.
  * Returns true if deps are available after the check, false on failure.
@@ -613,16 +611,7 @@ export async function memoryInitCommand(): Promise<void> {
 
   // First-time: step-by-step wizard
   console.log();
-  console.log(em("  ╭───────────────────────╮"));
-  console.log(
-    em("  │  ") +
-      "🧠" +
-      em(" ") +
-      chalk.bold.white("Memory Setup") +
-      em("     │"),
-  );
-  console.log(em("  ╰────────────╮──────────╯"));
-  console.log(em("               ╰─▸"));
+  printBanner("🧠 Memory Setup");
   console.log();
 
   showConfigHint();
@@ -744,16 +733,7 @@ export async function memoryInitCommand(): Promise<void> {
 
 export async function memoryConfigCommand(): Promise<void> {
   console.log();
-  console.log(em("  ╭───────────────────────╮"));
-  console.log(
-    em("  │  ") +
-      "🧠" +
-      em(" ") +
-      chalk.bold.white("Memory Config") +
-      em("    │"),
-  );
-  console.log(em("  ╰────────────╮──────────╯"));
-  console.log(em("               ╰─▸"));
+  printBanner("🧠 Memory Config");
   console.log();
 
   showConfigHint();

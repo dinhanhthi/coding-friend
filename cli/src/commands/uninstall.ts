@@ -10,7 +10,7 @@ import {
   marketplaceClonePath,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import {
   hasShellCompletion,
   removeShellCompletion,
@@ -147,7 +147,8 @@ async function uninstallScoped(scope: PluginScope): Promise<void> {
 }
 
 export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
-  console.log(`\n=== 👋 ${chalk.red("Coding Friend Uninstall")} 👋 ===`);
+  console.log();
+  printBanner("👋 Coding Friend Uninstall 👋", { color: chalk.red });
 
   // Check claude CLI
   if (!commandExists("claude")) {

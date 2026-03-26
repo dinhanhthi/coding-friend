@@ -1,6 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { commandExists } from "../lib/exec.js";
 import { ALL_COMPONENT_IDS } from "../types.js";
 import {
@@ -12,7 +12,7 @@ import {
 } from "../lib/statusline.js";
 
 export async function statuslineCommand(): Promise<void> {
-  console.log("=== 🌿 Coding Friend Statusline 🌿 ===");
+  printBanner("✨ Coding Friend Statusline ✨");
   console.log();
 
   // Step 1: Find plugin path

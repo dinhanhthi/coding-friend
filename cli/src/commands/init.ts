@@ -15,7 +15,7 @@ import {
   cleanupStalePluginRules,
   logPluginScriptWarning,
 } from "../lib/permissions.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
   claudeSettingsPath,
@@ -63,22 +63,6 @@ const GITIGNORE_END = "# <<< coding-friend managed";
 
 const em = chalk.hex("#10b981"); // emerald
 const dk = chalk.hex("#064e3b"); // dark green
-
-function printBanner(): void {
-  console.log();
-  console.log(em("  ╭───────────────────────╮"));
-  console.log(
-    em("  │  ") +
-      "✦" +
-      em(" ") +
-      chalk.bold.white("Coding Friend") +
-      em("  ✦   │"),
-  );
-  console.log(em("  │    ") + chalk.dim("Setup Wizard") + em("       │"));
-  console.log(em("  ╰────────────╮──────────╯"));
-  console.log(em("               ╰─▸"));
-  console.log();
-}
 
 let _stepIndex = 0;
 let _suppressStepHeaders = false;
@@ -1090,7 +1074,9 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
 
 export async function initCommand(): Promise<void> {
   _stepIndex = 0;
-  printBanner();
+  console.log();
+  printBanner("✨ Coding Friend Setup Wizard ✨");
+  console.log();
   showConfigHint();
 
   // Detect environment

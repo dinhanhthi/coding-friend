@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { resolveDocsDir, resolveMemoryDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
 import chalk from "chalk";
@@ -37,7 +37,7 @@ export async function mcpCommand(path?: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log(chalk.green.bold("=== 📚 Learn MCP ==="));
+  printBanner("📚 Learn MCP");
   log.info(`Docs folder: ${chalk.cyan(docsDir)}`);
   log.info(`Found: ${chalk.green(docCount)} docs`);
   console.log();
@@ -148,7 +148,7 @@ function printMemoryMcp(): void {
   const serverPath = join(mcpDir, "dist", "index.js");
 
   console.log();
-  console.log(chalk.magenta.bold("=== 🧠 Memory MCP ==="));
+  printBanner("🧠 Memory MCP", { color: chalk.magenta });
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
   console.log();
 

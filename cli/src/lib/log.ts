@@ -9,3 +9,27 @@ export const log = {
   step: (msg: string) => console.log(chalk.cyan("→"), msg),
   dim: (msg: string) => console.log(chalk.dim(msg)),
 };
+
+/**
+ * Print a boxed banner with green border.
+ * Example output:
+ *   ┌──────────────────────────────────┐
+ *   │   ✨ Coding Friend Update ✨     │
+ *   └──────────────────────────────────┘
+ */
+export function printBanner(
+  title: string,
+  opts: { color?: (s: string) => string } = {},
+): void {
+  const colorFn = opts.color ?? chalk.green;
+  const padding = 3;
+  const pad = " ".repeat(padding);
+  const inner = `${pad}${title}${pad}`;
+  const width = inner.length;
+  const top = `┌${"─".repeat(width)}┐`;
+  const mid = `│${inner}│`;
+  const bot = `└${"─".repeat(width)}┘`;
+  console.log(colorFn(top));
+  console.log(colorFn(mid));
+  console.log(colorFn(bot));
+}

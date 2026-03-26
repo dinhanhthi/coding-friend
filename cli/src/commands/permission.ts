@@ -1,7 +1,7 @@
 import { checkbox, confirm, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { claudeLocalSettingsPath, claudeSettingsPath } from "../lib/paths.js";
 import {
   STATIC_RULES,
@@ -186,7 +186,7 @@ export async function permissionCommand(opts: {
   user?: boolean;
   project?: boolean;
 }): Promise<void> {
-  console.log("=== 🌿 Coding Friend Permissions 🌿 ===");
+  printBanner("✨ Coding Friend Permissions ✨");
   console.log();
 
   // Resolve scope

@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
 import { claudeSettingsPath } from "../lib/paths.js";
 import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
@@ -111,7 +111,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     scope = "user";
   }
 
-  console.log("=== 🌿 Coding Friend Update 🌿 ===");
+  printBanner("✨ Coding Friend Update ✨");
   console.log();
 
   // Step 1: Gather info

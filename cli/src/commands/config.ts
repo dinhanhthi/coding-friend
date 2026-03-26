@@ -2,7 +2,7 @@ import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { readJson, mergeJson } from "../lib/json.js";
-import { log } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
   claudeSettingsPath,
@@ -725,21 +725,9 @@ async function editPermissions(): Promise<void> {
 
 // ─── Main ─────────────────────────────────────────────────────────────
 
-const em = chalk.hex("#10b981");
-
 export async function configCommand(): Promise<void> {
   console.log();
-  console.log(em("  ╭───────────────────────╮"));
-  console.log(
-    em("  │  ") +
-      "✦" +
-      em(" ") +
-      chalk.bold.white("Coding Friend") +
-      em("  ✦   │"),
-  );
-  console.log(em("  │    ") + chalk.dim("Config") + em("             │"));
-  console.log(em("  ╰────────────╮──────────╯"));
-  console.log(em("               ╰─▸"));
+  printBanner("✨ Coding Friend Config ✨");
   console.log();
 
   showConfigHint();
