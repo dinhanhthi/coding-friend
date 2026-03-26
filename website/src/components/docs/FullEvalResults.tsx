@@ -351,9 +351,9 @@ export default function FullEvalResults() {
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([wave, waveSkills]) => (
           <div key={wave} className="mb-8">
-            <h4 className="mb-3 text-lg font-semibold text-slate-200">
+            {/* <h4 className="mb-3 text-lg font-semibold text-slate-200">
               Wave {wave}
-            </h4>
+            </h4> */}
             <div className="space-y-3">
               {waveSkills.map(([key, skill]) => (
                 <SkillCard key={key} skillKey={key} skill={skill} />

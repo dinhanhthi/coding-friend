@@ -285,8 +285,8 @@ export async function memorySearchCommand(query: string): Promise<void> {
     [
       "-e",
       `
-      import { MarkdownBackend } from "${join(mcpDir, "dist/backends/markdown.js")}";
-      const backend = new MarkdownBackend("${memoryDir}");
+      import { MarkdownBackend } from ${JSON.stringify(join(mcpDir, "dist/backends/markdown.js"))};
+      const backend = new MarkdownBackend(${JSON.stringify(memoryDir)});
       const results = await backend.search({ query: process.env.CF_SEARCH_QUERY, limit: 10 });
       for (const r of results) {
         console.log(\`[\${r.score}] \${r.memory.frontmatter.title}\`);
@@ -333,8 +333,8 @@ export async function memoryListCommand(opts: {
     [
       "-e",
       `
-      import { MarkdownBackend } from "${join(mcpDir, "dist/backends/markdown.js")}";
-      const backend = new MarkdownBackend("${memoryDir}");
+      import { MarkdownBackend } from ${JSON.stringify(join(mcpDir, "dist/backends/markdown.js"))};
+      const backend = new MarkdownBackend(${JSON.stringify(memoryDir)});
       const metas = await backend.list({});
       if (metas.length === 0) { console.log("No memories found."); process.exit(0); }
 

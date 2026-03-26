@@ -3,6 +3,17 @@ import path from "node:path";
 import matter from "gray-matter";
 import type { CategoryInfo, Doc, DocFrontmatter, DocMeta } from "./types.js";
 
+function safePath(docsDir: string, ...segments: string[]): string | null {
+  const resolved = path.resolve(docsDir, ...segments);
+  if (
+    !resolved.startsWith(path.resolve(docsDir) + path.sep) &&
+    resolved !== path.resolve(docsDir)
+  ) {
+    return null;
+  }
+  return resolved;
+}
+
 function isMarkdownDoc(filePath: string): boolean {
   const name = path.basename(filePath);
   return name.endsWith(".md") && name !== "README.md";
@@ -92,8 +103,8 @@ export function readDoc(
   category: string,
   slug: string,
 ): Doc | null {
-  const filePath = path.join(docsDir, category, `${slug}.md`);
-  if (!fs.existsSync(filePath)) return null;
+  const filePath = safePath(docsDir, category, `${slug}.md`);
+  if (!filePath || !fs.existsSync(filePath)) return null;
 
   const raw = matter(fs.readFileSync(filePath, "utf-8"));
   const frontmatter = parseFrontmatter(raw);
@@ -147,13 +158,19 @@ export function createDoc(
   tags: string[],
   content: string,
 ): string {
-  const catDir = path.join(docsDir, category);
+  const catDir = safePath(docsDir, category);
+  if (!catDir) {
+    throw new Error(`Invalid category path: ${category}`);
+  }
   if (!fs.existsSync(catDir)) {
     fs.mkdirSync(catDir, { recursive: true });
   }
 
   const slug = slugify(title);
-  const filePath = path.join(catDir, `${slug}.md`);
+  const filePath = safePath(docsDir, category, `${slug}.md`);
+  if (!filePath) {
+    throw new Error(`Invalid doc path: ${category}/${slug}`);
+  }
   const today = new Date().toISOString().split("T")[0];
 
   const doc = matter.stringify(content, {
@@ -174,8 +191,8 @@ export function updateDoc(
   slug: string,
   updates: { content?: string; tags?: string[]; title?: string },
 ): string | null {
-  const filePath = path.join(docsDir, category, `${slug}.md`);
-  if (!fs.existsSync(filePath)) return null;
+  const filePath = safePath(docsDir, category, `${slug}.md`);
+  if (!filePath || !fs.existsSync(filePath)) return null;
 
   const raw = matter(fs.readFileSync(filePath, "utf-8"));
   const today = new Date().toISOString().split("T")[0];
