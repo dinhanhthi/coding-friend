@@ -51,10 +51,12 @@ import {
   applyDocsDirChange,
   ensureDocsFolders,
 } from "../lib/prompt-utils.js";
+import { memoryConfigMenu } from "../lib/memory-prompts.js";
 import {
-  getMemoryMcpStatus,
-  writeMemoryMcpEntry,
-} from "../lib/memory-prompts.js";
+  ensureMemoryBuilt,
+  isMemoryInitialized,
+  memoryInitWizard,
+} from "./memory.js";
 
 const GITIGNORE_START = "# >>> coding-friend managed";
 const GITIGNORE_END = "# <<< coding-friend managed";
@@ -194,8 +196,8 @@ function printSetupStatus(
     { label: "Shell completion", done: hasShellCompletion(), skipped: false },
     { label: "Statusline", done: isStatuslineConfigured(), skipped: false },
     {
-      label: "CF Memory MCP",
-      done: getMemoryMcpStatus().configured,
+      label: "CF Memory",
+      done: isMemoryInitialized(),
       skipped: false,
     },
     {
@@ -733,29 +735,41 @@ async function stepStatusline(): Promise<void> {
   log.success("Statusline configured!");
 }
 
-async function stepMemory(docsDir: string): Promise<void> {
-  const mcpStatus = getMemoryMcpStatus();
-  if (mcpStatus.configured) {
+async function stepMemory(
+  docsDir: string,
+  opts?: { menuMode?: boolean },
+): Promise<void> {
+  const initialized = isMemoryInitialized();
+
+  if (initialized) {
     printStepHeader(
-      `CF Memory MCP ${chalk.green("[done]")}`,
-      "Connects the memory system to Claude Code via MCP.",
+      `CF Memory ${chalk.green("[done]")}`,
+      "Persistent project knowledge across sessions — search tier, embeddings, MCP.",
     );
-    log.dim("Memory MCP already configured in .mcp.json.");
+
+    if (opts?.menuMode) {
+      // Menu mode — open config menu so user can adjust settings
+      await memoryConfigMenu({ exitLabel: "Back" });
+    } else {
+      log.dim(
+        'Memory already initialized. Run "cf memory config" to adjust settings.',
+      );
+    }
     return;
   }
 
   printStepHeader(
-    "CF Memory MCP",
-    "Connects the memory system to Claude Code via MCP so skills can store and search memories.",
+    "CF Memory",
+    "Persistent project knowledge across sessions — search tier, embeddings, MCP.",
   );
 
   const choice = await select({
-    message: "Configure CF Memory MCP server?",
+    message: "Set up CF Memory?",
     choices: injectBackChoice(
       [
-        { name: "Yes, add to .mcp.json", value: "yes" },
+        { name: "Yes, run memory setup wizard", value: "yes" },
         {
-          name: "No, I'll configure it later (cf memory mcp)",
+          name: "No, I'll set it up later (cf memory init)",
           value: "no",
         },
       ],
@@ -766,21 +780,13 @@ async function stepMemory(docsDir: string): Promise<void> {
   handleBack(choice);
 
   if (choice === "no") {
-    log.dim("Skipped. Run `cf memory mcp` anytime to get the config.");
+    log.dim('Skipped. Run "cf memory init" anytime to set up.');
     return;
   }
 
-  // Build MCP server path
-  let serverPath: string;
+  let mcpDir: string;
   try {
-    const mcpDir = getLibPath("cf-memory");
-    serverPath = join(mcpDir, "dist", "index.js");
-    if (!existsSync(serverPath)) {
-      log.warn(
-        "cf-memory not built yet. Run `cd cli/lib/cf-memory && npm install && npm run build` first.",
-      );
-      return;
-    }
+    mcpDir = getLibPath("cf-memory");
   } catch {
     log.warn(
       "cf-memory package not found. Install the CLI first: npm i -g coding-friend-cli",
@@ -788,33 +794,10 @@ async function stepMemory(docsDir: string): Promise<void> {
     return;
   }
 
+  ensureMemoryBuilt(mcpDir);
+
   const memoryDir = join(process.cwd(), docsDir, "memory");
-  writeMemoryMcpEntry(serverPath, memoryDir);
-
-  // Ask about autoCapture
-  const autoCapture = await confirm({
-    message:
-      "Enable auto-capture? (saves session summaries to memory before context compaction)",
-    default: false,
-  });
-
-  if (autoCapture) {
-    const scope = await askScope();
-    if (scope !== "back") {
-      const targetPath =
-        scope === "global" ? globalConfigPath() : localConfigPath();
-      const existingConfig = readJson<CodingFriendConfig>(targetPath);
-      const existingMemory = existingConfig?.memory ?? {};
-      mergeJson(targetPath, {
-        memory: { ...existingMemory, autoCapture: true },
-      });
-      log.success(`Saved to ${targetPath}`);
-    }
-  }
-
-  log.info(
-    `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
-  );
+  await memoryInitWizard(memoryDir, mcpDir);
 }
 
 async function stepClaudePermissions(
@@ -942,8 +925,8 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       ? chalk.green("configured")
       : chalk.yellow("not configured");
 
-    const memoryStatus = getMemoryMcpStatus().configured
-      ? chalk.green("configured")
+    const memoryStatus = isMemoryInitialized()
+      ? chalk.green("initialized")
       : chalk.yellow("not configured");
 
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
@@ -1009,9 +992,10 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           "  Token count, model, and session info in your terminal prompt",
       },
       {
-        name: `CF Memory MCP (${memoryStatus})`,
+        name: `CF Memory (${memoryStatus})`,
         value: "memory",
-        description: "  Connect the memory system to Claude Code via MCP",
+        description:
+          "  Persistent project knowledge — search tier, embeddings, MCP",
       },
       {
         name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
@@ -1060,7 +1044,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         await stepStatusline();
         break;
       case "memory":
-        await stepMemory(docsDir);
+        await stepMemory(docsDir, { menuMode: true });
         break;
       case "autoApprove": {
         const autoApproveChoice = await confirm({
@@ -1248,7 +1232,7 @@ export async function initCommand(): Promise<void> {
   // Step 6: Statusline
   await stepStatusline();
 
-  // Step 7: CF Memory MCP
+  // Step 7: CF Memory
   await stepMemory(docsDir);
 
   // Step 8: Claude permissions

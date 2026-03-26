@@ -549,73 +549,34 @@ async function ensureSqliteDepsIfNeeded(mcpDir: string): Promise<boolean> {
   return true;
 }
 
-async function setupMemoryMcp(
+/**
+ * Check whether the memory system has been initialized.
+ * Returns true when the user has gone through cf memory init (or the
+ * equivalent wizard inside cf init) — i.e. tier is explicitly set in config
+ * OR the SQLite DB already exists.
+ */
+export function isMemoryInitialized(): boolean {
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const globalTier = (globalCfg?.memory as Record<string, unknown> | undefined)
+    ?.tier;
+  const localTier = (localCfg?.memory as Record<string, unknown> | undefined)
+    ?.tier;
+  if (globalTier !== undefined || localTier !== undefined) return true;
+
+  const memoryDir = getMemoryDir();
+  return getDbPath(memoryDir) !== null;
+}
+
+/**
+ * Core memory init wizard — runs steps 1-5, installs deps, imports
+ * existing memories, and sets up MCP.  Called by both `cf memory init`
+ * and the CF Memory step inside `cf init`.
+ */
+export async function memoryInitWizard(
   memoryDir: string,
   mcpDir: string,
 ): Promise<void> {
-  const mcpStatus = getMemoryMcpStatus();
-  if (mcpStatus.configured && mcpStatus.scope === "local") {
-    log.info(`MCP: ${chalk.green("already configured")} in .mcp.json`);
-    return;
-  }
-
-  console.log();
-  log.step("MCP setup");
-  log.dim(
-    "The Memory MCP connects Claude Code to the memory system so skills can store and search memories.",
-  );
-
-  const addMcp = await confirm({
-    message: "Add coding-friend-memory to .mcp.json?",
-    default: true,
-  });
-
-  if (!addMcp) {
-    log.dim('Skipped. Run "cf memory mcp" anytime to get the config.');
-    return;
-  }
-
-  const serverPath = join(mcpDir, "dist", "index.js");
-  if (!existsSync(serverPath)) {
-    log.warn(
-      "cf-memory not built yet. Run `cf memory mcp` after building to get the config.",
-    );
-    return;
-  }
-
-  writeMemoryMcpEntry(serverPath, memoryDir);
-}
-
-export async function memoryInitCommand(): Promise<void> {
-  const memoryDir = getMemoryDir();
-  const mcpDir = getLibPath("cf-memory");
-  ensureMemoryBuilt(mcpDir);
-
-  const dbExists = getDbPath(memoryDir) !== null;
-
-  if (dbExists) {
-    // Re-run: show config menu (like `cf init` returning users flow)
-    console.log();
-    log.info(
-      "Memory already initialized. Opening config menu to adjust settings.",
-    );
-    log.dim('To re-import memories, run "cf memory rebuild".');
-    console.log();
-    await memoryConfigMenu({ exitLabel: "Done" });
-
-    // Ensure SQLite deps are present even for returning users (they may have
-    // been lost, e.g. after a reinstall or on a new machine syncing configs).
-    await ensureSqliteDepsIfNeeded(mcpDir);
-    return;
-  }
-
-  // First-time: step-by-step wizard
-  console.log();
-  printBanner("🧠 Memory Setup");
-  console.log();
-
-  showConfigHint();
-
   // Step 1: Tier
   log.step("Step 1/5: Search tier");
   await editMemoryTier(
@@ -729,6 +690,76 @@ export async function memoryInitCommand(): Promise<void> {
   log.info(
     `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
   );
+}
+
+async function setupMemoryMcp(
+  memoryDir: string,
+  mcpDir: string,
+): Promise<void> {
+  const mcpStatus = getMemoryMcpStatus();
+  if (mcpStatus.configured && mcpStatus.scope === "local") {
+    log.info(`MCP: ${chalk.green("already configured")} in .mcp.json`);
+    return;
+  }
+
+  console.log();
+  log.step("MCP setup");
+  log.dim(
+    "The Memory MCP connects Claude Code to the memory system so skills can store and search memories.",
+  );
+
+  const addMcp = await confirm({
+    message: "Add coding-friend-memory to .mcp.json?",
+    default: true,
+  });
+
+  if (!addMcp) {
+    log.dim('Skipped. Run "cf memory mcp" anytime to get the config.');
+    return;
+  }
+
+  const serverPath = join(mcpDir, "dist", "index.js");
+  if (!existsSync(serverPath)) {
+    log.warn(
+      "cf-memory not built yet. Run `cf memory mcp` after building to get the config.",
+    );
+    return;
+  }
+
+  writeMemoryMcpEntry(serverPath, memoryDir);
+}
+
+export async function memoryInitCommand(): Promise<void> {
+  const memoryDir = getMemoryDir();
+  const mcpDir = getLibPath("cf-memory");
+  ensureMemoryBuilt(mcpDir);
+
+  const dbExists = getDbPath(memoryDir) !== null;
+
+  if (dbExists) {
+    // Re-run: show config menu (like `cf init` returning users flow)
+    console.log();
+    log.info(
+      "Memory already initialized. Opening config menu to adjust settings.",
+    );
+    log.dim('To re-import memories, run "cf memory rebuild".');
+    console.log();
+    await memoryConfigMenu({ exitLabel: "Done" });
+
+    // Ensure SQLite deps are present even for returning users (they may have
+    // been lost, e.g. after a reinstall or on a new machine syncing configs).
+    await ensureSqliteDepsIfNeeded(mcpDir);
+    return;
+  }
+
+  // First-time: step-by-step wizard
+  console.log();
+  printBanner("🧠 Memory Setup");
+  console.log();
+
+  showConfigHint();
+
+  await memoryInitWizard(memoryDir, mcpDir);
 }
 
 export async function memoryConfigCommand(): Promise<void> {
