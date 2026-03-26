@@ -4,174 +4,44 @@ description: Install the Coding Friend CLI and Claude Code plugin to get started
 keywords: [installation, setup, claude code plugin, npm, cli, scope]
 ---
 
-## Option A: One-Prompt Install
-
-If you already have [Claude Code](https://claude.com/claude-code) running, paste the prompt below and Claude will walk you through everything — checking prerequisites, installing the CLI and plugin, and initializing your workspace.
-
-```text
-Install the "coding-friend-cli" npm package globally and set up the Coding Friend
-plugin for Claude Code. Follow these steps in order, checking each one before
-moving to the next:
-
-1. Check that Node.js >= 20 is installed (run: `node -v`). If not, stop and tell
-   me to install Node.js 20+ first.
-2. Install the CLI globally (run: `npm i -g coding-friend-cli`).
-3. Verify it works (run: `cf --version`). Show me the version.
-4. Install the plugin (run: `cf install --user`).
-5. Initialize the workspace in the current project (run: `cf init`). When cf init
-   asks questions, explain each option to me and let me choose.
-6. Show a short summary of what was installed and remind me to restart Claude
-   Code to load the plugin.
-```
-
-<Callout type="info">
-  After the install, restart Claude Code (or run `/exit` then reopen) to load
-  the plugin.
-</Callout>
-
----
-
-## Option B: Manual Install
-
-### Prerequisites
+## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+ installed
 - [Claude Code](https://claude.com/claude-code) installed
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
 - (Optional) [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
 
-### Install the CLI
-
-<PackageManagerTabs package="coding-friend-cli" />
-
-<Callout type="info">
-  **Linux users:** You may need to use `sudo` for global installs (e.g., `sudo
-  npm i -g coding-friend-cli`), or configure npm to use a directory you own. See
-  [npm
-  docs](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally)
-  for details.
-</Callout>
-
-This gives you the `cf` command globally. Verify with:
+## Install
 
 ```bash
-cf --version
-```
+# 1. Install the CLI globally
+npm i -g coding-friend-cli
 
-### Install the Plugin
-
-```bash
-# Interactive — asks which scope to use
+# 2. Install the plugin into Claude Code
 cf install
 
-# Or install directly at a specific scope:
-cf install --user       # All projects (default)
-cf install --project    # This project only (shared via git)
-cf install --local      # This machine only (gitignored)
-```
-
-Read more about `cf install` [here](/docs/cli/cf-install/).
-
-### Initialize Your Workspace and Configure Coding Friend
-
-```bash
-# In each project, run the following first
+# 3. Initialize your workspace (in each project)
 cf init
-```
 
-This will guide you through the configuration of Coding Friend, including setting up [permissions](/docs/reference/permissions/) so skills and hooks can run without repeated prompts. Read more about `cf init` [here](/docs/cli/cf-init/).
+# 4. Restart Claude Code (or `/exit` then reopen) to load the plugin.
+# Inside Claude Code session, try to type "/cf-plan" to see if the plugin is loaded.
 
-If you skip permissions during `cf init`, or want to manage them separately:
-
-```bash
-# Interactive — browse categories and pick rules
-cf permission
-
-# Or apply all recommended permissions at once
-cf permission --all
-```
-
-Read more about [`cf permission`](/docs/cli/cf-permission/) and [permissions](/docs/reference/permissions/).
-
-### Scan your project
-
-```bash
-# Enter claude code then run
-/cf-scan
-```
-
-This will scan your project and extract the knowledge into the memory system. Read more about [`/cf-scan`](/docs/skills/cf-scan/) for more details.
-
-## Auto-Update
-
-### Plugin Auto-Update
-
-Auto-update for the **plugin** is automatically enabled when you run `cf install`. This ensures the Coding Friend plugin stays up to date without manual intervention.
-
-If auto-update could not be enabled during installation (e.g., due to file permission issues), you can enable it manually:
-
-1. Run `/plugin` in Claude Code
-2. Go to **Marketplace**
-3. Select `coding-friend-marketplace`
-4. Enable **auto-update**
-
-### CLI Auto-Update
-
-The CLI **automatically checks for new versions** after each command you run (with a 24-hour cache). When a new version is available:
-
-1. A notification is displayed with the available version
-2. The CLI auto-updates itself via npm
-
-No manual action needed — the next time you run any `cf` command, the latest version will be used.
-
-To update manually at any time:
-
-```bash
-# Update everything (plugin + CLI + statusline)
-cf update
-
-# Update only the CLI
-cf update --cli
-
-# Or via npm directly
-npm install -g coding-friend-cli@latest
-```
-
-## Restart Claude Code
-
-Restart Claude Code to load the plugin. You should see the Coding Friend statusline at the bottom.
-
-## Verify Your Setup
-
-After restarting, run the status command to verify everything is configured correctly:
-
-```bash
+# 5. Verify 
 cf status
 ```
 
-This shows a compact dashboard with your plugin version, CLI version, memory tier, and config — all in one place. If anything is missing or misconfigured, the output will help you identify what to fix.
+<Callout type="info">
+  **Linux users:** You may need `sudo` for global installs (e.g., `sudo npm i -g
+  coding-friend-cli`), or [configure
+  npm](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally)
+  to use a directory you own.
+</Callout>
 
-## Enable AI Memory (Optional)
+## Auto-Update
 
-Coding Friend includes a [memory system](/docs/reference/memory-system/) that lets the AI store and recall project knowledge across sessions — codebase facts, conventions, debug episodes, and more.
-
-**Basic memory** (Tier 3) works automatically after `cf init` — skills like [`/cf-remember`](/docs/skills/cf-remember/) and [`/cf-ask`](/docs/skills/cf-ask/) save knowledge to `docs/memory/` as markdown files.
-
-For **better search**, you can upgrade to a higher tier:
-
-```bash
-# Tier 2 — Start a lightweight daemon with fuzzy search
-cf memory start-daemon
-
-# Tier 1 — Initialize SQLite with hybrid search (keyword + semantic)
-cf memory init
-```
-
-Check current status anytime with `cf memory status`. Read more about [`cf memory`](/docs/cli/cf-memory/).
+- **Plugin** — auto-update is enabled when you run `cf install`. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
+- **CLI** — automatically checks for new versions after each command (24-hour cache) and self-updates via npm. To update manually: `cf update`.
 
 ## Next Steps
 
-- Read the [Quick Start](/docs/getting-started/quick-start/) guide
-- Explore available [Skills](/docs/skills/overview/)
-- Learn about [CLI Commands](/docs/cli/overview/)
-- Set up [AI Memory](/docs/reference/memory-system/) for cross-session knowledge
+Read the [Quick Start](/docs/getting-started/quick-start/) guide to learn the core workflow.
