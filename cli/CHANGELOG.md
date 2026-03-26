@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.26.1 (2026-03-27)
+
+- Fix path traversal vulnerability in learn-mcp's `readDoc`, `createDoc`, and `updateDoc` functions — add `safePath()` guard to validate resolved paths stay within `docsDir` [#ae9f990](https://github.com/dinhanhthi/coding-friend/commit/ae9f990)
+- Fix code injection vulnerability in `cf memory` CLI by wrapping path interpolations with `JSON.stringify()` [#ae9f990](https://github.com/dinhanhthi/coding-friend/commit/ae9f990)
+
 ## v1.26.0 (2026-03-26)
 
 - Add CF Memory setup step to `cf init` wizard with `cf memory init` in install next steps [#403a356](https://github.com/dinhanhthi/coding-friend/commit/403a356) [#25e0a15](https://github.com/dinhanhthi/coding-friend/commit/25e0a15)
