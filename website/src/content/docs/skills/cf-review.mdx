@@ -60,8 +60,9 @@ Different behavior is expected based on the value of `[target]`:
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
 4. **Dispatch to subagent** — Fork a [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
-5. **Apply two-pass review** — Quick scan for obvious issues, then deep 4-layer analysis (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
-6. **Report findings** — Organized by severity (Critical / Important / Suggestion)
+5. **Apply 4-layer review** — Quality, security, testing, and design analysis (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
+6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
+7. **Report findings** — Organized by severity (Critical / Important / Suggestion)
 
 ### Review Modes
 
@@ -142,3 +143,14 @@ You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/sk
 | 1     | [`privacy-block` hook](/docs/reference/security/#file-level-protection) | Every tool call | Blocks reading `.env`, secrets, keys           |
 | 2     | [`/cf-commit`](/docs/skills/cf-commit/) secret scan                     | On commit       | Scans staged diff for leaked secrets           |
 | 3     | `/cf-review` Layer 3                                                    | On review       | Deep security analysis with confidence scoring |
+
+## Built-in Security Scan
+
+After the 4-layer review, `/cf-review` automatically invokes Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) — a dedicated security audit skill from Anthropic. This means every `/cf-review` run gets **two layers of security analysis**:
+
+| Pass                   | Source                                                                                    | Focus                                                            |
+| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Layer 3**            | Coding Friend's 4-layer review                                                           | Injection, auth bypasses, secrets, data flow — confidence-scored |
+| **`/security-review`** | [Anthropic's security-review](https://github.com/anthropics/claude-code-security-review) | Multi-phase vulnerability hunting with strict false-positive filtering |
+
+Findings from both passes are **merged and deduplicated** — when both flag the same issue, the higher-severity entry is kept. This gives you comprehensive security coverage without running a separate command.
