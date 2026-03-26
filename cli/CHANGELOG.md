@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.25.0 (2026-03-26)
+
+- Improve `cf status` command UI with cleaner layout [#577e79b](https://github.com/dinhanhthi/coding-friend/commit/577e79b)
+
 ## v1.24.0 (2026-03-26)
 
 - Add auto-approve setup step to `cf init` wizard [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)

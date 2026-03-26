@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.15.1 (2026-03-26)
+
+- Fix `auto-approve.cjs` hook not executable — add missing execute permission [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
+- Add stderr error logging to `auto-approve.cjs` catch blocks with `[auto-approve]` prefix for better debuggability [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
+- Fix `/cf-review-out` to include all branch commits in diff and prevent false positives [#87f73c1](https://github.com/dinhanhthi/coding-friend/commit/87f73c1)
+
 ## v0.15.0 (2026-03-26)
 
 - Add auto-approve `PreToolUse` hook for smart permission gating with two-tier classification: fast rule-based patterns (instant) and LLM fallback (Sonnet, ~2-5s) [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
