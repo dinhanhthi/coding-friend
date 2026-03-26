@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.23.0 (unpublished)
+
+- Redesign all CLI welcome banners with unified Unicode box-drawing style via `printBanner` helper, with emoji-aware alignment [#0509746](https://github.com/dinhanhthi/coding-friend/commit/0509746) [#1101e05](https://github.com/dinhanhthi/coding-friend/commit/1101e05)
+- Add color decorations to `cf mcp` command output [#bc017a8](https://github.com/dinhanhthi/coding-friend/commit/bc017a8)
+- Simplify `cf update` version summary output [#6ebe1f1](https://github.com/dinhanhthi/coding-friend/commit/6ebe1f1)
+- Fix `ReferenceError` for `isMemoryMcpConfigured` in `cf init` [#1714b65](https://github.com/dinhanhthi/coding-friend/commit/1714b65)
+
 ## v1.22.0 (2026-03-25)
 
 - Add MCP status display to `cf memory status` showing configuration scope (local/global/not configured) [#ec06cd3](https://github.com/dinhanhthi/coding-friend/commit/ec06cd3)
