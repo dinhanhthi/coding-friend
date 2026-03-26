@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { docsNavigation } from "@/lib/navigation";
 
-const DEFAULT_COLLAPSED = new Set(["/Slash Skills", "Auto-Invoked Skills", "CLI Commands"]);
+const DEFAULT_COLLAPSED = new Set([
+  "/Slash Skills",
+  "Auto-Invoked Skills",
+  "CLI Commands",
+]);
 
 export default function DocsSidebar() {
   const pathname = usePathname();

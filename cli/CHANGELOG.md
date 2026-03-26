@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.26.0 (2026-03-26)
+
+- Add CF Memory setup step to `cf init` wizard with `cf memory init` in install next steps [#403a356](https://github.com/dinhanhthi/coding-friend/commit/403a356) [#25e0a15](https://github.com/dinhanhthi/coding-friend/commit/25e0a15)
+- Add memory dependency cleanup and npm uninstall guidance to `cf uninstall` [#ce484dc](https://github.com/dinhanhthi/coding-friend/commit/ce484dc)
+
 ## v1.25.0 (2026-03-26)
 
 - Improve `cf status` command UI with cleaner layout [#577e79b](https://github.com/dinhanhthi/coding-friend/commit/577e79b)
