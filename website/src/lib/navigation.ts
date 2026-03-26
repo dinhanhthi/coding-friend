@@ -10,7 +10,7 @@ export const docsNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Skills",
+    title: "/Slash Skills",
     items: [
       { title: "/cf-plan", slug: "skills/cf-plan", tier: "medium" },
       { title: "/cf-fix", slug: "skills/cf-fix", tier: "medium" },
@@ -65,7 +65,7 @@ export const docsNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Auto-Invoked",
+    title: "Auto-Invoked Skills",
     items: [
       { title: "cf-tdd", slug: "skills/cf-tdd", tier: "medium" },
       { title: "cf-sys-debug", slug: "skills/cf-sys-debug", tier: "medium" },
