@@ -5,7 +5,7 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
-## v1.24.0 (unpublished)
+## v1.24.0 (2026-03-26)
 
 - Add auto-approve setup step to `cf init` wizard [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
 - Add auto-approve toggle to `cf config` menu [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
