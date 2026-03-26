@@ -4,7 +4,7 @@ description: "Brainstorm and create structured implementation plans."
 keywords: [planning, implementation plan, task breakdown, cf-plan]
 ---
 
-Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
+Context footprint: `⚡⚡⚡` (high) — [what does this mean?](/docs/reference/context-usage/)
 
 The `/cf-plan` skill helps you design solutions before writing code. It clarifies requirements, explores your codebase, brainstorms approaches, and produces a detailed implementation plan — then optionally implements it for you.
 
@@ -12,7 +12,17 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 
 ```bash
 /cf-plan [task description]
+/cf-plan --fast [task description]
+/cf-plan --hard [task description]
 ```
+
+## Modes
+
+- **Normal** (default) — Full workflow: discovery, agent-based exploration, brainstorming, validation, plan writing
+- **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Best for clear, single-module, additive tasks
+- **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
+
+If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding.
 
 ## Workflow
 
@@ -23,28 +33,36 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 5. **Write & Save the Plan** — Breaks the approved approach into small, sequential tasks with specific files, expected outcomes, and verification steps. Saves to `docs/plans/`
 6. **Offer Implementation** — Asks if you want to start implementing. If yes, executes each task sequentially using the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with [TDD discipline](/docs/skills/cf-tdd/), then automatically runs [`/cf-review`](/docs/skills/cf-review/)
 
-## Example
+## Examples
 
 ```bash
+# Normal — full workflow with brainstorming and agents
 /cf-plan Build a REST API with JWT authentication and rate limiting
+
+# Fast — skip discovery, inline search, straight to plan
+/cf-plan --fast Add a new CLI command similar to cf-install
+
+# Hard — deep exploration, rollback strategy, review gates
+/cf-plan --hard Migrate from REST to GraphQL across all API endpoints
 ```
 
 The skill will:
 
-- Ask probing questions about your requirements, challenge assumptions, and suggest alternatives if needed
-- Explore your existing API structure and auth setup
-- Propose 2–3 approaches with trade-offs
-- Present findings and wait for your approval
-- Create a phased implementation plan
+- Ask probing questions about your requirements, challenge assumptions, and suggest alternatives if needed (skipped in fast mode)
+- Explore your existing codebase structure (inline search in fast mode, double exploration in hard mode)
+- Propose 2–3 approaches with trade-offs (skipped in fast mode, 3–4 approaches with rollback strategies in hard mode)
+- Present findings and wait for your approval (skipped in fast mode)
+- Create a phased implementation plan (with rollback fields per task in hard mode)
 - Save the plan to `docs/plans/2026-03-05-rest-api-auth-plan.md`
-- Offer to implement it task by task
+- Offer to implement it task by task (with review gates every 2–3 tasks in hard mode)
 
 ## When to Use
 
-- Starting a new feature with uncertain scope
-- Redesigning a complex system
-- Onboarding to unfamiliar codebases
-- Planning migrations or refactors
+- Starting a new feature with uncertain scope → normal mode
+- Adding something similar to existing patterns → `--fast`
+- Redesigning a complex system → `--hard`
+- Onboarding to unfamiliar codebases → normal mode
+- Planning migrations or refactors → `--hard`
 
 ## Output
 
@@ -64,6 +82,7 @@ Each plan includes:
 - Chosen approach and rationale
 - Sequential tasks with specific files and verification steps
 - Risk assessment and mitigations
+- **Migration & Rollback** section (hard mode only) — overall rollback strategy, point of no return, incremental deployment options
 - **Next steps** — a reminder to run [`/cf-review`](/docs/skills/cf-review/) before committing
 
 ## Recommended Workflow

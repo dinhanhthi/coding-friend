@@ -17,6 +17,22 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 ## When Each Agent Is Used
 
+### cf-code-reviewer
+
+Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, and formatting the report.
+
+The review **methodology** (two-pass: quick scan + deep 4-layer analysis, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
+
+**Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
+
+```
+/cf-review (workflow orchestration)
+    ↓ fork + dispatch
+cf-code-reviewer (execution — how to review)
+    ↓ loads
+cf-auto-review (methodology — what to check)
+```
+
 ### cf-explorer
 
 The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it checks project memory first for cached exploration results, then maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets. The memory-first approach reduces token usage when the same codebase areas are explored multiple times in a session.
@@ -45,22 +61,6 @@ cf-ask (synthesize answer → save to memory)
 cf-explorer (trace code path → find relevant files → report)
     ↓ findings
 cf-fix (diagnose root cause → confirm → dispatch cf-implementer)
-```
-
-### cf-code-reviewer
-
-Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, and formatting the report.
-
-The review **methodology** (two-pass: quick scan + deep 4-layer analysis, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
-
-**Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
-
-```
-/cf-review (workflow orchestration)
-    ↓ fork + dispatch
-cf-code-reviewer (execution — how to review)
-    ↓ loads
-cf-auto-review (methodology — what to check)
 ```
 
 ### cf-implementer
