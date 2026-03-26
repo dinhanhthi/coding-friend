@@ -31,16 +31,19 @@ vi.mock("../../lib/prompt-utils.js", () => ({
 }));
 
 import { commandExists, run, runWithStderr } from "../../lib/exec.js";
-import { getInstalledVersion } from "../../lib/statusline.js";
+import { getInstalledVersion, ensureStatusline } from "../../lib/statusline.js";
 import { resolveScope } from "../../lib/prompt-utils.js";
+import { readJson } from "../../lib/json.js";
 import { updateCommand } from "../update.js";
 
 const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
 const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
+const mockEnsureStatusline = vi.mocked(ensureStatusline);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockReadFileSync = vi.mocked(readFileSync);
+const mockReadJson = vi.mocked(readJson);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -51,6 +54,119 @@ beforeEach(() => {
   mockGetInstalledVersion.mockReturnValue("0.7.2");
   // getLatestVersion uses run("gh", ...) — return null to skip update
   mockRun.mockReturnValue(null);
+});
+
+describe("updateCommand — version summary", () => {
+  it("shows 3 version lines (plugin, cli, statusline) in cf-status format", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.14.1");
+    mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.22.0" }));
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.14.1";
+      if (cmd === "npm") return "1.22.0";
+      return null;
+    });
+    mockReadJson.mockReturnValue({
+      statusLine: {
+        command:
+          "coding-friend-marketplace/coding-friend/v0.14.1/statusline.sh",
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({});
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    // Should contain version lines with arrow format
+    expect(output).toMatch(/Plugin\s+0\.14\.1 → 0\.14\.1/);
+    expect(output).toMatch(/CLI\s+1\.22\.0 → 1\.22\.0/);
+    expect(output).toMatch(/Statusline\s+0\.14\.1 → 0\.14\.1/);
+    // Should NOT contain old-style log.info lines
+    expect(output).not.toContain("Plugin version:");
+    expect(output).not.toContain("Latest plugin version:");
+    expect(output).not.toContain("CLI version:");
+    expect(output).not.toContain("Latest CLI version:");
+    expect(output).not.toContain("Statusline version:");
+  });
+
+  it("does not show 'already on the latest version' messages when up to date", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.14.1");
+    mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.22.0" }));
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.14.1";
+      if (cmd === "npm") return "1.22.0";
+      return null;
+    });
+    mockReadJson.mockReturnValue({
+      statusLine: {
+        command:
+          "coding-friend-marketplace/coding-friend/v0.14.1/statusline.sh",
+      },
+    });
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({});
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).not.toContain("already on the latest version");
+  });
+
+  it("shows plugin as 'not installed' when no plugin version", async () => {
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.14.1";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockReadJson.mockReturnValue(null);
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({});
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toMatch(/Plugin\s+not installed/);
+  });
+
+  it("shows statusline as 'not configured' when no statusline", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.14.1");
+    mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.14.1";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockReadJson.mockReturnValue(null);
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({});
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toMatch(/Statusline\s+not configured/);
+  });
+
+  it("does not show 'Updating statusline' step when statusline is already up to date", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.14.1");
+    mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.22.0" }));
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.14.1";
+      if (cmd === "npm") return "1.22.0";
+      return null;
+    });
+    mockReadJson.mockReturnValue({
+      statusLine: {
+        command:
+          "coding-friend-marketplace/coding-friend/v0.14.1/statusline.sh",
+      },
+    });
+    mockEnsureStatusline.mockReturnValue(null); // null = already up-to-date
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({});
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).not.toContain("Updating statusline");
+    expect(output).not.toContain("Statusline already up-to-date");
+  });
 });
 
 describe("updateCommand — scope flags", () => {

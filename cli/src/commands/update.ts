@@ -80,7 +80,7 @@ function getStatuslineVersion(): string | null {
   const match = sl.command.match(
     /coding-friend-marketplace\/coding-friend\/([^/]+)\//,
   );
-  return match?.[1] ?? null;
+  return match?.[1]?.replace(/^v/, "") ?? null;
 }
 
 export interface UpdateOptions extends ScopeFlags {
@@ -121,19 +121,42 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const cliVersion = getCliVersion();
   const latestCliVersion = getLatestCliVersion();
 
-  log.info(
-    `Plugin version: ${currentVersion ? `v${currentVersion}` : chalk.yellow("not found")}`,
-  );
-  log.info(
-    `Latest plugin version: ${latestVersion ? chalk.green(`v${latestVersion}`) : chalk.yellow("unknown (cannot reach GitHub)")}`,
-  );
-  log.info(`CLI version: v${cliVersion}`);
-  log.info(
-    `Latest CLI version: ${latestCliVersion ? chalk.green(`v${latestCliVersion}`) : chalk.yellow("unknown (cannot reach npm)")}`,
-  );
-  log.info(
-    `Statusline version: ${statuslineVersion ? chalk.green(`v${statuslineVersion}`) : chalk.yellow("not configured")}`,
-  );
+  // Version summary (same format as `cf status`)
+  const VERSION_COL = 13;
+  const pad = (label: string, width: number) =>
+    `  ${label}${" ".repeat(Math.max(1, width - label.length))}`;
+
+  const versionLine = (
+    label: string,
+    current: string | null,
+    latest: string | null,
+  ): string => {
+    const padded = pad(label, VERSION_COL);
+    if (!current) return `${padded}${chalk.dim("not installed")}`;
+    if (!latest)
+      return `${padded}${current} ${chalk.dim("(latest unavailable)")}`;
+    const cmp = semverCompare(
+      current.replace(/^v/, ""),
+      latest.replace(/^v/, ""),
+    );
+    const indicator =
+      cmp >= 0
+        ? chalk.green("✔ up to date")
+        : chalk.yellow("⚠ update available");
+    return `${padded}${current} → ${latest} ${indicator}`;
+  };
+
+  console.log(versionLine("Plugin", currentVersion, latestVersion));
+  console.log(versionLine("CLI", cliVersion, latestCliVersion));
+  if (statuslineVersion) {
+    console.log(
+      versionLine("Statusline", statuslineVersion, currentVersion ?? null),
+    );
+  } else {
+    console.log(
+      `${pad("Statusline", VERSION_COL)}${chalk.dim("not configured")}`,
+    );
+  }
   console.log();
 
   // Step 2: Update plugin if needed
@@ -149,9 +172,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     } else {
       const cmp = semverCompare(currentVersion, latestVersion);
       if (cmp === 0) {
-        log.success(
-          `Plugin already on the latest version (${chalk.green(`v${latestVersion}`)}).`,
-        );
+        // Already shown in version summary above
       } else if (cmp > 0) {
         log.info(
           `Plugin is ahead of latest release (local: ${chalk.cyan(`v${currentVersion}`)}, latest: v${latestVersion}). Skipping.`,
@@ -241,9 +262,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     } else {
       const cmp = semverCompare(cliVersion, latestCliVersion);
       if (cmp === 0) {
-        log.success(
-          `CLI already on the latest version (${chalk.green(`v${latestCliVersion}`)}).`,
-        );
+        // Already shown in version summary above
       } else if (cmp > 0) {
         log.info(
           `CLI is ahead of latest release (local: ${chalk.cyan(`v${cliVersion}`)}, latest: v${latestCliVersion}). Skipping.`,
@@ -272,12 +291,9 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
   // Step 4: Fix statusline
   if (doStatusline) {
-    log.step("Updating statusline...");
     const updatedVersion = ensureStatusline();
     if (updatedVersion) {
       log.success(`Statusline updated to ${chalk.green(`v${updatedVersion}`)}`);
-    } else {
-      log.dim("Statusline already up-to-date.");
     }
   }
 
