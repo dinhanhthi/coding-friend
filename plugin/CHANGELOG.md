@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.16.0 (2026-03-27)
+
+- Add discovery & brainstorm phase to `/cf-plan` — 3 rounds of probing questions, feasibility challenges, and alternative exploration before planning [#1d70778](https://github.com/dinhanhthi/coding-friend/commit/1d70778)
+- Add `--fast` and `--hard` mode flags to `/cf-plan` with auto-detect — fast mode skips discovery for simple tasks, hard mode adds risk analysis, rollback strategy, and review gates [#fc68f25](https://github.com/dinhanhthi/coding-friend/commit/fc68f25)
+- Move `token-counts.json` output from `plugin/generated/` to `website/src/generated/` — website reads tiers dynamically, eliminating hardcoded values [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
+- Fix `cf-review-out` tier badge (medium → low) [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
+
 ## v0.15.2 (2026-03-26)
 
 - Fix `auto-approve` hook overriding Claude Code's `allowedTools` for MCP tools and built-in tools — unknown non-Bash tools now pass through to Claude Code's own permission system instead of LLM classification [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
