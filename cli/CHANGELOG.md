@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.24.0 (unpublished)
+
+- Add auto-approve setup step to `cf init` wizard [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+- Add auto-approve toggle to `cf config` menu [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+
 ## v1.23.0 (2026-03-26)
 
 - Redesign all CLI welcome banners with unified Unicode box-drawing style via `printBanner` helper, with emoji-aware alignment [#0509746](https://github.com/dinhanhthi/coding-friend/commit/0509746) [#1101e05](https://github.com/dinhanhthi/coding-friend/commit/1101e05)

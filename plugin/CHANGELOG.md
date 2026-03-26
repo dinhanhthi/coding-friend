@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.15.0 (unpublished)
+
+- Add auto-approve `PreToolUse` hook for smart permission gating with two-tier classification: fast rule-based patterns (instant) and LLM fallback (Sonnet, ~2-5s) [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+- Add opt-in `autoApprove` config option in `.coding-friend/config.json` [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+
 ## v0.14.2 (2026-03-26)
 
 - Internal: consolidate independent versioning for bundled libs [#93b77cb](https://github.com/dinhanhthi/coding-friend/commit/93b77cb)
