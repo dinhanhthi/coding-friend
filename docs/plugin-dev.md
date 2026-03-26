@@ -41,7 +41,7 @@ cf dev on /path/to/coding-friend
 
 ## Token counts
 
-Each skill and agent consumes context tokens when loaded. The script `scripts/generate-token-counts.ts` measures this and writes the result to `plugin/generated/token-counts.json`.
+Each skill and agent consumes context tokens when loaded. The script `scripts/generate-token-counts.ts` measures this and writes the result to `website/src/generated/token-counts.json`.
 
 ```bash
 npm run generate:tokens
@@ -54,7 +54,7 @@ npm run generate:tokens
 3. Reads the bootstrap context (`plugin/context/bootstrap.md`)
 4. Counts tokens using `@lenml/tokenizer-claude`
 5. Assigns a context tier: `⚡` low (<1,000), `⚡⚡` medium (1,000–2,500), `⚡⚡⚡` high (>2,500)
-6. Writes everything to `plugin/generated/token-counts.json`
+6. Writes everything to `website/src/generated/token-counts.json`
 
 The website imports this JSON (via `website/src/lib/token-data.ts`) to display context footprint info on skill and agent doc pages.
 

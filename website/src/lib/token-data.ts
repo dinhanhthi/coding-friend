@@ -1,12 +1,4 @@
-import { readFileSync } from "fs";
-import { join } from "path";
-
-const tokenCounts = JSON.parse(
-  readFileSync(
-    join(process.cwd(), "../plugin/generated/token-counts.json"),
-    "utf-8",
-  ),
-);
+import tokenCounts from "@/generated/token-counts.json";
 
 export type Tier = "low" | "medium" | "high";
 

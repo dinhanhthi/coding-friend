@@ -1,140 +1,140 @@
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
-import type { Tier } from "@/lib/token-data";
+import {
+  getAllTokenData,
+  type Tier,
+  type SkillTokenEntry,
+} from "@/lib/token-data";
 
-interface Skill {
+interface SkillMeta {
   command: string;
   title: string;
   description: string;
+}
+
+interface Skill extends SkillMeta {
   tier: Tier;
 }
 
-const slashCommands: Skill[] = [
+const slashCommandMeta: SkillMeta[] = [
   {
     command: "/cf-ask",
     title: "Ask",
     description: "Quick Q&A about your codebase with persistent memory",
-    tier: "medium",
   },
   {
     command: "/cf-commit",
     title: "Commit",
     description: "Smart conventional commits with diff analysis",
-    tier: "low",
   },
   {
     command: "/cf-fix",
     title: "Fix",
     description:
       "Quick bug fix workflow with problem verification and approach confirmation",
-    tier: "medium",
   },
   {
     command: "/cf-help",
     title: "Help",
     description:
       "Answer questions about Coding Friend — skills, agents, workflows",
-    tier: "medium",
   },
   {
     command: "/cf-learn",
     title: "Learn",
     description: "Extract human learning docs from vibe coding sessions",
-    tier: "medium",
   },
   {
     command: "/cf-optimize",
     title: "Optimize",
     description: "Structured optimization with before/after measurement",
-    tier: "medium",
   },
   {
     command: "/cf-plan",
     title: "Plan",
     description:
       "Brainstorm and create implementation plans with structured exploration",
-    tier: "medium",
   },
   {
     command: "/cf-remember",
     title: "Remember",
     description: "Capture project knowledge for AI memory across sessions",
-    tier: "medium",
   },
   {
     command: "/cf-research",
     title: "Research",
     description: "In-depth research with web search and parallel subagents",
-    tier: "medium",
   },
   {
     command: "/cf-review",
     title: "Review",
     description: "Multi-layer code review in a forked subagent",
-    tier: "medium",
   },
   {
     command: "/cf-review-in",
     title: "Review In",
     description: "Collect and act on review results from an external AI agent",
-    tier: "medium",
   },
   {
     command: "/cf-review-out",
     title: "Review Out",
     description:
       "Generate a review prompt for an external AI agent (Gemini, Codex, etc.)",
-    tier: "low",
   },
   {
     command: "/cf-scan",
     title: "Scan",
     description:
       "Scan project and bootstrap memory with architecture and conventions",
-    tier: "high",
   },
   {
     command: "/cf-session",
     title: "Session",
     description:
       "Save current session to docs/sessions/ to resume on another machine",
-    tier: "medium",
   },
   {
     command: "/cf-ship",
     title: "Ship",
     description: "Verify, commit, push, and create PR in one command",
-    tier: "low",
   },
 ];
 
-const autoSkills: Skill[] = [
+const autoSkillMeta: SkillMeta[] = [
   {
     command: "cf-auto-review",
     title: "Code Review",
     description: "Multi-layer review checklist automatically applied",
-    tier: "low",
   },
   {
     command: "cf-sys-debug",
     title: "Systematic Debug",
     description: "4-phase debugging methodology for systematic problem solving",
-    tier: "medium",
   },
   {
     command: "cf-tdd",
     title: "TDD Workflow",
     description: "Enforces test-driven development: RED, GREEN, REFACTOR",
-    tier: "medium",
   },
   {
     command: "cf-verification",
     title: "Verification Gate",
     description: "Ensures tests pass before claiming work is done",
-    tier: "low",
   },
 ];
+
+function enrichWithTier(items: SkillMeta[]): Skill[] {
+  const data = getAllTokenData();
+  const skills = data.skills as Record<string, SkillTokenEntry>;
+  return items.map((item) => {
+    const name = item.command.replace(/^\//, "");
+    return { ...item, tier: skills[name]?.tier ?? "low" };
+  });
+}
+
+const slashCommands = enrichWithTier(slashCommandMeta);
+const autoSkills = enrichWithTier(autoSkillMeta);
 
 function skillHref(command: string): string {
   const name = command.startsWith("/") ? command.slice(1) : command;

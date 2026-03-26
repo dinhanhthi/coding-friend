@@ -1,25 +1,36 @@
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
-import type { Tier } from "@/lib/token-data";
+import {
+  getAllTokenData,
+  type Tier,
+  type AgentTokenEntry,
+} from "@/lib/token-data";
 
-interface Agent {
+interface AgentMeta {
   name: string;
   title: string;
   description: string;
-  model: string;
-  tier: Tier;
   usedBy: string[];
 }
 
-const agents: Agent[] = [
+interface Agent extends AgentMeta {
+  model: string;
+  tier: Tier;
+}
+
+const modelDisplayName: Record<string, string> = {
+  haiku: "Haiku",
+  sonnet: "Sonnet",
+  opus: "Opus",
+};
+
+const agentMeta: AgentMeta[] = [
   {
     name: "cf-code-reviewer",
     title: "Code Reviewer",
     description:
       "Multi-layer review covering plan alignment, code quality, security (OWASP top 10), and test coverage.",
-    model: "Opus",
-    tier: "low",
     usedBy: ["/cf-review", "/cf-ship"],
   },
   {
@@ -27,8 +38,6 @@ const agents: Agent[] = [
     title: "Explorer",
     description:
       "Maps project structure, searches files, reads code, and returns structured reports with findings and dependencies.",
-    model: "Haiku",
-    tier: "low",
     usedBy: ["/cf-plan", "/cf-ask", "/cf-fix"],
   },
   {
@@ -36,8 +45,6 @@ const agents: Agent[] = [
     title: "Implementer",
     description:
       "Strict TDD implementation in an isolated context. RED, GREEN, REFACTOR — then reports back.",
-    model: "Opus",
-    tier: "low",
     usedBy: ["/cf-plan", "/cf-fix", "/cf-optimize", "cf-tdd"],
   },
   {
@@ -45,8 +52,6 @@ const agents: Agent[] = [
     title: "Planner",
     description:
       "Designs 2-3 implementation approaches with pros, cons, effort, risk, and a recommended path.",
-    model: "Opus",
-    tier: "low",
     usedBy: ["/cf-plan"],
   },
   {
@@ -54,8 +59,6 @@ const agents: Agent[] = [
     title: "Writer",
     description:
       "Lightweight doc generation for memory files, notes, and straightforward markdown content.",
-    model: "Haiku",
-    tier: "medium",
     usedBy: ["/cf-learn", "/cf-remember", "/cf-scan", "/cf-ask"],
   },
   {
@@ -63,11 +66,24 @@ const agents: Agent[] = [
     title: "Writer Deep",
     description:
       "Deep reasoning writer for nuanced technical content, complex trade-off analysis, and architecture docs.",
-    model: "Sonnet",
-    tier: "low",
     usedBy: ["/cf-learn"],
   },
 ];
+
+function enrichAgents(items: AgentMeta[]): Agent[] {
+  const data = getAllTokenData();
+  const agentsData = data.agents as Record<string, AgentTokenEntry>;
+  return items.map((item) => {
+    const entry = agentsData[item.name];
+    return {
+      ...item,
+      tier: entry?.tier ?? "low",
+      model: modelDisplayName[entry?.model] ?? entry?.model ?? "Unknown",
+    };
+  });
+}
+
+const agents = enrichAgents(agentMeta);
 
 const modelColors: Record<string, string> = {
   Haiku: "text-emerald-400 border-emerald-400/30",
