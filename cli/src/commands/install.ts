@@ -121,10 +121,13 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   console.log();
   log.info("Next steps:");
   console.log(
-    `  ${chalk.cyan("cf init")}         Initialize workspace (docs folders, config)`,
+    `  ${chalk.cyan("cf init")}           Initialize workspace (docs folders, config)`,
   );
   console.log(
-    `  ${chalk.cyan("cf statusline")}   Setup statusline in Claude Code to show more real-time info`,
+    `  ${chalk.cyan("cf memory init")}    Setup AI memory for the project (also available in ${chalk.cyan("cf init")})`,
+  );
+  console.log(
+    `  ${chalk.cyan("cf statusline")}     Setup statusline in Claude Code to show more real-time info`,
   );
   console.log();
   log.dim("Restart Claude Code (or start a new session) to use the plugin.");
