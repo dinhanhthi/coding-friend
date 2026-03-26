@@ -117,7 +117,7 @@ function printConfig(
                 : String(c),
             )
             .join(", ");
-          subLine(subKey, names, subOverrides, chalk.cyan);
+          subLine(subKey, names, subOverrides, chalk.blueBright);
           continue;
         }
 
@@ -133,7 +133,7 @@ function printConfig(
           const inline = innerEntries
             .map(([k, v]) => `${k}: ${formatScalar(v)}`)
             .join(", ");
-          subLine(subKey, inline, subOverrides, chalk.cyan);
+          subLine(subKey, inline, subOverrides, chalk.blueBright);
           continue;
         }
 
@@ -143,12 +143,12 @@ function printConfig(
             subKey,
             subVal.map((v) => formatScalar(v)).join(", "),
             subOverrides,
-            chalk.cyan,
+            chalk.blueBright,
           );
           continue;
         }
 
-        subLine(subKey, formatScalar(subVal), subOverrides, chalk.cyan);
+        subLine(subKey, formatScalar(subVal), subOverrides, chalk.blueBright);
       }
       continue;
     }
@@ -184,6 +184,8 @@ function versionLine(
 }
 
 export async function statusCommand(): Promise<void> {
+  console.log(chalk.dim("Loading status information…"));
+
   // ─── Versions ────────────────────────────────────────────────────
   const pluginVersion = getInstalledVersion();
   const latestPlugin = getLatestVersion();
