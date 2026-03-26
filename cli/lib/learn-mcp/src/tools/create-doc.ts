@@ -15,15 +15,27 @@ export function registerCreateDoc(server: McpServer, docsDir: string): void {
       content: z.string().describe("Markdown content (without frontmatter)"),
     },
     async ({ category, title, tags, content }) => {
-      const filePath = createDoc(docsDir, category, title, tags, content);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ path: filePath, created: true }, null, 2),
-          },
-        ],
-      };
+      try {
+        const filePath = createDoc(docsDir, category, title, tags, content);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ path: filePath, created: true }, null, 2),
+            },
+          ],
+        };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: err instanceof Error ? err.message : String(err),
+            },
+          ],
+          isError: true,
+        };
+      }
     },
   );
 }
