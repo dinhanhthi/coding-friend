@@ -16,7 +16,7 @@ The key insight: CF's skills and agents **auto-activate and coordinate** — `cf
 
 We test how CF's **workflow orchestration** — skills auto-activating, agents being dispatched, discipline being enforced — improves output quality compared to bare Claude Code given the same task.
 
-The evaluation is organized into 2 waves. Each wave tests **skills** (slash commands and auto-invoked workflows). Agents (`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-code-reviewer`, `cf-writer`, `cf-writer-deep`) are not tested directly — they are evaluated indirectly when skills dispatch them during runs. This is intentional: we're testing the **orchestration**, not individual components.
+The evaluation is organized into 2 waves. Each wave tests **skills** (slash commands and auto-invoked workflows). Agents (`cf-explorer`, `cf-planner`, `cf-implementer`, `cf-reviewer`, `cf-writer`, `cf-writer-deep`) are not tested directly — they are evaluated indirectly when skills dispatch them during runs. This is intentional: we're testing the **orchestration**, not individual components.
 
 **Wave 1 — Core Workflow** (4 skills):
 
@@ -25,9 +25,9 @@ The evaluation is organized into 2 waves. Each wave tests **skills** (slash comm
 - `/cf-plan` — Plan quality (completeness, task granularity, risk identification)
 - `cf-tdd` — TDD compliance (RED before GREEN, test quality, refactor step)
 
-**Wave 2 — Supporting Skills** (7 skills):
+**Wave 2 — Supporting Skills** (6 skills):
 
-`/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `cf-sys-debug`, `cf-auto-review`
+`/cf-optimize`, `/cf-research`, `/cf-ask`, `/cf-scan`, `/cf-learn`, `cf-sys-debug`
 
 ### Why Security Is Not Benchmarked
 
@@ -105,9 +105,9 @@ Detailed per-skill, per-repository, per-criteria breakdown. Click a skill to exp
 
 ## Where CF Helps Most
 
-1. **Workflow orchestration**: Skills auto-activate and coordinate — `cf-tdd` triggers during bug fixes, `cf-auto-review` applies OWASP checklists during security tasks, `cf-verification` gates completion
+1. **Workflow orchestration**: Skills auto-activate and coordinate — `cf-tdd` triggers during bug fixes, `cf-reviewer` applies OWASP checklists during security tasks, `cf-verification` gates completion
 2. **Discipline enforcement**: TDD cycles, structured review output, test-before-fix — things the default AI skips when not explicitly asked
-3. **Agent dispatch**: `cf-review` spawns a dedicated `cf-code-reviewer` agent, `cf-fix` activates `cf-tdd` for test-driven fixing — multi-agent coordination that bare Claude doesn't do
+3. **Agent dispatch**: `cf-review` spawns a dedicated `cf-reviewer` agent, `cf-fix` activates `cf-tdd` for test-driven fixing — multi-agent coordination that bare Claude doesn't do
 
 ## Where Baseline Claude Code Is Enough
 

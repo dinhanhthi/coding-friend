@@ -27,8 +27,8 @@ const modelDisplayName: Record<string, string> = {
 
 const agentMeta: AgentMeta[] = [
   {
-    name: "cf-code-reviewer",
-    title: "Code Reviewer",
+    name: "cf-reviewer",
+    title: "Reviewer",
     description:
       "Multi-layer review covering plan alignment, code quality, security (OWASP top 10), and test coverage.",
     usedBy: ["/cf-review", "/cf-ship"],

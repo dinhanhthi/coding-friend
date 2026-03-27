@@ -13,8 +13,7 @@
       "cf-ask": { "repos": ["bench-webapp", "bench-library"] },
       "cf-scan": { "repos": ["bench-webapp", "bench-cli"] },
       "cf-learn": { "repos": ["bench-webapp"] },
-      "cf-sys-debug": { "repos": ["bench-cli"] },
-      "cf-auto-review": { "repos": ["bench-webapp"] }
+      "cf-sys-debug": { "repos": ["bench-cli"] }
     }
   },
   "wave3": {

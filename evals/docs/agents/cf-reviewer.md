@@ -1,12 +1,14 @@
-# Evaluating cf-code-reviewer
+# Evaluating cf-reviewer
+
+> **Note:** References to "cf-auto-review" and "cf-code-reviewer" below are historical — the review methodology was consolidated into `cf-reviewer` in v0.17.
 
 ## What We Test
 
-Whether the cf-code-reviewer agent produces more thorough, structured, and actionable code reviews than baseline Claude's direct analysis. We measure issue detection, precision (low false positives), severity accuracy, and actionability of fix suggestions.
+Whether the cf-reviewer agent produces more thorough, structured, and actionable code reviews than baseline Claude's direct analysis. We measure issue detection, precision (low false positives), severity accuracy, and actionability of fix suggestions.
 
 ## How Agents Are Tested
 
-The cf-code-reviewer agent is dispatched by cf-review and cf-auto-review skills. It performs multi-layer code review covering correctness, security, performance, and maintainability.
+The cf-reviewer agent is dispatched by cf-review and cf-auto-review skills. It performs multi-layer code review covering correctness, security, performance, and maintainability.
 
 ## Rubric Criteria
 
@@ -53,7 +55,7 @@ Notes: Multi-layer review should cover correctness, security, performance, and m
 
 ### Indirect (via skills)
 
-The cf-code-reviewer agent was dispatched in these eval runs:
+The cf-reviewer agent was dispatched in these eval runs:
 
 **cf-review (Wave 1)**:
 

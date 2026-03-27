@@ -802,7 +802,7 @@ test_rubric_cf_tdd_notes_mention_auto_activation() {
 test_rubric_cf_review_notes_mention_agent_dispatch() {
   local notes
   notes=$(jq -r '.notes' "$EVALS_DIR/rubrics/cf-review.json" 2>/dev/null)
-  assert_contains "$notes" "cf-code-reviewer" "cf-review notes should mention agent dispatch" || return 1
+  assert_contains "$notes" "cf-reviewer" "cf-review notes should mention agent dispatch" || return 1
 }
 
 test_rubric_cf_security_notes_mention_content_isolation() {

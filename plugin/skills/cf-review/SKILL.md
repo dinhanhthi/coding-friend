@@ -8,7 +8,7 @@ description: >
   commits, or branches.
 user-invocable: true
 context: fork
-agent: cf-code-reviewer
+agent: cf-reviewer
 ---
 
 # /cf-review
@@ -85,10 +85,10 @@ This skill is automatically invoked by other skills — you don't always need to
 
 5. **Read changed files** in full — do not review only the diff, understand the context.
 
-6. **Apply 4-layer review** (load the `cf-auto-review` skill):
+6. **Apply 4-layer review** (the cf-reviewer agent applies this automatically via its built-in Two-Pass Review methodology):
    - Layer 1: Plan alignment
    - Layer 2: Code quality
-   - Layer 3: Security (depth scaled by mode — see `cf-auto-review` skill)
+   - Layer 3: Security (depth scaled by mode)
    - Layer 4: Testing
 
 7. **Security review** (built-in):
