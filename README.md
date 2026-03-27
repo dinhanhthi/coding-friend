@@ -46,97 +46,28 @@
 
 For full details, visit the **[official website](https://cf.dinhanhthi.com/#features)**.
 
-## How it works
-
-Main workflow:
-
-<p align="center">
-  <img src="assets/workflow.png" alt="Workflow" width="100%" />
-</p>
-
-Memory architecture (read more about it [here](https://cf.dinhanhthi.com/docs/reference/memory-system/)):
-
-<p align="center">
-  <img src="assets/memory.png" alt="Memory Architecture" width="100%" />
-</p>
-
-The Learning Notes taken from your coding sessions with the help of the `/cf-learn` skill and `cf host` command:
-
-<p align="center">
-  <img src="website/public/cf-host.png" alt="Learning Notes" width="100%" />
-</p>
-
 ## Quick Start
-
-### Option A: One-Prompt Install
-
-Already have [Claude Code](https://claude.com/claude-code) running? Paste this prompt and Claude will handle the rest:
-
-```text
-Install the "coding-friend-cli" npm package globally and set up the Coding Friend
-plugin for Claude Code. Follow these steps in order, checking each one before
-moving to the next:
-
-1. Check that Node.js >= 20 is installed (run: `node -v`). If not, stop and tell
-   me to install Node.js 20+ first.
-2. Install the CLI globally (run: `npm i -g coding-friend-cli`).
-3. Verify it works (run: `cf --version`). Show me the version.
-4. Install the plugin (run: `cf install --user`).
-5. Initialize the workspace in the current project (run: `cf init`). When cf init
-   asks questions, explain each option to me and let me choose.
-6. Show a short summary of what was installed and remind me to restart Claude
-   Code to load the plugin.
-```
-
-After the install, restart Claude Code (or run `/exit` then reopen) to load the plugin.
-
-### Option B: Manual Install
 
 Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com/claude-code).
 
-```bash
-# 1. Install the CLI
-npm i -g coding-friend-cli
-
-# 2. Install the plugin
-cf install
-
-# 3. Initialize your workspace
-cf init
-
-# 4. Restart Claude Code
-```
-
-### 5. Enable AI memory (optional)
-
-The memory system stores project knowledge (facts, conventions, debug episodes) and recalls them automatically in future sessions. Basic memory works immediately, but you can enable better search:
-
-```bash
-cf memory start-daemon  # Start daemon with fuzzy search (Tier 2)
-cf memory init       # Initialize SQLite with hybrid search (Tier 1)
-cf memory status     # Check current tier and document count
-```
-
-Then bootstrap memory with project knowledge inside Claude Code:
-
-```
-/cf-scan This is a Next.js app with PostgreSQL and Stripe
-```
-
-This scans your project and creates ~10-15 memories covering architecture, conventions, and key features. Safe to run multiple times.
-
-Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
-
-### 6. Host your learning docs (optional)
-
-The `/cf-learn` skill generates learning notes from your coding sessions. You can browse them as a website or expose them to other LLM clients:
-
-```bash
-cf host              # Serve docs/learn/ as a website at localhost:3333
-cf mcp               # Setup an MCP server so other LLM clients can read your notes
-```
-
-Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/README.md).
+1. Install the CLI: `npm i -g coding-friend-cli`
+2. Install the plugin: `cf install`
+3. Initialize your workspace: `cf init`
+4. Restart Claude Code
+5. **(Optional) Enable AI memory** — stores project knowledge across sessions with automatic recall:
+   ```bash
+   cf memory start-daemon  # Start daemon with fuzzy search (Tier 2)
+   cf memory init          # Initialize SQLite with hybrid search (Tier 1)
+   cf memory status        # Check current tier and document count
+   ```
+   Then bootstrap memory inside Claude Code: `/cf-scan This is a Next.js app with PostgreSQL and Stripe`
+   Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
+6. **(Optional) Host your learning docs** — browse `/cf-learn` notes as a website or expose to other LLM clients:
+   ```bash
+   cf host              # Serve docs/learn/ as a website at localhost:3333
+   cf mcp               # Setup an MCP server so other LLM clients can read your notes
+   ```
+   Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/README.md).
 
 ## Commands
 
