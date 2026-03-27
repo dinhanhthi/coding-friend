@@ -1,5 +1,5 @@
 {
-  "name": "agent-cf-code-reviewer",
+  "name": "agent-cf-reviewer",
   "type": "agent",
   "description": "Multi-layer review",
   "criteria": [
@@ -54,5 +54,5 @@
     }
   ],
   "pass_threshold": 2.0,
-  "notes": "Multi-layer review should cover: correctness, security, performance, and maintainability. The reviewer agent does deeper analysis than cf-auto-review. For clean code, a concise 'no significant issues' is better than fabricated findings."
+  "notes": "Multi-layer review should cover: correctness, security, performance, and maintainability. The reviewer agent includes the full 4-layer review methodology. For clean code, a concise 'no significant issues' is better than fabricated findings."
 }

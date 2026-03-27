@@ -50,11 +50,10 @@ coding-friend/
 │   │   ├── cf-research/             # /cf-research — web research → docs/research/
 │   │   ├── cf-tdd/                  # TDD workflow (auto-invoked)
 │   │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
-│   │   ├── cf-auto-review/          # Review guide (auto-invoked)
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
-│       ├── cf-code-reviewer.md      # Code review subagent
+│       ├── cf-reviewer.md           # Code review subagent (4-layer methodology)
 │       ├── cf-explorer.md           # Read-only codebase explorer
 │       ├── cf-implementer.md        # TDD implementation subagent
 │       ├── cf-planner.md            # Exploration + task breakdown
@@ -85,15 +84,14 @@ coding-friend/
 
 ---
 
-## Skills Architecture (16 skills)
+## Skills Architecture (15 skills)
 
-### Reference Skills (4) — Auto-loaded when relevant
+### Reference Skills (3) — Auto-loaded when relevant
 
 | Skill             | Trigger              | Core Concept                                |
 | ----------------- | -------------------- | ------------------------------------------- |
 | `cf-tdd`          | Writing new code     | Iron law: no code without failing test      |
 | `cf-sys-debug`    | Debugging bugs       | 4-phase: investigate → analyze → test → fix |
-| `cf-auto-review`  | During code review   | 4-layer: plan, quality, security, testing   |
 | `cf-verification` | Before claiming done | Gate: no claims without fresh evidence      |
 
 Note: `cf-learn`, `cf-remember`, `cf-review`, `cf-optimize`, `cf-plan`, and `cf-fix` are also auto-invoked when relevant context is detected.
@@ -104,7 +102,7 @@ Note: `cf-learn`, `cf-remember`, `cf-review`, `cf-optimize`, `cf-plan`, and `cf-
 | ------------- | ----------------------- | -------------------------------------------------------------------------- |
 | `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                                       |
 | `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                     |
-| `cf-review`   | `/cf-review [target]`   | Fork context → cf-code-reviewer agent (also auto-invoked)                  |
+| `cf-review`   | `/cf-review [target]`   | Fork context → cf-reviewer agent (also auto-invoked)                       |
 | `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                         |
 | `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                                |
 | `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures                  |
@@ -141,7 +139,7 @@ name: cf-review
 description: Dispatch code review to a subagent. Use when the user wants code reviewed...
 user-invocable: true
 context: fork
-agent: cf-code-reviewer
+agent: cf-reviewer
 ---
 ```
 
@@ -188,7 +186,7 @@ Exit codes:
 
 | Agent              | Model   | Purpose                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |
-| `cf-code-reviewer` | opus    | 4-layer review: plan alignment, quality, security, testing |
+| `cf-reviewer`      | opus    | 4-layer review: plan alignment, quality, security, testing |
 | `cf-explorer`      | haiku   | Read-only codebase exploration and context gathering       |
 | `cf-implementer`   | opus    | TDD implementation: write test → implement → verify        |
 | `cf-planner`       | inherit | Codebase exploration + task decomposition                  |
@@ -299,9 +297,9 @@ stripFrontmatter(content) → markdownBody
 
 | Decision                                | Rationale                                                                                      |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 16 skills total                         | 4 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
+| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
 | Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
-| 6 agents                                | cf-code-reviewer, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep           |
+| 6 agents                                | cf-reviewer, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep                |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
 | /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
 | context: fork for /cf-review            | Isolate review from main context window                                                        |
@@ -424,7 +422,7 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ cf-code-reviewer agent (fork)          │          │
+    │  /cf-review ──→ cf-reviewer agent (fork)                │          │
     │                 4-layer review                       │          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │

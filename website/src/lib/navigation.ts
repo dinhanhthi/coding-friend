@@ -118,11 +118,6 @@ export const docsNavigation: NavSection[] = [
     title: "Auto-Invoked Skills",
     items: [
       {
-        title: "cf-auto-review",
-        slug: "skills/cf-auto-review",
-        tier: tierOf("skills/cf-auto-review"),
-      },
-      {
         title: "cf-sys-debug",
         slug: "skills/cf-sys-debug",
         tier: tierOf("skills/cf-sys-debug"),

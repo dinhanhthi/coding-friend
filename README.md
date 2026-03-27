@@ -156,7 +156,7 @@ Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/
 | `/cf-research [topic]`  | In-depth research with web search           |
 | `/cf-help [question]`   | Answer questions about Coding Friend        |
 
-Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`.
+Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-verification`.
 
 ## CLI Commands
 

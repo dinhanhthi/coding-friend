@@ -103,11 +103,6 @@ const slashCommandMeta: SkillMeta[] = [
 
 const autoSkillMeta: SkillMeta[] = [
   {
-    command: "cf-auto-review",
-    title: "Code Review",
-    description: "Multi-layer review checklist automatically applied",
-  },
-  {
     command: "cf-sys-debug",
     title: "Systematic Debug",
     description: "4-phase debugging methodology for systematic problem solving",
@@ -196,7 +191,7 @@ export default function Skills() {
               needed.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 justify-items-center gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {autoSkills.map((f) => (
               <SkillCard key={f.command} skill={f} />
             ))}

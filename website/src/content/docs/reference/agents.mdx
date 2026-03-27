@@ -2,7 +2,7 @@
 title: "Agents"
 description: "6 specialized agents for different engineering tasks."
 keywords:
-  [agents, subagents, cf-explorer, cf-code-reviewer, cf-implementer, cf-planner]
+  [agents, subagents, cf-explorer, cf-reviewer, cf-implementer, cf-planner]
 ---
 
 ## Overview
@@ -17,20 +17,18 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 ## When Each Agent Is Used
 
-### cf-code-reviewer
+### cf-reviewer
 
-Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, and formatting the report.
+Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, applying the two-pass review methodology (quick scan + deep 4-layer analysis), and formatting the report.
 
-The review **methodology** (two-pass: quick scan + deep 4-layer analysis, security vulnerability table, confidence scoring) lives in [`cf-auto-review`](/docs/skills/cf-auto-review/), which the agent loads at review time. This keeps methodology in one place rather than duplicated across components.
+The review methodology (security vulnerability table, confidence scoring, OWASP checks) is built directly into the agent — no separate skill dependency.
 
 **Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
 
 ```
 /cf-review (workflow orchestration)
     ↓ fork + dispatch
-cf-code-reviewer (execution — how to review)
-    ↓ loads
-cf-auto-review (methodology — what to check)
+cf-reviewer (execution + methodology — how to review and what to check)
 ```
 
 ### cf-explorer

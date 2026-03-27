@@ -46,7 +46,6 @@ const OUTPUT_PATH = join(
 const AUTO_SKILLS = new Set([
   "cf-tdd",
   "cf-sys-debug",
-  "cf-auto-review",
   "cf-verification",
 ]);
 

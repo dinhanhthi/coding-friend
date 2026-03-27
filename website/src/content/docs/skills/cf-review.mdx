@@ -59,8 +59,8 @@ Different behavior is expected based on the value of `[target]`:
 1. **Identify target** — Determine what to review based on `[target]` (see [Usage](#usage))
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
-4. **Dispatch to subagent** — Fork a [`cf-code-reviewer`](/docs/reference/agents/#cf-code-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
-5. **Apply 4-layer review** — Quality, security, testing, and design analysis (via [`cf-auto-review`](/docs/skills/cf-auto-review/))
+4. **Dispatch to subagent** — Fork a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
+5. **Apply 4-layer review** — Quality, security, testing, and design analysis (built into the cf-reviewer agent)
 6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
 7. **Report findings** — Organized by severity (Critical / Important / Suggestion)
 

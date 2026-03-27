@@ -4,7 +4,7 @@ Controlled A/B tests measuring whether the Coding Friend plugin improves Claude 
 
 ## What We're Actually Testing
 
-The core hypothesis: **CF's workflow orchestration produces better outcomes than bare Claude Code.** CF's skills and agents auto-activate and coordinate — `cf-tdd` enforces RED-GREEN-REFACTOR, `cf-fix` drives test-driven bug fixing, `cf-review` dispatches a dedicated reviewer agent, `cf-auto-review` applies OWASP checklists. Without CF, the default AI may produce correct code but misses the disciplined workflow steps that catch edge cases, enforce test coverage, and structure outputs.
+The core hypothesis: **CF's workflow orchestration produces better outcomes than bare Claude Code.** CF's skills and agents auto-activate and coordinate — `cf-tdd` enforces RED-GREEN-REFACTOR, `cf-fix` drives test-driven bug fixing, `cf-review` dispatches a dedicated `cf-reviewer` agent with integrated OWASP checklists. Without CF, the default AI may produce correct code but misses the disciplined workflow steps that catch edge cases, enforce test coverage, and structure outputs.
 
 We do **not** measure time or cost — only output quality against rubrics. Scoring uses **LLM-as-judge only** (Claude Haiku evaluating against rubric criteria). No regex, no pattern matching, no automated checks contribute to the final scores.
 

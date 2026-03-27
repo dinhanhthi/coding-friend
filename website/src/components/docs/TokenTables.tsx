@@ -32,7 +32,6 @@ const slashCommandMeta: Record<string, string> = {
 const autoSkillMeta: Record<string, string> = {
   "cf-sys-debug": "Debugging issues",
   "cf-tdd": "Writing new code",
-  "cf-auto-review": "Reviewing code",
   "cf-verification": "Before claiming done",
 };
 
@@ -41,7 +40,7 @@ const agentMeta: Record<string, string> = {
   "cf-writer-deep": "Deep reasoning docs",
   "cf-explorer": "Codebase exploration",
   "cf-planner": "Task decomposition",
-  "cf-code-reviewer": "Multi-layer review",
+  "cf-reviewer": "Multi-layer review",
   "cf-implementer": "TDD implementation",
 };
 
@@ -124,11 +123,6 @@ const overviewAutoMeta: Record<
     whatItDoes:
       "Guides 4-phase systematic debugging + documentation: Investigate, Analyze, Test, Fix, then Document",
   },
-  "cf-auto-review": {
-    activatesWhen: "Reviewing code changes",
-    whatItDoes:
-      "Applies multi-layer review checklist (correctness, security, performance, maintainability, tests)",
-  },
   "cf-verification": {
     activatesWhen: "Before claiming task complete",
     whatItDoes:
@@ -138,7 +132,7 @@ const overviewAutoMeta: Record<
 
 const agentRefMeta: Record<string, string> = {
   "cf-explorer": "Read-only codebase exploration and context gathering",
-  "cf-code-reviewer": "Multi-layer code review with deep reasoning",
+  "cf-reviewer": "Multi-layer code review with integrated 4-layer methodology",
   "cf-implementer": "TDD-driven implementation with test-first approach",
   "cf-planner": "Task decomposition, approach brainstorming, and planning",
   "cf-writer": "Lightweight document writing and markdown generation",

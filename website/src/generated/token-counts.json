@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-26T22:58:35.055Z",
+  "generatedAt": "2026-03-27T13:57:29.854Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,7 +18,7 @@
     }
   },
   "bootstrap": {
-    "tokens": 1439,
+    "tokens": 1431,
     "tier": "medium"
   },
   "skills": {
@@ -26,11 +26,6 @@
       "tokens": 2283,
       "tier": "medium",
       "type": "slash"
-    },
-    "cf-auto-review": {
-      "tokens": 1157,
-      "tier": "medium",
-      "type": "auto"
     },
     "cf-commit": {
       "tokens": 1037,
@@ -43,7 +38,7 @@
       "type": "slash"
     },
     "cf-help": {
-      "tokens": 1798,
+      "tokens": 1769,
       "tier": "medium",
       "type": "slash"
     },
@@ -73,7 +68,7 @@
       "type": "slash"
     },
     "cf-review": {
-      "tokens": 1816,
+      "tokens": 1812,
       "tier": "medium",
       "type": "slash"
     },
@@ -119,11 +114,6 @@
     }
   },
   "agents": {
-    "cf-code-reviewer": {
-      "tokens": 790,
-      "tier": "low",
-      "model": "opus"
-    },
     "cf-explorer": {
       "tokens": 953,
       "tier": "low",
@@ -137,6 +127,11 @@
     "cf-planner": {
       "tokens": 969,
       "tier": "low",
+      "model": "opus"
+    },
+    "cf-reviewer": {
+      "tokens": 1818,
+      "tier": "medium",
       "model": "opus"
     },
     "cf-writer-deep": {

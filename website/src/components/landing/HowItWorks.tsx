@@ -81,9 +81,9 @@ const sideNodes: SideNode[] = [
     kind: "agent",
   },
   {
-    id: "code-reviewer",
-    label: "cf-code-reviewer",
-    description: "Multi-layer code review agent",
+    id: "reviewer",
+    label: "cf-reviewer",
+    description: "Multi-layer code review agent (4-layer methodology)",
     parentId: "review",
     kind: "agent",
   },
@@ -119,13 +119,6 @@ const sideNodes: SideNode[] = [
     kind: "auto",
   },
   {
-    id: "auto-review",
-    label: "cf-auto-review",
-    description: "Review methodology auto-loaded during code review",
-    parentId: "review",
-    kind: "auto",
-  },
-  {
     id: "verification",
     label: "cf-verification",
     description: "Auto-invoked gate — never claims done without tests passing",
@@ -157,13 +150,12 @@ const nodeDocUrl: Record<string, string> = {
   explorer: "/docs/reference/agents/#cf-explorer",
   planner: "/docs/reference/agents/#cf-planner",
   implementer: "/docs/reference/agents/#cf-implementer",
-  "code-reviewer": "/docs/reference/agents/#cf-code-reviewer",
+  reviewer: "/docs/reference/agents/#cf-reviewer",
   writer: "/docs/reference/agents/#cf-writer",
   // Auto-invoked skills
   fix: "/docs/skills/cf-fix/",
   "sys-debug": "/docs/skills/cf-sys-debug/",
   optimize: "/docs/skills/cf-optimize/",
-  "auto-review": "/docs/skills/cf-auto-review/",
   verification: "/docs/skills/cf-verification/",
   learn: "/docs/skills/cf-learn/",
 };
@@ -195,14 +187,13 @@ const sideAbsolutePos: Record<string, { x: number; y: number }> = {
   explorer: { x: 90, y: AGENT_Y }, //  parent: plan (x=80)
   planner: { x: 250, y: AGENT_Y }, //  parent: plan (x=80)
   implementer: { x: 400, y: AGENT_Y }, // parent: implement (x=280)
-  "code-reviewer": { x: 560, y: AGENT_Y }, // parent: review (x=480)
+  reviewer: { x: 560, y: AGENT_Y }, // parent: review (x=480)
   writer: { x: 830, y: AGENT_Y }, //  parent: ship (x=880)
   // ── Bottom row: auto-invoked (left to right) ──
   fix: { x: 140, y: AUTO_Y }, //  parent: implement (x=280)
   "sys-debug": { x: 140, y: DEBUG_Y }, // loops with fix
   optimize: { x: 370, y: AUTO_Y }, //  parent: review (x=480)
-  "auto-review": { x: 540, y: AUTO_Y }, //  parent: review (x=480)
-  verification: { x: 710, y: AUTO_Y }, //  parent: commit (x=680)
+  verification: { x: 680, y: AUTO_Y }, //  parent: commit (x=680)
   learn: { x: 860, y: AUTO_Y }, //  parent: ship (x=880)
 };
 

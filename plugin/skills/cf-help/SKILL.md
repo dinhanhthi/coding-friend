@@ -26,7 +26,7 @@ Determine what the user is asking about:
 
 - **General overview** — what is Coding Friend, what can it do?
 - **Specific skill** — how does /cf-commit work? what does cf-tdd do?
-- **Specific agent** — what is the cf-code-reviewer agent?
+- **Specific agent** — what is the cf-reviewer agent?
 - **Setup/config** — how to configure, custom guides, ignore patterns
 - **Workflow** — how do skills work together?
 
@@ -59,12 +59,11 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 - **cf-tdd** — ⚡⚡ — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — ⚡⚡ — When debugging: investigate → analyze → test → fix
-- **cf-auto-review** — ⚡ — When reviewing code: plan, quality, security, testing
 - **cf-verification** — ⚡ — Before claiming done: run, read output, verify
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-code-reviewer** — ⚡ — Multi-layer code review in forked context
+- **cf-reviewer** — ⚡ — Multi-layer code review in forked context (4-layer: plan, quality, security, testing)
 - **cf-implementer** — ⚡ — TDD implementation subagent
 - **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
 - **cf-planner** — ⚡ — Task decomposition and approach brainstorming
