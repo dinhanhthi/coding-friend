@@ -63,7 +63,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-reviewer** — ⚡ — Multi-layer code review in forked context (4-layer: plan, quality, security, testing)
+- **cf-reviewer** — ⚡ — Multi-layer code review in forked context (5-layer: project rules, plan, quality, security, testing)
 - **cf-implementer** — ⚡ — TDD implementation subagent
 - **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
 - **cf-planner** — ⚡ — Task decomposition and approach brainstorming

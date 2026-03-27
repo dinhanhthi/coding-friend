@@ -79,7 +79,7 @@ The website imports this JSON (via `website/src/lib/token-data.ts`) to display c
 
 # 2. Review (before release prep)
 # Normally, it will be automatically triggered after each implementation or fix.
-/cf-review                        # 4-layer review with proportional security depth
+/cf-review                        # 5-layer review with proportional security depth
 
 # 3. Prep release (when ready to publish)
 /cf-ship                          # bump + changelog + commit + PR (via cf-ship-custom guide)

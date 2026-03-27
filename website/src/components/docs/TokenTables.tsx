@@ -132,7 +132,7 @@ const overviewAutoMeta: Record<
 
 const agentRefMeta: Record<string, string> = {
   "cf-explorer": "Read-only codebase exploration and context gathering",
-  "cf-reviewer": "Multi-layer code review with integrated 4-layer methodology",
+  "cf-reviewer": "Multi-layer code review with integrated 5-layer methodology",
   "cf-implementer": "TDD-driven implementation with test-first approach",
   "cf-planner": "Task decomposition, approach brainstorming, and planning",
   "cf-writer": "Lightweight document writing and markdown generation",

@@ -53,7 +53,7 @@ coding-friend/
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
-│       ├── cf-reviewer.md           # Code review subagent (4-layer methodology)
+│       ├── cf-reviewer.md           # Code review subagent (5-layer methodology)
 │       ├── cf-explorer.md           # Read-only codebase explorer
 │       ├── cf-implementer.md        # TDD implementation subagent
 │       ├── cf-planner.md            # Exploration + task breakdown
@@ -186,7 +186,7 @@ Exit codes:
 
 | Agent              | Model   | Purpose                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |
-| `cf-reviewer`      | opus    | 4-layer review: plan alignment, quality, security, testing |
+| `cf-reviewer`      | opus    | 5-layer review: project rules, plan, quality, security, testing |
 | `cf-explorer`      | haiku   | Read-only codebase exploration and context gathering       |
 | `cf-implementer`   | opus    | TDD implementation: write test → implement → verify        |
 | `cf-planner`       | inherit | Codebase exploration + task decomposition                  |
@@ -423,7 +423,7 @@ The project operates as 4 concurrent state machine layers.
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
     │  /cf-review ──→ cf-reviewer agent (fork)                │          │
-    │                 4-layer review                       │          │
+    │                 5-layer review                       │          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │
     │                 • Analyze diff                       │          │

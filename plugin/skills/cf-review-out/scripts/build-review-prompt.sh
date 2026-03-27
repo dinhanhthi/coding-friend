@@ -56,7 +56,13 @@ You are a senior code reviewer. This document contains everything you need to pe
 
 ## Review Criteria
 
-Evaluate the code changes against these 4 layers:
+Evaluate the code changes against these 5 layers:
+
+### Layer 0: Project Rules Compliance
+- If a \`CLAUDE.md\` file exists at the project root or in directories touched by the diff, read it
+- Check changes against stated conventions, required patterns, and forbidden patterns
+- Only flag violations of **specific, unambiguous rules** (MUST/SHOULD/ALWAYS/NEVER language)
+- MUST/ALWAYS/NEVER violations → Critical; SHOULD violations → Important
 
 ### Layer 1: Plan Alignment
 - Does the code implement what was intended?
@@ -82,6 +88,10 @@ Evaluate the code changes against these 4 layers:
 - Do tests verify behavior, not implementation?
 - Are error paths and edge cases tested?
 
+### Confidence Filtering (all layers)
+
+For each finding, assign confidence (0.0–1.0). Only report findings with confidence ≥ 0.8. Include the confidence score in your report for all Critical and Important findings.
+
 ## Output Format
 
 **IMPORTANT**: Write your review in this exact format. This allows automated tools to parse your findings.
@@ -98,11 +108,11 @@ reviewer: <your-name-or-model>
 
 ## Critical Issues
 <!-- Must fix. Bugs, security vulnerabilities, data loss risks. -->
-<!-- Use format: **[Critical] file:line — Summary** then description -->
+<!-- Use format: **[Critical] file:line — Summary** (confidence: 0.X) then description -->
 
 ## Important Issues
 <!-- Should fix. Design issues, maintainability, missing tests. -->
-<!-- Use format: **[Important] file:line — Summary** then description -->
+<!-- Use format: **[Important] file:line — Summary** (confidence: 0.X) then description -->
 
 ## Suggestions
 <!-- Nice to have. Style, minor optimizations. -->
@@ -140,10 +150,16 @@ The diff below may include **multiple sections**:
 - **\`git diff HEAD\`** — Uncommitted changes (staged + unstaged) not yet committed.
 - **\`git diff --staged\`** — Staged-only changes (subset of uncommitted).
 
-**To avoid false positives:**
+**To avoid false positives — do NOT flag:**
 - A file referenced in the diff (e.g., imported, configured, or registered) may already exist in the codebase but not appear in the diff because it was not modified. **Do NOT flag "missing file" unless you have confirmed the file does not exist in the project.**
 - If the diff contains only uncommitted changes (no branch diff section), it means either the branch has no new commits yet or the changes are on the base branch itself — review what is present.
 - Focus your review on the **code that is actually changed** in the diff, not on files that are merely referenced.
+- **Pre-existing issues**: Only flag issues introduced or modified in the diff, not pre-existing code
+- **Linter-catchable**: Don't flag issues a linter/typechecker/formatter would catch (unused imports, formatting, type errors)
+- **Lint-ignore'd code**: If code has an explicit linter-disable comment, don't flag the suppressed rule
+- **Intentional patterns**: If code has an explanatory comment justifying the approach, don't flag it
+- **Test code**: Relax rules for test files — hardcoded values, magic numbers, verbose setup are acceptable
+- **Generated code**: Skip auto-generated files (lockfiles, build output, files with codegen markers)
 
 ## Code Changes
 ${truncated_note}

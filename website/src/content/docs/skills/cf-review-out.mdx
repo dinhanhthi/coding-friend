@@ -45,7 +45,7 @@ The `/cf-review-out` skill generates a complete, self-contained review document 
 2. **Gather diff** — Collect all uncommitted changes via `git diff`
 3. **Build prompt** — Create a self-contained review document with:
    - Full diff of changes
-   - 4-layer review criteria (plan alignment, code quality, security, testing)
+   - 5-layer review criteria (project rules, plan alignment, code quality, security, testing)
    - Exact output format specification
    - Where the external agent should save results
 4. **Save prompt** — Write to `docs/reviews/<label>-prompt.md`
@@ -56,7 +56,7 @@ The `/cf-review-out` skill generates a complete, self-contained review document 
 The generated prompt is a complete, standalone document:
 
 - **Frontmatter** — label, date, status (`pending`)
-- **Review criteria** — 4-layer methodology matching [`/cf-review`](/docs/skills/cf-review/)
+- **Review criteria** — 5-layer methodology matching [`/cf-review`](/docs/skills/cf-review/)
 - **Output format** — exact markdown format the external agent must follow (Critical/Important/Suggestion)
 - **Save location** — tells the agent to write results to `docs/reviews/results/<label>-result.md`
 - **Full diff** — all code changes to review (truncated at 5000 lines with a note)

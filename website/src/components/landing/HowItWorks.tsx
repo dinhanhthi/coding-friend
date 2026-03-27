@@ -83,7 +83,7 @@ const sideNodes: SideNode[] = [
   {
     id: "reviewer",
     label: "cf-reviewer",
-    description: "Multi-layer code review agent (4-layer methodology)",
+    description: "Multi-layer code review agent (5-layer methodology)",
     parentId: "review",
     kind: "agent",
   },
