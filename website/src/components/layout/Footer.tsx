@@ -45,7 +45,7 @@ const footerLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-navy-950 border-t border-[#a0a0a01c]">
+    <footer className="bg-navy-900/80 border-t border-[#a0a0a01c]">
       <Container>
         <div className="flex flex-row flex-wrap justify-center gap-2 py-5 text-center text-base text-slate-500">
           <div className="whitespace-nowrap">

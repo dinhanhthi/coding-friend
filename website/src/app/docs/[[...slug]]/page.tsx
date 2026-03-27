@@ -23,7 +23,6 @@ import {
   OverviewAutoSkillsTable,
   AgentRefTable,
 } from "@/components/docs/TokenTables";
-import FullEvalResults from "@/components/docs/FullEvalResults";
 import Badge from "@/components/ui/Badge";
 import TokenBadge from "@/components/ui/TokenBadge";
 import CopyForAiButton from "@/components/docs/CopyForAiButton";
@@ -131,7 +130,6 @@ const mdxComponents = {
   OverviewSlashCommandsTable,
   OverviewAutoSkillsTable,
   AgentRefTable,
-  FullEvalResults,
 };
 
 export async function generateStaticParams() {

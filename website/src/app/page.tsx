@@ -1,7 +1,6 @@
 import Hero from "@/components/landing/Hero";
 import StatsSection from "@/components/landing/StatsSection";
 import EcosystemSection from "@/components/landing/EcosystemSection";
-import ComparisonSection from "@/components/landing/ComparisonSection";
 import Features from "@/components/landing/Features";
 import Skills from "@/components/landing/Skills";
 import Agents from "@/components/landing/Agents";
@@ -43,18 +42,16 @@ export default function Home() {
       </div>
       <EcosystemSection />
       <div className="bg-navy-950/50">
-        <ComparisonSection />
-        {/* <Features /> */}
+        <Features />
       </div>
-      <Features />
+      <HowItWorks />
       <div className="bg-navy-950/50">
-        <HowItWorks />
+        <Skills />
       </div>
-      <Skills />
+      <Agents />
       <div className="bg-navy-950/50">
-        <Agents />
+        <InstallSection />
       </div>
-      <InstallSection />
     </div>
   );
 }
