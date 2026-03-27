@@ -164,11 +164,7 @@ The plugin is managed by the CLI `cf` command. Learn more about the CLI in the [
 
 ## Evaluation
 
-We measure whether Coding Friend actually improves Claude Code's output through controlled A/B tests — the same prompts run against benchmark repos with and without the plugin. Results are scored against rubrics on a 0-3 scale. The goal is honest measurement, not marketing.
-
-**Key findings**: cf-fix (+1.10), cf-tdd (+0.87), and cf-review (+0.47) show clear improvements. Several skills show no difference from baseline Claude, and that is documented faithfully.
-
-For methodology, full results, and how to run evals, see [evals/README.md](evals/README.md).
+We run controlled A/B tests to measure whether Coding Friend actually improves Claude Code's output. Scores are not listed here because skills change frequently and published numbers would quickly become stale. To see the methodology and run the evals yourself, check [evals/README.md](evals/README.md).
 
 ## Plugin development
 

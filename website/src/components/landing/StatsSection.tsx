@@ -1,23 +1,7 @@
 import Container from "@/components/ui/Container";
-import evalData from "@/data/eval-results.json";
-
-function getBestBugFixDelta(): string {
-  let best = 0;
-  for (const model of Object.values(evalData.models)) {
-    const fix = model.skills["cf-fix" as keyof typeof model.skills];
-    if (!fix || fix.withoutCF <= 0) continue;
-    const pct = Math.round(
-      ((fix.withCF - fix.withoutCF) / fix.withoutCF) * 100,
-    );
-    if (pct > best) best = pct;
-  }
-  return best > 0 ? `+${best}%` : "N/A";
-}
-
 const stats = [
-  { value: evalData.stats.skillCount, label: "Skills & Commands" },
-  { value: evalData.stats.agentCount, label: "Specialized Agents" },
-  { value: getBestBugFixDelta(), label: "Bug Fix Quality" },
+  { value: "19+", label: "Skills & Commands" },
+  { value: "6", label: "Specialized Agents" },
 ];
 
 export default function StatsSection() {
