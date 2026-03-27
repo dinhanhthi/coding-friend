@@ -137,9 +137,9 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 3. If performance **regressed**, revert and try a different approach (go back to Step 5)
 4. Summarize what was changed and why it helped
 
-### Step 9: Review Reminder
+### Step 9: Auto-Review
 
-Ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
 ## Completion Protocol
 

@@ -31,7 +31,7 @@ This endpoint is taking 3 seconds to respond
 5. **Implement** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): verify existing tests pass, implement the optimization, confirm no regressions
 6. **Measure After** — Runs the exact same benchmark from Step 2, again 3 times for stable numbers
 7. **Compare & Report** — Shows a before/after table with percentage changes. Flags improvements < 5% as possibly within noise. If performance regressed, reverts and tries a different approach
-8. **Review Reminder** — Asks if you want to run [`/cf-review`](/docs/skills/cf-review/) or [`/cf-commit`](/docs/skills/cf-commit/)
+8. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the optimization is verified
 
 ## Examples
 

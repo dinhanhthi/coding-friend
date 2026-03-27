@@ -114,6 +114,7 @@ Auth module is functional but has one critical SQL injection vulnerability.
 
 - [`/cf-plan`](/docs/skills/cf-plan/) — runs `/cf-review` after all implementation tasks complete
 - [`/cf-fix`](/docs/skills/cf-fix/) — runs `/cf-review` after the fix is verified
+- [`/cf-optimize`](/docs/skills/cf-optimize/) — runs `/cf-review` after the optimization is measured and verified
 
 ## When to Use
 
@@ -131,6 +132,7 @@ Auth module is functional but has one critical SQL injection vulnerability.
 ```
 /cf-plan → implement (TDD) → (auto) /cf-review → /cf-ship
 /cf-fix → (auto) /cf-review → /cf-commit
+/cf-optimize → measure → optimize → (auto) /cf-review → /cf-commit
 ```
 
 You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/skills/cf-ship/) (which runs verification + commit + push + PR), it forms a complete quality gate before code reaches production.
