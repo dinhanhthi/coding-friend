@@ -1,6 +1,20 @@
 ---
 name: cf-help
-description: Answer questions about Coding Friend — skills, agents, workflows, setup
+description: >
+  Answer questions about Coding Friend — skills, agents, workflows, setup.
+  Auto-invoke this skill when the user asks about Coding Friend capabilities,
+  available skills, how to use a skill, what skills exist, how Coding Friend
+  works, what agents are available, how to configure Coding Friend, or any
+  question about the toolkit itself — e.g. "what skills are available?",
+  "how does coding friend work?", "what can you do?", "list all skills",
+  "what agents exist?", "how do I use cf-plan?", "what is cf-tdd?",
+  "explain this skill", "show me all commands", "what workflows are available?",
+  "how to configure coding friend", "what is coding friend?", "help me with
+  coding friend", "tell me about your skills", "what slash commands exist?",
+  "how do skills work together?", "what auto-invoked skills are there?",
+  "coding friend features", "coding friend setup", "what does cf-fix do?",
+  "which skill should I use?", "how do I get started with coding friend?".
+  Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 user-invocable: true
 model: haiku
 tools: [Read, Glob]
@@ -53,13 +67,14 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-learn [topic]` — ⚡⚡ — Extract learnings (configurable output, language, categories)
 - `/cf-research [topic]` — ⚡⚡ — In-depth research with web search → docs/research/
 - `/cf-session [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
-- `/cf-help [question]` — ⚡⚡ — This skill — answer questions about Coding Friend
+- `/cf-help [question]` — ⚡⚡ — This skill — answer questions about Coding Friend. Also auto-invoked.
 
 ### Auto-Invoked Skills (activate automatically when relevant)
 
 - **cf-tdd** — ⚡⚡ — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — ⚡⚡ — When debugging: investigate → analyze → test → fix
 - **cf-verification** — ⚡ — Before claiming done: run, read output, verify
+- **cf-help** — ⚡⚡ — When asking about Coding Friend skills, agents, or workflows
 
 ### Agents (run in forked sessions — separate context window)
 

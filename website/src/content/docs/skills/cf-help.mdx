@@ -1,12 +1,20 @@
 ---
 title: "/cf-help"
-description: "Answer questions about Coding Friend — skills, agents, workflows, setup."
-keywords: [help, overview, skills, agents, workflows, setup]
+description: "Answer questions about Coding Friend — skills, agents, workflows, setup. Also auto-invoked."
+keywords: [help, overview, skills, agents, workflows, setup, auto-invoked]
 ---
 
 Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
 The `/cf-help` skill answers questions about the Coding Friend toolkit. It provides a brief overview when asked generally, and reads specific skill files on-demand when you ask about a particular skill, agent, or workflow.
+
+This skill is **also auto-invoked** — you don't need to type `/cf-help` manually. Just ask naturally about Coding Friend and it will activate automatically:
+
+- "What skills are available?"
+- "How does cf-plan work?"
+- "What agents exist?"
+- "How do I configure Coding Friend?"
+- "Which skill should I use for X?"
 
 ## Usage
 
@@ -14,6 +22,10 @@ The `/cf-help` skill answers questions about the Coding Friend toolkit. It provi
 /cf-help
 /cf-help how does cf-tdd work?
 /cf-help what agents are available?
+
+# Or just ask naturally — cf-help auto-invokes:
+"what skills does coding friend have?"
+"how do I get started?"
 ```
 
 ## What It Does

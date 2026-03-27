@@ -100,7 +100,7 @@ Note: `cf-learn`, `cf-remember`, `cf-review`, `cf-optimize`, `cf-plan`, and `cf-
 
 | Skill         | Command                 | Key Feature                                                                |
 | ------------- | ----------------------- | -------------------------------------------------------------------------- |
-| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend                                       |
+| `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend (also auto-invoked)                   |
 | `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                     |
 | `cf-review`   | `/cf-review [target]`   | Fork context → cf-reviewer agent (also auto-invoked)                       |
 | `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                         |
