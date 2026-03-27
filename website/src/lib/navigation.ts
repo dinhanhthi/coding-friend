@@ -24,6 +24,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Installation", slug: "getting-started/installation" },
       { title: "Quick Start", slug: "getting-started/quick-start" },
       { title: "Skills Overview", slug: "skills/overview" },
+      { title: "Best Practices", slug: "getting-started/best-practices" },
     ],
   },
   {

@@ -1,0 +1,139 @@
+---
+title: "Best Practices"
+description: "Best practices for using Claude Code effectively with Coding Friend."
+keywords: [best practices, tips, workflow, claude code, productivity, conventions]
+---
+
+## Plan before you code
+
+Start with [`/cf-plan`](/docs/skills/cf-plan/) for any non-trivial task. Planning upfront helps Claude understand context, identify edge cases, and produce better code.
+
+```bash
+# Normal — full workflow with brainstorming and agents
+/cf-plan Add rate limiting to the API
+
+# Fast — skip discovery, straight to the plan (clear, single-module tasks)
+/cf-plan --fast Add a new CLI command similar to cf-install
+
+# Hard — deep exploration, rollback strategy, review gates (migrations, breaking changes)
+/cf-plan --hard Migrate from REST to GraphQL across all API endpoints
+```
+
+Pick the right mode for the task:
+
+- **Normal** (default) — Full discovery, brainstorming, and agent-based exploration. Best for new features with uncertain scope
+- **`--fast`** — Skips discovery and brainstorming. Best when the task is clear and follows existing patterns
+- **`--hard`** — Extra discovery round with risk analysis, rollback strategies per task, and review gates during implementation. Best for breaking changes, migrations, and multi-module refactors
+
+If you don't pass a flag, the skill auto-detects the mode based on task signals and confirms with you before proceeding.
+
+For simple tasks (typo fix, one-line change), skip planning entirely — just describe what you want.
+
+## Use specific, focused prompts
+
+Claude works best with clear, scoped requests. Break large tasks into smaller pieces. Include error messages, stack traces, or reproduction steps when reporting bugs.
+
+```bash
+# Good — specific and focused
+/cf-fix Login returns 401 when session cookie has expired
+
+# Less effective — vague and broad
+/cf-fix Auth is broken
+```
+
+## Scan your project first
+
+Run `/cf-scan` at the start of a new project to bootstrap the [memory system](/docs/reference/memory-system/). This gives Claude deep context about your architecture, conventions, and tech stack.
+
+```bash
+/cf-scan This is a Next.js e-commerce app with Prisma and Stripe
+```
+
+Re-scan when the project structure changes significantly.
+
+## Commit often, commit small
+
+Use `/cf-commit` after each logical unit of work. Small, focused commits are easier to review and revert.
+
+```bash
+# Good — one commit per logical change
+/cf-commit    # after adding the API endpoint
+/cf-commit    # after adding tests
+/cf-commit    # after updating docs
+
+# Avoid — one giant commit with everything
+# ... write 500 lines across 10 files, then commit
+```
+
+## Review before shipping
+
+Always run `/cf-review` before merging. The multi-layer review catches security issues, performance problems, and code quality gaps that are easy to miss.
+
+```bash
+# Review specific files or directories
+/cf-review src/auth/
+
+# Or review all staged changes
+/cf-review
+```
+
+For high-stakes changes, use `/cf-review-out` to get a second opinion from another AI (Gemini, Codex, etc.).
+
+## Capture knowledge as you go
+
+Use `/cf-remember` to save project decisions, conventions, and non-obvious context. This pays off in future sessions when Claude can recall why things were built a certain way.
+
+```bash
+/cf-remember We chose Redis over Memcached because we need pub/sub for real-time updates
+```
+
+Use `/cf-learn` to extract learning notes for yourself — things you discovered during a session that are worth remembering as a developer.
+
+## Keep CLAUDE.md lean
+
+Your `CLAUDE.md` file is loaded into every conversation. Keep it focused on:
+
+- Project-specific rules and conventions
+- Build/test/lint commands
+- Architecture decisions that affect how Claude should write code
+
+Avoid putting lengthy documentation or tutorials in `CLAUDE.md` — use `/cf-remember` for project knowledge instead.
+
+## Use custom skill guides for recurring patterns
+
+If you find yourself repeating the same instructions (e.g., "always run linting after commit", "include migration steps in PRs"), create a [custom skill guide](/docs/configuration/custom-skill-guides/). This automates your preferences without cluttering `CLAUDE.md`.
+
+```markdown
+<!-- .coding-friend/skills/cf-commit-custom/SKILL.md -->
+## After
+- Run `npm run lint` after committing
+- Verify no TODO comments were committed
+```
+
+## Use `/cf-ship` for the full workflow
+
+When you're ready to merge, `/cf-ship` chains the entire workflow: verify tests pass, create a conventional commit, push, and open a PR. This is safer than doing each step manually, because it gates the push on test verification.
+
+```bash
+/cf-ship Add user authentication with JWT
+```
+
+## Manage context wisely
+
+Claude Code has a finite context window. To make the most of it:
+
+- **Start fresh sessions** for unrelated tasks — don't reuse a session that already has a large context from a different task
+- **Use `/cf-session`** to save and resume sessions across machines
+- **Be specific about file paths** — instead of "look at the auth code", say "look at `src/auth/middleware.ts`"
+- **Check [Context Footprint](/docs/reference/context-usage/)** to understand how much context each skill uses
+- **Use `/compact` with instructions** when token usage is nearing the limit — always tell it what to keep:
+
+## When `/compact` is needed
+
+```bash
+# When token consumption is high, % usage nearing limit:
+/compact keep the original plan, user's request, key changes & todo tasks
+
+# ⚠️ Avoid using /compact without specific instructions:
+/compact  # ❌ Important info may be lost!
+```
