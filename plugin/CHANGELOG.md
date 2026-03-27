@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.16.1 (2026-03-27)
+
+- Consolidate review system into unified `cf-reviewer` agent with CLAUDE.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
+
 ## v0.16.0 (2026-03-27)
 
 - Add discovery & brainstorm phase to `/cf-plan` — 3 rounds of probing questions, feasibility challenges, and alternative exploration before planning [#1d70778](https://github.com/dinhanhthi/coding-friend/commit/1d70778)
