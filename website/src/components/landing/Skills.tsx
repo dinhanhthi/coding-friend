@@ -38,7 +38,7 @@ const slashCommandMeta: SkillMeta[] = [
     command: "/cf-help",
     title: "Help",
     description:
-      "Answer questions about Coding Friend — skills, agents, workflows",
+      "Answer questions about Coding Friend — skills, agents, workflows. Also auto-invoked when you ask naturally.",
   },
   {
     command: "/cf-learn",

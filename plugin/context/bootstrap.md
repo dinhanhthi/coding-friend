@@ -27,7 +27,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ### Auto-Invoked
 
-cf-tdd, cf-sys-debug, cf-verification
+cf-tdd, cf-sys-debug, cf-verification, cf-help
 
 **CRITICAL: cf-tdd enforcement** — Before writing ANY production code (new feature, implementation, refactoring, bug fix code), ALWAYS load the cf-tdd skill first. Do NOT skip to writing code directly. This applies whether you're implementing from a plan, fixing a bug, adding a feature, or refactoring. The only exceptions are: documentation-only changes, config edits, and non-code file updates.
 

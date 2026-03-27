@@ -115,7 +115,7 @@ export const docsNavigation: NavSection[] = [
     ],
   },
   {
-    title: "Auto-Invoked Skills",
+    title: "Only Auto-Invoked Skills",
     items: [
       {
         title: "cf-sys-debug",
