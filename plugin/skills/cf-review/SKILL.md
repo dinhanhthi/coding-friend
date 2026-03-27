@@ -21,6 +21,7 @@ This skill is automatically invoked by other skills — you don't always need to
 
 - **`/cf-plan`** — runs `/cf-review` after all implementation tasks complete
 - **`/cf-fix`** — runs `/cf-review` after the fix is verified
+- **`/cf-optimize`** — runs `/cf-review` after the optimization is measured and verified
 
 ## Workflow
 
