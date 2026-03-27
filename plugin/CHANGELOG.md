@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.17.0 (2026-03-27)
+
+- Make `cf-help` an auto-invoked skill — activates automatically when users ask about Coding Friend [#15777a7](https://github.com/dinhanhthi/coding-friend/commit/15777a7)
+- Make `/cf-optimize` auto-invoke `/cf-review` after optimization completes [#0301bbc](https://github.com/dinhanhthi/coding-friend/commit/0301bbc)
+- Remove quality evaluation section from website landing page and docs sidebar [#f397e02](https://github.com/dinhanhthi/coding-friend/commit/f397e02)
+
 ## v0.16.1 (2026-03-27)
 
 - Consolidate review system into unified `cf-reviewer` agent with CLAUDE.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
