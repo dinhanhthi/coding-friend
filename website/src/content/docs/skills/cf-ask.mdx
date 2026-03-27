@@ -34,44 +34,14 @@ The `/cf-ask` skill answers questions about your codebase and saves the answers 
 - Locating specific functionality
 - Quick clarifications during development
 
-## Memory Recall
+## Memory Integration
 
-Before exploring the codebase, `/cf-ask` searches existing memory using a **3-tier grep** on frontmatter fields:
+`/cf-ask` both **reads from** and **writes to** the [Memory System](/docs/reference/memory-system/):
 
-1. **Tier 1 — Descriptions** (cheapest): Grep `description:` fields for question keywords
-2. **Tier 2 — Tags**: Grep `tags:` fields if no description match
-3. **Tier 3 — Full-text**: Last resort content search
+- **Recall** — Before exploring code, searches existing `docs/memory/` via MCP tools or a 3-tier frontmatter grep. If a direct match is found, the existing answer is presented — no redundant exploration needed.
+- **Save** — After answering, saves the Q&A to `docs/memory/` (organized by category: `features/`, `conventions/`, `decisions/`) with YAML frontmatter and indexes it via MCP for future recall.
 
-If a direct match is found, the existing answer is presented — no redundant exploration needed.
-
-## Memory System
-
-Answers are saved to `docs/memory/` with YAML frontmatter for efficient recall:
-
-```yaml
----
-title: "Auth Flow"
-description: "JWT auth with refresh tokens and OAuth2 integration"
-tags: [auth, jwt, oauth]
-created: 2026-03-05
-updated: 2026-03-05
----
-```
-
-Organized by topic:
-
-```
-docs/memory/
-  ├── features/
-  │   ├── auth-flow.md
-  │   └── api-endpoints.md
-  ├── conventions/
-  │   ├── error-handling.md
-  │   └── state-management.md
-  └── decisions/
-      ├── jwt-vs-sessions.md
-      └── database-choice.md
-```
+See the [Memory System](/docs/reference/memory-system/) reference for full details on tiers, search pipeline, memory types, and markdown format.
 
 ## Benefits
 
