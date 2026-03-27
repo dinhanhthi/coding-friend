@@ -58,7 +58,7 @@ These permissions control what Coding Friend can do with your git repository. Th
 | Rule                     | What it enables                                                                                                                                                             |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Bash(git status *)`     | **Read-only.** `/cf-commit`, `/cf-review`, `cf-verification` check working tree status.                                                                                     |
-| `Bash(git diff *)`       | **Read-only.** `/cf-commit` reads staged/unstaged diffs and scans for secrets. `/cf-review` performs 4-layer code review. `cf-verification` checks for uncommitted changes. |
+| `Bash(git diff *)`       | **Read-only.** `/cf-commit` reads staged/unstaged diffs and scans for secrets. `/cf-review` performs 5-layer code review. `cf-verification` checks for uncommitted changes. |
 | `Bash(git log *)`        | **Read-only.** `/cf-commit` matches commit style. `/cf-review` reads context. `cf-sys-debug` finds when bugs were introduced.                                               |
 | `Bash(git branch *)`     | **Read-only.** `/cf-ship` and `cf-sys-debug` list/manage branches.                                                                                                          |
 | `Bash(git rev-parse *)`  | **Read-only.** Hooks and `/cf-commit` check git repo state.                                                                                                                 |

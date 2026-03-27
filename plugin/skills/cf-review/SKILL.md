@@ -60,8 +60,8 @@ This skill is automatically invoked by other skills — you don't always need to
    | Mode         | Condition                                          | Behavior                                                                |
    | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
    | **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection only. Skip context research.       |
-   | **STANDARD** | 4–10 files OR 51–300 lines                         | Full 4-layer review. All security phases, concise.                      |
-   | **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
+   | **STANDARD** | 4–10 files OR 51–300 lines                         | Full 5-layer review. All security phases, concise.                      |
+   | **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. |
 
    If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
 
@@ -85,7 +85,8 @@ This skill is automatically invoked by other skills — you don't always need to
 
 5. **Read changed files** in full — do not review only the diff, understand the context.
 
-6. **Apply 4-layer review** (the cf-reviewer agent applies this automatically via its built-in Two-Pass Review methodology):
+6. **Apply 5-layer review** (the cf-reviewer agent applies this automatically via its built-in Two-Pass Review methodology):
+   - Layer 0: Project rules compliance (CLAUDE.md)
    - Layer 1: Plan alignment
    - Layer 2: Code quality
    - Layer 3: Security (depth scaled by mode)
@@ -93,41 +94,19 @@ This skill is automatically invoked by other skills — you don't always need to
 
 7. **Security review** (built-in):
 
-   After the 4-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
+   After the 5-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
 
    Merge any findings from `/security-review` into the report — deduplicate with Layer 3 results, keeping the higher-severity entry when both flag the same issue.
 
-8. **Report findings** with severity levels:
-   - **Critical**: Must fix before merge
-   - **Important**: Should fix
-   - **Suggestion**: Consider
+8. **Report findings** — the cf-reviewer agent produces the formatted report using its built-in Reporting format (Critical/Important/Suggestion with file:line references and confidence scores). Do NOT redefine the format here.
 
-9. **Format the report:**
-
-   ```
-   ## 🔍 Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
-
-   ### 🚨 Critical Issues
-   - <issue> at <file>:<line>
-     For security: **[Category]** (confidence: 0.X) — exploit scenario + recommendation
-
-   ### ⚠️ Important Issues
-   - <issue> at <file>:<line>
-
-   ### 💡 Suggestions
-   - <suggestion>
-
-   ### 📋 Summary
-   <1-2 sentence overall assessment>
-   ```
-
-10. **Mark review complete and display status:**
+9. **Mark review complete and display status:**
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
 ```
 
-11. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
+10. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
 
 If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
 
@@ -138,11 +117,11 @@ If the review found **architectural insights** or **recurring patterns** worth p
 
 Skip if the review was routine with no notable findings.
 
-12. **Final output** — display the full report followed by the status banner in a **single message**.
+11. **Final output** — display the full report followed by the status banner in a **single message**.
 
 **IMPORTANT**: The structured report from step 9 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 
-Display the formatted report from step 9 first, then append the appropriate banner:
+Display the cf-reviewer's report first, then append the appropriate banner:
 
 **If NO critical issues were found:**
 

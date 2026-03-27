@@ -60,7 +60,7 @@ Different behavior is expected based on the value of `[target]`:
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
 4. **Dispatch to subagent** — Fork a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
-5. **Apply 4-layer review** — Quality, security, testing, and design analysis (built into the cf-reviewer agent)
+5. **Apply 5-layer review** — Project rules, plan alignment, code quality, security, and testing (built into the cf-reviewer agent)
 6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
 7. **Report findings** — Organized by severity (Critical / Important / Suggestion)
 
@@ -69,21 +69,22 @@ Different behavior is expected based on the value of `[target]`:
 | Mode         | When                                              | What Happens                                                            |
 | ------------ | ------------------------------------------------- | ----------------------------------------------------------------------- |
 | **QUICK**    | ≤3 files, ≤50 lines, no sensitive paths           | Secret scan + obvious issues only. Fast.                                |
-| **STANDARD** | 4–10 files or 51–300 lines                        | Full 4-layer review. All security phases, concise.                      |
-| **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 4-layer + extended security. Data flow tracing. Exploit scenarios. |
+| **STANDARD** | 4–10 files or 51–300 lines                        | Full 5-layer review. All security phases, concise.                      |
+| **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. |
 
 If any changed file matches sensitive patterns (`auth`, `crypto`, `token`, `session`, `password`, `.env`), the review always escalates to **DEEP**. Override with `--deep` or `--quick` flags.
 
-### 4-Layer Review
+### 5-Layer Review
 
-| Layer                 | Focus                                                               |
-| --------------------- | ------------------------------------------------------------------- |
-| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?            |
-| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance               |
-| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
-| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests           |
+| Layer                       | Focus                                                               |
+| --------------------------- | ------------------------------------------------------------------- |
+| **0. Project Rules**        | CLAUDE.md compliance — MUST/SHOULD rule violations                  |
+| **1. Plan Alignment**       | Does the code match the intended design? Missing pieces?            |
+| **2. Code Quality**         | Clarity, naming, consistency, complexity, performance               |
+| **3. Security**             | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
+| **4. Testing**              | Coverage gaps, edge cases, error paths, integration tests           |
 
-Security findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
+All findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
 
 ## Output
 
@@ -146,11 +147,11 @@ You can also use it standalone at any point. Combined with [`/cf-ship`](/docs/sk
 
 ## Built-in Security Scan
 
-After the 4-layer review, `/cf-review` automatically invokes Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) — a dedicated security audit skill from Anthropic. This means every `/cf-review` run gets **two layers of security analysis**:
+After the 5-layer review, `/cf-review` automatically invokes Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) — a dedicated security audit skill from Anthropic. This means every `/cf-review` run gets **two layers of security analysis**:
 
 | Pass                   | Source                                                                                   | Focus                                                                  |
 | ---------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Layer 3**            | Coding Friend's 4-layer review                                                           | Injection, auth bypasses, secrets, data flow — confidence-scored       |
+| **Layer 3**            | Coding Friend's 5-layer review                                                           | Injection, auth bypasses, secrets, data flow — confidence-scored       |
 | **`/security-review`** | [Anthropic's security-review](https://github.com/anthropics/claude-code-security-review) | Multi-phase vulnerability hunting with strict false-positive filtering |
 
 Findings from both passes are **merged and deduplicated** — when both flag the same issue, the higher-severity entry is kept. This gives you comprehensive security coverage without running a separate command.
