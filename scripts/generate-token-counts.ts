@@ -43,11 +43,7 @@ const OUTPUT_PATH = join(
   "token-counts.json",
 );
 
-const AUTO_SKILLS = new Set([
-  "cf-tdd",
-  "cf-sys-debug",
-  "cf-verification",
-]);
+const AUTO_SKILLS = new Set(["cf-tdd", "cf-sys-debug", "cf-verification"]);
 
 const TIERS = {
   low: { label: "Low", maxTokens: 1000, icon: "⚡" },

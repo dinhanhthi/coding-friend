@@ -106,19 +106,19 @@ reviewer: <your-name-or-model>
 
 # Review Result: ${LABEL}
 
-## Critical Issues
+## 🚨 Critical Issues
 <!-- Must fix. Bugs, security vulnerabilities, data loss risks. -->
 <!-- Use format: **[Critical] file:line — Summary** (confidence: 0.X) then description -->
 
-## Important Issues
+## ⚠️ Important Issues
 <!-- Should fix. Design issues, maintainability, missing tests. -->
 <!-- Use format: **[Important] file:line — Summary** (confidence: 0.X) then description -->
 
-## Suggestions
+## 💡 Suggestions
 <!-- Nice to have. Style, minor optimizations. -->
 <!-- Use format: **[Suggestion] file:line — Summary** then description -->
 
-## Summary
+## 📋 Summary
 <!-- 1-2 sentence overall assessment -->
 \`\`\`
 

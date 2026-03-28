@@ -184,14 +184,14 @@ Exit codes:
 
 ## Agents (6)
 
-| Agent              | Model   | Purpose                                                    |
-| ------------------ | ------- | ---------------------------------------------------------- |
-| `cf-reviewer`      | opus    | 5-layer review: project rules, plan, quality, security, testing |
-| `cf-explorer`      | haiku   | Read-only codebase exploration and context gathering       |
-| `cf-implementer`   | opus    | TDD implementation: write test → implement → verify        |
-| `cf-planner`       | inherit | Codebase exploration + task decomposition                  |
-| `cf-writer`        | haiku   | Lightweight document writing and markdown generation       |
-| `cf-writer-deep`   | sonnet  | Deep reasoning for nuanced technical documentation         |
+| Agent            | Model   | Purpose                                                         |
+| ---------------- | ------- | --------------------------------------------------------------- |
+| `cf-reviewer`    | opus    | 5-layer review: project rules, plan, quality, security, testing |
+| `cf-explorer`    | haiku   | Read-only codebase exploration and context gathering            |
+| `cf-implementer` | opus    | TDD implementation: write test → implement → verify             |
+| `cf-planner`     | inherit | Codebase exploration + task decomposition                       |
+| `cf-writer`      | haiku   | Lightweight document writing and markdown generation            |
+| `cf-writer-deep` | sonnet  | Deep reasoning for nuanced technical documentation              |
 
 ---
 

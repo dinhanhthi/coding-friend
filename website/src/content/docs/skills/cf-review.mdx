@@ -76,13 +76,13 @@ If any changed file matches sensitive patterns (`auth`, `crypto`, `token`, `sess
 
 ### 5-Layer Review
 
-| Layer                       | Focus                                                               |
-| --------------------------- | ------------------------------------------------------------------- |
-| **0. Project Rules**        | CLAUDE.md compliance — MUST/SHOULD rule violations                  |
-| **1. Plan Alignment**       | Does the code match the intended design? Missing pieces?            |
-| **2. Code Quality**         | Clarity, naming, consistency, complexity, performance               |
-| **3. Security**             | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
-| **4. Testing**              | Coverage gaps, edge cases, error paths, integration tests           |
+| Layer                 | Focus                                                               |
+| --------------------- | ------------------------------------------------------------------- |
+| **0. Project Rules**  | CLAUDE.md compliance — MUST/SHOULD rule violations                  |
+| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?            |
+| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance               |
+| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
+| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests           |
 
 All findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
 
