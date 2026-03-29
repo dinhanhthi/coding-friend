@@ -61,13 +61,13 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
    > Review by **<reviewer>** (from result frontmatter, or "external agent" if not specified)
 
    ### 🚨 Critical Issues
-   - <issue> at <file>:<line>
+   - **[L<n>]** <issue> at <file>:<line>
 
    ### ⚠️ Important Issues
-   - <issue> at <file>:<line>
+   - **[L<n>]** <issue> at <file>:<line>
 
    ### 💡 Suggestions
-   - <suggestion>
+   - **[L<n>]** <suggestion>
 
    ### 📋 Summary
    <assessment from external agent>

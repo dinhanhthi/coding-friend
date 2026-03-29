@@ -152,34 +152,28 @@ Every Critical and Important finding MUST include its confidence score in the re
 
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
 
+**Key rule:** Do NOT use layer headings (Layer 0, Layer 1, etc.) in the output. Collect all findings from all 5 layers and classify them into the 4 categories below. Each finding should mention which layer it came from inline (e.g., "**[L0]**", "**[L3: Security]**").
+
 Format:
 
 ```
 ## 🔍 Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
 
 ### 🚨 Critical Issues
-- [file:line] Description (confidence: 0.X)
+- **[L<n>]** [file:line] Description (confidence: 0.X)
   For security findings: **[Category]** — exploit scenario + recommendation
 
 ### ⚠️ Important Issues
-- [file:line] Description (confidence: 0.X)
+- **[L<n>]** [file:line] Description (confidence: 0.X)
 
 ### 💡 Suggestions
-- Description
+- **[L<n>]** [file:line] Description
 
 ### 📋 Summary
 Overall assessment in 1-2 sentences.
 ```
 
-## Performance Suggestion
-
-If the review identifies **performance concerns** — e.g. O(n²) loops, N+1 queries, missing indexes, unnecessary re-renders, unbounded data fetching, or memory-intensive operations — add a section at the end of the report:
-
-```
-### 🔥 Performance
-- [file:line] Description of concern
-  Suggestion: Consider running `/cf-optimize` on this code path for measured improvement.
-```
+If the review identifies **performance concerns** (O(n²) loops, N+1 queries, missing indexes, unnecessary re-renders, unbounded data fetching), include them as findings in the appropriate severity category above with a note: _Consider running `/cf-optimize` on this code path._
 
 ## Output Quality Gates
 

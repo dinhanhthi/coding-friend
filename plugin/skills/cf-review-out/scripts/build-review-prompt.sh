@@ -108,15 +108,16 @@ reviewer: <your-name-or-model>
 
 ## 🚨 Critical Issues
 <!-- Must fix. Bugs, security vulnerabilities, data loss risks. -->
-<!-- Use format: **[Critical] file:line — Summary** (confidence: 0.X) then description -->
+<!-- Use format: **[L<n>]** file:line — Summary (confidence: 0.X) then description -->
+<!-- Tag each finding with its review layer: L0=Rules, L1=Plan, L2=Quality, L3=Security, L4=Testing -->
 
 ## ⚠️ Important Issues
 <!-- Should fix. Design issues, maintainability, missing tests. -->
-<!-- Use format: **[Important] file:line — Summary** (confidence: 0.X) then description -->
+<!-- Use format: **[L<n>]** file:line — Summary (confidence: 0.X) then description -->
 
 ## 💡 Suggestions
 <!-- Nice to have. Style, minor optimizations. -->
-<!-- Use format: **[Suggestion] file:line — Summary** then description -->
+<!-- Use format: **[L<n>]** file:line — Summary then description -->
 
 ## 📋 Summary
 <!-- 1-2 sentence overall assessment -->
