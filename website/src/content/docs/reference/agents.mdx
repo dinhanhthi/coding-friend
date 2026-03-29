@@ -21,7 +21,7 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, applying the two-pass review methodology (quick scan + deep 5-layer analysis), and formatting the report.
 
-The review methodology (security vulnerability table, confidence scoring, OWASP checks) is built directly into the agent — no separate skill dependency.
+The review methodology (security vulnerability table, confidence scoring, OWASP checks) is built directly into the agent — no separate skill dependency. Findings from all 5 layers are collected into 4 severity categories (🚨 Critical, ⚠️ Important, 💡 Suggestions, 📋 Summary) — no layer headings in the output. Each finding is tagged with its source layer inline (e.g., `[L3]` for Security).
 
 **Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
 
