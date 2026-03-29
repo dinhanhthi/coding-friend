@@ -65,7 +65,15 @@ const server = new McpServer({
   version: cliPkg.version,
 });
 
-registerAllTools(server, backend);
+// Resolve DB path for status display
+const dbPath = (() => {
+  if ("getDbPath" in backend && typeof backend.getDbPath === "function") {
+    return (backend as { getDbPath(): string }).getDbPath();
+  }
+  return null;
+})();
+
+registerAllTools(server, backend, { docsDir, dbPath });
 registerAllResources(server, backend);
 
 const transport = new StdioServerTransport();

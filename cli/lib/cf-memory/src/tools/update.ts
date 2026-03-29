@@ -1,10 +1,14 @@
+import path from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { MemoryBackend } from "../lib/backend.js";
+import { buildUpdateStatus } from "../lib/status-frame.js";
+import type { ToolRegistrationContext } from "../server.js";
 
 export function registerUpdate(
   server: McpServer,
   backend: MemoryBackend,
+  ctx?: ToolRegistrationContext,
 ): void {
   server.tool(
     "memory_update",
@@ -45,18 +49,34 @@ export function registerUpdate(
           isError: true,
         };
       }
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              { id: memory.id, title: memory.frontmatter.title, updated: true },
-              null,
-              2,
-            ),
-          },
-        ],
+
+      const response = {
+        id: memory.id,
+        title: memory.frontmatter.title,
+        updated: true,
       };
+
+      const parts: Array<{ type: "text"; text: string }> = [
+        {
+          type: "text" as const,
+          text: JSON.stringify(response, null, 2),
+        },
+      ];
+
+      if (ctx?.docsDir) {
+        const markdownPath = path.join(ctx.docsDir, `${memory.id}.md`);
+        parts.push({
+          type: "text" as const,
+          text: buildUpdateStatus({
+            id: memory.id,
+            title: memory.frontmatter.title,
+            markdownPath,
+            dbPath: ctx.dbPath ?? null,
+          }),
+        });
+      }
+
+      return { content: parts };
     },
   );
 }
