@@ -2,6 +2,14 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.18.0 (2026-03-29)
+
+- Refactor `auto-approve` hook to Claude Code Auto-Mode style 3-step classification (auto-approve → LLM classify → block) [#4c57e1f](https://github.com/dinhanhthi/coding-friend/commit/4c57e1f)
+- Show CLAUDE.md update status in `cf-memory` output instead of raw file path [#f2b9022](https://github.com/dinhanhthi/coding-friend/commit/f2b9022)
+- Restructure code review output to unified 4-category format with consistent emoji headers [#2857066](https://github.com/dinhanhthi/coding-friend/commit/2857066) [#bf9c94e](https://github.com/dinhanhthi/coding-friend/commit/bf9c94e)
+- Add critical verification step to `cf-review-in` before acting on external review findings [#8b33fc3](https://github.com/dinhanhthi/coding-friend/commit/8b33fc3)
+- Add skill invocation guard to prevent false positive skill activation when discussing skills [#9eee92a](https://github.com/dinhanhthi/coding-friend/commit/9eee92a)
+
 ## v0.17.0 (2026-03-27)
 
 - Make `cf-help` an auto-invoked skill — activates automatically when users ask about Coding Friend [#15777a7](https://github.com/dinhanhthi/coding-friend/commit/15777a7)
