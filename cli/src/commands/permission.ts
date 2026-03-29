@@ -1,8 +1,15 @@
 import { checkbox, confirm, select } from "@inquirer/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
+import { readJson, mergeJson } from "../lib/json.js";
 import { log, printBanner } from "../lib/log.js";
-import { claudeLocalSettingsPath, claudeSettingsPath } from "../lib/paths.js";
+import {
+  claudeLocalSettingsPath,
+  claudeProjectSettingsPath,
+  claudeSettingsPath,
+  globalConfigPath,
+  localConfigPath,
+} from "../lib/paths.js";
 import {
   STATIC_RULES,
   getAllRules,
@@ -12,8 +19,16 @@ import {
   cleanupStalePluginRules,
   logPluginScriptWarning,
   extractTag,
+  runDangerousRulesAudit,
 } from "../lib/permissions.js";
 import type { PermissionRule } from "../lib/permissions.js";
+import type { CodingFriendConfig } from "../types.js";
+import {
+  askScope,
+  getScopeLabel,
+  formatScopeLabel,
+  getMergedValue,
+} from "../lib/prompt-utils.js";
 
 const TAG_COLORS: Record<string, (s: string) => string> = {
   "[read-only]": chalk.green,
@@ -133,6 +148,22 @@ async function interactiveFlow(
       });
     }
 
+    // Auto-approve toggle
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+    const autoApproveVal = getMergedValue(
+      "autoApprove",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+    const autoApproveScopeLabel = formatScopeLabel(
+      getScopeLabel("autoApprove", globalCfg, localCfg),
+    );
+    categoryChoices.push({
+      name: `Auto-approve ${autoApproveScopeLabel}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
+      value: "__auto_approve__",
+    });
+
     categoryChoices.push({
       name: chalk.green("→ Apply changes"),
       value: "__apply__",
@@ -145,6 +176,11 @@ async function interactiveFlow(
 
     if (chosen === "__apply__") {
       browsing = false;
+      continue;
+    }
+
+    if (chosen === "__auto_approve__") {
+      await autoApproveFlow();
       continue;
     }
 
@@ -179,6 +215,55 @@ async function interactiveFlow(
   const toAdd = [...enabled].filter((r) => !existing.includes(r));
   const toRemove = managedExisting.filter((r) => !enabled.has(r));
   return { toAdd, toRemove };
+}
+
+/**
+ * Interactive auto-approve toggle, matching the behavior in config.ts and init.ts.
+ */
+async function autoApproveFlow(): Promise<void> {
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = formatScopeLabel(
+    getScopeLabel("autoApprove", globalCfg, localCfg),
+  );
+
+  console.log(
+    chalk.bold("Auto-approve") +
+      ` ${scopeLabel}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+  );
+  log.dim(
+    "Auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns",
+  );
+  console.log();
+
+  const value = await confirm({
+    message: "Enable auto-approve?",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { autoApprove: value });
+  log.success(`Saved to ${targetPath}`);
+
+  // Audit dangerous rules if auto-approve is being enabled
+  if (value) {
+    await runDangerousRulesAudit(
+      [
+        claudeProjectSettingsPath(),
+        claudeLocalSettingsPath(),
+        claudeSettingsPath(),
+      ],
+      log,
+      (message) => confirm({ message, default: true }),
+    );
+  }
 }
 
 export async function permissionCommand(opts: {
