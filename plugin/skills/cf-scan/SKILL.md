@@ -32,7 +32,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ## Workflow
 
-### Step 0: Load Custom Guide
+### Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan`
 

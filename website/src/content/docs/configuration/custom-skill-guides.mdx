@@ -37,11 +37,13 @@ All sections are optional — include only what you need.
 
 ## How it works
 
-Each skill has a built-in step that runs `load-custom-guide.sh` at execution time. The script checks for a custom guide in the local path first, then the global path. If found, the guide content is loaded and integrated into the skill's workflow:
+Every `cf-*` skill has a **Step 0** that runs a bash script (`load-custom-guide.sh`). This script checks for a custom guide in the local path first, then the global path. If found, it outputs the guide content, and the skill integrates the sections into its workflow:
 
 - `## Before` → executes before the first step
 - `## Rules` → applies as additional rules throughout all steps
 - `## After` → executes after the final step
+
+The guide content becomes a direct tool result that the model reads inline — ensuring it is always followed.
 
 Custom guides are loaded **on-demand** — only when the corresponding skill runs. Changes to a guide take effect on the next skill invocation (no `/clear` needed).
 

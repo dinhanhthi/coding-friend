@@ -26,7 +26,7 @@ Output goes to `{docsDir}/research/` (default: `docs/research/`). Check `.coding
 
 ## Workflow
 
-### Step 0: Load Custom Guide
+### Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-research`
 

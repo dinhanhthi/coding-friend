@@ -24,11 +24,11 @@ In vibe coding, AI writes the code and human approves it — but the human doesn
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn`
 
-If output is not empty, integrate the returned sections:
+If output is not empty, integrate the returned sections into this workflow:
 
-- `## Before` → apply before the main content below
-- `## Rules` → apply as additional rules throughout
-- `## After` → apply after the workflow completes
+- `## Before` → execute before the first step
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
 
 ## Step 0: Load Config
 

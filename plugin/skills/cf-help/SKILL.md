@@ -28,7 +28,7 @@ Answer questions about the Coding Friend toolkit. Provide a brief overview when 
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help`
 
-If output is not empty, integrate the returned sections:
+If output is not empty, integrate the returned sections into this workflow:
 
 - `## Before` → execute before Step 1
 - `## Rules` → apply as additional rules throughout all steps
