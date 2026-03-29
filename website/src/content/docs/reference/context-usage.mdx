@@ -8,9 +8,12 @@ keywords: [tokens, context, footprint, cost, tier, context window, token count]
 
 When you invoke a skill (e.g., `/cf-plan`), its full `SKILL.md` file is **injected into the conversation prompt**. This is the skill's **context footprint** — the amount of your context window it occupies just by being loaded.
 
-:::note
-The context footprint measures only the tokens **inserted into the prompt** when a skill or agent is loaded. It does **not** reflect the total tokens consumed during execution, which depends on how much code is read, how many tool calls are made, and how long the conversation runs.
-:::
+<Callout type="info">
+  The context footprint measures only the tokens **inserted into the prompt**
+  when a skill or agent is loaded. It does **not** reflect the total tokens
+  consumed during execution, which depends on how much code is read, how many
+  tool calls are made, and how long the conversation runs.
+</Callout>
 
 **Bootstrap context** (<BootstrapTokens />) is loaded every session automatically. This includes the list of available skills, agents, activation signals, and conventions.
 
