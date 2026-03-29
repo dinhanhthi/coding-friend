@@ -1,0 +1,93 @@
+import { describe, it, expect } from "vitest";
+import { buildStoreStatus, buildUpdateStatus } from "../lib/status-frame.js";
+
+describe("buildStoreStatus", () => {
+  it("returns a decorated frame with markdown and database info", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: "/home/.coding-friend/memory/projects/-foo/db.sqlite",
+    });
+
+    expect(result).toContain("features/auth-pattern");
+    expect(result).toContain("Auth Pattern");
+    expect(result).toContain("/docs/memory/features/auth-pattern.md");
+    expect(result).toContain("db.sqlite");
+    // Must have frame decorations
+    expect(result).toContain("╭");
+    expect(result).toContain("╰");
+    expect(result).toContain("│");
+  });
+
+  it("shows markdown-only when dbPath is null", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: null,
+    });
+
+    expect(result).toContain("/docs/memory/features/auth-pattern.md");
+    expect(result).not.toContain("db.sqlite");
+    expect(result).toContain("╭");
+  });
+
+  it("includes duplicate warning when provided", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: null,
+      warning: "Near-duplicate found: features/old-auth (similarity: 0.82)",
+    });
+
+    expect(result).toContain("Near-duplicate");
+    expect(result).toContain("⚠");
+  });
+});
+
+describe("buildUpdateStatus", () => {
+  it("returns a decorated frame with markdown and database info", () => {
+    const result = buildUpdateStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: "/home/.coding-friend/memory/projects/-foo/db.sqlite",
+    });
+
+    expect(result).toContain("features/auth-pattern");
+    expect(result).toContain("Auth Pattern");
+    expect(result).toContain("/docs/memory/features/auth-pattern.md");
+    expect(result).toContain("db.sqlite");
+    expect(result).toContain("╭");
+    expect(result).toContain("╰");
+  });
+
+  it("shows markdown-only when dbPath is null", () => {
+    const result = buildUpdateStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: null,
+    });
+
+    expect(result).toContain("/docs/memory/features/auth-pattern.md");
+    expect(result).not.toContain("db.sqlite");
+  });
+});
+
+describe("frame alignment", () => {
+  it("all lines end at the same column", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: "/home/.coding-friend/memory/projects/-foo/db.sqlite",
+    });
+
+    const lines = result.split("\n");
+    // Top and bottom borders should be the same length
+    expect(lines[0].length).toBe(lines[lines.length - 1].length);
+  });
+});
