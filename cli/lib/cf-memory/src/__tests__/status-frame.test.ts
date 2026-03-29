@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildStoreStatus, buildUpdateStatus } from "../lib/status-frame.js";
 
 describe("buildStoreStatus", () => {
-  it("returns a decorated frame with markdown and database info", () => {
+  it("returns a list with markdown and database info", () => {
     const result = buildStoreStatus({
       id: "features/auth-pattern",
       title: "Auth Pattern",
@@ -14,10 +14,10 @@ describe("buildStoreStatus", () => {
     expect(result).toContain("Auth Pattern");
     expect(result).toContain("/docs/memory/features/auth-pattern.md");
     expect(result).toContain("db.sqlite");
-    // Must have frame decorations
-    expect(result).toContain("╭");
-    expect(result).toContain("╰");
-    expect(result).toContain("│");
+    // No box-drawing characters
+    expect(result).not.toContain("╭");
+    expect(result).not.toContain("╰");
+    expect(result).not.toContain("│");
   });
 
   it("shows markdown-only when dbPath is null", () => {
@@ -30,7 +30,6 @@ describe("buildStoreStatus", () => {
 
     expect(result).toContain("/docs/memory/features/auth-pattern.md");
     expect(result).not.toContain("db.sqlite");
-    expect(result).toContain("╭");
   });
 
   it("shows CLAUDE.md updated message when claudeMdUpdated is true", () => {
@@ -83,7 +82,7 @@ describe("buildStoreStatus", () => {
 });
 
 describe("buildUpdateStatus", () => {
-  it("returns a decorated frame with markdown and database info", () => {
+  it("returns a list with markdown and database info", () => {
     const result = buildUpdateStatus({
       id: "features/auth-pattern",
       title: "Auth Pattern",
@@ -95,8 +94,8 @@ describe("buildUpdateStatus", () => {
     expect(result).toContain("Auth Pattern");
     expect(result).toContain("/docs/memory/features/auth-pattern.md");
     expect(result).toContain("db.sqlite");
-    expect(result).toContain("╭");
-    expect(result).toContain("╰");
+    expect(result).not.toContain("╭");
+    expect(result).not.toContain("╰");
   });
 
   it("shows markdown-only when dbPath is null", () => {
@@ -133,20 +132,5 @@ describe("buildUpdateStatus", () => {
     });
 
     expect(result).not.toContain("CLAUDE.md");
-  });
-});
-
-describe("frame alignment", () => {
-  it("all lines end at the same column", () => {
-    const result = buildStoreStatus({
-      id: "features/auth-pattern",
-      title: "Auth Pattern",
-      markdownPath: "/docs/memory/features/auth-pattern.md",
-      dbPath: "/home/.coding-friend/memory/projects/-foo/db.sqlite",
-    });
-
-    const lines = result.split("\n");
-    // Top and bottom borders should be the same length
-    expect(lines[0].length).toBe(lines[lines.length - 1].length);
   });
 });
