@@ -29,6 +29,15 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 cf-tdd, cf-sys-debug, cf-verification, cf-help
 
+### Skill Invocation Guard
+
+**IMPORTANT — distinguish invocation intent from discussion:**
+
+- **INVOKE** a skill only when the user wants to **perform the skill's action** RIGHT NOW — e.g. they want code reviewed, a bug fixed, a commit created, knowledge extracted.
+- **DO NOT invoke** when the user is **talking ABOUT** a skill — e.g. discussing how to improve it, asking about its behavior, mentioning it as a reference, planning changes to the skill itself, or referencing it in past tense.
+- When the user's message contains a `/cf-*` name but the **intent is meta** (improve, change, discuss, analyze, compare, verify the skill itself), treat the skill name as a **noun**, not a **command**.
+- When in doubt, do NOT auto-invoke. Ask the user instead.
+
 **CRITICAL: cf-tdd enforcement** — Before writing ANY production code (new feature, implementation, refactoring, bug fix code), ALWAYS load the cf-tdd skill first. Do NOT skip to writing code directly. This applies whether you're implementing from a plan, fixing a bug, adding a feature, or refactoring. The only exceptions are: documentation-only changes, config edits, and non-code file updates.
 
 ## Available Agents
