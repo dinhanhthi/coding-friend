@@ -19,14 +19,15 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
 
 ## Workflow
 
-0. **Load Custom Guide:**
+### Step 0: Custom Guide
 
-   Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in`
 
-   If output is not empty, integrate the returned sections into this workflow:
-   - `## Before` → execute before step 1
-   - `## Rules` → apply as additional rules throughout all steps
-   - `## After` → execute after the final step
+If output is not empty, integrate the returned sections into this workflow:
+
+- `## Before` → execute before the first step
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
 
 1. **Determine the label:**
 
