@@ -5,6 +5,11 @@
 
 SKILL_NAME="${1:?Usage: load-custom-guide.sh <skill-name>}"
 
+# Defense-in-depth: reject path traversal (skill names are hardcoded, but be safe)
+if [[ "$SKILL_NAME" == */* ]] || [[ "$SKILL_NAME" == *\\* ]] || [[ "$SKILL_NAME" == *..* ]]; then
+  exit 0
+fi
+
 LOCAL=".coding-friend/skills/${SKILL_NAME}-custom/SKILL.md"
 GLOBAL="$HOME/.coding-friend/skills/${SKILL_NAME}-custom/SKILL.md"
 

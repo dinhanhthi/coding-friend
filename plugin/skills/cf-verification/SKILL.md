@@ -10,11 +10,11 @@ user-invocable: false
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-verification`
 
-If output is not empty, integrate the returned sections:
+If output is not empty, integrate the returned sections into this workflow:
 
-- `## Before` → apply before the main content below
-- `## Rules` → apply as additional rules throughout
-- `## After` → apply after verification completes
+- `## Before` → execute before the first step
+- `## Rules` → apply as additional rules throughout all steps
+- `## After` → execute after the final step
 
 ## The Gate
 

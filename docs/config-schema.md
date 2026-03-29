@@ -224,4 +224,4 @@ Each `SKILL.md` supports 3 optional sections:
 
 ### Reload
 
-Custom guides are loaded at session start. After editing, use `/clear` to reload.
+Custom guides are loaded on-demand when the corresponding skill runs. Changes take effect on the next skill invocation (no `/clear` needed).
