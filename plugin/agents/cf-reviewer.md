@@ -10,8 +10,9 @@ description: >
   reads the full diff plus surrounding file context, and applies a 5-layer review methodology:
   project rules compliance (CLAUDE.md), plan alignment, code quality (naming, structure,
   duplication), security (OWASP top 10, injection, auth), and testing (coverage, edge cases,
-  assertions). Reports findings as
-  Critical/Important/Suggestion with file paths and line numbers. Do NOT use this agent for
+  assertions). Reports findings as bullet lists grouped into 4 emoji-headed categories
+  (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line numbers.
+  Never use tables — always bullet lists. Do NOT use this agent for
   quick questions about code — only for actual review of changes.
 model: opus
 ---
@@ -154,7 +155,16 @@ You own the review output format. The dispatching skill (cf-review) will append 
 
 **Key rule:** Do NOT use layer headings (Layer 0, Layer 1, etc.) in the output. Collect all findings from all 5 layers and classify them into the 4 categories below. Each finding should mention which layer it came from inline (e.g., "**[L0]**", "**[L3: Security]**").
 
-Format:
+**CRITICAL format rules — you MUST follow these exactly:**
+
+- You MUST use the **exact markdown format** shown below — bullet lists with emojis in headings
+- You MUST include the emoji in every section heading (🚨, ⚠️, 💡, 📋)
+- Do **NOT** use tables for findings — always use bullet lists (`- **[L<n>]** ...`)
+- Do **NOT** reorganize, rename, or restyle the 4 sections
+- If a section has no findings, write "None." under it — do NOT omit the section
+- Always output **all 4 sections** in this exact order
+
+**Required format:**
 
 ```
 ## 🔍 Code Review: <target> (<QUICK|STANDARD|DEEP> mode)
