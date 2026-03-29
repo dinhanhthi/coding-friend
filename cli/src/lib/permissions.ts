@@ -284,21 +284,6 @@ export const STATIC_RULES: PermissionRule[] = [
     category: "MCP Memory",
     recommended: true,
   },
-
-  // Web & Research
-  {
-    rule: "WebSearch",
-    description: "[network] Perform web searches · Used by: /cf-research",
-    category: "Web & Research",
-    recommended: false,
-  },
-  {
-    rule: "WebFetch(domain:*)",
-    description:
-      "[network] Fetch content from web pages · Used by: /cf-research",
-    category: "Web & Research",
-    recommended: false,
-  },
 ];
 
 // ─── Tier 2: Plugin rules (version-independent) ────────────────────

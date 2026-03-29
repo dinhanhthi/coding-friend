@@ -92,7 +92,10 @@ function loadPreviousCounts(): {
   skills: Record<string, number>;
   agents: Record<string, number>;
 } {
-  const result = { skills: {} as Record<string, number>, agents: {} as Record<string, number> };
+  const result = {
+    skills: {} as Record<string, number>,
+    agents: {} as Record<string, number>,
+  };
   if (!existsSync(OUTPUT_PATH)) return result;
   try {
     const data = JSON.parse(readFileSync(OUTPUT_PATH, "utf-8"));
