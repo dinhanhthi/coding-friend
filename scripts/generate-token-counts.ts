@@ -87,7 +87,38 @@ function readFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
+function loadPreviousCounts(): {
+  bootstrap?: number;
+  skills: Record<string, number>;
+  agents: Record<string, number>;
+} {
+  const result = { skills: {} as Record<string, number>, agents: {} as Record<string, number> };
+  if (!existsSync(OUTPUT_PATH)) return result;
+  try {
+    const data = JSON.parse(readFileSync(OUTPUT_PATH, "utf-8"));
+    if (data.bootstrap?.tokens) result.bootstrap = data.bootstrap.tokens;
+    for (const [name, info] of Object.entries(data.skills ?? {})) {
+      result.skills[name] = (info as { tokens: number }).tokens;
+    }
+    for (const [name, info] of Object.entries(data.agents ?? {})) {
+      result.agents[name] = (info as { tokens: number }).tokens;
+    }
+  } catch {
+    // ignore corrupt file
+  }
+  return result;
+}
+
+function formatDelta(prev: number | undefined, curr: number): string {
+  if (prev === undefined) return `${String(curr).padStart(5)} tokens (new)`;
+  if (prev === curr) return `${String(curr).padStart(5)} tokens`;
+  const sign = curr > prev ? "+" : "";
+  return `${String(prev).padStart(5)} → ${String(curr).padStart(5)} tokens (${sign}${curr - prev})`;
+}
+
 async function main() {
+  const previous = loadPreviousCounts();
+
   const skills: Record<
     string,
     { tokens: number; tier: Tier; type: "slash" | "auto" }
@@ -141,7 +172,7 @@ async function main() {
   // Print summary
   console.log("\n📊 Token counts generated!\n");
   console.log(
-    `Bootstrap: ${bootstrapTokens} tokens (${getTier(bootstrapTokens)})\n`,
+    `Bootstrap: ${formatDelta(previous.bootstrap, bootstrapTokens)} (${getTier(bootstrapTokens)})\n`,
   );
 
   console.log("Skills:");
@@ -150,9 +181,19 @@ async function main() {
   );
   for (const [name, data] of sortedSkills) {
     const icon = TIERS[data.tier].icon;
+    const delta = formatDelta(previous.skills[name], data.tokens);
     console.log(
-      `  ${icon.padEnd(4)} ${name.padEnd(20)} ${String(data.tokens).padStart(5)} tokens  (${data.type})`,
+      `  ${icon.padEnd(4)} ${name.padEnd(20)} ${delta}  (${data.type})`,
     );
+  }
+
+  // Report removed skills
+  for (const name of Object.keys(previous.skills)) {
+    if (!skills[name]) {
+      console.log(
+        `        ${name.padEnd(20)} removed (was ${previous.skills[name]} tokens)`,
+      );
+    }
   }
 
   console.log("\nAgents:");
@@ -161,9 +202,19 @@ async function main() {
   );
   for (const [name, data] of sortedAgents) {
     const icon = TIERS[data.tier].icon;
+    const delta = formatDelta(previous.agents[name], data.tokens);
     console.log(
-      `  ${icon.padEnd(4)} ${name.padEnd(20)} ${String(data.tokens).padStart(5)} tokens  (${data.model})`,
+      `  ${icon.padEnd(4)} ${name.padEnd(20)} ${delta}  (${data.model})`,
     );
+  }
+
+  // Report removed agents
+  for (const name of Object.keys(previous.agents)) {
+    if (!agents[name]) {
+      console.log(
+        `        ${name.padEnd(20)} removed (was ${previous.agents[name]} tokens)`,
+      );
+    }
   }
 
   console.log(`\nOutput: ${OUTPUT_PATH}`);
