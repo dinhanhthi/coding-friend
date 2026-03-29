@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { MemoryBackend } from "../lib/backend.js";
 import { buildUpdateStatus } from "../lib/status-frame.js";
+import { updateInClaudeMd, syncToClaudeMd } from "../lib/claude-md.js";
 import type { ToolRegistrationContext } from "../server.js";
 
 export function registerUpdate(
@@ -50,6 +51,27 @@ export function registerUpdate(
         };
       }
 
+      // Sync convention memories to CLAUDE.md
+      let claudeMdUpdated = false;
+      if (memory.category === "conventions" && ctx?.docsDir) {
+        try {
+          if (description) {
+            // Description changed — update the CLAUDE.md entry
+            updateInClaudeMd(ctx.docsDir, memory.id, description);
+          } else {
+            // Ensure entry exists (e.g. if memory was created before this feature)
+            syncToClaudeMd(
+              ctx.docsDir,
+              memory.id,
+              memory.frontmatter.description,
+            );
+          }
+          claudeMdUpdated = true;
+        } catch {
+          // Best-effort
+        }
+      }
+
       const response = {
         id: memory.id,
         title: memory.frontmatter.title,
@@ -72,6 +94,7 @@ export function registerUpdate(
             title: memory.frontmatter.title,
             markdownPath,
             dbPath: ctx.dbPath ?? null,
+            claudeMdUpdated,
           }),
         });
       }

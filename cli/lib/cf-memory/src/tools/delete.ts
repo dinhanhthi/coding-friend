@@ -1,10 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { MemoryBackend } from "../lib/backend.js";
+import { removeFromClaudeMd } from "../lib/claude-md.js";
+import type { ToolRegistrationContext } from "../server.js";
 
 export function registerDelete(
   server: McpServer,
   backend: MemoryBackend,
+  ctx?: ToolRegistrationContext,
 ): void {
   server.tool(
     "memory_delete",
@@ -25,6 +28,15 @@ export function registerDelete(
           isError: true,
         };
       }
+      // Remove from CLAUDE.md if it was a conventions entry
+      if (id.startsWith("conventions/") && ctx?.docsDir) {
+        try {
+          removeFromClaudeMd(ctx.docsDir, id);
+        } catch {
+          // Best-effort
+        }
+      }
+
       return {
         content: [
           {

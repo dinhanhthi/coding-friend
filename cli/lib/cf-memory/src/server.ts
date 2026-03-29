@@ -22,5 +22,5 @@ export function registerAllTools(
   registerRetrieve(server, backend);
   registerList(server, backend);
   registerUpdate(server, backend, ctx);
-  registerDelete(server, backend);
+  registerDelete(server, backend, ctx);
 }

@@ -48,6 +48,8 @@ Detection: Tier 1 → Tier 2 → Tier 3 (first available wins).
 
 Memories are stored as Markdown files with YAML frontmatter in `docs/memory/<category>/`.
 
+Convention memories (`preference` type → `conventions/` folder) are also synced to the project's `CLAUDE.md` under a `## CF Memory: Conventions` section. Entries are tracked via HTML comments (`<!-- cf:<id> -->`) and are automatically added, updated, or removed when the corresponding memory is stored, updated, or deleted.
+
 ## Embedding Models
 
 Tier 1 (SQLite) uses embedding models to generate vectors for semantic search. Two providers are supported:

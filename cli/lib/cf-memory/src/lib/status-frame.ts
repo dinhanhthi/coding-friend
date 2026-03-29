@@ -8,6 +8,7 @@ interface StoreStatusInput {
   title: string;
   markdownPath: string;
   dbPath: string | null;
+  claudeMdUpdated?: boolean;
   warning?: string;
 }
 
@@ -16,6 +17,7 @@ interface UpdateStatusInput {
   title: string;
   markdownPath: string;
   dbPath: string | null;
+  claudeMdUpdated?: boolean;
 }
 
 /**
@@ -78,6 +80,10 @@ export function buildStoreStatus(input: StoreStatusInput): string {
     lines.push(`🗄️  Database: ${input.dbPath}`);
   }
 
+  if (input.claudeMdUpdated) {
+    lines.push(`📋 CLAUDE.md updated`);
+  }
+
   if (input.warning) {
     lines.push(``);
     lines.push(`⚠ ${input.warning}`);
@@ -98,6 +104,10 @@ export function buildUpdateStatus(input: UpdateStatusInput): string {
 
   if (input.dbPath) {
     lines.push(`🗄️  Database: ${input.dbPath}`);
+  }
+
+  if (input.claudeMdUpdated) {
+    lines.push(`📋 CLAUDE.md updated`);
   }
 
   return buildFrame(lines);
