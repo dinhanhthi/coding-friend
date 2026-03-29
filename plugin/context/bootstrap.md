@@ -76,6 +76,8 @@ The memory system provides persistent project knowledge across sessions via MCP 
 
 Memory files live in `docs/memory/` organized by type: features/ (facts), conventions/ (preferences), decisions/ (context), bugs/ (episodes), infrastructure/ (procedures).
 
+- **CLAUDE.md sync**: Convention memories (`preference` type) are automatically synced to a `## CF Memory: Conventions` section in the project's `CLAUDE.md` on store, update, and delete.
+
 ## CLI (coding-friend-cli)
 
 Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|rm|start|stop|rebuild|init|config|mcp], cf permission, cf statusline, cf update [--user|--project|--local]

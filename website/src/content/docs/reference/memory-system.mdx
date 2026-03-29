@@ -104,6 +104,12 @@ When you use MCP tools (`memory_store`, `memory_update`, `memory_delete`), the b
 
 No sync mechanism is needed — both storage layers are updated atomically by the same function.
 
+### CLAUDE.md sync for conventions
+
+Convention memories (`preference` type) are automatically synced to the project's `CLAUDE.md` file. When you store, update, or delete a convention memory, a corresponding entry is added, updated, or removed under a dedicated `## CF Memory: Conventions` section.
+
+Each entry is a concise one-liner (from the memory's `description` field) tracked via an HTML comment (`<!-- cf:<memory-id> -->`). This ensures Claude Code always has convention rules loaded in its context — without needing to search memory on every session start.
+
 ### When markdown is edited directly
 
 If you edit markdown files outside the MCP tools (e.g., in your editor, via git), **SQLite is not automatically updated**. The MCP server process has no file watcher.

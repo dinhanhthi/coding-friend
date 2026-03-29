@@ -5,6 +5,7 @@ import type { MemoryBackend } from "../lib/backend.js";
 import { MEMORY_TYPES } from "../lib/types.js";
 import { checkDuplicate } from "../lib/dedup.js";
 import { buildStoreStatus } from "../lib/status-frame.js";
+import { syncToClaudeMd } from "../lib/claude-md.js";
 import type { ToolRegistrationContext } from "../server.js";
 
 export function registerStore(
@@ -72,6 +73,17 @@ export function registerStore(
 
       const memory = await backend.store(input);
 
+      // Sync convention memories to CLAUDE.md
+      let claudeMdUpdated = false;
+      if (memory.category === "conventions" && ctx?.docsDir && !index_only) {
+        try {
+          syncToClaudeMd(ctx.docsDir, memory.id, description);
+          claudeMdUpdated = true;
+        } catch {
+          // Best-effort — don't block store on CLAUDE.md sync errors
+        }
+      }
+
       const response: Record<string, unknown> = {
         id: memory.id,
         title: memory.frontmatter.title,
@@ -100,6 +112,7 @@ export function registerStore(
             title: memory.frontmatter.title,
             markdownPath,
             dbPath: ctx.dbPath ?? null,
+            claudeMdUpdated,
             warning,
           }),
         });

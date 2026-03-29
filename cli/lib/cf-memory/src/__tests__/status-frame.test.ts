@@ -33,6 +33,41 @@ describe("buildStoreStatus", () => {
     expect(result).toContain("╭");
   });
 
+  it("shows CLAUDE.md updated message when claudeMdUpdated is true", () => {
+    const result = buildStoreStatus({
+      id: "conventions/code-style",
+      title: "Code Style",
+      markdownPath: "/docs/memory/conventions/code-style.md",
+      dbPath: null,
+      claudeMdUpdated: true,
+    });
+
+    expect(result).toContain("CLAUDE.md updated");
+  });
+
+  it("omits CLAUDE.md line when claudeMdUpdated is false", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: null,
+      claudeMdUpdated: false,
+    });
+
+    expect(result).not.toContain("CLAUDE.md");
+  });
+
+  it("omits CLAUDE.md line when claudeMdUpdated is not provided", () => {
+    const result = buildStoreStatus({
+      id: "features/auth-pattern",
+      title: "Auth Pattern",
+      markdownPath: "/docs/memory/features/auth-pattern.md",
+      dbPath: null,
+    });
+
+    expect(result).not.toContain("CLAUDE.md");
+  });
+
   it("includes duplicate warning when provided", () => {
     const result = buildStoreStatus({
       id: "features/auth-pattern",
@@ -74,6 +109,30 @@ describe("buildUpdateStatus", () => {
 
     expect(result).toContain("/docs/memory/features/auth-pattern.md");
     expect(result).not.toContain("db.sqlite");
+  });
+
+  it("shows CLAUDE.md updated message when claudeMdUpdated is true", () => {
+    const result = buildUpdateStatus({
+      id: "conventions/code-style",
+      title: "Code Style",
+      markdownPath: "/docs/memory/conventions/code-style.md",
+      dbPath: null,
+      claudeMdUpdated: true,
+    });
+
+    expect(result).toContain("CLAUDE.md updated");
+  });
+
+  it("omits CLAUDE.md line when claudeMdUpdated is false", () => {
+    const result = buildUpdateStatus({
+      id: "conventions/code-style",
+      title: "Code Style",
+      markdownPath: "/docs/memory/conventions/code-style.md",
+      dbPath: null,
+      claudeMdUpdated: false,
+    });
+
+    expect(result).not.toContain("CLAUDE.md");
   });
 });
 
