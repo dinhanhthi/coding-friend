@@ -14,13 +14,17 @@ The `auto-approve` hook is a PreToolUse hook that reduces permission prompts by 
 
 When the classifier blocks an action, Claude receives the reason and attempts an alternative approach automatically.
 
-:::caution[Not 100% safe]
-Auto-approve reduces interruptions but does not guarantee safety. The LLM classifier can make mistakes. We recommend using it in environments where you have version control so you can revert unexpected changes.
-:::
+<Callout type="warning" title="Not 100% safe">
+  Auto-approve reduces interruptions but does not guarantee safety. The LLM
+  classifier can make mistakes. We recommend using it in environments where you
+  have version control so you can revert unexpected changes.
+</Callout>
 
-:::note[Token cost]
-LLM classifier calls count toward your token usage. The extra cost comes from shell commands, network operations, and MCP tools. Read-only actions and working-dir file edits do **not** trigger classifier calls.
-:::
+<Callout type="info" title="Token cost">
+  LLM classifier calls count toward your token usage. The extra cost comes from
+  shell commands, network operations, and MCP tools. Read-only actions and
+  working-dir file edits do **not** trigger classifier calls.
+</Callout>
 
 ## Enable
 
