@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.18.1 (2026-03-30)
+
+- Fix and standardize custom guide integration across all skills [#faf48f4](https://github.com/dinhanhthi/coding-friend/commit/faf48f4) [#dffe764](https://github.com/dinhanhthi/coding-friend/commit/dffe764)
+
 ## v0.18.0 (2026-03-29)
 
 - Refactor `auto-approve` hook to Claude Code Auto-Mode style 3-step classification (auto-approve → LLM classify → block) [#4c57e1f](https://github.com/dinhanhthi/coding-friend/commit/4c57e1f)
