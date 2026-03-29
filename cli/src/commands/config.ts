@@ -5,6 +5,7 @@ import { readJson, mergeJson } from "../lib/json.js";
 import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
+  claudeProjectSettingsPath,
   claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
@@ -509,13 +510,27 @@ async function editAutoApprove(
 
   const value = await confirm({
     message:
-      "Enable auto-approve? (auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous)",
+      "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
     default: currentValue ?? false,
   });
 
   const scope = await askScope();
   if (scope === "back") return;
   writeToScope(scope, { autoApprove: value });
+
+  // Audit dangerous rules if auto-approve is being enabled
+  if (value) {
+    const { runDangerousRulesAudit } = await import("../lib/permissions.js");
+    await runDangerousRulesAudit(
+      [
+        claudeProjectSettingsPath(),
+        claudeLocalSettingsPath(),
+        claudeSettingsPath(),
+      ],
+      log,
+      (message) => confirm({ message, default: true }),
+    );
+  }
 }
 
 // ─── Statusline ──────────────────────────────────────────────────────

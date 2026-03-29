@@ -93,6 +93,33 @@ CFIGNORE: $CFIGNORE_PATTERNS
 $CONTENT
 </IMPORTANT>"
 
+# ─── Warn about dangerous rules when auto-approve is active ────────
+if [ -f ".coding-friend/config.json" ]; then
+  auto_approve=$(node -e "try{const c=JSON.parse(require('fs').readFileSync('.coding-friend/config.json','utf8'));console.log(c.autoApprove===true?'1':'0')}catch{console.log('0')}" 2>/dev/null)
+  if [ "$auto_approve" = "1" ]; then
+    _check_dangerous_rules() {
+      local settings_file="$1"
+      if [ -f "$settings_file" ]; then
+        node -e "
+          try {
+            const s = JSON.parse(require('fs').readFileSync('$settings_file', 'utf8'));
+            const rules = (s.permissions && s.permissions.allow) || [];
+            const dangerous = [/^Bash\(\\*\)$/, /^Bash\(python\*?\)$/, /^Bash\(python3\*?\)$/, /^Bash\(node\*?\)$/, /^Bash\(ruby\*?\)$/, /^Bash\(perl\*?\)$/, /^Bash\(sh\*?\)$/, /^Bash\(bash\*?\)$/, /^Bash\(npm run\*?\)$/, /^Bash\(npx\*?\)$/, /^Agent\(\\*\)$/];
+            const found = rules.filter(r => dangerous.some(p => p.test(r)));
+            if (found.length > 0) {
+              console.error('[auto-approve] WARNING: Found ' + found.length + ' dangerous allow rule(s) that bypass the classifier: ' + found.join(', '));
+              console.error('[auto-approve] Run \"cf config\" to remove them.');
+            }
+          } catch {}
+        " 2>&1 >&2
+      fi
+    }
+    _check_dangerous_rules ".claude/settings.json"
+    _check_dangerous_rules ".claude/settings.local.json"
+    _check_dangerous_rules "$HOME/.claude/settings.json"
+  fi
+fi
+
 # JSON-escape context
 ESCAPED_CTX=$(printf '%s' "$CONTEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
 

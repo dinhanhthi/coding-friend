@@ -995,47 +995,52 @@ function AutoApproveContent() {
       <p className="text-base leading-relaxed text-slate-400">
         Tired of approving every{" "}
         <code className="text-slate-300">git status</code> and{" "}
-        <code className="text-slate-300">ls</code>? The{" "}
+        <code className="text-slate-300">Write</code>? The{" "}
         <Link
           className="text-violet-400 hover:underline hover:underline-offset-4"
           href="/docs/reference/auto-approve/"
         >
           auto-approve hook
         </Link>{" "}
-        classifies tool calls into{" "}
-        <strong className="text-cyan-300">allow</strong>,{" "}
-        <strong className="text-rose-300">deny</strong>, or{" "}
-        <strong className="text-amber-300">ask</strong> — so you only get
-        prompted when it matters.
+        uses a 3-step pipeline — rules, working-dir check, and an LLM classifier
+        — so you only get prompted when it actually matters.
       </p>
 
-      {/* Two-tier diagram */}
-      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* 3-step pipeline diagram */}
+      <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           {
-            tier: "Tier 1",
+            step: "Step 1",
             name: "Rule-Based",
-            desc: "Instant pattern matching — read-only commands auto-approved, destructive ones blocked",
+            desc: "Instant pattern matching — read-only tools auto-approved, destructive commands blocked",
             color: "text-cyan-400",
             border: "border-cyan-500/30",
             speed: "~0ms",
           },
           {
-            tier: "Tier 2",
-            name: "LLM Fallback",
-            desc: "Sonnet classifies ambiguous commands — only triggered when rules can't decide",
+            step: "Step 2",
+            name: "Working-Dir",
+            desc: "File edits (Write/Edit) inside your project directory are auto-approved",
+            color: "text-emerald-400",
+            border: "border-emerald-500/30",
+            speed: "~0ms",
+          },
+          {
+            step: "Step 3",
+            name: "LLM Classifier",
+            desc: "Sonnet evaluates unknown actions — blocks with reason so Claude tries alternatives",
             color: "text-violet-400",
             border: "border-violet-500/30",
             speed: "~2-5s",
           },
         ].map((t) => (
           <div
-            key={t.tier}
+            key={t.step}
             className={`rounded-xl border ${t.border} bg-navy-950/60 p-4 text-center`}
           >
             <div className="flex items-center justify-center gap-2">
               <span className="font-mono text-xs font-medium text-slate-500 uppercase">
-                {t.tier}
+                {t.step}
               </span>
               <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
                 {t.speed}
@@ -1054,7 +1059,13 @@ function AutoApproveContent() {
         {[
           {
             decision: "Allow",
-            examples: ["git status", "ls -la", "npm test", "Read files"],
+            examples: [
+              "git status",
+              "ls -la",
+              "npm test",
+              "Read files",
+              "Write/Edit in project",
+            ],
             color: "text-cyan-400",
             border: "border-cyan-500/20",
             bg: "bg-cyan-500/5",
@@ -1068,7 +1079,7 @@ function AutoApproveContent() {
           },
           {
             decision: "Ask",
-            examples: ["Write files", "git push", "npm install"],
+            examples: ["git push", "npm install", "Write outside project"],
             color: "text-amber-400",
             border: "border-amber-500/20",
             bg: "bg-amber-500/5",
@@ -1091,7 +1102,13 @@ function AutoApproveContent() {
       </div>
 
       <div className="flex flex-wrap justify-center gap-2">
-        {["Opt-in", "Fail-open", "Shell-safe", "All users"].map((tag) => (
+        {[
+          "Opt-in",
+          "Fail-open",
+          "Working-dir safe",
+          "Shell-safe",
+          "All users",
+        ].map((tag) => (
           <span
             key={tag}
             className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-sm text-cyan-300"

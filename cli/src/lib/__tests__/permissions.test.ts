@@ -16,8 +16,11 @@ import {
   groupByCategory,
   cleanupStalePluginRules,
   extractTag,
+  auditDangerousRules,
+  stripDangerousRules,
+  DANGEROUS_RULE_PATTERNS,
 } from "../permissions.js";
-import type { PermissionRule } from "../permissions.js";
+import type { PermissionRule, DangerousRuleMatch } from "../permissions.js";
 
 let testDir: string;
 
@@ -531,5 +534,135 @@ describe("extractTag", () => {
       const tag = extractTag(rule.description);
       expect(tag).not.toBeNull();
     }
+  });
+});
+
+describe("DANGEROUS_RULE_PATTERNS", () => {
+  it("is a non-empty array of pattern/reason pairs", () => {
+    expect(DANGEROUS_RULE_PATTERNS.length).toBeGreaterThan(0);
+    for (const entry of DANGEROUS_RULE_PATTERNS) {
+      expect(entry.pattern).toBeInstanceOf(RegExp);
+      expect(typeof entry.reason).toBe("string");
+      expect(entry.reason.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("auditDangerousRules", () => {
+  it("detects Bash(*)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(*)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+    expect(result[0].rule).toBe("Bash(*)");
+    expect(result[0].reason).toContain("any shell command");
+  });
+
+  it("detects Bash(python*)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(python*)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+    expect(result[0].rule).toBe("Bash(python*)");
+  });
+
+  it("detects Bash(node*)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(node*)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+  });
+
+  it("detects Agent(*)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Agent(*)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+    expect(result[0].reason).toContain("subagent");
+  });
+
+  it("does NOT flag narrow rules like Bash(npm test *)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        permissions: { allow: ["Bash(npm test *)", "Bash(git status *)"] },
+      }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(0);
+  });
+
+  it("does NOT flag Bash(bash /specific/path/*)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        permissions: {
+          allow: ["Bash(bash /home/.claude/plugins/cache/*)"],
+        },
+      }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(0);
+  });
+
+  it("detects multiple dangerous rules", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        permissions: {
+          allow: ["Bash(*)", "Bash(python*)", "Bash(npm test *)"],
+        },
+      }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(2);
+  });
+
+  it("returns empty for missing file", () => {
+    const result = auditDangerousRules(join(testDir, "nonexistent.json"));
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe("stripDangerousRules", () => {
+  it("removes dangerous rules and returns count", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        permissions: { allow: ["Bash(*)", "Bash(npm test *)", "Read"] },
+      }),
+    );
+    const count = stripDangerousRules(settingsPath);
+    expect(count).toBe(1);
+    // Verify the rule was removed
+    const remaining = getExistingRules(settingsPath);
+    expect(remaining).toContain("Bash(npm test *)");
+    expect(remaining).toContain("Read");
+    expect(remaining).not.toContain("Bash(*)");
+  });
+
+  it("returns 0 when no dangerous rules", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(npm test *)"] } }),
+    );
+    expect(stripDangerousRules(settingsPath)).toBe(0);
   });
 });

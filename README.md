@@ -34,7 +34,7 @@
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
-- ✨ Smart auto-approve — two-tier hook (rules + Sonnet LLM) auto-approves safe tool calls, blocks destructive ones, and only prompts when it matters. Available to all users, opt-in via config
+- ✨ Smart auto-approve — 3-step hook (rules → working-dir check → Sonnet LLM classifier) auto-approves read-only tools and working-dir file edits, blocks destructive commands, and uses an LLM classifier for everything else. When blocked, Claude gets the reason and tries alternatives. Available to all users, opt-in via config
 - Prompt injection defense — layered content isolation protects against malicious instructions
 - CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
 - ✨ Customizable Claude Code statusline with account info & API rate limit tracking

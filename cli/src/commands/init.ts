@@ -18,6 +18,7 @@ import {
 import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
+  claudeProjectSettingsPath,
   claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
@@ -1049,7 +1050,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       case "autoApprove": {
         const autoApproveChoice = await confirm({
           message:
-            "Enable auto-approve? (auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous)",
+            "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
           default: autoApproveVal ?? false,
         });
         const autoApproveTargetScope = await askScope();
@@ -1060,6 +1061,21 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
               : localConfigPath();
           mergeJson(targetPath, { autoApprove: autoApproveChoice });
           log.success(`Saved to ${targetPath}`);
+        }
+
+        // Audit dangerous rules if auto-approve is being enabled
+        if (autoApproveChoice) {
+          const { runDangerousRulesAudit } =
+            await import("../lib/permissions.js");
+          await runDangerousRulesAudit(
+            [
+              claudeProjectSettingsPath(),
+              claudeLocalSettingsPath(),
+              claudeSettingsPath(),
+            ],
+            log,
+            (message) => confirm({ message, default: true }),
+          );
         }
         break;
       }

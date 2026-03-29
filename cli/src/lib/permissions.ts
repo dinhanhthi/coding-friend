@@ -365,6 +365,83 @@ export function getAllRules(): PermissionRule[] {
 /** Backward-compatible alias. */
 export const PERMISSION_RULES: PermissionRule[] = getAllRules();
 
+// ─── Dangerous rules audit ─────────────────────────────────────────
+
+/**
+ * Patterns that grant arbitrary code execution — dangerous when auto-approve is active.
+ * These allow rules would let commands bypass the LLM classifier entirely.
+ */
+export const DANGEROUS_RULE_PATTERNS: { pattern: RegExp; reason: string }[] = [
+  { pattern: /^Bash\(\*\)$/, reason: "Grants execution of any shell command" },
+  {
+    pattern: /^Bash\(python\*?\)$/,
+    reason: "Grants arbitrary Python execution",
+  },
+  {
+    pattern: /^Bash\(python3\*?\)$/,
+    reason: "Grants arbitrary Python3 execution",
+  },
+  {
+    pattern: /^Bash\(node\*?\)$/,
+    reason: "Grants arbitrary Node.js execution",
+  },
+  { pattern: /^Bash\(ruby\*?\)$/, reason: "Grants arbitrary Ruby execution" },
+  { pattern: /^Bash\(perl\*?\)$/, reason: "Grants arbitrary Perl execution" },
+  { pattern: /^Bash\(sh\*?\)$/, reason: "Grants arbitrary shell execution" },
+  { pattern: /^Bash\(bash\*?\)$/, reason: "Grants arbitrary bash execution" },
+  // Note: Bash(bash /specific/path/*) is fine — only bare Bash(bash*) is dangerous
+  {
+    pattern: /^Bash\(npm run\*?\)$/,
+    reason: "Grants execution of any npm script",
+  },
+  {
+    pattern: /^Bash\(npx\*?\)$/,
+    reason: "Grants execution of any npx package",
+  },
+  {
+    pattern: /^Agent\(\*\)$/,
+    reason: "Grants unrestricted subagent delegation",
+  },
+];
+
+export interface DangerousRuleMatch {
+  rule: string;
+  reason: string;
+}
+
+/**
+ * Audit settings for dangerous allow rules that would bypass auto-approve classifier.
+ */
+export function auditDangerousRules(
+  settingsPath: string,
+): DangerousRuleMatch[] {
+  const existing = getExistingRules(settingsPath);
+  const matches: DangerousRuleMatch[] = [];
+  for (const rule of existing) {
+    for (const { pattern, reason } of DANGEROUS_RULE_PATTERNS) {
+      if (pattern.test(rule)) {
+        matches.push({ rule, reason });
+        break;
+      }
+    }
+  }
+  return matches;
+}
+
+/**
+ * Strip dangerous rules from settings. Returns count of removed rules.
+ */
+export function stripDangerousRules(settingsPath: string): number {
+  const dangerous = auditDangerousRules(settingsPath);
+  if (dangerous.length === 0) return 0;
+  applyPermissions(
+    settingsPath,
+    [],
+    dangerous.map((d) => d.rule),
+  );
+  return dangerous.length;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /**
@@ -513,6 +590,45 @@ export function cleanupStalePluginRules(settingsPath: string): number {
 
   applyPermissions(settingsPath, [], stale);
   return stale.length;
+}
+
+// ─── Auto-approve audit helpers ─────────────────────────────────────
+
+/**
+ * Run the dangerous-rules audit on all Claude settings files (project, local, user).
+ * Shared between config.ts and init.ts to avoid duplication.
+ *
+ * @param settingsPaths - Array of settings.json paths to check
+ * @param log - Logger with warn/dim/success methods
+ * @param promptConfirm - Async function to prompt user for yes/no
+ */
+export async function runDangerousRulesAudit(
+  settingsPaths: string[],
+  log: {
+    warn: (msg: string) => void;
+    dim: (msg: string) => void;
+    success: (msg: string) => void;
+  },
+  promptConfirm: (message: string) => Promise<boolean>,
+): Promise<void> {
+  for (const sp of settingsPaths) {
+    const dangerous = auditDangerousRules(sp);
+    if (dangerous.length > 0) {
+      log.warn(`Found ${dangerous.length} dangerous rule(s) in ${sp}:`);
+      for (const d of dangerous) {
+        log.dim(`  ${d.rule} — ${d.reason}`);
+      }
+      const shouldStrip = await promptConfirm(
+        "Remove these rules? They would bypass the auto-approve classifier.",
+      );
+      if (shouldStrip) {
+        const count = stripDangerousRules(sp);
+        log.success(
+          `Removed ${count} dangerous rule(s). Restart Claude Code for changes to take effect.`,
+        );
+      }
+    }
+  }
 }
 
 // ─── Shared UI helpers ──────────────────────────────────────────────
