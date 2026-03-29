@@ -51,55 +51,90 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
    - Sections: Critical Issues, Important Issues, Suggestions, Summary
    - If format doesn't match exactly, normalize it — extract issues and categorize by severity
 
-4. **Present the results:**
+4. **Read context** (for verification):
 
-   Display the review in the standard format:
+   Read `<docsDir>/reviews/<label>-prompt.md` to understand what was reviewed. Use the diff from the prompt to understand the code context.
+
+5. **Critical verification — do NOT blindly trust external findings:**
+
+   External reviewers (AI or human) can produce false positives, miss context, or misunderstand intent. For **every** Critical and Important issue reported:
+
+   a. **Read the actual source code** at the referenced file and line number. If the file or line doesn't exist (code may have changed since the review), mark the finding as `Stale`.
+
+   b. **Verify the claim against reality:**
+   - Does the issue actually exist in the current code?
+   - Did the reviewer miss surrounding context that addresses the concern? (e.g., validation done elsewhere, error handled upstream, intentional design choice)
+   - Is the reviewer applying a generic best practice that doesn't apply to this specific codebase or situation?
+   - Is the reviewer suggesting something that would contradict project conventions (check CLAUDE.md, `docs/memory/conventions/`)?
+
+   c. **Classify each finding:**
+   - `Confirmed` — verified the issue exists and is valid
+   - `Questionable` — the concern has some merit but may not apply here; needs user judgment
+   - `Dismissed` — false positive, stale reference, or contradicts project context
+   - `Stale` — referenced code has changed since the review
+
+   d. For **Suggestions**, do a lighter check: skim the referenced code and flag only obviously wrong suggestions. Do not deep-verify every suggestion.
+
+   e. **Never auto-fix dismissed findings.** Only offer to fix Confirmed and Questionable (with user approval) findings.
+
+6. **Present the verified results:**
+
+   Display the review with verification verdicts:
 
    ```
    ## 🔍 External Review: <label>
 
    > Review by **<reviewer>** (from result frontmatter, or "external agent" if not specified)
+   > Verified by Coding Friend against current codebase.
 
    ### 🚨 Critical Issues
-   - **[L<n>]** <issue> at <file>:<line>
+   - **[L<n>]** ✅ Confirmed — <issue> at <file>:<line>
+     _Verification: <brief explanation of why this is valid>_
+   - **[L<n>]** ❌ Dismissed — <issue> at <file>:<line>
+     _Reason: <why this is a false positive or doesn't apply>_
 
    ### ⚠️ Important Issues
-   - **[L<n>]** <issue> at <file>:<line>
+   - **[L<n>]** ✅ Confirmed — <issue> at <file>:<line>
+   - **[L<n>]** ❓ Questionable — <issue> at <file>:<line>
+     _Note: <why this needs user judgment>_
 
    ### 💡 Suggestions
    - **[L<n>]** <suggestion>
+     _(flagged only if obviously wrong)_
 
-   ### 📋 Summary
+   ### 📊 Verification Summary
+   - Confirmed: N | Questionable: N | Dismissed: N | Stale: N
+
+   ### 📋 Reviewer's Summary
    <assessment from external agent>
    ```
 
-   Add a note: _"This review was performed by an external agent. Findings have been imported from `<docsDir>/reviews/results/<label>-result.md`."_
+   Add a note: _"This review was performed by an external agent. All Critical and Important findings have been independently verified against the current codebase. Dismissed findings are shown for transparency but will not be acted on."_
 
-5. **Also read the original prompt** (for context):
+7. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
 
-   Read `<docsDir>/reviews/<label>-prompt.md` to understand what was reviewed. Use the diff from the prompt to understand the code context when fixing issues.
-
-6. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
-
-   If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with type: "fact", importance: 3, source: "auto-capture".
+   If the review found **architectural insights** or **recurring patterns** worth preserving (from Confirmed findings only), call `memory_store` with type: "fact", importance: 3, source: "auto-capture".
 
    Skip if the review was routine with no notable findings.
 
-7. **Completion banner and next steps:**
+8. **Completion banner and next steps:**
 
-   **If NO critical issues were found:**
+   Count only `Confirmed` and `Questionable` findings (ignore Dismissed and Stale).
+
+   **If NO confirmed/questionable issues were found:**
 
    ```
    ╔══════════════════════════════════════════════════╗
-   ║  ✅  External Review Collected                    ║
+   ║  ✅  External Review Collected & Verified         ║
    ╚══════════════════════════════════════════════════╝
    ```
 
-   > Label: **<label>** · No blocking issues found.
+   > Label: **<label>** · No actionable issues after verification.
+   > (N finding(s) from external reviewer were dismissed as false positives.)
    >
    > You're clear to commit. Run `/cf-commit` when ready.
 
-   **If critical or important issues were found:**
+   **If confirmed or questionable issues were found:**
 
    ```
    ╔══════════════════════════════════════════════════╗
@@ -107,12 +142,12 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
    ╚══════════════════════════════════════════════════╝
    ```
 
-   > Label: **<label>** · **[N] issue(s)** found by external reviewer.
+   > Label: **<label>** · **[N] verified issue(s)** need attention (M dismissed as false positives).
    >
-   > Shall I fix these issues now?
+   > Shall I fix the confirmed issues now? (Questionable items will be presented for your decision.)
 
-   If the user agrees, fix each issue following TDD discipline (load `cf-tdd` skill first).
+   If the user agrees, fix each **Confirmed** issue following TDD discipline (load `cf-tdd` skill first). For **Questionable** items, present each one and ask the user before acting.
 
-8. **Update prompt status:**
+9. **Update prompt status:**
 
    After collecting, update the frontmatter in `<docsDir>/reviews/<label>-prompt.md`: change `status: pending` to `status: collected`.
