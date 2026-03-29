@@ -306,7 +306,7 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
   it("allows bash scripts from plugin root (double-quoted)", () => {
     expect(
       classifyByRules("Bash", {
-        command: `bash "${PLUGIN_ROOT}/hooks/context-tracker.sh" cf-fix`,
+        command: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix`,
       }),
     ).toBe("allow");
   });

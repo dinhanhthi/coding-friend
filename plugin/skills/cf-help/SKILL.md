@@ -24,13 +24,13 @@ tools: [Read, Glob]
 
 Answer questions about the Coding Friend toolkit. Provide a brief overview when asked generally, or read specific skill files on-demand when asked about a particular skill/agent/workflow.
 
-## Step 0: Load Custom Guide
+## Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help`
 
 If output is not empty, integrate the returned sections into this workflow:
 
-- `## Before` → execute before Step 1
+- `## Before` → execute before the first step
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 

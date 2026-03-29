@@ -39,7 +39,7 @@ Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember`
 
 If output is not empty, integrate the returned sections into this workflow:
 
-- `## Before` → execute before Step 1
+- `## Before` → execute before the first step
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
