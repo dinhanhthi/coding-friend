@@ -63,7 +63,7 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 
 ## Auto-Approve
 
-- **Auto-approve**: PreToolUse hook auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous (opt-in via `autoApprove` in config)
+- **Auto-approve**: PreToolUse hook with 3-step classification — auto-approves read-only tools and working-dir file edits, uses LLM classifier (Sonnet) for unknown actions, blocks destructive patterns. When blocked, Claude receives the reason and tries alternatives. Opt-in via `autoApprove` in config
 
 ## Memory System
 

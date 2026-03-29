@@ -30,9 +30,57 @@ const {
   classifyByRules,
   classifyWithLLM,
   isCodingFriendBash,
+  isInWorkingDir,
+  buildReason,
   SHELL_OPERATOR_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
+
+// ---------------------------------------------------------------------------
+// Unit tests — isInWorkingDir
+// ---------------------------------------------------------------------------
+
+describe("isInWorkingDir", () => {
+  it("returns true for relative path inside cwd", () => {
+    expect(isInWorkingDir("src/foo.js")).toBe(true);
+  });
+
+  it("returns true for file at cwd root", () => {
+    expect(isInWorkingDir("README.md")).toBe(true);
+  });
+
+  it("returns false for absolute path outside cwd", () => {
+    expect(isInWorkingDir("/etc/passwd")).toBe(false);
+  });
+
+  it("returns false for parent traversal", () => {
+    expect(isInWorkingDir("../../outside.txt")).toBe(false);
+  });
+
+  it("returns false for deep parent traversal", () => {
+    expect(isInWorkingDir("../../../etc/passwd")).toBe(false);
+  });
+
+  it("returns false for undefined", () => {
+    expect(isInWorkingDir(undefined)).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isInWorkingDir("")).toBe(false);
+  });
+
+  it("returns false for null", () => {
+    expect(isInWorkingDir(null)).toBe(false);
+  });
+
+  it("returns true for absolute path inside cwd", () => {
+    expect(isInWorkingDir(process.cwd() + "/src/app.ts")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — classifyByRules
+// ---------------------------------------------------------------------------
 
 describe("classifyByRules — auto-approve (allow)", () => {
   it("allows Read for any file", () => {
@@ -98,21 +146,61 @@ describe("classifyByRules — block (deny)", () => {
   });
 });
 
-describe("classifyByRules — normal prompt (ask)", () => {
-  it("asks for Write", () => {
+describe("classifyByRules — working-dir file operations", () => {
+  it("allows Write to relative path inside cwd", () => {
     expect(
-      classifyByRules("Write", { file_path: "src/app.ts", content: "x" }),
+      classifyByRules("Write", { file_path: "src/foo.js", content: "x" }),
+    ).toBe("allow");
+  });
+
+  it("asks for Write to absolute path outside cwd", () => {
+    expect(
+      classifyByRules("Write", { file_path: "/etc/passwd", content: "x" }),
     ).toBe("ask");
   });
 
-  it("asks for Edit", () => {
+  it("allows Edit to file inside cwd", () => {
+    expect(
+      classifyByRules("Edit", {
+        file_path: "README.md",
+        old_string: "a",
+        new_string: "b",
+      }),
+    ).toBe("allow");
+  });
+
+  it("asks for Edit to traversal path outside cwd", () => {
+    expect(
+      classifyByRules("Edit", {
+        file_path: "../../outside.txt",
+        old_string: "a",
+        new_string: "b",
+      }),
+    ).toBe("ask");
+  });
+
+  it("asks for Write with undefined file_path", () => {
+    expect(
+      classifyByRules("Write", { file_path: undefined, content: "x" }),
+    ).toBe("ask");
+  });
+});
+
+describe("classifyByRules — normal prompt (ask)", () => {
+  it("allows Write to file inside cwd", () => {
+    expect(
+      classifyByRules("Write", { file_path: "src/app.ts", content: "x" }),
+    ).toBe("allow");
+  });
+
+  it("allows Edit to file inside cwd", () => {
     expect(
       classifyByRules("Edit", {
         file_path: "src/app.ts",
         old_string: "a",
         new_string: "b",
       }),
-    ).toBe("ask");
+    ).toBe("allow");
   });
 
   it("asks for Bash git push (non-force)", () => {
@@ -133,9 +221,9 @@ describe("classifyByRules — normal prompt (ask)", () => {
     );
   });
 
-  it("asks for WebFetch", () => {
+  it("routes WebFetch to LLM (unknown)", () => {
     expect(classifyByRules("WebFetch", { url: "https://example.com" })).toBe(
-      "ask",
+      "unknown",
     );
   });
 });
@@ -319,29 +407,39 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
   });
 });
 
-describe("classifyByRules — passthrough for unknown non-Bash tools", () => {
-  it("returns passthrough for MCP tools", () => {
+describe("classifyByRules — unknown for unmatched tools (routes to LLM)", () => {
+  it("returns unknown for WebFetch", () => {
+    expect(classifyByRules("WebFetch", { url: "https://example.com" })).toBe(
+      "unknown",
+    );
+  });
+
+  it("returns unknown for WebSearch", () => {
+    expect(classifyByRules("WebSearch", { query: "test" })).toBe("unknown");
+  });
+
+  it("returns unknown for MCP tools", () => {
     expect(
       classifyByRules("mcp__coding-friend-memory__memory_search", {
         query: "test",
       }),
-    ).toBe("passthrough");
+    ).toBe("unknown");
   });
 
-  it("returns passthrough for chrome-devtools MCP tools", () => {
+  it("returns unknown for chrome-devtools MCP tools", () => {
     expect(classifyByRules("mcp__chrome-devtools__take_screenshot", {})).toBe(
-      "passthrough",
+      "unknown",
     );
   });
 
-  it("returns passthrough for context7 MCP tools", () => {
+  it("returns unknown for context7 MCP tools", () => {
     expect(
       classifyByRules("mcp__context7__resolve-library-id", { name: "react" }),
-    ).toBe("passthrough");
+    ).toBe("unknown");
   });
 
-  it("returns passthrough for completely unknown non-Bash tools", () => {
-    expect(classifyByRules("UnknownTool", { data: "abc" })).toBe("passthrough");
+  it("returns unknown for completely unknown non-Bash tools", () => {
+    expect(classifyByRules("UnknownTool", { data: "abc" })).toBe("unknown");
   });
 });
 
@@ -579,44 +677,134 @@ describe("classifyWithLLM", () => {
     cp.execFileSync = originalExecFileSync;
   });
 
-  it("returns allow when LLM says SAFE", () => {
+  it("returns allow with reason when LLM says SAFE|reason", () => {
+    cp.execFileSync = () => "SAFE|read-only network request";
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "allow",
+      reason: "read-only network request",
+    });
+  });
+
+  it("returns deny with reason when LLM says DANGEROUS|reason", () => {
+    cp.execFileSync = () => "DANGEROUS|deploys to production";
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "deny",
+      reason: "deploys to production",
+    });
+  });
+
+  it("returns ask with reason when LLM says NEEDS_REVIEW|reason", () => {
+    cp.execFileSync = () => "NEEDS_REVIEW|ambiguous network operation";
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "ask",
+      reason: "ambiguous network operation",
+    });
+  });
+
+  it("returns allow with generic reason when LLM says SAFE without pipe", () => {
     cp.execFileSync = () => "SAFE";
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("allow");
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "allow",
+      reason: "LLM classified as safe",
+    });
   });
 
-  it("returns deny when LLM says DANGEROUS", () => {
-    cp.execFileSync = () => "DANGEROUS";
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("deny");
-  });
-
-  it("returns ask when LLM says NEEDS_REVIEW", () => {
-    cp.execFileSync = () => "NEEDS_REVIEW";
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("ask");
-  });
-
-  it("returns ask on timeout (fail-open)", () => {
+  it("returns ask with unavailable reason on timeout (fail-open)", () => {
     cp.execFileSync = () => {
       const err = new Error("ETIMEDOUT");
       err.killed = true;
       throw err;
     };
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("ask");
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "ask",
+      reason: "LLM classification unavailable — requires user review",
+    });
   });
 
-  it("returns ask on error (fail-open)", () => {
+  it("returns ask with unavailable reason on error (fail-open)", () => {
     cp.execFileSync = () => {
       throw new Error("spawn ENOENT");
     };
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("ask");
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "ask",
+      reason: "LLM classification unavailable — requires user review",
+    });
   });
 
-  it("returns ask when claude is not on PATH (fail-open)", () => {
+  it("returns ask with unavailable reason when claude is not on PATH (fail-open)", () => {
     cp.execFileSync = () => {
       const err = new Error("spawn claude ENOENT");
       err.code = "ENOENT";
       throw err;
     };
-    expect(classifyWithLLM("SomeTool", { data: "test" })).toBe("ask");
+    const result = classifyWithLLM("SomeTool", { data: "test" });
+    expect(result).toEqual({
+      decision: "ask",
+      reason: "LLM classification unavailable — requires user review",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — buildReason
+// ---------------------------------------------------------------------------
+
+describe("buildReason", () => {
+  it("returns read-only reason for allowed tools", () => {
+    expect(buildReason("Read", { file_path: "x" }, "allow")).toBe(
+      "Auto-approved: 'Read' is a read-only operation",
+    );
+  });
+
+  it("returns working-dir reason for allowed Write", () => {
+    expect(
+      buildReason("Write", { file_path: "src/foo.js", content: "x" }, "allow", {
+        source: "working-dir",
+      }),
+    ).toBe("Auto-approved: file path is within working directory");
+  });
+
+  it("returns working-dir reason for allowed Edit", () => {
+    expect(
+      buildReason(
+        "Edit",
+        { file_path: "src/foo.js", old_string: "a", new_string: "b" },
+        "allow",
+        { source: "working-dir" },
+      ),
+    ).toBe("Auto-approved: file path is within working directory");
+  });
+
+  it("returns destructive pattern reason for denied Bash", () => {
+    expect(
+      buildReason("Bash", { command: "rm -rf /" }, "deny", {
+        source: "rule",
+        pattern: "rm -rf /",
+      }),
+    ).toBe(
+      "Blocked: 'rm -rf /' matches destructive pattern (rm -rf /). Try a safer alternative.",
+    );
+  });
+
+  it("returns confirmation reason for ask", () => {
+    expect(buildReason("WebFetch", { url: "https://example.com" }, "ask")).toBe(
+      "Requires confirmation: 'WebFetch' needs user review",
+    );
+  });
+
+  it("returns LLM reason when source is llm", () => {
+    expect(
+      buildReason("SomeTool", { data: "test" }, "allow", {
+        source: "llm",
+        reason: "read-only network request",
+      }),
+    ).toBe("read-only network request");
   });
 });
 
@@ -625,7 +813,7 @@ describe("classifyWithLLM", () => {
 // ---------------------------------------------------------------------------
 
 describe("integration: auto-approve decisions", () => {
-  it("Read normal file -> exit 0, permissionDecision allow", () => {
+  it("Read normal file -> exit 0, permissionDecision allow with read-only reason", () => {
     const { exitCode, stdout } = run({
       tool_name: "Read",
       tool_input: { file_path: "src/app.ts" },
@@ -633,9 +821,12 @@ describe("integration: auto-approve decisions", () => {
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(result.hookSpecificOutput.permissionDecisionReason).toBe(
+      "Auto-approved: 'Read' is a read-only operation",
+    );
   });
 
-  it("Bash rm -rf / -> exit 2, permissionDecision deny", () => {
+  it("Bash rm -rf / -> exit 2, permissionDecision deny with pattern reason", () => {
     const { exitCode, stdout } = run({
       tool_name: "Bash",
       tool_input: { command: "rm -rf /" },
@@ -643,27 +834,34 @@ describe("integration: auto-approve decisions", () => {
     expect(exitCode).toBe(2);
     const result = JSON.parse(stdout);
     expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+    expect(result.hookSpecificOutput.permissionDecisionReason).toMatch(
+      /Blocked:.*matches destructive pattern/,
+    );
   });
 
-  it("Write file -> exit 0, permissionDecision ask", () => {
+  it("Write file in cwd -> exit 0, permissionDecision allow with working-dir reason", () => {
     const { exitCode, stdout } = run({
       tool_name: "Write",
       tool_input: { file_path: "src/app.ts", content: "hello" },
     });
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
-    expect(result.hookSpecificOutput.permissionDecision).toBe("ask");
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(result.hookSpecificOutput.permissionDecisionReason).toBe(
+      "Auto-approved: file path is within working directory",
+    );
   });
 });
 
-describe("integration: passthrough for MCP tools", () => {
-  it("MCP tool -> exit 0, empty output {} (no decision)", () => {
+describe("integration: LLM fallback for unmatched tools", () => {
+  it("MCP tool -> exit 0, permissionDecision ask (LLM fail-open)", () => {
     const { exitCode, stdout } = run({
       tool_name: "mcp__coding-friend-memory__memory_search",
       tool_input: { query: "test" },
     });
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe("{}");
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("ask");
   });
 
   it("plugin bash script -> exit 0, permissionDecision allow", () => {

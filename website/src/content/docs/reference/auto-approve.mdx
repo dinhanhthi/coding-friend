@@ -1,18 +1,26 @@
 ---
 title: "Auto-Approve"
-description: "Smart permission gate that auto-approves safe tool calls and blocks destructive ones."
-keywords: [auto-approve, permissions, hooks, security, PreToolUse]
+description: "Smart permission gate that auto-approves safe tool calls, working-dir edits, and uses an LLM classifier for everything else."
+keywords: [auto-approve, permissions, hooks, security, PreToolUse, classifier]
 ---
 
 ## Overview
 
-The `auto-approve` hook is a PreToolUse hook that reduces permission prompts by classifying tool calls into three categories:
+The `auto-approve` hook is a PreToolUse hook that reduces permission prompts by classifying tool calls through a 3-step pipeline:
 
-- **Allow** — Safe, read-only operations are auto-approved without prompting
-- **Deny** — Destructive operations are blocked immediately
-- **Ask** — Ambiguous operations show the normal permission prompt
+1. **Rule-based** — known-safe actions are auto-approved, destructive ones are blocked instantly
+2. **Working-dir check** — file edits (`Write`/`Edit`) inside your project directory are auto-approved
+3. **LLM Classifier** — everything else is evaluated by Claude Sonnet for a context-aware decision
 
-This is **not** the same as `--dangerously-skip-permissions` (which skips all prompts) or `--enable-auto-mode` (which requires Team/Enterprise plans). Auto-approve provides a middle ground: smart classification available to all Coding Friend users.
+When the classifier blocks an action, Claude receives the reason and attempts an alternative approach automatically.
+
+:::caution[Not 100% safe]
+Auto-approve reduces interruptions but does not guarantee safety. The LLM classifier can make mistakes. We recommend using it in environments where you have version control so you can revert unexpected changes.
+:::
+
+:::note[Token cost]
+LLM classifier calls count toward your token usage. The extra cost comes from shell commands, network operations, and MCP tools. Read-only actions and working-dir file edits do **not** trigger classifier calls.
+:::
 
 ## Enable
 
@@ -24,11 +32,48 @@ Auto-approve is **off by default**. Enable it in `.coding-friend/config.json`:
 }
 ```
 
+Or use the interactive setup: `cf config` or `cf init`.
+
 ## How It Works
 
-The hook uses a two-tier classification system:
+```
+┌─────────────────────────┐
+│     Tool call arrives    │
+└───────────┬─────────────┘
+            ▼
+┌─────────────────────────┐
+│  Step 1: Rule-based     │  ~0ms
+│  ┌────────────────────┐ │
+│  │ DENY pattern?      │──── ▶ Block immediately
+│  │ Read-only tool?    │──── ▶ Allow
+│  │ Safe Bash command? │──── ▶ Allow
+│  │ Risky Bash prefix? │──── ▶ Ask user
+│  └────────────────────┘ │
+└───────────┬─────────────┘
+            │ not matched
+            ▼
+┌─────────────────────────┐
+│  Step 2: Working-dir    │  ~0ms
+│  ┌────────────────────┐ │
+│  │ Write/Edit in cwd? │──── ▶ Allow
+│  │ Write/Edit outside │──── ▶ Ask user
+│  └────────────────────┘ │
+└───────────┬─────────────┘
+            │ not Write/Edit
+            ▼
+┌─────────────────────────┐
+│  Step 3: LLM Classifier │  ~2-5s
+│  (Claude Sonnet)        │
+│  ┌────────────────────┐ │
+│  │ SAFE               │──── ▶ Allow
+│  │ DANGEROUS          │──── ▶ Block (with reason)
+│  │ NEEDS_REVIEW       │──── ▶ Ask user
+│  │ Error / timeout    │──── ▶ Ask user (fail-open)
+│  └────────────────────┘ │
+└─────────────────────────┘
+```
 
-### Tier 1: Rule-Based (instant)
+### Step 1: Rule-Based (instant)
 
 Pattern matching runs first. It covers the vast majority of tool calls with zero latency.
 
@@ -55,34 +100,67 @@ Pattern matching runs first. It covers the vast majority of tool calls with zero
 | `Bash` | `shutdown`, `reboot`, `sudo rm`                       |
 | `Bash` | `kill -9`, `pkill`                                    |
 
-**User prompted (ask):**
+**Known risky (ask user):**
 
-| Tool        | Condition                                                                                    |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| `Write`     | Always — file creation needs user awareness                                                  |
-| `Edit`      | Always — file modification needs user awareness                                              |
-| `WebFetch`  | Always                                                                                       |
-| `WebSearch` | Always                                                                                       |
-| `Bash`      | `git push` (non-force), `npm install`, `npm publish`, `docker`, `curl`, `wget`, `ssh`, `scp` |
+| Tool   | Condition                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------- |
+| `Bash` | `git push` (non-force), `npm install`, `npm publish`, `docker`, `curl`, `wget`, `ssh`, `scp` |
 
-### Tier 2: LLM Fallback (~2-5s)
+### Step 2: Working-Dir Check (instant)
 
-For Bash commands and unknown tools not matching any rule, the hook calls `claude --print -m sonnet` to classify the action. The LLM responds with one of: `SAFE`, `DANGEROUS`, or `NEEDS_REVIEW`.
+File operations (`Write` and `Edit`) are checked against your project directory:
 
-- Timeout: 10 seconds
-- If the LLM is unavailable, times out, or returns an unexpected response, the hook falls back to **ask** (fail-open)
+- **Inside working directory** → auto-approved (no prompt)
+- **Outside working directory** → requires user confirmation
+
+Path resolution uses `path.resolve()` to prevent traversal attacks (`../../etc/passwd` resolves outside cwd and is correctly blocked).
+
+### Step 3: LLM Classifier (~2-5s)
+
+Everything not resolved by Steps 1 or 2 goes to the LLM classifier. This includes:
+
+- Unknown Bash commands (not in allow or deny lists)
+- `WebFetch` and `WebSearch`
+- MCP tools
+- Any other unrecognized tool
+
+The classifier runs on **Claude Sonnet** and returns one of:
+
+| Response       | Action                                     |
+| -------------- | ------------------------------------------ |
+| `SAFE`         | Auto-approve                               |
+| `DANGEROUS`    | Block with actionable reason               |
+| `NEEDS_REVIEW` | Show permission prompt                     |
+| Error/timeout  | Fall back to permission prompt (fail-open) |
+
+**Feedback loop:** When the classifier blocks an action, the reason is returned to Claude so it can try an alternative approach. For example: _"Command 'npm run deploy' blocked: may push to production. Try a dry-run flag or a local-only alternative."_
+
+## Dangerous Rules Audit
+
+When you enable auto-approve, the CLI checks your Claude Code settings for overly broad allow rules that would bypass the classifier:
+
+- `Bash(*)` — grants execution of any shell command
+- `Bash(python*)`, `Bash(node*)`, `Bash(sh*)` — grants arbitrary interpreter execution
+- `Bash(npm run*)`, `Bash(npx*)` — grants execution of any script
+- `Agent(*)` — grants unrestricted subagent delegation
+
+These rules are dangerous because they auto-approve commands _before_ the classifier sees them. The CLI offers to remove them automatically. Narrow rules like `Bash(npm test *)` are kept.
+
+A warning also appears at session start if dangerous rules are detected while auto-approve is active.
 
 ## Comparison
 
-| Feature              | Auto-Approve Hook          | `--enable-auto-mode` | `--dangerously-skip-permissions` |
-| -------------------- | -------------------------- | -------------------- | -------------------------------- |
-| Availability         | All Coding Friend users    | Team/Enterprise only | All users                        |
-| Safe operations      | Auto-approve               | Auto-approve         | Auto-approve                     |
-| Dangerous operations | Block                      | Block                | Auto-approve                     |
-| Ambiguous operations | Ask user                   | AI decides           | Auto-approve                     |
-| Classifier           | Rules + Sonnet             | Sonnet 4.6           | None                             |
-| Latency              | ~0ms (rules) / ~2-5s (LLM) | Small overhead       | None                             |
-| Customizable         | On/off toggle              | No                   | No                               |
+| Feature              | Auto-Approve Hook                | `--enable-auto-mode`  | `--dangerously-skip-permissions` |
+| -------------------- | -------------------------------- | --------------------- | -------------------------------- |
+| Availability         | All Coding Friend users          | Team/Enterprise only  | All users                        |
+| Read-only operations | Auto-approve                     | Auto-approve          | Auto-approve                     |
+| Working-dir edits    | Auto-approve                     | Auto-approve          | Auto-approve                     |
+| Dangerous operations | Block with reason                | Block                 | Auto-approve                     |
+| Unknown operations   | LLM classifier (Sonnet)          | Sonnet 4.6 classifier | Auto-approve                     |
+| Feedback loop        | Yes — reason returned to Claude  | Yes                   | N/A                              |
+| Latency              | ~0ms (rules) / ~2-5s (LLM)       | Small overhead        | None                             |
+| Token cost           | LLM calls count toward usage     | Higher                | Standard                         |
+| Dangerous rules      | Audited + stripped on activation | Dropped on enter      | N/A                              |
 
 ## Safety Design
 
@@ -90,3 +168,5 @@ For Bash commands and unknown tools not matching any rule, the hook calls `claud
 - **Deny patterns checked first**: Destructive commands are caught before any allow/ask matching
 - **Runs after security hooks**: `privacy-block` and `scout-block` execute first and can block before auto-approve runs
 - **No override of deny rules**: Even when auto-approve says "allow", deny rules in Claude Code settings still take precedence
+- **Path traversal protection**: Working-dir check uses `path.resolve()` to prevent `../` escape attacks
+- **Prompt injection defense**: LLM classifier prompt wraps tool input in `<tool_input>` tags with explicit instructions to treat it as data, not instructions
