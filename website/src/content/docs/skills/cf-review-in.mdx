@@ -39,32 +39,52 @@ The `/cf-review-in` skill reads review results written by an external AI agent (
 
 1. **Find results** — Look for `docs/reviews/results/<label>-result.md`
 2. **Parse findings** — Extract Critical/Important/Suggestion issues from the result file
-3. **Present report** — Display findings in the standard review format
-4. **Read original context** — Load the prompt file to understand what was reviewed
-5. **Offer fixes** — If critical or important issues found, offer to fix them using TDD
-6. **Update status** — Mark the prompt as `collected` in its frontmatter
+3. **Read original context** — Load the prompt file to understand what was reviewed
+4. **Critically verify findings** — Do NOT blindly trust external findings. For every Critical and Important issue:
+   - Read the actual source code at the referenced file and line
+   - Verify the claim against reality (does it actually exist? did the reviewer miss context?)
+   - Classify each finding as **Confirmed**, **Questionable**, **Dismissed**, or **Stale**
+   - For Suggestions, do a lighter check — only flag obviously wrong ones
+5. **Present verified report** — Display findings with verification verdicts
+6. **Smart capture** — If notable architectural insights found in Confirmed findings, store to memory (when available)
+7. **Offer fixes** — If confirmed or questionable issues found, offer to fix them using TDD (dismissed findings are never auto-fixed)
+8. **Update status** — Mark the prompt as `collected` in its frontmatter
 
 ## Output
 
-Findings are presented in the same format as [`/cf-review`](/docs/skills/cf-review/):
+Findings are presented with independent verification verdicts:
 
 ```
-## External Review: fix-auth-bypass
+## 🔍 External Review: fix-auth-bypass
 
 > Review by Gemini 2.5 Pro
+> Verified by Coding Friend against current codebase.
 
 ### 🚨 Critical Issues
-- Missing input validation at api/handlers.ts:42
+- ✅ Confirmed — Missing input validation at api/handlers.ts:42
+  Verification: User input passed directly to query without sanitization.
+- ❌ Dismissed — Unused variable at lib/auth.ts:10
+  Reason: Variable is used in a downstream module.
 
 ### ⚠️ Important Issues
-- Error handling could be more specific at lib/auth.ts:18
+- ❓ Questionable — Error handling could be more specific at lib/auth.ts:18
+  Note: Current handling may be intentional; needs user judgment.
 
 ### 💡 Suggestions
 - Consider extracting shared logic into a utility function
 
-### 📋 Summary
+### 📊 Verification Summary
+- Confirmed: 1 | Questionable: 1 | Dismissed: 1 | Stale: 0
+
+### 📋 Reviewer's Summary
 Code is generally well-structured with one input validation gap.
 ```
+
+<Callout type="info">
+  All Critical and Important findings are independently verified against the
+  current codebase. Dismissed findings are shown for transparency but will not
+  be acted on.
+</Callout>
 
 ## Result File Format
 

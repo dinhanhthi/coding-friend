@@ -5,6 +5,12 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.27.0 (2026-03-29)
+
+- Remove Web & Research category from `cf permission` and add auto-approve toggle [#f0e20d3](https://github.com/dinhanhthi/coding-friend/commit/f0e20d3)
+- Refactor `auto-approve` hook to Claude Code Auto-Mode style 3-step classification (auto-approve → LLM classify → block) [#4c57e1f](https://github.com/dinhanhthi/coding-friend/commit/4c57e1f)
+- Show CLAUDE.md update status in `cf-memory` output as plain list format [#f2b9022](https://github.com/dinhanhthi/coding-friend/commit/f2b9022) [#a71f7cf](https://github.com/dinhanhthi/coding-friend/commit/a71f7cf) [#a3e4527](https://github.com/dinhanhthi/coding-friend/commit/a3e4527)
+
 ## v1.26.1 (2026-03-27)
 
 - Fix path traversal vulnerability in learn-mcp's `readDoc`, `createDoc`, and `updateDoc` functions — add `safePath()` guard to validate resolved paths stay within `docsDir` [#ae9f990](https://github.com/dinhanhthi/coding-friend/commit/ae9f990)
