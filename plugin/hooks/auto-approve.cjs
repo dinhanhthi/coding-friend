@@ -13,15 +13,17 @@
  *   Exit 0 = allow/ask, Exit 2 = deny
  *
  * Configuration:
- *   "autoApprove": true in .coding-friend/config.json enables the hook.
- *   Default (false or missing) → exit 0 with {}.
+ *   Reads global (~/.coding-friend/config.json) then local (.coding-friend/config.json).
+ *   Local overrides global. "autoApprove": true in either enables the hook.
+ *   Default (false or missing in both) → exit 0 with {}.
  *   Can also be force-enabled via CF_AUTO_APPROVE_ENABLED=1 env var (for tests).
- *   Fails open on any error.
+ *   Fails open on any error (malformed config in one file does not block the other).
  */
 
 "use strict";
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const cp = require("child_process");
 
@@ -106,6 +108,8 @@ const BASH_ALLOW_PREFIXES = [
   "git show",
   "git remote",
   "git tag",
+  "git blame",
+  "git add",
   "npm test",
   "npx jest",
   "npx vitest",
@@ -372,6 +376,45 @@ Respond in the exact format: CLASSIFICATION|reason`;
 }
 
 // ---------------------------------------------------------------------------
+// Config loading — merges global (~/.coding-friend/config.json) and local
+// (.coding-friend/config.json). Local overrides global.
+// ---------------------------------------------------------------------------
+
+/**
+ * Load autoApprove setting from global and local config files.
+ * @param {string} homeDir — user home directory (for global config)
+ * @param {string} cwd — current working directory (for local config)
+ * @returns {boolean} true if autoApprove is enabled
+ */
+function loadAutoApproveConfig(homeDir, cwd) {
+  /** Read and parse a single config file. Returns {} on any error. */
+  function readConfigFile(filePath, label) {
+    if (!fs.existsSync(filePath)) return {};
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      process.stderr.write(
+        `[auto-approve] ${label} config parse error: ${err && err.message ? err.message : err}\n`,
+      );
+      return {};
+    }
+  }
+
+  const globalConfig = readConfigFile(
+    path.join(homeDir, ".coding-friend", "config.json"),
+    "global",
+  );
+  const localConfig = readConfigFile(
+    path.join(cwd, ".coding-friend", "config.json"),
+    "local",
+  );
+  const merged = { ...globalConfig, ...localConfig };
+
+  return merged.autoApprove === true;
+}
+
+// ---------------------------------------------------------------------------
 // Exports for testing
 // ---------------------------------------------------------------------------
 module.exports = {
@@ -381,6 +424,7 @@ module.exports = {
   isCodingFriendBash,
   isInWorkingDir,
   extractBashScriptPath,
+  loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
   PLUGIN_ROOT,
 };
@@ -398,19 +442,9 @@ function main() {
     const forceEnabled = process.env.CF_AUTO_APPROVE_ENABLED === "1";
 
     if (!forceEnabled) {
-      let enabled = false;
-      const configPath = ".coding-friend/config.json";
-      if (fs.existsSync(configPath)) {
-        try {
-          const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-          if (config.autoApprove === true) enabled = true;
-        } catch (err) {
-          // Malformed config — fail open
-          process.stderr.write(
-            `[auto-approve] config parse error: ${err && err.message ? err.message : err}\n`,
-          );
-        }
-      }
+      const homeDir = os.homedir();
+      const cwd = process.cwd();
+      const enabled = loadAutoApproveConfig(homeDir, cwd);
       if (!enabled) {
         process.stdout.write("{}");
         process.exit(0);

@@ -32,6 +32,7 @@ const {
   isCodingFriendBash,
   isInWorkingDir,
   buildReason,
+  loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
@@ -103,6 +104,35 @@ describe("classifyByRules — auto-approve (allow)", () => {
 
   it("allows Bash git status", () => {
     expect(classifyByRules("Bash", { command: "git status" })).toBe("allow");
+  });
+
+  it("allows Bash git blame", () => {
+    expect(classifyByRules("Bash", { command: "git blame src/foo.ts" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git blame with line range", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "git blame -L 436,450 plugin/hooks/auto-approve.cjs",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash git add for specific files", () => {
+    expect(classifyByRules("Bash", { command: "git add src/foo.ts" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git add multiple files", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          "git add plugin/hooks/auto-approve.cjs plugin/hooks/__tests__/auto-approve.test.cjs",
+      }),
+    ).toBe("allow");
   });
 
   it("allows Bash npm test", () => {
@@ -881,6 +911,10 @@ describe("integration: config and fail-open", () => {
   it("outputs {} when autoApprove is disabled", () => {
     // Without CF_AUTO_APPROVE_ENABLED env, the hook reads config
     // By default autoApprove is false, so it should exit 0 with {}
+    // Use a temp HOME to isolate from real global config
+    const tmpHome = fs.mkdtempSync(
+      path.join(require("os").tmpdir(), "aa-test-home-"),
+    );
     const input = JSON.stringify({
       tool_name: "Read",
       tool_input: { file_path: "src/app.ts" },
@@ -889,13 +923,15 @@ describe("integration: config and fail-open", () => {
       const stdout = execFileSync("node", [SCRIPT], {
         input,
         encoding: "utf8",
-        env: { ...process.env },
+        env: { ...process.env, HOME: tmpHome, CF_AUTO_APPROVE_ENABLED: "" },
         timeout: 5000,
       });
       expect(stdout.trim()).toBe("{}");
     } catch (err) {
       // Should not error, but if it does check exit 0
       expect(err.status).toBe(0);
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
     }
   });
 
@@ -909,5 +945,191 @@ describe("integration: config and fail-open", () => {
     const { exitCode, stdout } = run("not json");
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe("{}");
+  });
+
+  it("enables auto-approve when global config has autoApprove: true", () => {
+    const tmpHome = fs.mkdtempSync(
+      path.join(require("os").tmpdir(), "aa-test-global-"),
+    );
+    const cfDir = path.join(tmpHome, ".coding-friend");
+    fs.mkdirSync(cfDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(cfDir, "config.json"),
+      JSON.stringify({ autoApprove: true }),
+    );
+    const input = JSON.stringify({
+      tool_name: "Read",
+      tool_input: { file_path: "src/app.ts" },
+    });
+    try {
+      const stdout = execFileSync("node", [SCRIPT], {
+        input,
+        encoding: "utf8",
+        env: { ...process.env, HOME: tmpHome, CF_AUTO_APPROVE_ENABLED: "" },
+        timeout: 5000,
+      });
+      // With autoApprove enabled, Read tool should be allowed (not {})
+      const result = JSON.parse(stdout);
+      expect(result.hookSpecificOutput).toBeDefined();
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    } catch (err) {
+      // Unexpected subprocess failure — surface the real error
+      expect(err.stdout).toBeTruthy();
+      const result = JSON.parse(err.stdout);
+      expect(result.hookSpecificOutput).toBeDefined();
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
+  });
+
+  it("local autoApprove: false overrides global autoApprove: true in integration", () => {
+    const tmpHome = fs.mkdtempSync(
+      path.join(require("os").tmpdir(), "aa-test-override-"),
+    );
+    const cfDir = path.join(tmpHome, ".coding-friend");
+    fs.mkdirSync(cfDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(cfDir, "config.json"),
+      JSON.stringify({ autoApprove: true }),
+    );
+    // Create a temp cwd with local config overriding
+    const tmpCwd = fs.mkdtempSync(
+      path.join(require("os").tmpdir(), "aa-test-cwd-"),
+    );
+    const localCfDir = path.join(tmpCwd, ".coding-friend");
+    fs.mkdirSync(localCfDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(localCfDir, "config.json"),
+      JSON.stringify({ autoApprove: false }),
+    );
+    const input = JSON.stringify({
+      tool_name: "Read",
+      tool_input: { file_path: "src/app.ts" },
+    });
+    try {
+      const stdout = execFileSync("node", [SCRIPT], {
+        input,
+        encoding: "utf8",
+        env: { ...process.env, HOME: tmpHome, CF_AUTO_APPROVE_ENABLED: "" },
+        cwd: tmpCwd,
+        timeout: 5000,
+      });
+      expect(stdout.trim()).toBe("{}");
+    } catch (err) {
+      expect(err.status).toBe(0);
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+      fs.rmSync(tmpCwd, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — loadAutoApproveConfig
+// ---------------------------------------------------------------------------
+
+const fs = require("fs");
+const os = require("os");
+
+describe("loadAutoApproveConfig", () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "auto-approve-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeConfig(dir, configObj) {
+    const cfDir = path.join(dir, ".coding-friend");
+    fs.mkdirSync(cfDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(cfDir, "config.json"),
+      JSON.stringify(configObj),
+    );
+  }
+
+  it("returns false when neither global nor local config exists", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    fs.mkdirSync(homeDir, { recursive: true });
+    fs.mkdirSync(cwd, { recursive: true });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
+  });
+
+  it("returns true when global config has autoApprove: true and no local config", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    fs.mkdirSync(cwd, { recursive: true });
+    writeConfig(homeDir, { autoApprove: true });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(true);
+  });
+
+  it("returns true when local config has autoApprove: true and no global config", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    fs.mkdirSync(homeDir, { recursive: true });
+    writeConfig(cwd, { autoApprove: true });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(true);
+  });
+
+  it("returns false when local config has autoApprove: false overriding global true", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(homeDir, { autoApprove: true });
+    writeConfig(cwd, { autoApprove: false });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
+  });
+
+  it("returns true when global has autoApprove: true and local has no autoApprove key", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(homeDir, { autoApprove: true });
+    writeConfig(cwd, { someOtherSetting: 42 });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(true);
+  });
+
+  it("returns false when global has autoApprove: false and local has no autoApprove key", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(homeDir, { autoApprove: false });
+    writeConfig(cwd, { someOtherSetting: 42 });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
+  });
+
+  it("skips malformed global config and still reads local", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    // Write malformed JSON to global
+    const globalCfDir = path.join(homeDir, ".coding-friend");
+    fs.mkdirSync(globalCfDir, { recursive: true });
+    fs.writeFileSync(path.join(globalCfDir, "config.json"), "{bad json");
+    writeConfig(cwd, { autoApprove: true });
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(true);
+  });
+
+  it("skips malformed local config and still reads global", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(homeDir, { autoApprove: true });
+    // Write malformed JSON to local
+    const localCfDir = path.join(cwd, ".coding-friend");
+    fs.mkdirSync(localCfDir, { recursive: true });
+    fs.writeFileSync(path.join(localCfDir, "config.json"), "{bad json");
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(true);
+  });
+
+  it("returns false when both configs have malformed JSON", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    const globalCfDir = path.join(homeDir, ".coding-friend");
+    fs.mkdirSync(globalCfDir, { recursive: true });
+    fs.writeFileSync(path.join(globalCfDir, "config.json"), "{bad");
+    const localCfDir = path.join(cwd, ".coding-friend");
+    fs.mkdirSync(localCfDir, { recursive: true });
+    fs.writeFileSync(path.join(localCfDir, "config.json"), "{bad");
+    expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
   });
 });
