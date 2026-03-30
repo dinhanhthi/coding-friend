@@ -2,6 +2,14 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.19.0 (2026-03-30)
+
+- Add `/cf-teach` personal teacher skill — conversational storytelling explanations of what the AI did and why [#4eae799](https://github.com/dinhanhthi/coding-friend/commit/4eae799)
+- Add `cf-plan` custom guide for skill and agent creation workflows [#f9c2861](https://github.com/dinhanhthi/coding-friend/commit/f9c2861)
+- Fix `auto-approve` LLM classifier and expand allow lists, read global config [#d43a3a1](https://github.com/dinhanhthi/coding-friend/commit/d43a3a1) [#1800bac](https://github.com/dinhanhthi/coding-friend/commit/1800bac)
+- Fix `cf-review-out` and `gather-diff` to include untracked files and equalize review scope [#84d7818](https://github.com/dinhanhthi/coding-friend/commit/84d7818)
+- Fix `cf-reviewer` format rules to enforce emoji-grouped bullet lists [#108c53a](https://github.com/dinhanhthi/coding-friend/commit/108c53a)
+
 ## v0.18.1 (2026-03-30)
 
 - Fix and standardize custom guide integration across all skills [#faf48f4](https://github.com/dinhanhthi/coding-friend/commit/faf48f4) [#dffe764](https://github.com/dinhanhthi/coding-friend/commit/dffe764)
