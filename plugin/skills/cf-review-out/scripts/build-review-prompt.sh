@@ -147,9 +147,12 @@ Once you have written your review to \`${DOCS_DIR}/reviews/results/${LABEL}-resu
 
 The diff below may include **multiple sections**:
 
-- **\`git diff <base>...HEAD\`** — All committed changes on the current branch vs the base branch. This is the primary diff to review.
-- **\`git diff HEAD\`** — Uncommitted changes (staged + unstaged) not yet committed.
+- **\`git diff <base>...HEAD\`** — All committed changes on the current branch vs the base branch.
+- **\`git diff HEAD\`** — Uncommitted changes (staged + unstaged) for tracked files not yet committed.
 - **\`git diff --staged\`** — Staged-only changes (subset of uncommitted).
+- **Untracked files** — New files not yet staged. Shown as full file content (not as a diff).
+
+**Review ALL sections equally** — committed, uncommitted, and untracked changes are all part of the review scope. Do not skip or deprioritize any section.
 
 **To avoid false positives — do NOT flag:**
 - A file referenced in the diff (e.g., imported, configured, or registered) may already exist in the codebase but not appear in the diff because it was not modified. **Do NOT flag "missing file" unless you have confirmed the file does not exist in the project.**
