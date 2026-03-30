@@ -3,10 +3,11 @@
 # Usage: bash gather-diff.sh
 # Output: branch diff (vs base) + uncommitted changes + recent log
 #
-# Produces three sections:
+# Produces four sections:
 #   1. Committed changes on current branch vs base (main/master)
-#   2. Uncommitted changes (staged + unstaged vs HEAD)
-#   3. Recent commit log
+#   2. Uncommitted changes (staged + unstaged vs HEAD) for tracked files
+#   3. Untracked files (new files not yet git-added)
+#   4. Recent commit log
 
 # Detect base branch (main or master)
 if git rev-parse --verify main >/dev/null 2>&1; then
@@ -33,7 +34,7 @@ if [ -n "$BASE_BRANCH" ] && [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "
   fi
 fi
 
-# Section 2: Uncommitted changes (staged + unstaged)
+# Section 2: Uncommitted changes (staged + unstaged) for tracked files
 uncommitted=$(git diff HEAD 2>/dev/null)
 if [ -n "$uncommitted" ]; then
   echo "=== git diff HEAD (uncommitted changes) ==="
@@ -46,6 +47,24 @@ staged=$(git diff --staged 2>/dev/null)
 if [ -n "$staged" ]; then
   echo "=== git diff --staged ==="
   echo "$staged"
+  echo ""
+fi
+
+# Section 4: Untracked files (new files not yet git-added)
+untracked_files=$(git ls-files --others --exclude-standard 2>/dev/null)
+if [ -n "$untracked_files" ]; then
+  echo "=== Untracked files (new, not yet staged) ==="
+  while IFS= read -r file; do
+    # Skip binary files
+    if file --brief --mime-encoding "$file" 2>/dev/null | grep -q 'binary'; then
+      echo "--- new file: $file (binary, content omitted)"
+      echo ""
+    else
+      echo "--- new file: $file"
+      cat "$file" 2>/dev/null
+      echo ""
+    fi
+  done <<< "$untracked_files"
   echo ""
 fi
 
