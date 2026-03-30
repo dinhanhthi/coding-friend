@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-29T14:07:48.263Z",
+  "generatedAt": "2026-03-30T06:10:29.204Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -38,12 +38,12 @@
       "type": "slash"
     },
     "cf-help": {
-      "tokens": 2045,
+      "tokens": 2048,
       "tier": "medium",
       "type": "slash"
     },
     "cf-learn": {
-      "tokens": 2455,
+      "tokens": 2459,
       "tier": "medium",
       "type": "slash"
     },
@@ -68,17 +68,17 @@
       "type": "slash"
     },
     "cf-review": {
-      "tokens": 1743,
+      "tokens": 1746,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-in": {
-      "tokens": 1688,
+      "tokens": 1691,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-out": {
-      "tokens": 983,
+      "tokens": 986,
       "tier": "low",
       "type": "slash"
     },
@@ -88,7 +88,7 @@
       "type": "slash"
     },
     "cf-session": {
-      "tokens": 1004,
+      "tokens": 1007,
       "tier": "medium",
       "type": "slash"
     },
@@ -98,17 +98,17 @@
       "type": "slash"
     },
     "cf-sys-debug": {
-      "tokens": 1673,
+      "tokens": 1678,
       "tier": "medium",
       "type": "auto"
     },
     "cf-tdd": {
-      "tokens": 1146,
+      "tokens": 1150,
       "tier": "medium",
       "type": "auto"
     },
     "cf-verification": {
-      "tokens": 570,
+      "tokens": 575,
       "tier": "low",
       "type": "auto"
     }
@@ -130,8 +130,8 @@
       "model": "opus"
     },
     "cf-reviewer": {
-      "tokens": 2360,
-      "tier": "medium",
+      "tokens": 2538,
+      "tier": "high",
       "model": "opus"
     },
     "cf-writer-deep": {
