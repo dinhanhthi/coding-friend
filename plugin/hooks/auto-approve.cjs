@@ -53,6 +53,16 @@ const ALWAYS_ALLOW_TOOLS = new Set([
   "ListMcpResourcesTool",
   "ReadMcpResourceTool",
   "AskUserQuestion",
+  // Coding Friend memory MCP tools — internal AI memory management
+  "mcp__coding-friend-memory__memory_search",
+  "mcp__coding-friend-memory__memory_retrieve",
+  "mcp__coding-friend-memory__memory_list",
+  "mcp__coding-friend-memory__memory_store",
+  "mcp__coding-friend-memory__memory_update",
+  "mcp__coding-friend-memory__memory_delete",
+  // Context7 MCP tools — read-only documentation queries
+  "mcp__context7__resolve-library-id",
+  "mcp__context7__query-docs",
 ]);
 
 /**
@@ -91,16 +101,42 @@ function isInWorkingDir(filePath) {
  * are sent to "unknown" for LLM classification.
  */
 const BASH_ALLOW_PREFIXES = [
+  // File inspection — read-only
   "ls",
   "cat",
   "head",
   "tail",
+  "grep",
+  "rg",
+  "find",
+  "stat",
+  "diff",
   "wc",
   "file",
+  "tree",
+  // Text processing — read-only
+  "sort",
+  "uniq",
+  "cut",
+  "jq",
+  // System info — read-only
   "which",
   "echo",
   "pwd",
   "date",
+  "uname",
+  "whoami",
+  "hostname",
+  "id",
+  "type",
+  "df",
+  "du",
+  // Path utilities — read-only
+  "realpath",
+  "basename",
+  "dirname",
+  "readlink",
+  // Git — read-only
   "git status",
   "git log",
   "git diff",
@@ -109,12 +145,29 @@ const BASH_ALLOW_PREFIXES = [
   "git remote",
   "git tag",
   "git blame",
+  "git rev-parse",
+  "git ls-files",
+  "git stash list",
+  "git stash show",
+  // Git — low-risk local writes (easily reversible)
   "git add",
+  "git commit",
+  "git stash push",
+  "git stash save",
+  // Node.js / npm — dev workflow
   "npm test",
+  "npm run",
   "npx jest",
   "npx vitest",
   "npx tsc --noEmit",
-  "tree",
+  "npx prettier",
+  "npx eslint",
+  "npx tsx",
+  // Version checks — read-only
+  "node --version",
+  "node -v",
+  "python --version",
+  "python3 --version",
 ];
 
 /**
@@ -286,7 +339,14 @@ function classifyByRules(toolName, toolInput) {
     // Check allow prefixes (safe read-only commands) — only if simple command
     if (!isCompound) {
       for (const prefix of BASH_ALLOW_PREFIXES) {
-        if (matchesPrefix(trimmed, prefix)) return "allow";
+        if (matchesPrefix(trimmed, prefix)) {
+          // Post-match safety: some allowed prefixes have dangerous sub-forms
+          if (prefix === "find" && trimmed.includes("-delete"))
+            return "unknown";
+          if (prefix === "git commit" && trimmed.includes("--amend"))
+            return "ask";
+          return "allow";
+        }
       }
 
       // Coding-friend related commands (scripts, cf CLI) — safe when simple
@@ -317,6 +377,10 @@ function classifyByRules(toolName, toolInput) {
  * @returns {{ decision: "allow"|"deny"|"ask", reason: string }}
  */
 function classifyWithLLM(toolName, toolInput) {
+  // Allow tests to override the timeout (e.g., 1ms to force fail-open)
+  const llmTimeout =
+    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 30000;
+
   try {
     const prompt = `You are a security classifier for AI tool calls. Classify this tool call and provide a reason.
 
@@ -336,8 +400,8 @@ Respond in the exact format: CLASSIFICATION|reason`;
 
     const result = cp.execFileSync(
       "claude",
-      ["--print", "-m", "sonnet", "--no-session-persistence", prompt],
-      { encoding: "utf8", timeout: 10000 },
+      ["--print", "--model", "sonnet", "--no-session-persistence", prompt],
+      { encoding: "utf8", timeout: llmTimeout },
     );
 
     const trimmed = result.trim();
