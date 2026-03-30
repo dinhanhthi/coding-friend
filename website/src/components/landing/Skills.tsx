@@ -46,12 +46,6 @@ const slashCommandMeta: SkillMeta[] = [
     description: "Extract human learning docs from vibe coding sessions",
   },
   {
-    command: "/cf-teach",
-    title: "Teach",
-    description:
-      "Personal teacher — conversational storytelling breakdown of any task",
-  },
-  {
     command: "/cf-optimize",
     title: "Optimize",
     description: "Structured optimization with before/after measurement",
@@ -104,6 +98,12 @@ const slashCommandMeta: SkillMeta[] = [
     command: "/cf-ship",
     title: "Ship",
     description: "Verify, commit, push, and create PR in one command",
+  },
+  {
+    command: "/cf-teach",
+    title: "Teach",
+    description:
+      "Personal teacher — conversational storytelling breakdown of any task",
   },
 ];
 
