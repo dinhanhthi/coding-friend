@@ -143,6 +143,211 @@ describe("classifyByRules — auto-approve (allow)", () => {
     expect(classifyByRules("Bash", { command: "npx jest src/" })).toBe("allow");
   });
 
+  it("allows Bash grep simple command", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          'grep "cf-teach" /Users/thi/git/coding-friend/website/src/generated/token-counts.json',
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash grep with flags", () => {
+    expect(classifyByRules("Bash", { command: "grep -r pattern src/" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash rg simple command", () => {
+    expect(
+      classifyByRules("Bash", { command: 'rg "pattern" /path/to/file' }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash find", () => {
+    expect(classifyByRules("Bash", { command: "find src -name '*.ts'" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash stat", () => {
+    expect(classifyByRules("Bash", { command: "stat package.json" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash diff", () => {
+    expect(
+      classifyByRules("Bash", { command: "diff file1.txt file2.txt" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash sort", () => {
+    expect(classifyByRules("Bash", { command: "sort names.txt" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash uniq", () => {
+    expect(classifyByRules("Bash", { command: "uniq sorted.txt" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash cut", () => {
+    expect(classifyByRules("Bash", { command: "cut -d: -f1 file.txt" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash jq", () => {
+    expect(
+      classifyByRules("Bash", { command: "jq '.version' package.json" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash uname", () => {
+    expect(classifyByRules("Bash", { command: "uname -a" })).toBe("allow");
+  });
+
+  it("allows Bash whoami", () => {
+    expect(classifyByRules("Bash", { command: "whoami" })).toBe("allow");
+  });
+
+  it("allows Bash hostname", () => {
+    expect(classifyByRules("Bash", { command: "hostname" })).toBe("allow");
+  });
+
+  it("allows Bash id", () => {
+    expect(classifyByRules("Bash", { command: "id" })).toBe("allow");
+  });
+
+  it("allows Bash realpath", () => {
+    expect(classifyByRules("Bash", { command: "realpath src/foo.ts" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash basename", () => {
+    expect(
+      classifyByRules("Bash", { command: "basename /path/to/file.ts" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash dirname", () => {
+    expect(
+      classifyByRules("Bash", { command: "dirname /path/to/file.ts" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash readlink", () => {
+    expect(classifyByRules("Bash", { command: "readlink -f symlink" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash type", () => {
+    expect(classifyByRules("Bash", { command: "type node" })).toBe("allow");
+  });
+
+  it("allows Bash df", () => {
+    expect(classifyByRules("Bash", { command: "df -h" })).toBe("allow");
+  });
+
+  it("allows Bash du", () => {
+    expect(classifyByRules("Bash", { command: "du -sh src/" })).toBe("allow");
+  });
+
+  it("allows Bash git rev-parse", () => {
+    expect(
+      classifyByRules("Bash", { command: "git rev-parse --abbrev-ref HEAD" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash git ls-files", () => {
+    expect(classifyByRules("Bash", { command: "git ls-files" })).toBe("allow");
+  });
+
+  it("allows Bash git stash list", () => {
+    expect(classifyByRules("Bash", { command: "git stash list" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git stash push", () => {
+    expect(classifyByRules("Bash", { command: "git stash push" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git stash show", () => {
+    expect(classifyByRules("Bash", { command: "git stash show" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git stash save", () => {
+    expect(classifyByRules("Bash", { command: 'git stash save "wip"' })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash git commit", () => {
+    expect(
+      classifyByRules("Bash", { command: 'git commit -m "feat: add feature"' }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash npm run", () => {
+    expect(classifyByRules("Bash", { command: "npm run format" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash npm run lint", () => {
+    expect(classifyByRules("Bash", { command: "npm run lint" })).toBe("allow");
+  });
+
+  it("allows Bash npx prettier", () => {
+    expect(
+      classifyByRules("Bash", { command: "npx prettier --write src/" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash npx eslint", () => {
+    expect(classifyByRules("Bash", { command: "npx eslint src/" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash npx tsx", () => {
+    expect(
+      classifyByRules("Bash", { command: "npx tsx scripts/generate.ts" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash node --version", () => {
+    expect(classifyByRules("Bash", { command: "node --version" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash node -v", () => {
+    expect(classifyByRules("Bash", { command: "node -v" })).toBe("allow");
+  });
+
+  it("allows Bash python --version", () => {
+    expect(classifyByRules("Bash", { command: "python --version" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows Bash python3 --version", () => {
+    expect(classifyByRules("Bash", { command: "python3 --version" })).toBe(
+      "allow",
+    );
+  });
+
   it("allows TodoWrite", () => {
     expect(classifyByRules("TodoWrite", { todos: [] })).toBe("allow");
   });
@@ -437,6 +642,127 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
   });
 });
 
+describe("classifyByRules — dangerous sub-variants of allowed prefixes", () => {
+  it("does NOT allow git stash drop", () => {
+    expect(
+      classifyByRules("Bash", { command: "git stash drop stash@{0}" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow git stash clear", () => {
+    expect(classifyByRules("Bash", { command: "git stash clear" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow git stash pop", () => {
+    expect(classifyByRules("Bash", { command: "git stash pop" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow bare git stash (ambiguous)", () => {
+    expect(classifyByRules("Bash", { command: "git stash" })).not.toBe("allow");
+  });
+
+  it("does NOT allow find -delete", () => {
+    expect(
+      classifyByRules("Bash", { command: "find . -name '*.tmp' -delete" }),
+    ).not.toBe("allow");
+  });
+
+  it("allows find without -delete", () => {
+    expect(classifyByRules("Bash", { command: "find src -name '*.ts'" })).toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT auto-approve git commit --amend", () => {
+    expect(classifyByRules("Bash", { command: "git commit --amend" })).toBe(
+      "ask",
+    );
+  });
+
+  it("does NOT auto-approve git commit --amend with message", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: 'git commit --amend -m "fix typo"',
+      }),
+    ).toBe("ask");
+  });
+
+  it("allows regular git commit", () => {
+    expect(
+      classifyByRules("Bash", { command: 'git commit -m "feat: add feature"' }),
+    ).toBe("allow");
+  });
+});
+
+describe("classifyByRules — coding-friend memory MCP tools (allow)", () => {
+  it("allows mcp__coding-friend-memory__memory_search", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_search", {
+        query: "test",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__coding-friend-memory__memory_retrieve", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_retrieve", {
+        id: "abc",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__coding-friend-memory__memory_list", () => {
+    expect(classifyByRules("mcp__coding-friend-memory__memory_list", {})).toBe(
+      "allow",
+    );
+  });
+
+  it("allows mcp__coding-friend-memory__memory_store", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_store", {
+        title: "test",
+        content: "x",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__coding-friend-memory__memory_update", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_update", {
+        id: "abc",
+        content: "updated",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__coding-friend-memory__memory_delete", () => {
+    expect(
+      classifyByRules("mcp__coding-friend-memory__memory_delete", {
+        id: "abc",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__context7__resolve-library-id", () => {
+    expect(
+      classifyByRules("mcp__context7__resolve-library-id", { name: "react" }),
+    ).toBe("allow");
+  });
+
+  it("allows mcp__context7__query-docs", () => {
+    expect(
+      classifyByRules("mcp__context7__query-docs", {
+        libraryId: "react",
+        query: "hooks",
+      }),
+    ).toBe("allow");
+  });
+});
+
 describe("classifyByRules — unknown for unmatched tools (routes to LLM)", () => {
   it("returns unknown for WebFetch", () => {
     expect(classifyByRules("WebFetch", { url: "https://example.com" })).toBe(
@@ -448,24 +774,10 @@ describe("classifyByRules — unknown for unmatched tools (routes to LLM)", () =
     expect(classifyByRules("WebSearch", { query: "test" })).toBe("unknown");
   });
 
-  it("returns unknown for MCP tools", () => {
-    expect(
-      classifyByRules("mcp__coding-friend-memory__memory_search", {
-        query: "test",
-      }),
-    ).toBe("unknown");
-  });
-
   it("returns unknown for chrome-devtools MCP tools", () => {
     expect(classifyByRules("mcp__chrome-devtools__take_screenshot", {})).toBe(
       "unknown",
     );
-  });
-
-  it("returns unknown for context7 MCP tools", () => {
-    expect(
-      classifyByRules("mcp__context7__resolve-library-id", { name: "react" }),
-    ).toBe("unknown");
   });
 
   it("returns unknown for completely unknown non-Bash tools", () => {
@@ -884,11 +1196,25 @@ describe("integration: auto-approve decisions", () => {
 });
 
 describe("integration: LLM fallback for unmatched tools", () => {
-  it("MCP tool -> exit 0, permissionDecision ask (LLM fail-open)", () => {
+  it("coding-friend memory MCP tool -> exit 0, permissionDecision allow", () => {
     const { exitCode, stdout } = run({
       tool_name: "mcp__coding-friend-memory__memory_search",
       tool_input: { query: "test" },
     });
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+  });
+
+  it("unknown MCP tool -> exit 0, permissionDecision ask (LLM fail-open)", () => {
+    // Force LLM timeout to 1ms to test fail-open behavior without real API call
+    const { exitCode, stdout } = run(
+      {
+        tool_name: "mcp__some-unknown-server__some_tool",
+        tool_input: { query: "test" },
+      },
+      { CF_AUTO_APPROVE_LLM_TIMEOUT: "1" },
+    );
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.hookSpecificOutput.permissionDecision).toBe("ask");
