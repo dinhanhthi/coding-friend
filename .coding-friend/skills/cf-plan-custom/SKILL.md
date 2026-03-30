@@ -84,6 +84,12 @@ These rules apply **only** when the Before section detected a new skill/agent pl
 - All agent names follow the `cf-*` pattern (e.g., `cf-deployer`)
 - Names should be short (1-2 words after `cf-`), descriptive, and verb-oriented for skills
 
+### LLMs.txt Regeneration
+
+- When the plan includes adding a new skill or agent with a website doc page, it **MUST** include a task to regenerate `llms.txt` and `llms-full.txt`: `cd website && npx tsx scripts/generate-llms-txt.ts`
+- These files are auto-generated from `docsNavigation` in `website/src/lib/navigation.ts` — never edit them manually
+- This task should come AFTER creating the website doc page and updating `navigation.ts`
+
 ### Composition Over Creation
 
 - Always prefer extending an existing skill or creating a custom guide over adding a new plugin skill
