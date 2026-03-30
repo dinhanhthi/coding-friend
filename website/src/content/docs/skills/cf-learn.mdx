@@ -8,6 +8,8 @@ Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/
 
 The `/cf-learn` skill creates learning documentation from your coding sessions. It captures what you learned, insights gained, and techniques used. Unlike [`/cf-remember`](/docs/skills/cf-remember/) (project context for AI recall), this creates educational notes for the human to learn from. These docs can be hosted as a personal knowledge base or served via MCP.
 
+💡 Looking for a deeper, conversational breakdown of *what happened and why* during a task? Check out [`/cf-teach`](/docs/skills/cf-teach/) — it explains everything like a sharp friend over coffee, covering approach, alternatives, tradeoffs, mistakes, and transferable lessons.
+
 💡 To see what you've learned so far, run [`cf host`](/docs/cli/cf-host/) to view the learning notes in your browser or using [`cf mcp`](/docs/cli/cf-mcp/) to integrate with other LLM clients.
 
 ## Usage
@@ -74,3 +76,19 @@ You can override these categories in your config to match your preferred organiz
 - Learn a new pattern or technique
 - Overcome a major debugging challenge
 - Complete a feature with novel architecture
+
+## cf-learn vs cf-teach
+
+Both skills write to the same `docs/learn/` directory, but serve different purposes:
+
+|                 | `/cf-learn`                             | [`/cf-teach`](/docs/skills/cf-teach/)                |
+| --------------- | --------------------------------------- | ---------------------------------------------------- |
+| **Purpose**     | Concise reference notes                 | Deep narrative explanation                           |
+| **Format**      | Structured (What / Why / How / Gotchas) | Flowing prose storytelling                           |
+| **Tone**        | Technical reference docs                | Friend explaining over coffee                        |
+| **Length**      | Short, dense                            | Long-form narrative                                  |
+| **Output path** | `{dir}/{category}/{name}.md`            | `{dir}/{category}/{name}.md`                         |
+| **Trigger**     | Auto-invoke + slash command             | Slash command only                                   |
+| **Best for**    | "What is X?" — future quick recall      | "Why did we do it this way?" — genuine understanding |
+
+Use `/cf-learn` to build a reference library of concepts and patterns. Use `/cf-teach` when you want to truly understand what happened during a session — the reasoning, the tradeoffs, and the lessons.

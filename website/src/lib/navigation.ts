@@ -107,6 +107,12 @@ export const docsNavigation: NavSection[] = [
         tier: tierOf("skills/cf-session"),
       },
       {
+        title: "/cf-teach",
+        slug: "skills/cf-teach",
+        manualOnly: true,
+        tier: tierOf("skills/cf-teach"),
+      },
+      {
         title: "/cf-ship",
         slug: "skills/cf-ship",
         manualOnly: true,

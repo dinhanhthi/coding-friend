@@ -30,7 +30,7 @@
 - ✨ Cross-agent code review (`/cf-review-out` + `/cf-review-in`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
 - Captures project knowledge across sessions (`/cf-remember`)
 - ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
-- ✨ Helps humans learn from vibe coding sessions (`/cf-learn`) — browse as a searchable website (`cf host`) or share with other LLM clients via MCP server (`cf mcp`)
+- ✨ Helps humans learn from vibe coding sessions (`/cf-learn` for concise notes, `/cf-teach` for deep conversational breakdowns) — browse as a searchable website (`cf host`) or share with other LLM clients via MCP server (`cf mcp`)
 - In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
 - ✨ Save and load Claude Code session chats across machines and accounts (`/cf-session`)
@@ -62,7 +62,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
    ```
    Then bootstrap memory inside Claude Code: `/cf-scan This is a Next.js app with PostgreSQL and Stripe`
    Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
-6. **(Optional) Host your learning docs** — browse `/cf-learn` notes as a website or expose to other LLM clients:
+6. **(Optional) Host your learning docs** — browse `/cf-learn` and `/cf-teach` notes as a website or expose to other LLM clients:
    ```bash
    cf host              # Serve docs/learn/ as a website at localhost:3333
    cf mcp               # Setup an MCP server so other LLM clients can read your notes
@@ -84,6 +84,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-session`           | Save/load Claude Code sessions              |
 | `/cf-remember [topic]`  | Capture project knowledge                   |
 | `/cf-learn [topic]`     | Extract learnings for human review          |
+| `/cf-teach [topic]`     | Personal teacher — conversational breakdown |
 | `/cf-research [topic]`  | In-depth research with web search           |
 | `/cf-help [question]`   | Answer questions about Coding Friend        |
 

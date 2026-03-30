@@ -127,9 +127,9 @@ const sideNodes: SideNode[] = [
   },
   {
     id: "learn",
-    label: "/cf-learn",
+    label: "/cf-learn + /cf-teach",
     description:
-      "Auto-extracts knowledge after substantial work into learning notes",
+      "Auto-extracts learning notes; /cf-teach gives a conversational breakdown on demand",
     parentId: "ship",
     kind: "auto",
   },

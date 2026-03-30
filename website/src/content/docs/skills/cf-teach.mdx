@@ -1,0 +1,91 @@
+---
+title: "/cf-teach"
+description: "Personal teacher — conversational storytelling breakdown of any task."
+keywords: [teaching, learning, storytelling, explanation, cf-teach]
+---
+
+Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
+
+The `/cf-teach` skill turns Claude into your personal teacher. After any task, it explains everything that happened in a conversational, storytelling way — like a sharp friend explaining over coffee, not a textbook. It covers not just _what_ was done, but _why_, what alternatives were rejected, what tradeoffs were made, and what lessons transfer to future work.
+
+Unlike [`/cf-learn`](/docs/skills/cf-learn/) (concise structured reference notes), `/cf-teach` creates a narrative deep-dive — longer, more personal, and focused on building genuine understanding rather than quick recall.
+
+## Usage
+
+```bash
+/cf-teach [optional topic or focus]
+```
+
+Run after completing a task to get a full teaching breakdown. The argument narrows the focus — without it, the skill explains the entire session.
+
+```bash
+/cf-teach
+# Full explanation of everything that happened in this session
+
+/cf-teach the caching strategy
+# Focus the explanation on the caching decisions specifically
+```
+
+## What It Does
+
+1. **Reconstructs the Session** — Reviews the full conversation to identify what was built, how, and why
+2. **Shows Explanation in Chat** — Displays the full narrative directly in the conversation first
+3. **Covers 9 Teaching Dimensions** — Approach, alternatives, connections, tools, tradeoffs, mistakes, pitfalls, expert observations, and transferable lessons
+4. **Saves to Output** — Writes the narrative doc to `docs/learn/` (same directory as `/cf-learn`)
+
+## The 9 Dimensions
+
+Every teaching doc covers these dimensions in narrative form:
+
+| #   | Dimension                | What it answers                                                        |
+| --- | ------------------------ | ---------------------------------------------------------------------- |
+| 1   | **The Approach**         | What reasoning led to this solution? What was the starting point?      |
+| 2   | **The Roads Not Taken**  | What alternatives were rejected and why?                               |
+| 3   | **How the Pieces Fit**   | How do the parts connect? Why is the order what it is?                 |
+| 4   | **Tools and Methods**    | Why these specific tools/patterns and not others?                      |
+| 5   | **The Tradeoffs**        | What was prioritized? What was sacrificed?                             |
+| 6   | **The Mess**             | What went wrong? What had to be revised? How was it fixed?             |
+| 7   | **Pitfalls**             | What should you watch out for in similar future work?                  |
+| 8   | **Expert Observations**  | What separates good thinking from average thinking here?               |
+| 9   | **Transferable Lessons** | What principles from this work apply to completely different problems? |
+
+## Output Format
+
+Teaching docs are saved as narrative prose — no frontmatter, no structured sections like `## What / ## Why / ## How`. Just a flowing story that reads like it was written by someone who cares about your understanding.
+
+File naming: snake-case, descriptive of the story (not just the topic):
+
+```
+docs/learn/debugging/how-i-debugged-the-race-condition.md
+docs/learn/concepts/why-we-chose-redis-over-postgres.md
+docs/learn/patterns/the-refactor-that-untangled-the-api-layer.md
+```
+
+Files are organized into category subdirectories — the same structure as `/cf-learn`.
+
+## cf-teach vs cf-learn
+
+Both skills write to the same `docs/learn/` directory, but they serve different purposes:
+
+|                 | `/cf-learn`                             | `/cf-teach`                                          |
+| --------------- | --------------------------------------- | ---------------------------------------------------- |
+| **Purpose**     | Concise reference notes                 | Deep narrative explanation                           |
+| **Format**      | Structured (What / Why / How / Gotchas) | Flowing prose storytelling                           |
+| **Tone**        | Technical reference docs                | Friend explaining over coffee                        |
+| **Length**      | Short, dense                            | Long-form narrative                                  |
+| **Output path** | `{dir}/{category}/{name}.md`            | `{dir}/{category}/{name}.md`                         |
+| **Writer**      | cf-writer (haiku) or cf-writer-deep     | Always cf-writer-deep (sonnet)                       |
+| **Trigger**     | Auto-invoke + slash command             | Slash command only                                   |
+| **Best for**    | "What is X?" — future quick recall      | "Why did we do it this way?" — genuine understanding |
+
+## Configuration
+
+Reuses the same `learn.*` settings as `/cf-learn`:
+
+| Setting            | Default      | Description                                                                |
+| ------------------ | ------------ | -------------------------------------------------------------------------- |
+| `learn.language`   | `en`         | Language for teaching docs (falls back to top-level `language`, then `en`) |
+| `learn.outputDir`  | `docs/learn` | Where to store teaching docs (relative to project root, or absolute)       |
+| `learn.autoCommit` | `false`      | Auto git-commit after writing                                              |
+
+Configure in `.coding-friend/config.json` (local, overrides global) or `~/.coding-friend/config.json` (global).

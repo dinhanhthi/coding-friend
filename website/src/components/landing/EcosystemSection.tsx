@@ -85,7 +85,7 @@ const tools = [
     subtitle: "cf host",
     tagline: "Knowledge Website",
     description:
-      "Turn your /cf-learn docs into a searchable static website. Host your knowledge base locally or deploy it anywhere.",
+      "Turn your /cf-learn and /cf-teach docs into a searchable static website. Host your knowledge base locally or deploy it anywhere.",
     color: "emerald",
     isPrincipal: false,
     icon: (
@@ -111,7 +111,7 @@ const tools = [
     subtitle: "cf mcp",
     tagline: "MCP Knowledge Server",
     description:
-      "Expose your /cf-learn docs as an MCP server — feed your knowledge base directly into any LLM client that supports MCP (e.g. ChatGPT, claude.ai,...).",
+      "Expose your /cf-learn and /cf-teach docs as an MCP server — feed your knowledge base directly into any LLM client that supports MCP (e.g. ChatGPT, claude.ai,...).",
     color: "orange",
     isPrincipal: false,
     icon: (
