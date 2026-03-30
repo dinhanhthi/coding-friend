@@ -27,6 +27,7 @@ const slashCommandMeta: Record<string, string> = {
   "cf-session": "Save/load sessions",
   "cf-commit": "Smart conventional commits",
   "cf-ship": "Verify, commit, push, PR",
+  "cf-teach": "Personal teacher — conversational storytelling breakdown",
 };
 
 const autoSkillMeta: Record<string, string> = {
@@ -95,6 +96,11 @@ const overviewSlashMeta: Record<
   "cf-learn": {
     description: "Extract human learning docs from coding sessions",
     triggeredBy: "slash + auto",
+  },
+  "cf-teach": {
+    description:
+      "Personal teacher — conversational storytelling breakdown of any task",
+    triggeredBy: "slash",
   },
   "cf-research": {
     description: "In-depth research with web search and parallel subagents",

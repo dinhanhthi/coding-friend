@@ -319,8 +319,15 @@ function LearnHostContent() {
         >
           <code>/cf-learn</code>
         </Link>{" "}
-        extracts human-readable knowledge from your coding sessions. Then serve
-        them as a searchable website with{" "}
+        extracts concise reference notes,{" "}
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/skills/cf-teach"
+        >
+          <code>/cf-teach</code>
+        </Link>{" "}
+        gives you a deep conversational breakdown of what happened and why. Then
+        serve them as a searchable website with{" "}
         <Link
           className="text-violet-400 hover:underline hover:underline-offset-4"
           href="/docs/cli/cf-host"
@@ -341,8 +348,8 @@ function LearnHostContent() {
       <div className="flex flex-wrap items-center justify-center gap-3 text-base">
         {[
           {
-            label: "/cf-learn",
-            desc: "Extract knowledge",
+            label: "/cf-learn + /cf-teach",
+            desc: "Extract & explain",
             color: "text-violet-400",
             border: "border-violet-500/30",
           },
