@@ -105,7 +105,7 @@ export async function sessionSaveCommand(
 
   const previewText = buildPreviewText(jsonlPath);
 
-  saveSession({
+  const folderName = saveSession({
     jsonlPath,
     sessionId,
     label,
@@ -115,7 +115,7 @@ export async function sessionSaveCommand(
   });
 
   log.success(`Session saved: "${label}"`);
-  log.dim(`  → ${join(docsDir, "sessions", sessionId)}`);
+  log.dim(`  → ${join(docsDir, "sessions", folderName)}`);
 }
 
 // ─── cf session load ─────────────────────────────────────────────────────────

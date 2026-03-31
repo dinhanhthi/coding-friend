@@ -38,7 +38,7 @@ claude --resume <session-id>
 
 ## Sessions Folder
 
-Sessions are stored in `<docsDir>/sessions/` inside your project. The `docsDir` is configured via `cf config` or `cf init` (default: `docs`). Sync this folder across machines (via git, Dropbox, etc.) to resume sessions elsewhere.
+Sessions are stored in `<docsDir>/sessions/<label-slug>/` inside your project. Folder names are derived from the session label (slugified to lowercase alphanumeric + dashes), making them easy to identify at a glance. The Claude session ID is stored in `meta.json` for `claude --resume`. The `docsDir` is configured via `cf config` or `cf init` (default: `docs`). Sync this folder across machines (via git, Dropbox, etc.) to resume sessions elsewhere.
 
 ## Privacy Warning
 

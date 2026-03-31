@@ -11,8 +11,23 @@ import { homedir, hostname as osHostname } from "os";
 import { readJson, writeJson } from "./json.js";
 import { encodeProjectPath, claudeSessionDir } from "./paths.js";
 
+/**
+ * Convert a label to a filesystem-safe slug for use as folder name.
+ * Keep in sync with: plugin/skills/cf-session/scripts/save-session.sh
+ */
+export function slugifyLabel(label: string, maxLen = 100): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maxLen)
+    .replace(/-+$/, "");
+  return slug || "session";
+}
+
 export interface SessionMeta {
   sessionId: string;
+  folderName?: string;
   label: string;
   projectPath: string;
   savedAt: string;
@@ -99,7 +114,10 @@ export function listSyncedSessions(syncDir: string): SessionMeta[] {
   for (const entry of entries) {
     const metaPath = join(sessionsDir, entry, "meta.json");
     const meta = readJson<SessionMeta>(metaPath);
-    if (meta) metas.push(meta);
+    if (meta) {
+      if (!meta.folderName) meta.folderName = entry;
+      metas.push(meta);
+    }
   }
 
   return metas.sort(
@@ -140,12 +158,16 @@ export function remapProjectPath(
 
 /**
  * Save a session to the sync folder.
- * Creates <syncDir>/sessions/<sessionId>/session.jsonl and meta.json.
+ * Creates <syncDir>/sessions/<label-slug>/session.jsonl and meta.json.
+ * Returns the folder name used.
  */
-export function saveSession(opts: SaveSessionOpts): void {
+export function saveSession(opts: SaveSessionOpts): string {
   const { jsonlPath, sessionId, label, projectPath, syncDir, previewText } =
     opts;
-  const destDir = join(syncDir, "sessions", sessionId);
+  const sessionsDir = join(syncDir, "sessions");
+  const baseSlug = slugifyLabel(label);
+  const folderName = uniqueFolderName(sessionsDir, baseSlug);
+  const destDir = join(sessionsDir, folderName);
   const destJsonl = join(destDir, "session.jsonl");
   const destMeta = join(destDir, "meta.json");
 
@@ -154,6 +176,7 @@ export function saveSession(opts: SaveSessionOpts): void {
 
   const meta: SessionMeta = {
     sessionId,
+    folderName,
     label,
     projectPath,
     savedAt: new Date().toISOString(),
@@ -161,6 +184,14 @@ export function saveSession(opts: SaveSessionOpts): void {
     previewText,
   };
   writeJson(destMeta, meta as unknown as Record<string, unknown>);
+  return folderName;
+}
+
+function uniqueFolderName(sessionsDir: string, base: string): string {
+  if (!existsSync(join(sessionsDir, base))) return base;
+  let i = 2;
+  while (existsSync(join(sessionsDir, `${base}-${i}`))) i++;
+  return `${base}-${i}`;
 }
 
 /**
@@ -175,7 +206,8 @@ export function loadSession(
   const encodedPath = encodeProjectPath(localProjectPath);
   const destDir = claudeSessionDir(encodedPath);
   const destPath = join(destDir, `${meta.sessionId}.jsonl`);
-  const srcPath = join(syncDir, "sessions", meta.sessionId, "session.jsonl");
+  const folder = meta.folderName ?? meta.sessionId;
+  const srcPath = join(syncDir, "sessions", folder, "session.jsonl");
 
   mkdirSync(destDir, { recursive: true });
   copyFileSync(srcPath, destPath);

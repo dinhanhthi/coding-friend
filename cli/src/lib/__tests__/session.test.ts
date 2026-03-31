@@ -36,6 +36,7 @@ import {
   loadSession,
   buildPreviewText,
   remapProjectPath,
+  slugifyLabel,
 } from "../session.js";
 
 const mockReaddirSync = vi.mocked(readdirSync);
@@ -130,15 +131,16 @@ describe("buildPreviewText", () => {
 });
 
 describe("listSyncedSessions", () => {
-  it("returns sessions sorted by savedAt descending", () => {
+  it("returns sessions sorted by savedAt descending with folderName", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReaddirSync.mockReturnValue(["sess-a", "sess-b"] as never);
+    mockReaddirSync.mockReturnValue(["session-a", "session-b"] as never);
     mockStatSync.mockReturnValue({ isDirectory: () => true } as never);
     mockReadJson.mockImplementation((p) => {
       const path = p as string;
-      if (path.includes("sess-a")) {
+      if (path.includes("session-a")) {
         return {
-          sessionId: "sess-a",
+          sessionId: "uuid-a",
+          folderName: "session-a",
           label: "Session A",
           projectPath: "/Users/alice/git/foo",
           savedAt: "2026-01-01T00:00:00Z",
@@ -146,9 +148,10 @@ describe("listSyncedSessions", () => {
           previewText: "hello",
         };
       }
-      if (path.includes("sess-b")) {
+      if (path.includes("session-b")) {
         return {
-          sessionId: "sess-b",
+          sessionId: "uuid-b",
+          folderName: "session-b",
           label: "Session B",
           projectPath: "/Users/alice/git/bar",
           savedAt: "2026-03-01T00:00:00Z",
@@ -160,8 +163,27 @@ describe("listSyncedSessions", () => {
     });
 
     const result = listSyncedSessions("/tmp/sync");
-    expect(result[0].sessionId).toBe("sess-b");
-    expect(result[1].sessionId).toBe("sess-a");
+    expect(result[0].sessionId).toBe("uuid-b");
+    expect(result[0].folderName).toBe("session-b");
+    expect(result[1].sessionId).toBe("uuid-a");
+    expect(result[1].folderName).toBe("session-a");
+  });
+
+  it("populates folderName from directory name when missing in meta", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReaddirSync.mockReturnValue(["old-uuid-folder"] as never);
+    mockStatSync.mockReturnValue({ isDirectory: () => true } as never);
+    mockReadJson.mockReturnValue({
+      sessionId: "old-uuid-folder",
+      label: "Old Session",
+      projectPath: "/Users/alice/git/foo",
+      savedAt: "2026-01-01T00:00:00Z",
+      machine: "machineA",
+      previewText: "hello",
+    });
+
+    const result = listSyncedSessions("/tmp/sync");
+    expect(result[0].folderName).toBe("old-uuid-folder");
   });
 
   it("returns empty array if sync dir does not exist", () => {
@@ -198,11 +220,57 @@ describe("remapProjectPath", () => {
   });
 });
 
-describe("saveSession", () => {
-  it("copies JSONL and writes meta.json to sync folder", () => {
-    mockExistsSync.mockReturnValue(true);
+describe("slugifyLabel", () => {
+  it("converts spaces to dashes and lowercases", () => {
+    expect(slugifyLabel("My Session Label")).toBe("my-session-label");
+  });
 
-    saveSession({
+  it("removes special characters", () => {
+    expect(slugifyLabel("fix: bug #123!")).toBe("fix-bug-123");
+  });
+
+  it("collapses multiple dashes", () => {
+    expect(slugifyLabel("foo---bar")).toBe("foo-bar");
+  });
+
+  it("trims leading and trailing dashes", () => {
+    expect(slugifyLabel("--hello--")).toBe("hello");
+  });
+
+  it("falls back to 'session' for empty result", () => {
+    expect(slugifyLabel("!!!")).toBe("session");
+    expect(slugifyLabel("")).toBe("session");
+  });
+
+  it("preserves already-slugified labels", () => {
+    expect(slugifyLabel("fix-mistral-429")).toBe("fix-mistral-429");
+  });
+
+  it("truncates very long labels to 100 chars", () => {
+    const long = "a".repeat(300);
+    const result = slugifyLabel(long);
+    expect(result.length).toBeLessThanOrEqual(100);
+    expect(result).toBe("a".repeat(100));
+  });
+
+  it("trims trailing dash after truncation", () => {
+    // 99 a's + space + long tail → slug is "a...a-b..." truncated at 100
+    const label = "a".repeat(99) + " " + "b".repeat(50);
+    const result = slugifyLabel(label);
+    expect(result.length).toBeLessThanOrEqual(100);
+    expect(result).not.toMatch(/-$/);
+  });
+
+  it("returns fallback for all-unicode input", () => {
+    expect(slugifyLabel("会议笔记")).toBe("session");
+  });
+});
+
+describe("saveSession", () => {
+  it("uses slugified label as folder name", () => {
+    mockExistsSync.mockReturnValue(false);
+
+    const folderName = saveSession({
       jsonlPath: "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
       sessionId: "abc",
       label: "My label",
@@ -211,32 +279,56 @@ describe("saveSession", () => {
       previewText: "hello world",
     });
 
+    expect(folderName).toBe("my-label");
     expect(mockMkdirSync).toHaveBeenCalledWith(
-      join("/tmp/sync", "sessions", "abc"),
+      join("/tmp/sync", "sessions", "my-label"),
       { recursive: true },
     );
     expect(mockCopyFileSync).toHaveBeenCalledWith(
       "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
-      join("/tmp/sync", "sessions", "abc", "session.jsonl"),
+      join("/tmp/sync", "sessions", "my-label", "session.jsonl"),
     );
     expect(mockWriteJson).toHaveBeenCalledWith(
-      join("/tmp/sync", "sessions", "abc", "meta.json"),
+      join("/tmp/sync", "sessions", "my-label", "meta.json"),
       expect.objectContaining({
         sessionId: "abc",
         label: "My label",
+        folderName: "my-label",
         projectPath: "/Users/alice/git/foo",
         previewText: "hello world",
       }),
     );
   });
+
+  it("appends numeric suffix when folder already exists", () => {
+    mockExistsSync.mockImplementation((p) => {
+      const path = p as string;
+      // First slug "my-label" exists, "my-label-2" does not
+      if (path.endsWith("my-label") && !path.endsWith("my-label-2"))
+        return true;
+      return false;
+    });
+
+    const folderName = saveSession({
+      jsonlPath: "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
+      sessionId: "abc",
+      label: "My label",
+      projectPath: "/Users/alice/git/foo",
+      syncDir: "/tmp/sync",
+      previewText: "hello world",
+    });
+
+    expect(folderName).toBe("my-label-2");
+  });
 });
 
 describe("loadSession", () => {
-  it("copies JSONL to correct encoded path on current machine", () => {
+  it("uses folderName to locate session in sync folder", () => {
     mockExistsSync.mockReturnValue(true);
 
     const meta = {
       sessionId: "abc",
+      folderName: "my-test-session",
       label: "test",
       projectPath: "/Users/alice/git/foo",
       savedAt: "2026-01-01T00:00:00Z",
@@ -255,18 +347,29 @@ describe("loadSession", () => {
       "abc.jsonl",
     );
 
-    const expectedDestDir = join(
-      homedir(),
-      ".claude",
-      "projects",
-      expectedEncodedPath,
+    expect(mockCopyFileSync).toHaveBeenCalledWith(
+      join("/tmp/sync", "sessions", "my-test-session", "session.jsonl"),
+      expectedDest,
     );
-    expect(mockMkdirSync).toHaveBeenCalledWith(expectedDestDir, {
-      recursive: true,
-    });
+  });
+
+  it("falls back to sessionId when folderName is missing (backward compat)", () => {
+    mockExistsSync.mockReturnValue(true);
+
+    const meta = {
+      sessionId: "abc",
+      label: "test",
+      projectPath: "/Users/alice/git/foo",
+      savedAt: "2026-01-01T00:00:00Z",
+      machine: "machineA",
+      previewText: "hello",
+    };
+
+    loadSession(meta, "/Users/bob/git/foo", "/tmp/sync");
+
     expect(mockCopyFileSync).toHaveBeenCalledWith(
       join("/tmp/sync", "sessions", "abc", "session.jsonl"),
-      expectedDest,
+      expect.any(String),
     );
   });
 });

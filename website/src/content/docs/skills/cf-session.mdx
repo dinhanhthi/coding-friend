@@ -51,10 +51,12 @@ claude --resume <session-id>
 
 ```
 docs/sessions/
-  <session-id>/
+  <label-slug>/
     session.jsonl   # Full conversation history
-    meta.json       # Label, project path, machine, timestamp, preview
+    meta.json       # Session ID, label, project path, machine, timestamp, preview
 ```
+
+Folder names are derived from the session label (slugified to lowercase alphanumeric + dashes). The Claude session ID is stored in `meta.json` for `claude --resume`.
 
 This folder is created by `cf init` alongside `docs/plans/`, `docs/memory/`, `docs/research/`, and `docs/learn/`. It is added to `.gitignore` during `cf init` if you choose to ignore docs artifacts.
 
