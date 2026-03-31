@@ -76,15 +76,16 @@ echo "Preview: $PREVIEW"
 
 ### Step 5: Save Session to Sessions Folder
 
-Run the save script with all values as arguments:
+Run the save script with all values as arguments. The script slugifies the label and uses it as the folder name (not the session UUID):
 
 ```bash
 CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
-bash "$CF_SESSION_SCRIPTS/save-session.sh" \
-  "$SESSIONS_DIR" "$SESSION_ID" "$LABEL" "$LATEST" "$PREVIEW"
+FOLDER_NAME=$(bash "$CF_SESSION_SCRIPTS/save-session.sh" \
+  "$SESSIONS_DIR" "$SESSION_ID" "$LABEL" "$LATEST" "$PREVIEW")
+echo "Saved to folder: $FOLDER_NAME"
 ```
 
-This copies the JSONL and writes `meta.json` with session metadata. All values are passed as command-line arguments to avoid injection.
+This copies the JSONL and writes `meta.json` with session metadata (including `sessionId` for `claude --resume`). All values are passed as command-line arguments to avoid injection.
 
 ### Step 6: Confirm Success
 
@@ -93,8 +94,8 @@ Report to the user:
 ```
 Session saved successfully.
   Label:   <label>
+  Folder:  <sessions-dir>/<folder-name>/
   ID:      <session-id>
-  Folder:  <sessions-dir>/<session-id>/
 
 To resume on another machine:
   1. Sync this project's docs/sessions/ folder (git, Dropbox, etc.)

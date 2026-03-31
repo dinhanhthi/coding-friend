@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write session metadata to meta.json.
 
-Usage: python3 write-meta.py <session_id> <label> <project_path> <saved_at> <machine> <preview> <dest_dir>
+Usage: python3 write-meta.py <session_id> <label> <project_path> <saved_at> <machine> <preview> <dest_dir> <folder_name>
 
 All values are passed as arguments to avoid shell injection.
 """
@@ -11,14 +11,15 @@ import sys
 
 
 def main():
-    if len(sys.argv) < 8:
-        print("ERROR: Expected 7 arguments", file=sys.stderr)
+    if len(sys.argv) < 9:
+        print("ERROR: Expected 8 arguments", file=sys.stderr)
         sys.exit(1)
 
-    session_id, label, project_path, saved_at, machine, preview, dest_dir = sys.argv[1:8]
+    session_id, label, project_path, saved_at, machine, preview, dest_dir, folder_name = sys.argv[1:9]
 
     meta = {
         "sessionId": session_id,
+        "folderName": folder_name,
         "label": label,
         "projectPath": project_path,
         "savedAt": saved_at,
