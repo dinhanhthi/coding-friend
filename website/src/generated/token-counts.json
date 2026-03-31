@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T10:41:42.765Z",
+  "generatedAt": "2026-03-31T21:49:19.924Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,7 +18,7 @@
     }
   },
   "bootstrap": {
-    "tokens": 1715,
+    "tokens": 1750,
     "tier": "medium"
   },
   "skills": {
@@ -58,8 +58,8 @@
       "type": "slash"
     },
     "cf-remember": {
-      "tokens": 2289,
-      "tier": "medium",
+      "tokens": 2589,
+      "tier": "high",
       "type": "slash"
     },
     "cf-research": {
@@ -73,13 +73,13 @@
       "type": "slash"
     },
     "cf-review-in": {
-      "tokens": 1691,
+      "tokens": 2251,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-out": {
-      "tokens": 986,
-      "tier": "low",
+      "tokens": 1013,
+      "tier": "medium",
       "type": "slash"
     },
     "cf-scan": {
@@ -88,7 +88,7 @@
       "type": "slash"
     },
     "cf-session": {
-      "tokens": 1007,
+      "tokens": 1053,
       "tier": "medium",
       "type": "slash"
     },
@@ -108,7 +108,7 @@
       "type": "auto"
     },
     "cf-teach": {
-      "tokens": 2334,
+      "tokens": 2466,
       "tier": "medium",
       "type": "slash"
     },
@@ -116,6 +116,11 @@
       "tokens": 575,
       "tier": "low",
       "type": "auto"
+    },
+    "cf-warm": {
+      "tokens": 2589,
+      "tier": "high",
+      "type": "slash"
     }
   },
   "agents": {

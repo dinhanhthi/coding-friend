@@ -28,6 +28,7 @@ const slashCommandMeta: Record<string, string> = {
   "cf-commit": "Smart conventional commits",
   "cf-ship": "Verify, commit, push, PR",
   "cf-teach": "Personal teacher — conversational storytelling breakdown",
+  "cf-warm": "Catch up after absence — git history summary",
 };
 
 const autoSkillMeta: Record<string, string> = {
@@ -108,6 +109,10 @@ const overviewSlashMeta: Record<
   },
   "cf-session": {
     description: "Save session to docs/sessions/ to resume on another machine",
+    triggeredBy: "slash",
+  },
+  "cf-warm": {
+    description: "Catch up after absence — summarize git history for a user",
     triggeredBy: "slash",
   },
   "cf-help": {
