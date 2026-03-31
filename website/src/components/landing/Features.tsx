@@ -1099,7 +1099,12 @@ function AutoApproveContent() {
             </p>
             <div className="mt-2 flex flex-wrap gap-1">
               {d.examples.map((ex) => (
-                <code key={ex} className="whitespace-nowrap text-xs text-slate-300">{ex}</code>
+                <code
+                  key={ex}
+                  className="text-xs whitespace-nowrap text-slate-300"
+                >
+                  {ex}
+                </code>
               ))}
             </div>
           </div>
