@@ -15,9 +15,6 @@
   <a href="https://github.com/dinhanhthi/coding-friend/issues">Report Bug</a>
 </p>
 
-> [!WARNING]
-> This repository is in heavy development, use at your own risk.
-
 ## What It Does
 
 - Enforces test-driven development (TDD)
