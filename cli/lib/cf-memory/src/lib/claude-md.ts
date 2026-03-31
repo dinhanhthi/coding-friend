@@ -14,7 +14,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const SECTION_HEADER = "## CF Memory: Conventions";
+export const SECTION_HEADER = "## CF Memory: Project Rules";
+
+/** @deprecated Old header — kept for migration. Removed after reading. */
+const LEGACY_HEADER = "## CF Memory: Conventions";
 
 // Tested per-line via .split("\n"), not against the full document,
 // so the $ anchor correctly matches end-of-line without the `m` flag.
@@ -52,13 +55,19 @@ function parseClaudeMd(content: string): {
   after: string;
   untrackedLines: string[];
 } {
-  const headerIdx = content.indexOf(SECTION_HEADER);
+  // Try current header first, then legacy header for migration
+  let headerIdx = content.indexOf(SECTION_HEADER);
+  let headerLen = SECTION_HEADER.length;
+  if (headerIdx === -1) {
+    headerIdx = content.indexOf(LEGACY_HEADER);
+    headerLen = LEGACY_HEADER.length;
+  }
   if (headerIdx === -1) {
     return { before: content, entries: [], after: "", untrackedLines: [] };
   }
 
   const before = content.slice(0, headerIdx);
-  const rest = content.slice(headerIdx + SECTION_HEADER.length);
+  const rest = content.slice(headerIdx + headerLen);
 
   // Find the next section header (## ) to determine where our section ends
   const nextSectionMatch = rest.match(/\n(## )/);

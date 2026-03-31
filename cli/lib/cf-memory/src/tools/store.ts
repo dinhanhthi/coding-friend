@@ -40,6 +40,14 @@ export function registerStore(
         .describe(
           "When true, skip file creation and return a Memory object for indexing. File must already exist on disk.",
         ),
+      sync_to_claude_md: z
+        .boolean()
+        .optional()
+        .describe(
+          "When true, sync this memory to the project's CLAUDE.md regardless of category. " +
+            "Use for memories containing project-wide rules, conventions, or decisions that should be visible in CLAUDE.md. " +
+            "Convention memories (type: preference) are always synced automatically.",
+        ),
     },
     async ({
       title,
@@ -50,6 +58,7 @@ export function registerStore(
       importance,
       source,
       index_only,
+      sync_to_claude_md,
     }) => {
       const input = {
         title,
@@ -73,9 +82,12 @@ export function registerStore(
 
       const memory = await backend.store(input);
 
-      // Sync convention memories to CLAUDE.md
+      // Sync to CLAUDE.md: auto for conventions, opt-in for other categories
       let claudeMdUpdated = false;
-      if (memory.category === "conventions" && ctx?.docsDir && !index_only) {
+      const shouldSync =
+        (memory.category === "conventions" || sync_to_claude_md) &&
+        ctx?.docsDir;
+      if (shouldSync) {
         try {
           syncToClaudeMd(ctx.docsDir, memory.id, description);
           claudeMdUpdated = true;

@@ -29,8 +29,15 @@ export function registerUpdate(
         .max(5)
         .optional()
         .describe("New importance"),
+      sync_to_claude_md: z
+        .boolean()
+        .optional()
+        .describe(
+          "When true, sync this memory to the project's CLAUDE.md regardless of category. " +
+            "Convention memories (type: preference) are always synced automatically.",
+        ),
     },
-    async ({ id, title, description, tags, content, importance }) => {
+    async ({ id, title, description, tags, content, importance, sync_to_claude_md }) => {
       const memory = await backend.update({
         id,
         title,
@@ -51,9 +58,12 @@ export function registerUpdate(
         };
       }
 
-      // Sync convention memories to CLAUDE.md
+      // Sync to CLAUDE.md: auto for conventions, opt-in for other categories
       let claudeMdUpdated = false;
-      if (memory.category === "conventions" && ctx?.docsDir) {
+      const shouldSync =
+        (memory.category === "conventions" || sync_to_claude_md) &&
+        ctx?.docsDir;
+      if (shouldSync) {
         try {
           if (description) {
             // Description changed — update the CLAUDE.md entry

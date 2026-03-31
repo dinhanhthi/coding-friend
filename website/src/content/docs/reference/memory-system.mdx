@@ -104,11 +104,13 @@ When you use MCP tools (`memory_store`, `memory_update`, `memory_delete`), the b
 
 No sync mechanism is needed — both storage layers are updated atomically by the same function.
 
-### CLAUDE.md sync for conventions
+### CLAUDE.md sync for project rules
 
-Convention memories (`preference` type) are automatically synced to the project's `CLAUDE.md` file. When you store, update, or delete a convention memory, a corresponding entry is added, updated, or removed under a dedicated `## CF Memory: Conventions` section.
+Convention memories (`preference` type) are automatically synced to the project's `CLAUDE.md` file. When you store, update, or delete a convention memory, a corresponding entry is added, updated, or removed under a dedicated `## CF Memory: Project Rules` section.
 
-Each entry is a concise one-liner (from the memory's `description` field) tracked via an HTML comment (`<!-- cf:<memory-id> -->`). This ensures Claude Code always has convention rules loaded in its context — without needing to search memory on every session start.
+Other memory types (decisions, infrastructure, etc.) can opt-in to CLAUDE.md sync by setting `sync_to_claude_md: true` when calling `memory_store` or `memory_update`. This is useful for project-wide rules that live outside the `conventions/` folder — e.g., architecture decisions that must be followed, or deployment procedures that must not be skipped.
+
+Each entry is a concise one-liner (from the memory's `description` field) tracked via an HTML comment (`<!-- cf:<memory-id> -->`). This ensures Claude Code always has project rules loaded in its context — without needing to search memory on every session start.
 
 ### When markdown is edited directly
 

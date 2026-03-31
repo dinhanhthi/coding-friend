@@ -28,12 +28,12 @@ export function registerDelete(
           isError: true,
         };
       }
-      // Remove from CLAUDE.md if it was a conventions entry
-      if (id.startsWith("conventions/") && ctx?.docsDir) {
+      // Remove from CLAUDE.md (any category may have been synced via sync_to_claude_md)
+      if (ctx?.docsDir) {
         try {
           removeFromClaudeMd(ctx.docsDir, id);
         } catch {
-          // Best-effort
+          // Best-effort — removeFromClaudeMd is idempotent
         }
       }
 

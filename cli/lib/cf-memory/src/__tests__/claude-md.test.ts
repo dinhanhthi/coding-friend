@@ -236,3 +236,116 @@ describe("syncToClaudeMd with realistic docsDir", () => {
     expect(content).toContain(SECTION_HEADER);
   });
 });
+
+describe("migration from old header", () => {
+  const OLD_HEADER = "## CF Memory: Conventions";
+
+  it("reads entries from old header and rewrites with new header on sync", () => {
+    writeFileSync(
+      claudeMdFile,
+      `# My Project\n\n${OLD_HEADER}\n\n- Old rule <!-- cf:conventions/old-rule -->\n`,
+    );
+
+    syncToClaudeMd(testDir, "conventions/new-rule", "New rule");
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    // Should have new header
+    expect(content).toContain(SECTION_HEADER);
+    // Should NOT have old header (unless they're the same)
+    if (SECTION_HEADER !== OLD_HEADER) {
+      expect(content).not.toContain(OLD_HEADER);
+    }
+    // Both entries should be preserved
+    expect(content).toContain("Old rule");
+    expect(content).toContain("New rule");
+  });
+
+  it("removes entries from old header format", () => {
+    writeFileSync(
+      claudeMdFile,
+      `# My Project\n\n${OLD_HEADER}\n\n- Old rule <!-- cf:conventions/old-rule -->\n- Keep this <!-- cf:conventions/keep -->\n`,
+    );
+
+    removeFromClaudeMd(testDir, "conventions/old-rule");
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).not.toContain("Old rule");
+    expect(content).toContain("Keep this");
+  });
+});
+
+describe("syncToClaudeMd with non-convention categories", () => {
+  it("syncs decisions entries to CLAUDE.md", () => {
+    syncToClaudeMd(
+      testDir,
+      "decisions/api-versioning",
+      "Always use URL-based API versioning (v1, v2)",
+    );
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).toContain(SECTION_HEADER);
+    expect(content).toContain("Always use URL-based API versioning");
+    expect(content).toContain("<!-- cf:decisions/api-versioning -->");
+  });
+
+  it("syncs infrastructure entries to CLAUDE.md", () => {
+    syncToClaudeMd(
+      testDir,
+      "infrastructure/deploy-checklist",
+      "Always run migrations before deploying",
+    );
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).toContain("Always run migrations before deploying");
+    expect(content).toContain("<!-- cf:infrastructure/deploy-checklist -->");
+  });
+
+  it("mixes convention and non-convention entries in same section", () => {
+    syncToClaudeMd(testDir, "conventions/naming", "Use camelCase");
+    syncToClaudeMd(
+      testDir,
+      "decisions/db-choice",
+      "Use PostgreSQL for all new services",
+    );
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).toContain("Use camelCase");
+    expect(content).toContain("Use PostgreSQL for all new services");
+    // Only one section header
+    const headerCount = content.split(SECTION_HEADER).length - 1;
+    expect(headerCount).toBe(1);
+  });
+
+  it("removes non-convention entries by ID", () => {
+    syncToClaudeMd(
+      testDir,
+      "decisions/api-versioning",
+      "URL-based versioning",
+    );
+    syncToClaudeMd(testDir, "conventions/naming", "Use camelCase");
+
+    removeFromClaudeMd(testDir, "decisions/api-versioning");
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).not.toContain("URL-based versioning");
+    expect(content).toContain("Use camelCase");
+  });
+
+  it("updates non-convention entries", () => {
+    syncToClaudeMd(
+      testDir,
+      "infrastructure/ci-rule",
+      "Run lint before tests",
+    );
+
+    updateInClaudeMd(
+      testDir,
+      "infrastructure/ci-rule",
+      "Run lint and type-check before tests",
+    );
+
+    const content = readFileSync(claudeMdFile, "utf-8");
+    expect(content).toContain("Run lint and type-check before tests");
+    expect(content).not.toContain("Run lint before tests\n");
+  });
+});

@@ -170,12 +170,25 @@ After the cf-writer agent completes and the markdown file is saved, you MUST cal
 - `importance`: 3 (default)
 - `source`: "conversation"
 - `index_only`: true
+- `sync_to_claude_md`: true — **if the memory contains project-wide rules** (see below)
 
 **If updating an existing memory** — call `memory_update` with:
 
 - `id`: the memory ID (e.g., `features/auth-module` — derived from `{category}/{name}`)
 - `content`: the updated full markdown content
 - `tags`: updated tags array (if changed)
+- `sync_to_claude_md`: true — **if the memory contains project-wide rules** (see below)
+
+**CLAUDE.md sync rules:**
+
+Convention memories (`type: preference`) are **always** synced to the project's CLAUDE.md automatically. For other categories, set `sync_to_claude_md: true` when the memory contains **project-wide rules, conventions, or decisions that future sessions must follow**. Examples:
+
+- `decisions/api-versioning` with rule "Always use URL-based versioning" → `sync_to_claude_md: true`
+- `infrastructure/deploy-checklist` with rule "Run migrations before deploying" → `sync_to_claude_md: true`
+- `bugs/null-pointer-fix` describing a one-time bug fix → do NOT sync
+- `features/auth-flow` describing how auth works → do NOT sync (unless it contains rules to follow)
+
+**Rule of thumb:** If the knowledge is prescriptive ("always do X", "never do Y", "use X pattern") and applies project-wide, sync it. If it's descriptive (how something works, what happened), don't.
 
 If the MCP tools are unavailable, log a warning to the user but do NOT fail silently — the user should know the memory was saved as a file but NOT indexed.
 

@@ -85,7 +85,7 @@ The memory system provides persistent project knowledge across sessions via MCP 
 
 Memory files live in `docs/memory/` organized by type: features/ (facts), conventions/ (preferences), decisions/ (context), bugs/ (episodes), infrastructure/ (procedures).
 
-- **CLAUDE.md sync**: Convention memories (`preference` type) are automatically synced to a `## CF Memory: Conventions` section in the project's `CLAUDE.md` on store, update, and delete.
+- **CLAUDE.md sync**: Convention memories (`preference` type) are automatically synced to a `## CF Memory: Project Rules` section in the project's `CLAUDE.md` on store, update, and delete. Other memory types can opt-in via `sync_to_claude_md: true` when they contain project-wide rules or conventions.
 
 ## CLI (coding-friend-cli)
 
