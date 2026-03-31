@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.20.0 (2026-03-31)
+
+- Add multi-reviewer support and flatten result paths in `/cf-review-out` and `/cf-review-in` [#a149f02](https://github.com/dinhanhthi/coding-friend/commit/a149f02)
+- Fix `auto-approve` hook to use `CLAUDE_PROJECT_DIR` for project root detection [#3407436](https://github.com/dinhanhthi/coding-friend/commit/3407436)
+
 ## v0.19.0 (2026-03-30)
 
 - Add `/cf-teach` personal teacher skill — conversational storytelling explanations of what the AI did and why [#4eae799](https://github.com/dinhanhthi/coding-friend/commit/4eae799)
