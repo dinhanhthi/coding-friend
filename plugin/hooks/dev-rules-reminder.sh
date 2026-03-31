@@ -16,7 +16,7 @@ cat > /dev/null  # consume stdin
 cat <<'REMINDER'
 <system-reminder>
 RULES: 1) Check skills first 2) Test before code 3) Verify before claiming 4) Respect .coding-friend/ignore 5) Conventional commits
-SKILLS: /cf-ask /cf-plan /cf-review /cf-review-out /cf-review-in /cf-commit /cf-ship /cf-fix /cf-optimize /cf-scan /cf-remember /cf-learn /cf-teach /cf-research /cf-session /cf-help
+SKILLS: /cf-ask /cf-plan /cf-review /cf-review-out /cf-review-in /cf-commit /cf-ship /cf-fix /cf-optimize /cf-scan /cf-remember /cf-learn /cf-teach /cf-research /cf-session /cf-warm /cf-help
 AUTO: cf-tdd, cf-sys-debug, cf-verification, cf-help
 CRITICAL: Before writing ANY production code (new feature, implementation, refactoring, bug fix code), ALWAYS load the cf-tdd skill first. This is mandatory — do NOT skip to writing code directly.
 INVOKE GUARD: Only invoke a skill when the user wants to PERFORM its action NOW. Do NOT invoke when the user is talking ABOUT a skill (improving it, discussing it, referencing it, analyzing it). When intent is meta/discussion, treat skill names as nouns, not commands.

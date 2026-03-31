@@ -317,11 +317,7 @@ describe("syncToClaudeMd with non-convention categories", () => {
   });
 
   it("removes non-convention entries by ID", () => {
-    syncToClaudeMd(
-      testDir,
-      "decisions/api-versioning",
-      "URL-based versioning",
-    );
+    syncToClaudeMd(testDir, "decisions/api-versioning", "URL-based versioning");
     syncToClaudeMd(testDir, "conventions/naming", "Use camelCase");
 
     removeFromClaudeMd(testDir, "decisions/api-versioning");
@@ -332,11 +328,7 @@ describe("syncToClaudeMd with non-convention categories", () => {
   });
 
   it("updates non-convention entries", () => {
-    syncToClaudeMd(
-      testDir,
-      "infrastructure/ci-rule",
-      "Run lint before tests",
-    );
+    syncToClaudeMd(testDir, "infrastructure/ci-rule", "Run lint before tests");
 
     updateInClaudeMd(
       testDir,

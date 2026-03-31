@@ -70,20 +70,21 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 
 | Command                 | Description                                 |
 | ----------------------- | ------------------------------------------- |
-| `/cf-plan [task]`       | Brainstorm and write implementation plan    |
-| `/cf-fix [bug]`         | Quick bug fix workflow                      |
 | `/cf-ask [question]`    | Quick Q&A about codebase                    |
-| `/cf-optimize [target]` | Structured optimization with measurement    |
-| `/cf-scan [desc]`       | Scan project and bootstrap memory           |
-| `/cf-review [target]`   | Code review in forked subagent              |
 | `/cf-commit [hint]`     | Analyze diff and create conventional commit |
-| `/cf-ship [hint]`       | Verify, commit, push, and create PR         |
-| `/cf-session`           | Save/load Claude Code sessions              |
-| `/cf-remember [topic]`  | Capture project knowledge                   |
-| `/cf-learn [topic]`     | Extract learnings for human review          |
-| `/cf-teach [topic]`     | Personal teacher — conversational breakdown |
-| `/cf-research [topic]`  | In-depth research with web search           |
+| `/cf-fix [bug]`         | Quick bug fix workflow                      |
 | `/cf-help [question]`   | Answer questions about Coding Friend        |
+| `/cf-learn [topic]`     | Extract learnings for human review          |
+| `/cf-optimize [target]` | Structured optimization with measurement    |
+| `/cf-plan [task]`       | Brainstorm and write implementation plan    |
+| `/cf-remember [topic]`  | Capture project knowledge                   |
+| `/cf-research [topic]`  | In-depth research with web search           |
+| `/cf-review [target]`   | Code review in forked subagent              |
+| `/cf-scan [desc]`       | Scan project and bootstrap memory           |
+| `/cf-session`           | Save/load Claude Code sessions              |
+| `/cf-ship [hint]`       | Verify, commit, push, and create PR         |
+| `/cf-teach [topic]`     | Personal teacher — conversational breakdown |
+| `/cf-warm [--user]`     | Catch up after absence — git history summary|
 
 Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-verification`.
 
