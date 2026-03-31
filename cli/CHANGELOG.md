@@ -5,6 +5,12 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.27.2 (2026-04-01)
+
+- Add `/cf-warm` and `/cf-teach` to `cf init` available commands list [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)
+- Expand CLAUDE.md sync to all memory categories with opt-in `sync_to_claude_md` parameter [#a0b2a5b](https://github.com/dinhanhthi/coding-friend/commit/a0b2a5b)
+- Use label-based folder names instead of UUIDs in session management [#674bec8](https://github.com/dinhanhthi/coding-friend/commit/674bec8)
+
 ## v1.27.1 (2026-03-31)
 
 - Clarify MCP status message in `cf memory status` to indicate project scope [#031e3bf](https://github.com/dinhanhthi/coding-friend/commit/031e3bf)

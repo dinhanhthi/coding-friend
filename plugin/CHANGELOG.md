@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.21.0 (2026-04-01)
+
+- Add `/cf-warm` skill — catch up after absence by summarizing git history for a specific user, with dry-run safety, topic clustering, and memory indexing [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)
+- Expand CLAUDE.md sync to all memory categories with opt-in `sync_to_claude_md` parameter [#a0b2a5b](https://github.com/dinhanhthi/coding-friend/commit/a0b2a5b)
+- Use label-based folder names instead of UUIDs in `/cf-session` [#674bec8](https://github.com/dinhanhthi/coding-friend/commit/674bec8)
+- Add stats count verification and `StatsSection` update rules to `cf-plan-custom` guide [#bfc7a4e](https://github.com/dinhanhthi/coding-friend/commit/bfc7a4e)
+
 ## v0.20.0 (2026-03-31)
 
 - Add multi-reviewer support and flatten result paths in `/cf-review-out` and `/cf-review-in` [#a149f02](https://github.com/dinhanhthi/coding-friend/commit/a149f02)
