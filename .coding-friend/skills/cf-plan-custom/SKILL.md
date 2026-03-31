@@ -84,6 +84,15 @@ These rules apply **only** when the Before section detected a new skill/agent pl
 - All agent names follow the `cf-*` pattern (e.g., `cf-deployer`)
 - Names should be short (1-2 words after `cf-`), descriptive, and verb-oriented for skills
 
+### Stats Update
+
+- When the plan includes adding a new skill or agent, it **MUST** include a task to update `website/src/components/landing/StatsSection.tsx` with the correct counts.
+- To get the counts, read `plugin/context/bootstrap.md` at runtime:
+  - **Skills count**: count ALL unique skill names from both the "Slash Commands" list and the "Auto-Invoked" list (deduplicate names that appear in both, e.g. `cf-help`). Format as `"N+"`.
+  - **Agents count**: count the items in the "Available Agents" list. Format as `"N"`.
+- Update the `stats` array values in `StatsSection.tsx` to match the new counts.
+- This task should come AFTER the checklist tasks that create the new skill/agent files.
+
 ### LLMs.txt Regeneration
 
 - When the plan includes adding a new skill or agent with a website doc page, it **MUST** include a task to regenerate `llms.txt` and `llms-full.txt`: `cd website && npx tsx scripts/generate-llms-txt.ts`
@@ -112,6 +121,11 @@ This section runs when the Before section detected a new skill/agent planning ta
 2. Compare every checklist item against the plan's tasks
 3. List any **missing items** — add tasks for them before saving the plan
 4. Print: `Checklist coverage: X/12 items covered (skill)` or `Checklist coverage: X/6 items covered (agent)`
+
+### Stats Update Verification (Outcome C only)
+
+- Verify the plan includes a task to update `StatsSection.tsx` with recounted skill/agent numbers
+- If missing → add the task before saving
 
 ### Integration Verification (Outcome C only)
 
