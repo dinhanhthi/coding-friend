@@ -30,7 +30,7 @@ const {
   classifyByRules,
   classifyWithLLM,
   isCodingFriendBash,
-  isInWorkingDir,
+  isInProjectDir,
   buildReason,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
@@ -38,44 +38,65 @@ const {
 } = require("../auto-approve.cjs");
 
 // ---------------------------------------------------------------------------
-// Unit tests — isInWorkingDir
+// Unit tests — isInProjectDir
 // ---------------------------------------------------------------------------
 
-describe("isInWorkingDir", () => {
+describe("isInProjectDir", () => {
   it("returns true for relative path inside cwd", () => {
-    expect(isInWorkingDir("src/foo.js")).toBe(true);
+    expect(isInProjectDir("src/foo.js")).toBe(true);
   });
 
   it("returns true for file at cwd root", () => {
-    expect(isInWorkingDir("README.md")).toBe(true);
+    expect(isInProjectDir("README.md")).toBe(true);
   });
 
   it("returns false for absolute path outside cwd", () => {
-    expect(isInWorkingDir("/etc/passwd")).toBe(false);
+    expect(isInProjectDir("/etc/passwd")).toBe(false);
   });
 
   it("returns false for parent traversal", () => {
-    expect(isInWorkingDir("../../outside.txt")).toBe(false);
+    expect(isInProjectDir("../../outside.txt")).toBe(false);
   });
 
   it("returns false for deep parent traversal", () => {
-    expect(isInWorkingDir("../../../etc/passwd")).toBe(false);
+    expect(isInProjectDir("../../../etc/passwd")).toBe(false);
   });
 
   it("returns false for undefined", () => {
-    expect(isInWorkingDir(undefined)).toBe(false);
+    expect(isInProjectDir(undefined)).toBe(false);
   });
 
   it("returns false for empty string", () => {
-    expect(isInWorkingDir("")).toBe(false);
+    expect(isInProjectDir("")).toBe(false);
   });
 
   it("returns false for null", () => {
-    expect(isInWorkingDir(null)).toBe(false);
+    expect(isInProjectDir(null)).toBe(false);
   });
 
   it("returns true for absolute path inside cwd", () => {
-    expect(isInWorkingDir(process.cwd() + "/src/app.ts")).toBe(true);
+    expect(isInProjectDir(process.cwd() + "/src/app.ts")).toBe(true);
+  });
+
+  it("uses explicit projectDir when provided", () => {
+    // When projectDir is given, paths should be checked against it, not process.cwd()
+    const fakeProject = "/tmp/fake-project";
+    expect(isInProjectDir(fakeProject + "/src/app.ts", fakeProject)).toBe(true);
+  });
+
+  it("rejects path outside explicit projectDir", () => {
+    const fakeProject = "/tmp/fake-project";
+    expect(isInProjectDir("/etc/passwd", fakeProject)).toBe(false);
+  });
+
+  it("rejects relative traversal outside explicit projectDir", () => {
+    const fakeProject = "/tmp/fake-project";
+    expect(isInProjectDir("../../outside.txt", fakeProject)).toBe(false);
+  });
+
+  it("uses process.cwd() when projectDir is not provided", () => {
+    // Backward compatibility: no projectDir means use process.cwd()
+    expect(isInProjectDir("src/foo.js")).toBe(true);
   });
 });
 
@@ -1192,6 +1213,64 @@ describe("integration: auto-approve decisions", () => {
     expect(result.hookSpecificOutput.permissionDecisionReason).toBe(
       "Auto-approved: file path is within working directory",
     );
+  });
+
+  it("Edit file — uses CLAUDE_PROJECT_DIR when set", () => {
+    // When CLAUDE_PROJECT_DIR is set, the hook should use it as the project root
+    // instead of process.cwd(). A file inside CLAUDE_PROJECT_DIR should be allowed.
+    const projectDir = process.cwd(); // use actual cwd as the fake project dir
+    const { exitCode, stdout } = run(
+      {
+        tool_name: "Edit",
+        tool_input: {
+          file_path: projectDir + "/src/app.ts",
+          old_string: "a",
+          new_string: "b",
+        },
+      },
+      { CLAUDE_PROJECT_DIR: projectDir },
+    );
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+  });
+
+  it("Edit file — rejects file outside CLAUDE_PROJECT_DIR", () => {
+    const { exitCode, stdout } = run(
+      {
+        tool_name: "Edit",
+        tool_input: {
+          file_path: "/etc/passwd",
+          old_string: "a",
+          new_string: "b",
+        },
+      },
+      { CLAUDE_PROJECT_DIR: "/tmp/some-project" },
+    );
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("ask");
+  });
+
+  it("Edit file — uses stdin cwd when CLAUDE_PROJECT_DIR is not set", () => {
+    // Middle-tier fallback: parsed.cwd from stdin JSON
+    const projectDir = process.cwd();
+    const { exitCode, stdout } = run(
+      {
+        tool_name: "Edit",
+        tool_input: {
+          file_path: projectDir + "/src/app.ts",
+          old_string: "a",
+          new_string: "b",
+        },
+        cwd: projectDir,
+      },
+      // Explicitly unset CLAUDE_PROJECT_DIR so parsed.cwd is used
+      { CLAUDE_PROJECT_DIR: "" },
+    );
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 });
 
