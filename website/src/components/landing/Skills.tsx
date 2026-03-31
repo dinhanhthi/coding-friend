@@ -105,6 +105,12 @@ const slashCommandMeta: SkillMeta[] = [
     description:
       "Personal teacher — conversational storytelling breakdown of any task",
   },
+  {
+    command: "/cf-warm",
+    title: "Warm",
+    description:
+      "Catch up after absence — summarize git history for a specific user",
+  },
 ];
 
 const autoSkillMeta: SkillMeta[] = [
