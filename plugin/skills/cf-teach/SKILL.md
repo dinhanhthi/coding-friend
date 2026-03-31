@@ -85,12 +85,12 @@ Use categories from config. Default categories:
 
 ### Determine File Name
 
-Choose a snake-case, meaningful file name that describes the story — not just the topic. Examples:
+Choose a snake-case, meaningful file name that describes the story — not just the topic. **File name must start with `cf-teach-`**. Examples:
 
-- `how-i-debugged-the-race-condition.md`
-- `why-we-chose-redis-over-postgres.md`
-- `building-the-auth-middleware-from-scratch.md`
-- `the-refactor-that-untangled-the-api-layer.md`
+- `cf-teach-how-i-debugged-the-race-condition.md`
+- `cf-teach-why-we-chose-redis-over-postgres.md`
+- `cf-teach-building-the-auth-middleware-from-scratch.md`
+- `cf-teach-the-refactor-that-untangled-the-api-layer.md`
 
 File path: `{outputDir}/{category}/{name}.md`
 
@@ -178,13 +178,23 @@ auto_commit: {autoCommit from config}
 commit_message: learn: <brief description of what was explained>
 ```
 
-**Content format** — no frontmatter, just the narrative:
+**Content format** — include frontmatter with tags, then the narrative:
 
 ```markdown
+---
+title: "<Meaningful Title That Describes the Story>"
+category: "<category-name>"
+tags: [CF Teach, tag2, tag3]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+
 # <Meaningful Title That Describes the Story>
 
 <The full 9-dimension narrative — flowing prose, not a checklist>
 ```
+
+**Tag rules:** Always include `"CF Teach"` as the first tag. Add 2-4 additional tags relevant to the topic.
 
 ## Step 5: Confirm
 
@@ -197,7 +207,7 @@ After the cf-writer-deep agent completes, show the user:
 
 - **Always show the narrative in chat first** — the human reads it here, not just from the file
 - **Always use cf-writer-deep** (sonnet) — never cf-writer (haiku). The storytelling format requires nuanced tone and synthesis.
-- **No frontmatter** — this is a narrative doc, not a structured reference note
+- **Include frontmatter with tags** — always include `"CF Teach"` tag plus 2-4 topic-relevant tags
 - **Use category subdirectories** — output to `{outputDir}/{category}/{name}.md` (same structure as cf-learn)
 - **Use actual examples** from the session — never generic illustrations
 - **Conversational tone** — like explaining to a smart friend, not writing documentation
