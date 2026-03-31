@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.27.1 (2026-03-31)
+
+- Clarify MCP status message in `cf memory status` to indicate project scope [#031e3bf](https://github.com/dinhanhthi/coding-friend/commit/031e3bf)
+
 ## v1.27.0 (2026-03-29)
 
 - Remove Web & Research category from `cf permission` and add auto-approve toggle [#f0e20d3](https://github.com/dinhanhthi/coding-friend/commit/f0e20d3)
