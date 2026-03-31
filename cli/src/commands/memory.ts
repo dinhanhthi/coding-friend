@@ -239,7 +239,7 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   } else {
     log.info(
-      `MCP: ${chalk.dim("not configured")} ${chalk.dim('(run "cf memory init" or add manually via "cf memory mcp")')}`,
+      `MCP: ${chalk.dim("not configured in this project")} ${chalk.dim('(run "cf memory init" or add manually via "cf memory mcp")')}`,
     );
   }
 

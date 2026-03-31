@@ -348,7 +348,7 @@ function LearnHostContent() {
       <div className="flex flex-wrap items-center justify-center gap-3 text-base">
         {[
           {
-            label: "/cf-learn + /cf-teach",
+            label: "/cf-learn or /cf-teach",
             desc: "Extract & explain",
             color: "text-violet-400",
             border: "border-violet-500/30",
@@ -1049,9 +1049,6 @@ function AutoApproveContent() {
               <span className="font-mono text-xs font-medium text-slate-500 uppercase">
                 {t.step}
               </span>
-              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                {t.speed}
-              </span>
             </div>
             <p className={`mt-1 text-base font-semibold ${t.color}`}>
               {t.name}
@@ -1096,14 +1093,15 @@ function AutoApproveContent() {
             key={d.decision}
             className={`rounded-xl border ${d.border} ${d.bg} p-3`}
           >
-            <p className={`text-sm font-semibold ${d.color}`}>{d.decision}</p>
-            <ul className="mt-2 space-y-1">
+            <p className={`text-sm font-semibold ${d.color}`}>
+              {d.decision}{" "}
+              <span className="font-normal text-slate-400">(examples)</span>
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
               {d.examples.map((ex) => (
-                <li key={ex} className="text-sm text-slate-400">
-                  <code className="text-xs text-slate-300">{ex}</code>
-                </li>
+                <code key={ex} className="whitespace-nowrap text-xs text-slate-300">{ex}</code>
               ))}
-            </ul>
+            </div>
           </div>
         ))}
       </div>
