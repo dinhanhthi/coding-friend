@@ -49,7 +49,7 @@ If output is not empty, integrate the returned sections into this workflow:
    Read the docsDir from `.coding-friend/config.json` (default: `docs`).
 
    ```bash
-   mkdir -p <docsDir>/reviews/results && \
+   mkdir -p <docsDir>/reviews && \
      bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
      bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
        "<label>" "<docsDir>" \
@@ -70,18 +70,18 @@ If output is not empty, integrate the returned sections into this workflow:
 
    > **Label:** `<label>`
    > **Prompt file:** `<docsDir>/reviews/<label>-prompt.md`
-   > **Results expected at:** `<docsDir>/reviews/results/<label>-result.md`
+   > **Results expected at:** `<docsDir>/reviews/<label>-result-<service>.md`
 
    Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
 
    > **Copy and paste this to your external agent:**
    >
    > ```
-   > Read the file <docsDir>/reviews/<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/results/<label>-result.md in the format specified in the prompt.
+   > Read the file <docsDir>/reviews/<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
    > ```
 
    Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a single, complete instruction that works when pasted into any AI agent (Gemini, Codex, ChatGPT, Cursor, etc.) that has access to the project files.
 
    Finally, remind the user:
 
-   > When the external agent finishes, run `/cf-review-in <label>` to collect the results.
+   > When all external agents finish, run `/cf-review-in <label>` to collect all results.

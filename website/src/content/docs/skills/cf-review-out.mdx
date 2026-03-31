@@ -58,7 +58,7 @@ The generated prompt is a complete, standalone document:
 - **Frontmatter** — label, date, status (`pending`)
 - **Review criteria** — 5-layer methodology matching [`/cf-review`](/docs/skills/cf-review/)
 - **Output format** — exact markdown format the external agent must follow (Critical/Important/Suggestion)
-- **Save location** — tells the agent to write results to `docs/reviews/results/<label>-result.md`
+- **Save location** — tells the agent to write results to `docs/reviews/<label>-result-<service>.md`
 - **Full diff** — all code changes to review (truncated at 5000 lines with a note)
 - **Security boundary** — diff marked as untrusted input
 
@@ -67,7 +67,7 @@ The generated prompt is a complete, standalone document:
 ```
 /cf-review-out fix-login     → generates docs/reviews/fix-login-prompt.md
 (user runs any external agent on the prompt file)
-external agent writes        → docs/reviews/results/fix-login-result.md
+external agent writes        → docs/reviews/fix-login-result-gemini.md
 /cf-review-in fix-login      → reads results, presents findings, offers to fix
 ```
 

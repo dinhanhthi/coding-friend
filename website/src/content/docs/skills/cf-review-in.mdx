@@ -22,7 +22,7 @@ The `/cf-review-in` skill reads review results written by an external AI agent (
 /cf-review-in <label>
 ```
 
-- **With label** — reads `docs/reviews/results/<label>-result.md`
+- **With label** — reads all `docs/reviews/<label>-result-*.md` files (one per reviewer)
 - **No arguments** — lists available results and asks which one to collect
 
 ## Examples
@@ -37,7 +37,7 @@ The `/cf-review-in` skill reads review results written by an external AI agent (
 
 ## Workflow
 
-1. **Find results** — Look for `docs/reviews/results/<label>-result.md`
+1. **Find results** — Glob for `docs/reviews/<label>-result-*.md`
 2. **Parse findings** — Extract Critical/Important/Suggestion issues from the result file
 3. **Read original context** — Load the prompt file to understand what was reviewed
 4. **Critically verify findings** — Do NOT blindly trust external findings. For every Critical and Important issue:

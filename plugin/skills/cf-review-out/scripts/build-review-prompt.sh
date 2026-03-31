@@ -52,7 +52,7 @@ You are a senior code reviewer. This document contains everything you need to pe
 1. Read the code changes below
 2. Apply the review criteria
 3. Write your findings in the **exact output format** specified
-4. Save your review to: \`${DOCS_DIR}/reviews/results/${LABEL}-result.md\`
+4. Save your review to: \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\` (replace \`<service>\` with your name — e.g., \`gemini\`, \`chatgpt\`, \`codex\`, \`cursor\`, \`copilot\`)
 
 ## Review Criteria
 
@@ -127,17 +127,17 @@ If the code looks good with no issues, explicitly state that under Summary and l
 
 ## Where to Save Your Review
 
-Save your review to this exact path (relative to project root):
+Save your review to this path (relative to project root), replacing \`<service>\` with your model/service name (e.g., \`gemini\`, \`chatgpt\`, \`codex\`, \`cursor\`, \`copilot\`):
 
 \`\`\`
-${DOCS_DIR}/reviews/results/${LABEL}-result.md
+${DOCS_DIR}/reviews/${LABEL}-result-<service>.md
 \`\`\`
 
-Create the \`results/\` directory if it doesn't exist.
+For example, if you are Gemini: \`${DOCS_DIR}/reviews/${LABEL}-result-gemini.md\`
 
 ## After You Finish
 
-Once you have written your review to \`${DOCS_DIR}/reviews/results/${LABEL}-result.md\`, tell the user to paste the following prompt to Claude Code to collect the results:
+Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Claude Code to collect the results:
 
 \`\`\`
 /cf-review-in ${LABEL}
