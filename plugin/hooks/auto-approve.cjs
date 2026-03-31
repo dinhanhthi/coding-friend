@@ -66,31 +66,33 @@ const ALWAYS_ALLOW_TOOLS = new Set([
 ]);
 
 /**
- * Check if a file path resolves to within process.cwd().
+ * Check if a file path resolves to within the project directory.
  * Uses realpathSync for existing paths (follows symlinks) and path.resolve
  * for new files (Write creates files that don't exist yet).
  * @param {string} filePath
+ * @param {string} [projectDir] — project root (defaults to process.cwd())
  * @returns {boolean}
  */
-function isInWorkingDir(filePath) {
+function isInProjectDir(filePath, projectDir) {
   if (!filePath || typeof filePath !== "string") return false;
-  // Canonicalize cwd too — handles symlinked project directories
-  let canonicalCwd;
+  const baseDir = projectDir || process.cwd();
+  // Canonicalize project dir — handles symlinked project directories
+  let canonicalRoot;
   try {
-    canonicalCwd = fs.realpathSync(process.cwd());
+    canonicalRoot = fs.realpathSync(baseDir);
   } catch {
-    canonicalCwd = process.cwd();
+    canonicalRoot = baseDir;
   }
   let resolved;
   try {
     // For existing files/symlinks, resolve to canonical path (follows symlinks)
-    resolved = fs.realpathSync(path.resolve(canonicalCwd, filePath));
+    resolved = fs.realpathSync(path.resolve(canonicalRoot, filePath));
   } catch {
     // File doesn't exist yet (Write creates new files) — use path.resolve only
-    resolved = path.resolve(canonicalCwd, filePath);
+    resolved = path.resolve(canonicalRoot, filePath);
   }
   return (
-    resolved.startsWith(canonicalCwd + path.sep) || resolved === canonicalCwd
+    resolved.startsWith(canonicalRoot + path.sep) || resolved === canonicalRoot
   );
 }
 
@@ -310,16 +312,17 @@ function matchesPrefix(trimmed, prefix) {
  * Classify a tool call using rules only.
  * @param {string} toolName
  * @param {object} toolInput
+ * @param {string} [projectDir] — project root for file path checks
  * @returns {"allow"|"deny"|"ask"|"unknown"}
  */
-function classifyByRules(toolName, toolInput) {
+function classifyByRules(toolName, toolInput, projectDir) {
   // Always-allow tools
   if (ALWAYS_ALLOW_TOOLS.has(toolName)) return "allow";
 
   // Working-dir file operations
   if (toolName === "Write" || toolName === "Edit") {
     const filePath = toolInput && toolInput.file_path;
-    return isInWorkingDir(filePath) ? "allow" : "ask";
+    return isInProjectDir(filePath, projectDir) ? "allow" : "ask";
   }
 
   // Bash classification
@@ -486,7 +489,7 @@ module.exports = {
   classifyWithLLM,
   buildReason,
   isCodingFriendBash,
-  isInWorkingDir,
+  isInProjectDir,
   extractBashScriptPath,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
@@ -505,17 +508,7 @@ function main() {
     // Check if enabled via env var (for tests) or config
     const forceEnabled = process.env.CF_AUTO_APPROVE_ENABLED === "1";
 
-    if (!forceEnabled) {
-      const homeDir = os.homedir();
-      const cwd = process.cwd();
-      const enabled = loadAutoApproveConfig(homeDir, cwd);
-      if (!enabled) {
-        process.stdout.write("{}");
-        process.exit(0);
-      }
-    }
-
-    // Read stdin
+    // Read stdin first — we need parsed.cwd for config loading too
     let input = "";
     try {
       input = fs.readFileSync(0, "utf8");
@@ -543,6 +536,20 @@ function main() {
       process.exit(0);
     }
 
+    // Resolve project directory: CLAUDE_PROJECT_DIR env > stdin cwd > process.cwd()
+    // Trust: parsed.cwd comes from Claude Code runtime (trusted source).
+    const projectDir =
+      process.env.CLAUDE_PROJECT_DIR || parsed.cwd || process.cwd();
+
+    if (!forceEnabled) {
+      const homeDir = os.homedir();
+      const enabled = loadAutoApproveConfig(homeDir, projectDir);
+      if (!enabled) {
+        process.stdout.write("{}");
+        process.exit(0);
+      }
+    }
+
     const toolName = parsed.tool_name;
     const toolInput = parsed.tool_input;
 
@@ -552,7 +559,7 @@ function main() {
     }
 
     // Tier 1: Rule-based
-    let decision = classifyByRules(toolName, toolInput);
+    let decision = classifyByRules(toolName, toolInput, projectDir);
     let reasonContext;
 
     // Build context for reason messages
