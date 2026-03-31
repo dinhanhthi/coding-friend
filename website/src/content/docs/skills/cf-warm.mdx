@@ -1,0 +1,88 @@
+---
+title: "/cf-warm"
+description: "Catch up after absence — summarize git history for a specific user."
+keywords: [warm-up, catch-up, git history, absence, cf-warm]
+---
+
+Context footprint: `⚡⚡⚡` (high) — [what does this mean?](/docs/reference/context-usage/)
+
+The `/cf-warm` skill helps you catch up after being away from a project. It summarizes your recent commits and everything the team did since your last commit, grouped by topic/area.
+
+## Usage
+
+```bash
+/cf-warm [--user <name>] [--n-commits <N>]
+```
+
+## Arguments
+
+| Flag              | Description                             | Default                                   |
+| ----------------- | --------------------------------------- | ----------------------------------------- |
+| `--user <name>`   | Git author name to look up              | Auto-detected from `git config user.name` |
+| `--n-commits <N>` | Number of your own commits to summarize | `10`                                      |
+
+## What It Does
+
+1. **Validates git repo** — Stops if not inside a git repository
+2. **Resolves user** — Auto-detects from `git config user.name` or uses `--user`
+3. **Dry run** — Counts commits before processing to warn about large volumes
+4. **Gathers your commits** — Fetches your last N commits (messages only, no diffs)
+5. **Gathers team commits** — Fetches all other commits since your last shown commit
+6. **Clusters by topic** — Groups team commits by topic/area using AI analysis
+7. **Writes report** — Saves to `docs/warm/warm-YYYY-MM-DD.md` and shows a terminal summary
+8. **Indexes in memory** — Stores the report in the memory system for future recall
+
+## Examples
+
+```bash
+# Auto-detect user, show last 10 commits
+/cf-warm
+
+# Look up a specific user
+/cf-warm --user "John Smith"
+
+# Show more of your own history
+/cf-warm --n-commits 10
+
+# Combine flags
+/cf-warm --user "Jane" --n-commits 3
+```
+
+## When to Use
+
+- **Returning from vacation** — Catch up on what happened while you were away
+- **Context switching** — Re-orient yourself when switching back to a project
+- **Onboarding** — Get a quick overview of recent activity when joining a team
+- **Monday morning** — Start the week knowing what changed over the weekend
+
+## Report Structure
+
+The generated report includes:
+
+- **Your Recent Work** — Summary of your last N commits, grouped by feature/fix
+- **What the Team Did** — All other commits grouped by topic (e.g., "Frontend", "API", "Infrastructure")
+- **Quick Orientation** — The most impactful changes you should be aware of
+
+## Safety
+
+- **Dry run first** — Always counts commits before fetching to warn about large volumes
+- **Messages only** — Uses commit messages and descriptions, not diffs (unless a message is too vague)
+- **Safety cap** — Maximum 200 team commits to keep the report manageable
+
+## Custom Guide
+
+Extend with `.coding-friend/skills/cf-warm-custom/SKILL.md`:
+
+```markdown
+## Before
+
+<!-- Run before the warm-up starts -->
+
+## Rules
+
+<!-- Additional rules during warm-up -->
+
+## After
+
+<!-- Run after warm-up completes -->
+```

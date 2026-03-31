@@ -16,6 +16,7 @@ node_modules/
 .agent/
 .agents/
 .aider*
+.claude/
 .copilot/
 .cursor/
 .cursorrules
@@ -34,6 +35,9 @@ docs/plans
 docs/research
 docs/reviews
 docs/sessions
+docs/warm
+evals/analysis
+evals/results
 # End AI Sync managed
 
 .claude/*

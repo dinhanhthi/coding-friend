@@ -37,7 +37,15 @@ export function registerUpdate(
             "Convention memories (type: preference) are always synced automatically.",
         ),
     },
-    async ({ id, title, description, tags, content, importance, sync_to_claude_md }) => {
+    async ({
+      id,
+      title,
+      description,
+      tags,
+      content,
+      importance,
+      sync_to_claude_md,
+    }) => {
       const memory = await backend.update({
         id,
         title,

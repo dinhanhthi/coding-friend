@@ -58,6 +58,7 @@ Proceed with the rest of cf-plan. But first:
 - If the user did not provide a name → suggest a short, meaningful `cf-*` name with rationale. Ask for confirmation.
 - Determine: is this a slash command, auto-invoked, or both?
 - Determine: does it need a new agent, or can it reuse existing ones?
+- Using Anthropic's builtin `/skill-creator` to create the skill.
 - Announce: "Proceeding to plan new skill: `/cf-<name>`" and continue to Step 1 (Discovery).
 
 ## Rules
@@ -92,6 +93,28 @@ These rules apply **only** when the Before section detected a new skill/agent pl
   - **Agents count**: count the items in the "Available Agents" list. Format as `"N"`.
 - Update the `stats` array values in `StatsSection.tsx` to match the new counts.
 - This task should come AFTER the checklist tasks that create the new skill/agent files.
+
+### TokenTables Metadata Update
+
+- When the plan includes adding a new skill or agent, it **MUST** include a task to update `website/src/components/docs/TokenTables.tsx` with metadata for the new entry.
+- For a new **slash command**: add an entry to `slashCommandMeta` (short description) AND `overviewSlashMeta` (description + triggeredBy: "slash" | "slash + auto"). Keep entries sorted alphabetically by key.
+- For a new **auto-invoked skill**: add an entry to `autoSkillMeta` (activates-when text) AND `overviewAutoMeta` (activatesWhen + whatItDoes). Keep entries sorted alphabetically by key.
+- For a new **agent**: add an entry to `agentMeta` (short purpose) AND `agentRefMeta` (longer purpose description). Keep entries sorted alphabetically by key.
+- This task should come AFTER the checklist tasks that create the new skill/agent files.
+
+### Landing Skills Metadata Update
+
+- When the plan includes adding a new skill, it **MUST** include a task to update `website/src/components/landing/Skills.tsx` with metadata for the new entry.
+- For a new **slash command**: add an entry to `slashCommandMeta` array with `command`, `title`, and `description`. Keep the array sorted alphabetically by `command`.
+- For a new **auto-invoked skill**: add an entry to `autoSkillMeta` array with `command` (no `/` prefix), `title`, and `description`. Keep the array sorted alphabetically by `command`.
+- This task should come AFTER the checklist tasks that create the new skill/agent files.
+
+### README Commands Table Update
+
+- When the plan includes adding a new **slash command**, it **MUST** include a task to update the `## Commands` table in `README.md` with a new row: `| /cf-<name> [args] | Short description |`.
+- Keep the table in the same order as existing entries (grouped logically, not strictly alphabetical).
+- If the new skill is **auto-invoked only** (no slash), add it to the "Auto-invoked skills" line instead.
+- This task should come AFTER the checklist tasks that create the new skill files.
 
 ### LLMs.txt Regeneration
 

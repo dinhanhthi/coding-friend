@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Container from "@/components/ui/Container";
 import MemoryArchitecture from "./MemoryArchitecture";
+import Link from "next/link";
 
 /* ────────────────────────────────────────────────────────────
    DATA MODEL
@@ -972,6 +973,14 @@ export default function HowItWorks() {
             >
               /cf-help
             </a>
+            , and{" "}
+            <Link
+              href="/docs/skills/overview/"
+              className="text-violet-400 transition-colors hover:text-violet-300"
+            >
+              many more
+            </Link>
+            .
           </p>
 
           {/* Memory Architecture Diagram */}
