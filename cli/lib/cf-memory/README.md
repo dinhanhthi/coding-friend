@@ -48,7 +48,7 @@ Detection: Tier 1 → Tier 2 → Tier 3 (first available wins).
 
 Memories are stored as Markdown files with YAML frontmatter in `docs/memory/<category>/`.
 
-Convention memories (`preference` type → `conventions/` folder) are also synced to the project's `CLAUDE.md` under a `## CF Memory: Conventions` section. Entries are tracked via HTML comments (`<!-- cf:<id> -->`) and are automatically added, updated, or removed when the corresponding memory is stored, updated, or deleted.
+Convention memories (`preference` type → `conventions/` folder) are automatically synced to the project's `CLAUDE.md` under a `## CF Memory: Project Rules` section. Other memory types can opt-in to CLAUDE.md sync by setting `sync_to_claude_md: true` when storing or updating — useful for decisions, infrastructure rules, or any project-wide rules that future sessions must follow. Entries are tracked via HTML comments (`<!-- cf:<id> -->`) and are automatically added, updated, or removed when the corresponding memory is stored, updated, or deleted.
 
 ## Embedding Models
 
