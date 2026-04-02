@@ -17,7 +17,7 @@ description: >
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 user-invocable: true
 model: haiku
-tools: [Read, Glob]
+allowed-tools: [Read, Glob]
 ---
 
 # /cf-help — Coding Friend Help
