@@ -7,7 +7,7 @@ description: >
   wants to commit the result.
 disable-model-invocation: true
 model: haiku
-tools: [Bash, Read, Glob]
+allowed-tools: [Bash, Read, Glob]
 ---
 
 # /cf-commit
