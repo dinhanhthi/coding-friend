@@ -27,7 +27,7 @@ coding-friend/
 │   ├── hooks/
 │   │   ├── hooks.json               # Plugin hooks manifest
 │   │   ├── session-init.sh          # SessionStart: bootstrap context
-│   │   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
+│   │   ├── rules-reminder.sh        # UserPromptSubmit: inject rules
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
 │   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
@@ -150,7 +150,7 @@ agent: cf-reviewer
 | Hook                    | Event            | Purpose                                                                          |
 | ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
 | `session-init.sh`       | SessionStart     | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
-| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                  |
+| `rules-reminder.sh`     | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                  |
 | `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                    |
 | `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
 | `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
@@ -337,7 +337,7 @@ The project operates as 4 concurrent state machine layers.
 │  SESSION_ACTIVE      │◄────────────────────────────────┐
 │                      │                                  │
 │  Hooks active:       │   UserPromptSubmit               │
-│  • dev-rules-reminder│◄── (on every prompt)             │
+│  • rules-reminder    │◄── (on every prompt)             │
 │  • privacy-block     │◄── PreToolUse (file access)      │
 │  • scout-block       │◄── PreToolUse (file access)      │
 │  • context-tracker   │◄── PostToolUse (async logging)   │
