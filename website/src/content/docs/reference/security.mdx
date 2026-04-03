@@ -9,7 +9,7 @@ Coding Friend treats all external data as untrusted and applies layered defenses
 ## Defenses
 
 - **Session start** — rules and security policies loaded and validated
-- **Per-prompt** — `rules-reminder` hook enforces boundaries before each prompt
+- **Per-prompt** — `rules-reminder` hook enforces boundaries (every 4th prompt)
 - **Per-skill** — external content (web search, research, MCP) is marked untrusted; embedded instructions are never executed
 - **Per-agent** — system prompts include guardrails: no exfiltration, no following fetched instructions, flag suspicious content
 

@@ -10,15 +10,18 @@ Hooks are lifecycle functions that execute automatically at specific points in y
 
 ## Hook Reference
 
-| Hook                 | Trigger          | Purpose                                                                 |
-| -------------------- | ---------------- | ----------------------------------------------------------------------- |
-| `session-init`       | SessionStart     | Initialize session state and load configuration                         |
-| `rules-reminder`     | UserPromptSubmit | Remind developers of project rules before each prompt                   |
-| `privacy-block`      | PreToolUse       | Block access to sensitive files (.env, .pem, SSH keys)                  |
-| `scout-block`        | PreToolUse       | Block access to files matching `.coding-friend/ignore` patterns         |
-| `statusline`         | SessionStart     | Configure editor statusline with project info, account, and rate limits |
-| `auto-approve`       | PreToolUse       | Auto-approve safe tool calls, block destructive ones (opt-in)           |
-| `context-tracker`    | PostToolUse      | Track tool usage and context for performance analysis                   |
+| Hook             | Trigger                    | Purpose                                                                                  |
+| ---------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| `session-init`   | SessionStart               | Initialize session state and load configuration                                          |
+| `rules-reminder` | UserPromptSubmit           | Remind developers of project rules (every 4th prompt)                                    |
+| `privacy-block`  | PreToolUse                 | Block access to sensitive files (.env, .pem, SSH keys)                                   |
+| `scout-block`    | PreToolUse                 | Block access to files matching `.coding-friend/ignore` patterns                          |
+| `auto-approve`   | PreToolUse                 | Auto-approve safe tool calls, block destructive ones (opt-in)                            |
+| `statusline`     | SessionStart               | Configure editor statusline with project info, account, rate limits, task/agent progress |
+| `session-log`    | Stop                       | Append turn log (JSONL) for richer memory capture                                        |
+| `task-tracker`   | TaskCreated/TaskCompleted  | Track task progress for statusline display                                               |
+| `agent-tracker`  | SubagentStart/SubagentStop | Track active agent for statusline display                                                |
+| `memory-capture` | PreCompact                 | Auto-capture session memory before context compaction                                    |
 
 ## How Hooks Work
 
@@ -33,8 +36,7 @@ Enable or disable hooks in [`.coding-friend/config.json`](/docs/configuration/co
   "hooks": {
     "privacyBlock": true,
     "scoutBlock": true,
-    "devRulesReminder": true,
-    "contextTracker": true
+    "rulesReminder": true
   }
 }
 ```

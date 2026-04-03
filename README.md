@@ -39,6 +39,7 @@
   cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
   👤 Thi Dinh (me@dinhanhthi.com)
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+  📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
   ```
 
 For full details, visit the **[official website](https://cf.dinhanhthi.com/#features)**.

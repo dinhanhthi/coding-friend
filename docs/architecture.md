@@ -31,7 +31,9 @@ coding-friend/
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
 │   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
-│   │   └── context-tracker.sh       # PostToolUse: track files read
+│   │   ├── session-log.sh           # Stop: append turn log for memory-capture
+│   │   ├── task-tracker.sh          # TaskCreated/Completed: track task progress
+│   │   └── agent-tracker.sh         # SubagentStart/Stop: track active agent
 │   │
 │   ├── context/
 │   │   └── bootstrap.md             # Bootstrap context (loaded by session-init)
@@ -145,16 +147,20 @@ agent: cf-reviewer
 
 ---
 
-## Hooks System (6 hooks)
+## Hooks System (10 hooks)
 
-| Hook                    | Event            | Purpose                                                                          |
-| ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
-| `session-init.sh`       | SessionStart     | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
-| `rules-reminder.sh`     | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                  |
-| `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                    |
-| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
-| `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
-| `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                   |
+| Hook                | Event                      | Purpose                                                                          |
+| ------------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| `session-init.sh`   | SessionStart               | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
+| `rules-reminder.sh` | UserPromptSubmit           | Inject core rules every 4th prompt (reduced from every prompt)                   |
+| `privacy-block.sh`  | PreToolUse                 | Block .env, credentials, keys. Exit 2 = block                                    |
+| `scout-block.cjs`   | PreToolUse                 | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
+| `auto-approve.cjs`  | PreToolUse                 | Auto-approve safe tool calls, block destructive ones (opt-in)                    |
+| `statusline.sh`     | Statusline                 | Show context usage, git branch, session info, task/agent progress                |
+| `session-log.sh`    | Stop                       | Append turn log to JSONL file for memory-capture (async: true)                   |
+| `task-tracker.sh`   | TaskCreated/TaskCompleted  | Track task progress for statusline (async: true)                                 |
+| `agent-tracker.sh`  | SubagentStart/SubagentStop | Track active agent for statusline (async: true)                                  |
+| `memory-capture.sh` | PreCompact                 | Auto-capture session memory before context compaction                            |
 
 ### Hook I/O Protocol
 
@@ -337,10 +343,13 @@ The project operates as 4 concurrent state machine layers.
 │  SESSION_ACTIVE      │◄────────────────────────────────┐
 │                      │                                  │
 │  Hooks active:       │   UserPromptSubmit               │
-│  • rules-reminder    │◄── (on every prompt)             │
+│  • rules-reminder    │◄── (every 4th prompt)            │
 │  • privacy-block     │◄── PreToolUse (file access)      │
 │  • scout-block       │◄── PreToolUse (file access)      │
-│  • context-tracker   │◄── PostToolUse (async logging)   │
+│  • auto-approve      │◄── PreToolUse (classification)   │
+│  • session-log       │◄── Stop (async turn logging)     │
+│  • task-tracker      │◄── TaskCreated/Completed (async) │
+│  • agent-tracker     │◄── SubagentStart/Stop (async)    │
 │                      │                                  │
 │  User interacts...   │──────────────────────────────────┘
 └──────┬───────────────┘
@@ -348,6 +357,7 @@ The project operates as 4 concurrent state machine layers.
        ▼
 ┌──────────────────┐
 │  SESSION_END     │
+│  memory-capture  │◄── PreCompact (auto-capture)
 │  (session done)  │
 └──────────────────┘
 ```

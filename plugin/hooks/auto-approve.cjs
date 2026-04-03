@@ -374,15 +374,99 @@ function classifyByRules(toolName, toolInput, projectDir) {
 // ---------------------------------------------------------------------------
 
 /**
+ * File-based LLM decision cache — persists across process invocations.
+ * Each PreToolUse hook spawns a new process, so in-memory state is lost.
+ * The cache file lives at /tmp/cf-llm-cache-{SESSION_ID}.json.
+ *
+ * Cache path can be overridden via CF_AUTO_APPROVE_CACHE_FILE env var (for tests).
+ */
+
+/**
+ * Session ID for cache file scoping. Set from parsed stdin JSON in main().
+ * Defaults to "default" if not available (e.g., in tests or when stdin lacks session_id).
+ */
+let _sessionId = "default";
+
+/** Set the session ID (called from main() after parsing stdin). */
+function setSessionId(id) {
+  if (id && typeof id === "string") _sessionId = id;
+}
+
+/** Resolve the cache file path. */
+function llmCacheFilePath() {
+  if (process.env.CF_AUTO_APPROVE_CACHE_FILE)
+    return process.env.CF_AUTO_APPROVE_CACHE_FILE;
+  return path.join(os.tmpdir(), `cf-llm-cache-${_sessionId}.json`);
+}
+
+/**
+ * Build a cache key from tool name and input.
+ * Uses file_path, command, or JSON-serialized input as the distinguishing part.
+ * @param {string} toolName
+ * @param {object} toolInput
+ * @returns {string}
+ */
+function llmCacheKey(toolName, toolInput) {
+  const inputKey =
+    (toolInput && (toolInput.file_path || toolInput.command)) ||
+    JSON.stringify(toolInput);
+  return `${toolName}:${inputKey}`;
+}
+
+/**
+ * Read the entire cache from disk. Returns {} on any error.
+ * @returns {Object<string, {decision: string, reason: string}>}
+ */
+function readLLMCache() {
+  try {
+    return JSON.parse(fs.readFileSync(llmCacheFilePath(), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Write a single entry to the cache file (read-modify-write).
+ * Best-effort — never throws.
+ * @param {string} key
+ * @param {{decision: string, reason: string}} value
+ */
+function writeLLMCacheEntry(key, value) {
+  try {
+    const cache = readLLMCache();
+    cache[key] = value;
+    fs.writeFileSync(llmCacheFilePath(), JSON.stringify(cache));
+  } catch {
+    // Best-effort — don't break the hook on cache write failure
+  }
+}
+
+/** Clear the LLM decision cache (for testing and session cleanup). */
+function clearLLMCache() {
+  try {
+    fs.unlinkSync(llmCacheFilePath());
+  } catch {
+    // File may not exist — that's fine
+  }
+}
+
+/**
  * Classify a tool call using the LLM (claude CLI).
+ * Results are cached to a file by tool+input key across process invocations.
+ * Error/fail-open results are NOT cached so retries can succeed.
  * @param {string} toolName
  * @param {object} toolInput
  * @returns {{ decision: "allow"|"deny"|"ask", reason: string }}
  */
 function classifyWithLLM(toolName, toolInput) {
+  const cacheKey = llmCacheKey(toolName, toolInput);
+  const cache = readLLMCache();
+  const cached = cache[cacheKey];
+  if (cached) return cached;
+
   // Allow tests to override the timeout (e.g., 1ms to force fail-open)
   const llmTimeout =
-    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 30000;
+    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 10000;
 
   try {
     const prompt = `You are a security classifier for AI tool calls. Classify this tool call and provide a reason.
@@ -429,10 +513,12 @@ Respond in the exact format: CLASSIFICATION|reason`;
       ask: "LLM classified as needs review",
     };
 
-    return {
+    const llmResult = {
       decision,
       reason: reason || GENERIC_REASONS[decision],
     };
+    writeLLMCacheEntry(cacheKey, llmResult);
+    return llmResult;
   } catch {
     // Timeout, ENOENT, any error → fail-open
     return {
@@ -487,6 +573,8 @@ function loadAutoApproveConfig(homeDir, cwd) {
 module.exports = {
   classifyByRules,
   classifyWithLLM,
+  clearLLMCache,
+  llmCacheKey,
   buildReason,
   isCodingFriendBash,
   isInProjectDir,
@@ -535,6 +623,9 @@ function main() {
       process.stdout.write("{}");
       process.exit(0);
     }
+
+    // Set session ID from stdin JSON for cache file scoping
+    setSessionId(parsed.session_id);
 
     // Resolve project directory: CLAUDE_PROJECT_DIR env > stdin cwd > process.cwd()
     // Trust: parsed.cwd comes from Claude Code runtime (trusted source).
