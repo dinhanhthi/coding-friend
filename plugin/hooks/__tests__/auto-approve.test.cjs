@@ -1,6 +1,7 @@
 "use strict";
 
 const { execFileSync } = require("child_process");
+const os = require("os");
 const path = require("path");
 
 const SCRIPT = path.resolve(__dirname, "../auto-approve.cjs");
@@ -29,6 +30,8 @@ function run(jsonInput, env = {}) {
 const {
   classifyByRules,
   classifyWithLLM,
+  clearLLMCache,
+  llmCacheKey,
   isCodingFriendBash,
   isInProjectDir,
   buildReason,
@@ -1031,13 +1034,21 @@ const cp = require("child_process");
 
 describe("classifyWithLLM", () => {
   let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-basic-${process.pid}.json`,
+  );
 
   beforeEach(() => {
     originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+    clearLLMCache();
   });
 
   afterEach(() => {
     cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
   });
 
   it("returns allow with reason when LLM says SAFE|reason", () => {
@@ -1111,6 +1122,174 @@ describe("classifyWithLLM", () => {
       decision: "ask",
       reason: "LLM classification unavailable — requires user review",
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — LLM decision cache
+// ---------------------------------------------------------------------------
+
+describe("classifyWithLLM — cache", () => {
+  let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-${process.pid}.json`,
+  );
+
+  beforeEach(() => {
+    originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+    clearLLMCache();
+  });
+
+  afterEach(() => {
+    cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
+  });
+
+  it("returns cached decision on second call with same tool+input key", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|cached result";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "terraform apply" });
+    const second = classifyWithLLM("Bash", { command: "terraform apply" });
+
+    expect(first).toEqual({ decision: "allow", reason: "cached result" });
+    expect(second).toEqual({ decision: "allow", reason: "cached result" });
+    expect(callCount).toBe(1); // LLM only called once
+  });
+
+  it("does NOT use cache for different tool names", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Bash", { command: "terraform apply" });
+    classifyWithLLM("SomeTool", { command: "terraform apply" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("does NOT use cache for different file paths", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Write", { file_path: "/tmp/a.txt" });
+    classifyWithLLM("Write", { file_path: "/tmp/b.txt" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("caches deny decisions too", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "DANGEROUS|risky operation";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "rm -rf important/" });
+    const second = classifyWithLLM("Bash", { command: "rm -rf important/" });
+
+    expect(first).toEqual({ decision: "deny", reason: "risky operation" });
+    expect(second).toEqual(first);
+    expect(callCount).toBe(1);
+  });
+
+  it("does NOT cache fail-open (error) results", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      if (callCount === 1) throw new Error("timeout");
+      return "SAFE|recovered";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "something" });
+    expect(first.decision).toBe("ask");
+
+    const second = classifyWithLLM("Bash", { command: "something" });
+    expect(second).toEqual({ decision: "allow", reason: "recovered" });
+    expect(callCount).toBe(2); // retried after error
+  });
+
+  it("clearLLMCache resets the cache", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Bash", { command: "test" });
+    clearLLMCache();
+    classifyWithLLM("Bash", { command: "test" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("persists cache to file (survives simulated process restart)", () => {
+    cp.execFileSync = () => "SAFE|file-persisted";
+    classifyWithLLM("Bash", { command: "terraform plan" });
+
+    // Verify the file exists and contains the cached entry
+    const cacheKey = llmCacheKey("Bash", { command: "terraform plan" });
+    const cacheContent = JSON.parse(
+      require("fs").readFileSync(testCacheFile, "utf8"),
+    );
+    expect(cacheContent[cacheKey]).toEqual({
+      decision: "allow",
+      reason: "file-persisted",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — LLM timeout
+// ---------------------------------------------------------------------------
+
+describe("classifyWithLLM — timeout", () => {
+  let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-timeout-${process.pid}.json`,
+  );
+
+  beforeEach(() => {
+    originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+  });
+
+  afterEach(() => {
+    cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
+  });
+
+  it("uses 10s default timeout (reduced from 30s)", () => {
+    let capturedTimeout;
+    cp.execFileSync = (_cmd, _args, opts) => {
+      capturedTimeout = opts.timeout;
+      return "SAFE|ok";
+    };
+
+    // Remove env override to test default
+    const origEnv = process.env.CF_AUTO_APPROVE_LLM_TIMEOUT;
+    delete process.env.CF_AUTO_APPROVE_LLM_TIMEOUT;
+
+    classifyWithLLM("SomeTool", { data: "unique-timeout-test" });
+
+    if (origEnv !== undefined) {
+      process.env.CF_AUTO_APPROVE_LLM_TIMEOUT = origEnv;
+    }
+
+    expect(capturedTimeout).toBe(10000);
   });
 });
 
@@ -1434,7 +1613,6 @@ describe("integration: config and fail-open", () => {
 // ---------------------------------------------------------------------------
 
 const fs = require("fs");
-const os = require("os");
 
 describe("loadAutoApproveConfig", () => {
   let tmpDir;

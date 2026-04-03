@@ -66,8 +66,8 @@ Or use the interactive setup: `cf config` or `cf init`.
             │ not Write/Edit
             ▼
 ┌─────────────────────────┐
-│  Step 3: LLM Classifier │  ~2-5s
-│  (Claude Sonnet)        │
+│  Step 3: LLM Classifier │  ~2-5s (cached: instant)
+│  (Claude Sonnet, 10s)   │
 │  ┌────────────────────┐ │
 │  │ SAFE               │──── ▶ Allow
 │  │ DANGEROUS          │──── ▶ Block (with reason)
@@ -128,7 +128,7 @@ Everything not resolved by Steps 1 or 2 goes to the LLM classifier. This include
 - MCP tools
 - Any other unrecognized tool
 
-The classifier runs on **Claude Sonnet** and returns one of:
+The classifier runs on **Claude Sonnet** (10s timeout) and returns one of:
 
 | Response       | Action                                     |
 | -------------- | ------------------------------------------ |
@@ -136,6 +136,8 @@ The classifier runs on **Claude Sonnet** and returns one of:
 | `DANGEROUS`    | Block with actionable reason               |
 | `NEEDS_REVIEW` | Show permission prompt                     |
 | Error/timeout  | Fall back to permission prompt (fail-open) |
+
+**File-based cache:** LLM decisions are cached by `tool+input` key to a session-scoped file in `/tmp`. The same tool call with the same arguments only hits the LLM once — subsequent invocations return the cached decision instantly. Error/fail-open results are not cached so retries can succeed.
 
 **Feedback loop:** When the classifier blocks an action, the reason is returned to Claude so it can try an alternative approach. For example: _"Command 'npm run deploy' blocked: may push to production. Try a dry-run flag or a local-only alternative."_
 
@@ -154,17 +156,17 @@ A warning also appears at session start if dangerous rules are detected while au
 
 ## Comparison
 
-| Feature              | Auto-Approve Hook                | `--enable-auto-mode`  | `--dangerously-skip-permissions` |
-| -------------------- | -------------------------------- | --------------------- | -------------------------------- |
-| Availability         | All Coding Friend users          | Team/Enterprise only  | All users                        |
-| Read-only operations | Auto-approve                     | Auto-approve          | Auto-approve                     |
-| Working-dir edits    | Auto-approve                     | Auto-approve          | Auto-approve                     |
-| Dangerous operations | Block with reason                | Block                 | Auto-approve                     |
-| Unknown operations   | LLM classifier (Sonnet)          | Sonnet 4.6 classifier | Auto-approve                     |
-| Feedback loop        | Yes — reason returned to Claude  | Yes                   | N/A                              |
-| Latency              | ~0ms (rules) / ~2-5s (LLM)       | Small overhead        | None                             |
-| Token cost           | LLM calls count toward usage     | Higher                | Standard                         |
-| Dangerous rules      | Audited + stripped on activation | Dropped on enter      | N/A                              |
+| Feature              | Auto-Approve Hook                       | `--enable-auto-mode`  | `--dangerously-skip-permissions` |
+| -------------------- | --------------------------------------- | --------------------- | -------------------------------- |
+| Availability         | All Coding Friend users                 | Team/Enterprise only  | All users                        |
+| Read-only operations | Auto-approve                            | Auto-approve          | Auto-approve                     |
+| Working-dir edits    | Auto-approve                            | Auto-approve          | Auto-approve                     |
+| Dangerous operations | Block with reason                       | Block                 | Auto-approve                     |
+| Unknown operations   | LLM classifier (Sonnet)                 | Sonnet 4.6 classifier | Auto-approve                     |
+| Feedback loop        | Yes — reason returned to Claude         | Yes                   | N/A                              |
+| Latency              | ~0ms (rules) / ~2-5s (LLM, cached: 0ms) | Small overhead        | None                             |
+| Token cost           | LLM calls count toward usage            | Higher                | Standard                         |
+| Dangerous rules      | Audited + stripped on activation        | Dropped on enter      | N/A                              |
 
 ## Safety Design
 

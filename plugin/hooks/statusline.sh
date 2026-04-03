@@ -337,6 +337,40 @@ if component_enabled "rate_limit"; then
   fi
 fi
 
+# ── Task/Agent tracking (for "task_agent" component) ──
+task_agent_line=""
+if component_enabled "task_agent"; then
+  # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)
+  SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+  if [ -n "$SESSION_ID" ]; then
+    ta_parts=""
+
+    # Task progress
+    TASKS_FILE="/tmp/cf-tasks-${SESSION_ID}.json"
+    if [ -f "$TASKS_FILE" ]; then
+      task_total=$(grep -o '"total"[[:space:]]*:[[:space:]]*[0-9]*' "$TASKS_FILE" 2>/dev/null | grep -o '[0-9]*$' || echo 0)
+      task_completed=$(grep -o '"completed"[[:space:]]*:[[:space:]]*[0-9]*' "$TASKS_FILE" 2>/dev/null | grep -o '[0-9]*$' || echo 0)
+      if [ "$task_total" -gt 0 ] 2>/dev/null; then
+        ta_parts="${CYAN}📋 Tasks: ${task_completed}/${task_total}${RESET}"
+      fi
+    fi
+
+    # Active agent
+    AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
+    if [ -f "$AGENT_FILE" ]; then
+      agent_name=$(cat "$AGENT_FILE" 2>/dev/null || true)
+      if [ -n "$agent_name" ]; then
+        if [ -n "$ta_parts" ]; then
+          ta_parts+="${separator}"
+        fi
+        ta_parts+="${YELLOW}🤖 Agent: ${agent_name}${RESET}"
+      fi
+    fi
+
+    task_agent_line="$ta_parts"
+  fi
+fi
+
 # Build output — use array to handle separators cleanly
 parts=()
 
@@ -387,4 +421,9 @@ if [ -n "$rate_limit_line" ]; then
 fi
 if [ -n "$third_line" ]; then
   printf "\n%s" "$third_line"
+fi
+
+# Fourth line: task/agent tracking
+if [ -n "$task_agent_line" ]; then
+  printf "\n%s" "$task_agent_line"
 fi
