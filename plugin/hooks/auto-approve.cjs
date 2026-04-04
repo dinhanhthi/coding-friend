@@ -5,7 +5,7 @@
  * 3-step classification:
  *   Step 1 (rules)       — pattern-based allow/deny/ask for known tools/commands
  *   Step 2 (working-dir) — Write/Edit auto-approved if file is inside cwd
- *   Step 3 (LLM)         — `claude --print -m sonnet` classifier for all unknown tools
+ *   Step 3 (LLM)         — `claude --print --model sonnet` classifier for all unknown tools
  *
  * Integration contract:
  *   stdin  – JSON with tool_name, tool_input
@@ -180,6 +180,65 @@ const BASH_ALLOW_PREFIXES = [
 const SHELL_OPERATOR_PATTERN = /[\n|;&<]|>>?|`|\$\(/;
 
 /**
+ * Detect unsafe compound operators EXCLUDING pipe.
+ * Checked AFTER stripping safe stderr redirects (2>&1).
+ * Semicolons, &&, ||, backticks, $(), newlines, input redirect (<),
+ * and any output redirect (>).
+ */
+const UNSAFE_COMPOUND_PATTERN = /[;\n`>]|&&|\|\||\$\(|</;
+
+/**
+ * Strip stderr-to-stdout redirects (e.g., "2>&1") from a command string.
+ * These are safe and should not prevent auto-approval.
+ * Only matches standalone "2>&1" tokens — not substrings like "sort2>&1" or "12>&1".
+ */
+function stripStderrRedirect(str) {
+  return str.replace(/(?<=\s|^)2>&1(?=\s|$)/g, "").trim();
+}
+
+/**
+ * Check if a compound (piped) command is safe by verifying every segment
+ * matches an allow prefix. Only pipe-based compounds qualify — commands
+ * with ;, &&, ||, backticks, $(), newlines, or redirects (except 2>&1)
+ * are never auto-approved here.
+ * @param {string} cmd — the full trimmed command
+ * @returns {boolean}
+ */
+/**
+ * Post-match safety check for allowed prefixes that have dangerous sub-forms.
+ * Returns "allow" if safe, or a non-allow decision if the command is risky.
+ * Used by both simple and compound command paths to keep behavior consistent.
+ * @param {string} cmd — the command (or pipe segment) to check
+ * @param {string} prefix — the matched allow prefix
+ * @returns {"allow"|"unknown"|"ask"}
+ */
+function postMatchSafety(cmd, prefix) {
+  if (prefix === "find" && cmd.includes("-delete")) return "unknown";
+  if (prefix === "git commit" && cmd.includes("--amend")) return "ask";
+  return "allow";
+}
+
+function isSafeCompoundCommand(cmd) {
+  // Strip safe stderr redirects first, then check for unsafe operators
+  const stripped = stripStderrRedirect(cmd);
+  if (UNSAFE_COMPOUND_PATTERN.test(stripped)) return false;
+
+  // Split on pipe operator
+  const segments = stripped.split("|").map((s) => s.trim());
+
+  // Every segment must be non-empty and match a known allow prefix
+  return segments.every((seg) => {
+    if (!seg) return false;
+    for (const prefix of BASH_ALLOW_PREFIXES) {
+      if (matchesPrefix(seg, prefix)) {
+        return postMatchSafety(seg, prefix) === "allow";
+      }
+    }
+    return false;
+  });
+}
+
+/**
  * Destructive Bash patterns that must be blocked.
  * Each is a regex tested against the full command.
  */
@@ -339,16 +398,16 @@ function classifyByRules(toolName, toolInput, projectDir) {
     // safe to auto-approve by prefix alone — send to LLM or ask
     const isCompound = SHELL_OPERATOR_PATTERN.test(trimmed);
 
+    // Safe compound commands: pipe-only chains where every segment is safe
+    if (isCompound && isSafeCompoundCommand(trimmed)) {
+      return "allow";
+    }
+
     // Check allow prefixes (safe read-only commands) — only if simple command
     if (!isCompound) {
       for (const prefix of BASH_ALLOW_PREFIXES) {
         if (matchesPrefix(trimmed, prefix)) {
-          // Post-match safety: some allowed prefixes have dangerous sub-forms
-          if (prefix === "find" && trimmed.includes("-delete"))
-            return "unknown";
-          if (prefix === "git commit" && trimmed.includes("--amend"))
-            return "ask";
-          return "allow";
+          return postMatchSafety(trimmed, prefix);
         }
       }
 
@@ -470,7 +529,7 @@ function classifyWithLLM(toolName, toolInput) {
 
   // Allow tests to override the timeout (e.g., 1ms to force fail-open)
   const llmTimeout =
-    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 10000;
+    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 30000;
 
   try {
     const prompt = `You are a security classifier for AI tool calls. Classify this tool call and provide a reason.
@@ -523,8 +582,13 @@ Respond in the exact format: CLASSIFICATION|reason`;
     };
     writeLLMCacheEntry(cacheKey, llmResult);
     return llmResult;
-  } catch {
+  } catch (err) {
     // Timeout, ENOENT, any error → fail-open
+    const errMsg = err && err.message ? err.message : String(err);
+    const isTimeout = err && err.killed;
+    process.stderr.write(
+      `[auto-approve] LLM classification failed: ${isTimeout ? "timeout" : errMsg}\n`,
+    );
     return {
       decision: "ask",
       reason: "LLM classification unavailable — requires user review",
@@ -582,9 +646,11 @@ module.exports = {
   buildReason,
   isCodingFriendBash,
   isInProjectDir,
+  isSafeCompoundCommand,
   extractBashScriptPath,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
+  UNSAFE_COMPOUND_PATTERN,
   PLUGIN_ROOT,
 };
 

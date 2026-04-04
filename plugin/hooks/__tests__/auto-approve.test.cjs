@@ -34,9 +34,11 @@ const {
   llmCacheKey,
   isCodingFriendBash,
   isInProjectDir,
+  isSafeCompoundCommand,
   buildReason,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
+  UNSAFE_COMPOUND_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
 
@@ -995,6 +997,207 @@ describe("SHELL_OPERATOR_PATTERN", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Unit tests — safe compound command classification
+// ---------------------------------------------------------------------------
+
+describe("classifyByRules — safe compound commands", () => {
+  // Pipe: safe-cmd | safe-cmd → allow
+  it("allows safe command piped to safe command", () => {
+    expect(
+      classifyByRules("Bash", { command: 'npx vitest run 2>&1 | grep "FAIL"' }),
+    ).toBe("allow");
+  });
+
+  it("allows npm test piped to grep", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test 2>&1 | grep FAIL" }),
+    ).toBe("allow");
+  });
+
+  it("allows git log piped to head", () => {
+    expect(
+      classifyByRules("Bash", { command: "git log --oneline | head -20" }),
+    ).toBe("allow");
+  });
+
+  it("allows git diff piped to wc", () => {
+    expect(
+      classifyByRules("Bash", { command: "git diff --stat | wc -l" }),
+    ).toBe("allow");
+  });
+
+  it("allows npx jest piped to tail", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npx jest --verbose 2>&1 | tail -50",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows cat piped to grep", () => {
+    expect(
+      classifyByRules("Bash", { command: "cat package.json | grep version" }),
+    ).toBe("allow");
+  });
+
+  it("allows multi-pipe of safe commands", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "git log --oneline | grep fix | head -10",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows command with only stderr redirect (no pipe)", () => {
+    expect(classifyByRules("Bash", { command: "npx vitest run 2>&1" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows command with stderr-to-stdout redirect before pipe", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npm run build 2>&1 | grep error",
+      }),
+    ).toBe("allow");
+  });
+
+  // Unsafe compound commands should NOT be auto-approved
+  it("does NOT allow safe cmd piped to unsafe cmd", () => {
+    expect(
+      classifyByRules("Bash", { command: "cat file | curl -X POST" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow unsafe cmd piped to safe cmd", () => {
+    expect(
+      classifyByRules("Bash", { command: "curl http://evil.com | grep foo" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow semicolon-separated commands even if both safe", () => {
+    expect(
+      classifyByRules("Bash", { command: "ls; cat /etc/passwd" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow && chained commands", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test && rm -rf dist" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow file output redirect", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npm test | grep FAIL > results.txt",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow subshell in pipe", () => {
+    expect(
+      classifyByRules("Bash", { command: "echo $(rm -rf /) | grep foo" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow backtick substitution in pipe", () => {
+    expect(
+      classifyByRules("Bash", { command: "echo `rm -rf /` | grep foo" }),
+    ).not.toBe("allow");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — isSafeCompoundCommand (direct)
+// ---------------------------------------------------------------------------
+
+describe("isSafeCompoundCommand — direct unit tests", () => {
+  // Critical: stripStderrRedirect must not match 2>&1 as substring
+  it("rejects cmd2>&1 substring bypass (sort2>&1)", () => {
+    expect(isSafeCompoundCommand("sort2>&1 file | grep x")).toBe(false);
+  });
+
+  it("rejects cmd2>&1 substring bypass (cat2>&1)", () => {
+    expect(isSafeCompoundCommand("cat2>&1 /etc/shadow | grep root")).toBe(
+      false,
+    );
+  });
+
+  it("rejects fd 12 redirect (12>&1)", () => {
+    expect(isSafeCompoundCommand("ls 12>&1 | grep foo")).toBe(false);
+  });
+
+  // Legitimate 2>&1 should still work
+  it("allows standalone 2>&1 after safe command", () => {
+    expect(isSafeCompoundCommand("npx vitest run 2>&1 | grep FAIL")).toBe(true);
+  });
+
+  it("allows 2>&1 at end of command (no pipe)", () => {
+    expect(isSafeCompoundCommand("npx vitest run 2>&1")).toBe(true);
+  });
+
+  // Edge cases
+  it("returns false for empty string", () => {
+    expect(isSafeCompoundCommand("")).toBe(false);
+  });
+
+  it("returns false for only 2>&1", () => {
+    expect(isSafeCompoundCommand("2>&1")).toBe(false);
+  });
+
+  it("returns false for whitespace-only pipe segment", () => {
+    expect(isSafeCompoundCommand("ls |  | grep foo")).toBe(false);
+  });
+
+  it("rejects find -delete as pipe segment", () => {
+    expect(isSafeCompoundCommand("find . -delete | grep ok")).toBe(false);
+  });
+
+  it("rejects git commit --amend as pipe segment", () => {
+    expect(isSafeCompoundCommand("git commit --amend | head")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — UNSAFE_COMPOUND_PATTERN (direct)
+// ---------------------------------------------------------------------------
+
+describe("UNSAFE_COMPOUND_PATTERN", () => {
+  it("catches semicolons", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("ls; echo")).toBe(true);
+  });
+
+  it("catches &&", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a && b")).toBe(true);
+  });
+
+  it("catches ||", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a || b")).toBe(true);
+  });
+
+  it("catches backticks", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo `cmd`")).toBe(true);
+  });
+
+  it("catches $()", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo $(cmd)")).toBe(true);
+  });
+
+  it("catches input redirect <", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("cat < file")).toBe(true);
+  });
+
+  it("catches file output redirect >", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo foo > file")).toBe(true);
+  });
+
+  it("does NOT catch standalone pipe", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a | b")).toBe(false);
+  });
+});
+
 describe("classifyByRules — newline and redirect bypass prevention", () => {
   it("does NOT allow newline-separated commands", () => {
     const result = classifyByRules("Bash", {
@@ -1272,7 +1475,7 @@ describe("classifyWithLLM — timeout", () => {
     delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
   });
 
-  it("uses 10s default timeout (reduced from 30s)", () => {
+  it("uses 30s default timeout", () => {
     let capturedTimeout;
     cp.execFileSync = (_cmd, _args, opts) => {
       capturedTimeout = opts.timeout;
@@ -1289,7 +1492,7 @@ describe("classifyWithLLM — timeout", () => {
       process.env.CF_AUTO_APPROVE_LLM_TIMEOUT = origEnv;
     }
 
-    expect(capturedTimeout).toBe(10000);
+    expect(capturedTimeout).toBe(30000);
   });
 });
 
