@@ -359,7 +359,7 @@ stripFrontmatter(content) → markdownBody
 | `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                                           |
 | Dev mode path validation                | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
 | Daemon runs forever by default          | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
-| Daemon auto-respawn with 3 retries      | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                          |
+| Daemon auto-respawn with 3 retries      | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                           |
 
 ---
 

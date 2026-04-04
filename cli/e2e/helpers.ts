@@ -10,10 +10,7 @@ export interface RunResult {
  * Run a CLI command and capture stdout + stderr + exit code.
  * Does not throw on non-zero exit — returns exitCode instead.
  */
-export function runCf(
-  args: string[],
-  opts?: ExecFileSyncOptions,
-): RunResult {
+export function runCf(args: string[], opts?: ExecFileSyncOptions): RunResult {
   try {
     const stdout = execFileSync("npx", ["tsx", "../src/index.ts", ...args], {
       encoding: "utf-8",
