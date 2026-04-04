@@ -26,7 +26,21 @@ SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]
 
 AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
 COUNT_FILE="/tmp/cf-agent-count-${SESSION_ID}"
+LOCK_DIR="/tmp/cf-agent-count-${SESSION_ID}.lock"
 EVENT=$(printf '%s' "$INPUT" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"hook_event_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+
+# Acquire lock (mkdir is atomic on all Unix systems)
+RETRIES=0
+while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+  RETRIES=$((RETRIES + 1))
+  if [ "$RETRIES" -gt 20 ]; then
+    # Give up after ~1s — don't block indefinitely
+    exit 0
+  fi
+  sleep 0.05
+done
+# Ensure lock is released on exit
+trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
 # Read current count
 COUNT=0

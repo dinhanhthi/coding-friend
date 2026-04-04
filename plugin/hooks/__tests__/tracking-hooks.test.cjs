@@ -30,6 +30,7 @@ function cleanup() {
   const patterns = [
     `/tmp/cf-agent-${SESSION_ID}`,
     `/tmp/cf-agent-count-${SESSION_ID}`,
+    `/tmp/cf-agent-count-${SESSION_ID}.lock`,
     `/tmp/cf-tasks-${SESSION_ID}.json`,
     `/tmp/cf-tasks-${SESSION_ID}.lock`,
     `/tmp/cf-session-${SESSION_ID}.jsonl`,
@@ -145,6 +146,54 @@ describe("agent-tracker.sh", () => {
     runHook(AGENT_TRACKER, { hook_event_name: "SubagentStart" });
     // Should not create any file
     expect(fs.existsSync(`/tmp/cf-agent-${SESSION_ID}`)).toBe(false);
+  });
+
+  it("uses mkdir-based locking to protect concurrent access", () => {
+    // The lock dir should not persist after the hook exits (released in EXIT trap)
+    runHook(AGENT_TRACKER, {
+      hook_event_name: "SubagentStart",
+      agent_type: "cf-reviewer",
+      session_id: SESSION_ID,
+    });
+
+    const lockDir = `/tmp/cf-agent-count-${SESSION_ID}.lock`;
+    // Lock should be released after hook completes
+    expect(fs.existsSync(lockDir)).toBe(false);
+
+    // Count file should still work correctly
+    const countFile = `/tmp/cf-agent-count-${SESSION_ID}`;
+    expect(fs.readFileSync(countFile, "utf8").trim()).toBe("1");
+  });
+
+  it("maintains correct count under concurrent starts", () => {
+    const { execFile } = require("child_process");
+
+    // Launch 5 SubagentStart hooks concurrently
+    const CONCURRENCY = 5;
+    const promises = [];
+    for (let i = 0; i < CONCURRENCY; i++) {
+      promises.push(
+        new Promise((resolve) => {
+          const child = execFile("bash", [AGENT_TRACKER], {
+            timeout: 5000,
+          }, () => resolve());
+          child.stdin.write(
+            JSON.stringify({
+              hook_event_name: "SubagentStart",
+              agent_type: `cf-agent-${i}`,
+              session_id: SESSION_ID,
+            }),
+          );
+          child.stdin.end();
+        }),
+      );
+    }
+
+    return Promise.all(promises).then(() => {
+      const countFile = `/tmp/cf-agent-count-${SESSION_ID}`;
+      const count = parseInt(fs.readFileSync(countFile, "utf8").trim(), 10);
+      expect(count).toBe(CONCURRENCY);
+    });
   });
 });
 

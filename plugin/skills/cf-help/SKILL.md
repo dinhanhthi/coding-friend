@@ -56,7 +56,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 ### Slash Commands (user triggers with /)
 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Brainstorm and write implementation plan
+- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
 - `/cf-commit [hint]` — ⚡ — Analyze diff and create conventional commit
 - `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR
@@ -87,7 +87,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
   - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
 - **cf-implementer** — ⚡ — TDD implementation subagent
 - **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
-- **cf-planner** — ⚡ — Task decomposition and approach brainstorming
+- **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases
 - **cf-writer** — ⚡ — Lightweight doc writer for markdown file generation
 - **cf-writer-deep** — ⚡ — Deep reasoning doc writer for nuanced technical content
 
