@@ -174,9 +174,14 @@ describe("agent-tracker.sh", () => {
     for (let i = 0; i < CONCURRENCY; i++) {
       promises.push(
         new Promise((resolve) => {
-          const child = execFile("bash", [AGENT_TRACKER], {
-            timeout: 5000,
-          }, () => resolve());
+          const child = execFile(
+            "bash",
+            [AGENT_TRACKER],
+            {
+              timeout: 5000,
+            },
+            () => resolve(),
+          );
           child.stdin.write(
             JSON.stringify({
               hook_event_name: "SubagentStart",

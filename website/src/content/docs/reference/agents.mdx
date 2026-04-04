@@ -57,6 +57,8 @@ cf-reviewer-reducer (dedup + rank → unified report)
 
 The foundational exploration agent used by multiple skills and agents. Runs on Claude Haiku for cost efficiency. Given a goal and specific questions, it checks project memory first for cached exploration results, then maps project structure, searches for relevant files, reads code, and returns a structured report with findings, key files, dependencies, and code snippets. The memory-first approach reduces token usage when the same codebase areas are explored multiple times in a session.
 
+When a **context file path** is provided by the orchestrating skill, cf-explorer writes its findings as structured JSON (task summary, relevant files, key findings, constraints) to that file. This enables downstream agents like cf-implementer to consume findings programmatically rather than through text serialization.
+
 Used by:
 
 - [`/cf-plan`](/docs/skills/cf-plan/) — explores codebase before the cf-planner designs approaches
@@ -65,9 +67,9 @@ Used by:
 
 ```
 /cf-plan (clarify → explore → plan → approve)
-    ↓ dispatch
-cf-explorer (map → search → read → report)
-    ↓ findings
+    ↓ dispatch (with context file path)
+cf-explorer (map → search → read → write context file → report)
+    ↓ context file + findings
 cf-planner (analyze → design approaches → plan tasks)
 
 /cf-ask (parse question)
@@ -77,9 +79,9 @@ cf-explorer (search → read → report)
 cf-ask (synthesize answer → save to memory)
 
 /cf-fix (understand bug → verify)
-    ↓ dispatch
-cf-explorer (trace code path → find relevant files → report)
-    ↓ findings
+    ↓ dispatch (with context file path)
+cf-explorer (trace code path → find relevant files → write context file → report)
+    ↓ context file + findings
 cf-fix (diagnose root cause → confirm → dispatch cf-implementer)
 ```
 
@@ -87,7 +89,11 @@ cf-fix (diagnose root cause → confirm → dispatch cf-implementer)
 
 Dispatched by [`/cf-plan [task]`](/docs/skills/cf-plan/), [`/cf-fix [bug]`](/docs/skills/cf-fix/), and [`/cf-optimize [target]`](/docs/skills/cf-optimize/) for test-first implementation. Also dispatched by [`cf-tdd`](/docs/skills/cf-tdd/) for substantial implementations (3+ files).
 
-The agent runs in an isolated context and follows strict RED → GREEN → REFACTOR discipline. Skills pass it a detailed prompt with task context, file paths, and test patterns, then review the agent's report.
+The agent runs in an isolated context and follows strict RED → GREEN → REFACTOR discipline. When a **context file path** is provided, the agent reads the structured JSON (written by cf-explorer or cf-planner) for primary context. The orchestrating skill manages the context file lifecycle (cleanup after success, update on retry).
+
+**Result signals**: The agent always ends its response with `[CF-RESULT: success]` or `[CF-RESULT: failure] <reason>`. The orchestrating skill parses this to determine whether to proceed or retry.
+
+**Auto-retry**: If the agent fails (tests fail, compile error, or empty output), the orchestrating skill retries once with error context appended to the context file under a `previous_failure` key. The user is always notified when a retry happens. If the retry also fails, the skill escalates to the user.
 
 For **parallel phases** in `/cf-plan`, multiple cf-implementer agents run concurrently as background agents — each handling one independent task. For **sequential phases**, agents run one at a time as before.
 
@@ -100,21 +106,27 @@ For **parallel phases** in `/cf-plan`, multiple cf-implementer agents run concur
     └── [sequential] phase: cf-implementer × N (one at a time)
 
 /cf-fix (diagnose → confirm approach)
-    ↓ dispatch
-cf-implementer (write regression test → fix → verify → report)
+    ↓ dispatch (with context file)
+cf-implementer (read context → write regression test → fix → verify → report)
+    ↓ [CF-RESULT: success] or [CF-RESULT: failure]
+    ↓ if failure → retry once with error context → escalate if still failing
 
 /cf-optimize (baseline → analyze → plan)
     ↓ dispatch
 cf-implementer (write test → optimize → verify → report)
 
 cf-tdd (auto-invoked for substantial work)
-    ↓ dispatch
-cf-implementer (RED → GREEN → REFACTOR → report)
+    ↓ dispatch (with context file)
+cf-implementer (read context → RED → GREEN → REFACTOR → report)
+    ↓ [CF-RESULT: success] or [CF-RESULT: failure]
+    ↓ if failure → retry once with error context → escalate if still failing
 ```
 
 ### cf-planner
 
 Invoked by [`/cf-plan [task]`](/docs/skills/cf-plan/) after the cf-explorer gathers codebase context. Takes the exploration report and designs 2-3 implementation approaches with pros, cons, effort, risk, and confidence levels. Recommends one approach and breaks it into phased tasks — grouping independent tasks into `[parallel]` phases and dependent tasks into `[sequential]` phases.
+
+When a **context file path** is provided, cf-planner writes its plan findings as structured JSON to that file, enabling downstream agents (cf-implementer) to consume the plan programmatically.
 
 **Output quality gates**: Plans must include at least 2 approaches (or explain why alternatives were ruled out), concrete file paths for every task, a verify step for each task, phase markers (`[parallel]` / `[sequential]`) on every task group, and at least 1 risk with mitigation.
 

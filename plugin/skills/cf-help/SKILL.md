@@ -85,9 +85,9 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
   - **cf-reviewer-tests** (haiku) — Test coverage
   - **cf-reviewer-rules** (haiku) — Project rules compliance (CLAUDE.md)
   - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
-- **cf-implementer** — ⚡ — TDD implementation subagent
-- **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
-- **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases
+- **cf-implementer** — ⚡ — TDD implementation subagent (reads structured context file, returns result signals, supports auto-retry on failure)
+- **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
+- **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases (writes structured context file)
 - **cf-writer** — ⚡ — Lightweight doc writer for markdown file generation
 - **cf-writer-deep** — ⚡ — Deep reasoning doc writer for nuanced technical content
 

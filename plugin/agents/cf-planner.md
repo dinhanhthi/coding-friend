@@ -62,12 +62,43 @@ After decomposing tasks, analyze dependencies and group tasks into **phases**:
    - When in doubt, keep tasks sequential — correctness over speed
 4. **Default**: If all tasks are interdependent, use a single `[sequential]` phase (this is the existing behavior)
 
-### 5. Report
+### 5. Write Context File (if task-id provided)
+
+If the caller provided a **context file path** (e.g., `docs/context/<task-id>.json`), write your plan findings as structured JSON to that file **before** returning your text report. This enables downstream agents (cf-implementer) to consume your plan programmatically.
+
+**Schema:**
+
+```json
+{
+  "task_id": "<task-id from caller>",
+  "task_summary": "<one-line summary of the planned work>",
+  "relevant_files": ["src/foo.ts", "src/bar.ts"],
+  "key_findings": ["finding 1", "finding 2"],
+  "constraints": ["constraint 1"],
+  "suggested_approach": "<recommended approach summary>"
+}
+```
+
+**Rules for writing context files:**
+
+- Create the parent directory for the context file path if it doesn't exist
+- Only write the file when a context file path is explicitly provided by the caller
+- `relevant_files`: all files from the recommended approach's tasks, ordered by phase
+- `key_findings`: key decisions, trade-offs, and risks identified
+- `suggested_approach`: the recommended approach in 2-3 sentences
+- `constraints`: anything that limits implementation choices
+
+After writing the file, mention the path in your text report so the orchestrating skill can forward it.
+
+### 6. Report
 
 Provide a structured plan:
 
 ```
 ## Plan: <title>
+
+### Context File
+<path to context file if written, or "not requested">
 
 ### Questions (MUST answer before implementing)
 - <anything unclear, ambiguous, or assumption-dependent>

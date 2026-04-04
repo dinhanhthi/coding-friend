@@ -1733,7 +1733,10 @@ describe("llmCacheKey — bounded keys", () => {
   });
 
   it("produces a bounded key for large inputs without file_path or command", () => {
-    const largeInput = { data: "x".repeat(10000), nested: { a: "y".repeat(5000) } };
+    const largeInput = {
+      data: "x".repeat(10000),
+      nested: { a: "y".repeat(5000) },
+    };
     const key = llmCacheKey("CustomTool", largeInput);
 
     // Key should be bounded — not contain the full serialized input
