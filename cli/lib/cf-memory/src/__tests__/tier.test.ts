@@ -289,6 +289,55 @@ describe("createBackendForTier() with embeddingConfig", () => {
   });
 });
 
+describe("makeRespawn retry logic", () => {
+  it("retries up to 3 times before giving up", async () => {
+    const daemonProcess = await import("../daemon/process.js");
+
+    let attempts = 0;
+    const spawnSpy = vi
+      .spyOn(daemonProcess, "spawnDaemon")
+      .mockImplementation(async () => {
+        attempts++;
+        return null; // always fail
+      });
+
+    // Use createBackendForTier with "lite" to trigger respawn path
+    // The respawn callback wraps makeRespawn which calls spawnDaemon
+    // We need to get the respawn function indirectly
+    // Instead, test via the exported createRespawnWithRetry
+    const { createRespawnWithRetry } = await import("../lib/tier.js");
+    const respawn = createRespawnWithRetry(".", undefined, undefined);
+    const result = await respawn();
+
+    expect(result).toBe(false);
+    expect(attempts).toBe(3);
+
+    spawnSpy.mockRestore();
+  });
+
+  it("succeeds on second attempt", async () => {
+    const daemonProcess = await import("../daemon/process.js");
+
+    let attempts = 0;
+    const spawnSpy = vi
+      .spyOn(daemonProcess, "spawnDaemon")
+      .mockImplementation(async () => {
+        attempts++;
+        if (attempts === 2) return { pid: 1234 };
+        return null;
+      });
+
+    const { createRespawnWithRetry } = await import("../lib/tier.js");
+    const respawn = createRespawnWithRetry(".", undefined, undefined);
+    const result = await respawn();
+
+    expect(result).toBe(true);
+    expect(attempts).toBe(2);
+
+    spawnSpy.mockRestore();
+  });
+});
+
 describe("TIERS constant", () => {
   it("has all 3 tier definitions", () => {
     expect(Object.keys(TIERS)).toHaveLength(3);

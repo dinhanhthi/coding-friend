@@ -1,0 +1,8 @@
+services:
+  e2e:
+    build:
+      context: ..
+      dockerfile: e2e/Dockerfile
+    volumes:
+      - ../e2e:/app/e2e:ro
+    command: ["npx", "vitest", "run", "--config", "vitest.e2e.config.ts"]

@@ -38,11 +38,28 @@ vi.mock("../../lib/statusline.js", () => ({
   ensureStatusline: vi.fn(),
 }));
 
+vi.mock("../../lib/log.js", () => ({
+  log: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    dim: vi.fn(),
+    step: vi.fn(),
+    success: vi.fn(),
+  },
+  printBanner: vi.fn(),
+}));
+
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
 import { ensureStatusline } from "../../lib/statusline.js";
 import { readJson } from "../../lib/json.js";
 import { existsSync } from "fs";
-import { devRestartCommand, devUpdateCommand } from "../dev.js";
+import {
+  devRestartCommand,
+  devUpdateCommand,
+  devStatusCommand,
+} from "../dev.js";
+import { log } from "../../lib/log.js";
 
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
@@ -97,5 +114,44 @@ describe("devUpdateCommand", () => {
   it("calls ensureStatusline after update", async () => {
     await devUpdateCommand("/tmp/coding-friend");
     expect(mockEnsureStatusline).toHaveBeenCalled();
+  });
+});
+
+describe("devStatusCommand", () => {
+  it("warns when dev mode localPath does not exist", async () => {
+    mockReadJson.mockReset();
+    // getDevState() returns state with non-existent path
+    mockReadJson
+      .mockReturnValueOnce({
+        localPath: "/nonexistent/path",
+        savedAt: "2025-01-01T00:00:00.000Z",
+      })
+      // getMarketplaceSource() → null
+      .mockReturnValueOnce(null);
+    // existsSync: first for localPath check → false
+    mockExistsSync.mockReturnValue(false);
+
+    await devStatusCommand();
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("/nonexistent/path"),
+    );
+  });
+
+  it("does not warn when dev mode localPath exists", async () => {
+    mockReadJson.mockReset();
+    mockReadJson
+      .mockReturnValueOnce({
+        localPath: "/tmp/coding-friend",
+        savedAt: "2025-01-01T00:00:00.000Z",
+      })
+      .mockReturnValueOnce(null);
+    mockExistsSync.mockReturnValue(true);
+
+    await devStatusCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("no longer exists"),
+    );
   });
 });

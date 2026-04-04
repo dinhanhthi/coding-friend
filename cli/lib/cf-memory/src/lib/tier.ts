@@ -50,17 +50,29 @@ export async function detectTier(configTier?: TierConfig): Promise<TierInfo> {
   return TIERS.markdown;
 }
 
-/** Build a respawn callback that DaemonClient can call when the daemon is gone. */
-function makeRespawn(
+const RESPAWN_MAX_RETRIES = 3;
+const RESPAWN_RETRY_DELAY_MS = 1000;
+
+/** Build a respawn callback with retry logic (up to 3 attempts). */
+export function createRespawnWithRetry(
   docsDir: string,
   embeddingConfig?: Partial<EmbeddingConfig>,
   idleTimeoutMs?: number,
 ): () => Promise<boolean> {
   return async () => {
-    const result = await spawnDaemon(docsDir, embeddingConfig, {
-      idleTimeoutMs,
-    });
-    return result !== null;
+    for (let attempt = 1; attempt <= RESPAWN_MAX_RETRIES; attempt++) {
+      // spawnDaemon returns null both when "already running" and "truly failed"
+      // Check isDaemonRunning after null to distinguish the two cases
+      const result = await spawnDaemon(docsDir, embeddingConfig, {
+        idleTimeoutMs,
+      });
+      if (result !== null) return true;
+      if (await isDaemonRunning()) return true;
+      if (attempt < RESPAWN_MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RESPAWN_RETRY_DELAY_MS));
+      }
+    }
+    return false;
   };
 }
 
@@ -75,7 +87,7 @@ export async function createBackendForTier(
   daemonOptions?: { idleTimeoutMs?: number },
 ): Promise<{ backend: MemoryBackend; tier: TierInfo }> {
   const tier = await detectTier(configTier);
-  const respawn = makeRespawn(
+  const respawn = createRespawnWithRetry(
     docsDir,
     embeddingConfig,
     daemonOptions?.idleTimeoutMs,

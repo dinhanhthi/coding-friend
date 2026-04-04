@@ -226,12 +226,12 @@ npm run test:watch    # Watch mode
 node dist/daemon/entry.js ./docs/memory
 
 # With idle timeout (ms) and tier
-node dist/daemon/entry.js ./docs/memory 1800000 --tier=lite
+node dist/daemon/entry.js ./docs/memory 0 --tier=lite
 ```
 
 The daemon runs a Hono HTTP server on a Unix Domain Socket at `~/.coding-friend/memory/daemon.sock`, with PID tracking at `~/.coding-friend/memory/daemon.pid`.
 
-**Auto-reconnect:** If the daemon dies (e.g., idle timeout expires), the `DaemonClient` automatically respawns it on the next request. This means mid-session daemon restarts are transparent — no manual intervention needed.
+**Auto-reconnect with retry:** If the daemon dies (e.g., crash or explicit stop), the `DaemonClient` automatically respawns it on the next request with up to 3 retry attempts (1-second delay between retries). If all retries fail, it falls back to Tier 3 (markdown grep). This means mid-session daemon restarts are transparent — no manual intervention needed.
 
 ### Lazy dependencies (Tier 1)
 
@@ -306,7 +306,7 @@ If these are missing, `cf memory init` will fail at the "Installing SQLite depen
 | ----------------------------- | ------------------------ | ------------------------------------------------- |
 | `MEMORY_DOCS_DIR`             | `./docs/memory`          | Path to memory storage directory                  |
 | `MEMORY_TIER`                 | `auto`                   | Force a tier: `auto`, `full`, `lite`, `markdown`  |
-| `MEMORY_DAEMON_IDLE_TIMEOUT`  | `1800000` (30 min)       | Daemon idle timeout in ms (`0` = never auto-stop) |
+| `MEMORY_DAEMON_IDLE_TIMEOUT`  | `0` (no timeout)         | Daemon idle timeout in ms (`0` = never auto-stop) |
 | `MEMORY_EMBEDDING_PROVIDER`   | `transformers`           | Embedding provider: `transformers` or `ollama`    |
 | `MEMORY_EMBEDDING_MODEL`      | (provider default)       | Embedding model name (e.g., `nomic-embed-text`)   |
 | `MEMORY_EMBEDDING_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL                                 |

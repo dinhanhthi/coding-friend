@@ -282,18 +282,18 @@ export async function editMemoryDaemonTimeout(
     | { idleTimeout?: number }
     | undefined;
   const currentMs = currentDaemon?.idleTimeout;
-  const currentMin = currentMs ? currentMs / 60000 : undefined;
+  const currentMin = currentMs !== undefined ? currentMs / 60000 : undefined;
 
   if (currentMin !== undefined) {
     log.dim(`Current: ${currentMin} minutes`);
   }
 
   const value = await input({
-    message: "Daemon idle timeout (minutes):",
-    default: String(currentMin ?? 30),
+    message: "Daemon idle timeout (minutes, 0 = no timeout):",
+    default: String(currentMin ?? 0),
     validate: (val) => {
       const n = Number(val);
-      if (isNaN(n) || n < 1) return "Must be a positive number";
+      if (isNaN(n) || n < 0) return "Must be 0 (no timeout) or a positive number";
       return true;
     },
   });

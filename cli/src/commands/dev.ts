@@ -379,6 +379,11 @@ export async function devStatusCommand(): Promise<void> {
   if (state) {
     log.info(`Dev mode: ${chalk.green("ON")}`);
     log.info(`Local path: ${chalk.cyan(state.localPath)}`);
+    if (!existsSync(state.localPath)) {
+      log.warn(
+        `Dev mode path no longer exists: ${state.localPath}. Run 'cf host <new-path>' to update.`,
+      );
+    }
     log.dim(`Since: ${state.savedAt}`);
   } else {
     log.info(`Dev mode: ${chalk.yellow("OFF")}`);
