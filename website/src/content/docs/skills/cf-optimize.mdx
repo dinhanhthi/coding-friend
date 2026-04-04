@@ -24,14 +24,15 @@ This endpoint is taking 3 seconds to respond
 
 ## Workflow
 
-1. **Understand the Target** — Read the target code and understand the current implementation. If the optimization goal is vague, asks what "better" means: faster? less memory? fewer API calls?
-2. **Baseline Measurement** — Run a benchmark 3 times for stable numbers. Records metrics with units and environment details
-3. **Analyze Bottlenecks** — Profile the code path to identify the actual bottleneck — no guessing. Ranks bottlenecks by impact
-4. **Plan the Optimization** — Proposes 1-2 approaches for the top bottleneck with expected improvement and risks. Asks for your confirmation before implementing
-5. **Implement** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): verify existing tests pass, implement the optimization, confirm no regressions
-6. **Measure After** — Runs the exact same benchmark from Step 2, again 3 times for stable numbers
-7. **Compare & Report** — Shows a before/after table with percentage changes. Flags improvements < 5% as possibly within noise. If performance regressed, reverts and tries a different approach
-8. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the optimization is verified
+1. **Detect Available Tools** — Checks for installed profiling/benchmarking tools (`hyperfine`, `clinic`, `0x`, `lighthouse`, `perf`). Falls back to AI-only mode if none found
+2. **Understand the Target** — Read the target code and understand the current implementation. If the optimization goal is vague, asks what "better" means: faster? less memory? fewer API calls?
+3. **Baseline Measurement** — Run a benchmark 3 times using detected tools (or manual timing). Records metrics with units and environment details
+4. **Analyze Bottlenecks** — Profile the code path to identify the actual bottleneck — no guessing. Ranks bottlenecks by impact
+5. **Plan the Optimization** — Proposes 1-2 approaches for the top bottleneck with expected improvement and risks. Asks for your confirmation before implementing
+6. **Implement** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): verify existing tests pass, implement the optimization, confirm no regressions
+7. **Measure After** — Runs the exact same benchmark from Step 3, again 3 times for stable numbers
+8. **Compare & Report** — Shows a before/after table with percentage changes. Flags improvements < 5% as possibly within noise. If performance regressed, reverts and tries a different approach
+9. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the optimization is verified
 
 ## Examples
 
@@ -91,6 +92,19 @@ The skill auto-invokes when it detects performance-related signals:
 - Performance concerns flagged by [`/cf-review`](/docs/skills/cf-review/) or [`/cf-fix`](/docs/skills/cf-fix/)
 
 It does NOT auto-invoke for minor refactors or style changes that are not performance-related.
+
+## Supported Profiling Tools
+
+| Tool                      | Domain     | Used For                                       |
+| ------------------------- | ---------- | ---------------------------------------------- |
+| `hyperfine`               | General    | Precise CLI benchmarking with warmup and stats |
+| `clinic`                  | Node.js    | Flamegraphs, I/O profiling                     |
+| `0x`                      | Node.js    | Lightweight flamegraph generation              |
+| `lighthouse`              | Web        | Web performance audit (LCP, FID, CLS)          |
+| `perf`                    | Linux      | CPU counters, cache misses                     |
+| `webpack-bundle-analyzer` | JS bundles | Bundle size visualization                      |
+
+When no tools are detected, cf-optimize uses **AI-only mode** with manual timing and code instrumentation. Results are clearly marked as estimates.
 
 ## When to Use Manually
 

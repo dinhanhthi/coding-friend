@@ -18,8 +18,8 @@ The `/cf-commit` skill creates well-formed conventional commits by analyzing you
 
 1. **Analyzes Changes** — Reviews diffs of all staged and unstaged files, plus recent commit history
 2. **Identifies Relevant Changes** — Separates conversation-related changes from unrelated work (only commits what you worked on in the current session)
-3. **Verifies Tests** — Runs tests, linter, and build before committing — skipped if `commit.verify: false` in config or tests already passed earlier in the session
-4. **Stages & Scans** — Stages only relevant files (never uses `git add .`) and scans for accidentally staged secrets
+3. **Stages & Scans** — Stages only relevant files (never uses `git add .`) and scans for accidentally staged secrets
+4. **Review Check** — If no `/cf-review` was run in the current session, suggests running one first (skippable)
 5. **Generates Message** — Creates a conventional commit message explaining the "why", not the "what"
 6. **Creates Commit** — Commits with the generated message — no AI attribution is ever included
 

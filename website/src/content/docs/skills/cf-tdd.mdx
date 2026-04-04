@@ -8,6 +8,15 @@ Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/
 
 The `cf-tdd` skill automatically activates when you're writing new code or refactoring existing code. It enforces the test-driven development (TDD) discipline: write a failing test first, implement minimal code to pass it, then refactor.
 
+## Skip Conditions
+
+TDD is automatically skipped when:
+
+- **All changed files are non-code** — styles (`.css`, `.scss`, `.sass`, `.less`, `.styl`), docs (`.md`, `.mdx`, `.txt`, `.rst`), or config (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`)
+- **User passes `--no-tdd`** — explicitly opts out with a one-line acknowledgment
+
+When skipped, the skill notes why and proceeds directly to implementation.
+
 ## When It Activates
 
 Automatically triggered when:
