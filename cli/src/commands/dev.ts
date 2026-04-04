@@ -2,6 +2,7 @@ import {
   existsSync,
   unlinkSync,
   readdirSync,
+  readFileSync,
   statSync,
   mkdirSync,
   copyFileSync,
@@ -324,13 +325,37 @@ export async function devSyncCommand(): Promise<void> {
   const shortDest = cacheVersionDir.replace(homedir(), "~");
   log.step(`Syncing ${chalk.cyan(pluginSrcDir)} → ${chalk.dim(shortDest)}`);
 
+  // Check if hooks.json event types changed (new/removed events require reinstall).
+  // Must read before copyDirRecursive overwrites the cache.
+  const cachedHooksPath = join(cacheVersionDir, "hooks", "hooks.json");
+  const sourceHooksPath = join(pluginSrcDir, "hooks", "hooks.json");
+  let hooksEventsChanged = false;
+
+  try {
+    const cachedHooks = JSON.parse(readFileSync(cachedHooksPath, "utf-8"));
+    const sourceHooks = JSON.parse(readFileSync(sourceHooksPath, "utf-8"));
+    const cachedEvents = Object.keys(cachedHooks.hooks || {}).sort();
+    const sourceEvents = Object.keys(sourceHooks.hooks || {}).sort();
+    hooksEventsChanged =
+      JSON.stringify(cachedEvents) !== JSON.stringify(sourceEvents);
+  } catch {
+    // If either file is missing or invalid, skip the check
+  }
+
   // Copy plugin/ contents directly into cache version dir
   const fileCount = { n: 0 };
   copyDirRecursive(pluginSrcDir, cacheVersionDir, fileCount);
 
-  log.success(
-    `Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`,
-  );
+  if (hooksEventsChanged) {
+    log.success(`Synced ${chalk.green(fileCount.n)} files.`);
+    log.warn(
+      `hooks.json event types changed. Run ${chalk.bold("cf dev restart")} for Claude Code to register the new hook events.`,
+    );
+  } else {
+    log.success(
+      `Synced ${chalk.green(fileCount.n)} files. Restart Claude Code to apply changes.`,
+    );
+  }
 }
 
 async function devReinstall(

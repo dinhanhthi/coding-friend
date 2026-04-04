@@ -133,9 +133,7 @@ function levenshtein(a: string, b: string): number {
  * Validate merged config with Zod. Warns on invalid values and unknown keys.
  * Returns sanitized config with invalid fields stripped.
  */
-function validateConfig(
-  merged: Record<string, unknown>,
-): CodingFriendConfig {
+function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
   const result = ConfigSchema.safeParse(merged);
   if (result.success) return result.data as CodingFriendConfig;
 
@@ -195,10 +193,7 @@ export function loadConfig(): CodingFriendConfig {
     DEFAULT_CONFIG as unknown as Record<string, unknown>,
     (global ?? {}) as Record<string, unknown>,
   );
-  const merged = deepMerge(
-    base,
-    (local ?? {}) as Record<string, unknown>,
-  );
+  const merged = deepMerge(base, (local ?? {}) as Record<string, unknown>);
   return validateConfig(merged);
 }
 

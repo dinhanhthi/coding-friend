@@ -293,7 +293,8 @@ export async function editMemoryDaemonTimeout(
     default: String(currentMin ?? 0),
     validate: (val) => {
       const n = Number(val);
-      if (isNaN(n) || n < 0) return "Must be 0 (no timeout) or a positive number";
+      if (isNaN(n) || n < 0)
+        return "Must be 0 (no timeout) or a positive number";
       return true;
     },
   });

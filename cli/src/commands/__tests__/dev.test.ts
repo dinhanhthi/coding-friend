@@ -58,11 +58,19 @@ import {
   devRestartCommand,
   devUpdateCommand,
   devStatusCommand,
+  devSyncCommand,
 } from "../dev.js";
 import { log } from "../../lib/log.js";
+import { readFileSync, readdirSync, statSync, copyFileSync } from "fs";
+import { run } from "../../lib/exec.js";
 
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
+const mockReadFileSync = vi.mocked(readFileSync);
+const mockReaddirSync = vi.mocked(readdirSync);
+const mockStatSync = vi.mocked(statSync);
+const mockCopyFileSync = vi.mocked(copyFileSync);
+const mockRun = vi.mocked(run);
 const mockReadJson = vi.mocked(readJson);
 const mockExistsSync = vi.mocked(existsSync);
 
@@ -152,6 +160,111 @@ describe("devStatusCommand", () => {
 
     expect(log.warn).not.toHaveBeenCalledWith(
       expect.stringContaining("no longer exists"),
+    );
+  });
+});
+
+describe("devSyncCommand", () => {
+  const devState = {
+    localPath: "/tmp/coding-friend",
+    savedAt: "2025-01-01T00:00:00.000Z",
+  };
+
+  const oldHooksJson = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+    },
+  });
+
+  const newHooksJsonSameEvents = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "new-test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "new-test" }] },
+      ],
+    },
+  });
+
+  const newHooksJsonNewEvents = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      TaskCreated: [
+        { matcher: "", hooks: [{ type: "command", command: "tracker" }] },
+      ],
+      SubagentStart: [
+        { matcher: "", hooks: [{ type: "command", command: "agent" }] },
+      ],
+    },
+  });
+
+  function setupSyncMocks() {
+    mockReadJson.mockReset();
+    mockReadJson.mockReturnValue(devState);
+    mockExistsSync.mockReturnValue(true);
+    // readdirSync: first call lists cache versions, subsequent calls list dir contents for copy
+    let readdirCallCount = 0;
+    mockReaddirSync.mockImplementation(() => {
+      readdirCallCount++;
+      if (readdirCallCount === 1)
+        return ["0.21.0"] as unknown as ReturnType<typeof readdirSync>;
+      return [] as unknown as ReturnType<typeof readdirSync>; // empty dir for copyDirRecursive
+    });
+    mockStatSync.mockReturnValue({
+      isDirectory: () => true,
+      mtimeMs: Date.now(),
+    } as unknown as ReturnType<typeof statSync>);
+    mockCopyFileSync.mockReturnValue(undefined);
+  }
+
+  it("warns when hooks.json has new event types", async () => {
+    setupSyncMocks();
+    // readFileSync: 1st call = cached hooks.json, 2nd call = source hooks.json
+    mockReadFileSync
+      .mockReturnValueOnce(oldHooksJson)
+      .mockReturnValueOnce(newHooksJsonNewEvents);
+
+    await devSyncCommand();
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
+    );
+  });
+
+  it("does not warn when hooks.json has same event types", async () => {
+    setupSyncMocks();
+    mockReadFileSync
+      .mockReturnValueOnce(oldHooksJson)
+      .mockReturnValueOnce(newHooksJsonSameEvents);
+
+    await devSyncCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
+    );
+  });
+
+  it("does not warn when no hooks.json exists", async () => {
+    setupSyncMocks();
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+
+    await devSyncCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
     );
   });
 });
