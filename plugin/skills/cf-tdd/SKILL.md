@@ -26,6 +26,28 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
+## Skip Conditions
+
+Check these BEFORE starting any TDD step. If a skip condition is met, bypass TDD entirely and proceed directly to implementation.
+
+### Auto-skip whitelist
+
+If **ALL** changed/new files match these extensions, skip TDD — note why and proceed:
+
+- **Styles**: `.css`, `.scss`, `.sass`, `.less`, `.styl`
+- **Docs**: `.md`, `.mdx`, `.txt`, `.rst`
+- **Config**: `.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`
+
+### `--no-tdd` flag
+
+If the user's invocation includes `--no-tdd`, skip TDD. Show a one-line acknowledgment:
+
+> TDD skipped via --no-tdd
+
+Then proceed directly to implementation.
+
+---
+
 ## The Iron Law
 
 **No production code without a failing test first.**

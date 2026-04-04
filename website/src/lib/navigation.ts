@@ -150,6 +150,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf dev", slug: "cli/cf-dev" },
       { title: "cf disable", slug: "cli/cf-disable" },
       { title: "cf enable", slug: "cli/cf-enable" },
+      { title: "cf guide", slug: "cli/cf-guide" },
       { title: "cf host", slug: "cli/cf-host" },
       { title: "cf init", slug: "cli/cf-init" },
       { title: "cf install", slug: "cli/cf-install" },

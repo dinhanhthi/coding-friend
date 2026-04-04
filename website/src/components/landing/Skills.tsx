@@ -97,7 +97,8 @@ const slashCommandMeta: SkillMeta[] = [
   {
     command: "/cf-ship",
     title: "Ship",
-    description: "Verify, commit, push, and create PR in one command",
+    description:
+      "Verify, commit, push, and create PR in one command (supports --dry-run)",
   },
   {
     command: "/cf-teach",
