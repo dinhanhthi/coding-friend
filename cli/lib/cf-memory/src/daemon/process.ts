@@ -6,7 +6,7 @@ import { getRequestListener } from "@hono/node-server";
 import { createDaemonApp } from "./server.js";
 import type { MemoryBackend } from "../lib/backend.js";
 
-const DEFAULT_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const DEFAULT_IDLE_TIMEOUT_MS = 0; // 0 = no timeout, run until explicitly stopped
 
 export interface DaemonPaths {
   socketPath: string;

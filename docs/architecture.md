@@ -354,8 +354,12 @@ stripFrontmatter(content) → markdownBody
 | /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                                          |
 | context: fork for /cf-review            | Isolate review from main context window                                                                               |
 | Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
+| Config schema validation (Zod)          | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
 | CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                                        |
 | `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                                           |
+| Dev mode path validation                | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
+| Daemon runs forever by default          | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
+| Daemon auto-respawn with 3 retries      | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                          |
 
 ---
 
