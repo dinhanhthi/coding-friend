@@ -62,4 +62,4 @@ Only report findings with confidence ≥ 0.8. Include confidence score for Criti
 Overall rules compliance assessment in 1-2 sentences.
 ```
 
-All 4 sections required. Empty sections show "None." Use bullet lists only, no tables. Always quote the exact rule text for Critical and Important findings.
+All 4 sections required. Empty sections show "None." Use bullet lists only, no tables. Always quote the exact rule text for Critical and Important findings. Use actual Unicode emoji characters (🚨 ⚠️ 💡 📋) in headings, NEVER text shortcodes like `:rotating_light:`, `:warning:`, `:bulb:`, or `:clipboard:`.
