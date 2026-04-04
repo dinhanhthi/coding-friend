@@ -54,7 +54,7 @@ const slashCommandMeta: SkillMeta[] = [
     command: "/cf-plan",
     title: "Plan",
     description:
-      "Brainstorm and create implementation plans with structured exploration",
+      "Brainstorm and create phased implementation plans with parallel execution",
   },
   {
     command: "/cf-remember",

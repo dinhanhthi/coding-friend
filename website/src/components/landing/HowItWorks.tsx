@@ -29,7 +29,7 @@ const mainNodes: FlowNode[] = [
     id: "plan",
     label: "/cf-plan",
     description:
-      "Brainstorm your approach. Explores the codebase, identifies patterns, and writes a structured plan.",
+      "Brainstorm your approach. Explores the codebase, identifies patterns, and writes a phased plan with parallel execution.",
   },
   {
     id: "implement",
@@ -70,7 +70,7 @@ const sideNodes: SideNode[] = [
   {
     id: "planner",
     label: "cf-planner",
-    description: "Task decomposition and approach brainstorming",
+    description: "Task decomposition with parallel/sequential phases",
     parentId: "plan",
     kind: "agent",
   },

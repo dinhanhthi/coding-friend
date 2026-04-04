@@ -207,7 +207,7 @@ Exit codes:
 | `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists         |
 | `cf-explorer`          | haiku   | Read-only codebase exploration and context gathering              |
 | `cf-implementer`       | opus    | TDD implementation: write test → implement → verify               |
-| `cf-planner`           | inherit | Codebase exploration + task decomposition                         |
+| `cf-planner`           | inherit | Codebase exploration + task decomposition (parallel/sequential phases) |
 | `cf-writer`            | haiku   | Lightweight document writing and markdown generation              |
 | `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                |
 
@@ -388,7 +388,10 @@ The project operates as 4 concurrent state machine layers.
      │ /cf-plan   │  │ CODE_TASK  │  │ /cf-fix  │  │ /cf-ask  │    │
      │            │  │            │  │          │  │          │    │
      │ Brainstorm │  │ New code   │  │ Quick    │  │ Q&A →    │    │
-     │ → plan doc │  │ requested  │  │ bug fix  │  │ memory/  │    │
+     │ → phased   │  │ requested  │  │ bug fix  │  │ memory/  │    │
+     │   plan doc │  │            │  │          │  │          │    │
+     │ (parallel  │  │            │  │          │  │          │    │
+     │  + seq.)   │  │            │  │          │  │          │    │
      └──────┬─────┘  └─────┬──────┘  └────┬─────┘  └────┬─────┘    │
             │               │              │              │          │
             │               ▼              │              │          │

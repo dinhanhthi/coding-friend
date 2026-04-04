@@ -1716,3 +1716,36 @@ describe("loadAutoApproveConfig", () => {
     expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// llmCacheKey — bounded key length
+// ---------------------------------------------------------------------------
+
+describe("llmCacheKey — bounded keys", () => {
+  it("uses file_path directly when available", () => {
+    const key = llmCacheKey("Read", { file_path: "/src/foo.ts" });
+    expect(key).toBe("Read:/src/foo.ts");
+  });
+
+  it("uses command directly when available", () => {
+    const key = llmCacheKey("Bash", { command: "npm test" });
+    expect(key).toBe("Bash:npm test");
+  });
+
+  it("produces a bounded key for large inputs without file_path or command", () => {
+    const largeInput = { data: "x".repeat(10000), nested: { a: "y".repeat(5000) } };
+    const key = llmCacheKey("CustomTool", largeInput);
+
+    // Key should be bounded — not contain the full serialized input
+    expect(key.length).toBeLessThan(200);
+    // Should still start with tool name
+    expect(key.startsWith("CustomTool:")).toBe(true);
+  });
+
+  it("produces consistent keys for the same input", () => {
+    const input = { z: 1, a: 2, data: "x".repeat(1000) };
+    const key1 = llmCacheKey("Tool", input);
+    const key2 = llmCacheKey("Tool", input);
+    expect(key1).toBe(key2);
+  });
+});

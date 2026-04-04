@@ -409,7 +409,11 @@ function llmCacheFilePath() {
 function llmCacheKey(toolName, toolInput) {
   const inputKey =
     (toolInput && (toolInput.file_path || toolInput.command)) ||
-    JSON.stringify(toolInput);
+    require("crypto")
+      .createHash("sha256")
+      .update(JSON.stringify(toolInput))
+      .digest("hex")
+      .slice(0, 32);
   return `${toolName}:${inputKey}`;
 }
 
