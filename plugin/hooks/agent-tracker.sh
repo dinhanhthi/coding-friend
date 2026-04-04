@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # SubagentStart/SubagentStop hook: Track active agent for statusline.
 #
-# Writes the active agent name to /tmp/cf-agent-$SESSION_ID.
-# Clears the file on SubagentStop.
-# The statusline hook reads this file to display "Agent: <name>".
+# Uses reference counting so parallel agents don't clear the indicator
+# when only one of them stops. Writes to two files per session:
+#   /tmp/cf-agent-$SESSION_ID       — last-started agent name (for display)
+#   /tmp/cf-agent-count-$SESSION_ID — number of active agents
+#
+# The statusline hook reads cf-agent-$SESSION_ID to display "Agent: <name>".
+# The file is only removed when the count drops to zero.
 #
 # Runs asynchronously — does not block Claude.
 #
@@ -21,14 +25,28 @@ SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]
 [ -z "$SESSION_ID" ] && exit 0
 
 AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
+COUNT_FILE="/tmp/cf-agent-count-${SESSION_ID}"
 EVENT=$(printf '%s' "$INPUT" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"hook_event_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+
+# Read current count
+COUNT=0
+if [ -f "$COUNT_FILE" ]; then
+  COUNT=$(cat "$COUNT_FILE" 2>/dev/null || echo 0)
+fi
 
 case "$EVENT" in
   SubagentStart)
     AGENT_TYPE=$(printf '%s' "$INPUT" | grep -o '"agent_type"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_type"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+    COUNT=$((COUNT + 1))
+    echo "$COUNT" > "$COUNT_FILE" 2>/dev/null || true
     [ -n "$AGENT_TYPE" ] && echo "$AGENT_TYPE" > "$AGENT_FILE" 2>/dev/null || true
     ;;
   SubagentStop)
-    rm -f "$AGENT_FILE" 2>/dev/null || true
+    COUNT=$((COUNT - 1))
+    if [ "$COUNT" -le 0 ]; then
+      rm -f "$AGENT_FILE" "$COUNT_FILE" 2>/dev/null || true
+    else
+      echo "$COUNT" > "$COUNT_FILE" 2>/dev/null || true
+    fi
     ;;
 esac

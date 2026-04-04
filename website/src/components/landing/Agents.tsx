@@ -30,7 +30,7 @@ const agentMeta: AgentMeta[] = [
     name: "cf-reviewer",
     title: "Reviewer",
     description:
-      "Multi-layer review covering plan alignment, code quality, security (OWASP top 10), and test coverage.",
+      "Review orchestrator: dispatches 5 specialist agents (plan, security, quality, tests, rules) in parallel + reducer.",
     usedBy: ["/cf-review", "/cf-ship"],
   },
   {

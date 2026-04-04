@@ -42,7 +42,13 @@ const agentMeta: Record<string, string> = {
   "cf-writer-deep": "Deep reasoning docs",
   "cf-explorer": "Codebase exploration",
   "cf-planner": "Task decomposition",
-  "cf-reviewer": "Multi-layer review",
+  "cf-reviewer": "Review orchestrator",
+  "cf-reviewer-plan": "Plan alignment check",
+  "cf-reviewer-quality": "Code quality + slop detection",
+  "cf-reviewer-security": "Security review (OWASP)",
+  "cf-reviewer-tests": "Test coverage check",
+  "cf-reviewer-rules": "Project rules compliance",
+  "cf-reviewer-reducer": "Deduplicate and rank findings",
   "cf-implementer": "TDD implementation",
 };
 
@@ -143,7 +149,13 @@ const overviewAutoMeta: Record<
 
 const agentRefMeta: Record<string, string> = {
   "cf-explorer": "Read-only codebase exploration and context gathering",
-  "cf-reviewer": "Multi-layer code review with integrated 5-layer methodology",
+  "cf-reviewer": "Review orchestrator: dispatches specialist agents in parallel",
+  "cf-reviewer-plan": "Plan alignment specialist — checks code matches the plan",
+  "cf-reviewer-quality": "Code quality + slop detection specialist",
+  "cf-reviewer-security": "Security specialist — OWASP top 10, injection, auth",
+  "cf-reviewer-tests": "Test coverage specialist — missing tests, edge cases",
+  "cf-reviewer-rules": "Project rules compliance specialist (CLAUDE.md, conventions)",
+  "cf-reviewer-reducer": "Deduplicates and ranks findings from all specialists",
   "cf-implementer": "TDD-driven implementation with test-first approach",
   "cf-planner": "Task decomposition, approach brainstorming, and planning",
   "cf-writer": "Lightweight document writing and markdown generation",

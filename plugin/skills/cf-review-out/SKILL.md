@@ -32,11 +32,10 @@ If output is not empty, integrate the returned sections into this workflow:
 
 1. **Determine the label:**
 
-   If `$ARGUMENTS` contains a label, use it. Otherwise:
+   If `$ARGUMENTS` contains a label, use it directly. Otherwise:
    - Analyze the current changes (branch name, changed files, nature of changes)
-   - **Suggest a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
-   - Ask the user: _"Suggested label: `<suggestion>`. Use this or enter your own:"_
-   - Wait for user confirmation or custom label
+   - **Auto-generate a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
+   - **No confirmation needed. Proceed immediately.**
 
    The label must be snake-case with a descriptive prefix.
 

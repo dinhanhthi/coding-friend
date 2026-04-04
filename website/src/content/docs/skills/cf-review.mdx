@@ -59,8 +59,8 @@ Different behavior is expected based on the value of `[target]`:
 1. **Identify target** — Determine what to review based on `[target]` (see [Usage](#usage))
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
-4. **Dispatch to subagent** — Fork a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer) agent in an isolated context (clean, unbiased, token-efficient)
-5. **Apply 5-layer review** — Project rules, plan alignment, code quality, security, and testing (built into the cf-reviewer agent)
+4. **Dispatch to orchestrator** — Fork a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer-orchestrator) orchestrator agent in an isolated context (clean, unbiased, token-efficient)
+5. **Parallel multi-agent review** — The orchestrator dispatches 5 specialist agents in parallel (plan alignment, security, code quality + slop detection, test coverage, project rules), then merges results via a reducer agent that deduplicates and severity-ranks findings
 6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
 7. **Report findings** — All findings from every layer collected into 4 categories (🚨 Critical / ⚠️ Important / 💡 Suggestion / 📋 Summary), each tagged with source layer
 
@@ -76,13 +76,13 @@ If any changed file matches sensitive patterns (`auth`, `crypto`, `token`, `sess
 
 ### 5-Layer Review
 
-| Layer                 | Focus                                                               |
-| --------------------- | ------------------------------------------------------------------- |
-| **0. Project Rules**  | CLAUDE.md compliance — MUST/SHOULD rule violations                  |
-| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?            |
-| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance               |
-| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode |
-| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests           |
+| Layer                 | Focus                                                                 |
+| --------------------- | --------------------------------------------------------------------- |
+| **0. Project Rules**  | CLAUDE.md compliance — MUST/SHOULD rule violations                    |
+| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?              |
+| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance, slop detection |
+| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode   |
+| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests             |
 
 All findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
 
