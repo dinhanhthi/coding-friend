@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-31T21:49:19.924Z",
+  "generatedAt": "2026-04-04T07:34:21.209Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -28,7 +28,7 @@
       "type": "slash"
     },
     "cf-commit": {
-      "tokens": 1037,
+      "tokens": 1039,
       "tier": "medium",
       "type": "slash"
     },
@@ -38,7 +38,7 @@
       "type": "slash"
     },
     "cf-help": {
-      "tokens": 2048,
+      "tokens": 2151,
       "tier": "medium",
       "type": "slash"
     },
@@ -68,18 +68,18 @@
       "type": "slash"
     },
     "cf-review": {
-      "tokens": 1746,
+      "tokens": 1757,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-in": {
-      "tokens": 2251,
+      "tokens": 2336,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-out": {
-      "tokens": 1013,
-      "tier": "medium",
+      "tokens": 994,
+      "tier": "low",
       "type": "slash"
     },
     "cf-scan": {
@@ -88,7 +88,7 @@
       "type": "slash"
     },
     "cf-session": {
-      "tokens": 1053,
+      "tokens": 1055,
       "tier": "medium",
       "type": "slash"
     },
@@ -113,12 +113,12 @@
       "type": "slash"
     },
     "cf-verification": {
-      "tokens": 575,
+      "tokens": 598,
       "tier": "low",
       "type": "auto"
     },
     "cf-warm": {
-      "tokens": 2589,
+      "tokens": 2634,
       "tier": "high",
       "type": "slash"
     }
@@ -139,9 +139,39 @@
       "tier": "low",
       "model": "opus"
     },
+    "cf-reviewer-plan": {
+      "tokens": 490,
+      "tier": "low",
+      "model": "sonnet"
+    },
+    "cf-reviewer-quality": {
+      "tokens": 966,
+      "tier": "low",
+      "model": "haiku"
+    },
+    "cf-reviewer-reducer": {
+      "tokens": 710,
+      "tier": "low",
+      "model": "haiku"
+    },
+    "cf-reviewer-rules": {
+      "tokens": 603,
+      "tier": "low",
+      "model": "haiku"
+    },
+    "cf-reviewer-security": {
+      "tokens": 876,
+      "tier": "low",
+      "model": "sonnet"
+    },
+    "cf-reviewer-tests": {
+      "tokens": 628,
+      "tier": "low",
+      "model": "haiku"
+    },
     "cf-reviewer": {
-      "tokens": 2538,
-      "tier": "high",
+      "tokens": 1239,
+      "tier": "medium",
       "model": "opus"
     },
     "cf-writer-deep": {

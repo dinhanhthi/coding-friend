@@ -87,7 +87,7 @@ If output is not empty, integrate the returned sections into this workflow:
 
 5. **Read changed files** in full — do not review only the diff, understand the context.
 
-6. **Apply 5-layer review** (the cf-reviewer agent applies this automatically via its built-in Two-Pass Review methodology):
+6. **Apply 5-layer review** (the cf-reviewer orchestrator dispatches specialist agents in parallel — plan, security, quality, tests, rules — then merges results via a reducer):
    - Layer 0: Project rules compliance (CLAUDE.md)
    - Layer 1: Plan alignment
    - Layer 2: Code quality

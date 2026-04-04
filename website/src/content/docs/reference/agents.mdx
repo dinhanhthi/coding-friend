@@ -1,13 +1,13 @@
 ---
 title: "Agents"
-description: "6 specialized agents for different engineering tasks."
+description: "12 specialized agents for different engineering tasks."
 keywords:
   [agents, subagents, cf-explorer, cf-reviewer, cf-implementer, cf-planner]
 ---
 
 ## Overview
 
-Coding Friend includes 6 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
+Coding Friend includes 12 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
 
 ## Agent Reference
 
@@ -17,18 +17,40 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 ## When Each Agent Is Used
 
-### cf-reviewer
+### cf-reviewer (orchestrator)
 
-Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent handles **execution** — reading the diff, reading full files for context, applying the two-pass review methodology (quick scan + deep 5-layer analysis), and formatting the report.
+Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent **orchestrates** a multi-agent review pipeline — dispatching 5 specialist agents in parallel, then merging results via a reducer agent.
 
-The review methodology (security vulnerability table, confidence scoring, OWASP checks) is built directly into the agent — no separate skill dependency. Findings from all 5 layers are collected into 4 severity categories (🚨 Critical, ⚠️ Important, 💡 Suggestions, 📋 Summary) — no layer headings in the output. Each finding is tagged with its source layer inline (e.g., `[L3]` for Security).
+**Review pipeline:**
 
-**Output quality gates**: Every review must include at least one finding, specific file:line references for Critical/Important issues, a "why" explanation for each finding, and a summary with confidence level.
+1. Prepare shared context (diff + changed files + review mode)
+2. Dispatch specialist agents in parallel (3 in QUICK mode, 5 in STANDARD/DEEP)
+3. Collect all specialist outputs
+4. Dispatch reducer agent to deduplicate, severity-rank, and merge into unified report
+
+**Specialist agents:**
+
+| Agent                  | Model  | Focus                                              |
+| ---------------------- | ------ | -------------------------------------------------- |
+| `cf-reviewer-plan`     | Sonnet | Plan alignment — missing items, out-of-scope       |
+| `cf-reviewer-security` | Sonnet | Security — OWASP, injection, auth, data flow       |
+| `cf-reviewer-quality`  | Haiku  | Code quality + slop detection (AI over-generation) |
+| `cf-reviewer-tests`    | Haiku  | Test coverage, edge cases, regression prevention   |
+| `cf-reviewer-rules`    | Haiku  | CLAUDE.md compliance — MUST/SHOULD violations      |
+| `cf-reviewer-reducer`  | Haiku  | Deduplicates and severity-ranks all findings       |
+
+**QUICK mode** skips `cf-reviewer-plan` and `cf-reviewer-rules` for faster feedback on small changes.
+
+Findings from all specialists are collected into 4 severity categories (🚨 Critical, ⚠️ Important, 💡 Suggestions, 📋 Summary). Each finding is tagged with its source layer inline (e.g., `[L3: Security]`). Multi-agent agreement on the same issue raises confidence.
 
 ```
 /cf-review (workflow orchestration)
     ↓ fork + dispatch
-cf-reviewer (execution + methodology — how to review and what to check)
+cf-reviewer (orchestrator)
+    ↓ parallel dispatch
+cf-reviewer-plan + cf-reviewer-security + cf-reviewer-quality + cf-reviewer-tests + cf-reviewer-rules
+    ↓ collect outputs
+cf-reviewer-reducer (dedup + rank → unified report)
 ```
 
 ### cf-explorer

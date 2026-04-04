@@ -55,7 +55,13 @@ coding-friend/
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
-│       ├── cf-reviewer.md           # Code review subagent (5-layer methodology)
+│       ├── cf-reviewer.md           # Review orchestrator (dispatches specialists)
+│       ├── cf-reviewer-plan.md      # Plan alignment specialist (sonnet)
+│       ├── cf-reviewer-security.md  # Security specialist (sonnet)
+│       ├── cf-reviewer-quality.md   # Code quality + slop detection (haiku)
+│       ├── cf-reviewer-tests.md     # Test coverage specialist (haiku)
+│       ├── cf-reviewer-rules.md     # Project rules compliance (haiku)
+│       ├── cf-reviewer-reducer.md   # Dedup + severity ranking (haiku)
 │       ├── cf-explorer.md           # Read-only codebase explorer
 │       ├── cf-implementer.md        # TDD implementation subagent
 │       ├── cf-planner.md            # Exploration + task breakdown
@@ -188,16 +194,22 @@ Exit codes:
 
 ---
 
-## Agents (6)
+## Agents (12)
 
-| Agent            | Model   | Purpose                                                         |
-| ---------------- | ------- | --------------------------------------------------------------- |
-| `cf-reviewer`    | opus    | 5-layer review: project rules, plan, quality, security, testing |
-| `cf-explorer`    | haiku   | Read-only codebase exploration and context gathering            |
-| `cf-implementer` | opus    | TDD implementation: write test → implement → verify             |
-| `cf-planner`     | inherit | Codebase exploration + task decomposition                       |
-| `cf-writer`      | haiku   | Lightweight document writing and markdown generation            |
-| `cf-writer-deep` | sonnet  | Deep reasoning for nuanced technical documentation              |
+| Agent                  | Model   | Purpose                                                           |
+| ---------------------- | ------- | ----------------------------------------------------------------- |
+| `cf-reviewer`          | opus    | Review orchestrator: dispatches specialists in parallel + reducer |
+| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                         |
+| `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                 |
+| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                          |
+| `cf-reviewer-tests`    | haiku   | Test coverage specialist                                          |
+| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                   |
+| `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists         |
+| `cf-explorer`          | haiku   | Read-only codebase exploration and context gathering              |
+| `cf-implementer`       | opus    | TDD implementation: write test → implement → verify               |
+| `cf-planner`           | inherit | Codebase exploration + task decomposition                         |
+| `cf-writer`            | haiku   | Lightweight document writing and markdown generation              |
+| `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                |
 
 ---
 
@@ -301,17 +313,17 @@ stripFrontmatter(content) → markdownBody
 
 ## Key Design Decisions
 
-| Decision                                | Rationale                                                                                      |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
-| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
-| 6 agents                                | cf-reviewer, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep                |
-| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
-| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
-| context: fork for /cf-review            | Isolate review from main context window                                                        |
-| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                     |
-| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                 |
-| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                    |
+| Decision                                | Rationale                                                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                        |
+| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                                                |
+| 12 agents                               | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
+| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                                               |
+| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                                          |
+| context: fork for /cf-review            | Isolate review from main context window                                                                               |
+| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
+| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                                        |
+| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                                           |
 
 ---
 
@@ -432,8 +444,8 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ cf-reviewer agent (fork)                │          │
-    │                 5-layer review                       │          │
+    │  /cf-review ──→ cf-reviewer orchestrator (fork)           │          │
+    │                 5 specialist agents in parallel + reducer│          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │
     │                 • Analyze diff                       │          │

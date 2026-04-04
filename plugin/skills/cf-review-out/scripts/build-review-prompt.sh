@@ -32,8 +32,24 @@ if [ "$line_count" -gt "$MAX_DIFF_LINES" ]; then
 > NOTE: The diff was truncated from $line_count to $MAX_DIFF_LINES lines. Review covers a subset."
 fi
 
-# Get date
+# Get date and project info
 current_date=$(date +%Y-%m-%d)
+
+# Project name from package.json or directory name
+project_name=""
+if [ -f "package.json" ]; then
+  project_name=$(grep -m1 '"name"' package.json | sed 's/.*: *"\([^"]*\)".*/\1/' 2>/dev/null || true)
+fi
+if [ -z "$project_name" ]; then
+  project_name=$(basename "$(pwd)")
+fi
+
+# Branch name
+branch_name=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+# File and line counts (grep -c returns exit 1 on no match; use subshell to avoid pipefail abort)
+files_changed=$(echo "$diff_content" | grep -c '^diff --git' || true)
+lines_changed=$(echo "$diff_content" | grep -cE '^\+[^+]|^-[^-]' || true)
 
 cat <<PROMPT
 ---
@@ -47,11 +63,19 @@ status: pending
 
 You are a senior code reviewer. This document contains everything you need to perform an independent code review. Read it carefully, then write your review to the specified output location.
 
+## Context
+
+- **Project:** ${project_name}
+- **Branch:** ${branch_name}
+- **Date:** ${current_date}
+- **Files changed:** ${files_changed}
+- **Lines changed:** ~${lines_changed}
+
 ## Your Task
 
-1. Read the code changes below
-2. Apply the review criteria
-3. Write your findings in the **exact output format** specified
+1. Read the code changes in the **Code Changes** section below
+2. Apply the **Review Criteria** (5 layers)
+3. Write your findings in the **exact Output Format** specified
 4. Save your review to: \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\` (replace \`<service>\` with your name — e.g., \`gemini\`, \`chatgpt\`, \`codex\`, \`cursor\`, \`copilot\`)
 
 ## Review Criteria
@@ -164,6 +188,17 @@ The diff below may include **multiple sections**:
 - **Intentional patterns**: If code has an explanatory comment justifying the approach, don't flag it
 - **Test code**: Relax rules for test files — hardcoded values, magic numbers, verbose setup are acceptable
 - **Generated code**: Skip auto-generated files (lockfiles, build output, files with codegen markers)
+
+## Output Checklist
+
+Before saving your review, verify:
+
+- [ ] All 4 sections present (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary)
+- [ ] Every Critical/Important finding has file:line reference and confidence score ≥ 0.8
+- [ ] Findings only flag issues **introduced in the diff**, not pre-existing code
+- [ ] No linter-catchable issues flagged (formatting, unused imports, type errors)
+- [ ] Frontmatter includes matching label: \`${LABEL}\`
+- [ ] File saved to correct path: \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`
 
 ## Code Changes
 ${truncated_note}

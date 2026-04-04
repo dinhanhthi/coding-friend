@@ -35,7 +35,7 @@ export const STATUSLINE_COMPONENTS: {
   { id: "branch", label: "Git branch (⎇ main)" },
   {
     id: "account",
-    label: "Account info — name, email & org (from ~/.claude.json)",
+    label: "Account info — name, email (from ~/.claude.json)",
   },
   { id: "context", label: "Context window usage (ctx 42%)" },
   {
