@@ -108,6 +108,16 @@ Use the `AskUserQuestion` tool for each interaction below. Do NOT batch all ques
 
 Only proceed after the user confirms your understanding and direction. If the user wants to skip brainstorming (e.g., "just plan it", "I already know what I want"), respect that and move on.
 
+### Step 1.5: Generate Task ID
+
+Generate a task-id for the context handoff protocol:
+
+1. **Generate a task-id**: use format `<timestamp>-<short-descriptor>` (e.g., `1717500000-add-auth-middleware`)
+2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
+3. **Context file path**: `{docsDir}/context/{task-id}.json`
+
+This task-id will be used throughout the workflow to pass structured context between agents.
+
 ### Step 2: Explore Codebase
 
 > **Fast mode**: Do NOT launch the cf-explorer agent. Instead, do a quick inline search using Glob and Grep directly in the main conversation. Focus only on the files immediately relevant to the task. Keep it brief — no deep exploration.
@@ -121,6 +131,8 @@ Launch the **cf-explorer agent** to gather codebase context. This runs in a sepa
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass a detailed prompt:
 
 > Explore the codebase to gather context for the following task: [user request]
+>
+> **Context file:** Write your structured findings to [docsDir/context/<task-id>.json]
 >
 > Confirmed assumptions: [list from Step 1]
 > Scope: [any constraints from Step 1]
@@ -149,11 +161,13 @@ Wait for the cf-explorer to return its findings.
 
 > **Fast mode**: Skip this step — pick the most straightforward approach based on codebase patterns found in Step 2. Proceed directly to Step 4.
 
-Launch the **cf-planner agent** with the cf-explorer's findings to brainstorm approaches.
+Launch the **cf-planner agent** with the cf-explorer's findings to brainstorm approaches. Pass the context file path so the planner can also write its findings for downstream agents.
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-planner"`. Pass:
 
 > Plan the following task: [user request]
+>
+> **Context file:** [path to docsDir/context/<task-id>.json] — the cf-explorer has already written structured findings here. Read it for codebase context, then update it with your plan findings.
 >
 > Confirmed assumptions: [list from Step 1]
 > User preferences: [any constraints from Step 1]
@@ -229,6 +243,7 @@ For `[sequential]` phases, implement each task one at a time using the **cf-impl
    > Implement the following task using strict TDD:
    >
    > **Task:** [task description from plan]
+   > **Context file:** [path to docsDir/context/<task-id>.json]
    > **Context:** [overall plan context — what we're building and why]
    > **Files:** [specific files listed in the task]
    > **Verify:** [verification criteria from the task]
@@ -237,9 +252,19 @@ For `[sequential]` phases, implement each task one at a time using the **cf-impl
    >
    > Follow RED → GREEN → REFACTOR. Report results when done.
 
-2. After each task completes, review the cf-implementer's report:
-   - If tests pass and the task is verified → mark task complete, move to next
-   - If issues reported → address them before proceeding (re-dispatch or fix inline)
+2. After each task completes, **parse the last line** for the result signal:
+   - `[CF-RESULT: success]` → mark task complete, move to next
+   - `[CF-RESULT: failure] <reason>` → retry once (see retry protocol below)
+   - No signal → treat as success (backward compatibility)
+
+**Retry protocol** (max 1 retry per task):
+
+1. Notify the user: `> ⟳ Task N attempt 1 failed (<reason>). Retrying with error context...`
+2. Update the context file — read existing content, add `previous_failure` key with reason, error summary, and attempt number
+3. Re-dispatch cf-implementer with the updated context file
+4. If retry also fails → report both failures, ask user: "Continue to next task or stop?"
+
+**Cleanup**: Delete the context file after all phases complete or if the user cancels.
 
 #### Parallel phases
 
@@ -299,6 +324,7 @@ For `[parallel]` phases, launch **all tasks concurrently**:
 ## Tasks
 
 #### Phase 1 [parallel]
+
 1. <task 1>
    - Files: <specific files>
    - Verify: <how to verify>
@@ -308,6 +334,7 @@ For `[parallel]` phases, launch **all tasks concurrently**:
    - Verify: <how to verify>
 
 #### Phase 2 [sequential]
+
 3. <task 3> — depends on Phase 1
    - Files: <specific files>
    - Verify: <how to verify>

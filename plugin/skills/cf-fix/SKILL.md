@@ -56,15 +56,21 @@ Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns.
 Include any relevant findings as context for the explorer.
 
-**3b. Explore relevant code** (via cf-explorer agent):
+**3b. Generate task-id and explore relevant code** (via cf-explorer agent):
 
-Launch the **cf-explorer agent** to gather context around the bug.
+1. **Generate a task-id**: use format `<timestamp>-<short-descriptor>` (e.g., `1717500000-fix-auth-race`)
+2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
+3. **Context file path**: `{docsDir}/context/{task-id}.json`
+
+Launch the **cf-explorer agent** to gather context around the bug, passing the context file path so it writes structured findings.
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
 > Error output: [from Step 2]
+>
+> **Context file:** Write your structured findings to [docsDir/context/<task-id>.json]
 >
 > [If past bug docs were found in 3a]:
 > Related past bugs found in memory:
@@ -100,11 +106,14 @@ Before changing code:
 
 Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
 
+Pass the context file path from Step 3b so the agent can read the explorer's structured findings.
+
 **Prompt template:**
 
 > Fix the following bug using strict TDD:
 >
 > **Bug:** [description from $ARGUMENTS]
+> **Context file:** [path to docsDir/context/<task-id>.json]
 > **Root cause:** [from Step 4]
 > **Fix approach:** [confirmed in Step 5]
 > **Failing test/command:** [from Step 2]
@@ -119,11 +128,63 @@ Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent
 > 4. Run the full test suite — no regressions allowed
 > 5. Report: what was fixed, tests written, and full test output as evidence
 
-### Step 7: Verify Agent Results
+### Step 7: Verify Agent Results + Retry on Failure
 
-1. Review the cf-implementer's report — confirm the fix addresses the root cause from Step 4
-2. If tests are still failing or the report shows concerns, provide more context and re-dispatch
-3. If the agent could not fix it after a reasonable attempt, fall back to fixing inline following TDD discipline
+**Parse the last line** of the cf-implementer's response for the result signal:
+
+- `[CF-RESULT: success]` → proceed to Step 8
+- `[CF-RESULT: failure] <reason>` → trigger retry (see below)
+- No signal found → treat as success (backward compatibility)
+
+**On success:**
+
+1. Review the report — confirm the fix addresses the root cause from Step 4
+2. Proceed to Step 8
+
+**Retry protocol** (max 1 retry):
+
+1. **Notify the user** (always visible):
+
+   ```
+   > ⟳ Attempt 1 failed (<reason>). Retrying with error context...
+   ```
+
+2. **Update the context file** — read the existing `{docsDir}/context/{task-id}.json`, add the `previous_failure` key, and write it back:
+
+   ```json
+   {
+     "task_id": "<task-id>",
+     "task_summary": "<original task>",
+     "relevant_files": ["..."],
+     "key_findings": ["..."],
+     "constraints": ["..."],
+     "suggested_approach": "...",
+     "previous_failure": {
+       "reason": "<tests-failed|compile-error|empty-output>",
+       "error_summary": "<brief error details from the agent's response>",
+       "attempt": 1
+     }
+   }
+   ```
+
+3. **Re-dispatch cf-implementer** with the updated context file and an amended prompt:
+
+   > **RETRY** — Previous attempt failed: [reason]. Error details: [summary].
+   > Review the context file at [path] for full failure context.
+   > [original prompt from Step 6]
+
+4. **If retry also fails**, escalate to user:
+
+   ```
+   > ✗ Both attempts failed. Summary:
+   > - Attempt 1: <reason>
+   > - Attempt 2: <reason>
+   > Please review and guide the next step.
+   ```
+
+   Then fall back to inline fixing following TDD discipline, or load `cf-sys-debug` if the user prefers.
+
+5. **Cleanup**: Delete the context file after the workflow completes (success or escalation) or if the user cancels.
 
 ### Step 8: Save Bug Knowledge (conditional)
 

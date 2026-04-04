@@ -62,7 +62,7 @@ coding-friend/
 │       ├── cf-reviewer-tests.md     # Test coverage specialist (haiku)
 │       ├── cf-reviewer-rules.md     # Project rules compliance (haiku)
 │       ├── cf-reviewer-reducer.md   # Dedup + severity ranking (haiku)
-│       ├── cf-explorer.md           # Read-only codebase explorer
+│       ├── cf-explorer.md           # Codebase explorer (writes context files)
 │       ├── cf-implementer.md        # TDD implementation subagent
 │       ├── cf-planner.md            # Exploration + task breakdown
 │       ├── cf-writer.md             # Lightweight doc writer
@@ -196,20 +196,52 @@ Exit codes:
 
 ## Agents (12)
 
-| Agent                  | Model   | Purpose                                                           |
-| ---------------------- | ------- | ----------------------------------------------------------------- |
-| `cf-reviewer`          | opus    | Review orchestrator: dispatches specialists in parallel + reducer |
-| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                         |
-| `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                 |
-| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                          |
-| `cf-reviewer-tests`    | haiku   | Test coverage specialist                                          |
-| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                   |
-| `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists         |
-| `cf-explorer`          | haiku   | Read-only codebase exploration and context gathering              |
-| `cf-implementer`       | opus    | TDD implementation: write test → implement → verify               |
-| `cf-planner`           | inherit | Codebase exploration + task decomposition (parallel/sequential phases) |
-| `cf-writer`            | haiku   | Lightweight document writing and markdown generation              |
-| `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                |
+| Agent                  | Model   | Purpose                                                                      |
+| ---------------------- | ------- | ---------------------------------------------------------------------------- |
+| `cf-reviewer`          | opus    | Review orchestrator: dispatches specialists in parallel + reducer            |
+| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                                    |
+| `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                            |
+| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                                     |
+| `cf-reviewer-tests`    | haiku   | Test coverage specialist                                                     |
+| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                              |
+| `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists                    |
+| `cf-explorer`          | haiku   | Codebase exploration + writes structured context file for downstream agents  |
+| `cf-implementer`       | opus    | TDD implementation with context file handoff, result signals, and auto-retry |
+| `cf-planner`           | inherit | Task decomposition (parallel/sequential phases) + writes context file        |
+| `cf-writer`            | haiku   | Lightweight document writing and markdown generation                         |
+| `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                           |
+
+### Agent Context Protocol
+
+Agents pass structured context to each other via a JSON context file at `{docsDir}/context/{task-id}.json`. This replaces text-only handoff between agent invocations.
+
+**Flow:**
+
+1. Orchestrating skill (cf-tdd, cf-fix, cf-plan) generates a `task-id` and determines the context file path
+2. cf-explorer or cf-planner writes structured findings to the context file
+3. cf-implementer reads the context file at the start and uses it as primary context (does not delete it)
+4. On failure, the skill appends `previous_failure` details to the context file and re-dispatches cf-implementer (max 1 retry)
+5. The orchestrating skill cleans up the context file after workflow completion, cancellation, or final escalation
+
+**Context file schema:**
+
+```json
+{
+  "task_id": "<timestamp>-<descriptor>",
+  "task_summary": "...",
+  "relevant_files": ["src/foo.ts"],
+  "key_findings": ["..."],
+  "constraints": ["..."],
+  "suggested_approach": "...",
+  "previous_failure": {
+    "reason": "tests-failed|compile-error|empty-output",
+    "error_summary": "...",
+    "attempt": 1
+  }
+}
+```
+
+**Result signals:** cf-implementer ends every response with `[CF-RESULT: success]` or `[CF-RESULT: failure] <reason>`. The orchestrating skill parses this to decide next steps.
 
 ---
 

@@ -37,14 +37,14 @@ const agentMeta: AgentMeta[] = [
     name: "cf-explorer",
     title: "Explorer",
     description:
-      "Maps project structure, searches files, reads code, and returns structured reports with findings and dependencies.",
+      "Maps project structure, searches files, reads code, and writes structured context files for downstream agents.",
     usedBy: ["/cf-plan", "/cf-ask", "/cf-fix"],
   },
   {
     name: "cf-implementer",
     title: "Implementer",
     description:
-      "Strict TDD implementation in an isolated context. RED, GREEN, REFACTOR — then reports back.",
+      "Strict TDD in an isolated context with structured context handoff and auto-retry on failure.",
     usedBy: ["/cf-plan", "/cf-fix", "/cf-optimize", "cf-tdd"],
   },
   {

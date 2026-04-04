@@ -31,7 +31,7 @@ If no flag is given, the skill auto-detects the appropriate mode based on task s
 3. **Brainstorm Approaches** — Launches the [`cf-planner`](/docs/reference/agents/#cf-planner) agent to generate 2–3 possible approaches, each with pros, cons, effort estimate, risk, and confidence level. Recommends one with rationale
 4. **Validate with You** — Presents key findings, approaches, and open questions. Waits for your approval before writing anything
 5. **Write & Save the Plan** — Breaks the approved approach into phased tasks with `[parallel]` or `[sequential]` markers, specific files, expected outcomes, and verification steps. Saves to `docs/plans/`
-6. **Offer Implementation** — Asks if you want to start implementing. Executes phases in order: parallel phases launch all tasks concurrently via background [`cf-implementer`](/docs/reference/agents/#cf-implementer) agents; sequential phases run one task at a time. All tasks follow [TDD discipline](/docs/skills/cf-tdd/). Automatically runs [`/cf-review`](/docs/skills/cf-review/) when done
+6. **Offer Implementation** — Asks if you want to start implementing. Executes phases in order: parallel phases launch all tasks concurrently via background [`cf-implementer`](/docs/reference/agents/#cf-implementer) agents; sequential phases run one task at a time. All tasks follow [TDD discipline](/docs/skills/cf-tdd/). If an implementer fails, retries once with error context before escalating. Automatically runs [`/cf-review`](/docs/skills/cf-review/) when done
 
 ## Examples
 

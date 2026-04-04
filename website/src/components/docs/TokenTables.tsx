@@ -148,13 +148,17 @@ const overviewAutoMeta: Record<
 };
 
 const agentRefMeta: Record<string, string> = {
-  "cf-explorer": "Read-only codebase exploration and context gathering",
-  "cf-reviewer": "Review orchestrator: dispatches specialist agents in parallel",
-  "cf-reviewer-plan": "Plan alignment specialist — checks code matches the plan",
+  "cf-explorer":
+    "Codebase exploration and context gathering (writes context files for downstream agents)",
+  "cf-reviewer":
+    "Review orchestrator: dispatches specialist agents in parallel",
+  "cf-reviewer-plan":
+    "Plan alignment specialist — checks code matches the plan",
   "cf-reviewer-quality": "Code quality + slop detection specialist",
   "cf-reviewer-security": "Security specialist — OWASP top 10, injection, auth",
   "cf-reviewer-tests": "Test coverage specialist — missing tests, edge cases",
-  "cf-reviewer-rules": "Project rules compliance specialist (CLAUDE.md, conventions)",
+  "cf-reviewer-rules":
+    "Project rules compliance specialist (CLAUDE.md, conventions)",
   "cf-reviewer-reducer": "Deduplicates and ranks findings from all specialists",
   "cf-implementer": "TDD-driven implementation with test-first approach",
   "cf-planner": "Task decomposition, approach brainstorming, and planning",
