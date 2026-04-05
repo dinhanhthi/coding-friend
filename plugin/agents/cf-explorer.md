@@ -70,6 +70,7 @@ If the caller provided a **context file path** (e.g., `docs/context/<task-id>.js
 
 ```json
 {
+  "schema_version": 1,
   "task_id": "<task-id from caller>",
   "task_summary": "<one-line summary of the exploration goal>",
   "relevant_files": ["src/foo.ts", "src/bar.ts"],
@@ -81,6 +82,7 @@ If the caller provided a **context file path** (e.g., `docs/context/<task-id>.js
 
 **Rules for writing context files:**
 
+- Always include `"schema_version": 1` as the first field — future schema changes will bump this number so readers can detect incompatible context files
 - Create the parent directory for the context file path if it doesn't exist
 - Only write the file when a context file path is explicitly provided by the caller
 - Include only actionable information — skip boilerplate

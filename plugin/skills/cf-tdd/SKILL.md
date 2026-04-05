@@ -138,11 +138,11 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pas
 
 ### Retry on Failure
 
-After the cf-implementer returns, **parse the last line** of its response for the result signal:
+After the cf-implementer returns, **parse the last non-empty line** of its response for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 
 - `[CF-RESULT: success]` → proceed to Review Reminder
 - `[CF-RESULT: failure] <reason>` → trigger retry (see below)
-- No signal found → treat as success (backward compatibility)
+- **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
 
 **Retry protocol** (max 1 retry):
 

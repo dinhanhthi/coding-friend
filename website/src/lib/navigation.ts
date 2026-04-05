@@ -180,6 +180,10 @@ export const docsNavigation: NavSection[] = [
     title: "Reference",
     items: [
       { title: "Agents", slug: "reference/agents" },
+      {
+        title: "Agent Context Handoff",
+        slug: "reference/agent-context-handoff",
+      },
       { title: "Hooks", slug: "reference/hooks" },
       { title: "Auto-Approve", slug: "reference/auto-approve" },
       { title: "Permissions", slug: "reference/permissions" },

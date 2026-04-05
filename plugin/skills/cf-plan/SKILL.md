@@ -252,10 +252,10 @@ For `[sequential]` phases, implement each task one at a time using the **cf-impl
    >
    > Follow RED → GREEN → REFACTOR. Report results when done.
 
-2. After each task completes, **parse the last line** for the result signal:
+2. After each task completes, **parse the last non-empty line** for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
    - `[CF-RESULT: success]` → mark task complete, move to next
    - `[CF-RESULT: failure] <reason>` → retry once (see retry protocol below)
-   - No signal → treat as success (backward compatibility)
+   - **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
 
 **Retry protocol** (max 1 retry per task):
 
@@ -269,6 +269,16 @@ For `[sequential]` phases, implement each task one at a time using the **cf-impl
 #### Parallel phases
 
 For `[parallel]` phases, launch **all tasks concurrently**:
+
+**Pre-dispatch safety check — file-overlap guard** (MANDATORY before spawning any agent):
+
+1. For each task in the phase, collect its declared file list (from the `files:` field in the plan).
+2. Flatten all file paths across every task in the phase and normalize them (resolve to absolute paths, strip trailing slashes).
+3. If any file path appears in **two or more tasks**, STOP — this phase is unsafe for parallel execution because multiple implementers would race on the same file.
+4. Report the overlap to the user with the exact duplicated paths and the tasks involved, then ask: _"Phase N has a file-overlap conflict. (a) Convert this phase to sequential, (b) reorganize tasks so files don't overlap, or (c) abort?"_
+5. Only proceed after the user resolves the conflict. Do NOT auto-merge or auto-serialize without user confirmation.
+
+After the overlap check passes:
 
 1. Spawn one `cf-implementer` agent **per task** — all with `run_in_background: true`
 2. All agents MUST be launched in a **single message block** (one message with multiple Agent tool calls)

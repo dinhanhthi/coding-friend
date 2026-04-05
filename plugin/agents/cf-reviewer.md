@@ -71,15 +71,28 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: haiku) with all specialist outputs concatenated. The reducer will:
+Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
 2. Rank by multi-agent agreement then confidence
 3. Output a unified report in the standard format
 
-### Step 5: Return Report
+### Step 5: Reducer Sanity Check
 
-Return the reducer's output as the final review report. Do NOT add your own findings — the specialists and reducer handle everything.
+Before returning, cross-check the reducer's output against the raw specialist outputs to catch over-merging:
+
+1. Count the total findings (Critical + Important + Suggestions) in each specialist's output.
+2. Record the **max single-specialist count** — the largest number any single agent produced.
+3. Count the total findings in the reducer's merged output.
+4. If the reducer's total is **less than the max single-specialist count**, emit a short warning at the very top of the final report:
+
+   > ⚠ Reducer merged aggressively: reduced from N findings (max from one specialist) to M merged findings. If the review feels incomplete, re-run with `CF_REDUCER_MODEL=sonnet` for a more conservative merge.
+
+5. This warning is informational only — do NOT block the review or modify the reducer's output otherwise.
+
+### Step 6: Return Report
+
+Return the reducer's output (with the optional sanity warning prepended) as the final review report. Do NOT add your own findings — the specialists and reducer handle everything.
 
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
 
