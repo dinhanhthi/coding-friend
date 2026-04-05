@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.28.0 (2026-04-05)
+
+- Phase 5 CLI Infrastructure — config validation, daemon lifecycle, E2E tests [#0f5aec0](https://github.com/dinhanhthi/coding-friend/commit/0f5aec0)
+- Add `cf guide` command for managing custom skill guides (Phase 6) [#d68bfa0](https://github.com/dinhanhthi/coding-friend/commit/d68bfa0)
+- Fix `cf dev sync` to detect `hooks.json` event type changes [#fdc8825](https://github.com/dinhanhthi/coding-friend/commit/fdc8825)
+- Fix `makeRespawn` retry-logic tests in `cf-memory` — mock `isDaemonRunning` to isolate tests from real daemon state on the host machine
+
 ## v1.27.2 (2026-04-01)
 
 - Add `/cf-warm` and `/cf-teach` to `cf init` available commands list [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)
