@@ -12,10 +12,14 @@ The `cf-tdd` skill automatically activates when you're writing new code or refac
 
 TDD is automatically skipped when:
 
-- **All changed files are non-code** — styles (`.css`, `.scss`, `.sass`, `.less`, `.styl`), docs (`.md`, `.mdx`, `.txt`, `.rst`), or config (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`)
-- **User passes `--no-tdd`** — explicitly opts out with a one-line acknowledgment
+- **All changed files are non-code** — styles (`.css`, `.scss`, `.sass`, `.less`, `.styl`), docs (`.md`, `.mdx`, `.txt`, `.rst`), or config (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`). Whitelist matches only when **all** changed files belong to these types — mixing in a `.ts` file (or any other code file) re-enables TDD for the whole change.
+- **User passes `--no-tdd`** — explicitly opts out with a one-line acknowledgment. This flag is recognized by the `cf-tdd` skill itself. Passing it through `/cf-fix` or `/cf-plan` today does **not** propagate to the downstream `cf-implementer` agent; those skills always delegate to the strict TDD implementer regardless of the flag.
 
 When skipped, the skill notes why and proceeds directly to implementation.
+
+## Agent Handoff
+
+When `cf-tdd` dispatches the `cf-implementer` agent for substantial implementations, it uses a structured JSON context file to pass findings without losing nuance through text serialization. See [Agent Context Handoff](/docs/reference/agent-context-handoff/) for the full mechanism, schema, and retry protocol.
 
 ## When It Activates
 

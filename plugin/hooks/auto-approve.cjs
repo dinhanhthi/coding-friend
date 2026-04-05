@@ -459,20 +459,58 @@ function llmCacheFilePath() {
 }
 
 /**
+ * Normalize a file path for cache key equality.
+ * Resolves relative paths against cwd and collapses `./`, `../` segments so
+ * that `foo.ts`, `./foo.ts`, `./a/../foo.ts`, and the absolute form all hash
+ * to the same key. Prevents a trivial cache-bypass vector where a classified
+ * path is permuted slightly on a later call to re-hit the LLM classifier.
+ * @param {string} filePath
+ * @returns {string}
+ */
+function normalizeFilePath(filePath) {
+  if (typeof filePath !== "string" || filePath.length === 0) return filePath;
+  try {
+    return path.resolve(filePath);
+  } catch {
+    return filePath;
+  }
+}
+
+/**
+ * Normalize a shell command for cache key equality.
+ * Collapses runs of any whitespace (spaces, tabs, newlines) into single spaces
+ * and trims the ends so that `"npm  test"`, `"npm test"`, `"  npm test  "`,
+ * and `"npm\ttest"` all hash to the same key.
+ * @param {string} command
+ * @returns {string}
+ */
+function normalizeCommand(command) {
+  if (typeof command !== "string") return command;
+  return command.replace(/\s+/g, " ").trim();
+}
+
+/**
  * Build a cache key from tool name and input.
  * Uses file_path, command, or JSON-serialized input as the distinguishing part.
+ * file_path and command are normalized so equivalent inputs share a key —
+ * this closes a trivial cache-bypass vector (e.g., `./foo.sh` vs `foo.sh`).
  * @param {string} toolName
  * @param {object} toolInput
  * @returns {string}
  */
 function llmCacheKey(toolName, toolInput) {
-  const inputKey =
-    (toolInput && (toolInput.file_path || toolInput.command)) ||
-    require("crypto")
+  let inputKey;
+  if (toolInput && toolInput.file_path) {
+    inputKey = normalizeFilePath(toolInput.file_path);
+  } else if (toolInput && toolInput.command) {
+    inputKey = normalizeCommand(toolInput.command);
+  } else {
+    inputKey = require("crypto")
       .createHash("sha256")
       .update(JSON.stringify(toolInput))
       .digest("hex")
       .slice(0, 32);
+  }
   return `${toolName}:${inputKey}`;
 }
 

@@ -130,11 +130,11 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 
 ### Step 7: Verify Agent Results + Retry on Failure
 
-**Parse the last line** of the cf-implementer's response for the result signal:
+**Parse the last non-empty line** of the cf-implementer's response for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 
 - `[CF-RESULT: success]` → proceed to Step 8
 - `[CF-RESULT: failure] <reason>` → trigger retry (see below)
-- No signal found → treat as success (backward compatibility)
+- **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
 
 **On success:**
 

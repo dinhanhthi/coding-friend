@@ -18,16 +18,27 @@
 
 set -euo pipefail
 
+ERR_LOG="${TMPDIR:-/tmp}/cf-hook-errors.log"
+
 INPUT=$(cat)
 
 # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)
 SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
-[ -z "$SESSION_ID" ] && exit 0
+if [ -z "$SESSION_ID" ]; then
+  # Payload did not contain a session_id — log so regressions in CC's event
+  # shape are visible without blocking the hook.
+  echo "[$(date '+%Y-%m-%dT%H:%M:%S')] agent-tracker: missing session_id in payload; first 200 bytes: $(printf '%s' "$INPUT" | head -c 200)" >>"$ERR_LOG" 2>/dev/null || true
+  exit 0
+fi
 
 AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
 COUNT_FILE="/tmp/cf-agent-count-${SESSION_ID}"
 LOCK_DIR="/tmp/cf-agent-count-${SESSION_ID}.lock"
 EVENT=$(printf '%s' "$INPUT" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"hook_event_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+if [ -z "$EVENT" ]; then
+  echo "[$(date '+%Y-%m-%dT%H:%M:%S')] agent-tracker: missing hook_event_name for session $SESSION_ID" >>"$ERR_LOG" 2>/dev/null || true
+  exit 0
+fi
 
 # Acquire lock (mkdir is atomic on all Unix systems)
 RETRIES=0

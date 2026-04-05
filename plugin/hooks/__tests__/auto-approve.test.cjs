@@ -1954,4 +1954,30 @@ describe("llmCacheKey — bounded keys", () => {
     const key2 = llmCacheKey("Tool", input);
     expect(key1).toBe(key2);
   });
+
+  // Path normalization — prevents cache bypass via equivalent path spellings
+  it("normalizes file_path so equivalent paths share a cache entry", () => {
+    const cwd = process.cwd();
+    const relative = llmCacheKey("Write", { file_path: "./foo.ts" });
+    const bareRelative = llmCacheKey("Write", { file_path: "foo.ts" });
+    const absolute = llmCacheKey("Write", {
+      file_path: require("path").join(cwd, "foo.ts"),
+    });
+    const dotted = llmCacheKey("Write", { file_path: "./a/../foo.ts" });
+
+    expect(relative).toBe(bareRelative);
+    expect(relative).toBe(absolute);
+    expect(relative).toBe(dotted);
+  });
+
+  it("normalizes command whitespace so equivalent commands share a cache entry", () => {
+    const a = llmCacheKey("Bash", { command: "npm  test" });
+    const b = llmCacheKey("Bash", { command: "npm test" });
+    const c = llmCacheKey("Bash", { command: "  npm test  " });
+    const d = llmCacheKey("Bash", { command: "npm\ttest" });
+
+    expect(a).toBe(b);
+    expect(a).toBe(c);
+    expect(a).toBe(d);
+  });
 });
