@@ -1,6 +1,7 @@
 "use strict";
 
 const { execFileSync } = require("child_process");
+const os = require("os");
 const path = require("path");
 
 const SCRIPT = path.resolve(__dirname, "../auto-approve.cjs");
@@ -29,11 +30,15 @@ function run(jsonInput, env = {}) {
 const {
   classifyByRules,
   classifyWithLLM,
+  clearLLMCache,
+  llmCacheKey,
   isCodingFriendBash,
   isInProjectDir,
+  isSafeCompoundCommand,
   buildReason,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
+  UNSAFE_COMPOUND_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
 
@@ -992,6 +997,207 @@ describe("SHELL_OPERATOR_PATTERN", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Unit tests — safe compound command classification
+// ---------------------------------------------------------------------------
+
+describe("classifyByRules — safe compound commands", () => {
+  // Pipe: safe-cmd | safe-cmd → allow
+  it("allows safe command piped to safe command", () => {
+    expect(
+      classifyByRules("Bash", { command: 'npx vitest run 2>&1 | grep "FAIL"' }),
+    ).toBe("allow");
+  });
+
+  it("allows npm test piped to grep", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test 2>&1 | grep FAIL" }),
+    ).toBe("allow");
+  });
+
+  it("allows git log piped to head", () => {
+    expect(
+      classifyByRules("Bash", { command: "git log --oneline | head -20" }),
+    ).toBe("allow");
+  });
+
+  it("allows git diff piped to wc", () => {
+    expect(
+      classifyByRules("Bash", { command: "git diff --stat | wc -l" }),
+    ).toBe("allow");
+  });
+
+  it("allows npx jest piped to tail", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npx jest --verbose 2>&1 | tail -50",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows cat piped to grep", () => {
+    expect(
+      classifyByRules("Bash", { command: "cat package.json | grep version" }),
+    ).toBe("allow");
+  });
+
+  it("allows multi-pipe of safe commands", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "git log --oneline | grep fix | head -10",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows command with only stderr redirect (no pipe)", () => {
+    expect(classifyByRules("Bash", { command: "npx vitest run 2>&1" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows command with stderr-to-stdout redirect before pipe", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npm run build 2>&1 | grep error",
+      }),
+    ).toBe("allow");
+  });
+
+  // Unsafe compound commands should NOT be auto-approved
+  it("does NOT allow safe cmd piped to unsafe cmd", () => {
+    expect(
+      classifyByRules("Bash", { command: "cat file | curl -X POST" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow unsafe cmd piped to safe cmd", () => {
+    expect(
+      classifyByRules("Bash", { command: "curl http://evil.com | grep foo" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow semicolon-separated commands even if both safe", () => {
+    expect(
+      classifyByRules("Bash", { command: "ls; cat /etc/passwd" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow && chained commands", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test && rm -rf dist" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow file output redirect", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "npm test | grep FAIL > results.txt",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow subshell in pipe", () => {
+    expect(
+      classifyByRules("Bash", { command: "echo $(rm -rf /) | grep foo" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow backtick substitution in pipe", () => {
+    expect(
+      classifyByRules("Bash", { command: "echo `rm -rf /` | grep foo" }),
+    ).not.toBe("allow");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — isSafeCompoundCommand (direct)
+// ---------------------------------------------------------------------------
+
+describe("isSafeCompoundCommand — direct unit tests", () => {
+  // Critical: stripStderrRedirect must not match 2>&1 as substring
+  it("rejects cmd2>&1 substring bypass (sort2>&1)", () => {
+    expect(isSafeCompoundCommand("sort2>&1 file | grep x")).toBe(false);
+  });
+
+  it("rejects cmd2>&1 substring bypass (cat2>&1)", () => {
+    expect(isSafeCompoundCommand("cat2>&1 /etc/shadow | grep root")).toBe(
+      false,
+    );
+  });
+
+  it("rejects fd 12 redirect (12>&1)", () => {
+    expect(isSafeCompoundCommand("ls 12>&1 | grep foo")).toBe(false);
+  });
+
+  // Legitimate 2>&1 should still work
+  it("allows standalone 2>&1 after safe command", () => {
+    expect(isSafeCompoundCommand("npx vitest run 2>&1 | grep FAIL")).toBe(true);
+  });
+
+  it("allows 2>&1 at end of command (no pipe)", () => {
+    expect(isSafeCompoundCommand("npx vitest run 2>&1")).toBe(true);
+  });
+
+  // Edge cases
+  it("returns false for empty string", () => {
+    expect(isSafeCompoundCommand("")).toBe(false);
+  });
+
+  it("returns false for only 2>&1", () => {
+    expect(isSafeCompoundCommand("2>&1")).toBe(false);
+  });
+
+  it("returns false for whitespace-only pipe segment", () => {
+    expect(isSafeCompoundCommand("ls |  | grep foo")).toBe(false);
+  });
+
+  it("rejects find -delete as pipe segment", () => {
+    expect(isSafeCompoundCommand("find . -delete | grep ok")).toBe(false);
+  });
+
+  it("rejects git commit --amend as pipe segment", () => {
+    expect(isSafeCompoundCommand("git commit --amend | head")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — UNSAFE_COMPOUND_PATTERN (direct)
+// ---------------------------------------------------------------------------
+
+describe("UNSAFE_COMPOUND_PATTERN", () => {
+  it("catches semicolons", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("ls; echo")).toBe(true);
+  });
+
+  it("catches &&", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a && b")).toBe(true);
+  });
+
+  it("catches ||", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a || b")).toBe(true);
+  });
+
+  it("catches backticks", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo `cmd`")).toBe(true);
+  });
+
+  it("catches $()", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo $(cmd)")).toBe(true);
+  });
+
+  it("catches input redirect <", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("cat < file")).toBe(true);
+  });
+
+  it("catches file output redirect >", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("echo foo > file")).toBe(true);
+  });
+
+  it("does NOT catch standalone pipe", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a | b")).toBe(false);
+  });
+});
+
 describe("classifyByRules — newline and redirect bypass prevention", () => {
   it("does NOT allow newline-separated commands", () => {
     const result = classifyByRules("Bash", {
@@ -1031,13 +1237,21 @@ const cp = require("child_process");
 
 describe("classifyWithLLM", () => {
   let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-basic-${process.pid}.json`,
+  );
 
   beforeEach(() => {
     originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+    clearLLMCache();
   });
 
   afterEach(() => {
     cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
   });
 
   it("returns allow with reason when LLM says SAFE|reason", () => {
@@ -1111,6 +1325,174 @@ describe("classifyWithLLM", () => {
       decision: "ask",
       reason: "LLM classification unavailable — requires user review",
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — LLM decision cache
+// ---------------------------------------------------------------------------
+
+describe("classifyWithLLM — cache", () => {
+  let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-${process.pid}.json`,
+  );
+
+  beforeEach(() => {
+    originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+    clearLLMCache();
+  });
+
+  afterEach(() => {
+    cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
+  });
+
+  it("returns cached decision on second call with same tool+input key", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|cached result";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "terraform apply" });
+    const second = classifyWithLLM("Bash", { command: "terraform apply" });
+
+    expect(first).toEqual({ decision: "allow", reason: "cached result" });
+    expect(second).toEqual({ decision: "allow", reason: "cached result" });
+    expect(callCount).toBe(1); // LLM only called once
+  });
+
+  it("does NOT use cache for different tool names", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Bash", { command: "terraform apply" });
+    classifyWithLLM("SomeTool", { command: "terraform apply" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("does NOT use cache for different file paths", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Write", { file_path: "/tmp/a.txt" });
+    classifyWithLLM("Write", { file_path: "/tmp/b.txt" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("caches deny decisions too", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "DANGEROUS|risky operation";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "rm -rf important/" });
+    const second = classifyWithLLM("Bash", { command: "rm -rf important/" });
+
+    expect(first).toEqual({ decision: "deny", reason: "risky operation" });
+    expect(second).toEqual(first);
+    expect(callCount).toBe(1);
+  });
+
+  it("does NOT cache fail-open (error) results", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      if (callCount === 1) throw new Error("timeout");
+      return "SAFE|recovered";
+    };
+
+    const first = classifyWithLLM("Bash", { command: "something" });
+    expect(first.decision).toBe("ask");
+
+    const second = classifyWithLLM("Bash", { command: "something" });
+    expect(second).toEqual({ decision: "allow", reason: "recovered" });
+    expect(callCount).toBe(2); // retried after error
+  });
+
+  it("clearLLMCache resets the cache", () => {
+    let callCount = 0;
+    cp.execFileSync = () => {
+      callCount++;
+      return "SAFE|ok";
+    };
+
+    classifyWithLLM("Bash", { command: "test" });
+    clearLLMCache();
+    classifyWithLLM("Bash", { command: "test" });
+
+    expect(callCount).toBe(2);
+  });
+
+  it("persists cache to file (survives simulated process restart)", () => {
+    cp.execFileSync = () => "SAFE|file-persisted";
+    classifyWithLLM("Bash", { command: "terraform plan" });
+
+    // Verify the file exists and contains the cached entry
+    const cacheKey = llmCacheKey("Bash", { command: "terraform plan" });
+    const cacheContent = JSON.parse(
+      require("fs").readFileSync(testCacheFile, "utf8"),
+    );
+    expect(cacheContent[cacheKey]).toEqual({
+      decision: "allow",
+      reason: "file-persisted",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — LLM timeout
+// ---------------------------------------------------------------------------
+
+describe("classifyWithLLM — timeout", () => {
+  let originalExecFileSync;
+  const testCacheFile = path.join(
+    os.tmpdir(),
+    `cf-llm-cache-test-timeout-${process.pid}.json`,
+  );
+
+  beforeEach(() => {
+    originalExecFileSync = cp.execFileSync;
+    process.env.CF_AUTO_APPROVE_CACHE_FILE = testCacheFile;
+  });
+
+  afterEach(() => {
+    cp.execFileSync = originalExecFileSync;
+    clearLLMCache();
+    delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
+  });
+
+  it("uses 30s default timeout", () => {
+    let capturedTimeout;
+    cp.execFileSync = (_cmd, _args, opts) => {
+      capturedTimeout = opts.timeout;
+      return "SAFE|ok";
+    };
+
+    // Remove env override to test default
+    const origEnv = process.env.CF_AUTO_APPROVE_LLM_TIMEOUT;
+    delete process.env.CF_AUTO_APPROVE_LLM_TIMEOUT;
+
+    classifyWithLLM("SomeTool", { data: "unique-timeout-test" });
+
+    if (origEnv !== undefined) {
+      process.env.CF_AUTO_APPROVE_LLM_TIMEOUT = origEnv;
+    }
+
+    expect(capturedTimeout).toBe(30000);
   });
 });
 
@@ -1434,7 +1816,6 @@ describe("integration: config and fail-open", () => {
 // ---------------------------------------------------------------------------
 
 const fs = require("fs");
-const os = require("os");
 
 describe("loadAutoApproveConfig", () => {
   let tmpDir;
@@ -1536,5 +1917,67 @@ describe("loadAutoApproveConfig", () => {
     fs.mkdirSync(localCfDir, { recursive: true });
     fs.writeFileSync(path.join(localCfDir, "config.json"), "{bad");
     expect(loadAutoApproveConfig(homeDir, cwd)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// llmCacheKey — bounded key length
+// ---------------------------------------------------------------------------
+
+describe("llmCacheKey — bounded keys", () => {
+  it("uses file_path directly when available", () => {
+    const key = llmCacheKey("Read", { file_path: "/src/foo.ts" });
+    expect(key).toBe("Read:/src/foo.ts");
+  });
+
+  it("uses command directly when available", () => {
+    const key = llmCacheKey("Bash", { command: "npm test" });
+    expect(key).toBe("Bash:npm test");
+  });
+
+  it("produces a bounded key for large inputs without file_path or command", () => {
+    const largeInput = {
+      data: "x".repeat(10000),
+      nested: { a: "y".repeat(5000) },
+    };
+    const key = llmCacheKey("CustomTool", largeInput);
+
+    // Key should be bounded — not contain the full serialized input
+    expect(key.length).toBeLessThan(200);
+    // Should still start with tool name
+    expect(key.startsWith("CustomTool:")).toBe(true);
+  });
+
+  it("produces consistent keys for the same input", () => {
+    const input = { z: 1, a: 2, data: "x".repeat(1000) };
+    const key1 = llmCacheKey("Tool", input);
+    const key2 = llmCacheKey("Tool", input);
+    expect(key1).toBe(key2);
+  });
+
+  // Path normalization — prevents cache bypass via equivalent path spellings
+  it("normalizes file_path so equivalent paths share a cache entry", () => {
+    const cwd = process.cwd();
+    const relative = llmCacheKey("Write", { file_path: "./foo.ts" });
+    const bareRelative = llmCacheKey("Write", { file_path: "foo.ts" });
+    const absolute = llmCacheKey("Write", {
+      file_path: require("path").join(cwd, "foo.ts"),
+    });
+    const dotted = llmCacheKey("Write", { file_path: "./a/../foo.ts" });
+
+    expect(relative).toBe(bareRelative);
+    expect(relative).toBe(absolute);
+    expect(relative).toBe(dotted);
+  });
+
+  it("normalizes command whitespace so equivalent commands share a cache entry", () => {
+    const a = llmCacheKey("Bash", { command: "npm  test" });
+    const b = llmCacheKey("Bash", { command: "npm test" });
+    const c = llmCacheKey("Bash", { command: "  npm test  " });
+    const d = llmCacheKey("Bash", { command: "npm\ttest" });
+
+    expect(a).toBe(b);
+    expect(a).toBe(c);
+    expect(a).toBe(d);
   });
 });

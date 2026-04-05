@@ -30,21 +30,21 @@ const agentMeta: AgentMeta[] = [
     name: "cf-reviewer",
     title: "Reviewer",
     description:
-      "Multi-layer review covering plan alignment, code quality, security (OWASP top 10), and test coverage.",
+      "Review orchestrator: dispatches 5 specialist agents (plan, security, quality, tests, rules) in parallel + reducer.",
     usedBy: ["/cf-review", "/cf-ship"],
   },
   {
     name: "cf-explorer",
     title: "Explorer",
     description:
-      "Maps project structure, searches files, reads code, and returns structured reports with findings and dependencies.",
+      "Maps project structure, searches files, reads code, and writes structured context files for downstream agents.",
     usedBy: ["/cf-plan", "/cf-ask", "/cf-fix"],
   },
   {
     name: "cf-implementer",
     title: "Implementer",
     description:
-      "Strict TDD implementation in an isolated context. RED, GREEN, REFACTOR — then reports back.",
+      "Strict TDD in an isolated context with structured context handoff and auto-retry on failure.",
     usedBy: ["/cf-plan", "/cf-fix", "/cf-optimize", "cf-tdd"],
   },
   {

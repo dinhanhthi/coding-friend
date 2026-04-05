@@ -7,7 +7,7 @@ description: >
   wants to commit the result.
 disable-model-invocation: true
 model: haiku
-tools: [Bash, Read, Glob]
+allowed-tools: [Bash, Read, Glob]
 ---
 
 # /cf-commit
@@ -41,22 +41,7 @@ Review the current conversation to understand what task was performed and which 
 - If ALL changes are from the current conversation, proceed normally
 - If there is a mix, clearly tell the user which files you will stage and which you will skip (and why)
 
-### Step 3: Verify Before Committing
-
-**Skip this step if ANY of these conditions are true:**
-
-- `.coding-friend/config.json` has `commit.verify: false`
-- Tests already ran and passed earlier in this conversation (e.g., from `cf-verification` after implementation)
-
-**Otherwise:**
-
-1. Run the test suite — all tests must pass
-2. Run linter if configured — no new warnings
-3. Run build if applicable — must succeed
-
-If any check fails, fix the issue FIRST. Do not commit broken code.
-
-### Step 4: Stage & Scan
+### Step 3: Stage & Scan
 
 - Stage only files relevant to the current conversation's task
 - Do NOT stage unrelated changes from other work
@@ -76,6 +61,14 @@ If `SECRETS > 0`:
 1. Review each match — variable names like `getApiKey()` or `TOKEN_TYPE` are OK, actual secret values are NOT
 2. If real secrets found: unstage the file (`git reset HEAD <file>`), suggest adding to `.gitignore`
 3. If all matches are false positives (code references, not actual secrets): proceed
+
+### Step 4: Review Check
+
+If no `/cf-review` was run in the current conversation, show a soft suggestion:
+
+> No review found in this session — run `/cf-review` first? (press Enter to skip and commit anyway)
+
+If the user skips (presses Enter or says to proceed), continue. If they want a review, load `/cf-review` and resume `/cf-commit` after.
 
 ### Step 5: Write Commit Message
 

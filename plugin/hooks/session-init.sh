@@ -83,6 +83,19 @@ if [ -f "$CFIGNORE_FILE" ]; then
   CFIGNORE_PATTERNS=$(grep -v '^#' "$CFIGNORE_FILE" | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
 fi
 
+# ─── Vacuum orphaned agent context files (older than 7 days) ──────
+# When a workflow is aborted mid-run, the orchestrating skill may not
+# get to delete its <docsDir>/context/<task-id>.json file. Sweep any
+# such files older than 7 days here so they don't accumulate forever.
+# Best-effort — never block session startup on cleanup errors.
+CONTEXT_DIR="$DOCS_DIR/context"
+if [ -d "$CONTEXT_DIR" ]; then
+  find "$CONTEXT_DIR" -maxdepth 1 -type f -name "*.json" -mtime +7 -print -delete 2>/dev/null \
+    | while IFS= read -r f; do
+        echo "[session-init] vacuumed stale context file: $f" >>"$LOG_FILE"
+      done || true
+fi
+
 # Build context
 CONTEXT="<IMPORTANT>
 PROJECT_TYPE: $PROJECT_TYPE

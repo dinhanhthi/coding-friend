@@ -5,7 +5,7 @@ description: >
   "ship it", "push and create PR", "let's ship", "deploy this", "send it", "push my changes",
   "create a PR", "open a pull request", "ready to merge", "let's get this merged".
   Also triggers when the user is done with a feature branch and wants the full
-  verify → commit → push → PR workflow.
+  verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
 disable-model-invocation: true
 ---
 
@@ -15,7 +15,7 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 ## Workflow
 
-### Step 0: Custom Guide
+### Step 0: Custom Guide & Flags
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship`
 
@@ -24,6 +24,12 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Before` → execute before the first step
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
+
+**Dry-run check**: If `$ARGUMENTS` contains `--dry-run`, enter simulation mode — run all steps below but **do not execute** any destructive action (no commit, no push, no PR creation). Prefix each step's output with `[dry-run]` and show what **would** happen. At the end, print:
+
+```
+🏃 DRY RUN COMPLETE — nothing was pushed or created.
+```
 
 ### Step 1: Verify
 

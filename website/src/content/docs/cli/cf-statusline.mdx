@@ -13,24 +13,28 @@ cf statusline
 Example:
 
 ```bash
-cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
-👤 Thi Dinh (me@dinhanhthi.com)
+🧠 Opus (1M)
+cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
 ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
 ```
+
+The first line is intentionally reserved for the model only. Claude Code renders its own built-in indicators (effort level, clipboard hints, MCP errors, token warnings) on the right side of the first row, so keeping that row short prevents your statusline from being cramped on narrow terminals.
 
 ## Available Components
 
 The statusline can show any combination of these components:
 
-| ID           | Description                                      | Example                          |
-| ------------ | ------------------------------------------------ | -------------------------------- |
-| `version`    | Plugin version                                   | `cf v0.3.0`                      |
-| `folder`     | Project name                                     | `MyProject`                      |
-| `model`      | Active model                                     | `Opus 4.6`                       |
-| `branch`     | Git branch                                       | `⎇ main`                         |
-| `account`    | Account name, email (from `~/.claude.json`)      | `👤 Thi (me@dinhanhthi.com)`     |
-| `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                        |
-| `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…` |
+| ID           | Description                                      | Example                                  |
+| ------------ | ------------------------------------------------ | ---------------------------------------- |
+| `version`    | Plugin version                                   | `cf v0.3.0`                              |
+| `folder`     | Project name                                     | `MyProject`                              |
+| `model`      | Active model                                     | `Opus 4.6`                               |
+| `branch`     | Git branch                                       | `⎇ main`                                 |
+| `account`    | Account name, email (from `~/.claude.json`)      | `👤 Thi (me@dinhanhthi.com)`             |
+| `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                                |
+| `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…`         |
+| `task_agent` | Task progress & active agent                     | `📋 Tasks: 2/5 \| 🤖 Agent: cf-reviewer` |
 
 When you run this command, an interactive checklist lets you choose which components to display. All components are enabled by default.
 
@@ -54,7 +58,8 @@ You can either edit `~/.coding-friend/config.json` directly, or run `cf statusli
       "branch",
       "account",
       "context",
-      "rate_limit"
+      "rate_limit",
+      "task_agent"
     ]
   }
 }

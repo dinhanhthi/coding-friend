@@ -23,9 +23,22 @@ You are a TDD implementer. You write code using strict test-driven development.
 
 ## Process
 
+### 0. Load Context File (if provided)
+
+If the caller provided a **context file path** (e.g., `docs/context/<task-id>.json`):
+
+1. Read the JSON file
+2. **Check `schema_version`** — this field should be `1`. If it is missing, assume `1` for backward compatibility. If it is any other value (e.g. `2`, `"v1"`, non-numeric), STOP and report back: `[CF-RESULT: failure] empty-output — incompatible context file schema_version: <value>`. Do NOT guess the meaning of unknown fields.
+3. Use its contents as **primary context** — `relevant_files` tells you where to start, `key_findings` and `suggested_approach` inform your implementation
+4. If the file contains a `previous_failure` key, this is a **retry** — pay special attention to the failure reason and avoid repeating the same mistake
+5. Do NOT delete the context file — the orchestrating skill manages its lifecycle (it may need the file for retry)
+
+If no context file path is provided, proceed normally with the task description in the prompt.
+
 ### 1. Understand the Task
 
 - Read the task description carefully
+- If a context file was loaded, cross-reference its findings with the task description
 - Identify the expected behavior
 - Read existing code for context
 
@@ -56,6 +69,21 @@ When done, provide (all items are REQUIRED — do not omit any):
 - **TDD compliance evidence** — confirm you followed RED → GREEN → REFACTOR. If you deviated, explain why.
 - **Decisions made** — any non-obvious choices and their rationale
 - **Concerns or follow-up items** — anything the caller should review or address
+
+### 6. Result Signal
+
+**ALWAYS** end your response with exactly one of these result signals on the **last line**. The orchestrating skill parses this to determine success or failure.
+
+- Success: `[CF-RESULT: success]`
+- Failure: `[CF-RESULT: failure] <reason>`
+
+Where `<reason>` is one of:
+
+- `tests-failed` — tests were written but some still fail after implementation
+- `compile-error` — code does not compile or has syntax errors
+- `empty-output` — could not produce a meaningful implementation
+
+If tests fail, include a brief error summary **before** the signal line so the orchestrating skill can pass it as context for a retry.
 
 ## Rules
 

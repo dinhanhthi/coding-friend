@@ -12,6 +12,7 @@ The `/cf-ship` skill automates the final steps of feature delivery: verifying te
 
 ```bash
 /cf-ship [hint]
+/cf-ship --dry-run    # Preview without pushing or creating PR
 ```
 
 ## What It Does
@@ -56,6 +57,16 @@ The generated PR includes:
 - [ ] Tests pass
 - [ ] Manual verification done
 ```
+
+## Dry-Run Mode
+
+Use `--dry-run` to preview the entire workflow without any side effects:
+
+```bash
+/cf-ship --dry-run
+```
+
+Each step shows what **would** happen (prefixed with `[dry-run]`) — no commit is created, nothing is pushed, and no PR is opened. Useful for verifying the workflow before shipping.
 
 ## Rules
 

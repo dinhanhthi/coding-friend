@@ -97,7 +97,15 @@ Verifies:
 - No obvious bugs from analysis
 - Consistent with codebase standards
 
-### 5. Documentation Updated
+### 5. Slop Check
+
+Scan changed code for signs of AI over-generation:
+
+- **AI transmarks** — phrases like "Certainly!", "Of course!", "I'd be happy to" in production code
+- **Excessive comments** — comments restating obvious code or function names
+- **Unnecessary verbosity** — over-engineered abstractions, verbose error handling wrapping simple operations
+
+### 6. Documentation Updated
 
 Changes are documented.
 

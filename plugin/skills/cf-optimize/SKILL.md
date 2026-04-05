@@ -32,7 +32,27 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-### Step 1: Understand the Target
+### Step 1: Detect Available Tools
+
+Run quick availability checks for profiling/benchmarking tools. Store the result for use in later steps.
+
+```bash
+# Node.js / JavaScript
+command -v clinic >/dev/null 2>&1 && echo "TOOL:clinic"
+command -v 0x >/dev/null 2>&1 && echo "TOOL:0x"
+npx lighthouse --version >/dev/null 2>&1 && echo "TOOL:lighthouse"
+
+# General
+command -v hyperfine >/dev/null 2>&1 && echo "TOOL:hyperfine"
+command -v perf >/dev/null 2>&1 && echo "TOOL:perf"
+
+# Web / Bundle
+command -v webpack-bundle-analyzer >/dev/null 2>&1 && echo "TOOL:webpack-bundle-analyzer"
+```
+
+If no tools are found, note this and proceed in **AI-only mode** — all profiling will be done via code instrumentation and manual timing. Results in AI-only mode are estimates; flag this clearly in the final report.
+
+### Step 2: Understand the Target
 
 1. Read `$ARGUMENTS` to identify what to optimize
 2. If the target is vague, ask the user to clarify what "better" means:
@@ -42,7 +62,7 @@ If output is not empty, integrate the returned sections into this workflow:
    - Smaller bundle size?
    - Better algorithmic complexity?
 
-### Step 2: Gather Context (conditional — based on target complexity)
+### Step 3: Gather Context (conditional — based on target complexity)
 
 Assess whether the optimization target is **simple** (single file/function, clear scope) or **complex** (cross-module, unclear bottleneck location, system-level):
 
@@ -63,19 +83,23 @@ Assess whether the optimization target is **simple** (single file/function, clea
 
 Memory and explorer results are **hints** — always verify against actual code and measurements.
 
-### Step 3: Baseline Measurement
+### Step 4: Baseline Measurement
 
-1. Identify or create a benchmark/measurement:
-   - If tests with timing exist, use those
-   - If a benchmark script exists, run it
-   - Otherwise, create a simple benchmark (time the operation, measure memory, count iterations)
-2. Run the baseline measurement **3 times** to get stable numbers
+1. Identify or create a benchmark/measurement. **Prefer detected tools** from Step 1:
+   - **hyperfine** → `hyperfine --warmup 3 '<command>'` (automatic 3-run avg + stats)
+   - **clinic** → `clinic doctor -- node <script>` (Node.js flamegraph + I/O analysis)
+   - **0x** → `0x <script>` (flamegraph for hot path detection)
+   - **lighthouse** → `lighthouse <url> --output json --quiet` (web performance audit)
+   - **perf** → `perf stat <command>` (CPU counters on Linux)
+   - **No tools** → create a simple benchmark (manual timing, `console.time()`, memory snapshots)
+2. Run the baseline measurement **3 times** to get stable numbers (hyperfine does this automatically)
 3. Record the results clearly:
    - Metric name, value, unit
    - Environment details (if relevant)
-4. Save baseline numbers — you will need them for comparison in Step 7
+   - Which tool was used (or "AI-only" if no tools)
+4. Save baseline numbers — you will need them for comparison in Step 8
 
-### Step 4: Analyze Bottlenecks
+### Step 5: Analyze Bottlenecks
 
 1. Profile the code path (add timing, use profiler if available)
 2. Identify the actual bottleneck — do NOT guess:
@@ -84,7 +108,7 @@ Memory and explorer results are **hints** — always verify against actual code 
    - What operations are redundant?
 3. Rank bottlenecks by impact (fix the biggest one first)
 
-### Step 5: Plan the Optimization
+### Step 6: Plan the Optimization
 
 1. For the top bottleneck, propose 1-2 optimization approaches
 2. For each approach, state:
@@ -94,7 +118,7 @@ Memory and explorer results are **hints** — always verify against actual code 
 3. Present the plan to the user and **wait for confirmation** before proceeding
 4. Do NOT optimize multiple things at once — one change at a time
 
-### Step 6: Implement (via cf-implementer agent)
+### Step 7: Implement (via cf-implementer agent)
 
 Dispatch the **cf-implementer agent** to implement the optimization test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
 
@@ -102,10 +126,10 @@ Dispatch the **cf-implementer agent** to implement the optimization test-first. 
 
 > Implement the following optimization using strict TDD:
 >
-> **Optimization:** [approach confirmed in Step 5]
+> **Optimization:** [approach confirmed in Step 6]
 > **Target:** [specific files and functions]
-> **Bottleneck:** [from Step 4 analysis]
-> **Baseline:** [measurements from Step 3]
+> **Bottleneck:** [from Step 5 analysis]
+> **Baseline:** [measurements from Step 4]
 > **Existing tests:** [test file paths]
 > **Test framework:** [framework and conventions]
 >
@@ -119,13 +143,13 @@ Dispatch the **cf-implementer agent** to implement the optimization test-first. 
 
 Review the cf-implementer's report. If tests failed or the agent reported concerns, address them before proceeding. Then load the `cf-verification` skill and run the full checklist before measuring.
 
-### Step 7: Measure After
+### Step 8: Measure After
 
-1. Run the **exact same benchmark** from Step 3
+1. Run the **exact same benchmark** from Step 4 (same tool, same parameters)
 2. Run it **3 times** for stable numbers
 3. Record the results
 
-### Step 8: Compare and Report
+### Step 9: Compare and Report
 
 1. Present a before/after comparison:
 
@@ -134,10 +158,11 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 | _metric_ | _value_ | _value_ | _% or absolute change_ |
 
 2. If improvement is **< 5%**, note that it may be within noise — consider if the added complexity is worth it
-3. If performance **regressed**, revert and try a different approach (go back to Step 5)
+3. If performance **regressed**, revert and try a different approach (go back to Step 6)
 4. Summarize what was changed and why it helped
+5. If running in **AI-only mode** (no profiling tools), add a disclaimer: "Measurements are code-instrumented estimates — install `hyperfine` or `clinic` for precise benchmarks."
 
-### Step 9: Auto-Review
+### Step 10: Auto-Review
 
 Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
@@ -152,6 +177,20 @@ Automatically invoke `/cf-review` — use the **Skill tool** with skill name `co
 - ALWAYS measure before AND after — no "it should be faster" claims
 - One optimization at a time — never batch multiple changes
 - Tests must pass throughout — the cf-implementer agent enforces TDD
-- Get user confirmation before implementing (Step 5)
+- Get user confirmation before implementing (Step 6)
 - If you cannot measure it, ask the user how to measure it before proceeding
 - Revert if the optimization makes things worse or breaks tests
+- Prefer real profiling tools over AI estimation when available
+
+## Tool Integration
+
+| Tool                      | Domain     | Install                                              | Used For                                                      |
+| ------------------------- | ---------- | ---------------------------------------------------- | ------------------------------------------------------------- |
+| `hyperfine`               | General    | `brew install hyperfine` / `cargo install hyperfine` | Precise CLI benchmarking with warmup and statistical analysis |
+| `clinic`                  | Node.js    | `npm i -g clinic`                                    | Flamegraphs, I/O profiling, bubbleprof                        |
+| `0x`                      | Node.js    | `npm i -g 0x`                                        | Lightweight flamegraph generation                             |
+| `lighthouse`              | Web        | `npm i -g lighthouse`                                | Web performance audit (LCP, FID, CLS)                         |
+| `perf`                    | Linux      | System package                                       | CPU counters, cache misses, syscall profiling                 |
+| `webpack-bundle-analyzer` | JS bundles | `npm i -D webpack-bundle-analyzer`                   | Bundle size visualization                                     |
+
+When no tools are detected, cf-optimize falls back to **AI-only mode**: manual `console.time()`, `process.memoryUsage()`, and code-level instrumentation. Results are clearly marked as estimates.

@@ -337,13 +337,57 @@ if component_enabled "rate_limit"; then
   fi
 fi
 
-# Build output — use array to handle separators cleanly
-parts=()
+# ── Task/Agent tracking (for "task_agent" component) ──
+task_agent_line=""
+if component_enabled "task_agent"; then
+  # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)
+  SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+  if [ -n "$SESSION_ID" ]; then
+    ta_parts=""
+
+    # Task progress
+    TASKS_FILE="/tmp/cf-tasks-${SESSION_ID}.json"
+    if [ -f "$TASKS_FILE" ]; then
+      task_total=$(grep -o '"total"[[:space:]]*:[[:space:]]*[0-9]*' "$TASKS_FILE" 2>/dev/null | grep -o '[0-9]*$' || echo 0)
+      task_completed=$(grep -o '"completed"[[:space:]]*:[[:space:]]*[0-9]*' "$TASKS_FILE" 2>/dev/null | grep -o '[0-9]*$' || echo 0)
+      if [ "$task_total" -gt 0 ] 2>/dev/null; then
+        ta_parts="${CYAN}📋 Tasks: ${task_completed}/${task_total}${RESET}"
+      fi
+    fi
+
+    # Active agent
+    AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
+    if [ -f "$AGENT_FILE" ]; then
+      agent_name=$(cat "$AGENT_FILE" 2>/dev/null || true)
+      if [ -n "$agent_name" ]; then
+        if [ -n "$ta_parts" ]; then
+          ta_parts+="${separator}"
+        fi
+        ta_parts+="${YELLOW}🤖 Agent: ${agent_name}${RESET}"
+      fi
+    fi
+
+    task_agent_line="$ta_parts"
+  fi
+fi
+
+# Line 1: model only (leaves room for Claude Code's built-in right-side indicators
+# like effort, clipboard, MCP errors — which float on the first line by design)
+if [ -n "$MODEL" ]; then
+  printf "%s" "${CYAN}🧠 ${MODEL}${RESET}"
+else
+  # Print an empty first line so subsequent lines still line up below any
+  # floating indicators Claude Code may render.
+  printf ""
+fi
+
+# Line 2: cf version | folder(branch) | account
+line2_parts=()
 
 if [ -n "$VERSION" ]; then
-  parts+=("${BLUE}cf v${VERSION}${RESET}")
+  line2_parts+=("${BLUE}cf v${VERSION}${RESET}")
 elif component_enabled "version"; then
-  parts+=("${BLUE}cf${RESET}")
+  line2_parts+=("${BLUE}cf${RESET}")
 fi
 
 if [ -n "$current_dir" ]; then
@@ -352,28 +396,24 @@ if [ -n "$current_dir" ]; then
     folder_part+=" (${branch_text}${BLUE})"
   fi
   folder_part+="${RESET}"
-  parts+=("$folder_part")
-fi
-[ -n "$MODEL" ] && parts+=("${CYAN}🧠 ${MODEL}${RESET}")
-
-# Join parts with separator
-output=""
-for part in "${parts[@]}"; do
-  if [ -z "$output" ]; then
-    output="$part"
-  else
-    output="${output}${separator}${part}"
-  fi
-done
-
-printf "%s" "$output"
-
-# Second line: account info
-if [ -n "$account_line" ]; then
-  printf "\n%s" "$account_line"
+  line2_parts+=("$folder_part")
 fi
 
-# Third line: context + rate limit
+[ -n "$account_line" ] && line2_parts+=("$account_line")
+
+if [ ${#line2_parts[@]} -gt 0 ]; then
+  line2=""
+  for part in "${line2_parts[@]}"; do
+    if [ -z "$line2" ]; then
+      line2="$part"
+    else
+      line2="${line2}${separator}${part}"
+    fi
+  done
+  printf "\n%s" "$line2"
+fi
+
+# Line 3: context + rate limit
 third_line=""
 if [ -n "$ctx_text" ]; then
   third_line="$ctx_text"
@@ -387,4 +427,9 @@ if [ -n "$rate_limit_line" ]; then
 fi
 if [ -n "$third_line" ]; then
   printf "\n%s" "$third_line"
+fi
+
+# Line 4: task/agent tracking
+if [ -n "$task_agent_line" ]; then
+  printf "\n%s" "$task_agent_line"
 fi

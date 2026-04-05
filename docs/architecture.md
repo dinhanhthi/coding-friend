@@ -27,11 +27,13 @@ coding-friend/
 │   ├── hooks/
 │   │   ├── hooks.json               # Plugin hooks manifest
 │   │   ├── session-init.sh          # SessionStart: bootstrap context
-│   │   ├── dev-rules-reminder.sh    # UserPromptSubmit: inject rules
+│   │   ├── rules-reminder.sh        # UserPromptSubmit: inject rules
 │   │   ├── privacy-block.sh         # PreToolUse: block sensitive files
 │   │   ├── scout-block.cjs           # PreToolUse: respect .coding-friend/ignore
 │   │   ├── statusline.sh            # Statusline: context tracking
-│   │   └── context-tracker.sh       # PostToolUse: track files read
+│   │   ├── session-log.sh           # Stop: append turn log for memory-capture
+│   │   ├── task-tracker.sh          # TaskCreated/Completed: track task progress
+│   │   └── agent-tracker.sh         # SubagentStart/Stop: track active agent
 │   │
 │   ├── context/
 │   │   └── bootstrap.md             # Bootstrap context (loaded by session-init)
@@ -53,8 +55,14 @@ coding-friend/
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   └── agents/
-│       ├── cf-reviewer.md           # Code review subagent (5-layer methodology)
-│       ├── cf-explorer.md           # Read-only codebase explorer
+│       ├── cf-reviewer.md           # Review orchestrator (dispatches specialists)
+│       ├── cf-reviewer-plan.md      # Plan alignment specialist (sonnet)
+│       ├── cf-reviewer-security.md  # Security specialist (sonnet)
+│       ├── cf-reviewer-quality.md   # Code quality + slop detection (haiku)
+│       ├── cf-reviewer-tests.md     # Test coverage specialist (haiku)
+│       ├── cf-reviewer-rules.md     # Project rules compliance (haiku)
+│       ├── cf-reviewer-reducer.md   # Dedup + severity ranking (haiku)
+│       ├── cf-explorer.md           # Codebase explorer (writes context files)
 │       ├── cf-implementer.md        # TDD implementation subagent
 │       ├── cf-planner.md            # Exploration + task breakdown
 │       ├── cf-writer.md             # Lightweight doc writer
@@ -145,16 +153,20 @@ agent: cf-reviewer
 
 ---
 
-## Hooks System (6 hooks)
+## Hooks System (10 hooks)
 
-| Hook                    | Event            | Purpose                                                                          |
-| ----------------------- | ---------------- | -------------------------------------------------------------------------------- |
-| `session-init.sh`       | SessionStart     | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
-| `dev-rules-reminder.sh` | UserPromptSubmit | Inject core rules on every prompt (<200 tokens)                                  |
-| `privacy-block.sh`      | PreToolUse       | Block .env, credentials, keys. Exit 2 = block                                    |
-| `scout-block.cjs`       | PreToolUse       | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
-| `statusline.sh`         | Statusline       | Show context usage, git branch, session info                                     |
-| `context-tracker.sh`    | PostToolUse      | Track files read (async: true)                                                   |
+| Hook                | Event                      | Purpose                                                                          |
+| ------------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| `session-init.sh`   | SessionStart               | Bootstrap context: load bootstrap.md, detect project, load .coding-friend/ignore |
+| `rules-reminder.sh` | UserPromptSubmit           | Inject core rules every 4th prompt (reduced from every prompt)                   |
+| `privacy-block.sh`  | PreToolUse                 | Block .env, credentials, keys. Exit 2 = block                                    |
+| `scout-block.cjs`   | PreToolUse                 | Respect .coding-friend/ignore patterns. Exit 2 = block                           |
+| `auto-approve.cjs`  | PreToolUse                 | Auto-approve safe tool calls, block destructive ones (opt-in)                    |
+| `statusline.sh`     | Statusline                 | Show context usage, git branch, session info, task/agent progress                |
+| `session-log.sh`    | Stop                       | Append turn log to JSONL file for memory-capture (async: true)                   |
+| `task-tracker.sh`   | TaskCreated/TaskCompleted  | Track task progress for statusline (async: true)                                 |
+| `agent-tracker.sh`  | SubagentStart/SubagentStop | Track active agent for statusline (async: true)                                  |
+| `memory-capture.sh` | PreCompact                 | Auto-capture session memory before context compaction                            |
 
 ### Hook I/O Protocol
 
@@ -182,16 +194,54 @@ Exit codes:
 
 ---
 
-## Agents (6)
+## Agents (12)
 
-| Agent            | Model   | Purpose                                                         |
-| ---------------- | ------- | --------------------------------------------------------------- |
-| `cf-reviewer`    | opus    | 5-layer review: project rules, plan, quality, security, testing |
-| `cf-explorer`    | haiku   | Read-only codebase exploration and context gathering            |
-| `cf-implementer` | opus    | TDD implementation: write test → implement → verify             |
-| `cf-planner`     | inherit | Codebase exploration + task decomposition                       |
-| `cf-writer`      | haiku   | Lightweight document writing and markdown generation            |
-| `cf-writer-deep` | sonnet  | Deep reasoning for nuanced technical documentation              |
+| Agent                  | Model   | Purpose                                                                      |
+| ---------------------- | ------- | ---------------------------------------------------------------------------- |
+| `cf-reviewer`          | opus    | Review orchestrator: dispatches specialists in parallel + reducer            |
+| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                                    |
+| `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                            |
+| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                                     |
+| `cf-reviewer-tests`    | haiku   | Test coverage specialist                                                     |
+| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                              |
+| `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists                    |
+| `cf-explorer`          | haiku   | Codebase exploration + writes structured context file for downstream agents  |
+| `cf-implementer`       | opus    | TDD implementation with context file handoff, result signals, and auto-retry |
+| `cf-planner`           | inherit | Task decomposition (parallel/sequential phases) + writes context file        |
+| `cf-writer`            | haiku   | Lightweight document writing and markdown generation                         |
+| `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                           |
+
+### Agent Context Protocol
+
+Agents pass structured context to each other via a JSON context file at `{docsDir}/context/{task-id}.json`. This replaces text-only handoff between agent invocations.
+
+**Flow:**
+
+1. Orchestrating skill (cf-tdd, cf-fix, cf-plan) generates a `task-id` and determines the context file path
+2. cf-explorer or cf-planner writes structured findings to the context file
+3. cf-implementer reads the context file at the start and uses it as primary context (does not delete it)
+4. On failure, the skill appends `previous_failure` details to the context file and re-dispatches cf-implementer (max 1 retry)
+5. The orchestrating skill cleans up the context file after workflow completion, cancellation, or final escalation
+
+**Context file schema:**
+
+```json
+{
+  "task_id": "<timestamp>-<descriptor>",
+  "task_summary": "...",
+  "relevant_files": ["src/foo.ts"],
+  "key_findings": ["..."],
+  "constraints": ["..."],
+  "suggested_approach": "...",
+  "previous_failure": {
+    "reason": "tests-failed|compile-error|empty-output",
+    "error_summary": "...",
+    "attempt": 1
+  }
+}
+```
+
+**Result signals:** cf-implementer ends every response with `[CF-RESULT: success]` or `[CF-RESULT: failure] <reason>`. The orchestrating skill parses this to decide next steps.
 
 ---
 
@@ -295,17 +345,21 @@ stripFrontmatter(content) → markdownBody
 
 ## Key Design Decisions
 
-| Decision                                | Rationale                                                                                      |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat |
-| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                         |
-| 6 agents                                | cf-reviewer, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep                |
-| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                        |
-| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                   |
-| context: fork for /cf-review            | Isolate review from main context window                                                        |
-| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                     |
-| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                 |
-| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                    |
+| Decision                                | Rationale                                                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                        |
+| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                                                |
+| 12 agents                               | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
+| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                                               |
+| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                                          |
+| context: fork for /cf-review            | Isolate review from main context window                                                                               |
+| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
+| Config schema validation (Zod)          | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
+| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                                        |
+| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                                           |
+| Dev mode path validation                | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
+| Daemon runs forever by default          | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
+| Daemon auto-respawn with 3 retries      | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                           |
 
 ---
 
@@ -337,10 +391,13 @@ The project operates as 4 concurrent state machine layers.
 │  SESSION_ACTIVE      │◄────────────────────────────────┐
 │                      │                                  │
 │  Hooks active:       │   UserPromptSubmit               │
-│  • dev-rules-reminder│◄── (on every prompt)             │
+│  • rules-reminder    │◄── (every 4th prompt)            │
 │  • privacy-block     │◄── PreToolUse (file access)      │
 │  • scout-block       │◄── PreToolUse (file access)      │
-│  • context-tracker   │◄── PostToolUse (async logging)   │
+│  • auto-approve      │◄── PreToolUse (classification)   │
+│  • session-log       │◄── Stop (async turn logging)     │
+│  • task-tracker      │◄── TaskCreated/Completed (async) │
+│  • agent-tracker     │◄── SubagentStart/Stop (async)    │
 │                      │                                  │
 │  User interacts...   │──────────────────────────────────┘
 └──────┬───────────────┘
@@ -348,6 +405,7 @@ The project operates as 4 concurrent state machine layers.
        ▼
 ┌──────────────────┐
 │  SESSION_END     │
+│  memory-capture  │◄── PreCompact (auto-capture)
 │  (session done)  │
 └──────────────────┘
 ```
@@ -366,7 +424,10 @@ The project operates as 4 concurrent state machine layers.
      │ /cf-plan   │  │ CODE_TASK  │  │ /cf-fix  │  │ /cf-ask  │    │
      │            │  │            │  │          │  │          │    │
      │ Brainstorm │  │ New code   │  │ Quick    │  │ Q&A →    │    │
-     │ → plan doc │  │ requested  │  │ bug fix  │  │ memory/  │    │
+     │ → phased   │  │ requested  │  │ bug fix  │  │ memory/  │    │
+     │   plan doc │  │            │  │          │  │          │    │
+     │ (parallel  │  │            │  │          │  │          │    │
+     │  + seq.)   │  │            │  │          │  │          │    │
      └──────┬─────┘  └─────┬──────┘  └────┬─────┘  └────┬─────┘    │
             │               │              │              │          │
             │               ▼              │              │          │
@@ -422,8 +483,8 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ cf-reviewer agent (fork)                │          │
-    │                 5-layer review                       │          │
+    │  /cf-review ──→ cf-reviewer orchestrator (fork)           │          │
+    │                 5 specialist agents in parallel + reducer│          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │
     │                 • Analyze diff                       │          │

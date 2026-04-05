@@ -19,17 +19,21 @@ The `/cf-review-in` skill reads review results written by an external AI agent (
 ## Usage
 
 ```bash
-/cf-review-in <label>
+/cf-review-in <label> [service]
 ```
 
-- **With label** — reads all `docs/reviews/<label>-result-*.md` files (one per reviewer)
+- **With label only** — reads all `docs/reviews/<label>-result-*.md` files (one per reviewer)
+- **With label and service** — reads only `docs/reviews/<label>-result-<service>.md` (filter to one reviewer)
 - **No arguments** — lists available results and asks which one to collect
 
 ## Examples
 
 ```bash
-# Collect results for a specific review
+# Collect results for a specific review (all reviewers)
 /cf-review-in fix-auth-bypass
+
+# Collect results from a specific reviewer only
+/cf-review-in fix-auth-bypass gemini
 
 # Browse available results
 /cf-review-in

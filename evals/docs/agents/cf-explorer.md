@@ -2,7 +2,7 @@
 
 ## What We Test
 
-Whether the cf-explorer agent (read-only, haiku model) efficiently explores codebases to find relevant files and produce well-structured exploration results. We measure recall (files found), precision (relevance of files found), token efficiency, and response structure.
+Whether the cf-explorer agent (exploration-only, haiku model) efficiently explores codebases to find relevant files, produce well-structured exploration results, and write structured context files for downstream agents. We measure recall (files found), precision (relevance of files found), token efficiency, and response structure.
 
 ## How Agents Are Tested
 

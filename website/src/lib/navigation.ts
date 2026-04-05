@@ -150,6 +150,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf dev", slug: "cli/cf-dev" },
       { title: "cf disable", slug: "cli/cf-disable" },
       { title: "cf enable", slug: "cli/cf-enable" },
+      { title: "cf guide", slug: "cli/cf-guide" },
       { title: "cf host", slug: "cli/cf-host" },
       { title: "cf init", slug: "cli/cf-init" },
       { title: "cf install", slug: "cli/cf-install" },
@@ -179,12 +180,17 @@ export const docsNavigation: NavSection[] = [
     title: "Reference",
     items: [
       { title: "Agents", slug: "reference/agents" },
+      {
+        title: "Agent Context Handoff",
+        slug: "reference/agent-context-handoff",
+      },
       { title: "Hooks", slug: "reference/hooks" },
       { title: "Auto-Approve", slug: "reference/auto-approve" },
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
       { title: "Memory System", slug: "reference/memory-system" },
       { title: "Context Footprint", slug: "reference/context-usage" },
+      { title: "Troubleshooting", slug: "reference/troubleshooting" },
     ],
   },
 ];

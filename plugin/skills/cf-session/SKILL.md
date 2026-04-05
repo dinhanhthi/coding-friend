@@ -7,7 +7,7 @@ description: >
   "bookmark this session". Pairs with `cf session load` + `claude --resume` on the target machine.
 disable-model-invocation: true
 model: haiku
-tools: [Bash, Read]
+allowed-tools: [Bash, Read]
 ---
 
 # /cf-session

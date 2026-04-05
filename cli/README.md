@@ -147,19 +147,25 @@ npm ls -g coding-friend-cli
 
 ### Running tests
 
-Tests are written with [Vitest](https://vitest.dev/) and live in `src/lib/__tests__/`.
+Tests are written with [Vitest](https://vitest.dev/).
 
 ```bash
 cd cli
 
-# Run all tests once
+# Run all unit tests once
 npm test
 
 # Watch mode (re-runs on file changes)
 npm run test:watch
+
+# Run E2E tests (real CLI commands against temp directories)
+npm run test:e2e
+
+# Run E2E tests in Docker (isolated, no host pollution)
+cd e2e && docker compose up --build --abort-on-container-exit
 ```
 
-Current coverage: `lib/json.ts`, `lib/paths.ts`, `lib/exec.ts`.
+Unit tests live in `src/**/__tests__/` and use mocks. E2E tests live in `e2e/` and run actual CLI commands — see [`e2e/README.md`](e2e/README.md) for details.
 
 ## Publish CLI to npm
 

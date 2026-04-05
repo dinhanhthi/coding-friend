@@ -156,6 +156,7 @@ const CrossAgentIcon = () => (
    ──────────────────────────────────────────────────────────── */
 
 const statuslineSegments = [
+  { label: "Model", example: "Opus (1M)", color: "text-cyan-400" },
   { label: "CF version", example: "cf v0.3.0", color: "text-blue-400" },
   {
     label: "Project + Branch",
@@ -166,7 +167,6 @@ const statuslineSegments = [
     ),
     color: "text-orange-400",
   },
-  { label: "Model", example: "Opus (1M)", color: "text-cyan-400" },
   {
     label: "Account",
     example: (
@@ -248,6 +248,9 @@ function StatuslineContent() {
               </span>
             </div>
             <div className="my-2 border-t border-slate-700/60" />
+            <div className="mb-0.5 flex flex-wrap items-center gap-0 gap-y-1 text-xs">
+              <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
+            </div>
             <div className="mb-0.5 flex flex-wrap items-center gap-0 gap-y-1.5 text-xs">
               <span className="whitespace-nowrap text-blue-400">cf v0.3.0</span>
               <span className="mx-1.5 text-slate-600">│</span>
@@ -255,9 +258,6 @@ function StatuslineContent() {
                 coding-friend <span className="text-green-400">(⎇ main)</span>
               </span>
               <span className="mx-1.5 text-slate-600">│</span>
-              <span className="whitespace-nowrap text-cyan-400">Opus (1M)</span>
-            </div>
-            <div className="mb-0.5 flex flex-wrap items-center gap-0 gap-y-1 text-xs">
               <span className="whitespace-nowrap text-cyan-400">
                 👤 Thi Dinh{" "}
                 <span className="text-slate-500">(me@dinhanhthi.com)</span>
