@@ -322,6 +322,17 @@ describe("STATIC_RULES", () => {
     expect(compoundGitRules).toHaveLength(expectedCmds.length);
   });
 
+  it("does NOT ship Bash(npx *) — too broad for the auto-approve threat model", () => {
+    const ruleStrings = STATIC_RULES.map((r) => r.rule);
+    expect(ruleStrings).not.toContain("Bash(npx *)");
+  });
+
+  it("ships narrow npx rules for safe, non-code-executing tools", () => {
+    const ruleStrings = STATIC_RULES.map((r) => r.rule);
+    expect(ruleStrings).toContain("Bash(npx tsc *)");
+    expect(ruleStrings).toContain("Bash(npx prettier *)");
+  });
+
   it("compound cd+git rules are all in Git category and recommended", () => {
     const compoundGitRules = STATIC_RULES.filter((r) =>
       r.rule.startsWith("Bash(cd * && git "),
@@ -580,6 +591,38 @@ describe("auditDangerousRules", () => {
     );
     const result = auditDangerousRules(settingsPath);
     expect(result).toHaveLength(1);
+  });
+
+  it("detects Bash(npx *) — space-form wildcard grants any npx package", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(npx *)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+    expect(result[0].rule).toBe("Bash(npx *)");
+    expect(result[0].reason).toContain("npx");
+  });
+
+  it("detects Bash(npx*) — no-space form already covered", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(npx*)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(1);
+  });
+
+  it("does NOT flag narrow Bash(npx tsc *)", () => {
+    const settingsPath = join(testDir, "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow: ["Bash(npx tsc *)"] } }),
+    );
+    const result = auditDangerousRules(settingsPath);
+    expect(result).toHaveLength(0);
   });
 
   it("detects Agent(*)", () => {

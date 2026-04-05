@@ -236,10 +236,24 @@ export const STATIC_RULES: PermissionRule[] = [
     category: "Testing & Build",
     recommended: true,
   },
+  // Narrow npx rules only — the broad "Bash(npx *)" used to live here but
+  // grants execution of any package from any registry, which conflicts with
+  // the auto-approve hook's threat model (see plugin/hooks/auto-approve.cjs).
+  // tsc and prettier are safe because they typecheck/format and do not
+  // execute arbitrary code from input files. Tools that execute arbitrary
+  // code (eslint plugins, jest test files, vitest, tsx) are intentionally
+  // NOT in the static recommended list — users who want them must add them
+  // explicitly with awareness of the risk.
   {
-    rule: "Bash(npx *)",
+    rule: "Bash(npx tsc *)",
     description:
-      "[execute] Run npx commands (eslint, tsc) · Used by: cf-verification",
+      "[execute] Run TypeScript compiler · Used by: cf-verification",
+    category: "Testing & Build",
+    recommended: true,
+  },
+  {
+    rule: "Bash(npx prettier *)",
+    description: "[execute] Run Prettier formatter · Used by: cf-verification",
     category: "Testing & Build",
     recommended: true,
   },
@@ -380,7 +394,8 @@ export const DANGEROUS_RULE_PATTERNS: { pattern: RegExp; reason: string }[] = [
     reason: "Grants execution of any npm script",
   },
   {
-    pattern: /^Bash\(npx\*?\)$/,
+    // Matches Bash(npx), Bash(npx*), and Bash(npx *) — any bare npx wildcard
+    pattern: /^Bash\(npx\s*\*?\)$/,
     reason: "Grants execution of any npx package",
   },
   {

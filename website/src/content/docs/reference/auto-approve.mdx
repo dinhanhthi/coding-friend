@@ -90,7 +90,7 @@ Pattern matching runs first. It covers the vast majority of tool calls with zero
 | `Grep`      | Any search                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `TodoWrite` | Always safe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `Agent`     | Always safe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `Bash`      | Read-only commands: `ls`, `cat`, `head`, `tail`, `wc`, `file`, `which`, `echo`, `pwd`, `date`, `tree`, `git status`, `git log`, `git diff`, `git branch`, `git show`, `git remote`, `git tag`, `npm test`, `npx jest`, `npx vitest`, `npx tsc --noEmit`. Simple commands qualify; pipe chains qualify only if every segment is an allow-prefix (e.g. `ls \| head`, `git log \| grep foo`); standalone `2>&1` stderr redirects are allowed. Chains with `;`, `&&`, `\|\|`, backticks, `$()`, or output redirects are never auto-approved. |
+| `Bash`      | Read-only commands: `ls`, `cat`, `head`, `tail`, `wc`, `file`, `which`, `echo`, `pwd`, `date`, `tree`, `git status`, `git log`, `git diff`, `git branch`, `git show`, `git remote`, `git tag`, `npx tsc --noEmit`, `npx prettier`, `cargo --version`, `cargo tree`, `cargo metadata`, `cargo pkgid`, `cargo locate-project`. Simple commands qualify; pipe chains qualify only if every segment is an allow-prefix (e.g. `ls \| head`, `git log \| grep foo`); standalone `2>&1` stderr redirects are allowed. Chains with `;`, `&&`, `\|\|`, backticks, `$()`, or output redirects are never auto-approved. |
 
 **Blocked (deny):**
 
@@ -106,9 +106,66 @@ Pattern matching runs first. It covers the vast majority of tool calls with zero
 
 **Known risky (ask user):**
 
-| Tool   | Condition                                                                                    |
-| ------ | -------------------------------------------------------------------------------------------- |
-| `Bash` | `git push` (non-force), `npm install`, `npm publish`, `docker`, `curl`, `wget`, `ssh`, `scp` |
+| Tool   | Condition                                                                                                                                                                              |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bash` | `git push` (non-force), `npm install`, `npm publish`, `docker`, `curl`, `wget`, `ssh`, `scp`                                                                                           |
+| `Bash` | **Test runners & script hosts**: `npm test`, `npm run`, `npx jest`, `npx vitest`, `npx tsx`, `npx eslint`                                                                              |
+| `Bash` | **Cargo — every non-read-only subcommand**: `cargo check`, `cargo build`, `cargo test`, `cargo run`, `cargo clippy`, `cargo fmt`, `cargo fix`, `cargo bench`, `cargo doc`, `cargo add`, `cargo remove`, `cargo update`, `cargo install`, `cargo uninstall`, `cargo clean`, `cargo new`, `cargo init`, `cargo publish`, `cargo yank`, `cargo owner`, `cargo login` |
+
+<Callout type="warning" title="Why test runners and build tools ask every time">
+  Commands like `npm test`, `cargo check`, or `npx vitest` **execute arbitrary
+  code** from files in your repo — test files, `build.rs` scripts, proc-macros,
+  `package.json` scripts, or ESLint plugins. A prompt-injection attack (via a
+  web page Claude fetches, a malicious dependency, or a tampered file) could
+  plant harmful code in one of those files and silent auto-approval would run
+  it without you ever seeing a prompt.
+
+  Routing these to the LLM classifier wouldn't help — the classifier only sees
+  the command string (`"cargo test"`) and would rubber-stamp it as safe. The
+  only real defense is to prompt the user at least once, so you have a chance
+  to notice something is off.
+</Callout>
+
+<Callout type="info" title="Trust your repo? Extend the allow list via autoApproveAllowExtra">
+  Adding commands to Claude Code's `permissions.allow` does **not** skip the
+  prompt here — PreToolUse hooks run before Claude Code's permission rules,
+  and [the hooks docs](https://code.claude.com/docs/en/hooks) state that "a
+  blocking hook takes precedence over allow rules." A hook that returns
+  `"ask"` forces the prompt regardless of any matching allow rule.
+
+  Coding Friend provides its own escape hatch inside `.coding-friend/config.json`.
+  Add prefixes to `autoApproveAllowExtra` — they are merged into the hook's
+  built-in allow list at runtime, so matching commands skip the prompt:
+
+```json
+// .coding-friend/config.json (in the project root)
+{
+  "autoApprove": true,
+  "autoApproveAllowExtra": [
+    "cargo check",
+    "cargo test",
+    "cargo build",
+    "npm test",
+    "npx vitest"
+  ]
+}
+```
+
+  - Entries are matched as **command prefixes** (same semantics as the hook's
+    built-in allow list): `"cargo test"` matches `cargo test`, `cargo test --lib`,
+    `cargo test --release -- --nocapture`, etc.
+  - Extras are also honored inside safe pipe chains, so
+    `cargo test 2>&1 | grep FAIL` auto-approves when `"cargo test"` is listed.
+  - Both global (`~/.coding-friend/config.json`) and local config files are
+    merged (union), so you can set project-wide extras locally and personal
+    ones globally.
+  - **DENY patterns and `postMatchSafety` checks still apply.** Adding
+    `"rm -rf"` to the list does not bypass the built-in deny for `rm -rf /`,
+    and adding `"git commit"` does not auto-approve `git commit --amend`.
+  - Only use this in repos you trust — entries here give Claude silent
+    execution of anything matching the prefix, including attacker-controlled
+    code in test files or build scripts. See the warning above.
+</Callout>
 
 ### Step 2: Working-Dir Check (instant)
 

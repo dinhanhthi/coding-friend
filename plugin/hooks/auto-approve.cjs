@@ -156,20 +156,29 @@ const BASH_ALLOW_PREFIXES = [
   "git commit",
   "git stash push",
   "git stash save",
-  // Node.js / npm — dev workflow
-  "npm test",
-  "npm run",
-  "npx jest",
-  "npx vitest",
+  // Node.js / npm — dev workflow (read-only / non-executing only)
+  // NOTE: npm test, npm run, npx jest/vitest/tsx/eslint execute arbitrary
+  // code from test files, package.json scripts, proc-macros, or eslint
+  // plugins. A prompt-injection attack could plant malicious code in those
+  // files and auto-approve would run it silently. Those go to ASK instead.
   "npx tsc --noEmit",
   "npx prettier",
-  "npx eslint",
-  "npx tsx",
   // Version checks — read-only
   "node --version",
   "node -v",
   "python --version",
   "python3 --version",
+  // Cargo — read-only subcommands only. Build/test/run/check all execute
+  // arbitrary code via build.rs scripts and proc-macros, so those go to ASK.
+  "cargo --version",
+  "cargo -V",
+  "cargo version",
+  "cargo help",
+  "cargo tree",
+  "cargo metadata",
+  "cargo pkgid",
+  "cargo locate-project",
+  "cargo search",
 ];
 
 /**
@@ -218,10 +227,17 @@ function postMatchSafety(cmd, prefix) {
   return "allow";
 }
 
-function isSafeCompoundCommand(cmd) {
+function isSafeCompoundCommand(cmd, allowExtra) {
   // Strip safe stderr redirects first, then check for unsafe operators
   const stripped = stripStderrRedirect(cmd);
   if (UNSAFE_COMPOUND_PATTERN.test(stripped)) return false;
+
+  // Effective allow list = hook defaults + user-configured per-project extras.
+  // allowExtra lets trusted projects opt extra prefixes into auto-approval
+  // (see loadAutoApproveConfig / autoApproveAllowExtra).
+  const effectiveAllow = allowExtra && allowExtra.length > 0
+    ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
+    : BASH_ALLOW_PREFIXES;
 
   // Split on pipe operator
   const segments = stripped.split("|").map((s) => s.trim());
@@ -229,7 +245,7 @@ function isSafeCompoundCommand(cmd) {
   // Every segment must be non-empty and match a known allow prefix
   return segments.every((seg) => {
     if (!seg) return false;
-    for (const prefix of BASH_ALLOW_PREFIXES) {
+    for (const prefix of effectiveAllow) {
       if (matchesPrefix(seg, prefix)) {
         return postMatchSafety(seg, prefix) === "allow";
       }
@@ -263,11 +279,52 @@ const BASH_DENY_PATTERNS = [
 
 /**
  * Bash commands that need user confirmation (not blocked, but not auto-approved).
+ *
+ * Test runners, build tools, and package managers live here — not the allowlist —
+ * because they execute arbitrary code from files that a prompt-injection attacker
+ * could tamper with (test files, build.rs scripts, proc-macros, package.json
+ * scripts, ESLint plugins, cargo build scripts). Requiring a prompt at least once
+ * gives the user a chance to notice unexpected executions.
+ *
+ * Users who trust their repo and want fewer prompts can add these to their
+ * Claude Code `permissions.allow` in `.claude/settings.json` — e.g.
+ * `"Bash(cargo test *)"`, `"Bash(npm test *)"`, `"Bash(npx vitest *)"`.
  */
 const BASH_ASK_PREFIXES = [
   "git push",
+  // npm / npx — execute arbitrary code from test files, scripts, or plugins
+  "npm test",
+  "npm run",
   "npm install",
   "npm publish",
+  "npx jest",
+  "npx vitest",
+  "npx tsx",
+  "npx eslint",
+  // cargo — every non-read-only subcommand runs build.rs, proc-macros, or
+  // test binaries, any of which can execute attacker-controlled code
+  "cargo check",
+  "cargo build",
+  "cargo test",
+  "cargo run",
+  "cargo clippy",
+  "cargo fmt",
+  "cargo fix",
+  "cargo bench",
+  "cargo doc",
+  "cargo add",
+  "cargo remove",
+  "cargo update",
+  "cargo install",
+  "cargo uninstall",
+  "cargo clean",
+  "cargo new",
+  "cargo init",
+  "cargo publish",
+  "cargo yank",
+  "cargo owner",
+  "cargo login",
+  // Networking / containers / remote access
   "docker",
   "curl",
   "wget",
@@ -372,9 +429,12 @@ function matchesPrefix(trimmed, prefix) {
  * @param {string} toolName
  * @param {object} toolInput
  * @param {string} [projectDir] — project root for file path checks
+ * @param {string[]} [allowExtra] — additional Bash allow prefixes from
+ *   `autoApproveAllowExtra` config. Merged with BASH_ALLOW_PREFIXES after the
+ *   DENY check, so it can never override deny patterns or postMatchSafety.
  * @returns {"allow"|"deny"|"ask"|"unknown"}
  */
-function classifyByRules(toolName, toolInput, projectDir) {
+function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
   // Always-allow tools
   if (ALWAYS_ALLOW_TOOLS.has(toolName)) return "allow";
 
@@ -389,23 +449,28 @@ function classifyByRules(toolName, toolInput, projectDir) {
     const cmd = (toolInput && toolInput.command) || "";
     const trimmed = cmd.trim();
 
-    // Check deny patterns first (most dangerous)
+    // Check deny patterns first (most dangerous) — allowExtra cannot bypass
     for (const pattern of BASH_DENY_PATTERNS) {
       if (pattern.test(trimmed)) return "deny";
     }
+
+    // Effective allow list = hook defaults + per-project extras
+    const effectiveAllow = allowExtra && allowExtra.length > 0
+      ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
+      : BASH_ALLOW_PREFIXES;
 
     // Compound commands (pipes, chains, redirects, subshells) are never
     // safe to auto-approve by prefix alone — send to LLM or ask
     const isCompound = SHELL_OPERATOR_PATTERN.test(trimmed);
 
     // Safe compound commands: pipe-only chains where every segment is safe
-    if (isCompound && isSafeCompoundCommand(trimmed)) {
+    if (isCompound && isSafeCompoundCommand(trimmed, allowExtra)) {
       return "allow";
     }
 
     // Check allow prefixes (safe read-only commands) — only if simple command
     if (!isCompound) {
-      for (const prefix of BASH_ALLOW_PREFIXES) {
+      for (const prefix of effectiveAllow) {
         if (matchesPrefix(trimmed, prefix)) {
           return postMatchSafety(trimmed, prefix);
         }
@@ -640,10 +705,16 @@ Respond in the exact format: CLASSIFICATION|reason`;
 // ---------------------------------------------------------------------------
 
 /**
- * Load autoApprove setting from global and local config files.
+ * Load autoApprove setting and allowExtra list from global and local config files.
+ *
+ * Merge strategy:
+ *   - `autoApprove` (boolean) — local overrides global (object spread semantics)
+ *   - `autoApproveAllowExtra` (string[]) — union of global + local, deduped,
+ *     non-string entries silently dropped, non-array values ignored entirely
+ *
  * @param {string} homeDir — user home directory (for global config)
  * @param {string} cwd — current working directory (for local config)
- * @returns {boolean} true if autoApprove is enabled
+ * @returns {{ enabled: boolean, allowExtra: string[] }}
  */
 function loadAutoApproveConfig(homeDir, cwd) {
   /** Read and parse a single config file. Returns {} on any error. */
@@ -660,6 +731,15 @@ function loadAutoApproveConfig(homeDir, cwd) {
     }
   }
 
+  /**
+   * Extract a validated allowExtra list from one config object.
+   * Non-array values → []. Non-string entries are dropped silently.
+   */
+  function extractAllowExtra(cfg) {
+    if (!Array.isArray(cfg.autoApproveAllowExtra)) return [];
+    return cfg.autoApproveAllowExtra.filter((s) => typeof s === "string");
+  }
+
   const globalConfig = readConfigFile(
     path.join(homeDir, ".coding-friend", "config.json"),
     "global",
@@ -670,7 +750,18 @@ function loadAutoApproveConfig(homeDir, cwd) {
   );
   const merged = { ...globalConfig, ...localConfig };
 
-  return merged.autoApprove === true;
+  // Union of global + local allowExtra, deduped (local entries first so the
+  // "first occurrence wins" ordering matches override semantics for booleans)
+  const combinedAllowExtra = [
+    ...extractAllowExtra(localConfig),
+    ...extractAllowExtra(globalConfig),
+  ];
+  const allowExtra = [...new Set(combinedAllowExtra)];
+
+  return {
+    enabled: merged.autoApprove === true,
+    allowExtra,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -740,13 +831,13 @@ function main() {
     const projectDir =
       process.env.CLAUDE_PROJECT_DIR || parsed.cwd || process.cwd();
 
-    if (!forceEnabled) {
-      const homeDir = os.homedir();
-      const enabled = loadAutoApproveConfig(homeDir, projectDir);
-      if (!enabled) {
-        process.stdout.write("{}");
-        process.exit(0);
-      }
+    // Load config (even when force-enabled) so we can pick up allowExtra
+    const homeDir = os.homedir();
+    const { enabled, allowExtra } = loadAutoApproveConfig(homeDir, projectDir);
+
+    if (!forceEnabled && !enabled) {
+      process.stdout.write("{}");
+      process.exit(0);
     }
 
     const toolName = parsed.tool_name;
@@ -757,8 +848,8 @@ function main() {
       process.exit(0);
     }
 
-    // Tier 1: Rule-based
-    let decision = classifyByRules(toolName, toolInput, projectDir);
+    // Tier 1: Rule-based (honors user's allowExtra opt-in list)
+    let decision = classifyByRules(toolName, toolInput, projectDir, allowExtra);
     let reasonContext;
 
     // Build context for reason messages
