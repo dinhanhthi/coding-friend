@@ -300,6 +300,10 @@ describe("makeRespawn retry logic", () => {
         attempts++;
         return null; // always fail
       });
+    // Isolate from real daemon state on the host machine
+    const runningSpy = vi
+      .spyOn(daemonProcess, "isDaemonRunning")
+      .mockResolvedValue(false);
 
     // Use createBackendForTier with "lite" to trigger respawn path
     // The respawn callback wraps makeRespawn which calls spawnDaemon
@@ -313,6 +317,7 @@ describe("makeRespawn retry logic", () => {
     expect(attempts).toBe(3);
 
     spawnSpy.mockRestore();
+    runningSpy.mockRestore();
   });
 
   it("succeeds on second attempt", async () => {
@@ -326,6 +331,10 @@ describe("makeRespawn retry logic", () => {
         if (attempts === 2) return { pid: 1234 };
         return null;
       });
+    // Isolate from real daemon state on the host machine
+    const runningSpy = vi
+      .spyOn(daemonProcess, "isDaemonRunning")
+      .mockResolvedValue(false);
 
     const { createRespawnWithRetry } = await import("../lib/tier.js");
     const respawn = createRespawnWithRetry(".", undefined, undefined);
@@ -335,6 +344,7 @@ describe("makeRespawn retry logic", () => {
     expect(attempts).toBe(2);
 
     spawnSpy.mockRestore();
+    runningSpy.mockRestore();
   });
 });
 
