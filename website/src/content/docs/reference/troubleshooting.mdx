@@ -1,0 +1,251 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions when using Coding Friend."
+keywords: [troubleshooting, errors, issues, debug, fix, help]
+---
+
+import { Callout } from "@/components/ui/Callout";
+
+## Installation & Setup
+
+### `cf install` fails with permission error
+
+**Symptom:** `EACCES` or permission denied when running `cf install`.
+
+**Fix:** Make sure you have write access to the Claude Code config directories:
+
+```bash
+# Check ownership
+ls -la ~/.claude/
+
+# Fix if needed
+chmod -R u+rw ~/.claude/
+```
+
+If you installed the CLI globally with `sudo`, reinstall without it:
+
+```bash
+npm install -g coding-friend-cli
+```
+
+### `cf install` says "Claude Code CLI not found"
+
+**Symptom:** The installer can't detect the `claude` CLI binary.
+
+**Fix:** Ensure Claude Code is installed and accessible in your `PATH`:
+
+```bash
+which claude    # Should show a path
+claude --version
+```
+
+If `claude` is installed but not in `PATH`, restart your terminal or add its location to your shell profile.
+
+### Hooks not firing after install
+
+**Symptom:** You ran `cf install` successfully but skills don't auto-invoke and auto-approve doesn't work.
+
+**Cause:** Hooks are registered in Claude Code's settings files. If the settings file was overwritten or the hook paths are stale, they won't fire.
+
+**Fix:**
+
+1. Check that hooks are registered:
+
+```bash
+cat ~/.claude/settings.json | grep -A2 "hooks"
+```
+
+2. Re-run install to refresh hook paths:
+
+```bash
+cf install --user    # or --project for project-level
+```
+
+3. Restart Claude Code after reinstalling.
+
+---
+
+## Auto-Approve
+
+### Auto-approve blocks a tool it shouldn't
+
+**Symptom:** A tool call that should be safe gets blocked with a "DANGEROUS" classification.
+
+**Cause:** The LLM classifier (Step 3) made an overly cautious decision.
+
+**Fix:**
+
+1. Approve the action manually when prompted — the classifier is advisory, not final.
+2. If a specific command is consistently blocked, add a targeted permission rule:
+
+```bash
+cf permission
+# → Browse to the relevant category and enable the rule
+```
+
+3. You can also inspect why a tool call was classified the way it was:
+
+```bash
+cf permission --explain '{"tool_name": "Bash", "tool_input": {"command": "your-command-here"}}'
+```
+
+See [Auto-Approve reference](/docs/reference/auto-approve/) for the full classification flow.
+
+### Auto-approve approves something dangerous
+
+**Symptom:** A risky operation was auto-approved when it shouldn't have been.
+
+**Fix:**
+
+1. Use `git` to revert any unwanted changes.
+2. Review your permission rules — you may have overly broad allow patterns:
+
+```bash
+cf permission    # Review and tighten rules
+```
+
+3. Check if you have dangerous rules like `Bash(*)` in your Claude Code settings. The CLI audits these when you enable auto-approve, but they can be added manually later.
+
+<Callout type="warning" title="Version control recommended">
+  Always use auto-approve in projects with version control so you can revert
+  unexpected changes.
+</Callout>
+
+---
+
+## Memory System
+
+### `cf memory start-daemon` fails
+
+**Symptom:** The memory daemon won't start or crashes immediately.
+
+**Possible causes:**
+
+1. **Port conflict:** Another process is using the same port.
+
+```bash
+# Check if something is already running
+cf memory status
+```
+
+2. **MCP server not built:** The daemon requires the MCP server to be compiled.
+
+```bash
+# If using from source, rebuild
+cd <coding-friend-mcp-dir> && npm run build
+```
+
+3. **Stale PID file:** A previous daemon didn't shut down cleanly.
+
+```bash
+cf memory stop-daemon   # Clean up stale state
+cf memory start-daemon  # Try again
+```
+
+### MCP server not connecting
+
+**Symptom:** Memory tools (`memory_store`, `memory_search`, etc.) are unavailable in Claude Code.
+
+**Fix:**
+
+1. Verify the MCP server is configured:
+
+```bash
+cf mcp    # Shows current MCP configuration
+```
+
+2. Check that the MCP server path in Claude Code settings points to the correct location. Re-run setup if needed:
+
+```bash
+cf install --user
+```
+
+3. Restart Claude Code — MCP servers are connected at session start.
+
+### Memory search returns no results
+
+**Symptom:** `memory_search` returns empty even though you have memory files.
+
+**Fix:**
+
+1. Check that memory files exist:
+
+```bash
+ls docs/memory/
+```
+
+2. Rebuild the search index:
+
+```bash
+cf memory rebuild
+```
+
+3. If using Tier 2 (daemon), make sure the daemon is running:
+
+```bash
+cf memory status
+cf memory start-daemon
+```
+
+---
+
+## Skills
+
+### Skill not auto-invoking
+
+**Symptom:** You expect a skill to auto-invoke (e.g., `cf-tdd` before writing code) but it doesn't.
+
+**Cause:** Auto-invoked skills depend on the `SessionStart` and `PreToolUse` hooks being active.
+
+**Fix:**
+
+1. Make sure Coding Friend is installed:
+
+```bash
+cf install --user
+```
+
+2. Check that the hook is registered in settings — look for `coding-friend` entries in your Claude Code hooks config.
+
+3. Start a new Claude Code session — hooks are loaded at session start.
+
+### `/cf-*` command not recognized
+
+**Symptom:** Typing `/cf-plan` or another slash command does nothing or shows "unknown command".
+
+**Cause:** Skills are loaded via the plugin system, not as CLI commands. They only work inside a Claude Code session with Coding Friend installed.
+
+**Fix:** Make sure you're running the command inside Claude Code (not a regular terminal) and that Coding Friend is installed for the current project or globally.
+
+---
+
+## CLI
+
+### `cf` command not found
+
+**Symptom:** `cf: command not found` after installation.
+
+**Fix:**
+
+```bash
+# Verify installation
+npm list -g coding-friend-cli
+
+# If not installed
+npm install -g coding-friend-cli
+
+# If installed but not in PATH, check npm global bin
+npm bin -g
+```
+
+Add the npm global bin directory to your `PATH` if it's not already there.
+
+---
+
+## Still stuck?
+
+If your issue isn't listed here:
+
+1. Run `cf status` to see a full diagnostic of your installation
+2. Check [GitHub Issues](https://github.com/dinhanhthi/coding-friend/issues) for known problems
+3. Open a new issue with your `cf status` output and steps to reproduce

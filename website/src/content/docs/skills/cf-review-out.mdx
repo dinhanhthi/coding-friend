@@ -23,7 +23,7 @@ The `/cf-review-out` skill generates a complete, self-contained review document 
 /cf-review-out [label]
 ```
 
-- **No arguments** — Claude suggests a label based on your changes, you confirm or provide your own
+- **No arguments** — Claude auto-generates a label based on your changes (no confirmation needed)
 - **With label** — uses the provided label directly (must be snake-case with prefix like `fix-`, `feature-`, `improve-`)
 
 ## Examples
@@ -41,13 +41,15 @@ The `/cf-review-out` skill generates a complete, self-contained review document 
 
 ## Workflow
 
-1. **Determine label** — Suggest a descriptive snake-case label or use the one provided
+1. **Determine label** — Auto-generate a descriptive snake-case label or use the one provided (no confirmation step)
 2. **Gather diff** — Collect all uncommitted changes via `git diff`
 3. **Build prompt** — Create a self-contained review document with:
+   - **Context section** — project name, branch, date, files/lines changed
    - Full diff of changes
    - 5-layer review criteria (project rules, plan alignment, code quality, security, testing)
    - Exact output format specification
    - Where the external agent should save results
+   - **Output checklist** — self-verification checklist for the external reviewer
 4. **Save prompt** — Write to `docs/reviews/<label>-prompt.md`
 5. **Guide user** — Show next steps for running the external agent
 
@@ -56,9 +58,11 @@ The `/cf-review-out` skill generates a complete, self-contained review document 
 The generated prompt is a complete, standalone document:
 
 - **Frontmatter** — label, date, status (`pending`)
+- **Context** — project name, branch, date, files changed, lines changed
 - **Review criteria** — 5-layer methodology matching [`/cf-review`](/docs/skills/cf-review/)
 - **Output format** — exact markdown format the external agent must follow (Critical/Important/Suggestion)
 - **Save location** — tells the agent to write results to `docs/reviews/<label>-result-<service>.md`
+- **Output checklist** — self-verification checklist (all sections present, confidence scores, no false positives)
 - **Full diff** — all code changes to review (truncated at 5000 lines with a note)
 - **Security boundary** — diff marked as untrusted input
 

@@ -2,6 +2,20 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.22.0 (2026-04-05)
+
+- Refactor `/cf-review` into multi-agent orchestrator that dispatches 5 specialist agents (`cf-reviewer-plan`, `cf-reviewer-security`, `cf-reviewer-quality`, `cf-reviewer-tests`, `cf-reviewer-rules`) in parallel and merges results via `cf-reviewer-reducer` [#e9c1d22](https://github.com/dinhanhthi/coding-friend/commit/e9c1d22)
+- Add structured context handoff and auto-retry for `cf-implementer` agent (context files, result signals, retry on failure) [#1d58b79](https://github.com/dinhanhthi/coding-friend/commit/1d58b79)
+- Add parallel execution for `cf-plan` task phases with agent-tracker locking fix [#8643c9c](https://github.com/dinhanhthi/coding-friend/commit/8643c9c)
+- Add task/agent tracking and LLM decision caching hooks, rename `dev-rules-reminder` → `rules-reminder` [#2d6c789](https://github.com/dinhanhthi/coding-friend/commit/2d6c789) [#777d172](https://github.com/dinhanhthi/coding-friend/commit/777d172)
+- Phase 6 skills UX improvements — activation signals, TDD escapes, `/cf-ship` dry-run flag, `/cf-optimize` profiling, `/cf-commit` review check, `cf guide` CLI [#d68bfa0](https://github.com/dinhanhthi/coding-friend/commit/d68bfa0)
+- Fix `auto-approve` hook security issues — `stripStderrRedirect` bypass and deduplication [#6b0e90e](https://github.com/dinhanhthi/coding-friend/commit/6b0e90e)
+- Fix `/cf-review-out` and `/cf-review` to guide external agents to use embedded diff only [#7b673f6](https://github.com/dinhanhthi/coding-friend/commit/7b673f6)
+- Fix skill frontmatter to use `allowed-tools` instead of `tools` [#81ed469](https://github.com/dinhanhthi/coding-friend/commit/81ed469)
+- Use actual emojis instead of escape codes in skill output [#c743ebb](https://github.com/dinhanhthi/coding-friend/commit/c743ebb)
+- Refactor statusline to move model to first line and dedicate a row to account info [#a93e975](https://github.com/dinhanhthi/coding-friend/commit/a93e975)
+- Add troubleshooting reference and enhance auto-approve documentation [#5871858](https://github.com/dinhanhthi/coding-friend/commit/5871858)
+
 ## v0.21.0 (2026-04-01)
 
 - Add `/cf-warm` skill — catch up after absence by summarizing git history for a specific user, with dry-run safety, topic clustering, and memory indexing [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)

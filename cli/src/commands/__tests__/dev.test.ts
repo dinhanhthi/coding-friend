@@ -38,14 +38,39 @@ vi.mock("../../lib/statusline.js", () => ({
   ensureStatusline: vi.fn(),
 }));
 
+vi.mock("../../lib/log.js", () => ({
+  log: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    dim: vi.fn(),
+    step: vi.fn(),
+    success: vi.fn(),
+  },
+  printBanner: vi.fn(),
+}));
+
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
 import { ensureStatusline } from "../../lib/statusline.js";
 import { readJson } from "../../lib/json.js";
 import { existsSync } from "fs";
-import { devRestartCommand, devUpdateCommand } from "../dev.js";
+import {
+  devRestartCommand,
+  devUpdateCommand,
+  devStatusCommand,
+  devSyncCommand,
+} from "../dev.js";
+import { log } from "../../lib/log.js";
+import { readFileSync, readdirSync, statSync, copyFileSync } from "fs";
+import { run } from "../../lib/exec.js";
 
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
+const mockReadFileSync = vi.mocked(readFileSync);
+const mockReaddirSync = vi.mocked(readdirSync);
+const mockStatSync = vi.mocked(statSync);
+const mockCopyFileSync = vi.mocked(copyFileSync);
+const mockRun = vi.mocked(run);
 const mockReadJson = vi.mocked(readJson);
 const mockExistsSync = vi.mocked(existsSync);
 
@@ -97,5 +122,149 @@ describe("devUpdateCommand", () => {
   it("calls ensureStatusline after update", async () => {
     await devUpdateCommand("/tmp/coding-friend");
     expect(mockEnsureStatusline).toHaveBeenCalled();
+  });
+});
+
+describe("devStatusCommand", () => {
+  it("warns when dev mode localPath does not exist", async () => {
+    mockReadJson.mockReset();
+    // getDevState() returns state with non-existent path
+    mockReadJson
+      .mockReturnValueOnce({
+        localPath: "/nonexistent/path",
+        savedAt: "2025-01-01T00:00:00.000Z",
+      })
+      // getMarketplaceSource() → null
+      .mockReturnValueOnce(null);
+    // existsSync: first for localPath check → false
+    mockExistsSync.mockReturnValue(false);
+
+    await devStatusCommand();
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("/nonexistent/path"),
+    );
+  });
+
+  it("does not warn when dev mode localPath exists", async () => {
+    mockReadJson.mockReset();
+    mockReadJson
+      .mockReturnValueOnce({
+        localPath: "/tmp/coding-friend",
+        savedAt: "2025-01-01T00:00:00.000Z",
+      })
+      .mockReturnValueOnce(null);
+    mockExistsSync.mockReturnValue(true);
+
+    await devStatusCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("no longer exists"),
+    );
+  });
+});
+
+describe("devSyncCommand", () => {
+  const devState = {
+    localPath: "/tmp/coding-friend",
+    savedAt: "2025-01-01T00:00:00.000Z",
+  };
+
+  const oldHooksJson = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+    },
+  });
+
+  const newHooksJsonSameEvents = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "new-test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "new-test" }] },
+      ],
+    },
+  });
+
+  const newHooksJsonNewEvents = JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      UserPromptSubmit: [
+        { matcher: "", hooks: [{ type: "command", command: "test" }] },
+      ],
+      TaskCreated: [
+        { matcher: "", hooks: [{ type: "command", command: "tracker" }] },
+      ],
+      SubagentStart: [
+        { matcher: "", hooks: [{ type: "command", command: "agent" }] },
+      ],
+    },
+  });
+
+  function setupSyncMocks() {
+    mockReadJson.mockReset();
+    mockReadJson.mockReturnValue(devState);
+    mockExistsSync.mockReturnValue(true);
+    // readdirSync: first call lists cache versions, subsequent calls list dir contents for copy
+    let readdirCallCount = 0;
+    mockReaddirSync.mockImplementation(() => {
+      readdirCallCount++;
+      if (readdirCallCount === 1)
+        return ["0.21.0"] as unknown as ReturnType<typeof readdirSync>;
+      return [] as unknown as ReturnType<typeof readdirSync>; // empty dir for copyDirRecursive
+    });
+    mockStatSync.mockReturnValue({
+      isDirectory: () => true,
+      mtimeMs: Date.now(),
+    } as unknown as ReturnType<typeof statSync>);
+    mockCopyFileSync.mockReturnValue(undefined);
+  }
+
+  it("warns when hooks.json has new event types", async () => {
+    setupSyncMocks();
+    // readFileSync: 1st call = cached hooks.json, 2nd call = source hooks.json
+    mockReadFileSync
+      .mockReturnValueOnce(oldHooksJson)
+      .mockReturnValueOnce(newHooksJsonNewEvents);
+
+    await devSyncCommand();
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
+    );
+  });
+
+  it("does not warn when hooks.json has same event types", async () => {
+    setupSyncMocks();
+    mockReadFileSync
+      .mockReturnValueOnce(oldHooksJson)
+      .mockReturnValueOnce(newHooksJsonSameEvents);
+
+    await devSyncCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
+    );
+  });
+
+  it("does not warn when no hooks.json exists", async () => {
+    setupSyncMocks();
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+
+    await devSyncCommand();
+
+    expect(log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("hooks.json"),
+    );
   });
 });

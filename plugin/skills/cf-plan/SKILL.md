@@ -108,6 +108,16 @@ Use the `AskUserQuestion` tool for each interaction below. Do NOT batch all ques
 
 Only proceed after the user confirms your understanding and direction. If the user wants to skip brainstorming (e.g., "just plan it", "I already know what I want"), respect that and move on.
 
+### Step 1.5: Generate Task ID
+
+Generate a task-id for the context handoff protocol:
+
+1. **Generate a task-id**: use format `<timestamp>-<short-descriptor>` (e.g., `1717500000-add-auth-middleware`)
+2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
+3. **Context file path**: `{docsDir}/context/{task-id}.json`
+
+This task-id will be used throughout the workflow to pass structured context between agents.
+
 ### Step 2: Explore Codebase
 
 > **Fast mode**: Do NOT launch the cf-explorer agent. Instead, do a quick inline search using Glob and Grep directly in the main conversation. Focus only on the files immediately relevant to the task. Keep it brief — no deep exploration.
@@ -121,6 +131,8 @@ Launch the **cf-explorer agent** to gather codebase context. This runs in a sepa
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass a detailed prompt:
 
 > Explore the codebase to gather context for the following task: [user request]
+>
+> **Context file:** Write your structured findings to [docsDir/context/<task-id>.json]
 >
 > Confirmed assumptions: [list from Step 1]
 > Scope: [any constraints from Step 1]
@@ -149,11 +161,13 @@ Wait for the cf-explorer to return its findings.
 
 > **Fast mode**: Skip this step — pick the most straightforward approach based on codebase patterns found in Step 2. Proceed directly to Step 4.
 
-Launch the **cf-planner agent** with the cf-explorer's findings to brainstorm approaches.
+Launch the **cf-planner agent** with the cf-explorer's findings to brainstorm approaches. Pass the context file path so the planner can also write its findings for downstream agents.
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-planner"`. Pass:
 
 > Plan the following task: [user request]
+>
+> **Context file:** [path to docsDir/context/<task-id>.json] — the cf-explorer has already written structured findings here. Read it for codebase context, then update it with your plan findings.
 >
 > Confirmed assumptions: [list from Step 1]
 > User preferences: [any constraints from Step 1]
@@ -192,18 +206,21 @@ Present the findings to the user:
 
 Based on the approved approach and the agent's findings:
 
-1. Break the chosen approach into small, sequential tasks
+1. Break the chosen approach into small tasks grouped into **phases**
 2. Each task should be completable in one focused session
 3. For each task, specify:
    - What to do (specific files, functions, tests)
    - Expected outcome
    - How to verify it worked
+4. **Phase structure** — use the phase markers from the cf-planner's output:
+   - `#### Phase N [parallel]` — tasks in this phase have no shared files and no interdependencies. They will be executed concurrently.
+   - `#### Phase N [sequential]` — tasks depend on earlier results and run one at a time.
+   - If the cf-planner produced a flat task list (no phases), or no cf-planner was used (fast mode), wrap all tasks in a single `[sequential]` phase.
 
 > **Hard mode** — enhanced task format:
 >
-> 4. Group tasks into **phases** with verification checkpoints between phases
-> 5. Each task must include an additional **Rollback** field: how to undo this specific task if needed
-> 6. Add a `## Migration & Rollback` section to the plan with the overall rollback strategy
+> 4. Each task must include an additional **Rollback** field: how to undo this specific task if needed
+> 5. Add a `## Migration & Rollback` section to the plan with the overall rollback strategy
 
 ### Step 6: Save the Plan
 
@@ -215,13 +232,18 @@ Based on the approved approach and the agent's findings:
 
 After the plan is saved, ask the user: **"Ready to start implementing?"**
 
-If the user agrees, implement each task from the plan **sequentially** using the **cf-implementer agent**:
+If the user agrees, execute the plan **phase by phase**. Parse the plan for `[parallel]` and `[sequential]` phase markers.
+
+#### Sequential phases
+
+For `[sequential]` phases, implement each task one at a time using the **cf-implementer agent**:
 
 1. For each task, dispatch the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
 
    > Implement the following task using strict TDD:
    >
    > **Task:** [task description from plan]
+   > **Context file:** [path to docsDir/context/<task-id>.json]
    > **Context:** [overall plan context — what we're building and why]
    > **Files:** [specific files listed in the task]
    > **Verify:** [verification criteria from the task]
@@ -230,12 +252,64 @@ If the user agrees, implement each task from the plan **sequentially** using the
    >
    > Follow RED → GREEN → REFACTOR. Report results when done.
 
-2. After each task completes, review the cf-implementer's report:
-   - If tests pass and the task is verified → mark task complete, move to next
-   - If issues reported → address them before proceeding (re-dispatch or fix inline)
-3. **Hard mode** — run `/cf-review` after every phase checkpoint (every 2-3 tasks), not just at the end. Only continue to the next phase if review passes.
-4. After all tasks are done, automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
-5. After review completes, if the implemented plan involved **performance-critical features** — e.g. data processing pipelines, API endpoints handling high traffic, database-heavy operations, algorithms on large datasets, or real-time processing — suggest running `/cf-optimize` on the critical code paths. Present it as an optional next step, do NOT auto-run.
+2. After each task completes, **parse the last non-empty line** for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
+   - `[CF-RESULT: success]` → mark task complete, move to next
+   - `[CF-RESULT: failure] <reason>` → retry once (see retry protocol below)
+   - **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
+
+**Retry protocol** (max 1 retry per task):
+
+1. Notify the user: `> ⟳ Task N attempt 1 failed (<reason>). Retrying with error context...`
+2. Update the context file — read existing content, add `previous_failure` key with reason, error summary, and attempt number
+3. Re-dispatch cf-implementer with the updated context file
+4. If retry also fails → report both failures, ask user: "Continue to next task or stop?"
+
+**Cleanup**: Delete the context file after all phases complete or if the user cancels.
+
+#### Parallel phases
+
+For `[parallel]` phases, launch **all tasks concurrently**:
+
+**Pre-dispatch safety check — file-overlap guard** (MANDATORY before spawning any agent):
+
+1. For each task in the phase, collect its declared file list (from the `files:` field in the plan).
+2. Flatten all file paths across every task in the phase and normalize them (resolve to absolute paths, strip trailing slashes).
+3. If any file path appears in **two or more tasks**, STOP — this phase is unsafe for parallel execution because multiple implementers would race on the same file.
+4. Report the overlap to the user with the exact duplicated paths and the tasks involved, then ask: _"Phase N has a file-overlap conflict. (a) Convert this phase to sequential, (b) reorganize tasks so files don't overlap, or (c) abort?"_
+5. Only proceed after the user resolves the conflict. Do NOT auto-merge or auto-serialize without user confirmation.
+
+After the overlap check passes:
+
+1. Spawn one `cf-implementer` agent **per task** — all with `run_in_background: true`
+2. All agents MUST be launched in a **single message block** (one message with multiple Agent tool calls)
+3. Each agent prompt must be fully self-contained (task, context, files, verify criteria, test patterns, constraints) — agents cannot see each other's work
+4. Immediately after launching, render a status table:
+
+```
+| # | Task | Status |
+|---|------|--------|
+| 1 | Task A | running |
+| 2 | Task B | running |
+| 3 | Task C | running |
+```
+
+5. Wait for all agents to complete (Claude Code notifies on background agent completion)
+6. Update the status table as each agent reports back (`done` / `failed`)
+7. When all done: show final table + summary line (e.g., "3/3 tasks completed")
+8. If any task failed: warn user, show failure details, ask: **"Proceed to next phase? (y/n)"**
+9. If all passed: automatically proceed to next phase
+
+#### Phase execution order
+
+- Execute phases in order: Phase 1 → Phase 2 → Phase 3 → ...
+- A phase must complete before the next one starts
+- If a parallel phase has a failed task and the user chooses NOT to proceed, stop execution and report status
+
+#### Post-implementation
+
+1. **Hard mode** — run `/cf-review` after every phase, not just at the end. Only continue to the next phase if review passes.
+2. After all phases are done, automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+3. After review completes, if the implemented plan involved **performance-critical features** — e.g. data processing pipelines, API endpoints handling high traffic, database-heavy operations, algorithms on large datasets, or real-time processing — suggest running `/cf-optimize` on the critical code paths. Present it as an optional next step, do NOT auto-run.
 
 ## Plan Template
 
@@ -259,12 +333,21 @@ If the user agrees, implement each task from the plan **sequentially** using the
 
 ## Tasks
 
+#### Phase 1 [parallel]
+
 1. <task 1>
    - Files: <specific files>
    - Verify: <how to verify>
    - Rollback: <how to undo — hard mode only>
 2. <task 2>
-   ...
+   - Files: <different files — no overlap with task 1>
+   - Verify: <how to verify>
+
+#### Phase 2 [sequential]
+
+3. <task 3> — depends on Phase 1
+   - Files: <specific files>
+   - Verify: <how to verify>
 
 ## Risks
 

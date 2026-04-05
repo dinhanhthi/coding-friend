@@ -17,7 +17,7 @@ description: >
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 user-invocable: true
 model: haiku
-tools: [Read, Glob]
+allowed-tools: [Read, Glob]
 ---
 
 # /cf-help — Coding Friend Help
@@ -56,10 +56,10 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 ### Slash Commands (user triggers with /)
 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Brainstorm and write implementation plan
+- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
-- `/cf-commit [hint]` — ⚡ — Analyze diff and create conventional commit
-- `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR
+- `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
+- `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
 - `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
 - `/cf-optimize [target]` — ⚡⚡ — Structured optimization with before/after measurement
 - `/cf-scan [description]` — ⚡⚡⚡ — Scan project and bootstrap memory
@@ -78,10 +78,16 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-reviewer** — ⚡ — Multi-layer code review in forked context (5-layer: project rules, plan, quality, security, testing)
-- **cf-implementer** — ⚡ — TDD implementation subagent
-- **cf-explorer** — ⚡ — Codebase exploration and analysis (read-only)
-- **cf-planner** — ⚡ — Task decomposition and approach brainstorming
+- **cf-reviewer** — ⚡ — Review orchestrator: dispatches 5 specialist agents in parallel + reducer
+  - **cf-reviewer-plan** (sonnet) — Plan alignment
+  - **cf-reviewer-security** (sonnet) — Security vulnerabilities
+  - **cf-reviewer-quality** (haiku) — Code quality + slop detection
+  - **cf-reviewer-tests** (haiku) — Test coverage
+  - **cf-reviewer-rules** (haiku) — Project rules compliance (CLAUDE.md)
+  - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
+- **cf-implementer** — ⚡ — TDD implementation subagent (reads structured context file, returns result signals, supports auto-retry on failure)
+- **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
+- **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases (writes structured context file)
 - **cf-writer** — ⚡ — Lightweight doc writer for markdown file generation
 - **cf-writer-deep** — ⚡ — Deep reasoning doc writer for nuanced technical content
 
@@ -135,6 +141,7 @@ Common issues:
 - **Custom guide not loading?** Verify the path: `.coding-friend/skills/<skill-name>-custom/SKILL.md` and that it has `## Before`, `## Rules`, or `## After` sections.
 - **Config not applied?** Local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`. Check both.
 - **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
+- **More issues?** Point the user to the [Troubleshooting page](https://cf.dinhanhthi.com/docs/reference/troubleshooting/) for memory daemon, install, hook, and MCP issues.
 
 ## Step 6: Answer concisely
 

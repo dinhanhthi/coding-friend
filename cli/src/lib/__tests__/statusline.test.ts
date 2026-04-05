@@ -38,8 +38,8 @@ function mockPaths(overrides: Partial<Record<string, string>> = {}) {
 }
 
 describe("STATUSLINE_COMPONENTS", () => {
-  it("has exactly 7 components", () => {
-    expect(STATUSLINE_COMPONENTS).toHaveLength(7);
+  it("has exactly 8 components", () => {
+    expect(STATUSLINE_COMPONENTS).toHaveLength(8);
   });
 
   it("has the correct component IDs", () => {
@@ -52,6 +52,7 @@ describe("STATUSLINE_COMPONENTS", () => {
       "account",
       "context",
       "rate_limit",
+      "task_agent",
     ]);
   });
 

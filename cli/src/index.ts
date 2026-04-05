@@ -294,6 +294,27 @@ memory
     },
   );
 
+const guide = program
+  .command("guide")
+  .description("Manage custom skill guides");
+
+guide
+  .command("create")
+  .description("Create a custom guide for a skill")
+  .argument("<skill-name>", "skill to create guide for (e.g. cf-commit)")
+  .action(async (skillName: string) => {
+    const { guideCreateCommand } = await import("./commands/guide.js");
+    guideCreateCommand(skillName);
+  });
+
+guide
+  .command("list")
+  .description("List existing custom guides")
+  .action(async () => {
+    const { guideListCommand } = await import("./commands/guide.js");
+    guideListCommand();
+  });
+
 const dev = program.command("dev").description("Development mode commands");
 
 program.addHelpText(

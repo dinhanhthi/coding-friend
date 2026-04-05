@@ -6,7 +6,7 @@ description: >
   Use when the user wants to collect an outside review — e.g. "review in", "collect review",
   "check review results", "cf-review-in", "read external review", "import review".
 user-invocable: true
-argument-hint: "<label>"
+argument-hint: "<label> [service]"
 ---
 
 # /cf-review-in
@@ -29,9 +29,11 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-1. **Determine the label:**
+1. **Determine the label and optional service:**
 
-   If `$ARGUMENTS` contains a label, use it. Otherwise:
+   Parse `$ARGUMENTS` as `<label> [service]` — label is required, service is optional.
+
+   If `$ARGUMENTS` contains a label (and optionally a service), use them. Otherwise:
    - List available result files in `<docsDir>/reviews/` that match `*-result-*.md`
    - Extract unique labels from the filenames (pattern: `<label>-result-<service>.md`)
    - If exactly one label exists, use it
@@ -42,7 +44,10 @@ If output is not empty, integrate the returned sections into this workflow:
 
    Check the docsDir from `.coding-friend/config.json` (default: `docs`).
 
-   Glob for all files matching `<docsDir>/reviews/<label>-result-*.md`. Each file corresponds to a different external reviewer/service (e.g., `<label>-result-gemini.md`, `<label>-result-chatgpt.md`).
+   If a **service** was specified in step 1: only read `<docsDir>/reviews/<label>-result-<service>.md`.
+   - If the file does not exist → tell the user: _"No results found for service `<service>`. Available:"_ then list existing services from `<label>-result-*.md` files → **STOP**.
+
+   If **no service** was specified: glob for all files matching `<docsDir>/reviews/<label>-result-*.md` (existing behavior).
    - If **no files found** → tell the user: _"No results found for label `<label>`. Make sure external agents have written their reviews to `<docsDir>/reviews/<label>-result-<service>.md`."_ → **STOP**.
    - If **one or more files found** → read all of them. Extract the service name from each filename (the part after `result-` and before `.md`).
    - If any file is empty or malformed → warn the user about that specific file but continue processing the rest.

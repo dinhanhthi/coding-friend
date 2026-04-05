@@ -42,6 +42,7 @@ Before claiming ANY task is done:
 3. **Lint/format** — If configured, run linter. No new warnings.
 4. **Manual check** — For UI changes, verify visually. For API changes, test the endpoint.
 5. **Show evidence** — Include test output, build output, or screenshots in your response.
+6. **Slop check** — Scan changed code for AI transmarks, excessive comments, unnecessary verbosity.
 
 ## What Counts as Evidence
 

@@ -1,0 +1,59 @@
+---
+title: "cf guide"
+description: "Create and manage custom skill guides."
+keywords: [guide, custom guide, skill customization, cf-guide]
+---
+
+The `cf guide` command helps you create and manage [Custom Skill Guides](/docs/configuration/custom-skill-guides/) — project-specific extensions that modify skill behavior.
+
+## Subcommands
+
+### `cf guide create <skill-name>`
+
+Scaffold a custom guide for a skill:
+
+```bash
+cf guide create cf-commit
+```
+
+This creates `.coding-friend/skills/cf-commit-custom/SKILL.md` with a commented template showing the three optional sections:
+
+- `## Before` — steps to run before the skill's first step
+- `## Rules` — additional rules applied throughout the skill
+- `## After` — steps to run after the skill's final step
+
+The command verifies the skill exists before creating the guide. It will not overwrite an existing guide.
+
+### `cf guide list`
+
+List all existing custom guides in the current project:
+
+```bash
+cf guide list
+```
+
+Output:
+
+```
+Custom guides (2):
+  cf-commit  →  .coding-friend/skills/cf-commit-custom/SKILL.md
+  cf-ship    →  .coding-friend/skills/cf-ship-custom/SKILL.md
+```
+
+## Examples
+
+```bash
+# Create a custom guide for cf-commit
+cf guide create cf-commit
+
+# Create a custom guide for cf-ship
+cf guide create cf-ship
+
+# List all custom guides
+cf guide list
+```
+
+## See Also
+
+- [Custom Skill Guides](/docs/configuration/custom-skill-guides/) — how custom guides work
+- [Configuration](/docs/configuration/config-json/) — project-level config

@@ -60,6 +60,10 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 - Agents: append "agent" (e.g., `cf-writer agent activated`)
 - ONE signal per activation — do not repeat for the same skill in the same turn
 
+**Never signal these** (non-cf-\* — no signal, ever, even if coding-friend is loaded):
+
+`/commit`, `/fix`, `/release`, `/deploy`, `/review`, `/plan`, `/ship`, `/test`, `/build`, `/lint`, `/format`, any third-party skill, any built-in CLI command
+
 ## Conventions
 
 - Tests next to source or in `__tests__/` / `tests/`
@@ -89,6 +93,6 @@ Memory files live in `docs/memory/` organized by type: features/ (facts), conven
 
 ## CLI (coding-friend-cli)
 
-Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf memory [status|search|list|rm|start|stop|rebuild|init|config|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
+Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf host, cf mcp, cf guide [create|list], cf memory [status|search|list|rm|start|stop|rebuild|init|config|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
 
 For details on any skill, read `plugin/skills/<name>/SKILL.md`.

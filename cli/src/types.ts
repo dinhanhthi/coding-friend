@@ -18,7 +18,8 @@ export type StatuslineComponent =
   | "branch"
   | "account"
   | "context"
-  | "rate_limit";
+  | "rate_limit"
+  | "task_agent";
 
 export interface StatuslineConfig {
   components?: StatuslineComponent[];
@@ -34,12 +35,16 @@ export const STATUSLINE_COMPONENTS: {
   { id: "branch", label: "Git branch (⎇ main)" },
   {
     id: "account",
-    label: "Account info — name, email & org (from ~/.claude.json)",
+    label: "Account info — name, email (from ~/.claude.json)",
   },
   { id: "context", label: "Context window usage (ctx 42%)" },
   {
     id: "rate_limit",
     label: "Rate limit — current & weekly usage (requires curl & jq)",
+  },
+  {
+    id: "task_agent",
+    label: "Task progress & active agent (Tasks: 2/5 | Agent: cf-reviewer)",
   },
 ];
 
