@@ -186,6 +186,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Security", slug: "reference/security" },
       { title: "Memory System", slug: "reference/memory-system" },
       { title: "Context Footprint", slug: "reference/context-usage" },
+      { title: "Troubleshooting", slug: "reference/troubleshooting" },
     ],
   },
 ];
