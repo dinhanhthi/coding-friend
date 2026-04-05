@@ -15,6 +15,24 @@ Custom skill guides let you extend built-in skills with your own instructions �
 
 Local directories override global directories with the same name.
 
+## Managing guides with `cf guide`
+
+The [`coding-friend-cli`](/configuration/cli/) ships with a `cf guide` command to scaffold and inspect custom guides without hand-creating directories.
+
+```bash
+# Scaffold a new local custom guide for a built-in skill
+cf guide create cf-commit
+# → .coding-friend/skills/cf-commit-custom/SKILL.md  (with Before/Rules/After template)
+
+# List all custom guides in the current project
+cf guide list
+```
+
+- `cf guide create <skill-name>` validates that the target skill actually exists in the installed plugin (or dev checkout) before creating the scaffold, so you can't accidentally create an orphaned guide. It won't overwrite an existing file.
+- `cf guide list` shows every `*-custom/SKILL.md` under `.coding-friend/skills/`, marks each one with a green ✔ if the underlying skill is found, or a yellow ⚠ if the guide is orphaned (the skill no longer exists — e.g. renamed or removed).
+
+Both commands operate on the **local** project scope. For global guides, create the file manually under `~/.coding-friend/skills/<skill-name>-custom/SKILL.md`.
+
 ## Format
 
 A custom guide is a `SKILL.md` file inside a `<skill-name>-custom/` directory, with up to 3 optional sections:
