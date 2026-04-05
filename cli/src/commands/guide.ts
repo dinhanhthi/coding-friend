@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 
@@ -133,13 +134,15 @@ export function guideListCommand(): void {
 
   const skillsDir = findPluginSkillsDir();
 
-  log.info(`Custom guides (${entries.length}):`);
+  log.info(`Custom guides (${chalk.bold(entries.length)}):`);
   for (const name of entries) {
     const path = join(customDir, `${name}-custom`, "SKILL.md");
-    const exists =
-      skillsDir != null && skillExists(skillsDir, name)
-        ? "✔"
-        : "⚠ skill not found";
-    log.info(`  ${name}  →  ${path}  (${exists})`);
+    const found = skillsDir != null && skillExists(skillsDir, name);
+    const status = found
+      ? chalk.green("✔")
+      : chalk.yellow("⚠ skill not found");
+    log.info(
+      `  ${status}  ${chalk.cyan(name)}  ${chalk.dim("→")}  ${chalk.dim(path)}`,
+    );
   }
 }
