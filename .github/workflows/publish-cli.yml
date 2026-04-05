@@ -24,8 +24,12 @@ jobs:
         with:
           node-version: 22
 
+      # OIDC trusted publishing requires npm >= 11.5.1, but node 22 ships npm 10.9.x.
+      # Pin to 11.11.0: last known-good before the 11.12+ self-upgrade regression
+      # that drops `promise-retry` mid-upgrade and breaks subsequent `npm ci` calls.
+      # Refs: nodejs/node#62425, npm/cli#9151
       - name: Upgrade npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.11.0
 
       - name: Install dependencies
         run: npm ci
