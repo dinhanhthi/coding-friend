@@ -13,11 +13,13 @@ cf statusline
 Example:
 
 ```bash
-cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
-👤 Thi Dinh (me@dinhanhthi.com)
+🧠 Opus (1M)
+cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
 ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
 📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
 ```
+
+The first line is intentionally reserved for the model only. Claude Code renders its own built-in indicators (effort level, clipboard hints, MCP errors, token warnings) on the right side of the first row, so keeping that row short prevents your statusline from being cramped on narrow terminals.
 
 ## Available Components
 

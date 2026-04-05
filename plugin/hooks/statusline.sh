@@ -371,13 +371,23 @@ if component_enabled "task_agent"; then
   fi
 fi
 
-# Build output — use array to handle separators cleanly
-parts=()
+# Line 1: model only (leaves room for Claude Code's built-in right-side indicators
+# like effort, clipboard, MCP errors — which float on the first line by design)
+if [ -n "$MODEL" ]; then
+  printf "%s" "${CYAN}🧠 ${MODEL}${RESET}"
+else
+  # Print an empty first line so subsequent lines still line up below any
+  # floating indicators Claude Code may render.
+  printf ""
+fi
+
+# Line 2: cf version | folder(branch) | account
+line2_parts=()
 
 if [ -n "$VERSION" ]; then
-  parts+=("${BLUE}cf v${VERSION}${RESET}")
+  line2_parts+=("${BLUE}cf v${VERSION}${RESET}")
 elif component_enabled "version"; then
-  parts+=("${BLUE}cf${RESET}")
+  line2_parts+=("${BLUE}cf${RESET}")
 fi
 
 if [ -n "$current_dir" ]; then
@@ -386,28 +396,24 @@ if [ -n "$current_dir" ]; then
     folder_part+=" (${branch_text}${BLUE})"
   fi
   folder_part+="${RESET}"
-  parts+=("$folder_part")
-fi
-[ -n "$MODEL" ] && parts+=("${CYAN}🧠 ${MODEL}${RESET}")
-
-# Join parts with separator
-output=""
-for part in "${parts[@]}"; do
-  if [ -z "$output" ]; then
-    output="$part"
-  else
-    output="${output}${separator}${part}"
-  fi
-done
-
-printf "%s" "$output"
-
-# Second line: account info
-if [ -n "$account_line" ]; then
-  printf "\n%s" "$account_line"
+  line2_parts+=("$folder_part")
 fi
 
-# Third line: context + rate limit
+[ -n "$account_line" ] && line2_parts+=("$account_line")
+
+if [ ${#line2_parts[@]} -gt 0 ]; then
+  line2=""
+  for part in "${line2_parts[@]}"; do
+    if [ -z "$line2" ]; then
+      line2="$part"
+    else
+      line2="${line2}${separator}${part}"
+    fi
+  done
+  printf "\n%s" "$line2"
+fi
+
+# Line 3: context + rate limit
 third_line=""
 if [ -n "$ctx_text" ]; then
   third_line="$ctx_text"
@@ -423,7 +429,7 @@ if [ -n "$third_line" ]; then
   printf "\n%s" "$third_line"
 fi
 
-# Fourth line: task/agent tracking
+# Line 4: task/agent tracking
 if [ -n "$task_agent_line" ]; then
   printf "\n%s" "$task_agent_line"
 fi

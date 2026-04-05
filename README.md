@@ -36,8 +36,8 @@
 - CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
 - ✨ Customizable Claude Code statusline with account info & API rate limit tracking
   ```
-  cf v0.3.0 | 📂 MyProject (⎇ main) | 🧠 Opus (1M)
-  👤 Thi Dinh (me@dinhanhthi.com)
+  🧠 Opus (1M)
+  cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
   ```
