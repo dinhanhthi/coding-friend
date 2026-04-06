@@ -741,6 +741,15 @@ function loadAutoApproveConfig(homeDir, cwd) {
     return cfg.autoApproveAllowExtra.filter((s) => typeof s === "string");
   }
 
+  /**
+   * Extract a validated ignore list from one config object.
+   * Non-array values → []. Non-string entries are dropped silently.
+   */
+  function extractIgnore(cfg) {
+    if (!Array.isArray(cfg.autoApproveIgnore)) return [];
+    return cfg.autoApproveIgnore.filter((s) => typeof s === "string");
+  }
+
   const globalConfig = readConfigFile(
     path.join(homeDir, ".coding-friend", "config.json"),
     "global",
@@ -759,9 +768,17 @@ function loadAutoApproveConfig(homeDir, cwd) {
   ];
   const allowExtra = [...new Set(combinedAllowExtra)];
 
+  // Union of global + local ignore, deduped
+  const combinedIgnore = [
+    ...extractIgnore(localConfig),
+    ...extractIgnore(globalConfig),
+  ];
+  const ignore = [...new Set(combinedIgnore)];
+
   return {
     enabled: merged.autoApprove === true,
     allowExtra,
+    ignore,
   };
 }
 
@@ -834,7 +851,7 @@ function main() {
 
     // Load config (even when force-enabled) so we can pick up allowExtra
     const homeDir = os.homedir();
-    const { enabled, allowExtra } = loadAutoApproveConfig(homeDir, projectDir);
+    const { enabled, allowExtra, ignore } = loadAutoApproveConfig(homeDir, projectDir);
 
     if (!forceEnabled && !enabled) {
       process.stdout.write("{}");
@@ -866,6 +883,31 @@ function main() {
             pattern: String(pattern.source || pattern),
           };
           break;
+        }
+      }
+    }
+
+    // Ignore check: let Claude Code's native permissions handle these commands.
+    // Runs BEFORE the LLM fallback to avoid wasting an LLM call on commands
+    // the user wants Claude Code to decide on via its native permissions.allow.
+    if (
+      (decision === "ask" || decision === "unknown") &&
+      toolName === "Bash" &&
+      ignore.length > 0
+    ) {
+      const cmd = (toolInput && toolInput.command) || "";
+      const trimmed = cmd.trim();
+      // For compound commands (pipes, chains), check the first segment
+      const pipeIdx = trimmed.search(SHELL_OPERATOR_PATTERN);
+      const firstSegment =
+        pipeIdx > 0 ? trimmed.slice(0, pipeIdx).trim() : trimmed;
+      for (const prefix of ignore) {
+        if (
+          matchesPrefix(firstSegment, prefix) ||
+          matchesPrefix(trimmed, prefix)
+        ) {
+          process.stdout.write("{}");
+          process.exit(0);
         }
       }
     }

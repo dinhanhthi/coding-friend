@@ -2164,6 +2164,78 @@ describe("loadAutoApproveConfig", () => {
     });
     expect(loadAutoApproveConfig(homeDir, cwd).allowExtra).toEqual([]);
   });
+
+  // ── autoApproveIgnore — delegate commands to native permissions ──────
+
+  it("returns empty ignore by default", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(cwd, { autoApprove: true });
+    expect(loadAutoApproveConfig(homeDir, cwd).ignore).toEqual([]);
+  });
+
+  it("reads ignore from local config", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(cwd, {
+      autoApprove: true,
+      autoApproveIgnore: ["cargo test", "npm run"],
+    });
+    const result = loadAutoApproveConfig(homeDir, cwd);
+    expect(result.ignore).toEqual(["cargo test", "npm run"]);
+  });
+
+  it("reads ignore from global config", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    fs.mkdirSync(cwd, { recursive: true });
+    writeConfig(homeDir, {
+      autoApprove: true,
+      autoApproveIgnore: ["npm test"],
+    });
+    expect(loadAutoApproveConfig(homeDir, cwd).ignore).toEqual(["npm test"]);
+  });
+
+  it("unions global and local ignore (both contribute, deduped)", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(homeDir, {
+      autoApprove: true,
+      autoApproveIgnore: ["npm test", "cargo test"],
+    });
+    writeConfig(cwd, {
+      autoApprove: true,
+      autoApproveIgnore: ["cargo test", "make build"],
+    });
+    const result = loadAutoApproveConfig(homeDir, cwd);
+    expect(result.ignore).toEqual(
+      expect.arrayContaining(["npm test", "cargo test", "make build"]),
+    );
+    expect(result.ignore).toHaveLength(3);
+  });
+
+  it("ignores non-string entries in autoApproveIgnore", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(cwd, {
+      autoApprove: true,
+      autoApproveIgnore: ["cargo test", 42, null, "npm test"],
+    });
+    expect(loadAutoApproveConfig(homeDir, cwd).ignore).toEqual([
+      "cargo test",
+      "npm test",
+    ]);
+  });
+
+  it("ignores autoApproveIgnore that is not an array", () => {
+    const homeDir = path.join(tmpDir, "home");
+    const cwd = path.join(tmpDir, "project");
+    writeConfig(cwd, {
+      autoApprove: true,
+      autoApproveIgnore: "cargo test",
+    });
+    expect(loadAutoApproveConfig(homeDir, cwd).ignore).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -2373,5 +2445,158 @@ describe("llmCacheKey — bounded keys", () => {
     expect(a).toBe(b);
     expect(a).toBe(c);
     expect(a).toBe(d);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration tests — hook respects autoApproveIgnore from config
+// ---------------------------------------------------------------------------
+
+describe("integration: autoApproveIgnore config", () => {
+  function setupIgnoreTest(ignore, command) {
+    const tmpHome = fs.mkdtempSync(
+      path.join(os.tmpdir(), "aa-ignore-home-"),
+    );
+    const tmpCwd = fs.mkdtempSync(
+      path.join(os.tmpdir(), "aa-ignore-cwd-"),
+    );
+    try {
+      const cfDir = path.join(tmpCwd, ".coding-friend");
+      fs.mkdirSync(cfDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(cfDir, "config.json"),
+        JSON.stringify({
+          autoApprove: true,
+          autoApproveIgnore: ignore,
+        }),
+      );
+      const input = JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command },
+        cwd: tmpCwd,
+      });
+      return execFileSync("node", [SCRIPT], {
+        input,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: tmpHome,
+          CF_AUTO_APPROVE_ENABLED: "",
+          CLAUDE_PROJECT_DIR: tmpCwd,
+        },
+        cwd: tmpCwd,
+        timeout: 5000,
+      });
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+      fs.rmSync(tmpCwd, { recursive: true, force: true });
+    }
+  }
+
+  it("outputs {} for an ignored command that would otherwise be ask", () => {
+    const stdout = setupIgnoreTest(["cargo test"], "cargo test --lib");
+    expect(stdout).toBe("{}");
+  });
+
+  it("outputs {} for compound pipe when first segment matches ignore", () => {
+    const stdout = setupIgnoreTest(["cargo test"], "cargo test --release | tee log.txt");
+    expect(stdout).toBe("{}");
+  });
+
+  it("does NOT bypass DENY even if command matches ignore", () => {
+    // rm -rf is always denied — ignore must not override security
+    try {
+      const tmpHome = fs.mkdtempSync(
+        path.join(os.tmpdir(), "aa-ignore-deny-home-"),
+      );
+      const tmpCwd = fs.mkdtempSync(
+        path.join(os.tmpdir(), "aa-ignore-deny-cwd-"),
+      );
+      try {
+        const cfDir = path.join(tmpCwd, ".coding-friend");
+        fs.mkdirSync(cfDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(cfDir, "config.json"),
+          JSON.stringify({
+            autoApprove: true,
+            autoApproveIgnore: ["rm"],
+          }),
+        );
+        const input = JSON.stringify({
+          tool_name: "Bash",
+          tool_input: { command: "rm -rf /tmp/evil" },
+          cwd: tmpCwd,
+        });
+        execFileSync("node", [SCRIPT], {
+          input,
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            HOME: tmpHome,
+            CF_AUTO_APPROVE_ENABLED: "",
+            CLAUDE_PROJECT_DIR: tmpCwd,
+          },
+          cwd: tmpCwd,
+          timeout: 5000,
+        });
+        // Should not reach here — deny exits with code 2
+        throw new Error("Expected exit code 2 (deny)");
+      } finally {
+        fs.rmSync(tmpHome, { recursive: true, force: true });
+        fs.rmSync(tmpCwd, { recursive: true, force: true });
+      }
+    } catch (err) {
+      expect(err.status).toBe(2);
+      const result = JSON.parse(err.stdout);
+      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+    }
+  });
+
+  it("does NOT bypass ALLOW when command matches ignore — still allows", () => {
+    // ls is in the built-in ALLOW list — ignore should not downgrade it
+    const tmpHome = fs.mkdtempSync(
+      path.join(os.tmpdir(), "aa-ignore-allow-home-"),
+    );
+    const tmpCwd = fs.mkdtempSync(
+      path.join(os.tmpdir(), "aa-ignore-allow-cwd-"),
+    );
+    try {
+      const cfDir = path.join(tmpCwd, ".coding-friend");
+      fs.mkdirSync(cfDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(cfDir, "config.json"),
+        JSON.stringify({
+          autoApprove: true,
+          autoApproveIgnore: ["ls"],
+        }),
+      );
+      const input = JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "ls -la" },
+        cwd: tmpCwd,
+      });
+      const stdout = execFileSync("node", [SCRIPT], {
+        input,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          HOME: tmpHome,
+          CF_AUTO_APPROVE_ENABLED: "",
+          CLAUDE_PROJECT_DIR: tmpCwd,
+        },
+        cwd: tmpCwd,
+        timeout: 5000,
+      });
+      const result = JSON.parse(stdout);
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+      fs.rmSync(tmpCwd, { recursive: true, force: true });
+    }
+  });
+
+  it("outputs {} for unknown command matching ignore prefix", () => {
+    const stdout = setupIgnoreTest(["some-unknown-tool"], "some-unknown-tool --verbose");
+    expect(stdout).toBe("{}");
   });
 });

@@ -167,6 +167,37 @@ Pattern matching runs first. It covers the vast majority of tool calls with zero
     code in test files or build scripts. See the warning above.
 </Callout>
 
+<Callout type="info" title="Prefer Claude Code's native patterns? Use autoApproveIgnore">
+  If you already have flexible glob patterns in Claude Code's
+  `.claude/settings.json` (e.g. `"Bash(cargo test * | *)"`) and want the
+  hook to **step aside** instead of overriding them, use `autoApproveIgnore`.
+
+  Unlike `autoApproveAllowExtra` (which force-allows), `autoApproveIgnore`
+  makes the hook return no decision — so Claude Code's native
+  `permissions.allow` rules take over with their full glob pattern support.
+
+```json
+// .coding-friend/config.json
+{
+  "autoApprove": true,
+  "autoApproveIgnore": ["cargo test", "cargo build"]
+}
+```
+
+  - Commands matching an ignore prefix are only bypassed when the hook would
+    return **"ask"** or route to the **LLM classifier**. Security **DENY
+    patterns are always enforced** regardless of this setting.
+  - For compound commands (pipes, chains), the first segment is checked:
+    `cargo test | tee log.txt` is ignored when `"cargo test"` is listed.
+  - Both global and local configs are merged (union), same as
+    `autoApproveAllowExtra`.
+  - **When to use which:**
+    - `autoApproveAllowExtra` — you want the hook to silently approve
+      (no prompt, no Claude Code check)
+    - `autoApproveIgnore` — you want Claude Code's native patterns to
+      decide (respects your `.claude/settings.json` allow rules)
+</Callout>
+
 ### Step 2: Working-Dir Check (instant)
 
 File operations (`Write` and `Edit`) are checked against your project directory:
