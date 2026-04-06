@@ -144,9 +144,7 @@ export function getCurrentAccountEmail(): string | undefined {
     ".claude.json",
   );
   const data = readJson<Record<string, unknown>>(claudeJsonPath);
-  const oauth = data?.oauthAccount as
-    | { emailAddress?: string }
-    | undefined;
+  const oauth = data?.oauthAccount as { emailAddress?: string } | undefined;
   return oauth?.emailAddress || undefined;
 }
 

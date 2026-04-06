@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.0 (2026-04-06)
+
+- Add `autoApproveIgnore` config — specify Bash command prefixes the `auto-approve` hook should skip classifying, deferring to Claude Code's native `permissions.allow` patterns (DENY rules still enforced) [#6621b61](https://github.com/dinhanhthi/coding-friend/commit/6621b61)
+- Downgrade `cf-implementer` agent from Opus to Sonnet — implementation is a structured, well-defined task; Opus is reserved for planning and complex reviews [#6f3bed3](https://github.com/dinhanhthi/coding-friend/commit/6f3bed3)
+
 ## v0.24.0 (2026-04-06)
 
 - Add per-account alias support to statusline — users can assign custom display names for each login account via `cf statusline`, `cf config`, or `cf init`; aliases are stored as an email-keyed map in `statusline.accountAliases` and replace the default name/email display [#126c11c](https://github.com/dinhanhthi/coding-friend/commit/126c11c)
