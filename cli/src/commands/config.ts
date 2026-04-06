@@ -534,6 +534,12 @@ async function editAutoApprove(
       log,
       (message) => confirm({ message, default: true }),
     );
+    log.dim(
+      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
+    );
+    log.dim(
+      "Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/",
+    );
   }
 }
 
