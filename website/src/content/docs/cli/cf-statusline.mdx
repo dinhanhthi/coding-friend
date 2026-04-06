@@ -31,7 +31,7 @@ The statusline can show any combination of these components:
 | `folder`     | Project name                                     | `MyProject`                              |
 | `model`      | Active model                                     | `Opus 4.6`                               |
 | `branch`     | Git branch                                       | `⎇ main`                                 |
-| `account`    | Account name, email (from `~/.claude.json`)      | `👤 Thi (me@dinhanhthi.com)`             |
+| `account`    | Account name, email, or custom alias             | `👤 Thi (me@dinhanhthi.com)`             |
 | `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                                |
 | `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…`         |
 | `task_agent` | Task progress & active agent                     | `📋 Tasks: 2/5 \| 🤖 Agent: cf-reviewer` |
@@ -43,6 +43,18 @@ When you run this command, an interactive checklist lets you choose which compon
 The `rate_limit` component requires **curl** and **jq** to fetch API usage data from Anthropic. If dependencies are missing, the statusline will show a warning instead. The CLI warns you during setup.
 
 The `account` component reads from `~/.claude.json` (requires **jq**, already needed by other components). Falls back to `claude auth status --json` if the file is unavailable. Usage data is cached for 60 seconds.
+
+### Account Alias
+
+When configuring the statusline (via `cf statusline`, `cf config`, or `cf init`), if you select the `account` component, you'll be prompted to set an alias for your current account:
+
+```
+? Alias for me@dinhanhthi.com (leave empty to clear): Work
+```
+
+The alias completely replaces the name/email display in the statusline (e.g., `👤 Work` instead of `👤 Thi Dinh (me@dinhanhthi.com)`). Aliases are stored per email, so if you switch accounts, each account can have its own alias. Accounts without an alias fall back to the default name/email display.
+
+To change or clear an alias, re-run `cf statusline` or `cf config`.
 
 ## Customization
 
@@ -60,7 +72,11 @@ You can either edit `~/.coding-friend/config.json` directly, or run `cf statusli
       "context",
       "rate_limit",
       "task_agent"
-    ]
+    ],
+    "accountAliases": {
+      "me@work.com": "Work",
+      "me@personal.com": "Personal"
+    }
   }
 }
 ```
