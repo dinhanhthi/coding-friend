@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.24.0 (2026-04-06)
+
+- Add per-account alias support to statusline — users can assign custom display names for each login account via `cf statusline`, `cf config`, or `cf init`; aliases are stored as an email-keyed map in `statusline.accountAliases` and replace the default name/email display [#126c11c](https://github.com/dinhanhthi/coding-friend/commit/126c11c)
+- Auto-approve `cargo fmt` as a safe formatter in the `auto-approve` hook [#1b79b39](https://github.com/dinhanhthi/coding-friend/commit/1b79b39)
+
 ## v0.23.0 (2026-04-06)
 
 - Move test runners and build tools (`npm test`, `npm run`, `npx jest`, `npx vitest`, `npx tsx`, `npx eslint`) from auto-approve allow list to ask list — these execute arbitrary code from repo files and could be exploited via prompt injection [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
