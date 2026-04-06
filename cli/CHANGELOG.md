@@ -5,6 +5,12 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.29.0 (2026-04-06)
+
+- Narrow `Bash(npx *)` static permission rule to `Bash(npx tsc *)` and `Bash(npx prettier *)` — the broad rule granted auto-approval for any npx package including those that execute arbitrary code [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
+- Fix dangerous rules audit regex to detect `Bash(npx *)` (space-form wildcard) in addition to `Bash(npx*)` [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
+- Add `cf guide` colorized output and help text [#ab18237](https://github.com/dinhanhthi/coding-friend/commit/ab18237)
+
 ## v1.28.0 (2026-04-05)
 
 - Phase 5 CLI Infrastructure — config validation, daemon lifecycle, E2E tests [#0f5aec0](https://github.com/dinhanhthi/coding-friend/commit/0f5aec0)
