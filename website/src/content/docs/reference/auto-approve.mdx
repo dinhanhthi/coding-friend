@@ -127,12 +127,13 @@ to notice something is off.
 
 </Callout>
 
-<Callout type="info" title="Trust your repo? Extend the allow list via autoApproveAllowExtra">
-  Adding commands to Claude Code's `permissions.allow` does **not** skip the
-  prompt here — PreToolUse hooks run before Claude Code's permission rules,
-  and [the hooks docs](https://code.claude.com/docs/en/hooks) state that "a
-  blocking hook takes precedence over allow rules." A hook that returns
-  `"ask"` forces the prompt regardless of any matching allow rule.
+#### 🔓 Trust your repo? Extend the allow list via `autoApproveAllowExtra`
+
+Adding commands to Claude Code's `permissions.allow` does **not** skip the
+prompt here — PreToolUse hooks run before Claude Code's permission rules,
+and [the hooks docs](https://code.claude.com/docs/en/hooks) state that "a
+blocking hook takes precedence over allow rules." A hook that returns
+`"ask"` forces the prompt regardless of any matching allow rule.
 
 Coding Friend provides its own escape hatch inside `.coding-friend/config.json`.
 Add prefixes to `autoApproveAllowExtra` — they are merged into the hook's
@@ -166,12 +167,12 @@ built-in allow list at runtime, so matching commands skip the prompt:
 - Only use this in repos you trust — entries here give Claude silent
   execution of anything matching the prefix, including attacker-controlled
   code in test files or build scripts. See the warning above.
-  </Callout>
 
-<Callout type="info" title="Prefer Claude Code's native patterns? Use autoApproveIgnore">
-  If you already have flexible glob patterns in Claude Code's
-  `.claude/settings.json` (e.g. `"Bash(cargo test * | *)"`) and want the
-  hook to **step aside** instead of overriding them, use `autoApproveIgnore`.
+#### 🔀 Prefer Claude Code's native patterns? Use `autoApproveIgnore`
+
+If you already have flexible glob patterns in Claude Code's
+`.claude/settings.json` (e.g. `"Bash(cargo test * | *)"`) and want the
+hook to **step aside** instead of overriding them, use `autoApproveIgnore`.
 
 Unlike `autoApproveAllowExtra` (which force-allows), `autoApproveIgnore`
 makes the hook return no decision — so Claude Code's native
@@ -192,10 +193,9 @@ makes the hook return no decision — so Claude Code's native
   `cargo test | tee log.txt` is ignored when `"cargo test"` is listed.
 - Both global and local configs are merged (union), same as
   `autoApproveAllowExtra`.
-- **When to use which:** - `autoApproveAllowExtra` — you want the hook to silently approve
-  (no prompt, no Claude Code check) - `autoApproveIgnore` — you want Claude Code's native patterns to
-  decide (respects your `.claude/settings.json` allow rules)
-  </Callout>
+- **When to use which:**
+  - `autoApproveAllowExtra` — you want the hook to silently approve (no prompt, no Claude Code check)
+  - `autoApproveIgnore` — you want Claude Code's native patterns to decide (respects your `.claude/settings.json` allow rules)
 
 ### Step 2: Working-Dir Check (instant)
 
