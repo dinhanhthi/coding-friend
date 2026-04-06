@@ -237,9 +237,10 @@ function isSafeCompoundCommand(cmd, allowExtra) {
   // Effective allow list = hook defaults + user-configured per-project extras.
   // allowExtra lets trusted projects opt extra prefixes into auto-approval
   // (see loadAutoApproveConfig / autoApproveAllowExtra).
-  const effectiveAllow = allowExtra && allowExtra.length > 0
-    ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
-    : BASH_ALLOW_PREFIXES;
+  const effectiveAllow =
+    allowExtra && allowExtra.length > 0
+      ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
+      : BASH_ALLOW_PREFIXES;
 
   // Split on pipe operator
   const segments = stripped.split("|").map((s) => s.trim());
@@ -456,9 +457,10 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
     }
 
     // Effective allow list = hook defaults + per-project extras
-    const effectiveAllow = allowExtra && allowExtra.length > 0
-      ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
-      : BASH_ALLOW_PREFIXES;
+    const effectiveAllow =
+      allowExtra && allowExtra.length > 0
+        ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
+        : BASH_ALLOW_PREFIXES;
 
     // Compound commands (pipes, chains, redirects, subshells) are never
     // safe to auto-approve by prefix alone — send to LLM or ask
@@ -851,7 +853,10 @@ function main() {
 
     // Load config (even when force-enabled) so we can pick up allowExtra
     const homeDir = os.homedir();
-    const { enabled, allowExtra, ignore } = loadAutoApproveConfig(homeDir, projectDir);
+    const { enabled, allowExtra, ignore } = loadAutoApproveConfig(
+      homeDir,
+      projectDir,
+    );
 
     if (!forceEnabled && !enabled) {
       process.stdout.write("{}");

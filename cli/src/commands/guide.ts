@@ -138,9 +138,7 @@ export function guideListCommand(): void {
   for (const name of entries) {
     const path = join(customDir, `${name}-custom`, "SKILL.md");
     const found = skillsDir != null && skillExists(skillsDir, name);
-    const status = found
-      ? chalk.green("✔")
-      : chalk.yellow("⚠ skill not found");
+    const status = found ? chalk.green("✔") : chalk.yellow("⚠ skill not found");
     log.info(
       `  ${status}  ${chalk.cyan(name)}  ${chalk.dim("→")}  ${chalk.dim(path)}`,
     );

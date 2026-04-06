@@ -1,6 +1,6 @@
 {
   "name": "coding-friend",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "private": true,
   "scripts": {

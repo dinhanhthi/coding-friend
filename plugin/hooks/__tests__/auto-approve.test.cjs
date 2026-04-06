@@ -601,9 +601,9 @@ describe("classifyByRules — normal prompt (ask)", () => {
   });
 
   it("asks for Bash cargo yank", () => {
-    expect(classifyByRules("Bash", { command: "cargo yank --vers 0.1.0" })).toBe(
-      "ask",
-    );
+    expect(
+      classifyByRules("Bash", { command: "cargo yank --vers 0.1.0" }),
+    ).toBe("ask");
   });
 
   it("asks for Bash cargo owner", () => {
@@ -2105,7 +2105,9 @@ describe("loadAutoApproveConfig", () => {
       autoApprove: true,
       autoApproveAllowExtra: ["npm test"],
     });
-    expect(loadAutoApproveConfig(homeDir, cwd).allowExtra).toEqual(["npm test"]);
+    expect(loadAutoApproveConfig(homeDir, cwd).allowExtra).toEqual([
+      "npm test",
+    ]);
   });
 
   it("unions global and local allowExtra (both contribute)", () => {
@@ -2258,9 +2260,9 @@ describe("classifyByRules — allowExtra param", () => {
   });
 
   it("still asks when allowExtra is not provided", () => {
-    expect(
-      classifyByRules("Bash", { command: "cargo test --lib" }),
-    ).toBe("ask");
+    expect(classifyByRules("Bash", { command: "cargo test --lib" })).toBe(
+      "ask",
+    );
   });
 
   it("allowExtra entry in compound pipe is respected by isSafeCompoundCommand", () => {
@@ -2454,12 +2456,8 @@ describe("llmCacheKey — bounded keys", () => {
 
 describe("integration: autoApproveIgnore config", () => {
   function setupIgnoreTest(ignore, command) {
-    const tmpHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "aa-ignore-home-"),
-    );
-    const tmpCwd = fs.mkdtempSync(
-      path.join(os.tmpdir(), "aa-ignore-cwd-"),
-    );
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "aa-ignore-home-"));
+    const tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), "aa-ignore-cwd-"));
     try {
       const cfDir = path.join(tmpCwd, ".coding-friend");
       fs.mkdirSync(cfDir, { recursive: true });
@@ -2499,7 +2497,10 @@ describe("integration: autoApproveIgnore config", () => {
   });
 
   it("outputs {} for compound pipe when first segment matches ignore", () => {
-    const stdout = setupIgnoreTest(["cargo test"], "cargo test --release | tee log.txt");
+    const stdout = setupIgnoreTest(
+      ["cargo test"],
+      "cargo test --release | tee log.txt",
+    );
     expect(stdout).toBe("{}");
   });
 
@@ -2596,7 +2597,10 @@ describe("integration: autoApproveIgnore config", () => {
   });
 
   it("outputs {} for unknown command matching ignore prefix", () => {
-    const stdout = setupIgnoreTest(["some-unknown-tool"], "some-unknown-tool --verbose");
+    const stdout = setupIgnoreTest(
+      ["some-unknown-tool"],
+      "some-unknown-tool --verbose",
+    );
     expect(stdout).toBe("{}");
   });
 });

@@ -246,8 +246,7 @@ export const STATIC_RULES: PermissionRule[] = [
   // explicitly with awareness of the risk.
   {
     rule: "Bash(npx tsc *)",
-    description:
-      "[execute] Run TypeScript compiler · Used by: cf-verification",
+    description: "[execute] Run TypeScript compiler · Used by: cf-verification",
     category: "Testing & Build",
     recommended: true,
   },
