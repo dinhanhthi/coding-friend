@@ -12,9 +12,18 @@ bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh [package-arg] [le
 
 Read the output. It tells you: which packages changed, current vs tag version, whether to bump or just update changelog, and path→package mapping.
 
-### Step B2: Determine bump level
+### Step B2: Determine bump level and filter packages
 
 If level not in args, analyze the changes and determine patch/minor/major automatically. Do NOT ask for confirmation — proceed immediately.
+
+**Cross-cutting commits — primary package attribution:**
+When a commit touches paths in multiple packages, determine which package owns the change by looking at where the **essence** of the change lives — not just which paths were touched:
+
+- If a commit is primarily a CLI feature/fix (most changed files are in `cli/`, the feature is a CLI command, the tests are CLI tests) and only incidentally updates a plugin file (e.g., a hook reads new config) → it is a **CLI-only change**. Do NOT bump or changelog the plugin for it.
+- If a commit independently changes both packages (e.g., adds a new plugin skill AND a new CLI command) → attribute to both, with separate package-appropriate descriptions.
+- **Key signal:** if the plugin changelog entry would describe CLI commands/features (e.g., `cf statusline`, `cf config`) rather than plugin-specific behavior, it's a CLI change — not a plugin change.
+
+After filtering, if a package flagged by bump-info.sh has NO commits that are primarily its own, skip bumping it entirely.
 
 ### Step B3: Bump version files
 
@@ -41,7 +50,12 @@ git remote get-url origin | sed 's|git@github.com:|https://github.com/|' | sed '
 
 # Commits per package (use tag from bump-info output)
 git log <TAG>..HEAD --oneline --no-merges -- <paths>
+
+# For cross-cutting commits, check the full stat to determine primary package
+git show <hash> --stat
 ```
+
+**Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
 ### Step B5: Sync website docs
 
