@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.23.0 (2026-04-06)
+
+- Move test runners and build tools (`npm test`, `npm run`, `npx jest`, `npx vitest`, `npx tsx`, `npx eslint`) from auto-approve allow list to ask list — these execute arbitrary code from repo files and could be exploited via prompt injection [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
+- Add Cargo support to `auto-approve` hook — read-only subcommands (`cargo --version`, `cargo tree`, `cargo metadata`, `cargo search`, `cargo help`) auto-approve; all others (`cargo check`, `cargo build`, `cargo test`, etc.) require confirmation due to `build.rs` and proc-macro execution [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
+- Add `autoApproveAllowExtra` config field — users can extend the auto-approve allow list per-project in `.coding-friend/config.json` to reduce prompts in trusted repos (DENY patterns and safety checks still apply) [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
+
 ## v0.22.0 (2026-04-05)
 
 - Refactor `/cf-review` into multi-agent orchestrator that dispatches 5 specialist agents (`cf-reviewer-plan`, `cf-reviewer-security`, `cf-reviewer-quality`, `cf-reviewer-tests`, `cf-reviewer-rules`) in parallel and merges results via `cf-reviewer-reducer` [#e9c1d22](https://github.com/dinhanhthi/coding-friend/commit/e9c1d22)
