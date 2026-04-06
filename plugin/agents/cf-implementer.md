@@ -14,7 +14,7 @@ description: >
   test first, then minimum code to pass, then refactors. Do NOT use this agent for
   single-file trivial changes, documentation, or config edits — use inline TDD (cf-tdd
   skill) for small changes instead.
-model: opus
+model: sonnet
 ---
 
 # Implementer Agent
