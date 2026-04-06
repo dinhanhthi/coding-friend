@@ -23,6 +23,7 @@ export type StatuslineComponent =
 
 export interface StatuslineConfig {
   components?: StatuslineComponent[];
+  accountAliases?: Record<string, string>;
 }
 
 export const STATUSLINE_COMPONENTS: {

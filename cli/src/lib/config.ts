@@ -58,6 +58,7 @@ const StatuslineComponentSchema = z.enum([
 
 const StatuslineConfigSchema = z.object({
   components: z.array(StatuslineComponentSchema).optional(),
+  accountAliases: z.record(z.string(), z.string()).optional(),
 });
 
 const MemoryConfigSchema = z.object({

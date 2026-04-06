@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { checkbox } from "@inquirer/prompts";
+import { checkbox, input } from "@inquirer/prompts";
 import { readJson, writeJson, mergeJson } from "./json.js";
 import {
   claudeSettingsPath,
@@ -126,9 +126,85 @@ export async function selectStatuslineComponents(
 
 /**
  * Save statusline component config to global config.
+ * Reads existing statusline config first to avoid clobbering sibling keys (e.g. accountAliases).
  */
 export function saveStatuslineConfig(components: StatuslineComponent[]): void {
-  mergeJson(globalConfigPath(), { statusline: { components } });
+  const config = readJson<Record<string, unknown>>(globalConfigPath()) ?? {};
+  const existing = (config.statusline ?? {}) as Record<string, unknown>;
+  mergeJson(globalConfigPath(), { statusline: { ...existing, components } });
+}
+
+/**
+ * Get the current account email from ~/.claude.json.
+ * Returns undefined if not found.
+ */
+export function getCurrentAccountEmail(): string | undefined {
+  const claudeJsonPath = join(
+    process.env.HOME ?? process.env.USERPROFILE ?? "",
+    ".claude.json",
+  );
+  const data = readJson<Record<string, unknown>>(claudeJsonPath);
+  const oauth = data?.oauthAccount as
+    | { emailAddress?: string }
+    | undefined;
+  return oauth?.emailAddress || undefined;
+}
+
+/**
+ * Load the account alias for a given email from global config.
+ * Returns undefined if not set.
+ */
+export function loadStatuslineAlias(email: string): string | undefined {
+  const config = readJson<CodingFriendConfig>(globalConfigPath());
+  return config?.statusline?.accountAliases?.[email] || undefined;
+}
+
+/**
+ * Save account alias for a given email to global config.
+ * Reads existing statusline config first to avoid clobbering components.
+ * Pass undefined or empty string to clear the alias for that email.
+ */
+export function saveStatuslineAlias(
+  email: string,
+  alias: string | undefined,
+): void {
+  const config = readJson<Record<string, unknown>>(globalConfigPath()) ?? {};
+  const existing = (config.statusline ?? {}) as Record<string, unknown>;
+  const aliases = {
+    ...((existing.accountAliases as Record<string, string>) ?? {}),
+  };
+  if (alias) {
+    aliases[email] = alias;
+  } else {
+    delete aliases[email];
+  }
+  const updated = { ...existing, accountAliases: aliases };
+  // Remove empty map
+  if (Object.keys(aliases).length === 0) delete updated.accountAliases;
+  mergeJson(globalConfigPath(), { statusline: updated });
+}
+
+/**
+ * Prompt user to set an account alias for the current email.
+ * Shows the email so user knows which account they're aliasing.
+ * Returns the alias string, or undefined if left empty (clears alias).
+ */
+export async function promptAccountAlias(
+  email: string,
+  currentAlias?: string,
+): Promise<string | undefined> {
+  const value = await input({
+    message: `Alias for ${email} (leave empty to clear):`,
+    default: currentAlias ?? "",
+    validate: (val) => {
+      if (val.length > 40) return "Alias must be 40 characters or less.";
+      if (/[\x00-\x1f]/.test(val))
+        return "Alias must not contain control characters.";
+      return true;
+    },
+  });
+  const trimmed = value.trim();
+  return trimmed || undefined;
 }
 
 /**
