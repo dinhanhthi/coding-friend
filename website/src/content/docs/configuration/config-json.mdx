@@ -52,6 +52,9 @@ Edit interactively with `cf config`, or manually edit the JSON files.
       "me@work.com": "Work"
     }
   },
+  "autoApprove": false,
+  "autoApproveAllowExtra": [],
+  "autoApproveIgnore": [],
   "memory": {
     "tier": "auto",
     "embedding": {
@@ -165,6 +168,34 @@ Settings for the statusline display (global config only).
 - When set, the alias replaces the full name/email display in the statusline (e.g., `👤 Work` instead of `👤 Name (email)`)
 - Each account can have its own alias — switching accounts preserves all aliases
 - Set interactively via `cf statusline`, `cf config`, or `cf init`
+
+### `autoApprove`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Enables the [auto-approve hook](/docs/reference/auto-approve) that reduces permission prompts
+- Uses a 3-step classification pipeline (rules → working-dir → LLM) to auto-approve safe operations
+
+### `autoApproveAllowExtra`
+
+- **Type**: `string[]`
+- **Default**: `[]`
+- Additional Bash command prefixes to auto-approve (merged with built-in allow list)
+- Entries are matched as command prefixes: `"cargo test"` matches `cargo test`, `cargo test --lib`, etc.
+- Cannot override DENY patterns — adding `"rm -rf"` does not bypass the built-in deny
+- Both global and local configs are merged (union, deduped)
+- See [Auto-Approve reference](/docs/reference/auto-approve) for details
+
+### `autoApproveIgnore`
+
+- **Type**: `string[]`
+- **Default**: `[]`
+- Bash command prefixes the hook should **not classify** — returns no decision so Claude Code's native `permissions.allow` patterns handle them
+- Only applies to commands that would be prompted ("ask") or sent to the LLM classifier ("unknown"). Security DENY patterns are always enforced
+- For compound commands (pipes, chains), the first segment is checked
+- Both global and local configs are merged (union, deduped)
+- Use this when you have flexible glob patterns in `.claude/settings.json` (e.g. `"Bash(cargo test * | *)"`) and want Claude Code to decide instead of the hook
+- See [Auto-Approve reference](/docs/reference/auto-approve) for the difference with `autoApproveAllowExtra`
 
 ### `memory`
 
