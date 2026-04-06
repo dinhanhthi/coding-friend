@@ -542,8 +542,8 @@ describe("classifyByRules — normal prompt (ask)", () => {
     expect(classifyByRules("Bash", { command: "cargo clippy" })).toBe("ask");
   });
 
-  it("asks for Bash cargo fmt (modifies source files)", () => {
-    expect(classifyByRules("Bash", { command: "cargo fmt" })).toBe("ask");
+  it("allows Bash cargo fmt (formatter, no code execution)", () => {
+    expect(classifyByRules("Bash", { command: "cargo fmt" })).toBe("allow");
   });
 
   it("asks for Bash cargo fix (modifies source files)", () => {

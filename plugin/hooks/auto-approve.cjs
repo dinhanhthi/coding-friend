@@ -179,6 +179,8 @@ const BASH_ALLOW_PREFIXES = [
   "cargo pkgid",
   "cargo locate-project",
   "cargo search",
+  // Cargo fmt — pure formatter (rustfmt), no build.rs or proc-macro execution
+  "cargo fmt",
 ];
 
 /**
@@ -308,7 +310,6 @@ const BASH_ASK_PREFIXES = [
   "cargo test",
   "cargo run",
   "cargo clippy",
-  "cargo fmt",
   "cargo fix",
   "cargo bench",
   "cargo doc",
