@@ -9,6 +9,10 @@ import {
   saveStatuslineConfig,
   writeStatuslineSettings,
   isStatuslineConfigured,
+  getCurrentAccountEmail,
+  loadStatuslineAlias,
+  saveStatuslineAlias,
+  promptAccountAlias,
 } from "../lib/statusline.js";
 
 export async function statuslineCommand(): Promise<void> {
@@ -64,16 +68,31 @@ export async function statuslineCommand(): Promise<void> {
     );
   }
 
-  // Step 4: Save config + write settings
+  // Step 4: Account alias (only if account component selected)
+  let alias: string | undefined;
+  if (components.includes("account")) {
+    const email = getCurrentAccountEmail();
+    if (email) {
+      alias = await promptAccountAlias(email, loadStatuslineAlias(email));
+      saveStatuslineAlias(email, alias);
+    } else {
+      log.dim("No account detected — skipping alias setup.");
+    }
+  }
+
+  // Step 5: Save config + write settings
   saveStatuslineConfig(components);
   writeStatuslineSettings(result.hookPath);
 
-  // Step 5: Confirm
+  // Step 6: Confirm
   log.success("Statusline configured!");
   log.dim("Restart Claude Code (or start a new session) to see it.");
   if (components.length < ALL_COMPONENT_IDS.length) {
     log.dim(`Showing: ${components.join(", ")}`);
   } else {
     log.dim("Showing all components.");
+  }
+  if (alias) {
+    log.dim(`Account alias: ${alias}`);
   }
 }

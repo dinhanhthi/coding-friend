@@ -34,6 +34,10 @@ import {
   selectStatuslineComponents,
   saveStatuslineConfig,
   writeStatuslineSettings,
+  getCurrentAccountEmail,
+  loadStatuslineAlias,
+  saveStatuslineAlias,
+  promptAccountAlias,
 } from "../lib/statusline.js";
 import { commandExists } from "../lib/exec.js";
 import {
@@ -728,6 +732,17 @@ async function stepStatusline(): Promise<void> {
       log.warn(
         `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
       );
+    }
+  }
+
+  // Account alias (only if account component selected)
+  if (components.includes("account")) {
+    const email = getCurrentAccountEmail();
+    if (email) {
+      const alias = await promptAccountAlias(email, loadStatuslineAlias(email));
+      saveStatuslineAlias(email, alias);
+    } else {
+      log.dim("No account detected — skipping alias setup.");
     }
   }
 

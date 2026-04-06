@@ -147,6 +147,29 @@ describe("saveStatuslineConfig", () => {
     ]);
   });
 
+  it("preserves accountAliases when saving components", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: {
+          components: ["version"],
+          accountAliases: { "a@b.com": "Work" },
+        },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineConfig } = await import("../statusline.js");
+    saveStatuslineConfig(["model", "branch"]);
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.components).toEqual(["model", "branch"]);
+    expect(sl?.accountAliases).toEqual({ "a@b.com": "Work" });
+  });
+
   it("preserves other config keys when saving", async () => {
     const configFile = join(testDir, "config.json");
     writeFileSync(
@@ -327,6 +350,158 @@ describe("ensureStatusline", () => {
     mockPaths({ pluginCache: cacheDir, claudeSettings: settingsFile });
     const { ensureStatusline } = await import("../statusline.js");
     expect(ensureStatusline()).toBeNull();
+  });
+});
+
+describe("loadStatuslineAlias", () => {
+  it("returns undefined when no config exists", async () => {
+    mockPaths();
+    const { loadStatuslineAlias } = await import("../statusline.js");
+    expect(loadStatuslineAlias("a@b.com")).toBeUndefined();
+  });
+
+  it("returns undefined when config has no accountAliases key", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({ statusline: { components: ["version"] } }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { loadStatuslineAlias } = await import("../statusline.js");
+    expect(loadStatuslineAlias("a@b.com")).toBeUndefined();
+  });
+
+  it("returns undefined when email not in aliases map", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: { accountAliases: { "other@b.com": "Other" } },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { loadStatuslineAlias } = await import("../statusline.js");
+    expect(loadStatuslineAlias("a@b.com")).toBeUndefined();
+  });
+
+  it("returns the alias for a matching email", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: {
+          accountAliases: { "a@b.com": "Work", "x@y.com": "Personal" },
+        },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { loadStatuslineAlias } = await import("../statusline.js");
+    expect(loadStatuslineAlias("a@b.com")).toBe("Work");
+    expect(loadStatuslineAlias("x@y.com")).toBe("Personal");
+  });
+});
+
+describe("saveStatuslineAlias", () => {
+  it("saves alias for email to global config", async () => {
+    const configFile = join(testDir, "config.json");
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineAlias } = await import("../statusline.js");
+    saveStatuslineAlias("a@b.com", "My Alias");
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.accountAliases).toEqual({ "a@b.com": "My Alias" });
+  });
+
+  it("preserves existing components when saving alias", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: { components: ["version", "model"] },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineAlias } = await import("../statusline.js");
+    saveStatuslineAlias("a@b.com", "Work");
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.accountAliases).toEqual({ "a@b.com": "Work" });
+    expect(sl?.components).toEqual(["version", "model"]);
+  });
+
+  it("preserves aliases for other emails", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: {
+          accountAliases: { "old@b.com": "Old" },
+        },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineAlias } = await import("../statusline.js");
+    saveStatuslineAlias("new@b.com", "New");
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.accountAliases).toEqual({
+      "old@b.com": "Old",
+      "new@b.com": "New",
+    });
+  });
+
+  it("clears alias for email when called with undefined", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: {
+          components: ["version"],
+          accountAliases: { "a@b.com": "Work", "x@y.com": "Personal" },
+        },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineAlias } = await import("../statusline.js");
+    saveStatuslineAlias("a@b.com", undefined);
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.accountAliases).toEqual({ "x@y.com": "Personal" });
+    expect(sl?.components).toEqual(["version"]);
+  });
+
+  it("removes accountAliases key when last alias cleared", async () => {
+    const configFile = join(testDir, "config.json");
+    writeFileSync(
+      configFile,
+      JSON.stringify({
+        statusline: { accountAliases: { "a@b.com": "Work" } },
+      }),
+    );
+
+    mockPaths({ globalConfig: configFile });
+    const { saveStatuslineAlias } = await import("../statusline.js");
+    saveStatuslineAlias("a@b.com", undefined);
+
+    const { readJson } = await import("../json.js");
+    const config = readJson<Record<string, unknown>>(configFile);
+    const sl = config?.statusline as Record<string, unknown>;
+    expect(sl?.accountAliases).toBeUndefined();
   });
 });
 

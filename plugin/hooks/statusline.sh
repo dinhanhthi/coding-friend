@@ -34,8 +34,10 @@ INPUT=$(cat)
 # Read component visibility config
 CONFIG_FILE="$HOME/.coding-friend/config.json"
 SL_COMPONENTS=""
+SL_ACCOUNT_ALIASES=""
 if [ -f "$CONFIG_FILE" ] && command -v jq &>/dev/null; then
   SL_COMPONENTS=$(jq -r '.statusline.components // empty' "$CONFIG_FILE" 2>/dev/null)
+  SL_ACCOUNT_ALIASES=$(jq -r '.statusline.accountAliases // empty' "$CONFIG_FILE" 2>/dev/null)
 fi
 
 # Check if a component is enabled (show all if no config)
@@ -229,42 +231,53 @@ if component_enabled "context"; then
 fi
 
 # ── Read account data (for "account" component) ──
-# Priority: 1) ~/.claude.json (fast local read)  2) claude auth status --json (subprocess fallback)
-acct_email=""
-acct_name=""
-if component_enabled "account" && command -v jq &>/dev/null; then
-  # Source 1: ~/.claude.json (fast local read, no network call)
-  CLAUDE_JSON="$HOME/.claude.json"
-  if [ -f "$CLAUDE_JSON" ]; then
-    # Extract all fields in a single jq call
-    acct_fields=$(jq -r '.oauthAccount | "\(.emailAddress // "")\t\(.displayName // "")"' "$CLAUDE_JSON" 2>/dev/null)
-    if [ -n "$acct_fields" ]; then
-      acct_email=$(echo "$acct_fields" | cut -f1)
-      acct_name=$(echo "$acct_fields" | cut -f2)
-    fi
-  fi
-
-  # Source 2: fallback to `claude auth status --json` if no email found
-  if [ -z "$acct_email" ] && command -v claude &>/dev/null; then
-    auth_data=$(timeout 3 claude auth status --json 2>/dev/null) || true
-    if [ -n "$auth_data" ] && echo "$auth_data" | jq -e '.loggedIn == true' >/dev/null 2>&1; then
-      acct_email=$(echo "$auth_data" | jq -r '.email // ""' 2>/dev/null)
-    fi
-  fi
-fi
-
-# Build account line
+# Always fetch email first, then check alias map for that email.
+# Priority: 1) alias from accountAliases map  2) raw name/email display
 account_line=""
 if component_enabled "account"; then
-  acct_parts=""
-  if [ -n "$acct_name" ]; then
-    acct_parts="${CYAN}${acct_name}${RESET}"
-    [ -n "$acct_email" ] && acct_parts+=" ${GRAY}(${acct_email})${RESET}"
-  elif [ -n "$acct_email" ]; then
-    acct_parts="${CYAN}${acct_email}${RESET}"
+  acct_email=""
+  acct_name=""
+  if command -v jq &>/dev/null; then
+    # Source 1: ~/.claude.json (fast local read, no network call)
+    CLAUDE_JSON="$HOME/.claude.json"
+    if [ -f "$CLAUDE_JSON" ]; then
+      acct_fields=$(jq -r '.oauthAccount | "\(.emailAddress // "")\t\(.displayName // "")"' "$CLAUDE_JSON" 2>/dev/null)
+      if [ -n "$acct_fields" ]; then
+        acct_email=$(echo "$acct_fields" | cut -f1)
+        acct_name=$(echo "$acct_fields" | cut -f2)
+      fi
+    fi
+
+    # Source 2: fallback to `claude auth status --json` if no email found
+    if [ -z "$acct_email" ] && command -v claude &>/dev/null; then
+      auth_data=$(timeout 3 claude auth status --json 2>/dev/null) || true
+      if [ -n "$auth_data" ] && echo "$auth_data" | jq -e '.loggedIn == true' >/dev/null 2>&1; then
+        acct_email=$(echo "$auth_data" | jq -r '.email // ""' 2>/dev/null)
+      fi
+    fi
   fi
 
-  [ -n "$acct_parts" ] && account_line="👤 ${acct_parts}"
+  # Look up alias for current email in the accountAliases map
+  acct_alias=""
+  if [ -n "$acct_email" ] && [ -n "$SL_ACCOUNT_ALIASES" ]; then
+    acct_alias=$(echo "$SL_ACCOUNT_ALIASES" | jq -r --arg email "$acct_email" '.[$email] // empty' 2>/dev/null)
+    # Strip non-printable characters (defense-in-depth for manually edited config)
+    acct_alias=$(printf '%s' "$acct_alias" | tr -cd '[:print:]')
+  fi
+
+  # Build account line: alias takes priority, then name/email fallback
+  if [ -n "$acct_alias" ]; then
+    account_line="👤 ${CYAN}${acct_alias}${RESET}"
+  else
+    acct_parts=""
+    if [ -n "$acct_name" ]; then
+      acct_parts="${CYAN}${acct_name}${RESET}"
+      [ -n "$acct_email" ] && acct_parts+=" ${GRAY}(${acct_email})${RESET}"
+    elif [ -n "$acct_email" ]; then
+      acct_parts="${CYAN}${acct_email}${RESET}"
+    fi
+    [ -n "$acct_parts" ] && account_line="👤 ${acct_parts}"
+  fi
 fi
 
 # ── Fetch usage data (for "rate_limit" component) ──
