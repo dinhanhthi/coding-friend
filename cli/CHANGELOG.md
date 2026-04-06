@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.30.0 (2026-04-06)
+
+- Add per-account alias support to statusline — auto-detect current email, prompt for alias, store as `statusline.accountAliases` map in config; integrates into `cf statusline`, `cf config`, and `cf init` [#126c11c](https://github.com/dinhanhthi/coding-friend/commit/126c11c)
+
 ## v1.29.0 (2026-04-06)
 
 - Narrow `Bash(npx *)` static permission rule to `Bash(npx tsc *)` and `Bash(npx prettier *)` — the broad rule granted auto-approval for any npx package including those that execute arbitrary code [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
