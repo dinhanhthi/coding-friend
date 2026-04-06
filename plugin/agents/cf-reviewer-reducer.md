@@ -68,7 +68,7 @@ Mention which specialist agents contributed and any cross-cutting themes.
 
 - All 4 sections required in exact order. Empty sections show "None."
 - Use bullet lists only, no tables
-- Include emoji in every section heading — use actual Unicode emoji characters (🚨, ⚠️, 💡, 📋), NEVER text shortcodes like `:rotating_light:`, `:warning:`, `:bulb:`, or `:clipboard:`
+- Include emoji in every section heading — use actual Unicode emoji characters (🚨, ⚠️, 💡, 📋)
 - Every Critical and Important finding must have file:line reference and confidence score
 - Do NOT add new findings — only merge, deduplicate, and rank what the specialists reported
 - Do NOT remove findings — all specialist findings must appear in the merged output
