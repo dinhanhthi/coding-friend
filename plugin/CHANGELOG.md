@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.1 (2026-04-07)
+
+- Fix inconsistent heading hierarchy in skill workflow sections — all skills now use `## Workflow` + `### Step N:` pattern consistently (`cf-help`, `cf-learn`, `cf-teach`, `cf-review`, `cf-review-in`, `cf-review-out`) [#71a01dc](https://github.com/dinhanhthi/coding-friend/commit/71a01dc)
+
 ## v0.25.0 (2026-04-06)
 
 - Add `autoApproveIgnore` config — specify Bash command prefixes the `auto-approve` hook should skip classifying, deferring to Claude Code's native `permissions.allow` patterns (DENY rules still enforced) [#6621b61](https://github.com/dinhanhthi/coding-friend/commit/6621b61)
