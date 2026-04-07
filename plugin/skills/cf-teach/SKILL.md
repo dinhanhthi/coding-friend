@@ -18,7 +18,9 @@ You are my personal teacher. Explain what just happened: **$ARGUMENTS**
 
 In any coding session, the AI does the heavy thinking — but the human often walks away with just the result, not the understanding. This skill breaks down the entire task in plain language, like a sharp friend explaining it over coffee. Not a textbook. Not documentation. A story about how and why.
 
-## Custom Guide
+## Workflow
+
+### Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-teach`
 
@@ -28,7 +30,7 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-## Step 0: Load Config
+### Step 1: Load Config
 
 Read config from two locations and merge (local overrides global):
 
@@ -55,7 +57,7 @@ Extract settings with these defaults:
 
 If `outputDir` directory doesn't exist, create it.
 
-## Step 1: Reconstruct the Session
+### Step 2: Reconstruct the Session
 
 Look back at the full conversation and identify:
 
@@ -69,7 +71,7 @@ Look back at the full conversation and identify:
 
 If `$ARGUMENTS` is provided, focus the explanation on that specific topic or aspect of the session.
 
-## Step 2: Categorize and Determine Output File
+### Step 3: Categorize and Determine Output File
 
 ### Categorize
 
@@ -104,7 +106,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absol
 
 For each potentially relevant file, read its first 20 lines. If the new teaching narrative fits an existing file, use a different name to avoid overwriting.
 
-## Step 3: Compose the Narrative (Show in Chat First)
+### Step 4: Compose the Narrative (Show in Chat First)
 
 **Before saving anything**, compose the full narrative and display it directly in the chat. This is the teaching moment — the human reads it here first.
 
@@ -160,7 +162,7 @@ What lessons from this work apply to completely different contexts? Connect the 
 - Make it engaging enough that the human actually wants to read it
 - The human should finish and feel: "Now I actually understand what happened and why"
 
-## Step 4: Save the Doc
+### Step 5: Save the Doc
 
 After displaying the narrative in chat, delegate to the **cf-writer-deep agent** (always — never cf-writer) to save it as a file.
 
@@ -196,7 +198,7 @@ updated: YYYY-MM-DD
 
 **Tag rules:** Always include `"CF Teach"` as the first tag. Add 2-4 additional tags relevant to the topic.
 
-## Step 5: Confirm
+### Step 6: Confirm
 
 After the cf-writer-deep agent completes, show the user:
 

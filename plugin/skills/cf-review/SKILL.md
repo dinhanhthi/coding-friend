@@ -35,80 +35,89 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-1. **Identify the target:**
-   - If `$ARGUMENTS` is empty, review all uncommitted changes (`git diff` + `git diff --staged`)
-   - If `$ARGUMENTS` is a file path, review that file
-   - If `$ARGUMENTS` is a commit range (e.g., `HEAD~3..HEAD`), review those commits
-   - If `$ARGUMENTS` is a natural language description (e.g., "the auth logic changes"), review all uncommitted changes but **focus the review** on the described area — filter findings to only report issues relevant to that description
-   - If `$ARGUMENTS` contains `--deep` or `--quick`, use that mode (override auto-detection)
+### Step 1: Identify the target
 
-2. **Gather the diff:**
+- If `$ARGUMENTS` is empty, review all uncommitted changes (`git diff` + `git diff --staged`)
+- If `$ARGUMENTS` is a file path, review that file
+- If `$ARGUMENTS` is a commit range (e.g., `HEAD~3..HEAD`), review those commits
+- If `$ARGUMENTS` is a natural language description (e.g., "the auth logic changes"), review all uncommitted changes but **focus the review** on the described area — filter findings to only report issues relevant to that description
+- If `$ARGUMENTS` contains `--deep` or `--quick`, use that mode (override auto-detection)
 
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
-   ```
+### Step 2: Gather the diff
 
-3. **Assess change size** to determine review depth:
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
+```
 
-   Run the bundled script (one permission prompt instead of many):
+### Step 3: Assess change size
 
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/assess-changes.sh"
-   ```
+Determine review depth. Run the bundled script (one permission prompt instead of many):
 
-   The script prints `KEY=value` lines: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, and `MODE`.
-   Use the `MODE` value directly — no further calculation needed.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/assess-changes.sh"
+```
 
-   | Mode         | Condition                                          | Behavior                                                                |
-   | ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
-   | **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection only. Skip context research.       |
-   | **STANDARD** | 4–10 files OR 51–300 lines                         | Full 5-layer review. All security phases, concise.                      |
-   | **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. |
+The script prints `KEY=value` lines: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, and `MODE`.
+Use the `MODE` value directly — no further calculation needed.
 
-   If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
+| Mode         | Condition                                          | Behavior                                                                |
+| ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection only. Skip context research.       |
+| **STANDARD** | 4–10 files OR 51–300 lines                         | Full 5-layer review. All security phases, concise.                      |
+| **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. |
 
-4. **Gather context** (conditional — based on review mode):
-   - **QUICK mode**: Skip this step entirely.
-   - **STANDARD mode**: Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<area being reviewed — e.g. auth, API, database>", "limit": 5 }`. Use results as context hints for the review.
-   - **DEEP mode**: Launch the **cf-explorer agent** to understand callers, dependencies, and data flows around the changed files. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
 
-     > Explore the codebase context around these changed files: [list changed files]
-     >
-     > Questions to answer:
-     >
-     > 1. What calls these files/functions? (callers, entry points)
-     > 2. What do these files depend on? (downstream effects)
-     > 3. What conventions and patterns exist in the surrounding code?
-     > 4. Are there related tests that should be checked?
+### Step 4: Gather context (conditional — based on review mode)
 
-     **Note:** cf-explorer already checks memory internally — do NOT call `memory_search` separately when using cf-explorer.
+- **QUICK mode**: Skip this step entirely.
+- **STANDARD mode**: Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<area being reviewed — e.g. auth, API, database>", "limit": 5 }`. Use results as context hints for the review.
+- **DEEP mode**: Launch the **cf-explorer agent** to understand callers, dependencies, and data flows around the changed files. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
-   Memory and explorer results are **hints** — always verify against actual code.
+  > Explore the codebase context around these changed files: [list changed files]
+  >
+  > Questions to answer:
+  >
+  > 1. What calls these files/functions? (callers, entry points)
+  > 2. What do these files depend on? (downstream effects)
+  > 3. What conventions and patterns exist in the surrounding code?
+  > 4. Are there related tests that should be checked?
 
-5. **Read changed files** in full — do not review only the diff, understand the context.
+  **Note:** cf-explorer already checks memory internally — do NOT call `memory_search` separately when using cf-explorer.
 
-6. **Apply 5-layer review** (the cf-reviewer orchestrator dispatches specialist agents in parallel — plan, security, quality, tests, rules — then merges results via a reducer):
-   - Layer 0: Project rules compliance (CLAUDE.md)
-   - Layer 1: Plan alignment
-   - Layer 2: Code quality
-   - Layer 3: Security (depth scaled by mode)
-   - Layer 4: Testing
+Memory and explorer results are **hints** — always verify against actual code.
 
-7. **Security review** (built-in):
+### Step 5: Read changed files
 
-   After the 5-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
+Read changed files in full — do not review only the diff, understand the context.
 
-   Merge any findings from `/security-review` into the report — deduplicate with Layer 3 results, keeping the higher-severity entry when both flag the same issue.
+### Step 6: Apply 5-layer review
 
-8. **Report findings** — the cf-reviewer agent produces the formatted report using its built-in Reporting format (Critical/Important/Suggestion with file:line references and confidence scores). Do NOT redefine the format here.
+The cf-reviewer orchestrator dispatches specialist agents in parallel — plan, security, quality, tests, rules — then merges results via a reducer:
 
-9. **Mark review complete and display status:**
+- Layer 0: Project rules compliance (CLAUDE.md)
+- Layer 1: Plan alignment
+- Layer 2: Code quality
+- Layer 3: Security (depth scaled by mode)
+- Layer 4: Testing
+
+### Step 7: Security review (built-in)
+
+After the 5-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
+
+Merge any findings from `/security-review` into the report — deduplicate with Layer 3 results, keeping the higher-severity entry when both flag the same issue.
+
+### Step 8: Report findings
+
+The cf-reviewer agent produces the formatted report using its built-in Reporting format (Critical/Important/Suggestion with file:line references and confidence scores). Do NOT redefine the format here.
+
+### Step 9: Mark review complete and display status
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
 ```
 
-10. **Smart capture** (conditional — only if `memory_store` MCP tool is available):
+### Step 10: Smart capture (conditional — only if `memory_store` MCP tool is available)
 
 If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
 
@@ -119,7 +128,9 @@ If the review found **architectural insights** or **recurring patterns** worth p
 
 Skip if the review was routine with no notable findings.
 
-11. **Final output** — display the full report followed by the status banner in a **single message**.
+### Step 11: Final output
+
+Display the full report followed by the status banner in a **single message**.
 
 **IMPORTANT**: The structured report from step 9 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 

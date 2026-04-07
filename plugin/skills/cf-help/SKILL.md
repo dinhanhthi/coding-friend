@@ -24,7 +24,9 @@ allowed-tools: [Read, Glob]
 
 Answer questions about the Coding Friend toolkit. Provide a brief overview when asked generally, or read specific skill files on-demand when asked about a particular skill/agent/workflow.
 
-## Step 0: Custom Guide
+## Workflow
+
+### Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help`
 
@@ -34,7 +36,7 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-## Step 1: Understand the question
+### Step 1: Understand the question
 
 Determine what the user is asking about:
 
@@ -44,7 +46,7 @@ Determine what the user is asking about:
 - **Setup/config** — how to configure, custom guides, ignore patterns
 - **Workflow** — how do skills work together?
 
-## Step 2: Provide overview (if general question)
+### Step 2: Provide overview (if general question)
 
 Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Core philosophy:
 
@@ -95,7 +97,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,000 tokens), `⚡⚡` = medium (1,000–2,500), `⚡⚡⚡` = high (>2,500). Bootstrap context (~1,300 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, see https://cf.dinhanhthi.com/docs/reference/context-usage/.
 
-## Step 3: Read specific files (if detailed question)
+### Step 3: Read specific files (if detailed question)
 
 If the user asks about a **specific skill**, read its SKILL.md:
 
@@ -120,7 +122,7 @@ If the user asks about **custom skill guides**, explain:
 - Global: `~/.coding-friend/skills/<skill-name>-custom/SKILL.md`
 - Sections: `## Before` (pre-workflow), `## Rules` (throughout), `## After` (post-workflow)
 
-## Step 4: Common Workflows (if workflow question)
+### Step 4: Common Workflows (if workflow question)
 
 If the user asks how skills work together, present these common workflows:
 
@@ -133,7 +135,7 @@ If the user asks how skills work together, present these common workflows:
 
 **Key distinction:** `/cf-remember` saves project knowledge for AI recall in future sessions. `/cf-learn` saves educational notes for the human to learn from.
 
-## Step 5: Troubleshooting (if troubleshooting question)
+### Step 5: Troubleshooting (if troubleshooting question)
 
 Common issues:
 
@@ -143,6 +145,6 @@ Common issues:
 - **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
 - **More issues?** Point the user to the [Troubleshooting page](https://cf.dinhanhthi.com/docs/reference/troubleshooting/) for memory daemon, install, hook, and MCP issues.
 
-## Step 6: Answer concisely
+### Step 6: Answer concisely
 
 Provide a clear, concise answer based on the information gathered. Link to specific files if the user wants to dive deeper.
