@@ -427,6 +427,35 @@ function matchesPrefix(trimmed, prefix) {
 }
 
 /**
+ * Extract target file paths from a simple rm command.
+ * Strips flags (tokens starting with `-`) and handles `--` end-of-options.
+ * Returns the array of path arguments, or null if not an rm command or no paths found.
+ * @param {string} trimmed — the full trimmed command
+ * @returns {string[]|null}
+ */
+function extractRmPaths(trimmed) {
+  if (!trimmed.startsWith("rm ") && !trimmed.startsWith("rm\t")) return null;
+  const afterRm = trimmed.slice(2).trim();
+  if (!afterRm) return null;
+
+  const tokens = afterRm.split(/\s+/);
+  const paths = [];
+  let endOfOptions = false;
+  for (const token of tokens) {
+    if (endOfOptions) {
+      paths.push(token);
+    } else if (token === "--") {
+      endOfOptions = true;
+    } else if (token.startsWith("-")) {
+      // Flag — skip
+    } else {
+      paths.push(token);
+    }
+  }
+  return paths.length > 0 ? paths : null;
+}
+
+/**
  * Classify a tool call using rules only.
  * @param {string} toolName
  * @param {object} toolInput
@@ -450,6 +479,20 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
   if (toolName === "Bash") {
     const cmd = (toolInput && toolInput.command) || "";
     const trimmed = cmd.trim();
+
+    // Early-allow: rm targeting paths entirely within the project directory.
+    // Checked before deny patterns so project-scoped cleanup is always permitted.
+    // Only applies to simple commands (no shell operators).
+    if (!SHELL_OPERATOR_PATTERN.test(trimmed)) {
+      const rmPaths = extractRmPaths(trimmed);
+      if (
+        rmPaths &&
+        rmPaths.length > 0 &&
+        rmPaths.every((p) => isInProjectDir(p, projectDir))
+      ) {
+        return "allow";
+      }
+    }
 
     // Check deny patterns first (most dangerous) — allowExtra cannot bypass
     for (const pattern of BASH_DENY_PATTERNS) {
@@ -797,6 +840,7 @@ module.exports = {
   isInProjectDir,
   isSafeCompoundCommand,
   extractBashScriptPath,
+  extractRmPaths,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
   UNSAFE_COMPOUND_PATTERN,
@@ -878,6 +922,12 @@ function main() {
     // Build context for reason messages
     if (decision === "allow" && (toolName === "Write" || toolName === "Edit")) {
       reasonContext = { source: "working-dir" };
+    } else if (decision === "allow" && toolName === "Bash") {
+      const cmd = (toolInput && toolInput.command) || "";
+      const rmPaths = extractRmPaths(cmd.trim());
+      if (rmPaths) {
+        reasonContext = { source: "rm-project-dir" };
+      }
     } else if (decision === "deny" && toolName === "Bash") {
       const cmd = (toolInput && toolInput.command) || "";
       const trimmed = cmd.trim();
@@ -956,7 +1006,7 @@ function main() {
  * @param {string} toolName
  * @param {object} toolInput
  * @param {"allow"|"deny"|"ask"} decision
- * @param {{ source?: "rule"|"working-dir"|"llm", reason?: string, pattern?: string }} [context]
+ * @param {{ source?: "rule"|"working-dir"|"rm-project-dir"|"llm", reason?: string, pattern?: string }} [context]
  * @returns {string}
  */
 function buildReason(toolName, toolInput, decision, context) {
@@ -968,6 +1018,9 @@ function buildReason(toolName, toolInput, decision, context) {
   if (decision === "allow") {
     if (context && context.source === "working-dir") {
       return "Auto-approved: file path is within working directory";
+    }
+    if (context && context.source === "rm-project-dir") {
+      return "Auto-approved: rm targets files within project directory";
     }
     return `Auto-approved: '${toolName}' is a read-only operation`;
   }
