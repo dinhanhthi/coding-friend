@@ -20,7 +20,9 @@ Extract learning points for human understanding. Topic: **$ARGUMENTS**
 
 In vibe coding, AI writes the code and human approves it — but the human doesn't actually learn anything. This skill extracts knowledge from the conversation and writes it as clear, educational docs so the human builds real understanding over time.
 
-## Custom Guide
+## Workflow
+
+### Step 0: Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn`
 
@@ -30,7 +32,7 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-## Step 0: Load Config
+### Step 1: Load Config
 
 Read config from two locations and merge (local overrides global):
 
@@ -62,7 +64,7 @@ Extract settings with these defaults:
 
 If `outputDir` directory doesn't exist, create it.
 
-## Step 1: Identify Knowledge Points
+### Step 2: Identify Knowledge Points
 
 Scan the conversation for things the human might not fully understand:
 
@@ -72,7 +74,7 @@ Scan the conversation for things the human might not fully understand:
 - **Debugging techniques**: How a bug was found and fixed
 - **Best practices**: Why something was done a certain way
 
-## Step 2: Categorize
+### Step 3: Categorize
 
 Use categories from config. Default categories:
 
@@ -98,7 +100,7 @@ Replace `/absolute/path/to/outputDir` with the resolved absolute path from Step 
 
 For each potentially relevant file, read its first 20 lines to understand what it covers. If the new knowledge fits an existing file, **append** to it instead of creating a new one.
 
-## Step 3: Assess Complexity
+### Step 4: Assess Complexity
 
 Before delegating to the cf-writer agent, assess the complexity of the content to write:
 
@@ -116,7 +118,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content t
 - Multi-concept synthesis is needed (connecting several ideas into one explanation)
 - Advanced architecture explanations or subtle debugging insights
 
-## Step 4: Delegate to cf-writer Agent
+### Step 5: Delegate to cf-writer Agent
 
 Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
 
@@ -252,7 +254,7 @@ Only include categories with at least one note file (excluding README.md).
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
-## Step 5: Confirm
+### Step 6: Confirm
 
 Read back the cf-writer agent's output and show the user:
 

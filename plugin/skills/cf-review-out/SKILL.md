@@ -30,36 +30,36 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-1. **Determine the label:**
+### Step 1: Determine the label
 
-   If `$ARGUMENTS` contains a label, use it directly. Otherwise:
-   - Analyze the current changes (branch name, changed files, nature of changes)
-   - **Auto-generate a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
-   - **No confirmation needed. Proceed immediately.**
+If `$ARGUMENTS` contains a label, use it directly. Otherwise:
+- Analyze the current changes (branch name, changed files, nature of changes)
+- **Auto-generate a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
+- **No confirmation needed. Proceed immediately.**
 
-   The label must be snake-case with a descriptive prefix.
+The label must be snake-case with a descriptive prefix.
 
-2. **Check for existing review:**
+### Step 2: Check for existing review
 
-   Check if `docs/reviews/<label>-prompt.md` already exists. If so, warn the user and ask whether to overwrite or pick a different label.
+Check if `docs/reviews/<label>-prompt.md` already exists. If so, warn the user and ask whether to overwrite or pick a different label.
 
-3. **Gather diff and build prompt:**
+### Step 3: Gather diff and build prompt
 
-   Read the docsDir from `.coding-friend/config.json` (default: `docs`).
+Read the docsDir from `.coding-friend/config.json` (default: `docs`).
 
-   ```bash
-   mkdir -p <docsDir>/reviews && \
-     bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
-     bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
-       "<label>" "<docsDir>" \
-     > <docsDir>/reviews/<label>-prompt.md
-   ```
+```bash
+mkdir -p <docsDir>/reviews && \
+  bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
+  bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
+    "<label>" "<docsDir>" \
+  > <docsDir>/reviews/<label>-prompt.md
+```
 
-   If the script exits with an error (empty diff), tell the user there are no changes to review and **STOP**.
+If the script exits with an error (empty diff), tell the user there are no changes to review and **STOP**.
 
-4. **Confirm and guide the user:**
+### Step 4: Confirm and guide the user
 
-   Show the user:
+Show the user:
 
    ```
    ╔══════════════════════════════════════════════════╗
