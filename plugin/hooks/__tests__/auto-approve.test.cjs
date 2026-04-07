@@ -35,6 +35,7 @@ const {
   isCodingFriendBash,
   isInProjectDir,
   isSafeCompoundCommand,
+  extractRmPaths,
   buildReason,
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
@@ -420,6 +421,97 @@ describe("classifyByRules — block (deny)", () => {
     expect(classifyByRules("Bash", { command: "chmod 777 /etc/passwd" })).toBe(
       "deny",
     );
+  });
+});
+
+describe("extractRmPaths", () => {
+  it("extracts single relative path", () => {
+    expect(extractRmPaths("rm -f docs/context/temp.md")).toEqual([
+      "docs/context/temp.md",
+    ]);
+  });
+
+  it("extracts path after -rf flags", () => {
+    expect(extractRmPaths("rm -rf dist/")).toEqual(["dist/"]);
+  });
+
+  it("extracts multiple paths", () => {
+    expect(extractRmPaths("rm -f file1.txt file2.txt")).toEqual([
+      "file1.txt",
+      "file2.txt",
+    ]);
+  });
+
+  it("extracts path after end-of-options --", () => {
+    expect(extractRmPaths("rm -- -strange-file")).toEqual(["-strange-file"]);
+  });
+
+  it("returns null for non-rm command", () => {
+    expect(extractRmPaths("ls -la")).toBeNull();
+  });
+
+  it("returns null for bare rm with no paths", () => {
+    expect(extractRmPaths("rm")).toBeNull();
+  });
+
+  it("returns null for rm with only flags", () => {
+    expect(extractRmPaths("rm -rf")).toBeNull();
+  });
+
+  it("returns null for rmdir (not rm)", () => {
+    expect(extractRmPaths("rmdir empty-dir")).toBeNull();
+  });
+});
+
+describe("classifyByRules — rm within project directory (allow)", () => {
+  it("allows rm of relative path inside cwd", () => {
+    expect(
+      classifyByRules("Bash", { command: "rm -f docs/context/temp.md" }),
+    ).toBe("allow");
+  });
+
+  it("allows rm -rf of relative path inside cwd", () => {
+    expect(
+      classifyByRules("Bash", { command: "rm -rf docs/context/" }),
+    ).toBe("allow");
+  });
+
+  it("allows rm of absolute path inside project dir", () => {
+    const absPath = process.cwd() + "/docs/context/review-ctx.md";
+    expect(classifyByRules("Bash", { command: `rm -f ${absPath}` })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows rm -rf of absolute path inside project dir", () => {
+    const absPath = process.cwd() + "/docs/context/";
+    expect(classifyByRules("Bash", { command: `rm -rf ${absPath}` })).toBe(
+      "allow",
+    );
+  });
+
+  it("denies rm -rf of absolute path outside project dir (hits deny pattern)", () => {
+    expect(
+      classifyByRules("Bash", { command: "rm -rf /etc/passwd" }),
+    ).toBe("deny");
+  });
+
+  it("does NOT allow rm with shell operators (compound command)", () => {
+    expect(
+      classifyByRules("Bash", { command: "rm docs/context/f.md && echo done" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow rm with parent traversal escape", () => {
+    expect(classifyByRules("Bash", { command: "rm -rf ../../" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow rm targeting path outside project via traversal", () => {
+    expect(
+      classifyByRules("Bash", { command: "rm -f ../../etc/passwd" }),
+    ).not.toBe("allow");
   });
 });
 
