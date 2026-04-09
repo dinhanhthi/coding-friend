@@ -73,6 +73,8 @@ export interface CodingFriendConfig {
   statusline?: StatuslineConfig;
   memory?: MemoryConfig;
   autoApprove?: boolean;
+  autoApproveIgnore?: string[];
+  autoApproveAllowExtra?: string[];
 }
 
 export const DEFAULT_CONFIG: Required<
