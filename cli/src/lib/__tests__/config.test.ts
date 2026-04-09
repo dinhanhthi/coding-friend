@@ -161,4 +161,29 @@ describe("loadConfig validation", () => {
     expect(config.autoApprove).toBe(true);
     expect(config.language).toBe("vi");
   });
+
+  it("accepts autoApproveIgnore as a valid config key (array of strings)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ autoApproveIgnore: ["npm test", "npx jest"] });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect((config as Record<string, unknown>)["autoApproveIgnore"]).toEqual([
+      "npm test",
+      "npx jest",
+    ]);
+  });
+
+  it("accepts autoApproveAllowExtra as a valid config key (array of strings)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ autoApproveAllowExtra: ["my-custom-cmd"] });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(
+      (config as Record<string, unknown>)["autoApproveAllowExtra"],
+    ).toEqual(["my-custom-cmd"]);
+  });
 });

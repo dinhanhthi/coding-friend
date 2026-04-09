@@ -86,6 +86,8 @@ const ConfigSchema = z.strictObject({
   statusline: StatuslineConfigSchema.optional(),
   memory: MemoryConfigSchema.optional(),
   autoApprove: z.boolean().optional(),
+  autoApproveIgnore: z.array(z.string()).optional(),
+  autoApproveAllowExtra: z.array(z.string()).optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -96,6 +98,8 @@ const KNOWN_KEYS = [
   "statusline",
   "memory",
   "autoApprove",
+  "autoApproveIgnore",
+  "autoApproveAllowExtra",
 ];
 
 function suggestKey(unknown: string): string | null {
