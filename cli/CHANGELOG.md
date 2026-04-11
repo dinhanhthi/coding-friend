@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.31.1 (2026-04-11)
+
+- Fix missing `autoApproveIgnore` and `autoApproveAllowExtra` fields in `ConfigSchema` and `CodingFriendConfig` — caused a false "Unknown config key" warning in `cf status` [#79b6d0c](https://github.com/dinhanhthi/coding-friend/commit/79b6d0c)
+
 ## v1.31.0 (2026-04-06)
 
 - Show a tip linking to auto-approve reference docs after enabling `autoApprove` in `cf config`, `cf init`, or `cf permission` — helps users discover `autoApproveAllowExtra` and `autoApproveIgnore` for fine-tuning [#f442215](https://github.com/dinhanhthi/coding-friend/commit/f442215)
