@@ -138,6 +138,8 @@ const BASH_ALLOW_PREFIXES = [
   "basename",
   "dirname",
   "readlink",
+  // Directory creation — safe, idempotent
+  "mkdir",
   // Git — read-only
   "git status",
   "git log",
