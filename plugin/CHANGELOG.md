@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.2 (2026-04-11)
+
+- Fix `auto-approve` hook to allow `rm` commands when all targets resolve within the project directory — previously blocked even project-scoped paths, requiring manual approvals for temp file cleanup [#bfd6a9c](https://github.com/dinhanhthi/coding-friend/commit/bfd6a9c)
+- Add `mkdir` to the `auto-approve` hook default allow list — safe and idempotent; no longer requires manual approval when creating context/docs directories [#f5f9b59](https://github.com/dinhanhthi/coding-friend/commit/f5f9b59)
+
 ## v0.25.1 (2026-04-07)
 
 - Fix inconsistent heading hierarchy in skill workflow sections — all skills now use `## Workflow` + `### Step N:` pattern consistently (`cf-help`, `cf-learn`, `cf-teach`, `cf-review`, `cf-review-in`, `cf-review-out`) [#71a01dc](https://github.com/dinhanhthi/coding-friend/commit/71a01dc)
