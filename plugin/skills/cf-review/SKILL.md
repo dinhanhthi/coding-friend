@@ -13,6 +13,8 @@ agent: cf-reviewer
 
 # /cf-review
 
+> ✨ **CODING FRIEND** → /cf-review activated
+
 Review the code changes for: **$ARGUMENTS**
 
 ## Auto-Triggered

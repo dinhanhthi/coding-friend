@@ -12,34 +12,6 @@ node_modules/
 /tmp/
 *.log
 
-# AI config files (managed by AI Sync)
-.agent/
-.agents/
-.aider*
-.claude/
-.copilot/
-.cursor/
-.cursorrules
-.gemini/
-.github/copilot-instructions.md
-.github/skills
-.ipynb_checkpoints
-.mcp.json
-.opencode/
-.windsurfrules
-CLAUDE.md
-GEMINI.md
-docs/learn
-docs/memory
-docs/plans
-docs/research
-docs/reviews
-docs/sessions
-docs/warm
-evals/analysis
-evals/results
-# End AI Sync managed
-
 .claude/*
 !.claude/skills/
 .claude/skills/*
@@ -78,3 +50,31 @@ website/public/llms-full.txt
 evals/.plugin-state.tmp
 
 graphify-out/
+
+# AI config files (managed by AI Sync)
+.agent/
+.agents/
+.aider*
+.claude/
+.copilot/
+.cursor/
+.cursorrules
+.gemini/
+.github/copilot-instructions.md
+.github/skills
+.ipynb_checkpoints
+.mcp.json
+.opencode/
+.windsurfrules
+CLAUDE.md
+GEMINI.md
+docs/learn
+docs/memory
+docs/plans
+docs/research
+docs/reviews
+docs/sessions
+docs/warm
+evals/analysis
+evals/results
+# End AI Sync managed
