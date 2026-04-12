@@ -94,13 +94,6 @@ export const STATIC_RULES: PermissionRule[] = [
     recommended: true,
   },
   {
-    rule: "Bash(node -e *)",
-    description:
-      "[execute] Run inline Node.js · Used by: memory-capture hook JSON parsing",
-    category: "Core Utilities",
-    recommended: true,
-  },
-  {
     rule: "Bash(touch /tmp/coding-friend/*)",
     description:
       "[write] Create temp marker files · Used by: /cf-review mark-reviewed",
