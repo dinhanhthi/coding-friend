@@ -1066,7 +1066,7 @@ function AutoApproveContent() {
             examples: [
               "git status",
               "ls -la",
-              "npm test",
+              "git commit",
               "Read files",
               "Write/Edit in project",
             ],
@@ -1083,7 +1083,7 @@ function AutoApproveContent() {
           },
           {
             decision: "Ask",
-            examples: ["git push", "npm install", "Write outside project"],
+            examples: ["git push", "npm test", "npm install", "docker"],
             color: "text-amber-400",
             border: "border-amber-500/20",
             bg: "bg-amber-500/5",
