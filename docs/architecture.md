@@ -110,7 +110,7 @@ Note: `cf-learn`, `cf-remember`, `cf-review`, `cf-optimize`, `cf-plan`, and `cf-
 | ------------- | ----------------------- | -------------------------------------------------------------------------- |
 | `cf-help`     | `/cf-help [question]`   | Answer questions about Coding Friend (also auto-invoked)                   |
 | `cf-plan`     | `/cf-plan [task]`       | Brainstorm + write implementation plan                                     |
-| `cf-review`   | `/cf-review [target]`   | Fork context → cf-reviewer agent (also auto-invoked)                       |
+| `cf-review`   | `/cf-review [target]`   | Dispatches cf-reviewer agent inline (also auto-invoked)                    |
 | `cf-commit`   | `/cf-commit [hint]`     | Analyze diff → conventional commit                                         |
 | `cf-ship`     | `/cf-ship [hint]`       | Verify + commit + push + PR                                                |
 | `cf-fix`      | `/cf-fix [bug]`         | Quick bug fix, escalates to cf-sys-debug after 3 failures                  |
@@ -141,13 +141,11 @@ name: cf-verification
 description: Verify before claiming work is complete
 user-invocable: false
 ---
-# Forked skill (runs in subagent, also auto-invoked)
+# Skill that dispatches the cf-reviewer orchestrator agent inline
 ---
 name: cf-review
 description: Dispatch code review to a subagent. Use when the user wants code reviewed...
 user-invocable: true
-context: fork
-agent: cf-reviewer
 ---
 ```
 
@@ -198,7 +196,7 @@ Exit codes:
 
 | Agent                  | Model   | Purpose                                                                      |
 | ---------------------- | ------- | ---------------------------------------------------------------------------- |
-| `cf-reviewer`          | opus    | Review orchestrator: dispatches specialists in parallel + reducer            |
+| `cf-reviewer`          | inherit | Review orchestrator: dispatches specialists in parallel + reducer            |
 | `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                                    |
 | `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                            |
 | `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                                     |
@@ -352,7 +350,7 @@ stripFrontmatter(content) → markdownBody
 | 12 agents                               | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
 | .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                                               |
 | /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                                          |
-| context: fork for /cf-review            | Isolate review from main context window                                                                               |
+| cf-reviewer dispatched inline by /cf-review | Skill runs inline (activation signal visible immediately), then dispatches cf-reviewer agent with Agent tool |
 | Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
 | Config schema validation (Zod)          | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
 | CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                                        |
@@ -483,7 +481,7 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ cf-reviewer orchestrator (fork)           │          │
+    │  /cf-review ──→ cf-reviewer orchestrator (inline)         │          │
     │                 5 specialist agents in parallel + reducer│          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │

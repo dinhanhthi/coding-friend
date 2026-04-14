@@ -1,6 +1,6 @@
 ---
 title: "/cf-review"
-description: "Multi-layer code review in a forked subagent."
+description: "Multi-layer code review dispatched to a cf-reviewer subagent."
 keywords: [code review, pull request, review checklist, cf-review, security]
 ---
 
@@ -59,7 +59,7 @@ Different behavior is expected based on the value of `[target]`:
 1. **Identify target** — Determine what to review based on `[target]` (see [Usage](#usage))
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
-4. **Dispatch to orchestrator** — Fork a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer-orchestrator) orchestrator agent in an isolated context (clean, unbiased, token-efficient)
+4. **Dispatch to orchestrator** — Dispatch a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer-orchestrator) orchestrator agent via the Agent tool (isolated context — clean, unbiased, token-efficient)
 5. **Parallel multi-agent review** — The orchestrator dispatches 5 specialist agents in parallel (plan alignment, security, code quality + slop detection, test coverage, project rules), then merges results via a reducer agent that deduplicates and severity-ranks findings
 6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
 7. **Report findings** — All findings from every layer collected into 4 categories (🚨 Critical / ⚠️ Important / 💡 Suggestion / 📋 Summary), each tagged with source layer

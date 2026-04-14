@@ -7,8 +7,6 @@ description: >
   "what do you think of these changes?". Also triggers on requests to review specific files,
   commits, or branches.
 user-invocable: true
-context: fork
-agent: cf-reviewer
 ---
 
 # /cf-review
@@ -93,25 +91,34 @@ Memory and explorer results are **hints** — always verify against actual code.
 
 Read changed files in full — do not review only the diff, understand the context.
 
-### Step 6: Apply 5-layer review
+### Step 6: Dispatch the cf-reviewer agent
 
-The cf-reviewer orchestrator dispatches specialist agents in parallel — plan, security, quality, tests, rules — then merges results via a reducer:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-reviewer"`. Pass the full context:
 
-- Layer 0: Project rules compliance (CLAUDE.md)
-- Layer 1: Plan alignment
-- Layer 2: Code quality
-- Layer 3: Security (depth scaled by mode)
-- Layer 4: Testing
+> **Review mode:** [QUICK | STANDARD | DEEP]
+>
+> **Diff:**
+> [full diff from Step 2]
+>
+> **Changed files (full content):**
+> [full content of each changed file from Step 5]
+>
+> **Context (if gathered in Step 4):**
+> [memory search results or cf-explorer findings, if any]
+>
+> Run the review now. Return the unified report in the 🚨/⚠️/💡/📋 format.
+
+Wait for the agent to return its report.
 
 ### Step 7: Security review (built-in)
 
-After the 5-layer review, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of Layer 3.
+After the cf-reviewer agent returns, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of the agent's Layer 3.
 
-Merge any findings from `/security-review` into the report — deduplicate with Layer 3 results, keeping the higher-severity entry when both flag the same issue.
+Merge any findings from `/security-review` into the report — deduplicate with results already in the report, keeping the higher-severity entry when both flag the same issue.
 
-### Step 8: Report findings
+### Step 8: Collect the report
 
-The cf-reviewer agent produces the formatted report using its built-in Reporting format (Critical/Important/Suggestion with file:line references and confidence scores). Do NOT redefine the format here.
+The result of Steps 6–7 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 11.
 
 ### Step 9: Mark review complete and display status
 
