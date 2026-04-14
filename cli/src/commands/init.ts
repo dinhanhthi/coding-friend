@@ -396,6 +396,7 @@ async function stepGitignore(docsDir: string): Promise<void> {
     `${docsDir}/learn/`,
     `${docsDir}/sessions/`,
     `${docsDir}/reviews/`,
+    `${docsDir}/context/`,
     ".coding-friend/",
   ];
 
