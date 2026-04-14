@@ -169,6 +169,8 @@ rm -rf docs/context/*.json   # if you want to wipe them all
 
 Nothing in the project reads stale context files, so a leftover file is cosmetic debt, not a correctness issue.
 
+The `<docsDir>/context/` folder is included in the `.gitignore` block added by `cf init`, so context files are never accidentally committed.
+
 ## Schema evolution
 
 Context files carry a `schema_version` field starting at `1`. When the schema changes:
