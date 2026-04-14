@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.3 (2026-04-14)
+
+- Fix `/cf-review` skill running in a forked subagent — activation signal now shows immediately and the review report correctly uses the 🚨/⚠️/💡/📋 format instead of the layer-based structure [#51320e4](https://github.com/dinhanhthi/coding-friend/commit/51320e4)
+
 ## v0.25.2 (2026-04-11)
 
 - Fix `auto-approve` hook to allow `rm` commands when all targets resolve within the project directory — previously blocked even project-scoped paths, requiring manual approvals for temp file cleanup [#bfd6a9c](https://github.com/dinhanhthi/coding-friend/commit/bfd6a9c)
