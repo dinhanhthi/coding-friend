@@ -13,7 +13,7 @@ description: >
   (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line numbers.
   Never use tables — always bullet lists. Do NOT use this agent for
   quick questions about code — only for actual review of changes.
-model: opus
+model: inherit
 ---
 
 # Code Review Orchestrator
