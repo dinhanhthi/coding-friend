@@ -1724,7 +1724,7 @@ describe("classifyWithLLM — timeout", () => {
     delete process.env.CF_AUTO_APPROVE_CACHE_FILE;
   });
 
-  it("uses 30s default timeout", () => {
+  it("uses 45s default timeout", () => {
     let capturedTimeout;
     cp.execFileSync = (_cmd, _args, opts) => {
       capturedTimeout = opts.timeout;
@@ -1741,7 +1741,7 @@ describe("classifyWithLLM — timeout", () => {
       process.env.CF_AUTO_APPROVE_LLM_TIMEOUT = origEnv;
     }
 
-    expect(capturedTimeout).toBe(30000);
+    expect(capturedTimeout).toBe(45000);
   });
 });
 

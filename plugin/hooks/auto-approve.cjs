@@ -680,7 +680,7 @@ function classifyWithLLM(toolName, toolInput) {
 
   // Allow tests to override the timeout (e.g., 1ms to force fail-open)
   const llmTimeout =
-    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 30000;
+    parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 45000;
 
   try {
     const prompt = `You are a security classifier for AI tool calls. Classify this tool call and provide a reason.
