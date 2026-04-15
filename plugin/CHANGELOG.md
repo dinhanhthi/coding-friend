@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.4 (2026-04-15)
+
+- Fix `auto-approve` LLM classifier timeout increased from 30s to 45s — reduces transient "LLM classification unavailable" fallbacks on slow networks or during cold starts [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
+- Document `autoApprove`, `autoApproveAllowExtra`, `autoApproveIgnore` config keys and `CF_AUTO_APPROVE_*` env vars in `docs/config-schema.md` [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
+
 ## v0.25.3 (2026-04-14)
 
 - Fix `/cf-review` skill running in a forked subagent — activation signal now shows immediately and the review report correctly uses the 🚨/⚠️/💡/📋 format instead of the layer-based structure [#51320e4](https://github.com/dinhanhthi/coding-friend/commit/51320e4)
