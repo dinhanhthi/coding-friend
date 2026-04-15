@@ -28,6 +28,20 @@ coding-friend uses a layered config system:
   // Default: true
   "devRulesReminder": true,
 
+  // Enable smart auto-approve hook (3-step: rules → working-dir → LLM classifier)
+  // Default: false
+  "autoApprove": false,
+
+  // Additional Bash command prefixes to auto-approve (merged across global + local)
+  // These are checked after deny patterns, so they cannot override destructive rules
+  // Example: ["cargo test", "pytest", "go test"]
+  // Default: []
+  "autoApproveAllowExtra": [],
+
+  // Bash command prefixes to always require user review, even if they match an allow rule
+  // Default: []
+  "autoApproveIgnore": [],
+
   // --- Learn settings ---
   "learn": {
     // Language for /cf-learn notes
@@ -225,3 +239,25 @@ Each `SKILL.md` supports 3 optional sections:
 ### Reload
 
 Custom guides are loaded on-demand when the corresponding skill runs. Changes take effect on the next skill invocation (no `/clear` needed).
+
+## Environment Variables
+
+These env vars override config file settings and are primarily intended for testing or temporary overrides.
+
+| Variable | Default | Description |
+|---|---|---|
+| `CF_AUTO_APPROVE_ENABLED` | — | Set to `"1"` to force-enable auto-approve regardless of config (useful for tests) |
+| `CF_AUTO_APPROVE_LLM_TIMEOUT` | `45000` | Timeout in ms for the LLM classifier subprocess. Increase if you see "LLM classification unavailable" on slow networks |
+| `CF_AUTO_APPROVE_CACHE_FILE` | auto (in tmpdir) | Override the LLM decision cache file path (useful for tests) |
+
+### Setting env vars for Claude Code
+
+Add to `.claude/settings.json` to persist across sessions:
+
+```json
+{
+  "env": {
+    "CF_AUTO_APPROVE_LLM_TIMEOUT": "60000"
+  }
+}
+```
