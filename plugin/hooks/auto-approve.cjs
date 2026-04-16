@@ -238,22 +238,164 @@ function postMatchSafety(cmd, prefix) {
 }
 
 /**
+ * Replace quoted content in a shell command string with spaces, preserving
+ * string length so that character positions remain valid.
+ *
+ * Rules (Bash quoting semantics):
+ *   - Double-quoted regions: content replaced with spaces. Backslash-escaped
+ *     chars inside ("\"" etc.) are consumed as-is (both chars → two spaces).
+ *   - Single-quoted regions: content replaced with spaces. No escapes inside
+ *     single quotes — even \' does not close them.
+ *   - Backslash-escaped chars outside quotes: both the backslash and the next
+ *     char are preserved as-is (they are not operators).
+ *
+ * Returns null when the string contains an unclosed quote, so callers can
+ * treat it as unsafe (fail-closed). An unclosed quote like
+ *   echo "foo | rm -rf /
+ * must never be silently sanitized into something that looks safe.
+ *
+ * @param {string} str
+ * @returns {string|null} — sanitized string (same length as input), or null on unmatched quote
+ */
+function removeQuotedContent(str) {
+  const chars = str.split("");
+  let i = 0;
+  while (i < chars.length) {
+    const ch = chars[i];
+    if (ch === '"') {
+      // Enter double-quoted region
+      chars[i] = " ";
+      i++;
+      let closed = false;
+      while (i < chars.length) {
+        if (chars[i] === "\\") {
+          // Backslash escape inside double quotes: consume both chars as spaces.
+          // The escaped char cannot itself be a live shell operator.
+          chars[i] = " ";
+          i++;
+          if (i < chars.length) {
+            chars[i] = " ";
+            i++;
+          }
+        } else if (chars[i] === '"') {
+          // Closing double quote
+          chars[i] = " ";
+          i++;
+          closed = true;
+          break;
+        } else if (chars[i] === "`") {
+          // Backtick is NOT sanitized inside double quotes — bash expands it.
+          // Keeping ` lets TRULY_UNSAFE_OPERATORS still catch it.
+          i++;
+        } else if (chars[i] === "$") {
+          // $ followed by ( forms $(...) which bash expands inside double quotes.
+          // Keep both $ and ( so TRULY_UNSAFE_OPERATORS catches $(.
+          // Other uses of $ — e.g. ${VAR} or $VAR — are variable expansions, NOT
+          // command substitutions. Bash does NOT re-parse the expanded value as shell
+          // syntax: the value becomes a literal word/argument to the command. So
+          // ${VAR} cannot inject operators and does not need special handling here.
+          // The { after $ is blanked by the default else branch, which is fine.
+          i++;
+          if (i < chars.length && chars[i] === "(") {
+            i++; // keep the ( too — don't blank it
+          }
+        } else {
+          chars[i] = " ";
+          i++;
+        }
+      }
+      if (!closed) return null; // unmatched double quote
+    } else if (ch === "'") {
+      // Enter single-quoted region — no escapes inside
+      chars[i] = " ";
+      i++;
+      let closed = false;
+      while (i < chars.length) {
+        if (chars[i] === "'") {
+          chars[i] = " ";
+          i++;
+          closed = true;
+          break;
+        } else {
+          chars[i] = " ";
+          i++;
+        }
+      }
+      if (!closed) return null; // unmatched single quote
+    } else if (ch === "\\") {
+      // Backslash escape outside quotes: keep both chars, skip ahead
+      i += 2; // skip backslash and the escaped char
+    } else {
+      i++;
+    }
+  }
+  return chars.join("");
+}
+
+/**
+ * Split a string on a delimiter, guided by a sanitized version of the same
+ * string. Positions of the delimiter in the sanitized string are used to split
+ * the original, so quoted content is never mis-split.
+ *
+ * Both `str` and `sanitized` must have the same length (guaranteed when
+ * `sanitized` comes from `removeQuotedContent(str)`).
+ *
+ * @param {string} str — original string to split
+ * @param {string} sanitized — quote-sanitized version (same length)
+ * @param {string} delimiter — substring to split on (e.g. "&&")
+ * @returns {Array<{orig: string, san: string}>} — pairs of original/sanitized slices
+ */
+function splitBySanitized(str, sanitized, delimiter) {
+  const dLen = delimiter.length;
+  const result = [];
+  let start = 0;
+  let i = 0;
+  while (i <= sanitized.length - dLen) {
+    if (sanitized.slice(i, i + dLen) === delimiter) {
+      result.push({
+        orig: str.slice(start, i),
+        san: sanitized.slice(start, i),
+      });
+      start = i + dLen;
+      i = start;
+    } else {
+      i++;
+    }
+  }
+  result.push({
+    orig: str.slice(start),
+    san: sanitized.slice(start),
+  });
+  return result;
+}
+
+/**
  * Check if a compound command is safe by verifying every segment against the
  * allow list. Supports pipe chains and && chains (where every clause is safe).
  * Other operators — ;, ||, backticks, $(), redirects, single & — are always
  * rejected. 2>&1 is stripped before checking.
+ *
+ * Uses a quote-aware tokenizer so that shell metacharacters inside quoted
+ * strings (e.g. grep "foo|bar", grep "=>") are not mistaken for operators.
+ *
  * @param {string} cmd — the full trimmed command
  * @param {string[]} [allowExtra] — additional allow prefixes from config
  * @returns {boolean}
  */
 function isSafeCompoundCommand(cmd, allowExtra) {
-  // Strip safe stderr redirects first, then check for truly unsafe operators
+  // Strip safe stderr redirects first
   const stripped = stripStderrRedirect(cmd);
-  if (TRULY_UNSAFE_OPERATORS.test(stripped)) return false;
+
+  // Compute quote-sanitized form. Bail out on unmatched quotes (fail-closed).
+  const sanitized = removeQuotedContent(stripped);
+  if (sanitized === null) return false;
+
+  // Check for truly unsafe operators using the sanitized string so that
+  // operators inside quoted content (e.g. grep "=>", grep "foo&&bar") are
+  // not falsely detected.
+  if (TRULY_UNSAFE_OPERATORS.test(sanitized)) return false;
 
   // Effective allow list = hook defaults + user-configured per-project extras.
-  // allowExtra lets trusted projects opt extra prefixes into auto-approval
-  // (see loadAutoApproveConfig / autoApproveAllowExtra).
   const effectiveAllow =
     allowExtra && allowExtra.length > 0
       ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
@@ -261,28 +403,61 @@ function isSafeCompoundCommand(cmd, allowExtra) {
 
   /**
    * Check if a single pipe-compound or simple segment is safe.
-   * Splits on pipe, verifies every part against the allow list.
+   * Splits on real pipe (not inside quotes, not preceded by backslash).
+   * @param {string} orig — original segment text
+   * @param {string} san — sanitized version (same length)
    */
-  function isPipeSegmentSafe(segment) {
-    const parts = segment.split("|").map((s) => s.trim());
-    return parts.every((part) => {
-      if (!part) return false;
+  function isPipeSegmentSafe(orig, san) {
+    // Split on | using the sanitized string so | inside quoted content is not
+    // treated as a pipe. \| (out-of-quote escaped alternation) is re-merged below.
+    const pipeParts = splitBySanitized(orig, san, "|");
+
+    // Collect final parts, re-merging any \| that was split in the original
+    const finalParts = [];
+    let pending = null;
+    for (const p of pipeParts) {
+      const rawOrig = p.orig.trimEnd(); // trimEnd to check last char before |
+      if (pending !== null) {
+        // Previous split was a \| — merge back with current
+        pending = { orig: pending.orig + "|" + p.orig, san: pending.san + "|" + p.san };
+        // Check if this part also ends with backslash (another \|)
+        if (pending.orig.trimEnd().endsWith("\\")) {
+          // keep pending
+        } else {
+          finalParts.push(pending);
+          pending = null;
+        }
+      } else if (rawOrig.endsWith("\\")) {
+        // This part ends with \, so the next | is \| — will be re-merged
+        pending = p;
+      } else {
+        finalParts.push(p);
+      }
+    }
+    if (pending !== null) finalParts.push(pending);
+
+    return finalParts.every(({ orig: part }) => {
+      const trimmed = part.trim();
+      if (!trimmed) return false;
       for (const prefix of effectiveAllow) {
-        if (matchesPrefix(part, prefix)) {
-          return postMatchSafety(part, prefix) === "allow";
+        if (matchesPrefix(trimmed, prefix)) {
+          return postMatchSafety(trimmed, prefix) === "allow";
         }
       }
       return false;
     });
   }
 
-  // Split on && to get top-level clauses; each clause may itself be a pipe chain
-  const andClauses = stripped.split("&&").map((s) => s.trim());
+  // Split on && to get top-level clauses using the sanitized string so that
+  // && inside quoted content (e.g. grep "foo&&bar") is not treated as an operator.
+  const andClauses = splitBySanitized(stripped, sanitized, "&&");
 
   // Every && clause must be non-empty and fully safe (pipe-safe check per clause)
-  return andClauses.every((clause) => {
-    if (!clause) return false;
-    return isPipeSegmentSafe(clause);
+  return andClauses.every(({ orig, san }) => {
+    const trimmedOrig = orig.trim();
+    const trimmedSan = san.trim();
+    if (!trimmedOrig) return false;
+    return isPipeSegmentSafe(trimmedOrig, trimmedSan);
   });
 }
 
