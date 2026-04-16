@@ -197,8 +197,22 @@ const SHELL_OPERATOR_PATTERN = /[\n|;&<]|>>?|`|\$\(/;
  * Checked AFTER stripping safe stderr redirects (2>&1).
  * Semicolons, &&, ||, backticks, $(), newlines, input redirect (<),
  * and any output redirect (>).
+ *
+ * NOTE: isSafeCompoundCommand no longer uses this pattern directly — it uses
+ * TRULY_UNSAFE_OPERATORS (which excludes &&) and handles && via segment-wise
+ * checking. This constant is exported for test coverage only.
  */
 const UNSAFE_COMPOUND_PATTERN = /[;\n`>]|&&|\|\||\$\(|</;
+
+/**
+ * Detect operators that are truly unsafe even when segments are individually safe.
+ * Does NOT include && — that is handled separately by segment-wise checking.
+ * Excludes pipe (|) which is handled by isSafeCompoundCommand segment logic.
+ * Single & (background operator, e.g. "cmd & evil") IS blocked — negative lookahead
+ * (?<!&)&(?!&) matches lone & but not && or the & in 2>&1 (the latter is stripped
+ * before this check runs, so only true background operators reach this pattern).
+ */
+const TRULY_UNSAFE_OPERATORS = /[;\n`>]|(?<!&)&(?!&)|\|\||\$\(|</;
 
 /**
  * Strip stderr-to-stdout redirects (e.g., "2>&1") from a command string.
@@ -209,14 +223,6 @@ function stripStderrRedirect(str) {
   return str.replace(/(?<=\s|^)2>&1(?=\s|$)/g, "").trim();
 }
 
-/**
- * Check if a compound (piped) command is safe by verifying every segment
- * matches an allow prefix. Only pipe-based compounds qualify — commands
- * with ;, &&, ||, backticks, $(), newlines, or redirects (except 2>&1)
- * are never auto-approved here.
- * @param {string} cmd — the full trimmed command
- * @returns {boolean}
- */
 /**
  * Post-match safety check for allowed prefixes that have dangerous sub-forms.
  * Returns "allow" if safe, or a non-allow decision if the command is risky.
@@ -231,10 +237,19 @@ function postMatchSafety(cmd, prefix) {
   return "allow";
 }
 
+/**
+ * Check if a compound command is safe by verifying every segment against the
+ * allow list. Supports pipe chains and && chains (where every clause is safe).
+ * Other operators — ;, ||, backticks, $(), redirects, single & — are always
+ * rejected. 2>&1 is stripped before checking.
+ * @param {string} cmd — the full trimmed command
+ * @param {string[]} [allowExtra] — additional allow prefixes from config
+ * @returns {boolean}
+ */
 function isSafeCompoundCommand(cmd, allowExtra) {
-  // Strip safe stderr redirects first, then check for unsafe operators
+  // Strip safe stderr redirects first, then check for truly unsafe operators
   const stripped = stripStderrRedirect(cmd);
-  if (UNSAFE_COMPOUND_PATTERN.test(stripped)) return false;
+  if (TRULY_UNSAFE_OPERATORS.test(stripped)) return false;
 
   // Effective allow list = hook defaults + user-configured per-project extras.
   // allowExtra lets trusted projects opt extra prefixes into auto-approval
@@ -244,18 +259,30 @@ function isSafeCompoundCommand(cmd, allowExtra) {
       ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
       : BASH_ALLOW_PREFIXES;
 
-  // Split on pipe operator
-  const segments = stripped.split("|").map((s) => s.trim());
-
-  // Every segment must be non-empty and match a known allow prefix
-  return segments.every((seg) => {
-    if (!seg) return false;
-    for (const prefix of effectiveAllow) {
-      if (matchesPrefix(seg, prefix)) {
-        return postMatchSafety(seg, prefix) === "allow";
+  /**
+   * Check if a single pipe-compound or simple segment is safe.
+   * Splits on pipe, verifies every part against the allow list.
+   */
+  function isPipeSegmentSafe(segment) {
+    const parts = segment.split("|").map((s) => s.trim());
+    return parts.every((part) => {
+      if (!part) return false;
+      for (const prefix of effectiveAllow) {
+        if (matchesPrefix(part, prefix)) {
+          return postMatchSafety(part, prefix) === "allow";
+        }
       }
-    }
-    return false;
+      return false;
+    });
+  }
+
+  // Split on && to get top-level clauses; each clause may itself be a pipe chain
+  const andClauses = stripped.split("&&").map((s) => s.trim());
+
+  // Every && clause must be non-empty and fully safe (pipe-safe check per clause)
+  return andClauses.every((clause) => {
+    if (!clause) return false;
+    return isPipeSegmentSafe(clause);
   });
 }
 
