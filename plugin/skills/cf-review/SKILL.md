@@ -110,23 +110,17 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-reviewer"`. Pass t
 
 Wait for the agent to return its report.
 
-### Step 7: Security review (built-in)
+### Step 7: Collect the report
 
-After the cf-reviewer agent returns, invoke the `/security-review` built-in skill (from Claude Code) using the **Skill tool** with `skill: "security-review"`. This provides an additional dedicated security analysis on top of the agent's Layer 3.
+The result of Step 6 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 10.
 
-Merge any findings from `/security-review` into the report — deduplicate with results already in the report, keeping the higher-severity entry when both flag the same issue.
-
-### Step 8: Collect the report
-
-The result of Steps 6–7 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 11.
-
-### Step 9: Mark review complete and display status
+### Step 8: Mark review complete and display status
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
 ```
 
-### Step 10: Smart capture (conditional — only if `memory_store` MCP tool is available)
+### Step 9: Smart capture (conditional — only if `memory_store` MCP tool is available)
 
 If the review found **architectural insights** or **recurring patterns** worth preserving, call `memory_store` with:
 
@@ -137,11 +131,11 @@ If the review found **architectural insights** or **recurring patterns** worth p
 
 Skip if the review was routine with no notable findings.
 
-### Step 11: Final output
+### Step 10: Final output
 
 Display the full report followed by the status banner in a **single message**.
 
-**IMPORTANT**: The structured report from step 9 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
+**IMPORTANT**: The structured report from step 8 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 
 Display the cf-reviewer's report first, then append the appropriate banner:
 
