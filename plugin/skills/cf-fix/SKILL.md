@@ -257,6 +257,11 @@ Call `memory_store` with:
 
 If the MCP tool is unavailable, log a warning to the user but do NOT fail silently.
 
+Show the user a 2-line summary:
+
+- **Markdown file:** `{docsDir}/memory/bugs/...md` (created or updated)
+- **Memory DB:** indexed ✓ — or: MCP unavailable, file only
+
 ### Step 9: Auto-Review
 
 Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.

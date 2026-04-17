@@ -216,7 +216,10 @@ If the MCP tools are unavailable, log a warning to the user but do NOT fail sile
 
 ### Step 8: Confirm
 
-Show the user where the Q&A was saved (new file or appended to existing).
+Show the user a 2-line summary:
+
+- **Markdown file:** `path/to/file.md` (created or appended)
+- **Memory DB:** indexed ✓ — or: MCP unavailable, file only
 
 ## Rules
 

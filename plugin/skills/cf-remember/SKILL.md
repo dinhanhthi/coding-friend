@@ -194,7 +194,10 @@ If the MCP tools are unavailable, log a warning to the user but do NOT fail sile
 
 ### Step 6: Confirm
 
-Read back the cf-writer agent's output and show the user what was saved and where.
+Show the user a 2-line summary:
+
+- **Markdown file:** `path/to/file.md` (created or updated)
+- **Memory DB:** indexed ✓ — or: MCP unavailable, file only
 
 ## Interpreting `$ARGUMENTS`
 
