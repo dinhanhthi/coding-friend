@@ -140,6 +140,11 @@ Call `memory_store` with:
 
 If the MCP tool is unavailable, log a warning to the user but do NOT fail silently.
 
+Show the user a 2-line summary:
+
+- **Markdown file:** `{docsDir}/memory/bugs/...md` (created or updated)
+- **Memory DB:** indexed ✓ — or: MCP unavailable, file only
+
 ## Common Traps
 
 | Trap                                       | Why It Fails                                       | Do This Instead                       |

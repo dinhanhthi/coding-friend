@@ -220,6 +220,11 @@ After the report is written, call `memory_store` MCP tool to index it:
 
 If MCP tools are unavailable, log a warning but do NOT fail — the file was already written.
 
+Show the user a 2-line summary:
+
+- **Markdown file:** `{docsDir}/warm/warm-YYYY-MM-DD.md` (created)
+- **Memory DB:** indexed ✓ — or: MCP unavailable, file only
+
 ## Interpreting `$ARGUMENTS`
 
 `$ARGUMENTS` is optional. It can contain:

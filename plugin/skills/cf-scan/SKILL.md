@@ -278,6 +278,7 @@ Print a summary table:
 | ... | | | | |
 
 Total: X memories (Y created, Z updated)
+Memory DB: indexed ✓ — or: MCP unavailable, files only
 ```
 
 Then suggest next steps:
