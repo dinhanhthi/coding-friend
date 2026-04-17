@@ -39,7 +39,7 @@ The `/cf-ask` skill answers questions about your codebase and saves the answers 
 `/cf-ask` both **reads from** and **writes to** the [Memory System](/docs/reference/memory-system/):
 
 - **Recall** — Before exploring code, searches existing `docs/memory/` via MCP tools or a 3-tier frontmatter grep. If a direct match is found, the existing answer is presented — no redundant exploration needed.
-- **Save** — After answering, saves the Q&A to `docs/memory/` (organized by category: `features/`, `conventions/`, `decisions/`) with YAML frontmatter and indexes it via MCP for future recall.
+- **Save** — After answering, saves the Q&A to `docs/memory/` (organized by category: `features/`, `conventions/`, `decisions/`) with YAML frontmatter and indexes it via MCP for future recall. Confirms with a 2-line summary: the markdown file path and whether the MCP database indexing succeeded.
 
 See the [Memory System](/docs/reference/memory-system/) reference for full details on tiers, search pipeline, memory types, and markdown format.
 

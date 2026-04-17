@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.6 (2026-04-17)
+
+- Skills now show a 2-line memory save summary in confirm steps: the markdown file path and the MCP database indexing status (success or unavailable) — affects `cf-ask`, `cf-remember`, `cf-fix`, `cf-scan`, `cf-warm`, `cf-sys-debug` [#66318a5](https://github.com/dinhanhthi/coding-friend/commit/66318a5)
+
 ## v0.25.5 (2026-04-17)
 
 - Fix `auto-approve` hook: implement quote-aware tokenization so shell metacharacters inside quoted strings (e.g. `grep "foo|bar"`, `grep "=>"`) are no longer mistaken for real operators — prevents false positives that triggered unnecessary confirmation prompts [#c83a1fc](https://github.com/dinhanhthi/coding-friend/commit/c83a1fc)

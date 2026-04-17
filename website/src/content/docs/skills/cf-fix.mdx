@@ -23,7 +23,7 @@ The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, expl
 5. **Confirm Approach** — Explains the root cause and proposed fix. Asks for your input if uncertain
 6. **Implement Fix** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): write a failing regression test first, then fix the root cause
 7. **Verify Results + Retry** — Parses the implementer's result signal. On success, confirms the fix addresses the root cause. On failure, retries once with error context. If both attempts fail, escalates to user
-8. **Save Bug Knowledge** — If the fix required more than 1 attempt, documents the bug (symptom, root cause, fix, prevention) to `docs/memory/bugs/` via [`cf-writer`](/docs/agents/cf-writer/) agent with frontmatter for future recall
+8. **Save Bug Knowledge** — If the fix required more than 1 attempt, documents the bug (symptom, root cause, fix, prevention) to `docs/memory/bugs/` via [`cf-writer`](/docs/agents/cf-writer/) agent; confirms with a 2-line summary: the markdown file path and MCP database indexing status
 9. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the fix is verified
 
 ## Example
