@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.25.5 (2026-04-17)
+
+- Fix `auto-approve` hook: implement quote-aware tokenization so shell metacharacters inside quoted strings (e.g. `grep "foo|bar"`, `grep "=>"`) are no longer mistaken for real operators — prevents false positives that triggered unnecessary confirmation prompts [#c83a1fc](https://github.com/dinhanhthi/coding-friend/commit/c83a1fc)
+- Fix `auto-approve` hook: `&&` chains are now auto-approved when all segments match the allow list — e.g. `git status && git log` no longer triggers the LLM classifier; single `&` (background operator) correctly blocked to prevent bypass [#2aa65ed](https://github.com/dinhanhthi/coding-friend/commit/2aa65ed)
+- Fix `cf-review`: remove redundant built-in security-review step that generated a separate non-formatted output, breaking the unified 🚨/⚠️/💡/📋 report [#ec565f7](https://github.com/dinhanhthi/coding-friend/commit/ec565f7)
+
 ## v0.25.4 (2026-04-15)
 
 - Fix `auto-approve` LLM classifier timeout increased from 30s to 45s — reduces transient "LLM classification unavailable" fallbacks on slow networks or during cold starts [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
