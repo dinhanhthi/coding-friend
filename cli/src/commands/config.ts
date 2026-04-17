@@ -616,6 +616,8 @@ async function editGitignore(
     `${docsDir}/research/`,
     `${docsDir}/learn/`,
     `${docsDir}/sessions/`,
+    `${docsDir}/reviews/`,
+    `${docsDir}/context/`,
     ".coding-friend/",
   ];
 
