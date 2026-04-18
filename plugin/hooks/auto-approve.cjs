@@ -120,6 +120,7 @@ const BASH_ALLOW_PREFIXES = [
   "sort",
   "uniq",
   "cut",
+  "tr",
   "jq",
   // System info — read-only
   "which",
@@ -133,11 +134,16 @@ const BASH_ALLOW_PREFIXES = [
   "type",
   "df",
   "du",
+  "ps",
+  "env",
+  "printenv",
   // Path utilities — read-only
   "realpath",
   "basename",
   "dirname",
   "readlink",
+  // Directory navigation — safe, no-op side effects
+  "cd",
   // Directory creation — safe, idempotent
   "mkdir",
   // Git — read-only
@@ -153,6 +159,10 @@ const BASH_ALLOW_PREFIXES = [
   "git ls-files",
   "git stash list",
   "git stash show",
+  "git shortlog",
+  "git worktree list",
+  "git config --list",
+  "git config -l",
   // Git — low-risk local writes (easily reversible)
   "git add",
   "git commit",
@@ -168,8 +178,17 @@ const BASH_ALLOW_PREFIXES = [
   // Version checks — read-only
   "node --version",
   "node -v",
+  "npm --version",
+  "npm -v",
+  "npm list",
+  "npm ls",
   "python --version",
   "python3 --version",
+  "rustc --version",
+  "rustc -V",
+  "rustup show",
+  "rustup --version",
+  "go version",
   // Cargo — read-only subcommands only. Build/test/run/check all execute
   // arbitrary code via build.rs scripts and proc-macros, so those go to ASK.
   "cargo --version",
