@@ -1350,6 +1350,104 @@ describe("classifyByRules — safe compound commands", () => {
     ).toBe("allow");
   });
 
+  it("allows cd as a standalone command", () => {
+    expect(classifyByRules("Bash", { command: "cd /some/path" })).toBe("allow");
+  });
+
+  it("allows cd && ls (cd as first segment in && chain)", () => {
+    expect(
+      classifyByRules("Bash", { command: "cd /some/path && ls" }),
+    ).toBe("allow");
+  });
+
+  // Text processing
+  it("allows tr (text transform)", () => {
+    expect(
+      classifyByRules("Bash", { command: "tr '[:upper:]' '[:lower:]'" }),
+    ).toBe("allow");
+  });
+
+  // System info
+  it("allows ps", () => {
+    expect(classifyByRules("Bash", { command: "ps aux" })).toBe("allow");
+  });
+
+  it("allows env", () => {
+    expect(classifyByRules("Bash", { command: "env" })).toBe("allow");
+  });
+
+  it("allows printenv", () => {
+    expect(classifyByRules("Bash", { command: "printenv PATH" })).toBe("allow");
+  });
+
+  // Version checks
+  it("allows rustc --version", () => {
+    expect(classifyByRules("Bash", { command: "rustc --version" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows rustc -V", () => {
+    expect(classifyByRules("Bash", { command: "rustc -V" })).toBe("allow");
+  });
+
+  it("allows rustup show", () => {
+    expect(classifyByRules("Bash", { command: "rustup show" })).toBe("allow");
+  });
+
+  it("allows rustup --version", () => {
+    expect(classifyByRules("Bash", { command: "rustup --version" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows npm --version", () => {
+    expect(classifyByRules("Bash", { command: "npm --version" })).toBe("allow");
+  });
+
+  it("allows npm -v", () => {
+    expect(classifyByRules("Bash", { command: "npm -v" })).toBe("allow");
+  });
+
+  it("allows npm list", () => {
+    expect(classifyByRules("Bash", { command: "npm list --depth=0" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows npm ls", () => {
+    expect(classifyByRules("Bash", { command: "npm ls" })).toBe("allow");
+  });
+
+  it("allows go version", () => {
+    expect(classifyByRules("Bash", { command: "go version" })).toBe("allow");
+  });
+
+  // Git read-only subcommands
+  it("allows git shortlog", () => {
+    expect(
+      classifyByRules("Bash", { command: "git shortlog -sn" }),
+    ).toBe("allow");
+  });
+
+  it("allows git worktree list", () => {
+    expect(classifyByRules("Bash", { command: "git worktree list" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows git config --list", () => {
+    expect(classifyByRules("Bash", { command: "git config --list" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows git config -l", () => {
+    expect(classifyByRules("Bash", { command: "git config -l" })).toBe(
+      "allow",
+    );
+  });
+
   it("does NOT allow && chain with unsafe segment (npm test)", () => {
     expect(
       classifyByRules("Bash", { command: "git status && npm test" }),
@@ -2472,6 +2570,20 @@ describe("classifyByRules — allowExtra param", () => {
       classifyByRules(
         "Bash",
         { command: "cargo test 2>&1 | grep FAIL" },
+        undefined,
+        ["cargo test"],
+      ),
+    ).toBe("allow");
+  });
+
+  it("allows cd && cargo test pipe chain when cargo test is in allowExtra", () => {
+    expect(
+      classifyByRules(
+        "Bash",
+        {
+          command:
+            'cd /Users/thi/git/xJournal/src-tauri && cargo test commands::media 2>&1 | grep "error\\[" | head -20',
+        },
         undefined,
         ["cargo test"],
       ),
