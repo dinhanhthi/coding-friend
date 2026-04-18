@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.26.0 (2026-04-18)
+
+- Expand `auto-approve` allow list with commonly used read-only commands: `cd`, `tr`, `ps`, `env`, `printenv`, `npm --version`/`-v`/`list`/`ls`, `rustc --version`/`-V`, `rustup show`/`--version`, `go version`, `git shortlog`, `git worktree list`, `git config --list`/`-l` — these frequently appear as segments in compound commands and were previously sent to the LLM classifier or prompted [#40fe1ff](https://github.com/dinhanhthi/coding-friend/commit/40fe1ff)
+
 ## v0.25.6 (2026-04-17)
 
 - Skills now show a 2-line memory save summary in confirm steps: the markdown file path and the MCP database indexing status (success or unavailable) — affects `cf-ask`, `cf-remember`, `cf-fix`, `cf-scan`, `cf-warm`, `cf-sys-debug` [#66318a5](https://github.com/dinhanhthi/coding-friend/commit/66318a5)
