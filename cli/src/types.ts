@@ -54,9 +54,6 @@ export const ALL_COMPONENT_IDS: StatuslineComponent[] =
 
 export interface MemoryConfig {
   tier?: "auto" | "full" | "lite" | "markdown";
-  daemon?: {
-    idleTimeout?: number;
-  };
   embedding?: {
     provider?: "transformers" | "ollama";
     model?: string;

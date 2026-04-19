@@ -62,9 +62,6 @@ Edit interactively with `cf config`, or manually edit the JSON files.
       "model": "Xenova/all-MiniLM-L6-v2",
       "ollamaUrl": "http://localhost:11434"
     },
-    "daemon": {
-      "idleTimeout": 0
-    },
     "autoCapture": false,
     "autoStart": false
   }
@@ -235,17 +232,6 @@ Settings for the embedding model used in Tier 1 semantic search. See [Embedding 
 - **Type**: `string`
 - **Default**: `"http://localhost:11434"`
 - URL of the Ollama server (only used when `provider` is `"ollama"`)
-
-#### `memory.daemon`
-
-Settings for the Tier 2 MiniSearch daemon.
-
-#### `memory.daemon.idleTimeout`
-
-- **Type**: `number` (milliseconds)
-- **Default**: `0` (no timeout — daemon runs until explicitly stopped)
-- Auto-shutdown the daemon after this many milliseconds of inactivity. Set to `0` to disable auto-shutdown (recommended). The `cf memory config` wizard prompts in minutes and converts automatically.
-- If the daemon stops (e.g., due to idle timeout or crash), it is **automatically respawned** on the next memory request with up to 3 retry attempts before falling back to Tier 3.
 
 #### `memory.autoCapture`
 

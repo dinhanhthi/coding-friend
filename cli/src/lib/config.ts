@@ -63,11 +63,6 @@ const StatuslineConfigSchema = z.object({
 
 const MemoryConfigSchema = z.object({
   tier: z.enum(["auto", "full", "lite", "markdown"]).optional(),
-  daemon: z
-    .object({
-      idleTimeout: z.number().optional(),
-    })
-    .optional(),
   embedding: z
     .object({
       provider: z.enum(["transformers", "ollama"]).optional(),

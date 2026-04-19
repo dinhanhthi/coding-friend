@@ -274,39 +274,6 @@ export async function editMemoryEmbedding(
   writeMemoryField(scope, "embedding", embedding);
 }
 
-export async function editMemoryDaemonTimeout(
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): Promise<void> {
-  const currentDaemon = getMergedMemoryValue("daemon", globalCfg, localCfg) as
-    | { idleTimeout?: number }
-    | undefined;
-  const currentMs = currentDaemon?.idleTimeout;
-  const currentMin = currentMs !== undefined ? currentMs / 60000 : undefined;
-
-  if (currentMin !== undefined) {
-    log.dim(`Current: ${currentMin} minutes`);
-  }
-
-  const value = await input({
-    message: "Daemon idle timeout (minutes, 0 = no timeout):",
-    default: String(currentMin ?? 0),
-    validate: (val) => {
-      const n = Number(val);
-      if (isNaN(n) || n < 0)
-        return "Must be 0 (no timeout) or a positive number";
-      return true;
-    },
-  });
-
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeMemoryField(scope, "daemon", {
-    ...currentDaemon,
-    idleTimeout: Number(value) * 60000,
-  });
-}
-
 // ─── MCP setup ──────────────────────────────────────────────────────
 
 /**
@@ -448,11 +415,6 @@ export async function memoryConfigMenu(opts?: {
       localCfg,
     ) as { provider?: string; model?: string } | undefined;
 
-    const daemonScope = getMemoryFieldScope("daemon", globalCfg, localCfg);
-    const daemonVal = getMergedMemoryValue("daemon", globalCfg, localCfg) as
-      | { idleTimeout?: number }
-      | undefined;
-
     const embeddingLabel = embeddingVal?.provider
       ? embeddingVal.model
         ? `${embeddingVal.model} (${embeddingVal.provider})`
@@ -490,10 +452,6 @@ export async function memoryConfigMenu(opts?: {
             value: "embedding",
           },
           {
-            name: `Daemon timeout ${formatScopeLabel(daemonScope)}${daemonVal?.idleTimeout ? ` (${daemonVal.idleTimeout / 60000}min)` : ""}`,
-            value: "daemon",
-          },
-          {
             name: `MCP setup (${mcpLabel})`,
             value: "mcp",
           },
@@ -516,9 +474,6 @@ export async function memoryConfigMenu(opts?: {
         break;
       case "embedding":
         await editMemoryEmbedding(globalCfg, localCfg);
-        break;
-      case "daemon":
-        await editMemoryDaemonTimeout(globalCfg, localCfg);
         break;
       case "mcp":
         await editMemoryMcp();

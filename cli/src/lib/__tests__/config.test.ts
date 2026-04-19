@@ -65,6 +65,18 @@ describe("loadConfig", () => {
     expect(config.memory?.embedding?.provider).toBe("transformers");
   });
 
+  it("strips memory.daemon.idleTimeout — not a supported config field", () => {
+    mockReadJson
+      .mockReturnValueOnce(null) // global
+      .mockReturnValueOnce({
+        memory: { daemon: { idleTimeout: 30 } },
+      }); // local
+
+    const config = loadConfig();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((config.memory as any)?.daemon).toBeUndefined();
+  });
+
   it("deep merges learn config", () => {
     mockReadJson
       .mockReturnValueOnce({
