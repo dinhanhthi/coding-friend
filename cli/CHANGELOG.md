@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.32.0 (2026-04-19)
+
+- Remove `memory.daemon.idleTimeout` config option — the daemon always runs until explicitly stopped with `cf memory stop-daemon`; the auto-stop timer was confusing and the default was already `0` (no timeout). Removes the option from schema, types, `cf memory init` wizard (now 4 steps), `cf memory config` menu, and docs [#9aa0533](https://github.com/dinhanhthi/coding-friend/commit/9aa0533)
+
 ## v1.31.3 (2026-04-17)
 
 - Fix `cf config`: add missing `reviews/` and `context/` to the `.gitignore` block it writes — `cf init` already included these entries but `cf config` did not, causing inconsistency between the two flows [#90f7854](https://github.com/dinhanhthi/coding-friend/commit/90f7854)
