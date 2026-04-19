@@ -31,9 +31,8 @@ Interactive setup wizard. On first run, walks through each setting. On re-run (d
 2. **Embedding provider** — Transformers.js or Ollama
 3. **Auto-capture** — auto-save session context on compaction
 4. **Auto-start daemon** — start daemon when MCP server connects
-5. **Daemon timeout** — idle timeout in minutes
-6. **Install deps & import** — installs SQLite deps and imports existing memories
-7. **MCP setup** — adds `coding-friend-memory` to `.mcp.json`
+5. **Install deps & import** — installs SQLite deps and imports existing memories
+6. **MCP setup** — adds `coding-friend-memory` to `.mcp.json`
 
 Each setting asks whether to save to global or local config.
 
@@ -42,7 +41,7 @@ Each setting asks whether to save to global or local config.
 ```bash
 cf memory init
 # 🧠 Memory Setup
-# Step 1/5: Search tier
+# Step 1/4: Search tier
 # ? Memory search tier: full
 # ...
 # Memory initialized!
@@ -111,7 +110,7 @@ cf memory start-daemon
 cf memory stop-daemon
 ```
 
-The daemon runs detached and auto-rebuilds on file changes. By default, the daemon runs indefinitely until explicitly stopped with `cf memory stop-daemon`. If you configure an idle timeout and the daemon stops, the MCP server respawns it automatically on the next request (with up to 3 retry attempts before falling back to Tier 3).
+The daemon runs detached and auto-rebuilds on file changes. It runs indefinitely until explicitly stopped with `cf memory stop-daemon`. If the daemon stops unexpectedly, the MCP server respawns it automatically on the next request (with up to 3 retry attempts before falling back to Tier 3).
 
 ## `rebuild`
 
@@ -143,7 +142,6 @@ In `.coding-friend/config.json`. Memory files are stored in `{docsDir}/memory/` 
 {
   "memory": {
     "tier": "auto",
-    "daemon": { "idleTimeout": 0 },
     "autoCapture": false,
     "autoStart": false,
     "embedding": {
@@ -157,7 +155,6 @@ In `.coding-friend/config.json`. Memory files are stored in `{docsDir}/memory/` 
 | Option                | Default                     | Description                                                           |
 | --------------------- | --------------------------- | --------------------------------------------------------------------- |
 | `tier`                | `"auto"`                    | `"auto"`, `"full"` (Tier 1), `"lite"` (Tier 2), `"markdown"` (Tier 3) |
-| `daemon.idleTimeout`  | `0` (no timeout)            | Minutes before daemon auto-stops (`0` = run forever)                  |
 | `autoCapture`         | `false`                     | Auto-save session summaries on context compaction                     |
 | `autoStart`           | `false`                     | Auto-start daemon when MCP server connects                            |
 | `embedding.provider`  | `"transformers"`            | `"transformers"` or `"ollama"`                                        |

@@ -867,7 +867,7 @@ export async function configCommand(): Promise<void> {
             name: `Memory settings ${formatScopeLabel(memoryScope)}`,
             value: "memory",
             description:
-              "  Tier, auto-capture, auto-start, embedding provider, daemon timeout",
+              "  Tier, auto-capture, auto-start, embedding provider",
           },
           {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,

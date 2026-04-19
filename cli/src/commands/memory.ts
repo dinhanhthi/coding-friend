@@ -13,7 +13,6 @@ import {
   editMemoryAutoCapture,
   editMemoryAutoStart,
   editMemoryEmbedding,
-  editMemoryDaemonTimeout,
   getMemoryMcpStatus,
   writeMemoryMcpEntry,
 } from "../lib/memory-prompts.js";
@@ -386,8 +385,7 @@ export async function memoryStartDaemonCommand(): Promise<void> {
 
   const config = loadConfig();
   const embedding = config.memory?.embedding;
-  const idleTimeoutMs = config.memory?.daemon?.idleTimeout;
-  const result = await spawnDaemon(memoryDir, embedding, { idleTimeoutMs });
+  const result = await spawnDaemon(memoryDir, embedding, {});
 
   if (result) {
     log.success(`Daemon started (PID ${result.pid})`);
@@ -569,7 +567,7 @@ export function isMemoryInitialized(): boolean {
 }
 
 /**
- * Core memory init wizard — runs steps 1-5, installs deps, imports
+ * Core memory init wizard — runs steps 1-4, installs deps, imports
  * existing memories, and sets up MCP.  Called by both `cf memory init`
  * and the CF Memory step inside `cf init`.
  */
@@ -578,7 +576,7 @@ export async function memoryInitWizard(
   mcpDir: string,
 ): Promise<void> {
   // Step 1: Tier
-  log.step("Step 1/5: Search tier");
+  log.step("Step 1/4: Search tier");
   await editMemoryTier(
     readJson<CodingFriendConfig>(globalConfigPath()),
     readJson<CodingFriendConfig>(localConfigPath()),
@@ -586,7 +584,7 @@ export async function memoryInitWizard(
   console.log();
 
   // Step 2: Embedding
-  log.step("Step 2/5: Embedding provider");
+  log.step("Step 2/4: Embedding provider");
   await editMemoryEmbedding(
     readJson<CodingFriendConfig>(globalConfigPath()),
     readJson<CodingFriendConfig>(localConfigPath()),
@@ -594,7 +592,7 @@ export async function memoryInitWizard(
   console.log();
 
   // Step 3: Auto-capture
-  log.step("Step 3/5: Auto-capture");
+  log.step("Step 3/4: Auto-capture");
   await editMemoryAutoCapture(
     readJson<CodingFriendConfig>(globalConfigPath()),
     readJson<CodingFriendConfig>(localConfigPath()),
@@ -602,16 +600,8 @@ export async function memoryInitWizard(
   console.log();
 
   // Step 4: Auto-start daemon
-  log.step("Step 4/5: Auto-start daemon");
+  log.step("Step 4/4: Auto-start daemon");
   await editMemoryAutoStart(
-    readJson<CodingFriendConfig>(globalConfigPath()),
-    readJson<CodingFriendConfig>(localConfigPath()),
-  );
-  console.log();
-
-  // Step 5: Daemon timeout
-  log.step("Step 5/5: Daemon idle timeout");
-  await editMemoryDaemonTimeout(
     readJson<CodingFriendConfig>(globalConfigPath()),
     readJson<CodingFriendConfig>(localConfigPath()),
   );
