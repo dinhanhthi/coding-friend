@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.32.1 (2026-04-20)
+
+- Fix stale `.mcp.json` paths breaking after `cf update` or Node.js version changes — new entries now use `npx -y coding-friend-cli mcp-serve <dir>` so the path resolves at runtime; `cf mcp` and `cf memory mcp` auto-rewrite existing stale/legacy entries to the new format [#6607463](https://github.com/dinhanhthi/coding-friend/commit/6607463)
+- Add `cf mcp-serve <memoryDir>` subcommand invoked by `npx` to launch the `cf-memory` MCP server [#6607463](https://github.com/dinhanhthi/coding-friend/commit/6607463)
+
 ## v1.32.0 (2026-04-19)
 
 - Remove `memory.daemon.idleTimeout` config option — the daemon always runs until explicitly stopped with `cf memory stop-daemon`; the auto-stop timer was confusing and the default was already `0` (no timeout). Removes the option from schema, types, `cf memory init` wizard (now 4 steps), `cf memory config` menu, and docs [#9aa0533](https://github.com/dinhanhthi/coding-friend/commit/9aa0533)
