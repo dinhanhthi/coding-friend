@@ -15,15 +15,13 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-`/cf-plan` supports three modes that control the depth of the planning workflow:
-
 | Mode       | Flag     | Steps skipped/added                                          | When to use                                          |
 | ---------- | -------- | ------------------------------------------------------------ | ---------------------------------------------------- |
 | **Normal** | (none)   | Full workflow                                                | Default — most tasks                                 |
 | **Fast**   | `--fast` | Skip discovery, inline exploration, skip planner agent       | Task is clear, single-module, additive               |
 | **Hard**   | `--hard` | Extra discovery round, deeper exploration, rollback planning | Breaking changes, migrations, multi-module refactors |
 
-Flags are parsed from `$ARGUMENTS`. Remove the flag before using the remaining text as the task description.
+Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description.
 
 ## Workflow
 
@@ -31,381 +29,150 @@ Flags are parsed from `$ARGUMENTS`. Remove the flag before using the remaining t
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 0.5: Determine Mode
 
-1. **Explicit flag** — If `$ARGUMENTS` contains `--fast` or `--hard`, use that mode. Strip the flag from the task description.
-2. **Auto-detect** — If no flag is given, scan the task for signals:
-
-**Fast signals** (need 2+ to trigger):
-
-- Task matches an existing pattern in the codebase (e.g. "add another command like X")
-- Single module or file affected
-- No external dependencies or APIs involved
-- User language implies simplicity: "just", "simple", "quick", "same as", "like we did for"
-- Task is purely additive (new file/function), not modifying existing logic
-
-**Hard signals** (need 2+ to trigger):
-
-- Multiple modules or packages affected
-- Involves breaking changes, migrations, or data schema changes
-- Touches security, auth, payments, or data integrity
-- User language implies complexity: "refactor", "migrate", "rewrite", "across all", "breaking"
-- Has external system dependencies (DB, APIs, third-party services)
-- Affects public API or shared contracts
-
-3. **Confirm auto-detected mode** — If auto-detect triggers a non-default mode:
-   - If **3+ signals** match → apply automatically, announce the mode and reasons
-   - If **2 signals** match → propose the mode and ask user to confirm before proceeding
-   - If signals are mixed or unclear → use **normal** mode
+1. **Explicit flag** — use `--fast` or `--hard` if present in `$ARGUMENTS`.
+2. **Auto-detect** — scan the task for signals (need 2+ to trigger):
+   - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
+   - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
+3. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal.
 
 ### Step 0.7: Check Memory
 
-Before exploring the codebase, check if project memory already has relevant context:
-
-1. If `memory_search` tool is available, search for keywords related to the task (e.g., architecture, conventions, prior plans, related features)
-2. If memory returns relevant results, use them as **starting context** for the exploration — this avoids redundant exploration
-3. If no memory is available or no relevant results, skip this step
+If `memory_search` is available, search for keywords related to the task. Use any relevant results as starting context; otherwise skip.
 
 ### Step 1: Discovery & Brainstorm
 
-> **Fast mode**: Skip this step entirely — assume the request is clear and proceed to Step 2.
+> **Fast mode**: Skip — proceed to Step 2.
 
-BEFORE reading code or researching, run a focused discovery session. The goal is to deeply understand the problem, challenge assumptions, and ensure we build the right thing — not just build something.
+Use `AskUserQuestion` for each round. Do NOT batch questions.
 
-Use the `AskUserQuestion` tool for each interaction below. Do NOT batch all questions into one message — ask in focused rounds.
+**Round 1 — Understand:** List ambiguities and assumptions; ask probing questions about objectives, constraints, success criteria; ask about preferred libraries/APIs — never guess.
 
-**Round 1 — Understand the problem:**
+**Round 2 — Challenge:** Question whether the proposed approach is the best path. Consider user/dev/ops/business angles. Be honest about feasibility and trade-offs. Apply YAGNI, KISS, DRY.
 
-1. Read the request. List things that are **ambiguous or unclear**
-2. List **assumptions** you're about to make
-3. Ask probing questions to fully understand the user's true objectives, constraints, and success criteria — don't just accept the surface-level request
-4. If the request involves external tools/APIs/libraries, ask which ones they prefer — do NOT guess
+**Round 3 — Converge** (if needed): Present 2-3 approaches with pros/cons; ask which to pursue. Skip if request was already clear.
 
-**Round 2 — Challenge & explore alternatives:**
+> **Hard mode** — add **Round 4: Risk & Rollback**: failure modes and blast radius; rollback plan; feature flags / gradual rollout options; incremental vs. all-or-nothing deployment.
 
-5. Once you understand the goal, **challenge the initial approach**. Question whether the proposed solution is the best path. Often the best solution differs from what was originally envisioned
-6. Consider multiple angles: impact on end users, developer experience, operations, and business objectives
-7. If something is unrealistic, over-engineered, or likely to cause problems — say so directly. Be brutally honest about feasibility and trade-offs. Your job is to prevent costly mistakes
-8. Apply **YAGNI**, **KISS**, and **DRY** — push back on unnecessary complexity
-
-**Round 3 — Converge (if needed):**
-
-9. If the discovery rounds surfaced new alternatives or concerns, present 2-3 viable approaches with brief pros/cons and ask the user which direction to pursue
-10. If the original request was clear and straightforward, skip this round
-
-> **Hard mode** — add **Round 4: Risk & Rollback** after Round 3:
->
-> 11. What could go wrong? List failure modes and blast radius
-> 12. What's the rollback plan if this breaks production?
-> 13. Are there feature flags or gradual rollout options?
-> 14. Can the change be deployed incrementally, or is it all-or-nothing?
-
-Only proceed after the user confirms your understanding and direction. If the user wants to skip brainstorming (e.g., "just plan it", "I already know what I want"), respect that and move on.
+If the user wants to skip brainstorming ("just plan it"), respect that and move on.
 
 ### Step 1.5: Generate Task ID
 
-Generate a task-id for the context handoff protocol:
-
-1. **Generate a task-id**: use format `<timestamp>-<short-descriptor>` (e.g., `1717500000-add-auth-middleware`)
-2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
-3. **Context file path**: `{docsDir}/context/{task-id}.json`
-
-This task-id will be used throughout the workflow to pass structured context between agents.
+1. **task-id**: `<timestamp>-<short-descriptor>` (e.g. `1717500000-add-auth-middleware`)
+2. **docsDir**: read from `.coding-friend/config.json` or default to `docs`
+3. **Context file**: `{docsDir}/context/{task-id}.json`
 
 ### Step 2: Explore Codebase
 
-> **Fast mode**: Do NOT launch the cf-explorer agent. Instead, do a quick inline search using Glob and Grep directly in the main conversation. Focus only on the files immediately relevant to the task. Keep it brief — no deep exploration.
+> **Fast mode**: Inline search with Glob/Grep only — no agents, no deep exploration.
+> **Normal**: Launch cf-explorer agent once.
+> **Hard**: Launch cf-explorer twice — standard exploration, then blast-radius analysis.
 
-> **Normal mode**: Launch the **cf-explorer agent** (default behavior below).
+Launch **cf-explorer** (`subagent_type: "coding-friend:cf-explorer"`):
 
-> **Hard mode**: Launch the cf-explorer agent **twice** — first for standard exploration, then a second call for dependency and blast-radius analysis (see below).
+> Explore the codebase for: [user request]
+> Context file: [docsDir/context/<task-id>.json]
+> Confirmed assumptions: [from Step 1] | Scope: [from Step 1]
+> Answer: (1) project structure & relevant modules, (2) affected files/functions, (3) patterns/conventions/dependencies, (4) existing tests/configs/docs
 
-Launch the **cf-explorer agent** to gather codebase context. This runs in a separate context to preserve the main conversation's token budget.
+> **Hard mode** — second cf-explorer call:
+> Blast-radius for [files from first call]: (1) what imports/depends on changed code, (2) what breaks, (3) affected public API consumers, (4) test coverage gaps
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass a detailed prompt:
+### Step 3: Brainstorm Approaches
 
-> Explore the codebase to gather context for the following task: [user request]
->
-> **Context file:** Write your structured findings to [docsDir/context/<task-id>.json]
->
-> Confirmed assumptions: [list from Step 1]
-> Scope: [any constraints from Step 1]
->
-> Questions to answer:
->
-> 1. What is the project structure and relevant modules?
-> 2. Which files and functions are affected by this task?
-> 3. What patterns, conventions, and dependencies exist in the affected areas?
-> 4. Are there existing tests, configs, or docs relevant to this change?
+> **Fast mode**: Skip — pick the most straightforward approach from Step 2, proceed to Step 4.
 
-Wait for the cf-explorer to return its findings.
+Launch **cf-planner** (`subagent_type: "coding-friend:cf-planner"`):
 
-> **Hard mode** — launch a second cf-explorer call for blast-radius analysis:
->
-> > Analyze the blast radius for changes to: [files/modules identified in first exploration]
-> >
-> > Questions to answer:
-> >
-> > 1. What other modules import or depend on the code we're changing?
-> > 2. What breaks if we get this wrong?
-> > 3. Are there consumers of public APIs or shared contracts affected?
-> > 4. What test suites cover the affected areas — are there gaps?
+> Plan: [user request]
+> Context file: [docsDir/context/<task-id>.json] (cf-explorer findings already written; read it, then update with plan findings)
+> Confirmed assumptions: [from Step 1] | User preferences: [from Step 1]
+> Codebase context: [full cf-explorer report]
+> Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
 
-### Step 3: Brainstorm Approaches (via cf-planner agent)
-
-> **Fast mode**: Skip this step — pick the most straightforward approach based on codebase patterns found in Step 2. Proceed directly to Step 4.
-
-Launch the **cf-planner agent** with the cf-explorer's findings to brainstorm approaches. Pass the context file path so the planner can also write its findings for downstream agents.
-
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-planner"`. Pass:
-
-> Plan the following task: [user request]
->
-> **Context file:** [path to docsDir/context/<task-id>.json] — the cf-explorer has already written structured findings here. Read it for codebase context, then update it with your plan findings.
->
-> Confirmed assumptions: [list from Step 1]
-> User preferences: [any constraints from Step 1]
->
-> Codebase context (from explorer):
-> [include the full exploration report returned by the cf-explorer agent]
->
-> Skip the clarification and exploration steps — assumptions are confirmed and codebase has been explored.
-> Focus on: generating 2-3 possible approaches based on the codebase context. For each approach, list pros, cons, effort (task count), risk, and confidence level. Recommend one approach with rationale.
-
-> **Hard mode** — add to the cf-planner prompt:
->
-> > Generate 3-4 approaches (not 2-3). Each approach MUST include:
-> >
-> > - Migration path (how to get from current state to target state)
-> > - Rollback strategy (what if we need to revert midway?)
-> > - Incremental deployment option (can this be rolled out gradually?)
-> >
-> > Blast-radius analysis: [include findings from second cf-explorer call]
-
-Wait for the cf-planner to return its approaches.
+> **Hard mode**: Generate 3-4 approaches; each must include migration path, rollback strategy, incremental deployment option. Include blast-radius findings.
 
 ### Step 4: Validate with User
 
-> **Fast mode**: Skip this step — go straight to Step 5 (Write the Plan).
+> **Fast mode**: Skip — go to Step 5.
 
-Present the findings to the user:
-
-1. **Key findings** from the codebase exploration (from cf-explorer)
-2. **Approaches** with pros/cons (from cf-planner)
-3. **Recommended approach** and why
-4. **Open questions** — anything flagged as uncertain
-5. Wait for user approval or corrections
+Present: key codebase findings, approaches with pros/cons, recommended approach and why, open questions. Wait for approval or corrections.
 
 ### Step 5: Write the Plan
 
-Based on the approved approach and the agent's findings:
+1. Break the chosen approach into tasks grouped into **phases**; each task completable in one session.
+2. Per task: what to do (files, functions, tests), expected outcome, how to verify.
+3. Phase markers: `#### Phase N [parallel]` (no shared files, run concurrently) or `#### Phase N [sequential]` (ordered). If no cf-planner or flat task list, wrap in a single `[sequential]` phase.
 
-1. Break the chosen approach into small tasks grouped into **phases**
-2. Each task should be completable in one focused session
-3. For each task, specify:
-   - What to do (specific files, functions, tests)
-   - Expected outcome
-   - How to verify it worked
-4. **Phase structure** — use the phase markers from the cf-planner's output:
-   - `#### Phase N [parallel]` — tasks in this phase have no shared files and no interdependencies. They will be executed concurrently.
-   - `#### Phase N [sequential]` — tasks depend on earlier results and run one at a time.
-   - If the cf-planner produced a flat task list (no phases), or no cf-planner was used (fast mode), wrap all tasks in a single `[sequential]` phase.
-
-> **Hard mode** — enhanced task format:
->
-> 4. Each task must include an additional **Rollback** field: how to undo this specific task if needed
-> 5. Add a `## Migration & Rollback` section to the plan with the overall rollback strategy
+> **Hard mode**: Each task adds a **Rollback** field; add `## Migration & Rollback` section with overall rollback strategy.
 
 ### Step 6: Save the Plan
 
-**Determine plan size** before saving:
+**Size threshold**: count total tasks across all phases.
+- **Small** (< 8 tasks AND < 3 phases) → single file `{docsDir}/plans/YYYY-MM-DD-<slug>.md` — see Small plan template below.
+- **Big** (8+ tasks OR 3+ phases) → subfolder `{docsDir}/plans/YYYY-MM-DD-<slug>/` with `README.md` + one `phase-N-<name>.md` per phase — see Big plan template below.
 
-- Count the total number of tasks across all phases.
-- A plan is considered **big** if it has **8+ tasks OR 3+ phases**.
+Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
 
-#### Small plan (< 8 tasks AND < 3 phases)
+After saving, present: path(s) created, phase count, task count, entry point.
 
-Write a single file: `{docsDir}/plans/YYYY-MM-DD-<slug>.md`
-
-Include a progress checklist at the top of the Tasks section:
-
-```markdown
-## Progress
-
-| Status | Phase | Task |
-|--------|-------|------|
-| ⬜ TODO | Phase 1 | Task name |
-| ⬜ TODO | Phase 2 | Task name |
-```
-
-Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
-
-#### Big plan (8+ tasks OR 3+ phases)
-
-Create a subfolder: `{docsDir}/plans/YYYY-MM-DD-<slug>/`
-
-Split the plan into chunk files — one file per phase:
-
-- `phase-1-<name>.md`
-- `phase-2-<name>.md`
-- `phase-N-<name>.md`
-
-Also create a `README.md` in the subfolder as the all-in-one overview:
-
-```markdown
-# Plan: <title>
-
-**Mode:** normal | fast | hard
-**Created:** YYYY-MM-DD
-**Status:** IN PROGRESS
-
-## Overview
-
-<1-2 sentences about the problem and chosen approach>
-
-## Progress
-
-| Status | Phase | File | Tasks |
-|--------|-------|------|-------|
-| ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
-| ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
-
-Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
-
-## Assumptions
-
-<copied from main plan>
-
-## Risks
-
-<copied from main plan>
-
-## Migration & Rollback (hard mode only)
-
-<copied from main plan>
-
-## Next Steps
-
-After implementation: consider running `/cf-review` → then `/cf-commit`
-```
-
-Each chunk file (`phase-N-<name>.md`) contains only its phase's tasks, with its own progress checklist:
-
-```markdown
-# Phase N: <name>
-
-**Plan:** [README.md](./README.md)
-**Type:** parallel | sequential
-
-## Progress
-
-| Status | Task |
-|--------|------|
-| ⬜ TODO | Task name |
-| ⬜ TODO | Task name |
-
-## Tasks
-
-<tasks for this phase only>
-```
-
-**After saving all files**, present to the user:
-- The folder/file path(s) created
-- A summary: phase count, task count, entry point (`README.md` or single file)
-
-1. Use the TaskCreate tool to create a task list
-2. Present the plan summary to the user
+1. Use TaskCreate to create a task list.
+2. Present the plan summary to the user.
 
 ### Step 7: Offer Implementation
 
-After the plan is saved, ask the user: **"Ready to start implementing?"**
-
-If the user agrees, execute the plan **phase by phase**. Parse the plan for `[parallel]` and `[sequential]` phase markers.
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase.
 
 #### Sequential phases
 
-For `[sequential]` phases, implement each task one at a time using the **cf-implementer agent**:
+Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) per task:
 
-1. For each task, dispatch the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
+> Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations] | Constraints: [risks/edge cases]
+> Follow RED → GREEN → REFACTOR.
 
-   > Implement the following task using strict TDD:
-   >
-   > **Task:** [task description from plan]
-   > **Context file:** [path to docsDir/context/<task-id>.json]
-   > **Context:** [overall plan context — what we're building and why]
-   > **Files:** [specific files listed in the task]
-   > **Verify:** [verification criteria from the task]
-   > **Test patterns:** [framework, conventions, test file locations]
-   > **Constraints:** [any risks or edge cases from the plan]
-   >
-   > Follow RED → GREEN → REFACTOR. Report results when done.
+Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
+- `[CF-RESULT: success]` → mark done, next task
+- `[CF-RESULT: failure] <reason>` → retry once
+- Missing/malformed/not-on-last-line → treat as failure (`empty-output`). Never assume silent success.
 
-2. After each task completes, **parse the last non-empty line** for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
-   - `[CF-RESULT: success]` → mark task complete, move to next
-   - `[CF-RESULT: failure] <reason>` → retry once (see retry protocol below)
-   - **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
+**Retry protocol** (max 1 per task):
+1. Notify: `> ⟳ Task N attempt 1 failed (<reason>). Retrying...`
+2. Add `previous_failure` key to context file (reason, error summary, attempt number).
+3. Re-dispatch cf-implementer.
+4. Second failure → report both, ask: "Continue to next task or stop?"
 
-**Retry protocol** (max 1 retry per task):
-
-1. Notify the user: `> ⟳ Task N attempt 1 failed (<reason>). Retrying with error context...`
-2. Update the context file — read existing content, add `previous_failure` key with reason, error summary, and attempt number
-3. Re-dispatch cf-implementer with the updated context file
-4. If retry also fails → report both failures, ask user: "Continue to next task or stop?"
-
-**Cleanup**: Delete the context file after all phases complete or if the user cancels.
+**Cleanup**: Delete the context file after all phases complete or on cancel.
 
 #### Parallel phases
 
-For `[parallel]` phases, launch **all tasks concurrently**:
+**File-overlap guard** (MANDATORY before spawning):
+1. Collect declared file lists from each task's `files:` field.
+2. Normalize all paths (absolute, no trailing slashes).
+3. If any path appears in 2+ tasks → STOP. Report duplicates and tasks involved.
+4. Ask: _"Phase N has a file-overlap conflict. (a) Convert to sequential, (b) reorganize so files don't overlap, or (c) abort?"_
+5. Only proceed after user resolves. Do NOT auto-serialize.
 
-**Pre-dispatch safety check — file-overlap guard** (MANDATORY before spawning any agent):
-
-1. For each task in the phase, collect its declared file list (from the `files:` field in the plan).
-2. Flatten all file paths across every task in the phase and normalize them (resolve to absolute paths, strip trailing slashes).
-3. If any file path appears in **two or more tasks**, STOP — this phase is unsafe for parallel execution because multiple implementers would race on the same file.
-4. Report the overlap to the user with the exact duplicated paths and the tasks involved, then ask: _"Phase N has a file-overlap conflict. (a) Convert this phase to sequential, (b) reorganize tasks so files don't overlap, or (c) abort?"_
-5. Only proceed after the user resolves the conflict. Do NOT auto-merge or auto-serialize without user confirmation.
-
-After the overlap check passes:
-
-1. Spawn one `cf-implementer` agent **per task** — all with `run_in_background: true`
-2. All agents MUST be launched in a **single message block** (one message with multiple Agent tool calls)
-3. Each agent prompt must be fully self-contained (task, context, files, verify criteria, test patterns, constraints) — agents cannot see each other's work
-4. Immediately after launching, render a status table:
-
-```
-| # | Task | Status |
-|---|------|--------|
-| 1 | Task A | running |
-| 2 | Task B | running |
-| 3 | Task C | running |
-```
-
-5. Wait for all agents to complete (Claude Code notifies on background agent completion)
-6. Update the status table as each agent reports back (`done` / `failed`)
-7. When all done: show final table + summary line (e.g., "3/3 tasks completed")
-8. If any task failed: warn user, show failure details, ask: **"Proceed to next phase? (y/n)"**
-9. If all passed: automatically proceed to next phase
+After overlap check passes:
+1. Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.
+2. Each agent prompt must be fully self-contained.
+3. Render status table immediately after launch (`running` → `done`/`failed`).
+4. Wait for all to complete; update table as each reports.
+5. All passed → proceed to next phase automatically. Any failed → warn, show details, ask: **"Proceed? (y/n)"**
 
 #### Phase execution order
 
-- Execute phases in order: Phase 1 → Phase 2 → Phase 3 → ...
-- A phase must complete before the next one starts
-- If a parallel phase has a failed task and the user chooses NOT to proceed, stop execution and report status
+Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
 #### Post-implementation
 
-1. **Hard mode** — run `/cf-review` after every phase, not just at the end. Only continue to the next phase if review passes.
-2. After all phases are done, automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
-3. After review completes, if the implemented plan involved **performance-critical features** — e.g. data processing pipelines, API endpoints handling high traffic, database-heavy operations, algorithms on large datasets, or real-time processing — suggest running `/cf-optimize` on the critical code paths. Present it as an optional next step, do NOT auto-run.
+1. **Hard mode**: run `/cf-review` after every phase; only continue if review passes.
+2. After all phases, automatically invoke `/cf-review` (Skill tool, `coding-friend:cf-review`).
+3. If plan involved performance-critical features, suggest `/cf-optimize` as optional next step — do NOT auto-run.
 
-## Plan Template
+## Plan Templates
 
 ### Small plan (single file)
 
@@ -416,12 +183,11 @@ After the overlap check passes:
 
 ## Context
 
-<1-2 sentences about the problem>
+<1-2 sentences>
 
 ## Assumptions
 
-- <assumption 1> — basis: <why you believe this>
-- <assumption 2> — basis: <why you believe this>
+- <assumption> — basis: <why>
 
 ## Approach
 
@@ -432,10 +198,7 @@ After the overlap check passes:
 | Status | Phase | Task |
 |--------|-------|------|
 | ⬜ TODO | Phase 1 | Task name |
-| ⬜ TODO | Phase 1 | Task name |
 | ⬜ TODO | Phase 2 | Task name |
-
-Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
 
 ## Tasks
 
@@ -446,7 +209,7 @@ Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE
    - Verify: <how to verify>
    - Rollback: <how to undo — hard mode only>
 2. <task 2>
-   - Files: <different files — no overlap with task 1>
+   - Files: <no overlap with task 1>
    - Verify: <how to verify>
 
 #### Phase 2 [sequential]
@@ -457,20 +220,20 @@ Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE
 
 ## Risks
 
-- <risk 1 and mitigation>
+- <risk and mitigation>
 
 ## Migration & Rollback (hard mode only)
 
-- Overall rollback strategy: <how to revert all changes>
-- Point of no return: <at which task is rollback no longer trivial?>
-- Incremental deployment: <can this be rolled out gradually?>
+- Overall rollback strategy: <how to revert all>
+- Point of no return: <which task>
+- Incremental deployment: <gradual rollout option>
 
 ## Next Steps
 
-After implementation: consider running `/cf-review` → then `/cf-commit`
+After implementation: `/cf-review` → `/cf-commit`
 ```
 
-### Big plan (subfolder — README.md + chunk files)
+### Big plan (subfolder)
 
 **README.md** (entry point):
 
@@ -492,25 +255,23 @@ After implementation: consider running `/cf-review` → then `/cf-commit`
 | ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
 | ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
 
-Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
-
 ## Assumptions
 
-- <assumption 1> — basis: <why you believe this>
+- <assumption> — basis: <why>
 
 ## Risks
 
-- <risk 1 and mitigation>
+- <risk and mitigation>
 
 ## Migration & Rollback (hard mode only)
 
-- Overall rollback strategy: <how to revert all changes>
-- Point of no return: <at which task is rollback no longer trivial?>
-- Incremental deployment: <can this be rolled out gradually?>
+- Overall rollback strategy: <how to revert all>
+- Point of no return: <which task>
+- Incremental deployment: <gradual rollout option>
 
 ## Next Steps
 
-After implementation: consider running `/cf-review` → then `/cf-commit`
+After implementation: `/cf-review` → `/cf-commit`
 ```
 
 **phase-N-\<name\>.md** (one per phase):
@@ -528,8 +289,6 @@ After implementation: consider running `/cf-review` → then `/cf-commit`
 | ⬜ TODO | <task 1 name> |
 | ⬜ TODO | <task 2 name> |
 
-Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
-
 ## Tasks
 
 1. <task 1>
@@ -543,19 +302,17 @@ Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE
 
 ## Completion Protocol
 
-After the plan is saved (or after implementation if the user chose to implement):
-
-- **DONE** — Plan created and saved. Show: task count, risk summary, recommended next step.
-- **DONE_WITH_CONCERNS** — Plan created but has open questions or high-risk items. Show: what needs user decision before proceeding.
-- **BLOCKED** — Cannot create a meaningful plan. Show: what information is missing, what assumptions couldn't be verified.
+- **DONE** — Plan saved. Show: task count, risk summary, next step.
+- **DONE_WITH_CONCERNS** — Plan saved with open questions or high-risk items. Show what needs user decision.
+- **BLOCKED** — Cannot plan. Show what information is missing.
 
 ## Rules
 
-- **Plan first, implement second** — never start coding before the plan is saved and the user approves.
-- **Brainstorm first, plan second** — question everything, challenge assumptions, explore alternatives before committing to an approach. Use `AskUserQuestion` to probe — never assume. (Relaxed in fast mode.)
-- **Delegate exploration** — always use the cf-explorer agent for codebase exploration, then the cf-planner agent for approach brainstorming. Never do heavy codebase reading in the main conversation. (Fast mode: inline search instead of agents.)
-- **Delegate implementation** — use the cf-implementer agent for task execution. If the agent fails after a reasonable attempt, fall back to implementing inline following TDD discipline (load cf-tdd).
-- **Respect the mode** — do not escalate fast to normal or normal to hard without user consent. If you detect the mode is wrong mid-workflow, pause and ask.
-- When uncertain, say so. State your confidence level and ask.
-- Do NOT assume which libraries, APIs, or tools to use without asking.
-- Plans should be concrete: exact file paths, function names, test commands.
+- **Plan first, implement second** — never start coding before the plan is saved and user approves.
+- **Brainstorm first, plan second** — challenge assumptions, explore alternatives. Use `AskUserQuestion`. (Relaxed in fast mode.)
+- **Delegate exploration** — use cf-explorer for codebase exploration, cf-planner for approach brainstorming. (Fast mode: inline search only.)
+- **Delegate implementation** — use cf-implementer. If it fails after retry, fall back to inline TDD (load cf-tdd).
+- **Respect the mode** — do not escalate without user consent. If mode seems wrong mid-workflow, pause and ask.
+- When uncertain, say so and ask.
+- Do NOT assume libraries, APIs, or tools — ask.
+- Plans must be concrete: exact file paths, function names, test commands.
