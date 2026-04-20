@@ -103,6 +103,15 @@ program
   });
 
 program
+  .command("mcp-serve")
+  .description("Start the cf-memory MCP server (used internally by npx)")
+  .argument("<memoryDir>", "path to memory directory")
+  .action(async (memoryDir: string) => {
+    const { mcpServeCommand } = await import("./commands/mcp-serve.js");
+    await mcpServeCommand(memoryDir);
+  });
+
+program
   .command("permission")
   .description("Manage Claude Code permission rules for Coding Friend")
   .option("--all", "Apply all recommended permissions without prompts")

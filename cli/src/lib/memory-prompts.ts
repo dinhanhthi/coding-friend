@@ -1,7 +1,6 @@
 /**
  * Shared memory prompt helpers — used by both `cf config > memory` and `cf memory config/init`.
  */
-import { existsSync } from "fs";
 import { homedir } from "os";
 import { confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
@@ -278,11 +277,9 @@ export async function editMemoryEmbedding(
 
 /**
  * Write the coding-friend-memory MCP entry into `.mcp.json` (merge, don't overwrite).
+ * Uses npx to resolve the current globally-installed CLI, making the entry version-stable.
  */
-export function writeMemoryMcpEntry(
-  serverPath: string,
-  memoryDir: string,
-): void {
+export function writeMemoryMcpEntry(memoryDir: string): void {
   const mcpPath = join(process.cwd(), ".mcp.json");
   const existing = readJson<Record<string, unknown>>(mcpPath) ?? {};
   const servers =
@@ -293,8 +290,8 @@ export function writeMemoryMcpEntry(
     mcpServers: {
       ...servers,
       "coding-friend-memory": {
-        command: "node",
-        args: [serverPath, memoryDir],
+        command: "npx",
+        args: ["-y", "coding-friend-cli", "mcp-serve", memoryDir],
       },
     },
   });
@@ -346,26 +343,8 @@ export async function editMemoryMcp(): Promise<void> {
     if (!reconfigure) return;
   }
 
-  let mcpDir: string;
-  try {
-    mcpDir = getLibPath("cf-memory");
-  } catch {
-    log.warn(
-      "cf-memory package not found. Install the CLI first: npm i -g coding-friend-cli",
-    );
-    return;
-  }
-
-  const serverPath = join(mcpDir, "dist", "index.js");
-  if (!existsSync(serverPath)) {
-    log.warn(
-      'cf-memory not built yet. Run "cf memory mcp" after building to get the config.',
-    );
-    return;
-  }
-
   const memoryDir = resolveMemoryDir();
-  writeMemoryMcpEntry(serverPath, memoryDir);
+  writeMemoryMcpEntry(memoryDir);
 }
 
 // ─── Memory config menu (shared by cf config > memory and cf memory config) ──
