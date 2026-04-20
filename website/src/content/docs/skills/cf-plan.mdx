@@ -53,7 +53,7 @@ The skill will:
 - Propose 2–3 approaches with trade-offs (skipped in fast mode, 3–4 approaches with rollback strategies in hard mode)
 - Present findings and wait for your approval (skipped in fast mode)
 - Create a phased implementation plan with `[parallel]` and `[sequential]` markers (with rollback fields per task in hard mode)
-- Save the plan to `docs/plans/2026-03-05-rest-api-auth-plan.md`
+- Save the plan to `docs/plans/` — single file for small plans, subfolder with chunks for large ones (8+ tasks or 3+ phases)
 - Offer to implement it — parallel phases run concurrently, sequential phases run one at a time (with review gates after every phase in hard mode)
 
 ## When to Use
@@ -66,20 +66,33 @@ The skill will:
 
 ## Output
 
-Plans are saved to `docs/plans/` with a date-prefixed filename:
+Plans are saved to `docs/plans/`. The structure depends on plan size:
+
+**Small plan** (< 8 tasks and < 3 phases) — single file:
 
 ```
 docs/plans/
-  ├── 2026-03-05-rest-api-auth-plan.md
-  ├── 2026-02-20-database-migration-plan.md
+  ├── 2026-03-05-add-cli-command.md
   └── ...
 ```
 
-Each plan includes:
+**Big plan** (8+ tasks or 3+ phases) — subfolder with chunks:
+
+```
+docs/plans/
+  └── 2026-03-05-rest-api-auth/
+        ├── README.md          ← entry point with progress table + links
+        ├── phase-1-setup.md
+        ├── phase-2-auth.md
+        └── phase-3-tests.md
+```
+
+Each plan (or chunk) includes:
 
 - Context and problem statement
 - Confirmed assumptions with basis
 - Chosen approach and rationale
+- **Progress table** — tracks each task with `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
 - Phased tasks (`[parallel]` / `[sequential]`) with specific files and verification steps
 - Risk assessment and mitigations
 - **Migration & Rollback** section (hard mode only) — overall rollback strategy, point of no return, incremental deployment options
