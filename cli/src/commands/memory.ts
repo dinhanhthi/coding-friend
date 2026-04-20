@@ -17,6 +17,7 @@ import {
   writeMemoryMcpEntry,
 } from "../lib/memory-prompts.js";
 import { readJson } from "../lib/json.js";
+import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
 import type { CodingFriendConfig } from "../types.js";
@@ -88,8 +89,8 @@ export function printMemoryMcpConfig(
 {
   "mcpServers": {
     "coding-friend-memory": {
-      "command": "node",
-      "args": ["${serverPath}", "${memoryDir}"]
+      "command": "npx",
+      "args": ["-y", "coding-friend-cli", "mcp-serve", "${memoryDir}"]
     }
   }
 }`);
@@ -684,7 +685,7 @@ export async function memoryInitWizard(
 
 async function setupMemoryMcp(
   memoryDir: string,
-  mcpDir: string,
+  _mcpDir: string,
 ): Promise<void> {
   const mcpStatus = getMemoryMcpStatus();
   if (mcpStatus.configured && mcpStatus.scope === "local") {
@@ -708,15 +709,7 @@ async function setupMemoryMcp(
     return;
   }
 
-  const serverPath = join(mcpDir, "dist", "index.js");
-  if (!existsSync(serverPath)) {
-    log.warn(
-      "cf-memory not built yet. Run `cf memory mcp` after building to get the config.",
-    );
-    return;
-  }
-
-  writeMemoryMcpEntry(serverPath, memoryDir);
+  writeMemoryMcpEntry(memoryDir);
 }
 
 export async function memoryInitCommand(): Promise<void> {
@@ -1105,6 +1098,8 @@ export async function memoryMcpCommand(): Promise<void> {
   const memoryDir = getMemoryDir();
   const mcpDir = getLibPath("cf-memory");
   ensureMemoryBuilt(mcpDir);
+
+  warnStaleMcpJson(memoryDir);
 
   const serverPath = join(mcpDir, "dist", "index.js");
   printMemoryMcpConfig(serverPath, memoryDir);

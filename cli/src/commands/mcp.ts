@@ -5,7 +5,14 @@ import { run } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
+import {
+  detectMemoryMcpState,
+  warnStaleMcpJson,
+  type MemoryMcpState,
+} from "../lib/mcp-state.js";
 import chalk from "chalk";
+
+export { detectMemoryMcpState, type MemoryMcpState };
 
 function countMdFiles(dir: string): number {
   let count = 0;
@@ -20,6 +27,8 @@ function countMdFiles(dir: string): number {
 }
 
 export async function mcpCommand(path?: string): Promise<void> {
+  warnStaleMcpJson(resolveMemoryDir());
+
   const docsDir = resolveDocsDir(path);
   const mcpDir = getLibPath("learn-mcp");
 

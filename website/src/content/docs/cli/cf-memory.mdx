@@ -19,7 +19,7 @@ Manage the persistent AI memory system. Store, search, and recall project knowle
 | `cf memory start-daemon`    | Start the Tier 2 daemon                                   |
 | `cf memory stop-daemon`     | Stop the Tier 2 daemon                                    |
 | `cf memory rebuild`         | Re-index all memories from markdown files                 |
-| `cf memory mcp`             | Print MCP server config for Claude Code and other clients |
+| `cf memory mcp`             | Print MCP server config and update `.mcp.json` with version-stable format |
 
 ## `init`
 
@@ -32,7 +32,7 @@ Interactive setup wizard. On first run, walks through each setting. On re-run (d
 3. **Auto-capture** — auto-save session context on compaction
 4. **Auto-start daemon** — start daemon when MCP server connects
 5. **Install deps & import** — installs SQLite deps and imports existing memories
-6. **MCP setup** — adds `coding-friend-memory` to `.mcp.json`
+6. **MCP setup** — adds `coding-friend-memory` to `.mcp.json` using the version-stable `npx` format
 
 Each setting asks whether to save to global or local config.
 

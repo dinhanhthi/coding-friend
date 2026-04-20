@@ -151,16 +151,32 @@ cf memory start-daemon  # Try again
 1. Verify the MCP server is configured:
 
 ```bash
-cf mcp    # Shows current MCP configuration
+cf mcp    # Shows current MCP configuration and detects stale paths
 ```
 
-2. Check that the MCP server path in Claude Code settings points to the correct location. Re-run setup if needed:
+2. Check that `.mcp.json` uses the version-stable format. Run `cf mcp` — if it warns about a stale path, update it:
 
 ```bash
-cf install --user
+cf memory mcp   # Rewrites .mcp.json with the npx format
 ```
 
 3. Restart Claude Code — MCP servers are connected at session start.
+
+### Memory MCP path broken after CLI update
+
+**Symptom:** Memory tools stop working after running `cf update` or switching Node.js versions. Claude Code shows an MCP connection error.
+
+**Cause:** The `.mcp.json` in your project was written with an absolute path to the old CLI installation (e.g. `/Users/you/.nvm/versions/node/v22.x.x/lib/node_modules/coding-friend-cli/...`). After the CLI moves, that path no longer exists.
+
+**Fix:**
+
+```bash
+cf memory mcp
+```
+
+This rewrites the `coding-friend-memory` entry in `.mcp.json` using the version-stable `npx` format, which resolves the current CLI at runtime and won't break on future updates.
+
+You can also run `cf mcp` to check whether stale paths are detected before they cause issues.
 
 ### Memory search returns no results
 
