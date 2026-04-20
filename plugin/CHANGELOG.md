@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.27.0 (2026-04-20)
+
+- Add chunked plan support to `cf-plan`: large plans (8+ tasks or 3+ phases) are now split into a subfolder with `README.md` + per-phase chunk files; small plans remain as a single file — includes progress tracking table (TODO/IN PROGRESS/DONE icons) in all plan files [#6fc506e](https://github.com/dinhanhthi/coding-friend/commit/6fc506e) [#bfa17d6](https://github.com/dinhanhthi/coding-friend/commit/bfa17d6)
+
 ## v0.26.0 (2026-04-18)
 
 - Expand `auto-approve` allow list with commonly used read-only commands: `cd`, `tr`, `ps`, `env`, `printenv`, `npm --version`/`-v`/`list`/`ls`, `rustc --version`/`-V`, `rustup show`/`--version`, `go version`, `git shortlog`, `git worktree list`, `git config --list`/`-l` — these frequently appear as segments in compound commands and were previously sent to the LLM classifier or prompted [#40fe1ff](https://github.com/dinhanhthi/coding-friend/commit/40fe1ff)
