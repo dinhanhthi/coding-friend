@@ -224,9 +224,103 @@ Based on the approved approach and the agent's findings:
 
 ### Step 6: Save the Plan
 
-1. Write the plan to `{docsDir}/plans/YYYY-MM-DD-<slug>.md` (default: `docs/plans/`). Check `.coding-friend/config.json` for custom `docsDir`.
-2. Use the TaskCreate tool to create a task list
-3. Present the plan summary to the user
+**Determine plan size** before saving:
+
+- Count the total number of tasks across all phases.
+- A plan is considered **big** if it has **8+ tasks OR 3+ phases**.
+
+#### Small plan (< 8 tasks AND < 3 phases)
+
+Write a single file: `{docsDir}/plans/YYYY-MM-DD-<slug>.md`
+
+Include a progress checklist at the top of the Tasks section:
+
+```markdown
+## Progress
+
+| Status | Phase | Task |
+|--------|-------|------|
+| ⬜ TODO | Phase 1 | Task name |
+| ⬜ TODO | Phase 2 | Task name |
+```
+
+Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
+
+#### Big plan (8+ tasks OR 3+ phases)
+
+Create a subfolder: `{docsDir}/plans/YYYY-MM-DD-<slug>/`
+
+Split the plan into chunk files — one file per phase:
+
+- `phase-1-<name>.md`
+- `phase-2-<name>.md`
+- `phase-N-<name>.md`
+
+Also create a `README.md` in the subfolder as the all-in-one overview:
+
+```markdown
+# Plan: <title>
+
+**Mode:** normal | fast | hard
+**Created:** YYYY-MM-DD
+**Status:** IN PROGRESS
+
+## Overview
+
+<1-2 sentences about the problem and chosen approach>
+
+## Progress
+
+| Status | Phase | File | Tasks |
+|--------|-------|------|-------|
+| ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
+| ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
+
+Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
+
+## Assumptions
+
+<copied from main plan>
+
+## Risks
+
+<copied from main plan>
+
+## Migration & Rollback (hard mode only)
+
+<copied from main plan>
+
+## Next Steps
+
+After implementation: consider running `/cf-review` → then `/cf-commit`
+```
+
+Each chunk file (`phase-N-<name>.md`) contains only its phase's tasks, with its own progress checklist:
+
+```markdown
+# Phase N: <name>
+
+**Plan:** [README.md](./README.md)
+**Type:** parallel | sequential
+
+## Progress
+
+| Status | Task |
+|--------|------|
+| ⬜ TODO | Task name |
+| ⬜ TODO | Task name |
+
+## Tasks
+
+<tasks for this phase only>
+```
+
+**After saving all files**, present to the user:
+- The folder/file path(s) created
+- A summary: phase count, task count, entry point (`README.md` or single file)
+
+1. Use the TaskCreate tool to create a task list
+2. Present the plan summary to the user
 
 ### Step 7: Offer Implementation
 
@@ -313,6 +407,8 @@ After the overlap check passes:
 
 ## Plan Template
 
+### Small plan (single file)
+
 ```markdown
 # Plan: <title>
 
@@ -330,6 +426,16 @@ After the overlap check passes:
 ## Approach
 
 <chosen approach and why>
+
+## Progress
+
+| Status | Phase | Task |
+|--------|-------|------|
+| ⬜ TODO | Phase 1 | Task name |
+| ⬜ TODO | Phase 1 | Task name |
+| ⬜ TODO | Phase 2 | Task name |
+
+Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
 
 ## Tasks
 
@@ -362,6 +468,77 @@ After the overlap check passes:
 ## Next Steps
 
 After implementation: consider running `/cf-review` → then `/cf-commit`
+```
+
+### Big plan (subfolder — README.md + chunk files)
+
+**README.md** (entry point):
+
+```markdown
+# Plan: <title>
+
+**Mode:** normal | fast | hard
+**Created:** YYYY-MM-DD
+**Status:** IN PROGRESS
+
+## Overview
+
+<1-2 sentences about the problem and chosen approach>
+
+## Progress
+
+| Status | Phase | File | Tasks |
+|--------|-------|------|-------|
+| ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
+| ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
+
+Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
+
+## Assumptions
+
+- <assumption 1> — basis: <why you believe this>
+
+## Risks
+
+- <risk 1 and mitigation>
+
+## Migration & Rollback (hard mode only)
+
+- Overall rollback strategy: <how to revert all changes>
+- Point of no return: <at which task is rollback no longer trivial?>
+- Incremental deployment: <can this be rolled out gradually?>
+
+## Next Steps
+
+After implementation: consider running `/cf-review` → then `/cf-commit`
+```
+
+**phase-N-\<name\>.md** (one per phase):
+
+```markdown
+# Phase N: <name>
+
+**Plan:** [README.md](./README.md)
+**Type:** parallel | sequential
+
+## Progress
+
+| Status | Task |
+|--------|------|
+| ⬜ TODO | <task 1 name> |
+| ⬜ TODO | <task 2 name> |
+
+Update icons as work progresses: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
+
+## Tasks
+
+1. <task 1>
+   - Files: <specific files>
+   - Verify: <how to verify>
+   - Rollback: <how to undo — hard mode only>
+2. <task 2>
+   - Files: <specific files>
+   - Verify: <how to verify>
 ```
 
 ## Completion Protocol
