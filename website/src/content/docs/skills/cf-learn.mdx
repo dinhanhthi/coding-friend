@@ -10,7 +10,25 @@ The `/cf-learn` skill creates learning documentation from your coding sessions. 
 
 💡 Looking for a deeper, conversational breakdown of _what happened and why_ during a task? Check out [`/cf-teach`](/docs/skills/cf-teach/) — it explains everything like a sharp friend over coffee, covering approach, alternatives, tradeoffs, mistakes, and transferable lessons.
 
-💡 To see what you've learned so far, run [`cf host`](/docs/cli/cf-host/) to view the learning notes in your browser or using [`cf mcp`](/docs/cli/cf-mcp/) to integrate with other LLM clients.
+💡 To see what you've learned so far, run [`cf host`](/docs/cli/cf-host/) to view the learning notes in your browser or use [`cf mcp`](/docs/cli/cf-mcp/) to integrate with other LLM clients.
+
+To serve your learning docs via MCP, add this to your MCP client config (run `cf mcp` to get the config with the correct path filled in):
+
+```json
+{
+  "mcpServers": {
+    "coding-friend-learn": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "coding-friend-cli",
+        "mcp-serve-learn",
+        "/path/to/your/project/docs/learn"
+      ]
+    }
+  }
+}
+```
 
 ## Usage
 

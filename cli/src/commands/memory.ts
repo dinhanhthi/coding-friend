@@ -5,7 +5,7 @@ import { homedir } from "os";
 import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
-import { log, printBanner, printBoxed } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   memoryConfigMenu,
@@ -79,37 +79,19 @@ export function printMemoryMcpConfig(memoryDir: string): void {
   console.log(chalk.dim("Add this to your MCP client config:"));
   console.log();
 
-  console.log(
-    chalk.yellow.bold("--- Claude Code (.mcp.json in project root) ---"),
-  );
-  printBoxed(`{
+  console.log(`{
   "mcpServers": {
     "coding-friend-memory": {
       "command": "npx",
-      "args": ["-y", "coding-friend-cli", "mcp-serve", "${memoryDir}"]
+      "args": [
+        "-y",
+        "coding-friend-cli",
+        "mcp-serve",
+        "${memoryDir}"
+      ]
     }
   }
 }`);
-  console.log();
-
-  console.log(
-    chalk.yellow.bold(
-      "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
-    ),
-  );
-  printBoxed(`{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "npx",
-      "args": ["-y", "coding-friend-cli", "mcp-serve", "${memoryDir}"]
-    }
-  }
-}`);
-  console.log();
-
-  console.log(chalk.yellow.bold("--- Generic MCP client ---"));
-  printBoxed(`Server command: npx -y coding-friend-cli mcp-serve ${memoryDir}
-Transport: stdio`);
   console.log();
 
   log.dim(
