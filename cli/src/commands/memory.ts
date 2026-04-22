@@ -75,10 +75,7 @@ export function ensureMemoryBuilt(mcpDir: string): void {
   }
 }
 
-export function printMemoryMcpConfig(
-  serverPath: string,
-  memoryDir: string,
-): void {
+export function printMemoryMcpConfig(memoryDir: string): void {
   console.log(chalk.dim("Add this to your MCP client config:"));
   console.log();
 
@@ -103,15 +100,15 @@ export function printMemoryMcpConfig(
   printBoxed(`{
   "mcpServers": {
     "coding-friend-memory": {
-      "command": "node",
-      "args": ["${serverPath}", "${memoryDir}"]
+      "command": "npx",
+      "args": ["-y", "coding-friend-cli", "mcp-serve", "${memoryDir}"]
     }
   }
 }`);
   console.log();
 
   console.log(chalk.yellow.bold("--- Generic MCP client ---"));
-  printBoxed(`Server command: node ${serverPath} ${memoryDir}
+  printBoxed(`Server command: npx -y coding-friend-cli mcp-serve ${memoryDir}
 Transport: stdio`);
   console.log();
 
@@ -1071,6 +1068,5 @@ export async function memoryMcpCommand(): Promise<void> {
 
   warnStaleMcpJson(memoryDir);
 
-  const serverPath = join(mcpDir, "dist", "index.js");
-  printMemoryMcpConfig(serverPath, memoryDir);
+  printMemoryMcpConfig(memoryDir);
 }
