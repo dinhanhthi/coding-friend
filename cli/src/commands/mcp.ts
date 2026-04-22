@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { resolveDocsDir, resolveMemoryDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
-import { log, printBanner, printBoxed } from "../lib/log.js";
+import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
 import {
@@ -49,7 +49,6 @@ export async function mcpCommand(path?: string): Promise<void> {
   printBanner("📚 Learn MCP");
   log.info(`Docs folder: ${chalk.cyan(docsDir)}`);
   log.info(`Found: ${chalk.green(docCount)} docs`);
-  console.log();
 
   // Install deps if needed
   if (!existsSync(join(mcpDir, "node_modules"))) {
@@ -78,24 +77,19 @@ export async function mcpCommand(path?: string): Promise<void> {
   console.log(chalk.dim("Add this to your MCP client config:"));
   console.log();
 
-  console.log(
-    chalk.yellow.bold(
-      "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
-    ),
-  );
-  printBoxed(`{
+  console.log(`{
   "mcpServers": {
     "coding-friend-learn": {
       "command": "npx",
-      "args": ["-y", "coding-friend-cli", "mcp-serve-learn", "${docsDir}"]
+      "args": [
+        "-y",
+        "coding-friend-cli",
+        "mcp-serve-learn",
+        "${docsDir}"
+      ]
     }
   }
 }`);
-  console.log();
-
-  console.log(chalk.yellow.bold("--- Generic MCP client ---"));
-  printBoxed(`Server command: npx -y coding-friend-cli mcp-serve-learn ${docsDir}
-Transport: stdio`);
   console.log();
 
   log.dim(
