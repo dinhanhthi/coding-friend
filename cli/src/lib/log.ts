@@ -52,3 +52,30 @@ export function printBanner(
   console.log(colorFn(mid));
   console.log(colorFn(bot));
 }
+
+/**
+ * Print multi-line content wrapped in a light box frame.
+ * Each line is padded to the widest visible width. Useful for framing
+ * code snippets or JSON config blocks in CLI output.
+ */
+export function printBoxed(
+  content: string,
+  opts: { color?: (s: string) => string; padding?: number } = {},
+): void {
+  const colorFn = opts.color ?? chalk.dim;
+  const padding = opts.padding ?? 1;
+  const pad = " ".repeat(padding);
+  const trimmed = content.replace(/^\n+|\n+$/g, "");
+  if (trimmed === "") return;
+  const lines = trimmed.split("\n");
+  const maxW = Math.max(...lines.map(visualWidth));
+  const innerW = maxW + padding * 2;
+  const top = `┌${"─".repeat(innerW)}┐`;
+  const bot = `└${"─".repeat(innerW)}┘`;
+  console.log(colorFn(top));
+  for (const line of lines) {
+    const gap = " ".repeat(maxW - visualWidth(line));
+    console.log(`${colorFn("│")}${pad}${line}${gap}${pad}${colorFn("│")}`);
+  }
+  console.log(colorFn(bot));
+}

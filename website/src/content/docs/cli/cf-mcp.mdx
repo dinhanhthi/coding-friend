@@ -26,7 +26,7 @@ When `cf mcp` runs, it automatically checks whether `.mcp.json` in the current d
 
 ## Output
 
-The command prints JSON configuration for two MCP servers:
+The command prints JSON configuration for two MCP servers — Learn MCP and Memory MCP — framed for easy copy/paste. It no longer lists the individual tools and resources to avoid terminal clutter; see [Available tools & resources](#available-tools--resources) below.
 
 ### Learn MCP
 
@@ -35,6 +35,47 @@ Configuration for the learning documentation server. Provides tools to search, r
 ### Memory MCP
 
 Configuration for the project memory server. Provides tools to store, search, list, update, and delete project memories.
+
+## Available tools & resources
+
+### Learn MCP tools
+
+**Read:**
+
+| Tool              | Description                                |
+| ----------------- | ------------------------------------------ |
+| `list-categories` | List all categories with doc counts        |
+| `list-docs`       | List docs, filter by category/tag          |
+| `read-doc`        | Read full content of a doc                 |
+| `search-docs`     | Full-text search across all docs           |
+| `get-review-list` | Docs that need review                      |
+
+**Write:**
+
+| Tool              | Description                                                 |
+| ----------------- | ----------------------------------------------------------- |
+| `create-doc`      | Create new learning doc                                     |
+| `update-doc`      | Append content or update tags                               |
+| `improve-doc`     | Get improvement suggestions                                 |
+| `track-knowledge` | Record understanding level (remembered/needs-review/new)    |
+
+### Memory MCP tools
+
+| Tool              | Description                        |
+| ----------------- | ---------------------------------- |
+| `memory_store`    | Store a new memory                 |
+| `memory_search`   | Search memories (keyword match)    |
+| `memory_retrieve` | Get a specific memory by ID        |
+| `memory_list`     | List memories with filtering       |
+| `memory_update`   | Update existing memory             |
+| `memory_delete`   | Delete a memory                    |
+
+### Memory MCP resources
+
+| Resource         | Description          |
+| ---------------- | -------------------- |
+| `memory://index` | Browse all memories  |
+| `memory://stats` | Storage statistics   |
 
 When `cf memory mcp` writes to `.mcp.json`, it uses the **version-stable `npx` format** — no hardcoded paths that break on CLI updates:
 
