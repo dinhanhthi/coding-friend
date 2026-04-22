@@ -112,6 +112,17 @@ program
   });
 
 program
+  .command("mcp-serve-learn")
+  .description("Start the learn MCP server (used internally by npx)")
+  .argument("<docsDir>", "path to docs directory")
+  .action(async (docsDir: string) => {
+    const { mcpServeLearnCommand } = await import(
+      "./commands/mcp-serve-learn.js"
+    );
+    await mcpServeLearnCommand(docsDir);
+  });
+
+program
   .command("permission")
   .description("Manage Claude Code permission rules for Coding Friend")
   .option("--all", "Apply all recommended permissions without prompts")

@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { resolveDocsDir, resolveMemoryDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
-import { log, printBanner } from "../lib/log.js";
+import { log, printBanner, printBoxed } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
 import {
@@ -75,8 +75,6 @@ export async function mcpCommand(path?: string): Promise<void> {
 
   console.log();
 
-  const serverPath = join(mcpDir, "dist", "index.js");
-
   console.log(chalk.dim("Add this to your MCP client config:"));
   console.log();
 
@@ -85,54 +83,23 @@ export async function mcpCommand(path?: string): Promise<void> {
       "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
     ),
   );
-  console.log(`
-{
+  printBoxed(`{
   "mcpServers": {
     "coding-friend-learn": {
-      "command": "node",
-      "args": ["${serverPath}", "${docsDir}"]
+      "command": "npx",
+      "args": ["-y", "coding-friend-cli", "mcp-serve-learn", "${docsDir}"]
     }
   }
 }`);
   console.log();
 
   console.log(chalk.yellow.bold("--- Generic MCP client ---"));
-  console.log(`
-Server command: node ${serverPath} ${docsDir}
+  printBoxed(`Server command: npx -y coding-friend-cli mcp-serve-learn ${docsDir}
 Transport: stdio`);
   console.log();
 
-  console.log(chalk.yellow.bold("--- Available tools ---"));
-  console.log();
-  console.log(chalk.cyan.bold("Read:"));
-  console.log(
-    `  ${chalk.white("list-categories")}    ${chalk.dim("List all categories with doc counts")}`,
-  );
-  console.log(
-    `  ${chalk.white("list-docs")}          ${chalk.dim("List docs, filter by category/tag")}`,
-  );
-  console.log(
-    `  ${chalk.white("read-doc")}           ${chalk.dim("Read full content of a doc")}`,
-  );
-  console.log(
-    `  ${chalk.white("search-docs")}        ${chalk.dim("Full-text search across all docs")}`,
-  );
-  console.log(
-    `  ${chalk.white("get-review-list")}    ${chalk.dim("Docs that need review")}`,
-  );
-  console.log();
-  console.log(chalk.cyan.bold("Write:"));
-  console.log(
-    `  ${chalk.white("create-doc")}         ${chalk.dim("Create new learning doc")}`,
-  );
-  console.log(
-    `  ${chalk.white("update-doc")}         ${chalk.dim("Append content or update tags")}`,
-  );
-  console.log(
-    `  ${chalk.white("improve-doc")}        ${chalk.dim("Get improvement suggestions")}`,
-  );
-  console.log(
-    `  ${chalk.white("track-knowledge")}    ${chalk.dim("Record understanding level (remembered/needs-review/new)")}`,
+  log.dim(
+    "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
   );
   console.log();
 
@@ -154,12 +121,10 @@ function printMemoryMcp(): void {
 
   ensureMemoryBuilt(mcpDir);
 
-  const serverPath = join(mcpDir, "dist", "index.js");
-
   console.log();
   printBanner("🧠 Memory MCP", { color: chalk.magenta });
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
   console.log();
 
-  printMemoryMcpConfig(serverPath, memoryDir);
+  printMemoryMcpConfig(memoryDir);
 }
