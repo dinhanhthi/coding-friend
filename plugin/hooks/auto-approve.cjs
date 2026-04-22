@@ -565,6 +565,13 @@ const BASH_ASK_PREFIXES = [
 const PLUGIN_ROOT = path.resolve(__dirname, "..");
 
 /**
+ * Matches safe stdout/stderr redirects: `> /tmp/<name>`, `2> /tmp/<name>`, or `> /dev/null`.
+ * Filename must be flat (no `/` after `/tmp/`) to prevent subdirectory traversal.
+ * Combined with the `..` early-return in isCodingFriendCompound, this is the full redirect guard.
+ */
+const SAFE_REDIRECT_RE = /\s*2?>\s*(\/tmp\/[\w.\-]+|\/dev\/null)/g;
+
+/**
  * Extract the script path from a bash command string (after "bash ").
  * Handles unquoted, double-quoted, and single-quoted paths.
  * @param {string} afterBash — the part after "bash "
@@ -636,6 +643,80 @@ function isCodingFriendBash(trimmed) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Check if a compound Bash command consists only of CF plugin scripts with safe
+ * redirects and/or allow-listed follow-up commands.
+ *
+ * Handles common patterns emitted by cf-review and other skills:
+ *   bash "cf-plugin-script.sh" > /tmp/out.txt 2>&1 && wc -l /tmp/out.txt
+ *   bash "cf-plugin-script.sh" 2>/tmp/err.txt
+ *
+ * Security constraints:
+ *   - Stdout/stderr redirects only to /tmp/<flat-filename> or /dev/null
+ *   - Append redirects (>>) are rejected
+ *   - Path traversal (..) is rejected early
+ *   - ||, ;, |, $(), ``, \n and < are rejected
+ *   - At least one && clause must be a CF script (hasCFScript guard)
+ *   - Remaining clauses must be in BASH_ALLOW_PREFIXES
+ */
+function isCodingFriendCompound(trimmed, allowExtra) {
+  // Strip `2>&1` redirects first (always safe, handled by stripStderrRedirect)
+  const stripped = stripStderrRedirect(trimmed);
+
+  // Reject path traversal — CF scripts never use .. in paths
+  if (stripped.includes("..")) return false;
+
+  const sanitized = removeQuotedContent(stripped);
+  if (sanitized === null) return false;
+
+  // Strip safe redirects to check remaining operators on the skeleton command.
+  // SAFE_REDIRECT_RE is module-level: matches `> /tmp/<name>`, `2> /tmp/<name>`, `/dev/null`.
+  const sanitizedNoRedirect = sanitized.replace(SAFE_REDIRECT_RE, "");
+
+  // After removing safe redirects, no truly unsafe operators should remain
+  if (TRULY_UNSAFE_OPERATORS.test(sanitizedNoRedirect)) return false;
+
+  const effectiveAllow =
+    allowExtra && allowExtra.length > 0
+      ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
+      : BASH_ALLOW_PREFIXES;
+
+  // Split on && using the quote-sanitized form so && inside quoted content is not treated as an operator
+  const andClauses = splitBySanitized(stripped, sanitized, "&&");
+  if (!andClauses.length) return false;
+
+  // At least one clause must be a CF plugin script
+  let hasCFScript = false;
+
+  const allSafe = andClauses.every(({ orig }) => {
+    const clause = orig.trim();
+    if (!clause) return false;
+
+    // Strip safe redirects from the clause to isolate the core command
+    const withoutRedirect = clause.replace(SAFE_REDIRECT_RE, "").trim();
+
+    // Reject any remaining shell operators (pipes, subshells, etc.)
+    if (SHELL_OPERATOR_PATTERN.test(withoutRedirect)) return false;
+
+    // Check if it's a CF plugin bash script
+    if (isCodingFriendBash(withoutRedirect)) {
+      hasCFScript = true;
+      return true;
+    }
+
+    // Check if it matches an allow-listed prefix
+    for (const prefix of effectiveAllow) {
+      if (matchesPrefix(withoutRedirect, prefix)) {
+        return postMatchSafety(withoutRedirect, prefix) === "allow";
+      }
+    }
+
+    return false;
+  });
+
+  return allSafe && hasCFScript;
 }
 
 /**
@@ -734,6 +815,11 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
 
     // Safe compound commands: pipe-only chains where every segment is safe
     if (isCompound && isSafeCompoundCommand(trimmed, allowExtra)) {
+      return "allow";
+    }
+
+    // CF plugin scripts with safe redirects and/or allow-listed follow-up commands
+    if (isCompound && isCodingFriendCompound(trimmed, allowExtra)) {
       return "allow";
     }
 
@@ -1060,6 +1146,7 @@ module.exports = {
   llmCacheKey,
   buildReason,
   isCodingFriendBash,
+  isCodingFriendCompound,
   isInProjectDir,
   isSafeCompoundCommand,
   extractBashScriptPath,
