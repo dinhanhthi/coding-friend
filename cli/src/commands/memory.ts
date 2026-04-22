@@ -5,7 +5,7 @@ import { homedir } from "os";
 import { confirm } from "@inquirer/prompts";
 import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
-import { log, printBanner } from "../lib/log.js";
+import { log, printBanner, printBoxed } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   memoryConfigMenu,
@@ -85,8 +85,7 @@ export function printMemoryMcpConfig(
   console.log(
     chalk.yellow.bold("--- Claude Code (.mcp.json in project root) ---"),
   );
-  console.log(`
-{
+  printBoxed(`{
   "mcpServers": {
     "coding-friend-memory": {
       "command": "npx",
@@ -101,8 +100,7 @@ export function printMemoryMcpConfig(
       "--- Claude Desktop / Claude Chat (claude_desktop_config.json) ---",
     ),
   );
-  console.log(`
-{
+  printBoxed(`{
   "mcpServers": {
     "coding-friend-memory": {
       "command": "node",
@@ -113,40 +111,12 @@ export function printMemoryMcpConfig(
   console.log();
 
   console.log(chalk.yellow.bold("--- Generic MCP client ---"));
-  console.log(`
-Server command: node ${serverPath} ${memoryDir}
+  printBoxed(`Server command: node ${serverPath} ${memoryDir}
 Transport: stdio`);
   console.log();
 
-  console.log(chalk.yellow.bold("--- Available tools ---"));
-  console.log();
-  console.log(
-    `  ${chalk.white("memory_store")}       ${chalk.dim("Store a new memory")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory_search")}      ${chalk.dim("Search memories (keyword match)")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory_retrieve")}    ${chalk.dim("Get a specific memory by ID")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory_list")}        ${chalk.dim("List memories with filtering")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory_update")}      ${chalk.dim("Update existing memory")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory_delete")}      ${chalk.dim("Delete a memory")}`,
-  );
-  console.log();
-
-  console.log(chalk.yellow.bold("--- Resources ---"));
-  console.log();
-  console.log(
-    `  ${chalk.white("memory://index")}     ${chalk.dim("Browse all memories")}`,
-  );
-  console.log(
-    `  ${chalk.white("memory://stats")}     ${chalk.dim("Storage statistics")}`,
+  log.dim(
+    "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
   );
   console.log();
   log.warn(
