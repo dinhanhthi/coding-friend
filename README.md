@@ -50,6 +50,14 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 
 1. Install the CLI: `npm i -g coding-friend-cli`
 2. Install the plugin: `cf install`
+   <details>
+   <summary>Or install manually (no CLI)</summary>
+
+   ```bash
+   claude plugin marketplace add dinhanhthi/coding-friend
+   claude plugin install coding-friend@coding-friend-marketplace
+   ```
+   </details>
 3. Initialize your workspace: `cf init`
 4. Restart Claude Code
 5. **(Optional) Enable AI memory** — stores project knowledge across sessions with automatic recall:

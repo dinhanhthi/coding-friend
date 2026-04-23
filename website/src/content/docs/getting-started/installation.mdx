@@ -19,7 +19,18 @@ npm i -g coding-friend-cli
 
 # 2. Install the plugin into Claude Code
 cf install
+```
 
+If you prefer to install **without the CLI**, you can add the marketplace and install the plugin manually:
+
+```bash
+claude plugin marketplace add dinhanhthi/coding-friend
+claude plugin install coding-friend@coding-friend-marketplace
+```
+
+Then continue from step 3 below (skip `cf install`).
+
+```bash
 # 3. Initialize your workspace (in each project)
 cf init
 
