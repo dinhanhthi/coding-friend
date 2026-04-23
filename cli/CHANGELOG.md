@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.32.2 (2026-04-23)
+
+- Simplify `cf mcp` output to a single clean JSON block — removes section headers and `jq` transforms; uses `npx -y coding-friend-cli mcp-serve <dir>` format consistently; adds a bootstrap guard so `cf mcp` without prior `cf memory init` prints a setup reminder instead of a broken config [#461bfe3](https://github.com/dinhanhthi/coding-friend/commit/461bfe3) [#7fbcfd6](https://github.com/dinhanhthi/coding-friend/commit/7fbcfd6) [#6595a27](https://github.com/dinhanhthi/coding-friend/commit/6595a27)
+
 ## v1.32.1 (2026-04-20)
 
 - Fix stale `.mcp.json` paths breaking after `cf update` or Node.js version changes — new entries now use `npx -y coding-friend-cli mcp-serve <dir>` so the path resolves at runtime; `cf mcp` and `cf memory mcp` auto-rewrite existing stale/legacy entries to the new format [#6607463](https://github.com/dinhanhthi/coding-friend/commit/6607463)
