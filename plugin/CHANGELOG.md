@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.27.1 (2026-04-23)
+
+- Fix `auto-approve` hook: allow CF plugin scripts (`.claude-plugin/`, `.claude/`) in compound `&&`/`;` commands with safe redirects (`>`, `>>`) — prevents false classifier hits when hook scripts write to log files [#e8e96e4](https://github.com/dinhanhthi/coding-friend/commit/e8e96e4)
+
 ## v0.27.0 (2026-04-20)
 
 - Add chunked plan support to `cf-plan`: large plans (8+ tasks or 3+ phases) are now split into a subfolder with `README.md` + per-phase chunk files; small plans remain as a single file — includes progress tracking table (TODO/IN PROGRESS/DONE icons) in all plan files [#6fc506e](https://github.com/dinhanhthi/coding-friend/commit/6fc506e) [#bfa17d6](https://github.com/dinhanhthi/coding-friend/commit/bfa17d6)
