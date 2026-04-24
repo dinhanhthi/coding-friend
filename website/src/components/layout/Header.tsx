@@ -56,7 +56,7 @@ export default function Header() {
                 Coding Friend
               </span>
               <span className="rounded-full border border-yellow-400/20 px-2 py-0.5 text-sm font-medium text-yellow-400">
-                alpha
+                beta
               </span>
             </span>
           </Link>
