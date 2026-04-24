@@ -33,6 +33,7 @@ If output is not empty, integrate the returned sections into this workflow:
 ### Step 1: Determine the label
 
 If `$ARGUMENTS` contains a label, use it directly. Otherwise:
+
 - Analyze the current changes (branch name, changed files, nature of changes)
 - **Auto-generate a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
 - **No confirmation needed. Proceed immediately.**
@@ -61,26 +62,26 @@ If the script exits with an error (empty diff), tell the user there are no chang
 
 Show the user:
 
-   ```
-   ╔══════════════════════════════════════════════════╗
-   ║  📝  Review Prompt Ready                         ║
-   ╚══════════════════════════════════════════════════╝
-   ```
+```
+╔══════════════════════════════════════════════════╗
+║  📝  Review Prompt Ready                         ║
+╚══════════════════════════════════════════════════╝
+```
 
-   > **Label:** `<label>`
-   > **Prompt file:** `<docsDir>/reviews/<label>-prompt.md`
-   > **Results expected at:** `<docsDir>/reviews/<label>-result-<service>.md`
+> **Label:** `<label>`
+> **Prompt file:** `<docsDir>/reviews/<label>-prompt.md`
+> **Results expected at:** `<docsDir>/reviews/<label>-result-<service>.md`
 
-   Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
+Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
 
-   > **Copy and paste this to your external agent:**
-   >
-   > ```
-   > Read the file <docsDir>/reviews/<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
-   > ```
+> **Copy and paste this to your external agent:**
+>
+> ```
+> Read the file <docsDir>/reviews/<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
+> ```
 
-   Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a single, complete instruction that works when pasted into any AI agent (Gemini, Codex, ChatGPT, Cursor, etc.) that has access to the project files.
+Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a single, complete instruction that works when pasted into any AI agent (Gemini, Codex, ChatGPT, Cursor, etc.) that has access to the project files.
 
-   Finally, remind the user:
+Finally, remind the user:
 
-   > When all external agents finish, run `/cf-review-in <label>` to collect all results.
+> When all external agents finish, run `/cf-review-in <label>` to collect all results.

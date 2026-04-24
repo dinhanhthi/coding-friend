@@ -343,21 +343,21 @@ stripFrontmatter(content) → markdownBody
 
 ## Key Design Decisions
 
-| Decision                                | Rationale                                                                                                             |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| 15 skills total                         | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                        |
-| Shell scripts for hooks                 | Portable, easy to debug, no build step                                                                                |
-| 12 agents                               | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
-| .coding-friend/ignore (gitignore-style) | Familiar pattern, simple implementation                                                                               |
-| /cf-remember + /cf-learn                | Unique value: project brain + human learning                                                                          |
-| cf-reviewer dispatched inline by /cf-review | Skill runs inline (activation signal visible immediately), then dispatches cf-reviewer agent with Agent tool |
-| Layered config                          | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
-| Config schema validation (Zod)          | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
-| CLI (`cf`) for installation             | Automates plugin setup, health checks, updates                                                                        |
-| `cf init` for setup                     | Re-runnable, detects previous setup, configures permissions                                                           |
-| Dev mode path validation                | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
-| Daemon runs forever by default          | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
-| Daemon auto-respawn with 3 retries      | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                           |
+| Decision                                    | Rationale                                                                                                             |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 15 skills total                             | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                        |
+| Shell scripts for hooks                     | Portable, easy to debug, no build step                                                                                |
+| 12 agents                                   | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
+| .coding-friend/ignore (gitignore-style)     | Familiar pattern, simple implementation                                                                               |
+| /cf-remember + /cf-learn                    | Unique value: project brain + human learning                                                                          |
+| cf-reviewer dispatched inline by /cf-review | Skill runs inline (activation signal visible immediately), then dispatches cf-reviewer agent with Agent tool          |
+| Layered config                              | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
+| Config schema validation (Zod)              | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
+| CLI (`cf`) for installation                 | Automates plugin setup, health checks, updates                                                                        |
+| `cf init` for setup                         | Re-runnable, detects previous setup, configures permissions                                                           |
+| Dev mode path validation                    | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
+| Daemon runs forever by default              | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
+| Daemon auto-respawn with 3 retries          | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                           |
 
 ---
 

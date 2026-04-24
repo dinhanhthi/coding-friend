@@ -244,11 +244,11 @@ Custom guides are loaded on-demand when the corresponding skill runs. Changes ta
 
 These env vars override config file settings and are primarily intended for testing or temporary overrides.
 
-| Variable | Default | Description |
-|---|---|---|
-| `CF_AUTO_APPROVE_ENABLED` | — | Set to `"1"` to force-enable auto-approve regardless of config (useful for tests) |
-| `CF_AUTO_APPROVE_LLM_TIMEOUT` | `45000` | Timeout in ms for the LLM classifier subprocess. Increase if you see "LLM classification unavailable" on slow networks |
-| `CF_AUTO_APPROVE_CACHE_FILE` | auto (in tmpdir) | Override the LLM decision cache file path (useful for tests) |
+| Variable                      | Default          | Description                                                                                                            |
+| ----------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `CF_AUTO_APPROVE_ENABLED`     | —                | Set to `"1"` to force-enable auto-approve regardless of config (useful for tests)                                      |
+| `CF_AUTO_APPROVE_LLM_TIMEOUT` | `45000`          | Timeout in ms for the LLM classifier subprocess. Increase if you see "LLM classification unavailable" on slow networks |
+| `CF_AUTO_APPROVE_CACHE_FILE`  | auto (in tmpdir) | Override the LLM decision cache file path (useful for tests)                                                           |
 
 ### Setting env vars for Claude Code
 

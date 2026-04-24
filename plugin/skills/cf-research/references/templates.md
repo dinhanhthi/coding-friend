@@ -26,6 +26,7 @@
 ## Contradictions
 
 <!-- Only include when sources disagree on a factual claim. Remove section if no contradictions found. -->
+
 - **Claim in question**: <the disputed point>
   - [Source A](URL): <their position and evidence>
   - [Source B](URL): <their position and evidence>
@@ -33,9 +34,9 @@
 
 ## Sources
 
-- [Source title](URL) — *primary*
-- [Source title](URL) — *primary*
-- [Source title](URL) — *secondary / background*
+- [Source title](URL) — _primary_
+- [Source title](URL) — _primary_
+- [Source title](URL) — _secondary / background_
 
 ## Notes
 

@@ -21,11 +21,7 @@ describe("printBoxed", () => {
   it("wraps a single line in a frame with 1-char padding", () => {
     printBoxed("hello", { color: identity });
 
-    expect(output).toEqual([
-      "┌───────┐",
-      "│ hello │",
-      "└───────┘",
-    ]);
+    expect(output).toEqual(["┌───────┐", "│ hello │", "└───────┘"]);
   });
 
   it("pads shorter lines so the right border aligns", () => {
@@ -43,21 +39,13 @@ describe("printBoxed", () => {
   it("strips leading and trailing blank lines", () => {
     printBoxed("\n\nhi\n\n", { color: identity });
 
-    expect(output).toEqual([
-      "┌────┐",
-      "│ hi │",
-      "└────┘",
-    ]);
+    expect(output).toEqual(["┌────┐", "│ hi │", "└────┘"]);
   });
 
   it("respects a custom padding option", () => {
     printBoxed("x", { color: identity, padding: 3 });
 
-    expect(output).toEqual([
-      "┌───────┐",
-      "│   x   │",
-      "└───────┘",
-    ]);
+    expect(output).toEqual(["┌───────┐", "│   x   │", "└───────┘"]);
   });
 
   it("treats emoji as two visual columns for alignment", () => {

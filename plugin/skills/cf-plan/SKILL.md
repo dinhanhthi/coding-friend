@@ -52,6 +52,7 @@ Use `AskUserQuestion` for each round. Do NOT batch questions.
 **Round 1 — Understand:** List ambiguities and assumptions; ask probing questions about objectives, constraints, success criteria; ask about preferred libraries/APIs — never guess.
 
 **Check for official solutions first (before proposing anything):**
+
 1. **Framework built-ins** — search official docs for native components or methods that solve this directly (e.g., React Suspense for loading states, Next.js Server Actions for mutations).
 2. **Official patterns** — check framework best practices and migration guides for the recommended approach.
 3. **Ecosystem standards** — identify officially maintained or widely adopted libraries for this use case.
@@ -62,12 +63,12 @@ If an official solution exists, it must be **Option 1** in the approach list. If
 
 Run these **attack angles** against the recommended approach before presenting it:
 
-| Attack angle | Question |
-|---|---|
-| Dependency failure | If an external API, service, or tool goes down, can the plan degrade gracefully? |
-| Scale explosion | At 10x data volume or user load, which step breaks first? |
-| Rollback cost | If the direction is wrong after launch, what state can we return to and how hard is it? |
-| Premise collapse | Which assumption in this plan is most fragile? What happens if it does not hold? |
+| Attack angle       | Question                                                                                |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| Dependency failure | If an external API, service, or tool goes down, can the plan degrade gracefully?        |
+| Scale explosion    | At 10x data volume or user load, which step breaks first?                               |
+| Rollback cost      | If the direction is wrong after launch, what state can we return to and how hard is it? |
+| Premise collapse   | Which assumption in this plan is most fragile? What happens if it does not hold?        |
 
 If an attack holds, deform the design and present the deformed version. If it shatters the approach entirely, discard it and tell the user why. Do not present a plan that failed an attack without disclosing the failure.
 
@@ -130,6 +131,7 @@ Present: key codebase findings, approaches with pros/cons, recommended approach 
 ### Step 6: Save the Plan
 
 **Size threshold**: count total tasks across all phases.
+
 - **Small** (< 8 tasks AND < 3 phases) → single file `{docsDir}/plans/YYYY-MM-DD-<slug>.md` — see Small plan template below.
 - **Big** (8+ tasks OR 3+ phases) → subfolder `{docsDir}/plans/YYYY-MM-DD-<slug>/` with `README.md` + one `phase-N-<name>.md` per phase — see Big plan template below.
 
@@ -152,11 +154,13 @@ Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) pe
 > Follow RED → GREEN → REFACTOR.
 
 Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
+
 - `[CF-RESULT: success]` → mark done, next task
 - `[CF-RESULT: failure] <reason>` → retry once
 - Missing/malformed/not-on-last-line → treat as failure (`empty-output`). Never assume silent success.
 
 **Retry protocol** (max 1 per task):
+
 1. Notify: `> ⟳ Task N attempt 1 failed (<reason>). Retrying...`
 2. Add `previous_failure` key to context file (reason, error summary, attempt number).
 3. Re-dispatch cf-implementer.
@@ -167,6 +171,7 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 #### Parallel phases
 
 **File-overlap guard** (MANDATORY before spawning):
+
 1. Collect declared file lists from each task's `files:` field.
 2. Normalize all paths (absolute, no trailing slashes).
 3. If any path appears in 2+ tasks → STOP. Report duplicates and tasks involved.
@@ -174,6 +179,7 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 5. Only proceed after user resolves. Do NOT auto-serialize.
 
 After overlap check passes:
+
 1. Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.
 2. Each agent prompt must be fully self-contained.
 3. Render status table immediately after launch (`running` → `done`/`failed`).
@@ -217,8 +223,8 @@ Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
 ## Progress
 
-| Status | Phase | Task |
-|--------|-------|------|
+| Status  | Phase   | Task      |
+| ------- | ------- | --------- |
 | ⬜ TODO | Phase 1 | Task name |
 | ⬜ TODO | Phase 2 | Task name |
 
@@ -276,8 +282,8 @@ After implementation: `/cf-review` → `/cf-commit`
 
 ## Progress
 
-| Status | Phase | File | Tasks |
-|--------|-------|------|-------|
+| Status  | Phase           | File                                     | Tasks   |
+| ------- | --------------- | ---------------------------------------- | ------- |
 | ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
 | ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
 
@@ -310,8 +316,8 @@ After implementation: `/cf-review` → `/cf-commit`
 
 ## Progress
 
-| Status | Task |
-|--------|------|
+| Status  | Task          |
+| ------- | ------------- |
 | ⬜ TODO | <task 1 name> |
 | ⬜ TODO | <task 2 name> |
 

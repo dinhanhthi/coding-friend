@@ -57,7 +57,9 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
    claude plugin marketplace add dinhanhthi/coding-friend
    claude plugin install coding-friend@coding-friend-marketplace
    ```
+
    </details>
+
 3. Initialize your workspace: `cf init`
 4. Restart Claude Code
 5. **(Optional) Enable AI memory** — stores project knowledge across sessions with automatic recall:

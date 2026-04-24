@@ -48,11 +48,11 @@ Research is token-intensive due to web fetches and parallel subagents. Before pr
 
 Before proceeding, confirm the mode with the user:
 
-| Mode | Goal | Entry | Output |
-|------|------|-------|--------|
-| **Deep Research** | Understand a domain in depth — build a comprehensive reference for `/cf-plan` | Step 1 | Full `docs/research/<slug>/` folder |
-| **Quick Reference** | Build a working mental model fast — no full document set needed | Step 2 only | Single `_notes.md` file |
-| **Write to Understand** | Already have materials collected — structure and document them | Step 2 | Full `docs/research/<slug>/` folder |
+| Mode                    | Goal                                                                          | Entry       | Output                              |
+| ----------------------- | ----------------------------------------------------------------------------- | ----------- | ----------------------------------- |
+| **Deep Research**       | Understand a domain in depth — build a comprehensive reference for `/cf-plan` | Step 1      | Full `docs/research/<slug>/` folder |
+| **Quick Reference**     | Build a working mental model fast — no full document set needed               | Step 2 only | Single `_notes.md` file             |
+| **Write to Understand** | Already have materials collected — structure and document them                | Step 2      | Full `docs/research/<slug>/` folder |
 
 If the user has not specified, suggest **Quick Reference** for exploratory questions and **Deep Research** for pre-implementation research.
 
@@ -67,6 +67,7 @@ If the user has not specified, suggest **Quick Reference** for exploratory quest
 4. Present the scope to the user and confirm before proceeding
 
 **Source targeting (web and comparison types):** Prioritize primary sources:
+
 - Official documentation, specification papers, and blog posts by the original builders
 - Repositories by the actual authors — not forks, tutorials, or aggregations
 - Target: 5–10 sources for standard research, 15–20 for a deep technical survey
@@ -75,7 +76,7 @@ Secondary explainers (blog posts, tutorials, aggregators) are background materia
 
 ### Step 2: Digest
 
-*Skip for **Codebase** research type (code is the primary source). Skip also for **Quick Reference** mode (go directly to gathering and summarizing key points).*
+_Skip for **Codebase** research type (code is the primary source). Skip also for **Quick Reference** mode (go directly to gathering and summarizing key points)._
 
 Work through the collected sources. For each piece, apply the triangulation filter before including any claim:
 
@@ -204,21 +205,22 @@ See `${CLAUDE_PLUGIN_ROOT}/skills/cf-research/references/templates.md` for the f
 
 ## Gotchas
 
-| What happened | Rule |
-|---------------|------|
-| Collected secondary explainers instead of primary sources | Target official docs, specification papers, and repos by original authors. A summary is not a source. |
-| Treated a convincing explainer as ground truth | Apply the triangulation filter: does the claim appear in 2+ contexts from the same primary source? |
-| Sources contradict and you silently picked one | Note both positions and the evidence each gives. False consensus is worse than admitted uncertainty. |
-| Skipped Digest and included everything collected | Cut roughly half of collected material. Volume is not quality. |
-| Part documents contain AI writing patterns | Refine before synthesizing: remove filler phrases, binary contrasts, dramatic fragmentation, overused adverbs. |
-| Escalated to planning or implementation after research | Stop at Step 7. Implementation is the user's call. |
-| Researched a codebase without cf-explorer | Always use cf-explorer for Codebase type — heavy file reads in the main thread overflow context fast. |
+| What happened                                             | Rule                                                                                                           |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Collected secondary explainers instead of primary sources | Target official docs, specification papers, and repos by original authors. A summary is not a source.          |
+| Treated a convincing explainer as ground truth            | Apply the triangulation filter: does the claim appear in 2+ contexts from the same primary source?             |
+| Sources contradict and you silently picked one            | Note both positions and the evidence each gives. False consensus is worse than admitted uncertainty.           |
+| Skipped Digest and included everything collected          | Cut roughly half of collected material. Volume is not quality.                                                 |
+| Part documents contain AI writing patterns                | Refine before synthesizing: remove filler phrases, binary contrasts, dramatic fragmentation, overused adverbs. |
+| Escalated to planning or implementation after research    | Stop at Step 7. Implementation is the user's call.                                                             |
+| Researched a codebase without cf-explorer                 | Always use cf-explorer for Codebase type — heavy file reads in the main thread overflow context fast.          |
 
 ## Specification Writing Mode
 
 Activate when the user asks to "codify design rules", "write a spec", "document patterns", or synthesize a design system.
 
 Workflow:
+
 1. **Collect** — Gather all references (existing docs, code, screenshots, decisions)
 2. **Extract patterns** — Identify recurring decisions (naming rules, API shape, data model conventions)
 3. **Codify** — Write explicit rules with examples and anti-patterns

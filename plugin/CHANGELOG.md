@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.28.0 (2026-04-24)
+
+- Add modes (Deep Research / Quick Reference / Write to Understand), Digest phase with triangulation filter, Refine step (strip AI writing patterns), Gotchas table, and Specification Writing Mode to `cf-research` — research now targets primary sources, filters contradictions, and enforces a linear self-review gate before presenting results [#670b678](https://github.com/dinhanhthi/coding-friend/commit/670b678)
+- Add `cf-research` templates: Contradictions section and Quick Reference Notes template [#670b678](https://github.com/dinhanhthi/coding-friend/commit/670b678)
+- Add attack angles brainstorm, official solution check, no-placeholders rule, and not-building scope guard to `cf-plan` [#098cd0c](https://github.com/dinhanhthi/coding-friend/commit/098cd0c)
+- Improve `cf-fix` and `cf-sys-debug` with cognitive guardrails: rationalization watch tables, progress signals, bisect mode, structured output formats, and regression guard — debugging now follows evidence, not intuition [#4b768a5](https://github.com/dinhanhthi/coding-friend/commit/4b768a5)
+
 ## v0.27.1 (2026-04-23)
 
 - Fix `auto-approve` hook: allow CF plugin scripts (`.claude-plugin/`, `.claude/`) in compound `&&`/`;` commands with safe redirects (`>`, `>>`) — prevents false classifier hits when hook scripts write to log files [#e8e96e4](https://github.com/dinhanhthi/coding-friend/commit/e8e96e4)

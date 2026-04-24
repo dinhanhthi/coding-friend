@@ -74,40 +74,40 @@ Configuration for the project memory server. Provides tools to store, search, li
 
 **Read:**
 
-| Tool              | Description                                |
-| ----------------- | ------------------------------------------ |
-| `list-categories` | List all categories with doc counts        |
-| `list-docs`       | List docs, filter by category/tag          |
-| `read-doc`        | Read full content of a doc                 |
-| `search-docs`     | Full-text search across all docs           |
-| `get-review-list` | Docs that need review                      |
+| Tool              | Description                         |
+| ----------------- | ----------------------------------- |
+| `list-categories` | List all categories with doc counts |
+| `list-docs`       | List docs, filter by category/tag   |
+| `read-doc`        | Read full content of a doc          |
+| `search-docs`     | Full-text search across all docs    |
+| `get-review-list` | Docs that need review               |
 
 **Write:**
 
-| Tool              | Description                                                 |
-| ----------------- | ----------------------------------------------------------- |
-| `create-doc`      | Create new learning doc                                     |
-| `update-doc`      | Append content or update tags                               |
-| `improve-doc`     | Get improvement suggestions                                 |
-| `track-knowledge` | Record understanding level (remembered/needs-review/new)    |
+| Tool              | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `create-doc`      | Create new learning doc                                  |
+| `update-doc`      | Append content or update tags                            |
+| `improve-doc`     | Get improvement suggestions                              |
+| `track-knowledge` | Record understanding level (remembered/needs-review/new) |
 
 ### Memory MCP tools
 
-| Tool              | Description                        |
-| ----------------- | ---------------------------------- |
-| `memory_store`    | Store a new memory                 |
-| `memory_search`   | Search memories (keyword match)    |
-| `memory_retrieve` | Get a specific memory by ID        |
-| `memory_list`     | List memories with filtering       |
-| `memory_update`   | Update existing memory             |
-| `memory_delete`   | Delete a memory                    |
+| Tool              | Description                     |
+| ----------------- | ------------------------------- |
+| `memory_store`    | Store a new memory              |
+| `memory_search`   | Search memories (keyword match) |
+| `memory_retrieve` | Get a specific memory by ID     |
+| `memory_list`     | List memories with filtering    |
+| `memory_update`   | Update existing memory          |
+| `memory_delete`   | Delete a memory                 |
 
 ### Memory MCP resources
 
-| Resource         | Description          |
-| ---------------- | -------------------- |
-| `memory://index` | Browse all memories  |
-| `memory://stats` | Storage statistics   |
+| Resource         | Description         |
+| ---------------- | ------------------- |
+| `memory://index` | Browse all memories |
+| `memory://stats` | Storage statistics  |
 
 When `cf memory mcp` writes to `.mcp.json`, it uses the **version-stable `npx` format** — no hardcoded paths that break on CLI updates:
 
@@ -116,12 +116,7 @@ When `cf memory mcp` writes to `.mcp.json`, it uses the **version-stable `npx` f
   "mcpServers": {
     "coding-friend-memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "coding-friend-cli",
-        "mcp-serve",
-        "/path/to/docs/memory"
-      ]
+      "args": ["-y", "coding-friend-cli", "mcp-serve", "/path/to/docs/memory"]
     }
   }
 }

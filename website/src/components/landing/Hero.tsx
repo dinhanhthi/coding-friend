@@ -70,8 +70,8 @@ export default function Hero() {
               />
             </svg>
             <span>
-              Beta — core features are stable, feedback welcome. Want to
-              shape it?{" "}
+              Beta — core features are stable, feedback welcome. Want to shape
+              it?{" "}
               <a
                 href="https://github.com/dinhanhthi/coding-friend"
                 target="_blank"

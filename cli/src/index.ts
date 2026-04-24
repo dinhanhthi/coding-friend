@@ -116,9 +116,8 @@ program
   .description("Start the learn MCP server (used internally by npx)")
   .argument("<docsDir>", "path to docs directory")
   .action(async (docsDir: string) => {
-    const { mcpServeLearnCommand } = await import(
-      "./commands/mcp-serve-learn.js"
-    );
+    const { mcpServeLearnCommand } =
+      await import("./commands/mcp-serve-learn.js");
     await mcpServeLearnCommand(docsDir);
   });
 
