@@ -51,7 +51,25 @@ Use `AskUserQuestion` for each round. Do NOT batch questions.
 
 **Round 1 — Understand:** List ambiguities and assumptions; ask probing questions about objectives, constraints, success criteria; ask about preferred libraries/APIs — never guess.
 
+**Check for official solutions first (before proposing anything):**
+1. **Framework built-ins** — search official docs for native components or methods that solve this directly (e.g., React Suspense for loading states, Next.js Server Actions for mutations).
+2. **Official patterns** — check framework best practices and migration guides for the recommended approach.
+3. **Ecosystem standards** — identify officially maintained or widely adopted libraries for this use case.
+
+If an official solution exists, it must be **Option 1** in the approach list. If recommending a custom approach over it, explain why the official solution is insufficient for this specific case.
+
 **Round 2 — Challenge:** Question whether the proposed approach is the best path. Consider user/dev/ops/business angles. Be honest about feasibility and trade-offs. Apply YAGNI, KISS, DRY.
+
+Run these **attack angles** against the recommended approach before presenting it:
+
+| Attack angle | Question |
+|---|---|
+| Dependency failure | If an external API, service, or tool goes down, can the plan degrade gracefully? |
+| Scale explosion | At 10x data volume or user load, which step breaks first? |
+| Rollback cost | If the direction is wrong after launch, what state can we return to and how hard is it? |
+| Premise collapse | Which assumption in this plan is most fragile? What happens if it does not hold? |
+
+If an attack holds, deform the design and present the deformed version. If it shatters the approach entirely, discard it and tell the user why. Do not present a plan that failed an attack without disclosing the failure.
 
 **Round 3 — Converge** (if needed): Present 2-3 approaches with pros/cons; ask which to pursue. Skip if request was already clear.
 
@@ -193,6 +211,10 @@ Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
 <chosen approach and why>
 
+## Not Building
+
+- <explicit out-of-scope item>
+
 ## Progress
 
 | Status | Phase | Task |
@@ -247,6 +269,10 @@ After implementation: `/cf-review` → `/cf-commit`
 ## Overview
 
 <1-2 sentences about the problem and chosen approach>
+
+## Not Building
+
+- <explicit out-of-scope item>
 
 ## Progress
 
@@ -316,3 +342,4 @@ After implementation: `/cf-review` → `/cf-commit`
 - When uncertain, say so and ask.
 - Do NOT assume libraries, APIs, or tools — ask.
 - Plans must be concrete: exact file paths, function names, test commands.
+- **No placeholders in approved plans.** Every step must be concrete before the user approves. Forbidden patterns: `TBD`, `TODO`, `"implement later"`, `"similar to step N"`, `"details to be determined"`. A plan with placeholders is a promise to plan later.
