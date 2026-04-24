@@ -34,7 +34,9 @@ describe("warnStaleMcpJson", () => {
     warnStaleMcpJson();
     // log.warn ultimately calls console.warn or console.error depending on impl
     // We check that some output was produced rather than asserting on exact format
-    expect(warnSpy.mock.calls.length + vi.spyOn(console, "error").mock.calls.length).toBeGreaterThanOrEqual(0);
+    expect(
+      warnSpy.mock.calls.length + vi.spyOn(console, "error").mock.calls.length,
+    ).toBeGreaterThanOrEqual(0);
   });
 
   it("is silent when entry uses npx format", async () => {

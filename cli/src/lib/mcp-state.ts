@@ -16,7 +16,9 @@ export function warnStaleMcpJson(memoryDir?: string): void {
 
   const mcpJson = readJson<Record<string, unknown>>(localMcpPath);
   if (mcpJson === null) {
-    log.warn(".mcp.json exists but could not be parsed — check for syntax errors.");
+    log.warn(
+      ".mcp.json exists but could not be parsed — check for syntax errors.",
+    );
     return;
   }
 
@@ -26,19 +28,33 @@ export function warnStaleMcpJson(memoryDir?: string): void {
     if (memoryDir) {
       writeMemoryMcpEntry(memoryDir);
       if (state.kind === "stale") {
-        log.success("Auto-updated stale .mcp.json to version-stable npx format.");
+        log.success(
+          "Auto-updated stale .mcp.json to version-stable npx format.",
+        );
       } else {
         log.success("Updated .mcp.json to version-stable npx format.");
       }
       console.log();
     } else if (state.kind === "stale") {
-      console.log(chalk.yellow(`\u26A0 Stale MCP config detected in .mcp.json`));
+      console.log(
+        chalk.yellow(`\u26A0 Stale MCP config detected in .mcp.json`),
+      );
       console.log(chalk.dim(`  Path no longer exists: ${state.path}`));
-      console.log(chalk.dim(`  Run "cf memory mcp" to update to the new format.`));
+      console.log(
+        chalk.dim(`  Run "cf memory mcp" to update to the new format.`),
+      );
       console.log();
     } else {
-      console.log(chalk.cyan(`\u2139 .mcp.json uses an absolute path for coding-friend-memory.`));
-      console.log(chalk.dim(`  Consider running "cf memory mcp" to switch to the version-stable format.`));
+      console.log(
+        chalk.cyan(
+          `\u2139 .mcp.json uses an absolute path for coding-friend-memory.`,
+        ),
+      );
+      console.log(
+        chalk.dim(
+          `  Consider running "cf memory mcp" to switch to the version-stable format.`,
+        ),
+      );
       console.log();
     }
   }

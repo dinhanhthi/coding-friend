@@ -438,7 +438,10 @@ function isSafeCompoundCommand(cmd, allowExtra) {
       const rawOrig = p.orig.trimEnd(); // trimEnd to check last char before |
       if (pending !== null) {
         // Previous split was a \| — merge back with current
-        pending = { orig: pending.orig + "|" + p.orig, san: pending.san + "|" + p.san };
+        pending = {
+          orig: pending.orig + "|" + p.orig,
+          san: pending.san + "|" + p.san,
+        };
         // Check if this part also ends with backslash (another \|)
         if (pending.orig.trimEnd().endsWith("\\")) {
           // keep pending

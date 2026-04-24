@@ -100,12 +100,12 @@ Using the cf-explorer's findings:
 
 5. **Rationalization Watch** — if any of these surface, stop and re-examine:
 
-   | Thought | What it means | Rule |
-   |---|---|---|
-   | "I'll just try this one thing" | No hypothesis, random-walking | Stop. Write the hypothesis first. |
-   | "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch. |
-   | "One more restart should fix it" | Avoiding the error message | Read the last error verbatim. Never restart more than twice without new evidence. |
-   | "I'm confident it's X" | Confidence is not evidence | Run an instrument that proves it. |
+   | Thought                             | What it means                             | Rule                                                                              |
+   | ----------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
+   | "I'll just try this one thing"      | No hypothesis, random-walking             | Stop. Write the hypothesis first.                                                 |
+   | "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch.                                          |
+   | "One more restart should fix it"    | Avoiding the error message                | Read the last error verbatim. Never restart more than twice without new evidence. |
+   | "I'm confident it's X"              | Confidence is not evidence                | Run an instrument that proves it.                                                 |
 
 ### Step 5: Confirm Approach
 
@@ -293,6 +293,7 @@ If the fix was not performance-related, skip this step.
 When the fix is complete (after Step 9/10), report using this format:
 
 **On success:**
+
 ```
 Root cause:   [what was wrong, file:line]
 Fix:          [what changed, file:line]

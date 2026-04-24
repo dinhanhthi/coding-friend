@@ -32,24 +32,24 @@ Name a specific file, function, and line. "A state management issue" is not test
 
 When these surface, stop and re-examine:
 
-| Thought | What it means | Rule |
-|---|---|---|
-| "I'll just try this one thing" | No hypothesis, random-walking | Stop. Write the hypothesis first. |
-| "I'm confident it's X" | Confidence is not evidence | Run an instrument that proves it. |
-| "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch. |
-| "It works on my machine" | Environment difference IS the bug | Enumerate every env difference before dismissing. |
-| "One more restart should fix it" | Avoiding the error message | Read the last error verbatim. Never restart more than twice without new evidence. |
+| Thought                             | What it means                             | Rule                                                                              |
+| ----------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
+| "I'll just try this one thing"      | No hypothesis, random-walking             | Stop. Write the hypothesis first.                                                 |
+| "I'm confident it's X"              | Confidence is not evidence                | Run an instrument that proves it.                                                 |
+| "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch.                                          |
+| "It works on my machine"            | Environment difference IS the bug         | Enumerate every env difference before dismissing.                                 |
+| "One more restart should fix it"    | Avoiding the error message                | Read the last error verbatim. Never restart more than twice without new evidence. |
 
 ## Progress Signals
 
 When these appear, the diagnosis is moving in the right direction:
 
-| Thought | What it means | Next step |
-|---|---|---|
-| "This log line matches the hypothesis" | Positive evidence found | Find one more independent piece of evidence to cross-validate |
-| "I can predict what the next error will be" | Mental model is forming | Run the prediction; if it matches, the model is correct |
-| "Root cause is in A but symptoms appear in B" | Propagation path understood | Trace the call chain from A to B and confirm each link |
-| "I can write a test that would fail on the old code" | Hypothesis is specific and testable | Write the test before applying the fix |
+| Thought                                              | What it means                       | Next step                                                     |
+| ---------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------- |
+| "This log line matches the hypothesis"               | Positive evidence found             | Find one more independent piece of evidence to cross-validate |
+| "I can predict what the next error will be"          | Mental model is forming             | Run the prediction; if it matches, the model is correct       |
+| "Root cause is in A but symptoms appear in B"        | Propagation path understood         | Trace the call chain from A to B and confirm each link        |
+| "I can write a test that would fail on the old code" | Hypothesis is specific and testable | Write the test before applying the fix                        |
 
 Do not claim progress without observable evidence matching at least one of these signals.
 
@@ -198,16 +198,16 @@ Show the user a 2-line summary:
 
 ## Gotchas
 
-| What happened | Rule |
-|---|---|
-| Patched symptom file instead of origin | Trace the execution path backward before touching any file |
-| MCP not loading, switched tools instead of diagnosing | Check server status, API key, config before switching |
-| Orchestrator said RUNNING but a downstream stage was misconfigured | In multi-stage pipelines, test each stage in isolation |
-| Race condition diagnosed as stale-state bug | For timing-sensitive issues, inspect event timestamps and ordering before state |
-| Reproduced locally but failed in CI | Align the environment first (runtime version, env vars, timezone), then chase the code |
-| Stack trace points deep into a library | Walk back 3 frames into your own code; the bug is almost always there |
-| Adding a `try/catch` to suppress the error | Hides the bug, doesn't fix it — find and fix the root cause |
-| Multiple changes at once | Can't tell which one fixed it — one change at a time, test after each |
+| What happened                                                      | Rule                                                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Patched symptom file instead of origin                             | Trace the execution path backward before touching any file                             |
+| MCP not loading, switched tools instead of diagnosing              | Check server status, API key, config before switching                                  |
+| Orchestrator said RUNNING but a downstream stage was misconfigured | In multi-stage pipelines, test each stage in isolation                                 |
+| Race condition diagnosed as stale-state bug                        | For timing-sensitive issues, inspect event timestamps and ordering before state        |
+| Reproduced locally but failed in CI                                | Align the environment first (runtime version, env vars, timezone), then chase the code |
+| Stack trace points deep into a library                             | Walk back 3 frames into your own code; the bug is almost always there                  |
+| Adding a `try/catch` to suppress the error                         | Hides the bug, doesn't fix it — find and fix the root cause                            |
+| Multiple changes at once                                           | Can't tell which one fixed it — one change at a time, test after each                  |
 
 ## Debugging Tools
 

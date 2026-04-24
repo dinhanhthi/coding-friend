@@ -109,9 +109,7 @@ describe("mcpServeLearnCommand", () => {
 
   // I1: docsDir validation
   it("exits with code 1 if docsDir does not exist", async () => {
-    mockExistsSync.mockImplementation((p: string) =>
-      p !== "/nonexistent/docs",
-    );
+    mockExistsSync.mockImplementation((p: string) => p !== "/nonexistent/docs");
 
     const { mcpServeLearnCommand } = await import("../mcp-serve-learn.js");
     mcpServeLearnCommand("/nonexistent/docs");
