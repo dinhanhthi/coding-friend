@@ -54,7 +54,7 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* Alpha notice */}
+          {/* Beta notice */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-base text-yellow-400">
             <svg
               className="h-4 w-4 shrink-0"
@@ -70,7 +70,7 @@ export default function Hero() {
               />
             </svg>
             <span>
-              Early stage — expect rough edges and frequent changes. Want to
+              Beta — core features are stable, feedback welcome. Want to
               shape it?{" "}
               <a
                 href="https://github.com/dinhanhthi/coding-friend"
