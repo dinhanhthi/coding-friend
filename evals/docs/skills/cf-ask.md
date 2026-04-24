@@ -2,7 +2,7 @@
 
 ## What We Test
 
-Whether the cf-ask skill provides more accurate, concise, and well-referenced answers to codebase questions than baseline Claude. We also measure whether answers are appropriately saved to memory.
+Whether the cf-ask skill provides more accurate, concise, and well-referenced answers to codebase questions than baseline Claude. We also measure whether answers are appropriately saved to memory, and — for flow questions — whether a Mermaid diagram is generated.
 
 ## Prompt(s)
 
@@ -14,6 +14,12 @@ Whether the cf-ask skill provides more accurate, concise, and well-referenced an
 
 > What string manipulation functions are available in this project? How does the slugify function handle special characters?
 
+**bench-webapp-flow** (`prompts/cf-ask/bench-webapp-flow.md`):
+
+> Walk me through the full lifecycle of a request in this project — from entry point to response.
+
+*(This prompt specifically targets the flow question path added in the April 2026 update — expects a Mermaid diagram in the answer.)*
+
 ## Benchmark Repos Used
 
 - **bench-webapp** -- Has a cache module at `src/lib/cache.ts` with TTL-based expiration and a known memory leak bug (expired entries never cleaned up)
@@ -21,14 +27,24 @@ Whether the cf-ask skill provides more accurate, concise, and well-referenced an
 
 ## Rubric Criteria
 
-| Criterion         | Weight | Description                                                    |
-| ----------------- | ------ | -------------------------------------------------------------- |
-| answer_accuracy   | 0.35   | Answer is factually correct based on the actual codebase state |
-| conciseness       | 0.25   | Answer is appropriately concise for a quick Q&A interaction    |
-| source_references | 0.20   | Answer points to specific files and locations                  |
-| memory_saved      | 0.20   | Answer is saved to memory when appropriate                     |
+| Criterion         | Weight | Description                                                                      |
+| ----------------- | ------ | -------------------------------------------------------------------------------- |
+| answer_accuracy   | 0.30   | Answer is factually correct based on the actual codebase state                   |
+| conciseness       | 0.20   | Answer is appropriately concise for a quick Q&A interaction                      |
+| source_references | 0.20   | Answer points to specific files and locations                                    |
+| memory_saved      | 0.15   | Answer is saved to memory when appropriate                                       |
+| flow_diagram      | 0.15   | For flow questions: a Mermaid diagram is generated with the correct diagram type |
+
+*`flow_diagram` is only scored for flow-question prompts. For non-flow prompts, its weight is redistributed proportionally across the other four criteria.*
 
 ### Scoring Levels
+
+**flow_diagram** (only for flow-question prompts; automated check: ` ```mermaid` block in response):
+
+- 0: No diagram generated for a clear flow question
+- 1: Diagram present but wrong type for the flow's shape (e.g., `flowchart` used instead of `sequenceDiagram`)
+- 2: Correct diagram type but missing key states or transitions
+- 3: Correct diagram type, all key actors/states/transitions present, error paths labeled
 
 **answer_accuracy**:
 
@@ -68,6 +84,7 @@ Notes: Not all questions warrant saving to memory. Score memory_saved as 3 if th
 - May use cf-explorer agent for codebase exploration
 - Appropriately concise
 - Correct judgment on whether to save to memory (these code-level questions typically do not warrant it)
+- **For flow questions**: generates a Mermaid diagram (`stateDiagram-v2`, `sequenceDiagram`, or `flowchart TD`) with labeled transitions; diagram saved to the `## Flow Diagram` section of the memory file
 
 ### Without CF
 
