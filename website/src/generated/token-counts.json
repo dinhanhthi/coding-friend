@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-24T07:25:10.944Z",
+  "generatedAt": "2026-04-24T07:39:34.174Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -33,7 +33,7 @@
       "type": "slash"
     },
     "cf-fix": {
-      "tokens": 3268,
+      "tokens": 3545,
       "tier": "high",
       "type": "slash"
     },
@@ -63,8 +63,8 @@
       "type": "slash"
     },
     "cf-research": {
-      "tokens": 1884,
-      "tier": "medium",
+      "tokens": 3199,
+      "tier": "high",
       "type": "slash"
     },
     "cf-review": {
@@ -98,8 +98,8 @@
       "type": "slash"
     },
     "cf-sys-debug": {
-      "tokens": 1731,
-      "tier": "medium",
+      "tokens": 3089,
+      "tier": "high",
       "type": "auto"
     },
     "cf-tdd": {

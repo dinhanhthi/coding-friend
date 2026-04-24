@@ -23,15 +23,48 @@
 
 <code examples if applicable>
 
+## Contradictions
+
+<!-- Only include when sources disagree on a factual claim. Remove section if no contradictions found. -->
+- **Claim in question**: <the disputed point>
+  - [Source A](URL): <their position and evidence>
+  - [Source B](URL): <their position and evidence>
+  - Unresolved — both positions retained
+
 ## Sources
 
-- [Source title](URL)
-- [Source title](URL)
+- [Source title](URL) — *primary*
+- [Source title](URL) — *primary*
+- [Source title](URL) — *secondary / background*
 
 ## Notes
 
 - <additional observations>
 - <caveats or limitations>
+- <unverified: claims from a single source that could not be cross-checked>
+```
+
+## Quick Reference Notes Template
+
+```markdown
+# Quick Reference: <Topic>
+
+**Date:** YYYY-MM-DD
+**Questions:** <the 3-5 questions this answers>
+
+## Mental Model
+
+<2-5 sentence overview — enough to work with>
+
+## Key Points
+
+- <point 1> — [source](URL)
+- <point 2> — [source](URL)
+- <point 3> — [source](URL)
+
+## Open Questions
+
+- <things still unclear>
 ```
 
 ## Summary Template
