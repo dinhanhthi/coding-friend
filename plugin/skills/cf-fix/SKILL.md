@@ -92,15 +92,29 @@ Using the cf-explorer's findings:
 1. Read the error — full stack trace, not just the message
 2. Trace backward from where the error appears to where it originates
 3. The bug is usually NOT where the error shows up
-4. **State your hypothesis** for the root cause before fixing — if unsure, say so and ask
+4. **State your hypothesis** using this exact template before fixing:
+
+   > "I believe the root cause is [X] because [evidence]."
+
+   Name a specific file, function, and line. "A state management issue" is not a hypothesis. "Stale cache in `useUser` at `src/hooks/user.ts:42` because the dependency array is missing `userId`" is a hypothesis.
+
+5. **Rationalization Watch** — if any of these surface, stop and re-examine:
+
+   | Thought | What it means | Rule |
+   |---|---|---|
+   | "I'll just try this one thing" | No hypothesis, random-walking | Stop. Write the hypothesis first. |
+   | "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch. |
+   | "One more restart should fix it" | Avoiding the error message | Read the last error verbatim. Never restart more than twice without new evidence. |
+   | "I'm confident it's X" | Confidence is not evidence | Run an instrument that proves it. |
 
 ### Step 5: Confirm Approach
 
 Before changing code:
 
-1. Tell the user what you believe the root cause is
+1. Tell the user what you believe the root cause is (using the template from Step 4)
 2. Explain what you plan to change and why
 3. If you're not confident, say so — ask for the user's input
+4. **Same symptom after a fix = hard stop.** Do not attempt a second fix until you can state a new hypothesis with new evidence. Escalate immediately to cf-sys-debug if the symptom recurs unchanged.
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
@@ -276,11 +290,17 @@ If the fix was not performance-related, skip this step.
 
 ## Completion Protocol
 
-When the fix is complete (after Step 9/10), report status:
+When the fix is complete (after Step 9/10), report using this format:
 
-- **DONE** — Bug fixed, tests pass, review clean. Show: root cause summary + files changed + test evidence.
-- **DONE_WITH_CONCERNS** — Bug fixed but with caveats. Show: what was fixed + what concerns remain (e.g., "fix is correct but the function has other issues worth addressing").
-- **BLOCKED** — Cannot fix. Show: what was tried, what failed, what information is needed to proceed.
+**On success:**
+```
+Root cause:   [what was wrong, file:line]
+Fix:          [what changed, file:line]
+Confirmed:    [evidence or test that proves the fix]
+Tests:        [pass/fail count, regression test location]
+```
+
+Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (state what is unknown and what information is needed to proceed).
 
 ## Escalation
 

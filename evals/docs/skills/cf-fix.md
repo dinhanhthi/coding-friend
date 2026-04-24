@@ -66,11 +66,13 @@ Notes: TDD approach expected: write failing test first, then fix.
 
 ### With CF
 
-- Precise root cause identification with file:line references
+- Precise root cause identification with file:line references using the template: "I believe the root cause is [X] because [evidence]"
+- Rationalization Watch enforced — no random-walking, no restarting without new evidence
+- Same-symptom-after-fix treated as hard stop, not retry
 - Failing test written first (RED), then fix applied (GREEN)
 - Regression check by running full test suite
+- Structured success output: Root cause / Fix / Confirmed / Tests
 - Automatic verification/review step after fixing
-- Before/after comparison showing the bug and fix
 
 ### Without CF
 

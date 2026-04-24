@@ -16,9 +16,42 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
-## The 3-Fix Rule
+## Core Constraint
 
-If you've attempted 3+ fixes and the bug persists, **stop**. The problem is architectural, not local. Step back and re-examine your assumptions.
+**Do not touch code until you can state the root cause in one sentence:**
+
+> "I believe the root cause is [X] because [evidence]."
+
+Name a specific file, function, and line. "A state management issue" is not testable. "Stale cache in `useUser` at `src/hooks/user.ts:42` because the dependency array is missing `userId`" is testable. If you cannot be that specific, you do not have a hypothesis yet.
+
+**Same symptom after a fix = hard stop.** Both a recurrence and "let me just try this" mean the hypothesis is unfinished. Re-read the execution path from scratch before touching code again.
+
+**After 3 failed hypotheses, stop.** Use the Handoff Format below to surface what was checked, ruled out, and unknown. Ask how to proceed.
+
+## Rationalization Watch
+
+When these surface, stop and re-examine:
+
+| Thought | What it means | Rule |
+|---|---|---|
+| "I'll just try this one thing" | No hypothesis, random-walking | Stop. Write the hypothesis first. |
+| "I'm confident it's X" | Confidence is not evidence | Run an instrument that proves it. |
+| "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch. |
+| "It works on my machine" | Environment difference IS the bug | Enumerate every env difference before dismissing. |
+| "One more restart should fix it" | Avoiding the error message | Read the last error verbatim. Never restart more than twice without new evidence. |
+
+## Progress Signals
+
+When these appear, the diagnosis is moving in the right direction:
+
+| Thought | What it means | Next step |
+|---|---|---|
+| "This log line matches the hypothesis" | Positive evidence found | Find one more independent piece of evidence to cross-validate |
+| "I can predict what the next error will be" | Mental model is forming | Run the prediction; if it matches, the model is correct |
+| "Root cause is in A but symptoms appear in B" | Propagation path understood | Trace the call chain from A to B and confirm each link |
+| "I can write a test that would fail on the old code" | Hypothesis is specific and testable | Write the test before applying the fix |
+
+Do not claim progress without observable evidence matching at least one of these signals.
 
 ## 4-Phase Process + Documentation
 
@@ -50,20 +83,38 @@ If matches found, read the top 1-2 matched files — they may reveal known root 
 1. **When did it start?** Check recent changes: `git log --oneline -20`, `git diff HEAD~5`
 2. **Is it consistent?** Does it fail every time, or intermittently? Intermittent = timing/state issue.
 3. **What's the minimal reproduction?** Strip away everything unrelated until you have the smallest case.
+4. **Pay attention to deflection.** When someone says "that part doesn't matter," treat it as a signal. The area someone avoids examining is often where the problem lives.
+
+### Bisect Mode
+
+Activate when the symptom is "used to work, now broken" or "broke after an update". Random-walking forward from the current state wastes context and produces random fixes.
+
+**Flow:**
+
+1. Find `last-known-good` using the most recent tag where the behavior was correct: `git tag --sort=-version:refname | head -5`. Do not use a date or raw SHA as the anchor.
+2. Define a pass/fail test command before starting. It must be runnable non-interactively and produce an unambiguous exit code. Write it once; reuse it at every step.
+3. Run `git bisect start`, `git bisect bad` (current), `git bisect good <tag>`. Let bisect drive; do not jump ahead.
+4. Context conservation: do not re-read large files at each step. Read once, note the key function or line, reference from notes.
+5. When bisect names the culprit commit: read only that commit's diff, not surrounding history. Identify the specific line that introduced the regression.
 
 ### Phase 3: Hypothesis Testing
 
-1. **Form one hypothesis.** "The bug is caused by X because Y."
-2. **Design a test.** What observation would confirm or disprove this hypothesis?
-3. **Test it.** Run the test. Read the output carefully.
-4. **If disproved**, go back to Phase 1 with new information. Do NOT patch around it.
+1. **Form one hypothesis** using the template: "The bug is caused by [X] because [evidence]." Name file and line.
+2. **Add one targeted instrument:** a log line, a failing assertion, or the smallest test that would fail if the hypothesis is correct. Run it.
+3. **If the evidence contradicts the hypothesis, discard it completely.** Re-orient with what was just learned. Do not preserve a hypothesis the evidence disproves.
+4. **External tool failure: diagnose before switching.** When an MCP tool or API fails, determine why first (server running? API key valid? config correct?) before trying an alternative.
+5. **Stack trace points into a library?** Walk back 3 frames into your own code. The bug is almost always there, not in the dependency.
 
 ### Phase 4: Implementation
 
-1. **Fix the root cause**, not the symptom
-2. **Write a regression test** that would have caught this bug
-3. **Run the full test suite** — your fix must not break anything else
-4. **Verify the original error is gone** — reproduce the original failure and confirm it's fixed
+1. **Fix the root cause**, not the symptom. If the fix touches more than 5 files, pause and confirm scope with the user.
+2. **Regression Guard** — for any bug that recurred or was previously "fixed", the fix is not done until:
+   - A regression test exists that fails on the unfixed code and passes on the fixed code
+   - The test lives in the project's test suite, not a temporary file
+   - The commit message states why the bug recurred and why this fix prevents it
+3. **Write a regression test** that would have caught this bug
+4. **Run the full test suite** — your fix must not break anything else
+5. **Verify the original error is gone** — reproduce the original failure and confirm it's fixed
 
 ### Phase 5: Document the Bug
 
@@ -145,15 +196,18 @@ Show the user a 2-line summary:
 - **Markdown file:** `{docsDir}/memory/bugs/...md` (created or updated)
 - **Memory DB:** indexed ✓ — or: MCP unavailable, file only
 
-## Common Traps
+## Gotchas
 
-| Trap                                       | Why It Fails                                       | Do This Instead                       |
-| ------------------------------------------ | -------------------------------------------------- | ------------------------------------- |
-| "Let me just try this..."                  | Random fixes waste time and obscure the real cause | Form a hypothesis first               |
-| Adding a `try/catch` to suppress the error | Hides the bug, doesn't fix it                      | Find and fix the root cause           |
-| "It works on my machine"                   | Environment difference IS the bug                  | Compare environments systematically   |
-| Fixing where the error appears             | Symptom vs cause confusion                         | Trace backward to the origin          |
-| Multiple changes at once                   | Can't tell which one fixed it                      | One change at a time, test after each |
+| What happened | Rule |
+|---|---|
+| Patched symptom file instead of origin | Trace the execution path backward before touching any file |
+| MCP not loading, switched tools instead of diagnosing | Check server status, API key, config before switching |
+| Orchestrator said RUNNING but a downstream stage was misconfigured | In multi-stage pipelines, test each stage in isolation |
+| Race condition diagnosed as stale-state bug | For timing-sensitive issues, inspect event timestamps and ordering before state |
+| Reproduced locally but failed in CI | Align the environment first (runtime version, env vars, timezone), then chase the code |
+| Stack trace points deep into a library | Walk back 3 frames into your own code; the bug is almost always there |
+| Adding a `try/catch` to suppress the error | Hides the bug, doesn't fix it — find and fix the root cause |
+| Multiple changes at once | Can't tell which one fixed it — one change at a time, test after each |
 
 ## Debugging Tools
 
@@ -161,6 +215,51 @@ Show the user a 2-line summary:
 - `git stash` — Isolate your changes to test clean state
 - Print/log tracing — Add strategic logging at decision points
 - Minimal reproduction — Smallest possible code that triggers the bug
+
+## Outcome
+
+### Success Format
+
+```
+Root cause:        [what was wrong, file:line]
+Fix:               [what changed, file:line]
+Confirmed:         [evidence or test that proves the fix]
+Tests:             [pass/fail count, regression test location]
+Regression guard:  [test file:line] or [none, reason]
+```
+
+Status: **resolved**, **resolved with caveats** (state them), or **blocked** (state what is unknown).
+
+### Handoff Format (after 3 failed hypotheses)
+
+```
+Symptom:
+[Original error description, one sentence]
+
+Hypotheses Tested:
+1. [Hypothesis 1] → [Test method] → [Result: ruled out because...]
+2. [Hypothesis 2] → [Test method] → [Result: ruled out because...]
+3. [Hypothesis 3] → [Test method] → [Result: ruled out because...]
+
+Evidence Collected:
+- [Log snippets / stack traces / file content]
+- [Reproduction steps]
+- [Environment info: versions, config, runtime]
+
+Ruled Out:
+- [Root causes that have been eliminated]
+
+Unknowns:
+- [What is still unclear]
+- [What information is missing]
+
+Suggested Next Steps:
+1. [Next investigation direction]
+2. [External tools or permissions that may be needed]
+3. [Additional context the user should provide]
+```
+
+Status: **blocked**
 
 ## Review Reminder
 

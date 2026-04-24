@@ -59,7 +59,12 @@ Notes: Complex bugs may require multiple hypothesis-test cycles -- this is expec
 
 ### With CF
 
+- Root-cause template enforced: "I believe the root cause is [X] because [evidence]" with file:line
+- Rationalization Watch and Progress Signals guide the investigation
+- Bisect Mode activated for "used to work, now broken" symptoms
 - 4-phase debugging approach (observe, hypothesize, test, fix)
+- After 3 failed hypotheses: structured Handoff Format (not prose escalation)
+- Regression Guard: recurring bugs require regression test + explanatory commit message
 - Root cause identified with file:line reference
 - Fix applied with test cases
 - Investigation documented to docs/memory/ or docs/learn/
