@@ -48,6 +48,9 @@ If output is not empty, integrate the returned sections into this workflow:
 1. Read `$ARGUMENTS` as the question
 2. If no question provided, ask the user what they want to know
 3. Identify keywords and likely relevant areas (modules, features, patterns)
+4. **Classify the question type** — check if the question is a *flow question*. A flow question asks about how something works end-to-end, how components interact, or what happens when a process runs. Trigger words: "how does X work", "flow of", "lifecycle", "sequence", "process", "when X happens", "walk me through", "how are X connected", "what triggers", "what happens when", "pipeline", "chain". Non-flow questions (lookup/definition/pattern/why) do NOT trigger this path.
+
+   Set `IS_FLOW_QUESTION = true/false` for use in Steps 3, 4, 5, and 6.
 
 ### Step 2: Check Existing Memory (Memory Recall)
 
@@ -94,6 +97,19 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 >
 > Scope: [keywords and likely relevant areas from Step 1]
 
+**If `IS_FLOW_QUESTION = true`**, add the following to the agent prompt:
+
+> Flow mapping required — also identify and report:
+>
+> - **Entry points**: where does the flow start? (user action, event, API call, CLI command…)
+> - **Actors / components**: what modules, classes, functions, or services are involved?
+> - **States / stages**: what are the distinct states or phases the system moves through?
+> - **Transitions**: what triggers movement from one state/stage to the next?
+> - **Exit points / outcomes**: what are the final states or outputs?
+> - **Error / alternate paths**: are there branches, retries, or failure modes?
+>
+> Organize findings as a list of states and transitions — not just a list of files.
+
 If related memory context was found in Step 2, include it:
 
 > Existing memory context (use as supplementary info, verify against current code):
@@ -110,10 +126,20 @@ Wait for the cf-explorer to return its findings.
 4. Use code snippets only when they clarify the answer
 5. Keep it concise — this is a focused answer, not a research paper
 
+**If `IS_FLOW_QUESTION = true`**, also generate a Mermaid diagram as part of the answer:
+
+- **Pick the right diagram type** based on the flow's shape:
+  - Discrete states with transitions → `stateDiagram-v2`
+  - Component-to-component interactions with messages → `sequenceDiagram`
+  - Process with decisions / branching → `flowchart TD`
+- **Rubric**: identify actors/states (nodes), then transitions/messages (edges), then add alternate/error paths as dotted or labeled edges. Label every transition with what triggers it. Keep the diagram to the minimum nodes needed to convey the big picture — omit internal implementation details that don't add clarity.
+- The diagram IS the concise answer for flow questions — keep surrounding prose tight.
+
 ### Step 5: Present to User
 
 1. Show the answer directly in the conversation
-2. List the key files that were consulted
+2. **If `IS_FLOW_QUESTION = true`**, display the Mermaid diagram inline (inside a `mermaid` fenced code block) before or after the prose — whichever gives the clearest reading order
+3. List the key files that were consulted
 
 ### Step 6: Save to Memory (via cf-writer agent)
 
@@ -155,6 +181,13 @@ content: |
 
   **A:** <concise answer>
 
+  <!-- Include this section only when IS_FLOW_QUESTION = true -->
+  ## Flow Diagram
+
+  ```mermaid
+  <diagram generated in Step 4>
+  ```
+
   **Related files:** `path/to/file1`, `path/to/file2`
 readme_update: false
 auto_commit: false
@@ -175,6 +208,13 @@ content: |
   **Q:** <question>
 
   **A:** <concise answer>
+
+  <!-- Include this section only when IS_FLOW_QUESTION = true -->
+  ## Flow Diagram
+
+  ```mermaid
+  <diagram generated in Step 4>
+  ```
 
   **Related files:** `path/to/file1`, `path/to/file2`
 readme_update: false

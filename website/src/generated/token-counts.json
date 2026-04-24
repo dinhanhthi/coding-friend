@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-24T07:39:34.174Z",
+  "generatedAt": "2026-04-24T11:43:49.514Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -23,8 +23,8 @@
   },
   "skills": {
     "cf-ask": {
-      "tokens": 2314,
-      "tier": "medium",
+      "tokens": 2922,
+      "tier": "high",
       "type": "slash"
     },
     "cf-commit": {
@@ -33,12 +33,12 @@
       "type": "slash"
     },
     "cf-fix": {
-      "tokens": 3545,
+      "tokens": 3565,
       "tier": "high",
       "type": "slash"
     },
     "cf-help": {
-      "tokens": 2250,
+      "tokens": 2273,
       "tier": "medium",
       "type": "slash"
     },
@@ -53,7 +53,7 @@
       "type": "slash"
     },
     "cf-plan": {
-      "tokens": 3868,
+      "tokens": 3896,
       "tier": "high",
       "type": "slash"
     },
@@ -63,7 +63,7 @@
       "type": "slash"
     },
     "cf-research": {
-      "tokens": 3199,
+      "tokens": 3231,
       "tier": "high",
       "type": "slash"
     },
@@ -73,12 +73,12 @@
       "type": "slash"
     },
     "cf-review-in": {
-      "tokens": 2350,
+      "tokens": 2390,
       "tier": "medium",
       "type": "slash"
     },
     "cf-review-out": {
-      "tokens": 1001,
+      "tokens": 1009,
       "tier": "medium",
       "type": "slash"
     },
@@ -98,7 +98,7 @@
       "type": "slash"
     },
     "cf-sys-debug": {
-      "tokens": 3089,
+      "tokens": 3151,
       "tier": "high",
       "type": "auto"
     },

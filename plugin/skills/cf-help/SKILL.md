@@ -57,7 +57,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Slash Commands (user triggers with /)
 
-- `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/
+- `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
