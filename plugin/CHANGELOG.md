@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.28.1 (2026-04-27)
+
+- Improve `auto-approve`: support semicolon-separated command chains — each `;`-separated clause is now evaluated independently (same as `&&` chains), allowing commands like `grep ... | head; echo "---"; grep ...` to auto-approve when all segments are safe [#f208e3d](https://github.com/dinhanhthi/coding-friend/commit/f208e3d)
+- Improve `auto-approve`: allow `2>/dev/null` stderr suppression in compound commands — `find ... 2>/dev/null && find ... | head` now auto-approves without confirmation [#f208e3d](https://github.com/dinhanhthi/coding-friend/commit/f208e3d)
+- Improve `cf-ask`: add Mermaid flow diagram for lifecycle/flow questions — architecture questions that describe a process or sequence now include a visual diagram alongside the prose explanation [#480f652](https://github.com/dinhanhthi/coding-friend/commit/480f652)
+
 ## v0.28.0 (2026-04-24)
 
 - Add modes (Deep Research / Quick Reference / Write to Understand), Digest phase with triangulation filter, Refine step (strip AI writing patterns), Gotchas table, and Specification Writing Mode to `cf-research` — research now targets primary sources, filters contradictions, and enforces a linear self-review gate before presenting results [#670b678](https://github.com/dinhanhthi/coding-friend/commit/670b678)
