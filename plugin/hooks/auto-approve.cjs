@@ -226,12 +226,14 @@ const UNSAFE_COMPOUND_PATTERN = /[;\n`>]|&&|\|\||\$\(|</;
 /**
  * Detect operators that are truly unsafe even when segments are individually safe.
  * Does NOT include && — that is handled separately by segment-wise checking.
+ * Does NOT include ; — semicolons are split and each clause is checked individually
+ *   (same approach as &&), so "grep foo | head; echo done" is safe when all safe.
  * Excludes pipe (|) which is handled by isSafeCompoundCommand segment logic.
  * Single & (background operator, e.g. "cmd & evil") IS blocked — negative lookahead
  * (?<!&)&(?!&) matches lone & but not && or the & in 2>&1 (the latter is stripped
  * before this check runs, so only true background operators reach this pattern).
  */
-const TRULY_UNSAFE_OPERATORS = /[;\n`>]|(?<!&)&(?!&)|\|\||\$\(|</;
+const TRULY_UNSAFE_OPERATORS = /[\n`>]|(?<!&)&(?!&)|\|\||\$\(|</;
 
 /**
  * Strip stderr-to-stdout redirects (e.g., "2>&1") from a command string.
@@ -390,12 +392,15 @@ function splitBySanitized(str, sanitized, delimiter) {
 
 /**
  * Check if a compound command is safe by verifying every segment against the
- * allow list. Supports pipe chains and && chains (where every clause is safe).
- * Other operators — ;, ||, backticks, $(), redirects, single & — are always
- * rejected. 2>&1 is stripped before checking.
+ * allow list. Supports pipe chains, && chains, and ; chains (where every clause
+ * is safe). Other operators — ||, backticks, $(), redirects, single & — are
+ * always rejected. 2>&1 is stripped before checking.
+ *
+ * Splitting order: ; (top-level) → && (within each ; clause) → | (within each &&
+ * sub-clause). Each leaf segment must match an allow-list prefix.
  *
  * Uses a quote-aware tokenizer so that shell metacharacters inside quoted
- * strings (e.g. grep "foo|bar", grep "=>") are not mistaken for operators.
+ * strings (e.g. grep "foo|bar", grep "foo;bar") are not mistaken for operators.
  *
  * @param {string} cmd — the full trimmed command
  * @param {string[]} [allowExtra] — additional allow prefixes from config
@@ -411,8 +416,10 @@ function isSafeCompoundCommand(cmd, allowExtra) {
 
   // Check for truly unsafe operators using the sanitized string so that
   // operators inside quoted content (e.g. grep "=>", grep "foo&&bar") are
-  // not falsely detected.
-  if (TRULY_UNSAFE_OPERATORS.test(sanitized)) return false;
+  // not falsely detected. Strip 2>/dev/null first — it's a common stderr
+  // suppression pattern that's safe, but its ">" would falsely trigger the check.
+  const sanitizedForOpCheck = sanitized.replace(/\s*2>\s*\/dev\/null/g, "");
+  if (TRULY_UNSAFE_OPERATORS.test(sanitizedForOpCheck)) return false;
 
   // Effective allow list = hook defaults + user-configured per-project extras.
   const effectiveAllow =
@@ -470,16 +477,25 @@ function isSafeCompoundCommand(cmd, allowExtra) {
     });
   }
 
-  // Split on && to get top-level clauses using the sanitized string so that
-  // && inside quoted content (e.g. grep "foo&&bar") is not treated as an operator.
-  const andClauses = splitBySanitized(stripped, sanitized, "&&");
+  // Split on ; first — semicolons separate independent commands, each of which
+  // must be safe on its own. Uses sanitized string so ; inside quoted content
+  // (e.g. grep "foo;bar") is not mistaken for a command separator.
+  const semiClauses = splitBySanitized(stripped, sanitized, ";");
 
-  // Every && clause must be non-empty and fully safe (pipe-safe check per clause)
-  return andClauses.every(({ orig, san }) => {
-    const trimmedOrig = orig.trim();
-    const trimmedSan = san.trim();
-    if (!trimmedOrig) return false;
-    return isPipeSegmentSafe(trimmedOrig, trimmedSan);
+  return semiClauses.every(({ orig: semiOrig, san: semiSan }) => {
+    const trimmedSemiOrig = semiOrig.trim();
+    const trimmedSemiSan = semiSan.trim();
+    if (!trimmedSemiOrig) return false;
+
+    // Within each semicolon clause, split on && to get chained sub-commands.
+    const andClauses = splitBySanitized(trimmedSemiOrig, trimmedSemiSan, "&&");
+
+    return andClauses.every(({ orig, san }) => {
+      const trimmedOrig = orig.trim();
+      const trimmedSan = san.trim();
+      if (!trimmedOrig) return false;
+      return isPipeSegmentSafe(trimmedOrig, trimmedSan);
+    });
   });
 }
 
