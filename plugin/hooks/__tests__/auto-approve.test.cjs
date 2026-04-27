@@ -1440,10 +1440,25 @@ describe("classifyByRules — safe compound commands", () => {
     ).not.toBe("allow");
   });
 
-  it("does NOT allow semicolon-separated commands even if both safe", () => {
+  it("allows semicolon-separated commands when all segments are safe", () => {
     expect(
-      classifyByRules("Bash", { command: "ls; cat /etc/passwd" }),
+      classifyByRules("Bash", { command: "ls; cat package.json" }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow semicolon-separated commands when a segment is unsafe", () => {
+    expect(
+      classifyByRules("Bash", { command: "ls; npm install" }),
     ).not.toBe("allow");
+  });
+
+  it("allows grep+pipe+semicolon scenario (real-world)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          'grep -n "name=" /tmp/IconCustom.tsx | head -20; echo "---"; grep -rn "IconCustom" /tmp/src --include="*.tsx" | head -5',
+      }),
+    ).toBe("allow");
   });
 
   it("does NOT allow && chained commands when a segment is unsafe", () => {
@@ -1602,6 +1617,27 @@ describe("classifyByRules — safe compound commands", () => {
       classifyByRules("Bash", { command: "echo `rm -rf /` | grep foo" }),
     ).not.toBe("allow");
   });
+
+  it("allows find with 2>/dev/null stderr suppression", () => {
+    expect(
+      classifyByRules("Bash", { command: "find /tmp -name '*.test*' 2>/dev/null" }),
+    ).toBe("allow");
+  });
+
+  it("allows find 2>/dev/null chained with && and pipe (real-world)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          'find /Users/thi/src -name "OnThisDayView.test*" 2>/dev/null && find /Users/thi/src -name "*.test*" | head -20',
+      }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow stdout redirect to /tmp (data exfiltration)", () => {
+    expect(
+      classifyByRules("Bash", { command: "cat /etc/passwd > /tmp/stolen.txt" }),
+    ).not.toBe("allow");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1609,6 +1645,33 @@ describe("classifyByRules — safe compound commands", () => {
 // ---------------------------------------------------------------------------
 
 describe("isSafeCompoundCommand — direct unit tests", () => {
+  // 2>/dev/null stderr suppression
+  it("allows find with 2>/dev/null stderr redirect", () => {
+    expect(isSafeCompoundCommand("find /tmp -name '*.test*' 2>/dev/null")).toBe(
+      true,
+    );
+  });
+
+  it("allows find 2>/dev/null && find | head chain (real-world)", () => {
+    expect(
+      isSafeCompoundCommand(
+        'find /Users/thi/src -name "OnThisDayView.test*" 2>/dev/null && find /Users/thi/src -name "*.test*" | head -20',
+      ),
+    ).toBe(true);
+  });
+
+  it("allows grep piped to head with 2>/dev/null", () => {
+    expect(
+      isSafeCompoundCommand("grep -rn 'foo' /tmp 2>/dev/null | head -10"),
+    ).toBe(true);
+  });
+
+  it("does NOT allow stdout redirect to /tmp (> /tmp/out.txt)", () => {
+    expect(
+      isSafeCompoundCommand("cat /etc/passwd > /tmp/stolen.txt"),
+    ).toBe(false);
+  });
+
   // Critical: stripStderrRedirect must not match 2>&1 as substring
   it("rejects cmd2>&1 substring bypass (sort2>&1)", () => {
     expect(isSafeCompoundCommand("sort2>&1 file | grep x")).toBe(false);
@@ -1679,8 +1742,28 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
     expect(isSafeCompoundCommand("git status || echo fallback")).toBe(false);
   });
 
-  it("rejects semicolon chain even if both segments are safe", () => {
-    expect(isSafeCompoundCommand("ls; cat package.json")).toBe(false);
+  it("allows semicolon chain when all segments are safe", () => {
+    expect(isSafeCompoundCommand("ls; cat package.json")).toBe(true);
+  });
+
+  it("rejects semicolon chain when a segment is unsafe", () => {
+    expect(isSafeCompoundCommand("ls; npm install")).toBe(false);
+  });
+
+  it("allows multi-semicolon grep+pipe chain (real-world screenshot scenario)", () => {
+    expect(
+      isSafeCompoundCommand(
+        'grep -n "name=" /tmp/IconCustom.tsx | head -20; echo "---"; grep -rn "IconCustom" /tmp/src --include="*.tsx" | head -5',
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects trailing semicolon (empty clause)", () => {
+    expect(isSafeCompoundCommand("ls;")).toBe(false);
+  });
+
+  it("rejects leading semicolon (empty first clause)", () => {
+    expect(isSafeCompoundCommand(";ls")).toBe(false);
   });
 
   it("allows mixed pipe + && where all segments are safe", () => {
