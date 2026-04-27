@@ -15,63 +15,42 @@
 - Add attack angles brainstorm, official solution check, no-placeholders rule, and not-building scope guard to `cf-plan` [#098cd0c](https://github.com/dinhanhthi/coding-friend/commit/098cd0c)
 - Improve `cf-fix` and `cf-sys-debug` with cognitive guardrails: rationalization watch tables, progress signals, bisect mode, structured output formats, and regression guard — debugging now follows evidence, not intuition [#4b768a5](https://github.com/dinhanhthi/coding-friend/commit/4b768a5)
 
-## v0.27.1 (2026-04-23)
-
-- Fix `auto-approve` hook: allow CF plugin scripts (`.claude-plugin/`, `.claude/`) in compound `&&`/`;` commands with safe redirects (`>`, `>>`) — prevents false classifier hits when hook scripts write to log files [#e8e96e4](https://github.com/dinhanhthi/coding-friend/commit/e8e96e4)
-
-## v0.27.0 (2026-04-20)
+## v0.27 (2026-04-23)
 
 - Add chunked plan support to `cf-plan`: large plans (8+ tasks or 3+ phases) are now split into a subfolder with `README.md` + per-phase chunk files; small plans remain as a single file — includes progress tracking table (TODO/IN PROGRESS/DONE icons) in all plan files [#6fc506e](https://github.com/dinhanhthi/coding-friend/commit/6fc506e) [#bfa17d6](https://github.com/dinhanhthi/coding-friend/commit/bfa17d6)
+- Fix `auto-approve` hook: allow CF plugin scripts (`.claude-plugin/`, `.claude/`) in compound `&&`/`;` commands with safe redirects (`>`, `>>`) — prevents false classifier hits when hook scripts write to log files [#e8e96e4](https://github.com/dinhanhthi/coding-friend/commit/e8e96e4)
 
-## v0.26.0 (2026-04-18)
+## v0.26 (2026-04-18)
 
 - Expand `auto-approve` allow list with commonly used read-only commands: `cd`, `tr`, `ps`, `env`, `printenv`, `npm --version`/`-v`/`list`/`ls`, `rustc --version`/`-V`, `rustup show`/`--version`, `go version`, `git shortlog`, `git worktree list`, `git config --list`/`-l` — these frequently appear as segments in compound commands and were previously sent to the LLM classifier or prompted [#40fe1ff](https://github.com/dinhanhthi/coding-friend/commit/40fe1ff)
 
-## v0.25.6 (2026-04-17)
-
-- Skills now show a 2-line memory save summary in confirm steps: the markdown file path and the MCP database indexing status (success or unavailable) — affects `cf-ask`, `cf-remember`, `cf-fix`, `cf-scan`, `cf-warm`, `cf-sys-debug` [#66318a5](https://github.com/dinhanhthi/coding-friend/commit/66318a5)
-
-## v0.25.5 (2026-04-17)
-
-- Fix `auto-approve` hook: implement quote-aware tokenization so shell metacharacters inside quoted strings (e.g. `grep "foo|bar"`, `grep "=>"`) are no longer mistaken for real operators — prevents false positives that triggered unnecessary confirmation prompts [#c83a1fc](https://github.com/dinhanhthi/coding-friend/commit/c83a1fc)
-- Fix `auto-approve` hook: `&&` chains are now auto-approved when all segments match the allow list — e.g. `git status && git log` no longer triggers the LLM classifier; single `&` (background operator) correctly blocked to prevent bypass [#2aa65ed](https://github.com/dinhanhthi/coding-friend/commit/2aa65ed)
-- Fix `cf-review`: remove redundant built-in security-review step that generated a separate non-formatted output, breaking the unified 🚨/⚠️/💡/📋 report [#ec565f7](https://github.com/dinhanhthi/coding-friend/commit/ec565f7)
-
-## v0.25.4 (2026-04-15)
-
-- Fix `auto-approve` LLM classifier timeout increased from 30s to 45s — reduces transient "LLM classification unavailable" fallbacks on slow networks or during cold starts [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
-- Document `autoApprove`, `autoApproveAllowExtra`, `autoApproveIgnore` config keys and `CF_AUTO_APPROVE_*` env vars in `docs/config-schema.md` [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
-
-## v0.25.3 (2026-04-14)
-
-- Fix `/cf-review` skill running in a forked subagent — activation signal now shows immediately and the review report correctly uses the 🚨/⚠️/💡/📋 format instead of the layer-based structure [#51320e4](https://github.com/dinhanhthi/coding-friend/commit/51320e4)
-
-## v0.25.2 (2026-04-11)
-
-- Fix `auto-approve` hook to allow `rm` commands when all targets resolve within the project directory — previously blocked even project-scoped paths, requiring manual approvals for temp file cleanup [#bfd6a9c](https://github.com/dinhanhthi/coding-friend/commit/bfd6a9c)
-- Add `mkdir` to the `auto-approve` hook default allow list — safe and idempotent; no longer requires manual approval when creating context/docs directories [#f5f9b59](https://github.com/dinhanhthi/coding-friend/commit/f5f9b59)
-
-## v0.25.1 (2026-04-07)
-
-- Fix inconsistent heading hierarchy in skill workflow sections — all skills now use `## Workflow` + `### Step N:` pattern consistently (`cf-help`, `cf-learn`, `cf-teach`, `cf-review`, `cf-review-in`, `cf-review-out`) [#71a01dc](https://github.com/dinhanhthi/coding-friend/commit/71a01dc)
-
-## v0.25.0 (2026-04-06)
+## v0.25 (2026-04-17)
 
 - Add `autoApproveIgnore` config — specify Bash command prefixes the `auto-approve` hook should skip classifying, deferring to Claude Code's native `permissions.allow` patterns (DENY rules still enforced) [#6621b61](https://github.com/dinhanhthi/coding-friend/commit/6621b61)
 - Downgrade `cf-implementer` agent from Opus to Sonnet — implementation is a structured, well-defined task; Opus is reserved for planning and complex reviews [#6f3bed3](https://github.com/dinhanhthi/coding-friend/commit/6f3bed3)
+- Fix inconsistent heading hierarchy in skill workflow sections — all skills now use `## Workflow` + `### Step N:` pattern consistently (`cf-help`, `cf-learn`, `cf-teach`, `cf-review`, `cf-review-in`, `cf-review-out`) [#71a01dc](https://github.com/dinhanhthi/coding-friend/commit/71a01dc)
+- Fix `auto-approve` hook to allow `rm` commands when all targets resolve within the project directory — previously blocked even project-scoped paths, requiring manual approvals for temp file cleanup [#bfd6a9c](https://github.com/dinhanhthi/coding-friend/commit/bfd6a9c)
+- Add `mkdir` to the `auto-approve` hook default allow list — safe and idempotent; no longer requires manual approval when creating context/docs directories [#f5f9b59](https://github.com/dinhanhthi/coding-friend/commit/f5f9b59)
+- Fix `/cf-review` skill running in a forked subagent — activation signal now shows immediately and the review report correctly uses the 🚨/⚠️/💡/📋 format instead of the layer-based structure [#51320e4](https://github.com/dinhanhthi/coding-friend/commit/51320e4)
+- Fix `auto-approve` LLM classifier timeout increased from 30s to 45s — reduces transient "LLM classification unavailable" fallbacks on slow networks or during cold starts [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
+- Document `autoApprove`, `autoApproveAllowExtra`, `autoApproveIgnore` config keys and `CF_AUTO_APPROVE_*` env vars in `docs/config-schema.md` [#4b24c8e](https://github.com/dinhanhthi/coding-friend/commit/4b24c8e)
+- Fix `auto-approve` hook: implement quote-aware tokenization so shell metacharacters inside quoted strings (e.g. `grep "foo|bar"`, `grep "=>"`) are no longer mistaken for real operators — prevents false positives that triggered unnecessary confirmation prompts [#c83a1fc](https://github.com/dinhanhthi/coding-friend/commit/c83a1fc)
+- Fix `auto-approve` hook: `&&` chains are now auto-approved when all segments match the allow list — e.g. `git status && git log` no longer triggers the LLM classifier; single `&` (background operator) correctly blocked to prevent bypass [#2aa65ed](https://github.com/dinhanhthi/coding-friend/commit/2aa65ed)
+- Fix `cf-review`: remove redundant built-in security-review step that generated a separate non-formatted output, breaking the unified 🚨/⚠️/💡/📋 report [#ec565f7](https://github.com/dinhanhthi/coding-friend/commit/ec565f7)
+- Skills now show a 2-line memory save summary in confirm steps: the markdown file path and the MCP database indexing status (success or unavailable) — affects `cf-ask`, `cf-remember`, `cf-fix`, `cf-scan`, `cf-warm`, `cf-sys-debug` [#66318a5](https://github.com/dinhanhthi/coding-friend/commit/66318a5)
 
-## v0.24.0 (2026-04-06)
+## v0.24 (2026-04-06)
 
 - Add per-account alias support to statusline — users can assign custom display names for each login account via `cf statusline`, `cf config`, or `cf init`; aliases are stored as an email-keyed map in `statusline.accountAliases` and replace the default name/email display [#126c11c](https://github.com/dinhanhthi/coding-friend/commit/126c11c)
 - Auto-approve `cargo fmt` as a safe formatter in the `auto-approve` hook [#1b79b39](https://github.com/dinhanhthi/coding-friend/commit/1b79b39)
 
-## v0.23.0 (2026-04-06)
+## v0.23 (2026-04-06)
 
 - Move test runners and build tools (`npm test`, `npm run`, `npx jest`, `npx vitest`, `npx tsx`, `npx eslint`) from auto-approve allow list to ask list — these execute arbitrary code from repo files and could be exploited via prompt injection [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
 - Add Cargo support to `auto-approve` hook — read-only subcommands (`cargo --version`, `cargo tree`, `cargo metadata`, `cargo search`, `cargo help`) auto-approve; all others (`cargo check`, `cargo build`, `cargo test`, etc.) require confirmation due to `build.rs` and proc-macro execution [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
 - Add `autoApproveAllowExtra` config field — users can extend the auto-approve allow list per-project in `.coding-friend/config.json` to reduce prompts in trusted repos (DENY patterns and safety checks still apply) [#16c51cc](https://github.com/dinhanhthi/coding-friend/commit/16c51cc)
 
-## v0.22.0 (2026-04-05)
+## v0.22 (2026-04-05)
 
 - Refactor `/cf-review` into multi-agent orchestrator that dispatches 5 specialist agents (`cf-reviewer-plan`, `cf-reviewer-security`, `cf-reviewer-quality`, `cf-reviewer-tests`, `cf-reviewer-rules`) in parallel and merges results via `cf-reviewer-reducer` [#e9c1d22](https://github.com/dinhanhthi/coding-friend/commit/e9c1d22)
 - Add structured context handoff and auto-retry for `cf-implementer` agent (context files, result signals, retry on failure) [#1d58b79](https://github.com/dinhanhthi/coding-friend/commit/1d58b79)
@@ -85,19 +64,19 @@
 - Refactor statusline to move model to first line and dedicate a row to account info [#a93e975](https://github.com/dinhanhthi/coding-friend/commit/a93e975)
 - Add troubleshooting reference and enhance auto-approve documentation [#5871858](https://github.com/dinhanhthi/coding-friend/commit/5871858)
 
-## v0.21.0 (2026-04-01)
+## v0.21 (2026-04-01)
 
 - Add `/cf-warm` skill — catch up after absence by summarizing git history for a specific user, with dry-run safety, topic clustering, and memory indexing [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)
 - Expand CLAUDE.md sync to all memory categories with opt-in `sync_to_claude_md` parameter [#a0b2a5b](https://github.com/dinhanhthi/coding-friend/commit/a0b2a5b)
 - Use label-based folder names instead of UUIDs in `/cf-session` [#674bec8](https://github.com/dinhanhthi/coding-friend/commit/674bec8)
 - Add stats count verification and `StatsSection` update rules to `cf-plan-custom` guide [#bfc7a4e](https://github.com/dinhanhthi/coding-friend/commit/bfc7a4e)
 
-## v0.20.0 (2026-03-31)
+## v0.20 (2026-03-31)
 
 - Add multi-reviewer support and flatten result paths in `/cf-review-out` and `/cf-review-in` [#a149f02](https://github.com/dinhanhthi/coding-friend/commit/a149f02)
 - Fix `auto-approve` hook to use `CLAUDE_PROJECT_DIR` for project root detection [#3407436](https://github.com/dinhanhthi/coding-friend/commit/3407436)
 
-## v0.19.0 (2026-03-30)
+## v0.19 (2026-03-30)
 
 - Add `/cf-teach` personal teacher skill — conversational storytelling explanations of what the AI did and why [#4eae799](https://github.com/dinhanhthi/coding-friend/commit/4eae799)
 - Add `cf-plan` custom guide for skill and agent creation workflows [#f9c2861](https://github.com/dinhanhthi/coding-friend/commit/f9c2861)
@@ -105,99 +84,72 @@
 - Fix `cf-review-out` and `gather-diff` to include untracked files and equalize review scope [#84d7818](https://github.com/dinhanhthi/coding-friend/commit/84d7818)
 - Fix `cf-reviewer` format rules to enforce emoji-grouped bullet lists [#108c53a](https://github.com/dinhanhthi/coding-friend/commit/108c53a)
 
-## v0.18.1 (2026-03-30)
-
-- Fix and standardize custom guide integration across all skills [#faf48f4](https://github.com/dinhanhthi/coding-friend/commit/faf48f4) [#dffe764](https://github.com/dinhanhthi/coding-friend/commit/dffe764)
-
-## v0.18.0 (2026-03-29)
+## v0.18 (2026-03-30)
 
 - Refactor `auto-approve` hook to Claude Code Auto-Mode style 3-step classification (auto-approve → LLM classify → block) [#4c57e1f](https://github.com/dinhanhthi/coding-friend/commit/4c57e1f)
 - Show CLAUDE.md update status in `cf-memory` output instead of raw file path [#f2b9022](https://github.com/dinhanhthi/coding-friend/commit/f2b9022)
 - Restructure code review output to unified 4-category format with consistent emoji headers [#2857066](https://github.com/dinhanhthi/coding-friend/commit/2857066) [#bf9c94e](https://github.com/dinhanhthi/coding-friend/commit/bf9c94e)
 - Add critical verification step to `cf-review-in` before acting on external review findings [#8b33fc3](https://github.com/dinhanhthi/coding-friend/commit/8b33fc3)
 - Add skill invocation guard to prevent false positive skill activation when discussing skills [#9eee92a](https://github.com/dinhanhthi/coding-friend/commit/9eee92a)
+- Fix and standardize custom guide integration across all skills [#faf48f4](https://github.com/dinhanhthi/coding-friend/commit/faf48f4) [#dffe764](https://github.com/dinhanhthi/coding-friend/commit/dffe764)
 
-## v0.17.0 (2026-03-27)
+## v0.17 (2026-03-27)
 
 - Make `cf-help` an auto-invoked skill — activates automatically when users ask about Coding Friend [#15777a7](https://github.com/dinhanhthi/coding-friend/commit/15777a7)
 - Make `/cf-optimize` auto-invoke `/cf-review` after optimization completes [#0301bbc](https://github.com/dinhanhthi/coding-friend/commit/0301bbc)
 - Remove quality evaluation section from website landing page and docs sidebar [#f397e02](https://github.com/dinhanhthi/coding-friend/commit/f397e02)
 
-## v0.16.1 (2026-03-27)
-
-- Consolidate review system into unified `cf-reviewer` agent with CLAUDE.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
-
-## v0.16.0 (2026-03-27)
+## v0.16 (2026-03-27)
 
 - Add discovery & brainstorm phase to `/cf-plan` — 3 rounds of probing questions, feasibility challenges, and alternative exploration before planning [#1d70778](https://github.com/dinhanhthi/coding-friend/commit/1d70778)
 - Add `--fast` and `--hard` mode flags to `/cf-plan` with auto-detect — fast mode skips discovery for simple tasks, hard mode adds risk analysis, rollback strategy, and review gates [#fc68f25](https://github.com/dinhanhthi/coding-friend/commit/fc68f25)
 - Move `token-counts.json` output from `plugin/generated/` to `website/src/generated/` — website reads tiers dynamically, eliminating hardcoded values [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
 - Fix `cf-review-out` tier badge (medium → low) [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
+- Consolidate review system into unified `cf-reviewer` agent with CLAUDE.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
 
-## v0.15.2 (2026-03-26)
+## v0.15 (2026-03-26)
 
+- Add auto-approve `PreToolUse` hook for smart permission gating with two-tier classification: fast rule-based patterns (instant) and LLM fallback (Sonnet, ~2-5s) [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+- Add opt-in `autoApprove` config option in `.coding-friend/config.json` [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
+- Fix `auto-approve.cjs` hook not executable — add missing execute permission [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
+- Add stderr error logging to `auto-approve.cjs` catch blocks with `[auto-approve]` prefix for better debuggability [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
+- Fix `/cf-review-out` to include all branch commits in diff and prevent false positives [#87f73c1](https://github.com/dinhanhthi/coding-friend/commit/87f73c1)
 - Fix `auto-approve` hook overriding Claude Code's `allowedTools` for MCP tools and built-in tools — unknown non-Bash tools now pass through to Claude Code's own permission system instead of LLM classification [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
 - Expand `ALWAYS_ALLOW_TOOLS` with 14 safe built-in Claude Code tools (`Skill`, `ToolSearch`, `TaskCreate`/`TaskUpdate`/`TaskGet`/`TaskList`/`TaskOutput`/`TaskStop`, `SendMessage`, `EnterPlanMode`/`ExitPlanMode`, `ListMcpResourcesTool`, `ReadMcpResourceTool`, `AskUserQuestion`) [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
 - Auto-approve coding-friend plugin scripts with `fs.realpathSync()` validation — resolves symlinks and verifies script exists on disk [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
 - Restrict `cf` CLI auto-approval to known safe subcommands only — prevents collision with Cloud Foundry CLI and other `cf` binaries [#3566f9b](https://github.com/dinhanhthi/coding-friend/commit/3566f9b)
 - Remove unused `/release` skill (already integrated into `cf-ship-custom`) [#a35d7aa](https://github.com/dinhanhthi/coding-friend/commit/a35d7aa)
 
-## v0.15.1 (2026-03-26)
-
-- Fix `auto-approve.cjs` hook not executable — add missing execute permission [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
-- Add stderr error logging to `auto-approve.cjs` catch blocks with `[auto-approve]` prefix for better debuggability [#4655722](https://github.com/dinhanhthi/coding-friend/commit/4655722)
-- Fix `/cf-review-out` to include all branch commits in diff and prevent false positives [#87f73c1](https://github.com/dinhanhthi/coding-friend/commit/87f73c1)
-
-## v0.15.0 (2026-03-26)
-
-- Add auto-approve `PreToolUse` hook for smart permission gating with two-tier classification: fast rule-based patterns (instant) and LLM fallback (Sonnet, ~2-5s) [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
-- Add opt-in `autoApprove` config option in `.coding-friend/config.json` [#7cff393](https://github.com/dinhanhthi/coding-friend/commit/7cff393)
-
-## v0.14.2 (2026-03-26)
-
-- Internal: consolidate independent versioning for bundled libs [#93b77cb](https://github.com/dinhanhthi/coding-friend/commit/93b77cb)
-
-## v0.14.1 (2026-03-24)
-
-- Clarify changelog entry rules to reflect net changes per version in `cf-ship-custom` guide [#55a6135](https://github.com/dinhanhthi/coding-friend/commit/55a6135)
-
-## v0.14.0 (2026-03-23)
+## v0.14 (2026-03-26)
 
 - Add `/cf-review-out` and `/cf-review-in` skills for cross-agent code review [#9d42044](https://github.com/dinhanhthi/coding-friend/commit/9d42044)
 - Add account info component to statusline with `~/.claude.json` fallback [#fd9ee3d](https://github.com/dinhanhthi/coding-friend/commit/fd9ee3d)
 - Update missing new skills in bootstrap context [#453228f](https://github.com/dinhanhthi/coding-friend/commit/453228f)
+- Clarify changelog entry rules to reflect net changes per version in `cf-ship-custom` guide [#55a6135](https://github.com/dinhanhthi/coding-friend/commit/55a6135)
+- Internal: consolidate independent versioning for bundled libs [#93b77cb](https://github.com/dinhanhthi/coding-friend/commit/93b77cb)
 
-## v0.13.0 (2026-03-21)
+## v0.13 (2026-03-21)
 
 - Improve skills and agents with enhanced instructions for evaluation and benchmarking [#bb1352b](https://github.com/dinhanhthi/coding-friend/commit/bb1352b)
 - Add `index_only` option to `memory_store` calls in `cf-scan`, `cf-ask`, `cf-remember`, `cf-fix`, `cf-sys-debug` to prevent duplicate file creation [#7f56711](https://github.com/dinhanhthi/coding-friend/commit/7f56711)
 - Add emoji to heading in reports of `cf-review` and `cf-code-reviewer` [#48fda77](https://github.com/dinhanhthi/coding-friend/commit/48fda77)
 - Add `cf-explorer` agent integration to `cf-research` for codebase context gathering [#51aeba9](https://github.com/dinhanhthi/coding-friend/commit/51aeba9)
 
-## v0.12.2 (2026-03-20)
-
-- Update bootstrap context to include `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)
-
-## v0.12.1 (2026-03-20)
-
-- Add detailed agent descriptions and enhance `cf-tdd` trigger phrases [#c9e9164](https://github.com/dinhanhthi/coding-friend/commit/c9e9164)
-
-## v0.12.0 (2026-03-20)
+## v0.12 (2026-03-20)
 
 - Add token usage visibility across UI with tier icons and documentation [#4227860](https://github.com/dinhanhthi/coding-friend/commit/4227860)
 - Extract hardcoded bash commands into scripts for skills [#4338b91](https://github.com/dinhanhthi/coding-friend/commit/4338b91)
+- Add detailed agent descriptions and enhance `cf-tdd` trigger phrases [#c9e9164](https://github.com/dinhanhthi/coding-friend/commit/c9e9164)
+- Update bootstrap context to include `cf memory config` command [#783dbb6](https://github.com/dinhanhthi/coding-friend/commit/783dbb6)
 
-## v0.11.1 (2026-03-17)
-
-- Make `memory_store` MCP calls mandatory and explicit in `cf-remember`, `cf-ask`, `cf-fix`, `cf-sys-debug` — split into separate MANDATORY steps to prevent skipping [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
-- Add `cf-remember` to smart capture list in bootstrap context [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
-
-## v0.11.0 (2026-03-17)
+## v0.11 (2026-03-17)
 
 - Add CF Memory priority to skills and agents — memory-aware skills now prioritize recall before task execution [#2f5724e](https://github.com/dinhanhthi/coding-friend/commit/2f5724e)
 - Add built-in security-review skill to `cf-review` workflow [#812794a](https://github.com/dinhanhthi/coding-friend/commit/812794a)
 - Force `cf-planner` agent to always use opus model [#79a94b8](https://github.com/dinhanhthi/coding-friend/commit/79a94b8)
 - Compact statusline layout with brighter green levels [#1d7bef1](https://github.com/dinhanhthi/coding-friend/commit/1d7bef1)
+- Make `memory_store` MCP calls mandatory and explicit in `cf-remember`, `cf-ask`, `cf-fix`, `cf-sys-debug` — split into separate MANDATORY steps to prevent skipping [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
+- Add `cf-remember` to smart capture list in bootstrap context [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
 
 ## v0.10 (2026-03-17)
 
