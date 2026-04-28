@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.29.1 (2026-04-29)
+
+- Fix `auto-approve`: allow `xargs` with safe read-only subcommands (`grep`, `rg`, `wc`, `head`, `tail`, `ls`, `cat`, `stat`, `diff`, `echo`, `sort`, `uniq`, `cut`, `tr`, `jq`, `file`) — `xargs` with destructive subcommands (`rm`, `sh`, `bash`, `curl`, `find`) still requires confirmation [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+- Fix `auto-approve`: allow `rm` targeting project files in compound commands (`rm docs/f.json && echo done` auto-approves when rm path is inside the project directory) [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+- Fix `cf-reviewer` and `cf-reviewer-codex` agent prompts to reflect correct heading structure and review format [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+
 ## v0.29.0 (2026-04-28)
 
 - Add Codex cross-engine review to `/cf-review` (opt-in) — when `codex.enabled = true` in config and the `codex` CLI is installed, `cf-reviewer` dispatches a 6th parallel specialist via `codex:codex-rescue`; cross-engine agreement (Claude + Codex flagging the same `file:line`) bumps severity one tier in the reducer [auto-approve + config]
