@@ -24,10 +24,16 @@ You are performing a **read-only code review**. Do NOT write, edit, or create an
 
 Review the following code changes and report findings. Focus on issues a second reviewer (different AI engine) would catch that might be missed: logic errors, edge cases, naming inconsistencies, security anti-patterns, test gaps, and algorithmic correctness.
 
-## Review Mode: {{MODE}}
+## Review Mode: {{MODE}} | Effort: {{EFFORT}}
 
+**Mode:**
 - STANDARD: thorough review of all dimensions
 - DEEP: deep analysis — include edge case walkthroughs and detailed reasoning for every Critical finding
+
+**Effort** (controls review depth):
+- `minimal` / `low`: flag Critical issues only; skip Suggestions
+- `medium`: standard review — Critical + Important + top Suggestions
+- `high` / `xhigh`: exhaustive review — trace all data flows, enumerate all edge cases, include full reasoning for every finding
 
 ## Input
 

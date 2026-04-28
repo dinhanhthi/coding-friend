@@ -82,10 +82,11 @@ export interface CodingFriendConfig {
 }
 
 export const DEFAULT_CONFIG: Required<
-  Pick<CodingFriendConfig, "language" | "docsDir">
+  Pick<CodingFriendConfig, "language" | "docsDir" | "codex">
 > & { learn: Required<LearnConfig> } = {
   language: "en",
   docsDir: "docs",
+  codex: { enabled: false, modes: ["STANDARD", "DEEP"], effort: "medium" },
   learn: {
     language: "en",
     outputDir: "docs/learn",

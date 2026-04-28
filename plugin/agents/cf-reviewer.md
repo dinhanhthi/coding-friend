@@ -74,11 +74,13 @@ Before launching agents, check Codex availability:
 
 ```bash
 CODEX_ENABLED=false
+CODEX_EFFORT="medium"
 # Read config
 CONFIG_FILE=".coding-friend/config.json"
 if [ -f "$CONFIG_FILE" ]; then
   CODEX_CFG_ENABLED=$(jq -r '.codex.enabled // false' "$CONFIG_FILE" 2>/dev/null)
   CODEX_CFG_MODES=$(jq -r '(.codex.modes // ["STANDARD","DEEP"]) | join(",")' "$CONFIG_FILE" 2>/dev/null)
+  CODEX_EFFORT=$(jq -r '.codex.effort // "medium"' "$CONFIG_FILE" 2>/dev/null)
 else
   CODEX_CFG_ENABLED="false"
   CODEX_CFG_MODES="STANDARD,DEEP"
@@ -97,7 +99,7 @@ If `CODEX_ENABLED=true` for the current mode, also dispatch:
 ```
 Agent(
   subagent_type = "codex:codex-rescue",
-  prompt = <contents of cf-reviewer-codex.md prompt template, with {{DIFF}} and {{FILES}} replaced with actual content, {{MODE}} replaced with current mode>,
+  prompt = <contents of cf-reviewer-codex.md prompt template, with {{DIFF}} and {{FILES}} replaced with actual content, {{MODE}} replaced with current mode, {{EFFORT}} replaced with $CODEX_EFFORT>,
   run_in_background = false
 )
 ```

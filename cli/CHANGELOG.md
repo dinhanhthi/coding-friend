@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.33.0 (2026-04-28)
+
+- Add `codex` config block schema to CLI config validation: `enabled`, `modes`, `effort` fields with Zod validation, typo suggestions for unknown nested keys (`codex.enabledd` → warns), and default values (`enabled: false`, `modes: ["STANDARD", "DEEP"]`, `effort: "medium"`)
+
 ## v1.32.2 (2026-04-23)
 
 - Simplify `cf mcp` output to a single clean JSON block — removes section headers and `jq` transforms; uses `npx -y coding-friend-cli mcp-serve <dir>` format consistently; adds a bootstrap guard so `cf mcp` without prior `cf memory init` prints a setup reminder instead of a broken config [#461bfe3](https://github.com/dinhanhthi/coding-friend/commit/461bfe3) [#7fbcfd6](https://github.com/dinhanhthi/coding-friend/commit/7fbcfd6) [#6595a27](https://github.com/dinhanhthi/coding-friend/commit/6595a27)
