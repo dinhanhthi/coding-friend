@@ -27,10 +27,12 @@ Review the following code changes and report findings. Focus on issues a second 
 ## Review Mode: {{MODE}} | Effort: {{EFFORT}}
 
 **Mode:**
+
 - STANDARD: thorough review of all dimensions
 - DEEP: deep analysis — include edge case walkthroughs and detailed reasoning for every Critical finding
 
 **Effort** (controls review depth):
+
 - `minimal` / `low`: flag Critical issues only; skip Suggestions
 - `medium`: standard review — Critical + Important + top Suggestions
 - `high` / `xhigh`: exhaustive review — trace all data flows, enumerate all edge cases, include full reasoning for every finding

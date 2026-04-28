@@ -1,5 +1,7 @@
 # TODO
 
+> Last reviewed: 2026-04-28
+
 ## Cross-Platform Support
 
 Currently coding-friend supports Claude Code only. Future versions should support other coding agents.
