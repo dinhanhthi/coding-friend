@@ -22,13 +22,15 @@ You are a code review orchestrator. Your job is to dispatch specialist review ag
 
 ## Review Modes
 
-| Mode         | Agents dispatched                                    |
-| ------------ | ---------------------------------------------------- |
-| **QUICK**    | security + quality + tests (3 agents)                |
-| **STANDARD** | plan + security + quality + tests + rules (5 agents) |
-| **DEEP**     | plan + security + quality + tests + rules (5 agents) |
+| Mode         | Agents dispatched (Claude)                           | Codex          |
+| ------------ | ---------------------------------------------------- | -------------- |
+| **QUICK**    | security + quality + tests (3 agents)                | —              |
+| **STANDARD** | plan + security + quality + tests + rules (5 agents) | ✓ if available |
+| **DEEP**     | plan + security + quality + tests + rules (5 agents) | ✓ if available |
 
 QUICK mode skips plan alignment and project rules agents for faster feedback on small changes.
+
+Codex runs as a 6th specialist in STANDARD/DEEP when: `config.codex.enabled === true` AND `codex` CLI is in PATH (`command -v codex`). When Codex is unavailable or not configured, silently skip it — do not warn or error.
 
 ## Orchestration Workflow
 
@@ -50,20 +52,59 @@ Launch specialist agents **in parallel** using the Agent tool. Each agent receiv
 - `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
 - `cf-reviewer-tests` (model: haiku) — Test coverage
 
-**STANDARD / DEEP mode** — dispatch all 5 agents in parallel:
+**STANDARD / DEEP mode** — dispatch all 5 Claude agents in parallel, plus Codex if available:
 
 - `cf-reviewer-plan` (model: sonnet) — Plan alignment
 - `cf-reviewer-security` (model: sonnet) — Security vulnerabilities
 - `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
 - `cf-reviewer-tests` (model: haiku) — Test coverage
 - `cf-reviewer-rules` (model: haiku) — Project rules compliance
+- **Codex (conditional)** — Cross-engine review via `codex:codex-rescue` subagent (see Codex Dispatch below)
 
-For each agent, provide:
+For each Claude agent, provide:
 
 1. The diff content
 2. The full content of all changed files
 3. The review mode (QUICK / STANDARD / DEEP) — DEEP mode means extended analysis: data flow tracing, exploit scenarios for security, deeper edge case analysis for tests
 4. Any additional context relevant to that specialist (e.g., plan docs for cf-reviewer-plan)
+
+#### Codex Dispatch (STANDARD / DEEP only)
+
+Before launching agents, check Codex availability:
+
+```bash
+CODEX_ENABLED=false
+# Read config
+CONFIG_FILE=".coding-friend/config.json"
+if [ -f "$CONFIG_FILE" ]; then
+  CODEX_CFG_ENABLED=$(jq -r '.codex.enabled // false' "$CONFIG_FILE" 2>/dev/null)
+  CODEX_CFG_MODES=$(jq -r '(.codex.modes // ["STANDARD","DEEP"]) | join(",")' "$CONFIG_FILE" 2>/dev/null)
+else
+  CODEX_CFG_ENABLED="false"
+  CODEX_CFG_MODES="STANDARD,DEEP"
+fi
+# Check CLI availability and whether current mode is in configured modes list
+if [ "$CODEX_CFG_ENABLED" = "true" ] && command -v codex >/dev/null 2>&1; then
+  case ",$CODEX_CFG_MODES," in
+    *,"$MODE",*)
+      CODEX_ENABLED=true ;;
+  esac
+fi
+```
+
+If `CODEX_ENABLED=true` for the current mode, also dispatch:
+
+```
+Agent(
+  subagent_type = "codex:codex-rescue",
+  prompt = <contents of cf-reviewer-codex.md prompt template, with {{DIFF}} and {{FILES}} replaced with actual content, {{MODE}} replaced with current mode>,
+  run_in_background = false
+)
+```
+
+Read the prompt template from `plugin/agents/cf-reviewer-codex.md` (the section after `## Prompt Template`). The prompt MUST include the phrase "Do NOT write, edit, or create any files" to override codex-rescue's default write behavior.
+
+If the Codex agent call fails or times out, treat the result as empty — do not retry, do not surface an error. Claude-only review continues normally. Track whether Codex ran successfully as `CODEX_RAN=true|false` for the banner metadata.
 
 ### Step 3: Collect Results
 
@@ -71,10 +112,10 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
+Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated — including the Codex output if it ran. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
-2. Rank by multi-agent agreement then confidence
+2. Rank by multi-agent agreement then confidence — cross-engine agreement (Claude specialist + Codex both flag same issue) is the strongest signal
 3. Output a unified report in the standard format
 
 ### Step 5: Reducer Sanity Check
@@ -95,6 +136,14 @@ Before returning, cross-check the reducer's output against the raw specialist ou
 Return the reducer's output (with the optional sanity warning prepended) as the final review report. Do NOT add your own findings — the specialists and reducer handle everything.
 
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
+
+If Codex ran successfully (`CODEX_RAN=true`), append this metadata line at the very end (after the report, on its own line — the cf-review skill reads this to update the banner):
+
+```
+CODEX_RAN=true
+```
+
+If Codex was skipped or failed, do not append anything.
 
 ## Output Quality Gates
 

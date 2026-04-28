@@ -497,9 +497,25 @@ describe("classifyByRules — rm within project directory (allow)", () => {
     );
   });
 
-  it("does NOT allow rm with shell operators (compound command)", () => {
+  it("allows rm project file chained with echo (compound command)", () => {
     expect(
       classifyByRules("Bash", { command: "rm docs/context/f.md && echo done" }),
+    ).toBe("allow");
+  });
+
+  it("allows rm absolute project path && echo (real-world screenshot)", () => {
+    const absPath =
+      process.cwd() + "/docs/context/1745827200-codex-config-schema.json";
+    expect(
+      classifyByRules("Bash", {
+        command: `rm ${absPath} && echo "cleaned"`,
+      }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow rm outside project chained with echo", () => {
+    expect(
+      classifyByRules("Bash", { command: 'rm /etc/passwd && echo "done"' }),
     ).not.toBe("allow");
   });
 
@@ -1441,15 +1457,15 @@ describe("classifyByRules — safe compound commands", () => {
   });
 
   it("allows semicolon-separated commands when all segments are safe", () => {
-    expect(
-      classifyByRules("Bash", { command: "ls; cat package.json" }),
-    ).toBe("allow");
+    expect(classifyByRules("Bash", { command: "ls; cat package.json" })).toBe(
+      "allow",
+    );
   });
 
   it("does NOT allow semicolon-separated commands when a segment is unsafe", () => {
-    expect(
-      classifyByRules("Bash", { command: "ls; npm install" }),
-    ).not.toBe("allow");
+    expect(classifyByRules("Bash", { command: "ls; npm install" })).not.toBe(
+      "allow",
+    );
   });
 
   it("allows grep+pipe+semicolon scenario (real-world)", () => {
@@ -1620,7 +1636,9 @@ describe("classifyByRules — safe compound commands", () => {
 
   it("allows find with 2>/dev/null stderr suppression", () => {
     expect(
-      classifyByRules("Bash", { command: "find /tmp -name '*.test*' 2>/dev/null" }),
+      classifyByRules("Bash", {
+        command: "find /tmp -name '*.test*' 2>/dev/null",
+      }),
     ).toBe("allow");
   });
 
@@ -1636,6 +1654,56 @@ describe("classifyByRules — safe compound commands", () => {
   it("does NOT allow stdout redirect to /tmp (data exfiltration)", () => {
     expect(
       classifyByRules("Bash", { command: "cat /etc/passwd > /tmp/stolen.txt" }),
+    ).not.toBe("allow");
+  });
+
+  // xargs with safe subcommands
+  it("allows xargs grep in pipe chain (real-world screenshot)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          'find /Users/thi/git/xJournal/src -type f \\( -name "*.tsx" -o -name "*.ts" \\) | xargs grep -l -i "button" 2>/dev/null | head -20',
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows xargs grep simple pipe", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "find . -name '*.ts' | xargs grep -l 'TODO'",
+      }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow xargs rm (destructive)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "find . -name '*.tmp' | xargs rm",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow xargs sh (arbitrary execution)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "find . -name '*.sh' | xargs sh",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow xargs find -exec rm (bypass via find subcommand)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "find /home | xargs find -exec rm {} +",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow xargs find (find is not a safe xargs subcommand)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "find . -name '*.ts' | xargs find",
+      }),
     ).not.toBe("allow");
   });
 });
@@ -1667,9 +1735,9 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
   });
 
   it("does NOT allow stdout redirect to /tmp (> /tmp/out.txt)", () => {
-    expect(
-      isSafeCompoundCommand("cat /etc/passwd > /tmp/stolen.txt"),
-    ).toBe(false);
+    expect(isSafeCompoundCommand("cat /etc/passwd > /tmp/stolen.txt")).toBe(
+      false,
+    );
   });
 
   // Critical: stripStderrRedirect must not match 2>&1 as substring
@@ -3315,5 +3383,82 @@ describe("isSafeCompoundCommand — quote-aware: complex edge cases", () => {
   // --- Backslash-pipe outside quotes (\| re-merge path) ---
   it("allows grep with \\| alternation outside quotes piped to wc -l", () => {
     expect(isSafeCompoundCommand('grep "foo\\|bar" file | wc -l')).toBe(true);
+  });
+
+  // xargs — safe subcommands
+  it("allows xargs grep (basic)", () => {
+    expect(
+      isSafeCompoundCommand("find . -name '*.ts' | xargs grep -l 'TODO'"),
+    ).toBe(true);
+  });
+
+  it("allows xargs grep with -n1 flag", () => {
+    expect(
+      isSafeCompoundCommand("find . -name '*.ts' | xargs -n1 grep 'TODO'"),
+    ).toBe(true);
+  });
+
+  it("allows xargs grep with -0 flag", () => {
+    expect(isSafeCompoundCommand("find . -print0 | xargs -0 grep 'TODO'")).toBe(
+      true,
+    );
+  });
+
+  it("allows xargs wc -l", () => {
+    expect(isSafeCompoundCommand("find . -name '*.ts' | xargs wc -l")).toBe(
+      true,
+    );
+  });
+
+  it("allows xargs head", () => {
+    expect(
+      isSafeCompoundCommand("find . -name '*.log' | xargs head -n 5"),
+    ).toBe(true);
+  });
+
+  it("allows xargs with 2>/dev/null (real-world screenshot)", () => {
+    expect(
+      isSafeCompoundCommand(
+        'find /Users/thi/git/xJournal/src -type f \\( -name "*.tsx" -o -name "*.ts" \\) | xargs grep -l -i "button" 2>/dev/null | head -20',
+      ),
+    ).toBe(true);
+  });
+
+  it("does NOT allow xargs rm", () => {
+    expect(isSafeCompoundCommand("find . -name '*.tmp' | xargs rm")).toBe(
+      false,
+    );
+  });
+
+  it("does NOT allow xargs sh", () => {
+    expect(isSafeCompoundCommand("find . -name '*.sh' | xargs sh")).toBe(false);
+  });
+
+  it("does NOT allow xargs bash", () => {
+    expect(isSafeCompoundCommand("ls | xargs bash")).toBe(false);
+  });
+
+  it("does NOT allow xargs curl", () => {
+    expect(isSafeCompoundCommand("cat urls.txt | xargs curl")).toBe(false);
+  });
+
+  it("does NOT allow xargs find (find as xargs subcommand)", () => {
+    expect(isSafeCompoundCommand("find . -name '*.ts' | xargs find")).toBe(
+      false,
+    );
+  });
+
+  it("does NOT allow xargs find -exec rm (bypass vector)", () => {
+    expect(isSafeCompoundCommand("find /home | xargs find -exec rm {} +")).toBe(
+      false,
+    );
+  });
+
+  it("allows xargs -I PLACEHOLDER grep (separate -I arg)", () => {
+    expect(
+      isSafeCompoundCommand(
+        "find . -name '*.ts' | xargs -I FILE grep TODO FILE",
+      ),
+    ).toBe(true);
   });
 });
