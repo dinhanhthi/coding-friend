@@ -6,6 +6,8 @@ This is a **version bump + ship + release** operation. Run these steps BEFORE th
 
 ### Step B1: Get bump context
 
+**Run this ALWAYS — even when the working tree is clean.** A clean working tree means changes are already committed and pushed; it does NOT mean there is nothing to release. Tags may not yet exist for the current file versions.
+
 ```bash
 bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh [package-arg] [level-arg]
 ```
@@ -120,7 +122,7 @@ Check CI/CD status:
 - NEVER add duplicate changelog entries. One feature = one bullet. Entries must reflect net changes vs the previous released version — do NOT list intermediate additions/removals that cancel each other out within the same version.
 - Changelog sections use today's date directly — NEVER use `(unpublished)`.
 - If a tag already exists, do NOT force-create tags — error and stop.
-- NEVER push tags without user confirmation (ask once before pushing all tags).
+- Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
 ## After
 
