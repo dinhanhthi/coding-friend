@@ -48,7 +48,7 @@ If output is not empty, integrate the returned sections into this workflow:
 1. Read `$ARGUMENTS` as the question
 2. If no question provided, ask the user what they want to know
 3. Identify keywords and likely relevant areas (modules, features, patterns)
-4. **Classify the question type** — check if the question is a *flow question*. A flow question asks about how something works end-to-end, how components interact, or what happens when a process runs. Trigger words: "how does X work", "flow of", "lifecycle", "sequence", "process", "when X happens", "walk me through", "how are X connected", "what triggers", "what happens when", "pipeline", "chain". Non-flow questions (lookup/definition/pattern/why) do NOT trigger this path.
+4. **Classify the question type** — check if the question is a _flow question_. A flow question asks about how something works end-to-end, how components interact, or what happens when a process runs. Trigger words: "how does X work", "flow of", "lifecycle", "sequence", "process", "when X happens", "walk me through", "how are X connected", "what triggers", "what happens when", "pipeline", "chain". Non-flow questions (lookup/definition/pattern/why) do NOT trigger this path.
 
    Set `IS_FLOW_QUESTION = true/false` for use in Steps 3, 4, 5, and 6.
 
@@ -155,7 +155,7 @@ Construct a write spec and delegate to **cf-writer agent** via the **Agent tool*
 
 **When creating** a new file (use absolute path for `file_path`):
 
-```
+````
 WRITE SPEC
 ----------
 task: create
@@ -186,40 +186,45 @@ content: |
 
   ```mermaid
   <diagram generated in Step 4>
-  ```
+````
 
-  **Related files:** `path/to/file1`, `path/to/file2`
+**Related files:** `path/to/file1`, `path/to/file2`
 readme_update: false
 auto_commit: false
 existing_file_action: skip
+
 ```
 
 **When appending** to an existing file (use absolute path for `file_path`):
 
 ```
-WRITE SPEC
-----------
+
+## WRITE SPEC
+
 task: update
 file_path: $CWD/{docsDir}/memory/{category}/{name}.md
 language: {language from config}
 content: |
-  ## Q&A: <short question summary> (YYYY-MM-DD)
 
-  **Q:** <question>
+## Q&A: <short question summary> (YYYY-MM-DD)
 
-  **A:** <concise answer>
+**Q:** <question>
+
+**A:** <concise answer>
 
   <!-- Include this section only when IS_FLOW_QUESTION = true -->
-  ## Flow Diagram
 
-  ```mermaid
-  <diagram generated in Step 4>
-  ```
+## Flow Diagram
 
-  **Related files:** `path/to/file1`, `path/to/file2`
+```mermaid
+<diagram generated in Step 4>
+```
+
+**Related files:** `path/to/file1`, `path/to/file2`
 readme_update: false
 auto_commit: false
 existing_file_action: append
+
 ```
 
 When appending, also instruct cf-writer to update the `updated` date in the existing frontmatter.
@@ -271,3 +276,4 @@ Show the user a 2-line summary:
 - Respect `.coding-friend/ignore` patterns
 - Use `language` config for answer language
 - Create directories as needed
+```

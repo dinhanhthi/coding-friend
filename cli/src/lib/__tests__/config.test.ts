@@ -198,4 +198,44 @@ describe("loadConfig validation", () => {
       (config as Record<string, unknown>)["autoApproveAllowExtra"],
     ).toEqual(["my-custom-cmd"]);
   });
+
+  it("accepts valid codex config block", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({
+        codex: { enabled: true, modes: ["STANDARD", "DEEP"], effort: "medium" },
+      });
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.codex?.enabled).toBe(true);
+    expect(config.codex?.modes).toEqual(["STANDARD", "DEEP"]);
+    expect(config.codex?.effort).toBe("medium");
+  });
+
+  it("warns and strips invalid codex.enabled type (string instead of boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codex: { enabled: "yes" } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("codex.enabled"),
+    );
+  });
+
+  it("omitting codex block produces no warnings and codex is undefined", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ language: "en" });
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.codex).toBeUndefined();
+  });
+
+  it("suggests 'codex' when user types 'codx' (typo suggestion)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codx: { enabled: true } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("codex"));
+  });
 });

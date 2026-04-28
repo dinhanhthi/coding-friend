@@ -18,7 +18,7 @@ Whether the cf-ask skill provides more accurate, concise, and well-referenced an
 
 > Walk me through the full lifecycle of a request in this project — from entry point to response.
 
-*(This prompt specifically targets the flow question path added in the April 2026 update — expects a Mermaid diagram in the answer.)*
+_(This prompt specifically targets the flow question path added in the April 2026 update — expects a Mermaid diagram in the answer.)_
 
 ## Benchmark Repos Used
 
@@ -35,7 +35,7 @@ Whether the cf-ask skill provides more accurate, concise, and well-referenced an
 | memory_saved      | 0.15   | Answer is saved to memory when appropriate                                       |
 | flow_diagram      | 0.15   | For flow questions: a Mermaid diagram is generated with the correct diagram type |
 
-*`flow_diagram` is only scored for flow-question prompts. For non-flow prompts, its weight is redistributed proportionally across the other four criteria.*
+_`flow_diagram` is only scored for flow-question prompts. For non-flow prompts, its weight is redistributed proportionally across the other four criteria._
 
 ### Scoring Levels
 

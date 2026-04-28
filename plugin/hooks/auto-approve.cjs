@@ -122,6 +122,8 @@ const BASH_ALLOW_PREFIXES = [
   "cut",
   "tr",
   "jq",
+  // xargs — safe when subcommand is read-only (checked in postMatchSafety)
+  "xargs",
   // System info — read-only
   "which",
   "echo",
@@ -245,6 +247,56 @@ function stripStderrRedirect(str) {
 }
 
 /**
+ * Extract the subcommand from an xargs call, skipping flags and their arguments.
+ * Handles common patterns: `xargs grep`, `xargs -n1 grep`, `xargs -0 grep`,
+ * `xargs -n 1 grep`, `xargs -I{} grep {}`.
+ * Returns null if no subcommand can be determined.
+ * @param {string} cmd — the full xargs command (e.g. "xargs grep -l foo")
+ * @returns {string|null}
+ */
+function extractXargsSubcmd(cmd) {
+  const tokens = cmd
+    .replace(/^xargs\s+/, "")
+    .trim()
+    .split(/\s+/);
+  // Flags that take a SEPARATE next token as their argument (when 2-char, e.g. "-n")
+  // Flags that take a SEPARATE next token as their argument (single-char form only)
+  const flagsWithSeparateArg = new Set([
+    "n",
+    "L",
+    "P",
+    "s",
+    "a",
+    "d",
+    "E",
+    "I",
+  ]);
+  let i = 0;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (tok === "--") {
+      return tokens[i + 1] || null;
+    }
+    if (!tok.startsWith("-")) {
+      return tok; // first non-flag token is the subcommand
+    }
+    if (tok.startsWith("--")) {
+      i++;
+      continue;
+    }
+    // Short flag(s): -0, -r, -n, -n1, -I{}, -I PLACEHOLDER, etc.
+    i++;
+    const flagChars = tok.slice(1);
+    // If exactly one flag char that requires a separate arg AND no arg embedded in token
+    if (flagChars.length === 1 && flagsWithSeparateArg.has(flagChars)) {
+      // Argument is the next token — skip it
+      if (i < tokens.length && !tokens[i].startsWith("-")) i++;
+    }
+  }
+  return null;
+}
+
+/**
  * Post-match safety check for allowed prefixes that have dangerous sub-forms.
  * Returns "allow" if safe, or a non-allow decision if the command is risky.
  * Used by both simple and compound command paths to keep behavior consistent.
@@ -255,6 +307,29 @@ function stripStderrRedirect(str) {
 function postMatchSafety(cmd, prefix) {
   if (prefix === "find" && cmd.includes("-delete")) return "unknown";
   if (prefix === "git commit" && cmd.includes("--amend")) return "ask";
+  if (prefix === "xargs") {
+    const XARGS_SAFE_SUBCMDS = new Set([
+      "grep",
+      "rg",
+      "wc",
+      "head",
+      "tail",
+      "ls",
+      "cat",
+      "stat",
+      "diff",
+      "echo",
+      "sort",
+      "uniq",
+      "cut",
+      "tr",
+      "jq",
+      "file",
+    ]);
+    const subcmd = extractXargsSubcmd(cmd);
+    if (!subcmd || !XARGS_SAFE_SUBCMDS.has(subcmd)) return "ask";
+    return "allow";
+  }
   return "allow";
 }
 
@@ -397,16 +472,18 @@ function splitBySanitized(str, sanitized, delimiter) {
  * always rejected. 2>&1 is stripped before checking.
  *
  * Splitting order: ; (top-level) → && (within each ; clause) → | (within each &&
- * sub-clause). Each leaf segment must match an allow-list prefix.
+ * sub-clause). Each leaf segment must either match an allow-list prefix or be an
+ * rm command targeting only files within the project directory.
  *
  * Uses a quote-aware tokenizer so that shell metacharacters inside quoted
  * strings (e.g. grep "foo|bar", grep "foo;bar") are not mistaken for operators.
  *
  * @param {string} cmd — the full trimmed command
  * @param {string[]} [allowExtra] — additional allow prefixes from config
+ * @param {string} [projectDir] — project root for rm project-scope checks
  * @returns {boolean}
  */
-function isSafeCompoundCommand(cmd, allowExtra) {
+function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
   // Strip safe stderr redirects first
   const stripped = stripStderrRedirect(cmd);
 
@@ -468,6 +545,15 @@ function isSafeCompoundCommand(cmd, allowExtra) {
     return finalParts.every(({ orig: part }) => {
       const trimmed = part.trim();
       if (!trimmed) return false;
+      // Allow rm targeting files entirely within the project directory
+      const rmPaths = extractRmPaths(trimmed);
+      if (
+        rmPaths &&
+        rmPaths.length > 0 &&
+        rmPaths.every((p) => isInProjectDir(p, projectDir))
+      ) {
+        return true;
+      }
       for (const prefix of effectiveAllow) {
         if (matchesPrefix(trimmed, prefix)) {
           return postMatchSafety(trimmed, prefix) === "allow";
@@ -833,7 +919,7 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
     const isCompound = SHELL_OPERATOR_PATTERN.test(trimmed);
 
     // Safe compound commands: pipe-only chains where every segment is safe
-    if (isCompound && isSafeCompoundCommand(trimmed, allowExtra)) {
+    if (isCompound && isSafeCompoundCommand(trimmed, allowExtra, projectDir)) {
       return "allow";
     }
 

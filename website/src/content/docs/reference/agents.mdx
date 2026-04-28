@@ -19,29 +19,42 @@ Context column shows the prompt footprint of the agent's system prompt (`⚡` = 
 
 ### cf-reviewer (orchestrator)
 
-Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent **orchestrates** a multi-agent review pipeline — dispatching 5 specialist agents in parallel, then merging results via a reducer agent.
+Invoked by [`/cf-review [target]`](/docs/skills/cf-review/). The agent **orchestrates** a multi-agent review pipeline — dispatching 5 Claude specialist agents in parallel (plus an optional Codex cross-engine reviewer), then merging results via a reducer agent.
 
 **Review pipeline:**
 
 1. Prepare shared context (diff + changed files + review mode)
-2. Dispatch specialist agents in parallel (3 in QUICK mode, 5 in STANDARD/DEEP)
+2. Dispatch specialist agents in parallel (3 in QUICK mode, 5 in STANDARD/DEEP; Codex opt-in in STANDARD/DEEP)
 3. Collect all specialist outputs
 4. Dispatch reducer agent to deduplicate, severity-rank, and merge into unified report
 
 **Specialist agents:**
 
-| Agent                  | Model  | Focus                                              |
-| ---------------------- | ------ | -------------------------------------------------- |
-| `cf-reviewer-plan`     | Sonnet | Plan alignment — missing items, out-of-scope       |
-| `cf-reviewer-security` | Sonnet | Security — OWASP, injection, auth, data flow       |
-| `cf-reviewer-quality`  | Haiku  | Code quality + slop detection (AI over-generation) |
-| `cf-reviewer-tests`    | Haiku  | Test coverage, edge cases, regression prevention   |
-| `cf-reviewer-rules`    | Haiku  | CLAUDE.md compliance — MUST/SHOULD violations      |
-| `cf-reviewer-reducer`  | Haiku  | Deduplicates and severity-ranks all findings       |
+| Agent                  | Model    | Focus                                              |
+| ---------------------- | -------- | -------------------------------------------------- |
+| `cf-reviewer-plan`     | Sonnet   | Plan alignment — missing items, out-of-scope       |
+| `cf-reviewer-security` | Sonnet   | Security — OWASP, injection, auth, data flow       |
+| `cf-reviewer-quality`  | Haiku    | Code quality + slop detection (AI over-generation) |
+| `cf-reviewer-tests`    | Haiku    | Test coverage, edge cases, regression prevention   |
+| `cf-reviewer-rules`    | Haiku    | CLAUDE.md compliance — MUST/SHOULD violations      |
+| `cf-reviewer-codex`    | External | Codex cross-engine review (opt-in, STANDARD/DEEP)  |
+| `cf-reviewer-reducer`  | Haiku    | Deduplicates and severity-ranks all findings       |
 
 **QUICK mode** skips `cf-reviewer-plan` and `cf-reviewer-rules` for faster feedback on small changes.
 
-Findings from all specialists are collected into 4 severity categories (🚨 Critical, ⚠️ Important, 💡 Suggestions, 📋 Summary). Each finding is tagged with its source layer inline (e.g., `[L3: Security]`). Multi-agent agreement on the same issue raises confidence.
+**Codex integration (opt-in):** When `config.codex.enabled = true` and the `codex` CLI is installed, `cf-reviewer-codex` runs as a 6th parallel specialist via the `codex:codex-rescue` subagent. Cross-engine agreement (Claude + Codex flagging the same `file:line`) is treated as the strongest signal and bumps severity one tier. Enable in `.coding-friend/config.json`:
+
+```json
+{
+  "codex": {
+    "enabled": true,
+    "modes": ["STANDARD", "DEEP"],
+    "effort": "medium"
+  }
+}
+```
+
+Findings from all specialists are collected into 4 severity categories (🚨 Critical, ⚠️ Important, 💡 Suggestions, 📋 Summary). Each finding is tagged with its source layer inline (e.g., `[L3: Security]`, `[L5: Codex]`). Multi-agent agreement on the same issue raises confidence.
 
 ```
 /cf-review (workflow orchestration)
@@ -49,6 +62,7 @@ Findings from all specialists are collected into 4 severity categories (🚨 Cri
 cf-reviewer (orchestrator)
     ↓ parallel dispatch
 cf-reviewer-plan + cf-reviewer-security + cf-reviewer-quality + cf-reviewer-tests + cf-reviewer-rules
++ cf-reviewer-codex (opt-in, via codex:codex-rescue)
     ↓ collect outputs
 cf-reviewer-reducer (dedup + rank → unified report)
 ```

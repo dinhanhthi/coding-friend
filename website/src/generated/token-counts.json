@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-24T11:43:49.514Z",
+  "generatedAt": "2026-04-28T09:31:23.975Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -23,7 +23,7 @@
   },
   "skills": {
     "cf-ask": {
-      "tokens": 2922,
+      "tokens": 2934,
       "tier": "high",
       "type": "slash"
     },
@@ -38,7 +38,7 @@
       "type": "slash"
     },
     "cf-help": {
-      "tokens": 2273,
+      "tokens": 2340,
       "tier": "medium",
       "type": "slash"
     },
@@ -68,7 +68,7 @@
       "type": "slash"
     },
     "cf-review": {
-      "tokens": 1774,
+      "tokens": 1921,
       "tier": "medium",
       "type": "slash"
     },
@@ -139,6 +139,11 @@
       "tier": "medium",
       "model": "opus"
     },
+    "cf-reviewer-codex": {
+      "tokens": 706,
+      "tier": "low",
+      "model": "external"
+    },
     "cf-reviewer-plan": {
       "tokens": 513,
       "tier": "low",
@@ -150,7 +155,7 @@
       "model": "haiku"
     },
     "cf-reviewer-reducer": {
-      "tokens": 719,
+      "tokens": 832,
       "tier": "low",
       "model": "haiku"
     },
@@ -170,7 +175,7 @@
       "model": "haiku"
     },
     "cf-reviewer": {
-      "tokens": 1491,
+      "tokens": 2177,
       "tier": "medium",
       "model": "inherit"
     },
