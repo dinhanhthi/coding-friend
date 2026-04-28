@@ -5,6 +5,12 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.33.1 (2026-04-29)
+
+- Fix `buildCodexConfig()` return type — now returns literal union `'minimal'|'low'|'medium'|'high'|'xhigh'` instead of `string`, preventing type errors in callers [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+- Fix `cf config` Codex edit flow — displays current values before prompts (matching the pattern of other edit functions) and warns when no modes are selected to catch silent misconfiguration [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+- Fix `cf config` feedback when disabling Codex — now logs "Codex disabled." matching the enabled path [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
+
 ## v1.33.0 (2026-04-28)
 
 - Add `codex` config block schema to CLI config validation: `enabled`, `modes`, `effort` fields with Zod validation, typo suggestions for unknown nested keys (`codex.enabledd` → warns), and default values (`enabled: false`, `modes: ["STANDARD", "DEEP"]`, `effort: "medium"`)
