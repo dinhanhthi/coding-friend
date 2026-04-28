@@ -200,11 +200,9 @@ describe("loadConfig validation", () => {
   });
 
   it("accepts valid codex config block", () => {
-    mockReadJson
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce({
-        codex: { enabled: true, modes: ["STANDARD", "DEEP"], effort: "medium" },
-      });
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({
+      codex: { enabled: true, modes: ["STANDARD", "DEEP"], effort: "medium" },
+    });
     const config = loadConfig();
     expect(log.warn).not.toHaveBeenCalled();
     expect(config.codex?.enabled).toBe(true);

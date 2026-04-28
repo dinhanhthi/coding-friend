@@ -208,8 +208,22 @@ const BASH_ALLOW_PREFIXES = [
 
 /** Safe xargs subcommands — read-only operations only. Checked in postMatchSafety. */
 const XARGS_SAFE_SUBCMDS = new Set([
-  "grep", "rg", "wc", "head", "tail", "ls", "cat",
-  "stat", "diff", "echo", "sort", "uniq", "cut", "tr", "jq", "file",
+  "grep",
+  "rg",
+  "wc",
+  "head",
+  "tail",
+  "ls",
+  "cat",
+  "stat",
+  "diff",
+  "echo",
+  "sort",
+  "uniq",
+  "cut",
+  "tr",
+  "jq",
+  "file",
 ]);
 
 /**

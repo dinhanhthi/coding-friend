@@ -541,6 +541,95 @@ async function editAutoApprove(
   }
 }
 
+// ─── Codex ───────────────────────────────────────────────────────────
+
+export function buildCodexConfig(input: {
+  enabled: boolean;
+  modes: Array<"QUICK" | "STANDARD" | "DEEP">;
+  effort: "minimal" | "low" | "medium" | "high" | "xhigh";
+}): {
+  enabled: boolean;
+  modes: Array<"QUICK" | "STANDARD" | "DEEP">;
+  effort: "minimal" | "low" | "medium" | "high" | "xhigh";
+} {
+  return {
+    enabled: input.enabled,
+    modes: input.modes,
+    effort: input.effort,
+  };
+}
+
+export async function editCodex(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const current = (localCfg?.codex ?? globalCfg?.codex) as
+    | CodingFriendConfig["codex"]
+    | undefined;
+
+  const defaults = DEFAULT_CONFIG.codex;
+
+  if (current !== undefined) {
+    log.dim(
+      `Current: enabled=${current.enabled}, modes=${(current.modes ?? []).join(",") || "(none)"}, effort=${current.effort}`,
+    );
+  }
+
+  const enabled = await confirm({
+    message:
+      "Enable Codex as 6th specialist in /cf-review? (requires `codex` CLI in PATH)",
+    default: current?.enabled ?? defaults.enabled,
+  });
+
+  const modes = await checkbox<"QUICK" | "STANDARD" | "DEEP">({
+    message: "Which review modes should Codex run in?",
+    choices: [
+      { name: "QUICK  (≤3 files, ≤50 lines)", value: "QUICK" },
+      { name: "STANDARD  (4–10 files or 51–300 lines)", value: "STANDARD" },
+      {
+        name: "DEEP  (>10 files, >300 lines, or sensitive paths)",
+        value: "DEEP",
+      },
+    ],
+    default: current?.modes ?? defaults.modes,
+  });
+
+  if (modes.length === 0) {
+    log.dim(
+      "Warning: no modes selected — Codex will never run. Select at least one mode.",
+    );
+  }
+
+  const effort = await select<"minimal" | "low" | "medium" | "high" | "xhigh">({
+    message: "Codex reasoning effort level:",
+    choices: [
+      { name: "minimal — fastest, least thorough", value: "minimal" },
+      { name: "low", value: "low" },
+      { name: "medium (default)", value: "medium" },
+      { name: "high", value: "high" },
+      { name: "xhigh — slowest, most thorough", value: "xhigh" },
+    ],
+    default: current?.effort ?? defaults.effort,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+
+  const codexCfg = buildCodexConfig({ enabled, modes, effort });
+  writeToScope(scope, { codex: codexCfg });
+
+  if (enabled) {
+    log.dim(
+      "Tip: make sure `codex` CLI is installed — `npm install -g @openai/codex`",
+    );
+    log.dim(
+      "Docs: https://cf.dinhanhthi.com/docs/configuration/config-json/#codex",
+    );
+  } else {
+    log.dim("Codex disabled.");
+  }
+}
+
 // ─── Statusline ──────────────────────────────────────────────────────
 
 async function editStatusline(): Promise<void> {
@@ -821,6 +910,13 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const codexScope = getScopeLabel("codex", globalCfg, localCfg);
+    const codexEnabled = (
+      getMergedValue("codex", globalCfg, localCfg) as
+        | CodingFriendConfig["codex"]
+        | undefined
+    )?.enabled;
+
     const statuslineStatus = isStatuslineConfigured()
       ? chalk.green("configured")
       : chalk.yellow("not configured");
@@ -875,6 +971,12 @@ export async function configCommand(): Promise<void> {
               "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
           },
           {
+            name: `Codex cross-engine review ${formatScopeLabel(codexScope)}${codexEnabled !== undefined ? ` (${codexEnabled ? "enabled" : "disabled"})` : ""}`,
+            value: "codex",
+            description:
+              "  Enable OpenAI Codex as 6th specialist in /cf-review (opt-in)",
+          },
+          {
             name: `Statusline (${statuslineStatus})`,
             value: "statusline",
             description:
@@ -922,6 +1024,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);
+        break;
+      case "codex":
+        await editCodex(globalCfg, localCfg);
         break;
       case "statusline":
         await editStatusline();
