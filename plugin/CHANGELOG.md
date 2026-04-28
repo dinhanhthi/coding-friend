@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.29.0 (2026-04-28)
+
+- Add Codex cross-engine review to `/cf-review` (opt-in) — when `codex.enabled = true` in config and the `codex` CLI is installed, `cf-reviewer` dispatches a 6th parallel specialist via `codex:codex-rescue`; cross-engine agreement (Claude + Codex flagging the same `file:line`) bumps severity one tier in the reducer [auto-approve + config]
+- Add `codex` config block to `.coding-friend/config.json` schema: `enabled` (boolean), `modes` (array of QUICK/STANDARD/DEEP), `effort` (minimal/low/medium/high/xhigh) — validated with Zod, deep-merged with defaults, typo suggestions for unknown keys including nested fields
+- Improve `auto-approve`: allow `xargs` with safe read-only subcommands (grep, rg, wc, head, tail, ls, cat, stat, diff, echo, sort, uniq, cut, tr, jq, file) — xargs with destructive subcommands (rm, sh, bash, curl, find) still require confirmation
+- Improve `auto-approve`: allow `rm` targeting project files in compound commands (`rm docs/f.json && echo done` auto-approves when rm path is inside the project directory)
+
 ## v0.28.1 (2026-04-27)
 
 - Improve `auto-approve`: support semicolon-separated command chains — each `;`-separated clause is now evaluated independently (same as `&&` chains), allowing commands like `grep ... | head; echo "---"; grep ...` to auto-approve when all segments are safe [#f208e3d](https://github.com/dinhanhthi/coding-friend/commit/f208e3d)

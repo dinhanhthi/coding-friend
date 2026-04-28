@@ -222,13 +222,15 @@ describe("loadConfig validation", () => {
     );
   });
 
-  it("omitting codex block produces no warnings and codex is undefined", () => {
+  it("omitting codex block produces no warnings and codex uses default (disabled)", () => {
     mockReadJson
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ language: "en" });
     const config = loadConfig();
     expect(log.warn).not.toHaveBeenCalled();
-    expect(config.codex).toBeUndefined();
+    expect(config.codex?.enabled).toBe(false);
+    expect(config.codex?.modes).toEqual(["STANDARD", "DEEP"]);
+    expect(config.codex?.effort).toBe("medium");
   });
 
   it("suggests 'codex' when user types 'codx' (typo suggestion)", () => {
@@ -236,6 +238,61 @@ describe("loadConfig validation", () => {
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ codx: { enabled: true } });
     const config = loadConfig();
-    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("codex"));
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Did you mean 'codex'"),
+    );
+  });
+
+  it("warns on unknown nested codex key (typo inside codex block)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codex: { enabledd: true } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("codex.enabledd"),
+    );
+  });
+
+  it("warns on invalid codex.modes enum value", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codex: { modes: ["QUICK", "INVALID_MODE"] } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("codex.modes"),
+    );
+  });
+
+  it("warns on invalid codex.effort enum value", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codex: { effort: "ultra" } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("codex.effort"),
+    );
+  });
+
+  it("strips invalid codex.enabled but preserves other valid codex fields", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ codex: { enabled: "yes", effort: "high" } });
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("codex.enabled"),
+    );
+    expect(config.codex?.effort).toBe("high");
+    // invalid "yes" is stripped; default false is applied via DEFAULT_CONFIG merge
+    expect(config.codex?.enabled).toBe(false);
+  });
+
+  it("deep merges codex block (global enabled + local modes)", () => {
+    mockReadJson
+      .mockReturnValueOnce({ codex: { enabled: true } })
+      .mockReturnValueOnce({ codex: { modes: ["DEEP"] } });
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.codex?.enabled).toBe(true);
+    expect(config.codex?.modes).toEqual(["DEEP"]);
   });
 });

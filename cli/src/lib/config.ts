@@ -74,7 +74,7 @@ const MemoryConfigSchema = z.object({
   autoStart: z.boolean().optional(),
 });
 
-const CodexConfigSchema = z.object({
+const CodexConfigSchema = z.strictObject({
   enabled: z.boolean().optional(),
   modes: z.array(z.enum(["QUICK", "STANDARD", "DEEP"])).optional(),
   effort: z.enum(["minimal", "low", "medium", "high", "xhigh"]).optional(),
@@ -152,13 +152,15 @@ function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
     const pathStr = issue.path.join(".");
 
     if (issue.code === "unrecognized_keys") {
-      // Unknown keys
+      // Unknown keys — may be at top level or nested (e.g. inside codex block)
       const keys = (issue as { keys: string[] }).keys ?? [];
       for (const key of keys) {
-        const suggestion = suggestKey(key);
+        const isNested = issue.path.length > 0;
+        const fullKey = isNested ? `${issue.path.join(".")}.${key}` : key;
+        const suggestion = isNested ? null : suggestKey(key);
         const hint = suggestion ? ` Did you mean '${suggestion}'?` : "";
-        log.warn(`Unknown config key '${key}'.${hint}`);
-        delete sanitized[key];
+        log.warn(`Unknown config key '${fullKey}'.${hint}`);
+        stripPath(sanitized, [...issue.path, key]);
       }
     } else {
       // Type/value errors

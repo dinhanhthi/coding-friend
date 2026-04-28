@@ -206,6 +206,12 @@ const BASH_ALLOW_PREFIXES = [
   "cargo fmt",
 ];
 
+/** Safe xargs subcommands — read-only operations only. Checked in postMatchSafety. */
+const XARGS_SAFE_SUBCMDS = new Set([
+  "grep", "rg", "wc", "head", "tail", "ls", "cat",
+  "stat", "diff", "echo", "sort", "uniq", "cut", "tr", "jq", "file",
+]);
+
 /**
  * Detect shell operators that make a command compound/unsafe.
  * If any of these appear in the command, it cannot be auto-approved
@@ -259,7 +265,6 @@ function extractXargsSubcmd(cmd) {
     .replace(/^xargs\s+/, "")
     .trim()
     .split(/\s+/);
-  // Flags that take a SEPARATE next token as their argument (when 2-char, e.g. "-n")
   // Flags that take a SEPARATE next token as their argument (single-char form only)
   const flagsWithSeparateArg = new Set([
     "n",
@@ -308,24 +313,6 @@ function postMatchSafety(cmd, prefix) {
   if (prefix === "find" && cmd.includes("-delete")) return "unknown";
   if (prefix === "git commit" && cmd.includes("--amend")) return "ask";
   if (prefix === "xargs") {
-    const XARGS_SAFE_SUBCMDS = new Set([
-      "grep",
-      "rg",
-      "wc",
-      "head",
-      "tail",
-      "ls",
-      "cat",
-      "stat",
-      "diff",
-      "echo",
-      "sort",
-      "uniq",
-      "cut",
-      "tr",
-      "jq",
-      "file",
-    ]);
     const subcmd = extractXargsSubcmd(cmd);
     if (!subcmd || !XARGS_SAFE_SUBCMDS.has(subcmd)) return "ask";
     return "allow";

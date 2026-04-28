@@ -92,9 +92,13 @@ function loadPreviousCounts(): {
   skills: Record<string, number>;
   agents: Record<string, number>;
 } {
-  const result = {
-    skills: {} as Record<string, number>,
-    agents: {} as Record<string, number>,
+  const result: {
+    bootstrap?: number;
+    skills: Record<string, number>;
+    agents: Record<string, number>;
+  } = {
+    skills: {},
+    agents: {},
   };
   if (!existsSync(OUTPUT_PATH)) return result;
   try {
