@@ -1,0 +1,90 @@
+---
+title: "/cf-review-codex"
+description: "Code review run by Codex (GPT) via the official Codex plugin for Claude Code."
+keywords: [code review, codex, gpt, openai, cross-engine review, cf-review-codex]
+---
+
+Context footprint: `⚡⚡⚡` (high) — [what does this mean?](/docs/reference/context-usage/)
+
+The `/cf-review-codex` skill is the **Codex (GPT) twin** of [`/cf-review`](/docs/skills/cf-review/). It uses the same target detection, diff gathering, and 4-section output format — but the actual review is performed by **GPT via the official [Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc)**, not by Claude specialist agents.
+
+Use this when you specifically want a cross-engine perspective from a different model family.
+
+## Requirements
+
+`/cf-review-codex` requires both:
+
+1. **Codex CLI** — the `codex` binary on your `PATH`
+2. **Codex plugin for Claude Code** — installed via the marketplace:
+   ```text
+   /plugin marketplace add openai/codex-plugin-cc
+   /plugin install codex@openai-codex
+   ```
+3. Run `/codex:setup` once to verify the install
+
+If either is missing, the skill exits early with installation instructions — it never silently falls back to Claude. If you want Claude review, run [`/cf-review`](/docs/skills/cf-review/) instead.
+
+## Usage
+
+```bash
+/cf-review-codex [target]
+```
+
+Same target syntax as `/cf-review`:
+
+- **No arguments** — reviews all uncommitted changes
+- **File or directory** — reviews that path
+- **Commit range** — e.g. `HEAD~3..HEAD`
+- **Natural language** — focuses Codex on the described area
+- **`--quick` / `--deep`** — overrides auto mode
+
+## How it differs from `/cf-review`
+
+| Aspect            | `/cf-review`                                    | `/cf-review-codex`                                                 |
+| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| Reviewer          | Claude specialist agents (5 in parallel)        | GPT via Codex plugin                                               |
+| Engines           | Claude only (or +Codex as 6th specialist)       | Codex only                                                         |
+| Output format     | 🚨 / ⚠️ / 💡 / 📋                              | 🚨 / ⚠️ / 💡 / 📋 (identical structure, all findings tagged `[L5: Codex]`) |
+| Effort control    | Mode-based (QUICK/STANDARD/DEEP)                | Mode-based + Codex `effort` (low/medium/high)                      |
+| Required setup    | None                                            | Codex CLI + Codex plugin                                           |
+
+If `/cf-review` already runs Codex as a 6th specialist when configured, why have this skill? Because `/cf-review-codex` gives you a **pure GPT review** when you explicitly want one — for example, after a Claude review has already happened and you want a fresh second opinion from a different engine.
+
+## When to use
+
+- You want a **GPT-only** perspective on a diff
+- You already ran `/cf-review` and want a cross-engine second opinion
+- You're debugging a tricky issue and want to compare reasoning between Claude and Codex
+- You want to test whether Codex catches something Claude missed (or vice versa)
+
+For the default workflow — review before commit/ship — `/cf-review` is recommended; it already includes Codex as an opt-in specialist.
+
+## Output
+
+Same 4-section format as `/cf-review`. Every finding is tagged `[L5: Codex]` so you can tell at a glance who the reviewer was:
+
+```
+## 🔍 Codex Cross-Engine Review
+
+### 🚨 Critical Issues
+- **[L5: Codex]** db/queries.ts:42 **[Injection]** — Unsanitized SQL in query builder (confidence: 0.92)
+  Reasoning: attacker-controlled email field flows into raw query string
+  Recommendation: switch to parameterised queries
+
+### ⚠️ Important Issues
+- **[L5: Codex]** api/auth.ts:18 **[Test gap]** — No rate-limit test (confidence: 0.85)
+
+### 💡 Suggestions
+- **[L5: Codex]** src/auth/session.ts:12 — Token entropy could be improved
+
+### 📋 Summary
+One critical SQL injection. One missing test. Otherwise clean.
+```
+
+The skill then appends a status banner (`✅ Codex Review Complete` or `⚠️ Action Needed` or `❌ Codex Review Failed`).
+
+## Related
+
+- [`/cf-review`](/docs/skills/cf-review/) — Default Claude-orchestrated review (recommended)
+- [`/cf-review-out`](/docs/skills/cf-review-out/) — Generate a review prompt for any external AI (manual)
+- [`/cf-review-in`](/docs/skills/cf-review-in/) — Collect external review results back into the workflow

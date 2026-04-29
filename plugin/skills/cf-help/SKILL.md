@@ -60,6 +60,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
+- `/cf-review-codex [target]` — ⚡⚡⚡ — Dispatch code review to Codex (GPT) via the official Codex plugin; same input/output as `/cf-review`
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
 - `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
