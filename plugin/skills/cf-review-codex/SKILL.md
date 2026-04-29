@@ -66,7 +66,7 @@ CODEX_READY=true|false
   reachable. Continue to Step 2.
 - `CODEX_READY=false` → **stop the workflow** and emit the install banner from the
   "Codex unavailable" template at the bottom of this file. Use the specific
-  `CODEX_CLI` / `CODEX_AGENT` fields to tell the user *which* piece is missing.
+  `CODEX_CLI` / `CODEX_AGENT` fields to tell the user _which_ piece is missing.
   Do NOT fall back to Claude review — the user explicitly asked for Codex; if they
   want Claude, they should run `/cf-review`.
 
@@ -101,11 +101,11 @@ The script prints `KEY=value` lines: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIV
 
 Mode-derived effort defaults:
 
-| Mode         | Condition                                          | Default Codex effort | Behavior                                       |
-| ------------ | -------------------------------------------------- | -------------------- | ---------------------------------------------- |
-| **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | `low`                | Skip context research                          |
-| **STANDARD** | 4–10 files OR 51–300 lines                         | `medium`             | Full review                                    |
-| **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | `high`               | Data flow tracing, edge case walkthroughs      |
+| Mode         | Condition                                          | Default Codex effort | Behavior                                  |
+| ------------ | -------------------------------------------------- | -------------------- | ----------------------------------------- |
+| **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | `low`                | Skip context research                     |
+| **STANDARD** | 4–10 files OR 51–300 lines                         | `medium`             | Full review                               |
+| **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | `high`               | Data flow tracing, edge case walkthroughs |
 
 If `SENSITIVE > 0`, always escalate to **DEEP**.
 
@@ -265,6 +265,7 @@ Display Codex's full report followed by the status banner in a **single message*
 > Codex is not installed or not reachable. Specifically: `CODEX_CLI=<value>`, `CODEX_AGENT=<value>`.
 >
 > To install:
+>
 > 1. Codex CLI: https://github.com/openai/codex-plugin-cc#installation
 > 2. Plugin: `/plugin marketplace add openai/codex-plugin-cc` then `/plugin install codex@openai-codex`
 > 3. Verify: `/codex:setup`

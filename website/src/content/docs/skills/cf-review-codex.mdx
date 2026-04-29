@@ -1,7 +1,8 @@
 ---
 title: "/cf-review-codex"
 description: "Code review run by Codex (GPT) via the official Codex plugin for Claude Code."
-keywords: [code review, codex, gpt, openai, cross-engine review, cf-review-codex]
+keywords:
+  [code review, codex, gpt, openai, cross-engine review, cf-review-codex]
 ---
 
 Context footprint: `⚡⚡⚡` (high) — [what does this mean?](/docs/reference/context-usage/)
@@ -40,13 +41,13 @@ Same target syntax as `/cf-review`:
 
 ## How it differs from `/cf-review`
 
-| Aspect            | `/cf-review`                                    | `/cf-review-codex`                                                 |
-| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
-| Reviewer          | Claude specialist agents (5 in parallel)        | GPT via Codex plugin                                               |
-| Engines           | Claude only (or +Codex as 6th specialist)       | Codex only                                                         |
-| Output format     | 🚨 / ⚠️ / 💡 / 📋                              | 🚨 / ⚠️ / 💡 / 📋 (identical structure, all findings tagged `[L5: Codex]`) |
-| Effort control    | Mode-based (QUICK/STANDARD/DEEP)                | Mode-based + Codex `effort` (low/medium/high)                      |
-| Required setup    | None                                            | Codex CLI + Codex plugin                                           |
+| Aspect         | `/cf-review`                              | `/cf-review-codex`                                                         |
+| -------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
+| Reviewer       | Claude specialist agents (5 in parallel)  | GPT via Codex plugin                                                       |
+| Engines        | Claude only (or +Codex as 6th specialist) | Codex only                                                                 |
+| Output format  | 🚨 / ⚠️ / 💡 / 📋                         | 🚨 / ⚠️ / 💡 / 📋 (identical structure, all findings tagged `[L5: Codex]`) |
+| Effort control | Mode-based (QUICK/STANDARD/DEEP)          | Mode-based + Codex `effort` (low/medium/high)                              |
+| Required setup | None                                      | Codex CLI + Codex plugin                                                   |
 
 If `/cf-review` already runs Codex as a 6th specialist when configured, why have this skill? Because `/cf-review-codex` gives you a **pure GPT review** when you explicitly want one — for example, after a Claude review has already happened and you want a fresh second opinion from a different engine.
 

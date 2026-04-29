@@ -15,7 +15,9 @@ const JQ_BIN = (() => {
   try {
     return execFileSync("which", ["jq"], { encoding: "utf8" }).trim();
   } catch {
-    throw new Error("jq is required to run check-codex tests but was not found in PATH");
+    throw new Error(
+      "jq is required to run check-codex tests but was not found in PATH",
+    );
   }
 })();
 
@@ -30,7 +32,9 @@ function run({
   globalConfig = null,
   codexInPath = true,
 } = {}) {
-  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "cf-check-codex-home-"));
+  const tmpHome = fs.mkdtempSync(
+    path.join(os.tmpdir(), "cf-check-codex-home-"),
+  );
   const tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-check-codex-cwd-"));
   const tmpBin = fs.mkdtempSync(path.join(os.tmpdir(), "cf-check-codex-bin-"));
 

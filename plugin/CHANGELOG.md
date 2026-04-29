@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.30.0 (2026-04-29)
+
+- Add `/cf-review-codex` skill — dispatches code review jobs to Codex (GPT) via the `codex:codex-rescue` plugin; mirrors `/cf-review` workflow with Codex-specific routing, effort knob, and config-layered `codex.enabled`/`codex.modes`/`codex.effort` settings [#099105b](https://github.com/dinhanhthi/coding-friend/commit/099105b)
+- Fix `cf-reviewer`: extract Codex availability check into `plugin/skills/cf-review/scripts/check-codex.sh` — resolves silent Codex skip during `/cf-review` when `config.codex.enabled` was `true`; script now prints `KEY=value` lines readable across Bash tool invocations; hardens `jq` config parsing to distinguish `false` from absent keys [#f000115](https://github.com/dinhanhthi/coding-friend/commit/f000115)
+- Improve `cf-sys-debug` description with concrete auto-invoke trigger signals (recurring bugs, flaky/race conditions, regressions, CI-only failures) and explicit boundary with `cf-fix` [#65db098](https://github.com/dinhanhthi/coding-friend/commit/65db098)
+
 ## v0.29.1 (2026-04-29)
 
 - Fix `auto-approve`: allow `xargs` with safe read-only subcommands (`grep`, `rg`, `wc`, `head`, `tail`, `ls`, `cat`, `stat`, `diff`, `echo`, `sort`, `uniq`, `cut`, `tr`, `jq`, `file`) — `xargs` with destructive subcommands (`rm`, `sh`, `bash`, `curl`, `find`) still requires confirmation [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
