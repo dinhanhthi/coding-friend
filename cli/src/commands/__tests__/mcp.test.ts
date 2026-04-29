@@ -1,5 +1,128 @@
-import { describe, it, expect } from "vitest";
-import { detectMemoryMcpState } from "../mcp.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { detectMemoryMcpState, printHealthSection } from "../mcp.js";
+import type { McpHealthResult } from "../../lib/mcp-health.js";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+// ─── printHealthSection — Fix 5: per-check fix hints ─────────────────────────
+
+describe("printHealthSection", () => {
+  it("shows green ✓ for ok checks", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [{ label: "Config", ok: true }],
+      ok: true,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("✓");
+    expect(joined).toContain("Config");
+  });
+
+  it("shows red ✗ for hard fail checks", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [{ label: "Config", ok: false, detail: "missing entry" }],
+      ok: false,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("✗");
+    expect(joined).toContain("missing entry");
+  });
+
+  it("shows per-check fix hint (→ ...) when check.fix is set and check fails", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [
+        {
+          label: "Config",
+          ok: false,
+          detail: "missing entry",
+          fix: 'Run "cf memory mcp" to fix',
+        },
+      ],
+      ok: false,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("→");
+    expect(joined).toContain('Run "cf memory mcp" to fix');
+  });
+
+  it("does NOT show fix hint for warn checks (only hard fails)", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [
+        {
+          label: "Daemon",
+          ok: false,
+          warn: true,
+          detail: "stopped",
+        },
+      ],
+      ok: true,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("⚠");
+    expect(joined).not.toContain("→");
+  });
+
+  it("does NOT show fix hint when check.fix is not set", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [
+        {
+          label: "Package",
+          ok: false,
+          detail: "not built",
+          // no fix field
+        },
+      ],
+      ok: false,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("✗");
+    expect(joined).not.toContain("→");
+  });
+
+  it("shows multiple per-check fix hints when multiple checks fail", () => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      output.push(args.map(String).join(" "));
+    });
+    const result: McpHealthResult = {
+      checks: [
+        { label: "Config", ok: false, detail: "missing", fix: "Run cf mcp 1" },
+        { label: "Package", ok: false, detail: "not built", fix: "Run cf mcp 2" },
+      ],
+      ok: false,
+    };
+    printHealthSection(result);
+    const joined = output.join("\n");
+    expect(joined).toContain("Run cf mcp 1");
+    expect(joined).toContain("Run cf mcp 2");
+  });
+});
 
 // ─── Part C: Stale detection ─────────────────────────────────────────────────
 

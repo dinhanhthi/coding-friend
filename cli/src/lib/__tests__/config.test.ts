@@ -20,13 +20,39 @@ vi.mock("../log.js", () => ({
 }));
 
 import { readJson } from "../json.js";
-import { loadConfig, resolveMemoryDir } from "../config.js";
+import { loadConfig, resolveMemoryDir, sanitizeRawConfig } from "../config.js";
 import { log } from "../log.js";
 
 const mockReadJson = vi.mocked(readJson);
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+describe("sanitizeRawConfig", () => {
+  it("returns valid parsed config when all keys are known", () => {
+    const raw = { language: "en", docsDir: "docs" };
+    const result = sanitizeRawConfig(raw);
+    expect(result).toEqual({ language: "en", docsDir: "docs" });
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  it("returns original raw config and warns when there is an unknown top-level key (parse fails)", () => {
+    const raw = { unknownTopLevelKey: "some-value" };
+    const result = sanitizeRawConfig(raw);
+    // Falls back to raw when parsing fails
+    expect(result).toBe(raw);
+    // Must emit a warning
+    expect(log.warn).toHaveBeenCalled();
+  });
+
+  it("includes the unrecognized key name in the warning message", () => {
+    const raw = { weirdUnknownKey: 123 };
+    sanitizeRawConfig(raw);
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("weirdUnknownKey"),
+    );
+  });
 });
 
 describe("loadConfig", () => {

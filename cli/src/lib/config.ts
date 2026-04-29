@@ -194,13 +194,27 @@ function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
 
 /**
  * Strip unsupported fields from a raw config object using the schema.
- * Falls back to the original if parsing fails (e.g. unknown top-level key).
+ * Falls back to the original if parsing fails (e.g. unknown top-level key),
+ * and warns so callers can see the issue.
  */
 export function sanitizeRawConfig(
   raw: Record<string, unknown>,
 ): Record<string, unknown> {
   const result = ConfigSchema.safeParse(raw);
-  return result.success ? (result.data as Record<string, unknown>) : raw;
+  if (result.success) {
+    return result.data as Record<string, unknown>;
+  }
+  // Extract key names from unrecognized_keys issues for a helpful warning
+  const unknownKeys: string[] = [];
+  for (const issue of result.error.issues) {
+    if (issue.code === "unrecognized_keys") {
+      const keys = (issue as { keys: string[] }).keys ?? [];
+      unknownKeys.push(...keys);
+    }
+  }
+  const keyList = unknownKeys.length > 0 ? `: ${unknownKeys.join(", ")}` : "";
+  log.warn(`sanitizeRawConfig: unrecognized config keys${keyList} — returning raw config`);
+  return raw;
 }
 
 /**
