@@ -24,7 +24,14 @@ If level not in args, analyze the changes and determine patch/minor/major automa
 - **MINOR** (x.Y.0): new capability a user can invoke or opt into — new skill, new CLI command, new hook, new feature flag — changelog label "Added" or "New".
 - **MAJOR** (X.0.0): breaking change (config format change, removed skill, changed CLI behavior).
 
-**Rule of thumb:** if all commits in a version only improve/refine/fix existing things (no new user-facing capability), the bump is PATCH.
+**Default to PATCH. Bias strongly toward PATCH over MINOR.**
+
+- When in doubt between PATCH and MINOR, choose PATCH.
+- A single new capability alongside improvements → still PATCH unless the new capability is substantial and user-facing on its own.
+- MINOR is reserved for releases where new capabilities are the dominant story — multiple new skills, commands, or features added, not just one incidental addition alongside fixes.
+- Small additions that extend existing behavior (new option to an existing command, new entry in an existing list, new config key for an existing feature) → PATCH, not MINOR.
+
+**Rule of thumb:** if all commits in a version only improve/refine/fix existing things (no new user-facing capability), the bump is PATCH. If only one minor new thing was added among many improvements, still prefer PATCH.
 
 **Cross-cutting commits — primary package attribution:**
 When a commit touches paths in multiple packages, determine which package owns the change by looking at where the **essence** of the change lives — not just which paths were touched:
