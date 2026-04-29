@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.34.0 (2026-04-29)
+
+- Add MCP health verification to `cf mcp` and `cf status` — reports whether the memory daemon is running and the MCP server is reachable, alongside config output [#f96dac1](https://github.com/dinhanhthi/coding-friend/commit/f96dac1)
+- Fix `cf status`: strip unsupported config fields from display output [#97d30fd](https://github.com/dinhanhthi/coding-friend/commit/97d30fd)
+
 ## v1.33.1 (2026-04-29)
 
 - Fix `buildCodexConfig()` return type — now returns literal union `'minimal'|'low'|'medium'|'high'|'xhigh'` instead of `string`, preventing type errors in callers [#f861c1e](https://github.com/dinhanhthi/coding-friend/commit/f861c1e)
