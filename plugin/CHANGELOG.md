@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.31.0 (2026-04-29)
+
+- Improve `cf-remember`: add four concrete auto-trigger signals — non-obvious bug fixes (post `cf-fix`/`cf-sys-debug` with root cause or multiple failed attempts), explicit architecture decisions ("we chose X over Y"), new project-wide conventions established during implementation, and substantial sessions ending with undocumented gotchas; register `cf-remember` as an auto-invoked skill in `cf-help` [#dfdd159](https://github.com/dinhanhthi/coding-friend/commit/dfdd159)
+
 ## v0.30.0 (2026-04-29)
 
 - Add `/cf-review-codex` skill — dispatches code review jobs to Codex (GPT) via the `codex:codex-rescue` plugin; mirrors `/cf-review` workflow with Codex-specific routing, effort knob, and config-layered `codex.enabled`/`codex.modes`/`codex.effort` settings [#099105b](https://github.com/dinhanhthi/coding-friend/commit/099105b)

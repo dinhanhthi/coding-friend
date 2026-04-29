@@ -59,7 +59,14 @@ For details on memory types, markdown format, search pipeline, and tier architec
 
 ## Auto-Invocation
 
-`cf-remember` also activates automatically when the conversation produces significant project knowledge worth preserving — architecture decisions, non-obvious conventions, complex feature flows, or important gotchas that would save time in future sessions. It does NOT auto-invoke for trivial changes.
+`cf-remember` activates automatically on four signals:
+
+1. **Non-obvious bug fix** — a `cf-fix` or `cf-sys-debug` session that involved a tricky root cause, a workaround, or multiple failed attempts → saved to `bugs/`
+2. **Architecture decision** — an explicit "we chose X over Y because…" moment in conversation → saved to `decisions/`
+3. **New convention** — a project-wide naming rule, API pattern, or structural constraint established during implementation → saved to `conventions/`
+4. **Session gotchas** — a substantial session ends with undocumented feature flows or non-obvious API behavior → saved to `features/`
+
+It does **not** auto-invoke for trivial one-line fixes, simple config changes, or purely educational exchanges (use [`/cf-learn`](/docs/skills/cf-learn/) for those).
 
 ## When to Use
 
