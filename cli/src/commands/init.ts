@@ -1306,6 +1306,6 @@ export async function initCommand(): Promise<void> {
   console.log();
   log.congrats("Setup complete!");
   log.dim(
-    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help",
+    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-review-codex, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help",
   );
 }
