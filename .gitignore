@@ -35,19 +35,11 @@ _pagefind/
 # `npm run generate:tokens`. It is committed (not ignored) because the
 # website's static build imports it at compile time.
 
-# Evals
-evals/results/
-evals/analysis/
-evals/benchmarks/*/node_modules/
-evals/benchmarks/*/package-lock.json
-
 # Website
 website/public/llms.txt
 website/public/llms-full.txt
 
 .understand-anything/
-
-evals/.plugin-state.tmp
 
 graphify-out/
 
@@ -76,6 +68,4 @@ docs/reviews
 docs/sessions
 docs/warm
 docs/context
-evals/analysis
-evals/results
 # End AI Sync managed
