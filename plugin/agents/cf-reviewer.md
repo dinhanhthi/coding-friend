@@ -70,39 +70,18 @@ For each Claude agent, provide:
 
 #### Codex Dispatch (STANDARD / DEEP only)
 
-Before launching agents, check Codex availability:
+Before launching agents, check Codex availability by running the helper script — substitute `<MODE>` with the current review mode (`STANDARD` or `DEEP`):
 
 ```bash
-CODEX_ENABLED=false
-CODEX_EFFORT="medium"
-# Read config — local overrides global, same layering as loadConfig()
-LOCAL_CONFIG=".coding-friend/config.json"
-GLOBAL_CONFIG="$HOME/.coding-friend/config.json"
-if [ -f "$LOCAL_CONFIG" ]; then
-  CODEX_CFG_ENABLED=$(jq -r '.codex.enabled // "unset"' "$LOCAL_CONFIG" 2>/dev/null)
-  CODEX_CFG_MODES=$(jq -r '(.codex.modes // "unset") | if type == "array" then join(",") else . end' "$LOCAL_CONFIG" 2>/dev/null)
-  CODEX_EFFORT=$(jq -r '.codex.effort // "unset"' "$LOCAL_CONFIG" 2>/dev/null)
-fi
-# Fall back to global config for any field not set locally
-if [ -f "$GLOBAL_CONFIG" ]; then
-  [ "${CODEX_CFG_ENABLED:-unset}" = "unset" ] && CODEX_CFG_ENABLED=$(jq -r '.codex.enabled // false' "$GLOBAL_CONFIG" 2>/dev/null)
-  [ "${CODEX_CFG_MODES:-unset}" = "unset" ] && CODEX_CFG_MODES=$(jq -r '(.codex.modes // ["STANDARD","DEEP"]) | if type == "array" then join(",") else . end' "$GLOBAL_CONFIG" 2>/dev/null)
-  [ "${CODEX_EFFORT:-unset}" = "unset" ] && CODEX_EFFORT=$(jq -r '.codex.effort // "medium"' "$GLOBAL_CONFIG" 2>/dev/null)
-fi
-# Final defaults if neither config has codex settings
-[ "${CODEX_CFG_ENABLED:-unset}" = "unset" ] && CODEX_CFG_ENABLED="false"
-[ "${CODEX_CFG_MODES:-unset}" = "unset" ] && CODEX_CFG_MODES="STANDARD,DEEP"
-[ "${CODEX_EFFORT:-unset}" = "unset" ] && CODEX_EFFORT="medium"
-# Check CLI availability and whether current mode is in configured modes list
-if [ "$CODEX_CFG_ENABLED" = "true" ] && command -v codex >/dev/null 2>&1; then
-  case ",$CODEX_CFG_MODES," in
-    *,"$MODE",*)
-      CODEX_ENABLED=true ;;
-  esac
-fi
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/check-codex.sh" "<MODE>"
 ```
 
-If `CODEX_ENABLED=true` for the current mode, also dispatch:
+The script prints two `KEY=value` lines on stdout (parse them from the Bash tool result):
+
+- `CODEX_ENABLED=true|false` — whether to dispatch Codex for the current mode
+- `CODEX_EFFORT=minimal|low|medium|high|xhigh` — effort level to inline into the Codex prompt
+
+It reads `.coding-friend/config.json` (local overrides global at `$HOME`), checks `command -v codex`, and verifies that the current MODE is in `codex.modes`. If `CODEX_ENABLED=true`, also dispatch:
 
 ```
 Agent(
