@@ -1,6 +1,19 @@
 ---
 name: cf-sys-debug
-description: Use when diagnosing bugs, investigating failures, or fixing broken behavior
+description: >
+  Systematic 4-phase debugging — root cause investigation, hypothesis testing,
+  regression-guarded fix, mandatory bug doc. Auto-invoke when a bug is non-trivial
+  or a previous fix didn't stick — signals: bug recurs ("still broken", "same error
+  again", "came back"), flaky / intermittent / race / timing, "used to work, now
+  broken", regression after update or dependency bump, hard-to-reproduce, works
+  locally but fails in CI (or vice versa), multi-stage pipeline failure, stack
+  trace into a library, user already tried fixes that didn't help, or user asks
+  to "find the root cause", "investigate", "diagnose", "why is this happening",
+  "trace this", "bisect", "deep dive". Also load BEFORE touching code whenever
+  the cause is unclear and a hypothesis must be stated first. Prefer over cf-fix
+  for hard, recurring, or investigation-heavy bugs (cf-fix may delegate here).
+  Do NOT auto-invoke for trivial typos, one-line fixes, or config errors with an
+  obvious cause.
 user-invocable: false
 ---
 
