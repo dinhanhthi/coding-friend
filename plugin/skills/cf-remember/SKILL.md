@@ -6,9 +6,17 @@ description: >
   preserve knowledge from the current session — e.g. "remember this", "save this to memory",
   "document what we did", "capture this decision", "write this down", "save for later",
   "don't forget", "note this", "record this convention", "preserve this knowledge".
-  Auto-invoke when the conversation produces significant project knowledge worth preserving —
-  architecture decisions, non-obvious conventions, complex feature flows, or important gotchas
-  that would save time in future sessions. Do NOT auto-invoke for trivial changes.
+  Auto-invoke when ANY of these signals appear:
+  (1) A bug fix (via cf-fix or cf-sys-debug) involved a non-obvious root cause, a workaround,
+  or required multiple failed attempts before resolving — save to bugs/ so future sessions avoid the same trap.
+  (2) An explicit architecture or approach decision was made in conversation — e.g. "we chose X over Y
+  because...", "we decided to use X instead of Y", "the reason we're doing X is..." — save to decisions/.
+  (3) A new project-wide convention or pattern was established during implementation — e.g. a naming rule,
+  an API design pattern, a structural constraint — save to conventions/.
+  (4) A substantial session ends with newly documented feature flows, non-obvious API behavior, or gotchas
+  that would save significant time in a future session — save to features/.
+  Do NOT auto-invoke for: trivial one-line fixes, simple config changes, purely educational exchanges
+  (use /cf-learn for those), or knowledge already obvious from reading the code.
   Unlike /cf-learn (educational notes for humans), this saves project context for AI recall.
 ---
 

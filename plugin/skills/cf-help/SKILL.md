@@ -66,7 +66,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
 - `/cf-optimize [target]` — ⚡⚡ — Structured optimization with before/after measurement
 - `/cf-scan [description]` — ⚡⚡⚡ — Scan project and bootstrap memory
-- `/cf-remember [topic]` — ⚡⚡ — Extract project knowledge to docs/memory/
+- `/cf-remember [topic]` — ⚡⚡ — Extract project knowledge to docs/memory/. Also auto-invoked.
 - `/cf-learn [topic]` — ⚡⚡ — Extract learnings (configurable output, language, categories)
 - `/cf-research [topic]` — ⚡⚡ — In-depth research with web search → docs/research/
 - `/cf-session [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
@@ -77,6 +77,8 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - **cf-tdd** — ⚡⚡ — When writing new code: RED → GREEN → REFACTOR
 - **cf-sys-debug** — ⚡⚡ — When debugging: investigate → analyze → test → fix
 - **cf-verification** — ⚡ — Before claiming done: run, read output, verify
+- **cf-learn** — ⚡⚡ — After substantial new knowledge: extract educational notes
+- **cf-remember** — ⚡⚡ — After non-obvious bug fixes, arch decisions, new conventions, or undocumented session gotchas: save to docs/memory/
 - **cf-help** — ⚡⚡ — When asking about Coding Friend skills, agents, or workflows
 
 ### Agents (run in forked sessions — separate context window)
