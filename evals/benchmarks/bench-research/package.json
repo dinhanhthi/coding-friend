@@ -1,6 +1,0 @@
-{
-  "name": "bench-research",
-  "version": "1.0.0",
-  "private": true,
-  "description": "A project exploring best practices for building CLI tools with TypeScript"
-}
