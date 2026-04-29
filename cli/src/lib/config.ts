@@ -193,6 +193,17 @@ function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
 }
 
 /**
+ * Strip unsupported fields from a raw config object using the schema.
+ * Falls back to the original if parsing fails (e.g. unknown top-level key).
+ */
+export function sanitizeRawConfig(
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = ConfigSchema.safeParse(raw);
+  return result.success ? (result.data as Record<string, unknown>) : raw;
+}
+
+/**
  * Load merged config: local deep-merges over global, both deep-merge over defaults.
  * Validates the merged result with Zod schema.
  */

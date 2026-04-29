@@ -35,10 +35,15 @@ vi.mock("../../lib/paths.js", () => ({
   ),
 }));
 
-vi.mock("../../lib/config.js", () => ({
-  loadConfig: vi.fn(() => ({})),
-  resolveMemoryDir: vi.fn(() => "/mock/docs/memory"),
-}));
+vi.mock("../../lib/config.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../lib/config.js")>();
+  return {
+    ...actual,
+    loadConfig: vi.fn(() => ({})),
+    resolveMemoryDir: vi.fn(() => "/mock/docs/memory"),
+  };
+});
 
 vi.mock("../../lib/plugin-state.js", () => ({
   isPluginInstalled: vi.fn(() => true),
@@ -373,6 +378,23 @@ describe("statusCommand — config section", () => {
 
     const joined = output.join("\n");
     expect(joined).not.toContain("⚙️ Config");
+  });
+
+  it("strips unsupported memory.daemon field from config display", async () => {
+    const output = captureOutput();
+    mockReadJson.mockImplementation((path: string) => {
+      if (path === "/mock/.coding-friend/config.json") {
+        return { memory: { daemon: { idleTimeout: 1800000 }, tier: "auto" } };
+      }
+      return null;
+    });
+
+    await statusCommand();
+
+    const joined = output.join("\n");
+    expect(joined).not.toContain("daemon");
+    expect(joined).not.toContain("idleTimeout");
+    expect(joined).toContain("tier"); // valid field still shown
   });
 
   it("does not show override indicator for keys only in local config", async () => {

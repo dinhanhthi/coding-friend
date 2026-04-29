@@ -12,7 +12,7 @@ import {
 } from "../lib/paths.js";
 import { getExistingRules } from "../lib/permissions.js";
 import { isPluginDisabled, detectPluginScope } from "../lib/plugin-state.js";
-import { resolveMemoryDir } from "../lib/config.js";
+import { resolveMemoryDir, resolveDocsDir, sanitizeRawConfig } from "../lib/config.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   semverCompare,
@@ -20,6 +20,10 @@ import {
   getCliVersion,
   getLatestCliVersion,
 } from "./update.js";
+import {
+  checkMemoryMcpHealth,
+  checkLearnMcpHealth,
+} from "../lib/mcp-health.js";
 
 const VERSION_COL = 11;
 const CONFIG_KEY_COL = 16;
@@ -36,6 +40,22 @@ function countMdFiles(dir: string): number {
     }
   }
   return count;
+}
+
+function listMdFilesRecursive(dir: string): string[] {
+  try {
+    const results: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        results.push(...listMdFilesRecursive(join(dir, entry.name)));
+      } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
+        results.push(entry.name);
+      }
+    }
+    return results;
+  } catch {
+    return [];
+  }
 }
 
 function formatUptime(seconds: number): string {
@@ -297,9 +317,105 @@ export async function statusCommand(): Promise<void> {
   console.log(`${pad("Documents", VERSION_COL)}${docCount} files`);
   console.log(chalk.dim(`  → Run "cf memory status" for details`));
 
+  // ─── MCP ─────────────────────────────────────────────────────────
+  console.log();
+  console.log(chalk.bold("🔌 MCP"));
+
+  try {
+    const localMcpPath = join(process.cwd(), ".mcp.json");
+
+    // Memory MCP sub-section
+    console.log(chalk.dim("  Memory MCP (coding-friend-memory)"));
+    let memIsDaemonRunning: () => Promise<boolean> = async () => false;
+    const memMcpDir = (() => {
+      try {
+        return getLibPath("cf-memory");
+      } catch {
+        return null;
+      }
+    })();
+    const memoryDistPath = memMcpDir ? join(memMcpDir, "dist", "index.js") : "/unavailable";
+    if (memMcpDir) {
+      try {
+        const proc = await import(join(memMcpDir, "dist/daemon/process.js"));
+        memIsDaemonRunning = proc.isDaemonRunning;
+      } catch {
+        // not built yet — daemon reports stopped (warn)
+      }
+    }
+
+    const memHealth = await checkMemoryMcpHealth({
+      readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
+      pathExists: existsSync,
+      isDaemonRunning: memIsDaemonRunning,
+      memoryDistPath,
+    });
+
+    let memHasIssues = false;
+    for (const check of memHealth.checks) {
+      const indicator = check.ok
+        ? chalk.green("✓")
+        : check.warn
+          ? chalk.yellow("⚠")
+          : chalk.red("✗");
+      const detail = !check.ok && check.detail ? `: ${check.detail}` : "";
+      console.log(`    ${indicator} ${pad(check.label, 20)}${detail}`);
+      if (!check.ok && !check.warn) memHasIssues = true;
+    }
+    if (memHasIssues) {
+      console.log(chalk.dim(`    → Run "cf mcp" to fix`));
+    }
+
+    console.log();
+
+    // Learn MCP sub-section
+    console.log(chalk.dim("  Learn MCP (coding-friend-learn)"));
+    let learnMcpDir: string | null = null;
+    try {
+      learnMcpDir = getLibPath("learn-mcp");
+    } catch {
+      // not available
+    }
+    const learnMcpDistPath = learnMcpDir
+      ? join(learnMcpDir, "dist", "index.js")
+      : "/unavailable";
+    const docsDir = resolveDocsDir();
+
+    const learnHealth = await checkLearnMcpHealth({
+      readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
+      pathExists: existsSync,
+      listMdFiles: listMdFilesRecursive,
+      docsDir,
+      learnMcpDistPath,
+    });
+
+    let learnHasIssues = false;
+    for (const check of learnHealth.checks) {
+      const indicator = check.ok
+        ? chalk.green("✓")
+        : check.warn
+          ? chalk.yellow("⚠")
+          : chalk.red("✗");
+      const detail = !check.ok && check.detail ? `: ${check.detail}` : "";
+      console.log(`    ${indicator} ${pad(check.label, 20)}${detail}`);
+      if (!check.ok && !check.warn) learnHasIssues = true;
+    }
+    if (learnHasIssues) {
+      console.log(chalk.dim(`    → Run "cf mcp" to fix`));
+    }
+  } catch {
+    console.log(`${pad("MCP", VERSION_COL)}${chalk.dim("unavailable")}`);
+  }
+
   // ─── Config ──────────────────────────────────────────────────────
-  const globalConfig = readJson<Record<string, unknown>>(globalConfigPath());
-  const localConfig = readJson<Record<string, unknown>>(localConfigPath());
+  const rawGlobalConfig = readJson<Record<string, unknown>>(globalConfigPath());
+  const rawLocalConfig = readJson<Record<string, unknown>>(localConfigPath());
+  const globalConfig = rawGlobalConfig
+    ? sanitizeRawConfig(rawGlobalConfig)
+    : null;
+  const localConfig = rawLocalConfig
+    ? sanitizeRawConfig(rawLocalConfig)
+    : null;
 
   if (globalConfig && Object.keys(globalConfig).length > 0) {
     console.log();
