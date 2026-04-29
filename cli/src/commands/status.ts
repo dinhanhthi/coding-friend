@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
+import { listMdFilesRecursive } from "../lib/fs-utils.js";
 
 import { getInstalledVersion } from "../lib/statusline.js";
 import { readJson } from "../lib/json.js";
@@ -40,22 +41,6 @@ function countMdFiles(dir: string): number {
     }
   }
   return count;
-}
-
-function listMdFilesRecursive(dir: string): string[] {
-  try {
-    const results: string[] = [];
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        results.push(...listMdFilesRecursive(join(dir, entry.name)));
-      } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-        results.push(entry.name);
-      }
-    }
-    return results;
-  } catch {
-    return [];
-  }
 }
 
 function formatUptime(seconds: number): string {
