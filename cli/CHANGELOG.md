@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.34.1 (2026-04-30)
+
+- Remove `codex` config block from CLI — drops `config.codex.enabled/modes/effort` fields, Codex init wizard prompts, and `cf config` Codex edit flow; adds migration handling for graceful upgrade from legacy configs with `codex` keys [#6504b88f](https://github.com/dinhanhthi/coding-friend/commit/6504b88f)
+- Improve `cf init` command list: include `/cf-design` in the available commands printed after setup completes [#d4550b25](https://github.com/dinhanhthi/coding-friend/commit/d4550b25)
+
 ## v1.34.0 (2026-04-29)
 
 - Add MCP health verification to `cf mcp` and `cf status` — reports whether the memory daemon is running and the MCP server is reachable, alongside config output [#f96dac1](https://github.com/dinhanhthi/coding-friend/commit/f96dac1)
