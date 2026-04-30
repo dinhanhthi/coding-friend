@@ -63,12 +63,6 @@ export interface MemoryConfig {
   autoStart?: boolean;
 }
 
-export interface CodexConfig {
-  enabled?: boolean;
-  modes?: Array<"QUICK" | "STANDARD" | "DEEP">;
-  effort?: "minimal" | "low" | "medium" | "high" | "xhigh";
-}
-
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
@@ -78,15 +72,13 @@ export interface CodingFriendConfig {
   autoApprove?: boolean;
   autoApproveIgnore?: string[];
   autoApproveAllowExtra?: string[];
-  codex?: CodexConfig;
 }
 
 export const DEFAULT_CONFIG: Required<
-  Pick<CodingFriendConfig, "language" | "docsDir" | "codex">
+  Pick<CodingFriendConfig, "language" | "docsDir">
 > & { learn: Required<LearnConfig> } = {
   language: "en",
   docsDir: "docs",
-  codex: { enabled: false, modes: ["STANDARD", "DEEP"], effort: "medium" },
   learn: {
     language: "en",
     outputDir: "docs/learn",

@@ -24,7 +24,6 @@ If two or more agents flag the **same file:line for the same issue**, merge into
 - Keep the **highest severity** classification
 - Note which agents flagged it (e.g., "flagged by security + quality agents")
 - Multi-agent agreement **raises confidence** — mention this in the finding
-- **Cross-engine agreement** (a Claude specialist + Codex `[L5: Codex]` both flag the same issue): this is the **strongest signal**. Annotate as "cross-engine agreement (Claude + Codex)" and bump severity one tier: Suggestion → Important, Important → Critical.
 
 ### 2. Severity Ranking
 
@@ -42,9 +41,8 @@ Preserve the original layer tag from each finding:
 - `[L2]` — Code Quality
 - `[L3: Security]` — Security
 - `[L4]` — Testing
-- `[L5: Codex]` — Codex cross-engine review
 
-If a finding was merged from multiple agents with different layer tags, show the primary tag with a note about the other. For cross-engine merges, show both tags: e.g., `[L3: Security][L5: Codex]`.
+If a finding was merged from multiple agents with different layer tags, show the primary tag with a note about the other.
 
 ## Output Format
 

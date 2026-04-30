@@ -60,75 +60,52 @@ Different behavior is expected based on the value of `[target]`:
 2. **Gather diff** — Collect changes via `git diff` and assess change size
 3. **Select review mode** — Auto-detect QUICK, STANDARD, or DEEP based on size and sensitivity
 4. **Dispatch to orchestrator** — Dispatch a [`cf-reviewer`](/docs/reference/agents/#cf-reviewer-orchestrator) orchestrator agent via the Agent tool (isolated context — clean, unbiased, token-efficient)
-5. **Parallel multi-agent review** — The orchestrator dispatches 5 specialist agents in parallel (plan alignment, security, code quality + slop detection, test coverage, project rules) plus an optional Codex cross-engine reviewer, then merges results via a reducer agent that deduplicates and severity-ranks findings
+5. **Parallel multi-agent review** — The orchestrator dispatches 5 specialist agents in parallel (plan alignment, security, code quality + slop detection, test coverage, project rules), then merges results via a reducer agent that deduplicates and severity-ranks findings
 6. **Run dedicated security scan** — Invoke Claude Code's built-in [`/security-review`](https://github.com/anthropics/claude-code-security-review) for an additional security-focused pass, then merge and deduplicate findings with Layer 3 results
 7. **Report findings** — All findings from every layer collected into 4 categories (🚨 Critical / ⚠️ Important / 💡 Suggestion / 📋 Summary), each tagged with source layer
 
 ### Review Modes
 
-| Mode         | When                                              | What Happens                                                                                   |
-| ------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **QUICK**    | ≤3 files, ≤50 lines, no sensitive paths           | Secret scan + obvious issues only. Fast. Codex skipped.                                        |
-| **STANDARD** | 4–10 files or 51–300 lines                        | Full 5-layer review. All security phases, concise. Codex runs if enabled.                      |
-| **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. Codex runs if enabled. |
+| Mode         | When                                              | What Happens                                                            |
+| ------------ | ------------------------------------------------- | ----------------------------------------------------------------------- |
+| **QUICK**    | ≤3 files, ≤50 lines, no sensitive paths           | Secret scan + obvious issues only. Fast.                                |
+| **STANDARD** | 4–10 files or 51–300 lines                        | Full 5-layer review. All security phases, concise.                      |
+| **DEEP**     | >10 files, >300 lines, or sensitive paths touched | Full 5-layer + extended security. Data flow tracing. Exploit scenarios. |
 
 If any changed file matches sensitive patterns (`auth`, `crypto`, `token`, `session`, `password`, `.env`), the review always escalates to **DEEP**. Override with `--deep` or `--quick` flags.
 
-### Multi-Layer Review (+ optional Codex)
+### Multi-Layer Review
 
-| Layer                   | Focus                                                                 |
-| ----------------------- | --------------------------------------------------------------------- |
-| **0. Project Rules**    | CLAUDE.md compliance — MUST/SHOULD rule violations                    |
-| **1. Plan Alignment**   | Does the code match the intended design? Missing pieces?              |
-| **2. Code Quality**     | Clarity, naming, consistency, complexity, performance, slop detection |
-| **3. Security**         | Injection, auth bypasses, secrets, data flow — depth scaled by mode   |
-| **4. Testing**          | Coverage gaps, edge cases, error paths, integration tests             |
-| **5. Codex** _(opt-in)_ | Cross-engine review via OpenAI Codex CLI — independent perspective    |
+| Layer                 | Focus                                                                 |
+| --------------------- | --------------------------------------------------------------------- |
+| **0. Project Rules**  | CLAUDE.md compliance — MUST/SHOULD rule violations                    |
+| **1. Plan Alignment** | Does the code match the intended design? Missing pieces?              |
+| **2. Code Quality**   | Clarity, naming, consistency, complexity, performance, slop detection |
+| **3. Security**       | Injection, auth bypasses, secrets, data flow — depth scaled by mode   |
+| **4. Testing**        | Coverage gaps, edge cases, error paths, integration tests             |
 
 All findings are confidence-scored (0–1). Only findings above 0.8 are reported, reducing false positives.
-
-### Codex Cross-Engine Review (opt-in)
-
-When `codex.enabled = true` in your config and the `codex` CLI is in PATH, a 6th specialist runs in STANDARD and DEEP modes. Codex reviews the same diff independently — when both Claude and Codex flag the same `file:line`, the severity is bumped one tier (cross-engine agreement is the strongest signal).
-
-Enable in `.coding-friend/config.json`:
-
-```json
-{
-  "codex": {
-    "enabled": true,
-    "modes": ["STANDARD", "DEEP"],
-    "effort": "medium"
-  }
-}
-```
-
-Or configure interactively with `cf config` → **Codex cross-engine review**.
-
-Codex findings are tagged `[L5: Codex]` in the report. If Codex is unavailable or not configured, it is silently skipped — no warnings, no errors.
 
 ## Output
 
 Findings from all 5 layers are collected and organized into 4 severity categories — no separate layer headings. Each finding is tagged with its source layer inline (e.g., `[L3]` for Security):
 
 ```
-## 🔍 Code Review: src/auth/ (DEEP mode, Codex enabled)
+## 🔍 Code Review: src/auth/ (DEEP mode)
 
 ### 🚨 Critical Issues
-- **[L3][L5: Codex]** db/queries.ts:42 — Unsanitized SQL in query builder (confidence: 0.95)
+- **[L3]** db/queries.ts:42 — Unsanitized SQL in query builder (confidence: 0.95)
   **[Injection]** — attacker can bypass auth via crafted email field
   → Use parameterized queries instead of string interpolation
-  ↑ Cross-engine agreement — severity elevated
 
 ### ⚠️ Important Issues
 - **[L4]** api/auth.ts:18 — Missing rate limit test on login endpoint (confidence: 0.85)
 
 ### 💡 Suggestions
 - **[L2]** src/auth/validators.ts:30 — Consider extracting validation logic into shared util
-- **[L5: Codex]** src/auth/session.ts:12 — Session token entropy could be improved
 
 ### 📋 Summary
-Auth module is functional but has one critical SQL injection vulnerability. Codex confirmed the SQL issue and flagged an additional session entropy concern.
+Auth module is functional but has one critical SQL injection vulnerability in the query builder.
 ```
 
 ## Auto-Triggered

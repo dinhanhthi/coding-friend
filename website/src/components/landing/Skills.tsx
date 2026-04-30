@@ -72,12 +72,6 @@ const slashCommandMeta: SkillMeta[] = [
     description: "Multi-layer code review in a forked subagent",
   },
   {
-    command: "/cf-review-codex",
-    title: "Review (Codex)",
-    description:
-      "Code review run by Codex (GPT) via the official Codex plugin — same input/output as /cf-review",
-  },
-  {
     command: "/cf-review-in",
     title: "Review In",
     description: "Collect and act on review results from an external AI agent",

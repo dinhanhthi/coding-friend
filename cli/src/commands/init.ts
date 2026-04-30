@@ -62,7 +62,6 @@ import {
   isMemoryInitialized,
   memoryInitWizard,
 } from "./memory.js";
-import { editCodex } from "./config.js";
 
 const GITIGNORE_START = "# >>> coding-friend managed";
 const GITIGNORE_END = "# <<< coding-friend managed";
@@ -954,13 +953,6 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
-    const codexScope = getScopeLabel("codex", globalCfg, localCfg);
-    const codexEnabled = (
-      getMergedValue("codex", globalCfg, localCfg) as
-        | CodingFriendConfig["codex"]
-        | undefined
-    )?.enabled;
-
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
     const allRules = getAllRules();
@@ -1027,12 +1019,6 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         value: "autoApprove",
         description:
           "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
-      },
-      {
-        name: `Codex cross-engine review ${formatScopeLabel(codexScope)}${codexEnabled !== undefined ? ` (${codexEnabled ? "enabled" : "disabled"})` : ""}`,
-        value: "codex",
-        description:
-          "  Enable OpenAI Codex as 6th specialist in /cf-review (opt-in)",
       },
       {
         name: `Permissions (${permissionStatus} rules)`,
@@ -1115,9 +1101,6 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         }
         break;
       }
-      case "codex":
-        await editCodex(globalCfg, localCfg);
-        break;
       case "permissions": {
         const learnCfg = (localCfg?.learn ?? globalCfg?.learn) as
           | CodingFriendConfig["learn"]
@@ -1306,6 +1289,6 @@ export async function initCommand(): Promise<void> {
   console.log();
   log.congrats("Setup complete!");
   log.dim(
-    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-review-codex, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help",
+    "Available commands: /cf-ask, /cf-plan, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help",
   );
 }

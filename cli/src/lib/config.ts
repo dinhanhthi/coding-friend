@@ -74,12 +74,6 @@ const MemoryConfigSchema = z.object({
   autoStart: z.boolean().optional(),
 });
 
-const CodexConfigSchema = z.strictObject({
-  enabled: z.boolean().optional(),
-  modes: z.array(z.enum(["QUICK", "STANDARD", "DEEP"])).optional(),
-  effort: z.enum(["minimal", "low", "medium", "high", "xhigh"]).optional(),
-});
-
 const ConfigSchema = z.strictObject({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -89,7 +83,6 @@ const ConfigSchema = z.strictObject({
   autoApprove: z.boolean().optional(),
   autoApproveIgnore: z.array(z.string()).optional(),
   autoApproveAllowExtra: z.array(z.string()).optional(),
-  codex: CodexConfigSchema.optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -102,7 +95,6 @@ const KNOWN_KEYS = [
   "autoApprove",
   "autoApproveIgnore",
   "autoApproveAllowExtra",
-  "codex",
 ];
 
 function suggestKey(unknown: string): string | null {
@@ -152,7 +144,7 @@ function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
     const pathStr = issue.path.join(".");
 
     if (issue.code === "unrecognized_keys") {
-      // Unknown keys — may be at top level or nested (e.g. inside codex block)
+      // Unknown keys — may be at top level or nested inside sub-objects
       const keys = (issue as { keys: string[] }).keys ?? [];
       for (const key of keys) {
         const isNested = issue.path.length > 0;
