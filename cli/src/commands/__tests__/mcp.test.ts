@@ -113,7 +113,12 @@ describe("printHealthSection", () => {
     const result: McpHealthResult = {
       checks: [
         { label: "Config", ok: false, detail: "missing", fix: "Run cf mcp 1" },
-        { label: "Package", ok: false, detail: "not built", fix: "Run cf mcp 2" },
+        {
+          label: "Package",
+          ok: false,
+          detail: "not built",
+          fix: "Run cf mcp 2",
+        },
       ],
       ok: false,
     };

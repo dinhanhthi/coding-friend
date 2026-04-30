@@ -43,6 +43,11 @@ export const docsNavigation: NavSection[] = [
         tier: tierOf("skills/cf-commit"),
       },
       {
+        title: "/cf-design",
+        slug: "skills/cf-design",
+        tier: tierOf("skills/cf-design"),
+      },
+      {
         title: "/cf-fix",
         slug: "skills/cf-fix",
         tier: tierOf("skills/cf-fix"),

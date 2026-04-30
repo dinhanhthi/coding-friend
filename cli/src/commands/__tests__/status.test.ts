@@ -36,8 +36,7 @@ vi.mock("../../lib/paths.js", () => ({
 }));
 
 vi.mock("../../lib/config.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../lib/config.js")>();
+  const actual = await importOriginal<typeof import("../../lib/config.js")>();
   return {
     ...actual,
     loadConfig: vi.fn(() => ({})),

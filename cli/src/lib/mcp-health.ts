@@ -106,8 +106,7 @@ export async function checkMemoryMcpHealth(
     daemonRunning = await deps.isDaemonRunning();
   } catch (err) {
     // If we can't check, treat as stopped (warn) — capture the error detail
-    daemonCheckError =
-      err instanceof Error ? err.message : String(err);
+    daemonCheckError = err instanceof Error ? err.message : String(err);
   }
 
   checks.push({

@@ -36,7 +36,8 @@ function makeLearnDeps(overrides: {
     pathExists: overrides.pathExists ?? (() => false),
     listMdFiles: overrides.listMdFiles ?? (() => []),
     docsDir: overrides.docsDir ?? "/fake/docs",
-    learnMcpDistPath: overrides.learnMcpDistPath ?? "/fake/learn-mcp/dist/index.js",
+    learnMcpDistPath:
+      overrides.learnMcpDistPath ?? "/fake/learn-mcp/dist/index.js",
   };
 }
 
@@ -48,7 +49,9 @@ describe("checkMemoryMcpHealth", () => {
       const result = await checkMemoryMcpHealth(
         makeMemoryDeps({ mcpJson: { mcpServers: {} } }),
       );
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck).toBeDefined();
       expect(configCheck!.ok).toBe(false);
       expect(configCheck!.warn).toBeFalsy();
@@ -59,7 +62,9 @@ describe("checkMemoryMcpHealth", () => {
       const result = await checkMemoryMcpHealth(
         makeMemoryDeps({ mcpJson: null }),
       );
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(false);
     });
 
@@ -76,7 +81,9 @@ describe("checkMemoryMcpHealth", () => {
         pathExists: () => false,
       });
       const result = await checkMemoryMcpHealth(deps);
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(false);
       expect(configCheck!.fix).toContain("cf memory mcp");
     });
@@ -94,7 +101,9 @@ describe("checkMemoryMcpHealth", () => {
         pathExists: (p) => p === "/existing/path/index.js",
       });
       const result = await checkMemoryMcpHealth(deps);
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(false);
       expect(configCheck!.fix).toContain("cf memory mcp");
     });
@@ -111,7 +120,9 @@ describe("checkMemoryMcpHealth", () => {
         },
       });
       const result = await checkMemoryMcpHealth(deps);
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(true);
     });
   });
@@ -152,7 +163,9 @@ describe("checkMemoryMcpHealth", () => {
         isDaemonRunning: async () => true,
       });
       const result = await checkMemoryMcpHealth(deps);
-      const daemonCheck = result.checks.find((c) => c.label === "Daemon status");
+      const daemonCheck = result.checks.find(
+        (c) => c.label === "Daemon status",
+      );
       expect(daemonCheck!.ok).toBe(true);
       expect(daemonCheck!.warn).toBeFalsy();
     });
@@ -166,7 +179,9 @@ describe("checkMemoryMcpHealth", () => {
         isDaemonRunning: async () => false,
       });
       const result = await checkMemoryMcpHealth(deps);
-      const daemonCheck = result.checks.find((c) => c.label === "Daemon status");
+      const daemonCheck = result.checks.find(
+        (c) => c.label === "Daemon status",
+      );
       expect(daemonCheck!.ok).toBe(false);
       expect(daemonCheck!.warn).toBe(true);
     });
@@ -199,7 +214,9 @@ describe("checkMemoryMcpHealth", () => {
     });
 
     it("is false when config is missing", async () => {
-      const result = await checkMemoryMcpHealth(makeMemoryDeps({ mcpJson: null }));
+      const result = await checkMemoryMcpHealth(
+        makeMemoryDeps({ mcpJson: null }),
+      );
       expect(result.ok).toBe(false);
     });
   });
@@ -253,7 +270,9 @@ describe("checkLearnMcpHealth — mcpServers type guard", () => {
     const result = await checkLearnMcpHealth(
       makeLearnDeps({ mcpJson: { mcpServers: "not-an-object" } }),
     );
-    const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+    const configCheck = result.checks.find(
+      (c) => c.label === "Config (.mcp.json)",
+    );
     expect(configCheck!.ok).toBe(false);
   });
 
@@ -261,7 +280,9 @@ describe("checkLearnMcpHealth — mcpServers type guard", () => {
     const result = await checkLearnMcpHealth(
       makeLearnDeps({ mcpJson: { mcpServers: ["item1", "item2"] } }),
     );
-    const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+    const configCheck = result.checks.find(
+      (c) => c.label === "Config (.mcp.json)",
+    );
     expect(configCheck!.ok).toBe(false);
   });
 
@@ -269,7 +290,9 @@ describe("checkLearnMcpHealth — mcpServers type guard", () => {
     const result = await checkLearnMcpHealth(
       makeLearnDeps({ mcpJson: { mcpServers: 42 } }),
     );
-    const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+    const configCheck = result.checks.find(
+      (c) => c.label === "Config (.mcp.json)",
+    );
     expect(configCheck!.ok).toBe(false);
   });
 });
@@ -282,14 +305,20 @@ describe("checkLearnMcpHealth", () => {
       const result = await checkLearnMcpHealth(
         makeLearnDeps({ mcpJson: { mcpServers: {} } }),
       );
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(false);
       expect(configCheck!.fix).toBeDefined();
     });
 
     it("fails when .mcp.json is null", async () => {
-      const result = await checkLearnMcpHealth(makeLearnDeps({ mcpJson: null }));
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const result = await checkLearnMcpHealth(
+        makeLearnDeps({ mcpJson: null }),
+      );
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(false);
     });
 
@@ -306,7 +335,9 @@ describe("checkLearnMcpHealth", () => {
           },
         }),
       );
-      const configCheck = result.checks.find((c) => c.label === "Config (.mcp.json)");
+      const configCheck = result.checks.find(
+        (c) => c.label === "Config (.mcp.json)",
+      );
       expect(configCheck!.ok).toBe(true);
     });
   });
@@ -388,7 +419,9 @@ describe("checkLearnMcpHealth", () => {
     });
 
     it("is false when config is missing", async () => {
-      const result = await checkLearnMcpHealth(makeLearnDeps({ mcpJson: null }));
+      const result = await checkLearnMcpHealth(
+        makeLearnDeps({ mcpJson: null }),
+      );
       expect(result.ok).toBe(false);
     });
   });

@@ -13,7 +13,11 @@ import {
 } from "../lib/paths.js";
 import { getExistingRules } from "../lib/permissions.js";
 import { isPluginDisabled, detectPluginScope } from "../lib/plugin-state.js";
-import { resolveMemoryDir, resolveDocsDir, sanitizeRawConfig } from "../lib/config.js";
+import {
+  resolveMemoryDir,
+  resolveDocsDir,
+  sanitizeRawConfig,
+} from "../lib/config.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   semverCompare,
@@ -319,7 +323,9 @@ export async function statusCommand(): Promise<void> {
         return null;
       }
     })();
-    const memoryDistPath = memMcpDir ? join(memMcpDir, "dist", "index.js") : "/unavailable";
+    const memoryDistPath = memMcpDir
+      ? join(memMcpDir, "dist", "index.js")
+      : "/unavailable";
     if (memMcpDir) {
       try {
         const proc = await import(join(memMcpDir, "dist/daemon/process.js"));
@@ -398,9 +404,7 @@ export async function statusCommand(): Promise<void> {
   const globalConfig = rawGlobalConfig
     ? sanitizeRawConfig(rawGlobalConfig)
     : null;
-  const localConfig = rawLocalConfig
-    ? sanitizeRawConfig(rawLocalConfig)
-    : null;
+  const localConfig = rawLocalConfig ? sanitizeRawConfig(rawLocalConfig) : null;
 
   if (globalConfig && Object.keys(globalConfig).length > 0) {
     console.log();

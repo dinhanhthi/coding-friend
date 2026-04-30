@@ -29,6 +29,12 @@ const slashCommandMeta: SkillMeta[] = [
     description: "Smart conventional commits with diff analysis",
   },
   {
+    command: "/cf-design",
+    title: "Design",
+    description:
+      "Scan existing UI patterns, design new components, or modify UI while keeping everything visually consistent.",
+  },
+  {
     command: "/cf-fix",
     title: "Fix",
     description:
