@@ -7,7 +7,10 @@ import { listMdFilesRecursive } from "../fs-utils.js";
 let testDir: string;
 
 beforeEach(() => {
-  testDir = join(tmpdir(), `cf-fs-utils-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  testDir = join(
+    tmpdir(),
+    `cf-fs-utils-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   mkdirSync(testDir, { recursive: true });
 });
 
@@ -97,7 +100,9 @@ describe("listMdFilesRecursive", () => {
 
   it("returns empty array (not error) when directory is unreadable (not exists)", () => {
     // Simulated by passing a non-existent path
-    const result = listMdFilesRecursive("/nonexistent/path/that/does/not/exist");
+    const result = listMdFilesRecursive(
+      "/nonexistent/path/that/does/not/exist",
+    );
     expect(result).toEqual([]);
   });
 });

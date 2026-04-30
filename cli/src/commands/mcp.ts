@@ -94,7 +94,9 @@ export async function mcpCommand(path?: string): Promise<void> {
   // Build if needed
   if (!existsSync(join(learnMcpDir, "dist"))) {
     log.step("Building MCP server...");
-    const result = run("npm", ["run", "build", "--silent"], { cwd: learnMcpDir });
+    const result = run("npm", ["run", "build", "--silent"], {
+      cwd: learnMcpDir,
+    });
     if (result === null) {
       log.error("Failed to build MCP server");
       process.exit(1);

@@ -26,6 +26,7 @@ const slashCommandMeta: Record<string, string> = {
   "cf-research": "In-depth research",
   "cf-session": "Save/load sessions",
   "cf-commit": "Smart conventional commits",
+  "cf-design": "UI design: scan patterns, design or modify UI consistently",
   "cf-ship": "Verify, commit, push, PR",
   "cf-teach": "Personal teacher — conversational storytelling breakdown",
   "cf-warm": "Catch up after absence — git history summary",
@@ -90,6 +91,11 @@ const overviewSlashMeta: Record<
   },
   "cf-commit": {
     description: "Smart conventional commits with diff analysis",
+    triggeredBy: "slash",
+  },
+  "cf-design": {
+    description:
+      "UI design workflow — scan existing patterns, design new UI, or modify UI while keeping it visually consistent",
     triggeredBy: "slash",
   },
   "cf-ship": {

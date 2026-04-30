@@ -1,0 +1,97 @@
+---
+title: "/cf-design"
+description: "UI design workflow — scan existing patterns, design new UI from a description, or modify UI while keeping it visually consistent."
+keywords:
+  [
+    design,
+    ui,
+    ux,
+    design system,
+    design patterns,
+    styling,
+    css,
+    tailwind,
+    consistency,
+  ]
+---
+
+Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
+
+The `/cf-design` skill helps you design UI with intent and consistency. It understands your project's existing visual style, applies design principles to avoid generic AI-looking output, and can search the web for current best practices.
+
+## Usage
+
+```bash
+# Scan existing UI and extract design patterns
+/cf-design scan [path]
+
+# Design new UI from a description
+/cf-design create a hero section with glassmorphism style
+
+# Modify existing UI consistently
+/cf-design modify the navbar -- make it sticky with blur backdrop
+
+# No args — Claude will ask what you need
+/cf-design
+```
+
+## 3 Modes
+
+| Mode       | Trigger                | What It Does                                                                                                    |
+| ---------- | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Scan**   | First word is `scan`   | Reads UI files, extracts color/typography/spacing/component patterns, saves to `docs/memory/DESIGN_PATTERNS.md` |
+| **Design** | Any description        | Implements new UI from your description, using existing patterns as a base                                      |
+| **Modify** | First word is `modify` | Changes a specific UI element while enforcing consistency with the rest                                         |
+
+## Design Patterns File
+
+When you run `/cf-design scan`, the skill saves your project's visual DNA to `docs/memory/DESIGN_PATTERNS.md`. This file is automatically loaded in every subsequent `/cf-design` call, so all future designs stay consistent.
+
+What gets captured:
+
+- **Colors** — primary, secondary, neutral, and semantic palette with exact values
+- **Typography** — font families, size scale, weights, line-heights
+- **Spacing** — base unit and scale
+- **Shape** — border-radius, shadow system
+- **Components** — how buttons, cards, inputs, and other elements are styled
+- **Overall style** — detected design style (minimalist, dark-first, glassmorphism, etc.)
+
+Run `/cf-design scan` again after major UI refactors to keep the file current.
+
+## What Makes It Different
+
+`/cf-design` actively fights AI-generic output with **design dials** — intentional variation across layout, spacing, color specificity, and typography weight. Every implementation commits to specific values rather than defaulting to `font-medium`, `space-y-4`, or `from-purple-600`.
+
+It also reads the project's `DESIGN_PATTERNS.md` before making any decision, so a navbar modification won't accidentally introduce a color that doesn't exist in your palette.
+
+## Web Search
+
+When you need current best practices or inspiration for a specific style, `/cf-design` can search the web. Just mention the pattern you're looking for:
+
+```bash
+/cf-design add a command palette -- modern, keyboard-first
+# → Will search for command palette UI patterns and apply them
+```
+
+## Integration
+
+- **`/cf-remember`** — Run after scan mode to index `DESIGN_PATTERNS.md` in the memory system for future sessions
+- **`/cf-research`** — Use alongside `/cf-design` when you need deep research on a specific style or pattern before designing
+- **`/cf-review`** — After design changes, run `/cf-review` with `DESIGN_PATTERNS.md` as context to catch visual inconsistencies
+- **`/cf-plan`** — Run `/cf-design scan` before planning a UI-heavy feature to capture the design context
+
+## Examples
+
+```bash
+# First time on a project — extract what's there
+/cf-design scan src/components
+
+# Build something new that fits the system
+/cf-design create a pricing table with 3 tiers
+
+# Fix a specific element
+/cf-design modify the footer -- add social links and make it darker
+
+# Ask what patterns the project uses
+/cf-design scan
+```

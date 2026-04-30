@@ -205,7 +205,9 @@ export function sanitizeRawConfig(
     }
   }
   const keyList = unknownKeys.length > 0 ? `: ${unknownKeys.join(", ")}` : "";
-  log.warn(`sanitizeRawConfig: unrecognized config keys${keyList} — returning raw config`);
+  log.warn(
+    `sanitizeRawConfig: unrecognized config keys${keyList} — returning raw config`,
+  );
   return raw;
 }
 

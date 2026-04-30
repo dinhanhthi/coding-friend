@@ -226,16 +226,11 @@ describe("loadConfig validation", () => {
   });
 
   it("warns and strips legacy codex block (migration: users who had codex config)", () => {
-    mockReadJson
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce({
-        codex: { enabled: true, modes: ["STANDARD", "DEEP"], effort: "medium" },
-      });
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({
+      codex: { enabled: true, modes: ["STANDARD", "DEEP"], effort: "medium" },
+    });
     const config = loadConfig();
-    expect(log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("codex"),
-    );
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("codex"));
     expect((config as Record<string, unknown>)["codex"]).toBeUndefined();
   });
-
 });

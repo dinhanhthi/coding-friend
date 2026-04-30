@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T10:55:15.247Z",
+  "generatedAt": "2026-04-30T11:16:34.232Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,7 +18,7 @@
     }
   },
   "bootstrap": {
-    "tokens": 1842,
+    "tokens": 1847,
     "tier": "medium"
   },
   "skills": {
@@ -29,6 +29,11 @@
     },
     "cf-commit": {
       "tokens": 1009,
+      "tier": "medium",
+      "type": "slash"
+    },
+    "cf-design": {
+      "tokens": 2447,
       "tier": "medium",
       "type": "slash"
     },
