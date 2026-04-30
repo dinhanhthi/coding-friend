@@ -24,11 +24,6 @@ Edit interactively with `cf config`, or manually edit the JSON files.
   "commit": {
     "verify": true
   },
-  "codex": {
-    "enabled": false,
-    "modes": ["STANDARD", "DEEP"],
-    "effort": "medium"
-  },
   "learn": {
     "language": "en",
     "outputDir": "docs/learn",
@@ -112,35 +107,6 @@ Settings for the `/cf-commit` workflow.
 - **Default**: `true`
 - Run tests before allowing commit
 - Set to `false` to skip pre-commit verification
-
-### `codex`
-
-Settings for the optional Codex cross-engine review in [`/cf-review`](/docs/skills/cf-review/).
-
-When enabled, a 6th specialist (OpenAI Codex CLI) runs in parallel with the 5 Claude agents during STANDARD and DEEP reviews. Cross-engine agreement — when both Claude and Codex flag the same `file:line` — bumps severity one tier. Codex is silently skipped when unavailable or not configured.
-
-Configure interactively with `cf config` → **Codex cross-engine review**.
-
-#### `codex.enabled`
-
-- **Type**: `boolean`
-- **Default**: `false`
-- Enable Codex as a 6th specialist in `/cf-review`
-- Requires `codex` CLI to be installed and in PATH (`npm install -g @openai/codex` or `brew install codex`)
-
-#### `codex.modes`
-
-- **Type**: `Array<"QUICK" | "STANDARD" | "DEEP">`
-- **Default**: `["STANDARD", "DEEP"]`
-- Review modes in which Codex runs
-- QUICK mode is not recommended (too small a diff to benefit from cross-engine review)
-
-#### `codex.effort`
-
-- **Type**: `"minimal" | "low" | "medium" | "high" | "xhigh"`
-- **Default**: `"medium"`
-- Codex reasoning effort level — higher effort is slower and more thorough
-- Maps to Codex CLI's `--effort` flag
 
 ### `learn`
 

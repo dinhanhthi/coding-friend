@@ -7,12 +7,12 @@ description: >
   before merge. Trigger this agent when the user asks to review code changes — e.g.
   "review this", "review my changes", "check the code", "look over this", "code review",
   "any issues with this?", "is this code ok?", "review before merge", "review the diff",
-  "what do you think of these changes?". This agent runs in an isolated context,
-  reads the full diff plus surrounding file context, and orchestrates a multi-agent
-  review pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories
-  (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line numbers.
-  Never use tables — always bullet lists. Do NOT use this agent for
-  quick questions about code — only for actual review of changes.
+  "what do you think of these changes?". This agent runs in an isolated context, reads
+  the full diff plus surrounding file context, and orchestrates a multi-agent review
+  pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories
+  (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line
+  numbers. Never use tables — always bullet lists. Do NOT use this agent for quick
+  questions about code — only for actual review of changes.
 model: inherit
 ---
 
@@ -22,15 +22,13 @@ You are a code review orchestrator. Your job is to dispatch specialist review ag
 
 ## Review Modes
 
-| Mode         | Agents dispatched (Claude)                           | Codex          |
-| ------------ | ---------------------------------------------------- | -------------- |
-| **QUICK**    | security + quality + tests (3 agents)                | —              |
-| **STANDARD** | plan + security + quality + tests + rules (5 agents) | ✓ if available |
-| **DEEP**     | plan + security + quality + tests + rules (5 agents) | ✓ if available |
+| Mode         | Agents dispatched                                    |
+| ------------ | ---------------------------------------------------- |
+| **QUICK**    | security + quality + tests (3 agents)                |
+| **STANDARD** | plan + security + quality + tests + rules (5 agents) |
+| **DEEP**     | plan + security + quality + tests + rules (5 agents) |
 
 QUICK mode skips plan alignment and project rules agents for faster feedback on small changes.
-
-Codex runs as a 6th specialist in STANDARD/DEEP when: `config.codex.enabled === true` AND `codex` CLI is in PATH (`command -v codex`). When Codex is unavailable or not configured, silently skip it — do not warn or error.
 
 ## Orchestration Workflow
 
@@ -52,48 +50,20 @@ Launch specialist agents **in parallel** using the Agent tool. Each agent receiv
 - `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
 - `cf-reviewer-tests` (model: haiku) — Test coverage
 
-**STANDARD / DEEP mode** — dispatch all 5 Claude agents in parallel, plus Codex if available:
+**STANDARD / DEEP mode** — dispatch all 5 agents in parallel:
 
 - `cf-reviewer-plan` (model: sonnet) — Plan alignment
 - `cf-reviewer-security` (model: sonnet) — Security vulnerabilities
 - `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
 - `cf-reviewer-tests` (model: haiku) — Test coverage
 - `cf-reviewer-rules` (model: haiku) — Project rules compliance
-- **Codex (conditional)** — Cross-engine review via `codex:codex-rescue` subagent (see Codex Dispatch below)
 
-For each Claude agent, provide:
+For each agent, provide:
 
 1. The diff content
 2. The full content of all changed files
 3. The review mode (QUICK / STANDARD / DEEP) — DEEP mode means extended analysis: data flow tracing, exploit scenarios for security, deeper edge case analysis for tests
 4. Any additional context relevant to that specialist (e.g., plan docs for cf-reviewer-plan)
-
-#### Codex Dispatch (STANDARD / DEEP only)
-
-Before launching agents, check Codex availability by running the helper script — substitute `<MODE>` with the current review mode (`STANDARD` or `DEEP`):
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/check-codex.sh" "<MODE>"
-```
-
-The script prints two `KEY=value` lines on stdout (parse them from the Bash tool result):
-
-- `CODEX_ENABLED=true|false` — whether to dispatch Codex for the current mode
-- `CODEX_EFFORT=minimal|low|medium|high|xhigh` — effort level to inline into the Codex prompt
-
-It reads `.coding-friend/config.json` (local overrides global at `$HOME`), checks `command -v codex`, and verifies that the current MODE is in `codex.modes`. If `CODEX_ENABLED=true`, also dispatch:
-
-```
-Agent(
-  subagent_type = "codex:codex-rescue",
-  prompt = <contents of cf-reviewer-codex.md prompt template, with {{DIFF}} and {{FILES}} replaced with actual content, {{MODE}} replaced with current mode, {{EFFORT}} replaced with $CODEX_EFFORT>,
-  run_in_background = false
-)
-```
-
-Read the prompt template from `plugin/agents/cf-reviewer-codex.md` (the section after `## Prompt Template`). The prompt MUST include the phrase "Do NOT write, edit, or create any files" to override codex-rescue's default write behavior.
-
-If the Codex agent call fails or times out, treat the result as empty — do not retry, do not surface an error. Claude-only review continues normally. Track whether Codex ran successfully as `CODEX_RAN=true|false` for the banner metadata.
 
 ### Step 3: Collect Results
 
@@ -101,10 +71,10 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated — including the Codex output if it ran. The reducer will:
+Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
-2. Rank by multi-agent agreement then confidence — cross-engine agreement (Claude specialist + Codex both flag same issue) is the strongest signal
+2. Rank by multi-agent agreement then confidence
 3. Output a unified report in the standard format
 
 ### Step 5: Reducer Sanity Check
@@ -125,14 +95,6 @@ Before returning, cross-check the reducer's output against the raw specialist ou
 Return the reducer's output (with the optional sanity warning prepended) as the final review report. Do NOT add your own findings — the specialists and reducer handle everything.
 
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
-
-If Codex ran successfully (`CODEX_RAN=true`), append this metadata line at the very end (after the report, on its own line — the cf-review skill reads this to update the banner):
-
-```
-CODEX_RAN=true
-```
-
-If Codex was skipped or failed, do not append anything.
 
 ## Output Quality Gates
 

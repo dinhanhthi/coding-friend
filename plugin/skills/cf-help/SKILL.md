@@ -60,7 +60,6 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
-- `/cf-review-codex [target]` — ⚡⚡⚡ — Dispatch code review to Codex (GPT) via the official Codex plugin; same input/output as `/cf-review`
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
 - `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
@@ -83,14 +82,13 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-reviewer** — ⚡ — Review orchestrator: dispatches 5 Claude specialist agents in parallel + Codex (if available) + reducer
+- **cf-reviewer** — ⚡ — Review orchestrator: dispatches 5 specialist agents in parallel + reducer
   - **cf-reviewer-plan** (sonnet) — Plan alignment
   - **cf-reviewer-security** (sonnet) — Security vulnerabilities
   - **cf-reviewer-quality** (haiku) — Code quality + slop detection
   - **cf-reviewer-tests** (haiku) — Test coverage
   - **cf-reviewer-rules** (haiku) — Project rules compliance (CLAUDE.md)
-  - **cf-reviewer-codex** (external/Codex) — Cross-engine review via `codex:codex-rescue` (opt-in, STANDARD/DEEP only)
-  - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings; cross-engine agreement (Claude + Codex) bumps severity
+  - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
 - **cf-implementer** — ⚡ — TDD implementation subagent (reads structured context file, returns result signals, supports auto-retry on failure)
 - **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
 - **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases (writes structured context file)

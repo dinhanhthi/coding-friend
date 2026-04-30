@@ -84,12 +84,6 @@ export const docsNavigation: NavSection[] = [
         tier: tierOf("skills/cf-review"),
       },
       {
-        title: "/cf-review-codex",
-        slug: "skills/cf-review-codex",
-        manualOnly: true,
-        tier: tierOf("skills/cf-review-codex"),
-      },
-      {
         title: "/cf-review-in",
         slug: "skills/cf-review-in",
         manualOnly: true,

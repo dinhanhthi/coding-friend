@@ -1155,13 +1155,6 @@ function CrossAgentContent() {
         >
           /cf-review-in
         </Link>
-        . For a fully automated GPT review via the official Codex plugin, run{" "}
-        <Link
-          className="text-violet-400 hover:underline hover:underline-offset-4"
-          href="/docs/skills/cf-review-codex/"
-        >
-          /cf-review-codex
-        </Link>
         .
       </p>
 

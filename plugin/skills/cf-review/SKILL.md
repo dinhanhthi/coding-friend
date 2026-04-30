@@ -114,11 +114,6 @@ Wait for the agent to return its report.
 
 The result of Step 6 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 10.
 
-Also check the last line of the cf-reviewer output for the metadata flag:
-
-- If the last line is exactly `CODEX_RAN=true` — strip this line from the report and set `CODEX_CROSS_CHECKED=true`.
-- Otherwise — `CODEX_CROSS_CHECKED=false`.
-
 ### Step 8: Mark review complete and display status
 
 ```bash
@@ -152,7 +147,7 @@ Display the cf-reviewer's report first, then append the appropriate banner:
 ╚══════════════════════════════════════════════════╝
 ```
 
-> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.[CODEX_LINE]
+> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
 >
 > You're clear to commit. Run `/cf-commit` when ready.
 
@@ -164,11 +159,6 @@ Display the cf-reviewer's report first, then append the appropriate banner:
 ╚══════════════════════════════════════════════════╝
 ```
 
-> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.[CODEX_LINE]
+> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
 >
 > Resolve the critical issues listed above. Shall I help fix them now?
-
-Where `[CODEX_LINE]` is replaced as follows:
-
-- If `CODEX_CROSS_CHECKED=true` → ` · 🤖 Codex cross-checked`
-- If `CODEX_CROSS_CHECKED=false` → _(empty — omit entirely)_

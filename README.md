@@ -25,7 +25,6 @@
 - Ensures verification before claiming done
 - Smart conventional commits and code review
 - ✨ Cross-agent code review (`/cf-review-out` + `/cf-review-in`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
-- ✨ Codex-powered review (`/cf-review-codex`) — run a full GPT/Codex review via the official Codex plugin for Claude Code
 - Captures project knowledge across sessions (`/cf-remember`)
 - ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
 - ✨ Helps humans learn from vibe coding sessions (`/cf-learn` for concise notes, `/cf-teach` for deep conversational breakdowns) — browse as a searchable website (`cf host`) or share with other LLM clients via MCP server (`cf mcp`)
@@ -92,7 +91,6 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-remember [topic]`  | Capture project knowledge                    |
 | `/cf-research [topic]`  | In-depth research with web search            |
 | `/cf-review [target]`   | Code review in forked subagent               |
-| `/cf-review-codex`      | Code review run by Codex (GPT)               |
 | `/cf-scan [desc]`       | Scan project and bootstrap memory            |
 | `/cf-session`           | Save/load Claude Code sessions               |
 | `/cf-ship [hint]`       | Verify, commit, push, and create PR          |
