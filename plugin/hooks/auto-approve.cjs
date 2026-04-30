@@ -655,6 +655,15 @@ const BASH_ASK_PREFIXES = [
   "cargo yank",
   "cargo owner",
   "cargo login",
+  // pnpm — executes arbitrary scripts, same risk as npm run/test
+  "pnpm test",
+  "pnpm run",
+  "pnpm exec",
+  "pnpm install",
+  "pnpm add",
+  "pnpm remove",
+  "pnpm publish",
+  "pnpm",
   // Networking / containers / remote access
   "docker",
   "curl",

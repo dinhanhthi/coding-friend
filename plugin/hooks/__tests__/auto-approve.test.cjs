@@ -758,6 +758,36 @@ describe("classifyByRules — normal prompt (ask)", () => {
     );
   });
 
+  it("asks for pnpm run <script> (executes arbitrary script)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm run build" })).toBe("ask");
+  });
+
+  it("asks for pnpm test (executes arbitrary test code)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm test" })).toBe("ask");
+  });
+
+  it("asks for pnpm install (installs packages)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm install" })).toBe("ask");
+  });
+
+  it("asks for pnpm add (installs packages)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm add react" })).toBe("ask");
+  });
+
+  it("asks for pnpm exec (executes package binary)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm exec vitest run" })).toBe(
+      "ask",
+    );
+  });
+
+  it("asks for pnpm format:check piped to tail (risky prefix wins over pipe)", () => {
+    // Real user scenario: pnpm format:check 2>&1 | tail -5 was going to LLM
+    // because pnpm was missing from BASH_ASK_PREFIXES
+    expect(
+      classifyByRules("Bash", { command: "pnpm format:check 2>&1 | tail -5" }),
+    ).toBe("ask");
+  });
+
   it("routes WebFetch to LLM (unknown)", () => {
     expect(classifyByRules("WebFetch", { url: "https://example.com" })).toBe(
       "unknown",
