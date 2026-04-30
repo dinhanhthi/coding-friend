@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.32.0 (2026-04-30)
+
+- Add `/cf-design` skill — UI design workflow with three modes: scan existing UI patterns into `DESIGN_PATTERNS.md`, design new UI from a natural-language description while respecting patterns, and modify specific UI elements with automatic consistency enforcement; includes reference guides for design styles and principles [#d4550b25](https://github.com/dinhanhthi/coding-friend/commit/d4550b25)
+- Remove `/cf-review-codex` skill and `cf-reviewer-codex` agent — Codex integration is no longer part of the review pipeline; `cf-reviewer` now dispatches the standard 5 specialist agents only [#6504b88f](https://github.com/dinhanhthi/coding-friend/commit/6504b88f)
+
 ## v0.31.0 (2026-04-29)
 
 - Improve `cf-remember`: add four concrete auto-trigger signals — non-obvious bug fixes (post `cf-fix`/`cf-sys-debug` with root cause or multiple failed attempts), explicit architecture decisions ("we chose X over Y"), new project-wide conventions established during implementation, and substantial sessions ending with undocumented gotchas; register `cf-remember` as an auto-invoked skill in `cf-help` [#dfdd159](https://github.com/dinhanhthi/coding-friend/commit/dfdd159)
