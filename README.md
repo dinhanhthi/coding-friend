@@ -17,7 +17,7 @@
 
 ## What It Does
 
-- Enforces test-driven development (TDD)
+- Supports test-driven development (TDD) — opt-in via `--add-tests` flag or `tdd: true` in config
 - Provides systematic debugging methodology
 - Quick bug fix workflow (`/cf-fix`)
 - Structured optimization with before/after measurement (`/cf-optimize`)
