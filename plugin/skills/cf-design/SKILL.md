@@ -21,11 +21,11 @@ Design UI with intent and consistency: **$ARGUMENTS**
 
 Three modes, triggered by the first word of `$ARGUMENTS`:
 
-| Invocation                          | Mode       | Purpose                                                                                     |
-| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
-| `/cf-design scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/memory/DESIGN_PATTERNS.md` |
-| `/cf-design [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base             |
-| `/cf-design modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns                  |
+| Invocation                          | Mode       | Purpose                                                                              |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `/cf-design scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/DESIGN_PATTERNS.md` |
+| `/cf-design [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base      |
+| `/cf-design modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns           |
 
 If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal is.
 
@@ -106,7 +106,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
 
    Ask: _"Does this look right? Anything to correct or add before I save?"_
 
-5. **Save** to `{docsDir}/memory/DESIGN_PATTERNS.md` after confirmation. Use the format shown in the output example above.
+5. **Save** to `{docsDir}/DESIGN_PATTERNS.md` after confirmation. Use the format shown in the output example above.
 
 6. Suggest running `/cf-remember` to index this file so it can be recalled in future sessions.
 
