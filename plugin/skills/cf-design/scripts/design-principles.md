@@ -27,7 +27,7 @@ Every screen has one primary action or piece of information. Everything else sup
 
 **In practice:**
 
-- Extract exact values from DESIGN_PATTERNS.md — never guess "a blue"
+- Extract exact values from DESIGN.md — never guess "a blue"
 - Semantic colors must be consistent: success = green (always), error = red (always), etc.
 - Dark mode: rethink the palette, don't just invert. Dark surfaces are not `bg-white opacity-5`.
 

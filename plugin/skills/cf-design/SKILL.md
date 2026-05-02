@@ -21,11 +21,11 @@ Design UI with intent and consistency: **$ARGUMENTS**
 
 Three modes, triggered by the first word of `$ARGUMENTS`:
 
-| Invocation                          | Mode       | Purpose                                                                              |
-| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
-| `/cf-design scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/DESIGN_PATTERNS.md` |
-| `/cf-design [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base      |
-| `/cf-design modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns           |
+| Invocation                          | Mode       | Purpose                                                                         |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `/cf-design scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/DESIGN.md`     |
+| `/cf-design [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base |
+| `/cf-design modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns      |
 
 If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal is.
 
@@ -41,7 +41,7 @@ If output is non-empty, integrate returned sections: `## Before` → before firs
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-design/scripts/load-design-context.sh"`
 
-- If `DESIGN_PATTERNS.md` exists: read it now and keep it in working memory for all subsequent steps. This is the project's source of truth for visual style.
+- If `DESIGN.md` exists: read it now and keep it in working memory for all subsequent steps. This is the project's source of truth for visual style.
 - If not found: note that patterns are unknown and will either be extracted (scan mode) or defined fresh.
 
 ## Step 1: Determine Mode
@@ -106,7 +106,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
 
    Ask: _"Does this look right? Anything to correct or add before I save?"_
 
-5. **Save** to `{docsDir}/DESIGN_PATTERNS.md` after confirmation. Use the format shown in the output example above.
+5. **Save** to `{docsDir}/DESIGN.md` after confirmation. Use the format shown in the output example above.
 
 6. Suggest running `/cf-remember` to index this file so it can be recalled in future sessions.
 
@@ -129,7 +129,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    - _Specific patterns_ or frameworks mentioned (Tailwind, shadcn, plain CSS, etc.)
 
 3. **Choose design foundation**:
-   - If `DESIGN_PATTERNS.md` exists → use it as the design foundation. The user's description refines on top.
+   - If `DESIGN.md` exists → use it as the design foundation. The user's description refines on top.
    - If no patterns exist → ask: _"No design patterns found. Should I (a) quick-scan the UI first, or (b) design fresh from your description?"_
 
 4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use WebSearch:
@@ -157,11 +157,11 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    **Design dials** (apply intentionally, not by default):
    - **Layout variance**: prefer grid-based, asymmetric, or purposeful alignment over "stack everything centered"
    - **Spacing intentionality**: use the project's spacing scale — never arbitrary px values
-   - **Color specificity**: use exact palette colors from DESIGN_PATTERNS.md, never generic `blue-500` defaults
+   - **Color specificity**: use exact palette colors from DESIGN.md, never generic `blue-500` defaults
    - **Weight variation**: vary font weights to create hierarchy — don't default to `font-medium` everywhere
    - **Detail moments**: add one small detail that shows intention (subtle gradient, specific shadow, slight border)
 
-7. **After implementation**: ask _"Want me to save these patterns to DESIGN_PATTERNS.md?"_ If yes, update the file and suggest `/cf-remember`.
+7. **After implementation**: ask _"Want me to save these patterns to DESIGN.md?"_ If yes, update the file and suggest `/cf-remember`.
 
 ---
 
@@ -174,7 +174,7 @@ Goal: change a specific part of the UI without breaking the visual consistency o
    - _How_ to change it = text after `--` (e.g., "make it sticky with blur backdrop")
    - If no `--` separator: ask the user to clarify what they want changed and how.
 
-2. **Require design context**: DESIGN_PATTERNS.md must exist. If it doesn't:
+2. **Require design context**: DESIGN.md must exist. If it doesn't:
    - Run a quick scan (abbreviated Step 2) focused on the specific component/area being modified.
    - Save results before proceeding.
 
@@ -201,4 +201,4 @@ Goal: change a specific part of the UI without breaking the visual consistency o
 - **Don't generate filler content** — use realistic placeholder text (not "Lorem Ipsum"), real icon names, real color values.
 - **Match the tech stack** — if the project uses Tailwind, use Tailwind classes. If it uses CSS modules, use those. Read existing files to confirm before generating.
 - **Progressive complexity** — implement the simplest version that satisfies the description first, then offer to add complexity (animations, responsive variants, dark mode) as follow-ups.
-- **Prefer existing patterns** — reuse component variants, spacing scale, and color tokens from DESIGN_PATTERNS.md rather than introducing new values.
+- **Prefer existing patterns** — reuse component variants, spacing scale, and color tokens from DESIGN.md rather than introducing new values.
