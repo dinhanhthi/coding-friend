@@ -164,7 +164,7 @@ describe("checkMemoryMcpHealth", () => {
       });
       const result = await checkMemoryMcpHealth(deps);
       const daemonCheck = result.checks.find(
-        (c) => c.label === "Daemon status",
+        (c) => c.label === "Daemon",
       );
       expect(daemonCheck!.ok).toBe(true);
       expect(daemonCheck!.warn).toBeFalsy();
@@ -180,7 +180,7 @@ describe("checkMemoryMcpHealth", () => {
       });
       const result = await checkMemoryMcpHealth(deps);
       const daemonCheck = result.checks.find(
-        (c) => c.label === "Daemon status",
+        (c) => c.label === "Daemon",
       );
       expect(daemonCheck!.ok).toBe(false);
       expect(daemonCheck!.warn).toBe(true);
@@ -238,7 +238,7 @@ describe("checkMemoryMcpHealth — isDaemonRunning throws", () => {
       },
     });
     const result = await checkMemoryMcpHealth(deps);
-    const daemonCheck = result.checks.find((c) => c.label === "Daemon status");
+    const daemonCheck = result.checks.find((c) => c.label === "Daemon");
     expect(daemonCheck).toBeDefined();
     expect(daemonCheck!.ok).toBe(false);
     expect(daemonCheck!.warn).toBe(true);
@@ -257,7 +257,7 @@ describe("checkMemoryMcpHealth — isDaemonRunning throws", () => {
       },
     });
     const result = await checkMemoryMcpHealth(deps);
-    const daemonCheck = result.checks.find((c) => c.label === "Daemon status");
+    const daemonCheck = result.checks.find((c) => c.label === "Daemon");
     expect(daemonCheck!.warn).toBe(true);
     expect(daemonCheck!.detail).toContain("socket error");
   });
