@@ -41,10 +41,15 @@ vi.mock("../../lib/memory-prompts.js", () => ({
   editMemoryAutoStart: vi.fn(),
   editMemoryEmbedding: vi.fn(),
   editMemoryDaemonTimeout: vi.fn(),
+  writeMemoryMcpEntry: vi.fn(),
+  getMemoryMcpStatus: vi.fn(() => ({ configured: false, scope: null })),
 }));
+
+const mockMergeJson = vi.fn();
 
 vi.mock("../../lib/json.js", () => ({
   readJson: vi.fn(() => ({})),
+  mergeJson: (...args: unknown[]) => mockMergeJson(...args),
 }));
 
 vi.mock("../../lib/paths.js", () => ({
@@ -73,10 +78,20 @@ vi.mock("/fake/cf-memory/dist/lib/lazy-install.js", () => ({
 }));
 
 import { existsSync } from "fs";
-import { memoryInitCommand } from "../memory.js";
+import { memoryInitCommand, memoryInitWizard } from "../memory.js";
+import { readJson } from "../../lib/json.js";
 import { log } from "../../lib/log.js";
+import { loadConfig } from "../../lib/config.js";
+import {
+  writeMemoryMcpEntry,
+  getMemoryMcpStatus,
+} from "../../lib/memory-prompts.js";
 
 const mockExistsSync = vi.mocked(existsSync);
+const mockReadJson = vi.mocked(readJson);
+const mockLoadConfig = vi.mocked(loadConfig);
+const mockWriteMemoryMcpEntry = vi.mocked(writeMemoryMcpEntry);
+const mockGetMemoryMcpStatus = vi.mocked(getMemoryMcpStatus);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -140,5 +155,179 @@ describe("memoryInitCommand", () => {
         "Failed to install SQLite dependencies.",
       );
     });
+  });
+});
+
+describe("memoryInitWizard — zero-prompt with global config inheritance", () => {
+  beforeEach(() => {
+    mockGetMemoryMcpStatus.mockReturnValue({ configured: false, scope: null });
+  });
+
+  it("writes smart defaults to local config when global has no memory settings", async () => {
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockMergeJson).toHaveBeenCalledWith(
+      "/fake/local-config.json",
+      expect.objectContaining({
+        memory: expect.objectContaining({
+          tier: "auto",
+          autoCapture: true,
+          autoStart: true,
+          embedding: expect.objectContaining({ provider: "transformers" }),
+        }),
+      }),
+    );
+  });
+
+  it("inherits tier from global config", async () => {
+    mockReadJson.mockImplementation((path: unknown) =>
+      String(path).includes("global") ? { memory: { tier: "full" } } : {},
+    );
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockMergeJson).toHaveBeenCalledWith(
+      "/fake/local-config.json",
+      expect.objectContaining({
+        memory: expect.objectContaining({ tier: "full" }),
+      }),
+    );
+  });
+
+  it("inherits embedding from global config", async () => {
+    const embedding = { provider: "ollama", model: "nomic-embed-text" };
+    mockReadJson.mockImplementation((path: unknown) =>
+      String(path).includes("global") ? { memory: { embedding } } : {},
+    );
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockMergeJson).toHaveBeenCalledWith(
+      "/fake/local-config.json",
+      expect.objectContaining({
+        memory: expect.objectContaining({ embedding }),
+      }),
+    );
+  });
+
+  it("inherits autoCapture: false from global config", async () => {
+    mockReadJson.mockImplementation((path: unknown) =>
+      String(path).includes("global") ? { memory: { autoCapture: false } } : {},
+    );
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockMergeJson).toHaveBeenCalledWith(
+      "/fake/local-config.json",
+      expect.objectContaining({
+        memory: expect.objectContaining({ autoCapture: false }),
+      }),
+    );
+  });
+
+  it("auto-writes .mcp.json without any prompt", async () => {
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
+  });
+
+  it("skips .mcp.json write when already configured locally", async () => {
+    mockGetMemoryMcpStatus.mockReturnValue({
+      configured: true,
+      scope: "local",
+    });
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockWriteMemoryMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("logs an explanation for each setting", async () => {
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    const infoMessages = vi.mocked(log.info).mock.calls.map((c) => c[0]);
+    expect(infoMessages.some((m) => String(m).includes("tier"))).toBe(true);
+    expect(
+      infoMessages.some(
+        (m) =>
+          String(m).includes("auto-capture") ||
+          String(m).includes("autoCapture") ||
+          String(m).includes("capture"),
+      ),
+    ).toBe(true);
+    expect(
+      infoMessages.some(
+        (m) => String(m).includes("daemon") || String(m).includes("auto-start"),
+      ),
+    ).toBe(true);
+  });
+
+  it("preserves existing memory fields (e.g. daemonTimeout) on re-run", async () => {
+    mockReadJson.mockImplementation((path: unknown) =>
+      String(path).includes("local")
+        ? { memory: { daemonTimeout: 30000 } }
+        : {},
+    );
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockMergeJson).toHaveBeenCalledWith(
+      "/fake/local-config.json",
+      expect.objectContaining({
+        memory: expect.objectContaining({ daemonTimeout: 30000 }),
+      }),
+    );
+  });
+});
+
+describe("memoryInitWizard — tier-specific completion", () => {
+  beforeEach(() => {
+    mockGetMemoryMcpStatus.mockReturnValue({ configured: false, scope: null });
+    mockReadJson.mockReturnValue({});
+  });
+
+  it('shows success message when tier is "markdown"', async () => {
+    mockLoadConfig.mockReturnValue({ memory: { tier: "markdown" } });
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    const logged = vi.mocked(console.log).mock.calls.flat();
+    expect(logged).toContain(
+      '🎉 Memory initialized! Run "cf memory status" to verify.',
+    );
+  });
+
+  it('shows success message when tier is "lite"', async () => {
+    mockLoadConfig.mockReturnValue({ memory: { tier: "lite" } });
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    const logged = vi.mocked(console.log).mock.calls.flat();
+    expect(logged).toContain(
+      '🎉 Memory initialized! Run "cf memory status" to verify.',
+    );
+  });
+
+  it('auto-writes .mcp.json for "markdown" tier', async () => {
+    mockLoadConfig.mockReturnValue({ memory: { tier: "markdown" } });
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
+  });
+
+  it('auto-writes .mcp.json for "lite" tier', async () => {
+    mockLoadConfig.mockReturnValue({ memory: { tier: "lite" } });
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
   });
 });
