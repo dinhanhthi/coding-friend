@@ -13,7 +13,7 @@ Coding Friend provides two [Model Context Protocol](https://modelcontextprotocol
 
 ## Learn MCP
 
-### Auto-registration
+### Auto-registration (Learn MCP)
 
 Run `cf mcp` or `cf init` to auto-register the Learn MCP into Claude Code at user scope:
 
@@ -29,7 +29,7 @@ claude mcp add --scope user coding-friend-learn -- npx -y coding-friend-cli mcp-
 
 User-scoped means it's available in **all your projects** automatically — no per-project setup.
 
-### Config for non-Claude-Code clients
+### Config for non-Claude-Code clients (Learn MCP)
 
 For other MCP clients (Claude Desktop, Cursor, ChatGPT, etc.), run `cf mcp` to get the config with the correct path filled in, then add it manually:
 
@@ -55,7 +55,7 @@ The path is always your global learn folder. To use a custom path, configure it 
 
 To disable the Learn MCP: `cf config` → Learn settings → Disable CF Learn. This unregisters the server from Claude Code automatically.
 
-### Available tools
+### Available tools (Learn MCP)
 
 **Read:**
 
@@ -78,7 +78,7 @@ To disable the Learn MCP: `cf config` → Learn settings → Disable CF Learn. T
 
 ## Memory MCP
 
-### Auto-registration
+### Auto-registration (Memory MCP)
 
 Run `cf init` or `cf memory init` to auto-register the Memory MCP into the current project's `.mcp.json`:
 
@@ -91,7 +91,7 @@ Or add it interactively when you run `cf mcp` — it will prompt if the current 
 
 Project-scoped means each project gets its own `.mcp.json` pointing to its own `docs/memory/` folder.
 
-### Config for non-Claude-Code clients
+### Config for non-Claude-Code clients (Memory MCP)
 
 ```json
 {
@@ -113,7 +113,7 @@ Replace the path with the absolute path to your project's `docs/memory/` directo
 
 **Important:** Always use a **local** `.mcp.json` per project — do not add it to `~/.claude/.mcp.json`, as the memory path is project-specific.
 
-### Available tools
+### Available tools (Memory MCP)
 
 | Tool | Description |
 | --- | --- |
