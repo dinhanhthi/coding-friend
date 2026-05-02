@@ -34,35 +34,46 @@ If output is not empty, integrate the returned sections into this workflow:
 
 ### Step 1: Load Config
 
-Read config from two locations and merge (local overrides global):
+Read config from **global only**:
 
-1. **Local:** `<project-root>/.coding-friend/config.json`
-2. **Global:** `~/.coding-friend/config.json`
+1. **Global:** `~/.coding-friend/config.json`
+
+If `learn.disabled` is `true` in the global config, **stop immediately** and inform the user: "CF Learn is disabled. Re-enable it with `cf config` or by setting `learn.disabled: false` in `~/.coding-friend/config.json`."
 
 Extract settings with these defaults:
 
 **`learn` settings:**
 
-| Setting             | Default                                                | Description                                                                                                                   |
-| ------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `learn.language`    | `en`                                                   | Language for cf-learn notes (falls back to top-level `language`, then `en`)                                                   |
-| `learn.outputDir`   | `{docsDir}/learn` (where `docsDir` defaults to `docs`) | Where to store learn docs                                                                                                     |
-| `learn.categories`  | See Step 2 table                                       | Subdirectories and their descriptions                                                                                         |
-| `learn.autoCommit`  | `false`                                                | Auto git-commit after writing                                                                                                 |
-| `learn.readmeIndex` | `false`                                                | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
+| Setting             | Default                    | Description                                                                                                                   |
+| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `learn.language`    | `en`                       | Language for cf-learn notes (falls back to top-level `language`, then `en`)                                                   |
+| `learn.outputDir`   | `~/.coding-friend/learn`   | Where to store learn docs (always global, never project-local)                                                                |
+| `learn.categories`  | See Step 2 table           | Subdirectories and their descriptions                                                                                         |
+| `learn.autoCommit`  | `false`                    | Auto git-commit after writing (only if outputDir is a git repo)                                                               |
+| `learn.readmeIndex` | `false`                    | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
+| `learn.disabled`    | `false`                    | If `true`, skip all file writing and exit immediately                                                                         |
 
-**Language resolution:** Read `learn.language` from config. If not set, fall back to top-level `language`. If neither is set, default to `en` (English).
+**Language resolution:** Read `learn.language` from global config. If not set, fall back to top-level `language`. If neither is set, default to `en` (English).
 
 **Path resolution for `outputDir`:**
 
-- Run `pwd` to get the current working directory — substitute its actual output wherever `$CWD` appears below (do NOT pass `$CWD` as a literal string)
-- Only check `$CWD/.coding-friend/config.json` for `outputDir` — do NOT search sub-folders
 - Starts with `/` → absolute path, use as-is
 - Starts with `~/` → expand `~` to home directory
-- Otherwise → relative to `$CWD` (the Claude Code session working directory, **not** any git sub-folder root)
+- Otherwise → treat as relative to home directory
 - Always pass `file_path` as an **absolute path** to the cf-writer agent
 
 If `outputDir` directory doesn't exist, create it.
+
+**Auto-commit git check:**
+
+Before deciding whether to ask about or apply `autoCommit`, check if `outputDir` is inside a git repository:
+
+```bash
+git -C "<resolved_outputDir>" rev-parse --is-inside-work-tree 2>/dev/null
+```
+
+- If exit code is 0: the dir is a git repo — `autoCommit` from config applies
+- If exit code is non-zero: the dir is NOT a git repo — skip auto-commit entirely (set `autoCommit = false`), do not mention it to the user
 
 ### Step 2: Identify Knowledge Points
 

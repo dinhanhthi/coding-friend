@@ -96,10 +96,9 @@ program
 program
   .command("mcp")
   .description("Setup MCP server for learning docs")
-  .argument("[path]", "path to docs folder")
-  .action(async (path) => {
+  .action(async () => {
     const { mcpCommand } = await import("./commands/mcp.js");
-    await mcpCommand(path);
+    await mcpCommand();
   });
 
 program

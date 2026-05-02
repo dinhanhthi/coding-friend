@@ -34,13 +34,13 @@ export interface MemoryMcpHealthDeps {
 }
 
 export interface LearnMcpHealthDeps {
-  /** Returns the parsed local .mcp.json, or null if not present/invalid. */
-  readMcpJson: () => Record<string, unknown> | null;
+  /** Returns true if coding-friend-learn MCP is registered (any scope). */
+  checkRegistered: () => boolean;
   /** Check whether a path exists on disk. */
   pathExists: (p: string) => boolean;
   /** List .md files in the given directory (recursive). Returns filenames. */
   listMdFiles: (dir: string) => string[];
-  /** Resolved docs directory path. */
+  /** Resolved learn directory path. */
   docsDir: string;
   /** Absolute path to learn-mcp dist/index.js (for package-built check). */
   learnMcpDistPath: string;
@@ -140,23 +140,17 @@ export async function checkLearnMcpHealth(
 ): Promise<McpHealthResult> {
   const checks: HealthCheck[] = [];
 
-  // ── (1) Config check ────────────────────────────────────────────────────────
-  const mcpJson = deps.readMcpJson();
-  const servers = mcpJson?.mcpServers;
-  const hasEntry =
-    servers != null &&
-    typeof servers === "object" &&
-    !Array.isArray(servers) &&
-    "coding-friend-learn" in (servers as Record<string, unknown>);
+  // ── (1) Registration check ──────────────────────────────────────────────────
+  const isRegistered = deps.checkRegistered();
 
   checks.push({
-    label: "Config (.mcp.json)",
-    ok: hasEntry,
-    ...(hasEntry
+    label: "Registered (claude mcp)",
+    ok: isRegistered,
+    ...(isRegistered
       ? {}
       : {
-          detail: "coding-friend-learn not configured",
-          fix: 'Run "cf mcp" to print the config snippet and add it',
+          detail: "coding-friend-learn not registered",
+          fix: 'Run "cf mcp" to register',
         }),
   });
 

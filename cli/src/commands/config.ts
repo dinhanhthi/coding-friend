@@ -1,8 +1,14 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { readJson, mergeJson } from "../lib/json.js";
 import { log, printBanner } from "../lib/log.js";
+import { resolveLearnDir } from "../lib/config.js";
+import { listMdFilesRecursive } from "../lib/fs-utils.js";
+import {
+  registerLearnMcp,
+  unregisterLearnMcp,
+} from "../lib/learn-prompts.js";
 import {
   claudeLocalSettingsPath,
   claudeProjectSettingsPath,
@@ -48,58 +54,6 @@ import { getAllRules, getExistingRules } from "../lib/permissions.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-
-function getNestedFieldScope(
-  section: "learn" | "memory",
-  field: string,
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): string {
-  const globalSection = globalCfg?.[section] as
-    | Record<string, unknown>
-    | undefined;
-  const localSection = localCfg?.[section] as
-    | Record<string, unknown>
-    | undefined;
-  const inGlobal = globalSection?.[field] !== undefined;
-  const inLocal = localSection?.[field] !== undefined;
-  if (inGlobal && inLocal) return "both";
-  if (inGlobal) return "global";
-  if (inLocal) return "local";
-  return "-";
-}
-
-function getLearnFieldScope(
-  field: string,
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): string {
-  return getNestedFieldScope("learn", field, globalCfg, localCfg);
-}
-
-function getMergedNestedValue(
-  section: "learn" | "memory",
-  field: string,
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): unknown {
-  const localSection = localCfg?.[section] as
-    | Record<string, unknown>
-    | undefined;
-  if (localSection?.[field] !== undefined) return localSection[field];
-  const globalSection = globalCfg?.[section] as
-    | Record<string, unknown>
-    | undefined;
-  return globalSection?.[field];
-}
-
-function getMergedLearnValue(
-  field: string,
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): unknown {
-  return getMergedNestedValue("learn", field, globalCfg, localCfg);
-}
 
 function writeToScope(
   scope: "global" | "local",
@@ -208,55 +162,107 @@ async function editLanguage(
 
 async function editLearnOutputDir(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = getMergedLearnValue("outputDir", globalCfg, localCfg) as
-    | string
-    | undefined;
-  if (currentValue) {
-    log.dim(`Current: ${currentValue}`);
-  }
+  const defaultLearnDir = DEFAULT_CONFIG.learn.outputDir;
+  const oldOutputDir = globalCfg?.learn?.outputDir ?? defaultLearnDir;
+  log.dim(`Current: ${oldOutputDir}`);
 
   const locationChoice = await select({
     message: "Where to store learning docs?",
     choices: [
-      { name: "In this project (docs/learn/)", value: "local" },
-      { name: "A separate folder", value: "external" },
+      {
+        name: `Use default (${defaultLearnDir})`,
+        value: "default",
+      },
+      { name: "Custom path…", value: "custom" },
     ],
   });
 
-  let outputDir = "docs/learn";
-  if (locationChoice === "external") {
-    outputDir = await input({
+  let newOutputDir = defaultLearnDir;
+  if (locationChoice === "custom") {
+    newOutputDir = await input({
       message: "Enter path (absolute or ~/...):",
-      default: currentValue ?? undefined,
-      validate: (val) => (val.length > 0 ? true : "Path cannot be empty"),
+      default: oldOutputDir !== defaultLearnDir ? oldOutputDir : undefined,
+      validate: (val) => {
+        if (val.length === 0) return "Path cannot be empty";
+        if (!val.startsWith("/") && !val.startsWith("~/"))
+          return "Path must be absolute (e.g. /home/user/learn) or start with ~/ (e.g. ~/learn)";
+        return true;
+      },
     });
-    const resolved = resolvePath(outputDir);
+    const resolved = resolvePath(newOutputDir);
     if (!existsSync(resolved)) {
       const create = await confirm({
         message: `Folder ${resolved} doesn't exist. Create it?`,
         default: true,
       });
       if (create) {
-        run("mkdir", ["-p", resolved]);
+        mkdirSync(resolved, { recursive: true });
         log.success(`Created ${resolved}`);
       }
     }
   }
 
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeLearnField(scope, "outputDir", outputDir);
+  const oldResolved = resolvePath(oldOutputDir);
+  const newResolved = resolvePath(newOutputDir);
+
+  // Always save new outputDir to global config
+  writeLearnField("global", "outputDir", newOutputDir);
+
+  if (oldResolved !== newResolved) {
+    // Offer to migrate docs if old path has .md files
+    const mdFiles = existsSync(oldResolved)
+      ? listMdFilesRecursive(oldResolved)
+      : [];
+    if (mdFiles.length > 0) {
+      const doMove = await confirm({
+        message: `Found ${mdFiles.length} learning doc(s) in ${oldResolved}. Move entire folder to ${newResolved}? (overwrites any existing files at target)`,
+        default: true,
+      });
+      if (doMove) {
+        const existingAtTarget = existsSync(newResolved)
+          ? listMdFilesRecursive(newResolved)
+          : [];
+        if (existingAtTarget.length > 0) {
+          const doOverwrite = await confirm({
+            message: `${newResolved} already contains ${existingAtTarget.length} file(s). Overwrite them?`,
+            default: false,
+          });
+          if (!doOverwrite) {
+            log.dim("Move cancelled. Config saved with new path.");
+            return;
+          }
+        }
+        mkdirSync(newResolved, { recursive: true });
+        cpSync(oldResolved, newResolved, { recursive: true });
+        rmSync(oldResolved, { recursive: true, force: true });
+        log.success(
+          `Moved ${mdFiles.length} doc(s) from ${oldResolved} to ${newResolved}.`,
+        );
+      }
+    }
+
+    // Re-register MCP with new path (unless learn is disabled)
+    if (!globalCfg?.learn?.disabled) {
+      unregisterLearnMcp();
+      const registered = registerLearnMcp(newResolved);
+      if (registered) {
+        log.success(
+          `Updated CF Learn MCP to point to ${newResolved}. Restart Claude Code to apply.`,
+        );
+      } else {
+        log.warn(
+          `Could not re-register MCP. Run manually:\n  claude mcp add --scope user coding-friend-learn -- npx -y coding-friend-cli mcp-serve-learn ${newResolved}`,
+        );
+      }
+    }
+  }
 }
 
 async function editLearnLanguage(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = getMergedLearnValue("language", globalCfg, localCfg) as
-    | string
-    | undefined;
+  const currentValue = globalCfg?.learn?.language;
   if (currentValue) {
     log.dim(`Current: ${currentValue}`);
   }
@@ -281,20 +287,15 @@ async function editLearnLanguage(
     if (!lang) lang = "en";
   }
 
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeLearnField(scope, "language", lang);
+  writeLearnField("global", "language", lang);
 }
 
 async function editLearnCategories(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const existingCats = getMergedLearnValue(
-    "categories",
-    globalCfg,
-    localCfg,
-  ) as LearnCategory[] | undefined;
+  const existingCats = globalCfg?.learn?.categories as
+    | LearnCategory[]
+    | undefined;
 
   const defaultNames = DEFAULT_CONFIG.learn.categories
     .map((c) => c.name)
@@ -352,43 +353,35 @@ async function editLearnCategories(
     if (customCats.length > 0) categories = customCats;
   }
 
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeLearnField(scope, "categories", categories);
+  writeLearnField("global", "categories", categories);
 }
 
 async function editLearnAutoCommit(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = getMergedLearnValue(
-    "autoCommit",
-    globalCfg,
-    localCfg,
-  ) as boolean | undefined;
+  const currentValue = globalCfg?.learn?.autoCommit;
   if (currentValue !== undefined) {
     log.dim(`Current: ${currentValue}`);
   }
+  log.dim(
+    "Note: auto-commit only works if your learn folder is a git repository.",
+  );
 
   const value = await confirm({
     message: "Auto-commit learning docs to git after each /cf-learn?",
     default: currentValue ?? false,
   });
 
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeLearnField(scope, "autoCommit", value);
+  writeLearnField("global", "autoCommit", value);
 }
 
 async function editLearnReadmeIndex(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = getMergedLearnValue(
-    "readmeIndex",
-    globalCfg,
-    localCfg,
-  ) as boolean | "per-category" | undefined;
+  const currentValue = globalCfg?.learn?.readmeIndex as
+    | boolean
+    | "per-category"
+    | undefined;
   if (currentValue !== undefined) {
     log.dim(`Current: ${currentValue}`);
   }
@@ -406,71 +399,81 @@ async function editLearnReadmeIndex(
   if (indexChoice === "single") readmeIndex = true;
   else if (indexChoice === "per-category") readmeIndex = "per-category";
 
-  const scope = await askScope();
-  if (scope === "back") return;
-  writeLearnField(scope, "readmeIndex", readmeIndex);
+  writeLearnField("global", "readmeIndex", readmeIndex);
+}
+
+async function editLearnDisabled(
+  globalCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const current = globalCfg?.learn?.disabled ?? false;
+  log.dim(`Current: ${current ? "disabled" : "enabled"}`);
+  const value = await confirm({
+    message: current
+      ? "CF Learn is disabled. Re-enable it? (resumes file writing and re-registers MCP)"
+      : "Disable CF Learn? (stops file writing and MCP serving)",
+    default: !current,
+  });
+  writeLearnField("global", "disabled", value ? !current : current);
+
+  if (!current && value) {
+    // disabling
+    const unregistered = unregisterLearnMcp();
+    if (unregistered) {
+      log.dim(
+        "Removed coding-friend-learn from Claude Code MCP. Restart Claude Code to apply.",
+      );
+    } else {
+      log.warn(
+        "Could not unregister MCP automatically. Run manually:\n  claude mcp remove --scope user coding-friend-learn",
+      );
+    }
+  } else if (current && value) {
+    // re-enabling
+    const freshGlobal = readJson<CodingFriendConfig>(globalConfigPath());
+    const learnDir = resolveLearnDir(freshGlobal);
+    registerLearnMcp(learnDir);
+    log.dim("Re-registered coding-friend-learn. Restart Claude Code to activate.");
+  }
 }
 
 async function learnSubMenu(): Promise<void> {
   while (true) {
     const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
 
-    const outputDirScope = getLearnFieldScope("outputDir", globalCfg, localCfg);
-    const outputDirVal = getMergedLearnValue(
-      "outputDir",
-      globalCfg,
-      localCfg,
-    ) as string | undefined;
+    const outputDirVal = globalCfg?.learn?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
+    const langVal = globalCfg?.learn?.language;
+    const autoCommitVal = globalCfg?.learn?.autoCommit;
+    const readmeVal = globalCfg?.learn?.readmeIndex;
+    const isDisabled = globalCfg?.learn?.disabled ?? false;
 
-    const langScope = getLearnFieldScope("language", globalCfg, localCfg);
-    const langVal = getMergedLearnValue("language", globalCfg, localCfg) as
-      | string
-      | undefined;
-
-    const catScope = getLearnFieldScope("categories", globalCfg, localCfg);
-
-    const autoCommitScope = getLearnFieldScope(
-      "autoCommit",
-      globalCfg,
-      localCfg,
-    );
-    const autoCommitVal = getMergedLearnValue(
-      "autoCommit",
-      globalCfg,
-      localCfg,
-    ) as boolean | undefined;
-
-    const readmeScope = getLearnFieldScope("readmeIndex", globalCfg, localCfg);
-    const readmeVal = getMergedLearnValue(
-      "readmeIndex",
-      globalCfg,
-      localCfg,
-    ) as boolean | "per-category" | undefined;
-
+    const disabledLabel = isDisabled ? chalk.yellow(" [disabled]") : "";
     const choice = await select({
-      message: "Learn settings:",
+      message: `Learn settings${disabledLabel}:`,
       choices: injectBackChoice(
         [
           {
-            name: `Output dir ${formatScopeLabel(outputDirScope)}${outputDirVal ? ` (${outputDirVal})` : ""}`,
+            name: `Output dir (${outputDirVal})`,
             value: "outputDir",
           },
           {
-            name: `Language ${formatScopeLabel(langScope)}${langVal ? ` (${langVal})` : ""}`,
+            name: `Language${langVal ? ` (${langVal})` : ""}`,
             value: "language",
           },
           {
-            name: `Categories ${formatScopeLabel(catScope)}`,
+            name: "Categories",
             value: "categories",
           },
           {
-            name: `Auto-commit ${formatScopeLabel(autoCommitScope)}${autoCommitVal !== undefined ? ` (${autoCommitVal})` : ""}`,
+            name: `Auto-commit${autoCommitVal !== undefined ? ` (${autoCommitVal})` : ""}`,
             value: "autoCommit",
           },
           {
-            name: `README index ${formatScopeLabel(readmeScope)}${readmeVal !== undefined ? ` (${readmeVal})` : ""}`,
+            name: `README index${readmeVal !== undefined ? ` (${readmeVal})` : ""}`,
             value: "readmeIndex",
+          },
+          {
+            name: isDisabled ? "Enable CF Learn" : "Disable CF Learn",
+            value: "disabled",
           },
         ],
         "Back",
@@ -481,19 +484,22 @@ async function learnSubMenu(): Promise<void> {
 
     switch (choice) {
       case "outputDir":
-        await editLearnOutputDir(globalCfg, localCfg);
+        await editLearnOutputDir(globalCfg);
         break;
       case "language":
-        await editLearnLanguage(globalCfg, localCfg);
+        await editLearnLanguage(globalCfg);
         break;
       case "categories":
-        await editLearnCategories(globalCfg, localCfg);
+        await editLearnCategories(globalCfg);
         break;
       case "autoCommit":
-        await editLearnAutoCommit(globalCfg, localCfg);
+        await editLearnAutoCommit(globalCfg);
         break;
       case "readmeIndex":
-        await editLearnReadmeIndex(globalCfg, localCfg);
+        await editLearnReadmeIndex(globalCfg);
+        break;
+      case "disabled":
+        await editLearnDisabled(globalCfg);
         break;
     }
   }
@@ -638,7 +644,6 @@ async function editGitignore(
     `${docsDir}/plans/`,
     `${docsDir}/memory/`,
     `${docsDir}/research/`,
-    `${docsDir}/learn/`,
     `${docsDir}/sessions/`,
     `${docsDir}/reviews/`,
     `${docsDir}/context/`,

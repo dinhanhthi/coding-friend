@@ -6,15 +6,22 @@ keywords: [mcp, model context protocol, cf mcp, memory mcp, learn mcp]
 
 ## Overview
 
-`cf mcp` generates [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server configurations for both **learning documentation** and **memory system**. Use this to integrate with other LLM clients like ChatGPT, Claude web, or other AI tools.
+`cf mcp` registers and configures the two Coding Friend [MCP](https://modelcontextprotocol.io/) servers. See [MCP Servers](/docs/reference/mcp/) for the full reference on both servers, their tools, and configuration options.
 
 ## Usage
 
 ```bash
-cf mcp [path]
+cf mcp
 ```
 
-The optional `path` argument overrides the learning docs folder (default: `<project>/docs/learn/`).
+The learn folder is always read from your global config (`~/.coding-friend/config.json`), defaulting to `~/.coding-friend/learn/`. To change it, run `cf config` → Learn settings → Output dir.
+
+## What it does
+
+1. **Auto-registers Learn MCP** (user scope) — runs `claude mcp add --scope user coding-friend-learn ...` so the server is available across all your projects. Skipped if already registered or if `learn.disabled` is set.
+2. **Prompts for Memory MCP** — if the current project doesn't have `coding-friend-memory` in `.mcp.json`, offers to add it.
+3. **Prints JSON config** for both servers — for copy/paste into non-Claude-Code MCP clients (Claude Desktop, Cursor, ChatGPT, etc.).
+4. **Runs health checks** for both servers and prints fix hints inline.
 
 ## Stale config detection
 
@@ -24,104 +31,7 @@ When `cf mcp` runs, it automatically checks whether `.mcp.json` in the current d
 - **Old format but still valid:** prints a notice suggesting you migrate to the version-stable format
 - **Already using `npx` format:** silent (no output)
 
-## Output
+## See Also
 
-The command prints JSON configuration for two MCP servers — Learn MCP and Memory MCP — for easy copy/paste into your MCP client config. It no longer lists the individual tools and resources to avoid terminal clutter; see [Available tools & resources](#available-tools--resources) below.
-
-### Learn MCP
-
-Configuration for the learning documentation server. Provides tools to search, read, create, and manage learning docs. See [/cf-learn](/docs/skills/cf-learn/#mcp-integration) for more details.
-
-```json
-{
-  "mcpServers": {
-    "coding-friend-learn": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "coding-friend-cli",
-        "mcp-serve-learn",
-        "/path/to/your/project/docs/learn"
-      ]
-    }
-  }
-}
-```
-
-### Memory MCP
-
-Configuration for the project memory server. Provides tools to store, search, list, update, and delete project memories. See [Memory System](/docs/reference/memory-system/#mcp-integration) for more details.
-
-```json
-{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "coding-friend-cli",
-        "mcp-serve",
-        "/path/to/your/project/docs/memory"
-      ]
-    }
-  }
-}
-```
-
-## Available tools & resources
-
-### Learn MCP tools
-
-**Read:**
-
-| Tool              | Description                         |
-| ----------------- | ----------------------------------- |
-| `list-categories` | List all categories with doc counts |
-| `list-docs`       | List docs, filter by category/tag   |
-| `read-doc`        | Read full content of a doc          |
-| `search-docs`     | Full-text search across all docs    |
-| `get-review-list` | Docs that need review               |
-
-**Write:**
-
-| Tool              | Description                                              |
-| ----------------- | -------------------------------------------------------- |
-| `create-doc`      | Create new learning doc                                  |
-| `update-doc`      | Append content or update tags                            |
-| `improve-doc`     | Get improvement suggestions                              |
-| `track-knowledge` | Record understanding level (remembered/needs-review/new) |
-
-### Memory MCP tools
-
-| Tool              | Description                     |
-| ----------------- | ------------------------------- |
-| `memory_store`    | Store a new memory              |
-| `memory_search`   | Search memories (keyword match) |
-| `memory_retrieve` | Get a specific memory by ID     |
-| `memory_list`     | List memories with filtering    |
-| `memory_update`   | Update existing memory          |
-| `memory_delete`   | Delete a memory                 |
-
-### Memory MCP resources
-
-| Resource         | Description         |
-| ---------------- | ------------------- |
-| `memory://index` | Browse all memories |
-| `memory://stats` | Storage statistics  |
-
-When `cf memory mcp` writes to `.mcp.json`, it uses the **version-stable `npx` format** — no hardcoded paths that break on CLI updates:
-
-```json
-{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "npx",
-      "args": ["-y", "coding-friend-cli", "mcp-serve", "/path/to/docs/memory"]
-    }
-  }
-}
-```
-
-This invokes `cf mcp-serve` via npx, which resolves the current globally-installed CLI at runtime instead of relying on a fixed path.
-
-**Important:** The memory path is project-specific (points to `docs/memory/` in your project). Always use a **local** `.mcp.json` per project — do not add it to the global `~/.claude/.mcp.json`, as it will only work for one project.
+- [MCP Servers](/docs/reference/mcp/) — full reference: tools, resources, config, health checks
+- [`cf memory mcp`](/docs/cli/cf-memory/) — Memory MCP setup command
