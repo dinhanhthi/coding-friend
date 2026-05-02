@@ -139,7 +139,6 @@ function printSetupStatus(
     "plans",
     "memory",
     "research",
-    "learn",
     "sessions",
     "reviews",
   ];
@@ -320,7 +319,6 @@ async function stepDocsDir(
       "plans",
       "memory",
       "research",
-      "learn",
       "sessions",
       "reviews",
     ];
@@ -349,7 +347,6 @@ async function stepDocsDir(
     "plans",
     "memory",
     "research",
-    "learn",
     "sessions",
     "reviews",
   ];
