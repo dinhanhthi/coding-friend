@@ -53,7 +53,8 @@ export function printHealthSection(result: McpHealthResult): void {
   console.log(chalk.dim("─── Health Check ───"));
   for (const check of result.checks) {
     if (check.ok) {
-      console.log(chalk.green(`  ✓ ${check.label}`));
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.green(`  ✓ ${check.label}${detail}`));
     } else if (check.warn) {
       const detail = check.detail ? `: ${check.detail}` : "";
       console.log(chalk.yellow(`  ⚠ ${check.label}${detail}`));
@@ -132,16 +133,14 @@ export async function checkMemoryMcpHealth(
   }
 
   checks.push({
-    label: "Daemon status",
+    label: "Daemon",
     ok: daemonRunning,
-    ...(daemonRunning
-      ? {}
-      : {
-          warn: true,
-          detail: daemonCheckError
-            ? `check failed: ${daemonCheckError}`
-            : "stopped (starts automatically on MCP connect)",
-        }),
+    detail: daemonRunning
+      ? "running"
+      : daemonCheckError
+        ? `check failed: ${daemonCheckError}`
+        : "stopped (starts automatically on MCP connect)",
+    ...(!daemonRunning ? { warn: true } : {}),
   });
 
   // result.ok = all checks pass, ignoring warns
