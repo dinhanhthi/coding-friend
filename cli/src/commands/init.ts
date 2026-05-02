@@ -817,6 +817,87 @@ async function stepMemory(
   await memoryInitWizard(memoryDir, mcpDir);
 }
 
+async function stepTdd(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("tdd", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("tdd", globalCfg, localCfg);
+
+  printStepHeader(
+    `TDD ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Enable TDD (RED→GREEN→REFACTOR) by default for all implementations.",
+  );
+
+  const tddChoice = await confirm({
+    message:
+      "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped TDD config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { tdd: tddChoice });
+  log.success(`Saved to ${targetPath}`);
+}
+
+async function stepAutoApprove(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("autoApprove", globalCfg, localCfg);
+
+  printStepHeader(
+    `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous.",
+  );
+
+  const autoApproveChoice = await confirm({
+    message:
+      "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped auto-approve config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { autoApprove: autoApproveChoice });
+  log.success(`Saved to ${targetPath}`);
+
+  if (autoApproveChoice) {
+    const { runDangerousRulesAudit } = await import("../lib/permissions.js");
+    await runDangerousRulesAudit(
+      [
+        claudeProjectSettingsPath(),
+        claudeLocalSettingsPath(),
+        claudeSettingsPath(),
+      ],
+      log,
+      (message) => confirm({ message, default: true }),
+    );
+    log.dim(
+      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
+    );
+    log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
+  }
+}
+
 async function stepClaudePermissions(
   externalLearnDir: string | null,
   autoCommit: boolean,
@@ -1301,7 +1382,17 @@ export async function initCommand(): Promise<void> {
   // Step 7: CF Memory
   await stepMemory(docsDir);
 
-  // Step 8: Claude permissions
+  // Re-read configs to pick up any changes from previous steps
+  const finalGlobal = readJson<CodingFriendConfig>(globalConfigPath());
+  const finalLocal = readJson<CodingFriendConfig>(localConfigPath());
+
+  // Step 8: TDD
+  await stepTdd(finalGlobal, finalLocal);
+
+  // Step 9: Auto-approve
+  await stepAutoApprove(finalGlobal, finalLocal);
+
+  // Step 10: Claude permissions
   printStepHeader(
     "Configure Claude permissions",
     "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
