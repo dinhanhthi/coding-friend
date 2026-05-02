@@ -9,14 +9,10 @@ import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   memoryConfigMenu,
-  editMemoryTier,
-  editMemoryAutoCapture,
-  editMemoryAutoStart,
-  editMemoryEmbedding,
   getMemoryMcpStatus,
   writeMemoryMcpEntry,
 } from "../lib/memory-prompts.js";
-import { readJson } from "../lib/json.js";
+import { readJson, mergeJson } from "../lib/json.js";
 import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
@@ -517,63 +513,80 @@ export function isMemoryInitialized(): boolean {
 }
 
 /**
- * Core memory init wizard — runs steps 1-4, installs deps, imports
- * existing memories, and sets up MCP.  Called by both `cf memory init`
- * and the CF Memory step inside `cf init`.
+ * Core memory init wizard — applies smart defaults (inheriting from global
+ * config where set), installs deps, imports existing memories, and sets up
+ * MCP. Called by both `cf memory init` and the CF Memory step inside `cf init`.
  */
 export async function memoryInitWizard(
   memoryDir: string,
   mcpDir: string,
 ): Promise<void> {
-  // Step 1: Tier
-  log.step("Step 1/4: Search tier");
-  await editMemoryTier(
-    readJson<CodingFriendConfig>(globalConfigPath()),
-    readJson<CodingFriendConfig>(localConfigPath()),
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const globalMem = (globalCfg?.memory ?? {}) as Record<string, unknown>;
+
+  // Resolve each setting: inherit from global config, else use smart default
+  const tier = (globalMem.tier as string | undefined) ?? "auto";
+  const embedding =
+    (globalMem.embedding as Record<string, unknown> | undefined) ??
+    ({ provider: "transformers" } as Record<string, unknown>);
+  const autoCapture = (globalMem.autoCapture as boolean | undefined) ?? true;
+  const autoStart = (globalMem.autoStart as boolean | undefined) ?? true;
+
+  // Field-level merge to preserve existing memory settings (e.g. daemonTimeout)
+  const existingLocalCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const existingMem = (existingLocalCfg?.memory ?? {}) as Record<
+    string,
+    unknown
+  >;
+  mergeJson(localConfigPath(), {
+    memory: { ...existingMem, tier, embedding, autoCapture, autoStart },
+  });
+
+  // Print what was set with explanation for each option
+  const inherited = chalk.dim("← global config");
+  const defaulted = chalk.dim("← default");
+  const src = (field: unknown) => (field !== undefined ? inherited : defaulted);
+
+  console.log();
+  log.info(`Search tier: ${chalk.cyan(String(tier))}  ${src(globalMem.tier)}`);
+  log.dim(
+    "  Auto-detects best backend: SQLite (Tier 1) → MiniSearch daemon (Tier 2) → Grep (Tier 3).",
+  );
+  log.info(
+    `Embedding: ${chalk.cyan(String(embedding.provider ?? "transformers"))}  ${src(globalMem.embedding)}`,
+  );
+  log.dim(
+    "  Powers semantic search in Tier 1. Runs locally, no external service needed.",
+  );
+  log.info(
+    `Auto-capture: ${autoCapture ? chalk.green("on") : chalk.dim("off")}  ${src(globalMem.autoCapture)}`,
+  );
+  log.dim(
+    "  Saves session summaries to memory when Claude Code compacts context.",
+  );
+  log.info(
+    `Auto-start daemon: ${autoStart ? chalk.green("on") : chalk.dim("off")}  ${src(globalMem.autoStart)}`,
+  );
+  log.dim(
+    "  Background process watches docs/memory/ and auto-rebuilds the search index on file changes.",
   );
   console.log();
 
-  // Step 2: Embedding
-  log.step("Step 2/4: Embedding provider");
-  await editMemoryEmbedding(
-    readJson<CodingFriendConfig>(globalConfigPath()),
-    readJson<CodingFriendConfig>(localConfigPath()),
-  );
-  console.log();
-
-  // Step 3: Auto-capture
-  log.step("Step 3/4: Auto-capture");
-  await editMemoryAutoCapture(
-    readJson<CodingFriendConfig>(globalConfigPath()),
-    readJson<CodingFriendConfig>(localConfigPath()),
-  );
-  console.log();
-
-  // Step 4: Auto-start daemon
-  log.step("Step 4/4: Auto-start daemon");
-  await editMemoryAutoStart(
-    readJson<CodingFriendConfig>(globalConfigPath()),
-    readJson<CodingFriendConfig>(localConfigPath()),
-  );
-  console.log();
-
-  // Install deps and import
+  // Install deps and import existing memories
   const config = loadConfig();
-  const tier = config.memory?.tier ?? "auto";
+  const resolvedTier = config.memory?.tier ?? "auto";
 
-  if (tier === "markdown") {
+  if (resolvedTier === "markdown") {
     await setupMemoryMcp(memoryDir, mcpDir);
-    log.success(
-      'Memory initialized with Tier 3 (markdown). Run "cf memory status" to verify.',
-    );
+    console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
+    printInitDone();
     return;
   }
 
-  if (tier === "lite") {
+  if (resolvedTier === "lite") {
     await setupMemoryMcp(memoryDir, mcpDir);
-    log.success(
-      'Memory initialized. Run "cf memory start-daemon" to enable Tier 2 search.',
-    );
+    console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
+    printInitDone();
     return;
   }
 
@@ -583,11 +596,9 @@ export async function memoryInitWizard(
 
   // Import existing memories
   if (!existsSync(memoryDir)) {
-    log.info(
-      "No memory directory found. Memories will be indexed as they're created.",
-    );
     await setupMemoryMcp(memoryDir, mcpDir);
-    log.success('Memory initialized. Run "cf memory status" to verify.');
+    console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
+    printInitDone();
     return;
   }
 
@@ -595,7 +606,8 @@ export async function memoryInitWizard(
   if (docCount === 0) {
     log.info("No existing memories to import.");
     await setupMemoryMcp(memoryDir, mcpDir);
-    log.success('Memory initialized. Run "cf memory status" to verify.');
+    console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
+    printInitDone();
     return;
   }
 
@@ -605,10 +617,10 @@ export async function memoryInitWizard(
     join(mcpDir, "dist/backends/sqlite/index.js")
   );
 
-  const embedding = config.memory?.embedding;
+  const configEmbedding = config.memory?.embedding;
   const backend = new SqliteBackend(memoryDir, {
     skipVec: false,
-    ...(embedding && { embedding }),
+    ...(configEmbedding && { embedding: configEmbedding }),
   });
 
   try {
@@ -622,13 +634,23 @@ export async function memoryInitWizard(
     await backend.close();
   }
 
-  // Configure MCP
   await setupMemoryMcp(memoryDir, mcpDir);
 
   console.log();
-  log.success('Memory initialized! Run "cf memory status" to verify.');
+  console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
   log.info(
     `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
+  );
+  log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
+  log.dim(
+    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/docs/cli/cf-memory/")}`,
+  );
+}
+
+function printInitDone(): void {
+  log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
+  log.dim(
+    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/docs/cli/cf-memory/")}`,
   );
 }
 
@@ -641,24 +663,10 @@ async function setupMemoryMcp(
     log.info(`MCP: ${chalk.green("already configured")} in .mcp.json`);
     return;
   }
-
-  console.log();
-  log.step("MCP setup");
-  log.dim(
-    "The Memory MCP connects Claude Code to the memory system so skills can store and search memories.",
-  );
-
-  const addMcp = await confirm({
-    message: "Add coding-friend-memory to .mcp.json?",
-    default: true,
-  });
-
-  if (!addMcp) {
-    log.dim('Skipped. Run "cf memory mcp" anytime to get the config.');
-    return;
-  }
-
   writeMemoryMcpEntry(memoryDir);
+  log.dim(
+    "  Connects Claude Code to memory so skills can store and retrieve knowledge.",
+  );
 }
 
 export async function memoryInitCommand(): Promise<void> {
@@ -686,10 +694,8 @@ export async function memoryInitCommand(): Promise<void> {
 
   // First-time: step-by-step wizard
   console.log();
-  printBanner("🧠 Memory Setup");
+  printBanner("🧠 CF Memory Setup");
   console.log();
-
-  showConfigHint();
 
   await memoryInitWizard(memoryDir, mcpDir);
 }
