@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { detectMemoryMcpState } from "./mcp-state.js";
 
 /**
@@ -44,6 +45,27 @@ export interface LearnMcpHealthDeps {
   docsDir: string;
   /** Absolute path to learn-mcp dist/index.js (for package-built check). */
   learnMcpDistPath: string;
+}
+
+// ─── printHealthSection ───────────────────────────────────────────────────────
+
+export function printHealthSection(result: McpHealthResult): void {
+  console.log(chalk.dim("─── Health Check ───"));
+  for (const check of result.checks) {
+    if (check.ok) {
+      console.log(chalk.green(`  ✓ ${check.label}`));
+    } else if (check.warn) {
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.yellow(`  ⚠ ${check.label}${detail}`));
+    } else {
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.red(`  ✗ ${check.label}${detail}`));
+      if (check.fix) {
+        console.log(chalk.dim(`    → ${check.fix}`));
+      }
+    }
+  }
+  console.log();
 }
 
 // ─── checkMemoryMcpHealth ─────────────────────────────────────────────────────
