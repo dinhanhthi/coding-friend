@@ -175,40 +175,11 @@ Three ways to store memories:
 
 ## MCP Integration
 
-The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically.
+The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically from the project's `.mcp.json`.
 
-| Tool              | Purpose                          |
-| ----------------- | -------------------------------- |
-| `memory_store`    | Store a new memory               |
-| `memory_search`   | Search (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID      |
-| `memory_list`     | List memories with filtering     |
-| `memory_update`   | Update existing memory           |
-| `memory_delete`   | Delete a memory                  |
+Skills like `/cf-remember` and `/cf-fix` use the MCP tools behind the scenes — you rarely call them directly. Run `cf memory init` or `cf init` to register the server automatically for your project.
 
-You never call these directly — skills like `/cf-remember` and `/cf-fix` use them behind the scenes.
-
-Run `cf mcp` to print the configuration snippet for both Learn MCP and Memory MCP. To get only the Memory MCP config, run `cf memory mcp`.
-
-Add the output to your MCP client config:
-
-```json
-{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "coding-friend-cli",
-        "mcp-serve",
-        "/path/to/your/project/docs/memory"
-      ]
-    }
-  }
-}
-```
-
-**Important:** The memory path is project-specific — it points to `docs/memory/` in your project. Always configure it in a **local** `.mcp.json` per project. Do not add it to the global `~/.claude/.mcp.json`, as it will only work for the one project whose path is hardcoded. Running `cf memory init` or `cf init` will set this up automatically.
+See [MCP Servers → Memory MCP](/docs/reference/mcp/#memory-mcp) for the full reference: available tools, resources, config snippets, and health checks.
 
 ## Search Pipeline
 

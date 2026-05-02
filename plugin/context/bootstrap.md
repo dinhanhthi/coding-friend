@@ -68,7 +68,7 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 
 - Tests next to source or in `__tests__/` / `tests/`
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
-- Project docs in `docs/memory/`, learning notes in `docs/learn/`, research in `docs/research/`
+- Project docs in `docs/memory/`, learning notes in `~/.coding-friend/learn/` (global), research in `docs/research/`
 - Config: `.coding-friend/config.json` (local) and `~/.coding-friend/config.json` (global), local overrides global
 - Top-level `language` setting applies to doc-generating skills like `/cf-ask`, `/cf-remember`, `/cf-plan`, `/cf-research` (default: `en`)
 - `learn.language` setting applies to `/cf-learn` notes (falls back to top-level `language`, then `en`)

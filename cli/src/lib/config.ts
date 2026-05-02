@@ -43,6 +43,7 @@ const LearnConfigSchema = z.object({
   categories: z.array(LearnCategorySchema).optional(),
   autoCommit: z.boolean().optional(),
   readmeIndex: z.union([z.boolean(), z.literal("per-category")]).optional(),
+  disabled: z.boolean().optional(),
 });
 
 const StatuslineComponentSchema = z.enum([
@@ -231,6 +232,7 @@ export function loadConfig(): CodingFriendConfig {
 /**
  * Resolve the docs directory for learn commands.
  * Priority: explicit arg > config learn.outputDir > default docs/learn
+ * @deprecated Use resolveLearnDir() for learn-specific resolution (global-only).
  */
 export function resolveDocsDir(explicitPath?: string): string {
   if (explicitPath) {
@@ -248,6 +250,17 @@ export function resolveDocsDir(explicitPath?: string): string {
   }
 
   return resolvePath("docs/learn");
+}
+
+/**
+ * Resolve the learn output directory — global config only.
+ * Priority: globalCfg.learn.outputDir > ~/.coding-friend/learn
+ */
+export function resolveLearnDir(globalCfg: CodingFriendConfig | null): string {
+  if (globalCfg?.learn?.outputDir) {
+    return resolvePath(globalCfg.learn.outputDir);
+  }
+  return resolvePath("~/.coding-friend/learn");
 }
 
 /**

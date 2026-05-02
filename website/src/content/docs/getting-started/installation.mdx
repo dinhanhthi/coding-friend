@@ -38,20 +38,14 @@ Then continue from step 3 below (skip `cf install`).
 # 3. Initialize your workspace (in each project)
 cf init
 
-# 3a. Config statusline (already in the flow of `cf init`)
-cf statusline
-
-# 3b. Init memory system (already in the flow of `cf init`)
-cf memory init
-
-# 3c. Configure permissions (already in the flow of `cf init`)
-cf permission
-
 # 4. Restart Claude Code (or `/exit` then reopen) to load the plugin.
 # Inside Claude Code session, try to type "/cf-plan" to see if the plugin is loaded.
 
 # 5. Verify
 cf status
+
+# 6. Change configs
+cf config
 ```
 
 <Callout type="info">
@@ -61,10 +55,12 @@ cf status
   to use a directory you own.
 </Callout>
 
-## Auto-Update
+## Update
 
-- **Plugin** — auto-update is enabled when you run `cf install`. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
-- **CLI** — automatically checks for new versions after each command (24-hour cache) and self-updates via npm. To update manually: `cf update`.
+Just run `cf update` to update the plugin and CLI. In case of any issues, you can try manually:
+
+- **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
+- **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
 
 ## Next Steps
 
