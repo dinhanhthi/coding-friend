@@ -29,7 +29,7 @@ This endpoint is taking 3 seconds to respond
 3. **Baseline Measurement** — Run a benchmark 3 times using detected tools (or manual timing). Records metrics with units and environment details
 4. **Analyze Bottlenecks** — Profile the code path to identify the actual bottleneck — no guessing. Ranks bottlenecks by impact
 5. **Plan the Optimization** — Proposes 1-2 approaches for the top bottleneck with expected improvement and risks. Asks for your confirmation before implementing
-6. **Implement** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent with strict [TDD discipline](/docs/skills/cf-tdd/): verify existing tests pass, implement the optimization, confirm no regressions
+6. **Implement** — Dispatches the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent: verify existing tests pass, implement the optimization, confirm no regressions. Pass `--add-tests` to enable TDD (write benchmark/regression tests first)
 7. **Measure After** — Runs the exact same benchmark from Step 3, again 3 times for stable numbers
 8. **Compare & Report** — Shows a before/after table with percentage changes. Flags improvements < 5% as possibly within noise. If performance regressed, reverts and tries a different approach
 9. **Auto-Review** — Automatically runs [`/cf-review`](/docs/skills/cf-review/) after the optimization is verified
@@ -60,7 +60,7 @@ This endpoint is taking 3 seconds to respond
 
 - **Always Measured** — Every optimization is benchmarked before and after — no "it should be faster" claims
 - **One at a Time** — Never batches multiple optimizations, so you know exactly what helped
-- **TDD Integration** — Enforces test-first approach via the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent
+- **TDD Integration** — Opt-in test-first via `--add-tests` flag with the [`cf-implementer`](/docs/reference/agents/#cf-implementer) agent
 - **Auto-Revert** — Reverts if the optimization makes things worse or breaks tests
 - **Custom Guides** — Extend behavior via `.coding-friend/skills/cf-optimize-custom/SKILL.md`
 

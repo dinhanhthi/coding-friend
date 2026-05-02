@@ -44,7 +44,7 @@ const agentMeta: AgentMeta[] = [
     name: "cf-implementer",
     title: "Implementer",
     description:
-      "Strict TDD in an isolated context with structured context handoff and auto-retry on failure.",
+      "Direct implementation by default; TDD with --add-tests. Isolated context, structured handoff, auto-retry on failure.",
     usedBy: ["/cf-plan", "/cf-fix", "/cf-optimize", "cf-tdd"],
   },
   {

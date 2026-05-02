@@ -946,6 +946,11 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       ? chalk.green("initialized")
       : chalk.yellow("not configured");
 
+    const tddScope = getScopeLabel("tdd", globalCfg, localCfg);
+    const tddVal = getMergedValue("tdd", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -1015,6 +1020,12 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           "  Persistent project knowledge — search tier, embeddings, MCP",
       },
       {
+        name: `TDD ${formatScopeLabel(tddScope)}${tddVal !== undefined ? ` (${tddVal})` : ""}`,
+        value: "tdd",
+        description:
+          "  Enable TDD (RED→GREEN→REFACTOR) by default for all implementations",
+      },
+      {
         name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
         value: "autoApprove",
         description:
@@ -1063,6 +1074,23 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       case "memory":
         await stepMemory(docsDir, { menuMode: true });
         break;
+      case "tdd": {
+        const tddChoice = await confirm({
+          message:
+            "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
+          default: tddVal ?? false,
+        });
+        const tddTargetScope = await askScope();
+        if (tddTargetScope !== "back") {
+          const targetPath =
+            tddTargetScope === "global"
+              ? globalConfigPath()
+              : localConfigPath();
+          mergeJson(targetPath, { tdd: tddChoice });
+          log.success(`Saved to ${targetPath}`);
+        }
+        break;
+      }
       case "autoApprove": {
         const autoApproveChoice = await confirm({
           message:

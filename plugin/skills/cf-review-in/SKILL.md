@@ -206,7 +206,7 @@ Count only `Confirmed` and `Questionable` findings across all reviewers (ignore 
 >
 > Shall I fix the confirmed issues now? (Questionable items will be presented for your decision.)
 
-If the user agrees, fix each **Confirmed** issue following TDD discipline (load `cf-tdd` skill first). For **Questionable** items, present each one and ask the user before acting.
+If the user agrees, load the `cf-tdd` skill and fix each **Confirmed** issue. Pass `--add-tests` to enable TDD for fixes when appropriate. For **Questionable** items, present each one and ask the user before acting.
 
 ### Step 9: Update prompt status
 

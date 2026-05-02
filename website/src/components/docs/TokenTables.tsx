@@ -34,7 +34,7 @@ const slashCommandMeta: Record<string, string> = {
 
 const autoSkillMeta: Record<string, string> = {
   "cf-sys-debug": "Debugging issues",
-  "cf-tdd": "Writing new code",
+  "cf-tdd": "Writing new code (direct mode or TDD)",
   "cf-verification": "Before claiming done",
 };
 
@@ -50,7 +50,7 @@ const agentMeta: Record<string, string> = {
   "cf-reviewer-tests": "Test coverage check",
   "cf-reviewer-rules": "Project rules compliance",
   "cf-reviewer-reducer": "Deduplicate and rank findings",
-  "cf-implementer": "TDD implementation",
+  "cf-implementer": "Direct or TDD implementation",
 };
 
 const modelDisplayName: Record<string, string> = {
@@ -139,7 +139,8 @@ const overviewAutoMeta: Record<
 > = {
   "cf-tdd": {
     activatesWhen: "Writing new code",
-    whatItDoes: "Enforces test-driven development: RED → GREEN → REFACTOR",
+    whatItDoes:
+      "Direct implementation by default (no new tests). TDD (RED → GREEN → REFACTOR) when --add-tests is used or tdd: true is set in config.",
   },
   "cf-sys-debug": {
     activatesWhen: "Debugging issues",
@@ -166,7 +167,8 @@ const agentRefMeta: Record<string, string> = {
   "cf-reviewer-rules":
     "Project rules compliance specialist (CLAUDE.md, conventions)",
   "cf-reviewer-reducer": "Deduplicates and ranks findings from all specialists",
-  "cf-implementer": "TDD-driven implementation with test-first approach",
+  "cf-implementer":
+    "Direct implementation by default; TDD (test-first) when --add-tests is used or tdd: true is set in config",
   "cf-planner": "Task decomposition, approach brainstorming, and planning",
   "cf-writer": "Lightweight document writing and markdown generation",
   "cf-writer-deep": "Deep reasoning for nuanced technical documentation",

@@ -36,7 +36,7 @@ If output is not empty, integrate the returned sections into this workflow:
 1. Run the failing test or command that triggers the bug
 2. Capture the exact error output
 3. If you **cannot reproduce**, tell the user and ask for more context — do NOT guess
-4. If no test exists, write one that demonstrates the failure
+4. If no test exists AND `--add-tests` flag was used, write one that demonstrates the failure. Otherwise, reproduce by running the code directly or via existing tests.
 
 ### Step 3: Recall Past Bugs + Explore Relevant Code
 
@@ -124,7 +124,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 
 **Prompt template:**
 
-> Fix the following bug using strict TDD:
+> Fix the following bug:
 >
 > **Bug:** [description from $ARGUMENTS]
 > **Context file:** [path to docsDir/context/<task-id>.json]
@@ -136,7 +136,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 >
 > Requirements:
 >
-> 1. If no regression test exists for this bug, write one first that demonstrates the failure
+> 1. If `--add-tests` was passed and no regression test exists for this bug, write one first that demonstrates the failure. Otherwise, skip test writing and fix directly.
 > 2. Fix the root cause — not the symptom. No try/catch to suppress errors.
 > 3. One fix at a time — no additional changes
 > 4. Run the full test suite — no regressions allowed

@@ -87,9 +87,9 @@ cf-fix (diagnose root cause → confirm → dispatch cf-implementer)
 
 ### cf-implementer
 
-Dispatched by [`/cf-plan [task]`](/docs/skills/cf-plan/), [`/cf-fix [bug]`](/docs/skills/cf-fix/), and [`/cf-optimize [target]`](/docs/skills/cf-optimize/) for test-first implementation. Also dispatched by [`cf-tdd`](/docs/skills/cf-tdd/) for substantial implementations (3+ files).
+Dispatched by [`/cf-plan [task]`](/docs/skills/cf-plan/), [`/cf-fix [bug]`](/docs/skills/cf-fix/), and [`/cf-optimize [target]`](/docs/skills/cf-optimize/). Also dispatched by [`cf-tdd`](/docs/skills/cf-tdd/) for substantial implementations (3+ files).
 
-The agent runs in an isolated context and follows strict RED → GREEN → REFACTOR discipline. When a **context file path** is provided, the agent reads the structured JSON (written by cf-explorer or cf-planner) for primary context. The orchestrating skill manages the context file lifecycle (cleanup after success, update on retry).
+By default the agent uses **direct implementation** — writes code and runs existing tests without creating new ones. Pass `--add-tests` or set `tdd: true` in config to enable TDD (RED → GREEN → REFACTOR). When a **context file path** is provided, the agent reads the structured JSON (written by cf-explorer or cf-planner) for primary context. The orchestrating skill manages the context file lifecycle (cleanup after success, update on retry).
 
 **Result signals**: The agent always ends its response with `[CF-RESULT: success]` or `[CF-RESULT: failure] <reason>`. The orchestrating skill parses this to determine whether to proceed or retry.
 
@@ -97,7 +97,7 @@ The agent runs in an isolated context and follows strict RED → GREEN → REFAC
 
 For **parallel phases** in `/cf-plan`, multiple cf-implementer agents run concurrently as background agents — each handling one independent task. For **sequential phases**, agents run one at a time as before.
 
-**Output quality gates**: Reports must include specific files created/modified, actual test output (not just "tests pass"), TDD compliance evidence (RED → GREEN → REFACTOR steps), decisions made, and any concerns.
+**Output quality gates**: Reports must include specific files created/modified, actual test/lint output, decisions made, and any concerns. In TDD mode, reports also include RED → GREEN → REFACTOR compliance evidence.
 
 ```
 /cf-plan (clarify → explore → plan → approve)
@@ -116,8 +116,8 @@ cf-implementer (read context → write regression test → fix → verify → re
 cf-implementer (write test → optimize → verify → report)
 
 cf-tdd (auto-invoked for substantial work)
-    ↓ dispatch (with context file)
-cf-implementer (read context → RED → GREEN → REFACTOR → report)
+    ↓ dispatch (with context file, --add-tests if TDD mode)
+cf-implementer (read context → implement directly OR RED → GREEN → REFACTOR → report)
     ↓ [CF-RESULT: success] or [CF-RESULT: failure]
     ↓ if failure → retry once with error context → escalate if still failing
 ```

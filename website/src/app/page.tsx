@@ -13,7 +13,7 @@ export default function Home() {
     "@type": "SoftwareApplication",
     name: "Coding Friend",
     description:
-      "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture across your engineering workflow.",
+      "A lean toolkit for systematic debugging, smart commits, code review, and knowledge capture — with optional TDD support across your engineering workflow.",
     url: "https://cf.dinhanhthi.com",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",

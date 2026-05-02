@@ -26,9 +26,9 @@ export default function Hero() {
             <span className="text-violet-400">Workflows</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
-            A lean toolkit that enforces TDD, systematic debugging, smart
-            commits, code review, and knowledge capture across your engineering
-            workflow.
+            A lean toolkit for systematic debugging, smart commits, code review,
+            and knowledge capture — with optional TDD support across your
+            engineering workflow.
           </p>
 
           {/* Ecosystem pills */}

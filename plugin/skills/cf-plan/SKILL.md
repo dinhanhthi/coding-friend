@@ -150,8 +150,8 @@ Ask: **"Ready to start implementing?"** If yes, execute phase by phase.
 
 Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) per task:
 
-> Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations] | Constraints: [risks/edge cases]
-> Follow RED → GREEN → REFACTOR.
+> Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
+> If `--add-tests` was passed to `/cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
 
 Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 

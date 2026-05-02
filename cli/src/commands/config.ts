@@ -499,6 +499,30 @@ async function learnSubMenu(): Promise<void> {
   }
 }
 
+// ─── TDD ─────────────────────────────────────────────────────────────
+
+async function editTdd(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("tdd", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { tdd: value });
+}
+
 // ─── Auto-Approve ────────────────────────────────────────────────────
 
 async function editAutoApprove(
@@ -814,6 +838,11 @@ export async function configCommand(): Promise<void> {
     const learnScope = getScopeLabel("learn", globalCfg, localCfg);
     const memoryScope = getScopeLabel("memory", globalCfg, localCfg);
 
+    const tddScope = getScopeLabel("tdd", globalCfg, localCfg);
+    const tddVal = getMergedValue("tdd", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -869,6 +898,12 @@ export async function configCommand(): Promise<void> {
             description: "  Tier, auto-capture, auto-start, embedding provider",
           },
           {
+            name: `TDD ${formatScopeLabel(tddScope)}${tddVal !== undefined ? ` (${tddVal})` : ""}`,
+            value: "tdd",
+            description:
+              "  Enable TDD (RED→GREEN→REFACTOR) by default for all implementations",
+          },
+          {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
@@ -919,6 +954,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "memory":
         await memoryConfigMenu();
+        break;
+      case "tdd":
+        await editTdd(globalCfg, localCfg);
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);

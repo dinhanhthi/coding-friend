@@ -99,7 +99,7 @@ The lifecycle owner is explicitly **not** the implementer agent. This is a delib
 4. cf-explorer returns a short text report mentioning the file
 5. Skill dispatches cf-implementer, passing the same path
 6. cf-implementer reads the file, uses it as primary context
-7. cf-implementer runs RED → GREEN → REFACTOR
+7. cf-implementer implements (direct mode or RED → GREEN → REFACTOR if --add-tests)
 8. cf-implementer appends [CF-RESULT: success] to its output
 9. Skill parses the sentinel, confirms success
 10. Skill deletes the context file

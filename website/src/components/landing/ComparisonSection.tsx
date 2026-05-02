@@ -64,7 +64,8 @@ const BAR_HEIGHT = 180;
 const SKILL_TOOLTIPS: Record<string, string> = {
   "cf-fix": "Diagnose and fix bugs using test-driven debugging workflow",
   "cf-review": "Multi-layer code review: quality, security, and testing",
-  "cf-tdd": "Test-Driven Development: RED → GREEN → REFACTOR cycle",
+  "cf-tdd":
+    "Implementation workflow: direct code by default, TDD opt-in with --add-tests",
 };
 
 function BarGroup({
