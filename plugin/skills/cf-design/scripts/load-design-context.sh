@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Loads DESIGN_PATTERNS.md from the project's docs directory.
+# Loads DESIGN.md from the project's docs directory.
 # Output is consumed by SKILL.md for design context injection.
 set -euo pipefail
 
@@ -14,12 +14,12 @@ if [[ -f "$CONFIG_FILE" ]]; then
   [[ -n "$_parsed" ]] && DOCS_DIR="$_parsed"
 fi
 
-PATTERNS_FILE="$PROJECT_ROOT/$DOCS_DIR/DESIGN_PATTERNS.md"
+PATTERNS_FILE="$PROJECT_ROOT/$DOCS_DIR/DESIGN.md"
 if [[ -f "$PATTERNS_FILE" ]]; then
-  echo "=== Existing Design Patterns (from $DOCS_DIR/DESIGN_PATTERNS.md) ==="
+  echo "=== Existing Design Patterns (from $DOCS_DIR/DESIGN.md) ==="
   cat "$PATTERNS_FILE"
   echo "=== End Design Patterns ==="
 else
-  echo "No DESIGN_PATTERNS.md found at $DOCS_DIR/DESIGN_PATTERNS.md."
+  echo "No DESIGN.md found at $DOCS_DIR/DESIGN.md."
   echo "Run '/cf-design scan' to extract and save your project's design patterns."
 fi
