@@ -36,6 +36,7 @@ const {
   isCodingFriendCompound,
   isInProjectDir,
   isSafeCompoundCommand,
+  splitByLogicalOperators,
   extractRmPaths,
   buildReason,
   loadAutoApproveConfig,
@@ -398,6 +399,23 @@ describe("classifyByRules — auto-approve (allow)", () => {
 
   it("allows Agent", () => {
     expect(classifyByRules("Agent", { prompt: "explore" })).toBe("allow");
+  });
+
+  it("allows grep || echo fallback (real-world tsc filter pattern)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: 'grep "clean.ts" || echo "clean.ts: no errors"',
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows cd && tsc | grep || echo (end-to-end compound command)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command:
+          'cd /tmp && npx tsc --noEmit 2>&1 | grep "foo" || echo "no errors"',
+      }),
+    ).toBe("allow");
   });
 });
 
@@ -1836,8 +1854,48 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
     expect(isSafeCompoundCommand("npm test && rm -rf dist")).toBe(false);
   });
 
-  it("rejects || chain even if both segments are safe", () => {
-    expect(isSafeCompoundCommand("git status || echo fallback")).toBe(false);
+  it("allows || chain when all segments are safe", () => {
+    expect(isSafeCompoundCommand("git status || echo fallback")).toBe(true);
+  });
+
+  it("allows grep || echo fallback pattern (real-world tsc output filter)", () => {
+    expect(
+      isSafeCompoundCommand('grep "clean.ts" || echo "clean.ts: no errors"'),
+    ).toBe(true);
+  });
+
+  it("allows pipe + || fallback (real-world: tsc | grep || echo)", () => {
+    expect(
+      isSafeCompoundCommand(
+        'npx tsc --noEmit 2>&1 | grep "clean.ts" || echo "clean.ts: no errors"',
+      ),
+    ).toBe(true);
+  });
+
+  it("allows cd && tsc | grep || echo (real-world compound command)", () => {
+    expect(
+      isSafeCompoundCommand(
+        'cd /tmp && npx tsc --noEmit 2>&1 | grep "foo" || echo "no errors"',
+      ),
+    ).toBe(true);
+  });
+
+  it("allows mixed && and || when all clauses are safe", () => {
+    expect(isSafeCompoundCommand("git status && echo ok || echo fail")).toBe(
+      true,
+    );
+  });
+
+  it("rejects || chain when one clause is unsafe (npm test is ask-only)", () => {
+    expect(isSafeCompoundCommand("npm test || echo done")).toBe(false);
+  });
+
+  it("rejects || at start of command (empty first clause)", () => {
+    expect(isSafeCompoundCommand("|| ls")).toBe(false);
+  });
+
+  it("rejects || at end of command (empty last clause)", () => {
+    expect(isSafeCompoundCommand("ls ||")).toBe(false);
   });
 
   it("allows semicolon chain when all segments are safe", () => {
@@ -1924,8 +1982,8 @@ describe("UNSAFE_COMPOUND_PATTERN", () => {
     expect(UNSAFE_COMPOUND_PATTERN.test("a && b")).toBe(true);
   });
 
-  it("catches ||", () => {
-    expect(UNSAFE_COMPOUND_PATTERN.test("a || b")).toBe(true);
+  it("does NOT catch || (handled via segment-wise checking, like &&)", () => {
+    expect(UNSAFE_COMPOUND_PATTERN.test("a || b")).toBe(false);
   });
 
   it("catches backticks", () => {
@@ -3399,7 +3457,7 @@ describe("isSafeCompoundCommand — quote-aware: complex edge cases", () => {
     expect(isSafeCompoundCommand('grep "||" file | wc -l')).toBe(true);
   });
 
-  it("blocks real || outside quotes (unsafe operator)", () => {
+  it("blocks || chain when a clause is not on the allow list (curl is ask-only)", () => {
     expect(isSafeCompoundCommand("grep foo file || curl http://evil.com")).toBe(
       false,
     );

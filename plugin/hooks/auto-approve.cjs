@@ -240,22 +240,24 @@ const SHELL_OPERATOR_PATTERN = /[\n|;&<]|>>?|`|\$\(/;
  * and any output redirect (>).
  *
  * NOTE: isSafeCompoundCommand no longer uses this pattern directly — it uses
- * TRULY_UNSAFE_OPERATORS (which excludes &&) and handles && via segment-wise
- * checking. This constant is exported for test coverage only.
+ * TRULY_UNSAFE_OPERATORS (which excludes && and ||) and handles && and || via
+ * segment-wise checking. This constant is exported for test coverage only.
  */
-const UNSAFE_COMPOUND_PATTERN = /[;\n`>]|&&|\|\||\$\(|</;
+const UNSAFE_COMPOUND_PATTERN = /[;\n`>]|&&|\$\(|</;
 
 /**
  * Detect operators that are truly unsafe even when segments are individually safe.
- * Does NOT include && — that is handled separately by segment-wise checking.
+ * Does NOT include && or || — both are handled by segment-wise checking in
+ *   isSafeCompoundCommand: if every clause separated by && or || is on the
+ *   allow list, the whole chain is safe.
  * Does NOT include ; — semicolons are split and each clause is checked individually
- *   (same approach as &&), so "grep foo | head; echo done" is safe when all safe.
+ *   (same approach as && and ||), so "grep foo | head; echo done" is safe when all safe.
  * Excludes pipe (|) which is handled by isSafeCompoundCommand segment logic.
  * Single & (background operator, e.g. "cmd & evil") IS blocked — negative lookahead
  * (?<!&)&(?!&) matches lone & but not && or the & in 2>&1 (the latter is stripped
  * before this check runs, so only true background operators reach this pattern).
  */
-const TRULY_UNSAFE_OPERATORS = /[\n`>]|(?<!&)&(?!&)|\|\||\$\(|</;
+const TRULY_UNSAFE_OPERATORS = /[\n`>]|(?<!&)&(?!&)|\$\(|</;
 
 /**
  * Strip stderr-to-stdout redirects (e.g., "2>&1") from a command string.
@@ -467,6 +469,41 @@ function splitBySanitized(str, sanitized, delimiter) {
 }
 
 /**
+ * Split a string on either "&&" or "||" logical operators, guided by a
+ * quote-sanitized version of the same string so that operators inside quoted
+ * strings (e.g. grep "foo||bar", grep "a&&b") are not mistaken for shell
+ * operators. Both && and || have equal shell precedence, so they are handled
+ * identically: if every resulting clause is safe, the whole chain is safe.
+ *
+ * @param {string} str — original string to split
+ * @param {string} sanitized — quote-sanitized version (same length)
+ * @returns {Array<{orig: string, san: string}>} — pairs of original/sanitized slices
+ */
+function splitByLogicalOperators(str, sanitized) {
+  const result = [];
+  let start = 0;
+  let i = 0;
+  while (i <= sanitized.length - 2) {
+    const chunk = sanitized.slice(i, i + 2);
+    if (chunk === "&&" || chunk === "||") {
+      result.push({
+        orig: str.slice(start, i),
+        san: sanitized.slice(start, i),
+      });
+      start = i + 2;
+      i = start;
+    } else {
+      i++;
+    }
+  }
+  result.push({
+    orig: str.slice(start),
+    san: sanitized.slice(start),
+  });
+  return result;
+}
+
+/**
  * Check if a compound command is safe by verifying every segment against the
  * allow list. Supports pipe chains, && chains, and ; chains (where every clause
  * is safe). Other operators — ||, backticks, $(), redirects, single & — are
@@ -574,10 +611,14 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
     const trimmedSemiSan = semiSan.trim();
     if (!trimmedSemiOrig) return false;
 
-    // Within each semicolon clause, split on && to get chained sub-commands.
-    const andClauses = splitBySanitized(trimmedSemiOrig, trimmedSemiSan, "&&");
+    // Within each semicolon clause, split on && and || to get chained sub-commands.
+    // Both operators have equal shell precedence; every clause must be safe.
+    const logicalClauses = splitByLogicalOperators(
+      trimmedSemiOrig,
+      trimmedSemiSan,
+    );
 
-    return andClauses.every(({ orig, san }) => {
+    return logicalClauses.every(({ orig, san }) => {
       const trimmedOrig = orig.trim();
       const trimmedSan = san.trim();
       if (!trimmedOrig) return false;
@@ -798,14 +839,15 @@ function isCodingFriendCompound(trimmed, allowExtra) {
       ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
       : BASH_ALLOW_PREFIXES;
 
-  // Split on && using the quote-sanitized form so && inside quoted content is not treated as an operator
-  const andClauses = splitBySanitized(stripped, sanitized, "&&");
-  if (!andClauses.length) return false;
+  // Split on && and || using the quote-sanitized form so operators inside quoted
+  // content are not treated as shell operators. Every clause must be safe.
+  const logicalClauses = splitByLogicalOperators(stripped, sanitized);
+  if (!logicalClauses.length) return false;
 
   // At least one clause must be a CF plugin script
   let hasCFScript = false;
 
-  const allSafe = andClauses.every(({ orig }) => {
+  const allSafe = logicalClauses.every(({ orig }) => {
     const clause = orig.trim();
     if (!clause) return false;
 
@@ -1264,6 +1306,7 @@ module.exports = {
   isCodingFriendCompound,
   isInProjectDir,
   isSafeCompoundCommand,
+  splitByLogicalOperators,
   extractBashScriptPath,
   extractRmPaths,
   loadAutoApproveConfig,
