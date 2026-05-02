@@ -77,6 +77,7 @@ const MemoryConfigSchema = z.object({
 const ConfigSchema = z.strictObject({
   language: z.string().optional(),
   docsDir: z.string().optional(),
+  tdd: z.boolean().optional(),
   learn: LearnConfigSchema.optional(),
   statusline: StatuslineConfigSchema.optional(),
   memory: MemoryConfigSchema.optional(),
@@ -89,6 +90,7 @@ const ConfigSchema = z.strictObject({
 const KNOWN_KEYS = [
   "language",
   "docsDir",
+  "tdd",
   "learn",
   "statusline",
   "memory",

@@ -26,13 +26,21 @@ Build a user authentication system
 
 Coding Friend explores your codebase, identifies existing patterns, and writes a structured implementation plan. The plan is saved to `docs/plans/` by default. Check [`/cf-plan`](/docs/skills/cf-plan/) for more details.
 
-## 2. Write Code with TDD
+## 2. Write Code
 
-Simply describe what you want to build. The [`cf-tdd`](/docs/skills/cf-tdd/) skill activates automatically and enforces:
+Simply describe what you want to build. The [`cf-tdd`](/docs/skills/cf-tdd/) skill activates automatically and checks for `--add-tests` in your task to decide the mode. By default it uses **direct implementation** — code without new tests. To enable TDD, pass `--add-tests`:
+
+```bash
+/cf-plan --add-tests Build a user authentication system
+```
+
+With `--add-tests`, the skill enforces:
 
 1. **RED** — Write a failing test first
 2. **GREEN** — Write minimal code to pass
 3. **REFACTOR** — Clean up while tests stay green
+
+You can also enable TDD globally via `cf config` or `cf init` (sets `tdd: true` in config).
 
 ## 3. Review Your Code
 

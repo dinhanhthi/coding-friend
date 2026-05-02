@@ -8,13 +8,14 @@ description: >
   component", "implement the API", "add a route", "write a service", "create the handler".
   Also auto-invoke when the conversation transitions from planning/discussion to actual code
   writing — any time production code is about to be written, this skill MUST be loaded first.
-  This is the MANDATORY gate for all code writing in the project. Do NOT auto-invoke for
-  documentation-only changes, config edits, non-code file updates, or when the user is only
-  asking questions about code without requesting changes.
+  By default uses direct implementation (no new tests written). TDD is enabled when `--add-tests`
+  is present or config `tdd: true`. This is the gate for all code writing in the project.
+  Do NOT auto-invoke for documentation-only changes, config edits, non-code file updates,
+  or when the user is only asking questions about code without requesting changes.
 user-invocable: false
 ---
 
-# Test-Driven Development
+# Implementation Workflow
 
 ## Custom Guide
 
@@ -26,13 +27,25 @@ If output is not empty, integrate the returned sections into this workflow:
 - `## Rules` → apply as additional rules throughout all steps
 - `## After` → execute after the final step
 
+## Mode Detection
+
+Determine the implementation mode BEFORE doing anything else:
+
+1. Check if the user's invocation or task description contains `--add-tests`
+2. Check if `.coding-friend/config.json` exists and has `"tdd": true`
+
+**Result:**
+
+- `--add-tests` present OR `tdd: true` in config → **TDD mode**. Show: `> TDD mode enabled — RED → GREEN → REFACTOR`
+- Neither → **Direct mode** (default). Show: `> Direct mode — implementing without new tests`
+
 ## Skip Conditions
 
-Check these BEFORE starting any TDD step. If a skip condition is met, bypass TDD entirely and proceed directly to implementation.
+Check these BEFORE starting. If a skip condition is met, bypass the workflow entirely and proceed directly to implementation.
 
 ### Auto-skip whitelist
 
-If **ALL** changed/new files match these extensions, skip TDD — note why and proceed:
+If **ALL** changed/new files match these extensions, skip entirely — note why and proceed:
 
 - **Styles**: `.css`, `.scss`, `.sass`, `.less`, `.styl`
 - **Docs**: `.md`, `.mdx`, `.txt`, `.rst`
@@ -40,21 +53,21 @@ If **ALL** changed/new files match these extensions, skip TDD — note why and p
 
 ### `--no-tdd` flag
 
-If the user's invocation includes `--no-tdd`, skip TDD. Show a one-line acknowledgment:
+Deprecated — direct mode is now the default. If present, acknowledge and proceed in direct mode:
 
-> TDD skipped via --no-tdd
-
-Then proceed directly to implementation.
+> `--no-tdd` is now the default. Proceeding in direct mode.
 
 ---
 
-## The Iron Law
+## Direct Mode (default)
 
-**No production code without a failing test first.**
+1. Read the task description and relevant existing code
+2. Implement the feature directly — no test writing
+3. Run existing tests if a test suite exists — fix failures before reporting
+4. Run typecheck/lint if available
+5. Report what was implemented
 
-Code written before a test exists must be deleted and rewritten test-first. No exceptions.
-
-## Cycle: RED → GREEN → REFACTOR
+## TDD Mode (`--add-tests` or `tdd: true` in config)
 
 ### RED — Write a failing test
 
@@ -74,18 +87,7 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 2. Improve naming, extract functions if needed
 3. Run ALL tests. They MUST still pass.
 
-## Rules
-
-| Situation                                       | Action                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------- |
-| "Let me just write the function first"          | NO. Write the test first.                                                 |
-| "This is too simple to test"                    | If it's too simple to test, it's too simple to get wrong. Test it anyway. |
-| "I'll add tests later"                          | No. Tests come FIRST. This is non-negotiable.                             |
-| "The test framework isn't set up"               | Set it up. That's part of the work.                                       |
-| "I already know what the code should look like" | Great. Describe it as a test first.                                       |
-| "This is just a refactor"                       | Ensure existing tests pass before AND after.                              |
-
-## Test Quality Checklist
+## Test Quality Checklist (TDD mode only)
 
 - [ ] Test describes behavior, not implementation
 - [ ] Test has a clear failure message
@@ -93,7 +95,7 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 - [ ] Test runs fast (<1s)
 - [ ] One assertion per test (or closely related assertions)
 
-## Anti-Patterns
+## Anti-Patterns (TDD mode only)
 
 1. **Testing mocks, not behavior** — If your test only verifies mock calls, it tests nothing
 2. **Test-only methods in production** — Never add methods just to make testing easier
@@ -101,7 +103,7 @@ Code written before a test exists must be deleted and rewritten test-first. No e
 
 ## Subagent Dispatch
 
-For **substantial implementations** (new feature spanning 3+ files, complex algorithm, or multi-step feature), dispatch the **cf-implementer agent** instead of implementing inline. This preserves the main conversation's context and enforces TDD in an isolated execution.
+For **substantial implementations** (new feature spanning 3+ files, complex algorithm, or multi-step feature), dispatch the **cf-implementer agent** instead of implementing inline. This preserves the main conversation's context.
 
 ### Context Handoff Protocol
 
@@ -118,23 +120,22 @@ If dispatching cf-explorer or cf-planner first, pass the context file path so th
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
 
 - Task description and expected behavior
+- `--add-tests` in the prompt if TDD mode is active
 - Context file path (if cf-explorer/cf-planner wrote one)
 - Relevant file paths (source files, test files, config)
-- Test framework and patterns used in the project
+- Test framework and patterns used in the project (if TDD mode)
 - Any constraints or edge cases
 
 **Prompt template:**
 
-> Implement the following using strict TDD:
+> Implement the following [--add-tests if TDD mode]:
 >
 > **Task:** [description]
 > **Context file:** [path to docs/context/<task-id>.json, or "none"]
 > **Expected behavior:** [what the code should do]
 > **Relevant files:** [paths]
-> **Test patterns:** [framework, conventions, example test file]
+> **Test patterns:** [framework, conventions, example test file — only if TDD mode]
 > **Constraints:** [any limits or edge cases]
->
-> Follow RED → GREEN → REFACTOR. Report results when done.
 
 ### Retry on Failure
 
@@ -187,7 +188,7 @@ After the cf-implementer returns, **parse the last non-empty line** of its respo
 
 5. **Cleanup**: If the workflow completes (success or final escalation), delete the context file if it still exists. If the user cancels mid-workflow, delete the context file to avoid orphans.
 
-**When NOT to dispatch** (do TDD inline instead):
+**When NOT to dispatch** (implement inline instead):
 
 - Single-file changes or small functions
 - Pure refactoring with existing test coverage
@@ -195,4 +196,4 @@ After the cf-implementer returns, **parse the last non-empty line** of its respo
 
 ## Review Reminder
 
-After implementation is complete and all tests pass, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+After implementation is complete, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.

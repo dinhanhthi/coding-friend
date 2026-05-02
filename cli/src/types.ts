@@ -66,6 +66,7 @@ export interface MemoryConfig {
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
+  tdd?: boolean;
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
   memory?: MemoryConfig;

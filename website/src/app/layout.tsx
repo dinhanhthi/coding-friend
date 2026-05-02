@@ -6,7 +6,7 @@ import "highlight.js/styles/github-dark.css";
 
 const siteTitle = "Coding Friend — Claude Code Plugin";
 const siteDescription =
-  "A lean toolkit that enforces TDD, systematic debugging, smart commits, code review, and knowledge capture — as a Claude Code plugin.";
+  "A lean toolkit for systematic debugging, smart commits, code review, and knowledge capture — with optional TDD support. As a Claude Code plugin.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cf.dinhanhthi.com"),

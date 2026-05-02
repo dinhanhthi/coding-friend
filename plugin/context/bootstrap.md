@@ -5,7 +5,7 @@ You have the coding-friend toolkit loaded. Follow these rules in every interacti
 ## Core Rules
 
 1. **Check skills first.** Before starting any task, check if a relevant skill exists. Load it before proceeding.
-2. **Test before code.** No production code without a failing test first (see: cf-tdd skill).
+2. **Test before code (optional).** Before writing any production code, load the cf-tdd skill. By default: direct implementation (no new tests). For TDD: add `--add-tests` flag or set `tdd: true` in config (see: cf-tdd skill).
 3. **Verify before claiming.** Never claim work is complete without running tests and showing output (see: cf-verification skill).
 4. **Respect boundaries.** Do not read files blocked by .coding-friend/ignore or privacy rules.
 5. **Commit with purpose.** Every commit must be a conventional commit with clear "why" (see: cf-commit skill).
@@ -38,7 +38,7 @@ cf-tdd, cf-sys-debug, cf-verification, cf-help
 - When the user's message contains a `/cf-*` name but the **intent is meta** (improve, change, discuss, analyze, compare, verify the skill itself), treat the skill name as a **noun**, not a **command**.
 - When in doubt, do NOT auto-invoke. Ask the user instead.
 
-**CRITICAL: cf-tdd enforcement** — Before writing ANY production code (new feature, implementation, refactoring, bug fix code), ALWAYS load the cf-tdd skill first. Do NOT skip to writing code directly. This applies whether you're implementing from a plan, fixing a bug, adding a feature, or refactoring. The only exceptions are: documentation-only changes, config edits, and non-code file updates.
+**cf-tdd gate** — Before writing ANY production code (new feature, implementation, refactoring, bug fix code), load the cf-tdd skill first. By default: direct implementation without new tests. Use `--add-tests` flag or config `tdd: true` to enable TDD (RED→GREEN→REFACTOR). The only exceptions are: documentation-only changes, config edits, and non-code file updates.
 
 ## Available Agents
 

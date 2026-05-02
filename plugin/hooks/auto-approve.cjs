@@ -505,16 +505,17 @@ function splitByLogicalOperators(str, sanitized) {
 
 /**
  * Check if a compound command is safe by verifying every segment against the
- * allow list. Supports pipe chains, && chains, and ; chains (where every clause
- * is safe). Other operators — ||, backticks, $(), redirects, single & — are
- * always rejected. 2>&1 is stripped before checking.
+ * allow list. Supports pipe chains, && chains, || chains, and ; chains (where
+ * every clause is safe). Other operators — backticks, $(), redirects, single &
+ * — are always rejected. 2>&1 is stripped before checking.
  *
- * Splitting order: ; (top-level) → && (within each ; clause) → | (within each &&
- * sub-clause). Each leaf segment must either match an allow-list prefix or be an
- * rm command targeting only files within the project directory.
+ * Splitting order: ; (top-level) → && and || together via splitByLogicalOperators
+ * (within each ; clause) → | (within each logical sub-clause). Each leaf segment
+ * must either match an allow-list prefix or be an rm command targeting only files
+ * within the project directory.
  *
  * Uses a quote-aware tokenizer so that shell metacharacters inside quoted
- * strings (e.g. grep "foo|bar", grep "foo;bar") are not mistaken for operators.
+ * strings (e.g. grep "foo|bar", grep "foo||bar") are not mistaken for operators.
  *
  * @param {string} cmd — the full trimmed command
  * @param {string[]} [allowExtra] — additional allow prefixes from config

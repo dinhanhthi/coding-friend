@@ -128,8 +128,9 @@ const autoSkillMeta: SkillMeta[] = [
   },
   {
     command: "cf-tdd",
-    title: "TDD Workflow",
-    description: "Enforces test-driven development: RED, GREEN, REFACTOR",
+    title: "Implementation Workflow",
+    description:
+      "Direct implementation by default. Add --add-tests for TDD: RED, GREEN, REFACTOR",
   },
   {
     command: "cf-verification",

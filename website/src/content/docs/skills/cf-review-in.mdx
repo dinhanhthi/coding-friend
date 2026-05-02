@@ -51,7 +51,7 @@ The `/cf-review-in` skill reads review results written by an external AI agent (
    - For Suggestions, do a lighter check — only flag obviously wrong ones
 5. **Present verified report** — Display findings with verification verdicts
 6. **Smart capture** — If notable architectural insights found in Confirmed findings, store to memory (when available)
-7. **Offer fixes** — If confirmed or questionable issues found, offer to fix them using TDD (dismissed findings are never auto-fixed)
+7. **Offer fixes** — If confirmed or questionable issues found, offer to fix them via cf-implementer (dismissed findings are never auto-fixed). Pass `--add-tests` to enable TDD for the fixes
 8. **Update status** — Mark the prompt as `collected` in its frontmatter
 
 ## Output

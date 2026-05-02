@@ -124,7 +124,7 @@ Dispatch the **cf-implementer agent** to implement the optimization test-first. 
 
 **Prompt template:**
 
-> Implement the following optimization using strict TDD:
+> Implement the following optimization:
 >
 > **Optimization:** [approach confirmed in Step 6]
 > **Target:** [specific files and functions]
@@ -176,7 +176,7 @@ Automatically invoke `/cf-review` — use the **Skill tool** with skill name `co
 
 - ALWAYS measure before AND after — no "it should be faster" claims
 - One optimization at a time — never batch multiple changes
-- Tests must pass throughout — the cf-implementer agent enforces TDD
+- Tests must pass throughout — run existing tests after every change
 - Get user confirmation before implementing (Step 6)
 - If you cannot measure it, ask the user how to measure it before proceeding
 - Revert if the optimization makes things worse or breaks tests

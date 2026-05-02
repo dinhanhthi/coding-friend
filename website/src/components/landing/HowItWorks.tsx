@@ -35,7 +35,7 @@ const mainNodes: FlowNode[] = [
     id: "implement",
     label: "cf-tdd",
     description:
-      "TDD workflow enforced. Every feature starts with a failing test, then implementation, then refactor.",
+      "Implementation workflow. Direct code by default — or add --add-tests for TDD: failing test first, then implementation, then refactor.",
   },
   {
     id: "review",
@@ -77,7 +77,8 @@ const sideNodes: SideNode[] = [
   {
     id: "implementer",
     label: "cf-implementer",
-    description: "TDD implementation agent — RED, GREEN, REFACTOR",
+    description:
+      "Implementation agent — direct code by default, TDD with --add-tests",
     parentId: "implement",
     kind: "agent",
   },

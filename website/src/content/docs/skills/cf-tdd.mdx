@@ -1,21 +1,31 @@
 ---
 title: "cf-tdd"
-description: "Enforces test-driven development: RED, GREEN, REFACTOR."
-keywords: [tdd, test driven development, red green refactor, testing]
+description: "Implementation workflow — direct code by default, TDD opt-in with --add-tests."
+keywords:
+  [tdd, test driven development, red green refactor, testing, implementation]
 ---
 
 Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
-The `cf-tdd` skill automatically activates when you're writing new code or refactoring existing code. It enforces the test-driven development (TDD) discipline: write a failing test first, implement minimal code to pass it, then refactor.
+The `cf-tdd` skill automatically activates when you're writing new code or refactoring existing code. By default it uses **direct implementation** — write code directly without new tests, then run any existing tests. To enable TDD (RED → GREEN → REFACTOR), pass `--add-tests` or set `tdd: true` in your config.
+
+## Mode Detection
+
+The skill detects which mode to use at startup:
+
+- **`--add-tests` flag present** in the invocation → TDD mode
+- **`tdd: true` in `.coding-friend/config.json`** → TDD mode
+- **Neither** → Direct mode (default)
+
+Direct mode shows: `> Direct mode — implementing without new tests`
+TDD mode shows: `> TDD mode enabled`
 
 ## Skip Conditions
 
-TDD is automatically skipped when:
+Both modes skip entirely when:
 
-- **All changed files are non-code** — styles (`.css`, `.scss`, `.sass`, `.less`, `.styl`), docs (`.md`, `.mdx`, `.txt`, `.rst`), or config (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`). Whitelist matches only when **all** changed files belong to these types — mixing in a `.ts` file (or any other code file) re-enables TDD for the whole change.
-- **User passes `--no-tdd`** — explicitly opts out with a one-line acknowledgment. This flag is recognized by the `cf-tdd` skill itself. Passing it through `/cf-fix` or `/cf-plan` today does **not** propagate to the downstream `cf-implementer` agent; those skills always delegate to the strict TDD implementer regardless of the flag.
-
-When skipped, the skill notes why and proceeds directly to implementation.
+- **All changed files are non-code** — styles (`.css`, `.scss`, `.sass`, `.less`, `.styl`), docs (`.md`, `.mdx`, `.txt`, `.rst`), or config (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`, `.lock`, `.config`). Whitelist matches only when **all** changed files belong to these types.
+- **User passes `--no-tdd`** — deprecated flag, kept for backward compatibility.
 
 ## Agent Handoff
 
@@ -31,11 +41,23 @@ Automatically triggered when:
 - Refactoring existing code ("refactor this", "clean up", "extract this", "simplify")
 - Test file exists but implementation doesn't
 
-## The TDD Cycle
+## Direct Mode (Default)
+
+Implements the feature without writing new tests:
+
+1. Read task context and understand requirements
+2. Implement the feature directly
+3. Run existing tests if any (`npm test`, `pytest`, etc.) — **do not write new ones**
+4. Run type checking and linting if configured
+5. Report what was done
+
+## TDD Mode (--add-tests)
+
+The classic RED → GREEN → REFACTOR cycle:
 
 ### RED: Write Failing Test
 
-Start by writing a test that describes desired behavior—it fails because the code doesn't exist yet.
+Start by writing a test that describes desired behavior — it fails because the code doesn't exist yet.
 
 ```typescript
 // test/user.test.ts
@@ -54,7 +76,6 @@ Write the simplest code that makes the test pass. No over-engineering.
 ```typescript
 // src/user.ts
 export function hashPassword(password: string): string {
-  // Minimal implementation to pass test
   return "hashed_" + password;
 }
 ```
@@ -72,15 +93,7 @@ export function hashPassword(password: string): string {
 }
 ```
 
-## Benefits
-
-- **Confidence** — Tests ensure code works before production
-- **Design** — Writing tests first leads to better API design
-- **Coverage** — Most code has tests automatically
-- **Refactoring** — Safe to improve code with test safety net
-- **Documentation** — Tests serve as usage examples
-
-## When It Helps Most
+## When TDD Helps Most
 
 - Complex business logic
 - Data transformations
@@ -88,10 +101,14 @@ export function hashPassword(password: string): string {
 - Edge case handling
 - Error scenarios
 
-## Key Rules
+## Config Option
 
-1. **Always test first** — No code without failing test
-2. **Keep tests simple** — Each test validates one behavior
-3. **One assert per test** — Clear pass/fail indication
-4. **Test edge cases** — Null, empty, invalid input
-5. **Refactor freely** — Tests prevent regressions
+Set `tdd: true` in `.coding-friend/config.json` to make TDD the default for all implementations in a project:
+
+```json
+{
+  "tdd": true
+}
+```
+
+Or configure it interactively with `cf config` or `cf init`.
