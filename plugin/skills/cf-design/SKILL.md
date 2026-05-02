@@ -78,7 +78,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
    - **Dark/light mode**: how it's implemented (class-based, media query, CSS vars).
    - **Overall style**: use `design-styles.md` to identify the closest matching style(s) and confidence.
 
-4. **Show findings to the user** for confirmation before saving. Format:
+4. **Show findings summary** — display the detected design system in this format:
 
    ```
    ## Detected Design System
@@ -104,11 +104,11 @@ Goal: understand the project's visual DNA and write it down so every future desi
    **Notes**: [any unique patterns, inconsistencies, or surprises]
    ```
 
-   Ask: _"Does this look right? Anything to correct or add before I save?"_
+5. **Save immediately** to `{docsDir}/DESIGN.md` using the format above — no confirmation needed before writing.
 
-5. **Save** to `{docsDir}/DESIGN.md` after confirmation. Use the format shown in the output example above.
+6. **After saving**, ask: _"I've saved `DESIGN.md`. Anything you'd like to adjust or add?"_ — if the user requests changes, update the file accordingly. Otherwise, proceed to step 7.
 
-6. Suggest running `/cf-remember` to index this file so it can be recalled in future sessions.
+7. Suggest running `/cf-remember` to index this file so it can be recalled in future sessions.
 
 ---
 
