@@ -18,6 +18,7 @@ import {
 import {
   checkMemoryMcpHealth,
   checkLearnMcpHealth,
+  printHealthSection,
   type McpHealthResult,
 } from "../lib/mcp-health.js";
 import { readJson } from "../lib/json.js";
@@ -32,28 +33,7 @@ import chalk from "chalk";
 
 export { detectMemoryMcpState, type MemoryMcpState };
 
-/**
- * Print a health check section to the console.
- * Shows ✓/✗/⚠ per check, and a per-check fix hint (check.fix) for hard failures.
- */
-export function printHealthSection(result: McpHealthResult): void {
-  console.log(chalk.dim("─── Health Check ───"));
-  for (const check of result.checks) {
-    if (check.ok) {
-      console.log(chalk.green(`  ✓ ${check.label}`));
-    } else if (check.warn) {
-      const detail = check.detail ? `: ${check.detail}` : "";
-      console.log(chalk.yellow(`  ⚠ ${check.label}${detail}`));
-    } else {
-      const detail = check.detail ? `: ${check.detail}` : "";
-      console.log(chalk.red(`  ✗ ${check.label}${detail}`));
-      if (check.fix) {
-        console.log(chalk.dim(`    → ${check.fix}`));
-      }
-    }
-  }
-  console.log();
-}
+export { printHealthSection };
 
 export async function mcpCommand(): Promise<void> {
   warnStaleMcpJson(resolveMemoryDir());

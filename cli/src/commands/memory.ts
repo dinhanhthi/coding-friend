@@ -14,6 +14,10 @@ import {
 } from "../lib/memory-prompts.js";
 import { readJson, mergeJson } from "../lib/json.js";
 import { warnStaleMcpJson } from "../lib/mcp-state.js";
+import {
+  checkMemoryMcpHealth,
+  printHealthSection,
+} from "../lib/mcp-health.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
 import type { CodingFriendConfig } from "../types.js";
@@ -1057,4 +1061,23 @@ export async function memoryMcpCommand(): Promise<void> {
   warnStaleMcpJson(memoryDir);
 
   printMemoryMcpConfig(memoryDir);
+
+  const localMcpPath = join(process.cwd(), ".mcp.json");
+  const memoryDistPath = join(mcpDir, "dist", "index.js");
+
+  let isDaemonRunning: () => Promise<boolean> = async () => false;
+  try {
+    const proc = await import(join(mcpDir, "dist/daemon/process.js"));
+    isDaemonRunning = proc.isDaemonRunning;
+  } catch {
+    // cf-memory not built yet — daemon check will report stopped (warn)
+  }
+
+  const memoryHealth = await checkMemoryMcpHealth({
+    readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
+    pathExists: existsSync,
+    isDaemonRunning,
+    memoryDistPath,
+  });
+  printHealthSection(memoryHealth);
 }
