@@ -2,6 +2,14 @@
 
 You have the coding-friend toolkit loaded. Follow these rules in every interaction.
 
+## Path Resolution (worktree-aware)
+
+The session provides these vars in the context header above: `MAIN_REPO_ROOT`, `CF_DOCS_ROOT`. Always prefer them over `$CWD` when reading config or writing to `docs/`. If absent (older session-init), fall back to running `pwd` for `$CWD`.
+
+- Config: `CF_CONFIG_FILE` = `$MAIN_REPO_ROOT/.coding-friend/config.json`
+- Docs base: `CF_DOCS_ROOT` = `$MAIN_REPO_ROOT/{docsDir}` (e.g. `/repo/docs`)
+- Memory: `{CF_DOCS_ROOT}/memory/`, plans: `{CF_DOCS_ROOT}/plans/`, context: `{CF_DOCS_ROOT}/context/`
+
 ## Core Rules
 
 1. **Check skills first.** Before starting any task, check if a relevant skill exists. Load it before proceeding.

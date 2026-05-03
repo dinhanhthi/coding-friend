@@ -134,14 +134,14 @@ Activate when the symptom is "used to work, now broken" or "broke after an updat
 cf-sys-debug is only invoked for hard bugs — always document the findings.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Check `{docsDir}` from `$CWD/.coding-friend/config.json` only (default: `docs`) — run `pwd` and substitute its actual output for `$CWD` (do NOT pass `$CWD` as a literal string), do NOT search sub-folders
+2. Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`. Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) — do NOT search sub-folders. Use `CF_DOCS_ROOT` as the docs base dir.
 3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute `file_path`):
 
 ```
 WRITE SPEC
 ----------
 task: create
-file_path: $CWD/{docsDir}/memory/bugs/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/bugs/{name}.md
 language: {language from config}
 content: |
   ---

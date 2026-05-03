@@ -25,9 +25,10 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 **IMPORTANT — path resolution:**
 
-- Run `pwd` to get the current working directory — substitute its actual output wherever `$CWD` appears below (do NOT pass `$CWD` as a literal string)
-- Only check `$CWD/.coding-friend/config.json` for `docsDir` — do NOT search sub-folders
-- Always resolve `file_path` as an **absolute path**: `$CWD/{docsDir}/memory/{category}/{name}.md`
+- Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`.
+- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) — do NOT search sub-folders
+- Use `CF_DOCS_ROOT` as the docs base dir (= `$MAIN_REPO_ROOT/{docsDir}` where `docsDir` comes from config, default `docs`)
+- Always resolve `file_path` as an **absolute path**: `{CF_DOCS_ROOT}/memory/{category}/{name}.md`
 - Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
 
 ## Workflow
@@ -68,7 +69,7 @@ If `$ARGUMENTS` is provided, show it back: "I'll use your description to guide t
 
 Read config:
 
-- Check `$CWD/.coding-friend/config.json` for `docsDir` (default: `docs`) and `language` (default: `en`)
+- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) and `language` (default: `en`)
 - Store the project description from `$ARGUMENTS` (if any) for use in explorer prompts
 
 ### Step 2: Structural Scan (Phase 1 — Main Agent)
@@ -215,7 +216,7 @@ Based on explorer findings, plan ~10-15 memories across categories:
 WRITE SPEC
 ----------
 task: create | update
-file_path: $CWD/{docsDir}/memory/{category}/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/{category}/{name}.md
 language: {language from config}
 content: |
   ---

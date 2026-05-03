@@ -25,6 +25,12 @@ echo "=== session-init.sh started at $(date) ===" >>"$LOG_FILE"
 trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FILE"' ERR
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+
+# Source the shared path resolver
+# shellcheck source=../lib/cf-paths.sh
+source "$PLUGIN_ROOT/lib/cf-paths.sh"
+cf_resolve_paths
+
 BOOTSTRAP_FILE="$PLUGIN_ROOT/context/bootstrap.md"
 
 # Read the bootstrap context
@@ -35,15 +41,9 @@ fi
 
 CONTENT=$(cat "$BOOTSTRAP_FILE")
 
-# Load config
-CONFIG_FILE=".coding-friend/config.json"
-DOCS_DIR="docs"
-if [ -f "$CONFIG_FILE" ]; then
-  CUSTOM_DIR=$(grep -o '"docsDir"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" 2>/dev/null | sed 's/.*"docsDir"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
-  if [ -n "$CUSTOM_DIR" ]; then
-    DOCS_DIR="$CUSTOM_DIR"
-  fi
-fi
+# Use resolved paths from cf-paths.sh (worktree-aware)
+CONFIG_FILE="$CF_CONFIG_FILE"
+DOCS_DIR="$CF_DOCS_ROOT"
 
 # Detect project type
 PROJECT_TYPE="unknown"
@@ -76,8 +76,8 @@ fi
 # Load ignore patterns if present
 CFIGNORE_PATTERNS=""
 CFIGNORE_FILE="$PLUGIN_ROOT/.coding-friend/ignore"
-if [ -f ".coding-friend/ignore" ]; then
-  CFIGNORE_FILE=".coding-friend/ignore"
+if [ -f "$MAIN_REPO_ROOT/.coding-friend/ignore" ]; then
+  CFIGNORE_FILE="$MAIN_REPO_ROOT/.coding-friend/ignore"
 fi
 if [ -f "$CFIGNORE_FILE" ]; then
   CFIGNORE_PATTERNS=$(grep -v '^#' "$CFIGNORE_FILE" | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
@@ -88,7 +88,7 @@ fi
 # get to delete its <docsDir>/context/<task-id>.json file. Sweep any
 # such files older than 7 days here so they don't accumulate forever.
 # Best-effort — never block session startup on cleanup errors.
-CONTEXT_DIR="$DOCS_DIR/context"
+CONTEXT_DIR="$CF_DOCS_ROOT/context"
 if [ -d "$CONTEXT_DIR" ]; then
   find "$CONTEXT_DIR" -maxdepth 1 -type f -name "*.json" -mtime +7 -print -delete 2>/dev/null \
     | while IFS= read -r f; do
@@ -101,21 +101,23 @@ CONTEXT="<IMPORTANT>
 PROJECT_TYPE: $PROJECT_TYPE
 PKG_MANAGER: $PKG_MANAGER
 DOCS_DIR: $DOCS_DIR
+MAIN_REPO_ROOT: $MAIN_REPO_ROOT
+CF_DOCS_ROOT: $CF_DOCS_ROOT
 CFIGNORE: $CFIGNORE_PATTERNS
 
 $CONTENT
 </IMPORTANT>"
 
 # ─── Warn about dangerous rules when auto-approve is active ────────
-if [ -f ".coding-friend/config.json" ]; then
-  auto_approve=$(node -e "try{const c=JSON.parse(require('fs').readFileSync('.coding-friend/config.json','utf8'));console.log(c.autoApprove===true?'1':'0')}catch{console.log('0')}" 2>/dev/null)
+if [ -f "$CF_CONFIG_FILE" ]; then
+  auto_approve=$(CF_CONFIG_FILE="$CF_CONFIG_FILE" node -e "try{const c=JSON.parse(require('fs').readFileSync(process.env.CF_CONFIG_FILE,'utf8'));console.log(c.autoApprove===true?'1':'0')}catch{console.log('0')}" 2>/dev/null)
   if [ "$auto_approve" = "1" ]; then
     _check_dangerous_rules() {
       local settings_file="$1"
       if [ -f "$settings_file" ]; then
-        node -e "
+        CF_SETTINGS_FILE="$settings_file" node -e "
           try {
-            const s = JSON.parse(require('fs').readFileSync('$settings_file', 'utf8'));
+            const s = JSON.parse(require('fs').readFileSync(process.env.CF_SETTINGS_FILE, 'utf8'));
             const rules = (s.permissions && s.permissions.allow) || [];
             const dangerous = [/^Bash\(\\*\)$/, /^Bash\(python\*?\)$/, /^Bash\(python3\*?\)$/, /^Bash\(node\*?\)$/, /^Bash\(ruby\*?\)$/, /^Bash\(perl\*?\)$/, /^Bash\(sh\*?\)$/, /^Bash\(bash\*?\)$/, /^Bash\(npm run\*?\)$/, /^Bash\(npx\*?\)$/, /^Agent\(\\*\)$/];
             const found = rules.filter(r => dangerous.some(p => p.test(r)));
