@@ -1,15 +1,23 @@
 ---
 title: "MCP Servers"
 description: "Single source of truth for Coding Friend's two MCP servers: Learn MCP and Memory MCP."
-keywords: [mcp, model context protocol, learn mcp, memory mcp, coding-friend-learn, coding-friend-memory]
+keywords:
+  [
+    mcp,
+    model context protocol,
+    learn mcp,
+    memory mcp,
+    coding-friend-learn,
+    coding-friend-memory,
+  ]
 ---
 
 Coding Friend provides two [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let Claude Code (and other LLM clients) interact with your learning docs and project memory.
 
-| Server | Name | Scope | Purpose |
-| --- | --- | --- | --- |
-| **Learn MCP** | `coding-friend-learn` | User (global) | Search, read, and write learning docs in `~/.coding-friend/learn/` |
-| **Memory MCP** | `coding-friend-memory` | Project (local) | Store, search, and manage project memories in `docs/memory/` |
+| Server         | Name                   | Scope           | Purpose                                                            |
+| -------------- | ---------------------- | --------------- | ------------------------------------------------------------------ |
+| **Learn MCP**  | `coding-friend-learn`  | User (global)   | Search, read, and write learning docs in `~/.coding-friend/learn/` |
+| **Memory MCP** | `coding-friend-memory` | Project (local) | Store, search, and manage project memories in `docs/memory/`       |
 
 ## Learn MCP
 
@@ -59,21 +67,21 @@ To disable the Learn MCP: `cf config` → Learn settings → Disable CF Learn. T
 
 **Read:**
 
-| Tool | Description |
-| --- | --- |
+| Tool              | Description                         |
+| ----------------- | ----------------------------------- |
 | `list-categories` | List all categories with doc counts |
-| `list-docs` | List docs, filter by category/tag |
-| `read-doc` | Read full content of a doc |
-| `search-docs` | Full-text search across all docs |
-| `get-review-list` | Docs that need review |
+| `list-docs`       | List docs, filter by category/tag   |
+| `read-doc`        | Read full content of a doc          |
+| `search-docs`     | Full-text search across all docs    |
+| `get-review-list` | Docs that need review               |
 
 **Write:**
 
-| Tool | Description |
-| --- | --- |
-| `create-doc` | Create new learning doc |
-| `update-doc` | Append content or update tags |
-| `improve-doc` | Get improvement suggestions |
+| Tool              | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `create-doc`      | Create new learning doc                                  |
+| `update-doc`      | Append content or update tags                            |
+| `improve-doc`     | Get improvement suggestions                              |
 | `track-knowledge` | Record understanding level (remembered/needs-review/new) |
 
 ## Memory MCP
@@ -115,21 +123,21 @@ Replace the path with the absolute path to your project's `docs/memory/` directo
 
 ### Available tools (Memory MCP)
 
-| Tool | Description |
-| --- | --- |
-| `memory_store` | Store a new memory |
-| `memory_search` | Search memories (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID |
-| `memory_list` | List memories with filtering |
-| `memory_update` | Update existing memory |
-| `memory_delete` | Delete a memory |
+| Tool              | Description                               |
+| ----------------- | ----------------------------------------- |
+| `memory_store`    | Store a new memory                        |
+| `memory_search`   | Search memories (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID               |
+| `memory_list`     | List memories with filtering              |
+| `memory_update`   | Update existing memory                    |
+| `memory_delete`   | Delete a memory                           |
 
 ### Available resources
 
-| Resource | Description |
-| --- | --- |
+| Resource         | Description         |
+| ---------------- | ------------------- |
 | `memory://index` | Browse all memories |
-| `memory://stats` | Storage statistics |
+| `memory://stats` | Storage statistics  |
 
 ## Health Checks
 

@@ -135,13 +135,7 @@ function printSetupStatus(
   missingFolders: number;
 } {
   const docsDir = getDocsDir(globalCfg, localCfg);
-  const subfolders = [
-    "plans",
-    "memory",
-    "research",
-    "sessions",
-    "reviews",
-  ];
+  const subfolders = ["plans", "memory", "research", "sessions", "reviews"];
 
   // ── Folders ──
   const folderStatus = subfolders.map((sub) => ({
@@ -527,7 +521,8 @@ async function stepLearnConfig(
   if (locationChoice === "custom") {
     outputDir = await input({
       message: "Enter path (absolute or ~/...):",
-      default: currentOutputDir !== defaultLearnDir ? currentOutputDir : undefined,
+      default:
+        currentOutputDir !== defaultLearnDir ? currentOutputDir : undefined,
       validate: (val) => {
         if (val.length === 0) return "Path cannot be empty";
         if (!val.startsWith("/") && !val.startsWith("~/"))

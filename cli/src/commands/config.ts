@@ -1,14 +1,18 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { readJson, mergeJson } from "../lib/json.js";
 import { log, printBanner } from "../lib/log.js";
 import { resolveLearnDir } from "../lib/config.js";
 import { listMdFilesRecursive } from "../lib/fs-utils.js";
-import {
-  registerLearnMcp,
-  unregisterLearnMcp,
-} from "../lib/learn-prompts.js";
+import { registerLearnMcp, unregisterLearnMcp } from "../lib/learn-prompts.js";
 import {
   claudeLocalSettingsPath,
   claudeProjectSettingsPath,
@@ -432,7 +436,9 @@ async function editLearnDisabled(
     const freshGlobal = readJson<CodingFriendConfig>(globalConfigPath());
     const learnDir = resolveLearnDir(freshGlobal);
     registerLearnMcp(learnDir);
-    log.dim("Re-registered coding-friend-learn. Restart Claude Code to activate.");
+    log.dim(
+      "Re-registered coding-friend-learn. Restart Claude Code to activate.",
+    );
   }
 }
 
@@ -440,7 +446,8 @@ async function learnSubMenu(): Promise<void> {
   while (true) {
     const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
 
-    const outputDirVal = globalCfg?.learn?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
+    const outputDirVal =
+      globalCfg?.learn?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
     const langVal = globalCfg?.learn?.language;
     const autoCommitVal = globalCfg?.learn?.autoCommit;
     const readmeVal = globalCfg?.learn?.readmeIndex;

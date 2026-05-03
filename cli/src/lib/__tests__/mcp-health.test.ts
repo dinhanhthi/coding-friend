@@ -163,9 +163,7 @@ describe("checkMemoryMcpHealth", () => {
         isDaemonRunning: async () => true,
       });
       const result = await checkMemoryMcpHealth(deps);
-      const daemonCheck = result.checks.find(
-        (c) => c.label === "Daemon",
-      );
+      const daemonCheck = result.checks.find((c) => c.label === "Daemon");
       expect(daemonCheck!.ok).toBe(true);
       expect(daemonCheck!.warn).toBeFalsy();
     });
@@ -179,9 +177,7 @@ describe("checkMemoryMcpHealth", () => {
         isDaemonRunning: async () => false,
       });
       const result = await checkMemoryMcpHealth(deps);
-      const daemonCheck = result.checks.find(
-        (c) => c.label === "Daemon",
-      );
+      const daemonCheck = result.checks.find((c) => c.label === "Daemon");
       expect(daemonCheck!.ok).toBe(false);
       expect(daemonCheck!.warn).toBe(true);
     });

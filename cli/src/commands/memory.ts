@@ -14,10 +14,7 @@ import {
 } from "../lib/memory-prompts.js";
 import { readJson, mergeJson } from "../lib/json.js";
 import { warnStaleMcpJson } from "../lib/mcp-state.js";
-import {
-  checkMemoryMcpHealth,
-  printHealthSection,
-} from "../lib/mcp-health.js";
+import { checkMemoryMcpHealth, printHealthSection } from "../lib/mcp-health.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
 import type { CodingFriendConfig } from "../types.js";
