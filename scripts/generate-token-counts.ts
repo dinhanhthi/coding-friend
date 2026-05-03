@@ -123,6 +123,20 @@ function formatDelta(prev: number | undefined, curr: number): string {
   return `${String(prev).padStart(5)} → ${String(curr).padStart(5)} tokens (${sign}${curr - prev})`;
 }
 
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+function computeTemporal(
+  created?: string,
+  updated?: string,
+): "new" | "updated" | null {
+  const now = Date.now();
+  if (created && now - new Date(created).getTime() <= TWO_WEEKS_MS)
+    return "new";
+  if (updated && now - new Date(updated).getTime() <= TWO_WEEKS_MS)
+    return "updated";
+  return null;
+}
+
 async function main() {
   const previous = loadPreviousCounts();
 
@@ -135,6 +149,7 @@ async function main() {
       created?: string;
       updated?: string;
       state?: string;
+      temporal?: "new" | "updated";
     }
   > = {};
   const agents: Record<
@@ -146,6 +161,7 @@ async function main() {
       created?: string;
       updated?: string;
       state?: string;
+      temporal?: "new" | "updated";
     }
   > = {};
 
@@ -165,6 +181,8 @@ async function main() {
     if (frontmatter["created"]) entry.created = frontmatter["created"];
     if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
     if (frontmatter["state"]) entry.state = frontmatter["state"];
+    const temporal = computeTemporal(frontmatter["created"], frontmatter["updated"]);
+    if (temporal) entry.temporal = temporal;
     skills[dir.name] = entry;
   }
 
@@ -182,6 +200,8 @@ async function main() {
     if (frontmatter["created"]) entry.created = frontmatter["created"];
     if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
     if (frontmatter["state"]) entry.state = frontmatter["state"];
+    const temporal = computeTemporal(frontmatter["created"], frontmatter["updated"]);
+    if (temporal) entry.temporal = temporal;
     agents[name] = entry;
   }
 

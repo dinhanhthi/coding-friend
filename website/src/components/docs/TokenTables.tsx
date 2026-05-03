@@ -264,11 +264,7 @@ export function SlashCommandsTable() {
       </thead>
       <tbody>
         {slashSkills.map(([name, entry]) => {
-          const { beta, temporal } = getItemStatus(
-            entry.created,
-            entry.updated,
-            entry.state,
-          );
+          const { beta, temporal } = getItemStatus(entry.state, entry.temporal);
           return (
             <tr key={name}>
               <td>
@@ -311,11 +307,7 @@ export function AutoSkillsTable() {
       </thead>
       <tbody>
         {autoSkills.map(([name, entry]) => {
-          const { beta, temporal } = getItemStatus(
-            entry.created,
-            entry.updated,
-            entry.state,
-          );
+          const { beta, temporal } = getItemStatus(entry.state, entry.temporal);
           return (
             <tr key={name}>
               <td>
@@ -359,11 +351,7 @@ export function AgentsTable() {
       </thead>
       <tbody>
         {sortedAgents.map(([name, entry]) => {
-          const { beta, temporal } = getItemStatus(
-            entry.created,
-            entry.updated,
-            entry.state,
-          );
+          const { beta, temporal } = getItemStatus(entry.state, entry.temporal);
           return (
             <tr key={name}>
               <td>
@@ -493,11 +481,7 @@ export function AgentRefTable() {
       </thead>
       <tbody>
         {sortedAgents.map(([name, entry]) => {
-          const { beta, temporal } = getItemStatus(
-            entry.created,
-            entry.updated,
-            entry.state,
-          );
+          const { beta, temporal } = getItemStatus(entry.state, entry.temporal);
           return (
             <tr key={name}>
               <td>
