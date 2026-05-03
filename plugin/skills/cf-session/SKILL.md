@@ -8,6 +8,8 @@ description: >
 disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read]
+created: 2026-03-05
+updated: 2026-05-03
 ---
 
 # /cf-session

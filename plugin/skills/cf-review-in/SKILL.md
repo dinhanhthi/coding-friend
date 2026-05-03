@@ -7,6 +7,8 @@ description: >
   "check review results", "cf-review-in", "read external review", "import review".
 user-invocable: true
 argument-hint: "<label> [service]"
+created: 2026-03-23
+updated: 2026-05-02
 ---
 
 # /cf-review-in

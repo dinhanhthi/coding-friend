@@ -7,6 +7,8 @@ description: >
   "fix the issue", "resolve this error", "help me fix", "can you fix", "this doesn't work",
   "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
   Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
+created: 2026-02-17
+updated: 2026-05-03
 ---
 
 # /cf-fix

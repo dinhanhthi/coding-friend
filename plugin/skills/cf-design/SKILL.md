@@ -11,6 +11,9 @@ description: >
   "match the existing style", "what design patterns does this project use", "extract the design
   system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
   outcome. Invoke via /cf-design — helps Claude produce intentional, consistent UI.
+created: 2026-04-30
+updated: 2026-05-02
+state: beta
 ---
 
 # /cf-design

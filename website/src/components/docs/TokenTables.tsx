@@ -1,10 +1,12 @@
 import {
   getAllTokenData,
+  getItemStatus,
   type Tier,
   type SkillTokenEntry,
   type AgentTokenEntry,
 } from "@/lib/token-data";
 import TokenBadge from "@/components/ui/TokenBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 /* ────────────────────────────────────────────────────────────
    METADATA — human-curated descriptions for each table row.
@@ -254,24 +256,35 @@ export function SlashCommandsTable() {
       <thead>
         <tr>
           <th>Command</th>
+          <th>Status</th>
           <th>Context</th>
           <th>Approx. Tokens</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
-        {slashSkills.map(([name, entry]) => (
-          <tr key={name}>
-            <td>
-              <a href={`/docs/skills/${name}/`}>{`/${name}`}</a>
-            </td>
-            <td>
-              <TokenBadge tier={entry.tier} />
-            </td>
-            <td>{approxTokens(entry.tokens)}</td>
-            <td>{slashCommandMeta[name] ?? name}</td>
-          </tr>
-        ))}
+        {slashSkills.map(([name, entry]) => {
+          const { beta, temporal } = getItemStatus(
+            entry.created,
+            entry.updated,
+            entry.state,
+          );
+          return (
+            <tr key={name}>
+              <td>
+                <a href={`/docs/skills/${name}/`}>{`/${name}`}</a>
+              </td>
+              <td>
+                <StatusBadge beta={beta} temporal={temporal} />
+              </td>
+              <td>
+                <TokenBadge tier={entry.tier} />
+              </td>
+              <td>{approxTokens(entry.tokens)}</td>
+              <td>{slashCommandMeta[name] ?? name}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -290,24 +303,35 @@ export function AutoSkillsTable() {
       <thead>
         <tr>
           <th>Skill</th>
+          <th>Status</th>
           <th>Context</th>
           <th>Approx. Tokens</th>
           <th>Activates When</th>
         </tr>
       </thead>
       <tbody>
-        {autoSkills.map(([name, entry]) => (
-          <tr key={name}>
-            <td>
-              <a href={`/docs/skills/${name}/`}>{name}</a>
-            </td>
-            <td>
-              <TokenBadge tier={entry.tier} />
-            </td>
-            <td>{approxTokens(entry.tokens)}</td>
-            <td>{autoSkillMeta[name] ?? name}</td>
-          </tr>
-        ))}
+        {autoSkills.map(([name, entry]) => {
+          const { beta, temporal } = getItemStatus(
+            entry.created,
+            entry.updated,
+            entry.state,
+          );
+          return (
+            <tr key={name}>
+              <td>
+                <a href={`/docs/skills/${name}/`}>{name}</a>
+              </td>
+              <td>
+                <StatusBadge beta={beta} temporal={temporal} />
+              </td>
+              <td>
+                <TokenBadge tier={entry.tier} />
+              </td>
+              <td>{approxTokens(entry.tokens)}</td>
+              <td>{autoSkillMeta[name] ?? name}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -326,6 +350,7 @@ export function AgentsTable() {
       <thead>
         <tr>
           <th>Agent</th>
+          <th>Status</th>
           <th>Context</th>
           <th>Approx. Tokens</th>
           <th>Model</th>
@@ -333,19 +358,29 @@ export function AgentsTable() {
         </tr>
       </thead>
       <tbody>
-        {sortedAgents.map(([name, entry]) => (
-          <tr key={name}>
-            <td>
-              <code>{name}</code>
-            </td>
-            <td>
-              <TokenBadge tier={entry.tier} />
-            </td>
-            <td>{approxTokens(entry.tokens)}</td>
-            <td>{modelDisplayName[entry.model] ?? entry.model}</td>
-            <td>{agentMeta[name] ?? name}</td>
-          </tr>
-        ))}
+        {sortedAgents.map(([name, entry]) => {
+          const { beta, temporal } = getItemStatus(
+            entry.created,
+            entry.updated,
+            entry.state,
+          );
+          return (
+            <tr key={name}>
+              <td>
+                <code>{name}</code>
+              </td>
+              <td>
+                <StatusBadge beta={beta} temporal={temporal} />
+              </td>
+              <td>
+                <TokenBadge tier={entry.tier} />
+              </td>
+              <td>{approxTokens(entry.tokens)}</td>
+              <td>{modelDisplayName[entry.model] ?? entry.model}</td>
+              <td>{agentMeta[name] ?? name}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -450,24 +485,35 @@ export function AgentRefTable() {
       <thead>
         <tr>
           <th>Agent</th>
+          <th>Status</th>
           <th>Model</th>
           <th>Context</th>
           <th>Purpose</th>
         </tr>
       </thead>
       <tbody>
-        {sortedAgents.map(([name, entry]) => (
-          <tr key={name}>
-            <td>
-              <code>{name}</code>
-            </td>
-            <td>Claude {modelDisplayName[entry.model] ?? entry.model}</td>
-            <td>
-              <TokenBadge tier={entry.tier} />
-            </td>
-            <td>{agentRefMeta[name] ?? agentMeta[name] ?? name}</td>
-          </tr>
-        ))}
+        {sortedAgents.map(([name, entry]) => {
+          const { beta, temporal } = getItemStatus(
+            entry.created,
+            entry.updated,
+            entry.state,
+          );
+          return (
+            <tr key={name}>
+              <td>
+                <code>{name}</code>
+              </td>
+              <td>
+                <StatusBadge beta={beta} temporal={temporal} />
+              </td>
+              <td>Claude {modelDisplayName[entry.model] ?? entry.model}</td>
+              <td>
+                <TokenBadge tier={entry.tier} />
+              </td>
+              <td>{agentRefMeta[name] ?? agentMeta[name] ?? name}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

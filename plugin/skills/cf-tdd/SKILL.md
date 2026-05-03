@@ -13,6 +13,8 @@ description: >
   Do NOT auto-invoke for documentation-only changes, config edits, non-code file updates,
   or when the user is only asking questions about code without requesting changes.
 user-invocable: false
+created: 2026-02-17
+updated: 2026-05-02
 ---
 
 # Implementation Workflow

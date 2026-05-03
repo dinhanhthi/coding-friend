@@ -79,7 +79,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | ----------------------------------------------- | -------------------------------------------------------------------------------- |
 | `/cf-ask [question]`                            | Quick Q&A about codebase                                                         |
 | `/cf-commit [hint]`                             | Analyze diff and create conventional commit                                      |
-| `/cf-design [mode]`                             | UI design: scan patterns, design or modify UI consistently                       |
+| `/cf-design [mode]` [beta]                      | UI design: scan patterns, design or modify UI consistently                       |
 | `/cf-fix [bug]`                                 | Quick bug fix workflow                                                           |
 | `/cf-help [question]`                           | Answer questions about Coding Friend                                             |
 | `/cf-learn [topic]`                             | Extract learnings for human review                                               |
@@ -92,7 +92,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-session`                                   | Save/load Claude Code sessions                                                   |
 | `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                              |
 | `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                      |
-| `/cf-warm [--user]`                             | Catch up after absence — git history summary                                     |
+| `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                     |
 
 Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-verification`.
 

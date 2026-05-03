@@ -13,6 +13,8 @@ description: >
   plans. Do NOT use this agent for simple questions, single-file changes, or tasks that don't
   need upfront planning.
 model: opus
+created: 2026-02-17
+updated: 2026-04-05
 ---
 
 # Planner Agent

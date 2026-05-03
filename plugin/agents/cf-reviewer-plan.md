@@ -7,6 +7,8 @@ description: >
   Skipped in QUICK review mode.
 model: sonnet
 tools: Read, Glob, Grep, Bash
+created: 2026-04-04
+updated: 2026-04-06
 ---
 
 # Plan Alignment Reviewer

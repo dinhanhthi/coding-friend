@@ -7,6 +7,8 @@ description: >
   "help me build", "how should we implement", "design a solution", "architect", "scaffold",
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
+created: 2026-02-17
+updated: 2026-05-03
 ---
 
 # /cf-plan

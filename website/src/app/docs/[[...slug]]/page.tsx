@@ -25,6 +25,7 @@ import {
 } from "@/components/docs/TokenTables";
 import Badge from "@/components/ui/Badge";
 import TokenBadge from "@/components/ui/TokenBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 import CopyForAiButton from "@/components/docs/CopyForAiButton";
 
 /**
@@ -234,6 +235,12 @@ export default async function DocPage({ params }: Props) {
             )}
             {currentNav?.tier && (
               <TokenBadge tier={currentNav.tier} size="lg" />
+            )}
+            {(currentNav?.beta || currentNav?.temporal) && (
+              <StatusBadge
+                beta={currentNav.beta}
+                temporal={currentNav.temporal}
+              />
             )}
           </div>
           <CopyForAiButton
