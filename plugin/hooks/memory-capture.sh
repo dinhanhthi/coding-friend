@@ -7,13 +7,19 @@ set -euo pipefail
 # Capture stdin (JSON with session_id etc.) before it gets consumed
 INPUT=$(cat)
 
-CONFIG_FILE="${PWD}/.coding-friend/config.json"
+# Resolve worktree-aware paths
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+# shellcheck source=../lib/cf-paths.sh
+source "$PLUGIN_ROOT/lib/cf-paths.sh"
+cf_resolve_paths
+
+CONFIG_FILE="$CF_CONFIG_FILE"
 AUTO_CAPTURE="false"
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  AUTO_CAPTURE=$(node -e "
+  AUTO_CAPTURE=$(CF_CONFIG_FILE="$CONFIG_FILE" node -e "
     try {
-      const c = JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf8'));
+      const c = JSON.parse(require('fs').readFileSync(process.env.CF_CONFIG_FILE,'utf8'));
       console.log(c.memory?.autoCapture ? 'true' : 'false');
     } catch { console.log('false'); }
   " 2>/dev/null || echo "false")

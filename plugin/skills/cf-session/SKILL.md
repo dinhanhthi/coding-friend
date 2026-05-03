@@ -32,13 +32,15 @@ If output is not empty, integrate the returned sections into this workflow:
 
 Output goes to `{docsDir}/sessions/` (default: `docs/sessions/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
 
-- Only check `$CWD/.coding-friend/config.json` for `docsDir` — do NOT search sub-folders
-- Always resolve the sessions path as an **absolute path**: `$CWD/{docsDir}/sessions/`
+- Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`.
+- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) — do NOT search sub-folders
+- Use `CF_DOCS_ROOT` as the docs base dir (= `$MAIN_REPO_ROOT/{docsDir}` where `docsDir` comes from config, default `docs`)
+- Always resolve the sessions path as an **absolute path**: `{CF_DOCS_ROOT}/sessions/`
 
 Create the folder if it doesn't exist:
 
 ```bash
-mkdir -p "$CWD/{docsDir}/sessions"
+mkdir -p "{CF_DOCS_ROOT}/sessions"
 ```
 
 ### Step 2: Detect Active Session

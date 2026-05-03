@@ -82,7 +82,7 @@ If the user wants to skip brainstorming ("just plan it"), respect that and move 
 ### Step 1.5: Generate Task ID
 
 1. **task-id**: `<timestamp>-<short-descriptor>` (e.g. `1717500000-add-auth-middleware`)
-2. **docsDir**: read from `.coding-friend/config.json` or default to `docs`
+2. **docsDir**: read from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json` from bootstrap context, fallback to `.coding-friend/config.json` in CWD) or default to `docs`. Use `CF_DOCS_ROOT` as the absolute docs base dir.
 3. **Context file**: `{docsDir}/context/{task-id}.json`
 
 ### Step 2: Explore Codebase

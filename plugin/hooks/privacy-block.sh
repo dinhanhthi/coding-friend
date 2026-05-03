@@ -18,8 +18,13 @@
 
 set -euo pipefail
 
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+# shellcheck source=../lib/cf-paths.sh
+source "$PLUGIN_ROOT/lib/cf-paths.sh"
+cf_resolve_paths
+
 # Check if hook is disabled via config
-CONFIG_FILE=".coding-friend/config.json"
+CONFIG_FILE="$CF_CONFIG_FILE"
 if [ -f "$CONFIG_FILE" ]; then
   if grep -q '"privacyBlock"[[:space:]]*:[[:space:]]*false' "$CONFIG_FILE" 2>/dev/null; then
     echo '{}'
