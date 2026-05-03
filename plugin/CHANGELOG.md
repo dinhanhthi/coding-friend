@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.1 (2026-05-03)
+
+- Add `created`, `updated`, and `state` (beta) metadata fields to skill and agent frontmatter — build script extracts these into `token-counts.json`; website shows status badges (Beta/New/Updated) in sidebar and tables [#e67f6ea](https://github.com/dinhanhthi/coding-friend/commit/e67f6ea)
+
 ## v0.33.0 (2026-05-03)
 
 - Add worktree support — `cf-paths.sh` resolves `MAIN_REPO_ROOT`, `CF_DOCS_ROOT`, and skill/hook paths correctly when working in git worktrees; `session-init`, `memory-capture`, `privacy-block`, and skills (`cf-ask`, `cf-fix`, `cf-plan`, `cf-remember`, `cf-scan`, `cf-session`, `cf-sys-debug`, `cf-warm`) updated to use worktree-aware path resolution [#35e4e0c](https://github.com/dinhanhthi/coding-friend/commit/35e4e0c)

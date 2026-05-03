@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.1 (2026-05-03)
+
+- Add `cdf` as an alias binary for users with a conflicting `cf` command (e.g. Cloudflare's CLI) — both `cf` and `cdf` point to the same CLI [#5003529](https://github.com/dinhanhthi/coding-friend/commit/5003529)
+
 ## v1.35.0 (2026-05-03)
 
 - Add `cf clean` command — interactive cleanup for generated docs in `docs/` subdirectories (context, memory, research, reviews, plans, sessions, learn); per-directory confirmation prompts with default-no; folders preserved, only contents removed [#1e3f249](https://github.com/dinhanhthi/coding-friend/commit/1e3f249)
