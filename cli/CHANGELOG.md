@@ -5,6 +5,18 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.0 (2026-05-03)
+
+- Add `cf clean` command — interactive cleanup for generated docs in `docs/` subdirectories (context, memory, research, reviews, plans, sessions, learn); per-directory confirmation prompts with default-no; folders preserved, only contents removed [#1e3f249](https://github.com/dinhanhthi/coding-friend/commit/1e3f249)
+- Add TDD and auto-approve configuration steps to `cf init` linear wizard — new Step 8 (`tdd`) and Step 9 (`auto-approve`) appear between CF Memory and permissions, matching the interactive menu [#548860a](https://github.com/dinhanhthi/coding-friend/commit/548860a)
+- Make `cf-learn` global-only — removes global/local choice from `cf init` and `cf config`; learn settings always saved to global config; adds `learn.disabled` flag, path validation, and conflict detection for `outputDir` migration; `cf mcp` no longer accepts `[path]` argument (always reads from global config) [#5988a0a](https://github.com/dinhanhthi/coding-friend/commit/5988a0a)
+- Add `tdd` boolean config field — `cf init`, `cf config`, and CLI config schema now support `tdd: true/false` to opt into TDD mode globally [#54f384e](https://github.com/dinhanhthi/coding-friend/commit/54f384e)
+- Improve `cf memory mcp` — shows MCP health check after displaying config (same output as `cf mcp`) [#6d07712](https://github.com/dinhanhthi/coding-friend/commit/6d07712)
+- Improve `cf memory init` — applies smart defaults with global config inheritance; no prompts for typical workflows; logs show what was set and which source each setting came from (global config or default) [#6d5bae9](https://github.com/dinhanhthi/coding-friend/commit/6d5bae9)
+- Fix `cf memory rebuild` — auto-recovers from corrupt SQLite database (SQLITE_CORRUPT, SQLITE_IOERR_SHORT_READ, "malformed" message) by deleting the corrupt DB and its WAL companions, then retrying from markdown source files [#7e13f27](https://github.com/dinhanhthi/coding-friend/commit/7e13f27)
+- Fix `cf init` — remove `docs/learn/` from auto-created project folders; learn is now global-only [#8a34987](https://github.com/dinhanhthi/coding-friend/commit/8a34987)
+- Fix `cf memory health-check` — show daemon running/stopped status in label [#6d07712](https://github.com/dinhanhthi/coding-friend/commit/6d07712)
+
 ## v1.34.1 (2026-04-30)
 
 - Remove `codex` config block from CLI — drops `config.codex.enabled/modes/effort` fields, Codex init wizard prompts, and `cf config` Codex edit flow; adds migration handling for graceful upgrade from legacy configs with `codex` keys [#6504b88f](https://github.com/dinhanhthi/coding-friend/commit/6504b88f)

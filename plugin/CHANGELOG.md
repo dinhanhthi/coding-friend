@@ -2,6 +2,16 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.0 (2026-05-03)
+
+- Add worktree support — `cf-paths.sh` resolves `MAIN_REPO_ROOT`, `CF_DOCS_ROOT`, and skill/hook paths correctly when working in git worktrees; `session-init`, `memory-capture`, `privacy-block`, and skills (`cf-ask`, `cf-fix`, `cf-plan`, `cf-remember`, `cf-scan`, `cf-session`, `cf-sys-debug`, `cf-warm`) updated to use worktree-aware path resolution [#35e4e0c](https://github.com/dinhanhthi/coding-friend/commit/35e4e0c)
+- Add `--resume` flag to `/cf-plan` — resume interrupted plans by passing the plan file path; adds checkpoint protocol with status icons (⬜→🔄→✅/❌) to track task progress; plan file becomes both specification and execution state tracker; big-plan phase sync cascades task✅→phase✅→README✅→plan✅ DONE [#3432a05](https://github.com/dinhanhthi/coding-friend/commit/3432a05)
+- Make TDD opt-in — default behavior is now direct implementation without new tests; TDD enabled via `--add-tests` flag or `tdd: true` in config; updates `cf-tdd`, `cf-fix`, `cf-optimize`, `cf-plan`, `cf-review-in`, and `cf-implementer` agent prompt accordingly [#54f384e](https://github.com/dinhanhthi/coding-friend/commit/54f384e)
+- Make `cf-learn` global-only — learn docs always go to `~/.coding-friend/learn/`; removes per-project `docs/learn/` support; `cf-learn` SKILL.md updated with `learn.disabled` flag, path validation, and conflict detection [#5988a0a](https://github.com/dinhanhthi/coding-friend/commit/5988a0a)
+- Improve `cf-design`: rename `DESIGN_PATTERNS.md` to `DESIGN.md`, save to `docs/` (not `docs/memory/`), and confirm after saving in Scan Mode instead of before [#6d52e8f](https://github.com/dinhanhthi/coding-friend/commit/6d52e8f) [#26b3eed](https://github.com/dinhanhthi/coding-friend/commit/26b3eed)
+- Fix `auto-approve`: allow `||` chains when all clauses are safe — `cmd1 || cmd2` now auto-approves when each clause passes the existing safety rules [#6c7de58](https://github.com/dinhanhthi/coding-friend/commit/6c7de58)
+- Fix `auto-approve`: add `pnpm` and its subcommands (`test`, `run`, `exec`, `install`, `add`, `remove`, `publish`) to `BASH_ASK_PREFIXES` — prevents `pnpm` commands from falling through to LLM classification [#c104480](https://github.com/dinhanhthi/coding-friend/commit/c104480)
+
 ## v0.32.0 (2026-04-30)
 
 - Add `/cf-design` skill — UI design workflow with three modes: scan existing UI patterns into `DESIGN_PATTERNS.md`, design new UI from a natural-language description while respecting patterns, and modify specific UI elements with automatic consistency enforcement; includes reference guides for design styles and principles [#d4550b25](https://github.com/dinhanhthi/coding-friend/commit/d4550b25)
