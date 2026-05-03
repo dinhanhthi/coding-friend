@@ -7,6 +7,9 @@ description: >
   "summarize recent changes", "what changed since I left", "warm up the project".
 user-invocable: true
 argument-hint: "[--user <name>] [--n-commits <N>]"
+created: 2026-03-31
+updated: 2026-05-03
+state: beta
 ---
 
 # /cf-warm

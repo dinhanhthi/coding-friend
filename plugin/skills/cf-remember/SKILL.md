@@ -18,6 +18,8 @@ description: >
   Do NOT auto-invoke for: trivial one-line fixes, simple config changes, purely educational exchanges
   (use /cf-learn for those), or knowledge already obvious from reading the code.
   Unlike /cf-learn (educational notes for humans), this saves project context for AI recall.
+created: 2026-02-17
+updated: 2026-05-03
 ---
 
 # /cf-remember

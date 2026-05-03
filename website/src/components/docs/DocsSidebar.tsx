@@ -6,9 +6,28 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { docsNavigation } from "@/lib/navigation";
 
+const dotColors: Record<string, string> = {
+  orange: "bg-orange-400",
+  emerald: "bg-emerald-400",
+  sky: "bg-sky-400",
+};
+
+function StatusDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="group/dot relative shrink-0">
+      <span
+        className={`block h-1.5 w-1.5 rounded-full ${dotColors[color] ?? "bg-slate-400"}`}
+      />
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-md border border-[#a0a0a03d] bg-[#1e1e2e] px-2 py-0.5 text-xs text-slate-300 opacity-0 transition-opacity group-hover/dot:opacity-100 whitespace-nowrap">
+        {label}
+      </span>
+    </span>
+  );
+}
+
 const DEFAULT_COLLAPSED = new Set([
   "/Slash Skills",
-  "Auto-Invoked Skills",
+  "Only Auto-Invoked Skills",
   "CLI Commands",
 ]);
 
@@ -82,7 +101,7 @@ export default function DocsSidebar() {
                       <li key={item.slug}>
                         <Link
                           href={href}
-                          className={`group flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-base transition-colors duration-200 ${
+                          className={`group flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-base whitespace-nowrap transition-colors duration-200 ${
                             isActive
                               ? "font-medium text-violet-400"
                               : "hover:bg-navy-800 text-slate-400 hover:text-white"
@@ -112,6 +131,13 @@ export default function DocsSidebar() {
                               size="sm"
                               variant="ghost"
                               showTooltip={false}
+                            />
+                          )}
+                          {item.beta && <StatusDot color="orange" label="beta" />}
+                          {item.temporal && (
+                            <StatusDot
+                              color={item.temporal === "new" ? "emerald" : "sky"}
+                              label={item.temporal}
                             />
                           )}
                         </Link>

@@ -7,6 +7,8 @@ description: >
   "what do you think of these changes?". Also triggers on requests to review specific files,
   commits, or branches.
 user-invocable: true
+created: 2026-02-17
+updated: 2026-04-30
 ---
 
 # /cf-review

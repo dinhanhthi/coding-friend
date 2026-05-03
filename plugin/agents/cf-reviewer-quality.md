@@ -6,6 +6,8 @@ description: >
   as part of parallel multi-agent review.
 model: haiku
 tools: Read, Glob, Grep, Bash
+created: 2026-04-04
+updated: 2026-04-06
 ---
 
 # Code Quality Reviewer

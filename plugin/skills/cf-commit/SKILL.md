@@ -8,6 +8,8 @@ description: >
 disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read, Glob]
+created: 2026-02-17
+updated: 2026-04-04
 ---
 
 # /cf-commit

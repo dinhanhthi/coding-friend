@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 import {
   getAllTokenData,
+  getItemStatus,
   type Tier,
   type AgentTokenEntry,
 } from "@/lib/token-data";
@@ -17,6 +19,8 @@ interface AgentMeta {
 interface Agent extends AgentMeta {
   model: string;
   tier: Tier;
+  beta?: boolean;
+  temporal?: "new" | "updated" | null;
 }
 
 const modelDisplayName: Record<string, string> = {
@@ -75,10 +79,17 @@ function enrichAgents(items: AgentMeta[]): Agent[] {
   const agentsData = data.agents as Record<string, AgentTokenEntry>;
   return items.map((item) => {
     const entry = agentsData[item.name];
+    const { beta, temporal } = getItemStatus(
+      entry?.created,
+      entry?.updated,
+      entry?.state,
+    );
     return {
       ...item,
       tier: entry?.tier ?? "low",
       model: modelDisplayName[entry?.model] ?? entry?.model ?? "Unknown",
+      beta,
+      temporal,
     };
   });
 }
@@ -104,7 +115,10 @@ function AgentCard({ agent }: { agent: Agent }) {
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
           {agent.name}
         </code>
-        <TokenBadge tier={agent.tier} size="lg" variant="ghost" />
+        <div className="flex items-center gap-2">
+          <StatusBadge beta={agent.beta} temporal={agent.temporal} />
+          <TokenBadge tier={agent.tier} size="lg" variant="ghost" />
+        </div>
       </div>
       <h3 className="mt-3 text-base font-semibold whitespace-nowrap text-white">
         {agent.title}

@@ -8,6 +8,8 @@ description: >
   when the user needs to understand a technology, library, or architecture pattern in depth
   before making decisions.
 disable-model-invocation: true
+created: 2026-02-19
+updated: 2026-04-24
 ---
 
 # /cf-research

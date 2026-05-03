@@ -10,6 +10,8 @@ description: >
   that are not performance-related.
 user-invocable: true
 argument-hint: "[target to optimize]"
+created: 2026-02-20
+updated: 2026-05-02
 ---
 
 # /cf-optimize

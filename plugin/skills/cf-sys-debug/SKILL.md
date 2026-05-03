@@ -15,6 +15,8 @@ description: >
   Do NOT auto-invoke for trivial typos, one-line fixes, or config errors with an
   obvious cause.
 user-invocable: false
+created: 2026-02-17
+updated: 2026-05-03
 ---
 
 # Systematic Debugging

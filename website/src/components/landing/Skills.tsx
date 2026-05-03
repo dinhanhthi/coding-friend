@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 import {
   getAllTokenData,
+  getItemStatus,
   type Tier,
   type SkillTokenEntry,
 } from "@/lib/token-data";
@@ -15,6 +17,8 @@ interface SkillMeta {
 
 interface Skill extends SkillMeta {
   tier: Tier;
+  beta?: boolean;
+  temporal?: "new" | "updated" | null;
 }
 
 const slashCommandMeta: SkillMeta[] = [
@@ -144,7 +148,13 @@ function enrichWithTier(items: SkillMeta[]): Skill[] {
   const skills = data.skills as Record<string, SkillTokenEntry>;
   return items.map((item) => {
     const name = item.command.replace(/^\//, "");
-    return { ...item, tier: skills[name]?.tier ?? "low" };
+    const entry = skills[name];
+    const { beta, temporal } = getItemStatus(
+      entry?.created,
+      entry?.updated,
+      entry?.state,
+    );
+    return { ...item, tier: entry?.tier ?? "low", beta, temporal };
   });
 }
 
@@ -166,7 +176,10 @@ function SkillCard({ skill }: { skill: Skill }) {
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
           {skill.command}
         </code>
-        <TokenBadge tier={skill.tier} size="lg" variant="ghost" />
+        <div className="flex items-center gap-2">
+          <StatusBadge beta={skill.beta} temporal={skill.temporal} />
+          <TokenBadge tier={skill.tier} size="lg" variant="ghost" />
+        </div>
       </div>
       <h3 className="mt-3 text-base font-semibold whitespace-nowrap text-white">
         {skill.title}

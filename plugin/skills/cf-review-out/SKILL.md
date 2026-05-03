@@ -8,6 +8,8 @@ description: >
   "prepare review for gemini", "review prompt".
 user-invocable: true
 argument-hint: "[optional: label, e.g. fix-auth-bypass]"
+created: 2026-03-23
+updated: 2026-04-24
 ---
 
 # /cf-review-out

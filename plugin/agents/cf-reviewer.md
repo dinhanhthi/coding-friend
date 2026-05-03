@@ -14,6 +14,8 @@ description: >
   numbers. Never use tables — always bullet lists. Do NOT use this agent for quick
   questions about code — only for actual review of changes.
 model: inherit
+created: 2026-02-17
+updated: 2026-04-30
 ---
 
 # Code Review Orchestrator

@@ -18,6 +18,8 @@ description: >
 user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob]
+created: 2026-02-17
+updated: 2026-05-02
 ---
 
 # /cf-help — Coding Friend Help

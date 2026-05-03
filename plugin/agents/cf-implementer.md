@@ -13,6 +13,8 @@ description: >
   Do NOT use this agent for single-file trivial changes, documentation, or config edits —
   use inline implementation (cf-tdd skill) for small changes instead.
 model: sonnet
+created: 2026-02-17
+updated: 2026-05-02
 ---
 
 # Implementer Agent

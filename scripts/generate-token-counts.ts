@@ -128,10 +128,26 @@ async function main() {
 
   const skills: Record<
     string,
-    { tokens: number; tier: Tier; type: "slash" | "auto" }
+    {
+      tokens: number;
+      tier: Tier;
+      type: "slash" | "auto";
+      created?: string;
+      updated?: string;
+      state?: string;
+    }
   > = {};
-  const agents: Record<string, { tokens: number; tier: Tier; model: string }> =
-    {};
+  const agents: Record<
+    string,
+    {
+      tokens: number;
+      tier: Tier;
+      model: string;
+      created?: string;
+      updated?: string;
+      state?: string;
+    }
+  > = {};
 
   // Process skills
   const skillsDir = join(PLUGIN_DIR, "skills");
@@ -142,9 +158,14 @@ async function main() {
 
     const content = readFileSync(skillFile, "utf-8");
     const tokens = await countTokens(content);
+    const frontmatter = readFrontmatter(content);
     const type = AUTO_SKILLS.has(dir.name) ? "auto" : "slash";
 
-    skills[dir.name] = { tokens, tier: getTier(tokens), type };
+    const entry: (typeof skills)[string] = { tokens, tier: getTier(tokens), type };
+    if (frontmatter["created"]) entry.created = frontmatter["created"];
+    if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
+    if (frontmatter["state"]) entry.state = frontmatter["state"];
+    skills[dir.name] = entry;
   }
 
   // Process agents
@@ -157,7 +178,11 @@ async function main() {
     const frontmatter = readFrontmatter(content);
     const model = frontmatter["model"] || "unknown";
 
-    agents[name] = { tokens, tier: getTier(tokens), model };
+    const entry: (typeof agents)[string] = { tokens, tier: getTier(tokens), model };
+    if (frontmatter["created"]) entry.created = frontmatter["created"];
+    if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
+    if (frontmatter["state"]) entry.state = frontmatter["state"];
+    agents[name] = entry;
   }
 
   // Process bootstrap

@@ -14,6 +14,8 @@ description: >
   context files when requested by the orchestrating skill).
 model: haiku
 tools: Read, Write, Glob, Grep, Bash, mcp__coding-friend-memory__memory_search
+created: 2026-03-03
+updated: 2026-04-05
 ---
 
 # Explorer Agent

@@ -10,6 +10,8 @@ description: >
   notes for the human to learn from.
 user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
+created: 2026-02-17
+updated: 2026-05-03
 ---
 
 # /cf-learn

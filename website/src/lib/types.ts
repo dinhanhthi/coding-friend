@@ -20,6 +20,8 @@ export interface NavItem {
   slug: string;
   manualOnly?: boolean;
   tier?: "low" | "medium" | "high";
+  beta?: boolean;
+  temporal?: "new" | "updated";
 }
 
 export interface NavSection {
