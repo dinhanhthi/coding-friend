@@ -60,7 +60,7 @@ Include any relevant findings as context for the explorer.
 
 **3b. Generate task-id and explore relevant code** (via cf-explorer agent):
 
-1. **Generate a task-id**: use format `<timestamp>-<short-descriptor>` (e.g., `1717500000-fix-auth-race`)
+1. **Generate a task-id**: use format `YYYY-MM-DD-<short-descriptor>` (e.g., `2026-05-03-fix-auth-race`)
 2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
 3. **Context file path**: `{docsDir}/context/{task-id}.json`
 
@@ -213,7 +213,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 WRITE SPEC
 ----------
 task: create
-file_path: {CF_DOCS_ROOT}/memory/bugs/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/bugs/YYYY-MM-DD-{name}.md
 language: {language from config}
 content: |
   ---
@@ -248,6 +248,8 @@ readme_update: false
 auto_commit: false
 existing_file_action: skip
 ```
+
+> **Backward compat:** Existing bug memory files without a date prefix are still readable — do not rename them.
 
 **Frontmatter rules:**
 

@@ -214,11 +214,13 @@ Based on explorer findings, plan ~10-15 memories across categories:
 
 **Write spec for cf-writer (same format as /cf-remember):**
 
+> **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename. Only new files use the `YYYY-MM-DD-<name>.md` format.
+
 ```
 WRITE SPEC
 ----------
 task: create | update
-file_path: {CF_DOCS_ROOT}/memory/{category}/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
 language: {language from config}
 content: |
   ---

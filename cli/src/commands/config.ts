@@ -654,6 +654,7 @@ async function editGitignore(
     `${docsDir}/sessions/`,
     `${docsDir}/reviews/`,
     `${docsDir}/context/`,
+    `${docsDir}/warm/`,
     ".coding-friend/",
   ];
 

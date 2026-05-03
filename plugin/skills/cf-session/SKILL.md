@@ -66,7 +66,9 @@ If `$ARGUMENTS` is provided, use it as the label. Otherwise ask the user:
 
 > "Give this session a label (or press Enter for default):"
 
-Use the provided label, or default to `session-YYYY-MM-DD` using today's date.
+Use the provided label, or default to `YYYY-MM-DD-session` using today's date.
+
+> **Note:** Existing sessions saved with the old `session-YYYY-MM-DD` folder naming continue to work — no migration needed.
 
 ### Step 4: Build Preview Text
 

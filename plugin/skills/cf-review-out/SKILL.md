@@ -44,18 +44,20 @@ The label must be snake-case with a descriptive prefix.
 
 ### Step 2: Check for existing review
 
-Check if `docs/reviews/<label>-prompt.md` already exists. If so, warn the user and ask whether to overwrite or pick a different label.
+Check if `<docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md` already exists (new format) OR `<docsDir>/reviews/<label>-prompt.md` (legacy format). If either exists, warn the user and ask whether to overwrite or pick a different label.
 
 ### Step 3: Gather diff and build prompt
 
 Read the docsDir from `.coding-friend/config.json` (default: `docs`).
 
+Construct the **full label** by prepending today's date: `YYYY-MM-DD-<label>` (e.g., `2026-05-03-fix-auth-bypass`). Use this full label everywhere from this point on — as the script argument, the output filename, and in the reviewer instructions.
+
 ```bash
 mkdir -p <docsDir>/reviews && \
   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
-    "<label>" "<docsDir>" \
-  > <docsDir>/reviews/<label>-prompt.md
+    "YYYY-MM-DD-<label>" "<docsDir>" \
+  > <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md
 ```
 
 If the script exits with an error (empty diff), tell the user there are no changes to review and **STOP**.
@@ -70,20 +72,20 @@ Show the user:
 ╚══════════════════════════════════════════════════╝
 ```
 
-> **Label:** `<label>`
-> **Prompt file:** `<docsDir>/reviews/<label>-prompt.md`
-> **Results expected at:** `<docsDir>/reviews/<label>-result-<service>.md`
+> **Label:** `YYYY-MM-DD-<label>`
+> **Prompt file:** `<docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md`
+> **Results expected at:** `<docsDir>/reviews/YYYY-MM-DD-<label>-result-<service>.md`
 
 Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
 
 > **Copy and paste this to your external agent:**
 >
 > ```
-> Read the file <docsDir>/reviews/<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
+> Read the file <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/YYYY-MM-DD-<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
 > ```
 
 Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a single, complete instruction that works when pasted into any AI agent (Gemini, Codex, ChatGPT, Cursor, etc.) that has access to the project files.
 
 Finally, remind the user:
 
-> When all external agents finish, run `/cf-review-in <label>` to collect all results.
+> When all external agents finish, run `/cf-review-in YYYY-MM-DD-<label>` to collect all results.

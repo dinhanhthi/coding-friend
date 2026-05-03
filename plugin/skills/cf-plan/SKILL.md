@@ -83,7 +83,7 @@ If the user wants to skip brainstorming ("just plan it"), respect that and move 
 
 ### Step 1.5: Generate Task ID
 
-1. **task-id**: `<timestamp>-<short-descriptor>` (e.g. `1717500000-add-auth-middleware`)
+1. **task-id**: `YYYY-MM-DD-<short-descriptor>` (e.g. `2026-05-03-add-auth-middleware`)
 2. **docsDir**: read from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json` from bootstrap context, fallback to `.coding-friend/config.json` in CWD) or default to `docs`. Use `CF_DOCS_ROOT` as the absolute docs base dir.
 3. **Context file**: `{docsDir}/context/{task-id}.json`
 
@@ -156,7 +156,7 @@ Ask: **"Ready to start implementing?"** If yes, execute phase by phase.
    - Filename only → look up `{docsDir}/plans/<path>` (append `.md` if missing).
    - If not found → report error and stop.
 2. Read the plan file at the resolved path.
-3. Derive the task-id: extract from the filename stem (e.g. `2026-05-03-my-plan` → `<timestamp>-my-plan`) or from a `task-id:` frontmatter field if present. Re-read existing context file at `{docsDir}/context/<task-id>.json` if it exists — load it now, before dispatching any tasks.
+3. Derive the task-id from the filename stem or from a `task-id:` frontmatter field if present. The stem IS the task-id (e.g. `2026-05-03-my-plan` → task-id = `2026-05-03-my-plan`). Look up the context file at `{docsDir}/context/<task-id>.json`. If not found, strip the leading `YYYY-MM-DD-` prefix from the stem (the first 11 characters if the stem starts with a date pattern) to get the bare name, then glob `{docsDir}/context/*<bare-name>*.json` for backward compat with the old unix-timestamp format (e.g. `1717500000-my-plan.json`). Load the context file now, before dispatching any tasks.
 4. Scan the Progress table. Classify each task:
    - `✅ DONE` → skip.
    - `🔄 IN PROGRESS` → Edit plan file: reset to `⬜ TODO`, treat as pending. (Session ended mid-task; completion status is unreliable.)

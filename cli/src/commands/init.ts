@@ -135,7 +135,7 @@ function printSetupStatus(
   missingFolders: number;
 } {
   const docsDir = getDocsDir(globalCfg, localCfg);
-  const subfolders = ["plans", "memory", "research", "sessions", "reviews"];
+  const subfolders = ["plans", "memory", "research", "sessions", "reviews", "warm"];
 
   // ── Folders ──
   const folderStatus = subfolders.map((sub) => ({
@@ -315,6 +315,7 @@ async function stepDocsDir(
       "research",
       "sessions",
       "reviews",
+      "warm",
     ];
     ensureDocsFolders(globalValue, DOCS_SUBFOLDERS);
     return;
@@ -343,6 +344,7 @@ async function stepDocsDir(
     "research",
     "sessions",
     "reviews",
+    "warm",
   ];
   applyDocsDirChange(value, currentValue, scope, DOCS_SUBFOLDERS);
   writeToScope(scope, { docsDir: value });
@@ -391,6 +393,7 @@ async function stepGitignore(docsDir: string): Promise<void> {
     `${docsDir}/sessions/`,
     `${docsDir}/reviews/`,
     `${docsDir}/context/`,
+    `${docsDir}/warm/`,
     ".coding-friend/",
   ];
 
