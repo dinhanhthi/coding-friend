@@ -44,14 +44,14 @@ Extract settings with these defaults:
 
 **`learn` settings:**
 
-| Setting             | Default                    | Description                                                                                                                   |
-| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `learn.language`    | `en`                       | Language for cf-learn notes (falls back to top-level `language`, then `en`)                                                   |
-| `learn.outputDir`   | `~/.coding-friend/learn`   | Where to store learn docs (always global, never project-local)                                                                |
-| `learn.categories`  | See Step 2 table           | Subdirectories and their descriptions                                                                                         |
-| `learn.autoCommit`  | `false`                    | Auto git-commit after writing (only if outputDir is a git repo)                                                               |
-| `learn.readmeIndex` | `false`                    | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
-| `learn.disabled`    | `false`                    | If `true`, skip all file writing and exit immediately                                                                         |
+| Setting             | Default                  | Description                                                                                                                   |
+| ------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `learn.language`    | `en`                     | Language for cf-learn notes (falls back to top-level `language`, then `en`)                                                   |
+| `learn.outputDir`   | `~/.coding-friend/learn` | Where to store learn docs (always global, never project-local)                                                                |
+| `learn.categories`  | See Step 2 table         | Subdirectories and their descriptions                                                                                         |
+| `learn.autoCommit`  | `false`                  | Auto git-commit after writing (only if outputDir is a git repo)                                                               |
+| `learn.readmeIndex` | `false`                  | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category + lightweight main README) |
+| `learn.disabled`    | `false`                  | If `true`, skip all file writing and exit immediately                                                                         |
 
 **Language resolution:** Read `learn.language` from global config. If not set, fall back to top-level `language`. If neither is set, default to `en` (English).
 

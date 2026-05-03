@@ -130,8 +130,7 @@ beforeEach(() => {
   mockExistsSync.mockImplementation((p: unknown) => {
     const path = String(p);
     return (
-      path.includes("cf-memory/node_modules") ||
-      path.includes("cf-memory/dist")
+      path.includes("cf-memory/node_modules") || path.includes("cf-memory/dist")
     );
   });
   mockStats.mockResolvedValue({ total: 5 });
@@ -147,9 +146,7 @@ describe("memoryRebuildCommand — happy path", () => {
 
     await memoryRebuildCommand();
 
-    expect(mockLog.success).toHaveBeenCalledWith(
-      expect.stringContaining("42"),
-    );
+    expect(mockLog.success).toHaveBeenCalledWith(expect.stringContaining("42"));
     expect(mockClose).toHaveBeenCalled();
   });
 });
@@ -226,9 +223,7 @@ describe("memoryRebuildCommand — SQLITE_CORRUPT recovery", () => {
     });
 
     const err = new Error("database disk image is malformed");
-    mockRebuild
-      .mockRejectedValueOnce(err)
-      .mockResolvedValueOnce(undefined);
+    mockRebuild.mockRejectedValueOnce(err).mockResolvedValueOnce(undefined);
 
     await memoryRebuildCommand();
 

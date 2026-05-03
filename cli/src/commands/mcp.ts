@@ -70,7 +70,11 @@ export async function mcpCommand(): Promise<void> {
   }
 
   console.log();
-  console.log(chalk.dim("Add this to your MCP client config (for non-Claude-Code clients):"));
+  console.log(
+    chalk.dim(
+      "Add this to your MCP client config (for non-Claude-Code clients):",
+    ),
+  );
   console.log();
 
   const learnDirJson = JSON.stringify(learnDir);
