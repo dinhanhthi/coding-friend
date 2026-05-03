@@ -390,21 +390,50 @@ export async function memoryRebuildCommand(): Promise<void> {
     const config = loadConfig();
     const embedding = config.memory?.embedding;
     const opts = embedding ? { embedding, skipVec: false } : { skipVec: false };
-    const backend = new SqliteBackend(memoryDir, opts);
+
+    const runRebuild = async () => {
+      const backend = new SqliteBackend(memoryDir, opts);
+      try {
+        await backend.rebuild();
+        const stats = await backend.stats();
+        log.success(`Rebuilt: ${stats.total} memories indexed.`);
+
+        if (backend.isVecEnabled()) {
+          log.info(`Vector search: ${chalk.green("enabled")}`);
+        }
+        if (!backend.isRebuildNeeded()) {
+          log.info("Embedding dimensions: up to date");
+        }
+      } finally {
+        await backend.close();
+      }
+    };
 
     try {
-      await backend.rebuild();
-      const stats = await backend.stats();
-      log.success(`Rebuilt: ${stats.total} memories indexed.`);
+      await runRebuild();
+    } catch (err) {
+      const isCorrupt =
+        err instanceof Error &&
+        (err.message.includes("database disk image is malformed") ||
+          (err as NodeJS.ErrnoException & { code?: string }).code ===
+            "SQLITE_CORRUPT" ||
+          (err as NodeJS.ErrnoException & { code?: string }).code ===
+            "SQLITE_IOERR_SHORT_READ");
 
-      if (backend.isVecEnabled()) {
-        log.info(`Vector search: ${chalk.green("enabled")}`);
+      if (isCorrupt) {
+        const dbPath = getDbPath(memoryDir);
+        if (dbPath) {
+          log.warn("SQLite database is corrupt. Deleting and recreating...");
+          // Remove WAL-mode companion files to prevent I/O errors on reopen
+          for (const suffix of ["", "-shm", "-wal"]) {
+            rmSync(dbPath + suffix, { force: true });
+          }
+        }
+        // DB already absent or deleted above — proceed with fresh rebuild
+        await runRebuild();
+      } else {
+        throw err;
       }
-      if (!backend.isRebuildNeeded()) {
-        log.info("Embedding dimensions: up to date");
-      }
-    } finally {
-      await backend.close();
     }
     return;
   }
