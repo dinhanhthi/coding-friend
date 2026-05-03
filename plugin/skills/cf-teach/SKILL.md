@@ -96,7 +96,9 @@ Choose a snake-case, meaningful file name that describes the story — not just 
 - `cf-teach-building-the-auth-middleware-from-scratch.md`
 - `cf-teach-the-refactor-that-untangled-the-api-layer.md`
 
-File path: `{outputDir}/{category}/{name}.md`
+File path: `{outputDir}/{category}/YYYY-MM-DD-{name}.md`
+
+> **Backward compat:** Existing files without a date prefix are still valid — do not rename them.
 
 ### Check Existing Files
 
@@ -174,7 +176,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer-deep"` and 
 WRITE SPEC
 ----------
 task: create
-file_path: {absolute path to outputDir}/{category}/{name}.md
+file_path: {absolute path to outputDir}/{category}/YYYY-MM-DD-{name}.md
 language: {resolved language from Step 0}
 content: |
   <The full narrative content — same as what was shown in chat>

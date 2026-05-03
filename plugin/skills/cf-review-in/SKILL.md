@@ -38,7 +38,9 @@ Parse `$ARGUMENTS` as `<label> [service]` — label is required, service is opti
 If `$ARGUMENTS` contains a label (and optionally a service), use them. Otherwise:
 
 - List available result files in `<docsDir>/reviews/` that match `*-result-*.md`
-- Extract unique labels from the filenames (pattern: `<label>-result-<service>.md`)
+- Extract unique labels from the filenames. Two formats are supported:
+  - New format: `YYYY-MM-DD-<label>-result-<service>.md` — the full `YYYY-MM-DD-<label>` stem is the label
+  - Legacy format: `<label>-result-<service>.md` — the `<label>` stem is the label
 - If exactly one label exists, use it
 - If multiple labels exist, ask the user which one to collect
 - If none exist, tell the user no results are available and suggest running `/cf-review-out` first
@@ -47,11 +49,11 @@ If `$ARGUMENTS` contains a label (and optionally a service), use them. Otherwise
 
 Check the docsDir from `.coding-friend/config.json` (default: `docs`).
 
-If a **service** was specified in step 1: only read `<docsDir>/reviews/<label>-result-<service>.md`.
+If a **service** was specified in step 1: try `<docsDir>/reviews/<label>-result-<service>.md` (works for both formats since `<label>` may already include the date prefix).
 
 - If the file does not exist → tell the user: _"No results found for service `<service>`. Available:"_ then list existing services from `<label>-result-*.md` files → **STOP**.
 
-If **no service** was specified: glob for all files matching `<docsDir>/reviews/<label>-result-*.md` (existing behavior).
+If **no service** was specified: glob for all files matching `<docsDir>/reviews/<label>-result-*.md` (covers both `YYYY-MM-DD-<label>-result-*.md` and `<label>-result-*.md` since the full label is used as given).
 
 - If **no files found** → tell the user: _"No results found for label `<label>`. Make sure external agents have written their reviews to `<docsDir>/reviews/<label>-result-<service>.md`."_ → **STOP**.
 - If **one or more files found** → read all of them. Extract the service name from each filename (the part after `result-` and before `.md`).
@@ -68,7 +70,7 @@ For each result file found, check for:
 
 ### Step 4: Read context (for verification)
 
-Read `<docsDir>/reviews/<label>-prompt.md` to understand what was reviewed. Use the diff from the prompt to understand the code context.
+Read the prompt file to understand what was reviewed. Try `<docsDir>/reviews/<label>-prompt.md` first (works for both formats since `<label>` includes any date prefix). If not found, also try stripping any leading date prefix from `<label>` and retry. Use the diff from the prompt to understand the code context.
 
 ### Step 5: Critical verification — do NOT blindly trust external findings
 
@@ -212,4 +214,4 @@ If the user agrees, load the `cf-tdd` skill and fix each **Confirmed** issue. Pa
 
 ### Step 9: Update prompt status
 
-After collecting, update the frontmatter in `<docsDir>/reviews/<label>-prompt.md`: change `status: pending` to `status: collected`.
+After collecting, update the frontmatter in the prompt file found in Step 4 (whichever path resolved successfully): change `status: pending` to `status: collected`.

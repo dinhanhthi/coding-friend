@@ -143,7 +143,7 @@ cf-sys-debug is only invoked for hard bugs — always document the findings.
 WRITE SPEC
 ----------
 task: create
-file_path: {CF_DOCS_ROOT}/memory/bugs/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/bugs/YYYY-MM-DD-{name}.md
 language: {language from config}
 content: |
   ---
@@ -181,6 +181,8 @@ readme_update: false
 auto_commit: false
 existing_file_action: skip
 ```
+
+> **Backward compat:** Existing bug memory files without a date prefix are still readable — do not rename them.
 
 **Frontmatter rules:**
 

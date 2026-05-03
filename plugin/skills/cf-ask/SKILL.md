@@ -149,10 +149,12 @@ Wait for the cf-explorer to return its findings.
 1. Read `language` config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`, default: `en`)
 2. Search existing memory files in `{docsDir}/memory/` — if an existing file covers the same topic, use `task: update` (append). Otherwise, use `task: create`.
 3. Choose the appropriate category:
-   - `features/<name>.md` — for feature-specific logic, flows, APIs
-   - `conventions/<name>.md` — for project-wide patterns and rules
-   - `decisions/<name>.md` — for architecture/design decisions
+   - `features/YYYY-MM-DD-<name>.md` — for feature-specific logic, flows, APIs
+   - `conventions/YYYY-MM-DD-<name>.md` — for project-wide patterns and rules
+   - `decisions/YYYY-MM-DD-<name>.md` — for architecture/design decisions
 4. Use kebab-case for file names
+
+> **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename — do not add a date prefix to already-created files.
 
 Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
 
@@ -162,7 +164,7 @@ Construct a write spec and delegate to **cf-writer agent** via the **Agent tool*
 WRITE SPEC
 ----------
 task: create
-file_path: {CF_DOCS_ROOT}/memory/{category}/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
 language: {language from config}
 content: |
   ---
@@ -205,7 +207,7 @@ existing_file_action: skip
 ## WRITE SPEC
 
 task: update
-file_path: {CF_DOCS_ROOT}/memory/{category}/{name}.md
+file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
 language: {language from config}
 content: |
 
