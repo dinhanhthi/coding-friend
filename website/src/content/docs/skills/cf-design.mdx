@@ -37,15 +37,15 @@ The `/cf-design` skill helps you design UI with intent and consistency. It under
 
 ## 3 Modes
 
-| Mode       | Trigger                | What It Does                                                                                                    |
-| ---------- | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Scan**   | First word is `scan`   | Reads UI files, extracts color/typography/spacing/component patterns, saves to `docs/memory/DESIGN_PATTERNS.md` |
-| **Design** | Any description        | Implements new UI from your description, using existing patterns as a base                                      |
-| **Modify** | First word is `modify` | Changes a specific UI element while enforcing consistency with the rest                                         |
+| Mode       | Trigger                | What It Does                                                                                            |
+| ---------- | ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Scan**   | First word is `scan`   | Reads UI files, extracts color/typography/spacing/component patterns, saves to `docs/DESIGN.md`         |
+| **Design** | Any description        | Implements new UI from your description, using existing patterns as a base                              |
+| **Modify** | First word is `modify` | Changes a specific UI element while enforcing consistency with the rest                                 |
 
-## Design Patterns File
+## Design File
 
-When you run `/cf-design scan`, the skill saves your project's visual DNA to `docs/memory/DESIGN_PATTERNS.md`. This file is automatically loaded in every subsequent `/cf-design` call, so all future designs stay consistent.
+When you run `/cf-design scan`, the skill saves your project's visual DNA to `docs/DESIGN.md`. This file is automatically loaded in every subsequent `/cf-design` call, so all future designs stay consistent.
 
 What gets captured:
 
@@ -62,7 +62,7 @@ Run `/cf-design scan` again after major UI refactors to keep the file current.
 
 `/cf-design` actively fights AI-generic output with **design dials** — intentional variation across layout, spacing, color specificity, and typography weight. Every implementation commits to specific values rather than defaulting to `font-medium`, `space-y-4`, or `from-purple-600`.
 
-It also reads the project's `DESIGN_PATTERNS.md` before making any decision, so a navbar modification won't accidentally introduce a color that doesn't exist in your palette.
+It also reads the project's `DESIGN.md` before making any decision, so a navbar modification won't accidentally introduce a color that doesn't exist in your palette.
 
 ## Web Search
 
@@ -75,9 +75,9 @@ When you need current best practices or inspiration for a specific style, `/cf-d
 
 ## Integration
 
-- **`/cf-remember`** — Run after scan mode to index `DESIGN_PATTERNS.md` in the memory system for future sessions
+- **`/cf-remember`** — Run after scan mode to index `DESIGN.md` in the memory system for future sessions
 - **`/cf-research`** — Use alongside `/cf-design` when you need deep research on a specific style or pattern before designing
-- **`/cf-review`** — After design changes, run `/cf-review` with `DESIGN_PATTERNS.md` as context to catch visual inconsistencies
+- **`/cf-review`** — After design changes, run `/cf-review` with `DESIGN.md` as context to catch visual inconsistencies
 - **`/cf-plan`** — Run `/cf-design scan` before planning a UI-heavy feature to capture the design context
 
 ## Examples

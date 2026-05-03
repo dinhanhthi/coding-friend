@@ -14,6 +14,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 /cf-plan [task description]
 /cf-plan --fast [task description]
 /cf-plan --hard [task description]
+/cf-plan --resume [plan-file-path]    # Resume an interrupted plan
 ```
 
 ## Modes
@@ -21,6 +22,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 - **Normal** (default) — Full workflow: discovery, agent-based exploration, brainstorming, validation, plan writing
 - **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Best for clear, single-module, additive tasks
 - **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
+- **Resume** (`--resume <path>`) — Resume an interrupted plan from where it left off. Skips already-completed tasks (✅) and re-runs any in-progress or pending ones
 
 If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding.
 

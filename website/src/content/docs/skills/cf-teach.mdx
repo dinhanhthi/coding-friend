@@ -31,7 +31,7 @@ Run after completing a task to get a full teaching breakdown. The argument narro
 1. **Reconstructs the Session** — Reviews the full conversation to identify what was built, how, and why
 2. **Shows Explanation in Chat** — Displays the full narrative directly in the conversation first
 3. **Covers 9 Teaching Dimensions** — Approach, alternatives, connections, tools, tradeoffs, mistakes, pitfalls, expert observations, and transferable lessons
-4. **Saves to Output** — Writes the narrative doc to `docs/learn/` (same directory as `/cf-learn`)
+4. **Saves to Output** — Writes the narrative doc to `~/.coding-friend/learn/` (same directory as `/cf-learn`)
 
 ## The 9 Dimensions
 
@@ -56,16 +56,16 @@ Teaching docs are saved as narrative prose — no frontmatter, no structured sec
 File naming: snake-case, descriptive of the story (not just the topic):
 
 ```
-docs/learn/debugging/how-i-debugged-the-race-condition.md
-docs/learn/concepts/why-we-chose-redis-over-postgres.md
-docs/learn/patterns/the-refactor-that-untangled-the-api-layer.md
+~/.coding-friend/learn/debugging/how-i-debugged-the-race-condition.md
+~/.coding-friend/learn/concepts/why-we-chose-redis-over-postgres.md
+~/.coding-friend/learn/patterns/the-refactor-that-untangled-the-api-layer.md
 ```
 
 Files are organized into category subdirectories — the same structure as `/cf-learn`.
 
 ## cf-teach vs cf-learn
 
-Both skills write to the same `docs/learn/` directory, but they serve different purposes:
+Both skills write to the same configurable directory (default: `~/.coding-friend/learn/`), but they serve different purposes:
 
 |                 | `/cf-learn`                             | `/cf-teach`                                          |
 | --------------- | --------------------------------------- | ---------------------------------------------------- |
@@ -85,7 +85,7 @@ Reuses the same `learn.*` settings as `/cf-learn`:
 | Setting            | Default      | Description                                                                |
 | ------------------ | ------------ | -------------------------------------------------------------------------- |
 | `learn.language`   | `en`         | Language for teaching docs (falls back to top-level `language`, then `en`) |
-| `learn.outputDir`  | `docs/learn` | Where to store teaching docs (relative to project root, or absolute)       |
+| `learn.outputDir`  | `~/.coding-friend/learn` | Where to store teaching docs (always global, never project-local)    |
 | `learn.autoCommit` | `false`      | Auto git-commit after writing                                              |
 
-Configure in `.coding-friend/config.json` (local, overrides global) or `~/.coding-friend/config.json` (global).
+Configure in `~/.coding-friend/config.json` (global config only — learn is always global).

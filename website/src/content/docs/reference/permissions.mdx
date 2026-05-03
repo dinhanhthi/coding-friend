@@ -107,7 +107,7 @@ Used exclusively by [`/cf-research`](/docs/skills/cf-research/). These are **not
 
 ### External Learn Directory
 
-These rules are only needed when [`/cf-learn`](/docs/skills/cf-learn/) is configured to write to a directory **outside** your project (e.g., `~/notes/learn`). They are generated dynamically based on your configured `learn.outputDir` path. If your learn directory is inside your project (the default `docs/learn/`), you do not need these.
+These rules are needed because [`/cf-learn`](/docs/skills/cf-learn/) always writes to a global directory outside your project (default: `~/.coding-friend/learn/`). They are generated dynamically based on your configured `learn.outputDir` path.
 
 | Rule                              | What it enables                                                                                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

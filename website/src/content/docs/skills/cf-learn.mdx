@@ -28,7 +28,7 @@ Or run without arguments to extract learnings from the current session. Your arg
 2. **Extracts Insights** — Identifies key learnings and techniques
 3. **Categorizes** — Organizes by concept type (concepts, patterns, languages, tools, debugging)
 4. **Creates Docs** — Generates clear learning materials with examples
-5. **Saves to Output** — Stores in configurable directory (default: `docs/learn/`)
+5. **Saves to Output** — Stores in configurable directory (default: `~/.coding-friend/learn/`)
 6. **Enables Sharing** — Docs can be hosted as website or served via MCP
 
 ## Examples
@@ -48,12 +48,12 @@ Or run without arguments to extract learnings from the current session. Your arg
 
 ## Configuration
 
-All settings are optional. Configure in `.coding-friend/config.json` (local, overrides global) or `~/.coding-friend/config.json` (global).
+All settings are optional. Configure in `~/.coding-friend/config.json` (global config only — learn is always global).
 
 | Setting             | Default         | Description                                                                                         |
 | ------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
 | `learn.language`    | `en`            | Language for learning notes (falls back to top-level `language`, then `en`)                         |
-| `learn.outputDir`   | `docs/learn`    | Where to store learning docs (relative to project root, or absolute)                                |
+| `learn.outputDir`   | `~/.coding-friend/learn` | Where to store learning docs (always global, never project-local)                              |
 | `learn.categories`  | See table below | Subdirectories and their descriptions                                                               |
 | `learn.autoCommit`  | `false`         | Auto git-commit after writing                                                                       |
 | `learn.readmeIndex` | `false`         | Index mode: `false` (none), `true` (single README), `"per-category"` (separate README per category) |
@@ -81,7 +81,7 @@ You can override these categories in your config to match your preferred organiz
 
 ## cf-learn vs cf-teach
 
-Both skills write to the same `docs/learn/` directory, but serve different purposes:
+Both skills write to the same configurable directory (default: `~/.coding-friend/learn/`), but serve different purposes:
 
 |                 | `/cf-learn`                             | [`/cf-teach`](/docs/skills/cf-teach/)                |
 | --------------- | --------------------------------------- | ---------------------------------------------------- |
