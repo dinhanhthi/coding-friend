@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { detectMemoryMcpState } from "./mcp-state.js";
 
 /**
@@ -34,16 +35,38 @@ export interface MemoryMcpHealthDeps {
 }
 
 export interface LearnMcpHealthDeps {
-  /** Returns the parsed local .mcp.json, or null if not present/invalid. */
-  readMcpJson: () => Record<string, unknown> | null;
+  /** Returns true if coding-friend-learn MCP is registered (any scope). */
+  checkRegistered: () => boolean;
   /** Check whether a path exists on disk. */
   pathExists: (p: string) => boolean;
   /** List .md files in the given directory (recursive). Returns filenames. */
   listMdFiles: (dir: string) => string[];
-  /** Resolved docs directory path. */
+  /** Resolved learn directory path. */
   docsDir: string;
   /** Absolute path to learn-mcp dist/index.js (for package-built check). */
   learnMcpDistPath: string;
+}
+
+// ─── printHealthSection ───────────────────────────────────────────────────────
+
+export function printHealthSection(result: McpHealthResult): void {
+  console.log(chalk.dim("─── Health Check ───"));
+  for (const check of result.checks) {
+    if (check.ok) {
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.green(`  ✓ ${check.label}${detail}`));
+    } else if (check.warn) {
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.yellow(`  ⚠ ${check.label}${detail}`));
+    } else {
+      const detail = check.detail ? `: ${check.detail}` : "";
+      console.log(chalk.red(`  ✗ ${check.label}${detail}`));
+      if (check.fix) {
+        console.log(chalk.dim(`    → ${check.fix}`));
+      }
+    }
+  }
+  console.log();
 }
 
 // ─── checkMemoryMcpHealth ─────────────────────────────────────────────────────
@@ -110,16 +133,14 @@ export async function checkMemoryMcpHealth(
   }
 
   checks.push({
-    label: "Daemon status",
+    label: "Daemon",
     ok: daemonRunning,
-    ...(daemonRunning
-      ? {}
-      : {
-          warn: true,
-          detail: daemonCheckError
-            ? `check failed: ${daemonCheckError}`
-            : "stopped (starts automatically on MCP connect)",
-        }),
+    detail: daemonRunning
+      ? "running"
+      : daemonCheckError
+        ? `check failed: ${daemonCheckError}`
+        : "stopped (starts automatically on MCP connect)",
+    ...(!daemonRunning ? { warn: true } : {}),
   });
 
   // result.ok = all checks pass, ignoring warns
@@ -140,23 +161,17 @@ export async function checkLearnMcpHealth(
 ): Promise<McpHealthResult> {
   const checks: HealthCheck[] = [];
 
-  // ── (1) Config check ────────────────────────────────────────────────────────
-  const mcpJson = deps.readMcpJson();
-  const servers = mcpJson?.mcpServers;
-  const hasEntry =
-    servers != null &&
-    typeof servers === "object" &&
-    !Array.isArray(servers) &&
-    "coding-friend-learn" in (servers as Record<string, unknown>);
+  // ── (1) Registration check ──────────────────────────────────────────────────
+  const isRegistered = deps.checkRegistered();
 
   checks.push({
-    label: "Config (.mcp.json)",
-    ok: hasEntry,
-    ...(hasEntry
+    label: "Registered (claude mcp)",
+    ok: isRegistered,
+    ...(isRegistered
       ? {}
       : {
-          detail: "coding-friend-learn not configured",
-          fix: 'Run "cf mcp" to print the config snippet and add it',
+          detail: "coding-friend-learn not registered",
+          fix: 'Run "cf mcp" to register',
         }),
   });
 

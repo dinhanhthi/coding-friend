@@ -12,9 +12,11 @@ vi.mock("child_process", () => ({
 
 const mockExistsSync = vi.fn();
 const mockStatSync = vi.fn();
+const mockMkdirSync = vi.fn();
 vi.mock("fs", () => ({
   existsSync: (...args: unknown[]) => mockExistsSync(...args),
   statSync: (...args: unknown[]) => mockStatSync(...args),
+  mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
 }));
 
 const mockRunWithStderr = vi.fn();
@@ -107,15 +109,19 @@ describe("mcpServeLearnCommand", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  // I1: docsDir validation
-  it("exits with code 1 if docsDir does not exist", async () => {
+  // I1: docsDir creation when missing
+  it("creates docsDir if it does not exist instead of exiting", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
     mockExistsSync.mockImplementation((p: string) => p !== "/nonexistent/docs");
 
     const { mcpServeLearnCommand } = await import("../mcp-serve-learn.js");
     mcpServeLearnCommand("/nonexistent/docs");
 
-    expect(mockExit).toHaveBeenCalledWith(1);
-    expect(mockSpawn).not.toHaveBeenCalled();
+    expect(mockMkdirSync).toHaveBeenCalledWith("/nonexistent/docs", {
+      recursive: true,
+    });
+    expect(mockExit).not.toHaveBeenCalled();
   });
 
   it("exits with code 1 if docsDir is not a directory", async () => {

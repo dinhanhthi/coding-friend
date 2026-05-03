@@ -15,9 +15,11 @@ import { getExistingRules } from "../lib/permissions.js";
 import { isPluginDisabled, detectPluginScope } from "../lib/plugin-state.js";
 import {
   resolveMemoryDir,
-  resolveDocsDir,
+  resolveLearnDir,
   sanitizeRawConfig,
 } from "../lib/config.js";
+import { isLearnMcpRegistered } from "../lib/learn-prompts.js";
+import { type CodingFriendConfig } from "../types.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
   semverCompare,
@@ -370,10 +372,11 @@ export async function statusCommand(): Promise<void> {
     const learnMcpDistPath = learnMcpDir
       ? join(learnMcpDir, "dist", "index.js")
       : "/unavailable";
-    const docsDir = resolveDocsDir();
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const docsDir = resolveLearnDir(globalCfg);
 
     const learnHealth = await checkLearnMcpHealth({
-      readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
+      checkRegistered: isLearnMcpRegistered,
       pathExists: existsSync,
       listMdFiles: listMdFilesRecursive,
       docsDir,

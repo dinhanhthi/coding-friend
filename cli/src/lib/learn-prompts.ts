@@ -1,0 +1,50 @@
+import { runWithStderr } from "./exec.js";
+import { resolvePath } from "./paths.js";
+import { log } from "./log.js";
+
+const MCP_NAME = "coding-friend-learn";
+
+export function registerLearnMcp(learnDir: string): boolean {
+  const resolved = resolvePath(learnDir);
+  const result = runWithStderr("claude", [
+    "mcp",
+    "add",
+    "--scope",
+    "user",
+    MCP_NAME,
+    "--",
+    "npx",
+    "-y",
+    "coding-friend-cli",
+    "mcp-serve-learn",
+    resolved,
+  ]);
+  if (result.exitCode !== 0) {
+    const stderr = result.stderr ?? "";
+    if (stderr.includes("ENOENT") || stderr.includes("command not found")) {
+      log.warn(
+        `claude CLI not found — add MCP manually:\n  claude mcp add --scope user ${MCP_NAME} -- npx -y coding-friend-cli mcp-serve-learn ${resolved}`,
+      );
+    } else {
+      log.warn(`Could not register MCP: ${stderr || "unknown error"}`);
+    }
+    return false;
+  }
+  return true;
+}
+
+export function isLearnMcpRegistered(): boolean {
+  const result = runWithStderr("claude", ["mcp", "get", MCP_NAME]);
+  return result.exitCode === 0;
+}
+
+export function unregisterLearnMcp(): boolean {
+  const result = runWithStderr("claude", [
+    "mcp",
+    "remove",
+    "--scope",
+    "user",
+    MCP_NAME,
+  ]);
+  return result.exitCode === 0;
+}

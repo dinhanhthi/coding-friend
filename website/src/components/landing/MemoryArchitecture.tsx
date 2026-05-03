@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 /* ────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ const archNodes: ArchNode[] = [
     label: "Daemon",
     sublabel: "Hono + UDS",
     description:
-      "Background Hono server on Unix Domain Socket. Only used for Tier 2 \u2014 hosts the MiniSearch index in-memory for fast BM25 + fuzzy search.",
+      "Background process spawned for Tier 1 & Tier 2. Watches docs/memory/ and auto-rebuilds the search index on file changes (git pull, manual edits). In Tier 2, also hosts the MiniSearch index in-memory for BM25 + fuzzy search over Unix Domain Socket.",
     row: 2,
     col: 1,
   },
@@ -91,11 +92,17 @@ const archNodes: ArchNode[] = [
 ];
 
 // Connections between nodes
-const connections: { from: string; to: string; label?: string }[] = [
+const connections: {
+  from: string;
+  to: string;
+  label?: string;
+  labelBelow?: boolean;
+}[] = [
   { from: "claude", to: "mcp" },
   { from: "mcp", to: "tier1", label: "direct" },
   { from: "mcp", to: "daemon", label: "HTTP/UDS" },
   { from: "mcp", to: "tier3", label: "direct" },
+  { from: "daemon", to: "tier1", label: "watch", labelBelow: true },
   { from: "daemon", to: "tier2" },
   { from: "tier1", to: "files" },
   { from: "tier2", to: "files" },
@@ -151,12 +158,25 @@ function getConnectionEndpoints(fromId: string, toId: string) {
   const from = getNodePos(fromNode);
   const to = getNodePos(toNode);
 
-  // Same row → right edge to left edge
-  if (fromNode.row === toNode.row) {
+  // Daemon → Tier 1: left edge of Daemon → right edge of Tier 1, offset below
+  // the "fallback" arrow line (which sits at the row center y) to prevent overlap
+  if (fromId === "daemon" && toId === "tier1") {
+    const yOffset = 16;
     return {
-      x1: from.x + BOX_W / 2,
+      x1: from.x - BOX_W / 2,
+      y1: from.y + yOffset,
+      x2: to.x + BOX_W / 2,
+      y2: to.y + yOffset,
+    };
+  }
+
+  // Same row → connect nearest edges (direction-aware)
+  if (fromNode.row === toNode.row) {
+    const goingRight = to.x > from.x;
+    return {
+      x1: goingRight ? from.x + BOX_W / 2 : from.x - BOX_W / 2,
       y1: from.y,
-      x2: to.x - BOX_W / 2,
+      x2: goingRight ? to.x - BOX_W / 2 : to.x + BOX_W / 2,
       y2: to.y,
     };
   }
@@ -304,12 +324,12 @@ export default function MemoryArchitecture() {
         <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
           3-tier graceful degradation — always works, even without heavy
           dependencies. See{" "}
-          <a
+          <Link
             href="/docs/reference/memory-system/"
             className="text-violet-400 hover:text-violet-300"
           >
             Memory System
-          </a>{" "}
+          </Link>{" "}
           for more details.
         </p>
       </div>
@@ -370,7 +390,7 @@ export default function MemoryArchitecture() {
               </filter>
             </defs>
 
-            {connections.map(({ from, to, label }) => {
+            {connections.map(({ from, to, label, labelBelow }) => {
               const d = connectionPath(from, to);
               const isGreen =
                 (from === "tier1" && to === "files") ||
@@ -431,8 +451,12 @@ export default function MemoryArchitecture() {
                       if (angle < -90) angle += 180;
                       const shouldRotate =
                         Math.abs(angle) > 5 && Math.abs(angle) < 80;
-                      // For near-vertical lines, place label at true midpoint
-                      const ly = shouldRotate ? my - 8 : my;
+                      // labelBelow: place text below the line; else above for diagonal, at midpoint for others
+                      const ly = shouldRotate
+                        ? my - 8
+                        : labelBelow
+                          ? my + 14
+                          : my;
                       return (
                         <text
                           x={mx}

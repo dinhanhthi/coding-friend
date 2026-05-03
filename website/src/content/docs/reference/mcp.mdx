@@ -1,0 +1,157 @@
+---
+title: "MCP Servers"
+description: "Single source of truth for Coding Friend's two MCP servers: Learn MCP and Memory MCP."
+keywords: [mcp, model context protocol, learn mcp, memory mcp, coding-friend-learn, coding-friend-memory]
+---
+
+Coding Friend provides two [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let Claude Code (and other LLM clients) interact with your learning docs and project memory.
+
+| Server | Name | Scope | Purpose |
+| --- | --- | --- | --- |
+| **Learn MCP** | `coding-friend-learn` | User (global) | Search, read, and write learning docs in `~/.coding-friend/learn/` |
+| **Memory MCP** | `coding-friend-memory` | Project (local) | Store, search, and manage project memories in `docs/memory/` |
+
+## Learn MCP
+
+### Auto-registration (Learn MCP)
+
+Run `cf mcp` or `cf init` to auto-register the Learn MCP into Claude Code at user scope:
+
+```bash
+cf mcp
+```
+
+This runs the equivalent of:
+
+```bash
+claude mcp add --scope user coding-friend-learn -- npx -y coding-friend-cli mcp-serve-learn ~/.coding-friend/learn
+```
+
+User-scoped means it's available in **all your projects** automatically — no per-project setup.
+
+### Config for non-Claude-Code clients (Learn MCP)
+
+For other MCP clients (Claude Desktop, Cursor, ChatGPT, etc.), run `cf mcp` to get the config with the correct path filled in, then add it manually:
+
+```json
+{
+  "mcpServers": {
+    "coding-friend-learn": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "coding-friend-cli",
+        "mcp-serve-learn",
+        "~/.coding-friend/learn"
+      ]
+    }
+  }
+}
+```
+
+The path is always your global learn folder. To use a custom path, configure it first: `cf config` → Learn settings → Output dir.
+
+### Disabling
+
+To disable the Learn MCP: `cf config` → Learn settings → Disable CF Learn. This unregisters the server from Claude Code automatically.
+
+### Available tools (Learn MCP)
+
+**Read:**
+
+| Tool | Description |
+| --- | --- |
+| `list-categories` | List all categories with doc counts |
+| `list-docs` | List docs, filter by category/tag |
+| `read-doc` | Read full content of a doc |
+| `search-docs` | Full-text search across all docs |
+| `get-review-list` | Docs that need review |
+
+**Write:**
+
+| Tool | Description |
+| --- | --- |
+| `create-doc` | Create new learning doc |
+| `update-doc` | Append content or update tags |
+| `improve-doc` | Get improvement suggestions |
+| `track-knowledge` | Record understanding level (remembered/needs-review/new) |
+
+## Memory MCP
+
+### Auto-registration (Memory MCP)
+
+Run `cf init` or `cf memory init` to auto-register the Memory MCP into the current project's `.mcp.json`:
+
+```bash
+cf init      # step 7 in the wizard
+cf memory init
+```
+
+Or add it interactively when you run `cf mcp` — it will prompt if the current project doesn't have it yet.
+
+Project-scoped means each project gets its own `.mcp.json` pointing to its own `docs/memory/` folder.
+
+### Config for non-Claude-Code clients (Memory MCP)
+
+```json
+{
+  "mcpServers": {
+    "coding-friend-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "coding-friend-cli",
+        "mcp-serve",
+        "/path/to/your/project/docs/memory"
+      ]
+    }
+  }
+}
+```
+
+Replace the path with the absolute path to your project's `docs/memory/` directory. Run `cf memory mcp` to get the correct path printed.
+
+**Important:** Always use a **local** `.mcp.json` per project — do not add it to `~/.claude/.mcp.json`, as the memory path is project-specific.
+
+### Available tools (Memory MCP)
+
+| Tool | Description |
+| --- | --- |
+| `memory_store` | Store a new memory |
+| `memory_search` | Search memories (keyword/semantic/hybrid) |
+| `memory_retrieve` | Get a specific memory by ID |
+| `memory_list` | List memories with filtering |
+| `memory_update` | Update existing memory |
+| `memory_delete` | Delete a memory |
+
+### Available resources
+
+| Resource | Description |
+| --- | --- |
+| `memory://index` | Browse all memories |
+| `memory://stats` | Storage statistics |
+
+## Health Checks
+
+`cf mcp` and `cf status` both run health checks for both MCP servers:
+
+- **Learn MCP:** checks registration (`claude mcp get coding-friend-learn`), package built, and docs present
+- **Memory MCP:** checks `.mcp.json` entry, package built, and daemon status (for Tier 1/2)
+
+Fix hints are printed inline when a check fails.
+
+## Stale Registration
+
+If you previously had `coding-friend-learn` registered pointing to an old path (e.g., from a per-project setup before v0.9), the health check will show "already registered" but it may point to the wrong folder. Fix it:
+
+```bash
+claude mcp remove --scope user coding-friend-learn
+cf mcp
+```
+
+## See Also
+
+- [`cf mcp`](/docs/cli/cf-mcp/) — CLI command reference
+- [`cf memory mcp`](/docs/cli/cf-memory/) — Memory MCP setup command
+- [`/cf-learn`](/docs/skills/cf-learn/) — learning extraction skill
+- [Memory System](/docs/reference/memory-system/) — memory architecture
