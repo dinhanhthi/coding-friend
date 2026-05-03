@@ -33,11 +33,12 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 ### Step 0.5: Determine Mode
 
-1. **Explicit flag** — use `--fast` or `--hard` if present in `$ARGUMENTS`.
-2. **Auto-detect** — scan the task for signals (need 2+ to trigger):
+1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and jump immediately to the **Resume Protocol** in Step 7. Skip Steps 1–6 entirely.
+2. **Explicit flag** — use `--fast` or `--hard` if present in `$ARGUMENTS`.
+3. **Auto-detect** — scan the task for signals (need 2+ to trigger):
    - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
    - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
-3. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal.
+4. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal.
 
 ### Step 0.7: Check Memory
 
@@ -135,7 +136,7 @@ Present: key codebase findings, approaches with pros/cons, recommended approach 
 - **Small** (< 8 tasks AND < 3 phases) → single file `{docsDir}/plans/YYYY-MM-DD-<slug>.md` — see Small plan template below.
 - **Big** (8+ tasks OR 3+ phases) → subfolder `{docsDir}/plans/YYYY-MM-DD-<slug>/` with `README.md` + one `phase-N-<name>.md` per phase — see Big plan template below.
 
-Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE`
+Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent failure after max retries)
 
 After saving, present: path(s) created, phase count, task count, entry point.
 
@@ -146,6 +147,23 @@ After saving, present: path(s) created, phase count, task count, entry point.
 
 Ask: **"Ready to start implementing?"** If yes, execute phase by phase.
 
+#### Resume Protocol (`--resume <path>`)
+
+1. **Resolve the plan file**:
+   - Full path (contains `/`) → validate it is within the current working directory or `{docsDir}`; report error and stop if outside.
+   - Filename only → look up `{docsDir}/plans/<path>` (append `.md` if missing).
+   - If not found → report error and stop.
+2. Read the plan file at the resolved path.
+3. Derive the task-id: extract from the filename stem (e.g. `2026-05-03-my-plan` → `<timestamp>-my-plan`) or from a `task-id:` frontmatter field if present. Re-read existing context file at `{docsDir}/context/<task-id>.json` if it exists — load it now, before dispatching any tasks.
+4. Scan the Progress table. Classify each task:
+   - `✅ DONE` → skip.
+   - `🔄 IN PROGRESS` → Edit plan file: reset to `⬜ TODO`, treat as pending. (Session ended mid-task; completion status is unreliable.)
+   - `❌ FAILED` → ask user: "Task N previously failed. Re-run it? (y/n)"
+   - `⬜ TODO` → pending, run as normal.
+5. If ALL tasks are `✅ DONE` → inform user: "Plan is already complete. Nothing to resume." Stop.
+6. Show user: list of pending tasks and estimated phases remaining. Ask: "Resume from the first pending task? (y/n)"
+7. If confirmed → execute pending tasks using the same Sequential phases protocol below, passing the context file loaded in step 3 to each cf-implementer dispatch.
+
 #### Sequential phases
 
 Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) per task:
@@ -153,9 +171,11 @@ Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) pe
 > Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
 > If `--add-tests` was passed to `/cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
 
+**Checkpoint before dispatch**: Edit the plan file — change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table.
+
 Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 
-- `[CF-RESULT: success]` → mark done, next task
+- `[CF-RESULT: success]` → Edit the plan file — change `🔄 IN PROGRESS` → `✅ DONE`. Then advance to next task.
 - `[CF-RESULT: failure] <reason>` → retry once
 - Missing/malformed/not-on-last-line → treat as failure (`empty-output`). Never assume silent success.
 
@@ -164,9 +184,13 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 1. Notify: `> ⟳ Task N attempt 1 failed (<reason>). Retrying...`
 2. Add `previous_failure` key to context file (reason, error summary, attempt number).
 3. Re-dispatch cf-implementer.
-4. Second failure → report both, ask: "Continue to next task or stop?"
+4. Second failure → Edit the plan file — change `🔄 IN PROGRESS` → `❌ FAILED`. Report both failures, ask: "Continue to next task or stop?"
 
-**Cleanup**: Delete the context file after all phases complete or on cancel.
+**Big plan phase sync**: After each task reaches `✅ DONE`, check if ALL tasks in the current phase file are `✅ DONE`. If yes, update the phase's row in `README.md` progress table to `✅ DONE`. When all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`.
+
+**Rule**: Only the cf-plan orchestrator edits the plan file. cf-implementer must NOT modify the plan file.
+
+**Cleanup**: Delete the context file ONLY after all phases are `✅ DONE`. On session interrupt, quota limit, or user Ctrl+C — keep the context file so `--resume` can read it later.
 
 #### Parallel phases
 
