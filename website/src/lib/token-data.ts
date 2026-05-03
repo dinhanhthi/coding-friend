@@ -17,6 +17,7 @@ export interface SkillTokenEntry extends TokenEntry {
   created?: string;
   updated?: string;
   state?: "beta";
+  temporal?: "new" | "updated";
 }
 
 export interface AgentTokenEntry extends TokenEntry {
@@ -24,6 +25,7 @@ export interface AgentTokenEntry extends TokenEntry {
   created?: string;
   updated?: string;
   state?: "beta";
+  temporal?: "new" | "updated";
 }
 
 export interface TierDef {
@@ -54,18 +56,9 @@ export function getAllTokenData() {
   return tokenCounts;
 }
 
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-
 export function getItemStatus(
-  created?: string,
-  updated?: string,
   state?: "beta",
+  temporal?: "new" | "updated",
 ): ItemStatuses {
-  const now = Date.now();
-  let temporal: "new" | "updated" | null = null;
-  if (created && now - new Date(created).getTime() <= TWO_WEEKS_MS)
-    temporal = "new";
-  else if (updated && now - new Date(updated).getTime() <= TWO_WEEKS_MS)
-    temporal = "updated";
-  return { beta: state === "beta", temporal };
+  return { beta: state === "beta", temporal: temporal ?? null };
 }

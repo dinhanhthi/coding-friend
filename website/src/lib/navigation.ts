@@ -26,12 +26,12 @@ const itemStatuses: Record<string, ItemStatusEntry> = (() => {
   for (const [name, entry] of Object.entries(
     data.skills as Record<string, SkillTokenEntry>,
   )) {
-    map[name] = getItemStatus(entry.created, entry.updated, entry.state);
+    map[name] = getItemStatus(entry.state, entry.temporal);
   }
   for (const [name, entry] of Object.entries(
     data.agents as Record<string, AgentTokenEntry>,
   )) {
-    map[name] = getItemStatus(entry.created, entry.updated, entry.state);
+    map[name] = getItemStatus(entry.state, entry.temporal);
   }
   return map;
 })();

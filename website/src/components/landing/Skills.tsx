@@ -149,11 +149,7 @@ function enrichWithTier(items: SkillMeta[]): Skill[] {
   return items.map((item) => {
     const name = item.command.replace(/^\//, "");
     const entry = skills[name];
-    const { beta, temporal } = getItemStatus(
-      entry?.created,
-      entry?.updated,
-      entry?.state,
-    );
+    const { beta, temporal } = getItemStatus(entry?.state, entry?.temporal);
     return { ...item, tier: entry?.tier ?? "low", beta, temporal };
   });
 }

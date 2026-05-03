@@ -79,11 +79,7 @@ function enrichAgents(items: AgentMeta[]): Agent[] {
   const agentsData = data.agents as Record<string, AgentTokenEntry>;
   return items.map((item) => {
     const entry = agentsData[item.name];
-    const { beta, temporal } = getItemStatus(
-      entry?.created,
-      entry?.updated,
-      entry?.state,
-    );
+    const { beta, temporal } = getItemStatus(entry?.state, entry?.temporal);
     return {
       ...item,
       tier: entry?.tier ?? "low",
