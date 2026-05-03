@@ -50,6 +50,9 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 
 1. Install the CLI: `npm i -g coding-friend-cli`
 2. Install the plugin: `cf install`
+
+   > **`cf` conflict?** If another tool (e.g. Cloudflare's `cf`) already occupies that name, use `cdf` — it's an alias for the same CLI: `cdf install`, `cdf init`, etc.
+
    <details>
    <summary>Or install manually (no CLI)</summary>
 

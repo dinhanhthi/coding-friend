@@ -4,7 +4,8 @@
   "description": "CLI for coding-friend — host learning docs, setup MCP server, initialize projects",
   "type": "module",
   "bin": {
-    "cf": "./dist/index.js"
+    "cf": "./dist/index.js",
+    "cdf": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup src/index.ts src/postinstall.ts --format esm --dts --clean",
