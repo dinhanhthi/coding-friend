@@ -26,7 +26,7 @@ Edit interactively with `cf config`, or manually edit the JSON files.
   },
   "learn": {
     "language": "en",
-    "outputDir": "docs/learn",
+    "outputDir": "~/.coding-friend/learn",
     "categories": [
       {
         "name": "concepts",
@@ -122,9 +122,15 @@ Settings for the `/cf-learn` skill.
 #### `learn.outputDir`
 
 - **Type**: `string`
-- **Default**: `"docs/learn"`
-- Where learning docs are saved
-- Supports absolute paths (`/path/to/dir`) or `~/` paths for external storage
+- **Default**: `"~/.coding-friend/learn"`
+- Where learning docs are saved — always stored globally (never per-project)
+- Supports absolute paths (`/path/to/dir`) or `~/` paths
+
+#### `learn.disabled`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Set to `true` to disable CF Learn file writing and MCP serving entirely
 
 #### `learn.categories`
 

@@ -9,6 +9,7 @@ export interface LearnConfig {
   categories?: LearnCategory[];
   autoCommit?: boolean;
   readmeIndex?: boolean | "per-category";
+  disabled?: boolean;
 }
 
 export type StatuslineComponent =
@@ -82,7 +83,7 @@ export const DEFAULT_CONFIG: Required<
   docsDir: "docs",
   learn: {
     language: "en",
-    outputDir: "docs/learn",
+    outputDir: "~/.coding-friend/learn",
     categories: [
       {
         name: "concepts",
@@ -101,5 +102,6 @@ export const DEFAULT_CONFIG: Required<
     ],
     autoCommit: false,
     readmeIndex: false,
+    disabled: false,
   },
 };

@@ -1,5 +1,5 @@
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import chalk from "chalk";
@@ -57,6 +57,10 @@ import {
   ensureDocsFolders,
 } from "../lib/prompt-utils.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
+import {
+  registerLearnMcp,
+  isLearnMcpRegistered,
+} from "../lib/learn-prompts.js";
 import {
   ensureMemoryBuilt,
   isMemoryInitialized,
@@ -135,7 +139,6 @@ function printSetupStatus(
     "plans",
     "memory",
     "research",
-    "learn",
     "sessions",
     "reviews",
   ];
@@ -316,7 +319,6 @@ async function stepDocsDir(
       "plans",
       "memory",
       "research",
-      "learn",
       "sessions",
       "reviews",
     ];
@@ -345,7 +347,6 @@ async function stepDocsDir(
     "plans",
     "memory",
     "research",
-    "learn",
     "sessions",
     "reviews",
   ];
@@ -393,7 +394,6 @@ async function stepGitignore(docsDir: string): Promise<void> {
     `${docsDir}/plans/`,
     `${docsDir}/memory/`,
     `${docsDir}/research/`,
-    `${docsDir}/learn/`,
     `${docsDir}/sessions/`,
     `${docsDir}/reviews/`,
     `${docsDir}/context/`,
@@ -491,52 +491,31 @@ async function selectLanguage(message: string): Promise<string> {
 
 async function stepLearnConfig(
   globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-  gitAvailable: boolean,
-): Promise<{ outputDir: string; autoCommit: boolean; isExternal: boolean }> {
-  const currentLearn = (localCfg?.learn ?? globalCfg?.learn) as
-    | CodingFriendConfig["learn"]
-    | undefined;
-  const scopeLabel = getScopeLabel("learn", globalCfg, localCfg);
-  const docsDir = getDocsDir(globalCfg, localCfg);
+): Promise<{ outputDir: string; autoCommit: boolean }> {
+  const globalLearn = globalCfg?.learn;
+  const defaultLearnDir = DEFAULT_CONFIG.learn.outputDir;
+  const currentOutputDir = globalLearn?.outputDir ?? defaultLearnDir;
 
   printStepHeader(
-    `/cf-learn config ${formatScopeLabel(scopeLabel)}`,
+    "/cf-learn config",
     "Controls where and how /cf-learn saves your learning notes.",
   );
-
-  const globalLearn = globalCfg?.learn;
-  if (globalLearn) {
-    const parts = [
-      globalLearn.language || "en",
-      globalLearn.outputDir || `${docsDir}/learn`,
-    ];
-    if (globalLearn.categories) {
-      parts.push(`${globalLearn.categories.length} categories`);
-    }
-    if (await offerGlobalShortcut(parts.join(", "))) {
-      const gOutputDir = globalLearn.outputDir || `${docsDir}/learn`;
-      const gIsExternal = !gOutputDir.startsWith(`${docsDir}/`);
-      return {
-        outputDir: gOutputDir,
-        autoCommit: globalLearn.autoCommit || false,
-        isExternal: gIsExternal,
-      };
-    }
-  }
 
   // a) Language
   const language = await selectLanguage(
     "What language should /cf-learn notes be written in?",
   );
 
-  // b) Output location
+  // b) Output location — global only, default ~/.coding-friend/learn
   const locationChoice = await select({
-    message: "Where to store learning docs?",
+    message: `Current learn folder: ${currentOutputDir}`,
     choices: injectBackChoice(
       [
-        { name: `In this project (${docsDir}/learn/)`, value: "local" },
-        { name: "A separate folder", value: "external" },
+        {
+          name: `Use default (${defaultLearnDir})`,
+          value: "default",
+        },
+        { name: "Custom path…", value: "custom" },
       ],
       "Cancel init",
     ),
@@ -544,15 +523,18 @@ async function stepLearnConfig(
 
   handleBack(locationChoice);
 
-  let outputDir = `${docsDir}/learn`;
-  let isExternal = false;
-  if (locationChoice === "external") {
+  let outputDir = defaultLearnDir;
+  if (locationChoice === "custom") {
     outputDir = await input({
       message: "Enter path (absolute or ~/...):",
-      default: currentLearn?.outputDir ?? undefined,
-      validate: (val) => (val.length > 0 ? true : "Path cannot be empty"),
+      default: currentOutputDir !== defaultLearnDir ? currentOutputDir : undefined,
+      validate: (val) => {
+        if (val.length === 0) return "Path cannot be empty";
+        if (!val.startsWith("/") && !val.startsWith("~/"))
+          return "Path must be absolute (e.g. /home/user/learn) or start with ~/ (e.g. ~/learn)";
+        return true;
+      },
     });
-    isExternal = true;
     const resolved = resolvePath(outputDir);
     if (!existsSync(resolved)) {
       const create = await confirm({
@@ -560,14 +542,14 @@ async function stepLearnConfig(
         default: true,
       });
       if (create) {
-        run("mkdir", ["-p", resolved]);
+        mkdirSync(resolved, { recursive: true });
         log.success(`Created ${resolved}`);
       }
     }
   }
 
   // c) Categories
-  const existingCats = currentLearn?.categories;
+  const existingCats = globalLearn?.categories;
   const defaultNames = DEFAULT_CONFIG.learn.categories
     .map((c) => c.name)
     .join(", ");
@@ -629,12 +611,20 @@ async function stepLearnConfig(
     if (customCats.length > 0) categories = customCats;
   }
 
-  // d) Auto-commit (only for external + git available)
+  // d) Auto-commit — only if outputDir is a git repo
   let autoCommit = false;
-  if (isExternal && gitAvailable) {
+  const resolvedOutputDir = resolvePath(outputDir);
+  const gitInLearnDir = run("git", [
+    "-C",
+    resolvedOutputDir,
+    "rev-parse",
+    "--is-inside-work-tree",
+  ]);
+  const learnDirIsGit = gitInLearnDir !== null;
+  if (learnDirIsGit) {
     autoCommit = await confirm({
       message: "Auto-commit learning docs to git after each /cf-learn?",
-      default: currentLearn?.autoCommit ?? false,
+      default: globalLearn?.autoCommit ?? false,
     });
   }
 
@@ -657,7 +647,7 @@ async function stepLearnConfig(
   if (indexChoice === "single") readmeIndex = true;
   else if (indexChoice === "per-category") readmeIndex = "per-category";
 
-  // f) One askScope() for the whole learn object
+  // f) Always write to global config
   const learnObj = {
     language,
     outputDir,
@@ -666,21 +656,12 @@ async function stepLearnConfig(
     readmeIndex,
   };
 
-  const scope = await askScope();
-  if (scope === "back") {
-    log.dim("Skipped /cf-learn config.");
-    return { outputDir, autoCommit, isExternal };
-  }
-
-  // Read existing learn from target scope and merge
-  const targetPath =
-    scope === "global" ? globalConfigPath() : localConfigPath();
-  const existingConfig = readJson<CodingFriendConfig>(targetPath);
+  const existingConfig = readJson<CodingFriendConfig>(globalConfigPath());
   const existingLearn = existingConfig?.learn ?? {};
-  mergeJson(targetPath, { learn: { ...existingLearn, ...learnObj } });
-  log.success(`Saved to ${targetPath}`);
+  mergeJson(globalConfigPath(), { learn: { ...existingLearn, ...learnObj } });
+  log.success(`Saved to ${globalConfigPath()}`);
 
-  return { outputDir, autoCommit, isExternal };
+  return { outputDir, autoCommit };
 }
 
 async function stepShellCompletion(): Promise<void> {
@@ -815,6 +796,87 @@ async function stepMemory(
 
   const memoryDir = join(process.cwd(), docsDir, "memory");
   await memoryInitWizard(memoryDir, mcpDir);
+}
+
+async function stepTdd(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("tdd", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("tdd", globalCfg, localCfg);
+
+  printStepHeader(
+    `TDD ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Enable TDD (RED→GREEN→REFACTOR) by default for all implementations.",
+  );
+
+  const tddChoice = await confirm({
+    message:
+      "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped TDD config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { tdd: tddChoice });
+  log.success(`Saved to ${targetPath}`);
+}
+
+async function stepAutoApprove(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("autoApprove", globalCfg, localCfg);
+
+  printStepHeader(
+    `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous.",
+  );
+
+  const autoApproveChoice = await confirm({
+    message:
+      "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped auto-approve config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { autoApprove: autoApproveChoice });
+  log.success(`Saved to ${targetPath}`);
+
+  if (autoApproveChoice) {
+    const { runDangerousRulesAudit } = await import("../lib/permissions.js");
+    await runDangerousRulesAudit(
+      [
+        claudeProjectSettingsPath(),
+        claudeLocalSettingsPath(),
+        claudeSettingsPath(),
+      ],
+      log,
+      (message) => confirm({ message, default: true }),
+    );
+    log.dim(
+      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
+    );
+    log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
+  }
 }
 
 async function stepClaudePermissions(
@@ -1063,7 +1125,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         await stepDocsLanguage(globalCfg, localCfg);
         break;
       case "learn":
-        await stepLearnConfig(globalCfg, localCfg, gitAvailable);
+        await stepLearnConfig(globalCfg);
         break;
       case "completion":
         await stepShellCompletion();
@@ -1130,16 +1192,11 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         break;
       }
       case "permissions": {
-        const learnCfg = (localCfg?.learn ?? globalCfg?.learn) as
-          | CodingFriendConfig["learn"]
-          | undefined;
-        const learnOutputDir = learnCfg?.outputDir || `${docsDir}/learn`;
-        const learnIsExternal = !learnOutputDir.startsWith(`${docsDir}/`);
+        const learnCfg = globalCfg?.learn;
+        const learnOutputDir =
+          learnCfg?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
         const learnAutoCommit = learnCfg?.autoCommit || false;
-        await stepClaudePermissions(
-          learnIsExternal ? learnOutputDir : null,
-          learnAutoCommit,
-        );
+        await stepClaudePermissions(learnOutputDir, learnAutoCommit);
         break;
       }
     }
@@ -1286,11 +1343,22 @@ export async function initCommand(): Promise<void> {
   await stepDocsLanguage(globalCfg, localCfg);
 
   // Step 4: /cf-learn config
-  const { outputDir, autoCommit, isExternal } = await stepLearnConfig(
-    updatedGlobal,
-    updatedLocal,
-    gitAvailable,
-  );
+  const { outputDir, autoCommit } = await stepLearnConfig(updatedGlobal);
+
+  // Register CF Learn MCP (user scope, global)
+  if (isLearnMcpRegistered()) {
+    log.dim("coding-friend-learn: already registered");
+    log.dim(
+      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-learn && cf mcp)",
+    );
+  } else {
+    const registered = registerLearnMcp(outputDir);
+    if (registered) {
+      log.success(
+        "Registered CF Learn MCP (user scope). Restart Claude Code to activate.",
+      );
+    }
+  }
 
   // Step 5: Shell completion
   await stepShellCompletion();
@@ -1301,12 +1369,22 @@ export async function initCommand(): Promise<void> {
   // Step 7: CF Memory
   await stepMemory(docsDir);
 
-  // Step 8: Claude permissions
+  // Re-read configs to pick up any changes from previous steps
+  const finalGlobal = readJson<CodingFriendConfig>(globalConfigPath());
+  const finalLocal = readJson<CodingFriendConfig>(localConfigPath());
+
+  // Step 8: TDD
+  await stepTdd(finalGlobal, finalLocal);
+
+  // Step 9: Auto-approve
+  await stepAutoApprove(finalGlobal, finalLocal);
+
+  // Step 10: Claude permissions
   printStepHeader(
     "Configure Claude permissions",
     "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
   );
-  await stepClaudePermissions(isExternal ? outputDir : null, autoCommit);
+  await stepClaudePermissions(outputDir, autoCommit);
 
   // Ensure .coding-friend/config.json exists as init marker
   if (!existsSync(localConfigPath())) {

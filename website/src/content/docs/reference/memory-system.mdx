@@ -38,7 +38,11 @@ By default (`memory.tier: "auto"`), the MCP server picks the best available tier
 You can force a specific tier in `.coding-friend/config.json`:
 
 ```json
-{ "memory": { "tier": "markdown" } }
+{
+  "memory": {
+    "tier": "markdown"
+  }
+}
 ```
 
 This is useful for testing (e.g., force Tier 3 even when SQLite is installed) or when you want to skip auto-detection. See [`memory.tier`](/docs/configuration/config-json#memorytier) for all values.
@@ -61,25 +65,28 @@ This is useful for testing (e.g., force Tier 3 even when SQLite is installed) or
 ┌────────┴─────────┐        │             grep/ripgrep
 │  SqliteBackend   │        │                   │
 │  (in-process)    │        ▼                   │
-│                  │  ┌────────────────┐        │
-│  better-sqlite3  │  │    Daemon      │        │
-│  sqlite-vec      │  │ (Unix socket)  │        │
-│  FTS5 + RRF      │  │                │        │
-│                  │  │   MiniSearch   │        │
-│                  │  │  (in-memory)   │        │
-└────────┬─────────┘  └───────┬────────┘        │
-         │                    │                 │
-         └────────────────────┼─────────────────┘
-                              ▼
-                   ┌────────────────────┐
-                   │  docs/memory/*.md  │
-                   │ (source of truth)  │
-                   └────────────────────┘
+│                  │  ┌─────────────────────┐   │
+│  better-sqlite3  │◄─│  Daemon             │   │
+│  sqlite-vec      │  │  (background)       │   │
+│  FTS5 + RRF      │  │                     │   │
+│                  │  │  • MiniSearch       │   │
+│                  │  │    (Tier 2 in-mem)  │   │
+└────────┬─────────┘  │  • fs.watch +       │   │
+         │            │    auto-rebuild     │   │
+         │            └──────────┬──────────┘   │
+         │                       │              │
+         └───────────────────────┼──────────────┘
+                                 ▼
+                      ┌────────────────────┐
+                      │  docs/memory/*.md  │
+                      │ (source of truth)  │
+                      └────────────────────┘
 ```
 
-- **Tier 1 & 3**: MCP server connects **directly** to the backend — no daemon needed
-- **Tier 2**: MCP server connects to a **Hono HTTP daemon** over Unix Domain Socket (UDS), which keeps the MiniSearch index in RAM
-- **Auto-reconnect with retry**: if the daemon stops mid-session (e.g., crash), the client automatically respawns it with up to 3 retry attempts before falling back to Tier 3. The daemon runs indefinitely by default (no idle timeout).
+- **Tier 1**: MCP server connects **directly** to `SqliteBackend` for queries. The daemon runs in the background, watches `docs/memory/` for file changes, and auto-rebuilds the SQLite index when markdown is edited externally (e.g., `git pull`, manual edits).
+- **Tier 2**: MCP server connects to the **Hono HTTP daemon** over Unix Domain Socket for queries. The daemon also watches files and rebuilds the MiniSearch index in-memory.
+- **Tier 3**: MCP server reads markdown files **directly** — no daemon involved.
+- **Auto-reconnect with retry**: if the daemon stops mid-session (e.g., crash), the client automatically respawns it with up to 3 retry attempts. The daemon runs indefinitely by default (no idle timeout).
 - **All tiers** read/write the same `docs/memory/*.md` markdown files (source of truth). SQLite is a rebuildable cache.
 
 ### Key technologies
@@ -114,9 +121,9 @@ Each entry is a concise one-liner (from the memory's `description` field) tracke
 
 ### When markdown is edited directly
 
-If you edit markdown files outside the MCP tools (e.g., in your editor, via git), **SQLite is not automatically updated**. The MCP server process has no file watcher.
+If you edit markdown files outside the MCP tools (e.g., in your editor, via git), the daemon auto-detects the change and rebuilds the search index — for both Tier 1 (SQLite) and Tier 2 (MiniSearch).
 
-To sync SQLite after manual edits:
+If the daemon is not running (Tier 3), sync manually:
 
 ```bash
 cf memory rebuild
@@ -125,9 +132,10 @@ cf memory rebuild
 This scans all markdown files and rebuilds the entire SQLite index (rows + embeddings) from scratch.
 
 <Callout type="info">
-  The Tier 2 daemon (`cf memory start-daemon`) includes a file watcher that
-  auto-rebuilds on markdown changes. But in Tier 1 (SQLite via MCP), there is no
-  watcher — you must rebuild manually.
+  The daemon auto-rebuilds the search index when markdown files change
+  externally — for both Tier 1 (SQLite) and Tier 2 (MiniSearch). If you're on
+  Tier 3 (no daemon), run `cf memory rebuild` manually after editing files
+  outside Claude Code.
 </Callout>
 
 ## Capturing Memories
@@ -167,40 +175,11 @@ Three ways to store memories:
 
 ## MCP Integration
 
-The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically.
+The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically from the project's `.mcp.json`.
 
-| Tool              | Purpose                          |
-| ----------------- | -------------------------------- |
-| `memory_store`    | Store a new memory               |
-| `memory_search`   | Search (keyword/semantic/hybrid) |
-| `memory_retrieve` | Get a specific memory by ID      |
-| `memory_list`     | List memories with filtering     |
-| `memory_update`   | Update existing memory           |
-| `memory_delete`   | Delete a memory                  |
+Skills like `/cf-remember` and `/cf-fix` use the MCP tools behind the scenes — you rarely call them directly. Run `cf memory init` or `cf init` to register the server automatically for your project.
 
-You never call these directly — skills like `/cf-remember` and `/cf-fix` use them behind the scenes.
-
-Run `cf mcp` to print the configuration snippet for both Learn MCP and Memory MCP. To get only the Memory MCP config, run `cf memory mcp`.
-
-Add the output to your MCP client config:
-
-```json
-{
-  "mcpServers": {
-    "coding-friend-memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "coding-friend-cli",
-        "mcp-serve",
-        "/path/to/your/project/docs/memory"
-      ]
-    }
-  }
-}
-```
-
-**Important:** The memory path is project-specific — it points to `docs/memory/` in your project. Always configure it in a **local** `.mcp.json` per project. Do not add it to the global `~/.claude/.mcp.json`, as it will only work for the one project whose path is hardcoded. Running `cf memory init` or `cf init` will set this up automatically.
+See [MCP Servers → Memory MCP](/docs/reference/mcp/#memory-mcp) for the full reference: available tools, resources, config snippets, and health checks.
 
 ## Search Pipeline
 

@@ -1,10 +1,15 @@
-import { existsSync, readdirSync } from "fs";
+import { confirm } from "@inquirer/prompts";
+import { existsSync } from "fs";
 import { join } from "path";
-import { resolveDocsDir, resolveMemoryDir } from "../lib/config.js";
+import { resolveLearnDir, resolveMemoryDir } from "../lib/config.js";
 import { run } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
+import {
+  writeMemoryMcpEntry,
+  getMemoryMcpStatus,
+} from "../lib/memory-prompts.js";
 import {
   detectMemoryMcpState,
   warnStaleMcpJson,
@@ -13,72 +18,32 @@ import {
 import {
   checkMemoryMcpHealth,
   checkLearnMcpHealth,
+  printHealthSection,
   type McpHealthResult,
 } from "../lib/mcp-health.js";
 import { readJson } from "../lib/json.js";
 import { listMdFilesRecursive } from "../lib/fs-utils.js";
+import {
+  registerLearnMcp,
+  isLearnMcpRegistered,
+} from "../lib/learn-prompts.js";
+import { globalConfigPath } from "../lib/paths.js";
+import { type CodingFriendConfig } from "../types.js";
 import chalk from "chalk";
 
 export { detectMemoryMcpState, type MemoryMcpState };
 
-function countMdFiles(dir: string): number {
-  let count = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      count += countMdFiles(join(dir, entry.name));
-    } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-      count++;
-    }
-  }
-  return count;
-}
+export { printHealthSection };
 
-/**
- * Print a health check section to the console.
- * Shows ✓/✗/⚠ per check, and a per-check fix hint (check.fix) for hard failures.
- */
-export function printHealthSection(result: McpHealthResult): void {
-  console.log(chalk.dim("─── Health Check ───"));
-  for (const check of result.checks) {
-    if (check.ok) {
-      console.log(chalk.green(`  ✓ ${check.label}`));
-    } else if (check.warn) {
-      const detail = check.detail ? `: ${check.detail}` : "";
-      console.log(chalk.yellow(`  ⚠ ${check.label}${detail}`));
-    } else {
-      const detail = check.detail ? `: ${check.detail}` : "";
-      console.log(chalk.red(`  ✗ ${check.label}${detail}`));
-      if (check.fix) {
-        console.log(chalk.dim(`    → ${check.fix}`));
-      }
-    }
-  }
-  console.log();
-}
-
-export async function mcpCommand(path?: string): Promise<void> {
+export async function mcpCommand(): Promise<void> {
   warnStaleMcpJson(resolveMemoryDir());
 
-  const docsDir = resolveDocsDir(path);
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const learnDir = resolveLearnDir(globalCfg);
   const learnMcpDir = getLibPath("learn-mcp");
 
-  // Validate docs
-  if (!existsSync(docsDir)) {
-    log.error(`Docs folder not found: ${docsDir}`);
-    log.dim("Run /cf-learn first to generate some docs.");
-    process.exit(1);
-  }
-
-  const docCount = countMdFiles(docsDir);
-  if (docCount === 0) {
-    log.error(`No .md files found in ${docsDir}`);
-    log.dim("Run /cf-learn first to generate some docs.");
-    process.exit(1);
-  }
-
   printBanner("📚 Learn MCP");
-  log.info(`Docs folder: ${chalk.cyan(docsDir)}`);
-  log.info(`Found: ${chalk.green(docCount)} docs`);
+  log.info(`Learn folder: ${chalk.cyan(learnDir)}`);
 
   // Install deps if needed
   if (!existsSync(join(learnMcpDir, "node_modules"))) {
@@ -105,10 +70,10 @@ export async function mcpCommand(path?: string): Promise<void> {
   }
 
   console.log();
-
-  console.log(chalk.dim("Add this to your MCP client config:"));
+  console.log(chalk.dim("Add this to your MCP client config (for non-Claude-Code clients):"));
   console.log();
 
+  const learnDirJson = JSON.stringify(learnDir);
   console.log(`{
   "mcpServers": {
     "coding-friend-learn": {
@@ -117,29 +82,61 @@ export async function mcpCommand(path?: string): Promise<void> {
         "-y",
         "coding-friend-cli",
         "mcp-serve-learn",
-        "${docsDir}"
+        ${learnDirJson}
       ]
     }
   }
 }`);
   console.log();
+  log.dim("See full docs: https://cf.dinhanhthi.com/docs/cli/cf-mcp/");
+  console.log();
 
-  log.dim(
-    "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
-  );
+  // ─── Auto-activate CF Learn MCP (user scope) ─────────────────────────────
+  if (globalCfg?.learn?.disabled) {
+    log.dim("coding-friend-learn: skipped (disabled in global config)");
+  } else if (isLearnMcpRegistered()) {
+    log.dim("coding-friend-learn: already registered");
+    log.dim(
+      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-learn && cf mcp)",
+    );
+  } else {
+    const registered = registerLearnMcp(learnDir);
+    if (registered) {
+      log.success(
+        "Added coding-friend-learn (user scope). Restart Claude Code to activate.",
+      );
+    }
+  }
+
   console.log();
 
   // ─── Learn MCP health check ───────────────────────────────────────────────
-  const localMcpPath = join(process.cwd(), ".mcp.json");
   const learnMcpDistPath = join(learnMcpDir, "dist", "index.js");
   const learnHealth = await checkLearnMcpHealth({
-    readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
+    checkRegistered: isLearnMcpRegistered,
     pathExists: existsSync,
     listMdFiles: listMdFilesRecursive,
-    docsDir,
+    docsDir: learnDir,
     learnMcpDistPath,
   });
   printHealthSection(learnHealth);
+
+  // ─── CF Memory MCP — prompt if not in current project ────────────────────
+  const memoryMcpStatus = getMemoryMcpStatus();
+  if (memoryMcpStatus.configured) {
+    log.dim("coding-friend-memory: already in .mcp.json");
+  } else {
+    const addMemoryMcp = await confirm({
+      message:
+        "coding-friend-memory not found in this project's .mcp.json. Add it now? (project-scoped — writes to .mcp.json)",
+      default: true,
+    });
+    if (addMemoryMcp) {
+      const memoryDir = resolveMemoryDir();
+      writeMemoryMcpEntry(memoryDir);
+    }
+  }
+  console.log();
 
   // Memory MCP section
   await printMemoryMcp();

@@ -1,9 +1,12 @@
 import { spawn } from "child_process";
-import { existsSync, statSync } from "fs";
+import { existsSync, mkdirSync, statSync } from "fs";
 import { join } from "path";
 import { getLibPath } from "../lib/lib-path.js";
 import { runWithStderr } from "../lib/exec.js";
 import { log } from "../lib/log.js";
+import { readJson } from "../lib/json.js";
+import { globalConfigPath } from "../lib/paths.js";
+import { type CodingFriendConfig } from "../types.js";
 
 function ensureLearnBuilt(mcpDir: string): void {
   if (!existsSync(join(mcpDir, "node_modules"))) {
@@ -36,8 +39,19 @@ function ensureLearnBuilt(mcpDir: string): void {
  * learn-mcp dependencies on first run if not already installed.
  */
 export async function mcpServeLearnCommand(docsDir: string): Promise<void> {
-  if (!existsSync(docsDir) || !statSync(docsDir).isDirectory()) {
-    log.error(`Docs directory not found: ${docsDir}`);
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  if (globalCfg?.learn?.disabled) {
+    log.warn(
+      "CF Learn is disabled (learn.disabled = true in ~/.coding-friend/config.json). MCP server not started.",
+    );
+    process.exit(0);
+    return;
+  }
+
+  if (!existsSync(docsDir)) {
+    mkdirSync(docsDir, { recursive: true });
+  } else if (!statSync(docsDir).isDirectory()) {
+    log.error(`Path exists but is not a directory: ${docsDir}`);
     process.exit(1);
     return;
   }
