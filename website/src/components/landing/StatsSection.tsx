@@ -1,7 +1,7 @@
 import Container from "@/components/ui/Container";
 const stats = [
   { value: "21+", label: "Skills & Commands" },
-  { value: "6", label: "Specialized Agents" },
+  { value: "12+", label: "Specialized Agents" },
 ];
 
 export default function StatsSection() {

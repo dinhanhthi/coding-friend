@@ -56,21 +56,17 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
    ```bash
    claude plugin marketplace add dinhanhthi/coding-friend
    claude plugin install coding-friend@coding-friend-marketplace
+
+   # Or inside Claude Code session:
+   /plugin marketplace add dinhanhthi/coding-friend
+   /plugin install coding-friend@coding-friend-marketplace
    ```
 
    </details>
 
 3. Initialize your workspace: `cf init`
 4. Restart Claude Code
-5. **(Optional) Enable AI memory** — stores project knowledge across sessions with automatic recall:
-   ```bash
-   cf memory start-daemon  # Start daemon with fuzzy search (Tier 2)
-   cf memory init          # Initialize SQLite with hybrid search (Tier 1)
-   cf memory status        # Check current tier and document count
-   ```
-   Then bootstrap memory inside Claude Code: `/cf-scan This is a Next.js app with PostgreSQL and Stripe`
-   Learn more: [cf memory](cli/README.md#cf-memory), [Memory System](https://cf.dinhanhthi.com/docs/reference/memory-system/).
-6. **(Optional) Host your learning docs** — browse `/cf-learn` and `/cf-teach` notes as a website or expose to other LLM clients:
+5. **(Optional) Host your learning docs** — browse `/cf-learn` and `/cf-teach` notes as a website or expose to other LLM clients:
    ```bash
    cf host              # Serve docs/learn/ as a website at localhost:3333
    cf mcp               # Setup an MCP server so other LLM clients can read your notes
