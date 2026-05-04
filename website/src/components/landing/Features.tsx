@@ -225,9 +225,9 @@ function StatuslineContent() {
             </div>
             <div className="h-2" />
             <pre className="text-[11px] leading-snug">
-              <span className="text-violet-400">{"   ✻\n"}</span>
-              <span className="text-violet-400">{"   |\n"}</span>
-              <span className="text-violet-400">{"  ▟█▙"}</span>
+              <span className="text-violet-400">{"    ✻\n"}</span>
+              <span className="text-violet-400">{"    |\n"}</span>
+              <span className="text-violet-400">{"   ▟█▙"}</span>
               {"    "}
               <span className="font-bold text-white">Claude Code</span>
               {" v2.1.50\n"}
@@ -238,7 +238,7 @@ function StatuslineContent() {
               <span className="text-orange-400">{"▝▜█████▛▘"}</span>{" "}
               <span className="text-slate-400">~/git/coding-friend</span>
               {"\n"}
-              <span className="text-orange-400">{" ▘▘ ▝▝"}</span>
+              <span className="text-orange-400">{"  ▘▘ ▝▝"}</span>
             </pre>
             <div className="my-2 border-t border-slate-700/60" />
             <div className="text-white">
