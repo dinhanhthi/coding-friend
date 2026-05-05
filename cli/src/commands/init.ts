@@ -116,7 +116,7 @@ function hasGitignoreBlock(): boolean {
  */
 function paddedScopeLabel(scope: string): string {
   const label = formatScopeLabel(scope);
-  // visible lengths: [-]=3, [both]=6, [done]=6, [skip]=6, [local]=7, [global]=8
+  // visible lengths: [-]=3, [done]=6, [skip]=6, [local]=7, [global]=8
   const visibleLen = scope.length + 2;
   return label + " ".repeat(Math.max(1, 9 - visibleLen));
 }
