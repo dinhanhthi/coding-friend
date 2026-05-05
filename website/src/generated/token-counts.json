@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T14:01:14.985Z",
+  "generatedAt": "2026-05-05T11:22:01.959Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -23,7 +23,7 @@
   },
   "skills": {
     "cf-ask": {
-      "tokens": 3019,
+      "tokens": 3087,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-20",
@@ -47,7 +47,7 @@
       "temporal": "new"
     },
     "cf-fix": {
-      "tokens": 3617,
+      "tokens": 3654,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -55,7 +55,7 @@
       "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 2426,
+      "tokens": 2456,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
@@ -79,7 +79,7 @@
       "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 4654,
+      "tokens": 4751,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -87,7 +87,7 @@
       "temporal": "updated"
     },
     "cf-remember": {
-      "tokens": 2886,
+      "tokens": 2980,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -111,15 +111,15 @@
       "temporal": "updated"
     },
     "cf-review-in": {
-      "tokens": 2420,
-      "tier": "medium",
+      "tokens": 2566,
+      "tier": "high",
       "type": "slash",
       "created": "2026-03-23",
       "updated": "2026-05-02",
       "temporal": "updated"
     },
     "cf-review-out": {
-      "tokens": 1027,
+      "tokens": 1182,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-23",
@@ -127,7 +127,7 @@
       "temporal": "updated"
     },
     "cf-scan": {
-      "tokens": 3437,
+      "tokens": 3485,
       "tier": "high",
       "type": "slash",
       "created": "2026-03-16",
@@ -135,11 +135,12 @@
       "temporal": "updated"
     },
     "cf-session": {
-      "tokens": 1178,
+      "tokens": 1213,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-05",
       "updated": "2026-05-03",
+      "state": "beta",
       "temporal": "updated"
     },
     "cf-ship": {
@@ -150,7 +151,7 @@
       "updated": "2026-04-04"
     },
     "cf-sys-debug": {
-      "tokens": 3445,
+      "tokens": 3476,
       "tier": "high",
       "type": "auto",
       "created": "2026-02-17",
@@ -166,8 +167,8 @@
       "temporal": "updated"
     },
     "cf-teach": {
-      "tokens": 2491,
-      "tier": "medium",
+      "tokens": 2526,
+      "tier": "high",
       "type": "slash",
       "created": "2026-03-30",
       "updated": "2026-04-07"
