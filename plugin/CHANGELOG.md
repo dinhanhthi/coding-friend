@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.3 (2026-05-05)
+
+- Fix `load-custom-guide.sh` — resolve custom guide path relative to git project root instead of CWD; prevents silent failures when a skill is invoked from a subdirectory (e.g. after `cd cli/`) [#7f9d14d](https://github.com/dinhanhthi/coding-friend/commit/7f9d14d)
+
 ## v0.33.2 (2026-05-05)
 
 - Extend YYYY-MM-DD date-prefix convention to all generated docs — `cf-plan`, `cf-fix`, `cf-remember`, `cf-ask`, `cf-scan`, `cf-teach`, `cf-sys-debug`, `cf-session`, `cf-review-out`, `cf-review-in` now produce date-prefixed filenames; fixes `cf-fix` task-id format inconsistency, adds missing `/cf-warm` to `cf-help`, and improves `cf-ask` numbered list formatting [#039867d](https://github.com/dinhanhthi/coding-friend/commit/039867d)

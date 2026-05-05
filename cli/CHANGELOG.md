@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.3 (2026-05-05)
+
+- Fix `cf session load` — handle legacy sessions missing `machine` and `projectPath` fields; show `@unknown` for missing machine, fallback to `process.cwd()` for missing path; update `SessionMeta` interface to mark these fields as optional to align type system with runtime reality [#da43e0a](https://github.com/dinhanhthi/coding-friend/commit/da43e0a)
+
 ## v1.35.2 (2026-05-05)
 
 - Fix `cf session load` — prevent crash when loading sessions saved before `previewText` field existed in metadata [#ad18793](https://github.com/dinhanhthi/coding-friend/commit/ad18793)
