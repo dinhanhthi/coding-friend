@@ -15,7 +15,7 @@ vi.mock("child_process", () => ({
 // Mock process.exit so tests don't terminate
 const mockExit = vi.spyOn(process, "exit").mockImplementation((() => {
   // noop — prevents test runner from dying
-}) as (code?: number) => never);
+}) as (code?: string | number | null | undefined) => never);
 
 beforeEach(() => {
   vi.clearAllMocks();

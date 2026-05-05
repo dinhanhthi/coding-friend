@@ -26,7 +26,7 @@ vi.mock("../../lib/exec.js", () => ({
 
 const mockExit = vi.spyOn(process, "exit").mockImplementation((() => {
   // noop
-}) as (code?: number) => never);
+}) as (code?: string | number | null | undefined) => never);
 
 beforeEach(() => {
   vi.clearAllMocks();

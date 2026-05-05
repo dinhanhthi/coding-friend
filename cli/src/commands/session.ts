@@ -28,7 +28,7 @@ function resolveDocsDir(): string {
 
 function formatSessionChoice(meta: SessionMeta): string {
   const date = new Date(meta.savedAt).toLocaleString();
-  const preview = meta.previewText.slice(0, 60).replace(/\n/g, " ");
+  const preview = (meta.previewText ?? "").slice(0, 60).replace(/\n/g, " ");
   return `[${meta.label}]  ${date}  @${meta.machine}  — ${preview}`;
 }
 
