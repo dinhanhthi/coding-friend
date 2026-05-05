@@ -175,12 +175,12 @@ program
 
 const session = program
   .command("session")
-  .description("Save and load Claude Code sessions across machines");
+  .description("[beta] Save and load Claude Code sessions across machines");
 
 program.addHelpText(
   "after",
   `
-Session subcommands:
+Session subcommands (beta):
   session save        Save current session to sync folder (use /cf-session inside a conversation)
   session load        Load a saved session from sync folder and print resume command`,
 );

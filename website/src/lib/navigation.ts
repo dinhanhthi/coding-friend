@@ -243,7 +243,7 @@ export const docsNavigation: NavSection[] = [
       { title: "cf mcp", slug: "cli/cf-mcp" },
       { title: "cf memory", slug: "cli/cf-memory" },
       { title: "cf permission", slug: "cli/cf-permission" },
-      { title: "cf session", slug: "cli/cf-session" },
+      { title: "cf session", slug: "cli/cf-session", beta: true },
       { title: "cf status", slug: "cli/cf-status" },
       { title: "cf statusline", slug: "cli/cf-statusline" },
       { title: "cf uninstall", slug: "cli/cf-uninstall" },
