@@ -39,9 +39,8 @@ Configs can be stored in two different locations - global and local. Local overr
 - Global config: `~/.coding-friend/config.json`
 - Local config: `<project>/.coding-friend/config.json`
 - The meaning of the labels is as follows:
-  - `[global]` - set only in global config
-  - `[local]` - set only in local (project) config
-  - `[both]` - set in both global and local config
+  - `[global]` - effective value comes from global config (not overridden locally)
+  - `[local]` - effective value comes from this project (overrides global if also set)
   - `[-]` - not configured anywhere (using defaults)
 
 ## Setup Steps

@@ -134,35 +134,35 @@ export function showConfigHint(): void {
   console.log();
   console.log(`  ${chalk.yellow("[-]")}      ${chalk.dim("not set anywhere")}`);
   console.log(
-    `  ${chalk.blue("[global]")}  ${chalk.dim("set in global config only")}`,
+    `  ${chalk.blue("[global]")}  ${chalk.dim("effective value comes from global config")}`,
   );
   console.log(
-    `  ${chalk.green("[local]")}   ${chalk.dim("set in this project only")}`,
-  );
-  console.log(
-    `  ${chalk.cyan("[both]")}    ${chalk.dim("set in both places — local value takes effect")}`,
+    `  ${chalk.green("[local]")}   ${chalk.dim("effective value comes from this project (overrides global if set)")}`,
   );
   console.log();
 }
 
 /**
- * Get the scope label for a config key.
- * Returns 'both' | 'global' | 'local' | '-'.
+ * Get the scope label for a config key — reflects where the *effective* value
+ * comes from after local-overrides-global merging. Returns 'local' | 'global' | '-'.
+ *
+ * - 'local'  → key is set in the local config (regardless of global)
+ * - 'global' → key is set only in global
+ * - '-'      → not set anywhere
  */
 export function getScopeLabel(
   key: string,
   globalCfg: object | null,
   localCfg: object | null,
 ): string {
-  const inGlobal = globalCfg
-    ? (globalCfg as Record<string, unknown>)[key] !== undefined
-    : false;
   const inLocal = localCfg
     ? (localCfg as Record<string, unknown>)[key] !== undefined
     : false;
-  if (inGlobal && inLocal) return "both";
-  if (inGlobal) return "global";
   if (inLocal) return "local";
+  const inGlobal = globalCfg
+    ? (globalCfg as Record<string, unknown>)[key] !== undefined
+    : false;
+  if (inGlobal) return "global";
   return "-";
 }
 
@@ -171,7 +171,6 @@ export function getScopeLabel(
  */
 export function formatScopeLabel(scope: string): string {
   if (scope === "-") return chalk.yellow("[-]");
-  if (scope === "both") return chalk.cyan("[both]");
   if (scope === "global") return chalk.blue("[global]");
   if (scope === "local") return chalk.green("[local]");
   return `[${scope}]`;

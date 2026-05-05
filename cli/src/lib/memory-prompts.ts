@@ -25,15 +25,12 @@ export function getMemoryFieldScope(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
 ): string {
+  const localSection = localCfg?.memory as Record<string, unknown> | undefined;
+  if (localSection?.[field] !== undefined) return "local";
   const globalSection = globalCfg?.memory as
     | Record<string, unknown>
     | undefined;
-  const localSection = localCfg?.memory as Record<string, unknown> | undefined;
-  const inGlobal = globalSection?.[field] !== undefined;
-  const inLocal = localSection?.[field] !== undefined;
-  if (inGlobal && inLocal) return "both";
-  if (inGlobal) return "global";
-  if (inLocal) return "local";
+  if (globalSection?.[field] !== undefined) return "global";
   return "-";
 }
 
