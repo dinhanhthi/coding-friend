@@ -10,7 +10,10 @@ if [[ "$SKILL_NAME" == */* ]] || [[ "$SKILL_NAME" == *\\* ]] || [[ "$SKILL_NAME"
   exit 0
 fi
 
-LOCAL=".coding-friend/skills/${SKILL_NAME}-custom/SKILL.md"
+# Always resolve custom guide relative to the git project root, not CWD.
+# This prevents misses when the shell is cd'd into a subdirectory (e.g. cli/).
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+LOCAL="${PROJECT_ROOT}/.coding-friend/skills/${SKILL_NAME}-custom/SKILL.md"
 GLOBAL="$HOME/.coding-friend/skills/${SKILL_NAME}-custom/SKILL.md"
 
 if [ -f "$LOCAL" ]; then
