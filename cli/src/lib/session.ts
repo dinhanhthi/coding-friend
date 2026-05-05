@@ -29,10 +29,10 @@ export interface SessionMeta {
   sessionId: string;
   folderName?: string;
   label: string;
-  projectPath: string;
+  projectPath?: string;
   savedAt: string;
-  machine: string;
-  previewText: string;
+  machine?: string;
+  previewText?: string;
 }
 
 export interface SaveSessionOpts {

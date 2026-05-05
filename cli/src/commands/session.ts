@@ -29,7 +29,7 @@ function resolveDocsDir(): string {
 function formatSessionChoice(meta: SessionMeta): string {
   const date = new Date(meta.savedAt).toLocaleString();
   const preview = (meta.previewText ?? "").slice(0, 60).replace(/\n/g, " ");
-  return `[${meta.label}]  ${date}  @${meta.machine}  — ${preview}`;
+  return `[${meta.label}]  ${date}  @${meta.machine ?? "unknown"}  — ${preview}`;
 }
 
 // ─── cf session save ─────────────────────────────────────────────────────────
@@ -141,12 +141,14 @@ export async function sessionLoadCommand(): Promise<void> {
 
   // Remap project path for current machine
   const currentHome = homedir();
-  const remapped = remapProjectPath(chosen.projectPath, currentHome);
+  const remapped = chosen.projectPath
+    ? remapProjectPath(chosen.projectPath, currentHome)
+    : process.cwd();
 
   let localProjectPath = remapped;
   if (remapped !== chosen.projectPath) {
     log.step(
-      `Original path: ${chosen.projectPath}\nRemapped to:   ${remapped}`,
+      `Original path: ${chosen.projectPath ?? "(not saved)"}\nRemapped to:   ${remapped}`,
     );
     const confirmed = await input({
       message: "Local project path (press Enter to accept or edit):",
