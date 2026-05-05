@@ -177,11 +177,18 @@ async function main() {
     const frontmatter = readFrontmatter(content);
     const type = AUTO_SKILLS.has(dir.name) ? "auto" : "slash";
 
-    const entry: (typeof skills)[string] = { tokens, tier: getTier(tokens), type };
+    const entry: (typeof skills)[string] = {
+      tokens,
+      tier: getTier(tokens),
+      type,
+    };
     if (frontmatter["created"]) entry.created = frontmatter["created"];
     if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
     if (frontmatter["state"]) entry.state = frontmatter["state"];
-    const temporal = computeTemporal(frontmatter["created"], frontmatter["updated"]);
+    const temporal = computeTemporal(
+      frontmatter["created"],
+      frontmatter["updated"],
+    );
     if (temporal) entry.temporal = temporal;
     skills[dir.name] = entry;
   }
@@ -196,11 +203,18 @@ async function main() {
     const frontmatter = readFrontmatter(content);
     const model = frontmatter["model"] || "unknown";
 
-    const entry: (typeof agents)[string] = { tokens, tier: getTier(tokens), model };
+    const entry: (typeof agents)[string] = {
+      tokens,
+      tier: getTier(tokens),
+      model,
+    };
     if (frontmatter["created"]) entry.created = frontmatter["created"];
     if (frontmatter["updated"]) entry.updated = frontmatter["updated"];
     if (frontmatter["state"]) entry.state = frontmatter["state"];
-    const temporal = computeTemporal(frontmatter["created"], frontmatter["updated"]);
+    const temporal = computeTemporal(
+      frontmatter["created"],
+      frontmatter["updated"],
+    );
     if (temporal) entry.temporal = temporal;
     agents[name] = entry;
   }

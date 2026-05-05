@@ -18,7 +18,7 @@ function StatusDot({ color, label }: { color: string; label: string }) {
       <span
         className={`block h-1.5 w-1.5 rounded-full ${dotColors[color] ?? "bg-slate-400"}`}
       />
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-md border border-[#a0a0a03d] bg-[#1e1e2e] px-2 py-0.5 text-xs text-slate-300 opacity-0 transition-opacity group-hover/dot:opacity-100 whitespace-nowrap">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-md border border-[#a0a0a03d] bg-[#1e1e2e] px-2 py-0.5 text-xs whitespace-nowrap text-slate-300 opacity-0 transition-opacity group-hover/dot:opacity-100">
         {label}
       </span>
     </span>
@@ -133,10 +133,14 @@ export default function DocsSidebar() {
                               showTooltip={false}
                             />
                           )}
-                          {item.beta && <StatusDot color="orange" label="beta" />}
+                          {item.beta && (
+                            <StatusDot color="orange" label="beta" />
+                          )}
                           {item.temporal && (
                             <StatusDot
-                              color={item.temporal === "new" ? "emerald" : "sky"}
+                              color={
+                                item.temporal === "new" ? "emerald" : "sky"
+                              }
                               label={item.temporal}
                             />
                           )}

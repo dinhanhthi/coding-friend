@@ -70,13 +70,13 @@ Identify:
 
 Choose the right location based on **what the knowledge is about**, not just what task was performed:
 
-| Category       | Location                                                 | Use For                                             |
-| -------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| Features       | `{docsDir}/memory/features/YYYY-MM-DD-<name>.md`        | Feature-specific logic, flows, APIs                 |
-| Conventions    | `{docsDir}/memory/conventions/YYYY-MM-DD-<name>.md`     | Project-wide patterns and rules                     |
-| Decisions      | `{docsDir}/memory/decisions/YYYY-MM-DD-<name>.md`       | Architecture/design decision records                |
-| Bugs           | `{docsDir}/memory/bugs/YYYY-MM-DD-<name>.md`            | Bug root causes, fixes, and how to avoid recurrence |
-| Infrastructure | `{docsDir}/memory/infrastructure/YYYY-MM-DD-<name>.md`  | Build, deploy, CI/CD, environment setup             |
+| Category       | Location                                               | Use For                                             |
+| -------------- | ------------------------------------------------------ | --------------------------------------------------- |
+| Features       | `{docsDir}/memory/features/YYYY-MM-DD-<name>.md`       | Feature-specific logic, flows, APIs                 |
+| Conventions    | `{docsDir}/memory/conventions/YYYY-MM-DD-<name>.md`    | Project-wide patterns and rules                     |
+| Decisions      | `{docsDir}/memory/decisions/YYYY-MM-DD-<name>.md`      | Architecture/design decision records                |
+| Bugs           | `{docsDir}/memory/bugs/YYYY-MM-DD-<name>.md`           | Bug root causes, fixes, and how to avoid recurrence |
+| Infrastructure | `{docsDir}/memory/infrastructure/YYYY-MM-DD-<name>.md` | Build, deploy, CI/CD, environment setup             |
 
 > **Backward compat:** When reading or updating existing memory files, both `YYYY-MM-DD-<name>.md` (new) and `<name>.md` (legacy) formats are valid — do not rename existing files.
 

@@ -176,7 +176,9 @@ describe("detectMemoryMcpState", () => {
     };
     const result = detectMemoryMcpState(mcp, () => false);
     expect(result.kind).toBe("stale");
-    expect((result as Extract<typeof result, { path: string }>).path).toBe("/old/absolute/path/to/index.js");
+    expect((result as Extract<typeof result, { path: string }>).path).toBe(
+      "/old/absolute/path/to/index.js",
+    );
   });
 
   it("returns 'legacy-valid' when command is node and path exists", () => {
@@ -190,7 +192,9 @@ describe("detectMemoryMcpState", () => {
     };
     const result = detectMemoryMcpState(mcp, () => true);
     expect(result.kind).toBe("legacy-valid");
-    expect((result as Extract<typeof result, { path: string }>).path).toBe("/existing/path/index.js");
+    expect((result as Extract<typeof result, { path: string }>).path).toBe(
+      "/existing/path/index.js",
+    );
   });
 
   it("passes the node path to the existence checker", () => {
