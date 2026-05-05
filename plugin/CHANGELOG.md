@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.2 (2026-05-05)
+
+- Extend YYYY-MM-DD date-prefix convention to all generated docs — `cf-plan`, `cf-fix`, `cf-remember`, `cf-ask`, `cf-scan`, `cf-teach`, `cf-sys-debug`, `cf-session`, `cf-review-out`, `cf-review-in` now produce date-prefixed filenames; fixes `cf-fix` task-id format inconsistency, adds missing `/cf-warm` to `cf-help`, and improves `cf-ask` numbered list formatting [#039867d](https://github.com/dinhanhthi/coding-friend/commit/039867d)
+
 ## v0.33.1 (2026-05-03)
 
 - Add `created`, `updated`, and `state` (beta) metadata fields to skill and agent frontmatter — build script extracts these into `token-counts.json`; website shows status badges (Beta/New/Updated) in sidebar and tables [#e67f6ea](https://github.com/dinhanhthi/coding-friend/commit/e67f6ea)

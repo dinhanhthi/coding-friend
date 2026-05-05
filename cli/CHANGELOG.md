@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.2 (2026-05-05)
+
+- Fix `cf session load` — prevent crash when loading sessions saved before `previewText` field existed in metadata [#ad18793](https://github.com/dinhanhthi/coding-friend/commit/ad18793)
+- Add `warm/` folder to `cf init` directory creation and `cf config` docs listing [#039867d](https://github.com/dinhanhthi/coding-friend/commit/039867d)
+
 ## v1.35.1 (2026-05-03)
 
 - Add `cdf` as an alias binary for users with a conflicting `cf` command (e.g. Cloudflare's CLI) — both `cf` and `cdf` point to the same CLI [#5003529](https://github.com/dinhanhthi/coding-friend/commit/5003529)
