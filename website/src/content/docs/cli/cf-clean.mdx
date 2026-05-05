@@ -28,15 +28,15 @@ No flags or arguments. The command is fully interactive — it shows a checkbox 
 
 The following directories are candidates for cleaning. Only directories that exist **and** have at least one file will appear in the selection list.
 
-| Directory  | Default path     | What Coding Friend generates there                                  |
-| ---------- | ---------------- | ------------------------------------------------------------------- |
-| `context`  | `docs/context/`  | Context handoff files for agent tasks (`cf-plan`, `cf-implementer`) |
-| `memory`   | `docs/memory/`   | Markdown memory files created by `/cf-remember` and `/cf-scan`      |
-| `research` | `docs/research/` | Research documents created by `/cf-research`                        |
-| `reviews`  | `docs/reviews/`  | Code review outputs from `/cf-review-out` and `/cf-review-in`       |
-| `plans`    | `docs/plans/`    | Implementation plans created by `/cf-plan`                          |
-| `sessions` | `docs/sessions/` | Session files saved by `cf session save`                            |
-| `learn`    | `~/.coding-friend/learn/` | Learning notes created by `/cf-learn` (respects `learn.outputDir`) |
+| Directory  | Default path              | What Coding Friend generates there                                  |
+| ---------- | ------------------------- | ------------------------------------------------------------------- |
+| `context`  | `docs/context/`           | Context handoff files for agent tasks (`cf-plan`, `cf-implementer`) |
+| `memory`   | `docs/memory/`            | Markdown memory files created by `/cf-remember` and `/cf-scan`      |
+| `research` | `docs/research/`          | Research documents created by `/cf-research`                        |
+| `reviews`  | `docs/reviews/`           | Code review outputs from `/cf-review-out` and `/cf-review-in`       |
+| `plans`    | `docs/plans/`             | Implementation plans created by `/cf-plan`                          |
+| `sessions` | `docs/sessions/`          | Session files saved by `cf session save`                            |
+| `learn`    | `~/.coding-friend/learn/` | Learning notes created by `/cf-learn` (respects `learn.outputDir`)  |
 
 All paths respect your `docsDir` config setting. The `memory` directory also respects `config.docsDir`, and the `learn` directory respects `config.learn.outputDir` if set.
 

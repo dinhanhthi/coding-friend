@@ -135,7 +135,14 @@ function printSetupStatus(
   missingFolders: number;
 } {
   const docsDir = getDocsDir(globalCfg, localCfg);
-  const subfolders = ["plans", "memory", "research", "sessions", "reviews", "warm"];
+  const subfolders = [
+    "plans",
+    "memory",
+    "research",
+    "sessions",
+    "reviews",
+    "warm",
+  ];
 
   // ── Folders ──
   const folderStatus = subfolders.map((sub) => ({
