@@ -176,7 +176,7 @@ export function saveStatuslineAlias(
   } else {
     delete aliases[email];
   }
-  const updated = { ...existing, accountAliases: aliases };
+  const updated: Record<string, unknown> = { ...existing, accountAliases: aliases };
   // Remove empty map
   if (Object.keys(aliases).length === 0) delete updated.accountAliases;
   mergeJson(globalConfigPath(), { statusline: updated });
