@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.4 (2026-05-05)
+
+- Mark `/cf-session` skill as beta — flag the cross-machine session save/load flow as beta in skill frontmatter, README skills table, and regenerated token counts to surface beta status in website badges while detection/resume reliability is hardened [#93b9bf3](https://github.com/dinhanhthi/coding-friend/commit/93b9bf3)
+
 ## v0.33.3 (2026-05-05)
 
 - Fix `load-custom-guide.sh` — resolve custom guide path relative to git project root instead of CWD; prevents silent failures when a skill is invoked from a subdirectory (e.g. after `cd cli/`) [#7f9d14d](https://github.com/dinhanhthi/coding-friend/commit/7f9d14d)

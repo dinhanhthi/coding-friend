@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.4 (2026-05-05)
+
+- Fix `cf init` and `cf config` scope labels — `[both]` removed; `[local]` and `[global]` now reflect where the *effective* value comes from after local-overrides-global merging instead of which file contains the key; updates `getScopeLabel`, `getMemoryFieldScope`, `showConfigHint`, and `cf-init.mdx` docs to match [#6f3e867](https://github.com/dinhanhthi/coding-friend/commit/6f3e867)
+- Mark `cf session` as beta — surface beta status of the cross-machine session save/load flow in `cf --help`, the docs sidebar, and the CLI command page so users know the surface may shift [#6ad4685](https://github.com/dinhanhthi/coding-friend/commit/6ad4685)
+
 ## v1.35.3 (2026-05-05)
 
 - Fix `cf session load` — handle legacy sessions missing `machine` and `projectPath` fields; show `@unknown` for missing machine, fallback to `process.cwd()` for missing path; update `SessionMeta` interface to mark these fields as optional to align type system with runtime reality [#da43e0a](https://github.com/dinhanhthi/coding-friend/commit/da43e0a)
