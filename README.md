@@ -92,7 +92,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-research [topic]`                          | In-depth research with web search                                                |
 | `/cf-review [target]`                           | Code review in forked subagent                                                   |
 | `/cf-scan [desc]`                               | Scan project and bootstrap memory                                                |
-| `/cf-session`                                   | Save/load Claude Code sessions                                                   |
+| `/cf-session` [beta]                            | Save/load Claude Code sessions                                                   |
 | `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                              |
 | `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                      |
 | `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                     |
