@@ -177,6 +177,11 @@ const BASH_ALLOW_PREFIXES = [
   // files and auto-approve would run it silently. Those go to ASK instead.
   "npx tsc --noEmit",
   "npx prettier",
+  // pnpm — pure formatter only (prettier). Other pnpm subcommands run package
+  // scripts/plugins and stay in BASH_ASK_PREFIXES. Allow-list match runs before
+  // the "pnpm" ask check, so this exception is honored.
+  "pnpm prettier",
+  "pnpm exec prettier",
   // Version checks — read-only
   "node --version",
   "node -v",
