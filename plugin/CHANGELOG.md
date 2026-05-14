@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.33.5 (2026-05-14)
+
+- Auto-approve `pnpm prettier` and `pnpm exec prettier` — pure formatter invocations are safe to run silently like `npx prettier`; other `pnpm` subcommands still route to ASK because they execute package scripts/plugins [#f93f3207](https://github.com/dinhanhthi/coding-friend/commit/f93f3207)
+- Refine `/cf-plan` big-plan phase sync rules — explicitly cover phase-start (`🔄 IN PROGRESS`), phase-fail (`❌ FAILED`), and plan-done states in `README.md`; require every flip to be applied immediately via its own Edit call and serialize concurrent edits from parallel phases to avoid losing updates to the shared table [#f93f3207](https://github.com/dinhanhthi/coding-friend/commit/f93f3207)
+
 ## v0.33.4 (2026-05-05)
 
 - Mark `/cf-session` skill as beta — flag the cross-machine session save/load flow as beta in skill frontmatter, README skills table, and regenerated token counts to surface beta status in website badges while detection/resume reliability is hardened [#93b9bf3](https://github.com/dinhanhthi/coding-friend/commit/93b9bf3)
