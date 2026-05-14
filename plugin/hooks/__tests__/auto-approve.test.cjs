@@ -325,6 +325,28 @@ describe("classifyByRules — auto-approve (allow)", () => {
     ).toBe("allow");
   });
 
+  it("allows Bash pnpm prettier", () => {
+    expect(
+      classifyByRules("Bash", { command: "pnpm prettier --write src/foo.tsx" }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash pnpm exec prettier", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "pnpm exec prettier --write src/foo.tsx",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows Bash pnpm prettier with stderr redirect and tail pipe", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "pnpm prettier --write src/foo.tsx 2>&1 | tail -2",
+      }),
+    ).toBe("allow");
+  });
+
   it("allows Bash node --version", () => {
     expect(classifyByRules("Bash", { command: "node --version" })).toBe(
       "allow",

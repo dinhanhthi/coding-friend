@@ -511,24 +511,31 @@ async function stepLearnConfig(
   );
 
   // b) Output location — global only, default ~/.coding-friend/learn
+  const hasDistinctCurrent = currentOutputDir !== defaultLearnDir;
+  const locationChoices: { name: string; value: string }[] = [];
+  if (hasDistinctCurrent) {
+    locationChoices.push({
+      name: `Keep current (${currentOutputDir})`,
+      value: "current",
+    });
+  }
+  locationChoices.push({
+    name: `Use default (${defaultLearnDir})`,
+    value: "default",
+  });
+  locationChoices.push({ name: "Custom path…", value: "custom" });
+
   const locationChoice = await select({
     message: `Current learn folder: ${currentOutputDir}`,
-    choices: injectBackChoice(
-      [
-        {
-          name: `Use default (${defaultLearnDir})`,
-          value: "default",
-        },
-        { name: "Custom path…", value: "custom" },
-      ],
-      "Cancel init",
-    ),
+    choices: injectBackChoice(locationChoices, "Cancel init"),
   });
 
   handleBack(locationChoice);
 
   let outputDir = defaultLearnDir;
-  if (locationChoice === "custom") {
+  if (locationChoice === "current") {
+    outputDir = currentOutputDir;
+  } else if (locationChoice === "custom") {
     outputDir = await input({
       message: "Enter path (absolute or ~/...):",
       default:

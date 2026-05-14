@@ -159,7 +159,7 @@ Ask: **"Ready to start implementing?"** If yes, execute phase by phase.
 3. Derive the task-id from the filename stem or from a `task-id:` frontmatter field if present. The stem IS the task-id (e.g. `2026-05-03-my-plan` → task-id = `2026-05-03-my-plan`). Look up the context file at `{docsDir}/context/<task-id>.json`. If not found, strip the leading `YYYY-MM-DD-` prefix from the stem (the first 11 characters if the stem starts with a date pattern) to get the bare name, then glob `{docsDir}/context/*<bare-name>*.json` for backward compat with the old unix-timestamp format (e.g. `1717500000-my-plan.json`). Load the context file now, before dispatching any tasks.
 4. Scan the Progress table. Classify each task:
    - `✅ DONE` → skip.
-   - `🔄 IN PROGRESS` → Edit plan file: reset to `⬜ TODO`, treat as pending. (Session ended mid-task; completion status is unreliable.)
+   - `🔄 IN PROGRESS` → Edit the file containing this task's row (the single plan file for **small plans**; the relevant phase file `phase-N-<name>.md` for **big plans**): reset to `⬜ TODO`, treat as pending. (Session ended mid-task; completion status is unreliable.)
    - `❌ FAILED` → ask user: "Task N previously failed. Re-run it? (y/n)"
    - `⬜ TODO` → pending, run as normal.
 5. If ALL tasks are `✅ DONE` → inform user: "Plan is already complete. Nothing to resume." Stop.
@@ -173,11 +173,11 @@ Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) pe
 > Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
 > If `--add-tests` was passed to `/cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
 
-**Checkpoint before dispatch**: Edit the plan file — change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table.
+**Checkpoint before dispatch**: Edit the file containing this task's row — the **single plan file** for small plans, or the **relevant phase file** (`phase-N-<name>.md`) for big plans. Change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table. **Big plan only** — if this is the first task of the phase to leave `⬜ TODO`, also edit `README.md` and flip that phase's row to `🔄 IN PROGRESS` (see "Big plan phase sync" below).
 
 Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 
-- `[CF-RESULT: success]` → Edit the plan file — change `🔄 IN PROGRESS` → `✅ DONE`. Then advance to next task.
+- `[CF-RESULT: success]` → Edit the same file targeted at dispatch — change `🔄 IN PROGRESS` → `✅ DONE`. Then advance to next task.
 - `[CF-RESULT: failure] <reason>` → retry once
 - Missing/malformed/not-on-last-line → treat as failure (`empty-output`). Never assume silent success.
 
@@ -186,11 +186,17 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 1. Notify: `> ⟳ Task N attempt 1 failed (<reason>). Retrying...`
 2. Add `previous_failure` key to context file (reason, error summary, attempt number).
 3. Re-dispatch cf-implementer.
-4. Second failure → Edit the plan file — change `🔄 IN PROGRESS` → `❌ FAILED`. Report both failures, ask: "Continue to next task or stop?"
+4. Second failure → Edit the same file targeted at dispatch — change `🔄 IN PROGRESS` → `❌ FAILED`. **Big plan only** — also edit `README.md` and flip that phase's row to `❌ FAILED`. Report both failures, ask: "Continue to next task or stop?"
 
-**Big plan phase sync**: After each task reaches `✅ DONE`, check if ALL tasks in the current phase file are `✅ DONE`. If yes, update the phase's row in `README.md` progress table to `✅ DONE`. When all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`.
+**Big plan phase sync** — every flip is its own Edit tool call applied **immediately**, never batched at the end of the plan:
 
-**Rule**: Only the cf-plan orchestrator edits the plan file. cf-implementer must NOT modify the plan file.
+- **Phase start** — when the first task of a phase flips to `🔄 IN PROGRESS` in the phase file, also flip that phase's row in `README.md` to `🔄 IN PROGRESS`.
+- **Task done** — after each task reaches `✅ DONE` in the phase file, check if ALL tasks in that phase file are `✅ DONE`. If yes, update the phase's row in `README.md` to `✅ DONE`.
+- **Phase failed** — when any task in the phase file becomes `❌ FAILED` (after retry), update the phase's row in `README.md` to `❌ FAILED` (overrides any `🔄 IN PROGRESS`).
+- **Plan done** — when all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`. If any row is `❌ FAILED`, set `**Status:**` to `❌ FAILED` instead.
+- **Parallel phases** — when multiple cf-implementer dispatches in a parallel phase return near-simultaneously, **serialize** the Edit calls: apply one Edit, wait for it to succeed, then apply the next. Concurrent edits to the same Markdown table will lose updates.
+
+**Rule**: Only the cf-plan orchestrator edits plan files (the single plan file for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
 
 **Cleanup**: Delete the context file ONLY after all phases are `✅ DONE`. On session interrupt, quota limit, or user Ctrl+C — keep the context file so `--resume` can read it later.
 

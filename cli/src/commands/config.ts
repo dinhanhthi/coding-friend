@@ -171,19 +171,29 @@ async function editLearnOutputDir(
   const oldOutputDir = globalCfg?.learn?.outputDir ?? defaultLearnDir;
   log.dim(`Current: ${oldOutputDir}`);
 
+  const hasDistinctCurrent = oldOutputDir !== defaultLearnDir;
+  const locationChoices: { name: string; value: string }[] = [];
+  if (hasDistinctCurrent) {
+    locationChoices.push({
+      name: `Keep current (${oldOutputDir})`,
+      value: "current",
+    });
+  }
+  locationChoices.push({
+    name: `Use default (${defaultLearnDir})`,
+    value: "default",
+  });
+  locationChoices.push({ name: "Custom path…", value: "custom" });
+
   const locationChoice = await select({
     message: "Where to store learning docs?",
-    choices: [
-      {
-        name: `Use default (${defaultLearnDir})`,
-        value: "default",
-      },
-      { name: "Custom path…", value: "custom" },
-    ],
+    choices: locationChoices,
   });
 
   let newOutputDir = defaultLearnDir;
-  if (locationChoice === "custom") {
+  if (locationChoice === "current") {
+    newOutputDir = oldOutputDir;
+  } else if (locationChoice === "custom") {
     newOutputDir = await input({
       message: "Enter path (absolute or ~/...):",
       default: oldOutputDir !== defaultLearnDir ? oldOutputDir : undefined,
