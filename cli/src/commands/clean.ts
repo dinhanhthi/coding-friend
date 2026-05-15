@@ -19,16 +19,6 @@ type DateRange =
 
 const DATE_PREFIX_RE = /^(\d{4}-\d{2}-\d{2})/;
 
-const RANGE_LABELS: Record<DateRange, string> = {
-  more_than_1_day: "more than 1 day old",
-  more_than_3_days: "more than 3 days old",
-  more_than_1_week: "more than 1 week old",
-  more_than_1_month: "more than 1 month old",
-  more_than_1_year: "more than 1 year old",
-  before_date: "before custom date",
-  all: "all files",
-};
-
 export function parseDateFromName(name: string): Date | null {
   const m = DATE_PREFIX_RE.exec(name);
   if (!m) return null;
@@ -183,24 +173,15 @@ export async function cleanCommand(): Promise<void> {
     return;
   }
 
-  console.log();
-  const { range, cutoff } = await promptDateRange();
-  console.log();
-
   const now = new Date();
   const summary: { key: string; deleted: number }[] = [];
 
   for (const entry of cleanable.filter((c) => selected.includes(c.key))) {
     const relPath = relative(process.cwd(), entry.path);
 
-    const rangeLabel =
-      range === "before_date"
-        ? `files before ${cutoff!.toISOString().slice(0, 10)}`
-        : RANGE_LABELS[range];
-
-    console.log(
-      `${chalk.yellow("→")} Clean ${chalk.bold(entry.key)} (${relPath}) — ${chalk.dim(rangeLabel)}`,
-    );
+    console.log();
+    console.log(`${chalk.yellow("→")} ${chalk.bold(entry.key)} (${relPath})`);
+    const { range, cutoff } = await promptDateRange();
 
     const isMemory = entry.key === "memory";
     const message = isMemory
