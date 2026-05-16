@@ -18,6 +18,9 @@ Start with [`/cf-plan`](/docs/skills/cf-plan/) for any non-trivial task. Plannin
 
 # Hard — deep exploration, rollback strategy, review gates (migrations, breaking changes)
 /cf-plan --hard Migrate from REST to GraphQL across all API endpoints
+
+# Autopilot — approve once, then review + fix + commit per phase, no prompts
+/cf-plan --auto Add a /healthz endpoint
 ```
 
 Pick the right mode for the task:
@@ -25,6 +28,7 @@ Pick the right mode for the task:
 - **Normal** (default) — Full discovery, brainstorming, and agent-based exploration. Best for new features with uncertain scope
 - **`--fast`** — Skips discovery and brainstorming. Best when the task is clear and follows existing patterns
 - **`--hard`** — Extra discovery round with risk analysis, rollback strategies per task, and review gates during implementation. Best for breaking changes, migrations, and multi-module refactors
+- **`--auto`** — Orthogonal flag (combines with any mode). After plan approval, runs each phase end-to-end: dispatch tasks → auto `/cf-review` → auto-fix Critical+Important findings (max 2 review rounds) → single conventional commit per phase → continue without prompting. Best when you trust the plan and want a hands-off run. Pair with `--add-tests` to autopilot a TDD-style workflow.
 
 If you don't pass a flag, the skill auto-detects the mode based on task signals and confirms with you before proceeding.
 

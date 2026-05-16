@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T11:22:01.959Z",
+  "generatedAt": "2026-05-16T10:55:10.153Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -43,8 +43,7 @@
       "type": "slash",
       "created": "2026-04-30",
       "updated": "2026-05-02",
-      "state": "beta",
-      "temporal": "new"
+      "state": "beta"
     },
     "cf-fix": {
       "tokens": 3654,
@@ -55,12 +54,11 @@
       "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 2456,
-      "tier": "medium",
+      "tokens": 2537,
+      "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-05-02",
-      "temporal": "updated"
+      "updated": "2026-05-02"
     },
     "cf-learn": {
       "tokens": 2602,
@@ -75,11 +73,10 @@
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-20",
-      "updated": "2026-05-02",
-      "temporal": "updated"
+      "updated": "2026-05-02"
     },
     "cf-plan": {
-      "tokens": 4751,
+      "tokens": 9214,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -99,32 +96,28 @@
       "tier": "high",
       "type": "slash",
       "created": "2026-02-19",
-      "updated": "2026-04-24",
-      "temporal": "updated"
+      "updated": "2026-04-24"
     },
     "cf-review": {
       "tokens": 1792,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-04-30",
-      "temporal": "updated"
+      "updated": "2026-04-30"
     },
     "cf-review-in": {
       "tokens": 2566,
       "tier": "high",
       "type": "slash",
       "created": "2026-03-23",
-      "updated": "2026-05-02",
-      "temporal": "updated"
+      "updated": "2026-05-02"
     },
     "cf-review-out": {
       "tokens": 1182,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-23",
-      "updated": "2026-04-24",
-      "temporal": "updated"
+      "updated": "2026-04-24"
     },
     "cf-scan": {
       "tokens": 3485,
@@ -159,12 +152,11 @@
       "temporal": "updated"
     },
     "cf-tdd": {
-      "tokens": 2080,
-      "tier": "medium",
+      "tokens": 3251,
+      "tier": "high",
       "type": "auto",
       "created": "2026-02-17",
-      "updated": "2026-05-02",
-      "temporal": "updated"
+      "updated": "2026-05-02"
     },
     "cf-teach": {
       "tokens": 2526,
@@ -203,8 +195,7 @@
       "tier": "medium",
       "model": "sonnet",
       "created": "2026-02-17",
-      "updated": "2026-05-02",
-      "temporal": "updated"
+      "updated": "2026-05-02"
     },
     "cf-planner": {
       "tokens": 1640,
@@ -232,8 +223,7 @@
       "tier": "low",
       "model": "haiku",
       "created": "2026-04-04",
-      "updated": "2026-04-30",
-      "temporal": "updated"
+      "updated": "2026-04-30"
     },
     "cf-reviewer-rules": {
       "tokens": 644,
@@ -261,8 +251,7 @@
       "tier": "medium",
       "model": "inherit",
       "created": "2026-02-17",
-      "updated": "2026-04-30",
-      "temporal": "updated"
+      "updated": "2026-04-30"
     },
     "cf-writer-deep": {
       "tokens": 1007,

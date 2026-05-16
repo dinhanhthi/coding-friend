@@ -14,6 +14,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 /cf-plan [task description]
 /cf-plan --fast [task description]
 /cf-plan --hard [task description]
+/cf-plan --auto [task description]    # Autopilot: review + fix + commit per phase, no prompts
 /cf-plan --resume [plan-file-path]    # Resume an interrupted plan
 ```
 
@@ -22,9 +23,22 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 - **Normal** (default) — Full workflow: discovery, agent-based exploration, brainstorming, validation, plan writing
 - **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Best for clear, single-module, additive tasks
 - **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
+- **Autopilot** (`--auto`) — Orthogonal flag (combines with fast/hard/normal). After you approve the plan once, every phase runs end-to-end: dispatch tasks → auto [`/cf-review`](/docs/skills/cf-review/) → if Critical or Important findings, auto-dispatch a fix task → re-review (max 2 review rounds) → single conventional commit per phase → continue to the next phase, **never** asking for confirmation between phases. Suggestions (💡) are logged in the commit body but don't block. The plan file embeds a `## AUTOPILOT` contract section + `auto: true` frontmatter so the workflow survives long conversations where Claude's context may evict the skill. Resume (`--resume`) honors `auto: true` and continues in autopilot mode automatically.
 - **Resume** (`--resume <path>`) — Resume an interrupted plan from where it left off. Skips already-completed tasks (✅) and re-runs any in-progress or pending ones
 
-If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding.
+If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding. `--auto` is never auto-detected — it must be opted in explicitly.
+
+### Autopilot stop conditions
+
+Autopilot only stops when one of these fires (otherwise it keeps going):
+
+- A task fails after its single retry
+- The fix cf-implementer returns failure (does not consume the second review round)
+- Review round 2 still has 🚨 Critical or ⚠️ Important findings
+- `/cf-review` output cannot be reliably parsed
+- `git commit` fails repeatedly after hook fixes
+- You explicitly interrupt (Ctrl+C, message)
+- All phases reach ✅ DONE in the plan file
 
 ## Workflow
 
@@ -46,6 +60,12 @@ If no flag is given, the skill auto-detects the appropriate mode based on task s
 
 # Hard — deep exploration, rollback strategy, review gates
 /cf-plan --hard Migrate from REST to GraphQL across all API endpoints
+
+# Autopilot — approve once, then review+fix+commit per phase, no prompts
+/cf-plan --auto Add a /healthz endpoint with tests and OpenAPI doc
+
+# Combine: fast planning + autopilot execution
+/cf-plan --fast --auto Add a hello.txt with a greeting
 ```
 
 The skill will:
