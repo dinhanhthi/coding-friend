@@ -60,7 +60,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 ### Slash Commands (user triggers with /)
 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
-- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution
+- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Add `--auto` for end-to-end autopilot (auto review + fix Critical/Important + commit per phase, no confirmation between phases).
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
@@ -77,7 +77,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Auto-Invoked Skills (activate automatically when relevant)
 
-- **cf-tdd** — ⚡⚡ — When writing new code: direct implementation by default; TDD with `--add-tests` or config `tdd: true`
+- **cf-tdd** — ⚡⚡ — When writing new code: direct implementation by default; TDD with `--add-tests` or config `tdd: true`. Add `--auto` for standalone autopilot (auto review + fix + commit after implementation).
 - **cf-sys-debug** — ⚡⚡ — When debugging: investigate → analyze → test → fix
 - **cf-verification** — ⚡ — Before claiming done: run, read output, verify
 - **cf-learn** — ⚡⚡ — After substantial new knowledge: extract educational notes
@@ -93,7 +93,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
   - **cf-reviewer-tests** (haiku) — Test coverage
   - **cf-reviewer-rules** (haiku) — Project rules compliance (CLAUDE.md)
   - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
-- **cf-implementer** — ⚡ — Implementation subagent: direct coding by default, TDD with `--add-tests` (reads structured context file, returns result signals, supports auto-retry on failure)
+- **cf-implementer** — ⚡ — Implementation subagent: direct coding by default, TDD with `--add-tests` (reads structured context file, returns result signals, supports auto-retry on failure). Does not own autopilot loops — cf-plan / cf-tdd orchestrate review / fix / commit when `--auto` is active.
 - **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
 - **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases (writes structured context file)
 - **cf-writer** — ⚡ — Lightweight doc writer for markdown file generation

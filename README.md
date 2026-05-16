@@ -87,7 +87,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-help [question]`                           | Answer questions about Coding Friend                                             |
 | `/cf-learn [topic]`                             | Extract learnings for human review                                               |
 | `/cf-optimize [target]`                         | Structured optimization with measurement                                         |
-| `/cf-plan [task]` \| `/cf-plan --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan |
+| `/cf-plan [task]` \| `/cf-plan --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase) |
 | `/cf-remember [topic]`                          | Capture project knowledge                                                        |
 | `/cf-research [topic]`                          | In-depth research with web search                                                |
 | `/cf-review [target]`                           | Code review in forked subagent                                                   |
@@ -97,7 +97,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
 | `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                      |
 | `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                     |
 
-Auto-invoked skills (no slash needed): `cf-tdd`, `cf-sys-debug`, `cf-verification`.
+Auto-invoked skills (no slash needed): `cf-tdd` (add `--auto` for autopilot review+fix+commit after implementation), `cf-sys-debug`, `cf-verification`.
 
 ## CLI Commands
 
