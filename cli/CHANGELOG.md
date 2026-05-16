@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.6 (2026-05-16)
+
+- Fix `cf clean` — when multiple directories are selected, each now gets its own date-range prompt instead of one shared cutoff applied to all; lets users keep different cleanup policies per directory type (e.g. plans older than 1 month, sessions older than 1 week) in a single invocation [#30d1519](https://github.com/dinhanhthi/coding-friend/commit/30d1519)
+
 ## v1.35.5 (2026-05-14)
 
 - Add date filtering to `cf clean` — interactively pick an age cutoff (more than 1 day / 3 days / 1 week / 1 month / 1 year, before a specific `YYYY-MM-DD`, or all files) so cleanup can target stale history without wiping everything; date is parsed from the `YYYY-MM-DD-*` filename prefix when present, falls back to `mtime`, and the summary now reports per-directory file counts removed [#f93f3207](https://github.com/dinhanhthi/coding-friend/commit/f93f3207)
