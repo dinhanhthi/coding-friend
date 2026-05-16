@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.34.0 (2026-05-16)
+
+- Add `--auto` flag to `/cf-plan` and `cf-tdd` — opt-in autopilot mode that runs phases/implementation autonomously (tasks → `/cf-review` → fix Critical/Important findings → git commit → next phase) with embedded `AUTOPILOT` contract that survives context eviction; `auto:true` frontmatter gates resume behavior; modes are orthogonal (combines with fast/hard/normal in `cf-plan`, with Direct/TDD in `cf-tdd`); explicit opt-in only — never auto-detected [#147add3](https://github.com/dinhanhthi/coding-friend/commit/147add3)
+
 ## v0.33.5 (2026-05-14)
 
 - Auto-approve `pnpm prettier` and `pnpm exec prettier` — pure formatter invocations are safe to run silently like `npx prettier`; other `pnpm` subcommands still route to ASK because they execute package scripts/plugins [#f93f3207](https://github.com/dinhanhthi/coding-friend/commit/f93f3207)
