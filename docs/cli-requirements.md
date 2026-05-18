@@ -1,0 +1,146 @@
+# CLI Requirements
+
+Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend`) and the **CLI** (`coding-friend-cli`). The plugin installs skills, agents, and hooks directly into Claude Code — it is fully functional as a standalone install. The CLI (`cf`) is an optional companion that adds workspace setup commands, manages the memory MCP server, and hosts the learn-doc server. Installing the plugin without the CLI gives you all AI-powered workflows; the CLI unlocks faster indexed memory recall and additional tooling conveniences.
+
+---
+
+## TL;DR
+
+| Tier | Meaning | Count today |
+| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
+| NONE | Skill / agent / hook works with zero CLI involvement. | Skills: 9 · Agents: 12 · Hooks: 7 |
+| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 0 · Hooks: 3 |
+| REQUIRED | Cannot function without CLI. | 0 |
+
+---
+
+## What `coding-friend-cli` Provides
+
+- **Workspace setup:** `cf init`, `cf install`, `cf uninstall`, `cf disable`, `cf enable`, `cf update`
+- **MCP servers:** `cf mcp`, `cf memory` (subcommands: `status`, `search`, `list`, `rm`, `start`, `stop`, `rebuild`, `init`, `config`, `mcp`) — provides the `coding-friend-memory` MCP server backed by SQLite + markdown files
+- **Host server:** `cf host` — powers the `coding-friend-learn` MCP used by `/cf-learn` (HTTP server on localhost:3333)
+- **Utilities:** `cf statusline`, `cf permission`, `cf guide`
+
+---
+
+## Per-Skill Table
+
+| Skill | Tier | Without CLI you lose... | Manual workaround |
+| --------------- | -------- | --------------------------------- | ------------------------------------------- |
+| cf-ask | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-commit | NONE | — | — |
+| cf-design | NONE | — | — |
+| cf-fix | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-help | NONE | — | — |
+| cf-learn | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-optimize | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-plan | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-remember | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-research | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review-in | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review-out | NONE | — | — |
+| cf-scan | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-session | NONE | — | — |
+| cf-ship | NONE | — | — |
+| cf-sys-debug | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-tdd | NONE | — | — |
+| cf-teach | NONE | — | — |
+| cf-verification | NONE | — | — |
+| cf-warm | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+
+---
+
+## Per-Agent Table
+
+| Agent | Tier |
+| -------------------- | ---- |
+| cf-explorer | NONE |
+| cf-implementer | NONE |
+| cf-planner | NONE |
+| cf-reviewer | NONE |
+| cf-reviewer-plan | NONE |
+| cf-reviewer-quality | NONE |
+| cf-reviewer-reducer | NONE |
+| cf-reviewer-rules | NONE |
+| cf-reviewer-security | NONE |
+| cf-reviewer-tests | NONE |
+| cf-writer | NONE |
+| cf-writer-deep | NONE |
+
+---
+
+## Per-Hook Table
+
+| Hook | Tier | Behavior without CLI |
+| ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| agent-tracker.sh | NONE | Tracks agent invocations via file-based logging — no CLI needed. |
+| auto-approve.cjs | NONE | Approval filter — no CLI dependency. |
+| memory-capture.sh | OPTIONAL | Fires on PreCompact and attempts `memory_store` MCP call. If MCP is unavailable, the step is skipped silently — no failure, episode simply not captured. |
+| privacy-block.sh | NONE | Content safety filter — no CLI dependency. |
+| rules-reminder.sh | NONE | Loads CLAUDE.md rules reminder via file read — no CLI needed. |
+| scout-block.cjs | NONE | Block filter — no CLI dependency. |
+| session-init.sh | OPTIONAL | Sources `cf-paths.sh` which references env vars set by `cf init`. Reads `~/.coding-friend/config.json` if present. Fully functional when config file is absent — falls back to defaults. |
+| session-log.sh | NONE | Logs session turns to `/tmp` — file-based only, no CLI needed. |
+| statusline.sh | OPTIONAL | Reads `~/.coding-friend/config.json` for component visibility settings (created by `cf config`). When config is absent, all components render with defaults — fully functional. |
+| task-tracker.sh | NONE | Tracks task invocations via file-based logging — no CLI needed. |
+
+---
+
+## Working Without the CLI
+
+All plugin workflows remain functional when `coding-friend-cli` is not installed. The differences are:
+
+**Memory search** — Use grep instead of the indexed MCP server:
+
+```bash
+grep -r "<query>" docs/memory/
+```
+
+**Memory writes** — Edit `docs/memory/*.md` files directly. Follow the frontmatter format:
+
+```markdown
+---
+name: ...
+type: feature|convention|decision|bug|infrastructure
+---
+# Title
+
+Content goes here.
+```
+
+When you later install the CLI and run `cf memory rebuild`, existing files are re-indexed automatically.
+
+**`/cf-learn` doc viewer** — Open `docs/learn/*.md` files directly in your editor. The learn-host server (`cf host`) provides an HTTP UI but is not required to read or write learning docs.
+
+**Statusline** — Remains functional. When `~/.coding-friend/config.json` is absent, all statusline components render with their default settings. Run `cf config` after installing the CLI to customize visibility.
+
+**PreCompact episode capture** — `memory-capture.sh` fires normally but skips the `memory_store` call when the MCP server is unavailable. Conversation compaction continues without interruption; the episode is simply not saved to the memory index.
+
+---
+
+## Installing the CLI Later
+
+```bash
+npm i -g coding-friend-cli
+cf init
+cf memory init
+```
+
+Existing `docs/memory/*.md` files will be re-indexed automatically on the first run of `cf memory rebuild` (or `cf memory init`).
+
+---
+
+## FAQ
+
+**Why are they separate packages?**
+The plugin ships through the Claude Code marketplace and has its own release cycle. The CLI is a standalone npm tool that can be updated, versioned, and distributed independently. Keeping them separate lets users adopt incrementally — plugin first, CLI when needed.
+
+**Will my project memory work later if I install the CLI?**
+Yes. The CLI re-indexes existing `docs/memory/*.md` files on the first run of `cf memory rebuild` (or `cf memory init`). No data is lost during the CLI-free period.
+
+**What if the `cf` command is broken?**
+Skills degrade gracefully to grep-based search and direct file writes. You can keep working — none of the core AI workflows hard-require the CLI.
+
+**Do agents need the CLI?**
+No. All agents in `plugin/agents/` are CLI-independent (NONE tier). They operate purely through Claude Code tool calls with no dependency on `cf` commands or MCP servers.
