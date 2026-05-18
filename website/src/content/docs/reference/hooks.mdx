@@ -8,6 +8,16 @@ keywords: [hooks, lifecycle, automation, pre-commit, post-commit, auto-approve]
 
 Hooks are lifecycle functions that execute automatically at specific points in your Coding Friend session. They handle security, formatting, reminders, and context management without requiring manual invocation.
 
+## CLI Requirement
+
+Most hooks are **NONE-tier** — they work without `coding-friend-cli`. Three hooks are **OPTIONAL-tier** and degrade silently when the CLI is missing:
+
+- **`memory-capture`** — fires on PreCompact and attempts `memory_store`; if the MCP is unavailable, the step is skipped silently and the episode is simply not captured.
+- **`session-init`** — sources `cf-paths.sh` which reads `~/.coding-friend/config.json`; falls back to defaults when the config file is absent.
+- **`statusline`** — reads `~/.coding-friend/config.json` for visibility settings; renders all components with defaults when the config is absent.
+
+See the full [CLI requirements](/docs/reference/cli-requirements/) matrix.
+
 ## Hook Reference
 
 | Hook             | Trigger                    | Purpose                                                                                  |
