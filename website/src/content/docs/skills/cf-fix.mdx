@@ -6,6 +6,10 @@ keywords: [bug fix, debugging, quick fix, cf-fix]
 
 Context footprint: `⚡⚡⚡` (high) — [what does this mean?](/docs/reference/context-usage/)
 
+<Callout type="info" title="CLI Requirement: OPTIONAL">
+  Uses the memory MCP from [`coding-friend-cli`](/docs/cli/) for fast indexed search. Without the CLI: falls back to `grep -r '<query>' docs/memory/`. Full functionality preserved, slower memory recall. See [CLI requirements](/docs/reference/cli-requirements/).
+</Callout>
+
 The `/cf-fix` skill streamlines bug fixing by verifying the problem exists, exploring the codebase for context, confirming your approach, implementing a fix with tests, and verifying the solution works.
 
 ## Usage

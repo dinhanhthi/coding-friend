@@ -14,6 +14,10 @@ keywords:
 
 Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
+<Callout type="info" title="CLI Requirement: OPTIONAL">
+  Uses the memory MCP from [`coding-friend-cli`](/docs/cli/) for fast indexed search. Without the CLI: falls back to `grep -r '<query>' docs/memory/`. Full functionality preserved, slower memory recall. See [CLI requirements](/docs/reference/cli-requirements/).
+</Callout>
+
 The `/cf-review-in` skill reads review results written by an external AI agent (generated via [`/cf-review-out`](/docs/skills/cf-review-out/)), presents the findings, and offers to fix any issues found.
 
 ## Usage
