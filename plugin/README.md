@@ -2,6 +2,33 @@
 
 Claude Code plugin for disciplined engineering workflows.
 
+## CLI Requirements
+
+The Coding Friend plugin works without the [`coding-friend-cli`](https://www.npmjs.com/package/coding-friend-cli). The CLI is a **separate npm package** that adds the memory MCP server (faster indexed search), the learn-host doc server, and workspace utilities. Skills and agents fall back gracefully when the CLI is missing.
+
+| Tier | Meaning | Count today |
+| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
+| **NONE** | Works with zero CLI involvement. | Skills: 9 · Agents: 11 · Hooks: 7 |
+| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
+| **REQUIRED** | Cannot function without CLI. | 0 |
+
+### Install the CLI (recommended)
+
+```bash
+npm i -g coding-friend-cli
+cf init
+cf memory init
+```
+
+### Working without the CLI
+
+- **Memory search:** `grep -r '<query>' docs/memory/`
+- **Memory writes:** edit `docs/memory/*.md` files directly; index rebuilds when the CLI is installed later.
+- **`/cf-learn` doc viewer:** open `docs/learn/*.md` directly in your editor — the learn-host server is just a convenience renderer.
+- **Statusline:** stays functional with default config when `~/.coding-friend/config.json` is missing.
+
+For the full per-skill / per-agent / per-hook matrix and FAQ, see [`docs/cli-requirements.md`](../docs/cli-requirements.md).
+
 ## Development Setup
 
 ```bash

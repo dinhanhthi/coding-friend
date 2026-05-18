@@ -76,6 +76,31 @@ Requires [Node.js](https://nodejs.org/) 20+ and [Claude Code](https://claude.com
    ```
    Learn more: [cf host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/README.md).
 
+## CLI vs Plugin — what do you need?
+
+Coding Friend ships as **two independent npm packages**:
+
+- **Plugin** (`coding-friend`) — skills, agents, and hooks installed directly into Claude Code via the marketplace. Fully functional standalone.
+- **CLI** (`coding-friend-cli`, binary `cf`) — optional companion that adds the memory MCP server (fast indexed recall), the learn-host doc viewer, statusline rendering, and workspace setup utilities.
+
+| Tier | Meaning | Count today |
+| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
+| **NONE** | Works with zero CLI involvement. | Skills: 9 · Agents: 11 · Hooks: 7 |
+| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
+| **REQUIRED** | Cannot function without CLI. | 0 |
+
+**Plugin-only quick-start** — install via Claude Code marketplace, skip the CLI for now. You will lose: fast indexed memory search (falls back to `grep -r '<query>' docs/memory/`), the learn-host doc viewer, and the `cf statusline` renderer. Everything else works.
+
+**Add the CLI later:**
+
+```bash
+npm i -g coding-friend-cli
+cf init
+cf memory init
+```
+
+For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs/cli-requirements.md`](docs/cli-requirements.md).
+
 ## Commands
 
 | Command                                         | Description                                                                      |
