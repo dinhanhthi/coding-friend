@@ -13,7 +13,9 @@ description: >
   coding friend", "tell me about your skills", "what slash commands exist?",
   "how do skills work together?", "what auto-invoked skills are there?",
   "coding friend features", "coding friend setup", "what does cf-fix do?",
-  "which skill should I use?", "how do I get started with coding friend?".
+  "which skill should I use?", "how do I get started with coding friend?",
+  "does X require the CLI?", "what works without coding-friend-cli?",
+  "is the CLI required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 user-invocable: true
 model: haiku
@@ -23,6 +25,8 @@ updated: 2026-05-02
 ---
 
 # /cf-help — Coding Friend Help
+
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Answer questions about the Coding Friend toolkit. Provide a brief overview when asked generally, or read specific skill files on-demand when asked about a particular skill/agent/workflow.
 
@@ -154,3 +158,31 @@ Common issues:
 ### Step 6: Answer concisely
 
 Provide a clear, concise answer based on the information gathered. Link to specific files if the user wants to dive deeper.
+
+## CLI Requirements (quick reference)
+
+The Coding Friend plugin works without `coding-friend-cli`. The CLI adds the memory MCP server (fast indexed search), the learn-host doc server, and a few utilities — but every skill and agent has a documented fallback path.
+
+**Three tiers:**
+
+- **NONE** — works with zero CLI involvement.
+- **OPTIONAL** — uses CLI-installed memory MCP for speed; falls back to grep over `docs/memory/` and direct file writes when CLI is absent. Full functionality preserved.
+- **REQUIRED** — cannot function without CLI. **(0 skills today.)**
+
+For the full per-skill/per-agent/per-hook matrix, see [docs/cli-requirements.md](../../../docs/cli-requirements.md).
+
+### Example: answering "do I need the CLI?" questions
+
+When users ask whether a skill needs the CLI, look up its tier first.
+
+> **Q:** "Do I need the CLI to use `/cf-fix`?"
+>
+> **A:** "No. `cf-fix` is OPTIONAL-tier — it uses the memory MCP when available, but falls back to `grep -r '<query>' docs/memory/`. See `docs/cli-requirements.md` for the full matrix."
+
+Trigger phrases this skill should recognize:
+
+- "does X require the CLI?"
+- "what works without coding-friend-cli?"
+- "how do I use memory without the CLI?"
+- "is the CLI required?"
+- "do I need to install the CLI?"

@@ -12,6 +12,8 @@ updated: 2026-04-06
 
 # Test Coverage Reviewer
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
+
 You are a test coverage specialist. Your job is to evaluate whether code changes are adequately tested.
 
 ## Input

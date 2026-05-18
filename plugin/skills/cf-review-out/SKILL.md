@@ -14,6 +14,8 @@ updated: 2026-04-24
 
 # /cf-review-out
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 Generate a review prompt for an external agent: **$ARGUMENTS**
 
 ## Purpose

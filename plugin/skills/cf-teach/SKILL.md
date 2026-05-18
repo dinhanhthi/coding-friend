@@ -14,6 +14,8 @@ updated: 2026-04-07
 
 # /cf-teach
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 You are my personal teacher. Explain what just happened: **$ARGUMENTS**
 
 ## Purpose

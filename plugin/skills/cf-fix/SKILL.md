@@ -13,6 +13,8 @@ updated: 2026-05-03
 
 # /cf-fix
 
+> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
+
 Fix the bug: **$ARGUMENTS**
 
 ## Workflow

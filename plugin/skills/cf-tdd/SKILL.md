@@ -19,6 +19,8 @@ updated: 2026-05-02
 
 # Implementation Workflow
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 ## Custom Guide
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd`

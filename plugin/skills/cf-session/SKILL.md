@@ -15,6 +15,8 @@ state: beta
 
 # /cf-session
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 Save the current Claude Code session to `docs/sessions/` so it can be restored on another machine.
 
 Label: **$ARGUMENTS**

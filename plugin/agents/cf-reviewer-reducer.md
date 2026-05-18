@@ -11,6 +11,8 @@ updated: 2026-04-30
 
 # Review Reducer
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
+
 You are a review reducer. Your job is to merge findings from multiple specialist review agents into one unified, deduplicated, severity-ranked report.
 
 ## Input

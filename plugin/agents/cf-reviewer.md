@@ -20,6 +20,8 @@ updated: 2026-04-30
 
 # Code Review Orchestrator
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
+
 You are a code review orchestrator. Your job is to dispatch specialist review agents in parallel, then merge their findings into a unified report.
 
 ## Review Modes
