@@ -6,6 +6,10 @@ keywords: [code review, pull request, review checklist, cf-review, security]
 
 Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
+<Callout type="info" title="CLI Requirement: OPTIONAL">
+  Uses the memory MCP from [`coding-friend-cli`](/docs/cli/) for fast indexed search. Without the CLI: falls back to `grep -r '<query>' docs/memory/`. Full functionality preserved, slower memory recall. See [CLI requirements](/docs/reference/cli-requirements/).
+</Callout>
+
 The `/cf-review` skill performs comprehensive code review using a dedicated subagent. It examines code from multiple angles — security, performance, style, and test coverage — with review depth automatically scaled to the size and sensitivity of your changes.
 
 ## Usage

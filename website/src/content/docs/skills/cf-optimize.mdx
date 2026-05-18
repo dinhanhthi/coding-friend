@@ -6,6 +6,10 @@ keywords: [optimization, performance, measurement, cf-optimize]
 
 Context footprint: `⚡⚡` (medium) — [what does this mean?](/docs/reference/context-usage/)
 
+<Callout type="info" title="CLI Requirement: OPTIONAL">
+  Uses the memory MCP from [`coding-friend-cli`](/docs/cli/) for fast indexed search. Without the CLI: falls back to `grep -r '<query>' docs/memory/`. Full functionality preserved, slower memory recall. See [CLI requirements](/docs/reference/cli-requirements/).
+</Callout>
+
 The `/cf-optimize` skill systematically improves performance by measuring baseline metrics, analyzing bottlenecks, getting your confirmation on the approach, implementing optimizations with tests, and comparing before/after results.
 
 This is an **auto-invoked** skill — it activates automatically when it detects performance-related context in the conversation (e.g. "this is slow", "optimize", "bottleneck", "high latency"). You can also trigger it manually with `/cf-optimize`.
