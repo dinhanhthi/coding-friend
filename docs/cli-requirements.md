@@ -8,8 +8,8 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 | Tier | Meaning | Count today |
 | -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| NONE | Skill / agent / hook works with zero CLI involvement. | Skills: 9 · Agents: 12 · Hooks: 7 |
-| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 0 · Hooks: 3 |
+| NONE | Skill / agent / hook works with zero CLI involvement. | Skills: 9 · Agents: 11 · Hooks: 7 |
+| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
 | REQUIRED | Cannot function without CLI. | 0 |
 
 ---
@@ -55,7 +55,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 | Agent | Tier |
 | -------------------- | ---- |
-| cf-explorer | NONE |
+| cf-explorer | OPTIONAL |
 | cf-implementer | NONE |
 | cf-planner | NONE |
 | cf-reviewer | NONE |
@@ -143,4 +143,4 @@ Yes. The CLI re-indexes existing `docs/memory/*.md` files on the first run of `c
 Skills degrade gracefully to grep-based search and direct file writes. You can keep working — none of the core AI workflows hard-require the CLI.
 
 **Do agents need the CLI?**
-No. All agents in `plugin/agents/` are CLI-independent (NONE tier). They operate purely through Claude Code tool calls with no dependency on `cf` commands or MCP servers.
+No agent hard-requires it. Eleven of twelve agents are NONE-tier (zero CLI involvement). `cf-explorer` is OPTIONAL — it uses `memory_search` as an exploration cache when available and falls back to full re-exploration when not.

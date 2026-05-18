@@ -69,3 +69,6 @@ docs/sessions
 docs/warm
 docs/context
 # End AI Sync managed
+
+.codex/
+AGENTS.md
