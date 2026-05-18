@@ -2,6 +2,23 @@
 
 CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-friend) plugin — a lean toolkit for disciplined engineering workflows with Claude Code.
 
+## Plugin without the CLI?
+
+If you installed the Coding Friend plugin through the Claude Code marketplace but cannot install or run this CLI (npm errors, sandboxed environment, restricted machine), **the plugin still works**. You lose:
+
+- Fast indexed memory search — falls back to `grep -r '<query>' docs/memory/`
+- The `coding-friend-learn-host` doc viewer — open `docs/learn/*.md` directly in your editor
+- The `cf statusline` renderer — Claude Code's default statusline takes over
+
+Everything else (every skill, every agent, every hook except the three OPTIONAL hooks above) is unaffected. See [`../docs/cli-requirements.md`](../docs/cli-requirements.md) for the full matrix.
+
+### Common CLI install issues
+
+- **`node` not found** — install Node.js 18+ from <https://nodejs.org>.
+- **`EACCES` on global install** — set a user-writable global prefix: `npm config set prefix ~/.npm-global` and add `~/.npm-global/bin` to your `PATH`.
+- **`cf` not on PATH after install** — verify with `npm root -g` and ensure that directory's `bin/` is in your `PATH`.
+- **MCP server not appearing in Claude Code** — after install, run `cf mcp` to register the memory MCP, then restart Claude Code.
+
 ## Requirements
 
 - Node.js >= 20

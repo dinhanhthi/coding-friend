@@ -9,6 +9,25 @@ coding-friend is a lean toolkit for Claude Code that enforces disciplined engine
 
 ---
 
+## Plugin vs CLI
+
+Coding Friend is split into **two independent npm packages** with independent release cycles:
+
+- **Plugin (`coding-friend`)** — Skills, agents, hooks, and lib scripts (`load-custom-guide.sh`, `cf-paths.sh`) installed into Claude Code via the marketplace. All workflow logic lives here.
+- **CLI (`coding-friend-cli`)** — Ships the `coding-friend-memory` MCP server (SQLite + markdown index for fast recall), the `coding-friend-learn-host` MCP server (HTTP doc viewer), and workspace utilities (`cf init`, `cf install`, `cf statusline`, etc.).
+
+**Communication boundary.** Skills never call the `cf` binary directly. The plugin reaches the CLI's services through MCP tools (`memory_search`, `memory_store`, etc.) which are advertised by the runtime when the CLI is installed. When those tools are absent, skills fall back to grep + direct file writes. This boundary keeps the plugin functional standalone and makes the CLI a strict enhancement, not a prerequisite.
+
+**Tier classification.** Every skill, agent, and hook is classified into one of three CLI tiers:
+
+- **NONE** — no CLI involvement.
+- **OPTIONAL** — uses memory MCP when available; documented grep fallback when absent.
+- **REQUIRED** — cannot function without the CLI. **No component is REQUIRED today** (project rule #10).
+
+For the per-component matrix, see [`cli-requirements.md`](./cli-requirements.md).
+
+---
+
 ## Directory Structure
 
 ```
