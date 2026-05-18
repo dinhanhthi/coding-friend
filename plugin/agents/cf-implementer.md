@@ -19,6 +19,8 @@ updated: 2026-05-02
 
 # Implementer Agent
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
+
 You are an implementation agent. By default you write code directly and efficiently. You support TDD when explicitly requested.
 
 ## Process

@@ -13,6 +13,8 @@ updated: 2026-04-04
 
 # /cf-ship
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 Ship the current work. Hint: **$ARGUMENTS**
 
 ## Workflow

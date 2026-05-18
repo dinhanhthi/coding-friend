@@ -14,6 +14,8 @@ updated: 2026-04-04
 
 # /cf-commit
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 Create a commit for the current changes. Hint: **$ARGUMENTS**
 
 ## Workflow

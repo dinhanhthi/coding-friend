@@ -18,6 +18,8 @@ state: beta
 
 # /cf-design
 
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
 Design UI with intent and consistency: **$ARGUMENTS**
 
 ## Modes
