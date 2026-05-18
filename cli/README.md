@@ -14,7 +14,7 @@ Everything else (every skill, every agent, every hook except the three OPTIONAL 
 
 ### Common CLI install issues
 
-- **`node` not found** — install Node.js 18+ from <https://nodejs.org>.
+- **`node` not found** — install Node.js 20+ from <https://nodejs.org> (the CLI declares `engines.node >= 20`; older versions will refuse to install).
 - **`EACCES` on global install** — set a user-writable global prefix: `npm config set prefix ~/.npm-global` and add `~/.npm-global/bin` to your `PATH`.
 - **`cf` not on PATH after install** — verify with `npm root -g` and ensure that directory's `bin/` is in your `PATH`.
 - **MCP server not appearing in Claude Code** — after install, run `cf mcp` to register the memory MCP, then restart Claude Code.
