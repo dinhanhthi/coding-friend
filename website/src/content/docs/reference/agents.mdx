@@ -9,6 +9,10 @@ keywords:
 
 Coding Friend includes 12 specialized agents, each optimized for specific engineering workflows. Agents are automatically selected based on the skill you invoke.
 
+## CLI Requirement
+
+Eleven of twelve agents are **NONE-tier** — they work without `coding-friend-cli`. The single exception is `cf-explorer`, which is **OPTIONAL-tier**: it uses `memory_search` as an exploration cache when the CLI's memory MCP is installed and falls back to fresh exploration when not. See the full [CLI requirements](/docs/reference/cli-requirements/) matrix.
+
 ## Agent Reference
 
 <AgentRefTable />
