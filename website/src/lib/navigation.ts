@@ -275,6 +275,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Permissions", slug: "reference/permissions" },
       { title: "Security", slug: "reference/security" },
       { title: "Memory System", slug: "reference/memory-system" },
+      { title: "CLI Requirements", slug: "reference/cli-requirements" },
       { title: "MCP Servers", slug: "reference/mcp" },
       { title: "Context Footprint", slug: "reference/context-usage" },
       { title: "Troubleshooting", slug: "reference/troubleshooting" },
