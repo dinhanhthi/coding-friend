@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.34.1 (2026-05-21)
+
+- Add `--inline` (alias `--no-file`) flag to `/cf-plan` — skips the on-disk plan file; the plan is presented in chat and progress is tracked via `TaskCreate`. Incompatible with `--auto` and `--resume` (both rely on a persistent plan file). Also adds `--quick` as a friendlier alias for `--fast`; both flags are normalized to their canonical form in Step 0.5 [#a200ee7](https://github.com/dinhanhthi/coding-friend/commit/a200ee7)
+- Annotate every skill and agent with a CLI Requirement callout (NONE or OPTIONAL) immediately below the H1, linking to `docs/cli-requirements.md` so plugin-only users can see at a glance whether a skill needs `coding-friend-cli`. `cf-explorer` is OPTIONAL due to `memory_search` in its Step 0 cache; all other agents are NONE [#5c36b4b](https://github.com/dinhanhthi/coding-friend/commit/5c36b4b)
+- Add "CLI Requirements" section to `plugin/README.md` with the 3-tier table and quick install/fallback instructions, positioned right after the intro paragraph [#e603e9d](https://github.com/dinhanhthi/coding-friend/commit/e603e9d)
+
 ## v0.34.0 (2026-05-16)
 
 - Add `--auto` flag to `/cf-plan` and `cf-tdd` — opt-in autopilot mode that runs phases/implementation autonomously (tasks → `/cf-review` → fix Critical/Important findings → git commit → next phase) with embedded `AUTOPILOT` contract that survives context eviction; `auto:true` frontmatter gates resume behavior; modes are orthogonal (combines with fast/hard/normal in `cf-plan`, with Direct/TDD in `cf-tdd`); explicit opt-in only — never auto-detected [#147add3](https://github.com/dinhanhthi/coding-friend/commit/147add3)

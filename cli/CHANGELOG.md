@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.7 (2026-05-21)
+
+- Add "Plugin without the CLI?" section near the top of `cli/README.md` for users who hit CLI install issues, with a common-issues troubleshooting list (EACCES, missing node, PATH, MCP registration) [#e603e9d](https://github.com/dinhanhthi/coding-friend/commit/e603e9d)
+- Align `cf-explorer` tier and Node version in CLI docs — `docs/cli-requirements.md` now reflects `cf-explorer` as OPTIONAL (with Agents counts updated to 11 NONE / 1 OPTIONAL); `cli/README.md` troubleshooting bullet updated from "Node.js 18+" to "Node.js 20+" with explicit engines reference so readers cannot end up on an unsupported runtime [#0dd45a5](https://github.com/dinhanhthi/coding-friend/commit/0dd45a5)
+
 ## v1.35.6 (2026-05-16)
 
 - Fix `cf clean` — when multiple directories are selected, each now gets its own date-range prompt instead of one shared cutoff applied to all; lets users keep different cleanup policies per directory type (e.g. plans older than 1 month, sessions older than 1 week) in a single invocation [#30d1519](https://github.com/dinhanhthi/coding-friend/commit/30d1519)
