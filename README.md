@@ -83,11 +83,11 @@ Coding Friend ships as **two independent npm packages**:
 - **Plugin** (`coding-friend`) — skills, agents, and hooks installed directly into Claude Code via the marketplace. Fully functional standalone.
 - **CLI** (`coding-friend-cli`, binary `cf`) — optional companion that adds the memory MCP server (fast indexed recall), the learn-host doc viewer, statusline rendering, and workspace setup utilities.
 
-| Tier | Meaning | Count today |
-| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| **NONE** | Works with zero CLI involvement. | Skills: 9 · Agents: 11 · Hooks: 7 |
+| Tier         | Meaning                                                                                                                            | Count today                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 9 · Agents: 11 · Hooks: 7 |
 | **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
-| **REQUIRED** | Cannot function without CLI. | 0 |
+| **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                 |
 
 **Plugin-only quick-start** — install via Claude Code marketplace, skip the CLI for now. You will lose: fast indexed memory search (falls back to `grep -r '<query>' docs/memory/`), the learn-host doc viewer, and the `cf statusline` renderer. Everything else works.
 
@@ -103,24 +103,24 @@ For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs
 
 ## Commands
 
-| Command                                         | Description                                                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------------- |
-| `/cf-ask [question]`                            | Quick Q&A about codebase                                                         |
-| `/cf-commit [hint]`                             | Analyze diff and create conventional commit                                      |
-| `/cf-design [mode]` [beta]                      | UI design: scan patterns, design or modify UI consistently                       |
-| `/cf-fix [bug]`                                 | Quick bug fix workflow                                                           |
-| `/cf-help [question]`                           | Answer questions about Coding Friend                                             |
-| `/cf-learn [topic]`                             | Extract learnings for human review                                               |
-| `/cf-optimize [target]`                         | Structured optimization with measurement                                         |
+| Command                                         | Description                                                                                                                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/cf-ask [question]`                            | Quick Q&A about codebase                                                                                                                                          |
+| `/cf-commit [hint]`                             | Analyze diff and create conventional commit                                                                                                                       |
+| `/cf-design [mode]` [beta]                      | UI design: scan patterns, design or modify UI consistently                                                                                                        |
+| `/cf-fix [bug]`                                 | Quick bug fix workflow                                                                                                                                            |
+| `/cf-help [question]`                           | Answer questions about Coding Friend                                                                                                                              |
+| `/cf-learn [topic]`                             | Extract learnings for human review                                                                                                                                |
+| `/cf-optimize [target]`                         | Structured optimization with measurement                                                                                                                          |
 | `/cf-plan [task]` \| `/cf-plan --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase) |
-| `/cf-remember [topic]`                          | Capture project knowledge                                                        |
-| `/cf-research [topic]`                          | In-depth research with web search                                                |
-| `/cf-review [target]`                           | Code review in forked subagent                                                   |
-| `/cf-scan [desc]`                               | Scan project and bootstrap memory                                                |
-| `/cf-session` [beta]                            | Save/load Claude Code sessions                                                   |
-| `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                              |
-| `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                      |
-| `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                     |
+| `/cf-remember [topic]`                          | Capture project knowledge                                                                                                                                         |
+| `/cf-research [topic]`                          | In-depth research with web search                                                                                                                                 |
+| `/cf-review [target]`                           | Code review in forked subagent                                                                                                                                    |
+| `/cf-scan [desc]`                               | Scan project and bootstrap memory                                                                                                                                 |
+| `/cf-session` [beta]                            | Save/load Claude Code sessions                                                                                                                                    |
+| `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                                                                                                               |
+| `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                                                                                                       |
+| `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                                                                                                      |
 
 Auto-invoked skills (no slash needed): `cf-tdd` (add `--auto` for autopilot review+fix+commit after implementation), `cf-sys-debug`, `cf-verification`.
 

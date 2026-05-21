@@ -221,7 +221,7 @@ When active, after implementation completes its own verification (existing tests
    - ⚠️ **Important** → must fix
    - 💡 **Suggestions** → log only, do NOT block
    - 📋 **Summary** → informational
-   If output is unparseable, STOP autopilot and surface to user.
+     If output is unparseable, STOP autopilot and surface to user.
 
 3. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
    - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced.
@@ -244,6 +244,7 @@ EOF
 5. **Report** — Print a brief summary of what was implemented, reviewed, fixed, and committed.
 
 **Stop conditions (only these end autopilot)**:
+
 - Implementation fails its own verification (typecheck/test failure that cannot be auto-fixed).
 - The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume the second review round).
 - Review round 2 still has Critical or Important findings.

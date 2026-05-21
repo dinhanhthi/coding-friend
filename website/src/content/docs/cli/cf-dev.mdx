@@ -15,8 +15,8 @@ cf dev on [path]    # Switch to local plugin source
 cf dev off          # Switch back to remote marketplace
 cf dev status       # Show current dev mode
 cf dev sync         # Sync local changes to cache (no version bump needed)
-cf dev restart      # Reinstall local dev plugin (off + on)
-cf dev update       # Update local dev plugin to latest version (off + on)
+cf dev restart      # Full reinstall via off + on cycle (recovery)
+cf dev update       # Refresh local plugin via uninstall + reinstall (fast)
 ```
 
 ## Subcommands
@@ -27,7 +27,7 @@ cf dev update       # Update local dev plugin to latest version (off + on)
 - `cf dev sync` - Sync local changes to cache without bumping the version. Useful for testing changes without reinstalling the plugin. Since Claude stores plugins in versioned cache directories, this command copies your local changes to the active cache directory.
   - ⚠️ When you bump the version, you have to use `cf dev update` to update the cached plugin to the latest version.
 - `cf dev restart` - Performs a full clean reinstall of the local dev plugin (off + on). Use this when the install state is broken or corrupted and you need a clean reinstall.
-- `cf dev update` - Update local dev plugin to latest version (off + on). Use this when you have new local changes (e.g. after a version bump) and want to update the cached plugin to the latest version.
+- `cf dev update` - Refresh the local dev plugin against the existing local marketplace (uninstall + reinstall, no remote round-trip). Use this when you have new local changes (e.g. after a version bump) and want to update the cached plugin. Falls back to a full restart cycle if you pass a different `path`, or if the local marketplace is no longer registered.
 
 ## Notes
 

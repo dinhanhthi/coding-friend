@@ -6,11 +6,11 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 ## TL;DR
 
-| Tier | Meaning | Count today |
-| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| NONE | Skill / agent / hook works with zero CLI involvement. | Skills: 9 · Agents: 11 · Hooks: 7 |
+| Tier     | Meaning                                                                                                                            | Count today                       |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 9 · Agents: 11 · Hooks: 7 |
 | OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
-| REQUIRED | Cannot function without CLI. | 0 |
+| REQUIRED | Cannot function without CLI.                                                                                                       | 0                                 |
 
 ---
 
@@ -25,65 +25,65 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 ## Per-Skill Table
 
-| Skill | Tier | Without CLI you lose... | Manual workaround |
-| --------------- | -------- | --------------------------------- | ------------------------------------------- |
-| cf-ask | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-commit | NONE | — | — |
-| cf-design | NONE | — | — |
-| cf-fix | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-help | NONE | — | — |
-| cf-learn | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-optimize | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-plan | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-remember | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-research | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review-in | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review-out | NONE | — | — |
-| cf-scan | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-session | NONE | — | — |
-| cf-ship | NONE | — | — |
-| cf-sys-debug | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-tdd | NONE | — | — |
-| cf-teach | NONE | — | — |
-| cf-verification | NONE | — | — |
-| cf-warm | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| Skill           | Tier     | Without CLI you lose...    | Manual workaround                |
+| --------------- | -------- | -------------------------- | -------------------------------- |
+| cf-ask          | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-commit       | NONE     | —                          | —                                |
+| cf-design       | NONE     | —                          | —                                |
+| cf-fix          | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-help         | NONE     | —                          | —                                |
+| cf-learn        | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-optimize     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-plan         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-remember     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-research     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review       | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review-in    | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-review-out   | NONE     | —                          | —                                |
+| cf-scan         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-session      | NONE     | —                          | —                                |
+| cf-ship         | NONE     | —                          | —                                |
+| cf-sys-debug    | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-tdd          | NONE     | —                          | —                                |
+| cf-teach        | NONE     | —                          | —                                |
+| cf-verification | NONE     | —                          | —                                |
+| cf-warm         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 
 ---
 
 ## Per-Agent Table
 
-| Agent | Tier |
-| -------------------- | ---- |
-| cf-explorer | OPTIONAL |
-| cf-implementer | NONE |
-| cf-planner | NONE |
-| cf-reviewer | NONE |
-| cf-reviewer-plan | NONE |
-| cf-reviewer-quality | NONE |
-| cf-reviewer-reducer | NONE |
-| cf-reviewer-rules | NONE |
-| cf-reviewer-security | NONE |
-| cf-reviewer-tests | NONE |
-| cf-writer | NONE |
-| cf-writer-deep | NONE |
+| Agent                | Tier     |
+| -------------------- | -------- |
+| cf-explorer          | OPTIONAL |
+| cf-implementer       | NONE     |
+| cf-planner           | NONE     |
+| cf-reviewer          | NONE     |
+| cf-reviewer-plan     | NONE     |
+| cf-reviewer-quality  | NONE     |
+| cf-reviewer-reducer  | NONE     |
+| cf-reviewer-rules    | NONE     |
+| cf-reviewer-security | NONE     |
+| cf-reviewer-tests    | NONE     |
+| cf-writer            | NONE     |
+| cf-writer-deep       | NONE     |
 
 ---
 
 ## Per-Hook Table
 
-| Hook | Tier | Behavior without CLI |
-| ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| agent-tracker.sh | NONE | Tracks agent invocations via file-based logging — no CLI needed. |
-| auto-approve.cjs | NONE | Approval filter — no CLI dependency. |
-| memory-capture.sh | OPTIONAL | Fires on PreCompact and attempts `memory_store` MCP call. If MCP is unavailable, the step is skipped silently — no failure, episode simply not captured. |
-| privacy-block.sh | NONE | Content safety filter — no CLI dependency. |
-| rules-reminder.sh | NONE | Loads CLAUDE.md rules reminder via file read — no CLI needed. |
-| scout-block.cjs | NONE | Block filter — no CLI dependency. |
-| session-init.sh | OPTIONAL | Sources `cf-paths.sh` which references env vars set by `cf init`. Reads `~/.coding-friend/config.json` if present. Fully functional when config file is absent — falls back to defaults. |
-| session-log.sh | NONE | Logs session turns to `/tmp` — file-based only, no CLI needed. |
-| statusline.sh | OPTIONAL | Reads `~/.coding-friend/config.json` for component visibility settings (created by `cf config`). When config is absent, all components render with defaults — fully functional. |
-| task-tracker.sh | NONE | Tracks task invocations via file-based logging — no CLI needed. |
+| Hook              | Tier     | Behavior without CLI                                                                                                                                                                     |
+| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| agent-tracker.sh  | NONE     | Tracks agent invocations via file-based logging — no CLI needed.                                                                                                                         |
+| auto-approve.cjs  | NONE     | Approval filter — no CLI dependency.                                                                                                                                                     |
+| memory-capture.sh | OPTIONAL | Fires on PreCompact and attempts `memory_store` MCP call. If MCP is unavailable, the step is skipped silently — no failure, episode simply not captured.                                 |
+| privacy-block.sh  | NONE     | Content safety filter — no CLI dependency.                                                                                                                                               |
+| rules-reminder.sh | NONE     | Loads CLAUDE.md rules reminder via file read — no CLI needed.                                                                                                                            |
+| scout-block.cjs   | NONE     | Block filter — no CLI dependency.                                                                                                                                                        |
+| session-init.sh   | OPTIONAL | Sources `cf-paths.sh` which references env vars set by `cf init`. Reads `~/.coding-friend/config.json` if present. Fully functional when config file is absent — falls back to defaults. |
+| session-log.sh    | NONE     | Logs session turns to `/tmp` — file-based only, no CLI needed.                                                                                                                           |
+| statusline.sh     | OPTIONAL | Reads `~/.coding-friend/config.json` for component visibility settings (created by `cf config`). When config is absent, all components render with defaults — fully functional.          |
+| task-tracker.sh   | NONE     | Tracks task invocations via file-based logging — no CLI needed.                                                                                                                          |
 
 ---
 
@@ -104,6 +104,7 @@ grep -r "<query>" docs/memory/
 name: ...
 type: feature|convention|decision|bug|infrastructure
 ---
+
 # Title
 
 Content goes here.

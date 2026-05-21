@@ -19,13 +19,13 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-| Mode         | Flag     | Steps skipped/added                                                                                                                                                     | When to use                                          |
-| ------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| **Normal**   | (none)   | Full workflow                                                                                                                                                            | Default — most tasks                                 |
-| **Fast**     | `--fast` (alias `--quick`) | Skip discovery, inline exploration, skip planner agent                                                                                                                  | Task is clear, single-module, additive               |
-| **Hard**     | `--hard` | Extra discovery round, deeper exploration, rollback planning                                                                                                            | Breaking changes, migrations, multi-module refactors |
-| **Autopilot** | `--auto` | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode. | Hands-off end-to-end execution after plan approval   |
-| **Inline**   | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`. | Small one-off task where the user wants planning thought but no on-disk artifact |
+| Mode          | Flag                           | Steps skipped/added                                                                                                                                                                                        | When to use                                                                      |
+| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Normal**    | (none)                         | Full workflow                                                                                                                                                                                              | Default — most tasks                                                             |
+| **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent                                                                                                                                                     | Task is clear, single-module, additive                                           |
+| **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                               | Breaking changes, migrations, multi-module refactors                             |
+| **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode. | Hands-off end-to-end execution after plan approval                               |
+| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.              | Small one-off task where the user wants planning thought but no on-disk artifact |
 
 Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`) are normalized to their canonical form.
 
@@ -41,8 +41,8 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and jump immediately to the **Resume Protocol** in Step 7. Skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.)
 2. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
-2a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
-2b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked via TaskCreate.`
+   2a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
+   2b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked via TaskCreate.`
 3. **Auto-detect** — scan the task for signals (need 2+ to trigger):
    - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
    - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
@@ -248,7 +248,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
    - ⚠️ **Important** → must fix
    - 💡 **Suggestions** → log only, do NOT block
    - 📋 **Summary** → informational
-   If you cannot reliably parse the review output (unexpected format), STOP autopilot and surface to user — do NOT default to "looks clean".
+     If you cannot reliably parse the review output (unexpected format), STOP autopilot and surface to user — do NOT default to "looks clean".
 
 4. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
    - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced by the findings.
@@ -271,6 +271,7 @@ EOF
 6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" added to Big plan phase sync below. Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
 
 **Stop conditions (only these end autopilot)**:
+
 - Task fails after its 1 retry.
 - Review round 2 still has Critical or Important findings.
 - Review output cannot be parsed.
@@ -292,7 +293,7 @@ EOF
 
 ```markdown
 ---
-auto: false  # set true when created with --auto
+auto: false # set true when created with --auto
 ---
 
 # Plan: <title>
@@ -398,7 +399,7 @@ After implementation: `/cf-review` → `/cf-commit`
 
 ```markdown
 ---
-auto: false  # set true when created with --auto
+auto: false # set true when created with --auto
 ---
 
 # Plan: <title>
