@@ -404,7 +404,9 @@ dev
 
 dev
   .command("update")
-  .description("Update local dev plugin to latest version (off + on)")
+  .description(
+    "Refresh local dev plugin via uninstall + reinstall (fast, no remote round-trip)",
+  )
   .argument(
     "[path]",
     "path to local coding-friend repo (default: saved path or cwd)",
