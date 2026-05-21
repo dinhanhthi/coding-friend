@@ -15,7 +15,7 @@ import {
   knownMarketplacesPath,
   pluginCachePath,
 } from "../lib/paths.js";
-import { run, commandExists } from "../lib/exec.js";
+import { run, runWithStderr, commandExists } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import {
   isPluginInstalled,
@@ -62,9 +62,15 @@ function ensureClaude(): boolean {
 
 function runClaude(args: string[], label: string): boolean {
   log.step(label);
-  const result = run("claude", args);
-  if (result === null) {
+  const result = runWithStderr("claude", args);
+  if (result.exitCode !== 0) {
     log.error(`Failed: claude ${args.join(" ")}`);
+    const tail = result.stderr
+      .split("\n")
+      .filter((l) => l.trim())
+      .slice(-5)
+      .join("\n");
+    if (tail) log.dim(tail);
     return false;
   }
   return true;
@@ -200,14 +206,27 @@ export async function devOffCommand(): Promise<void> {
     );
   }
 
+  // Local plugin + marketplace are now gone — dev mode is effectively OFF.
+  // Clear state before attempting remote steps so a remote failure cannot
+  // leave dev-state.json out of sync with reality.
+  try {
+    unlinkSync(devStatePath());
+  } catch {
+    // ignore
+  }
+
   // Step 3: Add remote marketplace
-  if (
-    !runClaude(
-      ["plugin", "marketplace", "add", REMOTE_URL],
-      "Adding remote marketplace...",
-    )
-  ) {
-    log.error("Failed to add remote marketplace.");
+  const remoteAdded = runClaude(
+    ["plugin", "marketplace", "add", REMOTE_URL],
+    "Adding remote marketplace...",
+  );
+  if (!remoteAdded) {
+    log.error(
+      "Failed to add remote marketplace. Dev mode is OFF but remote is not configured.",
+    );
+    log.dim(
+      `Run \`claude plugin marketplace add ${REMOTE_URL}\` manually, then \`claude plugin install ${PLUGIN_ID}\`.`,
+    );
     return;
   }
 
@@ -222,13 +241,6 @@ export async function devOffCommand(): Promise<void> {
       log.error("Failed to install remote plugin.");
       return;
     }
-  }
-
-  // Step 5: Clean up state file
-  try {
-    unlinkSync(devStatePath());
-  } catch {
-    // ignore
   }
 
   console.log();
@@ -393,8 +405,80 @@ async function devReinstall(
 export const devRestartCommand = (path?: string) =>
   devReinstall(path, "Restarting dev mode");
 
-export const devUpdateCommand = (path?: string) =>
-  devReinstall(path, "Updating dev plugin");
+export async function devUpdateCommand(path?: string): Promise<void> {
+  const state = getDevState();
+  if (!state) {
+    log.error("Dev mode is OFF. Run `cf dev on <path>` first.");
+    return;
+  }
+
+  if (!ensureClaude()) return;
+
+  // If caller passed a different path, fall back to full off→on cycle so the
+  // local marketplace gets re-registered at the new location.
+  if (path && resolve(path) !== state.localPath) {
+    return devReinstall(path, "Updating dev plugin (path changed)");
+  }
+
+  // If the marketplace was removed externally (e.g. by `claude plugin
+  // marketplace remove`), the fast path's install step would fail with a
+  // misleading "Failed to reinstall" error. Fall back to a full cycle so the
+  // marketplace gets re-registered.
+  if (!isMarketplaceRegistered()) {
+    return devReinstall(
+      state.localPath,
+      "Updating dev plugin (marketplace missing)",
+    );
+  }
+
+  const localPath = state.localPath;
+  const version = getLocalPluginVersion(localPath);
+  const versionLabel = version ? ` (v${version})` : "";
+
+  console.log();
+  printBanner(`Updating dev plugin${versionLabel}`, { color: chalk.cyan });
+  console.log();
+  log.info(`Local path: ${chalk.cyan(localPath)}`);
+
+  if (isPluginInstalled()) {
+    if (
+      !runClaude(
+        ["plugin", "uninstall", PLUGIN_ID],
+        "Uninstalling local plugin...",
+      )
+    ) {
+      run("claude", ["plugin", "uninstall", PLUGIN_NAME]);
+    }
+  }
+
+  if (
+    !runClaude(
+      ["plugin", "install", PLUGIN_ID],
+      "Reinstalling plugin from local source...",
+    )
+  ) {
+    if (!runClaude(["plugin", "install", PLUGIN_NAME], "Retrying install...")) {
+      log.error(
+        "Failed to reinstall local plugin. Run `cf dev restart` to recover.",
+      );
+      return;
+    }
+  }
+
+  writeJson(devStatePath(), {
+    localPath,
+    savedAt: new Date().toISOString(),
+  } as unknown as Record<string, unknown>);
+
+  ensureStatusline();
+  ensureShellCompletion({ silent: true });
+
+  console.log();
+  log.success(
+    `Dev plugin updated${versionLabel} from ${chalk.cyan(localPath)}.`,
+  );
+  log.dim("Restart Claude Code to see changes.");
+}
 
 export async function devStatusCommand(): Promise<void> {
   const state = getDevState();
