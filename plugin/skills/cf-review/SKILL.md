@@ -8,7 +8,7 @@ description: >
   commits, or branches.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-04-30
+updated: 2026-05-28
 ---
 
 # /cf-review
@@ -47,11 +47,32 @@ If output is not empty, integrate the returned sections into this workflow:
 - If `$ARGUMENTS` is a natural language description (e.g., "the auth logic changes"), review all uncommitted changes but **focus the review** on the described area — filter findings to only report issues relevant to that description
 - If `$ARGUMENTS` contains `--deep` or `--quick`, use that mode (override auto-detection)
 
+**Codex dual-review flag:**
+
+- If `$ARGUMENTS` contains `--with-codex`, set `codex=true` and strip the flag from `$ARGUMENTS` before any other parsing.
+- Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in without passing the flag). If absent or `false`, `codex=false`.
+- When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). Codex reviews the **uncommitted working tree** (`codex review --uncommitted`).
+- **Target compatibility:** Codex's `--uncommitted` scope only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews uncommitted changes). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated uncommitted tree. In that case do NOT run Codex — print:
+  > ⚠ `--with-codex` only applies to the default uncommitted-changes review; Codex does not support the target `<target>`. Running Claude-only review.
+  Set `codex=false` and skip Steps 2.5/6.5.
+
 ### Step 2: Gather the diff
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
 ```
+
+### Step 2.5: Spawn Codex review in the background (only when `codex=true`)
+
+Skip this step entirely when `codex=false`.
+
+Resolve the docs root and a label `YYYY-MM-DD-review`. Use `CF_DOCS_ROOT` (the absolute docs base dir from the session bootstrap context) so the result file lands in the project docs folder even when Claude is launched from a subdirectory — do NOT use the bare `docsDir` name with a cwd-relative path. Fallback: if `CF_DOCS_ROOT` is unset, use `$MAIN_REPO_ROOT/<docsDir>`. Spawn the Codex review as a **background Bash process** (`run_in_background: true`) so Claude's own review (Steps 3–6) runs concurrently:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
+```
+
+**Do NOT wait for or inspect the Codex result here.** Immediately proceed to Step 3 and run Claude's own review (Steps 3–6) while Codex runs in the background — that concurrency is the whole point. The harness automatically notifies Claude when the background process exits (do NOT poll, sleep, or check `/tasks` — per the Bash tool contract: "you'll be notified when it finishes"). The Codex exit status and result are checked later, in Step 6.5.
 
 ### Step 3: Assess change size
 
@@ -114,9 +135,46 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-reviewer"`. Pass t
 
 Wait for the agent to return its report.
 
+### Step 6.5: Collect & normalize the Codex review (only when `codex=true`)
+
+Skip this step entirely when `codex=false`.
+
+1. **Wait for the Codex background process to finish.** By the time the cf-reviewer agent (Step 6) returns, the harness has likely already delivered the Codex completion notification. If it has not yet arrived, wait for it — do NOT poll or sleep. Only read the result file after the process has exited.
+2. **Check the Codex exit status** (from the background process — its `CF_CODEX=...` stderr line and exit code):
+   - `CF_CODEX=unavailable` (exit 127) → Codex not installed. Print:
+     > ⚠ Codex unavailable (not on PATH) — proceeding with Claude-only review.
+     Set `codex=false` and skip the rest of this step (Step 7 will use the cf-reviewer report as-is).
+   - `CF_CODEX=error` (non-zero exit) → Codex failed (e.g. not logged in). Print:
+     > ⚠ Codex review failed (<reason from stderr>) — proceeding with Claude-only review.
+     Set `codex=false` and skip the rest of this step.
+   - `CF_CODEX=ok <file>` (exit 0) → the review was written to the result file; continue.
+3. Normalize the raw Codex result into the standard 4-section format:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
+   ```
+
+   (Use the same `${CF_DOCS_ROOT}`-based path the result was written to in Step 2.5.) This emits a `## 🔍 Codex Review` block with findings tagged `**[Codex]**` and severities mapped (`[P2]`→⚠️, `[P3]`→💡, anything else incl. `[P1]`/`[P0]`→🚨 so a top severity never fails silent). It never drops content — unparseable output is folded into the Summary section.
+
+Never block the workflow on Codex — any failure degrades gracefully to a Claude-only review.
+
 ### Step 7: Collect the report
 
-The result of Step 6 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 10.
+**When `codex=false`:** the result of Step 6 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 10.
+
+**When `codex=true`:** merge the two reviews through the reducer so findings are deduplicated and severity-ranked across both sources. Dispatch the **cf-reviewer-reducer** agent (Agent tool, `subagent_type: "coding-friend:cf-reviewer-reducer"`) with both inputs concatenated:
+
+> Merge these two review reports into one unified, deduplicated, severity-ranked report.
+>
+> **Source 1 — Claude multi-agent review:**
+> [the full report from Step 6]
+>
+> **Source 2 — Codex review:**
+> [the normalized `## 🔍 Codex Review` block from Step 6.5]
+>
+> Preserve the `[Codex]` provenance tag on Codex-originated findings. Where Claude and Codex flag the same file:line for the same issue, merge into one finding (keep highest severity) and note both sources agreed (raises confidence). Output the standard 🚨/⚠️/💡/📋 format.
+
+Use the reducer's merged output as the report in Step 10.
 
 ### Step 8: Mark review complete and display status
 
@@ -141,7 +199,7 @@ Display the full report followed by the status banner in a **single message**.
 
 **IMPORTANT**: The structured report from step 8 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 
-Display the cf-reviewer's report first, then append the appropriate banner:
+Display the cf-reviewer's report first, then append the appropriate banner. When `codex=true`, add a `· Reviewed by: Claude + Codex` suffix to the `Mode:` line of whichever banner is shown (when `codex=false`, omit the suffix).
 
 **If NO critical issues were found:**
 

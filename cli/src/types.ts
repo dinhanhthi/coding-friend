@@ -64,6 +64,10 @@ export interface MemoryConfig {
   autoStart?: boolean;
 }
 
+export interface ReviewConfig {
+  withCodex?: boolean;
+}
+
 export interface CodingFriendConfig {
   language?: string;
   docsDir?: string;
@@ -71,6 +75,7 @@ export interface CodingFriendConfig {
   learn?: LearnConfig;
   statusline?: StatuslineConfig;
   memory?: MemoryConfig;
+  review?: ReviewConfig;
   autoApprove?: boolean;
   autoApproveIgnore?: string[];
   autoApproveAllowExtra?: string[];

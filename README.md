@@ -24,6 +24,7 @@
 - Quick Q&A about codebase with memory (`/cf-ask`)
 - Ensures verification before claiming done
 - Smart conventional commits and code review
+- ✨ Automated Codex dual review (`/cf-review --with-codex`) — runs Claude's review and a Codex review in parallel, merges both into one report, no copy-paste
 - ✨ Cross-agent code review (`/cf-review-out` + `/cf-review-in`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
 - Captures project knowledge across sessions (`/cf-remember`)
 - ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
@@ -115,7 +116,7 @@ For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs
 | `/cf-plan [task]` \| `/cf-plan --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase) |
 | `/cf-remember [topic]`                          | Capture project knowledge                                                                                                                                         |
 | `/cf-research [topic]`                          | In-depth research with web search                                                                                                                                 |
-| `/cf-review [target]`                           | Code review in forked subagent                                                                                                                                    |
+| `/cf-review [target]`                           | Code review in forked subagent; `--with-codex` adds a parallel Codex review merged into one report                                                                 |
 | `/cf-scan [desc]`                               | Scan project and bootstrap memory                                                                                                                                 |
 | `/cf-session` [beta]                            | Save/load Claude Code sessions                                                                                                                                    |
 | `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                                                                                                               |

@@ -1158,6 +1158,19 @@ function CrossAgentContent() {
         .
       </p>
 
+      <p className="text-base leading-relaxed text-slate-400">
+        Using Codex? Skip the copy-paste entirely.{" "}
+        <Link
+          className="text-violet-400 hover:underline hover:underline-offset-4"
+          href="/docs/skills/cf-review/"
+        >
+          /cf-review --with-codex
+        </Link>{" "}
+        runs Claude&apos;s review and a Codex review in parallel, then merges
+        both into one report — fully automated. The prompt-based flow below stays
+        for any other agent (Gemini, ChatGPT) or a human reviewer.
+      </p>
+
       {/* Flow diagram */}
       <div className="mx-auto flex w-full max-w-3xl items-center justify-center gap-3 sm:gap-4">
         {[

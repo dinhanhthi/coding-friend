@@ -73,7 +73,7 @@ function writeToScope(
  * Write a nested sub-field to the chosen scope, preserving other fields in the section.
  */
 function writeNestedField(
-  section: "learn" | "memory",
+  section: "learn" | "memory" | "review",
   scope: "global" | "local",
   field: string,
   value: unknown,
@@ -546,6 +546,33 @@ async function editTdd(
   writeToScope(scope, { tdd: value });
 }
 
+// ─── Review (Codex dual-review) ──────────────────────────────────────
+
+async function editReviewWithCodex(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = (
+    getMergedValue("review", globalCfg, localCfg) as
+      | { withCodex?: boolean }
+      | undefined
+  )?.withCodex;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+  log.dim("Note: requires the Codex CLI installed and logged in.");
+
+  const value = await confirm({
+    message:
+      "Run a Codex second-opinion review alongside Claude's by default? (every /cf-review, including auto-invoked ones)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeNestedField("review", scope, "withCodex", value);
+}
+
 // ─── Auto-Approve ────────────────────────────────────────────────────
 
 async function editAutoApprove(
@@ -873,6 +900,13 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const reviewScope = getScopeLabel("review", globalCfg, localCfg);
+    const withCodexVal = (
+      getMergedValue("review", globalCfg, localCfg) as
+        | { withCodex?: boolean }
+        | undefined
+    )?.withCodex;
+
     const statuslineStatus = isStatuslineConfigured()
       ? chalk.green("configured")
       : chalk.yellow("not configured");
@@ -933,6 +967,12 @@ export async function configCommand(): Promise<void> {
               "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
           },
           {
+            name: `Codex dual-review ${formatScopeLabel(reviewScope)}${withCodexVal !== undefined ? ` (${withCodexVal})` : ""}`,
+            value: "review",
+            description:
+              "  Run a Codex second-opinion review alongside Claude's on every /cf-review",
+          },
+          {
             name: `Statusline (${statuslineStatus})`,
             value: "statusline",
             description:
@@ -983,6 +1023,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);
+        break;
+      case "review":
+        await editReviewWithCodex(globalCfg, localCfg);
         break;
       case "statusline":
         await editStatusline();

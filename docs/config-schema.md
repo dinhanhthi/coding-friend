@@ -87,6 +87,18 @@ coding-friend uses a layered config system:
     // Default: false
     "readmeIndex": false,
   },
+
+  // --- Review settings ---
+  "review": {
+    // Run a Codex second-opinion review alongside Claude's review by default.
+    // When true, every /cf-review (including auto-invoked from /cf-plan, /cf-fix,
+    // /cf-optimize) runs `codex review --uncommitted` in parallel and merges both
+    // reviews into one report. Equivalent to always passing `--with-codex`.
+    // Requires the Codex CLI installed and logged in; degrades gracefully to a
+    // Claude-only review with a warning if Codex is unavailable.
+    // Default: false
+    "withCodex": false,
+  },
 }
 ```
 

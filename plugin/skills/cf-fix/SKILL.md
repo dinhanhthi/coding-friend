@@ -8,7 +8,7 @@ description: >
   "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
   Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
 created: 2026-02-17
-updated: 2026-05-03
+updated: 2026-05-28
 ---
 
 # /cf-fix
@@ -285,6 +285,8 @@ Show the user a 2-line summary:
 ### Step 9: Auto-Review
 
 Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+
+> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
 
 ### Step 10: Performance Suggestion (conditional)
 
