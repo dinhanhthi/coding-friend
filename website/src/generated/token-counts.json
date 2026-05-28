@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-20T23:30:18.707Z",
+  "generatedAt": "2026-05-28T11:45:56.880Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -45,18 +45,19 @@
       "state": "beta"
     },
     "cf-fix": {
-      "tokens": 3727,
+      "tokens": 3778,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-05-03"
+      "updated": "2026-05-28",
+      "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 2990,
+      "tokens": 3047,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-05-21",
+      "updated": "2026-05-28",
       "temporal": "updated"
     },
     "cf-learn": {
@@ -67,18 +68,19 @@
       "updated": "2026-05-03"
     },
     "cf-optimize": {
-      "tokens": 2487,
-      "tier": "medium",
+      "tokens": 2538,
+      "tier": "high",
       "type": "slash",
       "created": "2026-02-20",
-      "updated": "2026-05-02"
+      "updated": "2026-05-28",
+      "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 9756,
+      "tokens": 9801,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-05-21",
+      "updated": "2026-05-28",
       "temporal": "updated"
     },
     "cf-remember": {
@@ -96,11 +98,12 @@
       "updated": "2026-04-24"
     },
     "cf-review": {
-      "tokens": 1865,
-      "tier": "medium",
+      "tokens": 3385,
+      "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-04-30"
+      "updated": "2026-05-28",
+      "temporal": "updated"
     },
     "cf-review-in": {
       "tokens": 2639,
@@ -110,11 +113,12 @@
       "updated": "2026-05-02"
     },
     "cf-review-out": {
-      "tokens": 1220,
+      "tokens": 1343,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-23",
-      "updated": "2026-04-24"
+      "updated": "2026-05-28",
+      "temporal": "updated"
     },
     "cf-scan": {
       "tokens": 3558,
@@ -146,7 +150,7 @@
       "updated": "2026-05-03"
     },
     "cf-tdd": {
-      "tokens": 3289,
+      "tokens": 3290,
       "tier": "high",
       "type": "auto",
       "created": "2026-02-17",

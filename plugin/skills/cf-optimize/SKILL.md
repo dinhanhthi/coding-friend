@@ -11,7 +11,7 @@ description: >
 user-invocable: true
 argument-hint: "[target to optimize]"
 created: 2026-02-20
-updated: 2026-05-02
+updated: 2026-05-28
 ---
 
 # /cf-optimize
@@ -169,6 +169,8 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 ### Step 10: Auto-Review
 
 Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+
+> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
 
 ## Completion Protocol
 

@@ -64,6 +64,9 @@ Edit interactively with `cf config`, or manually edit the JSON files.
     },
     "autoCapture": false,
     "autoStart": false
+  },
+  "review": {
+    "withCodex": false
   }
 }
 ```
@@ -251,6 +254,18 @@ Settings for the embedding model used in Tier 1 semantic search. See [Embedding 
 - **Type**: `boolean`
 - **Default**: `false`
 - Auto-start the daemon when the MCP server connects
+
+### `review`
+
+Settings for the [`/cf-review`](/docs/skills/cf-review/) skill.
+
+#### `review.withCodex`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Run a [Codex](https://developers.openai.com/codex/cli/) second-opinion review alongside Claude's review by default — equivalent to always passing `--with-codex`
+- When `true`, every `/cf-review` (including the auto-invoked ones from `/cf-plan`, `/cf-fix`, `/cf-optimize`) runs `codex review --uncommitted` in parallel and merges both reviews into one report
+- Requires the Codex CLI installed and logged in; degrades gracefully to a Claude-only review with a warning if Codex is unavailable
 
 ## Layered Config
 

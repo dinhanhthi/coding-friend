@@ -233,4 +233,26 @@ describe("loadConfig validation", () => {
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("codex"));
     expect((config as Record<string, unknown>)["codex"]).toBeUndefined();
   });
+
+  it("accepts review.withCodex as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { withCodex: true } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.withCodex).toBe(true);
+  });
+
+  it("warns and strips review.withCodex when it is the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { withCodex: "yes" } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("withCodex"),
+    );
+    expect(config.review?.withCodex).toBeUndefined();
+  });
 });

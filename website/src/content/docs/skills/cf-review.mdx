@@ -25,6 +25,11 @@ Different behavior is expected based on the value of `[target]`:
 - **Commit range** — reviews a range of commits
 - **Natural language description** — reviews all uncommitted changes, focused on the described area
 
+### Flags
+
+- `--deep` / `--quick` — force a review depth instead of auto-detecting
+- `--with-codex` — run a [Codex](https://developers.openai.com/codex/cli/) second-opinion review in parallel with Claude's, then merge both into one report (see [Dual Review with Codex](#dual-review-with-codex))
+
 ## Examples
 
 ```bash
@@ -56,6 +61,11 @@ Different behavior is expected based on the value of `[target]`:
 # Force a deep or quick review
 /cf-review src/auth/ --deep
 /cf-review README.md --quick
+```
+
+```bash
+# Review with Claude AND Codex, merged into one report
+/cf-review --with-codex
 ```
 
 ## Workflow
@@ -111,6 +121,23 @@ Findings from all 5 layers are collected and organized into 4 severity categorie
 ### 📋 Summary
 Auth module is functional but has one critical SQL injection vulnerability in the query builder.
 ```
+
+## Dual Review with Codex
+
+If you have the [Codex CLI](https://developers.openai.com/codex/cli/) installed and logged in, `/cf-review --with-codex` gets you a second independent opinion automatically — no copy-paste round-trip.
+
+How it works:
+
+1. Codex review (`codex review --uncommitted`) is spawned as a **background process**, so it runs concurrently with Claude's own multi-agent review — not one after the other.
+2. Claude runs its normal 5-layer review in parallel.
+3. When Codex finishes, its findings are normalized (`[P1]`→🚨 Critical, `[P2]`→⚠️ Important, `[P3]`→💡 Suggestion) and tagged `[Codex]`.
+4. Both reviews are merged through the reducer — duplicate findings (same file:line) are collapsed, and agreement between Claude and Codex raises confidence.
+
+Enable it by default for every review (including the auto-triggered ones from `/cf-plan`, `/cf-fix`, `/cf-optimize`) by setting `review.withCodex: true` in [`.coding-friend/config.json`](/docs/configuration/config-json/).
+
+<Callout type="info" title="Graceful fallback">
+  If Codex is not installed or not logged in, `/cf-review --with-codex` prints a warning and continues with a Claude-only review — it never blocks. This is the automated alternative to the manual [`/cf-review-out`](/docs/skills/cf-review-out/) + [`/cf-review-in`](/docs/skills/cf-review-in/) flow, which remains the path for other external AIs (Gemini, ChatGPT) or human reviewers.
+</Callout>
 
 ## Auto-Triggered
 

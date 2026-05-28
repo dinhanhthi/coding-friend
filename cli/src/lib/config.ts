@@ -75,6 +75,10 @@ const MemoryConfigSchema = z.object({
   autoStart: z.boolean().optional(),
 });
 
+const ReviewConfigSchema = z.strictObject({
+  withCodex: z.boolean().optional(),
+});
+
 const ConfigSchema = z.strictObject({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -82,6 +86,7 @@ const ConfigSchema = z.strictObject({
   learn: LearnConfigSchema.optional(),
   statusline: StatuslineConfigSchema.optional(),
   memory: MemoryConfigSchema.optional(),
+  review: ReviewConfigSchema.optional(),
   autoApprove: z.boolean().optional(),
   autoApproveIgnore: z.array(z.string()).optional(),
   autoApproveAllowExtra: z.array(z.string()).optional(),
@@ -95,6 +100,7 @@ const KNOWN_KEYS = [
   "learn",
   "statusline",
   "memory",
+  "review",
   "autoApprove",
   "autoApproveIgnore",
   "autoApproveAllowExtra",
