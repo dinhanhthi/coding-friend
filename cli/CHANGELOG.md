@@ -5,6 +5,12 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.35.8 (2026-05-28)
+
+- Add `review.withCodex` config key — typed in `CodingFriendConfig`, Zod-validated (unknown/wrong-type values warn and fall back to default), and editable via a new "Codex dual-review" toggle in `cf config`. Enables the Codex second-opinion review (`/cf-review --with-codex`) by default for every review, including auto-invoked ones [#ba32860](https://github.com/dinhanhthi/coding-friend/commit/ba32860)
+- Improve `cf dev` reliability and error visibility — clearer surfacing of failures during dev mode runs [#fe98f81](https://github.com/dinhanhthi/coding-friend/commit/fe98f81)
+- Update `cf dev update` help text to reflect the fast path [#e7999dd](https://github.com/dinhanhthi/coding-friend/commit/e7999dd)
+
 ## v1.35.7 (2026-05-21)
 
 - Add "Plugin without the CLI?" section near the top of `cli/README.md` for users who hit CLI install issues, with a common-issues troubleshooting list (EACCES, missing node, PATH, MCP registration) [#e603e9d](https://github.com/dinhanhthi/coding-friend/commit/e603e9d)

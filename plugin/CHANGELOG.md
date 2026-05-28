@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.34.2 (2026-05-28)
+
+- Add `--with-codex` flag to `/cf-review` — runs a Codex second-opinion review (`codex review --uncommitted`) as a background process concurrently with Claude's own multi-agent review, then merges both through the reducer (Codex `[P2]`→⚠️, `[P3]`→💡, anything else incl. `[P1]`/`[P0]`→🚨 so a top severity never fails silent). New scripts `run-codex-review.sh` (invoke + graceful fallback when Codex is unavailable on PATH or errors) and `normalize-codex-review.sh` (never drops unparseable output — folds it into Summary). Config-gated by `review.withCodex` so auto-invoked reviews from `/cf-plan`, `/cf-fix`, `/cf-optimize` can opt in without passing the flag; falls back to a Claude-only review with a warning if Codex is unavailable [#ba32860](https://github.com/dinhanhthi/coding-friend/commit/ba32860)
+
 ## v0.34.1 (2026-05-21)
 
 - Add `--inline` (alias `--no-file`) flag to `/cf-plan` — skips the on-disk plan file; the plan is presented in chat and progress is tracked via `TaskCreate`. Incompatible with `--auto` and `--resume` (both rely on a persistent plan file). Also adds `--quick` as a friendlier alias for `--fast`; both flags are normalized to their canonical form in Step 0.5 [#a200ee7](https://github.com/dinhanhthi/coding-friend/commit/a200ee7)
