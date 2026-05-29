@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-05-28
+updated: 2026-05-29
 ---
 
 # /cf-plan
@@ -27,7 +27,7 @@ Create an implementation plan for: **$ARGUMENTS**
 | **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode. | Hands-off end-to-end execution after plan approval                               |
 | **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.              | Small one-off task where the user wants planning thought but no on-disk artifact |
 
-Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`) are normalized to their canonical form.
+Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`) are normalized to their canonical form.
 
 ## Workflow
 
