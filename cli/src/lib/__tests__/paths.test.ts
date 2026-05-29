@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { homedir } from "os";
 import { resolve, join } from "path";
 import {
@@ -6,12 +6,21 @@ import {
   marketplaceCachePath,
   marketplaceClonePath,
   globalConfigDir,
+  globalConfigPath,
   memoryDepsDir,
   encodeProjectPath,
   claudeProjectsDir,
   claudeSessionDir,
   claudeProjectSettingsPath,
+  claudeSettingsPath,
+  installedPluginsPath,
+  pluginCachePath,
+  knownMarketplacesPath,
 } from "../paths.js";
+
+// Ensure tests are not affected by CLAUDE_CONFIG_DIR set in the caller's shell
+beforeEach(() => vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string));
+afterEach(() => vi.unstubAllEnvs());
 
 describe("resolvePath", () => {
   it("returns absolute paths unchanged", () => {
@@ -138,6 +147,97 @@ describe("claudeProjectSettingsPath", () => {
   it("returns <cwd>/.claude/settings.json", () => {
     expect(claudeProjectSettingsPath()).toBe(
       resolve(process.cwd(), ".claude", "settings.json"),
+    );
+  });
+});
+
+describe("CLAUDE_CONFIG_DIR", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("unset: claudeSettingsPath uses ~/.claude (regression)", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string);
+    expect(claudeSettingsPath()).toBe(
+      join(homedir(), ".claude", "settings.json"),
+    );
+  });
+
+  it("absolute: claudeSettingsPath uses CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(claudeSettingsPath()).toBe(join("/tmp/cfg", "settings.json"));
+  });
+
+  it("tilde: claudeSettingsPath expands ~ in CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "~/cfg");
+    expect(claudeSettingsPath()).toBe(
+      join(homedir(), "cfg", "settings.json"),
+    );
+  });
+
+  it("whitespace: claudeSettingsPath trims CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "  /tmp/cfg  ");
+    expect(claudeSettingsPath()).toBe(join("/tmp/cfg", "settings.json"));
+  });
+
+  it("relative: claudeSettingsPath uses value verbatim (not resolved against cwd)", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "relcfg");
+    expect(claudeSettingsPath()).toBe(join("relcfg", "settings.json"));
+  });
+
+  it("set: installedPluginsPath relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(installedPluginsPath()).toBe(
+      join("/tmp/cfg", "plugins", "installed_plugins.json"),
+    );
+  });
+
+  it("set: pluginCachePath relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(pluginCachePath()).toBe(
+      join(
+        "/tmp/cfg",
+        "plugins",
+        "cache",
+        "coding-friend-marketplace",
+        "coding-friend",
+      ),
+    );
+  });
+
+  it("set: knownMarketplacesPath relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(knownMarketplacesPath()).toBe(
+      join("/tmp/cfg", "plugins", "known_marketplaces.json"),
+    );
+  });
+
+  it("set: marketplaceCachePath relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(marketplaceCachePath()).toBe(
+      join("/tmp/cfg", "plugins", "cache", "coding-friend-marketplace"),
+    );
+  });
+
+  it("set: marketplaceClonePath relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(marketplaceClonePath()).toBe(
+      join(
+        "/tmp/cfg",
+        "plugins",
+        "marketplaces",
+        "coding-friend-marketplace",
+      ),
+    );
+  });
+
+  it("set: claudeProjectsDir relocates under CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(claudeProjectsDir()).toBe(join("/tmp/cfg", "projects"));
+  });
+
+  it("set: globalConfigPath is NOT affected by CLAUDE_CONFIG_DIR", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
+    expect(globalConfigPath()).toBe(
+      join(homedir(), ".coding-friend", "config.json"),
     );
   });
 });
