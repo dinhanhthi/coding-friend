@@ -131,7 +131,7 @@ if [ -f "$CF_CONFIG_FILE" ]; then
     }
     _check_dangerous_rules ".claude/settings.json"
     _check_dangerous_rules ".claude/settings.local.json"
-    _check_dangerous_rules "$HOME/.claude/settings.json"
+    _check_dangerous_rules "$(cf_claude_dir)/settings.json"
   fi
 fi
 

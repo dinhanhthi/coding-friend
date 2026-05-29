@@ -21,9 +21,29 @@ export function globalConfigPath(): string {
   return join(homedir(), ".coding-friend", "config.json");
 }
 
+/**
+ * Resolve Claude Code's global config directory.
+ * Honors CLAUDE_CONFIG_DIR (a single directory, default ~/.claude). Read fresh on every call —
+ * never cached — so it only affects sessions launched with the env var set.
+ * Returns the config dir ITSELF: settings.json, plugins/, projects/, .credentials.json, and the
+ * in-.claude .mcp.json all live directly under it. NOTE: the HOME-level ~/.claude.json file is
+ * intentionally NOT relocated by this helper (per Claude Code docs it stays at ~/.claude.json).
+ *
+ * Resolution rule: tilde-expands a leading `~` and otherwise uses the value verbatim (no cwd
+ * anchoring for relative paths). Intentionally mirrors the Phase 3 bash `cf_claude_dir()` helper
+ * so all CF surfaces resolve the var identically.
+ */
+export function claudeConfigDir(): string {
+  const env = process.env.CLAUDE_CONFIG_DIR?.trim();
+  if (!env) return join(homedir(), ".claude");
+  if (env === "~") return homedir();
+  if (env.startsWith("~/")) return join(homedir(), env.slice(2));
+  return env; // absolute used as-is; relative left as-is (undocumented, matches the bash helper)
+}
+
 /** Path to Claude global settings */
 export function claudeSettingsPath(): string {
-  return join(homedir(), ".claude", "settings.json");
+  return join(claudeConfigDir(), "settings.json");
 }
 
 /** Path to Claude project settings (<project>/.claude/settings.json) */
@@ -38,14 +58,13 @@ export function claudeLocalSettingsPath(): string {
 
 /** Path to installed plugins file */
 export function installedPluginsPath(): string {
-  return join(homedir(), ".claude", "plugins", "installed_plugins.json");
+  return join(claudeConfigDir(), "plugins", "installed_plugins.json");
 }
 
 /** Plugin cache base path */
 export function pluginCachePath(): string {
   return join(
-    homedir(),
-    ".claude",
+    claudeConfigDir(),
     "plugins",
     "cache",
     "coding-friend-marketplace",
@@ -60,14 +79,13 @@ export function devStatePath(): string {
 
 /** Path to Claude known marketplaces */
 export function knownMarketplacesPath(): string {
-  return join(homedir(), ".claude", "plugins", "known_marketplaces.json");
+  return join(claudeConfigDir(), "plugins", "known_marketplaces.json");
 }
 
 /** Marketplace cache directory (parent of pluginCachePath) */
 export function marketplaceCachePath(): string {
   return join(
-    homedir(),
-    ".claude",
+    claudeConfigDir(),
     "plugins",
     "cache",
     "coding-friend-marketplace",
@@ -77,8 +95,7 @@ export function marketplaceCachePath(): string {
 /** Marketplace clone directory */
 export function marketplaceClonePath(): string {
   return join(
-    homedir(),
-    ".claude",
+    claudeConfigDir(),
     "plugins",
     "marketplaces",
     "coding-friend-marketplace",
@@ -108,7 +125,7 @@ export function encodeProjectPath(absolutePath: string): string {
 
 /** Path to Claude Code's projects directory (~/.claude/projects) */
 export function claudeProjectsDir(): string {
-  return join(homedir(), ".claude", "projects");
+  return join(claudeConfigDir(), "projects");
 }
 
 /** Path to a specific project's session directory (~/.claude/projects/<encodedPath>) */

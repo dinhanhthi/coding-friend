@@ -59,3 +59,29 @@ cf_resolve_paths() {
 
   export MAIN_REPO_ROOT CF_CONFIG_FILE CF_DOCS_ROOT
 }
+
+# cf_claude_dir — resolve Claude Code's global config directory.
+#
+# Honors CLAUDE_CONFIG_DIR (a single directory, default ~/.claude). Read fresh on
+# every call so it only affects sessions launched with the env var set. Returns the
+# config dir ITSELF: settings.json, plugins/, projects/, .credentials.json all live
+# directly under it. The HOME-level ~/.claude.json file is NOT relocated by this.
+#
+# Resolution rule mirrors the CLI claudeConfigDir() in cli/src/lib/paths.ts so every
+# CF surface resolves the var identically: trims surrounding whitespace, tilde-expands
+# a leading ~, otherwise uses the value verbatim (no cwd anchoring).
+cf_claude_dir() {
+  local dir="${CLAUDE_CONFIG_DIR-}"
+  # Trim leading/trailing whitespace (matches the TS .trim())
+  dir="${dir#"${dir%%[![:space:]]*}"}"
+  dir="${dir%"${dir##*[![:space:]]}"}"
+  if [ -z "$dir" ]; then
+    printf '%s/.claude' "$HOME"
+    return
+  fi
+  case "$dir" in
+    "~") dir="$HOME" ;;
+    "~/"*) dir="$HOME/${dir#\~/}" ;;
+  esac
+  printf '%s' "$dir"
+}
