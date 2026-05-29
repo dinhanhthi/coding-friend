@@ -46,6 +46,12 @@ component_enabled() {
   echo "$SL_COMPONENTS" | jq -e "index(\"$1\")" > /dev/null 2>&1
 }
 
+# Resolve Claude global config dir (honors CLAUDE_CONFIG_DIR; default ~/.claude)
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+# shellcheck source=../lib/cf-paths.sh
+source "$PLUGIN_ROOT/lib/cf-paths.sh"
+CF_CLAUDE_DIR="$(cf_claude_dir)"
+
 # Colors
 BLUE=$'\033[0;34m'
 GREEN=$'\033[0;32m'
@@ -147,6 +153,14 @@ get_oauth_token() {
   if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
     echo "$CLAUDE_CODE_OAUTH_TOKEN"; return 0
   fi
+  # 1b. When CLAUDE_CONFIG_DIR is set, its credentials file is authoritative for this
+  #     session — prefer it over the global Keychain so multi-account setups read the
+  #     right token. Falls through to the chain below if the file is absent.
+  if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f "${CF_CLAUDE_DIR}/.credentials.json" ]; then
+    local token
+    token=$(jq -r '.claudeAiOauth.accessToken // empty' "${CF_CLAUDE_DIR}/.credentials.json" 2>/dev/null)
+    if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
+  fi
   # 2. macOS Keychain
   if command -v security >/dev/null 2>&1; then
     local blob
@@ -158,7 +172,7 @@ get_oauth_token() {
     fi
   fi
   # 3. Credentials file
-  local creds_file="${HOME}/.claude/.credentials.json"
+  local creds_file="${CF_CLAUDE_DIR}/.credentials.json"
   if [ -f "$creds_file" ]; then
     local token
     token=$(jq -r '.claudeAiOauth.accessToken // empty' "$creds_file" 2>/dev/null)
@@ -187,7 +201,7 @@ if component_enabled "version"; then
     VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
   fi
   if [ -z "$VERSION" ]; then
-    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null)
+    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$CF_CLAUDE_DIR/plugins/installed_plugins.json" 2>/dev/null)
   fi
 fi
 
