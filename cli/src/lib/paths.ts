@@ -33,7 +33,7 @@ export function globalConfigPath(): string {
  * anchoring for relative paths). Intentionally mirrors the Phase 3 bash `cf_claude_dir()` helper
  * so all CF surfaces resolve the var identically.
  */
-function claudeConfigDir(): string {
+export function claudeConfigDir(): string {
   const env = process.env.CLAUDE_CONFIG_DIR?.trim();
   if (!env) return join(homedir(), ".claude");
   if (env === "~") return homedir();
