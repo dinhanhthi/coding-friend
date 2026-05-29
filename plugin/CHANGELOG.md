@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.34.3 (2026-05-29)
+
+- Honor the `CLAUDE_CONFIG_DIR` env var in plugin hooks and the session skill — `session-init.sh` checks the global settings file, `statusline.sh` reads credentials + installed-plugins (and prefers the config-dir credentials over the Keychain when set), and `cf-session`'s `detect-session.sh` resolves the projects directory all under the overridden config directory instead of `~/.claude`. Adds a shared `cf_claude_dir()` resolver to `plugin/lib/cf-paths.sh` (trims whitespace, tilde-expands a leading `~`, else verbatim; falls back to `~/.claude`) that mirrors the CLI resolver so every surface resolves the variable identically; the HOME-level `~/.claude.json` is intentionally not relocated [#cf5007a](https://github.com/dinhanhthi/coding-friend/commit/cf5007a)
+- Add `--add-tests` to `/cf-plan` usage docs and alias `--tdd` to it [#d37f222](https://github.com/dinhanhthi/coding-friend/commit/d37f222)
+
 ## v0.34.2 (2026-05-28)
 
 - Add `--with-codex` flag to `/cf-review` — runs a Codex second-opinion review (`codex review --uncommitted`) as a background process concurrently with Claude's own multi-agent review, then merges both through the reducer (Codex `[P2]`→⚠️, `[P3]`→💡, anything else incl. `[P1]`/`[P0]`→🚨 so a top severity never fails silent). New scripts `run-codex-review.sh` (invoke + graceful fallback when Codex is unavailable on PATH or errors) and `normalize-codex-review.sh` (never drops unparseable output — folds it into Summary). Config-gated by `review.withCodex` so auto-invoked reviews from `/cf-plan`, `/cf-fix`, `/cf-optimize` can opt in without passing the flag; falls back to a Claude-only review with a warning if Codex is unavailable [#ba32860](https://github.com/dinhanhthi/coding-friend/commit/ba32860)
