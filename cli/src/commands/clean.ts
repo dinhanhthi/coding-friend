@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync, statSync } from "fs";
 import { join, relative } from "path";
 
-import { checkbox, confirm, input, select } from "@inquirer/prompts";
+import { confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
 
 import { loadConfig, resolveMemoryDir } from "../lib/config.js";
@@ -149,34 +149,32 @@ export async function cleanCommand(): Promise<void> {
     { key: "learn", path: join(docsDir, "learn") },
   ];
 
-  const cleanable = candidates
-    .map((c) => ({ ...c, fileCount: countFiles(c.path) }))
-    .filter((c) => existsSync(c.path) && c.fileCount > 0);
-
-  if (cleanable.length === 0) {
-    log.info("Nothing to clean.");
-    console.log();
-    return;
-  }
-
-  const selected = await checkbox({
-    message: "Select directories to clean:",
-    choices: cleanable.map((c) => ({
-      name: `${c.key} — ${c.fileCount} ${c.fileCount === 1 ? "file" : "files"}`,
-      value: c.key,
-    })),
-  });
-
-  if (selected.length === 0) {
-    log.dim("  Nothing selected.");
-    console.log();
-    return;
-  }
-
-  const now = new Date();
   const summary: { key: string; deleted: number }[] = [];
 
-  for (const entry of cleanable.filter((c) => selected.includes(c.key))) {
+  while (true) {
+    const cleanable = candidates
+      .map((c) => ({ ...c, fileCount: countFiles(c.path) }))
+      .filter((c) => existsSync(c.path) && c.fileCount > 0);
+
+    if (cleanable.length === 0) {
+      log.info("Nothing to clean.");
+      break;
+    }
+
+    const selected = await select<string>({
+      message: "Select a directory to clean:",
+      choices: [
+        ...cleanable.map((c) => ({
+          name: `${c.key} — ${c.fileCount} ${c.fileCount === 1 ? "file" : "files"}`,
+          value: c.key,
+        })),
+        { name: chalk.dim("Done (exit)"), value: "__done__" },
+      ],
+    });
+
+    if (selected === "__done__") break;
+
+    const entry = cleanable.find((c) => c.key === selected)!;
     const relPath = relative(process.cwd(), entry.path);
 
     console.log();
@@ -191,6 +189,7 @@ export async function cleanCommand(): Promise<void> {
     const ok = await confirm({ message, default: false });
 
     if (ok) {
+      const now = new Date();
       const { deleted, failed } = deleteMatchingEntries(
         entry.path,
         range,
