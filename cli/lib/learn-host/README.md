@@ -5,9 +5,9 @@ Next.js app that renders your `/cf-learn` docs as a browsable website with searc
 ## Usage (via CLI)
 
 ```bash
-cf host                     # serves docs/learn/ on port 3333
-cf host ./my-docs           # serves a custom directory
-cf host -p 4000             # custom port
+cf learn host               # serves docs/learn/ on port 3333
+cf learn host ./my-docs     # serves a custom directory
+cf learn host -p 4000       # custom port
 ```
 
 The CLI handles deps install, build, and serving automatically.
@@ -25,12 +25,11 @@ npm install
 
 ### 2. Point to a docs directory
 
-The app resolves docs via (in order):
+The app reads the docs directory from the `DOCS_DIR` env var, which the CLI sets by resolving (in order):
 
-1. `DOCS_DIR` env var
-2. Local `.coding-friend/config.json` → `learn.outputDir`
-3. Global `~/.coding-friend/config.json` → `learn.outputDir`
-4. Default: `docs/learn/` relative to project root
+1. Explicit path argument (`cf learn host <path>`)
+2. Global `~/.coding-friend/config.json` → `learn.outputDir`
+3. Default: `~/.coding-friend/learn`
 
 For local dev, set `DOCS_DIR` to any directory with the expected structure:
 
@@ -104,7 +103,7 @@ src/
 ## How It Fits Together
 
 ```
-cf host [path]
+cf learn host [path]
   └─ resolves docs dir
   └─ npm install (one-time)
   └─ npm run build  (with DOCS_DIR env)

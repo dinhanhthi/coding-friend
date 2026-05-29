@@ -19,7 +19,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall disable enable init config host mcp memory permission statusline update status clean dev session guide"
+  local commands="install uninstall disable enable init config learn mcp memory permission statusline update status clean dev session guide"
   local scope_flags="--user --global --project --local"
   local update_flags="--cli --plugin --statusline --user --global --project --local"
 
@@ -44,6 +44,12 @@ _cf_completions() {
   # Subcommands for 'guide'
   if [[ "\${COMP_WORDS[1]}" == "guide" && \${COMP_CWORD} -eq 2 ]]; then
     COMPREPLY=($(compgen -W "create list" -- "$cur"))
+    return
+  fi
+
+  # Subcommands for 'learn'
+  if [[ "\${COMP_WORDS[1]}" == "learn" && \${COMP_CWORD} -eq 2 ]]; then
+    COMPREPLY=($(compgen -W "host push" -- "$cur"))
     return
   fi
 
@@ -86,7 +92,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'enable:Re-enable the Coding Friend plugin'
     'init:Initialize coding-friend in current project'
     'config:Manage Coding Friend configuration'
-    'host:Build and serve learning docs as a static website'
+    'learn:Manage learning docs — host as a website or push to git'
     'mcp:Setup MCP server for learning docs'
     'memory:AI memory system — store and search project knowledge'
     'permission:Manage Claude Code permission rules for Coding Friend'
@@ -172,6 +178,13 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'list:List existing custom guides'
     )
     _describe 'subcommand' subcommands
+  elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "learn" ]]; then
+    local -a subcommands
+    subcommands=(
+      'host:Build and serve learning docs as a static website'
+      'push:Commit and push learning docs to origin'
+    )
+    _describe 'subcommand' subcommands
   elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && ("\${words[3]}" == "on" || "\${words[3]}" == "restart" || "\${words[3]}" == "update") ]]; then
     _path_files -/
   fi
@@ -191,7 +204,7 @@ complete -c cf -n "__fish_use_subcommand" -a disable -d "Disable the Coding Frie
 complete -c cf -n "__fish_use_subcommand" -a enable -d "Re-enable the Coding Friend plugin"
 complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend in current project"
 complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
-complete -c cf -n "__fish_use_subcommand" -a host -d "Build and serve learning docs as a static website"
+complete -c cf -n "__fish_use_subcommand" -a learn -d "Manage learning docs — host as a website or push to git"
 complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learning docs"
 complete -c cf -n "__fish_use_subcommand" -a memory -d "AI memory system — store and search project knowledge"
 complete -c cf -n "__fish_use_subcommand" -a permission -d "Manage Claude Code permission rules"
@@ -243,6 +256,9 @@ complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved
 # Guide subcommands
 complete -c cf -n "__fish_seen_subcommand_from guide" -a create -d "Create a custom guide for a skill"
 complete -c cf -n "__fish_seen_subcommand_from guide" -a list -d "List existing custom guides"
+# Learn subcommands
+complete -c cf -n "__fish_seen_subcommand_from learn" -a host -d "Build and serve learning docs as a static website"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a push -d "Commit and push learning docs to origin"
 `;
 
 const POWERSHELL_BLOCK = `
@@ -250,11 +266,12 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','disable','enable','init','config','host','mcp','memory','permission','statusline','update','status','clean','dev','session','guide')
+  $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','clean','dev','session','guide')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
   $guideSubcommands = @('create','list')
+  $learnSubcommands = @('host','push')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local')
   $words = $commandAst.CommandElements
@@ -269,6 +286,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'guide') {
     $guideSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'learn') {
+    $learnSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'install' -or $words[1].ToString() -eq 'uninstall' -or $words[1].ToString() -eq 'disable' -or $words[1].ToString() -eq 'enable')) {
     $scopeFlags | Where-Object { $_ -like "$wordToComplete*" } |

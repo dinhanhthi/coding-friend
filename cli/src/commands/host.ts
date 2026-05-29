@@ -1,9 +1,12 @@
 import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
-import { resolveDocsDir } from "../lib/config.js";
+import { resolveLearnDir } from "../lib/config.js";
 import { run, streamExec } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
+import { readJson } from "../lib/json.js";
+import { globalConfigPath } from "../lib/paths.js";
+import { type CodingFriendConfig } from "../types.js";
 
 function countMdFiles(dir: string): number {
   let count = 0;
@@ -27,7 +30,8 @@ export async function hostCommand(
   path?: string,
   opts?: { port?: string },
 ): Promise<void> {
-  const docsDir = resolveDocsDir(path);
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const docsDir = resolveLearnDir(globalCfg, path);
   const port = opts?.port ?? "3333";
   const hostDir = getLibPath("learn-host");
 

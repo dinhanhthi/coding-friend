@@ -602,9 +602,9 @@ The project operates as 4 concurrent state machine layers.
                                          ┌────────────────┐      │         │
                                          │ CONSUMABLE     │◄─────┘         │
                                          │                │                │
-                                         │ cf host ──→ website (3333)     │
-                                         │ cf mcp  ──→ MCP server        │
-                                         │ direct  ──→ .md files         │
+                                         │ cf learn host ──→ website     │
+                                         │ cf mcp        ──→ MCP server  │
+                                         │ direct        ──→ .md files   │
                                          └────────────────┘                │
 ```
 
