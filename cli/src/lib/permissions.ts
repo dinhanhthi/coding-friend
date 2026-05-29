@@ -1,5 +1,5 @@
-import { homedir } from "os";
 import { readJson, writeJson } from "./json.js";
+import { pluginCachePath } from "./paths.js";
 
 export interface PermissionRule {
   rule: string;
@@ -294,10 +294,6 @@ export const STATIC_RULES: PermissionRule[] = [
 
 // ─── Tier 2: Plugin rules (version-independent) ────────────────────
 
-/** Tilde path for Read rules (Read expands ~ automatically). */
-const PLUGIN_CACHE_TILDE =
-  "~/.claude/plugins/cache/coding-friend-marketplace/coding-friend";
-
 /**
  * Build Tier 2 permission rules for plugin scripts.
  * Uses two Bash rules (unquoted + quoted paths) to cover all plugin scripts
@@ -309,11 +305,16 @@ const PLUGIN_CACHE_TILDE =
  * variants need their own rule.
  *
  * Bash rules use absolute path because ~ is NOT expanded in Bash() rules.
- * Read rules use ~ because Read() rules DO expand ~ (gitignore spec).
+ * Read rules use ~ when CLAUDE_CONFIG_DIR is unset (Read() expands ~);
+ * when CLAUDE_CONFIG_DIR is set the absolute path from pluginCachePath() is used.
  */
 export function buildPluginScriptRules(): PermissionRule[] {
   // Bash rules require absolute path — ~ is not expanded for Bash()
-  const absBase = `${homedir()}/.claude/plugins/cache/coding-friend-marketplace/coding-friend`;
+  const absBase = pluginCachePath();
+  // Read rules prefer ~ form (Read expands it); fall back to absolute when config dir is overridden
+  const readBase = process.env.CLAUDE_CONFIG_DIR?.trim()
+    ? absBase
+    : "~/.claude/plugins/cache/coding-friend-marketplace/coding-friend";
 
   return [
     {
@@ -331,7 +332,7 @@ export function buildPluginScriptRules(): PermissionRule[] {
       recommended: true,
     },
     {
-      rule: `Read(${PLUGIN_CACHE_TILDE}/**)`,
+      rule: `Read(${readBase}/**)`,
       description: "[read-only] Read plugin files · Used by: hooks, agents",
       category: "Plugin Scripts",
       recommended: true,
