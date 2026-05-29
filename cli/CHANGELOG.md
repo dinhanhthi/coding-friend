@@ -5,6 +5,15 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.36.0 (2026-05-29)
+
+- Add `cf learn` command group — `cf learn host` (serve the Learn Host locally) and `cf learn push`; `cf host` is kept as a hidden legacy alias. Wires the commands into the CLI, shell completions, and config [#a338aea](https://github.com/dinhanhthi/coding-friend/commit/a338aea)
+- Honor the `CLAUDE_CONFIG_DIR` env var across the CLI — a new `claudeConfigDir()` resolver routes Claude's global paths (settings, plugins, marketplaces, projects, the in-`.claude` `.mcp.json`, and plugin-cache permission rules) under the overridden config directory instead of `~/.claude`. Reads the variable fresh each call (no caching), tilde-expands a leading `~`, otherwise uses the value verbatim, and falls back to `~/.claude` when unset so default behavior is unchanged; `~/.coding-friend` and project-local `.claude/` are not relocated [#65453fe](https://github.com/dinhanhthi/coding-friend/commit/65453fe)
+- Clean one directory at a time in `cf clean` — refactored the loop so each selected directory is processed independently [#25a48e3](https://github.com/dinhanhthi/coding-friend/commit/25a48e3)
+- Add missing `guide` and `clean` entries to shell completions [#6196f31](https://github.com/dinhanhthi/coding-friend/commit/6196f31)
+- Keep Learn Host breadcrumbs on one line and truncate the last crumb [#e16eeba](https://github.com/dinhanhthi/coding-friend/commit/e16eeba)
+- Stop tracking `tsconfig.tsbuildinfo` build cache in Learn Host [#6f9716a](https://github.com/dinhanhthi/coding-friend/commit/6f9716a)
+
 ## v1.35.8 (2026-05-28)
 
 - Add `review.withCodex` config key — typed in `CodingFriendConfig`, Zod-validated (unknown/wrong-type values warn and fall back to default), and editable via a new "Codex dual-review" toggle in `cf config`. Enables the Codex second-opinion review (`/cf-review --with-codex`) by default for every review, including auto-invoked ones [#ba32860](https://github.com/dinhanhthi/coding-friend/commit/ba32860)
