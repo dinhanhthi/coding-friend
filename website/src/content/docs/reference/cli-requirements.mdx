@@ -23,7 +23,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 - **Workspace setup:** `cf init`, `cf install`, `cf uninstall`, `cf disable`, `cf enable`, `cf update`
 - **MCP servers:** `cf mcp`, `cf memory` (subcommands: `status`, `search`, `list`, `rm`, `start`, `stop`, `rebuild`, `init`, `config`, `mcp`) — provides the `coding-friend-memory` MCP server backed by SQLite + markdown files
-- **Host server:** `cf host` — powers the `coding-friend-learn` MCP used by `/cf-learn` (HTTP server on localhost:3333)
+- **Learn server:** `cf learn host` — serves learning docs as a website (HTTP server on localhost:3333)
 - **Utilities:** `cf statusline`, `cf permission`, `cf guide`
 
 ## Per-Skill Table
@@ -109,7 +109,7 @@ Content goes here.
 
 When you later install the CLI and run `cf memory rebuild`, existing files are re-indexed automatically.
 
-**`/cf-learn` doc viewer** — Open `docs/learn/*.md` files directly in your editor. The learn-host server (`cf host`) provides an HTTP UI but is not required to read or write learning docs.
+**`/cf-learn` doc viewer** — Open `docs/learn/*.md` files directly in your editor. The learn-host server (`cf learn host`) provides an HTTP UI but is not required to read or write learning docs.
 
 **Statusline** — Remains functional. When `~/.coding-friend/config.json` is absent, all statusline components render with their default settings. Run `cf config` after installing the CLI to customize visibility.
 

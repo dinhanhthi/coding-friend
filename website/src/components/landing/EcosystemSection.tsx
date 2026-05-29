@@ -82,7 +82,7 @@ const tools = [
   {
     id: "learn-host",
     name: "Learn Host",
-    subtitle: "cf host",
+    subtitle: "cf learn host",
     tagline: "Knowledge Website",
     description:
       "Turn your /cf-learn and /cf-teach docs into a searchable static website. Host your knowledge base locally or deploy it anywhere.",
@@ -103,7 +103,7 @@ const tools = [
         />
       </svg>
     ),
-    href: "/docs/cli/cf-host/",
+    href: "/docs/cli/cf-learn/",
   },
   {
     id: "learn-mcp",

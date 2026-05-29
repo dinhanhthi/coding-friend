@@ -330,9 +330,9 @@ function LearnHostContent() {
         serve them as a searchable website with{" "}
         <Link
           className="text-violet-400 hover:underline hover:underline-offset-4"
-          href="/docs/cli/cf-host"
+          href="/docs/cli/cf-learn"
         >
-          <code>cf host</code>
+          <code>cf learn host</code>
         </Link>
         , or expose them to other LLM clients via{" "}
         <Link
@@ -360,7 +360,7 @@ function LearnHostContent() {
             border: "border-slate-500/30",
           },
           {
-            label: "cf host / cf mcp",
+            label: "cf learn host / cf mcp",
             desc: "Website or MCP server",
             color: "text-emerald-400",
             border: "border-emerald-500/30",

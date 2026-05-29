@@ -194,7 +194,7 @@ Language values:
 
 ### MCP Server + Web Host (CLI only)
 
-The `cf host` and `cf mcp` CLI commands use the same `learn.outputDir` to determine the docs folder. No additional config keys are required — both features use the existing `learn` configuration.
+The `cf learn host` and `cf mcp` CLI commands use the same `learn.outputDir` to determine the docs folder. No additional config keys are required — both features use the existing `learn` configuration.
 
 **MCP server:** Docs folder is passed as a CLI argument when starting the server.
 **Web host:** Docs folder is set via `DOCS_DIR` env var at build time.

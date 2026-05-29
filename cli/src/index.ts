@@ -83,9 +83,40 @@ program
     await configCommand();
   });
 
-program
+const learn = program
+  .command("learn")
+  .description("Manage learning docs — host as a website or push to git");
+
+program.addHelpText(
+  "after",
+  `
+Learn subcommands:
+  learn host [path]   Build and serve learning docs as a static website
+  learn push [path]   Commit and push learning docs (only if learn dir is the git root)`,
+);
+
+learn
   .command("host")
   .description("Build and serve learning docs as a static website")
+  .argument("[path]", "path to docs folder")
+  .option("-p, --port <port>", "port number", "3333")
+  .action(async (path, opts) => {
+    const { hostCommand } = await import("./commands/host.js");
+    await hostCommand(path, opts);
+  });
+
+learn
+  .command("push")
+  .description("Commit and push learning docs to origin")
+  .argument("[path]", "path to docs folder")
+  .action(async (path) => {
+    const { learnPushCommand } = await import("./commands/learn.js");
+    await learnPushCommand(path);
+  });
+
+// Legacy alias for `cf learn host` — kept working but hidden from help.
+program
+  .command("host", { hidden: true })
   .argument("[path]", "path to docs folder")
   .option("-p, --port <port>", "port number", "3333")
   .action(async (path, opts) => {

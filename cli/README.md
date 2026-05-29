@@ -78,10 +78,12 @@ cf init              # Initialize workspace (interactive)
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
                      # 💡 Edit docsDir, language, learn settings, and more.
-cf host [path]       # Build and serve learning docs at localhost:3333
-                     # [path] is optional, default is `docs/learn`
+cf learn host [path] # Build and serve learning docs at localhost:3333
+                     # [path] is optional, default is `~/.coding-friend/learn`
+cf learn push [path] # Commit and push learning docs (only if learn dir is the git root)
+                     # [path] is optional, default is `~/.coding-friend/learn`
 cf mcp [path]        # Setup MCP server for LLM integration
-                     # [path] is optional, default is `docs/learn`
+                     # [path] is optional, default is `~/.coding-friend/learn`
                      # This prints a JSON config snippet to add to your client's MCP
 cf permission              # Manage Claude Code permission rules (interactive)
 cf permission --all        # Apply all recommended permissions without prompts

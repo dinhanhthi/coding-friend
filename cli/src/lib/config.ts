@@ -260,9 +260,15 @@ export function resolveDocsDir(explicitPath?: string): string {
 
 /**
  * Resolve the learn output directory — global config only.
- * Priority: globalCfg.learn.outputDir > ~/.coding-friend/learn
+ * Priority: explicit arg > globalCfg.learn.outputDir > ~/.coding-friend/learn
  */
-export function resolveLearnDir(globalCfg: CodingFriendConfig | null): string {
+export function resolveLearnDir(
+  globalCfg: CodingFriendConfig | null,
+  explicitPath?: string,
+): string {
+  if (explicitPath) {
+    return resolvePath(explicitPath);
+  }
   if (globalCfg?.learn?.outputDir) {
     return resolvePath(globalCfg.learn.outputDir);
   }

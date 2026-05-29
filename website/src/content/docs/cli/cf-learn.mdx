@@ -1,0 +1,55 @@
+---
+title: "cf learn"
+description: "Manage learning docs — host them as a local website or push them to git."
+keywords: [learn, host, push, cf learn, cf learn host, cf learn push]
+---
+
+## Overview
+
+`cf learn` groups the commands for working with your learning documentation: serve it as a searchable website, or commit and push it to git.
+
+## Subcommands
+
+| Command         | Purpose                                          |
+| --------------- | ------------------------------------------------ |
+| `cf learn host` | Build and serve learning docs as a local website |
+| `cf learn push` | Commit and push learning docs to origin          |
+
+## cf learn host
+
+Transforms your learning documentation into a searchable, browsable website. Perfect for reviewing notes, sharing knowledge with your team, or integrating docs with other tools.
+
+```bash
+cf learn host [path]
+
+# Example
+cf learn host ./my-learning-docs
+```
+
+The default path is `~/.coding-friend/learn/`.
+
+### Local Server
+
+Docs are served at `http://localhost:3333` by default.
+
+### Incremental Static Regeneration (ISR)
+
+The server automatically detects changes to your markdown files and regenerates affected pages without a full rebuild.
+
+### Full-Text Search
+
+Built-in search powered by [Pagefind](https://pagefind.app/). Search across all your documentation instantly.
+
+## cf learn push
+
+Commits every change in the learn folder and pushes it to `origin`.
+
+```bash
+cf learn push [path]
+```
+
+### Git-root safety
+
+`cf learn push` only pushes without prompting when the learn folder is the **root** of its git repository. If the learn folder lives inside a larger repo (for example, `docs/learn/` of another project), pushing would commit and push that whole repo — so the command warns you and asks for confirmation first.
+
+> **Legacy:** `cf host` still works as an alias for `cf learn host`.
