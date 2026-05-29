@@ -1,13 +1,13 @@
 /**
  * Shared memory prompt helpers — used by both `cf config > memory` and `cf memory config/init`.
  */
-import { homedir } from "os";
 import { confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
+import { homedir } from "os";
 import { join } from "path";
 import { readJson, mergeJson, writeJson } from "./json.js";
 import { log } from "./log.js";
-import { globalConfigPath, localConfigPath } from "./paths.js";
+import { claudeConfigDir, globalConfigPath, localConfigPath } from "./paths.js";
 import { getLibPath } from "./lib-path.js";
 import { resolveMemoryDir } from "./config.js";
 import type { CodingFriendConfig } from "../types.js";
@@ -308,7 +308,7 @@ export function getMemoryMcpStatus(): {
     return { configured: true, scope: "local" };
   }
 
-  const globalMcpPath = join(homedir(), ".claude", ".mcp.json");
+  const globalMcpPath = join(claudeConfigDir(), ".mcp.json");
   const globalMcp = readJson<Record<string, unknown>>(globalMcpPath);
   const globalServers = globalMcp?.mcpServers as
     | Record<string, unknown>
@@ -324,11 +324,15 @@ export async function editMemoryMcp(): Promise<void> {
   const status = getMemoryMcpStatus();
 
   if (status.configured) {
+    const globalMcpDisplay = join(claudeConfigDir(), ".mcp.json").replace(
+      homedir(),
+      "~",
+    );
     const label =
       status.scope === "local"
         ? chalk.green("configured") + chalk.dim(" (local .mcp.json)")
         : chalk.green("configured") +
-          chalk.dim(" (global ~/.claude/.mcp.json)") +
+          chalk.dim(` (global ${globalMcpDisplay})`) +
           " " +
           chalk.yellow("⚠ only works for one project");
     log.info(`MCP: ${label}`);

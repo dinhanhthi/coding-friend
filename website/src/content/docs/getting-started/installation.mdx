@@ -68,6 +68,60 @@ Just run `cf update` to update the plugin and CLI. In case of any issues, you ca
 - **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
 - **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
 
+## Custom config directory (`CLAUDE_CONFIG_DIR`)
+
+Claude Code lets you override its global config directory (default `~/.claude`) with the [`CLAUDE_CONFIG_DIR`](https://code.claude.com/docs/en/env-vars) environment variable — useful for running multiple accounts side by side. Coding Friend honors it everywhere: the `cf` CLI, the plugin hooks, and skill scripts all read/write under the directory you set instead of `~/.claude`.
+
+```bash
+# Everything in this session uses ~/.claude-work instead of ~/.claude
+CLAUDE_CONFIG_DIR=~/.claude-work claude
+```
+
+Inside that session you don't have to do anything extra — hooks, skills, and any `cf` command you run all inherit the variable automatically.
+
+What moves with `CLAUDE_CONFIG_DIR`, and what does not:
+
+- **Relocated** — `settings.json`, `plugins/` (the Coding Friend plugin cache and marketplace registration), `projects/` (session history), and `.credentials.json` all live under the custom directory.
+- **Not relocated** — `~/.claude.json` (your account/MCP file) stays at your home directory, and Coding Friend's own `~/.coding-friend/` directory (config, memory) is never moved. Project-local `.claude/` directories are also untouched.
+
+### Each config directory is a separate install
+
+A custom `CLAUDE_CONFIG_DIR` starts empty — the marketplace and plugin you already installed in the default `~/.claude` do **not** carry over. Treat each config directory like a fresh machine: run the install steps once, with the variable set.
+
+```bash
+# One-time setup for the new config directory
+CLAUDE_CONFIG_DIR=~/.claude-work cf install     # register marketplace + install plugin
+CLAUDE_CONFIG_DIR=~/.claude-work cf statusline   # (optional) set up the statusline
+
+# Then launch sessions with the same variable
+CLAUDE_CONFIG_DIR=~/.claude-work claude
+```
+
+Only the steps that write into `.claude/` need repeating per config directory — `cf install` (plugin + marketplace) and `cf statusline` (writes to `<dir>/settings.json`). Project-level setup is **not** tied to the config directory and does not need redoing: `cf init`, `cf memory init`, and your global `~/.coding-friend/config.json` are shared across every config directory.
+
+<Callout type="warning">
+  Always use the **same** `CLAUDE_CONFIG_DIR` for install and for launching
+  Claude Code. If you install with the variable set but start `claude` without
+  it (or vice versa), the session looks in a different directory and won't see
+  the plugin. Use an `export` or alias (below) to avoid the mismatch.
+</Callout>
+
+<Callout type="info">
+  **Running `cf` outside a Claude Code session?** Commands like `cf install`,
+  `cf update`, `cf memory`, and `cf dev` read the variable fresh each time, so
+  set it in your shell to keep them aligned with the session you launch — e.g.
+  add `export CLAUDE_CONFIG_DIR="$HOME/.claude-work"` to your `~/.zshrc`, or use
+  per-command aliases:
+
+  ```bash
+  alias claude-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work claude'
+  alias cf-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work cf'
+  ```
+
+  `cf dev` honors it too — just make sure `cf dev` and `claude` run with the
+  same `CLAUDE_CONFIG_DIR` so the dev plugin lands where the session looks for it.
+</Callout>
+
 ## Next Steps
 
 Read the [Quick Start](/docs/getting-started/quick-start/) guide to learn the core workflow.

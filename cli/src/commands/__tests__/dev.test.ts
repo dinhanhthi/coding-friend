@@ -18,6 +18,7 @@ vi.mock("fs", async () => {
 vi.mock("../../lib/exec.js", () => ({
   commandExists: vi.fn(() => true),
   run: vi.fn(() => ""),
+  runWithStderr: vi.fn(() => ({ stdout: "", stderr: "", exitCode: 0 })),
 }));
 
 vi.mock("../../lib/json.js", () => ({

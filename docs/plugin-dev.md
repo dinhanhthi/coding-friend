@@ -39,6 +39,25 @@ cf dev on /path/to/coding-friend
 # 4. When feature is done — bump version once and commit
 ```
 
+### Using a custom `CLAUDE_CONFIG_DIR`
+
+If you develop against a custom Claude config directory (see [Installation → Custom config directory](https://cf.dinhanhthi.com/docs/getting-started/installation/)), the dev plugin must be registered **inside that directory**. `cf dev` honors `CLAUDE_CONFIG_DIR`, but it shares a single dev-state file (`~/.coding-friend/dev-state.json`) across config directories — so if you previously ran `cf dev on` against the default `~/.claude`, re-point it at the custom directory by turning dev mode off and on again **with the variable set**:
+
+```bash
+# Reset dev mode into the custom config directory
+CLAUDE_CONFIG_DIR=~/.claude-work cf dev off
+CLAUDE_CONFIG_DIR=~/.claude-work cf dev on ~/git/coding-friend
+```
+
+Then run the inner loop (`cf dev sync`, etc.) and launch Claude Code with the **same** variable so the session loads the dev plugin from the right place:
+
+```bash
+CLAUDE_CONFIG_DIR=~/.claude-work cf dev sync
+CLAUDE_CONFIG_DIR=~/.claude-work claude
+```
+
+Always keep `cf dev` and `claude` on the same `CLAUDE_CONFIG_DIR` — an `export` in your shell profile (or an alias) is the easiest way to avoid a mismatch.
+
 ## Token counts
 
 Each skill and agent consumes context tokens when loaded. The script `scripts/generate-token-counts.ts` measures this and writes the result to `website/src/generated/token-counts.json`.
