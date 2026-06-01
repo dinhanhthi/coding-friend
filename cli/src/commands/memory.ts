@@ -48,14 +48,23 @@ function truncateError(text: string): string {
   return [...head, `  ... (${skipped} lines omitted) ...`, ...tail].join("\n");
 }
 
-export function ensureMemoryBuilt(mcpDir: string): void {
+export function ensureMemoryBuilt(
+  mcpDir: string,
+  opts?: { exitOnError?: boolean },
+): boolean {
+  const exitOnError = opts?.exitOnError ?? true;
+  const fail = (msg: string, stderr?: string): boolean => {
+    log.error(msg);
+    if (stderr) log.error(truncateError(stderr));
+    if (exitOnError) process.exit(1);
+    return false;
+  };
+
   if (!existsSync(join(mcpDir, "node_modules"))) {
     log.step("Installing memory server dependencies (one-time setup)...");
     const result = runWithStderr("npm", ["install"], { cwd: mcpDir });
     if (result.exitCode !== 0) {
-      log.error("Failed to install dependencies");
-      if (result.stderr) log.error(truncateError(result.stderr));
-      process.exit(1);
+      return fail("Failed to install dependencies", result.stderr);
     }
     log.success("Done.");
   }
@@ -64,11 +73,42 @@ export function ensureMemoryBuilt(mcpDir: string): void {
     log.step("Building memory server...");
     const result = runWithStderr("npm", ["run", "build"], { cwd: mcpDir });
     if (result.exitCode !== 0) {
-      log.error("Failed to build memory server");
-      if (result.stderr) log.error(truncateError(result.stderr));
-      process.exit(1);
+      return fail("Failed to build memory server", result.stderr);
     }
     log.success("Done.");
+  }
+
+  return true;
+}
+
+/**
+ * Rebuild the memory server after a CLI update.
+ *
+ * cf-memory ships as source only — its `dist/` and `node_modules/` are
+ * gitignored and excluded from the npm tarball — so `npm install -g
+ * coding-friend-cli@latest` leaves them missing. The memory MCP server
+ * (`mcp-serve` → `node dist/index.js`) then fails to start until the next
+ * `cf memory status` triggers a build. Building here makes memory ready
+ * before the next Claude Code session, so users no longer have to run
+ * `cf memory status` twice after `cf update`.
+ *
+ * No-op for users who never set up memory. Never aborts the update on failure.
+ */
+export async function refreshMemoryAfterUpdate(): Promise<void> {
+  try {
+    if (!isMemoryInitialized()) return;
+
+    const mcpDir = getLibPath("cf-memory");
+    log.step("Ensuring memory server is built...");
+    const built = ensureMemoryBuilt(mcpDir, { exitOnError: false });
+    if (built) {
+      log.success("Memory server ready.");
+    } else {
+      log.warn('Memory server build failed — run "cf memory status" to retry.');
+    }
+  } catch {
+    // Never let a memory-refresh failure abort the rest of `cf update`.
+    log.warn('Could not refresh memory server — run "cf memory status" to retry.');
   }
 }
 

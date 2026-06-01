@@ -289,6 +289,15 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     }
   }
 
+  // Step 3.5: Rebuild the memory server bundled with the (just-updated) CLI.
+  // The npm package ships cf-memory as source only, so a global reinstall wipes
+  // its built dist/ + node_modules — rebuild now so the memory MCP server is
+  // ready for the next Claude Code session.
+  if (doCli) {
+    const { refreshMemoryAfterUpdate } = await import("./memory.js");
+    await refreshMemoryAfterUpdate();
+  }
+
   // Step 4: Fix statusline
   if (doStatusline) {
     const updatedVersion = ensureStatusline();
