@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.36.1 (2026-06-03)
+
+- Fix `cf update` — rebuild bundled `cf-memory` server after CLI reinstall; `ensureMemoryBuilt` gains a non-fatal `exitOnError` option; gated on `isMemoryInitialized`; fixes memory MCP server unavailable until `cf memory status` was run twice [#ce17f36](https://github.com/dinhanhthi/coding-friend/commit/ce17f36)
+
 ## v1.36.0 (2026-05-29)
 
 - Add `cf learn` command group — `cf learn host` (serve the Learn Host locally) and `cf learn push`; `cf host` is kept as a hidden legacy alias. Wires the commands into the CLI, shell completions, and config [#a338aea](https://github.com/dinhanhthi/coding-friend/commit/a338aea)

@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.34.4 (2026-06-03)
+
+- Improve `/cf-commit` — cap body at 4 bullets (≤ 72 chars each), prefer subject-only for small changes, require concise bullet list over prose [#3cf82c9](https://github.com/dinhanhthi/coding-friend/commit/3cf82c9)
+- Improve `/cf-plan --fast` — single-phase plans stay in chat (no plan file written); multi-phase and `--auto` still write to disk; drop 8-task threshold and collapse Small plan template to 1 phase [#3cd4de2](https://github.com/dinhanhthi/coding-friend/commit/3cd4de2)
+
 ## v0.34.3 (2026-05-29)
 
 - Honor the `CLAUDE_CONFIG_DIR` env var in plugin hooks and the session skill — `session-init.sh` checks the global settings file, `statusline.sh` reads credentials + installed-plugins (and prefers the config-dir credentials over the Keychain when set), and `cf-session`'s `detect-session.sh` resolves the projects directory all under the overridden config directory instead of `~/.claude`. Adds a shared `cf_claude_dir()` resolver to `plugin/lib/cf-paths.sh` (trims whitespace, tilde-expands a leading `~`, else verbatim; falls back to `~/.claude`) that mirrors the CLI resolver so every surface resolves the variable identically; the HOME-level `~/.claude.json` is intentionally not relocated [#cf5007a](https://github.com/dinhanhthi/coding-friend/commit/cf5007a)
