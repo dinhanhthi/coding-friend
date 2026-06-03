@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-05-29
+updated: 2026-06-03
 ---
 
 # /cf-plan
@@ -22,7 +22,7 @@ Create an implementation plan for: **$ARGUMENTS**
 | Mode          | Flag                           | Steps skipped/added                                                                                                                                                                                        | When to use                                                                      |
 | ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | **Normal**    | (none)                         | Full workflow                                                                                                                                                                                              | Default — most tasks                                                             |
-| **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent                                                                                                                                                     | Task is clear, single-module, additive                                           |
+| **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent. **No plan file** when the result is single-phase (plan stays in chat, tracked via TaskCreate). Falls back to writing the file if the plan turns out multi-phase (user mis-flagged it) or when combined with `--auto`. | Task is clear, single-module, additive                                           |
 | **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                               | Breaking changes, migrations, multi-module refactors                             |
 | **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode. | Hands-off end-to-end execution after plan approval                               |
 | **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.              | Small one-off task where the user wants planning thought but no on-disk artifact |
@@ -46,7 +46,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 3. **Auto-detect** — scan the task for signals (need 2+ to trigger):
    - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
    - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
-4. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal.
+4. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal. When fast mode is applied (whether via `--fast` or auto-detected), note in the announcement that a single-phase plan stays in chat with no file written (see Step 6).
 
 ### Step 0.7: Check Memory
 
@@ -142,10 +142,12 @@ Present: key codebase findings, approaches with pros/cons, recommended approach 
 
 > **Inline mode** (`--inline`): Skip the file write entirely. Use TaskCreate to register every task from the plan (one task per implementation task, in phase order). Present the full plan body (Context, Approach, Tasks per phase, Risks) inline in chat. Do NOT create any file under `{docsDir}/plans/`. Skip the rest of this step and proceed to Step 7. Progress tracking in Step 7 uses TaskUpdate instead of editing a plan file; all "edit the plan file" / "Progress table" instructions in Step 7 become "call TaskUpdate on the corresponding task". The context file at `{docsDir}/context/<task-id>.json` is still created (cf-implementer needs it).
 
-**Size threshold**: count total tasks across all phases.
+> **Fast mode** (`--fast`, no `--auto`, no `--inline`): If the plan has exactly **1 phase**, do NOT write a file — follow the **Inline mode** path above (present the plan in chat, register tasks via TaskCreate, still create the context file). Because no file is written, the whole rest of the workflow tracks this plan inline: in Step 7, use TaskUpdate on the corresponding task instead of editing a plan file — the "small plan → edit the single file" instructions do NOT apply. If the plan turns out to have **2+ phases**, the task was bigger than fast scope assumed: announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, writing it to disk.` and write the file per the threshold below (normal Step 7 file-edit tracking applies). When `--fast` is combined with `--auto`, always write the file (autopilot reads `auto: true` from the on-disk plan), regardless of phase count.
 
-- **Small** (< 8 tasks AND < 3 phases) → single file `{docsDir}/plans/YYYY-MM-DD-<slug>.md` — see Small plan template below.
-- **Big** (8+ tasks OR 3+ phases) → subfolder `{docsDir}/plans/YYYY-MM-DD-<slug>/` with `README.md` + one `phase-N-<name>.md` per phase — see Big plan template below.
+**Size threshold** (phase count is the sole discriminator):
+
+- **Small** (exactly 1 phase) → single file `{docsDir}/plans/YYYY-MM-DD-<slug>.md` — see Small plan template below. No task-count ceiling.
+- **Big** (2+ phases) → subfolder `{docsDir}/plans/YYYY-MM-DD-<slug>/` with `README.md` + one `phase-N-<name>.md` per phase — see Big plan template below.
 
 Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent failure after max retries)
 
@@ -355,26 +357,22 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 
 ## Progress
 
-| Status  | Phase   | Task      |
-| ------- | ------- | --------- |
-| ⬜ TODO | Phase 1 | Task name |
-| ⬜ TODO | Phase 2 | Task name |
+<!-- single-file plans are always exactly 1 phase; multi-phase plans use the Big template -->
+
+| Status  | Phase   | Task        |
+| ------- | ------- | ----------- |
+| ⬜ TODO | Phase 1 | Task 1 name |
+| ⬜ TODO | Phase 1 | Task 2 name |
 
 ## Tasks
 
-#### Phase 1 [parallel]
+#### Phase 1 [sequential]
 
 1. <task 1>
    - Files: <specific files>
    - Verify: <how to verify>
    - Rollback: <how to undo — hard mode only>
 2. <task 2>
-   - Files: <no overlap with task 1>
-   - Verify: <how to verify>
-
-#### Phase 2 [sequential]
-
-3. <task 3> — depends on Phase 1
    - Files: <specific files>
    - Verify: <how to verify>
 
