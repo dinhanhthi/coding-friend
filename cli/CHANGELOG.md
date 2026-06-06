@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.36.2 (2026-06-06)
+
+- Add `disableGUIPlan` (boolean) and `guiPlanFormat` (`"html" | "md"`) config keys — typed in `CodingFriendConfig`, Zod-validated (unknown/wrong-type values warn and fall back to default), and added to the `KNOWN_KEYS` typo-suggestion list. They control the `/cf-plan` human overview doc. Editable via a new "Plan docs" section in `cf config` and a Plan docs step in `cf init` (both the linear wizard and the returning-user menu); the format prompt defaults to the current `guiPlanFormat` so reconfiguring no longer clobbers an existing `"md"` choice back to `"html"` [#3b1690b](https://github.com/dinhanhthi/coding-friend/commit/3b1690b)
+
 ## v1.36.1 (2026-06-03)
 
 - Fix `cf update` — rebuild bundled `cf-memory` server after CLI reinstall; `ensureMemoryBuilt` gains a non-fatal `exitOnError` option; gated on `isMemoryInitialized`; fixes memory MCP server unavailable until `cf memory status` was run twice [#ce17f36](https://github.com/dinhanhthi/coding-friend/commit/ce17f36)
