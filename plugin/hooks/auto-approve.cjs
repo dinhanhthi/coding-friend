@@ -537,9 +537,24 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
 
   // Check for truly unsafe operators using the sanitized string so that
   // operators inside quoted content (e.g. grep "=>", grep "foo&&bar") are
-  // not falsely detected. Strip 2>/dev/null first — it's a common stderr
-  // suppression pattern that's safe, but its ">" would falsely trigger the check.
-  const sanitizedForOpCheck = sanitized.replace(/\s*2>\s*\/dev\/null/g, "");
+  // not falsely detected. Strip >/dev/null and 2>/dev/null first — both
+  // discard output and are safe, but their ">" would falsely trigger the check.
+  // Security constraints:
+  //   - Use [ \t]* (not \s*) so newlines are NOT consumed. \s* would eat the
+  //     newline before `>/dev/null` and hide a command separator, letting an
+  //     attacker append "echo ok\n>/dev/null sh -c '...'" past the guard.
+  //   - Negative lookahead (?![\w.\-/]) anchors "/dev/null" to a path-token
+  //     boundary so ">/dev/null.sh", ">/dev/nullxxx", ">/dev/null/../tmp/x"
+  //     do NOT match and remain unsafe (would otherwise enable arbitrary
+  //     stdout file writes).
+  //   - >>/dev/null (append) is rejected by side effect: the regex strips the
+  //     second ">" + "/dev/null", the leftover first ">" then trips
+  //     TRULY_UNSAFE_OPERATORS. Do not remove that operator from the unsafe
+  //     set without explicitly handling append redirects here first.
+  const sanitizedForOpCheck = sanitized.replace(
+    /[ \t]*2?>[ \t]*\/dev\/null(?![\w.\-/])/g,
+    "",
+  );
   if (TRULY_UNSAFE_OPERATORS.test(sanitizedForOpCheck)) return false;
 
   // Effective allow list = hook defaults + user-configured per-project extras.
@@ -730,8 +745,15 @@ const PLUGIN_ROOT = path.resolve(__dirname, "..");
  * Matches safe stdout/stderr redirects: `> /tmp/<name>`, `2> /tmp/<name>`, or `> /dev/null`.
  * Filename must be flat (no `/` after `/tmp/`) to prevent subdirectory traversal.
  * Combined with the `..` early-return in isCodingFriendCompound, this is the full redirect guard.
+ *
+ * Security constraints (mirror isSafeCompoundCommand line 542):
+ *   - Use [ \t]* (not \s*) so newlines are NOT consumed.
+ *   - Negative lookahead anchors "/dev/null" to a token boundary so
+ *     ">/dev/null.sh" stays unsafe. The "/tmp/..." branch is already safe
+ *     because [\w.\-]+ is greedy and excludes "/".
  */
-const SAFE_REDIRECT_RE = /\s*2?>\s*(\/tmp\/[\w.\-]+|\/dev\/null)/g;
+const SAFE_REDIRECT_RE =
+  /[ \t]*2?>[ \t]*(\/tmp\/[\w.\-]+|\/dev\/null(?![\w.\-/]))/g;
 
 /**
  * Extract the script path from a bash command string (after "bash ").
