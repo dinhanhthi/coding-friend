@@ -27,11 +27,11 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 ## Modes
 
 - **Normal** (default) — Full workflow: discovery, agent-based exploration, brainstorming, validation, plan writing
-- **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Single-phase fast plans stay in chat (no file written); multi-phase fast plans still save to disk. `--fast --auto` always writes a file. Best for clear, single-module, additive tasks
+- **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Single-phase fast plans stay in chat (no file written); multi-phase fast plans still save to disk. `--fast --auto` always writes a file. Fast mode never generates the human overview doc (even with `--auto`). Best for clear, single-module, additive tasks
 - **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
 - **Autopilot** (`--auto`) — Orthogonal flag (combines with fast/hard/normal). After you approve the plan once, every phase runs end-to-end: dispatch tasks → auto [`/cf-review`](/docs/skills/cf-review/) → if Critical or Important findings, auto-dispatch a fix task → re-review (max 2 review rounds) → single conventional commit per phase → continue to the next phase, **never** asking for confirmation between phases. Suggestions (💡) are logged in the commit body but don't block. The plan file embeds a `## AUTOPILOT` contract section + `auto: true` frontmatter so the workflow survives long conversations where Claude's context may evict the skill. Resume (`--resume`) honors `auto: true` and continues in autopilot mode automatically.
 - **Resume** (`--resume <path>`) — Resume an interrupted plan from where it left off. Skips already-completed tasks (✅) and re-runs any in-progress or pending ones
-- **No GUI** (`--no-gui` / `--no-human`) — Skip the human-readable overview doc for this run. Does not affect the agent plan files
+- **No GUI** (`--no-gui` / `--no-human`) — Skip the human-readable overview doc for this run. Does not affect the agent plan files. (Fast mode already skips the overview automatically.)
 
 If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding. `--auto` is never auto-detected — it must be opted in explicitly.
 
@@ -124,7 +124,7 @@ Alongside the agent plan, `/cf-plan` generates a concise, human-readable overvie
 - **Alternate format:** `overview.md` — set `guiPlanFormat: "md"` in config
 - **Skip for one run:** pass `--no-gui` (alias `--no-human`)
 - **Skip globally:** set `disableGUIPlan: true` in `.coding-friend/config.json`
-- **Auto-skipped:** when `--inline` is active (no files written) or for fast single-phase plans that stay in chat
+- **Auto-skipped:** in **fast mode** (`--fast`/`--quick` or auto-detected fast — including `--fast --auto`), and when `--inline` is active (no files written)
 
 Each plan (or chunk) includes:
 
