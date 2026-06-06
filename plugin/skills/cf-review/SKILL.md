@@ -8,7 +8,7 @@ description: >
   commits, or branches.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-06-07
 ---
 
 # /cf-review
@@ -47,8 +47,8 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 - If `$ARGUMENTS` contains `--with-codex` (or its alias `--codex`), set `codex=true` and strip the flag from `$ARGUMENTS` before any other parsing.
 - Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in without passing the flag). If absent or `false`, `codex=false`.
-- When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). Codex reviews the **uncommitted working tree** (`codex review --uncommitted`).
-- **Target compatibility:** Codex's `--uncommitted` scope only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews uncommitted changes). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated uncommitted tree. In that case do NOT run Codex — print:
+- When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). The Codex script (`run-codex-review.sh`) **auto-selects its scope** from git state so it covers committed work, not just the working tree: feature branch → `codex review --base <base>` (committed branch changes); on the base branch with unpushed commits → `--base <upstream>` (local commits not yet pushed); only uncommitted changes → `--uncommitted`; local-only repo → `--commit HEAD`. This lets Codex see a phase's changes even after they are committed — including on the base branch, where `gather-diff.sh` only reports uncommitted work (its committed-vs-base section is gated on being on a feature branch), so Codex covers committed-on-base work that Claude's own review would otherwise miss. Trade-off: a `--base`/`--commit` scope omits uncommitted/untracked files, and when Codex is unavailable that committed-on-base work degrades to a Claude-only review that may see nothing.
+- **Target compatibility:** the auto-scope above only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews the default change set). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated default change set. In that case do NOT run Codex — print:
   > ⚠ `--with-codex` only applies to the default uncommitted-changes review; Codex does not support the target `<target>`. Running Claude-only review.
   Set `codex=false` and skip Steps 2.5/6.5.
 
@@ -143,7 +143,10 @@ Skip this step entirely when `codex=false`.
    - `CF_CODEX=error` (non-zero exit) → Codex failed (e.g. not logged in). Print:
      > ⚠ Codex review failed (<reason from stderr>) — proceeding with Claude-only review.
      Set `codex=false` and skip the rest of this step.
-   - `CF_CODEX=ok <file>` (exit 0) → the review was written to the result file; continue.
+   - `CF_CODEX=empty` (exit 0, no result file) → nothing committed or uncommitted to review. Print:
+     > ⚠ Codex found no changes to review — proceeding with Claude-only review.
+     Set `codex=false` and skip the rest of this step.
+   - `CF_CODEX=ok <file>` (exit 0) → the review was written to the result file; continue. (An optional `CF_CODEX_SCOPE=...` line on stderr records which scope was used.)
 3. Normalize the raw Codex result into the standard 4-section format:
 
    ```bash

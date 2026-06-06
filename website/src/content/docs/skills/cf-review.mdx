@@ -128,7 +128,7 @@ If you have the [Codex CLI](https://developers.openai.com/codex/cli/) installed 
 
 How it works:
 
-1. Codex review (`codex review --uncommitted`) is spawned as a **background process**, so it runs concurrently with Claude's own multi-agent review — not one after the other.
+1. The Codex review is spawned as a **background process**, so it runs concurrently with Claude's own multi-agent review — not one after the other. Codex auto-selects its scope from git state (`--base` for committed branch/unpushed work, `--uncommitted` for the working tree, `--commit` for a local-only repo), so it reviews a phase even after it has been committed.
 2. Claude runs its normal 5-layer review in parallel.
 3. When Codex finishes, its findings are normalized (`[P1]`→🚨 Critical, `[P2]`→⚠️ Important, `[P3]`→💡 Suggestion) and tagged `[Codex]`.
 4. Both reviews are merged through the reducer — duplicate findings (same file:line) are collapsed, and agreement between Claude and Codex raises confidence.
