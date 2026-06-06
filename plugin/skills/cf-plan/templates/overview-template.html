@@ -94,6 +94,60 @@
 
     p + p { margin-top: 0.25rem; }
 
+    /* ── Bullet lists for prose sections ── */
+    ul.bullets {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul.bullets li {
+      position: relative;
+      padding-left: 1.4em;
+      margin-bottom: 0.5rem;
+      color: var(--fg);
+    }
+
+    ul.bullets li::before {
+      content: "•";
+      position: absolute;
+      left: 0.2em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── Summary (Plan at a Glance) ── */
+    .stats {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1.25rem;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .stat-num {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--fg-muted);
+      margin-top: 0.2rem;
+    }
+
     /* ── Card (Key Decisions) ── */
     .card {
       background: var(--bg-card);
@@ -159,11 +213,12 @@
 
     /* ── Diagram area ── */
     .diagram-wrap {
+      position: relative;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 1.25rem;
-      overflow-x: auto;
+      overflow: hidden;
     }
 
     .diagram-wrap + .diagram-wrap {
@@ -174,6 +229,42 @@
     .mermaid svg {
       max-width: 100%;
       height: auto;
+    }
+
+    /* ── Zoom controls (added per diagram by JS) ── */
+    .zoom-controls {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+      z-index: 2;
+    }
+
+    .zoom-controls button {
+      width: 1.9rem;
+      height: 1.9rem;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-controls button:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .zoom-hint {
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      margin-top: 0.4rem;
     }
 
     /* ── Code / inline monospace ── */
@@ -204,18 +295,40 @@
       </p>
     </header>
 
+    <!-- ── Plan at a Glance (summary) ── -->
+    <section id="summary">
+      <h2>Plan at a Glance</h2>
+      <!-- FILL: counts from the plan. Phases = number of phases; Tasks = total tasks across all phases. Add more .stat blocks (e.g. Files) only if the plan states them. -->
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-num"><!-- FILL: phase count --></span>
+          <span class="stat-label">Phases</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num"><!-- FILL: task count --></span>
+          <span class="stat-label">Tasks</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Problem & Intent ── -->
     <section id="problem">
       <h2>Problem &amp; Intent</h2>
-      <!-- FILL: the original problem / intention / purpose, 2-4 concise sentences -->
-      <p>Placeholder: describe what is broken, missing, or desired and why it matters.</p>
+      <!-- FILL: the original problem / intention / purpose as concise bullets -->
+      <ul class="bullets">
+        <li>Placeholder: what is broken, missing, or desired.</li>
+        <li>Placeholder: why it matters / the impact.</li>
+      </ul>
     </section>
 
     <!-- ── Solution (Big Picture) ── -->
     <section id="solution">
       <h2>Solution (Big Picture)</h2>
-      <!-- FILL: what we're going to do, high level, no step-by-step TODOs -->
-      <p>Placeholder: explain the chosen approach and why it solves the problem without listing individual tasks.</p>
+      <!-- FILL: the chosen approach as concise bullets, high level, no step-by-step TODOs -->
+      <ul class="bullets">
+        <li>Placeholder: the core of the approach.</li>
+        <li>Placeholder: how it solves the problem.</li>
+      </ul>
     </section>
 
     <!-- ── Key Decisions ── -->
@@ -269,10 +382,65 @@ graph LR
   <!-- This overview is a local, git-ignored artifact opened from disk; CDN integrity (SRI) omitted intentionally. To harden: pin an exact version and add integrity="sha384-…" from https://www.jsdelivr.com/ -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" crossorigin="anonymous"></script>
   <script>
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
-    });
+    // Attach wheel-zoom + drag-pan to one already-rendered diagram. Only transforms
+    // the post-render SVG (no innerHTML of plan text) so label sanitization still holds.
+    function setupPanZoom(wrap) {
+      const svg = wrap.querySelector('svg');
+      if (!svg) return;
+      let scale = 1, tx = 0, ty = 0;
+      const MIN = 0.3, MAX = 5;
+      svg.style.transformOrigin = '0 0';
+      svg.style.cursor = 'grab';
+      const apply = () => { svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; };
+      function zoomAt(factor, cx, cy) {
+        const next = Math.min(MAX, Math.max(MIN, scale * factor));
+        const k = next / scale;
+        tx = cx - (cx - tx) * k;
+        ty = cy - (cy - ty) * k;
+        scale = next;
+        apply();
+      }
+      const center = () => [wrap.clientWidth / 2, wrap.clientHeight / 2];
+
+      wrap.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const r = wrap.getBoundingClientRect();
+        zoomAt(e.deltaY < 0 ? 1.1 : 1 / 1.1, e.clientX - r.left, e.clientY - r.top);
+      }, { passive: false });
+
+      let dragging = false, lastX = 0, lastY = 0;
+      wrap.addEventListener('mousedown', (e) => {
+        dragging = true; lastX = e.clientX; lastY = e.clientY; svg.style.cursor = 'grabbing';
+      });
+      window.addEventListener('mouseup', () => { dragging = false; svg.style.cursor = 'grab'; });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        tx += e.clientX - lastX; ty += e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY; apply();
+      });
+
+      const controls = document.createElement('div');
+      controls.className = 'zoom-controls';
+      const mk = (label, title, onClick) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = label; b.title = title;
+        b.addEventListener('click', onClick);
+        controls.appendChild(b);
+      };
+      mk('+', 'Zoom in', () => zoomAt(1.25, ...center()));
+      mk('−', 'Zoom out', () => zoomAt(0.8, ...center()));
+      mk('↺', 'Reset', () => { scale = 1; tx = 0; ty = 0; apply(); });
+      wrap.appendChild(controls);
+    }
+
+    (async () => {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      });
+      await mermaid.run();
+      document.querySelectorAll('.diagram-wrap').forEach(setupPanZoom);
+    })();
   </script>
 </body>
 </html>
