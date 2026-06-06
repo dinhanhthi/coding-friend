@@ -182,6 +182,11 @@ const statuslineSegments = [
     example: "[5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm",
     color: "text-violet-300",
   },
+  {
+    label: "Session ID",
+    example: "🆔 a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    color: "text-slate-400",
+  },
 ];
 
 function StatuslineContent() {
