@@ -4,11 +4,45 @@ import { Command } from "commander";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { installedPluginsPath } from "./lib/paths.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
   readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
 );
+
+/** Read the installed Coding Friend plugin version from installed_plugins.json. */
+function getInstalledPluginVersion(): string | null {
+  try {
+    const data = JSON.parse(readFileSync(installedPluginsPath(), "utf-8"));
+    const plugins = (data.plugins ?? data) as Record<string, unknown>;
+    for (const [key, value] of Object.entries(plugins)) {
+      if (!key.includes("coding-friend")) continue;
+      if (Array.isArray(value) && value.length > 0) {
+        const entry = value[0] as Record<string, unknown>;
+        if (typeof entry.version === "string") return entry.version;
+      }
+      if (typeof value === "object" && value !== null && "version" in value) {
+        return (value as { version: string }).version;
+      }
+    }
+  } catch {
+    // file missing or unreadable
+  }
+  return null;
+}
+
+/** Build the version string. Plugin lookup only runs when -v/--version is requested. */
+function buildVersionString(): string {
+  const pluginVersion = getInstalledPluginVersion();
+  return [
+    `CLI    ${pkg.version}`,
+    `plugin ${pluginVersion ?? "(not installed)"}`,
+  ].join("\n");
+}
+
+const wantsVersion =
+  process.argv.includes("-v") || process.argv.includes("--version");
 
 const program = new Command();
 
@@ -17,7 +51,7 @@ program
   .description(
     "coding-friend CLI — host learning docs, setup MCP, init projects",
   )
-  .version(pkg.version, "-v, --version");
+  .version(wantsVersion ? buildVersionString() : pkg.version, "-v, --version");
 
 program
   .command("install")
