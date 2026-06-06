@@ -1,0 +1,278 @@
+<!-- cf-plan human overview template. cf-writer-deep fills the FILL markers from the agent plan. Keep it concise and decision-focused; no step-by-step task lists. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><!-- FILL: plan name --></title>
+  <style>
+    /* ── CSS custom properties (light) ── */
+    :root {
+      --bg:          #ffffff;
+      --bg-card:     #f5f6f8;
+      --fg:          #1a1b1e;
+      --fg-muted:    #5c5f6b;
+      --accent:      #4a6cf7;
+      --accent-soft: #eef1fd;
+      --border:      #e0e2e9;
+      --not-building-bg:     #fff8f0;
+      --not-building-border: #f0a060;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:          #0f1117;
+        --bg-card:     #1a1d27;
+        --fg:          #e4e5ec;
+        --fg-muted:    #8b8fa8;
+        --accent:      #7b97ff;
+        --accent-soft: #1e2440;
+        --border:      #2b2e3d;
+        --not-building-bg:     #1f1810;
+        --not-building-border: #c07838;
+      }
+    }
+
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      background: var(--bg);
+      color: var(--fg);
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Content container ── */
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* ── Header / title ── */
+    .plan-header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--fg);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .plan-meta {
+      font-size: 0.875rem;
+      color: var(--fg-muted);
+      margin-top: 0.4rem;
+    }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+    }
+
+    section {
+      margin-bottom: 2.5rem;
+    }
+
+    p {
+      color: var(--fg);
+      margin-bottom: 0.5rem;
+    }
+
+    p + p { margin-top: 0.25rem; }
+
+    /* ── Card (Key Decisions) ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li {
+      position: relative;
+      padding-left: 1.4em;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      color: var(--fg);
+    }
+
+    .card ul li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ── Not Building block ── */
+    .not-building {
+      background: var(--not-building-bg);
+      border: 1px solid var(--not-building-border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+
+    .not-building h2 {
+      color: var(--not-building-border);
+    }
+
+    .not-building ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .not-building ul li {
+      position: relative;
+      padding-left: 1.4em;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+      color: var(--fg);
+    }
+
+    .not-building ul li::before {
+      content: "✕";
+      position: absolute;
+      left: 0;
+      color: var(--not-building-border);
+      font-weight: 700;
+    }
+
+    /* ── Diagram area ── */
+    .diagram-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .diagram-wrap + .diagram-wrap {
+      margin-top: 1rem;
+    }
+
+    /* Ensure Mermaid SVGs scale nicely */
+    .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Code / inline monospace ── */
+    code {
+      font-family: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo,
+                   "Courier New", monospace;
+      font-size: 0.875em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+
+    /* ── Responsive tweak ── */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ── Title / Plan name ── -->
+    <header class="plan-header">
+      <h1><!-- FILL: plan name, e.g. "Add streaming support to cf-review" --></h1>
+      <p class="plan-meta">
+        <!-- FILL: optional metadata, e.g. "Plan · June 2026 · cf-plan" -->
+      </p>
+    </header>
+
+    <!-- ── Problem & Intent ── -->
+    <section id="problem">
+      <h2>Problem &amp; Intent</h2>
+      <!-- FILL: the original problem / intention / purpose, 2-4 concise sentences -->
+      <p>Placeholder: describe what is broken, missing, or desired and why it matters.</p>
+    </section>
+
+    <!-- ── Solution (Big Picture) ── -->
+    <section id="solution">
+      <h2>Solution (Big Picture)</h2>
+      <!-- FILL: what we're going to do, high level, no step-by-step TODOs -->
+      <p>Placeholder: explain the chosen approach and why it solves the problem without listing individual tasks.</p>
+    </section>
+
+    <!-- ── Key Decisions ── -->
+    <section id="decisions">
+      <h2>Key Decisions</h2>
+      <!-- FILL: the main decisions the plan makes, one concise line each -->
+      <div class="card">
+        <ul>
+          <li>Decision one: short phrase that captures the choice made.</li>
+          <li>Decision two: another choice and brief rationale if non-obvious.</li>
+          <li>Decision three: a third example decision.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ── Diagrams ── -->
+    <section id="diagrams">
+      <h2>Diagrams</h2>
+      <!-- FILL: Mermaid diagram(s) for structure / flow / state machine / algorithm where a picture beats prose -->
+      <!-- Add one .diagram-wrap per diagram; remove placeholder content before shipping -->
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+graph LR
+    A[User triggers /cf-plan] --> B(cf-planner agent)
+    B --> C{exploration done?}
+    C -- yes --> D[write plan phases]
+    C -- no  --> E[explore codebase]
+    E --> C
+    D --> F[cf-writer-deep fills overview]
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── Not Building ── -->
+    <section id="not-building">
+      <div class="not-building">
+        <h2>Not Building</h2>
+        <!-- FILL: explicit out-of-scope items -->
+        <ul>
+          <li>Out-of-scope item one.</li>
+          <li>Out-of-scope item two.</li>
+          <li>Out-of-scope item three.</li>
+        </ul>
+      </div>
+    </section>
+
+  </div><!-- /.container -->
+
+  <!-- This overview is a local, git-ignored artifact opened from disk; CDN integrity (SRI) omitted intentionally. To harden: pin an exact version and add integrity="sha384-…" from https://www.jsdelivr.com/ -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" crossorigin="anonymous"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+    });
+  </script>
+</body>
+</html>
