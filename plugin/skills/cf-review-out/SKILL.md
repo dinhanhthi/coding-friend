@@ -9,7 +9,7 @@ description: >
 user-invocable: true
 argument-hint: "[optional: label, e.g. fix-auth-bypass]"
 created: 2026-03-23
-updated: 2026-05-28
+updated: 2026-06-06
 ---
 
 # /cf-review-out
@@ -30,11 +30,7 @@ Creates a complete, self-contained review document in `docs/reviews/` that any e
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Determine the label
 

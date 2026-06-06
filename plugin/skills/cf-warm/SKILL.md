@@ -8,7 +8,7 @@ description: >
 user-invocable: true
 argument-hint: "[--user <name>] [--n-commits <N>]"
 created: 2026-03-31
-updated: 2026-05-03
+updated: 2026-06-06
 state: beta
 ---
 
@@ -40,11 +40,7 @@ Output goes to `{docsDir}/warm/` (default: `docs/warm/`). Check `.coding-friend/
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-warm`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Validate & Configure
 

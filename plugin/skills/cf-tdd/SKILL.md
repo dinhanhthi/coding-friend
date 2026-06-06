@@ -14,7 +14,7 @@ description: >
   or when the user is only asking questions about code without requesting changes.
 user-invocable: false
 created: 2026-02-17
-updated: 2026-05-02
+updated: 2026-06-06
 ---
 
 # Implementation Workflow
@@ -25,11 +25,7 @@ updated: 2026-05-02
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ## Mode Detection
 

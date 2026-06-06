@@ -8,7 +8,7 @@ description: >
   verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
 disable-model-invocation: true
 created: 2026-02-17
-updated: 2026-04-04
+updated: 2026-06-06
 ---
 
 # /cf-ship
@@ -23,11 +23,7 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 **Dry-run check**: If `$ARGUMENTS` contains `--dry-run`, enter simulation mode — run all steps below but **do not execute** any destructive action (no commit, no push, no PR creation). Prefix each step's output with `[dry-run]` and show what **would** happen. At the end, print:
 

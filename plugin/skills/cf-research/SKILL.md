@@ -9,7 +9,7 @@ description: >
   before making decisions.
 disable-model-invocation: true
 created: 2026-02-19
-updated: 2026-04-24
+updated: 2026-06-06
 ---
 
 # /cf-research
@@ -34,11 +34,7 @@ Output goes to `{docsDir}/research/` (default: `docs/research/`). Check `.coding
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-research`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 0.5: Context Budget Check
 
