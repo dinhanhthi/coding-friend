@@ -1810,6 +1810,60 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
     );
   });
 
+  // Allows plain >/dev/null (stdout discard)
+  it("allows stdout >/dev/null (no leading 2)", () => {
+    expect(isSafeCompoundCommand("ls -la >/dev/null")).toBe(true);
+  });
+
+  it("allows >/dev/null 2>&1 combination", () => {
+    expect(isSafeCompoundCommand("git status >/dev/null 2>&1")).toBe(true);
+  });
+
+  it("allows >/dev/null in piped chain", () => {
+    expect(
+      isSafeCompoundCommand("find /tmp -name '*.x' >/dev/null | head -5"),
+    ).toBe(true);
+  });
+
+  // Regression: /dev/null suffix matching must NOT bypass the guard
+  it("rejects >/dev/null.sh suffix bypass (stdout)", () => {
+    expect(isSafeCompoundCommand("git status >/dev/null.sh")).toBe(false);
+  });
+
+  it("rejects >/dev/null.txt suffix bypass (stdout)", () => {
+    expect(isSafeCompoundCommand("ls >/dev/null.txt")).toBe(false);
+  });
+
+  it("rejects >/dev/nullxxx suffix bypass (stdout)", () => {
+    expect(isSafeCompoundCommand("ls >/dev/nullxxx")).toBe(false);
+  });
+
+  it("rejects 2>/dev/null.txt suffix bypass (stderr)", () => {
+    expect(isSafeCompoundCommand("ls 2>/dev/null.txt")).toBe(false);
+  });
+
+  it("rejects >/dev/null/../tmp/x path-traversal suffix bypass", () => {
+    expect(isSafeCompoundCommand("ls >/dev/null/../../tmp/x")).toBe(false);
+  });
+
+  // Regression: \s* must NOT consume newline (Codex finding)
+  it("rejects newline before >/dev/null hiding command separator", () => {
+    expect(
+      isSafeCompoundCommand("echo ok\n>/dev/null sh -c 'rm -rf /'"),
+    ).toBe(false);
+  });
+
+  it("rejects newline before 2>/dev/null hiding command separator", () => {
+    expect(
+      isSafeCompoundCommand("echo ok\n2>/dev/null sh -c 'rm -rf /'"),
+    ).toBe(false);
+  });
+
+  // Regression: >>/dev/null (append) must remain rejected
+  it("rejects >>/dev/null (append redirect not explicitly allowed)", () => {
+    expect(isSafeCompoundCommand("ls >>/dev/null")).toBe(false);
+  });
+
   // Critical: stripStderrRedirect must not match 2>&1 as substring
   it("rejects cmd2>&1 substring bypass (sort2>&1)", () => {
     expect(isSafeCompoundCommand("sort2>&1 file | grep x")).toBe(false);
