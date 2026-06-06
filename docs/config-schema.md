@@ -42,6 +42,14 @@ coding-friend uses a layered config system:
   // Default: []
   "autoApproveIgnore": [],
 
+  // Disable the human overview doc /cf-plan generates next to the agent plan
+  // Default: false
+  "disableGUIPlan": false,
+
+  // Format for the /cf-plan human overview doc: "html" (styled self-contained file w/ Mermaid) or "md" (markdown w/ mermaid fences)
+  // Default: "html"
+  "guiPlanFormat": "html",
+
   // --- Learn settings ---
   "learn": {
     // Language for /cf-learn notes
