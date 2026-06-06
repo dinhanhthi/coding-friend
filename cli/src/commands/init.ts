@@ -900,6 +900,10 @@ async function stepPlanDocs(
     globalCfg,
     localCfg,
   ) as boolean | undefined;
+  const currentFormat = getMergedValue("guiPlanFormat", globalCfg, localCfg) as
+    | "html"
+    | "md"
+    | undefined;
   const scopeLabel = getScopeLabel("disableGUIPlan", globalCfg, localCfg);
 
   printStepHeader(
@@ -923,6 +927,7 @@ async function stepPlanDocs(
         ],
         "Skip plan docs config",
       ),
+      default: currentFormat ?? "html",
     });
     if (fmt === BACK) {
       log.dim("Skipped plan docs config.");
@@ -1093,6 +1098,11 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       globalCfg,
       localCfg,
     ) as boolean | undefined;
+    const planDocsFormatVal = getMergedValue(
+      "guiPlanFormat",
+      globalCfg,
+      localCfg,
+    ) as "html" | "md" | undefined;
 
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
@@ -1287,6 +1297,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
               ],
               "Skip plan docs config",
             ),
+            default: planDocsFormatVal ?? "html",
           });
           if (fmt === BACK) {
             log.dim("Skipped plan docs config.");
