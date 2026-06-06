@@ -13,6 +13,7 @@ import Callout from "@/components/docs/Callout";
 import CodeBlock from "@/components/docs/CodeBlock";
 import PackageManagerTabs from "@/components/docs/PackageManagerTabs";
 import MdxLink from "@/components/docs/MdxLink";
+import ContextFootprint from "@/components/docs/ContextFootprint";
 import {
   BootstrapTokens,
   TierSystemTable,
@@ -176,6 +177,17 @@ export default async function DocPage({ params }: Props) {
   const parts = slugStr.split("/");
   const navItems = flattenNavigation();
   const currentNav = navItems.find((item) => item.slug === slugStr);
+
+  // Bind the page's tier into <ContextFootprint /> so the MDX body line stays
+  // in sync with the header badge and token-counts.json (single source).
+  const footprintTier = currentNav?.tier;
+  const components = {
+    ...mdxComponents,
+    ContextFootprint: footprintTier
+      ? () => <ContextFootprint tier={footprintTier} />
+      : () => null,
+  };
+
   const breadcrumbs = [];
   if (currentNav) {
     breadcrumbs.push({ label: currentNav.section });
@@ -261,7 +273,7 @@ export default async function DocPage({ params }: Props) {
         <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-300 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-base max-w-none">
           <MDXRemote
             source={doc.content}
-            components={mdxComponents}
+            components={components}
             options={{
               mdxOptions: {
                 remarkPlugins: [remarkGfm],

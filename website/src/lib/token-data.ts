@@ -52,6 +52,21 @@ export function getTierDef(tier: Tier): TierDef {
   return (tokenCounts.tiers as Record<Tier, TierDef>)[tier];
 }
 
+/**
+ * Human-readable token range for a tier, derived from the generated tier
+ * thresholds (single source of truth: scripts/generate-token-counts.ts).
+ * e.g. "< 1,500 tokens", "1,500 – 3,000 tokens", "> 3,000 tokens".
+ */
+export function getTierRange(tier: Tier): string {
+  const tiers = tokenCounts.tiers as Record<Tier, TierDef>;
+  const fmt = (n: number) => n.toLocaleString("en-US");
+  const low = tiers.low.maxTokens!;
+  const medium = tiers.medium.maxTokens!;
+  if (tier === "low") return `< ${fmt(low)} tokens`;
+  if (tier === "medium") return `${fmt(low)} – ${fmt(medium)} tokens`;
+  return `> ${fmt(medium)} tokens`;
+}
+
 export function getAllTokenData() {
   return tokenCounts;
 }
