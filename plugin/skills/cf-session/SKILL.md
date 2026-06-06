@@ -9,7 +9,7 @@ disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read]
 created: 2026-03-05
-updated: 2026-05-03
+updated: 2026-06-06
 state: beta
 ---
 
@@ -27,11 +27,7 @@ Label: **$ARGUMENTS**
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-session`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Resolve Sessions Folder
 

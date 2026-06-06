@@ -9,7 +9,7 @@ description: >
 user-invocable: true
 argument-hint: "[optional: topic or specific task to explain]"
 created: 2026-03-30
-updated: 2026-04-07
+updated: 2026-06-06
 ---
 
 # /cf-teach
@@ -28,11 +28,7 @@ In any coding session, the AI does the heavy thinking — but the human often wa
 
 Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-teach`
 
-If output is not empty, integrate the returned sections into this workflow:
-
-- `## Before` → execute before the first step
-- `## Rules` → apply as additional rules throughout all steps
-- `## After` → execute after the final step
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Load Config
 
