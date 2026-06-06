@@ -54,6 +54,7 @@ const StatuslineComponentSchema = z.enum([
   "account",
   "context",
   "rate_limit",
+  "session",
   "task_agent",
 ]);
 

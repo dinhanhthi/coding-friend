@@ -16,6 +16,7 @@ Example:
 🧠 Opus (1M)
 cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
 ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+🆔 a1b2c3d4-e5f6-7890-abcd-ef1234567890
 📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
 ```
 
@@ -34,6 +35,7 @@ The statusline can show any combination of these components:
 | `account`    | Account name, email, or custom alias             | `👤 Thi (me@dinhanhthi.com)`             |
 | `context`    | Context window usage (color-coded green→red)     | `ctx 42%`                                |
 | `rate_limit` | Current (5h) & weekly (7d) usage with reset time | `[5h] 30% → 2:30pm \| [7d] 10%…`         |
+| `session`    | Claude Code session ID (full UUID)               | `🆔 a1b2c3d4-…`                          |
 | `task_agent` | Task progress & active agent                     | `📋 Tasks: 2/5 \| 🤖 Agent: cf-reviewer` |
 
 When you run this command, an interactive checklist lets you choose which components to display. All components are enabled by default.
@@ -71,6 +73,7 @@ You can either edit `~/.coding-friend/config.json` directly, or run `cf statusli
       "account",
       "context",
       "rate_limit",
+      "session",
       "task_agent"
     ],
     "accountAliases": {
