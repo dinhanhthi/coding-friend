@@ -159,9 +159,10 @@ Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` 
 After saving, present: folder path created, phase count, task count, entry point (`README.md`), and the overview path (if generated).
 
 1. Use TaskCreate to create a task list.
-2. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
-3. Present the plan summary to the user.
-4. When autopilot=true, add `auto: true` to the YAML frontmatter at the top of `README.md`. For **big plans**, the `## AUTOPILOT` section is ALSO copied into EVERY `phase-N-*.md` file (so any phase file Claude re-opens during a long conversation carries the rules).
+2. Set the `slug:` frontmatter field in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>`, identical to the task-id from Step 1.5). This is what the user copies to mention the plan or pass to `--resume <slug>`. Include the slug in the post-save summary so it is easy to copy.
+3. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
+4. Present the plan summary to the user.
+5. When autopilot=true, add `auto: true` to the YAML frontmatter at the top of `README.md`. For **big plans**, the `## AUTOPILOT` section is ALSO copied into EVERY `phase-N-*.md` file (so any phase file Claude re-opens during a long conversation carries the rules).
 
 #### Human overview doc
 
@@ -352,6 +353,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 
 ```markdown
 ---
+slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `--resume <slug>`
 auto: false # set true when created with --auto
 ---
 
@@ -421,6 +423,7 @@ After implementation: `/cf-review` → `/cf-commit`
 
 ```markdown
 ---
+slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `--resume <slug>`
 auto: false # set true when created with --auto
 ---
 
