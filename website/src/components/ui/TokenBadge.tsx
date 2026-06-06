@@ -1,4 +1,5 @@
 import type { Tier } from "@/lib/token-data";
+import { getTierDef, getTierRange } from "@/lib/token-data";
 
 interface TokenBadgeProps {
   tier: Tier;
@@ -7,18 +8,6 @@ interface TokenBadgeProps {
   className?: string;
   variant?: "default" | "ghost";
 }
-
-const tierName: Record<Tier, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-};
-
-const tierDesc: Record<Tier, string> = {
-  low: "<1K tokens injected into prompt",
-  medium: "~1K–2.5K tokens injected into prompt",
-  high: ">2.5K tokens injected into prompt",
-};
 
 const tierCount: Record<Tier, number> = { low: 1, medium: 2, high: 3 };
 
@@ -49,6 +38,8 @@ export default function TokenBadge({
   variant = "default",
 }: TokenBadgeProps) {
   const sizeConfig = sizeMap[size];
+  const tierLabel = getTierDef(tier).label;
+  const tierDesc = `${getTierRange(tier)} injected into prompt`;
 
   const variantClasses =
     variant === "ghost"
@@ -58,18 +49,16 @@ export default function TokenBadge({
   return (
     <span
       className={`group/tip relative inline-flex items-center leading-tight ${variantClasses} ${sizeConfig.class} ${className}`}
-      aria-label={`${tierName[tier]} context: ${tierDesc[tier]}`}
+      aria-label={`${tierLabel} context: ${tierDesc}`}
     >
       {Array.from({ length: tierCount[tier] }, (_, i) => (
         <ZapIcon key={i} className={sizeConfig.icon} />
       ))}
       {showTooltip && (
         <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max -translate-x-1/2 rounded-lg border border-[#a0a0a01c] bg-slate-900 px-3 py-2 text-center text-sm leading-relaxed opacity-0 shadow-xl transition-opacity duration-200 group-hover/tip:opacity-100">
-          <span className="font-semibold text-orange-400">
-            {tierName[tier]}
-          </span>
+          <span className="font-semibold text-orange-400">{tierLabel}</span>
           <span className="mt-0.5 block text-xs text-slate-400">
-            {tierDesc[tier]}
+            {tierDesc}
           </span>
           <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
         </span>

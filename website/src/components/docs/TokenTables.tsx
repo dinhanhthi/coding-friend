@@ -1,6 +1,7 @@
 import {
   getAllTokenData,
   getItemStatus,
+  getTierRange,
   type Tier,
   type SkillTokenEntry,
   type AgentTokenEntry,
@@ -198,22 +199,10 @@ export function BootstrapTokens() {
   return <>{approxTokens(tokens)} tokens</>;
 }
 
-const tierSystemRows: { tier: Tier; range: string; meaning: string }[] = [
-  {
-    tier: "low",
-    range: "< 1,500 tokens",
-    meaning: "Lightweight — small prompt footprint",
-  },
-  {
-    tier: "medium",
-    range: "1,500 – 3,000 tokens",
-    meaning: "Moderate — standard prompt footprint",
-  },
-  {
-    tier: "high",
-    range: "> 3,000 tokens",
-    meaning: "Heavy — large prompt footprint",
-  },
+const tierSystemRows: { tier: Tier; meaning: string }[] = [
+  { tier: "low", meaning: "Lightweight — small prompt footprint" },
+  { tier: "medium", meaning: "Moderate — standard prompt footprint" },
+  { tier: "high", meaning: "Heavy — large prompt footprint" },
 ];
 
 export function TierSystemTable() {
@@ -228,13 +217,13 @@ export function TierSystemTable() {
         </tr>
       </thead>
       <tbody>
-        {tierSystemRows.map(({ tier, range, meaning }) => (
+        {tierSystemRows.map(({ tier, meaning }) => (
           <tr key={tier}>
             <td>{tier.charAt(0).toUpperCase() + tier.slice(1)}</td>
             <td>
               <TokenBadge tier={tier} showTooltip={false} />
             </td>
-            <td>{range}</td>
+            <td>{getTierRange(tier)}</td>
             <td>{meaning}</td>
           </tr>
         ))}
