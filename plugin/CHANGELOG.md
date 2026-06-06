@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.35.0 (2026-06-06)
+
+- Add a human-readable overview doc to `/cf-plan` — alongside the agent plan it generates `overview.html` (default) or `overview.md` (set via the `guiPlanFormat` config), a concise, decision-focused summary with Mermaid diagrams (problem/intent, solution, key decisions). Generated point-in-time by `cf-writer-deep` from a sanitized template. New `--no-gui` (alias `--no-human`) flag and the `disableGUIPlan` config disable it; **fast mode and `--inline` skip it automatically**. Every plan is now saved as a **subfolder** (`<slug>/`) with `README.md` as the entry point — single-phase plans included; `--resume` stays backward-compatible with legacy single-file plans. `cf-reviewer-plan` ignores `overview.*` so plan-alignment review still targets the agent plan [#623a2f1](https://github.com/dinhanhthi/coding-friend/commit/623a2f1)
+- Add `--codex` as an alias for `/cf-review --with-codex` [#58e6e1d](https://github.com/dinhanhthi/coding-friend/commit/58e6e1d)
+- Fix the auto-approve hook — anchor `/dev/null` redirects and block newline separators [#93632dc](https://github.com/dinhanhthi/coding-friend/commit/93632dc)
+
 ## v0.34.4 (2026-06-03)
 
 - Improve `/cf-commit` — cap body at 4 bullets (≤ 72 chars each), prefer subject-only for small changes, require concise bullet list over prose [#3cf82c9](https://github.com/dinhanhthi/coding-friend/commit/3cf82c9)
