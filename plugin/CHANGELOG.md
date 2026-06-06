@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.35.1 (2026-06-06)
+
+- Improve the `/cf-plan` human overview — richer, more readable `overview.html` layout and add a `slug` field to the plan README frontmatter [#ffe8444](https://github.com/dinhanhthi/coding-friend/commit/ffe8444)
+
 ## v0.35.0 (2026-06-06)
 
 - Add a human-readable overview doc to `/cf-plan` — alongside the agent plan it generates `overview.html` (default) or `overview.md` (set via the `guiPlanFormat` config), a concise, decision-focused summary with Mermaid diagrams (problem/intent, solution, key decisions). Generated point-in-time by `cf-writer-deep` from a sanitized template. New `--no-gui` (alias `--no-human`) flag and the `disableGUIPlan` config disable it; **fast mode and `--inline` skip it automatically**. Every plan is now saved as a **subfolder** (`<slug>/`) with `README.md` as the entry point — single-phase plans included; `--resume` stays backward-compatible with legacy single-file plans. `cf-reviewer-plan` ignores `overview.*` so plan-alignment review still targets the agent plan [#623a2f1](https://github.com/dinhanhthi/coding-friend/commit/623a2f1)

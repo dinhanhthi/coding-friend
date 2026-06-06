@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.36.3 (2026-06-06)
+
+- Show the installed plugin version alongside the CLI version in `cf -v` / `cf --version` [#b18b67a](https://github.com/dinhanhthi/coding-friend/commit/b18b67a)
+- Clarify the `Default` vs `Global` labels in the learn settings picker (`cf config` / `cf init`) [#875a2f2](https://github.com/dinhanhthi/coding-friend/commit/875a2f2)
+
 ## v1.36.2 (2026-06-06)
 
 - Add `disableGUIPlan` (boolean) and `guiPlanFormat` (`"html" | "md"`) config keys — typed in `CodingFriendConfig`, Zod-validated (unknown/wrong-type values warn and fall back to default), and added to the `KNOWN_KEYS` typo-suggestion list. They control the `/cf-plan` human overview doc. Editable via a new "Plan docs" section in `cf config` and a Plan docs step in `cf init` (both the linear wizard and the returning-user menu); the format prompt defaults to the current `guiPlanFormat` so reconfiguring no longer clobbers an existing `"md"` choice back to `"html"` [#3b1690b](https://github.com/dinhanhthi/coding-friend/commit/3b1690b)
