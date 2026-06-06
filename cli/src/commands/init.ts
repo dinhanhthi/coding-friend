@@ -917,8 +917,8 @@ async function stepPlanDocs(
   );
 
   const disableChoice = await confirm({
-    message: "Disable the /cf-plan human overview doc?",
-    default: currentDisable ?? false,
+    message: "Disable the /cf-plan human overview doc? (off by default)",
+    default: currentDisable ?? true,
   });
 
   let formatChoice: string | undefined;
@@ -1288,8 +1288,8 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       }
       case "planDocs": {
         const planDocsDisableChoice = await confirm({
-          message: "Disable the /cf-plan human overview doc?",
-          default: planDocsDisableVal ?? false,
+          message: "Disable the /cf-plan human overview doc? (off by default)",
+          default: planDocsDisableVal ?? true,
         });
         let planDocsFormatChoice: string | undefined;
         if (!planDocsDisableChoice) {

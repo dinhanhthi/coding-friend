@@ -21,17 +21,17 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 /cf-plan --auto [task description]    # Autopilot: review + fix + commit per phase, no prompts
 /cf-plan --add-tests [task description]  # Implement with TDD (alias: --tdd)
 /cf-plan --resume [plan-file-path]    # Resume an interrupted plan
-/cf-plan --no-gui [task description]  # Skip the human overview doc for this run (alias: --no-human)
+/cf-plan --gui [task description]     # Also generate the human overview doc for this run (alias: --human)
 ```
 
 ## Modes
 
 - **Normal** (default) — Full workflow: discovery, agent-based exploration, brainstorming, validation, plan writing
-- **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Single-phase fast plans stay in chat (no file written); multi-phase fast plans still save to disk. `--fast --auto` always writes a file. Fast mode never generates the human overview doc (even with `--auto`). Best for clear, single-module, additive tasks
+- **Fast** (`--fast`) — Skip discovery and brainstorming. Inline codebase search instead of agents. Go straight to the plan. Single-phase fast plans stay in chat (no file written); multi-phase fast plans still save to disk. `--fast --auto` always writes a file. Fast mode never generates the human overview doc unless you pass `--gui`. Best for clear, single-module, additive tasks
 - **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
 - **Autopilot** (`--auto`) — Orthogonal flag (combines with fast/hard/normal). After you approve the plan once, every phase runs end-to-end: dispatch tasks → auto [`/cf-review`](/docs/skills/cf-review/) → if Critical or Important findings, auto-dispatch a fix task → re-review (max 2 review rounds) → single conventional commit per phase → continue to the next phase, **never** asking for confirmation between phases. Suggestions (💡) are logged in the commit body but don't block. The plan file embeds a `## AUTOPILOT` contract section + `auto: true` frontmatter so the workflow survives long conversations where Claude's context may evict the skill. Resume (`--resume`) honors `auto: true` and continues in autopilot mode automatically.
 - **Resume** (`--resume <path>`) — Resume an interrupted plan from where it left off. Skips already-completed tasks (✅) and re-runs any in-progress or pending ones
-- **No GUI** (`--no-gui` / `--no-human`) — Skip the human-readable overview doc for this run. Does not affect the agent plan files. (Fast mode already skips the overview automatically.)
+- **GUI overview** (`--gui` / `--human`) — Also generate the human-readable overview doc for this run (off by default — it costs extra tokens). Does not affect the agent plan files. Overrides fast mode, which otherwise skips the overview.
 
 If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding. `--auto` is never auto-detected — it must be opted in explicitly.
 
@@ -82,7 +82,7 @@ The skill will:
 - Propose 2–3 approaches with trade-offs (skipped in fast mode, 3–4 approaches with rollback strategies in hard mode)
 - Present findings and wait for your approval (skipped in fast mode)
 - Create a phased implementation plan with `[parallel]` and `[sequential]` markers (with rollback fields per task in hard mode)
-- Save the plan to `docs/plans/` as a subfolder (unless `--fast` with a single phase — those stay in chat); single-phase plans get `README.md` + `overview.html`; multi-phase plans add per-phase files. Pass `--no-gui` to skip the overview doc for one run
+- Save the plan to `docs/plans/` as a subfolder (unless `--fast` with a single phase — those stay in chat); single-phase plans get `README.md`; multi-phase plans add per-phase files. Pass `--gui` to also generate the human overview doc for one run
 - Offer to implement it — parallel phases run concurrently, sequential phases run one at a time (with review gates after every phase in hard mode)
 
 ## When to Use
@@ -101,7 +101,7 @@ Plans are saved to `docs/plans/` (except `--fast` single-phase plans, which stay
 docs/plans/
   └── 2026-03-05-add-cli-command/
         ├── README.md          ← entry point with progress table
-        └── overview.html      ← human-readable overview (default format)
+        └── overview.html      ← human-readable overview (only with --gui or disableGUIPlan: false)
 ```
 
 **Multi-phase plans** (2+ phases) also include per-phase files:
@@ -113,18 +113,18 @@ docs/plans/
         ├── phase-1-setup.md
         ├── phase-2-auth.md
         ├── phase-3-tests.md
-        └── overview.html      ← human-readable overview
+        └── overview.html      ← human-readable overview (only with --gui or disableGUIPlan: false)
 ```
 
 ### Human overview doc
 
-Alongside the agent plan, `/cf-plan` generates a concise, human-readable overview doc. It is decision-focused (what was chosen and why), includes a Mermaid diagram of the phases, and is a point-in-time snapshot — not updated as tasks complete.
+Optionally, `/cf-plan` can generate a concise, human-readable overview doc alongside the agent plan. It is decision-focused (what was chosen and why), includes a Mermaid diagram of the phases, and is a point-in-time snapshot — not updated as tasks complete. It is **off by default** because it costs extra tokens.
 
+- **Enable for one run:** pass `--gui` (alias `--human`)
+- **Enable globally:** set `disableGUIPlan: false` in `.coding-friend/config.json`
 - **Default format:** `overview.html` — rendered in-browser, no Markdown viewer needed
 - **Alternate format:** `overview.md` — set `guiPlanFormat: "md"` in config
-- **Skip for one run:** pass `--no-gui` (alias `--no-human`)
-- **Skip globally:** set `disableGUIPlan: true` in `.coding-friend/config.json`
-- **Auto-skipped:** in **fast mode** (`--fast`/`--quick` or auto-detected fast — including `--fast --auto`), and when `--inline` is active (no files written)
+- **Never generated:** in `--inline` mode (no files written). In **fast mode** it is skipped unless you pass `--gui`
 
 Each plan (or chunk) includes:
 

@@ -547,8 +547,8 @@ async function editDisableGUIPlan(
 
   const value = await confirm({
     message:
-      "Disable the human overview doc that /cf-plan generates alongside the agent plan?",
-    default: currentValue ?? false,
+      "Disable the human overview doc that /cf-plan generates alongside the agent plan? (off by default)",
+    default: currentValue ?? true,
   });
 
   const scope = await askScope();
@@ -609,7 +609,7 @@ async function planDocsSubMenu(): Promise<void> {
       choices: injectBackChoice(
         [
           {
-            name: `Disable overview doc (${disableVal ?? false})`,
+            name: `Disable overview doc (${disableVal ?? true})`,
             value: "disableGUIPlan",
           },
           {
