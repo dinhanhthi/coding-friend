@@ -21,7 +21,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob]
 created: 2026-02-17
-updated: 2026-05-28
+updated: 2026-06-06
 ---
 
 # /cf-help — Coding Friend Help
@@ -105,7 +105,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Context Window Usage
 
-Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,000 tokens), `⚡⚡` = medium (1,000–2,500), `⚡⚡⚡` = high (>2,500). Bootstrap context (~1,300 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, see https://cf.dinhanhthi.com/docs/reference/context-usage/.
+Each skill loads its SKILL.md into context when triggered. Context tiers: `⚡` = low (<1,500 tokens), `⚡⚡` = medium (1,500–3,000), `⚡⚡⚡` = high (>3,000). Bootstrap context (~2,100 tokens) is loaded every session. Agents run in forked sessions with their own context window. For exact token counts, see https://cf.dinhanhthi.com/docs/reference/context-usage/.
 
 ### Step 3: Read specific files (if detailed question)
 

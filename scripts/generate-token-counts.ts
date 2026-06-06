@@ -6,7 +6,7 @@
  *   2. Reads every agent .md in plugin/agents/
  *   3. Reads the bootstrap context (plugin/context/bootstrap.md)
  *   4. Counts tokens for each using @lenml/tokenizer-claude
- *   5. Assigns a context tier: ⚡ low (<1,000), ⚡⚡ medium (1,000–2,500), ⚡⚡⚡ high (>2,500)
+ *   5. Assigns a context tier: ⚡ low (<1,500), ⚡⚡ medium (1,500–3,000), ⚡⚡⚡ high (>3,000)
  *   6. Writes the result to website/src/generated/token-counts.json
  *
  * Output JSON structure:
@@ -46,8 +46,8 @@ const OUTPUT_PATH = join(
 const AUTO_SKILLS = new Set(["cf-tdd", "cf-sys-debug", "cf-verification"]);
 
 const TIERS = {
-  low: { label: "Low", maxTokens: 1000, icon: "⚡" },
-  medium: { label: "Medium", maxTokens: 2500, icon: "⚡⚡" },
+  low: { label: "Low", maxTokens: 1500, icon: "⚡" },
+  medium: { label: "Medium", maxTokens: 3000, icon: "⚡⚡" },
   high: { label: "High", icon: "⚡⚡⚡" },
 } as const;
 
