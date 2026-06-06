@@ -72,7 +72,7 @@ npm run generate:tokens
 2. Reads every agent `.md` in `plugin/agents/`
 3. Reads the bootstrap context (`plugin/context/bootstrap.md`)
 4. Counts tokens using `@lenml/tokenizer-claude`
-5. Assigns a context tier: `⚡` low (<1,000), `⚡⚡` medium (1,000–2,500), `⚡⚡⚡` high (>2,500)
+5. Assigns a context tier: `⚡` low (<1,500), `⚡⚡` medium (1,500–3,000), `⚡⚡⚡` high (>3,000)
 6. Writes everything to `website/src/generated/token-counts.json`
 
 The website imports this JSON (via `website/src/lib/token-data.ts`) to display context footprint info on skill and agent doc pages.

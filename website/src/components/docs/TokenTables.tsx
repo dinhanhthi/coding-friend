@@ -201,17 +201,17 @@ export function BootstrapTokens() {
 const tierSystemRows: { tier: Tier; range: string; meaning: string }[] = [
   {
     tier: "low",
-    range: "< 1,000 tokens",
+    range: "< 1,500 tokens",
     meaning: "Lightweight — small prompt footprint",
   },
   {
     tier: "medium",
-    range: "1,000 – 2,500 tokens",
+    range: "1,500 – 3,000 tokens",
     meaning: "Moderate — standard prompt footprint",
   },
   {
     tier: "high",
-    range: "> 2,500 tokens",
+    range: "> 3,000 tokens",
     meaning: "Heavy — large prompt footprint",
   },
 ];
