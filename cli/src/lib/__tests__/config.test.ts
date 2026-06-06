@@ -255,4 +255,48 @@ describe("loadConfig validation", () => {
     );
     expect(config.review?.withCodex).toBeUndefined();
   });
+
+  it("accepts disableGUIPlan as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ disableGUIPlan: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.disableGUIPlan).toBe(true);
+  });
+
+  it("accepts guiPlanFormat as a valid config key (enum 'md')", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ guiPlanFormat: "md" });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.guiPlanFormat).toBe("md");
+  });
+
+  it("warns and strips guiPlanFormat when given an invalid enum value", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ guiPlanFormat: "pdf" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("guiPlanFormat"),
+    );
+    expect(config.guiPlanFormat).toBeUndefined();
+  });
+
+  it("warns and strips disableGUIPlan when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ disableGUIPlan: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("disableGUIPlan"),
+    );
+    expect(config.disableGUIPlan).toBeUndefined();
+  });
 });
