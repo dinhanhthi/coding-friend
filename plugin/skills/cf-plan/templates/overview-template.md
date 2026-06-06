@@ -4,13 +4,26 @@
 
 <!-- FILL: plan name, e.g. "Add streaming support to cf-review" -->
 
+## Plan at a Glance
+
+<!-- FILL: counts from the plan. Add a Files row only if the plan states it. -->
+
+- **Phases:** {N}
+- **Tasks:** {N}
+
 ## Problem & Intent
 
-<!-- FILL: the original problem / intention / purpose, 2-4 concise sentences -->
+<!-- FILL: the original problem / intention / purpose as concise bullets -->
+
+- Bullet one: what is broken, missing, or desired.
+- Bullet two: why it matters / the impact.
 
 ## Solution (Big Picture)
 
-<!-- FILL: what we're going to do, high level, no step-by-step TODOs -->
+<!-- FILL: the chosen approach as concise bullets, high level, no step-by-step TODOs -->
+
+- Bullet one: the core of the approach.
+- Bullet two: how it solves the problem.
 
 ## Key Decisions
 
