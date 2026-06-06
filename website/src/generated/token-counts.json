@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-06T09:36:23.378Z",
+  "generatedAt": "2026-06-06T12:05:49.214Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -55,7 +55,7 @@
       "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 3030,
+      "tokens": 3055,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -79,7 +79,7 @@
       "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 8890,
+      "tokens": 10123,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -103,7 +103,7 @@
       "temporal": "updated"
     },
     "cf-review": {
-      "tokens": 3368,
+      "tokens": 3378,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
