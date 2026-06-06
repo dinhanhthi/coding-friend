@@ -275,6 +275,15 @@ function StatuslineContent() {
                 2:30pm
               </span>
             </div>
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs mt-1">
+              <span className="whitespace-nowrap text-slate-400">
+                📋 Tasks: <span className="text-emerald-400">2/5</span>
+              </span>
+              <span className="mx-1.5 text-slate-600">│</span>
+              <span className="whitespace-nowrap text-slate-400">
+                🤖 Agent: <span className="text-sky-400">cf-reviewer</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
