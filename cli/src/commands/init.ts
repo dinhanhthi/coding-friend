@@ -515,7 +515,7 @@ async function stepLearnConfig(
   const locationChoices: { name: string; value: string }[] = [];
   if (hasDistinctCurrent) {
     locationChoices.push({
-      name: `Keep current (${currentOutputDir})`,
+      name: `Keep global (${currentOutputDir})`,
       value: "current",
     });
   }
@@ -562,17 +562,22 @@ async function stepLearnConfig(
 
   // c) Categories
   const existingCats = globalLearn?.categories;
-  const defaultNames = DEFAULT_CONFIG.learn.categories
-    .map((c) => c.name)
-    .join(", ");
+  const defaultCats = DEFAULT_CONFIG.learn.categories;
+  const defaultNames = defaultCats.map((c) => c.name).join(", ");
 
   const catChoices: { name: string; value: string }[] = [
     { name: `Use defaults (${defaultNames})`, value: "defaults" },
   ];
-  if (existingCats && existingCats.length > 0) {
+  // Only offer the global value when it actually differs from the defaults —
+  // otherwise the two options look identical and are confusing.
+  if (
+    existingCats &&
+    existingCats.length > 0 &&
+    JSON.stringify(existingCats) !== JSON.stringify(defaultCats)
+  ) {
     const existingNames = existingCats.map((c) => c.name).join(", ");
     catChoices.push({
-      name: `Keep current (${existingNames})`,
+      name: `Keep global (${existingNames})`,
       value: "existing",
     });
   }
@@ -591,7 +596,7 @@ async function stepLearnConfig(
   } else if (catChoice === "custom") {
     console.log();
     if (existingCats && existingCats.length > 0) {
-      console.log("Current categories in config.json:");
+      console.log("Global categories in config.json:");
       for (const c of existingCats) {
         log.dim(`  ${c.name}: ${c.description}`);
       }
