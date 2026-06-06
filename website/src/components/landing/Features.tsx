@@ -277,6 +277,14 @@ function StatuslineContent() {
             </div>
             <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs mt-1">
               <span className="whitespace-nowrap text-slate-400">
+                🆔{" "}
+                <span className="text-slate-500">
+                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                </span>
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs mt-1">
+              <span className="whitespace-nowrap text-slate-400">
                 📋 Tasks: <span className="text-emerald-400">2/5</span>
               </span>
               <span className="mx-1.5 text-slate-600">│</span>

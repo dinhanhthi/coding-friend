@@ -2,8 +2,9 @@
 # Statusline: Show session info in Claude Code status bar.
 #
 # Displays a compact status line with: plugin version, current directory,
-# active model, git branch, account info, context window usage, and API usage percentage
-# with color-coded gradient (green→red) and reset time.
+# active model, git branch, account info, context window usage, API usage percentage
+# with color-coded gradient (green→red) and reset time, the Claude Code session ID,
+# and task/agent progress.
 #
 # Context window usage is read from the stdin JSON (context_window.used_percentage)
 # provided by Claude Code. Account info is read from ~/.claude.json (oauthAccount),
@@ -22,7 +23,7 @@
 #
 # Configuration:
 #   Components can be toggled via ~/.coding-friend/config.json:
-#   { "statusline": { "components": ["version", "folder", "model", "branch", "account", "context", "rate_limit"] } }
+#   { "statusline": { "components": ["version", "folder", "model", "branch", "account", "context", "rate_limit", "session", "task_agent"] } }
 #   Run `cf statusline` to configure interactively.
 #   If no config exists, all components are shown by default.
 
@@ -244,6 +245,11 @@ if component_enabled "context"; then
   fi
 fi
 
+# Session ID — provided by Claude Code in stdin JSON. Parsed once here so both the
+# "session" and "task_agent" components can read it safely under `set -u`,
+# regardless of which (if either) is enabled.
+SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+
 # ── Read account data (for "account" component) ──
 # Always fetch email first, then check alias map for that email.
 # Priority: 1) alias from accountAliases map  2) raw name/email display
@@ -364,11 +370,15 @@ if component_enabled "rate_limit"; then
   fi
 fi
 
+# ── Session ID (for "session" component) ──
+session_line=""
+if component_enabled "session"; then
+  [ -n "$SESSION_ID" ] && session_line="${GRAY}🆔 ${SESSION_ID}${RESET}"
+fi
+
 # ── Task/Agent tracking (for "task_agent" component) ──
 task_agent_line=""
 if component_enabled "task_agent"; then
-  # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)
-  SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
   if [ -n "$SESSION_ID" ]; then
     ta_parts=""
 
@@ -456,7 +466,12 @@ if [ -n "$third_line" ]; then
   printf "\n%s" "$third_line"
 fi
 
-# Line 4: task/agent tracking
+# Line 4: session id
+if [ -n "$session_line" ]; then
+  printf "\n%s" "$session_line"
+fi
+
+# Line 5: task/agent tracking
 if [ -n "$task_agent_line" ]; then
   printf "\n%s" "$task_agent_line"
 fi

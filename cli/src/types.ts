@@ -20,6 +20,7 @@ export type StatuslineComponent =
   | "account"
   | "context"
   | "rate_limit"
+  | "session"
   | "task_agent";
 
 export interface StatuslineConfig {
@@ -43,6 +44,10 @@ export const STATUSLINE_COMPONENTS: {
   {
     id: "rate_limit",
     label: "Rate limit — current & weekly usage (requires curl & jq)",
+  },
+  {
+    id: "session",
+    label: "Claude Code session ID (🆔 a1b2c3d4-…)",
   },
   {
     id: "task_agent",
