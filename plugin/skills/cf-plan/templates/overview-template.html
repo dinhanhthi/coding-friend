@@ -231,6 +231,13 @@
       height: auto;
     }
 
+    /* Mermaid wraps node-label text in <p>; the page's `p { color: var(--fg) }`
+       rule leaks in and overrides the per-node label color, making dark text on
+       bright node fills invisible in dark mode. Inherit the label color instead. */
+    .mermaid p {
+      color: inherit;
+    }
+
     /* ── Zoom controls (added per diagram by JS) ── */
     .zoom-controls {
       position: absolute;
