@@ -891,6 +891,66 @@ async function stepAutoApprove(
   }
 }
 
+async function stepPlanDocs(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentDisable = getMergedValue(
+    "disableGUIPlan",
+    globalCfg,
+    localCfg,
+  ) as boolean | undefined;
+  const currentFormat = getMergedValue("guiPlanFormat", globalCfg, localCfg) as
+    | "html"
+    | "md"
+    | undefined;
+  const scopeLabel = getScopeLabel("disableGUIPlan", globalCfg, localCfg);
+
+  printStepHeader(
+    `Plan docs ${formatScopeLabel(scopeLabel)}`,
+    "The human overview doc /cf-plan writes next to the agent plan — enable/disable and choose format.",
+  );
+
+  const disableChoice = await confirm({
+    message: "Disable the /cf-plan human overview doc?",
+    default: currentDisable ?? false,
+  });
+
+  let formatChoice: string | undefined;
+  if (!disableChoice) {
+    const fmt = await select({
+      message: "Format for the human overview doc?",
+      choices: injectBackChoice(
+        [
+          { name: "HTML", value: "html" },
+          { name: "Markdown", value: "md" },
+        ],
+        "Skip plan docs config",
+      ),
+      default: currentFormat ?? "html",
+    });
+    if (fmt === BACK) {
+      log.dim("Skipped plan docs config.");
+      return;
+    }
+    formatChoice = fmt;
+  }
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped plan docs config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, {
+    disableGUIPlan: disableChoice,
+    ...(formatChoice !== undefined ? { guiPlanFormat: formatChoice } : {}),
+  });
+  log.success(`Saved to ${targetPath}`);
+}
+
 async function stepClaudePermissions(
   externalLearnDir: string | null,
   autoCommit: boolean,
@@ -1032,6 +1092,18 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const planDocsScope = getScopeLabel("disableGUIPlan", globalCfg, localCfg);
+    const planDocsDisableVal = getMergedValue(
+      "disableGUIPlan",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+    const planDocsFormatVal = getMergedValue(
+      "guiPlanFormat",
+      globalCfg,
+      localCfg,
+    ) as "html" | "md" | undefined;
+
     const projectRules = getExistingRules(claudeLocalSettingsPath());
     const userRules = getExistingRules(claudeSettingsPath());
     const allRules = getAllRules();
@@ -1104,6 +1176,12 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         value: "autoApprove",
         description:
           "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
+      },
+      {
+        name: `Plan docs ${formatScopeLabel(planDocsScope)}`,
+        value: "planDocs",
+        description:
+          "  /cf-plan human overview doc — enable/disable + format (html/md)",
       },
       {
         name: `Permissions (${permissionStatus} rules)`,
@@ -1200,6 +1278,46 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           log.dim(
             "Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/",
           );
+        }
+        break;
+      }
+      case "planDocs": {
+        const planDocsDisableChoice = await confirm({
+          message: "Disable the /cf-plan human overview doc?",
+          default: planDocsDisableVal ?? false,
+        });
+        let planDocsFormatChoice: string | undefined;
+        if (!planDocsDisableChoice) {
+          const fmt = await select({
+            message: "Format for the human overview doc?",
+            choices: injectBackChoice(
+              [
+                { name: "HTML", value: "html" },
+                { name: "Markdown", value: "md" },
+              ],
+              "Skip plan docs config",
+            ),
+            default: planDocsFormatVal ?? "html",
+          });
+          if (fmt === BACK) {
+            log.dim("Skipped plan docs config.");
+            break;
+          }
+          planDocsFormatChoice = fmt;
+        }
+        const planDocsTargetScope = await askScope();
+        if (planDocsTargetScope !== "back") {
+          const targetPath =
+            planDocsTargetScope === "global"
+              ? globalConfigPath()
+              : localConfigPath();
+          mergeJson(targetPath, {
+            disableGUIPlan: planDocsDisableChoice,
+            ...(planDocsFormatChoice !== undefined
+              ? { guiPlanFormat: planDocsFormatChoice }
+              : {}),
+          });
+          log.success(`Saved to ${targetPath}`);
         }
         break;
       }
@@ -1391,7 +1509,10 @@ export async function initCommand(): Promise<void> {
   // Step 9: Auto-approve
   await stepAutoApprove(finalGlobal, finalLocal);
 
-  // Step 10: Claude permissions
+  // Step 10: Plan docs
+  await stepPlanDocs(finalGlobal, finalLocal);
+
+  // Step 11: Claude permissions
   printStepHeader(
     "Configure Claude permissions",
     "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",

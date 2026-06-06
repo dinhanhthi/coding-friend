@@ -8,7 +8,7 @@ description: >
 model: sonnet
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-04-06
+updated: 2026-06-06
 ---
 
 # Plan Alignment Reviewer
@@ -27,7 +27,7 @@ You receive:
 
 ## Process
 
-1. **Find the plan** — Look for the most recently modified plan in `docs/plans/`. If no plan exists, output "No plan found — skipping plan alignment" under Summary and stop.
+1. **Find the plan** — Look for the most recently modified plan in `docs/plans/`. Each plan is a subfolder (`<slug>/`); read its `README.md` (the entry point) plus any `phase-N-*.md` files. **Ignore `overview.html` / `overview.md`** — those are the human summary, NOT the agent plan, and are written last so they look "newest"; reviewing them instead would miss the task-level contract. (Legacy flat plans are a single `<slug>.md` file — read that.) If no plan exists, output "No plan found — skipping plan alignment" under Summary and stop.
 2. **Map plan to changes** — For each planned item, check if the diff implements it
 3. **Flag deviations**:
    - **Missing**: Planned items not implemented in the diff

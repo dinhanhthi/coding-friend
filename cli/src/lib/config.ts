@@ -90,6 +90,8 @@ const ConfigSchema = z.strictObject({
   autoApprove: z.boolean().optional(),
   autoApproveIgnore: z.array(z.string()).optional(),
   autoApproveAllowExtra: z.array(z.string()).optional(),
+  disableGUIPlan: z.boolean().optional(),
+  guiPlanFormat: z.enum(["html", "md"]).optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -104,6 +106,8 @@ const KNOWN_KEYS = [
   "autoApprove",
   "autoApproveIgnore",
   "autoApproveAllowExtra",
+  "disableGUIPlan",
+  "guiPlanFormat",
 ];
 
 function suggestKey(unknown: string): string | null {

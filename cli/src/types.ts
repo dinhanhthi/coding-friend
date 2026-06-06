@@ -79,6 +79,8 @@ export interface CodingFriendConfig {
   autoApprove?: boolean;
   autoApproveIgnore?: string[];
   autoApproveAllowExtra?: string[];
+  disableGUIPlan?: boolean;
+  guiPlanFormat?: "html" | "md";
 }
 
 export const DEFAULT_CONFIG: Required<
