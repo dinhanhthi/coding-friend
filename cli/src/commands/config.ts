@@ -175,7 +175,7 @@ async function editLearnOutputDir(
   const locationChoices: { name: string; value: string }[] = [];
   if (hasDistinctCurrent) {
     locationChoices.push({
-      name: `Keep current (${oldOutputDir})`,
+      name: `Keep global (${oldOutputDir})`,
       value: "current",
     });
   }
@@ -311,17 +311,22 @@ async function editLearnCategories(
     | LearnCategory[]
     | undefined;
 
-  const defaultNames = DEFAULT_CONFIG.learn.categories
-    .map((c) => c.name)
-    .join(", ");
+  const defaultCats = DEFAULT_CONFIG.learn.categories;
+  const defaultNames = defaultCats.map((c) => c.name).join(", ");
 
   const catChoices: { name: string; value: string }[] = [
     { name: `Use defaults (${defaultNames})`, value: "defaults" },
   ];
-  if (existingCats && existingCats.length > 0) {
+  // Only offer the global value when it actually differs from the defaults —
+  // otherwise the two options look identical and are confusing.
+  if (
+    existingCats &&
+    existingCats.length > 0 &&
+    JSON.stringify(existingCats) !== JSON.stringify(defaultCats)
+  ) {
     const existingNames = existingCats.map((c) => c.name).join(", ");
     catChoices.push({
-      name: `Keep current (${existingNames})`,
+      name: `Keep global (${existingNames})`,
       value: "existing",
     });
   }
@@ -338,7 +343,7 @@ async function editLearnCategories(
   } else if (catChoice === "custom") {
     console.log();
     if (existingCats && existingCats.length > 0) {
-      console.log("Current categories:");
+      console.log("Global categories:");
       for (const c of existingCats) {
         log.dim(`  ${c.name}: ${c.description}`);
       }
@@ -461,6 +466,11 @@ async function learnSubMenu(): Promise<void> {
     const langVal = globalCfg?.learn?.language;
     const autoCommitVal = globalCfg?.learn?.autoCommit;
     const readmeVal = globalCfg?.learn?.readmeIndex;
+    const catsVal = (
+      globalCfg?.learn?.categories ?? DEFAULT_CONFIG.learn.categories
+    )
+      .map((c) => c.name)
+      .join(", ");
     const isDisabled = globalCfg?.learn?.disabled ?? false;
 
     const disabledLabel = isDisabled ? chalk.yellow(" [disabled]") : "";
@@ -477,7 +487,7 @@ async function learnSubMenu(): Promise<void> {
             value: "language",
           },
           {
-            name: "Categories",
+            name: `Categories (${catsVal})`,
             value: "categories",
           },
           {
