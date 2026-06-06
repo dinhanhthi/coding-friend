@@ -45,7 +45,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 **Codex dual-review flag:**
 
-- If `$ARGUMENTS` contains `--with-codex`, set `codex=true` and strip the flag from `$ARGUMENTS` before any other parsing.
+- If `$ARGUMENTS` contains `--with-codex` (or its alias `--codex`), set `codex=true` and strip the flag from `$ARGUMENTS` before any other parsing.
 - Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in without passing the flag). If absent or `false`, `codex=false`.
 - When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). Codex reviews the **uncommitted working tree** (`codex review --uncommitted`).
 - **Target compatibility:** Codex's `--uncommitted` scope only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews uncommitted changes). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated uncommitted tree. In that case do NOT run Codex — print:
