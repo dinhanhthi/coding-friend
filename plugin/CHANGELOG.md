@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.35.2 (2026-06-07)
+
+- Make the `/cf-plan` human overview doc **opt-in** — it is now **off by default** (it costs extra tokens); enable per-run with `--gui` (alias `--human`). `--gui` overrides fast mode; precedence is inline > `--gui` > fast > config [#df7fa7e](https://github.com/dinhanhthi/coding-friend/commit/df7fa7e)
+- `/cf-review` with Codex now auto-selects the review scope to cover committed changes [#9138857](https://github.com/dinhanhthi/coding-friend/commit/9138857)
+- Add a session ID component to the statusline [#ae38cb4](https://github.com/dinhanhthi/coding-friend/commit/ae38cb4)
+- Fix `/cf-plan` Mermaid node label text so it stays readable on bright fills [#ff153df](https://github.com/dinhanhthi/coding-friend/commit/ff153df)
+
 ## v0.35.1 (2026-06-06)
 
 - Improve the `/cf-plan` human overview — richer, more readable `overview.html` layout and add a `slug` field to the plan README frontmatter [#ffe8444](https://github.com/dinhanhthi/coding-friend/commit/ffe8444)
