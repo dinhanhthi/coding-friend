@@ -63,12 +63,12 @@ export default function Footer() {
           <div className="whitespace-nowrap">
             Other useful tools:{" "}
             <a
-              href="https://github.com/dinhanhthi/ai-sync"
+              href="https://dinhanhthi.com/tools/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-violet-400 hover:text-violet-300"
             >
-              AI Sync
+              check here
             </a>
             .
           </div>
