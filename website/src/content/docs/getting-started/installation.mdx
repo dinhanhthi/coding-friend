@@ -8,8 +8,9 @@ keywords: [installation, setup, claude code plugin, npm, cli, scope]
 
 - [Node.js](https://nodejs.org/) 20+ installed
 - [Claude Code](https://claude.com/claude-code) installed
+- [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
+- (Optional) Codex CLI if you use codex. It's useful for cross-review with [`/cf-review --with-codex`](/docs/skills/cf-review/).
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
-- (Optional) [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
 
 ## Install
 
@@ -27,7 +28,7 @@ cf install
   same CLI: ```bash cdf install cdf init cdf memory status # etc. ```
 </Callout>
 
-If you prefer to install **without the CLI**, you can add the marketplace and install the plugin manually:
+If you prefer to install **without the CLI** (you will lose almost 50% the power of CF, see [CLI Requirements](/docs/reference/cli-requirements/) for more), you can add the marketplace and install the plugin manually:
 
 ```bash
 claude plugin marketplace add dinhanhthi/coding-friend
@@ -63,7 +64,7 @@ cf config
 
 ## Update
 
-Just run `cf update` to update the plugin and CLI. In case of any issues, you can try manually:
+Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `cf update` twice to make it work). In case of any issues, you can try manually:
 
 - **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
 - **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
