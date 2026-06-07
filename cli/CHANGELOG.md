@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.36.4 (2026-06-07)
+
+- Flip the `disableGUIPlan` default to `true` in `cf config` and `cf init` — the `/cf-plan` human overview doc is now off by default [#df7fa7e](https://github.com/dinhanhthi/coding-friend/commit/df7fa7e)
+- Add a `session` statusline component (full Claude Code session ID) — selectable in the statusline component list [#ae38cb4](https://github.com/dinhanhthi/coding-friend/commit/ae38cb4)
+
 ## v1.36.3 (2026-06-06)
 
 - Show the installed plugin version alongside the CLI version in `cf -v` / `cf --version` [#b18b67a](https://github.com/dinhanhthi/coding-friend/commit/b18b67a)
