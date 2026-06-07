@@ -19,8 +19,10 @@ interface Props {
 }
 
 function renderInline(text: string) {
-  // Match backtick code spans and markdown links
-  const tokenRegex = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g;
+  // Match backtick code spans, bold (**…**), and markdown links.
+  // Code spans are matched first so markdown inside them stays literal.
+  const tokenRegex =
+    /`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
   const result: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -41,17 +43,24 @@ function renderInline(text: string) {
           {match[1]}
         </code>,
       );
+    } else if (match[2] !== undefined) {
+      // Bold **text**
+      result.push(
+        <strong key={match.index} className="font-semibold text-white">
+          {match[2]}
+        </strong>,
+      );
     } else {
       // Markdown link [text](url)
       result.push(
         <a
           key={match.index}
-          href={match[3]}
+          href={match[4]}
           target="_blank"
           rel="noopener noreferrer"
           className="text-white/40 hover:text-sky-500"
         >
-          {match[2]}
+          {match[3]}
         </a>,
       );
     }
