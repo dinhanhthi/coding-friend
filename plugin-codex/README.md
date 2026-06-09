@@ -1,0 +1,118 @@
+# coding-friend plugin
+
+Claude Code plugin for disciplined engineering workflows.
+
+## CLI Requirements
+
+The Coding Friend plugin works without the [`coding-friend-cli`](https://www.npmjs.com/package/coding-friend-cli). The CLI is a **separate npm package** that adds the memory MCP server (faster indexed search), the learn-host doc server, and workspace utilities. Skills and agents fall back gracefully when the CLI is missing.
+
+| Tier         | Meaning                                                                                                                            | Count today                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 9 · Agents: 11 · Hooks: 7 |
+| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
+| **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                 |
+
+### Install the CLI (recommended)
+
+```bash
+npm i -g coding-friend-cli
+cf init
+cf memory init
+```
+
+### Working without the CLI
+
+- **Memory search:** `grep -r '<query>' docs/memory/`
+- **Memory writes:** edit `docs/memory/*.md` files directly; index rebuilds when the CLI is installed later.
+- **`$cf-learn` doc viewer:** open `docs/learn/*.md` directly in your editor — the learn-host server is just a convenience renderer.
+- **Statusline:** stays functional with default config when `~/.coding-friend/config.json` is missing.
+
+For the full per-skill / per-agent / per-hook matrix and FAQ, see [`docs/cli-requirements.md`](../docs/cli-requirements.md).
+
+## Development Setup
+
+```bash
+git clone https://github.com/dinhanhthi/coding-friend.git
+cd coding-friend
+```
+
+## Option 1: `--plugin-dir` (CLI only)
+
+Load the plugin directly from source — no installation needed:
+
+```bash
+claude --plugin-dir /path/to/coding-friend/plugin
+```
+
+This is session-scoped: it loads skills, hooks, agents, and commands from the local directory, picks up changes on next session restart, and does not modify installed plugins.
+
+> **Conflict warning:** If coding-friend is already installed from the marketplace, disable it first to avoid duplicates:
+>
+> ```bash
+> claude plugin disable coding-friend   # before dev
+> claude plugin enable coding-friend    # after dev
+> ```
+
+**Tip:** Add an alias for quick access:
+
+```bash
+alias claude-dev="claude --plugin-dir /path/to/coding-friend/plugin"
+```
+
+## Option 2: `cf dev` (CLI + VSCode)
+
+The `cf dev` command (from `coding-friend-cli`) automates switching between local and marketplace sources. Works with both CLI and VSCode extension.
+
+```bash
+cf dev on /path/to/coding-friend    # switch to local
+cf dev off                          # switch back to marketplace
+cf dev status                       # check current mode
+cf dev restart                      # reinstall (fixes broken state)
+cf dev update                       # update to latest local version (off + on)
+cf dev sync                         # push local edits into cache
+```
+
+Changes require restarting Claude Code (or reloading VSCode window).
+
+### Why `cf dev sync` matters
+
+`cf dev on` installs the plugin into a versioned cache (`~/.claude/plugins/cache/.../0.1.0`). After that, Claude Code reads from the cache — not your source files. Edits are invisible until the cache is updated.
+
+`cf dev sync` copies your source directly into the cache without reinstalling or bumping versions (~1 second).
+
+✨ When the plugin is bumped to a new version, run `cf dev restart` to update the cache to the latest version.
+
+✨ **Recommended workflow:**
+
+```bash
+cf dev on /path/to/coding-friend    # one-time setup
+
+# Inner loop:
+# 1. Edit files
+# 2. cf dev sync
+# 3. Restart Claude Code and test
+
+# When done — bump version once and commit
+```
+
+Skips `.git`, `node_modules`, `.claude`, and `.coding-friend` during sync.
+
+## Option 3: Manual marketplace swap
+
+If you don't have the CLI:
+
+```bash
+# Switch to local
+claude plugin uninstall coding-friend
+claude plugin marketplace remove coding-friend-marketplace
+claude plugin marketplace add /path/to/coding-friend
+claude plugin install coding-friend
+```
+
+```bash
+# Switch back to remote
+claude plugin uninstall coding-friend
+claude plugin marketplace remove coding-friend-marketplace
+claude plugin marketplace add https://github.com/dinhanhthi/coding-friend.git
+claude plugin install coding-friend
+```
