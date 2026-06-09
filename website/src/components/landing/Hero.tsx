@@ -19,7 +19,7 @@ export default function Hero() {
             priority
           />
           <p className="mb-4 text-base font-medium tracking-wider text-slate-500 uppercase">
-            Claude Code Plugin
+            Claude Code + Codex CLI
           </p>
           <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] text-balance text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
@@ -33,6 +33,14 @@ export default function Hero() {
 
           {/* Ecosystem pills */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-base">
+            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
+              Claude Code
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 font-mono text-teal-300">
+              Codex CLI
+            </span>
+            <span className="text-slate-600">+</span>
             <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
               Plugin
             </span>

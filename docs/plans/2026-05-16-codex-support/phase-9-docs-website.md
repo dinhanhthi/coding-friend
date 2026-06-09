@@ -6,21 +6,21 @@
 
 ## Progress
 
-| Status  | Task                                                    |
-| ------- | ------------------------------------------------------- |
-| ⬜ TODO | 9.1 README + CLAUDE.md updates                          |
-| ⬜ TODO | 9.2 Website landing — Codex pill + install section      |
-| ⬜ TODO | 9.3 Website docs pages — install, hosts, model mapping  |
-| ⬜ TODO | 9.4 StatsSection + landing Skills metadata (host count) |
-| ⬜ TODO | 9.5 Regenerate `llms.txt` + `llms-full.txt`             |
+| Status     | Task                                                    |
+| ---------- | ------------------------------------------------------- |
+| ✅ DONE    | 9.1 README + tracked developer docs updates             |
+| ✅ DONE    | 9.2 Website landing — Codex pill + install section      |
+| ✅ DONE    | 9.3 Website docs pages — install, hosts, model mapping  |
+| ✅ DONE    | 9.4 StatsSection + landing Skills metadata (host count) |
+| ⚠️ BLOCKED | 9.5 Regenerate `llms.txt` + `llms-full.txt`             |
 
 ## Tasks
 
 1. **9.1 README + CLAUDE.md**
-   - Files: `README.md` (edit), `CLAUDE.md` (edit)
-   - README: add Codex install section under existing Claude install ("Codex CLI users: run `cf install --codex` instead"). Update Commands table noting `--codex` works on lifecycle commands. Add "Supported hosts: Claude Code, Codex CLI" line.
-   - CLAUDE.md: add `## Codex Support` section listing host-aware files, build-script invocation, drift-check command.
-   - Verify: manual review; lint test (if any) passes.
+   - Files: `README.md`, `cli/README.md`, `docs/plugin-dev.md`
+   - README: added supported-host line, Claude/Codex install snippets, Codex manual `/plugins` note, Codex init command, and lifecycle command host-flag note.
+   - Developer docs: `CLAUDE.md` is ignored/untracked in this repo state, so tracked Codex maintenance notes were added to `docs/plugin-dev.md` instead.
+   - Verify: manual review; Prettier check passes.
    - Rollback: revert.
 
 2. **9.2 Website landing**
@@ -30,9 +30,9 @@
    - Rollback: revert components.
 
 3. **9.3 Website docs pages**
-   - Files: `website/src/app/docs/codex/page.mdx` (new), `website/src/app/docs/installation/page.mdx` (edit — add Codex tab), `website/src/lib/navigation.ts` (edit — add Codex doc entry under "Getting started")
-   - New page covers: prerequisites (Codex CLI ≥ 0.130.0), install command, what gets registered, model-mapping (Claude haiku/sonnet/opus → Codex models user picks in config.toml — point to `[agents.<name>.model]` override), known gaps (PreCompact, trackers), troubleshooting (drift check, manual `codex plugin marketplace upgrade`).
-   - Verify: docs build (`cd website && npm run build`) clean.
+   - Files: `website/src/content/docs/getting-started/codex.mdx` (new), `website/src/content/docs/getting-started/installation.mdx`, `website/src/lib/navigation.ts`, plus related CLI/config/reference pages.
+   - New page covers: prerequisites (Codex CLI ≥ 0.130.0), install command, what gets registered, model mapping via copied agent TOMLs, known gaps (manual plugin install, best-effort parallelism, trackers, synchronous hooks, statusline, discoverability, session resume), troubleshooting, drift check, and manual `codex plugin marketplace upgrade`.
+   - Verify: focused formatting checks pass. Full website build is blocked in this sandbox (see exit criteria notes).
    - Rollback: delete page + revert nav.
 
 4. **9.4 StatsSection + Skills metadata**
@@ -42,14 +42,21 @@
    - Rollback: revert.
 
 5. **9.5 llms.txt regeneration**
-   - Files: `website/llms.txt`, `website/llms-full.txt` (auto-generated)
+   - Files: `website/public/llms.txt`, `website/public/llms-full.txt` (auto-generated)
    - Run `cd website && npx tsx scripts/generate-llms-txt.ts`
-   - Verify: regenerated files contain the new Codex doc page; `git diff` only shows additions.
+   - Status: blocked by sandbox IPC restriction (`listen EPERM` on `tsx` pipe). Escalation was rejected because the workspace is out of credits. No workaround was attempted after rejection.
+   - Verify: not run. Regenerate when environment permits and verify the files contain `/docs/getting-started/codex/`.
    - Rollback: regenerate from previous nav state.
 
 ## Exit criteria
 
-- README mentions Codex with install command
-- Website landing has Codex pill + install snippet
-- Codex docs page is reachable from nav
-- llms.txt contains Codex doc URL
+- ✅ README mentions Codex with install command
+- ✅ Website landing has Codex pill + host install snippet
+- ✅ Codex docs page is reachable from nav
+- ✅ `cd cli && npx vitest run src/lib/__tests__/codex-config.test.ts`
+- ✅ `cd cli && npm run build`
+- ✅ `npm run verify:codex-drift`
+- ✅ Prettier checks for touched root/CLI and website files
+- ⚠️ `cd website && npm run lint` fails on an existing unrelated `DocsSidebar.tsx` `react-hooks/set-state-in-effect` error
+- ⚠️ `cd website && npx tsx scripts/generate-llms-txt.ts` blocked by sandbox IPC; escalation rejected due workspace credits
+- ⚠️ `npx next build` was attempted directly to bypass npm prebuild, but the process hung after `Creating an optimized production build ...` and could not be terminated from the sandbox; no website build result is available

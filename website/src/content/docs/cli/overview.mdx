@@ -32,22 +32,22 @@ npm install -g coding-friend-cli@latest
 
 ## Commands
 
-| Command                                     | Purpose                                                                           |
-| ------------------------------------------- | --------------------------------------------------------------------------------- |
-| [`cf install`](/docs/cli/cf-install/)       | Install the Coding Friend plugin (supports `--user`/`--project`/`--local`)        |
-| [`cf uninstall`](/docs/cli/cf-uninstall/)   | Remove the Coding Friend plugin (supports `--user`/`--project`/`--local`)         |
-| [`cf disable`](/docs/cli/cf-disable/)       | Disable the plugin without uninstalling (supports `--user`/`--project`/`--local`) |
-| [`cf enable`](/docs/cli/cf-enable/)         | Re-enable a disabled plugin (supports `--user`/`--project`/`--local`)             |
-| [`cf init`](/docs/cli/cf-init/)             | Initialize workspace with documentation folders and platform configuration        |
-| [`cf config`](/docs/cli/cf-config/)         | Manage Coding Friend configuration interactively                                  |
-| [`cf clean`](/docs/cli/cf-clean/)           | Interactively clean generated docs in `docs/` subdirectories                      |
+| Command                                     | Purpose                                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`cf install`](/docs/cli/cf-install/)       | Install the Coding Friend plugin (Claude default; `--agent codex` for Codex)            |
+| [`cf uninstall`](/docs/cli/cf-uninstall/)   | Remove the Coding Friend plugin (Claude default; `--agent codex` for Codex)             |
+| [`cf disable`](/docs/cli/cf-disable/)       | Disable the plugin without uninstalling (Claude default; `--agent codex` for Codex)     |
+| [`cf enable`](/docs/cli/cf-enable/)         | Re-enable a disabled plugin (Claude default; `--agent codex` for Codex)                 |
+| [`cf init`](/docs/cli/cf-init/)             | Initialize workspace with documentation folders and host configuration                  |
+| [`cf config`](/docs/cli/cf-config/)         | Manage Coding Friend configuration interactively                                        |
+| [`cf clean`](/docs/cli/cf-clean/)           | Interactively clean generated docs in `docs/` subdirectories                            |
 | [`cf learn`](/docs/cli/cf-learn/)           | Host learning docs as a website (`cf learn host`) or push them to git (`cf learn push`) |
-| [`cf mcp`](/docs/cli/cf-mcp/)               | Setup MCP server for integrating learning docs with other LLM clients             |
-| [`cf statusline`](/docs/cli/cf-statusline/) | Configure the Claude Code statusline with project info                            |
-| [`cf update`](/docs/cli/cf-update/)         | Update plugin, CLI, and statusline (supports scope flags)                         |
-| [`cf dev`](/docs/cli/cf-dev/)               | Switch between local and remote plugin for development                            |
-| [`cf session`](/docs/cli/cf-session/)       | Save and load Claude Code sessions across machines                                |
-| `cf help`                                   | Show help information                                                             |
+| [`cf mcp`](/docs/cli/cf-mcp/)               | Setup MCP server for integrating learning docs with other LLM clients                   |
+| [`cf statusline`](/docs/cli/cf-statusline/) | Configure the Claude Code statusline with project info                                  |
+| [`cf update`](/docs/cli/cf-update/)         | Update plugin, CLI, and statusline (Claude default; `--agent codex` for Codex)          |
+| [`cf dev`](/docs/cli/cf-dev/)               | Switch between local and remote plugin for development                                  |
+| [`cf session`](/docs/cli/cf-session/)       | Save and load Claude Code sessions across machines                                      |
+| `cf help`                                   | Show help information                                                                   |
 
 > `cf host` still works as a legacy alias for [`cf learn host`](/docs/cli/cf-learn/).
 

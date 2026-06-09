@@ -58,6 +58,20 @@ CLAUDE_CONFIG_DIR=~/.claude-work claude
 
 Always keep `cf dev` and `claude` on the same `CLAUDE_CONFIG_DIR` — an `export` in your shell profile (or an alias) is the easiest way to avoid a mismatch.
 
+## Codex artifact
+
+Claude remains the canonical authoring host for plugin source. Codex support is generated from the same source tree:
+
+- Canonical source: `plugin/`
+- Generated Codex artifact: `plugin-codex/`
+- Agent converter: `scripts/lib/agent-md-to-toml.js`
+- Build command: `npm run build:codex`
+- Drift check: `npm run verify:codex-drift`
+
+When editing shared plugin source, keep host-specific syntax behind placeholders such as `{{cf:slash ...}}`, `{{cf:agent_ref ...}}`, `{{cf:dispatch ...}}`, `{{cf:plugin_root}}`, and `{{cf:host}}`. Do not hard-code Claude-only command, agent, or plugin-root syntax in files that are copied into `plugin-codex/`.
+
+Host-aware CLI code lives in `cli/src/lib/host.ts`, `cli/src/lib/codex-config.ts`, and the Codex branches of lifecycle commands (`install`, `uninstall`, `enable`, `disable`, `update`, `init`, and `permission`). Codex auto-approve uses `autoApproveCodex` and remains deterministic-only; Claude auto-approve keeps `autoApprove` and the Sonnet classifier.
+
 ## Token counts
 
 Each skill and agent consumes context tokens when loaded. The script `scripts/generate-token-counts.ts` measures this and writes the result to `website/src/generated/token-counts.json`.

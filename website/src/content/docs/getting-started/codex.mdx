@@ -1,0 +1,121 @@
+---
+title: "Codex CLI"
+description: "Use Coding Friend as a first-class Codex CLI plugin host."
+keywords: [codex, codex cli, host, plugin, agents, mcp, setup]
+---
+
+## Overview
+
+Coding Friend supports Codex CLI alongside Claude Code. Claude remains the default host for `cf` commands; use `--agent codex` or the `--codex` alias when you want the Codex path.
+
+<Callout type="info">
+  Codex support targets Codex CLI `0.130.0` or newer. Run `codex --version`
+  before setup if you are unsure.
+</Callout>
+
+## Install
+
+```bash
+# 1. Install the shared CLI
+npm i -g coding-friend-cli
+
+# 2. Register the Codex marketplace and deploy generated agents
+cf install --agent codex
+
+# 3. Open Codex, then install the plugin from the plugin UI
+codex
+# inside Codex: /plugins -> install coding-friend
+
+# 4. Initialize this project for Codex
+cf init --agent codex --trust-project
+```
+
+`--trust-project` marks the current project trusted in `~/.codex/config.toml`, so Codex can read the project `.codex/config.toml` written by Coding Friend. Skip it if you prefer to review and trust the project manually.
+
+## What Gets Registered
+
+`cf install --agent codex`:
+
+- Checks that the `codex` binary exists and is at least `0.130.0`
+- Runs `codex plugin marketplace add dinhanhthi/coding-friend`
+- Records `coding-friend` as enabled in `~/.codex/config.toml`
+- Copies generated agent TOMLs into your personal Codex agents directory when available
+
+`cf init --agent codex`:
+
+- Creates the usual Coding Friend docs folders (`docs/plans`, `docs/memory`, `docs/research`, and related folders)
+- Writes `AGENTS.md` with Coding Friend rules and `$cf-*` skill references
+- Registers `coding-friend-memory` in both `~/.codex/config.toml` and project `.codex/config.toml`
+- Writes project-scoped agent TOMLs under `.codex/agents/`
+- Sets `agents.max_depth = 2` in `~/.codex/config.toml` so nested Coding Friend review and implementation agents can run
+
+## Daily Commands
+
+```bash
+cf install --agent codex
+cf init --agent codex
+cf update --agent codex
+cf enable --agent codex
+cf disable --agent codex
+cf uninstall --agent codex
+```
+
+`cf update --agent codex` runs `codex plugin marketplace upgrade coding-friend-marketplace`. If Codex reports that the marketplace was upgraded but the plugin is not installed yet, open Codex and use `/plugins` to install it.
+
+## Skills And Agents
+
+In Codex, Coding Friend skills use `$cf-*` syntax instead of Claude's `/cf-*` syntax:
+
+```text
+$cf-plan add dark mode to the dashboard
+$cf-review --target HEAD~1..HEAD
+$cf-fix investigate the checkout crash
+```
+
+Agents are generated from the same Markdown source used by Claude and copied as Codex TOML files. The generated files preserve the source agent's intent tier:
+
+- `haiku` - lightweight exploration, writing, and focused checks
+- `sonnet` - deeper implementation and specialist review
+- `opus` - planning and highest-effort reasoning
+- `inherit` - use the current session model
+
+If your Codex setup requires explicit model IDs, edit the copied TOML files in `.codex/agents/` or `~/.codex/agents/` and set each agent's `model = "..."` to the model you want Codex to use.
+
+## Auto-Approve
+
+Codex auto-approve is separate from Claude auto-approve:
+
+```bash
+cf permission --agent codex --enable-auto-approve
+cf permission --agent codex --disable-auto-approve
+```
+
+This writes `autoApproveCodex` in `.coding-friend/config.json`. Codex v1 auto-approve is deterministic-only: known-safe reads and working-directory edits can be approved, destructive actions are blocked, and unknown actions defer to Codex native approval. The Claude Sonnet classifier is intentionally not used from Codex hooks.
+
+## Known Differences
+
+- Codex plugin install still has a manual `/plugins` step; the CLI can register and upgrade marketplaces but cannot fully install a plugin non-interactively in Codex `0.130.0`.
+- Parallel agent fan-out is best effort. Coding Friend raises `agents.max_depth` to 2, but Codex still decides how to schedule spawned agents.
+- Task tracking hooks that depend on Claude-only task events are not registered on Codex.
+- Codex hooks are synchronous, so generated Codex hooks keep payloads small and drop Claude's `async` flag.
+- Codex statusline support is static. Claude's live counters and per-event statusline updates are not available on Codex.
+- `$cf-*` skill discoverability differs from Claude's slash menu.
+- Session save/load remains Claude-oriented; for Codex use native `codex resume` and `codex fork`.
+
+## Troubleshooting
+
+```bash
+codex --version
+cf install --agent codex
+cf init --agent codex --trust-project
+cf update --agent codex
+```
+
+If generated agents are missing, rerun `cf install --agent codex` after the plugin is installed, then run `cf init --agent codex` in the project.
+
+For contributors, regenerate the Codex artifact and verify it is committed:
+
+```bash
+npm run build:codex
+npm run verify:codex-drift
+```
