@@ -1,0 +1,32 @@
+{
+  "name": "coding-friend-marketplace",
+  "version": "1.0.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Codex CLI",
+  "owner": {
+    "name": "Anh-Thi Dinh"
+  },
+  "plugins": [
+    {
+      "name": "coding-friend",
+      "source": {
+        "source": "local",
+        "path": "./plugin-codex"
+      },
+      "description": "Lean toolkit for disciplined engineering workflows with Codex CLI",
+      "author": {
+        "name": "Anh-Thi Dinh"
+      },
+      "keywords": [
+        "skills",
+        "tdd",
+        "debugging",
+        "code-review",
+        "workflows",
+        "knowledge",
+        "agents"
+      ],
+      "license": "MIT",
+      "category": "Productivity"
+    }
+  ]
+}
