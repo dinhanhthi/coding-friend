@@ -1,9 +1,31 @@
 import chalk from "chalk";
+import {
+  isCodexPluginDisabled,
+  setCodexPluginEnabled,
+} from "../lib/codex-config.js";
 import { log } from "../lib/log.js";
 import { isPluginDisabled, setPluginEnabled } from "../lib/plugin-state.js";
-import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
+import {
+  resolveHostFlags,
+  resolveScope,
+  type ScopeFlags,
+} from "../lib/prompt-utils.js";
 
 export async function enableCommand(opts: ScopeFlags = {}): Promise<void> {
+  const { host } = resolveHostFlags(opts);
+  if (host === "codex") {
+    if (!isCodexPluginDisabled()) {
+      log.info("Coding Friend is already enabled for Codex.");
+      return;
+    }
+
+    log.step("Enabling Codex plugin...");
+    setCodexPluginEnabled(true);
+    log.success("Coding Friend enabled for Codex.");
+    log.dim("Restart Codex CLI for the change to take effect.");
+    return;
+  }
+
   // Step 1: Resolve scope
   const scope = await resolveScope(
     opts,

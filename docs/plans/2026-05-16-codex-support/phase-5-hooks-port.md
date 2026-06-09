@@ -30,7 +30,7 @@
      - Read `hookEventName = "PermissionRequest"` from stdin JSON
      - Read `tool_name`, `tool_input` per Codex schema (PermissionRequest payload, verified in Phase 0.4)
      - Output `{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"|"deny","message":"..."}}}` instead of Claude's `{"decision":"allow"|"deny",...}`
-     - Read `autoApprove.codex` (not `autoApprove`) from `.coding-friend/config.json` — default OFF if missing or `false`
+     - Read `autoApproveCodex` (not `autoApprove`) from `.coding-friend/config.json` — default OFF if missing or `false`
      - Deterministic-only v1: safe known patterns may allow, dangerous patterns deny, unknown emits no decision so Codex native approval handles it. Do not call Claude or any LLM classifier from the Codex hook.
    - Verify: fixture tests for safe-tool allow, dangerous-pattern deny, unknown→no decision, config-disabled→no-op
    - Rollback: delete forked file + test.

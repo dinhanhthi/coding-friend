@@ -20,10 +20,17 @@ import {
   claudeLocalSettingsPath,
   claudeProjectSettingsPath,
   claudeSettingsPath,
+  codexConfigTomlPath,
   globalConfigPath,
   localConfigPath,
   resolvePath,
 } from "../lib/paths.js";
+import {
+  deployCodexAgents,
+  findCodexAgentSourceDir,
+  trustCodexProject,
+  writeCodexMemoryMcpConfig,
+} from "../lib/codex-config.js";
 import {
   hasShellCompletion,
   ensureShellCompletion,
@@ -49,6 +56,8 @@ import {
   BACK,
   injectBackChoice,
   askScope,
+  resolveHostFlags,
+  type ScopeFlags,
   showConfigHint,
   getScopeLabel,
   formatScopeLabel,
@@ -1348,7 +1357,17 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
 
 // ─── Main ─────────────────────────────────────────────────────────────
 
-export async function initCommand(): Promise<void> {
+export interface InitOptions extends ScopeFlags {
+  trustProject?: boolean;
+}
+
+export async function initCommand(opts: InitOptions = {}): Promise<void> {
+  const { host } = resolveHostFlags(opts);
+  if (host === "codex") {
+    initCodexCommand(opts);
+    return;
+  }
+
   _stepIndex = 0;
   console.log();
   printBanner("✨ Coding Friend Setup Wizard ✨");
@@ -1554,4 +1573,109 @@ export async function initCommand(): Promise<void> {
   log.dim(
     "Available commands: /cf-ask, /cf-plan, /cf-design, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help",
   );
+}
+
+function initCodexCommand(opts: InitOptions): void {
+  _stepIndex = 0;
+  console.log();
+  printBanner("✨ Coding Friend Codex Setup ✨");
+  console.log();
+
+  const gitAvailable = isGitRepo();
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const docsDir = getDocsDir(globalCfg, localCfg);
+  const memoryDir = join(process.cwd(), docsDir, "memory");
+
+  ensureDocsFolders(docsDir, [
+    "plans",
+    "memory",
+    "research",
+    "sessions",
+    "reviews",
+    "warm",
+  ]);
+
+  if (!existsSync(localConfigPath())) {
+    writeJson(localConfigPath(), {});
+  }
+
+  const agentsMdPath = join(process.cwd(), "AGENTS.md");
+  if (!existsSync(agentsMdPath)) {
+    writeFileSync(agentsMdPath, renderCodexAgentsMd(), "utf8");
+    log.success("Created AGENTS.md.");
+  } else {
+    log.dim("AGENTS.md already exists; left unchanged.");
+  }
+
+  if (gitAvailable) {
+    ensureGitignoreEntry("AGENTS.md");
+  }
+
+  writeCodexMemoryMcpConfig(memoryDir, codexConfigTomlPath());
+  log.success("Registered coding-friend-memory in ~/.codex/config.toml.");
+
+  const projectCodexDir = join(process.cwd(), ".codex");
+  const projectConfigPath = join(projectCodexDir, "config.toml");
+  writeCodexMemoryMcpConfig(memoryDir, projectConfigPath);
+  log.success("Wrote project .codex/config.toml.");
+
+  const agentSource = findCodexAgentSourceDir();
+  if (agentSource) {
+    const copied = deployCodexAgents(
+      agentSource,
+      join(projectCodexDir, "agents"),
+    );
+    log.success(`Deployed ${copied} project Codex agent definition(s).`);
+  } else {
+    log.warn(
+      "Codex agent TOMLs were not found locally yet. Install the plugin from Codex, then rerun cf init --agent codex.",
+    );
+  }
+
+  if (opts.trustProject) {
+    trustCodexProject(process.cwd());
+    log.success("Marked this project trusted in ~/.codex/config.toml.");
+  } else {
+    log.dim(
+      "Project trust was not changed. To enable project-scoped Codex config, run: cf init --agent codex --trust-project",
+    );
+  }
+
+  console.log();
+  log.congrats("Codex setup complete!");
+  log.dim("Restart Codex CLI or start a new session to use Coding Friend.");
+}
+
+function renderCodexAgentsMd(): string {
+  return `# Coding Friend
+
+Use Coding Friend skills with Codex's $skill syntax.
+
+## Rules
+
+1. Verify before claiming done.
+2. Respect .coding-friend/ignore and project privacy boundaries.
+3. Use conventional commits without AI attribution.
+4. Store durable project knowledge in docs/memory/.
+
+## Skills
+
+$cf-ask, $cf-plan, $cf-review, $cf-review-out, $cf-review-in, $cf-commit, $cf-design, $cf-ship, $cf-fix, $cf-optimize, $cf-scan, $cf-remember, $cf-learn, $cf-teach, $cf-research, $cf-session, $cf-warm, $cf-help
+`;
+}
+
+function ensureGitignoreEntry(entry: string): void {
+  const gitignorePath = ".gitignore";
+  const existing = existsSync(gitignorePath)
+    ? readFileSync(gitignorePath, "utf8")
+    : "";
+  if (existing.split(/\n/).includes(entry)) return;
+
+  const next =
+    existing.endsWith("\n") || existing.length === 0
+      ? `${existing}${entry}\n`
+      : `${existing}\n${entry}\n`;
+  writeFileSync(gitignorePath, next, "utf8");
+  log.success(`Added ${entry} to .gitignore.`);
 }

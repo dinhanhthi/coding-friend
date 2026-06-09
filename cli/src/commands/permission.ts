@@ -25,6 +25,8 @@ import type { PermissionRule } from "../lib/permissions.js";
 import type { CodingFriendConfig } from "../types.js";
 import {
   askScope,
+  resolveHostFlags,
+  type ScopeFlags,
   getScopeLabel,
   formatScopeLabel,
   getMergedValue,
@@ -274,7 +276,17 @@ export async function permissionCommand(opts: {
   all?: boolean;
   user?: boolean;
   project?: boolean;
+  agent?: string;
+  codex?: boolean;
+  enableAutoApprove?: boolean;
+  disableAutoApprove?: boolean;
 }): Promise<void> {
+  const { host } = resolveHostFlags(opts satisfies ScopeFlags);
+  if (host === "codex") {
+    codexPermissionCommand(opts);
+    return;
+  }
+
   printBanner("✨ Coding Friend Permissions ✨");
   console.log();
 
@@ -395,5 +407,45 @@ export async function permissionCommand(opts: {
   applyPermissions(settingsPath, toAdd, toRemove);
   log.success(
     `Done — added ${toAdd.length}, removed ${toRemove.length} rules in ${settingsLabel}.`,
+  );
+}
+
+function codexPermissionCommand(opts: {
+  enableAutoApprove?: boolean;
+  disableAutoApprove?: boolean;
+}): void {
+  printBanner("✨ Coding Friend Codex Permissions ✨");
+  console.log();
+
+  if (opts.enableAutoApprove && opts.disableAutoApprove) {
+    log.error(
+      "Use only one Codex auto-approve flag: --enable-auto-approve or --disable-auto-approve.",
+    );
+    process.exit(1);
+    return;
+  }
+
+  const nextValue = opts.enableAutoApprove
+    ? true
+    : opts.disableAutoApprove
+      ? false
+      : undefined;
+
+  if (nextValue === undefined) {
+    const cfg = readJson<CodingFriendConfig>(localConfigPath());
+    const current = cfg?.autoApproveCodex === true;
+    log.info(`Codex auto-approve is ${current ? "enabled" : "disabled"}.`);
+    log.dim(
+      "Use --enable-auto-approve or --disable-auto-approve to change it.",
+    );
+    return;
+  }
+
+  mergeJson(localConfigPath(), { autoApproveCodex: nextValue });
+  log.success(
+    `Codex auto-approve ${nextValue ? "enabled" : "disabled"} in .coding-friend/config.json.`,
+  );
+  log.dim(
+    "Codex v1 auto-approve is deterministic-only; unknown actions defer to Codex native approval.",
   );
 }

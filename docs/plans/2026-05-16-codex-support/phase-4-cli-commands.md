@@ -10,12 +10,12 @@
 
 | Status  | Task                                                |
 | ------- | --------------------------------------------------- |
-| ⬜ TODO | 4.1 `cf install --agent codex`                      |
-| ⬜ TODO | 4.2 `cf uninstall --agent codex`                    |
-| ⬜ TODO | 4.3 `cf enable --agent codex` / `cf disable --agent codex` |
-| ⬜ TODO | 4.4 `cf update --agent codex`                       |
-| ⬜ TODO | 4.5 `cf init --agent codex` + `cf permission --agent codex` |
-| ⬜ TODO | 4.6 Register host flags in commander entrypoint     |
+| ✅ DONE | 4.1 `cf install --agent codex`                      |
+| ✅ DONE | 4.2 `cf uninstall --agent codex`                    |
+| ✅ DONE | 4.3 `cf enable --agent codex` / `cf disable --agent codex` |
+| ✅ DONE | 4.4 `cf update --agent codex`                       |
+| ✅ DONE | 4.5 `cf init --agent codex` + `cf permission --agent codex` |
+| ✅ DONE | 4.6 Register host flags in commander entrypoint     |
 
 ## Tasks
 
@@ -53,7 +53,7 @@
    - Files: `cli/src/commands/init.ts` (edit), `cli/src/commands/permission.ts` (edit), tests
    - `init --agent codex`: registers MCP `coding-friend-memory` in `[mcp_servers.coding-friend-memory]` in `~/.codex/config.toml`, writes root `<cwd>/AGENTS.md`, and writes project `.codex/config.toml` / `.codex/agents/*.toml` as needed.
    - **Trust level — explicit consent only:** if user passes `--trust-project`, set `[projects."<cwd>"] trust_level = "trusted"`. **Never silently set this** — trust is a security decision belonging to the user. Without the flag, print "To enable project-scoped config, run `cf init --agent codex --trust-project` or trust manually via Codex."
-   - `permission --agent codex`: manages `autoApprove.codex` flag in `.coding-friend/config.json` (Phase 5 hook reads this). Provides `--enable-auto-approve` / `--disable-auto-approve` flags. Default OFF on Codex even if Claude has auto-approve enabled.
+   - `permission --agent codex`: manages `autoApproveCodex` flag in `.coding-friend/config.json` (Phase 5 hook reads this). This deliberately avoids changing the existing Claude `autoApprove` boolean schema. Provides `--enable-auto-approve` / `--disable-auto-approve` flags. Default OFF on Codex even if Claude has auto-approve enabled.
    - Verify: TOML mutations don't clobber existing keys; config.json mutations preserve other fields; no `trust_level` written without `--trust-project`.
    - Rollback: revert each file.
 
@@ -69,3 +69,10 @@
 - All Claude lifecycle tests pass unchanged (regression guard)
 - New Codex tests cover happy path + min-version-fail + already-installed cases
 - `cf init --agent codex` writes a valid `~/.codex/config.toml` snippet that Codex can parse (`codex --help` still works after the edit)
+
+## Phase 4 validation
+
+- Focused affected suite: `npx vitest run src/lib/__tests__/codex-config.test.ts src/lib/__tests__/config.test.ts src/commands/__tests__/install.test.ts src/commands/__tests__/uninstall.test.ts src/commands/__tests__/enable.test.ts src/commands/__tests__/disable.test.ts src/commands/__tests__/update.test.ts src/commands/__tests__/permission.test.ts`
+- Build: `npm run build`
+- Smoke: `cf init --agent codex --trust-project` with temp `CODEX_HOME` produced parseable Codex TOML; `codex --help` accepted it.
+- Full `npm test` requires unsandboxed local IPC/socket listeners for `tsx` and cf-memory daemon tests. Sandbox execution fails with `EPERM`; the required escalation request was rejected by the environment because the workspace is out of credits.

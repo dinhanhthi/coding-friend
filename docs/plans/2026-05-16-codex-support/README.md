@@ -14,7 +14,7 @@ Locked decisions (Round 1 discovery + adopted from Codex agent's cross-review):
 1. Install UX: `cf install --agent codex` (extensible flag, default `claude`), hosts independent
 2. Memory: shared `docs/memory/` + single MCP daemon registered to both hosts
 3. Slash refs: `{{cf:command}}` placeholder + build transform
-4. Auto-approve on Codex: **deterministic-only v1** (no LLM classifier port); opt-in via `autoApprove.codex: true`; unknown → defer to Codex native approval
+4. Auto-approve on Codex: **deterministic-only v1** (no LLM classifier port); opt-in via `autoApproveCodex: true`; unknown → defer to Codex native approval
 5. Architecture: 1 repo, 2 plugin folders (`plugin/` source + `plugin-codex/` committed artifact)
 6. Versioning: locked `v*` ↔ `codex-v*` (same number)
 7. `cf install --agent codex` installs ONLY Codex (no side-effect on Claude)
@@ -41,7 +41,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 | ✅ DONE | Phase 1: Host abstraction               | [phase-1-host-abstraction.md](./phase-1-host-abstraction.md)   | 4 tasks |
 | ✅ DONE | Phase 2: Placeholder convention + sweep | [phase-2-placeholders.md](./phase-2-placeholders.md)           | 3 tasks |
 | ✅ DONE | Phase 3: Manifests + build pipeline     | [phase-3-manifests-build.md](./phase-3-manifests-build.md)     | 4 tasks |
-| ⬜ TODO | Phase 4: CLI Codex commands             | [phase-4-cli-commands.md](./phase-4-cli-commands.md)           | 6 tasks |
+| ✅ DONE | Phase 4: CLI Codex commands             | [phase-4-cli-commands.md](./phase-4-cli-commands.md)           | 6 tasks |
 | ⬜ TODO | Phase 5: Hooks port                     | [phase-5-hooks-port.md](./phase-5-hooks-port.md)               | 5 tasks |
 | ⬜ TODO | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
 | ⬜ TODO | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
@@ -70,7 +70,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 - **`marketplace add` may prompt for trust.** Phase 0.6 probes the non-interactive path. If only interactive, document.
 - **Codex CLI is pre-1.0 (v0.130.0).** Plugin/hook schema may change. Mitigation: pin min version in `cf install --agent codex`; smoke-test on every CI run; document supported Codex version range.
 - **Build artifact drift.** `plugin-codex/` is committed; PR author may forget to rebuild. Mitigation: pre-commit hook regenerates + CI drift check fails PR with non-empty diff.
-- **Auto-approve port correctness.** Schema differs (`hookSpecificOutput.decision.behavior` vs Claude's `decision`). Mitigation: keep opt-in separate from Claude (`autoApprove.codex`); add fixture tests; deny-by-default on unknown patterns.
+- **Auto-approve port correctness.** Schema differs (`hookSpecificOutput.decision.behavior` vs Claude's `decision`). Mitigation: keep opt-in separate from Claude (`autoApproveCodex`); add fixture tests; deny-by-default on unknown patterns.
 - **Memory MCP contention.** SQLite WAL handles reads; writes serialize. Mitigation: existing daemon already single-writer-multi-reader; just register MCP with both hosts.
 - **Auto-capture fragility on Codex**: current Codex supports `PreCompact` and exposes `transcript_path`, but transcript format is not stable. Mitigation: use `PreCompact` first and keep a `Stop` fallback/throttle for long sessions if needed.
 - **Agent dispatch translation.** Claude uses `Agent` tool + `subagent_type: "coding-friend:cf-explorer"`. Codex uses spawn-agents tool or `$cf-name` mention. Mitigation: `{{cf:dispatch agent=... prompt=...}}` placeholder; build renders to host-specific syntax.

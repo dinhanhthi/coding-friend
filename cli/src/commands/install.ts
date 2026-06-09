@@ -1,19 +1,36 @@
 import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
+import { checkCodexVersion } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
 import { devStatePath } from "../lib/paths.js";
+import {
+  deployCodexAgents,
+  findCodexAgentSourceDir,
+  isCodexMarketplaceRegistered,
+  setCodexPluginEnabled,
+} from "../lib/codex-config.js";
 import {
   isMarketplaceRegistered,
   isPluginDisabled,
   enableMarketplaceAutoUpdate,
 } from "../lib/plugin-state.js";
-import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
+import {
+  resolveHostFlags,
+  resolveScope,
+  type ScopeFlags,
+} from "../lib/prompt-utils.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { getInstalledVersion } from "../lib/statusline.js";
 import { getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
 
 export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
+  const { host } = resolveHostFlags(opts);
+  if (host === "codex") {
+    await installCodexCommand();
+    return;
+  }
+
   printBanner("✨ Coding Friend Install ✨");
   console.log();
 
@@ -23,6 +40,7 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
       "Claude CLI not found. Install it first: https://docs.anthropic.com/en/docs/claude-code/getting-started",
     );
     process.exit(1);
+    return;
   }
 
   // Step 2: Check dev mode (installing marketplace plugin would conflict)
@@ -131,4 +149,70 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   );
   console.log();
   log.dim("Restart Claude Code (or start a new session) to use the plugin.");
+}
+
+async function installCodexCommand(): Promise<void> {
+  printBanner("✨ Coding Friend Codex Install ✨");
+  console.log();
+
+  if (!commandExists("codex")) {
+    log.error(
+      "Codex CLI not found. Install it first: https://developers.openai.com/codex",
+    );
+    process.exit(1);
+    return;
+  }
+
+  const version = checkCodexVersion();
+  if (!version.ok) {
+    log.error(
+      `Codex CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires Codex CLI >= ${version.min}.`,
+    );
+    log.dim("Upgrade Codex, then rerun: cf install --agent codex");
+    process.exit(1);
+    return;
+  }
+
+  if (isCodexMarketplaceRegistered()) {
+    log.success("Codex marketplace already registered.");
+  } else {
+    log.step("Adding coding-friend Codex marketplace...");
+    const result = run("codex", [
+      "plugin",
+      "marketplace",
+      "add",
+      "dinhanhthi/coding-friend",
+    ]);
+    if (result === null && !isCodexMarketplaceRegistered()) {
+      log.error(
+        "Failed to add Codex marketplace. Try manually: codex plugin marketplace add dinhanhthi/coding-friend",
+      );
+      process.exit(1);
+      return;
+    }
+    log.success("Codex marketplace registered.");
+  }
+
+  setCodexPluginEnabled(true);
+  log.success("Codex plugin enablement recorded in ~/.codex/config.toml.");
+
+  const agentSource = findCodexAgentSourceDir();
+  if (agentSource) {
+    const copied = deployCodexAgents(agentSource);
+    log.success(`Deployed ${copied} Codex agent definition(s).`);
+  } else {
+    log.warn(
+      "Codex agent TOMLs were not found locally yet. Install the plugin from Codex, then run cf init --agent codex to deploy project agents.",
+    );
+  }
+
+  console.log();
+  log.info("One manual Codex step remains:");
+  console.log(
+    `  ${chalk.cyan("codex")} → ${chalk.cyan("/plugins")} → install ${chalk.bold("coding-friend")}`,
+  );
+  log.dim(
+    "Codex CLI v0.130.0 exposes marketplace registration but not scriptable plugin install.",
+  );
+  log.dim("Run cf update --agent codex for on-demand plugin updates.");
 }
