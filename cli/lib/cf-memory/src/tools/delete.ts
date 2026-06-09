@@ -28,7 +28,7 @@ export function registerDelete(
           isError: true,
         };
       }
-      // Remove from CLAUDE.md (any category may have been synced via sync_to_claude_md)
+      // Remove from host instruction files if this memory was synced.
       if (ctx?.docsDir) {
         try {
           removeFromClaudeMd(ctx.docsDir, id);

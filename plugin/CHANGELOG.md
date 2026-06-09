@@ -5,7 +5,8 @@
 ## v0.36.0 (2026-06-14)
 
 - Add Codex CLI as a first-class Coding Friend host alongside Claude Code, with a generated `plugin-codex/` artifact that carries the same skills, host-neutral workflow references, Codex TOML agents, synchronous hooks, and shared memory MCP setup.
-- Add deterministic Codex auto-approve handling, project hook registration, direct agent deployment, and documented fallbacks for Codex-only parity gaps such as manual plugin installation, static statusline support, and native session resume/fork.
+- Add deterministic Codex auto-approve handling, plugin-bundled hooks, direct agent deployment, and documented fallbacks for Codex-only parity gaps such as manual plugin installation, native statusline configuration, and native session resume/fork.
+- Keep the published Claude plugin fully resolved while performing one-way Codex rendering; generated instructions now replace Claude-only task, question, background, and agent APIs, and agent tiers map to Codex reasoning effort instead of Anthropic model aliases.
 - Lock Claude and Codex plugin releases to matching `v*` and `codex-v*` tags, regenerate Codex artifacts before relevant commits, and reject stale generated artifacts in pull-request CI.
 
 ## v0.35.3 (2026-06-14)

@@ -90,12 +90,12 @@ Choose the right location based on **what the knowledge is about**, not just wha
 
 Before delegating to the cf-writer agent, assess the complexity of the content:
 
-**Use `cf-writer` agent (haiku)** when:
+**Use `cf-writer` agent (low reasoning effort)** when:
 
 - Simple feature docs, naming conventions, straightforward decisions
 - Short content with clear structure
 
-**Use `cf-writer-deep` agent (sonnet)** when:
+**Use `cf-writer-deep` agent (medium reasoning effort)** when:
 
 - Complex architecture decisions with nuanced trade-offs
 - Deep technical explanations requiring careful reasoning
@@ -103,7 +103,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content:
 
 ### Step 4: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
+Construct a write spec and invoke the appropriate cf-writer agent via the Codex subagent workflow.
 
 Check if the target file already exists:
 
@@ -163,7 +163,7 @@ existing_file_action: append
 - `tags`: 3-5 relevant keywords as array
 - When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
-Use the **Agent tool** with `$cf-writer` or `$cf-writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the Codex subagent workflow with `cf-writer` custom agent or `cf-writer-deep` custom agent (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 5: Index in CF Memory (MANDATORY)
 
@@ -190,9 +190,9 @@ After the cf-writer agent completes and the markdown file is saved, you MUST cal
 - `tags`: updated tags array (if changed)
 - `sync_to_claude_md`: true — **if the memory contains project-wide rules** (see below)
 
-**CLAUDE.md sync rules:**
+**AGENTS.md sync rules:**
 
-Convention memories (`type: preference`) are **always** synced to the project's CLAUDE.md automatically. For other categories, set `sync_to_claude_md: true` when the memory contains **project-wide rules, conventions, or decisions that future sessions must follow**. Examples:
+Convention memories (`type: preference`) are **always** synced to the project's AGENTS.md automatically. For other categories, set `sync_to_claude_md: true` when the memory contains **project-wide rules, conventions, or decisions that future sessions must follow**. Examples:
 
 - `decisions/api-versioning` with rule "Always use URL-based versioning" → `sync_to_claude_md: true`
 - `infrastructure/deploy-checklist` with rule "Run migrations before deploying" → `sync_to_claude_md: true`

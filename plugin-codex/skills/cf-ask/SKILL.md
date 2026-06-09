@@ -6,7 +6,6 @@ description: >
   "what's the flow for Z?", "explain this module", "how are these connected?", "what pattern
   does this use?", "why is this done this way?". Unlike $cf-research (deep multi-doc output),
   this gives a single focused answer.
-disable-model-invocation: true
 created: 2026-02-20
 updated: 2026-06-06
 ---
@@ -86,7 +85,7 @@ Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 
 Launch the **cf-explorer agent** to gather codebase context for the question.
 
-Use the **Agent tool** with `$cf-explorer`. Pass:
+Spawn the `cf-explorer` custom agent. Pass:
 
 > Explore the codebase to answer the following question: [question from Step 1]
 >
@@ -154,7 +153,7 @@ Wait for the cf-explorer to return its findings.
 
 > **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename — do not add a date prefix to already-created files.
 
-Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `$cf-writer`.
+Construct a write spec and delegate to **cf-writer agent** by spawning the `cf-writer` custom agent.
 
 **When creating** a new file (use absolute path for `file_path`):
 

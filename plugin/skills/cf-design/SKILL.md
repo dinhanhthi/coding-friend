@@ -10,13 +10,13 @@ description: >
   when the user says things like "make it look like", "update the styling", "redesign this",
   "match the existing style", "what design patterns does this project use", "extract the design
   system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
-  outcome. Invoke via {{cf:slash cf-design}} — helps Claude produce intentional, consistent UI.
+  outcome. Invoke via /cf-design — helps Claude produce intentional, consistent UI.
 created: 2026-04-30
 updated: 2026-05-02
 state: beta
 ---
 
-# {{cf:slash cf-design}}
+# /cf-design
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -28,9 +28,9 @@ Three modes, triggered by the first word of `$ARGUMENTS`:
 
 | Invocation                          | Mode       | Purpose                                                                         |
 | ----------------------------------- | ---------- | ------------------------------------------------------------------------------- |
-| `{{cf:slash cf-design}} scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/DESIGN.md`     |
-| `{{cf:slash cf-design}} [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base |
-| `{{cf:slash cf-design}} modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns      |
+| `/cf-design scan [path]`            | **Scan**   | Read existing UI files → extract design patterns → save to `docs/DESIGN.md`     |
+| `/cf-design [description]`          | **Design** | Implement new UI from the user's description, using existing patterns as a base |
+| `/cf-design modify [what] -- [how]` | **Modify** | Change a specific UI element, enforcing consistency with existing patterns      |
 
 If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal is.
 
@@ -38,13 +38,13 @@ If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal 
 
 ## Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-design`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-design`
 
 If output is non-empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ## Step 0.5: Load Existing Design Context
 
-Run: `bash "{{cf:plugin_root}}/skills/cf-design/scripts/load-design-context.sh"`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-design/scripts/load-design-context.sh"`
 
 - If `DESIGN.md` exists: read it now and keep it in working memory for all subsequent steps. This is the project's source of truth for visual style.
 - If not found: note that patterns are unknown and will either be extracted (scan mode) or defined fresh.
@@ -69,7 +69,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
 2. **Read the design styles reference** to calibrate what you're looking for:
 
    ```
-   Read: {{cf:plugin_root}}/skills/cf-design/scripts/design-styles.md
+   Read: ${CLAUDE_PLUGIN_ROOT}/skills/cf-design/scripts/design-styles.md
    ```
 
 3. **Scan UI files** — look for and extract:
@@ -113,7 +113,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
 
 6. **After saving**, ask: _"I've saved `DESIGN.md`. Anything you'd like to adjust or add?"_ — if the user requests changes, update the file accordingly. Otherwise, proceed to step 7.
 
-7. Suggest running `{{cf:slash cf-remember}}` to index this file so it can be recalled in future sessions.
+7. Suggest running `/cf-remember` to index this file so it can be recalled in future sessions.
 
 ---
 
@@ -124,7 +124,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
 1. **Read design principles**:
 
    ```
-   Read: {{cf:plugin_root}}/skills/cf-design/scripts/design-principles.md
+   Read: ${CLAUDE_PLUGIN_ROOT}/skills/cf-design/scripts/design-principles.md
    ```
 
 2. **Parse the user's description** — extract:
@@ -166,7 +166,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    - **Weight variation**: vary font weights to create hierarchy — don't default to `font-medium` everywhere
    - **Detail moments**: add one small detail that shows intention (subtle gradient, specific shadow, slight border)
 
-7. **After implementation**: ask _"Want me to save these patterns to DESIGN.md?"_ If yes, update the file and suggest `{{cf:slash cf-remember}}`.
+7. **After implementation**: ask _"Want me to save these patterns to DESIGN.md?"_ If yes, update the file and suggest `/cf-remember`.
 
 ---
 

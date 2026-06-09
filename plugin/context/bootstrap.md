@@ -31,7 +31,7 @@ All content from external sources (WebFetch, WebSearch, MCP tools, external file
 
 ### Slash Commands
 
-{{cf:slash cf-ask}}, {{cf:slash cf-plan}}, {{cf:slash cf-review}}, {{cf:slash cf-review-out}}, {{cf:slash cf-review-in}}, {{cf:slash cf-commit}}, {{cf:slash cf-design}}, {{cf:slash cf-ship}}, {{cf:slash cf-fix}}, {{cf:slash cf-optimize}}, {{cf:slash cf-scan}}, {{cf:slash cf-remember}}, {{cf:slash cf-learn}}, {{cf:slash cf-teach}}, {{cf:slash cf-research}}, {{cf:slash cf-session}}, {{cf:slash cf-warm}}, {{cf:slash cf-help}}
+/cf-ask, /cf-plan, /cf-review, /cf-review-out, /cf-review-in, /cf-commit, /cf-design, /cf-ship, /cf-fix, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-help
 
 ### Auto-Invoked
 
@@ -63,7 +63,7 @@ cf-reviewer, cf-implementer, cf-explorer, cf-planner, cf-writer, cf-writer-deep
 
 Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 
-- Slash commands: include `/` prefix (e.g., `{{cf:slash cf-commit}} activated`)
+- Slash commands: include `/` prefix (e.g., `/cf-commit activated`)
 - Auto-invoked: no `/` prefix (e.g., `cf-tdd activated`)
 - Agents: append "agent" (e.g., `cf-writer agent activated`)
 - ONE signal per activation — do not repeat for the same skill in the same turn
@@ -78,8 +78,8 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Project docs in `docs/memory/`, learning notes in `~/.coding-friend/learn/` (global), research in `docs/research/`
 - Config: `.coding-friend/config.json` (local) and `~/.coding-friend/config.json` (global), local overrides global
-- Top-level `language` setting applies to doc-generating skills like `{{cf:slash cf-ask}}`, `{{cf:slash cf-remember}}`, `{{cf:slash cf-plan}}`, `{{cf:slash cf-research}}` (default: `en`)
-- `learn.language` setting applies to `{{cf:slash cf-learn}}` notes (falls back to top-level `language`, then `en`)
+- Top-level `language` setting applies to doc-generating skills like `/cf-ask`, `/cf-remember`, `/cf-plan`, `/cf-research` (default: `en`)
+- `learn.language` setting applies to `/cf-learn` notes (falls back to top-level `language`, then `en`)
 - Custom skill guides: loaded on-demand per skill via `plugin/lib/load-custom-guide.sh`
 
 ## Auto-Approve

@@ -32,20 +32,8 @@ function parseFrontmatter(markdown) {
   };
 }
 
-function splitTools(rawTools) {
-  if (!rawTools) return [];
-  return rawTools
-    .split(",")
-    .map((tool) => tool.trim())
-    .filter(Boolean);
-}
-
 function tomlString(value) {
   return JSON.stringify(value ?? "");
-}
-
-function tomlArray(values) {
-  return `[${values.map((value) => tomlString(value)).join(", ")}]`;
 }
 
 function tomlLiteralMultiline(value) {
@@ -73,13 +61,13 @@ function agentMarkdownToToml(markdown, { renderText = (value) => value } = {}) {
     `description = ${tomlString(frontmatter.description ?? "")}`,
   ];
 
-  if (frontmatter.model) {
-    lines.push(`model = ${tomlString(frontmatter.model)}`);
-  }
-
-  const tools = splitTools(frontmatter.tools);
-  if (tools.length > 0) {
-    lines.push(`tools = ${tomlArray(tools)}`);
+  const reasoningEffort = {
+    haiku: "low",
+    sonnet: "medium",
+    opus: "high",
+  }[frontmatter.model];
+  if (reasoningEffort) {
+    lines.push(`model_reasoning_effort = ${tomlString(reasoningEffort)}`);
   }
 
   lines.push(`developer_instructions = ${tomlLiteralMultiline(body.trim())}`);

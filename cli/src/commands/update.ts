@@ -423,7 +423,7 @@ async function updateCodexCommand(opts: UpdateOptions): Promise<void> {
 
   if (opts.statusline) {
     log.warn(
-      "Codex statusline setup is handled by cf statusline --agent codex in a later phase.",
+      "Codex owns its TUI footer. Open Codex and run /statusline to configure it.",
     );
   }
 
