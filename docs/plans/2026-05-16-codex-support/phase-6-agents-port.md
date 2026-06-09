@@ -8,9 +8,9 @@
 
 | Status  | Task                                              |
 | ------- | ------------------------------------------------- |
-| ⬜ TODO | 6.1 Write MD→TOML agent converter                 |
-| ⬜ TODO | 6.2 Generate and deploy `plugin-codex/agents/cf-*.toml` |
-| ⬜ TODO | 6.3 Resolve `{{cf:dispatch ...}}` in build script |
+| ✅ DONE | 6.1 Write MD→TOML agent converter                 |
+| ✅ DONE | 6.2 Generate and deploy `plugin-codex/agents/cf-*.toml` |
+| ✅ DONE | 6.3 Resolve `{{cf:dispatch ...}}` in build script |
 
 ## Tasks
 
@@ -48,3 +48,13 @@
 - `cf install --agent codex` deploys those TOMLs to `~/.codex/agents/`
 - A Codex session with the plugin installed can spawn `$cf-explorer` and receive output
 - No `{{cf:dispatch}}` placeholder remains in `plugin-codex/skills/*/SKILL.md`
+
+## Phase 6 validation
+
+- Converter tests: `node --test scripts/__tests__/agent-md-to-toml.test.mjs`
+- Build transform tests: `node --test scripts/__tests__/build-codex-plugin.test.mjs`
+- Placeholder lint: `node --test scripts/__tests__/placeholder-lint.test.mjs`
+- Generated artifact: `npm run build:codex`
+- Drift guard: `npm run verify:codex-drift`
+- Agent count: `plugin-codex/agents/` contains 12 `cf-*.toml` files.
+- Placeholder scan: no `{{cf:dispatch}}`, `{{cf:agent_ref}}`, `{{cf:slash}}`, raw `subagent_type:`, or `CLAUDE_PLUGIN_ROOT` remains in `plugin-codex/agents` or `plugin-codex/skills`.

@@ -43,7 +43,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 | ✅ DONE | Phase 3: Manifests + build pipeline     | [phase-3-manifests-build.md](./phase-3-manifests-build.md)     | 4 tasks |
 | ✅ DONE | Phase 4: CLI Codex commands             | [phase-4-cli-commands.md](./phase-4-cli-commands.md)           | 6 tasks |
 | ✅ DONE | Phase 5: Hooks port                     | [phase-5-hooks-port.md](./phase-5-hooks-port.md)               | 5 tasks |
-| ⬜ TODO | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
+| ✅ DONE | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
 | ⬜ TODO | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
 | ⬜ TODO | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
 | ⬜ TODO | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
