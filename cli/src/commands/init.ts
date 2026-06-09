@@ -29,6 +29,7 @@ import {
   deployCodexAgents,
   findCodexAgentSourceDir,
   trustCodexProject,
+  writeCodexAgentLimits,
   writeCodexMemoryMcpConfig,
 } from "../lib/codex-config.js";
 import {
@@ -1614,6 +1615,8 @@ function initCodexCommand(opts: InitOptions): void {
 
   writeCodexMemoryMcpConfig(memoryDir, codexConfigTomlPath());
   log.success("Registered coding-friend-memory in ~/.codex/config.toml.");
+  writeCodexAgentLimits(codexConfigTomlPath());
+  log.success("Configured Codex agent depth for nested Coding Friend agents.");
 
   const projectCodexDir = join(process.cwd(), ".codex");
   const projectConfigPath = join(projectCodexDir, "config.toml");

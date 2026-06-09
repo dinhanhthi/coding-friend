@@ -162,6 +162,16 @@ export function writeCodexMemoryMcpConfig(
   );
 }
 
+export function writeCodexAgentLimits(
+  configPath = codexConfigTomlPath(),
+): void {
+  const content = readToml(configPath);
+  writeToml(
+    configPath,
+    upsertTableKey(content, "agents", "max_depth", "max_depth = 2"),
+  );
+}
+
 export function trustCodexProject(
   projectPath = process.cwd(),
   configPath = codexConfigTomlPath(),

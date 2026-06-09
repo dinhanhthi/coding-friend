@@ -1,6 +1,6 @@
 # coding-friend-cli
 
-CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-friend) plugin — a lean toolkit for disciplined engineering workflows with Claude Code.
+CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-friend) plugin — a lean toolkit for disciplined engineering workflows with Claude Code and Codex CLI.
 
 ## Plugin without the CLI?
 
@@ -23,7 +23,7 @@ Everything else (every skill, every agent, every hook except the three OPTIONAL 
 
 - Node.js >= 20
 - npm (included with Node.js, but on some Linux distros you may need to install it separately)
-- The [coding-friend plugin](https://github.com/dinhanhthi/coding-friend) installed in Claude Code
+- The [coding-friend plugin](https://github.com/dinhanhthi/coding-friend) installed in Claude Code or Codex CLI
 
 ### Additional requirements for `cf memory init`
 
@@ -56,12 +56,14 @@ cf install --user       # Install at user scope (all projects)
 cf install --global     # Same as --user
 cf install --project    # Install at project scope (shared via git)
 cf install --local      # Install at local scope (this machine only)
+cf install --agent codex  # Register/install Coding Friend for Codex CLI
                         # 💡 Safe to run multiple times (idempotent).
 cf uninstall            # Uninstall plugin (interactive scope chooser)
 cf uninstall --user     # Uninstall from user scope (full cleanup)
 cf uninstall --global   # Same as --user
 cf uninstall --project  # Uninstall from project scope only
 cf uninstall --local    # Uninstall from local scope only
+cf uninstall --agent codex  # Disable Coding Friend in Codex CLI
                         # 💡 Interactive — asks for confirmation before acting.
 cf disable             # Disable plugin (interactive scope chooser)
 cf disable --user      # Disable at user scope (all projects)
@@ -75,6 +77,7 @@ cf enable --global     # Same as --user
 cf enable --project    # Enable at project scope
 cf enable --local      # Enable at local scope
 cf init              # Initialize workspace (interactive)
+cf init --agent codex  # Initialize workspace for Codex CLI
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
                      # 💡 Edit docsDir, language, learn settings, and more.
@@ -89,6 +92,7 @@ cf permission              # Manage Claude Code permission rules (interactive)
 cf permission --all        # Apply all recommended permissions without prompts
 cf permission --user       # Save to user-level settings (~/.claude/settings.json)
 cf permission --project    # Save to project-level settings (.claude/settings.local.json)
+cf permission --agent codex --enable-auto-approve
 cf permission --all --user # Apply all recommended permissions to user settings
 cf statusline        # Setup coding-friend statusline
 cf update               # Update plugin + CLI + statusline
@@ -97,6 +101,7 @@ cf update               # Update plugin + CLI + statusline
 cf update --cli         # Update only the CLI (npm package)
 cf update --plugin      # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline
+cf update --agent codex # Update Codex marketplace/plugin cache
 cf update --project     # Update plugin at project scope
 cf update --local       # Update plugin at local scope
 cf dev on [path]     # Switch to local plugin source for development
