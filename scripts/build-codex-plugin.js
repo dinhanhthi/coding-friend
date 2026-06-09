@@ -248,6 +248,7 @@ function createCodexMcpConfig() {
       "coding-friend-memory": {
         command: "npx",
         args: ["-y", "coding-friend-cli", "mcp-serve", "docs/memory"],
+        env: {},
       },
     },
   };
