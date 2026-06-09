@@ -1,0 +1,102 @@
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import test from "node:test";
+
+const require = createRequire(import.meta.url);
+const {
+  agentMarkdownToToml,
+  createCodexPluginManifest,
+  renderCodexText,
+  transformCodexHooks,
+} = require("../build-codex-plugin.js");
+
+test("renders Coding Friend placeholders for Codex", () => {
+  const rendered = renderCodexText(
+    [
+      "{{cf:slash cf-review}}",
+      "{{cf:agent_ref cf-explorer}}",
+      "{{cf:skill_invoke cf-learn}}",
+      "{{cf:plugin_root}}/hooks/session-init.sh",
+      "{{cf:host}}",
+      "/cf-plan",
+      "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
+      "process.env.CLAUDE_PLUGIN_ROOT",
+    ].join("\n"),
+  );
+
+  assert.equal(
+    rendered,
+    [
+      "$cf-review",
+      "$cf-explorer",
+      "load `$cf-learn`",
+      "${PLUGIN_ROOT}/hooks/session-init.sh",
+      "Codex CLI",
+      "$cf-plan",
+      "${PLUGIN_ROOT}/hooks/rules-reminder.sh",
+      "process.env.PLUGIN_ROOT",
+    ].join("\n"),
+  );
+});
+
+test("creates stamped Codex plugin manifest", () => {
+  const manifest = createCodexPluginManifest({ version: "1.2.3" });
+  assert.equal(manifest.name, "coding-friend");
+  assert.equal(manifest.version, "1.2.3");
+  assert.equal(manifest.skills, "./skills/");
+  assert.equal(manifest.hooks, "./hooks/hooks.json");
+  assert.equal(manifest.mcpServers, "./.mcp.json");
+});
+
+test("converts markdown agents to Codex TOML", () => {
+  const toml = agentMarkdownToToml(`---
+name: cf-example
+description: >
+  Example agent for testing conversion.
+model: haiku
+tools: Read, Write, Bash
+---
+
+# Example
+
+Use {{cf:slash cf-review}} and {{cf:agent_ref cf-writer}}.
+`);
+
+  assert.match(toml, /name = "cf-example"/);
+  assert.match(toml, /description = "Example agent for testing conversion\."/);
+  assert.match(toml, /model = "haiku"/);
+  assert.match(toml, /tools = \["Read", "Write", "Bash"\]/);
+  assert.match(toml, /developer_instructions = ".*\$cf-review.*\$cf-writer/s);
+});
+
+test("filters and renders Codex hooks", () => {
+  const hooks = transformCodexHooks({
+    hooks: {
+      TaskCreated: [
+        {
+          matcher: "",
+          hooks: [{ type: "command", command: "task-tracker.sh", async: true }],
+        },
+      ],
+      PreCompact: [
+        {
+          matcher: "",
+          hooks: [
+            {
+              type: "command",
+              command: "${CLAUDE_PLUGIN_ROOT}/hooks/memory-capture.sh",
+              async: false,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(Object.keys(hooks.hooks), ["PreCompact"]);
+  assert.equal(
+    hooks.hooks.PreCompact[0].hooks[0].command,
+    "${PLUGIN_ROOT}/hooks/memory-capture.sh",
+  );
+  assert.equal("async" in hooks.hooks.PreCompact[0].hooks[0], false);
+});
