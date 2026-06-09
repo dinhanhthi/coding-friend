@@ -1,12 +1,14 @@
 ---
 title: "cf uninstall"
-description: "Remove the Coding Friend plugin from Claude Code."
-keywords: [uninstall, remove, cleanup, cf uninstall, scope]
+description: "Remove or disable the Coding Friend plugin from Claude Code or Codex CLI."
+keywords: [uninstall, remove, cleanup, cf uninstall, scope, codex]
 ---
 
 ## Overview
 
 `cf uninstall` removes the Coding Friend plugin from Claude Code. The cleanup behavior depends on the scope.
+
+Use `cf uninstall --agent codex` for Codex CLI.
 
 ## Usage
 
@@ -16,6 +18,8 @@ cf uninstall --user     # Uninstall from user scope (full cleanup)
 cf uninstall --global   # Same as --user
 cf uninstall --project  # Uninstall from project scope only
 cf uninstall --local    # Uninstall from local scope only
+cf uninstall --agent codex
+cf uninstall --agent codex --remove-marketplace
 ```
 
 ## Scope-Dependent Behavior
@@ -42,6 +46,10 @@ Only removes the plugin registration from `.claude/settings.json`. Does not touc
 ### Local scope (`--local`)
 
 Only removes the plugin registration from `.claude/settings.local.json`. Does not touch marketplace, cache, statusline, or shell completion.
+
+### Codex CLI (`--agent codex`)
+
+Disables `coding-friend` in `~/.codex/config.toml`. Add `--remove-marketplace` to run `codex plugin marketplace remove coding-friend-marketplace` as well.
 
 ## What It Does NOT Do
 

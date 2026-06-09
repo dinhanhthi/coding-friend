@@ -11,6 +11,7 @@ import {
   isCodexPluginDisabled,
   setCodexPluginEnabled,
   trustCodexProject,
+  writeCodexAgentLimits,
   writeCodexMemoryMcpConfig,
 } from "../codex-config.js";
 
@@ -84,6 +85,24 @@ describe("codex-config", () => {
     );
     expect(toml).toContain('[projects."/repo"]');
     expect(toml).toContain('trust_level = "trusted"');
+  });
+
+  it("writes Codex agent depth without clobbering existing agent config", () => {
+    const file = tempFile();
+    writeFileSync(
+      file,
+      ["[agents]", "max_threads = 6", "", "[model]", 'name = "gpt-5"', ""].join(
+        "\n",
+      ),
+    );
+
+    writeCodexAgentLimits(file);
+
+    const toml = readFileSync(file, "utf8");
+    expect(toml).toContain("[agents]");
+    expect(toml).toContain("max_depth = 2");
+    expect(toml).toContain("max_threads = 6");
+    expect(toml.indexOf("[agents]")).toBeLessThan(toml.indexOf("[model]"));
   });
 
   it("reads latest installed Codex plugin version from cache dirs", () => {

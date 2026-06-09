@@ -11,20 +11,39 @@ const MANAGERS = [
   { id: "pnpm", label: "pnpm", install: "pnpm add -g" },
 ] as const;
 
+const HOSTS = [
+  { id: "claude", label: "Claude", suffix: "" },
+  { id: "codex", label: "Codex", suffix: " --agent codex" },
+] as const;
+
 type ManagerId = (typeof MANAGERS)[number]["id"];
+type HostId = (typeof HOSTS)[number]["id"];
 
 const PKG = "coding-friend-cli";
 
-const fixedSteps = [
-  { step: "2", title: "Install Plugin", code: "cf install" },
-  { step: "3", title: "Initialize Workspace", code: "cf init" },
-  { step: "4", title: "Update to the latest version", code: "cf update" },
-];
-
 export default function InstallSection() {
   const [active, setActive] = useState<ManagerId>("npm");
+  const [hostId, setHostId] = useState<HostId>("claude");
   const manager = MANAGERS.find((m) => m.id === active)!;
+  const host = HOSTS.find((h) => h.id === hostId)!;
   const installCmd = `${manager.install} ${PKG}`;
+  const hostSteps = [
+    {
+      step: "2",
+      title: `Install Plugin for ${host.label}`,
+      code: `cf install${host.suffix}`,
+    },
+    {
+      step: "3",
+      title: "Initialize Workspace",
+      code: `cf init${host.suffix}`,
+    },
+    {
+      step: "4",
+      title: "Update to the latest version",
+      code: `cf update${host.suffix}`,
+    },
+  ];
 
   return (
     <section id="install" className="py-10 md:py-16 lg:py-20">
@@ -79,8 +98,25 @@ export default function InstallSection() {
             </pre>
           </div>
 
-          {/* Steps 2 & 3 — fixed commands */}
-          {fixedSteps.map((s) => (
+          <div className="flex justify-center">
+            <div className="bg-navy-950 inline-flex rounded-lg border border-[#a0a0a01c] p-1">
+              {HOSTS.map((h) => (
+                <button
+                  key={h.id}
+                  onClick={() => setHostId(h.id)}
+                  className={`cursor-pointer rounded-md px-4 py-2 text-base font-medium transition-colors ${
+                    hostId === h.id
+                      ? "bg-violet-500 text-white"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {hostSteps.map((s) => (
             <div
               key={s.step}
               className="overflow-hidden rounded-xl border border-[#a0a0a01c]"
