@@ -13,7 +13,7 @@ updated: 2026-06-06
 state: beta
 ---
 
-# {{cf:slash cf-session}}
+# /cf-session
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -25,7 +25,7 @@ Label: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-session`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-session`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -49,7 +49,7 @@ mkdir -p "{CF_DOCS_ROOT}/sessions"
 Run the detection script. It outputs two lines: the full JSONL path and the session ID.
 
 ```bash
-CF_SESSION_SCRIPTS="{{cf:plugin_root}}/skills/cf-session/scripts"
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
 OUTPUT=$(bash "$CF_SESSION_SCRIPTS/detect-session.sh")
 LATEST=$(echo "$OUTPUT" | head -1)
 SESSION_ID=$(echo "$OUTPUT" | tail -1)
@@ -74,7 +74,7 @@ Use the provided label, or default to `YYYY-MM-DD-session` using today's date.
 Extract the first user message from the JSONL for preview:
 
 ```bash
-CF_SESSION_SCRIPTS="{{cf:plugin_root}}/skills/cf-session/scripts"
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
 PREVIEW=$(python3 "$CF_SESSION_SCRIPTS/extract-preview.py" "$LATEST")
 echo "Preview: $PREVIEW"
 ```
@@ -84,7 +84,7 @@ echo "Preview: $PREVIEW"
 Run the save script with all values as arguments. The script slugifies the label and uses it as the folder name (not the session UUID):
 
 ```bash
-CF_SESSION_SCRIPTS="{{cf:plugin_root}}/skills/cf-session/scripts"
+CF_SESSION_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/skills/cf-session/scripts"
 FOLDER_NAME=$(bash "$CF_SESSION_SCRIPTS/save-session.sh" \
   "$SESSIONS_DIR" "$SESSION_ID" "$LABEL" "$LATEST" "$PREVIEW")
 echo "Saved to folder: $FOLDER_NAME"

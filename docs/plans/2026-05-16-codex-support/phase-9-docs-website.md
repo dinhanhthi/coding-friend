@@ -31,7 +31,7 @@
 
 3. **9.3 Website docs pages**
    - Files: `website/src/content/docs/getting-started/codex.mdx` (new), `website/src/content/docs/getting-started/installation.mdx`, `website/src/lib/navigation.ts`, plus related CLI/config/reference pages.
-   - New page covers: prerequisites (Codex CLI ≥ 0.130.0), install command, what gets registered, model mapping via copied agent TOMLs, known gaps (manual plugin install, best-effort parallelism, trackers, synchronous hooks, statusline, discoverability, session resume), troubleshooting, drift check, and manual `codex plugin marketplace upgrade`.
+   - New page covers: prerequisites (Codex CLI ≥ 0.130.0), install command, what gets registered, reasoning-effort mapping via copied agent TOMLs, known gaps (manual plugin install, best-effort parallelism, trackers, synchronous hooks, native statusline fields, and native session resume/fork), troubleshooting, drift check, and manual `codex plugin marketplace upgrade`.
    - Verify: focused formatting checks and the full production build pass. Desktop and 390px mobile browser checks confirm the page renders without overlap and is reachable from the docs navigation.
    - Rollback: delete page + revert nav.
 

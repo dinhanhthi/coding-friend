@@ -10,7 +10,7 @@ description: >
   when the user says things like "make it look like", "update the styling", "redesign this",
   "match the existing style", "what design patterns does this project use", "extract the design
   system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
-  outcome. Invoke via $cf-design — helps Claude produce intentional, consistent UI.
+  outcome. Invoke via $cf-design — helps Codex produce intentional, consistent UI.
 created: 2026-04-30
 updated: 2026-05-02
 state: beta
@@ -137,7 +137,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    - If `DESIGN.md` exists → use it as the design foundation. The user's description refines on top.
    - If no patterns exist → ask: _"No design patterns found. Should I (a) quick-scan the UI first, or (b) design fresh from your description?"_
 
-4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use WebSearch:
+4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use web search:
    - Query pattern: `"[style name] UI design [year] best practices"`
    - Example: `"glassmorphism UI 2024 best practices"`
    - Extract 2-3 specific, applicable techniques from the results. Summarize briefly.
@@ -189,7 +189,7 @@ Goal: change a specific part of the UI without breaking the visual consistency o
    - Does it introduce a new pattern (animation, glassmorphism, etc.)? Does it fit the style?
    - If something diverges, explain why it's intentional and worth the consistency trade-off.
 
-4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), use WebSearch to find the current best implementation approach.
+4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), use web search to find the current best implementation approach.
 
 5. **Implement** — apply the same design dials from Step 3. Stay within the existing system unless the user explicitly wants to diverge.
 

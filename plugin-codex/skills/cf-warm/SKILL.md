@@ -5,8 +5,6 @@ description: >
   returns after time away from a project and needs to understand what happened — e.g.
   "warm up", "catch me up", "what happened while I was away", "what did I work on",
   "summarize recent changes", "what changed since I left", "warm up the project".
-user-invocable: true
-argument-hint: "[--user <name>] [--n-commits <N>]"
 created: 2026-03-31
 updated: 2026-06-06
 state: beta
@@ -141,7 +139,7 @@ Use the `language` setting from config for the report language.
 
 **6a. Delegate to cf-writer agent:**
 
-Construct a write spec and invoke the cf-writer agent via the **Agent tool** with `$cf-writer`.
+Construct a write spec and invoke the cf-writer agent by spawning the `cf-writer` custom agent.
 
 ```
 WRITE SPEC

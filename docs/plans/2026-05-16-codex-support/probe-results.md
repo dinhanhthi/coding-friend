@@ -12,8 +12,8 @@ Codex can preserve more Coding Friend behavior than the original May plan assume
 - **Task tracker:** Codex has no `TaskCreated` / `TaskCompleted` hook event equivalent.
 - **Structured questions:** no Codex equivalent of Claude's `AskUserQuestion` UI; use plain natural-language choices.
 - **Fire-and-forget agents:** no background subagent dispatch; Codex waits for subagent results.
-- **Plan mode UI:** no Claude-style accept-plan surface; use durable plan files plus natural-language confirmation.
-- **Scheduler / wakeup tools:** no Codex equivalent for `/loop`-style timed re-entry.
+- **Plan mode UI:** Codex now exposes native `/plan`, but not Claude's `ExitPlanMode` acceptance tool inside a skill. CF keeps durable plan files plus direct confirmation.
+- **Scheduler / wakeup tools:** Codex app automations exist as a separate surface, but a CLI plugin skill has no `/loop`-style timed re-entry tool.
 - **Plugin auto-update:** use `cf update --agent codex` / `codex plugin marketplace upgrade`; no Claude-style auto-update flag found.
 
 ## Probe Details
@@ -101,7 +101,7 @@ CODEX_HOME=/private/tmp/cf-codex-home codex debug prompt-input '$cf-probe'
 
 Result: the probe skill did not appear in the model-visible skill list. The config flag alone does not install a marketplace plugin that has not been installed by Codex's plugin directory.
 
-Decision: v1 `cf install --agent codex` registers the marketplace, deploys generated agent TOMLs, registers MCP, and prints a required manual step: open Codex, use the plugin directory (`/plugins` / Plugins UI), and install `coding-friend` once. `cf enable --agent codex` and `cf disable --agent codex` can still toggle an already-installed plugin.
+Decision: v1 `cf install --agent codex` registers the marketplace, records enablement, deploys generated agent TOMLs when available, and prints a required manual step: open Codex, use the plugin directory (`/plugins` / Plugins UI), and install `coding-friend` once. `cf init --agent codex` registers the memory MCP server. `cf enable --agent codex` and `cf disable --agent codex` can toggle an already-installed plugin.
 
 ## Plan Corrections
 

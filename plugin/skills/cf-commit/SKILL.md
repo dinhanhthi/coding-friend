@@ -12,7 +12,7 @@ created: 2026-02-17
 updated: 2026-06-06
 ---
 
-# {{cf:slash cf-commit}}
+# /cf-commit
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -22,14 +22,14 @@ Create a commit for the current changes. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-commit`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-commit`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Analyze Changes
 
 ```bash
-bash "{{cf:plugin_root}}/skills/cf-commit/scripts/analyze-changes.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-commit/scripts/analyze-changes.sh"
 ```
 
 ### Step 2: Identify Conversation-Related Changes
@@ -51,7 +51,7 @@ Review the current conversation to understand what task was performed and which 
 **Secret scan** — after staging, check for accidental secrets:
 
 ```bash
-bash "{{cf:plugin_root}}/skills/cf-commit/scripts/scan-secrets.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-commit/scripts/scan-secrets.sh"
 ```
 
 The script prints `SECRETS=<count>` and, if `SECRETS > 0`, shows matching lines with context.
@@ -64,11 +64,11 @@ If `SECRETS > 0`:
 
 ### Step 4: Review Check
 
-If no `{{cf:slash cf-review}}` was run in the current conversation, show a soft suggestion:
+If no `/cf-review` was run in the current conversation, show a soft suggestion:
 
-> No review found in this session — run `{{cf:slash cf-review}}` first? (press Enter to skip and commit anyway)
+> No review found in this session — run `/cf-review` first? (press Enter to skip and commit anyway)
 
-If the user skips (presses Enter or says to proceed), continue. If they want a review, load `{{cf:slash cf-review}}` and resume `{{cf:slash cf-commit}}` after.
+If the user skips (presses Enter or says to proceed), continue. If they want a review, load `/cf-review` and resume `/cf-commit` after.
 
 ### Step 5: Write Commit Message
 

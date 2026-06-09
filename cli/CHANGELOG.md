@@ -10,6 +10,8 @@
 - Add host selection to Coding Friend lifecycle commands with `--agent codex` and `--codex`, while preserving Claude Code as the default and keeping each host's installation and enablement state independent.
 - Add Codex marketplace registration, generated agent deployment, project `AGENTS.md` and `.codex/config.toml` setup, shared memory MCP registration, project trust support, and `agents.max_depth = 2` for nested Coding Friend agents.
 - Add Codex-specific deterministic auto-approve configuration and lifecycle cleanup, with fixture and integration coverage for config cohabitation, hooks, agent deployment, and stale artifact prevention.
+- Route Codex statusline guidance to the native `/statusline` command instead of advertising an unsupported CF wrapper.
+- Sync convention memories to `AGENTS.md` in Codex-only projects and to both host instruction files when Claude and Codex share a project.
 - Restrict the npm package file list to bundled runtime source and configuration, excluding nested development dependencies, test output, and local build artifacts from published CLI tarballs.
 
 ## v1.37.0 (2026-06-14)

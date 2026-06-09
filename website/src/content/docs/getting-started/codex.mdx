@@ -72,14 +72,14 @@ $cf-review --target HEAD~1..HEAD
 $cf-fix investigate the checkout crash
 ```
 
-Agents are generated from the same Markdown source used by Claude and copied as Codex TOML files. The generated files preserve the source agent's intent tier:
+Agents are generated from the same Markdown source used by Claude and copied as Codex TOML files. Claude's intent tiers map to Codex reasoning effort without pinning an account-specific model:
 
-- `haiku` - lightweight exploration, writing, and focused checks
-- `sonnet` - deeper implementation and specialist review
-- `opus` - planning and highest-effort reasoning
-- `inherit` - use the current session model
+- `haiku` -> `model_reasoning_effort = "low"`
+- `sonnet` -> `model_reasoning_effort = "medium"`
+- `opus` -> `model_reasoning_effort = "high"`
+- `inherit` -> inherit the current session defaults
 
-If your Codex setup requires explicit model IDs, edit the copied TOML files in `.codex/agents/` or `~/.codex/agents/` and set each agent's `model = "..."` to the model you want Codex to use.
+The generated files omit Claude's tool-list frontmatter because `tools` is not a documented standalone Codex custom-agent key. Agent instructions constrain the role, while the parent Codex sandbox and MCP configuration control the available tools. To pin a model, edit the copied TOML and add a supported Codex `model = "..."`.
 
 ## Auto-Approve
 
@@ -98,9 +98,9 @@ This writes `autoApproveCodex` in `.coding-friend/config.json`. Codex v1 auto-ap
 - Parallel agent fan-out is best effort. Coding Friend raises `agents.max_depth` to 2, but Codex still decides how to schedule spawned agents.
 - Task tracking hooks that depend on Claude-only task events are not registered on Codex.
 - Codex hooks are synchronous, so generated Codex hooks keep payloads small and drop Claude's `async` flag.
-- Codex statusline support is static. Claude's live counters and per-event statusline updates are not available on Codex.
-- `$cf-*` skill discoverability differs from Claude's slash menu.
-- Session save/load remains Claude-oriented; for Codex use native `codex resume` and `codex fork`.
+- Configure Codex's built-in footer fields with `/statusline`. Claude's CF-specific live task and agent counters are not available.
+- Browse skills with `/skills` or type `$` to invoke one explicitly.
+- `$cf-session` routes to native `/resume`, `/fork`, `codex resume`, and `codex fork`.
 
 ## Troubleshooting
 

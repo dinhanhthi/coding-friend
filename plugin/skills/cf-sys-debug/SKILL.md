@@ -25,7 +25,7 @@ updated: 2026-06-06
 
 ## Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-sys-debug`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-sys-debug`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -135,7 +135,7 @@ cf-sys-debug is only invoked for hard bugs — always document the findings.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
 2. Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`. Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) — do NOT search sub-folders. Use `CF_DOCS_ROOT` as the docs base dir.
-3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `{{cf:agent_ref cf-writer}}` (use absolute `file_path`):
+3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute `file_path`):
 
 ```
 WRITE SPEC
@@ -278,4 +278,4 @@ Status: **blocked**
 
 ## Review Reminder
 
-After the fix is verified, ask the user if they want to run `{{cf:slash cf-review}}` or `{{cf:slash cf-commit}}`. Do NOT auto-run — wait for their choice.
+After the fix is verified, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.

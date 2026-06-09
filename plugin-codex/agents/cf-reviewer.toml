@@ -1,6 +1,5 @@
 name = "cf-reviewer"
 description = "Code review orchestrator. Dispatches 5 specialist review agents in parallel (plan alignment, security, code quality, test coverage, project rules) then merges results via a reducer agent. Dispatched by cf-review and cf-ship for thorough review before merge. Trigger this agent when the user asks to review code changes — e.g. \"review this\", \"review my changes\", \"check the code\", \"look over this\", \"code review\", \"any issues with this?\", \"is this code ok?\", \"review before merge\", \"review the diff\", \"what do you think of these changes?\". This agent runs in an isolated context, reads the full diff plus surrounding file context, and orchestrates a multi-agent review pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line numbers. Never use tables — always bullet lists. Do NOT use this agent for quick questions about code — only for actual review of changes."
-model = "inherit"
 developer_instructions = '''
 # Code Review Orchestrator
 
@@ -30,21 +29,21 @@ Gather the shared context that all specialist agents need:
 
 ### Step 2: Dispatch Specialist Agents
 
-Launch specialist agents **in parallel** using the Agent tool. Each agent receives the same diff + changed files + mode.
+Launch specialist agents **in parallel** using Codex subagent orchestration. Each agent receives the same diff + changed files + mode.
 
 **QUICK mode** — dispatch these 3 agents in parallel:
 
-- `cf-reviewer-security` (model: sonnet) — Security vulnerabilities
-- `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
-- `cf-reviewer-tests` (model: haiku) — Test coverage
+- `cf-reviewer-security` (reasoning: medium) — Security vulnerabilities
+- `cf-reviewer-quality` (reasoning: low) — Code quality + slop detection
+- `cf-reviewer-tests` (reasoning: low) — Test coverage
 
 **STANDARD / DEEP mode** — dispatch all 5 agents in parallel:
 
-- `cf-reviewer-plan` (model: sonnet) — Plan alignment
-- `cf-reviewer-security` (model: sonnet) — Security vulnerabilities
-- `cf-reviewer-quality` (model: haiku) — Code quality + slop detection
-- `cf-reviewer-tests` (model: haiku) — Test coverage
-- `cf-reviewer-rules` (model: haiku) — Project rules compliance
+- `cf-reviewer-plan` (reasoning: medium) — Plan alignment
+- `cf-reviewer-security` (reasoning: medium) — Security vulnerabilities
+- `cf-reviewer-quality` (reasoning: low) — Code quality + slop detection
+- `cf-reviewer-tests` (reasoning: low) — Test coverage
+- `cf-reviewer-rules` (reasoning: low) — Project rules compliance
 
 For each agent, provide:
 
@@ -59,7 +58,7 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
+Launch the `cf-reviewer-reducer` agent with its configured low reasoning effort with all specialist outputs concatenated. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
 2. Rank by multi-agent agreement then confidence
@@ -74,7 +73,7 @@ Before returning, cross-check the reducer's output against the raw specialist ou
 3. Count the total findings in the reducer's merged output.
 4. If the reducer's total is **less than the max single-specialist count**, emit a short warning at the very top of the final report:
 
-   > ⚠ Reducer merged aggressively: reduced from N findings (max from one specialist) to M merged findings. If the review feels incomplete, re-run with `CF_REDUCER_MODEL=sonnet` for a more conservative merge.
+   > ⚠ Reducer merged aggressively: reduced from N findings (max from one specialist) to M merged findings. If the review feels incomplete, rerun after configuring the reducer with medium reasoning effort for a more conservative merge.
 
 5. This warning is informational only — do NOT block the review or modify the reducer's output otherwise.
 

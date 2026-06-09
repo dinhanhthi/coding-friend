@@ -5,8 +5,6 @@ description: >
   written by an external reviewer and presents findings, then offers to fix issues.
   Use when the user wants to collect an outside review — e.g. "review in", "collect review",
   "check review results", "cf-review-in", "read external review", "import review".
-user-invocable: true
-argument-hint: "<label> [service]"
 created: 2026-03-23
 updated: 2026-06-06
 ---
@@ -81,7 +79,7 @@ b. **Verify the claim against reality:**
 - Does the issue actually exist in the current code?
 - Did the reviewer miss surrounding context that addresses the concern? (e.g., validation done elsewhere, error handled upstream, intentional design choice)
 - Is the reviewer applying a generic best practice that doesn't apply to this specific codebase or situation?
-- Is the reviewer suggesting something that would contradict project conventions (check CLAUDE.md, `docs/memory/conventions/`)?
+- Is the reviewer suggesting something that would contradict project conventions (check AGENTS.md, `docs/memory/conventions/`)?
 
 c. **Classify each finding:**
 

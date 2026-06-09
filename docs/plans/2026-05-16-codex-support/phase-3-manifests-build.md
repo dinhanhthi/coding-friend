@@ -56,12 +56,13 @@
    - Responsibilities:
      - Read `plugin/package.json` (or root) → version string
      - Copy `plugin/skills/`, `plugin/agents/` into `plugin-codex/`
-     - Transform every `{{cf:slash NAME}}` → `$NAME`; `{{cf:agent_ref NAME}}` → `$NAME`; `{{cf:skill_invoke NAME}}` → `load $NAME`; `{{cf:plugin_root}}` → `${PLUGIN_ROOT}`; `{{cf:dispatch ...}}` → natural-language equivalent (template literal); `{{cf:host}}` → `Codex CLI`
+     - Transform Claude-native `/cf-*`, plugin-root, Skill-tool, and `subagent_type` references to Codex syntax.
+     - Apply targeted Codex workflow overrides for native sessions, review behavior, direct questions, inline task tracking, web search wording, and parallel subagent requests.
      - Transform Claude-only hook event references in `hooks.json` (skip `TaskCreated`/`TaskCompleted` entries when generating Codex hooks.json — keep `PreCompact` and `SubagentStart`/`SubagentStop`, which Phase 0 verified Codex supports). Drop `async` fields because Codex hooks run synchronously. Build a per-host event allowlist.
      - Convert each `plugin/agents/cf-*.md` to `plugin-codex/agents/cf-*.toml` using frontmatter `name`+`description` → TOML keys; markdown body → `developer_instructions` string. (Phase 6 owns the converter; this task just calls it.)
      - Write `plugin-codex/.codex-plugin/plugin.json` with stamped version
      - Idempotent: rerunning produces byte-identical output (sort JSON keys, fix line endings)
-   - Verify: `node scripts/build-codex-plugin.js` produces `plugin-codex/` with no diff on second run; test asserts placeholder transforms; test asserts version stamping.
+   - Verify: `node scripts/build-codex-plugin.js` produces `plugin-codex/` with no diff on second run; tests assert source transforms, Codex overrides, and version stamping.
    - Rollback: `rm -rf plugin-codex/`; delete script.
 
 4. **3.4 Wire npm scripts**

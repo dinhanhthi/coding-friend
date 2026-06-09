@@ -53,10 +53,7 @@ function isTextFile(filePath) {
 function renderCodexText(input) {
   return input
     .replace(/\{\{cf:slash\s+([a-z0-9-]+)\}\}/g, (_match, name) => `$${name}`)
-    .replace(
-      /\{\{cf:agent_ref\s+([a-z0-9-]+)\}\}/g,
-      (_match, name) => `$${name}`,
-    )
+    .replace(/\{\{cf:agent_ref\s+([a-z0-9-]+)\}\}/g, (_match, name) => name)
     .replace(
       /\{\{cf:skill_invoke\s+([a-z0-9-]+)\}\}/g,
       (_match, name) => `load \`$${name}\``,
@@ -77,9 +74,244 @@ function renderCodexText(input) {
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, "${PLUGIN_ROOT}")
     .replace(/CLAUDE_PLUGIN_ROOT/g, "PLUGIN_ROOT")
     .replace(
+      /use the Skill tool with skill name `coding-friend:(cf-[a-z0-9-]+)`/g,
+      (_match, name) => `load \`$${name}\``,
+    )
+    .replace(
+      /Use the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\./g,
+      (_match, name) => `Spawn the \`${name}\` custom agent.`,
+    )
+    .replace(
+      /via the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
+      (_match, name) => `by spawning the \`${name}\` custom agent`,
+    )
+    .replace(
+      /\(Agent tool, `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\)/g,
+      (_match, name) => `(spawn the \`${name}\` custom agent)`,
+    )
+    .replace(
+      /`subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
+      (_match, name) => `\`${name}\` custom agent`,
+    )
+    .replace(
       /(?<![A-Za-z0-9_-])\/(cf-[a-z0-9-]+)\b/g,
       (_match, name) => `$${name}`,
     );
+}
+
+function renderCodexInstructionText(input) {
+  return renderCodexText(input)
+    .replace(/\busing the Agent tool\b/gi, "using Codex subagent orchestration")
+    .replace(/\*\*Agent tool\*\*/g, "Codex subagent workflow")
+    .replace(/\bAgent tool\b/g, "Codex subagent workflow")
+    .replace(/`AskUserQuestion`/g, "a direct user question")
+    .replace(/\bAskUserQuestion\b/g, "a direct user question")
+    .replace(/\(haiku\)/g, "(low reasoning effort)")
+    .replace(/\(sonnet\)/g, "(medium reasoning effort)")
+    .replace(/\(opus\)/g, "(high reasoning effort)")
+    .replace(/\bCLAUDE\.md\b/g, "AGENTS.md")
+    .replace(/\bWebSearch and WebFetch\b/g, "web search and source opening")
+    .replace(/\bWebSearch\b/g, "web search")
+    .replace(/\bWebFetch\b/g, "source opening")
+    .replace(
+      /Use the Write tool for new files/g,
+      "Create new files with the available file-editing tool",
+    )
+    .replace(
+      /Use the Edit tool for appending to or updating existing files/g,
+      "Edit existing files with the available file-editing tool",
+    )
+    .replace(/\bEdit tool calls?\b/g, "file edits")
+    .replace(/\bEdit calls?\b/g, "file edits")
+    .replace(
+      /it runs on Haiku for cost\s+efficiency\./gi,
+      "it uses low reasoning effort for cost efficiency.",
+    )
+    .replace(
+      /Runs on Haiku for speed\./g,
+      "Uses low reasoning effort for speed.",
+    )
+    .replace(
+      /Runs on Sonnet for deeper reasoning\s+than Haiku\./g,
+      "Uses medium reasoning effort for deeper analysis.",
+    )
+    .replace(/\(model: sonnet\)/g, "(reasoning: medium)")
+    .replace(/\(model: haiku\)/g, "(reasoning: low)")
+    .replace(
+      /Launch the `cf-reviewer-reducer` agent \(model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files\)/g,
+      "Launch the `cf-reviewer-reducer` agent with its configured low reasoning effort",
+    )
+    .replace(
+      /re-run with `CF_REDUCER_MODEL=sonnet` for a more conservative merge/g,
+      "rerun after configuring the reducer with medium reasoning effort for a more conservative merge",
+    )
+    .replace(/helps Claude produce/g, "helps Codex produce")
+    .replace(/phase file Claude re-opens/g, "phase file Codex re-opens")
+    .replace(/if Claude finds itself/g, "if Codex finds itself")
+    .replace(/Claude does NOT need/g, "Codex does NOT need")
+    .replace(
+      /> If `review\.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here \(cf-review reads the config itself\)\./g,
+      "> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.",
+    )
+    .replace(
+      /\(If `review\.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here\.\)/g,
+      "(On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.)",
+    );
+}
+
+function renderCodexPlanSkill(input) {
+  return input
+    .replace(/tracked via TaskCreate/g, "tracked with an inline checklist")
+    .replace(
+      /register tasks via TaskCreate/g,
+      "register tasks in an inline checklist",
+    )
+    .replace(
+      /Progress tracked via TaskCreate/g,
+      "Progress tracked with an inline checklist",
+    )
+    .replace(
+      /Use TaskCreate to register every task from the plan/g,
+      "Create an inline checklist containing every task from the plan",
+    )
+    .replace(
+      /Use TaskCreate to create a task list\./g,
+      "Create a task checklist and keep it updated.",
+    )
+    .replace(
+      /Progress tracking in Step 7 uses TaskUpdate/g,
+      "Progress tracking in Step 7 updates the inline checklist",
+    )
+    .replace(
+      /use TaskUpdate on the corresponding task/g,
+      "update the corresponding checklist item",
+    )
+    .replace(
+      /call TaskUpdate on the corresponding task/g,
+      "update the corresponding checklist item",
+    )
+    .replace(
+      /Spawn one cf-implementer \*\*per task\*\* with `run_in_background: true` — all in a \*\*single message block\*\*\./g,
+      "Ask Codex to spawn one `cf-implementer` custom agent per task in parallel, wait for all agents, and collect each result.",
+    );
+}
+
+function renderCodexReviewSkill(input) {
+  return input
+    .replace(
+      /\*\*Codex dual-review flag:\*\*[\s\S]*?(?=\n### Step 2: Gather the diff)/,
+      [
+        "**Codex host behavior:**",
+        "",
+        "- This skill already runs inside Codex. Ignore `--with-codex`, its `--codex` alias, and `review.withCodex`; do not launch a nested `codex review` subprocess.",
+        "- Run the Coding Friend multi-agent review below.",
+        "",
+      ].join("\n"),
+    )
+    .replace(
+      /### Step 2\.5: Spawn Codex review in the background \(only when `codex=true`\)[\s\S]*?(?=\n### Step 3: Assess change size)/,
+      "",
+    )
+    .replace(
+      /### Step 6\.5: Collect & normalize the Codex review \(only when `codex=true`\)[\s\S]*?(?=\n### Step 7: Collect the report)/,
+      "",
+    )
+    .replace(
+      /### Step 7: Collect the report[\s\S]*?(?=\n### Step 8: Mark review complete and display status)/,
+      [
+        "### Step 7: Collect the report",
+        "",
+        "The result of Step 6 is the final formatted report (Critical / Important / Suggestions / Summary). Do not reformat or restructure it; use it as-is in Step 10.",
+        "",
+      ].join("\n"),
+    )
+    .replace(/Claude's own review/g, "Coding Friend's multi-agent review")
+    .replace(/Claude-only review/g, "Coding Friend review")
+    .replace(
+      /Display the cf-reviewer's report first, then append the appropriate banner\. When `codex=true`, add a `· Reviewed by: Claude \+ Codex` suffix to the `Mode:` line of whichever banner is shown \(when `codex=false`, omit the suffix\)\./,
+      "Display the cf-reviewer's report first, then append the appropriate banner.",
+    )
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+function renderCodexSessionSkill() {
+  return `---
+name: cf-session
+description: >
+  Continue or branch Codex conversations with the native session controls. Use when the user
+  asks to resume, continue, fork, or restore a Codex session. Codex owns its transcript format,
+  so Coding Friend does not copy or rewrite session JSONL files.
+---
+
+# $cf-session
+
+Codex provides native session management:
+
+- Use \`/resume\` in the TUI or run \`codex resume\` to continue a saved conversation.
+- Use \`/fork\` in the TUI or run \`codex fork\` to branch a conversation.
+- Use \`/archive\` to archive the current conversation without deleting its transcript.
+
+Do not run Coding Friend's Claude session scripts or parse Codex session files. If the user
+needs cross-machine continuity, explain that native Codex session availability is the supported
+path and keep durable project knowledge in \`docs/memory/\`.
+`;
+}
+
+function stripClaudeSkillFrontmatter(input) {
+  const match = input.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return input;
+
+  const filtered = match[1]
+    .split("\n")
+    .filter(
+      (line) =>
+        !/^(?:model|allowed-tools|user-invocable|disable-model-invocation|argument-hint):/.test(
+          line,
+        ),
+    )
+    .join("\n");
+  return `---\n${filtered}\n---\n${input.slice(match[0].length)}`;
+}
+
+function renderCodexFile(sourcePath, input) {
+  const normalizedPath = sourcePath.split(path.sep).join("/");
+  const isSkill = normalizedPath.endsWith("/SKILL.md");
+  const isInstruction =
+    isSkill ||
+    normalizedPath.includes("/context/") ||
+    normalizedPath.endsWith("/plugin/README.md");
+  let rendered = isInstruction
+    ? renderCodexInstructionText(input)
+    : renderCodexText(input);
+
+  if (isSkill) {
+    rendered = stripClaudeSkillFrontmatter(rendered);
+  }
+
+  if (normalizedPath.endsWith("/skills/cf-plan/SKILL.md")) {
+    rendered = renderCodexPlanSkill(rendered);
+  } else if (normalizedPath.endsWith("/skills/cf-review/SKILL.md")) {
+    rendered = renderCodexReviewSkill(rendered);
+  } else if (normalizedPath.endsWith("/skills/cf-session/SKILL.md")) {
+    rendered = renderCodexSessionSkill();
+  } else if (normalizedPath.endsWith("/skills/cf-help/SKILL.md")) {
+    rendered = rendered
+      .replace(
+        "Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code.",
+        "Coding Friend is a lean toolkit for disciplined engineering workflows in Codex CLI.",
+      )
+      .replace(
+        / Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report \(set `review\.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable\)\./,
+        "",
+      );
+  } else if (normalizedPath.endsWith("/skills/cf-review-out/SKILL.md")) {
+    rendered = rendered.replace(
+      /> \*\*Using Codex\?\*\*[\s\S]*?(?=\n\n)/,
+      "> **Using Codex?** Run `$cf-review` directly. The review-out/review-in round trip remains available for other external reviewers or humans.",
+    );
+  }
+
+  return rendered;
 }
 
 async function copyRenderedFile(sourcePath, targetPath) {
@@ -91,7 +323,7 @@ async function copyRenderedFile(sourcePath, targetPath) {
     return;
   }
   const source = await fs.readFile(sourcePath, "utf8");
-  await fs.writeFile(targetPath, renderCodexText(source));
+  await fs.writeFile(targetPath, renderCodexFile(sourcePath, source));
   await fs.chmod(targetPath, mode);
 }
 
@@ -125,7 +357,9 @@ async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
     const markdown = await fs.readFile(sourcePath, "utf8");
     await fs.writeFile(
       targetPath,
-      convertAgentMarkdownToToml(markdown, { renderText: renderCodexText }),
+      convertAgentMarkdownToToml(markdown, {
+        renderText: renderCodexInstructionText,
+      }),
     );
   }
 }
@@ -335,10 +569,14 @@ if (require.main === module) {
 
 module.exports = {
   agentMarkdownToToml: (markdown) =>
-    convertAgentMarkdownToToml(markdown, { renderText: renderCodexText }),
+    convertAgentMarkdownToToml(markdown, {
+      renderText: renderCodexInstructionText,
+    }),
   buildCodexPlugin,
   createCodexMcpConfig,
   createCodexPluginManifest,
+  renderCodexFile,
+  renderCodexInstructionText,
   renderCodexText,
   transformCodexHooks,
 };

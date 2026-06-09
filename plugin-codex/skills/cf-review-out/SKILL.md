@@ -6,8 +6,6 @@ description: >
   code changes. Use when the user wants an outside review — e.g. "get a second opinion",
   "external review", "review out", "send for review", "cf-review-out", "outside review",
   "prepare review for gemini", "review prompt".
-user-invocable: true
-argument-hint: "[optional: label, e.g. fix-auth-bypass]"
 created: 2026-03-23
 updated: 2026-06-06
 ---
@@ -22,7 +20,7 @@ Generate a review prompt for an external agent: **$ARGUMENTS**
 
 Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`$cf-review-in`](/docs/skills/cf-review-in/) to collect results.
 
-> **Using Codex?** If you have the Codex CLI installed and logged in, you don't need this manual round-trip — run [`$cf-review --with-codex`](/docs/skills/cf-review/) instead. It invokes Codex automatically, runs Claude's own review in parallel, and merges both into one report with no copy-paste. This `$cf-review-out` + `$cf-review-in` flow remains the path for any other external AI (Gemini, ChatGPT) or a human reviewer.
+> **Using Codex?** Run `$cf-review` directly. The review-out/review-in round trip remains available for other external reviewers or humans.
 
 ## Workflow
 

@@ -11,7 +11,7 @@ created: 2026-02-17
 updated: 2026-06-06
 ---
 
-# {{cf:slash cf-fix}}
+# /cf-fix
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -21,7 +21,7 @@ Fix the bug: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-fix`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -64,7 +64,7 @@ Include any relevant findings as context for the explorer.
 
 Launch the **cf-explorer agent** to gather context around the bug, passing the context file path so it writes structured findings.
 
-Use the **Agent tool** with `{{cf:agent_ref cf-explorer}}`. Pass:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
@@ -118,7 +118,7 @@ Before changing code:
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `{{cf:agent_ref cf-implementer}}`.
+Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
 
 Pass the context file path from Step 3b so the agent can read the explorer's structured findings.
 
@@ -205,7 +205,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 **Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `{{cf:agent_ref cf-writer}}` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
+2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
 
 ```
 WRITE SPEC
@@ -280,15 +280,15 @@ Show the user a 2-line summary:
 
 ### Step 9: Auto-Review
 
-Automatically invoke `{{cf:slash cf-review}}` — {{cf:skill_invoke cf-review}}. Do NOT ask the user first, just run it.
+Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
 > If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
 
 ### Step 10: Performance Suggestion (conditional)
 
-If the bug fix involved **performance-critical code** — e.g. database queries, API endpoints, loops over large datasets, memory management, caching, or I/O operations — suggest running `{{cf:slash cf-optimize}}` on the affected code path. Present it as an optional next step, do NOT auto-run.
+If the bug fix involved **performance-critical code** — e.g. database queries, API endpoints, loops over large datasets, memory management, caching, or I/O operations — suggest running `/cf-optimize` on the affected code path. Present it as an optional next step, do NOT auto-run.
 
-Example: _"The fix touched a database query path. Want to run `{{cf:slash cf-optimize}}` on it to verify performance hasn't regressed and look for optimization opportunities?"_
+Example: _"The fix touched a database query path. Want to run `/cf-optimize` on it to verify performance hasn't regressed and look for optimization opportunities?"_
 
 If the fix was not performance-related, skip this step.
 
@@ -311,8 +311,8 @@ Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (state 
 
 If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
 
-1. **Suggest `{{cf:slash cf-learn}}`** — Ask the user: _"This bug is taking multiple attempts. Want to run `{{cf:slash cf-learn}}` to capture the debugging insights so far before continuing?"_
-2. If the user agrees, invoke `{{cf:slash cf-learn}}` — {{cf:skill_invoke cf-learn}}
+1. **Suggest `/cf-learn`** — Ask the user: _"This bug is taking multiple attempts. Want to run `/cf-learn` to capture the debugging insights so far before continuing?"_
+2. If the user agrees, invoke `/cf-learn` — use the Skill tool with skill name `coding-friend:cf-learn`
 3. Then proceed with the 3rd attempt
 
 If you've tried **3 fixes** and the bug persists:

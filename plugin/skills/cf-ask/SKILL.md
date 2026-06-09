@@ -4,14 +4,14 @@ description: >
   Quick Q&A about codebase — explores code to answer, saves to docs/memory. Use when the user
   asks a focused question about the project — e.g. "how does X work?", "where is Y defined?",
   "what's the flow for Z?", "explain this module", "how are these connected?", "what pattern
-  does this use?", "why is this done this way?". Unlike {{cf:slash cf-research}} (deep multi-doc output),
+  does this use?", "why is this done this way?". Unlike /cf-research (deep multi-doc output),
   this gives a single focused answer.
 disable-model-invocation: true
 created: 2026-02-20
 updated: 2026-06-06
 ---
 
-# {{cf:slash cf-ask}}
+# /cf-ask
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -21,8 +21,8 @@ Answer the question: **$ARGUMENTS**
 
 Quick, focused Q&A about the codebase. Proactively explores code to find the answer, then saves the Q&A to project memory so it can be referenced later.
 
-- Unlike `{{cf:slash cf-research}}`: single focused answer, no multi-doc output
-- Unlike `{{cf:slash cf-remember}}`: proactively explores the codebase to answer vs extracting knowledge already in conversation
+- Unlike `/cf-research`: single focused answer, no multi-doc output
+- Unlike `/cf-remember`: proactively explores the codebase to answer vs extracting knowledge already in conversation
 
 ## Folder
 
@@ -40,7 +40,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-ask`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ask`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -86,7 +86,7 @@ Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 
 Launch the **cf-explorer agent** to gather codebase context for the question.
 
-Use the **Agent tool** with `{{cf:agent_ref cf-explorer}}`. Pass:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
 > Explore the codebase to answer the following question: [question from Step 1]
 >
@@ -154,7 +154,7 @@ Wait for the cf-explorer to return its findings.
 
 > **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename — do not add a date prefix to already-created files.
 
-Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `{{cf:agent_ref cf-writer}}`.
+Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
 
 **When creating** a new file (use absolute path for `file_path`):
 

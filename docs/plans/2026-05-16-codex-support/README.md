@@ -13,16 +13,16 @@ Locked decisions (Round 1 discovery + adopted from Codex agent's cross-review):
 
 1. Install UX: `cf install --agent codex` (extensible flag, default `claude`), hosts independent
 2. Memory: shared `docs/memory/` + single MCP daemon registered to both hosts
-3. Slash refs: `{{cf:command}}` placeholder + build transform
+3. Host rendering: `plugin/` remains valid Claude-native source; the build performs one-way Claude-to-Codex transforms and rejects unresolved placeholders
 4. Auto-approve on Codex: **deterministic-only v1** (no LLM classifier port); opt-in via `autoApproveCodex: true`; unknown → defer to Codex native approval
 5. Architecture: 1 repo, 2 plugin folders (`plugin/` source + `plugin-codex/` committed artifact)
 6. Versioning: locked `v*` ↔ `codex-v*` (same number)
 7. `cf install --agent codex` installs ONLY Codex (no side-effect on Claude)
 8. Build artifact committed + pre-commit hook + CI drift guard
-9. Codex hooks installed via project `<cwd>/.codex/config.toml [hooks]` for trust clarity; plugin-bundled hooks also exist but require user trust review
+9. Codex hooks ship in the enabled plugin's `hooks/hooks.json` and require normal Codex `/hooks` trust review; project config is reserved for MCP and project agents
 10. `cf init --agent codex` generates project `AGENTS.md` (Codex equivalent of `CLAUDE.md`), gitignored by default
 11. Codex session resume/fork uses native `codex resume` / `codex fork`; no CF-side session file parsing
-12. `codex review` used as Codex-native second-pass reviewer where it fits the cf-review workflow
+12. Claude-side `/cf-review --with-codex` uses `codex review` as an external second opinion; generated Codex `$cf-review` avoids recursively launching Codex
 
 See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the single-source-of-truth matrix.
 
@@ -73,7 +73,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 - **Auto-approve port correctness.** Schema differs (`hookSpecificOutput.decision.behavior` vs Claude's `decision`). Mitigation: keep opt-in separate from Claude (`autoApproveCodex`); add fixture tests; deny-by-default on unknown patterns.
 - **Memory MCP contention.** SQLite WAL handles reads; writes serialize. Mitigation: existing daemon already single-writer-multi-reader; just register MCP with both hosts.
 - **Auto-capture fragility on Codex**: current Codex supports `PreCompact` and exposes `transcript_path`, but transcript format is not stable. Mitigation: use `PreCompact` first and keep a `Stop` fallback/throttle for long sessions if needed.
-- **Agent dispatch translation.** Claude uses `Agent` tool + `subagent_type: "coding-friend:cf-explorer"`. Codex uses spawn-agents tool or `$cf-name` mention. Mitigation: `{{cf:dispatch agent=... prompt=...}}` placeholder; build renders to host-specific syntax.
+- **Agent dispatch translation.** Claude uses the `Agent` tool plus `subagent_type`; Codex uses explicit natural-language custom-agent spawning. Mitigation: the one-way renderer rewrites Claude-native dispatch instructions and lints generated Codex instructions for Claude-only runtime APIs.
 - **Tag namespace bloat.** Add `codex-v*` tag pattern. Mitigation: GA workflow auto-tags `codex-v$VERSION` whenever `v$VERSION` is tagged.
 
 ## Migration & Rollback
@@ -85,7 +85,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 
 ## Integration
 
-- **Works with:** All existing skills (auto-discoverable on both hosts after Phase 2 placeholder sweep), memory MCP, statusline (Codex has TUI customization in config.toml).
+- **Works with:** All existing skills, memory MCP, custom agents, plugin hooks, and Codex's native `/statusline` configuration.
 - **Auto-invokes:** N/A — this is infrastructure, not a skill.
 - **Invoked by this:** Build script auto-runs in pre-commit and CI; `cf install --agent codex` invokes the Codex plugin marketplace.
 - **Replaces/overlaps:** Supersedes the Codex slice of [2026-02-21-multi-platform-support.md](../2026-02-21-multi-platform-support.md). Other platforms in that plan remain open work.

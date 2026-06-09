@@ -1,7 +1,6 @@
 name = "cf-reviewer-security"
 description = "Security review specialist. Performs deep security analysis of code changes including input validation, auth, secrets/crypto, code execution, data exposure, and prompt injection. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review. Includes exploit scenarios for Critical findings. Traces data flow from untrusted input through processing to sensitive operations."
-model = "sonnet"
-tools = ["Read", "Glob", "Grep", "Bash"]
+model_reasoning_effort = "medium"
 developer_instructions = '''
 # Security Reviewer
 

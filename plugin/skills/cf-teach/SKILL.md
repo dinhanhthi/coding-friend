@@ -4,7 +4,7 @@ description: >
   Personal teacher skill — after any task, explains what happened in a conversational, storytelling
   way (like a sharp friend over coffee). Covers: approach taken, alternatives rejected, how parts
   connect, tools used, tradeoffs, mistakes made, pitfalls to watch, expert observations, and
-  transferable lessons. Unlike {{cf:slash cf-learn}} (concise structured reference notes), this creates a
+  transferable lessons. Unlike /cf-learn (concise structured reference notes), this creates a
   narrative deep-dive for the human to truly understand what happened and why.
 user-invocable: true
 argument-hint: "[optional: topic or specific task to explain]"
@@ -12,7 +12,7 @@ created: 2026-03-30
 updated: 2026-06-06
 ---
 
-# {{cf:slash cf-teach}}
+# /cf-teach
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -26,7 +26,7 @@ In any coding session, the AI does the heavy thinking — but the human often wa
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-teach`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-teach`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -103,7 +103,7 @@ File path: `{outputDir}/{category}/YYYY-MM-DD-{name}.md`
 Before creating a new file, check if a relevant file already exists in the target category:
 
 ```bash
-bash "{{cf:plugin_root}}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
 ```
 
 For each potentially relevant file, read its first 20 lines. If the new teaching narrative fits an existing file, use a different name to avoid overwriting.
@@ -168,7 +168,7 @@ What lessons from this work apply to completely different contexts? Connect the 
 
 After displaying the narrative in chat, delegate to the **cf-writer-deep agent** (always — never cf-writer) to save it as a file.
 
-Use the **Agent tool** with `{{cf:agent_ref cf-writer-deep}}` and include this write spec:
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer-deep"` and include this write spec:
 
 ```
 WRITE SPEC
@@ -217,4 +217,4 @@ After the cf-writer-deep agent completes, show the user:
 - **Conversational tone** — like explaining to a smart friend, not writing documentation
 - **Never skip dimensions** — all 9 must be covered, even briefly, in every teaching doc
 - **NEVER delete or overwrite existing content** — if a similar file exists, use a different name
-- This is distinct from `{{cf:slash cf-learn}}`: cf-learn = concise reference notes; cf-teach = deep narrative story
+- This is distinct from `/cf-learn`: cf-learn = concise reference notes; cf-teach = deep narrative story

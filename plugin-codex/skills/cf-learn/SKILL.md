@@ -8,8 +8,6 @@ description: >
   topics. Do NOT auto-invoke for trivial tasks like simple file edits, typo fixes, or routine
   operations. Unlike $cf-remember (project context for AI recall), this creates educational
   notes for the human to learn from.
-user-invocable: true
-argument-hint: "[optional: specific topic or focus area to extract]"
 created: 2026-02-17
 updated: 2026-06-06
 ---
@@ -115,14 +113,14 @@ For each potentially relevant file, read its first 20 lines to understand what i
 
 Before delegating to the cf-writer agent, assess the complexity of the content to write:
 
-**Use `cf-writer` agent (haiku)** when:
+**Use `cf-writer` agent (low reasoning effort)** when:
 
 - Simple, factual concepts (e.g., "how to use X tool", "naming convention for Y")
 - Straightforward tool/library usage notes
 - Short content with clear structure
 - Single-concept explanations
 
-**Use `cf-writer-deep` agent (sonnet)** when:
+**Use `cf-writer-deep` agent (medium reasoning effort)** when:
 
 - Content requires deep reasoning about nuanced technical concepts (e.g., explaining race conditions, distributed system trade-offs, complex type system features)
 - Very long context needs to be synthesized into a coherent doc
@@ -131,7 +129,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content t
 
 ### Step 5: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
+Construct a write spec and invoke the appropriate cf-writer agent via the Codex subagent workflow.
 
 ### Determine Task Type
 
@@ -263,7 +261,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the **Agent tool** with `$cf-writer` or `$cf-writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the Codex subagent workflow with `cf-writer` custom agent or `cf-writer-deep` custom agent (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 6: Confirm
 

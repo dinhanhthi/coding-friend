@@ -33,7 +33,7 @@ export function buildStoreStatus(input: StoreStatusInput): string {
   }
 
   if (input.claudeMdUpdated) {
-    lines.push(`📋 CLAUDE.md updated`);
+    lines.push(`📋 Project instructions updated`);
   }
 
   if (input.warning) {
@@ -56,7 +56,7 @@ export function buildUpdateStatus(input: UpdateStatusInput): string {
   }
 
   if (input.claudeMdUpdated) {
-    lines.push(`📋 CLAUDE.md updated`);
+    lines.push(`📋 Project instructions updated`);
   }
 
   return lines.join("\n");

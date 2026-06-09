@@ -44,7 +44,7 @@
 
 5. **0.5 GATING — Plugin-bundled `agents/` discovery**
    - Why this is gating: Codex plugin-build docs list `skills`, `mcpServers`, `apps`, `hooks` as plugin pointers — agents are NOT listed. The subagents doc says agents load from `~/.codex/agents/` or `<repo>/.codex/agents/`. If Codex doesn't scan plugin-bundled `agents/`, Phase 6 ships 12 TOML files that do nothing.
-   - Files: extend scratch plugin from 0.1 with `agents/cf-probe-agent.toml` (`name = "cf-probe-agent"`, `description = "..."`, `developer_instructions = "Reply with PROBE_AGENT_OK"`). Run `codex` and try to spawn `$cf-probe-agent`. Confirm activation.
+   - Files: extend scratch plugin from 0.1 with `agents/cf-probe-agent.toml` (`name = "cf-probe-agent"`, `description = "..."`, `developer_instructions = "Reply with PROBE_AGENT_OK"`). Run `codex` and explicitly ask it to spawn the `cf-probe-agent` custom agent. Confirm activation.
    - If discoverable: keep Phase 6 as written.
    - If NOT discoverable: **rewrite Phase 6**. `cf install --agent codex` writes each agent TOML into `~/.codex/agents/cf-*.toml` directly (config mutation, not plugin file). Build script still generates the TOML; install command copies them. Phase 4.1 grows by one step (agent file deploy).
    - Verify: probe-results.md documents discovery path + chosen Phase 6 shape.

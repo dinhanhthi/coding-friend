@@ -1,7 +1,6 @@
 name = "cf-reviewer-tests"
 description = "Test coverage review specialist. Checks whether new code paths are tested, test quality, edge case coverage, and regression prevention. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review."
-model = "haiku"
-tools = ["Read", "Glob", "Grep", "Bash"]
+model_reasoning_effort = "low"
 developer_instructions = '''
 # Test Coverage Reviewer
 

@@ -19,25 +19,28 @@
 
 Supported hosts: **Claude Code** and **Codex CLI**. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`.
 
+Command examples below use Claude's `/cf-*` form. In Codex, invoke the same
+skills as `$cf-*` or choose them from `/skills`.
+
 - Supports test-driven development (TDD) — opt-in via `--add-tests` flag or `tdd: true` in config
 - Provides systematic debugging methodology
-- Quick bug fix workflow (`{{cf:slash cf-fix}}`)
-- Structured optimization with before/after measurement (`{{cf:slash cf-optimize}}`)
-- Quick Q&A about codebase with memory (`{{cf:slash cf-ask}}`)
+- Quick bug fix workflow (`/cf-fix`)
+- Structured optimization with before/after measurement (`/cf-optimize`)
+- Quick Q&A about codebase with memory (`/cf-ask`)
 - Ensures verification before claiming done
 - Smart conventional commits and code review
-- ✨ Automated Codex dual review (`{{cf:slash cf-review}} --with-codex`) — runs Claude's review and a Codex review in parallel, merges both into one report, no copy-paste
-- ✨ Cross-agent code review (`{{cf:slash cf-review-out}}` + `{{cf:slash cf-review-in}}`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
-- Captures project knowledge across sessions (`{{cf:slash cf-remember}}`)
+- ✨ Automated Codex dual review (`/cf-review --with-codex`) — runs Claude's review and a Codex review in parallel, merges both into one report, no copy-paste
+- ✨ Cross-agent code review (`/cf-review-out` + `/cf-review-in`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
+- Captures project knowledge across sessions (`/cf-remember`)
 - ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
-- ✨ Helps humans learn from vibe coding sessions (`{{cf:slash cf-learn}}` for concise notes, `{{cf:slash cf-teach}}` for deep conversational breakdowns) — browse as a searchable website (`cf learn host`) or share with other LLM clients via MCP server (`cf mcp`)
-- In-depth research with web search and parallel subagents (`{{cf:slash cf-research}}`)
+- ✨ Helps humans learn from vibe coding sessions (`/cf-learn` for concise notes, `/cf-teach` for deep conversational breakdowns) — browse as a searchable website (`cf learn host`) or share with other LLM clients via MCP server (`cf mcp`)
+- In-depth research with web search and parallel subagents (`/cf-research`)
 - Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
-- ✨ Save and load Claude Code session chats across machines and accounts (`{{cf:slash cf-session}}`)
+- ✨ Session continuity — Claude can save/load synchronized chats with `/cf-session`; Codex uses native `/resume` and `/fork`
 - ✨ Smart auto-approve — Claude uses a 3-step hook (rules → working-dir check → Sonnet LLM classifier); Codex uses deterministic rules and defers unknown actions to Codex native approval. Available to all users, opt-in via config
 - Prompt injection defense — layered content isolation protects against malicious instructions
-- CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. `cf permission` lets you interactively configure Claude Code's tool permissions
-- ✨ Customizable Claude Code statusline with account info & API rate limit tracking
+- CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. Claude permissions use `cf permission`; Codex sandbox posture remains native `/permissions`
+- ✨ Customizable Claude Code statusline with account info and rate limits; Codex users configure built-in footer fields with `/statusline`
   ```
   🧠 Opus (1M)
   cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
@@ -86,7 +89,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Cl
    ```
 
 4. Restart your host session
-5. **(Optional) Host your learning docs** — browse `{{cf:slash cf-learn}}` and `{{cf:slash cf-teach}}` notes as a website or expose to other LLM clients:
+5. **(Optional) Host your learning docs** — browse `/cf-learn` and `/cf-teach` notes as a website or expose to other LLM clients:
    ```bash
    cf learn host        # Serve ~/.coding-friend/learn as a website at localhost:3333
    cf mcp               # Setup an MCP server so other LLM clients can read your notes
@@ -120,24 +123,24 @@ For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs
 
 ## Commands
 
-| Command                                                                 | Description                                                                                                                                                                                                                       |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `{{cf:slash cf-ask}} [question]`                                        | Quick Q&A about codebase                                                                                                                                                                                                          |
-| `{{cf:slash cf-commit}} [hint]`                                         | Analyze diff and create conventional commit                                                                                                                                                                                       |
-| `{{cf:slash cf-design}} [mode]` [beta]                                  | UI design: scan patterns, design or modify UI consistently                                                                                                                                                                        |
-| `{{cf:slash cf-fix}} [bug]`                                             | Quick bug fix workflow                                                                                                                                                                                                            |
-| `{{cf:slash cf-help}} [question]`                                       | Answer questions about Coding Friend                                                                                                                                                                                              |
-| `{{cf:slash cf-learn}} [topic]`                                         | Extract learnings for human review                                                                                                                                                                                                |
-| `{{cf:slash cf-optimize}} [target]`                                     | Structured optimization with measurement                                                                                                                                                                                          |
-| `{{cf:slash cf-plan}} [task]` \| `{{cf:slash cf-plan}} --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase); `--gui` also generates the human overview doc (off by default) |
-| `{{cf:slash cf-remember}} [topic]`                                      | Capture project knowledge                                                                                                                                                                                                         |
-| `{{cf:slash cf-research}} [topic]`                                      | In-depth research with web search                                                                                                                                                                                                 |
-| `{{cf:slash cf-review}} [target]`                                       | Code review in forked subagent; `--with-codex` adds a parallel Codex review merged into one report                                                                                                                                |
-| `{{cf:slash cf-scan}} [desc]`                                           | Scan project and bootstrap memory                                                                                                                                                                                                 |
-| `{{cf:slash cf-session}}` [beta]                                        | Save/load Claude Code sessions                                                                                                                                                                                                    |
-| `{{cf:slash cf-ship}} [hint]`                                           | Verify, commit, push, and create PR                                                                                                                                                                                               |
-| `{{cf:slash cf-teach}} [topic]`                                         | Personal teacher — conversational breakdown                                                                                                                                                                                       |
-| `{{cf:slash cf-warm}} [--user]` [beta]                                  | Catch up after absence — git history summary                                                                                                                                                                                      |
+| Command                                         | Description                                                                                                                                                                                                                       |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/cf-ask [question]`                            | Quick Q&A about codebase                                                                                                                                                                                                          |
+| `/cf-commit [hint]`                             | Analyze diff and create conventional commit                                                                                                                                                                                       |
+| `/cf-design [mode]` [beta]                      | UI design: scan patterns, design or modify UI consistently                                                                                                                                                                        |
+| `/cf-fix [bug]`                                 | Quick bug fix workflow                                                                                                                                                                                                            |
+| `/cf-help [question]`                           | Answer questions about Coding Friend                                                                                                                                                                                              |
+| `/cf-learn [topic]`                             | Extract learnings for human review                                                                                                                                                                                                |
+| `/cf-optimize [target]`                         | Structured optimization with measurement                                                                                                                                                                                          |
+| `/cf-plan [task]` \| `/cf-plan --resume <path>` | Brainstorm and write implementation plan; `--resume` resumes an interrupted plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase); `--gui` also generates the human overview doc (off by default) |
+| `/cf-remember [topic]`                          | Capture project knowledge                                                                                                                                                                                                         |
+| `/cf-research [topic]`                          | In-depth research with web search                                                                                                                                                                                                 |
+| `/cf-review [target]`                           | Code review in forked subagent; `--with-codex` adds a parallel Codex review merged into one report                                                                                                                                |
+| `/cf-scan [desc]`                               | Scan project and bootstrap memory                                                                                                                                                                                                 |
+| `/cf-session` [beta]                            | Save/load Claude Code sessions                                                                                                                                                                                                    |
+| `/cf-ship [hint]`                               | Verify, commit, push, and create PR                                                                                                                                                                                               |
+| `/cf-teach [topic]`                             | Personal teacher — conversational breakdown                                                                                                                                                                                       |
+| `/cf-warm [--user]` [beta]                      | Catch up after absence — git history summary                                                                                                                                                                                      |
 
 Auto-invoked skills (no slash needed): `cf-tdd` (add `--auto` for autopilot review+fix+commit after implementation), `cf-sys-debug`, `cf-verification`.
 

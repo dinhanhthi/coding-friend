@@ -1,7 +1,6 @@
 ---
 name: cf-verification
 description: Verify before claiming work is complete
-user-invocable: false
 created: 2026-02-17
 updated: 2026-06-06
 ---

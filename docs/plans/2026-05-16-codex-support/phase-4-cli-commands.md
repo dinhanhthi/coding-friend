@@ -75,4 +75,4 @@
 - Focused affected suite: `npx vitest run src/lib/__tests__/codex-config.test.ts src/lib/__tests__/config.test.ts src/commands/__tests__/install.test.ts src/commands/__tests__/uninstall.test.ts src/commands/__tests__/enable.test.ts src/commands/__tests__/disable.test.ts src/commands/__tests__/update.test.ts src/commands/__tests__/permission.test.ts`
 - Build: `npm run build`
 - Smoke: `cf init --agent codex --trust-project` with temp `CODEX_HOME` produced parseable Codex TOML; `codex --help` accepted it.
-- Full `npm test` requires unsandboxed local IPC/socket listeners for `tsx` and cf-memory daemon tests. Sandbox execution fails with `EPERM`; the required escalation request was rejected by the environment because the workspace is out of credits.
+- Final release-candidate validation ran the full CLI suite outside the restricted sandbox: 59 Vitest files / 858 tests plus 7 hook files / 558 tests, 1,416 tests total, all passing.

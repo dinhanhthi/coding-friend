@@ -5,9 +5,6 @@ description: >
   e.g. "commit this", "commit my changes", "save my work", "create a commit", "git commit",
   "commit what we did", "stage and commit". Also triggers when the user finishes a task and
   wants to commit the result.
-disable-model-invocation: true
-model: haiku
-allowed-tools: [Bash, Read, Glob]
 created: 2026-02-17
 updated: 2026-06-06
 ---

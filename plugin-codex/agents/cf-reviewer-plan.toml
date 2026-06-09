@@ -1,7 +1,6 @@
 name = "cf-reviewer-plan"
 description = "Plan alignment review specialist. Checks whether code changes match the implementation plan. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review. Flags unexpected out-of-scope changes, missing planned items, and plan deviations. Skipped in QUICK review mode."
-model = "sonnet"
-tools = ["Read", "Glob", "Grep", "Bash"]
+model_reasoning_effort = "medium"
 developer_instructions = '''
 # Plan Alignment Reviewer
 

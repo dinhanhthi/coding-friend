@@ -107,6 +107,20 @@ describe("updateCommand — Codex", () => {
     ]);
     expect(mockResolveScope).not.toHaveBeenCalled();
   });
+
+  it("points Codex statusline updates to the native command", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ agent: "codex", statusline: true });
+
+    const output = consoleSpy.mock.calls
+      .map((call) => call.join(" "))
+      .join("\n");
+    expect(output).toContain("run /statusline");
+    expect(output).not.toContain("later phase");
+    expect(mockEnsureStatusline).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateCommand — version summary", () => {

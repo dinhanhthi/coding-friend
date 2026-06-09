@@ -14,7 +14,6 @@ description: >
   for hard, recurring, or investigation-heavy bugs (cf-fix may delegate here).
   Do NOT auto-invoke for trivial typos, one-line fixes, or config errors with an
   obvious cause.
-user-invocable: false
 created: 2026-02-17
 updated: 2026-06-06
 ---
@@ -135,7 +134,7 @@ cf-sys-debug is only invoked for hard bugs — always document the findings.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
 2. Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`. Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) — do NOT search sub-folders. Use `CF_DOCS_ROOT` as the docs base dir.
-3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `$cf-writer` (use absolute `file_path`):
+3. Construct a write spec and delegate to **cf-writer agent** by spawning the `cf-writer` custom agent (use absolute `file_path`):
 
 ```
 WRITE SPEC
