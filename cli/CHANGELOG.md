@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.37.0 (2026-06-09)
+
+- Add host selection to Coding Friend lifecycle commands with `--agent codex` and `--codex`, while preserving Claude Code as the default and keeping each host's installation and enablement state independent.
+- Add Codex marketplace registration, generated agent deployment, project `AGENTS.md` and `.codex/config.toml` setup, shared memory MCP registration, project trust support, and `agents.max_depth = 2` for nested Coding Friend agents.
+- Add Codex-specific deterministic auto-approve configuration and lifecycle cleanup, with fixture and integration coverage for config cohabitation, hooks, agent deployment, and stale artifact prevention.
+- Restrict the npm package file list to bundled runtime source and configuration, excluding nested development dependencies, test output, and local build artifacts from published CLI tarballs.
+
 ## v1.36.4 (2026-06-07)
 
 - Flip the `disableGUIPlan` default to `true` in `cf config` and `cf init` — the `/cf-plan` human overview doc is now off by default [#df7fa7e](https://github.com/dinhanhthi/coding-friend/commit/df7fa7e)
