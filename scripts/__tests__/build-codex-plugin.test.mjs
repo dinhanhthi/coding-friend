@@ -90,13 +90,46 @@ test("filters and renders Codex hooks", () => {
           ],
         },
       ],
+      PreToolUse: [
+        {
+          matcher: "Read|Write",
+          hooks: [
+            {
+              type: "command",
+              command: "${CLAUDE_PLUGIN_ROOT}/hooks/privacy-block.sh",
+            },
+          ],
+        },
+        {
+          matcher: "",
+          hooks: [
+            {
+              type: "command",
+              command: "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs",
+            },
+          ],
+        },
+      ],
     },
   });
 
-  assert.deepEqual(Object.keys(hooks.hooks), ["PreCompact"]);
+  assert.deepEqual(Object.keys(hooks.hooks), [
+    "PreCompact",
+    "PreToolUse",
+    "PermissionRequest",
+  ]);
   assert.equal(
     hooks.hooks.PreCompact[0].hooks[0].command,
-    "${PLUGIN_ROOT}/hooks/memory-capture.sh",
+    "CF_HOST=codex ${PLUGIN_ROOT}/hooks/memory-capture.codex.sh",
   );
   assert.equal("async" in hooks.hooks.PreCompact[0].hooks[0], false);
+  assert.equal(
+    hooks.hooks.PreToolUse[0].hooks[0].command,
+    "CF_HOST=codex ${PLUGIN_ROOT}/hooks/privacy-block.sh",
+  );
+  assert.equal(hooks.hooks.PreToolUse.length, 1);
+  assert.equal(
+    hooks.hooks.PermissionRequest[0].hooks[0].command,
+    "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs",
+  );
 });

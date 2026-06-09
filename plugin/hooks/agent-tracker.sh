@@ -22,8 +22,13 @@ ERR_LOG="${TMPDIR:-/tmp}/cf-hook-errors.log"
 
 INPUT=$(cat)
 
+json_string() {
+  local key="$1"
+  printf '%s' "$INPUT" | grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed "s/.*\"$key\"[[:space:]]*:[[:space:]]*\"//;s/\"$//" || true
+}
+
 # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)
-SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+SESSION_ID=$(json_string "session_id")
 if [ -z "$SESSION_ID" ]; then
   # Payload did not contain a session_id — log so regressions in CC's event
   # shape are visible without blocking the hook.
@@ -34,7 +39,10 @@ fi
 AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
 COUNT_FILE="/tmp/cf-agent-count-${SESSION_ID}"
 LOCK_DIR="/tmp/cf-agent-count-${SESSION_ID}.lock"
-EVENT=$(printf '%s' "$INPUT" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"hook_event_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+EVENT=$(json_string "hook_event_name")
+if [ -z "$EVENT" ]; then
+  EVENT=$(json_string "hookEventName")
+fi
 if [ -z "$EVENT" ]; then
   echo "[$(date '+%Y-%m-%dT%H:%M:%S')] agent-tracker: missing hook_event_name for session $SESSION_ID" >>"$ERR_LOG" 2>/dev/null || true
   exit 0
@@ -61,7 +69,13 @@ fi
 
 case "$EVENT" in
   SubagentStart)
-    AGENT_TYPE=$(printf '%s' "$INPUT" | grep -o '"agent_type"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"agent_type"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+    AGENT_TYPE=$(json_string "agent_type")
+    if [ -z "$AGENT_TYPE" ]; then
+      AGENT_TYPE=$(json_string "agent_name")
+    fi
+    if [ -z "$AGENT_TYPE" ]; then
+      AGENT_TYPE=$(json_string "subagent_type")
+    fi
     COUNT=$((COUNT + 1))
     echo "$COUNT" > "$COUNT_FILE" 2>/dev/null || true
     [ -n "$AGENT_TYPE" ] && echo "$AGENT_TYPE" > "$AGENT_FILE" 2>/dev/null || true

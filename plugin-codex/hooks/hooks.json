@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/memory-capture.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/memory-capture.codex.sh"
           }
         ]
       }
@@ -17,20 +17,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/privacy-block.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/privacy-block.sh"
           },
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/scout-block.cjs"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/auto-approve.cjs"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/scout-block.cjs"
           }
         ]
       }
@@ -41,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/session-init.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/session-init.sh"
           }
         ]
       }
@@ -52,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/session-log.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/session-log.sh"
           }
         ]
       }
@@ -63,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/agent-tracker.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/agent-tracker.sh"
           }
         ]
       }
@@ -74,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/agent-tracker.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/agent-tracker.sh"
           }
         ]
       }
@@ -85,7 +76,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/rules-reminder.sh"
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/rules-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs"
           }
         ]
       }

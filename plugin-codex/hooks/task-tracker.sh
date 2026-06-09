@@ -16,6 +16,10 @@ set -euo pipefail
 
 ERR_LOG="${TMPDIR:-/tmp}$cf-hook-errors.log"
 
+if [ "${CF_HOST:-claude}" = "codex" ]; then
+  exit 0
+fi
+
 INPUT=$(cat)
 
 # Parse session_id from stdin JSON (Claude Code provides it here, not as env var)

@@ -24,7 +24,17 @@ exec 2>>"$LOG_FILE"
 echo "=== session-init.sh started at $(date) ===" >>"$LOG_FILE"
 trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FILE"' ERR
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}"
+
+CF_HOST="${CF_HOST:-}"
+if [ -z "$CF_HOST" ]; then
+  if [ -n "${CODEX_SESSION_ID:-}" ] || [ -n "${CODEX_HOME:-}" ]; then
+    CF_HOST="codex"
+  else
+    CF_HOST="claude"
+  fi
+fi
+export CF_HOST
 
 # Source the shared path resolver
 # shellcheck source=../lib/cf-paths.sh
@@ -98,6 +108,7 @@ fi
 
 # Build context
 CONTEXT="<IMPORTANT>
+HOST: $CF_HOST
 PROJECT_TYPE: $PROJECT_TYPE
 PKG_MANAGER: $PKG_MANAGER
 DOCS_DIR: $DOCS_DIR
