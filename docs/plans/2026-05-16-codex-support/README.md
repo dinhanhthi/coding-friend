@@ -46,7 +46,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 | ✅ DONE    | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
 | ✅ DONE    | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
 | ✅ DONE    | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
-| ⚠️ BLOCKED | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
+| ✅ DONE    | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
 | ⬜ TODO    | Phase 10: Release plumbing              | [phase-10-release-plumbing.md](./phase-10-release-plumbing.md) | 4 tasks |
 
 **Total: 47 tasks across 11 phases.** (Phase 0 has 3 GATING probes that may force rewrites of Phase 4.1 or Phase 6 before implementation begins.)
