@@ -2,6 +2,9 @@
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const {
+  agentMarkdownToToml: convertAgentMarkdownToToml,
+} = require("./lib/agent-md-to-toml.js");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PLUGIN_SOURCE_DIR = path.join(REPO_ROOT, "plugin");
@@ -63,7 +66,13 @@ function renderCodexText(input) {
     .replace(
       /\{\{cf:dispatch\s+agent=([a-z0-9-]+)\s+prompt="([^"]*)"\}\}/g,
       (_match, agent, prompt) =>
-        `Spawn a subagent named ${agent} with the following instructions: ${prompt}`,
+        [
+          `Spawn a subagent named \`${agent}\` with the following instructions:`,
+          "",
+          prompt,
+          "",
+          "Wait for it to finish and use its output.",
+        ].join("\n"),
     )
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, "${PLUGIN_ROOT}")
     .replace(/CLAUDE_PLUGIN_ROOT/g, "PLUGIN_ROOT")
@@ -103,80 +112,6 @@ async function copyRenderedTree(sourceDir, targetDir) {
   }
 }
 
-function parseFrontmatter(markdown) {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
-  if (!match) {
-    return { frontmatter: {}, body: markdown };
-  }
-
-  const frontmatter = {};
-  const lines = match[1].split("\n");
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const simple = line.match(/^([A-Za-z0-9_-]+):(?:\s*(.*))?$/);
-    if (!simple) continue;
-
-    const [, key, rawValue = ""] = simple;
-    if (rawValue === ">") {
-      const folded = [];
-      while (index + 1 < lines.length && /^\s+/.test(lines[index + 1])) {
-        index += 1;
-        folded.push(lines[index].trim());
-      }
-      frontmatter[key] = folded.join(" ").replace(/\s+/g, " ").trim();
-    } else {
-      frontmatter[key] = rawValue.trim();
-    }
-  }
-
-  return {
-    frontmatter,
-    body: markdown.slice(match[0].length),
-  };
-}
-
-function splitTools(rawTools) {
-  if (!rawTools) return [];
-  return rawTools
-    .split(",")
-    .map((tool) => tool.trim())
-    .filter(Boolean);
-}
-
-function tomlString(value) {
-  return JSON.stringify(value ?? "");
-}
-
-function tomlArray(values) {
-  return `[${values.map((value) => tomlString(value)).join(", ")}]`;
-}
-
-function agentMarkdownToToml(markdown) {
-  const rendered = renderCodexText(markdown);
-  const { frontmatter, body } = parseFrontmatter(rendered);
-  const name = frontmatter.name;
-  if (!name) {
-    throw new Error("Agent markdown is missing frontmatter name");
-  }
-
-  const lines = [
-    `name = ${tomlString(name)}`,
-    `description = ${tomlString(frontmatter.description ?? "")}`,
-  ];
-
-  if (frontmatter.model) {
-    lines.push(`model = ${tomlString(frontmatter.model)}`);
-  }
-
-  const tools = splitTools(frontmatter.tools);
-  if (tools.length > 0) {
-    lines.push(`tools = ${tomlArray(tools)}`);
-  }
-
-  lines.push(`developer_instructions = ${tomlString(body.trim())}`);
-  return `${lines.join("\n")}\n`;
-}
-
 async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
   await fs.mkdir(targetAgentDir, { recursive: true });
   const entries = await fs.readdir(sourceAgentDir, { withFileTypes: true });
@@ -188,7 +123,10 @@ async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
       entry.name.replace(/\.md$/, ".toml"),
     );
     const markdown = await fs.readFile(sourcePath, "utf8");
-    await fs.writeFile(targetPath, agentMarkdownToToml(markdown));
+    await fs.writeFile(
+      targetPath,
+      convertAgentMarkdownToToml(markdown, { renderText: renderCodexText }),
+    );
   }
 }
 
@@ -383,7 +321,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  agentMarkdownToToml,
+  agentMarkdownToToml: (markdown) =>
+    convertAgentMarkdownToToml(markdown, { renderText: renderCodexText }),
   buildCodexPlugin,
   createCodexMcpConfig,
   createCodexPluginManifest,

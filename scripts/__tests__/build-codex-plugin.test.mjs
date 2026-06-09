@@ -18,6 +18,7 @@ test("renders Coding Friend placeholders for Codex", () => {
       "{{cf:skill_invoke cf-learn}}",
       "{{cf:plugin_root}}/hooks/session-init.sh",
       "{{cf:host}}",
+      '{{cf:dispatch agent=cf-explorer prompt="explore X"}}',
       "/cf-plan",
       "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.CLAUDE_PLUGIN_ROOT",
@@ -32,6 +33,13 @@ test("renders Coding Friend placeholders for Codex", () => {
       "load `$cf-learn`",
       "${PLUGIN_ROOT}/hooks/session-init.sh",
       "Codex CLI",
+      [
+        "Spawn a subagent named `cf-explorer` with the following instructions:",
+        "",
+        "explore X",
+        "",
+        "Wait for it to finish and use its output.",
+      ].join("\n"),
       "$cf-plan",
       "${PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.PLUGIN_ROOT",
@@ -66,7 +74,10 @@ Use {{cf:slash cf-review}} and {{cf:agent_ref cf-writer}}.
   assert.match(toml, /description = "Example agent for testing conversion\."/);
   assert.match(toml, /model = "haiku"/);
   assert.match(toml, /tools = \["Read", "Write", "Bash"\]/);
-  assert.match(toml, /developer_instructions = ".*\$cf-review.*\$cf-writer/s);
+  assert.match(
+    toml,
+    /developer_instructions = '''\n# Example\n\nUse \$cf-review and \$cf-writer\.\n'''/,
+  );
 });
 
 test("filters and renders Codex hooks", () => {
