@@ -1,6 +1,6 @@
 {
   "name": "coding-friend-cli",
-  "version": "1.37.0",
+  "version": "1.38.0",
   "description": "CLI for coding-friend — host learning docs, setup MCP server, initialize projects",
   "type": "module",
   "bin": {
@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsup src/index.ts src/postinstall.ts --format esm --dts --clean",
     "postinstall": "node -e \"import('./dist/postinstall.js').catch(()=>{})\"",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm run check:package",
+    "check:package": "node scripts/check-package.mjs",
     "dev": "tsx src/index.ts",
     "watch": "tsup src/index.ts src/postinstall.ts --format esm --dts --watch",
     "test": "vitest run && vitest run --config vitest.hooks.config.ts",
@@ -20,14 +21,41 @@
   },
   "files": [
     "dist",
-    "lib"
+    "lib/cf-memory/package.json",
+    "lib/cf-memory/package-lock.json",
+    "lib/cf-memory/scripts",
+    "lib/cf-memory/src/backends",
+    "lib/cf-memory/src/bin",
+    "lib/cf-memory/src/daemon",
+    "lib/cf-memory/src/index.ts",
+    "lib/cf-memory/src/lib",
+    "lib/cf-memory/src/resources",
+    "lib/cf-memory/src/server.ts",
+    "lib/cf-memory/src/tools",
+    "lib/cf-memory/tsconfig.json",
+    "lib/learn-host/next.config.ts",
+    "lib/learn-host/package.json",
+    "lib/learn-host/package-lock.json",
+    "lib/learn-host/postcss.config.mjs",
+    "lib/learn-host/public/logo.svg",
+    "lib/learn-host/src",
+    "lib/learn-host/tsconfig.json",
+    "lib/learn-mcp/package.json",
+    "lib/learn-mcp/package-lock.json",
+    "lib/learn-mcp/src/bin",
+    "lib/learn-mcp/src/index.ts",
+    "lib/learn-mcp/src/lib",
+    "lib/learn-mcp/src/server.ts",
+    "lib/learn-mcp/src/tools",
+    "lib/learn-mcp/tsconfig.json"
   ],
   "keywords": [
     "coding-friend",
     "cli",
     "learning",
     "mcp",
-    "claude"
+    "claude",
+    "codex"
   ],
   "author": {
     "name": "Anh-Thi Dinh",
