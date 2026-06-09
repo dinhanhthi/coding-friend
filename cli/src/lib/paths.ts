@@ -1,6 +1,9 @@
 import { homedir } from "os";
 import { resolve, join, isAbsolute } from "path";
 
+const CODEX_MARKETPLACE_NAME = "coding-friend-marketplace";
+const CODEX_PLUGIN_NAME = "coding-friend";
+
 /**
  * Resolve a path that may be absolute, start with ~/, or be relative.
  * Relative paths are resolved from the given base (defaults to cwd).
@@ -131,4 +134,64 @@ export function claudeProjectsDir(): string {
 /** Path to a specific project's session directory (~/.claude/projects/<encodedPath>) */
 export function claudeSessionDir(encodedPath: string): string {
   return join(claudeProjectsDir(), encodedPath);
+}
+
+/**
+ * Resolve Codex's global config directory.
+ * Honors CODEX_HOME (default ~/.codex), matching Codex CLI's own config lookup.
+ */
+export function codexConfigDir(): string {
+  const env = process.env.CODEX_HOME?.trim();
+  if (!env) return join(homedir(), ".codex");
+  if (env === "~") return homedir();
+  if (env.startsWith("~/")) return join(homedir(), env.slice(2));
+  return env;
+}
+
+/** Path to Codex global config.toml */
+export function codexConfigTomlPath(): string {
+  return join(codexConfigDir(), "config.toml");
+}
+
+/** Codex plugin cache directory */
+export function codexPluginsCacheDir(): string {
+  return join(codexConfigDir(), "plugins", "cache");
+}
+
+/** Codex Coding Friend installed plugin cache directory */
+export function codexInstalledPluginsPath(): string {
+  return join(codexPluginsCacheDir(), CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME);
+}
+
+/** Codex marketplace clone/snapshot directory */
+export function codexMarketplaceClonePath(): string {
+  return join(
+    codexConfigDir(),
+    "plugins",
+    "marketplaces",
+    CODEX_MARKETPLACE_NAME,
+  );
+}
+
+/** Codex sessions directory */
+export function codexProjectsDir(): string {
+  return join(codexConfigDir(), "sessions");
+}
+
+/** Codex session directory for a date: ~/.codex/sessions/YYYY/MM/DD */
+export function codexSessionDir(date: Date): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return join(codexProjectsDir(), year, month, day);
+}
+
+/** Repo-local Codex marketplace file */
+export function codexLocalMarketplacePath(): string {
+  return resolve(process.cwd(), ".agents", "plugins", "marketplace.json");
+}
+
+/** Personal Codex agents directory */
+export function codexAgentsDir(): string {
+  return join(codexConfigDir(), "agents");
 }

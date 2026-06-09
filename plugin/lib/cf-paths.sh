@@ -12,6 +12,8 @@
 #   3. Non-git directory    — git command fails; falls back to $PWD
 
 cf_resolve_paths() {
+  : "${CLAUDE_PLUGIN_ROOT:=${PLUGIN_ROOT:-}}"
+
   local git_common_dir
   git_common_dir=$(git -C "$PWD" rev-parse --git-common-dir 2>/dev/null || true)
 
