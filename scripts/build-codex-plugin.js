@@ -257,6 +257,18 @@ function createCodexMcpConfig() {
 async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
   const pluginSourceDir = path.join(repoRoot, "plugin");
   const codexPluginDir = path.join(repoRoot, "plugin-codex");
+  try {
+    const sourceStat = await fs.stat(pluginSourceDir);
+    if (!sourceStat.isDirectory()) {
+      throw new Error(`Missing plugin source directory: ${pluginSourceDir}`);
+    }
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      throw new Error(`Missing plugin source directory: ${pluginSourceDir}`);
+    }
+    throw error;
+  }
+
   const packageJson = JSON.parse(
     await fs.readFile(path.join(repoRoot, "package.json"), "utf8"),
   );
