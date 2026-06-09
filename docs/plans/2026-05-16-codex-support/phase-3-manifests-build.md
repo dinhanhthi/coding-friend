@@ -56,7 +56,7 @@
    - Responsibilities:
      - Read `plugin/package.json` (or root) → version string
      - Copy `plugin/skills/`, `plugin/agents/` into `plugin-codex/`
-     - Transform every `{{cf:slash NAME}}` → `$NAME`; `{{cf:agent_ref NAME}}` → `$NAME`; `{{cf:plugin_root}}` → `${PLUGIN_ROOT}`; `{{cf:dispatch ...}}` → natural-language equivalent (template literal); `{{cf:host}}` → `Codex CLI`
+     - Transform every `{{cf:slash NAME}}` → `$NAME`; `{{cf:agent_ref NAME}}` → `$NAME`; `{{cf:skill_invoke NAME}}` → `load $NAME`; `{{cf:plugin_root}}` → `${PLUGIN_ROOT}`; `{{cf:dispatch ...}}` → natural-language equivalent (template literal); `{{cf:host}}` → `Codex CLI`
      - Transform Claude-only hook event references in `hooks.json` (skip PreCompact/TaskCreated/TaskCompleted/SubagentStart/SubagentStop entries when generating Codex hooks.json — keep only events Codex supports). Build a per-host event allowlist.
      - Convert each `plugin/agents/cf-*.md` to `plugin-codex/agents/cf-*.toml` using frontmatter `name`+`description` → TOML keys; markdown body → `developer_instructions` string. (Phase 6 owns the converter; this task just calls it.)
      - Write `plugin-codex/.codex-plugin/plugin.json` with stamped version

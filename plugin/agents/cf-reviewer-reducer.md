@@ -78,4 +78,4 @@ Mention which specialist agents contributed and any cross-cutting themes.
 - Do NOT remove findings — all specialist findings must appear in the merged output
 - If the code is genuinely clean across all agents, report it as a Suggestion-level acknowledgment
 - Preserve "Why" explanations from specialist agents
-- For performance concerns, include note: _Consider running `/cf-optimize` on this code path._
+- For performance concerns, include note: _Consider running `{{cf:slash cf-optimize}}` on this code path._

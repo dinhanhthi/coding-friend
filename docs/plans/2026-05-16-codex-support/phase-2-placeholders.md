@@ -8,9 +8,9 @@
 
 | Status  | Task                                             |
 | ------- | ------------------------------------------------ |
-| ⬜ TODO | 2.1 Define placeholder convention doc            |
-| ⬜ TODO | 2.2 Sweep all SKILL.md / agent .md / shared docs |
-| ⬜ TODO | 2.3 Add placeholder lint test                    |
+| ✅ DONE | 2.1 Define placeholder convention doc            |
+| ✅ DONE | 2.2 Sweep all SKILL.md / agent .md / shared docs |
+| ✅ DONE | 2.3 Add placeholder lint test                    |
 
 ## Tasks
 
@@ -21,13 +21,14 @@
      - `{{cf:plugin_root}}` → Claude: `${CLAUDE_PLUGIN_ROOT}`, Codex: `${PLUGIN_ROOT}` (shell hook scripts only)
      - `{{cf:dispatch agent=NAME prompt="..."}}` → Claude: full `Agent` tool block with `subagent_type: "coding-friend:NAME"`; Codex: natural-language "Spawn a subagent named NAME with the following instructions: ..."
      - `{{cf:agent_ref NAME}}` → Claude: `subagent_type: "coding-friend:NAME"`; Codex: `$NAME`
+     - `{{cf:skill_invoke NAME}}` → Claude: `use the Skill tool with skill name coding-friend:NAME`; Codex: `load $NAME`
      - `{{cf:host}}` → Claude: literal `Claude Code`, Codex: literal `Codex CLI` (for cosmetic doc strings)
    - Verify: doc reviewed; no real changes yet.
    - Rollback: delete the doc.
 
 2. **2.2 Sweep all skill/agent/doc files**
    - Files: every `plugin/skills/cf-*/SKILL.md` (21 files), every `plugin/agents/cf-*.md` (12 files), `plugin/context/bootstrap.md`, `CLAUDE.md`, `README.md` — only the source-of-truth copies, NOT `plugin-codex/` (that's generated)
-   - Replace every literal `/cf-review`, `/cf-commit`, `/cf-plan`, …, `${CLAUDE_PLUGIN_ROOT}` (in skill bodies/docs, NOT in `.sh` scripts yet — those stay raw), `subagent_type: "coding-friend:cf-..."` with the matching `{{cf:...}}` placeholder.
+   - Replace every literal `/cf-review`, `/cf-commit`, `/cf-plan`, …, `${CLAUDE_PLUGIN_ROOT}` (in skill bodies/docs, NOT in `.sh` scripts yet — those stay raw), `subagent_type: "coding-friend:cf-..."`, and raw `coding-friend:cf-...` skill invocation references with the matching `{{cf:...}}` placeholder.
    - Hook script `.sh` files in `plugin/hooks/` keep `${CLAUDE_PLUGIN_ROOT}` raw — they are not transformed at source; the build script copies them and rewrites env vars for Codex.
    - Verify: `git grep -nE '/cf-[a-z]+' plugin/skills plugin/agents | grep -v '{{cf:'` returns only false-positives (URLs, file paths). Manual review required.
    - Rollback: `git checkout -- plugin/ CLAUDE.md README.md plugin/context/bootstrap.md`.

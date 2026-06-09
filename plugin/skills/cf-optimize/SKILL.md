@@ -14,7 +14,7 @@ created: 2026-02-20
 updated: 2026-06-06
 ---
 
-# /cf-optimize
+# {{cf:slash cf-optimize}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -28,7 +28,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-optimize`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-optimize`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -68,7 +68,7 @@ Assess whether the optimization target is **simple** (single file/function, clea
 
 - **Simple target** (e.g., "optimize this function"): Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<optimization target keywords — e.g. performance, latency, bottleneck, caching>", "limit": 5 }`. Then read the relevant source files directly.
 
-- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Use the **Agent tool** with `{{cf:agent_ref cf-explorer}}`. Pass:
 
   > Explore the codebase to understand the performance context for: [optimization target]
   >
@@ -120,7 +120,7 @@ Memory and explorer results are **hints** — always verify against actual code 
 
 ### Step 7: Implement (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to implement the optimization test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
+Dispatch the **cf-implementer agent** to implement the optimization test-first. Use the **Agent tool** with `{{cf:agent_ref cf-implementer}}`.
 
 **Prompt template:**
 
@@ -164,7 +164,7 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 
 ### Step 10: Auto-Review
 
-Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+Automatically invoke `{{cf:slash cf-review}}` — {{cf:skill_invoke cf-review}}. Do NOT ask the user first, just run it.
 
 > If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
 

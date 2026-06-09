@@ -11,11 +11,11 @@ created: 2026-02-17
 updated: 2026-06-07
 ---
 
-# /cf-review
+# {{cf:slash cf-review}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
-> ✨ **CODING FRIEND** → /cf-review activated
+> ✨ **CODING FRIEND** → {{cf:slash cf-review}} activated
 
 Review the code changes for: **$ARGUMENTS**
 
@@ -23,15 +23,15 @@ Review the code changes for: **$ARGUMENTS**
 
 This skill is automatically invoked by other skills — you don't always need to run it manually:
 
-- **`/cf-plan`** — runs `/cf-review` after all implementation tasks complete
-- **`/cf-fix`** — runs `/cf-review` after the fix is verified
-- **`/cf-optimize`** — runs `/cf-review` after the optimization is measured and verified
+- **`{{cf:slash cf-plan}}`** — runs `{{cf:slash cf-review}}` after all implementation tasks complete
+- **`{{cf:slash cf-fix}}`** — runs `{{cf:slash cf-review}}` after the fix is verified
+- **`{{cf:slash cf-optimize}}`** — runs `{{cf:slash cf-review}}` after the optimization is measured and verified
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-review`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -46,7 +46,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 **Codex dual-review flag:**
 
 - If `$ARGUMENTS` contains `--with-codex` (or its alias `--codex`), set `codex=true` and strip the flag from `$ARGUMENTS` before any other parsing.
-- Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in without passing the flag). If absent or `false`, `codex=false`.
+- Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `{{cf:slash cf-plan}}`, `{{cf:slash cf-fix}}`, `{{cf:slash cf-optimize}}` opt in without passing the flag). If absent or `false`, `codex=false`.
 - When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). The Codex script (`run-codex-review.sh`) **auto-selects its scope** from git state so it covers committed work, not just the working tree: feature branch → `codex review --base <base>` (committed branch changes); on the base branch with unpushed commits → `--base <upstream>` (local commits not yet pushed); only uncommitted changes → `--uncommitted`; local-only repo → `--commit HEAD`. This lets Codex see a phase's changes even after they are committed — including on the base branch, where `gather-diff.sh` only reports uncommitted work (its committed-vs-base section is gated on being on a feature branch), so Codex covers committed-on-base work that Claude's own review would otherwise miss. Trade-off: a `--base`/`--commit` scope omits uncommitted/untracked files, and when Codex is unavailable that committed-on-base work degrades to a Claude-only review that may see nothing.
 - **Target compatibility:** the auto-scope above only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews the default change set). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated default change set. In that case do NOT run Codex — print:
   > ⚠ `--with-codex` only applies to the default uncommitted-changes review; Codex does not support the target `<target>`. Running Claude-only review.
@@ -55,7 +55,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 ### Step 2: Gather the diff
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
+bash "{{cf:plugin_root}}/skills/cf-review/scripts/gather-diff.sh"
 ```
 
 ### Step 2.5: Spawn Codex review in the background (only when `codex=true`)
@@ -65,7 +65,7 @@ Skip this step entirely when `codex=false`.
 Resolve the docs root and a label `YYYY-MM-DD-review`. Use `CF_DOCS_ROOT` (the absolute docs base dir from the session bootstrap context) so the result file lands in the project docs folder even when Claude is launched from a subdirectory — do NOT use the bare `docsDir` name with a cwd-relative path. Fallback: if `CF_DOCS_ROOT` is unset, use `$MAIN_REPO_ROOT/<docsDir>`. Spawn the Codex review as a **background Bash process** (`run_in_background: true`) so Claude's own review (Steps 3–6) runs concurrently:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
+bash "{{cf:plugin_root}}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
 ```
 
 **Do NOT wait for or inspect the Codex result here.** Immediately proceed to Step 3 and run Claude's own review (Steps 3–6) while Codex runs in the background — that concurrency is the whole point. The harness automatically notifies Claude when the background process exits (do NOT poll, sleep, or check `/tasks` — per the Bash tool contract: "you'll be notified when it finishes"). The Codex exit status and result are checked later, in Step 6.5.
@@ -75,7 +75,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_
 Determine review depth. Run the bundled script (one permission prompt instead of many):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/assess-changes.sh"
+bash "{{cf:plugin_root}}/skills/cf-review/scripts/assess-changes.sh"
 ```
 
 The script prints `KEY=value` lines: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, and `MODE`.
@@ -93,7 +93,7 @@ If `SENSITIVE > 0`, always escalate to **DEEP** regardless of size.
 
 - **QUICK mode**: Skip this step entirely.
 - **STANDARD mode**: Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<area being reviewed — e.g. auth, API, database>", "limit": 5 }`. Use results as context hints for the review.
-- **DEEP mode**: Launch the **cf-explorer agent** to understand callers, dependencies, and data flows around the changed files. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+- **DEEP mode**: Launch the **cf-explorer agent** to understand callers, dependencies, and data flows around the changed files. Use the **Agent tool** with `{{cf:agent_ref cf-explorer}}`. Pass:
 
   > Explore the codebase context around these changed files: [list changed files]
   >
@@ -114,7 +114,7 @@ Read changed files in full — do not review only the diff, understand the conte
 
 ### Step 6: Dispatch the cf-reviewer agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-reviewer"`. Pass the full context:
+Use the **Agent tool** with `{{cf:agent_ref cf-reviewer}}`. Pass the full context:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
 >
@@ -150,7 +150,7 @@ Skip this step entirely when `codex=false`.
 3. Normalize the raw Codex result into the standard 4-section format:
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
+   bash "{{cf:plugin_root}}/skills/cf-review/scripts/normalize-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
    ```
 
    (Use the same `${CF_DOCS_ROOT}`-based path the result was written to in Step 2.5.) This emits a `## 🔍 Codex Review` block with findings tagged `**[Codex]**` and severities mapped (`[P2]`→⚠️, `[P3]`→💡, anything else incl. `[P1]`/`[P0]`→🚨 so a top severity never fails silent). It never drops content — unparseable output is folded into the Summary section.
@@ -161,7 +161,7 @@ Never block the workflow on Codex — any failure degrades gracefully to a Claud
 
 **When `codex=false`:** the result of Step 6 is the final formatted report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat or restructure it — use it as-is in Step 10.
 
-**When `codex=true`:** merge the two reviews through the reducer so findings are deduplicated and severity-ranked across both sources. Dispatch the **cf-reviewer-reducer** agent (Agent tool, `subagent_type: "coding-friend:cf-reviewer-reducer"`) with both inputs concatenated:
+**When `codex=true`:** merge the two reviews through the reducer so findings are deduplicated and severity-ranked across both sources. Dispatch the **cf-reviewer-reducer** agent (Agent tool, `{{cf:agent_ref cf-reviewer-reducer}}`) with both inputs concatenated:
 
 > Merge these two review reports into one unified, deduplicated, severity-ranked report.
 >
@@ -178,7 +178,7 @@ Use the reducer's merged output as the report in Step 10.
 ### Step 8: Mark review complete and display status
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
+bash "{{cf:plugin_root}}/skills/cf-review/scripts/mark-reviewed.sh"
 ```
 
 ### Step 9: Smart capture (conditional — only if `memory_store` MCP tool is available)
@@ -210,7 +210,7 @@ Display the cf-reviewer's report first, then append the appropriate banner. When
 
 > Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
 >
-> You're clear to commit. Run `/cf-commit` when ready.
+> You're clear to commit. Run `{{cf:slash cf-commit}}` when ready.
 
 **If critical issues were found** — show the banner, then wait for the user's answer:
 

@@ -23,7 +23,7 @@ updated: 2026-06-14
 
 ## Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-tdd`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -37,7 +37,7 @@ Determine the implementation mode BEFORE doing anything else:
 
 **Result:**
 
-- `--add-tests` present OR `tdd: true` in config → **TDD mode**. Show: `> TDD mode enabled — RED → GREEN → REFACTOR`. → TDD mode: Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-tdd/modes/tdd-mode.md` now and follow RED→GREEN→REFACTOR.
+- `--add-tests` present OR `tdd: true` in config → **TDD mode**. Show: `> TDD mode enabled — RED → GREEN → REFACTOR`. → TDD mode: Read `{{cf:plugin_root}}/skills/cf-tdd/modes/tdd-mode.md` now and follow RED→GREEN→REFACTOR.
 - Neither → **Direct mode** (default). Show: `> Direct mode — implementing without new tests`
 - Additionally, if `--auto` is present → **Autopilot active**. Show: `> 🤖 Autopilot enabled — will auto-review, auto-fix Critical+Important, and auto-commit after implementation.`
 
@@ -61,7 +61,7 @@ Deprecated — direct mode is now the default. If present, acknowledge and proce
 
 ### `--auto` flag
 
-Note: `--auto` enables the **Autopilot Post-Implementation Loop**. It does NOT change the implementation mode itself. → When `--auto` is active, Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-tdd/modes/autopilot-loop.md` now and run that loop instead of the standard Review Reminder.
+Note: `--auto` enables the **Autopilot Post-Implementation Loop**. It does NOT change the implementation mode itself. → When `--auto` is active, Read `{{cf:plugin_root}}/skills/cf-tdd/modes/autopilot-loop.md` now and run that loop instead of the standard Review Reminder.
 
 ---
 
@@ -89,7 +89,7 @@ If dispatching cf-explorer or cf-planner first, pass the context file path so th
 
 ### Dispatch
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
+Use the **Agent tool** with `{{cf:agent_ref cf-implementer}}`. Pass:
 
 - Task description and expected behavior
 - `--add-tests` in the prompt if TDD mode is active
@@ -170,4 +170,4 @@ After the cf-implementer returns, **parse the last non-empty line** of its respo
 
 ## Review Reminder
 
-After implementation is complete: if `--auto` is active, the Autopilot Post-Implementation Loop in `${CLAUDE_PLUGIN_ROOT}/skills/cf-tdd/modes/autopilot-loop.md` has already handled review and commit — skip this section. Otherwise, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+After implementation is complete: if `--auto` is active, the Autopilot Post-Implementation Loop in `{{cf:plugin_root}}/skills/cf-tdd/modes/autopilot-loop.md` has already handled review and commit — skip this section. Otherwise, ask the user if they want to run `{{cf:slash cf-review}}` or `{{cf:slash cf-commit}}`. Do NOT auto-run — wait for their choice.
