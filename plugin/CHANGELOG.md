@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.36.0 (2026-06-14)
+
+- Add Codex CLI as a first-class Coding Friend host alongside Claude Code, with a generated `plugin-codex/` artifact that carries the same skills, host-neutral workflow references, Codex TOML agents, synchronous hooks, and shared memory MCP setup.
+- Add deterministic Codex auto-approve handling, project hook registration, direct agent deployment, and documented fallbacks for Codex-only parity gaps such as manual plugin installation, static statusline support, and native session resume/fork.
+- Lock Claude and Codex plugin releases to matching `v*` and `codex-v*` tags, regenerate Codex artifacts before relevant commits, and reject stale generated artifacts in pull-request CI.
+
 ## v0.35.3 (2026-06-14)
 
 - Restructure `/cf-plan` and `cf-tdd` skills with progressive disclosure — flag-gated blocks (autopilot, resume, TDD mode) now live in separate `modes/` files loaded only when their flag is active, trimming default context cost with no change to behavior [#a1c8c78](https://github.com/dinhanhthi/coding-friend/commit/a1c8c78)

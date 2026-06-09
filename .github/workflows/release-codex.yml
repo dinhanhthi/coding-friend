@@ -1,0 +1,180 @@
+name: Release Codex plugin
+
+on:
+  push:
+    tags:
+      - "codex-v*"
+  workflow_call:
+    inputs:
+      target_sha:
+        description: Commit that the locked Claude and Codex tags must reference
+        required: true
+        type: string
+      version:
+        description: Semver without the v prefix
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codex-release-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      REQUESTED_TARGET: ${{ inputs.target_sha || github.sha }}
+      REQUESTED_VERSION: ${{ inputs.version || github.ref_name }}
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_sha || github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Normalize release inputs
+        id: release
+        run: |
+          VERSION="${REQUESTED_VERSION#codex-v}"
+          VERSION="${VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid Codex release version: $REQUESTED_VERSION"
+            exit 1
+          fi
+
+          echo "archive=coding-friend-codex-v${VERSION}.zip" >> "$GITHUB_OUTPUT"
+          echo "tag=codex-v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Verify locked versions
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const expected = process.env.VERSION;
+          const files = [
+            ["package.json", JSON.parse(fs.readFileSync("package.json", "utf8")).version],
+            [
+              "plugin/.claude-plugin/plugin.json",
+              JSON.parse(
+                fs.readFileSync("plugin/.claude-plugin/plugin.json", "utf8"),
+              ).version,
+            ],
+            [
+              "plugin-codex/.codex-plugin/plugin.json",
+              JSON.parse(
+                fs.readFileSync(
+                  "plugin-codex/.codex-plugin/plugin.json",
+                  "utf8",
+                ),
+              ).version,
+            ],
+          ];
+
+          const mismatches = files.filter(([, version]) => version !== expected);
+          if (mismatches.length > 0) {
+            for (const [file, version] of mismatches) {
+              console.error(`${file}: expected ${expected}, found ${version}`);
+            }
+            process.exit(1);
+          }
+          NODE
+
+      - name: Verify generated Codex plugin
+        run: npm run verify:codex-drift
+
+      - name: Verify matching Claude tag
+        env:
+          CLAUDE_TAG: v${{ steps.release.outputs.version }}
+          TARGET_SHA: ${{ env.REQUESTED_TARGET }}
+        run: |
+          if ! git rev-parse "$CLAUDE_TAG" >/dev/null 2>&1; then
+            echo "::error::Matching Claude tag $CLAUDE_TAG does not exist"
+            exit 1
+          fi
+
+          CLAUDE_SHA="$(git rev-list -n 1 "$CLAUDE_TAG")"
+          if [ "$CLAUDE_SHA" != "$TARGET_SHA" ]; then
+            echo "::error::$CLAUDE_TAG points to $CLAUDE_SHA, expected $TARGET_SHA"
+            exit 1
+          fi
+
+      - name: Verify Codex tag target
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          TARGET_SHA: ${{ env.REQUESTED_TARGET }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            EXISTING_SHA="$(git rev-list -n 1 "$TAG")"
+            if [ "$EXISTING_SHA" != "$TARGET_SHA" ]; then
+              echo "::error::$TAG points to $EXISTING_SHA, expected $TARGET_SHA"
+              exit 1
+            fi
+          fi
+
+      - name: Build release archive
+        env:
+          ARCHIVE: ${{ steps.release.outputs.archive }}
+        run: zip -qr "$ARCHIVE" plugin-codex
+
+      - name: Build release notes
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          CLAUDE_TAG="v${VERSION}"
+          CLAUDE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${CLAUDE_TAG}"
+          BODY=$(awk -v tag="$CLAUDE_TAG" '
+            BEGIN { found=0 }
+            /^## / {
+              if (found) exit
+              header=$2
+              gsub(/[^v0-9.].*/, "", header)
+              if (header == tag) { found=1; next }
+            }
+            found { print }
+          ' plugin/CHANGELOG.md)
+
+          {
+            echo "Codex plugin build locked to [${CLAUDE_TAG}](${CLAUDE_URL})."
+            echo
+            if [ -n "$BODY" ]; then
+              echo "$BODY"
+            else
+              echo "Release codex-v${VERSION}"
+            fi
+          } > /tmp/codex-release-body.md
+
+      - name: Replace existing release if present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes
+          fi
+
+      - name: Create Codex GitHub release
+        env:
+          ARCHIVE: ${{ steps.release.outputs.archive }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+          TARGET_SHA: ${{ env.REQUESTED_TARGET }}
+        run: |
+          gh release create "$TAG" "$ARCHIVE#Codex plugin archive" \
+            --target "$TARGET_SHA" \
+            --title "$TAG" \
+            --notes-file /tmp/codex-release-body.md
