@@ -8,11 +8,11 @@
 
 | Status  | Task                                                                 |
 | ------- | -------------------------------------------------------------------- |
-| ⬜ TODO | 5.1 Update `session-init.sh` to be host-agnostic                     |
-| ⬜ TODO | 5.2 Fork `auto-approve.codex.cjs` for PermissionRequest schema       |
-| ⬜ TODO | 5.3 Fork `memory-capture.codex.sh` using PreCompact + transcript path |
-| ⬜ TODO | 5.4 Port agent tracker; keep task tracker Claude-only                |
-| ⬜ TODO | 5.5 Update `hooks.json` build to emit Codex-only event registrations |
+| ✅ DONE | 5.1 Update `session-init.sh` to be host-agnostic                     |
+| ✅ DONE | 5.2 Fork `auto-approve.codex.cjs` for PermissionRequest schema       |
+| ✅ DONE | 5.3 Fork `memory-capture.codex.sh` using PreCompact + transcript path |
+| ✅ DONE | 5.4 Port agent tracker; keep task tracker Claude-only                |
+| ✅ DONE | 5.5 Update `hooks.json` build to emit Codex-only event registrations |
 
 ## Tasks
 
@@ -71,3 +71,11 @@
 - `memory-capture.codex.sh` produces a memory file from a fixture transcript
 - All existing Claude hook tests pass unchanged
 - `CF_HOST` env var is set correctly by session-init and consumed by every hook script
+
+## Phase 5 validation
+
+- Full hook suite: `cd cli && npm run test:hooks` (558 tests)
+- Build transform tests: `node --test scripts/__tests__/build-codex-plugin.test.mjs`
+- Placeholder lint: `node --test scripts/__tests__/placeholder-lint.test.mjs`
+- Codex artifact regenerated with `npm run build:codex`; generated hooks use `PermissionRequest` for `auto-approve.codex.cjs`, `PreCompact` for `memory-capture.codex.sh`, and omit `TaskCreated` / `TaskCompleted`.
+- Codex memory capture writes markdown directly to the existing `docs/memory/bugs` episode category (`type: episode`, `source: auto-capture`) so it remains compatible with the current Markdown memory backend.

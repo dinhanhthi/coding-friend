@@ -75,12 +75,15 @@ function renderCodexText(input) {
 
 async function copyRenderedFile(sourcePath, targetPath) {
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  const mode = (await fs.stat(sourcePath)).mode & 0o777;
   if (!isTextFile(sourcePath)) {
     await fs.copyFile(sourcePath, targetPath);
+    await fs.chmod(targetPath, mode);
     return;
   }
   const source = await fs.readFile(sourcePath, "utf8");
   await fs.writeFile(targetPath, renderCodexText(source));
+  await fs.chmod(targetPath, mode);
 }
 
 async function copyRenderedTree(sourceDir, targetDir) {
@@ -192,24 +195,70 @@ async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
 function transformCodexHooks(hooksJson) {
   const output = { hooks: {} };
   const hooks = hooksJson.hooks ?? {};
+  let needsPermissionHook = false;
+
+  const renderHookCommand = (command) => {
+    const rendered = renderCodexText(command).replace(
+      /\/hooks\/memory-capture\.sh\b/g,
+      "/hooks/memory-capture.codex.sh",
+    );
+    return rendered.startsWith("CF_HOST=")
+      ? rendered
+      : `CF_HOST=codex ${rendered}`;
+  };
+
   for (const eventName of Object.keys(hooks).sort()) {
     if (!CODEX_HOOK_EVENTS.has(eventName)) continue;
 
-    output.hooks[eventName] = hooks[eventName].map((entry) => ({
-      ...entry,
-      hooks: (entry.hooks ?? []).map((hook) => {
-        const nextHook = {
-          ...hook,
-          command:
-            typeof hook.command === "string"
-              ? renderCodexText(hook.command)
-              : hook.command,
+    const entries = hooks[eventName]
+      .map((entry) => {
+        const renderedHooks = (entry.hooks ?? []).flatMap((hook) => {
+          const command = typeof hook.command === "string" ? hook.command : "";
+          if (/\/hooks\/auto-approve\.cjs\b/.test(command)) {
+            needsPermissionHook = true;
+            return [];
+          }
+
+          const nextHook = {
+            ...hook,
+            command:
+              typeof hook.command === "string"
+                ? renderHookCommand(hook.command)
+                : hook.command,
+          };
+          delete nextHook.async;
+          return [nextHook];
+        });
+
+        if (renderedHooks.length === 0) return null;
+        return {
+          ...entry,
+          hooks: renderedHooks,
         };
-        delete nextHook.async;
-        return nextHook;
-      }),
-    }));
+      })
+      .filter(Boolean);
+
+    if (entries.length > 0) {
+      output.hooks[eventName] = entries;
+    }
   }
+
+  if (needsPermissionHook) {
+    output.hooks.PermissionRequest = [
+      ...(output.hooks.PermissionRequest ?? []),
+      {
+        matcher: "",
+        hooks: [
+          {
+            type: "command",
+            command:
+              "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs",
+          },
+        ],
+      },
+    ];
+  }
+
   return output;
 }
 
