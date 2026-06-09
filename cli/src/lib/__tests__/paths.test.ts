@@ -180,9 +180,7 @@ describe("CLAUDE_CONFIG_DIR", () => {
 
   it("tilde: claudeSettingsPath expands ~ in CLAUDE_CONFIG_DIR", () => {
     vi.stubEnv("CLAUDE_CONFIG_DIR", "~/cfg");
-    expect(claudeSettingsPath()).toBe(
-      join(homedir(), "cfg", "settings.json"),
-    );
+    expect(claudeSettingsPath()).toBe(join(homedir(), "cfg", "settings.json"));
   });
 
   it("whitespace: claudeSettingsPath trims CLAUDE_CONFIG_DIR", () => {
@@ -232,12 +230,7 @@ describe("CLAUDE_CONFIG_DIR", () => {
   it("set: marketplaceClonePath relocates under CLAUDE_CONFIG_DIR", () => {
     vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
     expect(marketplaceClonePath()).toBe(
-      join(
-        "/tmp/cfg",
-        "plugins",
-        "marketplaces",
-        "coding-friend-marketplace",
-      ),
+      join("/tmp/cfg", "plugins", "marketplaces", "coding-friend-marketplace"),
     );
   });
 
@@ -270,6 +263,18 @@ describe("Codex paths", () => {
     vi.stubEnv("CODEX_HOME", "~/codex-home");
 
     expect(codexConfigDir()).toBe(join(homedir(), "codex-home"));
+  });
+
+  it("expands bare ~ in CODEX_HOME", () => {
+    vi.stubEnv("CODEX_HOME", "~");
+
+    expect(codexConfigDir()).toBe(homedir());
+  });
+
+  it("trims CODEX_HOME whitespace", () => {
+    vi.stubEnv("CODEX_HOME", "  /tmp/codex-home  ");
+
+    expect(codexConfigDir()).toBe("/tmp/codex-home");
   });
 
   it("returns Codex plugin cache paths", () => {

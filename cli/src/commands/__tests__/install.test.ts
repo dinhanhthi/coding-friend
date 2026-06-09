@@ -206,6 +206,47 @@ describe("installCommand", () => {
     ]);
   });
 
+  it("keeps the no-flag install path on the Claude marketplace flow", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(false);
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockResolveScope.mockResolvedValue("user");
+    mockRun.mockReturnValue("ok");
+
+    await installCommand();
+
+    expect(mockResolveHostFlags).toHaveBeenCalledWith({});
+    expect(mockCommandExists).toHaveBeenCalledWith("claude");
+    expect(mockResolveScope).toHaveBeenCalledWith({});
+    expect(mockRun.mock.calls).toMatchInlineSnapshot(`
+      [
+        [
+          "claude",
+          [
+            "plugin",
+            "marketplace",
+            "add",
+            "dinhanhthi/coding-friend",
+          ],
+        ],
+        [
+          "claude",
+          [
+            "plugin",
+            "install",
+            "coding-friend@coding-friend-marketplace",
+            "--scope",
+            "user",
+          ],
+        ],
+      ]
+    `);
+    expect(mockIsCodexMarketplaceRegistered).not.toHaveBeenCalled();
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+    expect(mockFindCodexAgentSourceDir).not.toHaveBeenCalled();
+    expect(mockDeployCodexAgents).not.toHaveBeenCalled();
+  });
+
   it("does not pass --scope to marketplace add (always global)", async () => {
     mockCommandExists.mockReturnValue(true);
     mockIsMarketplaceRegistered.mockReturnValue(false);

@@ -1,10 +1,11 @@
 import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   deployCodexAgents,
+  findCodexAgentSourceDir,
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
   isCodexPluginDisabled,
@@ -19,6 +20,8 @@ function tempFile(name = "config.toml"): string {
 }
 
 describe("codex-config", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("toggles plugin enabled while preserving unrelated TOML", () => {
     const file = tempFile();
     writeFileSync(
@@ -29,6 +32,7 @@ describe("codex-config", () => {
         "",
         '[plugins."coding-friend@coding-friend-marketplace"]',
         "enabled = true",
+        "# user option",
         'custom = "kept"',
         "",
         "[other]",
@@ -38,9 +42,18 @@ describe("codex-config", () => {
     );
 
     setCodexPluginEnabled(false, file);
+    const disabledToml = readFileSync(file, "utf8");
     expect(isCodexPluginDisabled(file)).toBe(true);
-    expect(readFileSync(file, "utf8")).toContain('custom = "kept"');
-    expect(readFileSync(file, "utf8")).toContain("[other]");
+    expect(disabledToml).toContain('custom = "kept"');
+    expect(disabledToml).toContain("[other]");
+    expect(disabledToml.indexOf("# user option")).toBeLessThan(
+      disabledToml.indexOf('custom = "kept"'),
+    );
+    expect(
+      disabledToml.indexOf(
+        '[plugins."coding-friend@coding-friend-marketplace"]',
+      ),
+    ).toBeLessThan(disabledToml.indexOf("[other]"));
 
     setCodexPluginEnabled(true, file);
     expect(isCodexPluginDisabled(file)).toBe(false);
@@ -83,6 +96,56 @@ describe("codex-config", () => {
     );
 
     expect(getCodexInstalledVersion(root)).toBe("0.35.2");
+  });
+
+  it("prefers generated Codex agents over installed cache agents", () => {
+    const root = mkdtempSync(join(tmpdir(), "cf-codex-agent-source-"));
+    const codexHome = join(root, "codex-home");
+    const generatedAgents = join(root, "plugin-codex", "agents");
+    const installedAgents = join(
+      codexHome,
+      "plugins",
+      "cache",
+      "coding-friend-marketplace",
+      "coding-friend",
+      "0.35.2",
+      "agents",
+    );
+    mkdirSync(generatedAgents, { recursive: true });
+    mkdirSync(join(installedAgents, "..", ".codex-plugin"), {
+      recursive: true,
+    });
+    mkdirSync(installedAgents, { recursive: true });
+    writeFileSync(
+      join(installedAgents, "..", ".codex-plugin", "plugin.json"),
+      JSON.stringify({ version: "0.35.2" }),
+    );
+    vi.stubEnv("CODEX_HOME", codexHome);
+
+    expect(findCodexAgentSourceDir(root)).toBe(generatedAgents);
+  });
+
+  it("falls back to installed Codex agents when generated agents are absent", () => {
+    const root = mkdtempSync(join(tmpdir(), "cf-codex-agent-source-"));
+    const codexHome = join(root, "codex-home");
+    const installedRoot = join(
+      codexHome,
+      "plugins",
+      "cache",
+      "coding-friend-marketplace",
+      "coding-friend",
+      "0.35.2",
+    );
+    const installedAgents = join(installedRoot, "agents");
+    mkdirSync(join(installedRoot, ".codex-plugin"), { recursive: true });
+    mkdirSync(installedAgents, { recursive: true });
+    writeFileSync(
+      join(installedRoot, ".codex-plugin", "plugin.json"),
+      JSON.stringify({ version: "0.35.2" }),
+    );
+    vi.stubEnv("CODEX_HOME", codexHome);
+
+    expect(findCodexAgentSourceDir(root)).toBe(installedAgents);
   });
 
   it("deploys TOML agents", () => {

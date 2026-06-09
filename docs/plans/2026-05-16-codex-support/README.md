@@ -45,7 +45,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 | ✅ DONE | Phase 5: Hooks port                     | [phase-5-hooks-port.md](./phase-5-hooks-port.md)               | 5 tasks |
 | ✅ DONE | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
 | ✅ DONE | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
-| ⬜ TODO | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
+| ✅ DONE | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
 | ⬜ TODO | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
 | ⬜ TODO | Phase 10: Release plumbing              | [phase-10-release-plumbing.md](./phase-10-release-plumbing.md) | 4 tasks |
 
