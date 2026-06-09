@@ -10,21 +10,36 @@ vi.mock("../../lib/plugin-state.js", () => ({
 
 vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
+  resolveHostFlags: vi.fn(),
+}));
+
+vi.mock("../../lib/codex-config.js", () => ({
+  isCodexPluginDisabled: vi.fn(),
+  setCodexPluginEnabled: vi.fn(),
 }));
 
 import { isPluginDisabled, setPluginEnabled } from "../../lib/plugin-state.js";
-import { resolveScope } from "../../lib/prompt-utils.js";
+import {
+  isCodexPluginDisabled,
+  setCodexPluginEnabled,
+} from "../../lib/codex-config.js";
+import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { disableCommand } from "../disable.js";
 
 const mockIsPluginDisabled = vi.mocked(isPluginDisabled);
 const mockSetPluginEnabled = vi.mocked(setPluginEnabled);
 const mockResolveScope = vi.mocked(resolveScope);
+const mockResolveHostFlags = vi.mocked(resolveHostFlags);
+const mockIsCodexPluginDisabled = vi.mocked(isCodexPluginDisabled);
+const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
+  mockResolveHostFlags.mockReturnValue({ host: "claude" });
   mockResolveScope.mockResolvedValue("user");
   mockIsPluginDisabled.mockReturnValue(false);
+  mockIsCodexPluginDisabled.mockReturnValue(false);
 });
 
 describe("disableCommand", () => {
@@ -67,5 +82,14 @@ describe("disableCommand", () => {
     await disableCommand({ local: true });
 
     expect(mockSetPluginEnabled).toHaveBeenCalledWith("local", false);
+  });
+
+  it("disables Codex plugin without resolving Claude scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+
+    await disableCommand({ agent: "codex" });
+
+    expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(false);
+    expect(mockResolveScope).not.toHaveBeenCalled();
   });
 });

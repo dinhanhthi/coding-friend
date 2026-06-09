@@ -26,6 +26,18 @@ vi.mock("../update.js", () => ({
 
 vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
+  resolveHostFlags: vi.fn(),
+}));
+
+vi.mock("../../lib/host.js", () => ({
+  checkCodexVersion: vi.fn(),
+}));
+
+vi.mock("../../lib/codex-config.js", () => ({
+  deployCodexAgents: vi.fn(),
+  findCodexAgentSourceDir: vi.fn(),
+  isCodexMarketplaceRegistered: vi.fn(),
+  setCodexPluginEnabled: vi.fn(),
 }));
 
 vi.mock("fs", async () => {
@@ -42,7 +54,14 @@ import {
 } from "../../lib/plugin-state.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
-import { resolveScope } from "../../lib/prompt-utils.js";
+import { checkCodexVersion } from "../../lib/host.js";
+import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
+import {
+  deployCodexAgents,
+  findCodexAgentSourceDir,
+  isCodexMarketplaceRegistered,
+  setCodexPluginEnabled,
+} from "../../lib/codex-config.js";
 import { installCommand } from "../install.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -54,14 +73,30 @@ const mockEnableMarketplaceAutoUpdate = vi.mocked(enableMarketplaceAutoUpdate);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
+const mockResolveHostFlags = vi.mocked(resolveHostFlags);
+const mockCheckCodexVersion = vi.mocked(checkCodexVersion);
+const mockIsCodexMarketplaceRegistered = vi.mocked(
+  isCodexMarketplaceRegistered,
+);
+const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
+const mockFindCodexAgentSourceDir = vi.mocked(findCodexAgentSourceDir);
+const mockDeployCodexAgents = vi.mocked(deployCodexAgents);
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+  mockResolveHostFlags.mockReturnValue({ host: "claude" });
   mockResolveScope.mockResolvedValue("user");
   mockExistsSync.mockReturnValue(false); // no dev mode by default
   mockEnableMarketplaceAutoUpdate.mockReturnValue(true);
+  mockCheckCodexVersion.mockReturnValue({
+    ok: true,
+    actual: "0.130.0",
+    min: "0.130.0",
+  });
+  mockFindCodexAgentSourceDir.mockReturnValue("/repo/plugin-codex/agents");
+  mockDeployCodexAgents.mockReturnValue(12);
 });
 
 describe("installCommand", () => {
@@ -230,5 +265,50 @@ describe("installCommand", () => {
       expect.anything(),
       expect.stringContaining("Cannot make plugin auto-update"),
     );
+  });
+
+  it("registers Codex marketplace and deploys agents for --agent codex", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockIsCodexMarketplaceRegistered.mockReturnValue(false);
+    mockRun.mockReturnValue("ok");
+
+    await installCommand({ agent: "codex" });
+
+    expect(mockCommandExists).toHaveBeenCalledWith("codex");
+    expect(mockRun).toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "add",
+      "dinhanhthi/coding-friend",
+    ]);
+    expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(true);
+    expect(mockDeployCodexAgents).toHaveBeenCalledWith(
+      "/repo/plugin-codex/agents",
+    );
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("exits when Codex version is too old", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockCheckCodexVersion.mockReturnValue({
+      ok: false,
+      actual: "0.129.0",
+      min: "0.130.0",
+    });
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+
+    await installCommand({ agent: "codex" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockRun).not.toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "add",
+      "dinhanhthi/coding-friend",
+    ]);
   });
 });
