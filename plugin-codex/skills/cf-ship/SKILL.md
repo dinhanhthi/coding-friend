@@ -6,7 +6,6 @@ description: >
   "create a PR", "open a pull request", "ready to merge", "let's get this merged".
   Also triggers when the user is done with a feature branch and wants the full
   verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
-disable-model-invocation: true
 created: 2026-02-17
 updated: 2026-06-06
 ---

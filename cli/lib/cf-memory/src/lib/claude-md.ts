@@ -1,8 +1,9 @@
 /**
- * Sync convention memories to the project's CLAUDE.md file.
+ * Sync convention memories to the project's host instruction files.
  *
  * When a memory of type "preference" (category "conventions") is stored,
- * updated, or deleted, the corresponding entry in CLAUDE.md is kept in sync.
+ * updated, or deleted, the corresponding entry in CLAUDE.md and/or AGENTS.md
+ * is kept in sync.
  *
  * Entries are tracked via HTML comments: <!-- cf:<memory-id> -->
  * All entries live under a dedicated section header.
@@ -44,6 +45,20 @@ function projectRoot(docsDir: string): string {
  */
 export function claudeMdPath(docsDir: string): string {
   return path.join(projectRoot(docsDir), "CLAUDE.md");
+}
+
+export function agentsMdPath(docsDir: string): string {
+  return path.join(projectRoot(docsDir), "AGENTS.md");
+}
+
+function instructionFilePaths(
+  docsDir: string,
+  createClaudeFallback: boolean,
+): string[] {
+  const candidates = [claudeMdPath(docsDir), agentsMdPath(docsDir)];
+  const existing = candidates.filter((filePath) => fs.existsSync(filePath));
+  if (existing.length > 0 || !createClaudeFallback) return existing;
+  return [candidates[0]];
 }
 
 /**
@@ -143,84 +158,81 @@ export function syncToClaudeMd(
   docsDir: string,
   id: string,
   description: string,
-): void {
-  const filePath = claudeMdPath(docsDir);
-  const existing = fs.existsSync(filePath)
-    ? fs.readFileSync(filePath, "utf-8")
-    : "";
+): string[] {
+  const updated: string[] = [];
+  for (const filePath of instructionFilePaths(docsDir, true)) {
+    const existing = fs.existsSync(filePath)
+      ? fs.readFileSync(filePath, "utf-8")
+      : "";
 
-  const { before, entries, after, untrackedLines } = parseClaudeMd(existing);
+    const { before, entries, after, untrackedLines } = parseClaudeMd(existing);
+    const filtered = entries.filter((entry) => {
+      const match = entry.match(ENTRY_RE);
+      return !match || match[1] !== id;
+    });
+    filtered.push(formatEntry(id, description));
 
-  // Remove any existing entry with the same ID
-  const filtered = entries.filter((e) => {
-    const match = e.match(ENTRY_RE);
-    return !match || match[1] !== id;
-  });
-
-  // Add the new/updated entry
-  filtered.push(formatEntry(id, description));
-
-  fs.writeFileSync(
-    filePath,
-    buildClaudeMd(before, filtered, after, untrackedLines),
-    "utf-8",
-  );
+    fs.writeFileSync(
+      filePath,
+      buildClaudeMd(before, filtered, after, untrackedLines),
+      "utf-8",
+    );
+    updated.push(filePath);
+  }
+  return updated;
 }
 
 /**
- * Remove a convention entry from the project's CLAUDE.md.
+ * Remove a convention entry from the project's host instruction files.
  */
-export function removeFromClaudeMd(docsDir: string, id: string): void {
-  const filePath = claudeMdPath(docsDir);
-  if (!fs.existsSync(filePath)) return;
+export function removeFromClaudeMd(docsDir: string, id: string): string[] {
+  const updated: string[] = [];
+  for (const filePath of instructionFilePaths(docsDir, false)) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const { before, entries, after, untrackedLines } = parseClaudeMd(content);
+    if (entries.length === 0) continue;
 
-  const content = fs.readFileSync(filePath, "utf-8");
-  const { before, entries, after, untrackedLines } = parseClaudeMd(content);
+    const filtered = entries.filter((entry) => {
+      const match = entry.match(ENTRY_RE);
+      return !match || match[1] !== id;
+    });
+    if (filtered.length === entries.length) continue;
 
-  if (entries.length === 0) return;
-
-  const filtered = entries.filter((e) => {
-    const match = e.match(ENTRY_RE);
-    return !match || match[1] !== id;
-  });
-
-  // Only write if something actually changed
-  if (filtered.length === entries.length) return;
-
-  fs.writeFileSync(
-    filePath,
-    buildClaudeMd(before, filtered, after, untrackedLines),
-    "utf-8",
-  );
+    fs.writeFileSync(
+      filePath,
+      buildClaudeMd(before, filtered, after, untrackedLines),
+      "utf-8",
+    );
+    updated.push(filePath);
+  }
+  return updated;
 }
 
 /**
- * Update an existing convention entry in CLAUDE.md (no upsert).
+ * Update an existing convention entry in the host instruction files (no upsert).
  */
 export function updateInClaudeMd(
   docsDir: string,
   id: string,
   description: string,
-): void {
-  const filePath = claudeMdPath(docsDir);
-  if (!fs.existsSync(filePath)) return;
+): string[] {
+  const updated: string[] = [];
+  for (const filePath of instructionFilePaths(docsDir, false)) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const { before, entries, after, untrackedLines } = parseClaudeMd(content);
+    const index = entries.findIndex((entry) => {
+      const match = entry.match(ENTRY_RE);
+      return match && match[1] === id;
+    });
+    if (index === -1) continue;
 
-  const content = fs.readFileSync(filePath, "utf-8");
-  const { before, entries, after, untrackedLines } = parseClaudeMd(content);
-
-  // Check if entry exists
-  const idx = entries.findIndex((e) => {
-    const match = e.match(ENTRY_RE);
-    return match && match[1] === id;
-  });
-
-  if (idx === -1) return;
-
-  entries[idx] = formatEntry(id, description);
-
-  fs.writeFileSync(
-    filePath,
-    buildClaudeMd(before, entries, after, untrackedLines),
-    "utf-8",
-  );
+    entries[index] = formatEntry(id, description);
+    fs.writeFileSync(
+      filePath,
+      buildClaudeMd(before, entries, after, untrackedLines),
+      "utf-8",
+    );
+    updated.push(filePath);
+  }
+  return updated;
 }

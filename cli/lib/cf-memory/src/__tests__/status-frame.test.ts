@@ -32,7 +32,7 @@ describe("buildStoreStatus", () => {
     expect(result).not.toContain("db.sqlite");
   });
 
-  it("shows CLAUDE.md updated message when claudeMdUpdated is true", () => {
+  it("shows project instructions updated when sync succeeds", () => {
     const result = buildStoreStatus({
       id: "conventions/code-style",
       title: "Code Style",
@@ -41,10 +41,10 @@ describe("buildStoreStatus", () => {
       claudeMdUpdated: true,
     });
 
-    expect(result).toContain("CLAUDE.md updated");
+    expect(result).toContain("Project instructions updated");
   });
 
-  it("omits CLAUDE.md line when claudeMdUpdated is false", () => {
+  it("omits project instructions line when sync did not run", () => {
     const result = buildStoreStatus({
       id: "features/auth-pattern",
       title: "Auth Pattern",
@@ -53,10 +53,10 @@ describe("buildStoreStatus", () => {
       claudeMdUpdated: false,
     });
 
-    expect(result).not.toContain("CLAUDE.md");
+    expect(result).not.toContain("Project instructions");
   });
 
-  it("omits CLAUDE.md line when claudeMdUpdated is not provided", () => {
+  it("omits project instructions line when sync status is not provided", () => {
     const result = buildStoreStatus({
       id: "features/auth-pattern",
       title: "Auth Pattern",
@@ -64,7 +64,7 @@ describe("buildStoreStatus", () => {
       dbPath: null,
     });
 
-    expect(result).not.toContain("CLAUDE.md");
+    expect(result).not.toContain("Project instructions");
   });
 
   it("includes duplicate warning when provided", () => {
@@ -110,7 +110,7 @@ describe("buildUpdateStatus", () => {
     expect(result).not.toContain("db.sqlite");
   });
 
-  it("shows CLAUDE.md updated message when claudeMdUpdated is true", () => {
+  it("shows project instructions updated when sync succeeds", () => {
     const result = buildUpdateStatus({
       id: "conventions/code-style",
       title: "Code Style",
@@ -119,10 +119,10 @@ describe("buildUpdateStatus", () => {
       claudeMdUpdated: true,
     });
 
-    expect(result).toContain("CLAUDE.md updated");
+    expect(result).toContain("Project instructions updated");
   });
 
-  it("omits CLAUDE.md line when claudeMdUpdated is false", () => {
+  it("omits project instructions line when sync did not run", () => {
     const result = buildUpdateStatus({
       id: "conventions/code-style",
       title: "Code Style",
@@ -131,6 +131,6 @@ describe("buildUpdateStatus", () => {
       claudeMdUpdated: false,
     });
 
-    expect(result).not.toContain("CLAUDE.md");
+    expect(result).not.toContain("Project instructions");
   });
 });

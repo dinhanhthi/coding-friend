@@ -12,7 +12,7 @@ updated: 2026-06-06
 
 ## Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-verification`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-verification`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -28,10 +28,10 @@ Auto-invoke this skill after tasks that **produce or modify code** (implementati
 
 Do NOT auto-invoke after **analysis-only skills** that don't change code:
 
-- `{{cf:slash cf-review}}` — code review is analysis, not implementation
-- `{{cf:slash cf-plan}}` — planning doesn't produce code
-- `{{cf:slash cf-ask}}` — Q&A doesn't produce code
-- `{{cf:slash cf-research}}` — research doesn't produce code
+- `/cf-review` — code review is analysis, not implementation
+- `/cf-plan` — planning doesn't produce code
+- `/cf-ask` — Q&A doesn't produce code
+- `/cf-research` — research doesn't produce code
 
 ## Checklist
 

@@ -6,18 +6,21 @@ import {
   syncToClaudeMd,
   removeFromClaudeMd,
   updateInClaudeMd,
+  agentsMdPath,
   claudeMdPath,
   SECTION_HEADER,
 } from "../lib/claude-md.js";
 
 let testDir: string;
 let claudeMdFile: string;
+let agentsMdFile: string;
 let counter = 0;
 
 beforeEach(() => {
   testDir = join(tmpdir(), `cf-claude-md-test-${Date.now()}-${++counter}`);
   mkdirSync(testDir, { recursive: true });
   claudeMdFile = join(testDir, "CLAUDE.md");
+  agentsMdFile = join(testDir, "AGENTS.md");
 });
 
 afterEach(() => {
@@ -219,6 +222,75 @@ describe("claudeMdPath", () => {
   it("uses docsDir as-is when no known suffix matches", () => {
     const result = claudeMdPath(testDir);
     expect(result).toBe(join(testDir, "CLAUDE.md"));
+  });
+});
+
+describe("host instruction file sync", () => {
+  it("updates AGENTS.md without creating CLAUDE.md in a Codex-only project", () => {
+    writeFileSync(agentsMdFile, "# Codex Instructions\n");
+
+    const updated = syncToClaudeMd(
+      testDir,
+      "conventions/code-style",
+      "Use 2-space indentation",
+    );
+
+    expect(updated).toEqual([agentsMdFile]);
+    expect(readFileSync(agentsMdFile, "utf-8")).toContain(
+      "Use 2-space indentation",
+    );
+    expect(existsSync(claudeMdFile)).toBe(false);
+  });
+
+  it("updates both files in a dual-host project", () => {
+    writeFileSync(claudeMdFile, "# Claude Instructions\n");
+    writeFileSync(agentsMdFile, "# Codex Instructions\n");
+
+    const updated = syncToClaudeMd(
+      testDir,
+      "conventions/code-style",
+      "Use 2-space indentation",
+    );
+
+    expect(updated).toEqual([claudeMdFile, agentsMdFile]);
+    expect(readFileSync(claudeMdFile, "utf-8")).toContain(
+      "Use 2-space indentation",
+    );
+    expect(readFileSync(agentsMdFile, "utf-8")).toContain(
+      "Use 2-space indentation",
+    );
+  });
+
+  it("updates and removes tracked entries from both files", () => {
+    writeFileSync(claudeMdFile, "# Claude Instructions\n");
+    writeFileSync(agentsMdFile, "# Codex Instructions\n");
+    syncToClaudeMd(testDir, "conventions/style", "Old style guide");
+
+    expect(
+      updateInClaudeMd(testDir, "conventions/style", "New style guide"),
+    ).toEqual([claudeMdFile, agentsMdFile]);
+    expect(readFileSync(claudeMdFile, "utf-8")).toContain("New style guide");
+    expect(readFileSync(agentsMdFile, "utf-8")).toContain("New style guide");
+
+    expect(removeFromClaudeMd(testDir, "conventions/style")).toEqual([
+      claudeMdFile,
+      agentsMdFile,
+    ]);
+    expect(readFileSync(claudeMdFile, "utf-8")).not.toContain(
+      "New style guide",
+    );
+    expect(readFileSync(agentsMdFile, "utf-8")).not.toContain(
+      "New style guide",
+    );
+  });
+});
+
+describe("agentsMdPath", () => {
+  it("strips /docs/memory suffix to derive project root", () => {
+    const docsDir = join(testDir, "docs", "memory");
+    mkdirSync(docsDir, { recursive: true });
+
+    expect(agentsMdPath(docsDir)).toBe(join(testDir, "AGENTS.md"));
   });
 });
 

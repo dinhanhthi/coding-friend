@@ -11,7 +11,7 @@ created: 2026-03-23
 updated: 2026-06-06
 ---
 
-# {{cf:slash cf-review-in}}
+# /cf-review-in
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -19,13 +19,13 @@ Collect external review results for: **$ARGUMENTS**
 
 ## Purpose
 
-Reads the review results written by an external AI agent (generated via [`{{cf:slash cf-review-out}}`](/docs/skills/cf-review-out/)) and presents them in the conversation. Then offers to fix any issues found.
+Reads the review results written by an external AI agent (generated via [`/cf-review-out`](/docs/skills/cf-review-out/)) and presents them in the conversation. Then offers to fix any issues found.
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-review-in`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -41,7 +41,7 @@ If `$ARGUMENTS` contains a label (and optionally a service), use them. Otherwise
   - Legacy format: `<label>-result-<service>.md` — the `<label>` stem is the label
 - If exactly one label exists, use it
 - If multiple labels exist, ask the user which one to collect
-- If none exist, tell the user no results are available and suggest running `{{cf:slash cf-review-out}}` first
+- If none exist, tell the user no results are available and suggest running `/cf-review-out` first
 
 ### Step 2: Find and read all result files for the label
 
@@ -193,7 +193,7 @@ Count only `Confirmed` and `Questionable` findings across all reviewers (ignore 
 > No actionable issues after verification.
 > (N finding(s) from external reviewer(s) were dismissed as false positives.)
 >
-> You're clear to commit. Run `{{cf:slash cf-commit}}` when ready.
+> You're clear to commit. Run `/cf-commit` when ready.
 
 **If confirmed or questionable issues were found:**
 

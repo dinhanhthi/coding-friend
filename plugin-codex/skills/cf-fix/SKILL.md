@@ -64,7 +64,7 @@ Include any relevant findings as context for the explorer.
 
 Launch the **cf-explorer agent** to gather context around the bug, passing the context file path so it writes structured findings.
 
-Use the **Agent tool** with `$cf-explorer`. Pass:
+Spawn the `cf-explorer` custom agent. Pass:
 
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
@@ -118,7 +118,7 @@ Before changing code:
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `$cf-implementer`.
+Dispatch the **cf-implementer agent** to fix the bug test-first. Spawn the `cf-implementer` custom agent.
 
 Pass the context file path from Step 3b so the agent can read the explorer's structured findings.
 
@@ -205,7 +205,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 **Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `$cf-writer` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
+2. Construct a write spec and delegate to **cf-writer agent** by spawning the `cf-writer` custom agent (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
 
 ```
 WRITE SPEC
@@ -282,7 +282,7 @@ Show the user a 2-line summary:
 
 Automatically invoke `$cf-review` — load `$cf-review`. Do NOT ask the user first, just run it.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
+> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
 
 ### Step 10: Performance Suggestion (conditional)
 

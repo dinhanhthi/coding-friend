@@ -11,7 +11,7 @@ created: 2026-02-17
 updated: 2026-06-07
 ---
 
-# {{cf:slash cf-plan}}
+# /cf-plan
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -19,13 +19,13 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-| Mode          | Flag                           | Steps skipped/added                                                                                                                                                                                        | When to use                                                                      |
-| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Normal**    | (none)                         | Full workflow                                                                                                                                                                                              | Default — most tasks                                                             |
+| Mode          | Flag                           | Steps skipped/added                                                                                                                                                                                                                                                                                                                            | When to use                                                                      |
+| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Normal**    | (none)                         | Full workflow                                                                                                                                                                                                                                                                                                                                  | Default — most tasks                                                             |
 | **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent. **No plan file** when the result is single-phase (plan stays in chat, tracked via TaskCreate). Falls back to writing the file if the plan turns out multi-phase (user mis-flagged it) or when combined with `--auto`. **No human overview doc in fast mode** unless `--gui` is passed. | Task is clear, single-module, additive                                           |
-| **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                               | Breaking changes, migrations, multi-module refactors                             |
-| **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode. | Hands-off end-to-end execution after plan approval                               |
-| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.              | Small one-off task where the user wants planning thought but no on-disk artifact |
+| **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                                                                                                                                                                   | Breaking changes, migrations, multi-module refactors                             |
+| **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode.                                                                                                                                     | Hands-off end-to-end execution after plan approval                               |
+| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.                                                                                                                                                  | Small one-off task where the user wants planning thought but no on-disk artifact |
 
 Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human` → `--gui`) are normalized to their canonical form. The user's single-dash `-gui` / `-human` are also normalized to `--gui`.
 
@@ -35,7 +35,7 @@ Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining te
 
 ### Step 0: Custom Guide
 
-Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-plan`
+Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -102,7 +102,7 @@ If the user wants to skip brainstorming ("just plan it"), respect that and move 
 > **Normal**: Launch cf-explorer agent once.
 > **Hard**: Launch cf-explorer twice — standard exploration, then blast-radius analysis.
 
-Launch **cf-explorer** (`{{cf:agent_ref cf-explorer}}`):
+Launch **cf-explorer** (`subagent_type: "coding-friend:cf-explorer"`):
 
 > Explore the codebase for: [user request]
 > Context file: [docsDir/context/<task-id>.json]
@@ -116,7 +116,7 @@ Launch **cf-explorer** (`{{cf:agent_ref cf-explorer}}`):
 
 > **Fast mode**: Skip — pick the most straightforward approach from Step 2, proceed to Step 4.
 
-Launch **cf-planner** (`{{cf:agent_ref cf-planner}}`):
+Launch **cf-planner** (`subagent_type: "coding-friend:cf-planner"`):
 
 > Plan: [user request]
 > Context file: [docsDir/context/<task-id>.json] (cf-explorer findings already written; read it, then update with plan findings)
@@ -169,7 +169,7 @@ After saving, present: folder path created, phase count, task count, entry point
 When humanDoc=true AND a plan file was written, generate a concise human-readable overview next to `README.md`. (humanDoc is off by default — it is only true when `--gui`/`--human` is passed or `disableGUIPlan: false` is set; `--inline` writes no plan file at all — so it never reaches this step.):
 
 - **Output**: `{plan-folder}/overview.html` when `guiPlanFormat` = `html` (default), or `{plan-folder}/overview.md` when `guiPlanFormat` = `md`.
-- **Generator**: dispatch **cf-writer-deep** (`{{cf:agent_ref cf-writer-deep}}`). Give it: the just-written plan (the `README.md` + any `phase-N-*.md`), the matching template at `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Instruct it to fill the template's `<!-- FILL: … -->` markers from the plan and replace the placeholder content. For HTML output, it must HTML-escape prose values it injects (so `<`, `&`, and generic types like `Foo<T>` render correctly). **Mermaid diagram labels derived from plan text must also be sanitized** — strip or escape `<`, `>`, `"`, `&` in node/edge labels and wrap labels in quotes. The `<div class="mermaid">` body is parsed by the browser as HTML *before* Mermaid runs, so an unsanitized label like `</div><img onerror=…>` would break out of the container and execute (Mermaid's `securityLevel` only sanitizes what Mermaid itself renders — too late to stop browser-level DOM injection).
+- **Generator**: dispatch **cf-writer-deep** (`subagent_type: "coding-friend:cf-writer-deep"`). Give it: the just-written plan (the `README.md` + any `phase-N-*.md`), the matching template at `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Instruct it to fill the template's `<!-- FILL: … -->` markers from the plan and replace the placeholder content. For HTML output, it must HTML-escape prose values it injects (so `<`, `&`, and generic types like `Foo<T>` render correctly). **Mermaid diagram labels derived from plan text must also be sanitized** — strip or escape `<`, `>`, `"`, `&` in node/edge labels and wrap labels in quotes. The `<div class="mermaid">` body is parsed by the browser as HTML _before_ Mermaid runs, so an unsanitized label like `</div><img onerror=…>` would break out of the container and execute (Mermaid's `securityLevel` only sanitizes what Mermaid itself renders — too late to stop browser-level DOM injection).
 - **Content rules**: SHORT and decision-focused — a **Plan at a Glance** summary (Phases = number of phases, Tasks = total tasks across all phases; both counts come straight from the just-written plan), the original problem/intent, the solution big picture, the key decisions (one concise line each), and Mermaid diagrams for any structure/flow/state-machine/algorithm where a picture beats prose. **Write Problem & Intent and Solution as concise bullet lists, not paragraphs** (the templates already use `<ul class="bullets">` / `-` bullets — fill those, don't replace with `<p>`). Do NOT copy the step-by-step task list — that lives in the agent plan.
 - **Point-in-time**: generated once here; NOT updated as the Progress table changes during implementation.
 - **Skip** entirely when humanDoc=false — i.e. whenever `--gui`/`--human` is absent and `disableGUIPlan` is not explicitly `false` (the default), in **fast mode** without `--gui`, or in `--inline` mode (no plan file at all).
@@ -194,15 +194,15 @@ Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user 
 5. If ALL tasks are `✅ DONE` → inform user: "Plan is already complete. Nothing to resume." Stop.
 6. Show user: list of pending tasks and estimated phases remaining. Ask: "Resume from the first pending task? (y/n)"
 7. If confirmed → execute pending tasks using the same Sequential phases protocol below, passing the context file loaded in step 3 to each cf-implementer dispatch.
-   - **Autopilot gating** — Before honoring `auto: true` in frontmatter, verify the plan body (`README.md` for small plans; README.md and every phase file for big plans) actually contains a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. If the section is missing in any file that should have it, do NOT autopilot — warn the user: `> ⚠️ Plan has \`auto: true\` in frontmatter but the \`## AUTOPILOT\` section is missing in <path>. Refusing to autopilot. Re-run \`{{cf:slash cf-plan}} --auto\` to regenerate the section, or remove \`auto: true\` to resume normally.` Stop.
+   - **Autopilot gating** — Before honoring `auto: true` in frontmatter, verify the plan body (`README.md` for small plans; README.md and every phase file for big plans) actually contains a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. If the section is missing in any file that should have it, do NOT autopilot — warn the user: `> ⚠️ Plan has \`auto: true\` in frontmatter but the \`## AUTOPILOT\` section is missing in <path>. Refusing to autopilot. Re-run \`/cf-plan --auto\` to regenerate the section, or remove \`auto: true\` to resume normally.` Stop.
    - Otherwise (frontmatter has `auto: true` AND section is present): the remaining phases run under the Autopilot Per-Phase Loop instead of the standard protocol. Announce to user when resuming: `> 🤖 This plan has \`auto: true\` — continuing in autopilot mode.`
 
 #### Sequential phases
 
-Dispatch **cf-implementer** (`{{cf:agent_ref cf-implementer}}`) per task:
+Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) per task:
 
 > Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
-> If `--add-tests` was passed to `{{cf:slash cf-plan}}`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
+> If `--add-tests` was passed to `/cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
 
 **Checkpoint before dispatch**: Edit the file containing this task's row — `README.md` for small plans, or the **relevant phase file** (`phase-N-<name>.md`) for big plans. Change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table. **Big plan only** — if this is the first task of the phase to leave `⬜ TODO`, also edit `README.md` and flip that phase's row to `🔄 IN PROGRESS` (see "Big plan phase sync" below).
 
@@ -226,7 +226,7 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 - **Phase failed** — when any task in the phase file becomes `❌ FAILED` (after retry), update the phase's row in `README.md` to `❌ FAILED` (overrides any `🔄 IN PROGRESS`).
 - **Plan done** — when all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`. If any row is `❌ FAILED`, set `**Status:**` to `❌ FAILED` instead.
 - **Parallel phases** — when multiple cf-implementer dispatches in a parallel phase return near-simultaneously, **serialize** the Edit calls: apply one Edit, wait for it to succeed, then apply the next. Concurrent edits to the same Markdown table will lose updates.
-- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until the Autopilot Per-Phase Loop's Step 6 (after `{{cf:slash cf-review}}` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
+- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until the Autopilot Per-Phase Loop's Step 6 (after `/cf-review` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
 
 **Rule**: Only the cf-plan orchestrator edits plan files (`README.md` for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
 
@@ -260,7 +260,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol above. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes ({{cf:skill_invoke cf-review}}, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix
@@ -272,7 +272,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 4. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
    - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced by the findings.
    - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Mark phase ❌ FAILED (revert README phase row from ✅ DONE → ❌ FAILED for big plans if already flipped). Surface the failure to user.
-   - Otherwise, re-run `{{cf:slash cf-review}}` (round 2).
+   - Otherwise, re-run `/cf-review` (round 2).
    - If round 2 still has Critical or Important → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface BOTH review outputs and the fix attempt, ask user.
    - Hard cap: never more than 2 reviews per phase. Never more than 1 fix attempt per phase.
 
@@ -302,9 +302,9 @@ EOF
 
 #### Post-implementation
 
-1. **Hard mode**: run `{{cf:slash cf-review}}` after every phase; only continue if review passes.
-2. After all phases, automatically invoke `{{cf:slash cf-review}}` ({{cf:skill_invoke cf-review}}) (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
-3. If plan involved performance-critical features, suggest `{{cf:slash cf-optimize}}` as optional next step — do NOT auto-run.
+1. **Hard mode**: run `/cf-review` after every phase; only continue if review passes.
+2. After all phases, automatically invoke `/cf-review` (use the Skill tool with skill name `coding-friend:cf-review`) (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
+3. If plan involved performance-critical features, suggest `/cf-optimize` as optional next step — do NOT auto-run.
 
 ## Plan Templates
 
@@ -320,14 +320,14 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 **Per-phase loop:**
 
 1. Dispatch all tasks in the current phase using the standard cf-implementer protocol (sequential or parallel as marked). Apply normal retry rules. If a task ends ❌ FAILED after retry → STOP autopilot, mark the failing task ❌ FAILED in the plan file (and revert the phase row in `README.md` from ✅ DONE to ❌ FAILED for big plans if it was already flipped), report to user.
-2. After all tasks in the phase reach ✅ DONE, run `{{cf:slash cf-review}}` on the uncommitted changes (no extra arguments — reviews everything that has not been committed yet, which is this phase's work).
+2. After all tasks in the phase reach ✅ DONE, run `/cf-review` on the uncommitted changes (no extra arguments — reviews everything that has not been committed yet, which is this phase's work).
 3. Parse review findings:
    - 🚨 **Critical** and ⚠️ **Important** → must be fixed.
    - 💡 **Suggestions** → log them in the upcoming commit body, do NOT block.
 4. If Critical/Important findings exist:
    - Dispatch one cf-implementer call with a fix task that lists the findings verbatim. Files: union of files referenced by the findings.
    - If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately (do NOT consume the second review round). Mark the phase ❌ FAILED (and revert the README phase row from ✅ DONE to ❌ FAILED if applicable). Surface the failure to user.
-   - Otherwise, re-run `{{cf:slash cf-review}}`.
+   - Otherwise, re-run `/cf-review`.
    - If Critical/Important still present after this 2nd review → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report both review outputs to user.
    - Maximum 2 review rounds per phase total (initial + 1 fix attempt).
 5. Once review is clean (no Critical/Important):
@@ -341,7 +341,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 - Task fails after its 1 retry.
 - The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume the second review round).
 - Review round 2 still has Critical or Important findings.
-- Review output from `{{cf:slash cf-review}}` cannot be reliably parsed.
+- Review output from `/cf-review` cannot be reliably parsed.
 - `git commit` fails repeatedly after attempted hook fixes.
 - User explicitly interrupts (Ctrl+C, message).
 - Plan file shows all phases ✅ DONE.
@@ -414,7 +414,7 @@ auto: false # set true when created with --auto
 
 ## Next Steps
 
-After implementation: `{{cf:slash cf-review}}` → `{{cf:slash cf-commit}}`
+After implementation: `/cf-review` → `/cf-commit`
 ```
 
 ### Big plan (subfolder)
@@ -468,7 +468,7 @@ auto: false # set true when created with --auto
 
 ## Next Steps
 
-After implementation: `{{cf:slash cf-review}}` → `{{cf:slash cf-commit}}`
+After implementation: `/cf-review` → `/cf-commit`
 ```
 
 **phase-N-\<name\>.md** (one per phase):
@@ -505,8 +505,8 @@ After implementation: `{{cf:slash cf-review}}` → `{{cf:slash cf-commit}}`
 
 The human overview doc (Step 6) is generated by cf-writer-deep from one of these skeleton templates (do NOT inline them here — they live as separate files so they don't inflate this skill's token footprint):
 
-- `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.html` — styled, self-contained HTML; Mermaid via CDN (major-version range).
-- `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.md` — Markdown mirror; Mermaid code fences.
+- `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.html` — styled, self-contained HTML; Mermaid via CDN (major-version range).
+- `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.md` — Markdown mirror; Mermaid code fences.
 
 Both carry `<!-- FILL: … -->` markers for: Problem & Intent, Solution (big picture), Key Decisions, diagram(s), Not Building.
 

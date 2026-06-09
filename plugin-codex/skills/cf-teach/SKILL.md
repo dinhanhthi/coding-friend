@@ -6,8 +6,6 @@ description: >
   connect, tools used, tradeoffs, mistakes made, pitfalls to watch, expert observations, and
   transferable lessons. Unlike $cf-learn (concise structured reference notes), this creates a
   narrative deep-dive for the human to truly understand what happened and why.
-user-invocable: true
-argument-hint: "[optional: topic or specific task to explain]"
 created: 2026-03-30
 updated: 2026-06-06
 ---
@@ -168,7 +166,7 @@ What lessons from this work apply to completely different contexts? Connect the 
 
 After displaying the narrative in chat, delegate to the **cf-writer-deep agent** (always — never cf-writer) to save it as a file.
 
-Use the **Agent tool** with `$cf-writer-deep` and include this write spec:
+Use the Codex subagent workflow with `cf-writer-deep` custom agent and include this write spec:
 
 ```
 WRITE SPEC
@@ -210,7 +208,7 @@ After the cf-writer-deep agent completes, show the user:
 ## Rules
 
 - **Always show the narrative in chat first** — the human reads it here, not just from the file
-- **Always use cf-writer-deep** (sonnet) — never cf-writer (haiku). The storytelling format requires nuanced tone and synthesis.
+- **Always use cf-writer-deep** (medium reasoning effort) — never cf-writer (low reasoning effort). The storytelling format requires nuanced tone and synthesis.
 - **Include frontmatter with tags** — always include `"CF Teach"` tag plus 2-4 topic-relevant tags
 - **Use category subdirectories** — output to `{outputDir}/{category}/{name}.md` (same structure as cf-learn)
 - **Use actual examples** from the session — never generic illustrations

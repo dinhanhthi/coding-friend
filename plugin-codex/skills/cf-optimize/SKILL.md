@@ -8,8 +8,6 @@ description: >
   "high latency", "memory leak", "reduce load time", "speed up", "takes too long",
   "timeout", "O(n²)", "N+1". Do NOT auto-invoke for minor refactors or style changes
   that are not performance-related.
-user-invocable: true
-argument-hint: "[target to optimize]"
 created: 2026-02-20
 updated: 2026-06-06
 ---
@@ -68,7 +66,7 @@ Assess whether the optimization target is **simple** (single file/function, clea
 
 - **Simple target** (e.g., "optimize this function"): Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<optimization target keywords — e.g. performance, latency, bottleneck, caching>", "limit": 5 }`. Then read the relevant source files directly.
 
-- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Use the **Agent tool** with `$cf-explorer`. Pass:
+- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Spawn the `cf-explorer` custom agent. Pass:
 
   > Explore the codebase to understand the performance context for: [optimization target]
   >
@@ -120,7 +118,7 @@ Memory and explorer results are **hints** — always verify against actual code 
 
 ### Step 7: Implement (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to implement the optimization test-first. Use the **Agent tool** with `$cf-implementer`.
+Dispatch the **cf-implementer agent** to implement the optimization test-first. Spawn the `cf-implementer` custom agent.
 
 **Prompt template:**
 
@@ -166,7 +164,7 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 
 Automatically invoke `$cf-review` — load `$cf-review`. Do NOT ask the user first, just run it.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
+> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
 
 ## Completion Protocol
 

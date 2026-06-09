@@ -17,9 +17,6 @@ description: >
   "does X require the CLI?", "what works without coding-friend-cli?",
   "is the CLI required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
-user-invocable: true
-model: haiku
-allowed-tools: [Read, Glob]
 created: 2026-02-17
 updated: 2026-06-07
 ---
@@ -50,7 +47,7 @@ Determine what the user is asking about:
 
 ### Step 2: Provide overview (if general question)
 
-Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Core philosophy:
+Coding Friend is a lean toolkit for disciplined engineering workflows in Codex CLI. Core philosophy:
 
 1. **Check skills first** — Before any task, check if a relevant skill exists
 2. **Test before code** — RED → GREEN → REFACTOR
@@ -61,7 +58,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 - `$cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
 - `$cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
-- `$cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report (set `review.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable).
+- `$cf-review [target]` — ⚡⚡ — Dispatch code review to subagent.
 - `$cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `$cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
 - `$cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
@@ -87,12 +84,12 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 ### Agents (run in forked sessions — separate context window)
 
 - **cf-reviewer** — ⚡ — Review orchestrator: dispatches 5 specialist agents in parallel + reducer
-  - **cf-reviewer-plan** (sonnet) — Plan alignment
-  - **cf-reviewer-security** (sonnet) — Security vulnerabilities
-  - **cf-reviewer-quality** (haiku) — Code quality + slop detection
-  - **cf-reviewer-tests** (haiku) — Test coverage
-  - **cf-reviewer-rules** (haiku) — Project rules compliance (CLAUDE.md)
-  - **cf-reviewer-reducer** (haiku) — Deduplicates and ranks findings
+  - **cf-reviewer-plan** (medium reasoning effort) — Plan alignment
+  - **cf-reviewer-security** (medium reasoning effort) — Security vulnerabilities
+  - **cf-reviewer-quality** (low reasoning effort) — Code quality + slop detection
+  - **cf-reviewer-tests** (low reasoning effort) — Test coverage
+  - **cf-reviewer-rules** (low reasoning effort) — Project rules compliance (AGENTS.md)
+  - **cf-reviewer-reducer** (low reasoning effort) — Deduplicates and ranks findings
 - **cf-implementer** — ⚡ — Implementation subagent: direct coding by default, TDD with `--add-tests` (reads structured context file, returns result signals, supports auto-retry on failure). Does not own autopilot loops — cf-plan / cf-tdd orchestrate review / fix / commit when `--auto` is active.
 - **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
 - **cf-planner** — ⚡ — Task decomposition with parallel/sequential phases (writes structured context file)

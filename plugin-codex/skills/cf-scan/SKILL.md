@@ -7,8 +7,6 @@ description: >
   "bootstrap memory", "initialize memory with project knowledge", "populate memory",
   "build project understanding", "scan this aspect", "analyze the project".
   This is a token-heavy operation — always warn the user before proceeding.
-user-invocable: true
-argument-hint: "[project description]"
 created: 2026-03-16
 updated: 2026-06-06
 ---
@@ -85,7 +83,7 @@ Use Glob to check for these files (read whichever exist):
 | Package/language | `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`, `composer.json`, `mix.exs` |
 | Config           | `tsconfig.json`, `.eslintrc*`, `prettier.config*`, `biome.json`, `.editorconfig`                                           |
 | Infrastructure   | `Dockerfile`, `docker-compose.yml`, `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Makefile`, `Justfile`                    |
-| Documentation    | `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `CLAUDE.md`, `docs/`                                                    |
+| Documentation    | `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `AGENTS.md`, `docs/`                                                    |
 | Test             | `jest.config*`, `vitest.config*`, `pytest.ini`, `setup.cfg`, `.mocharc*`, `cypress.config*`                                |
 
 **2b. Read and extract:**
@@ -207,8 +205,8 @@ Based on explorer findings, plan ~10-15 memories across categories:
 1. Check if a memory with matching `{category}/{slug}` exists in the lookup map
 2. If **exists** → delegate to cf-writer with `task: update` and `existing_file_action: overwrite`, then call `memory_update` with params: `id` (e.g. "features/auth-module"), `content` (full new markdown), `tags` (updated tags array)
 3. If **new** → assess complexity:
-   - Simple (short, factual) → delegate to **cf-writer** agent (haiku)
-   - Complex (nuanced architecture, deep trade-offs) → delegate to **cf-writer-deep** agent (sonnet)
+   - Simple (short, factual) → delegate to **cf-writer** agent (low reasoning effort)
+   - Complex (nuanced architecture, deep trade-offs) → delegate to **cf-writer-deep** agent (medium reasoning effort)
 
 **Write spec for cf-writer (same format as $cf-remember):**
 

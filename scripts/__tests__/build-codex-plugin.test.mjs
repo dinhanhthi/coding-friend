@@ -12,6 +12,8 @@ const {
   buildCodexPlugin,
   createCodexPluginManifest,
   createCodexMcpConfig,
+  renderCodexFile,
+  renderCodexInstructionText,
   renderCodexText,
   transformCodexHooks,
 } = require("../build-codex-plugin.js");
@@ -30,7 +32,19 @@ async function createFixtureRepo() {
   );
   await writeText(
     path.join(repoRoot, "plugin", "skills", "cf-example", "SKILL.md"),
-    "Use {{cf:host}}, {{cf:slash cf-review}}, and {{cf:agent_ref cf-writer}}.\n",
+    [
+      "---",
+      "name: cf-example",
+      "description: Example",
+      "model: haiku",
+      "allowed-tools: [Read]",
+      "---",
+      "",
+      'Use /cf-review and the Agent tool with `subagent_type: "coding-friend:cf-writer"`.',
+      "",
+      "model: keep this body example",
+      "",
+    ].join("\n"),
   );
   await writeText(
     path.join(repoRoot, "plugin", "hooks", "hooks.json"),
@@ -68,7 +82,7 @@ async function createFixtureRepo() {
   );
   await writeText(
     path.join(repoRoot, "plugin", "hooks", "privacy-block.sh"),
-    "#!/usr/bin/env bash\necho {{cf:host}}\n",
+    "#!/usr/bin/env bash\necho Claude Code\n",
     0o755,
   );
   await writeText(
@@ -81,7 +95,7 @@ async function createFixtureRepo() {
   );
   await writeText(
     path.join(repoRoot, "plugin", "README.md"),
-    'Call {{cf:dispatch agent=cf-explorer prompt="inspect state"}}\n',
+    'Use the Agent tool with `subagent_type: "coding-friend:cf-explorer"`.\n',
   );
   await writeText(
     path.join(repoRoot, "plugin", "CHANGELOG.md"),
@@ -96,7 +110,7 @@ async function createFixtureRepo() {
       "tools: Read, Bash",
       "---",
       "",
-      "Use {{cf:slash cf-review}}.",
+      "Use /cf-review.",
       "",
     ].join("\n"),
   );
@@ -130,18 +144,16 @@ async function snapshotTree(root) {
   return files;
 }
 
-test("renders Coding Friend placeholders for Codex", () => {
-  const rendered = renderCodexText(
+test("renders Claude-native Coding Friend references for Codex", () => {
+  const rendered = renderCodexInstructionText(
     [
-      "{{cf:slash cf-review}}",
-      "{{cf:agent_ref cf-explorer}}",
-      "{{cf:skill_invoke cf-learn}}",
-      "{{cf:plugin_root}}/hooks/session-init.sh",
-      "{{cf:host}}",
-      '{{cf:dispatch agent=cf-explorer prompt="explore X"}}',
+      "/cf-review",
+      'Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`.',
+      "use the Skill tool with skill name `coding-friend:cf-learn`",
       "/cf-plan",
       "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.CLAUDE_PLUGIN_ROOT",
+      "Use cf-writer (sonnet) and read CLAUDE.md.",
     ].join("\n"),
   );
 
@@ -149,22 +161,41 @@ test("renders Coding Friend placeholders for Codex", () => {
     rendered,
     [
       "$cf-review",
-      "$cf-explorer",
+      "Spawn the `cf-explorer` custom agent.",
       "load `$cf-learn`",
-      "${PLUGIN_ROOT}/hooks/session-init.sh",
-      "Codex CLI",
-      [
-        "Spawn a subagent named `cf-explorer` with the following instructions:",
-        "",
-        "explore X",
-        "",
-        "Wait for it to finish and use its output.",
-      ].join("\n"),
       "$cf-plan",
       "${PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.PLUGIN_ROOT",
+      "Use cf-writer (medium reasoning effort) and read AGENTS.md.",
     ].join("\n"),
   );
+});
+
+test("renders Codex-native plan and session alternatives", () => {
+  const plan = renderCodexFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    [
+      "Use TaskCreate to create a task list.",
+      "Use `AskUserQuestion` for each round.",
+      "Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.",
+    ].join("\n"),
+  );
+  assert.match(plan, /Create a task checklist and keep it updated/);
+  assert.match(plan, /a direct user question/);
+  assert.doesNotMatch(plan, /`a direct user question`/);
+  assert.match(
+    plan,
+    /spawn one `cf-implementer` custom agent per task in parallel/,
+  );
+  assert.doesNotMatch(plan, /TaskCreate|AskUserQuestion|run_in_background/);
+
+  const session = renderCodexFile(
+    "/repo/plugin/skills/cf-session/SKILL.md",
+    "Claude session implementation",
+  );
+  assert.match(session, /codex resume/);
+  assert.match(session, /codex fork/);
+  assert.doesNotMatch(session, /Claude session implementation/);
 });
 
 test("creates stamped Codex plugin manifest", () => {
@@ -204,11 +235,12 @@ Use {{cf:slash cf-review}} and {{cf:agent_ref cf-writer}}.
 
   assert.match(toml, /name = "cf-example"/);
   assert.match(toml, /description = "Example agent for testing conversion\."/);
-  assert.match(toml, /model = "haiku"/);
-  assert.match(toml, /tools = \["Read", "Write", "Bash"\]/);
+  assert.match(toml, /model_reasoning_effort = "low"/);
+  assert.doesNotMatch(toml, /^model =/m);
+  assert.doesNotMatch(toml, /^tools =/m);
   assert.match(
     toml,
-    /developer_instructions = '''\n# Example\n\nUse \$cf-review and \$cf-writer\.\n'''/,
+    /developer_instructions = '''\n# Example\n\nUse \$cf-review and cf-writer\.\n'''/,
   );
 });
 
@@ -321,14 +353,24 @@ test("builds Codex plugin fixture idempotently", async () => {
     path.join(codexPluginDir, "README.md"),
     "utf8",
   );
-  assert.match(readme, /Spawn a subagent named `cf-explorer`/);
+  assert.match(
+    readme,
+    /Codex subagent workflow with `cf-explorer` custom agent/,
+  );
   assert.doesNotMatch(readme, /\{\{cf:/);
 
   const skill = await fs.readFile(
     path.join(codexPluginDir, "skills", "cf-example", "SKILL.md"),
     "utf8",
   );
-  assert.match(skill, /Use Codex CLI, \$cf-review, and \$cf-writer\./);
+  assert.match(
+    skill,
+    /Use \$cf-review and the Codex subagent workflow with `cf-writer` custom agent\./,
+  );
+  const skillFrontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(skillFrontmatter);
+  assert.doesNotMatch(skillFrontmatter[1], /^model:|^allowed-tools:/m);
+  assert.match(skill, /model: keep this body example/);
 
   const shellMode = (
     await fs.stat(path.join(codexPluginDir, "hooks", "privacy-block.sh"))
