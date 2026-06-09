@@ -11,7 +11,7 @@ created: 2026-02-17
 updated: 2026-06-14
 ---
 
-# /cf-plan
+# {{cf:slash cf-plan}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -35,13 +35,13 @@ Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining te
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-plan`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 0.5: Determine Mode
 
-1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.) → Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/resume.md` now and follow it.
+1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.) → Read `{{cf:plugin_root}}/skills/cf-plan/modes/resume.md` now and follow it.
 2. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
    2a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
    2b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked via TaskCreate.`
@@ -102,7 +102,7 @@ If the user wants to skip brainstorming ("just plan it"), respect that and move 
 > **Normal**: Launch cf-explorer agent once.
 > **Hard**: Launch cf-explorer twice — standard exploration, then blast-radius analysis.
 
-Launch **cf-explorer** (`subagent_type: "coding-friend:cf-explorer"`):
+Launch **cf-explorer** (`{{cf:agent_ref cf-explorer}}`):
 
 > Explore the codebase for: [user request]
 > Context file: [docsDir/context/<task-id>.json]
@@ -116,7 +116,7 @@ Launch **cf-explorer** (`subagent_type: "coding-friend:cf-explorer"`):
 
 > **Fast mode**: Skip — pick the most straightforward approach from Step 2, proceed to Step 4.
 
-Launch **cf-planner** (`subagent_type: "coding-friend:cf-planner"`):
+Launch **cf-planner** (`{{cf:agent_ref cf-planner}}`):
 
 > Plan: [user request]
 > Context file: [docsDir/context/<task-id>.json] (cf-explorer findings already written; read it, then update with plan findings)
@@ -139,7 +139,7 @@ Present: key codebase findings, approaches with pros/cons, recommended approach 
 1. Break the chosen approach into tasks grouped into **phases**; each task completable in one session.
 2. Per task: what to do (files, functions, tests), expected outcome, how to verify.
 3. Phase markers: `#### Phase N [parallel]` (no shared files, run concurrently) or `#### Phase N [sequential]` (ordered). If no cf-planner or flat task list, wrap in a single `[sequential]` phase.
-4. When autopilot=true, the plan body MUST include a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Copy the AUTOPILOT CONTRACT block verbatim — Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now and copy its fenced block exactly.
+4. When autopilot=true, the plan body MUST include a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Copy the AUTOPILOT CONTRACT block verbatim — Read `{{cf:plugin_root}}/skills/cf-plan/modes/autopilot.md` now and copy its fenced block exactly.
 
 > **Hard mode**: Each task adds a **Rollback** field; add `## Migration & Rollback` section with overall rollback strategy.
 
@@ -169,21 +169,21 @@ After saving, present: folder path created, phase count, task count, entry point
 When humanDoc=true AND a plan file was written, generate a concise human-readable overview next to `README.md`. (humanDoc is off by default — it is only true when `--gui`/`--human` is passed or `disableGUIPlan: false` is set; `--inline` writes no plan file at all — so it never reaches this step.):
 
 - **Output**: `{plan-folder}/overview.html` when `guiPlanFormat` = `html` (default), or `{plan-folder}/overview.md` when `guiPlanFormat` = `md`.
-- **Generator**: dispatch **cf-writer-deep** (`subagent_type: "coding-friend:cf-writer-deep"`). Give it: the just-written plan (the `README.md` + any `phase-N-*.md`), the matching template at `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Instruct it to fill the template's `<!-- FILL: … -->` markers from the plan and replace the placeholder content. For HTML output, it must HTML-escape prose values it injects (so `<`, `&`, and generic types like `Foo<T>` render correctly). **Mermaid diagram labels derived from plan text must also be sanitized** — strip or escape `<`, `>`, `"`, `&` in node/edge labels and wrap labels in quotes. The `<div class="mermaid">` body is parsed by the browser as HTML *before* Mermaid runs, so an unsanitized label like `</div><img onerror=…>` would break out of the container and execute (Mermaid's `securityLevel` only sanitizes what Mermaid itself renders — too late to stop browser-level DOM injection).
+- **Generator**: dispatch **cf-writer-deep** (`{{cf:agent_ref cf-writer-deep}}`). Give it: the just-written plan (the `README.md` + any `phase-N-*.md`), the matching template at `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Instruct it to fill the template's `<!-- FILL: … -->` markers from the plan and replace the placeholder content. For HTML output, it must HTML-escape prose values it injects (so `<`, `&`, and generic types like `Foo<T>` render correctly). **Mermaid diagram labels derived from plan text must also be sanitized** — strip or escape `<`, `>`, `"`, `&` in node/edge labels and wrap labels in quotes. The `<div class="mermaid">` body is parsed by the browser as HTML *before* Mermaid runs, so an unsanitized label like `</div><img onerror=…>` would break out of the container and execute (Mermaid's `securityLevel` only sanitizes what Mermaid itself renders — too late to stop browser-level DOM injection).
 - **Content rules**: SHORT and decision-focused — a **Plan at a Glance** summary (Phases = number of phases, Tasks = total tasks across all phases; both counts come straight from the just-written plan), the original problem/intent, the solution big picture, the key decisions (one concise line each), and Mermaid diagrams for any structure/flow/state-machine/algorithm where a picture beats prose. **Write Problem & Intent and Solution as concise bullet lists, not paragraphs** (the templates already use `<ul class="bullets">` / `-` bullets — fill those, don't replace with `<p>`). Do NOT copy the step-by-step task list — that lives in the agent plan.
 - **Point-in-time**: generated once here; NOT updated as the Progress table changes during implementation.
 - **Skip** entirely when humanDoc=false — i.e. whenever `--gui`/`--human` is absent and `disableGUIPlan` is not explicitly `false` (the default), in **fast mode** without `--gui`, or in `--inline` mode (no plan file at all).
 
 ### Step 7: Offer Implementation
 
-Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → use the existing Sequential/Parallel phases protocols unchanged.
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `{{cf:plugin_root}}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → use the existing Sequential/Parallel phases protocols unchanged.
 
 #### Sequential phases
 
-Dispatch **cf-implementer** (`subagent_type: "coding-friend:cf-implementer"`) per task:
+Dispatch **cf-implementer** (`{{cf:agent_ref cf-implementer}}`) per task:
 
 > Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
-> If `--add-tests` was passed to `/cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
+> If `--add-tests` was passed to `{{cf:slash cf-plan}}`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
 
 **Checkpoint before dispatch**: Edit the file containing this task's row — `README.md` for small plans, or the **relevant phase file** (`phase-N-<name>.md`) for big plans. Change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table. **Big plan only** — if this is the first task of the phase to leave `⬜ TODO`, also edit `README.md` and flip that phase's row to `🔄 IN PROGRESS` (see "Big plan phase sync" below).
 
@@ -207,7 +207,7 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 - **Phase failed** — when any task in the phase file becomes `❌ FAILED` (after retry), update the phase's row in `README.md` to `❌ FAILED` (overrides any `🔄 IN PROGRESS`).
 - **Plan done** — when all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`. If any row is `❌ FAILED`, set `**Status:**` to `❌ FAILED` instead.
 - **Parallel phases** — when multiple cf-implementer dispatches in a parallel phase return near-simultaneously, **serialize** the Edit calls: apply one Edit, wait for it to succeed, then apply the next. Concurrent edits to the same Markdown table will lose updates.
-- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until Step 6 of the Per-Phase Loop in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (after `/cf-review` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
+- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until Step 6 of the Per-Phase Loop in `{{cf:plugin_root}}/skills/cf-plan/modes/autopilot.md` (after `{{cf:slash cf-review}}` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
 
 **Rule**: Only the cf-plan orchestrator edits plan files (`README.md` for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
 
@@ -235,19 +235,19 @@ After overlap check passes:
 
 Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
-→ When autopilot=true, Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block.
+→ When autopilot=true, Read `{{cf:plugin_root}}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block.
 
 #### Post-implementation
 
-1. **Hard mode**: run `/cf-review` after every phase; only continue if review passes.
-2. After all phases, automatically invoke `/cf-review` (Skill tool, `coding-friend:cf-review`) (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
-3. If plan involved performance-critical features, suggest `/cf-optimize` as optional next step — do NOT auto-run.
+1. **Hard mode**: run `{{cf:slash cf-review}}` after every phase; only continue if review passes.
+2. After all phases, automatically invoke `{{cf:slash cf-review}}` ({{cf:skill_invoke cf-review}}) (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
+3. If plan involved performance-critical features, suggest `{{cf:slash cf-optimize}}` as optional next step — do NOT auto-run.
 
 ## Plan Templates
 
 ### AUTOPILOT CONTRACT block
 
-Only when `--auto`: the AUTOPILOT CONTRACT block lives in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (Step 5 #4 loads it for that case). Skip in normal runs.
+Only when `--auto`: the AUTOPILOT CONTRACT block lives in `{{cf:plugin_root}}/skills/cf-plan/modes/autopilot.md` (Step 5 #4 loads it for that case). Skip in normal runs.
 
 ### Small plan (1 phase — written as `README.md` inside the plan folder)
 
@@ -405,8 +405,8 @@ After implementation: `/cf-review` → `/cf-commit`
 
 The human overview doc (Step 6) is generated by cf-writer-deep from one of these skeleton templates (do NOT inline them here — they live as separate files so they don't inflate this skill's token footprint):
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.html` — styled, self-contained HTML; Mermaid via CDN (major-version range).
-- `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.md` — Markdown mirror; Mermaid code fences.
+- `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.html` — styled, self-contained HTML; Mermaid via CDN (major-version range).
+- `{{cf:plugin_root}}/skills/cf-plan/templates/overview-template.md` — Markdown mirror; Mermaid code fences.
 
 Both carry `<!-- FILL: … -->` markers for: Problem & Intent, Solution (big picture), Key Decisions, diagram(s), Not Building.
 

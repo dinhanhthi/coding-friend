@@ -24,7 +24,7 @@ created: 2026-02-17
 updated: 2026-06-07
 ---
 
-# /cf-help — Coding Friend Help
+# {{cf:slash cf-help}} — Coding Friend Help
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -34,7 +34,7 @@ Answer questions about the Coding Friend toolkit. Provide a brief overview when 
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-help`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -43,7 +43,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 Determine what the user is asking about:
 
 - **General overview** — what is Coding Friend, what can it do?
-- **Specific skill** — how does /cf-commit work? what does cf-tdd do?
+- **Specific skill** — how does {{cf:slash cf-commit}} work? what does cf-tdd do?
 - **Specific agent** — what is the cf-reviewer agent?
 - **Setup/config** — how to configure, custom guides, ignore patterns
 - **Workflow** — how do skills work together?
@@ -59,21 +59,21 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Slash Commands (user triggers with /)
 
-- `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
-- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
-- `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report (set `review.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable).
-- `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
-- `/cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
-- `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
-- `/cf-fix [bug]` — ⚡⚡ — Quick bug fix workflow
-- `/cf-optimize [target]` — ⚡⚡ — Structured optimization with before/after measurement
-- `/cf-scan [description]` — ⚡⚡⚡ — Scan project and bootstrap memory
-- `/cf-remember [topic]` — ⚡⚡ — Extract project knowledge to docs/memory/. Also auto-invoked.
-- `/cf-learn [topic]` — ⚡⚡ — Extract learnings (configurable output, language, categories)
-- `/cf-research [topic]` — ⚡⚡ — In-depth research with web search → docs/research/
-- `/cf-session [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
-- `/cf-warm [user]` — ⚡⚡ — Catch up after absence — git history summary for a user
-- `/cf-help [question]` — ⚡⚡ — This skill — answer questions about Coding Friend. Also auto-invoked.
+- `{{cf:slash cf-ask}} [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
+- `{{cf:slash cf-plan}} [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
+- `{{cf:slash cf-review}} [target]` — ⚡⚡ — Dispatch code review to subagent. Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report (set `review.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable).
+- `{{cf:slash cf-commit}} [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
+- `{{cf:slash cf-design}} [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
+- `{{cf:slash cf-ship}} [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
+- `{{cf:slash cf-fix}} [bug]` — ⚡⚡ — Quick bug fix workflow
+- `{{cf:slash cf-optimize}} [target]` — ⚡⚡ — Structured optimization with before/after measurement
+- `{{cf:slash cf-scan}} [description]` — ⚡⚡⚡ — Scan project and bootstrap memory
+- `{{cf:slash cf-remember}} [topic]` — ⚡⚡ — Extract project knowledge to docs/memory/. Also auto-invoked.
+- `{{cf:slash cf-learn}} [topic]` — ⚡⚡ — Extract learnings (configurable output, language, categories)
+- `{{cf:slash cf-research}} [topic]` — ⚡⚡ — In-depth research with web search → docs/research/
+- `{{cf:slash cf-session}} [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
+- `{{cf:slash cf-warm}} [user]` — ⚡⚡ — Catch up after absence — git history summary for a user
+- `{{cf:slash cf-help}} [question]` — ⚡⚡ — This skill — answer questions about Coding Friend. Also auto-invoked.
 
 ### Auto-Invoked Skills (activate automatically when relevant)
 
@@ -132,14 +132,14 @@ If the user asks about **custom skill guides**, explain:
 
 If the user asks how skills work together, present these common workflows:
 
-- **Build a feature:** `/cf-plan` → implement → `/cf-review` → `/cf-commit` → `/cf-ship`
-- **Fix a bug:** `/cf-fix` → (auto: review) → `/cf-commit`
-- **Quick question:** `/cf-ask` → answer saved to docs/memory/
-- **Deep research:** `/cf-research` → `/cf-plan` → implement
-- **End of session:** `/cf-remember` (project context for AI) + `/cf-learn` (educational notes for human)
-- **Optimize:** `/cf-optimize` → baseline → fix → measure → compare
+- **Build a feature:** `{{cf:slash cf-plan}}` → implement → `{{cf:slash cf-review}}` → `{{cf:slash cf-commit}}` → `{{cf:slash cf-ship}}`
+- **Fix a bug:** `{{cf:slash cf-fix}}` → (auto: review) → `{{cf:slash cf-commit}}`
+- **Quick question:** `{{cf:slash cf-ask}}` → answer saved to docs/memory/
+- **Deep research:** `{{cf:slash cf-research}}` → `{{cf:slash cf-plan}}` → implement
+- **End of session:** `{{cf:slash cf-remember}}` (project context for AI) + `{{cf:slash cf-learn}}` (educational notes for human)
+- **Optimize:** `{{cf:slash cf-optimize}}` → baseline → fix → measure → compare
 
-**Key distinction:** `/cf-remember` saves project knowledge for AI recall in future sessions. `/cf-learn` saves educational notes for the human to learn from.
+**Key distinction:** `{{cf:slash cf-remember}}` saves project knowledge for AI recall in future sessions. `{{cf:slash cf-learn}}` saves educational notes for the human to learn from.
 
 ### Step 5: Troubleshooting (if troubleshooting question)
 
@@ -171,7 +171,7 @@ For the full per-skill/per-agent/per-hook matrix, see [docs/cli-requirements.md]
 
 When users ask whether a skill needs the CLI, look up its tier first.
 
-> **Q:** "Do I need the CLI to use `/cf-fix`?"
+> **Q:** "Do I need the CLI to use `{{cf:slash cf-fix}}`?"
 >
 > **A:** "No. `cf-fix` is OPTIONAL-tier — it uses the memory MCP when available, but falls back to `grep -r '<query>' docs/memory/`. See `docs/cli-requirements.md` for the full matrix."
 

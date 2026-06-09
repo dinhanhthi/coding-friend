@@ -6,7 +6,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol above. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (Skill tool, `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes ({{cf:skill_invoke cf-review}}, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix
@@ -18,7 +18,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 4. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
    - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced by the findings.
    - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Mark phase ❌ FAILED (revert README phase row from ✅ DONE → ❌ FAILED for big plans if already flipped). Surface the failure to user.
-   - Otherwise, re-run `/cf-review` (round 2).
+   - Otherwise, re-run `{{cf:slash cf-review}}` (round 2).
    - If round 2 still has Critical or Important → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface BOTH review outputs and the fix attempt, ask user.
    - Hard cap: never more than 2 reviews per phase. Never more than 1 fix attempt per phase.
 

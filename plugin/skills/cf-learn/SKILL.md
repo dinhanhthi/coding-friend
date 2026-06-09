@@ -6,7 +6,7 @@ description: >
   knowledge, problem-solving insights, or non-trivial concepts worth preserving — such as
   debugging breakthroughs, architecture decisions, best practices, or explanations of complex
   topics. Do NOT auto-invoke for trivial tasks like simple file edits, typo fixes, or routine
-  operations. Unlike /cf-remember (project context for AI recall), this creates educational
+  operations. Unlike {{cf:slash cf-remember}} (project context for AI recall), this creates educational
   notes for the human to learn from.
 user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
@@ -14,7 +14,7 @@ created: 2026-02-17
 updated: 2026-06-06
 ---
 
-# /cf-learn
+# {{cf:slash cf-learn}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -28,7 +28,7 @@ In vibe coding, AI writes the code and human approves it — but the human doesn
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-learn`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -104,7 +104,7 @@ File path: `{outputDir}/{category}/{name}.md`
 Before creating a new file, check if a relevant file already exists in the target category:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
+bash "{{cf:plugin_root}}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
 ```
 
 Replace `/absolute/path/to/outputDir` with the resolved absolute path from Step 0 before running.
@@ -263,7 +263,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `{{cf:agent_ref cf-writer}}` or `{{cf:agent_ref cf-writer-deep}}` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 6: Confirm
 
