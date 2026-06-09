@@ -30,6 +30,12 @@ vi.mock("../../lib/shell-completion.js", () => ({
 
 vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
+  resolveHostFlags: vi.fn(),
+}));
+
+vi.mock("../../lib/codex-config.js", () => ({
+  CODEX_MARKETPLACE_NAME: "coding-friend-marketplace",
+  setCodexPluginEnabled: vi.fn(),
 }));
 
 vi.mock("../../lib/memory-prompts.js", () => ({
@@ -43,7 +49,8 @@ import {
   hasShellCompletion,
   removeShellCompletion,
 } from "../../lib/shell-completion.js";
-import { resolveScope } from "../../lib/prompt-utils.js";
+import { setCodexPluginEnabled } from "../../lib/codex-config.js";
+import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
 import { uninstallCommand } from "../uninstall.js";
 
@@ -57,6 +64,8 @@ const mockRun = vi.mocked(run);
 const mockHasShellCompletion = vi.mocked(hasShellCompletion);
 const mockRemoveShellCompletion = vi.mocked(removeShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
+const mockResolveHostFlags = vi.mocked(resolveHostFlags);
+const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
 
 const home = homedir();
 const installedPluginsFile = join(
@@ -93,6 +102,7 @@ const memoryDepsDir = join(home, ".coding-friend", "memory");
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
+  mockResolveHostFlags.mockReturnValue({ host: "claude" });
   mockResolveScope.mockResolvedValue("user");
 });
 
@@ -575,5 +585,30 @@ describe("uninstallCommand", () => {
 
     const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(consoleCalls).toContain("legacy project-scope coding-friend-memory");
+  });
+
+  it("disables Codex plugin without Claude detection", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+
+    await uninstallCommand({ agent: "codex" });
+
+    expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(false);
+    expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("optionally removes Codex marketplace", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ agent: "codex", removeMarketplace: true });
+
+    expect(mockRun).toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "remove",
+      "coding-friend-marketplace",
+    ]);
   });
 });

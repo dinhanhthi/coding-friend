@@ -4,11 +4,22 @@ import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
 import { claudeSettingsPath } from "../lib/paths.js";
 import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
+import {
+  CODEX_MARKETPLACE_NAME,
+  getCodexInstalledVersion,
+} from "../lib/codex-config.js";
 import { log, printBanner } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
-import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
-import { isMemoryMcpRegistered, registerMemoryMcp } from "../lib/memory-mcp-register.js";
+import {
+  resolveHostFlags,
+  resolveScope,
+  type ScopeFlags,
+} from "../lib/prompt-utils.js";
+import {
+  isMemoryMcpRegistered,
+  registerMemoryMcp,
+} from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
 import chalk from "chalk";
 
@@ -92,6 +103,12 @@ export interface UpdateOptions extends ScopeFlags {
 }
 
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
+  const { host } = resolveHostFlags(opts);
+  if (host === "codex") {
+    await updateCodexCommand(opts);
+    return;
+  }
+
   // If no component flags specified, update everything
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
   const doCli = updateAll || !!opts.cli;
@@ -327,4 +344,89 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
   console.log();
   log.dim("Restart Claude Code (or start a new session) to see changes.");
+}
+
+async function updateCodexCommand(opts: UpdateOptions): Promise<void> {
+  const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
+  const doCli = updateAll || !!opts.cli;
+  const doPlugin = updateAll || !!opts.plugin;
+
+  printBanner("✨ Coding Friend Codex Update ✨");
+  console.log();
+
+  if (doPlugin) {
+    const beforeVersion = getCodexInstalledVersion();
+    console.log(
+      `  Plugin      ${beforeVersion ? beforeVersion : chalk.dim("not installed")}`,
+    );
+
+    if (!commandExists("codex")) {
+      log.error("Codex CLI not found. Cannot update Codex plugin.");
+    } else {
+      log.step("Updating Codex marketplace...");
+      const result = runWithStderr("codex", [
+        "plugin",
+        "marketplace",
+        "upgrade",
+        CODEX_MARKETPLACE_NAME,
+      ]);
+      if (result.exitCode !== 0) {
+        log.error(
+          `Codex marketplace upgrade failed. Try manually: codex plugin marketplace upgrade ${CODEX_MARKETPLACE_NAME}`,
+        );
+        if (result.stderr) log.dim(`stderr: ${result.stderr}`);
+      } else {
+        const afterVersion = getCodexInstalledVersion();
+        if (afterVersion && afterVersion !== beforeVersion) {
+          log.success(
+            `Codex plugin updated to ${chalk.green(`v${afterVersion}`)}.`,
+          );
+        } else if (afterVersion) {
+          log.success(
+            `Codex plugin is installed at ${chalk.green(`v${afterVersion}`)}.`,
+          );
+        } else {
+          log.warn(
+            "Marketplace updated, but coding-friend is not installed yet. Open Codex and run /plugins to install it.",
+          );
+        }
+      }
+    }
+  }
+
+  if (doCli) {
+    const cliVersion = getCliVersion();
+    const latestCliVersion = getLatestCliVersion();
+    if (!latestCliVersion) {
+      log.warn("Cannot check latest CLI version from npm.");
+    } else {
+      const cmp = semverCompare(cliVersion, latestCliVersion);
+      if (cmp < 0) {
+        log.step(
+          `CLI update available: ${chalk.yellow(`v${cliVersion}`)} → ${chalk.green(`v${latestCliVersion}`)}`,
+        );
+        const result = run("npm", [
+          "install",
+          "-g",
+          "coding-friend-cli@latest",
+        ]);
+        if (result === null) {
+          log.error(
+            "CLI update failed. Try manually: npm install -g coding-friend-cli@latest",
+          );
+        } else {
+          log.success(`CLI updated to ${chalk.green(`v${latestCliVersion}`)}`);
+        }
+      }
+    }
+  }
+
+  if (opts.statusline) {
+    log.warn(
+      "Codex statusline setup is handled by cf statusline --agent codex in a later phase.",
+    );
+  }
+
+  console.log();
+  log.dim("Restart Codex CLI (or start a new session) to see changes.");
 }
