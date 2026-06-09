@@ -8,8 +8,8 @@
 
 | Status  | Task                                                 |
 | ------- | ---------------------------------------------------- |
-| ⬜ TODO | 7.1 Register MCP server in Codex config / .mcp.json  |
-| ⬜ TODO | 7.2 Cohabitation smoke test (Claude + Codex same DB) |
+| ✅ DONE | 7.1 Register MCP server in Codex config / .mcp.json  |
+| ✅ DONE | 7.2 Cohabitation smoke test (Claude + Codex same DB) |
 
 ## Tasks
 
@@ -18,16 +18,16 @@
    - `plugin-codex/.mcp.json` content:
      ```json
      {
-       "mcp_servers": {
+       "mcpServers": {
          "coding-friend-memory": {
-           "command": "cf",
-           "args": ["mcp"],
+           "command": "npx",
+           "args": ["-y", "coding-friend-cli", "mcp-serve", "docs/memory"],
            "env": {}
          }
        }
      }
      ```
-   - The `cf mcp` command (already exists) starts the memory MCP daemon over stdio. Same binary serves both hosts.
+   - The `mcp-serve <memoryDir>` command starts the memory MCP server over stdio. `cf mcp` remains the setup/health helper that writes `.mcp.json` for Claude-compatible clients. Same server binary serves both hosts.
    - Verify: `codex` interactive session lists the memory tools (`memory_search`, etc.) alongside built-ins.
    - Rollback: remove `.mcp.json` entry; remove TOML lines.
 
@@ -46,3 +46,11 @@
 - `codex` can call MCP memory tools after `cf install --codex`
 - Memory data written from Claude session is visible in a Codex session and vice versa
 - Concurrent-write test passes
+
+## Phase 7 validation
+
+- Build transform tests: `node --test scripts/__tests__/build-codex-plugin.test.mjs`
+- SQLite cohabitation smoke: `cd cli/lib/cf-memory && npm test -- --run src/__tests__/memory-cohabitation.test.ts`
+- Generated artifact: `npm run build:codex`
+- Drift guard: `npm run verify:codex-drift`
+- `plugin-codex/.mcp.json` points at `npx -y coding-friend-cli mcp-serve docs/memory` and includes `env: {}`.

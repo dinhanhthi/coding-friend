@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const {
   agentMarkdownToToml,
   createCodexPluginManifest,
+  createCodexMcpConfig,
   renderCodexText,
   transformCodexHooks,
 } = require("../build-codex-plugin.js");
@@ -54,6 +55,18 @@ test("creates stamped Codex plugin manifest", () => {
   assert.equal(manifest.skills, "./skills/");
   assert.equal(manifest.hooks, "./hooks/hooks.json");
   assert.equal(manifest.mcpServers, "./.mcp.json");
+});
+
+test("creates Codex MCP config for shared memory server", () => {
+  assert.deepEqual(createCodexMcpConfig(), {
+    mcpServers: {
+      "coding-friend-memory": {
+        command: "npx",
+        args: ["-y", "coding-friend-cli", "mcp-serve", "docs/memory"],
+        env: {},
+      },
+    },
+  });
 });
 
 test("converts markdown agents to Codex TOML", () => {
