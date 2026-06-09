@@ -12,7 +12,7 @@ created: 2026-03-23
 updated: 2026-06-06
 ---
 
-# /cf-review-out
+# {{cf:slash cf-review-out}}
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -20,15 +20,15 @@ Generate a review prompt for an external agent: **$ARGUMENTS**
 
 ## Purpose
 
-Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`/cf-review-in`](/docs/skills/cf-review-in/) to collect results.
+Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`{{cf:slash cf-review-in}}`](/docs/skills/cf-review-in/) to collect results.
 
-> **Using Codex?** If you have the Codex CLI installed and logged in, you don't need this manual round-trip — run [`/cf-review --with-codex`](/docs/skills/cf-review/) instead. It invokes Codex automatically, runs Claude's own review in parallel, and merges both into one report with no copy-paste. This `/cf-review-out` + `/cf-review-in` flow remains the path for any other external AI (Gemini, ChatGPT) or a human reviewer.
+> **Using Codex?** If you have the Codex CLI installed and logged in, you don't need this manual round-trip — run [`{{cf:slash cf-review}} --with-codex`](/docs/skills/cf-review/) instead. It invokes Codex automatically, runs Claude's own review in parallel, and merges both into one report with no copy-paste. This `{{cf:slash cf-review-out}}` + `{{cf:slash cf-review-in}}` flow remains the path for any other external AI (Gemini, ChatGPT) or a human reviewer.
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-review-out`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -54,8 +54,8 @@ Construct the **full label** by prepending today's date: `YYYY-MM-DD-<label>` (e
 
 ```bash
 mkdir -p <docsDir>/reviews && \
-  bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
-  bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
+  bash "{{cf:plugin_root}}/skills/cf-review/scripts/gather-diff.sh" | \
+  bash "{{cf:plugin_root}}/skills/cf-review-out/scripts/build-review-prompt.sh" \
     "YYYY-MM-DD-<label>" "<docsDir>" \
   > <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md
 ```
@@ -88,4 +88,4 @@ Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a s
 
 Finally, remind the user:
 
-> When all external agents finish, run `/cf-review-in YYYY-MM-DD-<label>` to collect all results.
+> When all external agents finish, run `{{cf:slash cf-review-in}} YYYY-MM-DD-<label>` to collect all results.

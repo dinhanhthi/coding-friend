@@ -23,7 +23,7 @@ updated: 2026-06-06
 
 ## Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-tdd`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -123,7 +123,7 @@ If dispatching cf-explorer or cf-planner first, pass the context file path so th
 
 ### Dispatch
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
+Use the **Agent tool** with `{{cf:agent_ref cf-implementer}}`. Pass:
 
 - Task description and expected behavior
 - `--add-tests` in the prompt if TDD mode is active
@@ -206,11 +206,11 @@ After the cf-implementer returns, **parse the last non-empty line** of its respo
 
 This section activates **iff `--auto` is present in the current cf-tdd invocation's arguments**.
 
-That single check is sufficient — Claude does NOT need to introspect whether cf-tdd was loaded transitively. Why: cf-plan owns the autopilot loop when a plan has `auto: true`, and cf-plan's contract explicitly forbids propagating `--auto` to cf-implementer (see "Autopilot note" in the Subagent Dispatch section above). So a transitively-loaded cf-tdd (e.g. cf-plan falling back to inline TDD when cf-implementer fails) will never see `--auto` in its own arguments, and this section will not fire. Direct user invocations like `/cf-tdd --auto …` always carry the flag and correctly activate this loop.
+That single check is sufficient — Claude does NOT need to introspect whether cf-tdd was loaded transitively. Why: cf-plan owns the autopilot loop when a plan has `auto: true`, and cf-plan's contract explicitly forbids propagating `--auto` to cf-implementer (see "Autopilot note" in the Subagent Dispatch section above). So a transitively-loaded cf-tdd (e.g. cf-plan falling back to inline TDD when cf-implementer fails) will never see `--auto` in its own arguments, and this section will not fire. Direct user invocations like `{{cf:slash cf-tdd}} --auto …` always carry the flag and correctly activate this loop.
 
 When active, after implementation completes its own verification (existing tests pass + typecheck/lint clean), run this loop instead of the standard Review Reminder:
 
-1. **Run review** — invoke the cf-review skill (Skill tool, `coding-friend:cf-review`, no extra args). cf-review will analyze uncommitted changes.
+1. **Run review** — invoke the cf-review skill ({{cf:skill_invoke cf-review}}, no extra args). cf-review will analyze uncommitted changes.
 
 2. **Parse findings** — cf-review returns bullets under 4 emoji headers:
    - 🚨 **Critical** → must fix
@@ -222,7 +222,7 @@ When active, after implementation completes its own verification (existing tests
 3. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
    - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced.
    - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Surface the failure to user.
-   - Otherwise, re-run `/cf-review` (round 2).
+   - Otherwise, re-run `{{cf:slash cf-review}}` (round 2).
    - If round 2 still has Critical or Important → STOP autopilot, surface both review outputs and the fix attempt, ask user.
    - Hard cap: 2 reviews total, 1 fix attempt.
 
@@ -254,4 +254,4 @@ EOF
 
 ## Review Reminder
 
-After implementation is complete: if `--auto` is active, the Autopilot Post-Implementation Loop (above) has already handled review and commit — skip this section. Otherwise, ask the user if they want to run `/cf-review` or `/cf-commit`. Do NOT auto-run — wait for their choice.
+After implementation is complete: if `--auto` is active, the Autopilot Post-Implementation Loop (above) has already handled review and commit — skip this section. Otherwise, ask the user if they want to run `{{cf:slash cf-review}}` or `{{cf:slash cf-commit}}`. Do NOT auto-run — wait for their choice.

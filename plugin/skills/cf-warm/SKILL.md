@@ -12,7 +12,7 @@ updated: 2026-06-06
 state: beta
 ---
 
-# /cf-warm
+# {{cf:slash cf-warm}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -38,13 +38,13 @@ Output goes to `{docsDir}/warm/` (default: `docs/warm/`). Check `.coding-friend/
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-warm`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-warm`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ### Step 1: Validate & Configure
 
-1. **Check git repo** — run `git rev-parse --is-inside-work-tree`. If it fails, tell the user: "This directory is not a git repository. `/cf-warm` only works inside git repos." and **STOP**.
+1. **Check git repo** — run `git rev-parse --is-inside-work-tree`. If it fails, tell the user: "This directory is not a git repository. `{{cf:slash cf-warm}}` only works inside git repos." and **STOP**.
 
 2. **Read config** — check `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for:
    - `docsDir` (default: `docs`)
@@ -141,7 +141,7 @@ Use the `language` setting from config for the report language.
 
 **6a. Delegate to cf-writer agent:**
 
-Construct a write spec and invoke the cf-writer agent via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
+Construct a write spec and invoke the cf-writer agent via the **Agent tool** with `{{cf:agent_ref cf-writer}}`.
 
 ```
 WRITE SPEC
@@ -237,10 +237,10 @@ Show the user a 2-line summary:
 
 Examples:
 
-- `/cf-warm` — auto-detect user, show last 10 commits
-- `/cf-warm --user "John Smith"` — look up commits by John Smith
-- `/cf-warm --n-commits 20` — show last 20 of your commits
-- `/cf-warm --user "Jane" --n-commits 3` — Jane's last 3 commits
+- `{{cf:slash cf-warm}}` — auto-detect user, show last 10 commits
+- `{{cf:slash cf-warm}} --user "John Smith"` — look up commits by John Smith
+- `{{cf:slash cf-warm}} --n-commits 20` — show last 20 of your commits
+- `{{cf:slash cf-warm}} --user "Jane" --n-commits 3` — Jane's last 3 commits
 
 ## Rules
 

@@ -13,7 +13,7 @@ created: 2026-03-16
 updated: 2026-06-06
 ---
 
-# /cf-scan
+# {{cf:slash cf-scan}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -39,7 +39,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-scan`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -210,7 +210,7 @@ Based on explorer findings, plan ~10-15 memories across categories:
    - Simple (short, factual) → delegate to **cf-writer** agent (haiku)
    - Complex (nuanced architecture, deep trade-offs) → delegate to **cf-writer-deep** agent (sonnet)
 
-**Write spec for cf-writer (same format as /cf-remember):**
+**Write spec for cf-writer (same format as {{cf:slash cf-remember}}):**
 
 > **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename. Only new files use the `YYYY-MM-DD-<name>.md` format.
 
@@ -286,17 +286,17 @@ Memory DB: indexed ✓ — or: MCP unavailable, files only
 
 Then suggest next steps:
 
-> - Run `/cf-scan` again anytime to refresh project knowledge
-> - Use `/cf-remember` to capture specific knowledge from conversations
-> - Use `/cf-ask` to query the memory system
+> - Run `{{cf:slash cf-scan}}` again anytime to refresh project knowledge
+> - Use `{{cf:slash cf-remember}}` to capture specific knowledge from conversations
+> - Use `{{cf:slash cf-ask}}` to query the memory system
 
 ## Interpreting `$ARGUMENTS`
 
 `$ARGUMENTS` is an optional free-form project description. Examples:
 
-- `/cf-scan` — scan with no additional context
-- `/cf-scan This is a Next.js e-commerce app with Stripe payments and PostgreSQL` — use description to guide scan
-- `/cf-scan Focus on the API layer and auth system` — narrow the scan focus
+- `{{cf:slash cf-scan}}` — scan with no additional context
+- `{{cf:slash cf-scan}} This is a Next.js e-commerce app with Stripe payments and PostgreSQL` — use description to guide scan
+- `{{cf:slash cf-scan}} Focus on the API layer and auth system` — narrow the scan focus
 
 When provided, include `$ARGUMENTS` in every explorer prompt so the scan is guided by the user's context.
 

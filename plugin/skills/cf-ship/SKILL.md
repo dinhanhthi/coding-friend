@@ -11,7 +11,7 @@ created: 2026-02-17
 updated: 2026-06-06
 ---
 
-# /cf-ship
+# {{cf:slash cf-ship}}
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
@@ -21,7 +21,7 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide & Flags
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-ship`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -46,7 +46,7 @@ If ANY check fails, stop and fix before proceeding.
 
 If there are uncommitted changes:
 
-1. Run the `/cf-commit` workflow (load the `cf-commit` skill)
+1. Run the `{{cf:slash cf-commit}}` workflow (load the `cf-commit` skill)
 2. Use `$ARGUMENTS` as commit hint if provided
 
 ### Step 3: Push

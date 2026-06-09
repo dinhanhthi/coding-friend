@@ -16,13 +16,13 @@ description: >
   (4) A substantial session ends with newly documented feature flows, non-obvious API behavior, or gotchas
   that would save significant time in a future session — save to features/.
   Do NOT auto-invoke for: trivial one-line fixes, simple config changes, purely educational exchanges
-  (use /cf-learn for those), or knowledge already obvious from reading the code.
-  Unlike /cf-learn (educational notes for humans), this saves project context for AI recall.
+  (use {{cf:slash cf-learn}} for those), or knowledge already obvious from reading the code.
+  Unlike {{cf:slash cf-learn}} (educational notes for humans), this saves project context for AI recall.
 created: 2026-02-17
 updated: 2026-06-06
 ---
 
-# /cf-remember
+# {{cf:slash cf-remember}}
 
 > **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
@@ -48,7 +48,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember`
+Run: `bash "{{cf:plugin_root}}/lib/load-custom-guide.sh" cf-remember`
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
@@ -163,7 +163,7 @@ existing_file_action: append
 - `tags`: 3-5 relevant keywords as array
 - When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `{{cf:agent_ref cf-writer}}` or `{{cf:agent_ref cf-writer-deep}}` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 5: Index in CF Memory (MANDATORY)
 
@@ -215,13 +215,13 @@ Show the user a 2-line summary:
 `$ARGUMENTS` is free-form user input. It can express:
 
 1. **A focus/filter** (most common) — the main idea, purpose, or requirement that narrows what to remember from the conversation.
-   - Example: `/cf-remember the auth flow` → filter conversation for auth-related knowledge
-   - Example: `/cf-remember why we chose Redis` → focus on that specific decision
-   - Example: `/cf-remember gotchas from the migration` → extract only gotchas related to migration
+   - Example: `{{cf:slash cf-remember}} the auth flow` → filter conversation for auth-related knowledge
+   - Example: `{{cf:slash cf-remember}} why we chose Redis` → focus on that specific decision
+   - Example: `{{cf:slash cf-remember}} gotchas from the migration` → extract only gotchas related to migration
 
 2. **An explicit topic name** — only when the user clearly specifies a filename or category.
-   - Example: `/cf-remember topic:caching-strategy` → use "caching-strategy" as the topic name
-   - Example: `/cf-remember save as conventions/api-naming` → use the explicit path
+   - Example: `{{cf:slash cf-remember}} topic:caching-strategy` → use "caching-strategy" as the topic name
+   - Example: `{{cf:slash cf-remember}} save as conventions/api-naming` → use the explicit path
 
 **Default behavior**: Always auto-detect the topic name from the filtered content. Only use `$ARGUMENTS` as the literal topic name when the user explicitly indicates it (e.g., with "topic:", "save as", "call it", "name it").
 
