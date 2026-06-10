@@ -28,3 +28,6 @@ jobs:
 
       - name: Verify generated Codex plugin
         run: npm run verify:codex-drift
+
+      - name: Lint placeholders and Codex artifact
+        run: npm run lint:codex

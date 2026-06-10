@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,7 @@ const CODEX_PATTERNS = [
     regex:
       /Codex dual-review flag|Step 2\.5: Spawn Codex review|Step 6\.5: Collect & normalize the Codex review|run-codex-review\.sh|normalize-codex-review\.sh|codex=(?:true|false)/g,
   },
+  { name: "Claude-only dev workflow", regex: /\bcf dev sync\b/g },
   { name: "unsupported agent tools key", regex: /^tools\s*=/gm },
 ];
 
@@ -78,11 +79,11 @@ function lineNumberForIndex(source, index) {
   return source.slice(0, index).split("\n").length;
 }
 
-async function findIssues(files, patterns) {
+async function findIssues(files, patterns, root = repoRoot) {
   const issues = [];
 
   for (const relativePath of files) {
-    const absolutePath = path.join(repoRoot, relativePath);
+    const absolutePath = path.join(root, relativePath);
     const raw = await readFile(absolutePath, "utf8");
     const searchable = stripFencedCode(raw);
 
@@ -102,24 +103,31 @@ async function findIssues(files, patterns) {
   return issues;
 }
 
-export async function findPlaceholderLintIssues() {
+export async function findPlaceholderLintIssues(root = repoRoot) {
   const pluginFiles = await collectInstructionFiles(
-    path.join(repoRoot, "plugin"),
+    path.join(root, "plugin"),
     "plugin",
   );
   return findIssues(
     [...pluginFiles, ...SHARED_MARKDOWN_FILES].sort(),
     SOURCE_PATTERNS,
+    root,
   );
 }
 
-export async function findCodexArtifactLintIssues() {
+export async function findCodexArtifactLintIssues(root = repoRoot) {
   const files = await collectInstructionFiles(
-    path.join(repoRoot, "plugin-codex"),
+    path.join(root, "plugin-codex"),
     "plugin-codex",
   );
-  files.push("plugin-codex/context/bootstrap.md");
-  return findIssues(files.sort(), CODEX_PATTERNS);
+  const bootstrapPath = "plugin-codex/context/bootstrap.md";
+  try {
+    await access(path.join(root, bootstrapPath));
+    files.push(bootstrapPath);
+  } catch {
+    // Fixture repos may not include a bootstrap context file.
+  }
+  return findIssues(files.sort(), CODEX_PATTERNS, root);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
