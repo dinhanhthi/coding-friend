@@ -160,7 +160,11 @@ export function codexPluginsCacheDir(): string {
 
 /** Codex Coding Friend installed plugin cache directory */
 export function codexInstalledPluginsPath(): string {
-  return join(codexPluginsCacheDir(), CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME);
+  return join(
+    codexPluginsCacheDir(),
+    CODEX_MARKETPLACE_NAME,
+    CODEX_PLUGIN_NAME,
+  );
 }
 
 /** Codex marketplace clone/snapshot directory */
