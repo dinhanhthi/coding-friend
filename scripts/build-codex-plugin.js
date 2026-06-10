@@ -2,6 +2,7 @@
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 const {
   agentMarkdownToToml: convertAgentMarkdownToToml,
 } = require("./lib/agent-md-to-toml.js");
@@ -26,6 +27,17 @@ const IGNORED_COPY_ENTRIES = new Set([
   ".DS_Store",
   "__tests__",
   "PLACEHOLDERS.md",
+]);
+// Claude-only files (relative to plugin/) that would ship as dead or
+// self-contradictory weight in the Codex artifact: the generated cf-review
+// forbids the nested-Codex flow, the generated cf-session routes to native
+// session controls, and task/memory hooks have Codex replacements.
+const CODEX_EXCLUDED_SOURCE_PATHS = new Set([
+  "hooks/memory-capture.sh",
+  "hooks/task-tracker.sh",
+  "skills/cf-review/scripts/normalize-codex-review.sh",
+  "skills/cf-review/scripts/run-codex-review.sh",
+  "skills/cf-session/scripts",
 ]);
 const CODEX_HOOK_EVENTS = new Set([
   "SessionStart",
@@ -303,7 +315,20 @@ function renderCodexFile(sourcePath, input) {
       .replace(
         / Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report \(set `review\.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable\)\./,
         "",
+      )
+      .replace(
+        /\n- \*\*After editing plugin files\?\*\* Run `cf dev sync` to copy changes to the cached version\./,
+        "",
       );
+  } else if (
+    normalizedPath.endsWith(
+      "/skills/cf-review-out/scripts/build-review-prompt.sh",
+    )
+  ) {
+    rendered = rendered.replace(
+      /paste the following prompt to Claude Code to collect the results/,
+      "paste the following prompt to Codex to collect the results",
+    );
   } else if (normalizedPath.endsWith("/skills/cf-review-out/SKILL.md")) {
     rendered = rendered.replace(
       /> \*\*Using Codex\?\*\*[\s\S]*?(?=\n\n)/,
@@ -327,15 +352,20 @@ async function copyRenderedFile(sourcePath, targetPath) {
   await fs.chmod(targetPath, mode);
 }
 
-async function copyRenderedTree(sourceDir, targetDir) {
+async function copyRenderedTree(sourceDir, targetDir, relativePrefix = "") {
   const entries = await fs.readdir(sourceDir, { withFileTypes: true });
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     if (IGNORED_COPY_ENTRIES.has(entry.name)) continue;
 
+    const relativePath = relativePrefix
+      ? `${relativePrefix}/${entry.name}`
+      : entry.name;
+    if (CODEX_EXCLUDED_SOURCE_PATHS.has(relativePath)) continue;
+
     const sourcePath = path.join(sourceDir, entry.name);
     const targetPath = path.join(targetDir, entry.name);
     if (entry.isDirectory()) {
-      await copyRenderedTree(sourcePath, targetPath);
+      await copyRenderedTree(sourcePath, targetPath, relativePath);
       continue;
     }
     if (entry.isFile()) {
@@ -379,6 +409,20 @@ function transformCodexHooks(hooksJson) {
       : `CF_HOST=codex ${rendered}`;
   };
 
+  // Codex surfaces file edits as `apply_patch` (with `Edit`/`Write` as
+  // documented matcher aliases); add the canonical name explicitly so the
+  // generated matchers do not depend on the alias behavior.
+  const renderMatcher = (matcher) => {
+    if (typeof matcher !== "string" || matcher === "") return matcher;
+    if (
+      /\b(?:Write|Edit)\b/.test(matcher) &&
+      !matcher.includes("apply_patch")
+    ) {
+      return `${matcher}|apply_patch`;
+    }
+    return matcher;
+  };
+
   for (const eventName of Object.keys(hooks).sort()) {
     if (!CODEX_HOOK_EVENTS.has(eventName)) continue;
 
@@ -405,6 +449,9 @@ function transformCodexHooks(hooksJson) {
         if (renderedHooks.length === 0) return null;
         return {
           ...entry,
+          ...(typeof entry.matcher === "string"
+            ? { matcher: renderMatcher(entry.matcher) }
+            : {}),
           hooks: renderedHooks,
         };
       })
@@ -513,18 +560,22 @@ async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
   await copyRenderedTree(
     path.join(pluginSourceDir, "skills"),
     path.join(codexPluginDir, "skills"),
+    "skills",
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "hooks"),
     path.join(codexPluginDir, "hooks"),
+    "hooks",
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "lib"),
     path.join(codexPluginDir, "lib"),
+    "lib",
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "context"),
     path.join(codexPluginDir, "context"),
+    "context",
   );
 
   for (const filename of ["README.md", "CHANGELOG.md"]) {
@@ -558,6 +609,24 @@ async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
     path.join(codexPluginDir, ".mcp.json"),
     stableJson(createCodexMcpConfig()),
   );
+
+  // Guard against silently no-op'd transforms: the drift check only proves
+  // the committed artifact matches the build output, not that the output is
+  // host-compatible. Fail the build itself on any unresolved reference.
+  const { findCodexArtifactLintIssues } = await import(
+    pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
+  );
+  const lintIssues = await findCodexArtifactLintIssues(repoRoot);
+  if (lintIssues.length > 0) {
+    const details = lintIssues
+      .map(
+        (issue) => `${issue.file}:${issue.line}: ${issue.type}: ${issue.value}`,
+      )
+      .join("\n");
+    throw new Error(
+      `Generated Codex plugin contains unresolved or host-incompatible references:\n${details}`,
+    );
+  }
 }
 
 if (require.main === module) {
