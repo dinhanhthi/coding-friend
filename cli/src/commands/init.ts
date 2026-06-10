@@ -1605,23 +1605,24 @@ function initCodexCommand(opts: InitOptions): void {
   if (!existsSync(agentsMdPath)) {
     writeFileSync(agentsMdPath, renderCodexAgentsMd(), "utf8");
     log.success("Created AGENTS.md.");
+    if (gitAvailable) {
+      ensureGitignoreEntry("AGENTS.md");
+    }
   } else {
     log.dim("AGENTS.md already exists; left unchanged.");
   }
 
-  if (gitAvailable) {
-    ensureGitignoreEntry("AGENTS.md");
-  }
-
-  writeCodexMemoryMcpConfig(memoryDir, codexConfigTomlPath());
-  log.success("Registered coding-friend-memory in ~/.codex/config.toml.");
+  // The memory MCP registration is project-scoped only (.codex/config.toml).
+  // A global entry would hold an absolute path to whichever project ran
+  // `cf init --agent codex` last, leaking that project's memory into every
+  // other Codex session.
   writeCodexAgentLimits(codexConfigTomlPath());
   log.success("Configured Codex agent depth for nested Coding Friend agents.");
 
   const projectCodexDir = join(process.cwd(), ".codex");
   const projectConfigPath = join(projectCodexDir, "config.toml");
   writeCodexMemoryMcpConfig(memoryDir, projectConfigPath);
-  log.success("Wrote project .codex/config.toml.");
+  log.success("Registered coding-friend-memory in project .codex/config.toml.");
 
   const agentSource = findCodexAgentSourceDir();
   if (agentSource) {
@@ -1641,7 +1642,7 @@ function initCodexCommand(opts: InitOptions): void {
     log.success("Marked this project trusted in ~/.codex/config.toml.");
   } else {
     log.dim(
-      "Project trust was not changed. To enable project-scoped Codex config, run: cf init --agent codex --trust-project",
+      "Project trust was not changed. The project-scoped memory MCP only loads once the project is trusted — run: cf init --agent codex --trust-project",
     );
   }
 

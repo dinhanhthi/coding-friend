@@ -9,6 +9,8 @@ import {
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
   isCodexPluginDisabled,
+  removeCodexMemoryMcpConfig,
+  removeDeployedCodexAgents,
   setCodexPluginEnabled,
   trustCodexProject,
   writeCodexAgentLimits,
@@ -85,6 +87,32 @@ describe("codex-config", () => {
     );
     expect(toml).toContain('[projects."/repo"]');
     expect(toml).toContain('trust_level = "trusted"');
+  });
+
+  it("removes the memory MCP table while preserving unrelated TOML", () => {
+    const file = tempFile();
+    writeFileSync(file, '[model]\nname = "gpt-5"\n');
+    writeCodexMemoryMcpConfig("/repo/docs/memory", file);
+
+    expect(removeCodexMemoryMcpConfig(file)).toBe(true);
+    const toml = readFileSync(file, "utf8");
+    expect(toml).toContain("[model]");
+    expect(toml).not.toContain("[mcp_servers.coding-friend-memory]");
+
+    expect(removeCodexMemoryMcpConfig(file)).toBe(false);
+  });
+
+  it("removes only deployed cf-*.toml agents", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cf-codex-agents-"));
+    writeFileSync(join(dir, "cf-explorer.toml"), 'name = "cf-explorer"\n');
+    writeFileSync(join(dir, "cf-writer.toml"), 'name = "cf-writer"\n');
+    writeFileSync(join(dir, "user-agent.toml"), 'name = "user-agent"\n');
+
+    expect(removeDeployedCodexAgents(dir)).toBe(2);
+    expect(readFileSync(join(dir, "user-agent.toml"), "utf8")).toContain(
+      "user-agent",
+    );
+    expect(removeDeployedCodexAgents(dir)).toBe(0);
   });
 
   it("writes Codex agent depth without clobbering existing agent config", () => {

@@ -13,6 +13,8 @@ import {
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import {
+  removeCodexMemoryMcpConfig,
+  removeDeployedCodexAgents,
   setCodexPluginEnabled,
   CODEX_MARKETPLACE_NAME,
 } from "../lib/codex-config.js";
@@ -397,6 +399,19 @@ function uninstallCodexCommand(opts: UninstallOptions): void {
 
   setCodexPluginEnabled(false);
   log.success("Disabled coding-friend in ~/.codex/config.toml.");
+
+  const removedAgents = removeDeployedCodexAgents();
+  if (removedAgents > 0) {
+    log.success(
+      `Removed ${removedAgents} deployed Coding Friend agent definition(s) from ~/.codex/agents/.`,
+    );
+  }
+
+  if (removeCodexMemoryMcpConfig()) {
+    log.success(
+      "Removed coding-friend-memory registration from ~/.codex/config.toml.",
+    );
+  }
 
   if (opts.removeMarketplace) {
     if (!commandExists("codex")) {

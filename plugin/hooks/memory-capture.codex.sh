@@ -46,28 +46,58 @@ function readJson(filePath) {
   }
 }
 
-function walk(dir, out = []) {
-  if (!fs.existsSync(dir)) return out;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      walk(full, out);
-    } else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
-      out.push(full);
+// Sessions live under CODEX_HOME/sessions/YYYY/MM/DD/*.jsonl. This runs on a
+// synchronous PreCompact hook, so walk date directories newest-first and stop
+// at the first match instead of reading the whole tree.
+function listDirsDesc(dir) {
+  try {
+    return fs
+      .readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+      .reverse();
+  } catch {
+    return [];
+  }
+}
+
+function findTranscriptInDay(dayDir, sessionId) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dayDir, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  const files = entries.filter(
+    (entry) => entry.isFile() && entry.name.endsWith(".jsonl"),
+  );
+  // Codex rollout filenames usually embed the session id — match those
+  // without reading file contents.
+  const byName = files.find((entry) => entry.name.includes(sessionId));
+  if (byName) return path.join(dayDir, byName.name);
+  for (const entry of files) {
+    const full = path.join(dayDir, entry.name);
+    try {
+      if (fs.readFileSync(full, "utf8").includes(sessionId)) return full;
+    } catch {
+      // ignore unreadable files
     }
   }
-  return out;
+  return null;
 }
 
 function findTranscript(sessionId) {
   if (!sessionId) return null;
   const sessionsDir = path.join(process.env.CODEX_HOME || "", "sessions");
-  for (const filePath of walk(sessionsDir)) {
-    try {
-      const content = fs.readFileSync(filePath, "utf8");
-      if (content.includes(sessionId)) return filePath;
-    } catch {
-      // ignore unreadable files
+  for (const year of listDirsDesc(sessionsDir)) {
+    const yearDir = path.join(sessionsDir, year);
+    for (const month of listDirsDesc(yearDir)) {
+      const monthDir = path.join(yearDir, month);
+      for (const day of listDirsDesc(monthDir)) {
+        const found = findTranscriptInDay(path.join(monthDir, day), sessionId);
+        if (found) return found;
+      }
     }
   }
   return null;
