@@ -227,7 +227,7 @@ For example, if you are Gemini: \`${DOCS_DIR}/reviews/${LABEL}-result-gemini.md\
 
 ## After You Finish
 
-Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Claude Code to collect the results:
+Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Codex to collect the results:
 
 \`\`\`
 $cf-review-in ${LABEL}

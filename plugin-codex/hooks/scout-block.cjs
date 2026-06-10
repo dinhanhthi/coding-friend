@@ -220,7 +220,8 @@ function main() {
     // Load user ignore file
     let userContent = "";
     const pluginRoot =
-      process.env.PLUGIN_ROOT || path.resolve(path.dirname(__filename), "..");
+      process.env.PLUGIN_ROOT ||
+      path.resolve(path.dirname(__filename), "..");
     const localIgnore = ".coding-friend/ignore";
     const pluginIgnore = path.join(pluginRoot, ".coding-friend/ignore");
 
