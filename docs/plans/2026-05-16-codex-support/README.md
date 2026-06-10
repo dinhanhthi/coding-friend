@@ -35,18 +35,18 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 
 ## Progress
 
-| Status     | Phase                                   | File                                                           | Tasks   |
-| ---------- | --------------------------------------- | -------------------------------------------------------------- | ------- |
-| ✅ DONE    | Phase 0: Smoke tests & spike (3 GATING) | [phase-0-smoke-tests.md](./phase-0-smoke-tests.md)             | 7 tasks |
-| ✅ DONE    | Phase 1: Host abstraction               | [phase-1-host-abstraction.md](./phase-1-host-abstraction.md)   | 4 tasks |
-| ✅ DONE    | Phase 2: Placeholder convention + sweep | [phase-2-placeholders.md](./phase-2-placeholders.md)           | 3 tasks |
-| ✅ DONE    | Phase 3: Manifests + build pipeline     | [phase-3-manifests-build.md](./phase-3-manifests-build.md)     | 4 tasks |
-| ✅ DONE    | Phase 4: CLI Codex commands             | [phase-4-cli-commands.md](./phase-4-cli-commands.md)           | 6 tasks |
-| ✅ DONE    | Phase 5: Hooks port                     | [phase-5-hooks-port.md](./phase-5-hooks-port.md)               | 5 tasks |
-| ✅ DONE    | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
-| ✅ DONE    | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
-| ✅ DONE    | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
-| ✅ DONE    | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
+| Status         | Phase                                   | File                                                           | Tasks   |
+| -------------- | --------------------------------------- | -------------------------------------------------------------- | ------- |
+| ✅ DONE        | Phase 0: Smoke tests & spike (3 GATING) | [phase-0-smoke-tests.md](./phase-0-smoke-tests.md)             | 7 tasks |
+| ✅ DONE        | Phase 1: Host abstraction               | [phase-1-host-abstraction.md](./phase-1-host-abstraction.md)   | 4 tasks |
+| ✅ DONE        | Phase 2: Placeholder convention + sweep | [phase-2-placeholders.md](./phase-2-placeholders.md)           | 3 tasks |
+| ✅ DONE        | Phase 3: Manifests + build pipeline     | [phase-3-manifests-build.md](./phase-3-manifests-build.md)     | 4 tasks |
+| ✅ DONE        | Phase 4: CLI Codex commands             | [phase-4-cli-commands.md](./phase-4-cli-commands.md)           | 6 tasks |
+| ✅ DONE        | Phase 5: Hooks port                     | [phase-5-hooks-port.md](./phase-5-hooks-port.md)               | 5 tasks |
+| ✅ DONE        | Phase 6: Agents port                    | [phase-6-agents-port.md](./phase-6-agents-port.md)             | 3 tasks |
+| ✅ DONE        | Phase 7: MCP + memory cohabitation      | [phase-7-mcp-memory.md](./phase-7-mcp-memory.md)               | 2 tasks |
+| ✅ DONE        | Phase 8: Tests                          | [phase-8-tests.md](./phase-8-tests.md)                         | 4 tasks |
+| ✅ DONE        | Phase 9: Docs & website                 | [phase-9-docs-website.md](./phase-9-docs-website.md)           | 5 tasks |
 | ⏸ RELEASE GATE | Phase 10: Release plumbing              | [phase-10-release-plumbing.md](./phase-10-release-plumbing.md) | 4 tasks |
 
 **Total: 47 tasks across 11 phases.** (Phase 0 has 3 GATING probes that may force rewrites of Phase 4.1 or Phase 6 before implementation begins.)
@@ -93,3 +93,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 ## Next Steps
 
 After implementation: `/cf-review` → `/cf-commit` → tag `v$NEW` + `codex-v$NEW` together.
+
+`/cf-review` ran on 2026-06-10 (DEEP); all findings were fixed. See
+[NEXT-STEPS.md](./NEXT-STEPS.md) for the post-review checklist: commit the
+fixes, run the live-Codex probes, then proceed to the release gate.
