@@ -42,7 +42,7 @@ async function createFixtureRepo() {
       "",
       'Use /cf-review and the Agent tool with `subagent_type: "coding-friend:cf-writer"`.',
       "",
-      "model: keep this body example",
+      "The model: keep this body example",
       "",
     ].join("\n"),
   );
@@ -370,7 +370,7 @@ test("builds Codex plugin fixture idempotently", async () => {
   const skillFrontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
   assert.ok(skillFrontmatter);
   assert.doesNotMatch(skillFrontmatter[1], /^model:|^allowed-tools:/m);
-  assert.match(skill, /model: keep this body example/);
+  assert.match(skill, /The model: keep this body example/);
 
   const shellMode = (
     await fs.stat(path.join(codexPluginDir, "hooks", "privacy-block.sh"))
