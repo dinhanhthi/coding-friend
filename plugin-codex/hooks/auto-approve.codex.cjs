@@ -17,7 +17,49 @@ const {
   buildReason,
   classifyByRules,
   extractRmPaths,
+  isInProjectDir,
 } = require("./auto-approve.cjs");
+
+// Codex edits files through `apply_patch`; its targets live inside the patch
+// envelope (https://github.com/openai/codex, apply_patch_tool_instructions).
+// Tolerate leading whitespace and casing so the parser matches anything Codex
+// would actually honor.
+const APPLY_PATCH_HEADER_PATTERN =
+  /^[ \t]*\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gim;
+// A broader match for "this line is a file operation header" — used only to
+// detect headers we failed to extract a path from, so a missed header forces a
+// defer instead of a blanket allow.
+const APPLY_PATCH_OP_PATTERN =
+  /^[ \t]*\*\*\*[ \t]+(?:Add|Update|Delete|Move)\b/gim;
+
+function extractApplyPatchPaths(command) {
+  if (typeof command !== "string") return [];
+  const paths = [];
+  for (const match of command.matchAll(APPLY_PATCH_HEADER_PATTERN)) {
+    paths.push(match[1].trim());
+  }
+  return paths;
+}
+
+function countApplyPatchOps(command) {
+  if (typeof command !== "string") return 0;
+  return [...command.matchAll(APPLY_PATCH_OP_PATTERN)].length;
+}
+
+/**
+ * Mirror the Write/Edit rule for Codex `apply_patch`: allow only when every
+ * touched path stays inside the project directory, otherwise defer to Codex's
+ * native approval. Fail safe: an unparseable patch (no paths), or one whose
+ * operation-header count does not match the paths we extracted (a header we
+ * could not parse a path from), defers rather than allowing an unchecked write.
+ */
+function classifyApplyPatch(toolInput, projectDir) {
+  const command = toolInput && toolInput.command;
+  const paths = extractApplyPatchPaths(command);
+  if (paths.length === 0) return "unknown";
+  if (countApplyPatchOps(command) !== paths.length) return "unknown";
+  return paths.every((p) => isInProjectDir(p, projectDir)) ? "allow" : "ask";
+}
 
 function readConfigFile(filePath, label) {
   if (!fs.existsSync(filePath)) return {};
@@ -78,7 +120,10 @@ function codexDecision(behavior, message) {
 }
 
 function reasonContext(toolName, toolInput, decision) {
-  if (decision === "allow" && (toolName === "Write" || toolName === "Edit")) {
+  if (
+    decision === "allow" &&
+    (toolName === "Write" || toolName === "Edit" || toolName === "apply_patch")
+  ) {
     return { source: "working-dir" };
   }
   if (decision === "allow" && toolName === "Bash") {
@@ -126,12 +171,10 @@ function main() {
       return;
     }
 
-    const decision = classifyByRules(
-      toolName,
-      toolInput,
-      projectDir,
-      allowExtra,
-    );
+    const decision =
+      toolName === "apply_patch"
+        ? classifyApplyPatch(toolInput, projectDir)
+        : classifyByRules(toolName, toolInput, projectDir, allowExtra);
     if (decision !== "allow" && decision !== "deny") {
       writeNoDecision();
       return;
@@ -161,5 +204,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  classifyApplyPatch,
+  extractApplyPatchPaths,
   loadCodexAutoApproveConfig,
 };

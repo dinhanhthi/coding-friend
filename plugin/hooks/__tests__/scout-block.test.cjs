@@ -219,6 +219,34 @@ describe("extractPaths", () => {
     expect(extractPaths({ command: "git status" })).toEqual([]);
   });
 
+  it("extracts targets from apply_patch envelopes in command", () => {
+    const patch = [
+      "*** Begin Patch",
+      "*** Update File: src/app.ts",
+      "*** Move to: src/renamed.ts",
+      "@@",
+      "-a",
+      "+b",
+      "*** Delete File: docs/old.md",
+      "*** End Patch",
+    ].join("\n");
+    expect(extractPaths({ command: patch })).toEqual([
+      "src/app.ts",
+      "src/renamed.ts",
+      "docs/old.md",
+    ]);
+  });
+
+  it("extracts apply_patch headers with leading whitespace", () => {
+    const patch = [
+      "*** Begin Patch",
+      "  *** Add File: config/.env",
+      "+SECRET=1",
+      "*** End Patch",
+    ].join("\n");
+    expect(extractPaths({ command: patch })).toEqual(["config/.env"]);
+  });
+
   it("returns empty for null/undefined", () => {
     expect(extractPaths(null)).toEqual([]);
     expect(extractPaths(undefined)).toEqual([]);
