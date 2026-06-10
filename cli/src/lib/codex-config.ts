@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "fs";
 import { basename, dirname, join, resolve } from "path";
@@ -146,6 +147,40 @@ export function isCodexPluginDisabled(
 ): boolean {
   const table = getTable(readToml(configPath), CODEX_PLUGIN_TABLE);
   return table.some((line) => /^\s*enabled\s*=\s*false\s*(?:#.*)?$/.test(line));
+}
+
+function removeTable(content: string, tableName: string): string {
+  const lines = content.split(/\n/);
+  const range = findTableRange(lines, tableHeader(tableName));
+  if (!range) return content;
+  let start = range.start;
+  // Also drop blank lines directly above the removed table header.
+  while (start > 0 && lines[start - 1].trim() === "") start -= 1;
+  lines.splice(start, range.end - start);
+  return `${lines.join("\n").replace(/\n*$/, "")}\n`;
+}
+
+export function removeCodexMemoryMcpConfig(
+  configPath = codexConfigTomlPath(),
+): boolean {
+  const content = readToml(configPath);
+  const next = removeTable(content, CODEX_MEMORY_MCP_TABLE);
+  if (next === content) return false;
+  writeToml(configPath, next);
+  return true;
+}
+
+export function removeDeployedCodexAgents(
+  targetDir = codexAgentsDir(),
+): number {
+  if (!existsSync(targetDir)) return 0;
+  let removed = 0;
+  for (const entry of readdirSync(targetDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !/^cf-.*\.toml$/.test(entry.name)) continue;
+    rmSync(join(targetDir, entry.name));
+    removed += 1;
+  }
+  return removed;
 }
 
 export function writeCodexMemoryMcpConfig(

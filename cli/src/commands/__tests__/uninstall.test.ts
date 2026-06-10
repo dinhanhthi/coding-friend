@@ -35,6 +35,8 @@ vi.mock("../../lib/prompt-utils.js", () => ({
 
 vi.mock("../../lib/codex-config.js", () => ({
   CODEX_MARKETPLACE_NAME: "coding-friend-marketplace",
+  removeCodexMemoryMcpConfig: vi.fn(() => true),
+  removeDeployedCodexAgents: vi.fn(() => 0),
   setCodexPluginEnabled: vi.fn(),
 }));
 
@@ -595,6 +597,17 @@ describe("uninstallCommand", () => {
     expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(false);
     expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
     expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("cleans up deployed Codex agents and the memory MCP registration", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    const { removeCodexMemoryMcpConfig, removeDeployedCodexAgents } =
+      await import("../../lib/codex-config.js");
+
+    await uninstallCommand({ agent: "codex" });
+
+    expect(vi.mocked(removeDeployedCodexAgents)).toHaveBeenCalled();
+    expect(vi.mocked(removeCodexMemoryMcpConfig)).toHaveBeenCalled();
   });
 
   it("optionally removes Codex marketplace", async () => {

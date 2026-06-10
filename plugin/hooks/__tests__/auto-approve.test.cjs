@@ -1848,15 +1848,15 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
 
   // Regression: \s* must NOT consume newline (Codex finding)
   it("rejects newline before >/dev/null hiding command separator", () => {
-    expect(
-      isSafeCompoundCommand("echo ok\n>/dev/null sh -c 'rm -rf /'"),
-    ).toBe(false);
+    expect(isSafeCompoundCommand("echo ok\n>/dev/null sh -c 'rm -rf /'")).toBe(
+      false,
+    );
   });
 
   it("rejects newline before 2>/dev/null hiding command separator", () => {
-    expect(
-      isSafeCompoundCommand("echo ok\n2>/dev/null sh -c 'rm -rf /'"),
-    ).toBe(false);
+    expect(isSafeCompoundCommand("echo ok\n2>/dev/null sh -c 'rm -rf /'")).toBe(
+      false,
+    );
   });
 
   // Regression: >>/dev/null (append) must remain rejected
