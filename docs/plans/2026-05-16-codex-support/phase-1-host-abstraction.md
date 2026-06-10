@@ -6,12 +6,12 @@
 
 ## Progress
 
-| Status  | Task                                                                       |
-| ------- | -------------------------------------------------------------------------- |
-| ✅ DONE | 1.1 Create `cli/src/lib/host.ts`                                           |
-| ✅ DONE | 1.2 Extend `cli/src/lib/paths.ts` with `codex*Path()` helpers              |
-| ✅ DONE | 1.3 Extend `cli/src/lib/prompt-utils.ts` with host flags in ScopeFlags     |
-| ✅ DONE | 1.4 Add `cf-paths.sh` host adapter for hook scripts                        |
+| Status  | Task                                                                   |
+| ------- | ---------------------------------------------------------------------- |
+| ✅ DONE | 1.1 Create `cli/src/lib/host.ts`                                       |
+| ✅ DONE | 1.2 Extend `cli/src/lib/paths.ts` with `codex*Path()` helpers          |
+| ✅ DONE | 1.3 Extend `cli/src/lib/prompt-utils.ts` with host flags in ScopeFlags |
+| ✅ DONE | 1.4 Add `cf-paths.sh` host adapter for hook scripts                    |
 
 ## Tasks
 

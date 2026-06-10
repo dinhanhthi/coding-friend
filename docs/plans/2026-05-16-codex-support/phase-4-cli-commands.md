@@ -8,14 +8,14 @@
 
 ## Progress
 
-| Status  | Task                                                |
-| ------- | --------------------------------------------------- |
-| ✅ DONE | 4.1 `cf install --agent codex`                      |
-| ✅ DONE | 4.2 `cf uninstall --agent codex`                    |
-| ✅ DONE | 4.3 `cf enable --agent codex` / `cf disable --agent codex` |
-| ✅ DONE | 4.4 `cf update --agent codex`                       |
+| Status  | Task                                                        |
+| ------- | ----------------------------------------------------------- |
+| ✅ DONE | 4.1 `cf install --agent codex`                              |
+| ✅ DONE | 4.2 `cf uninstall --agent codex`                            |
+| ✅ DONE | 4.3 `cf enable --agent codex` / `cf disable --agent codex`  |
+| ✅ DONE | 4.4 `cf update --agent codex`                               |
 | ✅ DONE | 4.5 `cf init --agent codex` + `cf permission --agent codex` |
-| ✅ DONE | 4.6 Register host flags in commander entrypoint     |
+| ✅ DONE | 4.6 Register host flags in commander entrypoint             |
 
 ## Tasks
 

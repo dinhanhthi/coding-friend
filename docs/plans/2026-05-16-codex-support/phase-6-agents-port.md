@@ -6,11 +6,11 @@
 
 ## Progress
 
-| Status  | Task                                              |
-| ------- | ------------------------------------------------- |
-| ✅ DONE | 6.1 Write MD→TOML agent converter                 |
+| Status  | Task                                                    |
+| ------- | ------------------------------------------------------- |
+| ✅ DONE | 6.1 Write MD→TOML agent converter                       |
 | ✅ DONE | 6.2 Generate and deploy `plugin-codex/agents/cf-*.toml` |
-| ✅ DONE | 6.3 Render Codex-native agent dispatch instructions |
+| ✅ DONE | 6.3 Render Codex-native agent dispatch instructions     |
 
 ## Tasks
 

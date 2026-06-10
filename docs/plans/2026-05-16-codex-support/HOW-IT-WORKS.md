@@ -18,10 +18,14 @@ release candidate, not the original proposal.
    does not expose non-interactive plugin installation.
 4. In each project, run `cf init --agent codex`.
    - Creates the Coding Friend docs folders and a root `AGENTS.md`.
-   - Registers the shared memory MCP server in global and project Codex config.
+   - Registers the shared memory MCP server in the **project**
+     `.codex/config.toml` only. A global registration would point at one
+     project's absolute memory path and leak it into every other Codex
+     session, so it is intentionally not written.
    - Deploys project custom agents under `.codex/agents/`.
    - Sets `agents.max_depth = 2` globally for Coding Friend's nested review flow.
    - Leaves project trust unchanged unless `--trust-project` is passed.
+     Without project trust the project-scoped memory MCP does not load.
 5. Start a new Codex thread, review plugin hooks with `/hooks`, and invoke
    skills with `$cf-*` or select them from `/skills`.
 
@@ -44,26 +48,32 @@ host is available to the other through the same MCP backend.
 docs or memory. After `cf install --agent codex` and
 `cf init --agent codex`, the existing project memory remains usable.
 
+`cf uninstall --agent codex` mirrors this for Codex: it disables the plugin,
+removes deployed `~/.codex/agents/cf-*.toml`, and drops any
+`coding-friend-memory` entry from the global config. It leaves
+`agents.max_depth`, project trust entries, and project-local `.codex/` files
+in place.
+
 ## 2. Feature mapping
 
-| Feature | Claude Code | Codex implementation |
-| --- | --- | --- |
-| Skills | `/cf-*` | `$cf-*`, `/skills`, and description-based implicit activation |
-| Custom agents | Claude Markdown agents and `Agent` dispatch | Generated TOML agents deployed to `~/.codex/agents/` or `.codex/agents/`; prompts explicitly ask Codex to spawn the named custom agent |
-| Agent model tiers | `haiku`, `sonnet`, `opus`, `inherit` | Generated `model_reasoning_effort`: low, medium, high, or inherited parent defaults; no invalid Anthropic model IDs |
-| Hooks | Claude plugin `hooks.json` | Generated plugin-bundled Codex hooks, reviewed through `/hooks`; task-only events are omitted |
-| Memory MCP | Claude MCP registration | `cf init --agent codex` writes `[mcp_servers.coding-friend-memory]` to Codex config |
-| Auto-approve | Rules plus Sonnet classifier | Separate `autoApproveCodex` opt-in; deterministic allow/deny only, unknown actions defer to Codex |
-| Memory capture | `PreCompact` | Codex `PreCompact` with Codex transcript parsing |
-| Project-rule memory sync | `CLAUDE.md` | `AGENTS.md`; dual-host projects update both instruction files |
-| Reviews | CF specialists plus optional external Codex second opinion | Native CF specialist subagents; `--with-codex` is ignored because the workflow already runs inside Codex |
-| Parallel plans | Claude background agent calls | Codex parallel subagent request and wait; scheduling remains host-controlled |
-| Sessions | CF's Claude session save/load | Generated `$cf-session` routes to native `/resume`, `/fork`, `codex resume`, and `codex fork` |
-| Statusline | CF shell renderer with live counters | Native `/statusline` built-in fields; CF-specific live counters are unavailable |
-| Session status | `cf status` plus Claude UI | Native `/status` for current Codex session details; no CF aggregate Codex status wrapper |
-| Permissions | `cf permission` manages Claude rules | `cf permission --agent codex` only toggles deterministic CF auto-approve; native `/permissions` owns Codex sandbox posture |
-| Generic MCP administration | Existing CF/Claude commands | Native `codex mcp` and `/mcp`; project memory registration remains automated by `cf init` |
-| Plugin updates | Claude marketplace auto-update | `cf update --agent codex` runs `codex plugin marketplace upgrade`; no automatic session-start update |
+| Feature                    | Claude Code                                                | Codex implementation                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skills                     | `/cf-*`                                                    | `$cf-*`, `/skills`, and description-based implicit activation                                                                                  |
+| Custom agents              | Claude Markdown agents and `Agent` dispatch                | Generated TOML agents deployed to `~/.codex/agents/` or `.codex/agents/`; prompts explicitly ask Codex to spawn the named custom agent         |
+| Agent model tiers          | `haiku`, `sonnet`, `opus`, `inherit`                       | Generated `model_reasoning_effort`: low, medium, high, or inherited parent defaults; no invalid Anthropic model IDs                            |
+| Hooks                      | Claude plugin `hooks.json`                                 | Generated plugin-bundled Codex hooks, reviewed through `/hooks`; task-only events are omitted                                                  |
+| Memory MCP                 | Claude MCP registration                                    | `cf init --agent codex` writes `[mcp_servers.coding-friend-memory]` to the project `.codex/config.toml` (requires project trust)               |
+| Auto-approve               | Rules plus Sonnet classifier                               | Separate `autoApproveCodex` opt-in; deterministic allow/deny only (including `apply_patch` working-dir checks), unknown actions defer to Codex |
+| Memory capture             | `PreCompact`                                               | Codex `PreCompact` with Codex transcript parsing                                                                                               |
+| Project-rule memory sync   | `CLAUDE.md`                                                | `AGENTS.md`; dual-host projects update both instruction files                                                                                  |
+| Reviews                    | CF specialists plus optional external Codex second opinion | Native CF specialist subagents; `--with-codex` is ignored because the workflow already runs inside Codex                                       |
+| Parallel plans             | Claude background agent calls                              | Codex parallel subagent request and wait; scheduling remains host-controlled                                                                   |
+| Sessions                   | CF's Claude session save/load                              | Generated `$cf-session` routes to native `/resume`, `/fork`, `codex resume`, and `codex fork`                                                  |
+| Statusline                 | CF shell renderer with live counters                       | Native `/statusline` built-in fields; CF-specific live counters are unavailable                                                                |
+| Session status             | `cf status` plus Claude UI                                 | Native `/status` for current Codex session details; no CF aggregate Codex status wrapper                                                       |
+| Permissions                | `cf permission` manages Claude rules                       | `cf permission --agent codex` only toggles deterministic CF auto-approve; native `/permissions` owns Codex sandbox posture                     |
+| Generic MCP administration | Existing CF/Claude commands                                | Native `codex mcp` and `/mcp`; project memory registration remains automated by `cf init`                                                      |
+| Plugin updates             | Claude marketplace auto-update                             | `cf update --agent codex` runs `codex plugin marketplace upgrade`; no automatic session-start update                                           |
 
 Lifecycle commands with host routing are:
 
@@ -96,9 +106,18 @@ published Claude plugin.
 - Claude's external Codex second-review branch is removed from Codex review.
 - Markdown agents become TOML with Codex reasoning effort settings.
 - Unsupported task hook events and hook `async` fields are removed.
+- Hook matchers containing `Write`/`Edit` gain an explicit `apply_patch`
+  alternative.
+- Claude-only files (Claude session scripts, the nested-Codex review
+  scripts, `task-tracker.sh`, the Claude memory-capture hook) are excluded
+  from the artifact.
 
-The source and artifact are guarded by tests, a tracked pre-commit hook, and
-the `codex-drift` CI workflow.
+The build fails if the generated artifact contains unresolved placeholders or
+host-incompatible references (`scripts/placeholder-lint.mjs`). The source and
+artifact are additionally guarded by tests (`npm run test:scripts`, run in the
+`tests` CI workflow), a tracked pre-commit hook, and the `codex-drift` CI
+workflow (which also runs `npm run lint:codex`). The drift check fails on both
+modified and untracked artifact files.
 
 ### 3.3 Shared and forked code
 

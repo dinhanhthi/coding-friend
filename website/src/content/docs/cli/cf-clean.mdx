@@ -22,7 +22,7 @@ keywords:
 cf clean
 ```
 
-No flags or arguments. The command is fully interactive — it shows a checkbox list of directories that contain content, lets you pick an age cutoff, then asks for confirmation per directory before deleting anything.
+No flags or arguments. The command is fully interactive — it loops over the directories that contain content one at a time: pick a directory, pick an age cutoff for it, confirm, and repeat until you choose **Done (exit)**.
 
 ## Directories
 
@@ -43,14 +43,14 @@ All paths respect your `docsDir` config setting. The `memory` directory also res
 ## Behavior
 
 1. **Banner** — prints a header so you know which command is running.
-2. **Checkbox selection** — shows only directories that exist and have content. Each option displays the directory name and a file count, e.g. `context — 3 files`.
-3. **Date range prompt** — pick an age cutoff applied to every selected directory:
+2. **Directory selection (loop)** — shows only directories that exist and have content, one pick at a time. Each option displays the directory name and a file count, e.g. `context — 3 files`, plus a **Done (exit)** option to finish. File counts are refreshed after every round.
+3. **Date range prompt** — pick an age cutoff for the selected directory:
    - More than 1 day / 3 days / 1 week / 1 month / 1 year
    - Before a specific date (`YYYY-MM-DD`)
    - Clean all (no date filter)
-4. **Per-directory confirmation** — for each selected directory, the command prints its path and the chosen range, then asks you to confirm deletion of matching contents. The default answer is **No** (safe by default).
-5. **Clearing** — only entries that match the date range are deleted. The top-level folder itself is preserved.
-6. **Summary** — prints the total number of files removed and a per-directory breakdown.
+4. **Confirmation** — the command prints the directory path and the chosen range, then asks you to confirm deletion of matching contents. The default answer is **No** (safe by default).
+5. **Clearing** — only entries that match the date range are deleted. The top-level folder itself is preserved. The loop then returns to step 2 so you can clean another directory with a different cutoff.
+6. **Summary** — after you exit the loop, prints the total number of files removed and a per-directory breakdown.
 
 If no directories have content, the command prints `Nothing to clean.` and exits.
 

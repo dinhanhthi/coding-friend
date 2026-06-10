@@ -13,7 +13,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Read|Write|Edit|Glob|Grep",
+        "matcher": "Read|Write|Edit|Glob|Grep|apply_patch",
         "hooks": [
           {
             "type": "command",

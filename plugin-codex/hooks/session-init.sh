@@ -26,9 +26,12 @@ trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FIL
 
 PLUGIN_ROOT="${PLUGIN_ROOT:-${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
+# Only CODEX_SESSION_ID is session-scoped evidence of the running host.
+# CODEX_HOME is a profile-scoped customization a dual-host user may export
+# globally, so it must not flip Claude sessions to codex.
 CF_HOST="${CF_HOST:-}"
 if [ -z "$CF_HOST" ]; then
-  if [ -n "${CODEX_SESSION_ID:-}" ] || [ -n "${CODEX_HOME:-}" ]; then
+  if [ -n "${CODEX_SESSION_ID:-}" ]; then
     CF_HOST="codex"
   else
     CF_HOST="claude"

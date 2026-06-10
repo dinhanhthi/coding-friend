@@ -6,13 +6,13 @@
 
 ## Progress
 
-| Status  | Task                                                                 |
-| ------- | -------------------------------------------------------------------- |
-| ✅ DONE | 5.1 Update `session-init.sh` to be host-agnostic                     |
-| ✅ DONE | 5.2 Fork `auto-approve.codex.cjs` for PermissionRequest schema       |
+| Status  | Task                                                                  |
+| ------- | --------------------------------------------------------------------- |
+| ✅ DONE | 5.1 Update `session-init.sh` to be host-agnostic                      |
+| ✅ DONE | 5.2 Fork `auto-approve.codex.cjs` for PermissionRequest schema        |
 | ✅ DONE | 5.3 Fork `memory-capture.codex.sh` using PreCompact + transcript path |
-| ✅ DONE | 5.4 Port agent tracker; keep task tracker Claude-only                |
-| ✅ DONE | 5.5 Update `hooks.json` build to emit Codex-only event registrations |
+| ✅ DONE | 5.4 Port agent tracker; keep task tracker Claude-only                 |
+| ✅ DONE | 5.5 Update `hooks.json` build to emit Codex-only event registrations  |
 
 ## Tasks
 
