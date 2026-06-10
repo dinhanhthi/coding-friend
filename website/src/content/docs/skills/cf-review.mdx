@@ -136,7 +136,12 @@ How it works:
 Enable it by default for every review (including the auto-triggered ones from `/cf-plan`, `/cf-fix`, `/cf-optimize`) by setting `review.withCodex: true` in [`.coding-friend/config.json`](/docs/configuration/config-json/).
 
 <Callout type="info" title="Graceful fallback">
-  If Codex is not installed or not logged in, `/cf-review --with-codex` prints a warning and continues with a Claude-only review — it never blocks. This is the automated alternative to the manual [`/cf-review-out`](/docs/skills/cf-review-out/) + [`/cf-review-in`](/docs/skills/cf-review-in/) flow, which remains the path for other external AIs (Gemini, ChatGPT) or human reviewers.
+  If Codex is not installed or not logged in, `/cf-review --with-codex` prints a
+  warning and continues with a Claude-only review — it never blocks. This is the
+  automated alternative to the manual
+  [`/cf-review-out`](/docs/skills/cf-review-out/) +
+  [`/cf-review-in`](/docs/skills/cf-review-in/) flow, which remains the path for
+  other external AIs (Gemini, ChatGPT) or human reviewers.
 </Callout>
 
 ## Auto-Triggered
