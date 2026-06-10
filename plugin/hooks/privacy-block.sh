@@ -35,13 +35,36 @@ fi
 # Read tool input from stdin
 INPUT=$(cat)
 
-# Extract file path from tool input
+# Extract path-like fields. file_path and pattern are simple values, so a grep
+# is enough. The command field (Codex apply_patch) carries a JSON-escaped patch
+# whose embedded `\"` quotes truncate a naive `"[^"]*"` capture and hide every
+# header after the first quoted hunk — so when it is present, parse the JSON
+# with node to recover the full command and extract the patch target paths.
 FILE_PATH=$(printf '%s' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
-COMMAND=$(printf '%s' "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 PATTERN=$(printf '%s' "$INPUT" | grep -o '"pattern"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"pattern"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 
+PATCH_PATHS=""
+if printf '%s' "$INPUT" | grep -q '"command"'; then
+  PATCH_PATHS=$(printf '%s' "$INPUT" | node -e '
+    let s = "";
+    process.stdin.on("data", (d) => (s += d));
+    process.stdin.on("end", () => {
+      try {
+        const j = JSON.parse(s);
+        const cmd = String((j.tool_input && j.tool_input.command) || "");
+        const re =
+          /^[ \t]*\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gim;
+        const out = [];
+        let m;
+        while ((m = re.exec(cmd))) out.push(m[1].trim());
+        process.stdout.write(out.join("\n"));
+      } catch {}
+    });
+  ' 2>/dev/null || true)
+fi
+
 # Collect all paths to check
-PATHS_TO_CHECK="$FILE_PATH $COMMAND $PATTERN"
+PATHS_TO_CHECK="$FILE_PATH $PATTERN $PATCH_PATHS"
 
 # Sensitive patterns
 SENSITIVE_PATTERNS=(
