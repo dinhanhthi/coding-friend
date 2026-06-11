@@ -94,6 +94,7 @@ See [HOW-IT-WORKS.md](./HOW-IT-WORKS.md) for the user-journey explainer and the 
 
 After implementation: `/cf-review` → `/cf-commit` → tag `v$NEW` + `codex-v$NEW` together.
 
-`/cf-review` ran on 2026-06-10 (DEEP); all findings were fixed. See
-[NEXT-STEPS.md](./NEXT-STEPS.md) for the post-review checklist: commit the
-fixes, run the live-Codex probes, then proceed to the release gate.
+`/cf-review` ran on 2026-06-10 (DEEP); all findings were fixed and committed.
+See [NEXT-STEPS.md](./NEXT-STEPS.md) for the full runbook: local dev testing,
+merge requirements, CI workflow explainer, GA release steps, dual-host setup,
+and the remaining website-docs updates.
