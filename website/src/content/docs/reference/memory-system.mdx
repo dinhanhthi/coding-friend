@@ -1,201 +1,62 @@
 ---
 title: "Memory System"
-description: "Architecture overview of the persistent AI memory system"
+description: "Persistent AI memory for Claude Code — setup, usage, and settings"
 ---
 
-Persistent project memory for Claude Code across sessions. Stores knowledge as markdown files in `docs/memory/`, with optional hybrid search indexing.
+Persistent project memory for Claude Code across sessions. Memories are markdown files in `docs/memory/` (git-trackable, human-editable); an optional SQLite index adds fast search. Everything stays on your machine.
 
-## Core Concepts
+## Updating
 
-- **Markdown is source of truth** — every memory is a `.md` file with YAML frontmatter, git-trackable and human-editable
-- **SQLite is a cache** — rebuilding from markdown never loses data
-- **3-tier graceful degradation** — always works, regardless of what you install
-- **Local-only** — no data leaves your machine
-
-## 3-Tier Architecture
-
-The system detects available dependencies and picks the best backend automatically:
-
-|                  | Tier 1 (Full)                               | Tier 2 (Lite)                  | Tier 3 (Markdown)                  |
-| ---------------- | ------------------------------------------- | ------------------------------ | ---------------------------------- |
-| **What**         | SQLite + FTS5 + sqlite-vec                  | MiniSearch daemon              | Pure file I/O                      |
-| **Search**       | Hybrid: keyword + semantic + RRF fusion     | BM25 + fuzzy + prefix          | grep/substring                     |
-| **Semantic**     | Yes (vector embeddings)                     | No                             | No                                 |
-| **Dependencies** | better-sqlite3, sqlite-vec, Transformers.js | MiniSearch (~7KB)              | None                               |
-| **Index**        | On disk (SQLite file)                       | In-memory (rebuilds in &lt;1s) | None                               |
-| **Latency**      | &lt;50ms                                    | &lt;10ms                       | &lt;5ms (LLM reasons over results) |
-| **Scale**        | 100K+ memories                              | ~10K                           | ~1K                                |
-| **Setup**        | `cf memory init`                            | `cf memory start-daemon`       | Nothing                            |
-
-### Tier selection
-
-By default (`memory.tier: "auto"`), the MCP server picks the best available tier at startup:
-
-1. SQLite database exists and deps installed? → **Tier 1**
-2. Daemon running? → **Tier 2**
-3. Otherwise → **Tier 3** (always available — just reads markdown files)
-
-You can force a specific tier in `.coding-friend/config.json`:
-
-```json
-{
-  "memory": {
-    "tier": "markdown"
-  }
-}
-```
-
-This is useful for testing (e.g., force Tier 3 even when SQLite is installed) or when you want to skip auto-detection. See [`memory.tier`](/docs/configuration/config-json#memorytier) for all values.
-
-### How tiers connect
-
-```
-                        Claude Code
-                            │
-                  ┌─────────┴────-─────┐
-                  │ MCP Server (stdio) │
-                  └─────────┬─────-────┘
-                            │
-                     detectTier()
-                            │
-         ┌──────────────────┼────────────────-──┐
-         │                  │                   │
-    Tier 1 (Full)     Tier 2 (Lite)     Tier 3 (Markdown)
-         │                  │                   │
-┌────────┴─────────┐        │             grep/ripgrep
-│  SqliteBackend   │        │                   │
-│  (in-process)    │        ▼                   │
-│                  │  ┌─────────────────────┐   │
-│  better-sqlite3  │◄─│  Daemon             │   │
-│  sqlite-vec      │  │  (background)       │   │
-│  FTS5 + RRF      │  │                     │   │
-│                  │  │  • MiniSearch       │   │
-│                  │  │    (Tier 2 in-mem)  │   │
-└────────┬─────────┘  │  • fs.watch +       │   │
-         │            │    auto-rebuild     │   │
-         │            └──────────┬──────────┘   │
-         │                       │              │
-         └───────────────────────┼──────────────┘
-                                 ▼
-                      ┌────────────────────┐
-                      │  docs/memory/*.md  │
-                      │ (source of truth)  │
-                      └────────────────────┘
-```
-
-- **Tier 1**: MCP server connects **directly** to `SqliteBackend` for queries. The daemon runs in the background, watches `docs/memory/` for file changes, and auto-rebuilds the SQLite index when markdown is edited externally (e.g., `git pull`, manual edits).
-- **Tier 2**: MCP server connects to the **Hono HTTP daemon** over Unix Domain Socket for queries. The daemon also watches files and rebuilds the MiniSearch index in-memory.
-- **Tier 3**: MCP server reads markdown files **directly** — no daemon involved.
-- **Auto-reconnect with retry**: if the daemon stops mid-session (e.g., crash), the client automatically respawns it with up to 3 retry attempts. The daemon runs indefinitely by default (no idle timeout).
-- **All tiers** read/write the same `docs/memory/*.md` markdown files (source of truth). SQLite is a rebuildable cache.
-
-### Key technologies
-
-- **[FTS5](https://www.sqlite.org/fts5.html)** — SQLite's built-in full-text search engine, uses BM25 ranking algorithm
-- **[sqlite-vec](https://github.com/asg017/sqlite-vec)** — SQLite extension for vector storage and cosine similarity search
-- **[MiniSearch](https://lucaong.github.io/minisearch/)** — Lightweight (~7KB) in-memory search with BM25 + fuzzy matching
-- **[Hono](https://hono.dev/)** — Ultra-lightweight (~14KB) HTTP framework powering the Tier 2 daemon
-- **Unix Domain Socket (UDS)** — IPC transport for daemon communication (10-50x faster than TCP, no port conflicts)
-- **[Transformers.js](https://huggingface.co/docs/transformers.js)** — Runs ML embedding models in Node.js (no Python/GPU needed)
-- **WAL mode** — SQLite Write-Ahead Logging for concurrent reads/writes without blocking
-
-## Write & Sync
-
-### How writes work
-
-When you use MCP tools (`memory_store`, `memory_update`, `memory_delete`), the backend writes to **both markdown and SQLite in a single call**:
-
-1. Write markdown file (source of truth)
-2. Upsert/delete SQLite row (immediate)
-3. Generate embedding vector (async, non-blocking)
-
-No sync mechanism is needed — both storage layers are updated atomically by the same function.
-
-### CLAUDE.md sync for project rules
-
-Convention memories (`preference` type) are automatically synced to the project's `CLAUDE.md` file. When you store, update, or delete a convention memory, a corresponding entry is added, updated, or removed under a dedicated `## CF Memory: Project Rules` section.
-
-Other memory types (decisions, infrastructure, etc.) can opt-in to CLAUDE.md sync by setting `sync_to_claude_md: true` when calling `memory_store` or `memory_update`. This is useful for project-wide rules that live outside the `conventions/` folder — e.g., architecture decisions that must be followed, or deployment procedures that must not be skipped.
-
-Each entry is a concise one-liner (from the memory's `description` field) tracked via an HTML comment (`<!-- cf:<memory-id> -->`). This ensures Claude Code always has project rules loaded in its context — without needing to search memory on every session start.
-
-### When markdown is edited directly
-
-If you edit markdown files outside the MCP tools (e.g., in your editor, via git), the daemon auto-detects the change and rebuilds the search index — for both Tier 1 (SQLite) and Tier 2 (MiniSearch).
-
-If the daemon is not running (Tier 3), sync manually:
-
-```bash
-cf memory rebuild
-```
-
-This scans all markdown files and rebuilds the entire SQLite index (rows + embeddings) from scratch.
-
-<Callout type="info">
-  The daemon auto-rebuilds the search index when markdown files change
-  externally — for both Tier 1 (SQLite) and Tier 2 (MiniSearch). If you're on
-  Tier 3 (no daemon), run `cf memory rebuild` manually after editing files
-  outside Claude Code.
+<Callout type="warning">
+  As of **v1.37.0**, the Memory MCP is registered **once at user scope** (global)
+  — no per-project `.mcp.json` setup needed.
 </Callout>
 
-## Capturing Memories
+**New install** — nothing to do. `cf install` / `cf mcp` registers the server once for all your projects.
 
-Three ways to store memories:
+**Upgrading from before v1.37.0** — older setups added a `coding-friend-memory` entry to each project's `.mcp.json`. That entry now **shadows** the global server (Claude Code precedence: local &gt; project &gt; user). In each affected project, run:
 
-1. **Bootstrap** — `/cf-scan` inside a Claude Code session
-   - Scans the entire project (README, configs, source code) and populates memory with architecture, conventions, tech stack, key features
-   - Safe to run multiple times — updates existing memories, never duplicates
-   - Recommended for new projects or after major refactors
-2. **Manually** — `/cf-remember` inside a Claude Code session
-   - Claude picks the right category and writes a markdown file
-   - Also indexes via `memory_store` MCP tool
-3. **Automatically** — when `memory.autoCapture` is enabled
-   - PreCompact hook captures session summaries as `episode` memories
-   - Skills auto-capture notable findings:
-     - `/cf-fix` — bug root causes
-     - `/cf-review` — architectural patterns
-     - `/cf-sys-debug` — debugging breakthroughs
+```bash
+cf update      # registers user-scope, strips the legacy .mcp.json entry
+```
 
-`/cf-scan` vs `/cf-remember`:
+then restart Claude Code. See the [Migration Guide](/docs/reference/memory-mcp-migration/) for full steps.
 
-|                    | [`/cf-scan`](/docs/skills/cf-scan/)                                                                   | [`/cf-remember`](/docs/skills/cf-remember/) |
-| ------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **When**           | First time, or to refresh project knowledge, or anytime you want to "scan" some aspect of the project | After a coding session                      |
-| **Source**         | Scans the codebase directly                                                                           | Extracts from conversation                  |
-| **Scope**          | Whole project (architecture, conventions, features)                                                   | Specific topic from current session         |
-| **Typical output** | 10-15 memories across all categories                                                                  | 1-3 memories per invocation                 |
+## Setup
 
-`/cf-remember` vs `cf memory`:
+```bash
+cf mcp
+```
 
-|              | [`/cf-remember`](/docs/skills/cf-remember/) | [`cf memory`](/docs/reference/memory-system/#mcp-integration) |
-| ------------ | ------------------------------------------- | ------------------------------------------------------------- |
-| **Where**    | Inside Claude Code session                  | Terminal CLI                                                  |
-| **Does**     | Saves knowledge from conversation           | Manages the memory system                                     |
-| **Examples** | `/cf-remember auth uses JWT`                | `cf memory status`, `cf memory rebuild`                       |
+Registers the Memory MCP at user scope — equivalent to:
 
-## MCP Integration
+```bash
+claude mcp add --scope user coding-friend-memory -- npx -y coding-friend-cli mcp-serve
+```
 
-The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically from the project's `.mcp.json`.
+No path argument is needed: the server resolves the current project at runtime (`CLAUDE_PROJECT_DIR` → git repo root → `docs/memory`). Restart Claude Code after registering.
 
-Skills like `/cf-remember` and `/cf-fix` use the MCP tools behind the scenes — you rarely call them directly. Run `cf memory init` or `cf init` to register the server automatically for your project.
+Each project stays isolated:
 
-See [MCP Servers → Memory MCP](/docs/reference/mcp/#memory-mcp) for the full reference: available tools, resources, config snippets, and health checks.
+- **Markdown source** — `<project>/docs/memory/` (committed in the project repo)
+- **Search index** — `~/.coding-friend/memory/projects/<slug>/db.sqlite`
 
-## Search Pipeline
+## Core ideas
 
-When Claude calls `memory_search`, the query goes through this pipeline (Tier 1):
+- **Markdown is the source of truth** — every memory is a `.md` file with YAML frontmatter. The SQLite index is a rebuildable cache (`cf memory rebuild` re-creates it, never loses data).
+- **Always works** — 3 tiers are auto-selected by what's installed: SQLite hybrid search (full) → in-memory daemon (lite) → plain markdown grep. The basic tier needs no setup.
+- **Local-only** — nothing leaves your machine.
+- **Lazy** — a project's database is created only when the first memory is stored.
 
-1. **Query routing** — auto-detects intent: quoted strings/code patterns → keyword only, questions (how/why/what) → semantic only, everything else → hybrid (both + fusion)
+## Capturing memories
 
-2. **Keyword search (FTS5 + BM25)** — full-text search with weighted fields: title (10x), tags (6x), description (4x), content (1x)
+- [`/cf-scan`](/docs/skills/cf-scan/) — scan the project and populate memory (run once, or to refresh).
+- [`/cf-remember`](/docs/skills/cf-remember/) — save knowledge from the current session.
+- **Automatic** — enable `memory.autoCapture` to capture session summaries plus notable findings from `/cf-fix`, `/cf-review`, and `/cf-sys-debug`.
 
-3. **Semantic search (embeddings)** — text converted to vectors by an embedding model, compared using cosine similarity. Finds meaning, not just keywords (e.g., "login verification" matches "JWT authentication"). Vectors cached by content hash.
+Skills use the MCP tools (`memory_store`, `memory_search`, …) behind the scenes — you rarely call them directly.
 
-4. **Fusion (RRF)** — in hybrid mode, keyword and semantic results merged with Reciprocal Rank Fusion (k=60). Each result scored by rank position `1/(60 + rank)`, scores from both lists summed.
-
-5. **Post-processing** — temporal decay (90-day half-life, floor at 70%), deduplication (Jaccard similarity), optional type/tag filtering
-
-## Memory Types
+## Memory types
 
 | Type         | Folder            | Answers                         | Example                               |
 | ------------ | ----------------- | ------------------------------- | ------------------------------------- |
@@ -205,14 +66,14 @@ When Claude calls `memory_search`, the query goes through this pipeline (Tier 1)
 | `episode`    | `bugs/`           | "What did we do before?"        | "Fixed CORS on /api/upload"           |
 | `procedure`  | `infrastructure/` | "What steps to do X?"           | "Deploy: build, ship, merge, release" |
 
-Each type maps to a subfolder in `docs/memory/` for easy browsing.
+Convention memories (`preference`) are also synced to a `## CF Memory: Project Rules` section in the project's `CLAUDE.md` so rules stay loaded every session.
 
-## Markdown Format
+## Markdown format
 
 ```yaml
 ---
 title: "API Authentication Pattern"
-description: "Auth module uses JWT tokens stored in httpOnly cookies with RS256"
+description: "Auth module uses JWT tokens in httpOnly cookies with RS256"
 type: fact
 tags: [auth, jwt, api, security]
 importance: 3
@@ -223,31 +84,23 @@ source: conversation
 The auth module uses RS256-signed JWT tokens...
 ```
 
-- **`title`** — short, descriptive name
-- **`description`** — one-line searchable summary (&lt;100 chars). Critical for search quality. Good: `"JWT auth with httpOnly cookies and RS256"`. Bad: `"How auth works"`.
-- **`type`** — one of: `fact`, `preference`, `context`, `episode`, `procedure`
-- **`tags`** — keywords for filtering and search ranking
-- **`importance`** — 1 (low) to 5 (critical), default 3. Auto-captured episodes default to 2.
-- **`created`** / **`updated`** — ISO date strings
-- **`source`** — `conversation` (manual) or `auto-capture` (automatic)
+The **`description`** is the most important field for search quality — keep it a factual one-liner under 100 chars. `importance` is 1–5 (default 3); `source` is `conversation` or `auto-capture`.
 
-## Embedding Models
+## Settings
 
-Semantic search (Tier 1) needs an embedding model to convert text into vectors. Two providers available:
+All options live in `.coding-friend/config.json` under `memory`. See the full [config reference](/docs/configuration/config-json#memory).
 
-- **Transformers.js** (default) — runs in Node.js, no external service, model auto-downloaded (~23 MB)
-- **Ollama** (optional) — uses a local [Ollama](https://ollama.com/) server, supports more models, falls back to Transformers.js if unavailable
+### Tier
 
-| Model                      | Dims | Size    | Provider        | Notes                         |
-| -------------------------- | ---- | ------- | --------------- | ----------------------------- |
-| `Xenova/all-MiniLM-L6-v2`  | 384  | ~23 MB  | Transformers.js | **Default** — auto-downloaded |
-| `all-minilm:l6-v2`         | 384  | ~23 MB  | Ollama          | Same model via Ollama         |
-| `nomic-embed-text`         | 768  | ~274 MB | Ollama          | **Recommended upgrade**       |
-| `mxbai-embed-large`        | 1024 | ~670 MB | Ollama          | Best quality                  |
-| `snowflake-arctic-embed:s` | 384  | ~67 MB  | Ollama          | Alternative small model       |
-| `bge-base-en-v1.5`         | 768  | ~130 MB | Ollama          | English-optimized             |
+`memory.tier` selects the backend — `"auto"` (default) picks the best available, or force one of `"full" | "lite" | "markdown"`:
 
-To use Ollama: [install it](https://ollama.com/download), pull a model (`ollama pull nomic-embed-text`), then configure in `.coding-friend/config.json`:
+```json
+{ "memory": { "tier": "auto" } }
+```
+
+### Embedding (semantic search)
+
+Works out of the box (Transformers.js, `Xenova/all-MiniLM-L6-v2`, ~23 MB, auto-downloaded). For higher quality, use a local [Ollama](https://ollama.com/) model:
 
 ```json
 {
@@ -261,12 +114,12 @@ To use Ollama: [install it](https://ollama.com/download), pull a model (`ollama 
 }
 ```
 
-Run `cf memory rebuild` after setup to embed existing memories.
+Run `cf memory rebuild` after changing the model. Switching to different dimensions auto-disables vector search until you rebuild (keyword search keeps working; markdown is never affected).
 
-When switching to a model with different dimensions (e.g., 384 → 768), vector search is auto-disabled until you run `cf memory rebuild`. Keyword search still works. Markdown files are never affected.
+### Auto-capture
 
-Environment variables: `MEMORY_EMBEDDING_PROVIDER` (`"transformers"` or `"ollama"`), `MEMORY_EMBEDDING_MODEL`, `MEMORY_EMBEDDING_OLLAMA_URL` (default `http://localhost:11434`). See [`config.json` reference](/docs/configuration/config-json#memory) for all options.
+`memory.autoCapture` (boolean, default `false`) — automatically capture session summaries and skill findings.
 
-## Configuration
+## Reference
 
-Check out the [configuration reference](/docs/configuration/config-json#memory) for all memory options.
+Full tool list, resources, config snippets, and health checks: [MCP Servers → Memory MCP](/docs/reference/mcp/#memory-mcp).

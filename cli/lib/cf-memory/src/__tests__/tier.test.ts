@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync } from "fs";
+import { mkdirSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { detectTier, createBackendForTier, TIERS } from "../lib/tier.js";
 import { MarkdownBackend } from "../backends/markdown.js";
 import { DaemonClient } from "../lib/daemon-client.js";
 import type { DaemonPaths } from "../daemon/process.js";
+import { areSqliteDepsAvailable } from "../lib/lazy-install.js";
 
 let testDir: string;
 
@@ -250,6 +251,26 @@ describe("createBackendForTier()", () => {
       pathsSpy.mockRestore();
     }
   });
+});
+
+describe("createBackendForTier() — lazy DB guarantee", () => {
+  it.skipIf(!areSqliteDepsAvailable())(
+    "full tier on a non-CF project does not create DB before any write",
+    async () => {
+      // Use an explicit tmpdir dbPath so ~/.coding-friend is never touched
+      const dbPath = join(testDir, "db.sqlite");
+      const { backend, tier } = await createBackendForTier(
+        testDir,
+        "full",
+        undefined,
+        { dbPath },
+      );
+      expect(tier.name).toBe("full");
+      // No DB file after construction
+      expect(existsSync(dbPath)).toBe(false);
+      await backend.close();
+    },
+  );
 });
 
 describe("createBackendForTier() with embeddingConfig", () => {

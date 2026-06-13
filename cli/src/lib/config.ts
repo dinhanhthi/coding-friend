@@ -1,6 +1,8 @@
+import { resolve, isAbsolute } from "path";
 import { z } from "zod";
 import { readJson } from "./json.js";
 import { localConfigPath, globalConfigPath, resolvePath } from "./paths.js";
+import { resolveMainRepoRoot } from "./project-root.js";
 import { CodingFriendConfig, DEFAULT_CONFIG } from "../types.js";
 import { log } from "./log.js";
 
@@ -296,4 +298,24 @@ export function resolveMemoryDir(explicitPath?: string): string {
   }
 
   return resolvePath("docs/memory");
+}
+
+/**
+ * Resolve the memory directory for a project given a base directory.
+ * Walks from baseDir → main repo root (via git worktree logic) → config docsDir → memory dir.
+ * Reads <root>/.coding-friend/config.json directly (not via loadConfig/cwd).
+ * Intended for user-scope MCP server wrappers that receive CLAUDE_PROJECT_DIR at runtime.
+ */
+export function resolveProjectMemoryDir(baseDir: string): string {
+  const root = resolveMainRepoRoot(baseDir);
+
+  const configPath = resolve(root, ".coding-friend", "config.json");
+  const config = readJson<{ docsDir?: string }>(configPath);
+  const docsDir = config?.docsDir ?? "docs";
+
+  if (isAbsolute(docsDir)) {
+    return resolve(docsDir, "memory");
+  }
+
+  return resolve(root, docsDir, "memory");
 }

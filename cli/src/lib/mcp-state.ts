@@ -1,16 +1,16 @@
 import { existsSync } from "fs";
 import { join } from "path";
 import { readJson } from "./json.js";
-import { writeMemoryMcpEntry } from "./memory-prompts.js";
 import { log } from "./log.js";
 import chalk from "chalk";
 
 /**
  * Check .mcp.json in cwd for stale/legacy coding-friend-memory entries.
- * - If memoryDir is provided: auto-rewrite stale/legacy entries to the npx format.
- * - If memoryDir is omitted: warn only (no rewrite).
+ * Warns only — does not rewrite. The project-scope entry shadows the
+ * user-scope server (Claude Code precedence: local > project > user);
+ * run `cf update` to remove it automatically.
  */
-export function warnStaleMcpJson(memoryDir?: string): void {
+export function warnStaleMcpJson(): void {
   const localMcpPath = join(process.cwd(), ".mcp.json");
   if (!existsSync(localMcpPath)) return;
 
@@ -24,39 +24,35 @@ export function warnStaleMcpJson(memoryDir?: string): void {
 
   const state = detectMemoryMcpState(mcpJson, existsSync);
 
-  if (state.kind === "stale" || state.kind === "legacy-valid") {
-    if (memoryDir) {
-      writeMemoryMcpEntry(memoryDir);
-      if (state.kind === "stale") {
-        log.success(
-          "Auto-updated stale .mcp.json to version-stable npx format.",
-        );
-      } else {
-        log.success("Updated .mcp.json to version-stable npx format.");
-      }
-      console.log();
-    } else if (state.kind === "stale") {
-      console.log(
-        chalk.yellow(`\u26A0 Stale MCP config detected in .mcp.json`),
-      );
-      console.log(chalk.dim(`  Path no longer exists: ${state.path}`));
-      console.log(
-        chalk.dim(`  Run "cf memory mcp" to update to the new format.`),
-      );
-      console.log();
-    } else {
-      console.log(
-        chalk.cyan(
-          `\u2139 .mcp.json uses an absolute path for coding-friend-memory.`,
-        ),
-      );
-      console.log(
-        chalk.dim(
-          `  Consider running "cf memory mcp" to switch to the version-stable format.`,
-        ),
-      );
-      console.log();
-    }
+  if (state.kind === "stale") {
+    console.log(
+      chalk.yellow(`⚠ Stale MCP config detected in .mcp.json`),
+    );
+    console.log(chalk.dim(`  Path no longer exists: ${state.path}`));
+    console.log(
+      chalk.dim(
+        `  This project-scope coding-friend-memory entry shadows the global (user-scope) memory server.`,
+      ),
+    );
+    console.log(
+      chalk.dim(`  Run "cf update" to remove it automatically.`),
+    );
+    console.log();
+  } else if (state.kind === "legacy-valid") {
+    console.log(
+      chalk.cyan(
+        `ℹ .mcp.json has a project-scope coding-friend-memory entry.`,
+      ),
+    );
+    console.log(
+      chalk.dim(
+        `  This shadows the global (user-scope) memory server (Claude Code precedence: local > project > user).`,
+      ),
+    );
+    console.log(
+      chalk.dim(`  Run "cf update" to remove it automatically.`),
+    );
+    console.log();
   }
 }
 

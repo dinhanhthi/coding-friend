@@ -1,0 +1,91 @@
+---
+title: "Memory MCP Migration Guide"
+description: "Migrate from per-project .mcp.json memory registration to user-scope global registration."
+keywords: [memory, mcp, migration, upgrade, user-scope, project-scope]
+---
+
+## What changed
+
+Before v1.37.0, the Memory MCP server was registered per-project: `cf memory init` wrote a `coding-friend-memory` entry into the project's `.mcp.json` with an absolute path to that project's `docs/memory/` folder. Each project needed its own registration, and worktrees required manual `.mcp.json` management.
+
+From v1.37.0 onward, the Memory MCP is registered **once at user scope** — no path argument is stored at registration time. The server resolves the current project's memory directory at runtime:
+
+```
+CLAUDE_PROJECT_DIR (set by Claude Code)
+  → main git worktree root (via git-common-dir)
+  → .coding-friend/config.json docsDir
+  → <root>/docs/memory
+```
+
+Per-project memory isolation is **unchanged**: each project still stores its markdown source in `<project>/docs/memory/` and its SQLite index in `~/.coding-friend/memory/projects/<slug>/db.sqlite`.
+
+## New users — nothing to do
+
+If you installed Coding Friend v1.37.0 or later, `cf install` and `cf init` register the user-scope server automatically. Run `claude mcp get coding-friend-memory` to verify:
+
+```bash
+claude mcp get coding-friend-memory
+# coding-friend-memory: npx -y coding-friend-cli mcp-serve  (user scope)
+```
+
+## Existing users — migration steps
+
+If any of your projects have a `coding-friend-memory` entry in `.mcp.json` (from a previous install), run the following in each such project:
+
+```bash
+cd /your/project
+cf update
+```
+
+`cf update` does three things:
+1. Ensures the user-scope Memory MCP is registered (`claude mcp add --scope user coding-friend-memory -- npx -y coding-friend-cli mcp-serve`).
+2. Strips the `coding-friend-memory` entry from `.mcp.json`.
+3. Deletes `.mcp.json` entirely if removing that entry left it empty.
+
+Then **restart Claude Code** (the stdio server process does not hot-reload — a fresh session is required):
+
+```bash
+claude  # or restart from your shell / IDE
+```
+
+### Verification
+
+After migrating:
+
+```bash
+# Should show the user-scope registration (no path arg)
+claude mcp get coding-friend-memory
+
+# .mcp.json should have no coding-friend-memory entry (or not exist)
+cat .mcp.json 2>/dev/null | grep coding-friend-memory  # should be empty
+```
+
+## Precedence and the shadow problem
+
+Claude Code resolves MCP servers in order: **local > project > user**. Until you run `cf update`, a project-scope `.mcp.json` entry **shadows** the user-scope server. The old entry still works — it points to the same `docs/memory/` path — but you do not get the new benefits (worktree support, no-path registration). Once you remove the legacy entry, the user-scope server takes over.
+
+## Not migrating — what breaks
+
+Nothing. A project that still has a `coding-friend-memory` entry in `.mcp.json` continues to work exactly as before. The legacy entry is still valid; Claude Code picks it up via project-scope precedence. Migrate when convenient.
+
+## Rollback
+
+If you want to go back to a per-project `.mcp.json` entry, run:
+
+```bash
+cf memory mcp
+```
+
+This prints the config snippet with the explicit path for the current project. Copy it into `.mcp.json` manually. The explicit path wins over the user-scope server via project-scope precedence.
+
+Alternatively, to remove the user-scope registration entirely:
+
+```bash
+claude mcp remove --scope user coding-friend-memory
+```
+
+## See Also
+
+- [Memory System](/docs/reference/memory-system/) — architecture overview and runtime resolution details
+- [MCP Servers](/docs/reference/mcp/) — full MCP reference
+- [`cf update`](/docs/cli/cf-update/) — CLI command that auto-migrates legacy entries

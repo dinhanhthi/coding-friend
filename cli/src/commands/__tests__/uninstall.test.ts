@@ -32,6 +32,10 @@ vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
 }));
 
+vi.mock("../../lib/memory-prompts.js", () => ({
+  removeMemoryMcpEntry: vi.fn(() => ({ removed: false, fileDeleted: false })),
+}));
+
 import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { confirm } from "@inquirer/prompts";
 import { commandExists, run } from "../../lib/exec.js";
@@ -40,6 +44,7 @@ import {
   removeShellCompletion,
 } from "../../lib/shell-completion.js";
 import { resolveScope } from "../../lib/prompt-utils.js";
+import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
 import { uninstallCommand } from "../uninstall.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -520,5 +525,55 @@ describe("uninstallCommand", () => {
 
     const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(consoleCalls).not.toContain("npm uninstall -g coding-friend-cli");
+  });
+
+  // ─── Memory MCP migration cleanup ───────────────────────────────────
+
+  it("calls removeMemoryMcpEntry when uninstalling project scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ project: true });
+
+    expect(vi.mocked(removeMemoryMcpEntry)).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT call removeMemoryMcpEntry when uninstalling local scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("local");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ local: true });
+
+    expect(vi.mocked(removeMemoryMcpEntry)).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call removeMemoryMcpEntry when uninstalling user scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("user");
+    mockExistsSync.mockReturnValue(false);
+    mockReadFileSync.mockImplementation(() => { throw new Error("not found"); });
+    mockHasShellCompletion.mockReturnValue(false);
+    mockConfirm.mockResolvedValueOnce(false); // decline uninstall
+
+    await uninstallCommand();
+
+    expect(vi.mocked(removeMemoryMcpEntry)).not.toHaveBeenCalled();
+  });
+
+  it("logs success message when project-scope uninstall removes the legacy entry", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+    vi.mocked(removeMemoryMcpEntry).mockReturnValue({ removed: true, fileDeleted: false });
+
+    await uninstallCommand({ project: true });
+
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("legacy project-scope coding-friend-memory");
   });
 });

@@ -62,6 +62,10 @@ import {
   isLearnMcpRegistered,
 } from "../lib/learn-prompts.js";
 import {
+  registerMemoryMcp,
+  isMemoryMcpRegistered,
+} from "../lib/memory-mcp-register.js";
+import {
   ensureMemoryBuilt,
   isMemoryInitialized,
   memoryInitWizard,
@@ -1491,6 +1495,21 @@ export async function initCommand(): Promise<void> {
     if (registered) {
       log.success(
         "Registered CF Learn MCP (user scope). Restart Claude Code to activate.",
+      );
+    }
+  }
+
+  // Register CF Memory MCP (user scope, global)
+  if (isMemoryMcpRegistered()) {
+    log.dim("coding-friend-memory: already registered (user scope)");
+    log.dim(
+      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-memory && cf mcp)",
+    );
+  } else {
+    const registered = registerMemoryMcp();
+    if (registered) {
+      log.success(
+        "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
       );
     }
   }

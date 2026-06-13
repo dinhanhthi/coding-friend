@@ -6,6 +6,11 @@ vi.mock("../../lib/lib-path.js", () => ({
   getLibPath: vi.fn(() => "/fake/cf-memory"),
 }));
 
+// Mock config to control resolveProjectMemoryDir
+vi.mock("../../lib/config.js", () => ({
+  resolveProjectMemoryDir: vi.fn((baseDir: string) => `${baseDir}/docs/memory`),
+}));
+
 // Mock child_process.spawn
 const mockSpawn = vi.fn();
 vi.mock("child_process", () => ({
@@ -19,6 +24,7 @@ const mockExit = vi.spyOn(process, "exit").mockImplementation((() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete process.env.CLAUDE_PROJECT_DIR;
 });
 
 describe("mcpServeCommand", () => {
@@ -97,5 +103,51 @@ describe("mcpServeCommand", () => {
 
     fakeProcess.emit("error", new Error("ENOENT: no such file"));
     expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it("resolves memoryDir from CLAUDE_PROJECT_DIR when no arg given", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
+
+    process.env.CLAUDE_PROJECT_DIR = "/project/root";
+
+    const { mcpServeCommand } = await import("../mcp-serve.js");
+    await mcpServeCommand();
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "node",
+      ["/fake/cf-memory/dist/index.js", "/project/root/docs/memory"],
+      expect.objectContaining({ stdio: "inherit" }),
+    );
+  });
+
+  it("falls back to cwd-based resolution when no arg and no CLAUDE_PROJECT_DIR", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
+
+    const { resolveProjectMemoryDir } = await import("../../lib/config.js");
+    const mockResolve = vi.mocked(resolveProjectMemoryDir);
+    mockResolve.mockReturnValueOnce("/cwd/docs/memory");
+
+    const { mcpServeCommand } = await import("../mcp-serve.js");
+    await mcpServeCommand();
+
+    const spawnArgs = mockSpawn.mock.calls[0];
+    expect(spawnArgs[1][1]).toBe("/cwd/docs/memory");
+  });
+
+  it("uses explicit memoryDir arg without calling resolveProjectMemoryDir", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
+
+    const { resolveProjectMemoryDir } = await import("../../lib/config.js");
+    const mockResolve = vi.mocked(resolveProjectMemoryDir);
+
+    const { mcpServeCommand } = await import("../mcp-serve.js");
+    await mcpServeCommand("/explicit/path");
+
+    expect(mockResolve).not.toHaveBeenCalled();
+    const spawnArgs = mockSpawn.mock.calls[0];
+    expect(spawnArgs[1][1]).toBe("/explicit/path");
   });
 });

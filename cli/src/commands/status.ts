@@ -19,6 +19,7 @@ import {
   sanitizeRawConfig,
 } from "../lib/config.js";
 import { isLearnMcpRegistered } from "../lib/learn-prompts.js";
+import { isMemoryMcpRegistered } from "../lib/memory-mcp-register.js";
 import { type CodingFriendConfig } from "../types.js";
 import { getLibPath } from "../lib/lib-path.js";
 import {
@@ -342,6 +343,7 @@ export async function statusCommand(): Promise<void> {
       pathExists: existsSync,
       isDaemonRunning: memIsDaemonRunning,
       memoryDistPath,
+      isRegistered: isMemoryMcpRegistered,
     });
 
     let memHasIssues = false;

@@ -19,11 +19,17 @@ vi.mock("../log.js", () => ({
   },
 }));
 
+vi.mock("../project-root.js", () => ({
+  resolveMainRepoRoot: vi.fn(),
+}));
+
 import { readJson } from "../json.js";
-import { loadConfig, resolveMemoryDir, sanitizeRawConfig } from "../config.js";
+import { loadConfig, resolveMemoryDir, resolveProjectMemoryDir, sanitizeRawConfig } from "../config.js";
+import { resolveMainRepoRoot } from "../project-root.js";
 import { log } from "../log.js";
 
 const mockReadJson = vi.mocked(readJson);
+const mockResolveMainRepoRoot = vi.mocked(resolveMainRepoRoot);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -298,5 +304,52 @@ describe("loadConfig validation", () => {
       expect.stringContaining("disableGUIPlan"),
     );
     expect(config.disableGUIPlan).toBeUndefined();
+  });
+});
+
+describe("resolveProjectMemoryDir", () => {
+  it("uses config docsDir when .coding-friend/config.json has docsDir set", () => {
+    const root = "/tmp/myproject";
+    mockResolveMainRepoRoot.mockReturnValue(root);
+    mockReadJson.mockReturnValue({ docsDir: "documentation" });
+
+    const result = resolveProjectMemoryDir("/tmp/myproject/worktree");
+    expect(result).toBe(`${root}/documentation/memory`);
+  });
+
+  it("falls back to docs/memory when .coding-friend/config.json is missing", () => {
+    const root = "/tmp/myproject";
+    mockResolveMainRepoRoot.mockReturnValue(root);
+    mockReadJson.mockReturnValue(null);
+
+    const result = resolveProjectMemoryDir("/tmp/myproject");
+    expect(result).toBe(`${root}/docs/memory`);
+  });
+
+  it("falls back to docs/memory when config exists but docsDir is absent", () => {
+    const root = "/tmp/myproject";
+    mockResolveMainRepoRoot.mockReturnValue(root);
+    mockReadJson.mockReturnValue({});
+
+    const result = resolveProjectMemoryDir("/tmp/myproject");
+    expect(result).toBe(`${root}/docs/memory`);
+  });
+
+  it("uses absolute docsDir as-is without prepending root", () => {
+    const root = "/tmp/myproject";
+    mockResolveMainRepoRoot.mockReturnValue(root);
+    mockReadJson.mockReturnValue({ docsDir: "/absolute/docs" });
+
+    const result = resolveProjectMemoryDir("/tmp/myproject");
+    expect(result).toBe("/absolute/docs/memory");
+  });
+
+  it("calls resolveMainRepoRoot with the provided baseDir", () => {
+    const root = "/tmp/myproject";
+    mockResolveMainRepoRoot.mockReturnValue(root);
+    mockReadJson.mockReturnValue(null);
+
+    resolveProjectMemoryDir("/some/base/dir");
+    expect(mockResolveMainRepoRoot).toHaveBeenCalledWith("/some/base/dir");
   });
 });
