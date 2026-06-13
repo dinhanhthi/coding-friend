@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-06-07
+updated: 2026-06-14
 ---
 
 # /cf-plan
@@ -41,7 +41,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 ### Step 0.5: Determine Mode
 
-1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and jump immediately to the **Resume Protocol** in Step 7. Skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.)
+1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.) → Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/resume.md` now and follow it.
 2. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
    2a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
    2b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked via TaskCreate.`
@@ -139,7 +139,7 @@ Present: key codebase findings, approaches with pros/cons, recommended approach 
 1. Break the chosen approach into tasks grouped into **phases**; each task completable in one session.
 2. Per task: what to do (files, functions, tests), expected outcome, how to verify.
 3. Phase markers: `#### Phase N [parallel]` (no shared files, run concurrently) or `#### Phase N [sequential]` (ordered). If no cf-planner or flat task list, wrap in a single `[sequential]` phase.
-4. When autopilot=true, the plan body MUST include a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Copy the AUTOPILOT CONTRACT block verbatim — see Plan Templates section below.
+4. When autopilot=true, the plan body MUST include a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Copy the AUTOPILOT CONTRACT block verbatim — Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now and copy its fenced block exactly.
 
 > **Hard mode**: Each task adds a **Rollback** field; add `## Migration & Rollback` section with overall rollback strategy.
 
@@ -176,26 +176,7 @@ When humanDoc=true AND a plan file was written, generate a concise human-readabl
 
 ### Step 7: Offer Implementation
 
-Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → enter the **Autopilot Per-Phase Loop** (see new section below). If autopilot=false → use the existing Sequential/Parallel phases protocols unchanged.
-
-#### Resume Protocol (`--resume <path>`)
-
-1. **Resolve the plan entry file**:
-   - Full path to a folder → use `<folder>/README.md`. Full path to a file → use it directly. Validate the target is within the current working directory or `{docsDir}`; report error and stop if outside.
-   - Name only (`<slug>`) → resolve in this order, using the first that exists: `{docsDir}/plans/<slug>/README.md` (current layout) → `{docsDir}/plans/<slug>.md` (legacy single-file) → `{docsDir}/plans/<slug>` (append `.md` if it is a bare file).
-   - If none found → report error and stop.
-2. Read the plan entry file at the resolved path.
-3. Derive the task-id from the containing folder name (current layout: entry is `<slug>/README.md` → task-id = `<slug>`) or the filename stem (legacy single-file `<slug>.md`), or from a `task-id:` frontmatter field if present. The stem/folder name IS the task-id (e.g. `2026-05-03-my-plan` → task-id = `2026-05-03-my-plan`). Look up the context file at `{docsDir}/context/<task-id>.json`. If not found, strip the leading `YYYY-MM-DD-` prefix from the stem (the first 11 characters if the stem starts with a date pattern) to get the bare name, then glob `{docsDir}/context/*<bare-name>*.json` for backward compat with the old unix-timestamp format (e.g. `1717500000-my-plan.json`). Load the context file now, before dispatching any tasks.
-4. Scan the Progress table. Classify each task:
-   - `✅ DONE` → skip.
-   - `🔄 IN PROGRESS` → Edit the file containing this task's row (`README.md` for **small plans**; the relevant phase file `phase-N-<name>.md` for **big plans**): reset to `⬜ TODO`, treat as pending. (Session ended mid-task; completion status is unreliable.)
-   - `❌ FAILED` → ask user: "Task N previously failed. Re-run it? (y/n)"
-   - `⬜ TODO` → pending, run as normal.
-5. If ALL tasks are `✅ DONE` → inform user: "Plan is already complete. Nothing to resume." Stop.
-6. Show user: list of pending tasks and estimated phases remaining. Ask: "Resume from the first pending task? (y/n)"
-7. If confirmed → execute pending tasks using the same Sequential phases protocol below, passing the context file loaded in step 3 to each cf-implementer dispatch.
-   - **Autopilot gating** — Before honoring `auto: true` in frontmatter, verify the plan body (`README.md` for small plans; README.md and every phase file for big plans) actually contains a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. If the section is missing in any file that should have it, do NOT autopilot — warn the user: `> ⚠️ Plan has \`auto: true\` in frontmatter but the \`## AUTOPILOT\` section is missing in <path>. Refusing to autopilot. Re-run \`/cf-plan --auto\` to regenerate the section, or remove \`auto: true\` to resume normally.` Stop.
-   - Otherwise (frontmatter has `auto: true` AND section is present): the remaining phases run under the Autopilot Per-Phase Loop instead of the standard protocol. Announce to user when resuming: `> 🤖 This plan has \`auto: true\` — continuing in autopilot mode.`
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → use the existing Sequential/Parallel phases protocols unchanged.
 
 #### Sequential phases
 
@@ -226,7 +207,7 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 - **Phase failed** — when any task in the phase file becomes `❌ FAILED` (after retry), update the phase's row in `README.md` to `❌ FAILED` (overrides any `🔄 IN PROGRESS`).
 - **Plan done** — when all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`. If any row is `❌ FAILED`, set `**Status:**` to `❌ FAILED` instead.
 - **Parallel phases** — when multiple cf-implementer dispatches in a parallel phase return near-simultaneously, **serialize** the Edit calls: apply one Edit, wait for it to succeed, then apply the next. Concurrent edits to the same Markdown table will lose updates.
-- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until the Autopilot Per-Phase Loop's Step 6 (after `/cf-review` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
+- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until Step 6 of the Per-Phase Loop in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (after `/cf-review` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
 
 **Rule**: Only the cf-plan orchestrator edits plan files (`README.md` for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
 
@@ -254,51 +235,7 @@ After overlap check passes:
 
 Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
-#### Autopilot Per-Phase Loop (`--auto` only)
-
-When the plan was created with `--auto` (or has `auto: true` in frontmatter), each phase runs through this loop. The orchestrator MUST follow this exactly and MUST NOT ask the user for confirmation between phases.
-
-1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol above. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
-
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (Skill tool, `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
-
-3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
-   - 🚨 **Critical** → must fix
-   - ⚠️ **Important** → must fix
-   - 💡 **Suggestions** → log only, do NOT block
-   - 📋 **Summary** → informational
-     If you cannot reliably parse the review output (unexpected format), STOP autopilot and surface to user — do NOT default to "looks clean".
-
-4. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
-   - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced by the findings.
-   - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Mark phase ❌ FAILED (revert README phase row from ✅ DONE → ❌ FAILED for big plans if already flipped). Surface the failure to user.
-   - Otherwise, re-run `/cf-review` (round 2).
-   - If round 2 still has Critical or Important → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface BOTH review outputs and the fix attempt, ask user.
-   - Hard cap: never more than 2 reviews per phase. Never more than 1 fix attempt per phase.
-
-5. **Commit the phase** — On clean review (or only Suggestions remaining):
-   - `git add -A`
-   - Generate a conventional commit message: `<type>(<scope>): <phase-name>` where `<type>` matches the dominant change (feat/fix/refactor/docs/chore/test), `<scope>` is inferred from the directory of changed files, and `<phase-name>` is the phase title.
-   - Commit body: bulleted list of completed tasks + any Suggestion-level findings logged as follow-ups.
-   - `git commit -m "$(cat <<'EOF'
-<message>
-EOF
-)"`
-   - NEVER use `--no-verify`. NEVER include AI/Claude co-author lines (project rule #6).
-   - If `git commit` fails (pre-commit hook), do NOT amend — fix the issue, re-stage, create a NEW commit. If repeated failure → STOP and surface to user.
-
-6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" added to Big plan phase sync below. Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
-
-**Stop conditions (only these end autopilot)**:
-
-- Task fails after its 1 retry.
-- Review round 2 still has Critical or Important findings.
-- Review output cannot be parsed.
-- `git commit` fails repeatedly after fix attempts.
-- User explicitly interrupts.
-- All phases reach ✅ DONE in plan file.
-
-**Drift guard**: if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan, that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
+→ When autopilot=true, Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block.
 
 #### Post-implementation
 
@@ -310,44 +247,7 @@ EOF
 
 ### AUTOPILOT CONTRACT block
 
-Only when `--auto`. Copy this entire block **verbatim** into each generated plan file that needs it — see Step 5 / Step 6 for which files (small plan: `README.md`; big plan: `README.md` AND every `phase-N-*.md`). The templates below mark its position with a placeholder; replace that placeholder with this exact text. Omit the whole section when `auto: false`.
-
-```markdown
-## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
-
-This plan was created with `--auto`. When resuming or continuing this plan, follow this contract exactly. Do NOT ask the user for confirmation between phases.
-
-**Per-phase loop:**
-
-1. Dispatch all tasks in the current phase using the standard cf-implementer protocol (sequential or parallel as marked). Apply normal retry rules. If a task ends ❌ FAILED after retry → STOP autopilot, mark the failing task ❌ FAILED in the plan file (and revert the phase row in `README.md` from ✅ DONE to ❌ FAILED for big plans if it was already flipped), report to user.
-2. After all tasks in the phase reach ✅ DONE, run `/cf-review` on the uncommitted changes (no extra arguments — reviews everything that has not been committed yet, which is this phase's work).
-3. Parse review findings:
-   - 🚨 **Critical** and ⚠️ **Important** → must be fixed.
-   - 💡 **Suggestions** → log them in the upcoming commit body, do NOT block.
-4. If Critical/Important findings exist:
-   - Dispatch one cf-implementer call with a fix task that lists the findings verbatim. Files: union of files referenced by the findings.
-   - If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately (do NOT consume the second review round). Mark the phase ❌ FAILED (and revert the README phase row from ✅ DONE to ❌ FAILED if applicable). Surface the failure to user.
-   - Otherwise, re-run `/cf-review`.
-   - If Critical/Important still present after this 2nd review → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report both review outputs to user.
-   - Maximum 2 review rounds per phase total (initial + 1 fix attempt).
-5. Once review is clean (no Critical/Important):
-   - `git add -A`
-   - `git commit -m "<type>(<scope>): <phase-name>` (conventional commit). Body lists tasks completed + any Suggestion-level findings that were intentionally left as follow-ups.
-   - NEVER use `--no-verify`. NEVER include AI/Claude co-author lines (project rule #6).
-6. Immediately proceed to the next phase. Do NOT ask "Continue? (y/n)". The user already authorized autopilot at plan approval.
-
-**Stop conditions (only these):**
-
-- Task fails after its 1 retry.
-- The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume the second review round).
-- Review round 2 still has Critical or Important findings.
-- Review output from `/cf-review` cannot be reliably parsed.
-- `git commit` fails repeatedly after attempted hook fixes.
-- User explicitly interrupts (Ctrl+C, message).
-- Plan file shows all phases ✅ DONE.
-
-**Drift guard:** if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an `auto: true` plan, that is a drift bug. Re-read this section and proceed.
-```
+Only when `--auto`: the AUTOPILOT CONTRACT block lives in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (Step 5 #4 loads it for that case). Skip in normal runs.
 
 ### Small plan (1 phase — written as `README.md` inside the plan folder)
 
