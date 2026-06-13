@@ -41,8 +41,13 @@ vi.mock("../../lib/memory-prompts.js", () => ({
   editMemoryAutoStart: vi.fn(),
   editMemoryEmbedding: vi.fn(),
   editMemoryDaemonTimeout: vi.fn(),
-  writeMemoryMcpEntry: vi.fn(),
   getMemoryMcpStatus: vi.fn(() => ({ configured: false, scope: null })),
+}));
+
+vi.mock("../../lib/memory-mcp-register.js", () => ({
+  registerMemoryMcp: vi.fn(() => true),
+  isMemoryMcpRegistered: vi.fn(() => false),
+  unregisterMemoryMcp: vi.fn(() => true),
 }));
 
 const mockMergeJson = vi.fn();
@@ -83,15 +88,15 @@ import { readJson } from "../../lib/json.js";
 import { log } from "../../lib/log.js";
 import { loadConfig } from "../../lib/config.js";
 import {
-  writeMemoryMcpEntry,
-  getMemoryMcpStatus,
-} from "../../lib/memory-prompts.js";
+  registerMemoryMcp,
+  isMemoryMcpRegistered,
+} from "../../lib/memory-mcp-register.js";
 
 const mockExistsSync = vi.mocked(existsSync);
 const mockReadJson = vi.mocked(readJson);
 const mockLoadConfig = vi.mocked(loadConfig);
-const mockWriteMemoryMcpEntry = vi.mocked(writeMemoryMcpEntry);
-const mockGetMemoryMcpStatus = vi.mocked(getMemoryMcpStatus);
+const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
+const mockIsMemoryMcpRegistered = vi.mocked(isMemoryMcpRegistered);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -102,6 +107,8 @@ beforeEach(() => {
 
   mockAreSqliteDepsAvailable.mockReturnValue(false);
   mockEnsureDeps.mockResolvedValue(true);
+  mockIsMemoryMcpRegistered.mockReturnValue(false);
+  mockRegisterMemoryMcp.mockReturnValue(true);
 });
 
 /**
@@ -160,7 +167,7 @@ describe("memoryInitCommand", () => {
 
 describe("memoryInitWizard — zero-prompt with global config inheritance", () => {
   beforeEach(() => {
-    mockGetMemoryMcpStatus.mockReturnValue({ configured: false, scope: null });
+    mockIsMemoryMcpRegistered.mockReturnValue(false);
   });
 
   it("writes smart defaults to local config when global has no memory settings", async () => {
@@ -227,24 +234,37 @@ describe("memoryInitWizard — zero-prompt with global config inheritance", () =
     );
   });
 
-  it("auto-writes .mcp.json without any prompt", async () => {
+  it("registers MCP at user scope without any prompt", async () => {
     mockReadJson.mockReturnValue({});
 
     await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
 
-    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalled();
   });
 
-  it("skips .mcp.json write when already configured locally", async () => {
-    mockGetMemoryMcpStatus.mockReturnValue({
-      configured: true,
-      scope: "local",
-    });
+  it("skips registration when already registered at user scope", async () => {
+    mockIsMemoryMcpRegistered.mockReturnValue(true);
     mockReadJson.mockReturnValue({});
 
     await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
 
-    expect(mockWriteMemoryMcpEntry).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("logs already-registered message when MCP is already registered", async () => {
+    mockIsMemoryMcpRegistered.mockReturnValue(true);
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    const infoMessages = vi.mocked(log.info).mock.calls.map((c) => c[0]);
+    expect(
+      infoMessages.some(
+        (m) =>
+          String(m).includes("already registered") &&
+          String(m).includes("user scope"),
+      ),
+    ).toBe(true);
   });
 
   it("logs an explanation for each setting", async () => {
@@ -285,11 +305,26 @@ describe("memoryInitWizard — zero-prompt with global config inheritance", () =
       }),
     );
   });
+
+  it("does NOT write to .mcp.json — registers via user-scope registerMemoryMcp instead", async () => {
+    mockReadJson.mockReturnValue({});
+
+    await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
+
+    // mergeJson must never be called with a .mcp.json path
+    const mcpJsonCalls = mockMergeJson.mock.calls.filter((args) =>
+      String(args[0]).includes(".mcp.json"),
+    );
+    expect(mcpJsonCalls).toHaveLength(0);
+
+    // User-scope registration must be used instead
+    expect(mockRegisterMemoryMcp).toHaveBeenCalled();
+  });
 });
 
 describe("memoryInitWizard — tier-specific completion", () => {
   beforeEach(() => {
-    mockGetMemoryMcpStatus.mockReturnValue({ configured: false, scope: null });
+    mockIsMemoryMcpRegistered.mockReturnValue(false);
     mockReadJson.mockReturnValue({});
   });
 
@@ -315,19 +350,19 @@ describe("memoryInitWizard — tier-specific completion", () => {
     );
   });
 
-  it('auto-writes .mcp.json for "markdown" tier', async () => {
+  it('registers MCP at user scope for "markdown" tier', async () => {
     mockLoadConfig.mockReturnValue({ memory: { tier: "markdown" } });
 
     await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
 
-    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalled();
   });
 
-  it('auto-writes .mcp.json for "lite" tier', async () => {
+  it('registers MCP at user scope for "lite" tier', async () => {
     mockLoadConfig.mockReturnValue({ memory: { tier: "lite" } });
 
     await memoryInitWizard("/fake/docs/memory", "/fake/cf-memory");
 
-    expect(mockWriteMemoryMcpEntry).toHaveBeenCalledWith("/fake/docs/memory");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalled();
   });
 });

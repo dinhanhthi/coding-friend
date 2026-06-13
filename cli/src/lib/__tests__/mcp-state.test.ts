@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -56,5 +56,62 @@ describe("warnStaleMcpJson", () => {
     const { warnStaleMcpJson } = await import("../mcp-state.js");
     warnStaleMcpJson();
     expect(consoleSpy).not.toHaveBeenCalled();
+  });
+
+  it("warns but does NOT rewrite .mcp.json for a stale (path missing) entry", async () => {
+    const mcpPath = join(testDir, ".mcp.json");
+    const original = JSON.stringify({
+      mcpServers: {
+        "coding-friend-memory": {
+          command: "node",
+          args: ["/nonexistent/path/dist/index.js"],
+        },
+      },
+    });
+    writeFileSync(mcpPath, original, "utf-8");
+
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { warnStaleMcpJson } = await import("../mcp-state.js");
+    warnStaleMcpJson();
+
+    // Must warn (output produced)
+    expect(consoleSpy).toHaveBeenCalled();
+    // Must NOT rewrite — file still has command: "node"
+    const afterContent = readFileSync(mcpPath, "utf-8");
+    const afterJson = JSON.parse(afterContent);
+    expect(
+      afterJson.mcpServers["coding-friend-memory"].command,
+    ).toBe("node");
+  });
+
+  it("warns but does NOT rewrite .mcp.json for a legacy-valid (path exists) entry", async () => {
+    // Create a fake server file so the path exists
+    const fakeServer = join(testDir, "dist", "index.js");
+    mkdirSync(join(testDir, "dist"), { recursive: true });
+    writeFileSync(fakeServer, "// fake", "utf-8");
+
+    const mcpPath = join(testDir, ".mcp.json");
+    const original = JSON.stringify({
+      mcpServers: {
+        "coding-friend-memory": {
+          command: "node",
+          args: [fakeServer],
+        },
+      },
+    });
+    writeFileSync(mcpPath, original, "utf-8");
+
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { warnStaleMcpJson } = await import("../mcp-state.js");
+    warnStaleMcpJson();
+
+    // Must warn (output produced)
+    expect(consoleSpy).toHaveBeenCalled();
+    // Must NOT rewrite — file still has command: "node"
+    const afterContent = readFileSync(mcpPath, "utf-8");
+    const afterJson = JSON.parse(afterContent);
+    expect(
+      afterJson.mcpServers["coding-friend-memory"].command,
+    ).toBe("node");
   });
 });
