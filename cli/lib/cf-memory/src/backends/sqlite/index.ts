@@ -66,21 +66,23 @@ export interface SqliteBackendOptions {
 }
 
 export class SqliteBackend implements MemoryBackend {
-  private db: DatabaseLike;
+  private db: DatabaseLike | null = null;
   private markdown: MarkdownBackend;
   private pipeline: EmbeddingPipeline | null = null;
   private cache: EmbeddingCache | null = null;
   private vecEnabled = false;
   private needsEmbeddingRebuild = false;
   private dbPath: string;
+  private opts: SqliteBackendOptions | undefined;
 
   constructor(
     private docsDir: string,
     opts?: SqliteBackendOptions,
   ) {
     this.markdown = new MarkdownBackend(docsDir);
+    this.opts = opts;
 
-    // Determine DB path
+    // Determine DB path — pure computation, no filesystem access
     if (opts?.dbPath) {
       this.dbPath = opts.dbPath;
     } else {
@@ -90,28 +92,67 @@ export class SqliteBackend implements MemoryBackend {
       this.dbPath = path.join(projectDir, "db.sqlite");
     }
 
-    // Open database — defers mkdirSync until after dep check to avoid empty dirs
-    this.db = this.openDatabase(opts?.depsDir);
+    // Validate that the native better-sqlite3 binary loads correctly.
+    // Open and immediately close an in-memory DB — no file is created on disk.
+    // If the native module is missing or has an ABI mismatch, the error
+    // propagates out of the constructor so tier.ts's try/catch can fall back
+    // to the daemon client or MarkdownBackend.
+    const Database = loadDepSync<{ new (path: string): DatabaseLike }>(
+      "better-sqlite3",
+      opts?.depsDir,
+    );
+    const DbConstructor =
+      (Database as unknown as { default: { new (path: string): DatabaseLike } })
+        .default ?? Database;
+    const probe = new DbConstructor(":memory:");
+    (probe as unknown as { close(): void }).close();
+  }
+
+  private getDefaultDepsDir(): string {
+    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+    return path.join(home, ".coding-friend", "memory");
+  }
+
+  /**
+   * Open the DB, run migrations, and set up vec/embedding. Memoized.
+   * Always creates the DB file and directory. Call only from write operations.
+   */
+  private ensureDb(): DatabaseLike {
+    if (this.db) return this.db;
+
+    const depsDir = this.opts?.depsDir;
+
+    // Open database (creates dir + file)
+    const Database = loadDepSync<{ new (path: string): DatabaseLike }>(
+      "better-sqlite3",
+      depsDir,
+    );
+    // better-sqlite3 exports the class as default in CJS
+    const DbConstructor =
+      (Database as unknown as { default: { new (path: string): DatabaseLike } })
+        .default ?? Database;
+    fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
+    this.db = new DbConstructor(this.dbPath);
 
     // Run migrations
     migrate(this.db);
 
     // Store the resolved docsDir so `cf memory list --projects` can display the source path
-    const resolvedDir = path.resolve(docsDir);
+    const resolvedDir = path.resolve(this.docsDir);
     if (getMetadata(this.db, "source_dir") !== resolvedDir) {
       setMetadata(this.db, "source_dir", resolvedDir);
     }
 
     // Try to set up vector search
-    if (!opts?.skipVec) {
-      this.vecEnabled = this.setupVec(opts?.depsDir);
+    if (!this.opts?.skipVec) {
+      this.vecEnabled = this.setupVec(this.db, depsDir);
     }
 
     // Set up embedding pipeline and cache
     if (this.vecEnabled) {
       this.pipeline = new EmbeddingPipeline({
-        ...opts?.embedding,
-        depsDir: opts?.depsDir,
+        ...this.opts?.embedding,
+        depsDir,
       });
       this.cache = new EmbeddingCache(this.db);
 
@@ -130,27 +171,21 @@ export class SqliteBackend implements MemoryBackend {
         this.needsEmbeddingRebuild = true;
       }
     }
+
+    return this.db;
   }
 
-  private getDefaultDepsDir(): string {
-    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
-    return path.join(home, ".coding-friend", "memory");
+  /**
+   * Return the open DB if it already exists on disk, or null if it doesn't.
+   * For read operations: avoids creating an empty DB on projects with no memories.
+   */
+  private openIfExists(): DatabaseLike | null {
+    if (this.db) return this.db;
+    if (!fs.existsSync(this.dbPath)) return null;
+    return this.ensureDb();
   }
 
-  private openDatabase(depsDir?: string): DatabaseLike {
-    const Database = loadDepSync<{ new (path: string): DatabaseLike }>(
-      "better-sqlite3",
-      depsDir,
-    );
-    // better-sqlite3 exports the class as default in CJS
-    const DbConstructor =
-      (Database as unknown as { default: { new (path: string): DatabaseLike } })
-        .default ?? Database;
-    fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
-    return new DbConstructor(this.dbPath);
-  }
-
-  private setupVec(depsDir?: string): boolean {
+  private setupVec(db: DatabaseLike, depsDir?: string): boolean {
     try {
       const sqliteVec = loadDepSync<{ load: (db: unknown) => void }>(
         "sqlite-vec",
@@ -159,8 +194,8 @@ export class SqliteBackend implements MemoryBackend {
       const loader =
         (sqliteVec as unknown as { default: { load: (db: unknown) => void } })
           .default ?? sqliteVec;
-      loader.load(this.db);
-      return createVecTable(this.db);
+      loader.load(db);
+      return createVecTable(db);
     } catch {
       return false;
     }
@@ -182,7 +217,8 @@ export class SqliteBackend implements MemoryBackend {
     // 1. Store to markdown (source of truth)
     const memory = await this.markdown.store(input);
 
-    // 2. Index in SQLite
+    // 2. Index in SQLite (creates DB on first store)
+    const db = this.ensureDb();
     const hash = contentHash(
       prepareEmbeddingText({
         title: memory.frontmatter.title,
@@ -192,11 +228,11 @@ export class SqliteBackend implements MemoryBackend {
       }),
     );
 
-    this.upsertRow(memory, hash);
+    this.upsertRow(db, memory, hash);
 
     // 3. Generate and store embedding (async, non-blocking for store)
     if (this.vecEnabled && this.pipeline) {
-      this.embedAndStore(memory.id, memory, hash).catch((err) => {
+      this.embedAndStore(db, memory.id, memory, hash).catch((err) => {
         process.stderr.write(
           `[cf-memory] Embedding failed for ${memory.id}: ${err instanceof Error ? err.message : String(err)}\n`,
         );
@@ -214,10 +250,14 @@ export class SqliteBackend implements MemoryBackend {
       return metas.map((m) => ({ memory: m, score: 0, matchedOn: [] }));
     }
 
+    // No DB yet → no indexed results
+    const db = this.openIfExists();
+    if (!db) return [];
+
     const limit = input.limit ?? 10;
 
     const ranked = await hybridSearch({
-      db: this.db,
+      db,
       query,
       limit,
       pipeline: this.pipeline,
@@ -228,7 +268,7 @@ export class SqliteBackend implements MemoryBackend {
     // Convert ranked results to SearchResult format
     const results: SearchResult[] = [];
     for (const r of ranked) {
-      const row = this.getRow(r.id);
+      const row = this.getRow(db, r.id);
       if (!row) continue;
 
       // Apply tag filter
@@ -260,11 +300,15 @@ export class SqliteBackend implements MemoryBackend {
   }
 
   async retrieve(id: string): Promise<Memory | null> {
-    // Read from markdown (source of truth)
+    // Read from markdown (source of truth) — no DB access needed
     return this.markdown.retrieve(id);
   }
 
   async list(input: ListInput): Promise<MemoryMeta[]> {
+    // No DB yet → no indexed results
+    const db = this.openIfExists();
+    if (!db) return [];
+
     let sql = "SELECT * FROM memories WHERE 1=1";
     const params: unknown[] = [];
 
@@ -284,7 +328,7 @@ export class SqliteBackend implements MemoryBackend {
     sql += " LIMIT ?";
     params.push(limit);
 
-    const stmt = this.db.prepare(sql);
+    const stmt = db.prepare(sql);
     const rows = (
       stmt as unknown as {
         all(...p: unknown[]): Array<Record<string, unknown>>;
@@ -305,7 +349,8 @@ export class SqliteBackend implements MemoryBackend {
     const memory = await this.markdown.update(input);
     if (!memory) return null;
 
-    // 2. Re-index in SQLite
+    // 2. Re-index in SQLite (creates DB if not yet open)
+    const db = this.ensureDb();
     const hash = contentHash(
       prepareEmbeddingText({
         title: memory.frontmatter.title,
@@ -315,11 +360,11 @@ export class SqliteBackend implements MemoryBackend {
       }),
     );
 
-    this.upsertRow(memory, hash);
+    this.upsertRow(db, memory, hash);
 
     // 3. Re-embed
     if (this.vecEnabled && this.pipeline) {
-      this.embedAndStore(memory.id, memory, hash).catch((err) => {
+      this.embedAndStore(db, memory.id, memory, hash).catch((err) => {
         process.stderr.write(
           `[cf-memory] Embedding failed for ${memory.id}: ${err instanceof Error ? err.message : String(err)}\n`,
         );
@@ -334,15 +379,18 @@ export class SqliteBackend implements MemoryBackend {
     const deleted = await this.markdown.delete(id);
     if (!deleted) return false;
 
-    // 2. Remove from SQLite
-    this.db.prepare("DELETE FROM memories WHERE id = ?").run(id);
+    // 2. Remove from SQLite index if the DB exists
+    const db = this.openIfExists();
+    if (db) {
+      db.prepare("DELETE FROM memories WHERE id = ?").run(id);
 
-    // 3. Remove from vec table
-    if (this.vecEnabled) {
-      try {
-        this.db.prepare("DELETE FROM vec_memories WHERE memory_id = ?").run(id);
-      } catch {
-        // Ignore vec errors
+      // 3. Remove from vec table
+      if (this.vecEnabled) {
+        try {
+          db.prepare("DELETE FROM vec_memories WHERE memory_id = ?").run(id);
+        } catch {
+          // Ignore vec errors
+        }
       }
     }
 
@@ -350,8 +398,12 @@ export class SqliteBackend implements MemoryBackend {
   }
 
   async stats(): Promise<MemoryStats> {
+    // No DB yet → zeroed stats
+    const db = this.openIfExists();
+    if (!db) return { total: 0, byCategory: {}, byType: {} };
+
     const rows = (
-      this.db.prepare(
+      db.prepare(
         "SELECT category, type, COUNT(*) as count FROM memories GROUP BY category, type",
       ) as unknown as {
         all(): Array<{ category: string; type: string; count: number }>;
@@ -379,19 +431,26 @@ export class SqliteBackend implements MemoryBackend {
    * 2. Async pass: generate embeddings (non-transactional, failures logged)
    */
   async rebuild(): Promise<void> {
+    // Read markdown metas FIRST — before touching the DB.
+    // If there is nothing to index (and no pending embedding rebuild),
+    // return early without creating the DB file or directory.
+    const metas = this.markdown.getAllMeta();
+    if (metas.length === 0 && !this.needsEmbeddingRebuild) return;
+
+    // Ensure DB is open (creates it if needed)
+    const db = this.ensureDb();
+
     // If embedding model changed, recreate vec table with new dimensions
     if (this.needsEmbeddingRebuild && this.pipeline) {
       try {
-        this.db.prepare("DROP TABLE IF EXISTS vec_memories").run();
-        createVecTable(this.db, this.pipeline.dims);
+        db.prepare("DROP TABLE IF EXISTS vec_memories").run();
+        createVecTable(db, this.pipeline.dims);
         this.vecEnabled = true;
       } catch {
         // Vec setup failed
       }
     }
 
-    // Read all markdown files first
-    const metas = this.markdown.getAllMeta();
     const memories: Array<{ memory: Memory; hash: string }> = [];
 
     for (const meta of metas) {
@@ -410,25 +469,25 @@ export class SqliteBackend implements MemoryBackend {
     }
 
     // Pass 1: Atomic transaction for all SQLite rows
-    this.db.prepare("BEGIN").run();
+    db.prepare("BEGIN").run();
     try {
-      this.db.prepare("DELETE FROM memories").run();
+      db.prepare("DELETE FROM memories").run();
       if (this.vecEnabled) {
         try {
-          this.db.prepare("DELETE FROM vec_memories").run();
+          db.prepare("DELETE FROM vec_memories").run();
         } catch {
           // Ignore if vec table doesn't exist
         }
       }
-      this.db.prepare("DELETE FROM embedding_cache").run();
+      db.prepare("DELETE FROM embedding_cache").run();
 
       for (const { memory, hash } of memories) {
-        this.upsertRow(memory, hash);
+        this.upsertRow(db, memory, hash);
       }
 
-      this.db.prepare("COMMIT").run();
+      db.prepare("COMMIT").run();
     } catch (err) {
-      this.db.prepare("ROLLBACK").run();
+      db.prepare("ROLLBACK").run();
       throw err;
     }
 
@@ -436,7 +495,7 @@ export class SqliteBackend implements MemoryBackend {
     if (this.vecEnabled && this.pipeline) {
       for (const { memory, hash } of memories) {
         try {
-          await this.embedAndStore(memory.id, memory, hash);
+          await this.embedAndStore(db, memory.id, memory, hash);
         } catch (err) {
           process.stderr.write(
             `[cf-memory] Embedding failed for ${memory.id}: ${err instanceof Error ? err.message : String(err)}\n`,
@@ -447,13 +506,14 @@ export class SqliteBackend implements MemoryBackend {
 
     // Update metadata with current embedding model info
     if (this.pipeline) {
-      setMetadata(this.db, "embedding_model", this.pipeline.modelName);
-      setMetadata(this.db, "embedding_dims", String(this.pipeline.dims));
+      setMetadata(db, "embedding_model", this.pipeline.modelName);
+      setMetadata(db, "embedding_dims", String(this.pipeline.dims));
       this.needsEmbeddingRebuild = false;
     }
   }
 
   async close(): Promise<void> {
+    if (!this.db) return;
     try {
       (this.db as unknown as { close(): void }).close();
     } catch {
@@ -463,36 +523,34 @@ export class SqliteBackend implements MemoryBackend {
 
   // --- Private helpers ---
 
-  private upsertRow(memory: Memory, hash: string): void {
+  private upsertRow(db: DatabaseLike, memory: Memory, hash: string): void {
     const sql = `
       INSERT OR REPLACE INTO memories
         (id, slug, category, title, description, type, tags, importance, created, updated, source, content, content_hash)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    this.db
-      .prepare(sql)
-      .run(
-        memory.id,
-        memory.slug,
-        memory.category,
-        memory.frontmatter.title,
-        memory.frontmatter.description,
-        memory.frontmatter.type,
-        JSON.stringify(memory.frontmatter.tags),
-        memory.frontmatter.importance,
-        memory.frontmatter.created,
-        memory.frontmatter.updated,
-        memory.frontmatter.source,
-        memory.content,
-        hash,
-      );
+    db.prepare(sql).run(
+      memory.id,
+      memory.slug,
+      memory.category,
+      memory.frontmatter.title,
+      memory.frontmatter.description,
+      memory.frontmatter.type,
+      JSON.stringify(memory.frontmatter.tags),
+      memory.frontmatter.importance,
+      memory.frontmatter.created,
+      memory.frontmatter.updated,
+      memory.frontmatter.source,
+      memory.content,
+      hash,
+    );
   }
 
-  private getRow(id: string): Record<string, unknown> | null {
+  private getRow(db: DatabaseLike, id: string): Record<string, unknown> | null {
     return (
       (
-        this.db.prepare("SELECT * FROM memories WHERE id = ?") as unknown as {
+        db.prepare("SELECT * FROM memories WHERE id = ?") as unknown as {
           get(id: string): Record<string, unknown> | undefined;
         }
       ).get(id) ?? null
@@ -513,6 +571,7 @@ export class SqliteBackend implements MemoryBackend {
   }
 
   private async embedAndStore(
+    db: DatabaseLike,
     id: string,
     memory: Memory,
     hash: string,
@@ -539,11 +598,9 @@ export class SqliteBackend implements MemoryBackend {
       embedding.byteLength,
     );
     try {
-      this.db
-        .prepare(
-          "INSERT OR REPLACE INTO vec_memories (memory_id, embedding) VALUES (?, ?)",
-        )
-        .run(id, buffer);
+      db.prepare(
+        "INSERT OR REPLACE INTO vec_memories (memory_id, embedding) VALUES (?, ?)",
+      ).run(id, buffer);
     } catch {
       // sqlite-vec error — ignore
     }
