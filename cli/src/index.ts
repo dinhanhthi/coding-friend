@@ -168,9 +168,11 @@ program
 
 program
   .command("mcp-serve")
-  .description("Start the cf-memory MCP server (used internally by npx)")
-  .argument("<memoryDir>", "path to memory directory")
-  .action(async (memoryDir: string) => {
+  .description(
+    "Start the cf-memory MCP server (used internally by npx). When memoryDir is omitted, resolves from CLAUDE_PROJECT_DIR at runtime.",
+  )
+  .argument("[memoryDir]", "path to memory directory (optional)")
+  .action(async (memoryDir: string | undefined) => {
     const { mcpServeCommand } = await import("./commands/mcp-serve.js");
     await mcpServeCommand(memoryDir);
   });

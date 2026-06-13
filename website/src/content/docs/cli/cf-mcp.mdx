@@ -19,17 +19,13 @@ The learn folder is always read from your global config (`~/.coding-friend/confi
 ## What it does
 
 1. **Auto-registers Learn MCP** (user scope) — runs `claude mcp add --scope user coding-friend-learn ...` so the server is available across all your projects. Skipped if already registered or if `learn.disabled` is set.
-2. **Prompts for Memory MCP** — if the current project doesn't have `coding-friend-memory` in `.mcp.json`, offers to add it.
+2. **Auto-registers Memory MCP** (user scope) — runs `claude mcp add --scope user coding-friend-memory -- npx -y coding-friend-cli mcp-serve` so it's available across all your projects. No path argument is stored at registration — the server resolves the current project's memory directory at runtime from `CLAUDE_PROJECT_DIR`. Skipped if already registered.
 3. **Prints JSON config** for both servers — for copy/paste into non-Claude-Code MCP clients (Claude Desktop, Cursor, ChatGPT, etc.).
 4. **Runs health checks** for both servers and prints fix hints inline.
 
-## Stale config detection
+## Notes
 
-When `cf mcp` runs, it automatically checks whether `.mcp.json` in the current directory has a stale `coding-friend-memory` entry — i.e., one that points to an absolute path that no longer exists (common after updating Node.js or reinstalling the CLI).
-
-- **Stale path (broken):** prints a warning and suggests running `cf memory mcp` to fix it
-- **Old format but still valid:** prints a notice suggesting you migrate to the version-stable format
-- **Already using `npx` format:** silent (no output)
+`cf mcp` and `cf status` warn you when a project-scope `.mcp.json` entry for `coding-friend-memory` shadows the user-scope server — run `cf update` to clean it up.
 
 ## See Also
 

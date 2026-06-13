@@ -10,8 +10,11 @@ import { getLibPath } from "../lib/lib-path.js";
 import {
   memoryConfigMenu,
   getMemoryMcpStatus,
-  writeMemoryMcpEntry,
 } from "../lib/memory-prompts.js";
+import {
+  registerMemoryMcp,
+  isMemoryMcpRegistered,
+} from "../lib/memory-mcp-register.js";
 import { readJson, mergeJson } from "../lib/json.js";
 import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { checkMemoryMcpHealth, printHealthSection } from "../lib/mcp-health.js";
@@ -113,7 +116,11 @@ export async function refreshMemoryAfterUpdate(): Promise<void> {
 }
 
 export function printMemoryMcpConfig(memoryDir: string): void {
-  console.log(chalk.dim("Add this to your MCP client config:"));
+  console.log(
+    chalk.dim(
+      "For non-Claude-Code MCP clients only (Claude Code is already set up via the user-scope registration above) — add this to that client's config:",
+    ),
+  );
   console.log();
 
   console.log(`{
@@ -135,8 +142,8 @@ export function printMemoryMcpConfig(memoryDir: string): void {
     "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
   );
   console.log();
-  log.warn(
-    "Note: The memory path is project-specific. Use local .mcp.json (per project), not global ~/.claude/.mcp.json.",
+  log.dim(
+    "Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.",
   );
   console.log();
 }
@@ -215,17 +222,25 @@ export async function memoryStatusCommand(): Promise<void> {
 
   // MCP status
   const mcpStatus = getMemoryMcpStatus();
-  if (mcpStatus.configured && mcpStatus.scope === "local") {
+  if (mcpStatus.userScope && mcpStatus.scope === "local") {
     log.info(
-      `MCP: ${chalk.green("configured")} ${chalk.dim("(local .mcp.json)")}`,
+      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow("⚠ project .mcp.json shadows user-scope server — run \"cf update\" to clean up")}`,
+    );
+  } else if (mcpStatus.userScope) {
+    log.info(
+      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")}`,
+    );
+  } else if (mcpStatus.configured && mcpStatus.scope === "local") {
+    log.info(
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(local .mcp.json — run \"cf mcp\" to migrate to user scope)")}`,
     );
   } else if (mcpStatus.configured && mcpStatus.scope === "global") {
     log.info(
-      `MCP: ${chalk.green("configured")} ${chalk.dim("(global ~/.claude/.mcp.json)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(global ~/.claude/.mcp.json — run \"cf mcp\" to migrate to user scope)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
     );
   } else {
     log.info(
-      `MCP: ${chalk.dim("not configured in this project")} ${chalk.dim('(run "cf memory init" or add manually via "cf memory mcp")')}`,
+      `MCP: ${chalk.dim("not registered")} ${chalk.dim('(run "cf mcp" to register at user scope)')}`,
     );
   }
 
@@ -647,14 +662,14 @@ export async function memoryInitWizard(
   const resolvedTier = config.memory?.tier ?? "auto";
 
   if (resolvedTier === "markdown") {
-    await setupMemoryMcp(memoryDir, mcpDir);
+    await setupMemoryMcp();
     console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
     printInitDone();
     return;
   }
 
   if (resolvedTier === "lite") {
-    await setupMemoryMcp(memoryDir, mcpDir);
+    await setupMemoryMcp();
     console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
     printInitDone();
     return;
@@ -666,7 +681,7 @@ export async function memoryInitWizard(
 
   // Import existing memories
   if (!existsSync(memoryDir)) {
-    await setupMemoryMcp(memoryDir, mcpDir);
+    await setupMemoryMcp();
     console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
     printInitDone();
     return;
@@ -675,7 +690,7 @@ export async function memoryInitWizard(
   const docCount = countMdFiles(memoryDir);
   if (docCount === 0) {
     log.info("No existing memories to import.");
-    await setupMemoryMcp(memoryDir, mcpDir);
+    await setupMemoryMcp();
     console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
     printInitDone();
     return;
@@ -704,7 +719,7 @@ export async function memoryInitWizard(
     await backend.close();
   }
 
-  await setupMemoryMcp(memoryDir, mcpDir);
+  await setupMemoryMcp();
 
   console.log();
   console.log('🎉 Memory initialized! Run "cf memory status" to verify.');
@@ -724,18 +739,14 @@ function printInitDone(): void {
   );
 }
 
-async function setupMemoryMcp(
-  memoryDir: string,
-  _mcpDir: string,
-): Promise<void> {
-  const mcpStatus = getMemoryMcpStatus();
-  if (mcpStatus.configured && mcpStatus.scope === "local") {
-    log.info(`MCP: ${chalk.green("already configured")} in .mcp.json`);
+async function setupMemoryMcp(): Promise<void> {
+  if (isMemoryMcpRegistered()) {
+    log.info("coding-friend-memory: already registered (user scope)");
     return;
   }
-  writeMemoryMcpEntry(memoryDir);
-  log.dim(
-    "  Connects Claude Code to memory so skills can store and retrieve knowledge.",
+  registerMemoryMcp();
+  log.success(
+    "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
   );
 }
 
@@ -1124,7 +1135,7 @@ export async function memoryMcpCommand(): Promise<void> {
   const mcpDir = getLibPath("cf-memory");
   ensureMemoryBuilt(mcpDir);
 
-  warnStaleMcpJson(memoryDir);
+  warnStaleMcpJson();
 
   printMemoryMcpConfig(memoryDir);
 

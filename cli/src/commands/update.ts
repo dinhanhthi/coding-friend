@@ -8,6 +8,8 @@ import { log, printBanner } from "../lib/log.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import { resolveScope, type ScopeFlags } from "../lib/prompt-utils.js";
+import { isMemoryMcpRegistered, registerMemoryMcp } from "../lib/memory-mcp-register.js";
+import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -296,6 +298,20 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   if (doCli) {
     const { refreshMemoryAfterUpdate } = await import("./memory.js");
     await refreshMemoryAfterUpdate();
+  }
+
+  // Step 3.6: Ensure user-scope memory MCP is registered, then strip any legacy
+  // project-scope entry from .mcp.json that would shadow the user-scope server.
+  if (!isMemoryMcpRegistered()) {
+    registerMemoryMcp();
+  }
+  const migrationResult = removeMemoryMcpEntry();
+  if (migrationResult.removed) {
+    if (migrationResult.fileDeleted) {
+      log.success("Removed legacy project-scope coding-friend-memory from .mcp.json (file deleted — was empty).");
+    } else {
+      log.success("Removed legacy project-scope coding-friend-memory from .mcp.json");
+    }
   }
 
   // Step 4: Fix statusline
