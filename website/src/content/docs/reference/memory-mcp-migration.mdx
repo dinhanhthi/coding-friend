@@ -6,9 +6,9 @@ keywords: [memory, mcp, migration, upgrade, user-scope, project-scope]
 
 ## What changed
 
-Before v1.2, the Memory MCP server was registered per-project: `cf memory init` wrote a `coding-friend-memory` entry into the project's `.mcp.json` with an absolute path to that project's `docs/memory/` folder. Each project needed its own registration, and worktrees required manual `.mcp.json` management.
+Before v1.37.0, the Memory MCP server was registered per-project: `cf memory init` wrote a `coding-friend-memory` entry into the project's `.mcp.json` with an absolute path to that project's `docs/memory/` folder. Each project needed its own registration, and worktrees required manual `.mcp.json` management.
 
-From v1.2 onward, the Memory MCP is registered **once at user scope** — no path argument is stored at registration time. The server resolves the current project's memory directory at runtime:
+From v1.37.0 onward, the Memory MCP is registered **once at user scope** — no path argument is stored at registration time. The server resolves the current project's memory directory at runtime:
 
 ```
 CLAUDE_PROJECT_DIR (set by Claude Code)
@@ -21,7 +21,7 @@ Per-project memory isolation is **unchanged**: each project still stores its mar
 
 ## New users — nothing to do
 
-If you installed Coding Friend v1.2 or later, `cf install` and `cf init` register the user-scope server automatically. Run `claude mcp get coding-friend-memory` to verify:
+If you installed Coding Friend v1.37.0 or later, `cf install` and `cf init` register the user-scope server automatically. Run `claude mcp get coding-friend-memory` to verify:
 
 ```bash
 claude mcp get coding-friend-memory

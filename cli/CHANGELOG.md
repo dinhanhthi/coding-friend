@@ -5,6 +5,14 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.37.0 (2026-06-14)
+
+- Register the memory MCP **once at user scope** (global) — no per-project `.mcp.json` entry or `cf memory init` needed. The server resolves the current project's memory dir at runtime from `CLAUDE_PROJECT_DIR` (worktree-aware via git-common-dir) and `.coding-friend/config.json` `docsDir`; explicit-path invocation still works for non-Claude-Code clients [#1c88b8b](https://github.com/dinhanhthi/coding-friend/commit/1c88b8b) [#5f8376d](https://github.com/dinhanhthi/coding-friend/commit/5f8376d)
+- `cf update` and `cf uninstall --project` now strip a legacy project-scope `coding-friend-memory` entry from `.mcp.json` (it would otherwise shadow the user-scope server); `cf update` registers the user-scope server first so memory is never left unconfigured [#cd9f38c](https://github.com/dinhanhthi/coding-friend/commit/cd9f38c)
+- Create the memory database lazily — opening a project with no memories no longer creates an empty `~/.coding-friend/memory/projects/<slug>/db.sqlite` [#3c77f19](https://github.com/dinhanhthi/coding-friend/commit/3c77f19)
+- `cf memory status`, `cf mcp`, and the MCP health check report the user-scope registration as healthy and warn when a project `.mcp.json` entry shadows the global server [#cd9f38c](https://github.com/dinhanhthi/coding-friend/commit/cd9f38c)
+- Clarify the manual-config note in `cf mcp` / `cf memory mcp` — it now states the printed config is for non-Claude-Code clients only [#f29b0d2](https://github.com/dinhanhthi/coding-friend/commit/f29b0d2)
+
 ## v1.36.4 (2026-06-07)
 
 - Flip the `disableGUIPlan` default to `true` in `cf config` and `cf init` — the `/cf-plan` human overview doc is now off by default [#df7fa7e](https://github.com/dinhanhthi/coding-friend/commit/df7fa7e)
