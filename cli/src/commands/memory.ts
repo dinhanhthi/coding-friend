@@ -116,7 +116,11 @@ export async function refreshMemoryAfterUpdate(): Promise<void> {
 }
 
 export function printMemoryMcpConfig(memoryDir: string): void {
-  console.log(chalk.dim("Add this to your MCP client config:"));
+  console.log(
+    chalk.dim(
+      "For non-Claude-Code MCP clients only (Claude Code is already set up via the user-scope registration above) — add this to that client's config:",
+    ),
+  );
   console.log();
 
   console.log(`{
@@ -138,8 +142,8 @@ export function printMemoryMcpConfig(memoryDir: string): void {
     "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
   );
   console.log();
-  log.warn(
-    "Note: The memory path is project-specific. Use local .mcp.json (per project), not global ~/.claude/.mcp.json.",
+  log.dim(
+    "Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.",
   );
   console.log();
 }
