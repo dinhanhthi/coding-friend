@@ -1,4 +1,3 @@
-import { confirm } from "@inquirer/prompts";
 import { existsSync } from "fs";
 import { join } from "path";
 import { resolveLearnDir, resolveMemoryDir } from "../lib/config.js";
@@ -6,10 +5,6 @@ import { run } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
 import { ensureMemoryBuilt, printMemoryMcpConfig } from "./memory.js";
-import {
-  writeMemoryMcpEntry,
-  getMemoryMcpStatus,
-} from "../lib/memory-prompts.js";
 import {
   detectMemoryMcpState,
   warnStaleMcpJson,
@@ -19,7 +14,6 @@ import {
   checkMemoryMcpHealth,
   checkLearnMcpHealth,
   printHealthSection,
-  type McpHealthResult,
 } from "../lib/mcp-health.js";
 import { readJson } from "../lib/json.js";
 import { listMdFilesRecursive } from "../lib/fs-utils.js";
@@ -27,6 +21,10 @@ import {
   registerLearnMcp,
   isLearnMcpRegistered,
 } from "../lib/learn-prompts.js";
+import {
+  registerMemoryMcp,
+  isMemoryMcpRegistered,
+} from "../lib/memory-mcp-register.js";
 import { globalConfigPath } from "../lib/paths.js";
 import { type CodingFriendConfig } from "../types.js";
 import chalk from "chalk";
@@ -36,7 +34,7 @@ export { detectMemoryMcpState, type MemoryMcpState };
 export { printHealthSection };
 
 export async function mcpCommand(): Promise<void> {
-  warnStaleMcpJson(resolveMemoryDir());
+  warnStaleMcpJson();
 
   const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   const learnDir = resolveLearnDir(globalCfg);
@@ -125,19 +123,18 @@ export async function mcpCommand(): Promise<void> {
   });
   printHealthSection(learnHealth);
 
-  // ─── CF Memory MCP — prompt if not in current project ────────────────────
-  const memoryMcpStatus = getMemoryMcpStatus();
-  if (memoryMcpStatus.configured) {
-    log.dim("coding-friend-memory: already in .mcp.json");
+  // ─── Auto-activate CF Memory MCP (user scope) ────────────────────────────
+  if (isMemoryMcpRegistered()) {
+    log.dim("coding-friend-memory: already registered (user scope)");
+    log.dim(
+      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-memory && cf mcp)",
+    );
   } else {
-    const addMemoryMcp = await confirm({
-      message:
-        "coding-friend-memory not found in this project's .mcp.json. Add it now? (project-scoped — writes to .mcp.json)",
-      default: true,
-    });
-    if (addMemoryMcp) {
-      const memoryDir = resolveMemoryDir();
-      writeMemoryMcpEntry(memoryDir);
+    const registered = registerMemoryMcp();
+    if (registered) {
+      log.success(
+        "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
+      );
     }
   }
   console.log();

@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+
+vi.mock("../memory-mcp-register.js", () => ({
+  isMemoryMcpRegistered: vi.fn(),
+  registerMemoryMcp: vi.fn(),
+  unregisterMemoryMcp: vi.fn(),
+}));
 
 // We need to test writeMemoryMcpEntry, which calls writeJson and reads process.cwd()
 // Use a real tmpdir as the cwd simulation by mocking process.cwd()
@@ -94,5 +100,22 @@ describe("writeMemoryMcpEntry", () => {
     expect(args[1]).toBe("coding-friend-cli");
     expect(args[2]).toBe("mcp-serve");
     expect(args[3]).toBe(memoryDir);
+  });
+});
+
+describe("editMemoryMcp", () => {
+  it("calls registerMemoryMcp when not yet registered (first-time path)", async () => {
+    const { isMemoryMcpRegistered, registerMemoryMcp } = await import(
+      "../memory-mcp-register.js"
+    );
+    vi.mocked(isMemoryMcpRegistered).mockReturnValue(false);
+    vi.mocked(registerMemoryMcp).mockReturnValue(true);
+
+    const { editMemoryMcp } = await import("../memory-prompts.js");
+    await editMemoryMcp();
+
+    expect(registerMemoryMcp).toHaveBeenCalledOnce();
+    // Must not write a project-scope .mcp.json
+    expect(existsSync(join(testDir, ".mcp.json"))).toBe(false);
   });
 });

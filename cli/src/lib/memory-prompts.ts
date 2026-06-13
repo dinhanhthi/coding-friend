@@ -3,13 +3,12 @@
  */
 import { confirm, input, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import { homedir } from "os";
 import { join } from "path";
 import { readJson, mergeJson, writeJson } from "./json.js";
 import { log } from "./log.js";
 import { claudeConfigDir, globalConfigPath, localConfigPath } from "./paths.js";
 import { getLibPath } from "./lib-path.js";
-import { resolveMemoryDir } from "./config.js";
+import { registerMemoryMcp, isMemoryMcpRegistered } from "./memory-mcp-register.js";
 import type { CodingFriendConfig } from "../types.js";
 import {
   BACK,
@@ -321,31 +320,20 @@ export function getMemoryMcpStatus(): {
 }
 
 export async function editMemoryMcp(): Promise<void> {
-  const status = getMemoryMcpStatus();
-
-  if (status.configured) {
-    const globalMcpDisplay = join(claudeConfigDir(), ".mcp.json").replace(
-      homedir(),
-      "~",
-    );
-    const label =
-      status.scope === "local"
-        ? chalk.green("configured") + chalk.dim(" (local .mcp.json)")
-        : chalk.green("configured") +
-          chalk.dim(` (global ${globalMcpDisplay})`) +
-          " " +
-          chalk.yellow("⚠ only works for one project");
-    log.info(`MCP: ${label}`);
-
+  if (isMemoryMcpRegistered()) {
+    log.info(`MCP: ${chalk.green("registered")} (user scope)`);
     const reconfigure = await confirm({
-      message: "Reconfigure Memory MCP in local .mcp.json?",
+      message: "Re-register Memory MCP (user scope)?",
       default: false,
     });
     if (!reconfigure) return;
   }
-
-  const memoryDir = resolveMemoryDir();
-  writeMemoryMcpEntry(memoryDir);
+  const ok = registerMemoryMcp();
+  if (ok) {
+    log.success(
+      "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
+    );
+  }
 }
 
 // ─── Memory config menu (shared by cf config > memory and cf memory config) ──
