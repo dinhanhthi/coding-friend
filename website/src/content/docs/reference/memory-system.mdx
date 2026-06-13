@@ -20,7 +20,7 @@ Persistent project memory for Claude Code across sessions. Memories are markdown
 cf update      # registers user-scope, strips the legacy .mcp.json entry
 ```
 
-then restart Claude Code. See the [Migration Guide](/docs/reference/memory-mcp-migration/) for full steps.
+then restart Claude Code (the stdio server does not hot-reload). Not migrating breaks nothing — the legacy entry still works; you just don't get the new benefits until removed.
 
 ## Setup
 
