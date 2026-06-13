@@ -175,9 +175,48 @@ Three ways to store memories:
 
 ## MCP Integration
 
-The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically from the project's `.mcp.json`.
+The [MCP](https://modelcontextprotocol.io/) (Model Context Protocol) server bridges Claude Code and memory backends via [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#stdio) — Claude Code spawns it automatically from a single **user-scope** registration (available across all your projects).
 
-Skills like `/cf-remember` and `/cf-fix` use the MCP tools behind the scenes — you rarely call them directly. Run `cf memory init` or `cf init` to register the server automatically for your project.
+### Registration
+
+The memory MCP is registered once at user scope by `cf install`, `cf init`, or `cf mcp`:
+
+```bash
+cf mcp
+```
+
+This runs the equivalent of:
+
+```bash
+claude mcp add --scope user coding-friend-memory -- npx -y coding-friend-cli mcp-serve
+```
+
+No path argument is needed. The server resolves the current project's memory directory at **runtime** from the `CLAUDE_PROJECT_DIR` environment variable (set automatically by Claude Code for each spawned stdio server), then walks to the main repo root via git worktree logic, reads `.coding-friend/config.json` for `docsDir`, and resolves `<root>/docs/memory`.
+
+### Per-project isolation
+
+Each project's memories remain isolated:
+
+- **Markdown source** — `<project>/docs/memory/` (committed in the project repo)
+- **SQLite index** — `~/.coding-friend/memory/projects/<slug>/db.sqlite` (keyed by project path)
+
+User-scope registration does not cause cross-project contamination because the server resolves the path per-session, not at registration time.
+
+### Lazy DB creation
+
+The SQLite database for a project is created on demand — only when the first memory is stored. Opening a project that has no memories does not create an empty database.
+
+### Legacy project-scope entries
+
+If a project's `.mcp.json` still has a `coding-friend-memory` entry (from before v1.2), that entry **shadows** the user-scope server (Claude Code precedence: local > project > user). Run `cf update` in the project to strip the legacy entry automatically:
+
+```bash
+cf update
+```
+
+See the [Memory MCP Migration Guide](/docs/reference/memory-mcp-migration/) for step-by-step instructions.
+
+Skills like `/cf-remember` and `/cf-fix` use the MCP tools behind the scenes — you rarely call them directly.
 
 See [MCP Servers → Memory MCP](/docs/reference/mcp/#memory-mcp) for the full reference: available tools, resources, config snippets, and health checks.
 

@@ -218,17 +218,25 @@ export async function memoryStatusCommand(): Promise<void> {
 
   // MCP status
   const mcpStatus = getMemoryMcpStatus();
-  if (mcpStatus.configured && mcpStatus.scope === "local") {
+  if (mcpStatus.userScope && mcpStatus.scope === "local") {
     log.info(
-      `MCP: ${chalk.green("configured")} ${chalk.dim("(local .mcp.json)")}`,
+      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow("⚠ project .mcp.json shadows user-scope server — run \"cf update\" to clean up")}`,
+    );
+  } else if (mcpStatus.userScope) {
+    log.info(
+      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")}`,
+    );
+  } else if (mcpStatus.configured && mcpStatus.scope === "local") {
+    log.info(
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(local .mcp.json — run \"cf mcp\" to migrate to user scope)")}`,
     );
   } else if (mcpStatus.configured && mcpStatus.scope === "global") {
     log.info(
-      `MCP: ${chalk.green("configured")} ${chalk.dim("(global ~/.claude/.mcp.json)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(global ~/.claude/.mcp.json — run \"cf mcp\" to migrate to user scope)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
     );
   } else {
     log.info(
-      `MCP: ${chalk.dim("not configured in this project")} ${chalk.dim('(run "cf memory init" or add manually via "cf memory mcp")')}`,
+      `MCP: ${chalk.dim("not registered")} ${chalk.dim('(run "cf mcp" to register at user scope)')}`,
     );
   }
 
