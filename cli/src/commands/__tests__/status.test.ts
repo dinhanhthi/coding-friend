@@ -59,6 +59,17 @@ vi.mock("../../lib/lib-path.js", () => ({
   getLibPath: vi.fn(() => "/mock/lib/cf-memory"),
 }));
 
+vi.mock("../../lib/memory-mcp-register.js", () => ({
+  isMemoryMcpRegistered: vi.fn(() => true),
+  registerMemoryMcp: vi.fn(() => true),
+  unregisterMemoryMcp: vi.fn(() => true),
+}));
+
+vi.mock("../../lib/learn-prompts.js", () => ({
+  isLearnMcpRegistered: vi.fn(() => true),
+  registerLearnMcp: vi.fn(() => true),
+}));
+
 vi.mock("../update.js", () => ({
   getLatestVersion: vi.fn(),
   getCliVersion: vi.fn(() => "0.9.0"),

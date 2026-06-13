@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import { detectMemoryMcpState } from "./mcp-state.js";
+import { isMemoryMcpRegistered } from "./memory-mcp-register.js";
 
 /**
  * A single health check result.
@@ -32,6 +33,12 @@ export interface MemoryMcpHealthDeps {
   isDaemonRunning: () => Promise<boolean>;
   /** Absolute path to cf-memory dist/index.js (for package-built check). */
   memoryDistPath: string;
+  /**
+   * Returns true if coding-friend-memory is registered at user scope
+   * (via `claude mcp add --scope user`). Defaults to the real
+   * isMemoryMcpRegistered() from memory-mcp-register when omitted.
+   */
+  isRegistered?: () => boolean;
 }
 
 export interface LearnMcpHealthDeps {
@@ -81,33 +88,52 @@ export async function checkMemoryMcpHealth(
   deps: MemoryMcpHealthDeps,
 ): Promise<McpHealthResult> {
   const checks: HealthCheck[] = [];
+  const checkRegistered = deps.isRegistered ?? isMemoryMcpRegistered;
 
-  // ── (1) Config check ────────────────────────────────────────────────────────
+  // ── (1) User-scope registration check ───────────────────────────────────────
+  const registered = checkRegistered();
+
+  checks.push({
+    label: "Registered (user scope)",
+    ok: registered,
+    ...(registered
+      ? {}
+      : {
+          detail: "coding-friend-memory not registered",
+          fix: 'Run "cf mcp" to register',
+        }),
+  });
+
+  // ── (1b) Shadow warning — project .mcp.json entry shadows user-scope server ─
   const mcpJson = deps.readMcpJson();
   const state = detectMemoryMcpState(mcpJson, deps.pathExists);
 
-  if (state.kind === "npx") {
-    checks.push({ label: "Config (.mcp.json)", ok: true });
-  } else if (state.kind === "none") {
+  if (state.kind === "stale") {
     checks.push({
-      label: "Config (.mcp.json)",
+      label: "Project .mcp.json",
       ok: false,
-      detail: "coding-friend-memory not configured",
-      fix: 'Run "cf memory mcp" to add the MCP entry',
+      warn: true,
+      detail: `Stale entry shadows user-scope server (path missing: ${state.path})`,
+      fix: 'Run "cf update" to remove it automatically',
     });
-  } else {
-    // stale or legacy-valid — both are failures (push user to npx format)
-    const detail =
-      state.kind === "stale"
-        ? `Stale path: ${state.path}`
-        : `Absolute path (legacy): ${state.path}`;
+  } else if (state.kind === "legacy-valid") {
     checks.push({
-      label: "Config (.mcp.json)",
+      label: "Project .mcp.json",
       ok: false,
-      detail,
-      fix: 'Run "cf memory mcp" to update to the npx format',
+      warn: true,
+      detail: `Legacy absolute-path entry shadows user-scope server`,
+      fix: 'Run "cf update" to migrate to the user-scope registration',
+    });
+  } else if (state.kind === "npx") {
+    checks.push({
+      label: "Project .mcp.json",
+      ok: false,
+      warn: true,
+      detail: "Project-scope npx entry shadows user-scope server",
+      fix: 'Run "cf update" to remove it automatically',
     });
   }
+  // state.kind === "none" → no project entry, no shadow warning needed
 
   // ── (2) Package built ────────────────────────────────────────────────────────
   const distExists = deps.pathExists(deps.memoryDistPath);

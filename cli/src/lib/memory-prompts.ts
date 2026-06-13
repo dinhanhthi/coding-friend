@@ -2,6 +2,7 @@
  * Shared memory prompt helpers — used by both `cf config > memory` and `cf memory config/init`.
  */
 import { confirm, input, select } from "@inquirer/prompts";
+import { rmSync } from "fs";
 import chalk from "chalk";
 import { join } from "path";
 import { readJson, mergeJson, writeJson } from "./json.js";
@@ -294,17 +295,79 @@ export function writeMemoryMcpEntry(memoryDir: string): void {
   log.success("Added coding-friend-memory to .mcp.json");
 }
 
-export function getMemoryMcpStatus(): {
+/**
+ * Remove the legacy project-scope `coding-friend-memory` entry from `.mcp.json`.
+ * - If the file does not exist or cannot be parsed, returns `{removed:false, fileDeleted:false}`.
+ * - If after removal `mcpServers` becomes empty, the key is dropped.
+ * - If the whole object becomes empty, the file is deleted.
+ */
+export function removeMemoryMcpEntry(): {
+  removed: boolean;
+  fileDeleted: boolean;
+} {
+  const mcpPath = join(process.cwd(), ".mcp.json");
+  const existing = readJson<Record<string, unknown>>(mcpPath);
+
+  if (existing == null) {
+    return { removed: false, fileDeleted: false };
+  }
+
+  const servers = existing.mcpServers as Record<string, unknown> | undefined;
+  if (
+    servers == null ||
+    typeof servers !== "object" ||
+    Array.isArray(servers) ||
+    !("coding-friend-memory" in servers)
+  ) {
+    return { removed: false, fileDeleted: false };
+  }
+
+  delete servers["coding-friend-memory"];
+
+  if (Object.keys(servers).length === 0) {
+    delete existing.mcpServers;
+  }
+
+  if (Object.keys(existing).length === 0) {
+    rmSync(mcpPath, { force: true });
+    return { removed: true, fileDeleted: true };
+  }
+
+  writeJson(mcpPath, existing);
+  return { removed: true, fileDeleted: false };
+}
+
+export function getMemoryMcpStatus(
+  checkIsRegistered: () => boolean = isMemoryMcpRegistered,
+): {
   configured: boolean;
-  scope: "local" | "global" | null;
+  scope: "local" | "global" | "user" | null;
+  /** True when registered at user scope via `claude mcp add --scope user`. */
+  userScope: boolean;
 } {
   const localMcpPath = join(process.cwd(), ".mcp.json");
   const localMcp = readJson<Record<string, unknown>>(localMcpPath);
   const localServers = localMcp?.mcpServers as
     | Record<string, unknown>
     | undefined;
+
+  // ── User-scope registration (new canonical state) ───────────────────────────
+  const userScope = checkIsRegistered();
+  if (userScope) {
+    // Still check for a project-scope entry that shadows the user-scope server.
+    // We report configured=true; callers that care about the shadow can read userScope.
+    const hasShadow =
+      localServers != null && "coding-friend-memory" in localServers;
+    return {
+      configured: true,
+      scope: hasShadow ? "local" : "user",
+      userScope: true,
+    };
+  }
+
+  // ── Legacy: project / global .mcp.json entries ──────────────────────────────
   if (localServers != null && "coding-friend-memory" in localServers) {
-    return { configured: true, scope: "local" };
+    return { configured: true, scope: "local", userScope: false };
   }
 
   const globalMcpPath = join(claudeConfigDir(), ".mcp.json");
@@ -313,10 +376,10 @@ export function getMemoryMcpStatus(): {
     | Record<string, unknown>
     | undefined;
   if (globalServers != null && "coding-friend-memory" in globalServers) {
-    return { configured: true, scope: "global" };
+    return { configured: true, scope: "global", userScope: false };
   }
 
-  return { configured: false, scope: null };
+  return { configured: false, scope: null, userScope: false };
 }
 
 export async function editMemoryMcp(): Promise<void> {
@@ -390,14 +453,21 @@ export async function memoryConfigMenu(opts?: {
       : "";
 
     const mcpStatus = getMemoryMcpStatus();
-    const mcpLabel = mcpStatus.configured
+    const mcpLabel = mcpStatus.userScope
       ? mcpStatus.scope === "local"
-        ? chalk.green("configured") + chalk.dim(" (.mcp.json)")
-        : chalk.green("configured") +
-          chalk.dim(" (global)") +
+        ? chalk.green("registered") +
+          chalk.dim(" (user scope)") +
           " " +
-          chalk.yellow("⚠")
-      : chalk.dim("not configured");
+          chalk.yellow("⚠ shadow")
+        : chalk.green("registered") + chalk.dim(" (user scope)")
+      : mcpStatus.configured
+        ? mcpStatus.scope === "local"
+          ? chalk.yellow("configured") + chalk.dim(" (.mcp.json)")
+          : chalk.yellow("configured") +
+            chalk.dim(" (global)") +
+            " " +
+            chalk.yellow("⚠")
+        : chalk.dim("not registered");
 
     const choice = await select({
       message: "Memory settings:",

@@ -2,6 +2,7 @@ import { existsSync, rmSync } from "fs";
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import { readJson, writeJson } from "../lib/json.js";
+import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
 import {
   claudeSettingsPath,
   devStatePath,
@@ -182,6 +183,16 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
   // For project/local scope: simple uninstall (no full cleanup)
   if (scope === "project" || scope === "local") {
     await uninstallScoped(scope);
+    if (scope === "project") {
+      const migrationResult = removeMemoryMcpEntry();
+      if (migrationResult.removed) {
+        if (migrationResult.fileDeleted) {
+          log.success("Removed legacy project-scope coding-friend-memory from .mcp.json (file deleted — was empty).");
+        } else {
+          log.success("Removed legacy project-scope coding-friend-memory from .mcp.json");
+        }
+      }
+    }
     return;
   }
 

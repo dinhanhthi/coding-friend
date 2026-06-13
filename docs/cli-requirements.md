@@ -125,10 +125,9 @@ When you later install the CLI and run `cf memory rebuild`, existing files are r
 ```bash
 npm i -g coding-friend-cli
 cf init
-cf memory init
 ```
 
-Existing `docs/memory/*.md` files will be re-indexed automatically on the first run of `cf memory rebuild` (or `cf memory init`).
+`cf init` registers both the Learn and Memory MCP servers at user scope (no per-project `.mcp.json` needed). Existing `docs/memory/*.md` files will be re-indexed automatically on the first run of `cf memory rebuild` (or `cf memory init` for Tier 1 SQLite setup).
 
 ---
 

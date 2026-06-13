@@ -181,6 +181,7 @@ async function printMemoryMcp(): Promise<void> {
     pathExists: existsSync,
     isDaemonRunning,
     memoryDistPath,
+    isRegistered: isMemoryMcpRegistered,
   });
   printHealthSection(memoryHealth);
 }
