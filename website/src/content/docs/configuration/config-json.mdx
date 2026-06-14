@@ -53,6 +53,7 @@ Edit interactively with `cf config`, or manually edit the JSON files.
     }
   },
   "autoApprove": false,
+  "autoApproveCodex": false,
   "autoApproveAllowExtra": [],
   "autoApproveIgnore": [],
   "disableGUIPlan": true,
@@ -183,6 +184,14 @@ Settings for the statusline display (global config only).
 - **Default**: `false`
 - Enables the [auto-approve hook](/docs/reference/auto-approve) that reduces permission prompts
 - Uses a 3-step classification pipeline (rules → working-dir → LLM) to auto-approve safe operations
+
+### `autoApproveCodex`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- Enables deterministic-only auto-approve for Codex CLI
+- Unknown actions defer to Codex native approval; the Claude Sonnet classifier is not used from Codex hooks
+- Set with `cf permission --agent codex --enable-auto-approve` or `cf permission --agent codex --disable-auto-approve`
 
 ### `autoApproveAllowExtra`
 

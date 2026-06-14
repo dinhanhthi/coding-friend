@@ -1,0 +1,64 @@
+---
+name: cf-verification
+description: Verify before claiming work is complete
+created: 2026-02-17
+updated: 2026-06-06
+---
+
+# Verification Before Completion
+
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
+
+## Custom Guide
+
+Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-verification`
+
+If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+
+## The Gate
+
+**No completion claims without fresh verification evidence.**
+
+Claiming work is complete without verification is dishonesty, not efficiency.
+
+## When to Auto-Invoke
+
+Auto-invoke this skill after tasks that **produce or modify code** (implementation, bug fixes, refactoring).
+
+Do NOT auto-invoke after **analysis-only skills** that don't change code:
+
+- `$cf-review` — code review is analysis, not implementation
+- `$cf-plan` — planning doesn't produce code
+- `$cf-ask` — Q&A doesn't produce code
+- `$cf-research` — research doesn't produce code
+
+## Checklist
+
+Before claiming ANY task is done:
+
+1. **Run tests** — Execute the test suite. Read the output. All tests must pass.
+2. **Run the build** — If applicable, build the project. No errors.
+3. **Lint/format** — If configured, run linter. No new warnings.
+4. **Manual check** — For UI changes, verify visually. For API changes, test the endpoint.
+5. **Show evidence** — Include test output, build output, or screenshots in your response.
+6. **Slop check** — Scan changed code for AI transmarks, excessive comments, unnecessary verbosity.
+
+## What Counts as Evidence
+
+| Good Evidence                 | Bad Evidence                       |
+| ----------------------------- | ---------------------------------- |
+| Test output showing all pass  | "I believe the tests pass"         |
+| Build output with exit code 0 | "The build should work"            |
+| Actual command output         | "I ran the tests" (without output) |
+| Screenshot of UI change       | "The UI looks correct"             |
+| `git diff` showing the change | "I made the change"                |
+
+## Common Failures
+
+- [ ] Tests pass
+- [ ] No type errors (TypeScript/typed languages)
+- [ ] Linter clean
+- [ ] Build succeeds
+- [ ] No console errors/warnings
+- [ ] Feature works as described
+- [ ] No regressions in existing functionality

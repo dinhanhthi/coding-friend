@@ -12,13 +12,14 @@ const SESSION_LOG = path.resolve(__dirname, "../session-log.sh");
 const SESSION_ID = `test-tracking-${process.pid}`;
 
 /** Run a shell hook with JSON stdin. Returns stdout (empty for async hooks). */
-function runHook(script, jsonInput) {
+function runHook(script, jsonInput, env = {}) {
   const input =
     typeof jsonInput === "string" ? jsonInput : JSON.stringify(jsonInput);
   try {
     return execFileSync("bash", [script], {
       input,
       encoding: "utf8",
+      env: { ...process.env, ...env },
       timeout: 5000,
     });
   } catch {
@@ -148,6 +149,18 @@ describe("agent-tracker.sh", () => {
     expect(fs.existsSync(`/tmp/cf-agent-${SESSION_ID}`)).toBe(false);
   });
 
+  it("accepts Codex-style hookEventName and agent_name", () => {
+    runHook(AGENT_TRACKER, {
+      hookEventName: "SubagentStart",
+      agent_name: "cf-codex-reviewer",
+      session_id: SESSION_ID,
+    });
+
+    expect(fs.readFileSync(`/tmp/cf-agent-${SESSION_ID}`, "utf8").trim()).toBe(
+      "cf-codex-reviewer",
+    );
+  });
+
   it("uses mkdir-based locking to protect concurrent access", () => {
     // The lock dir should not persist after the hook exits (released in EXIT trap)
     runHook(AGENT_TRACKER, {
@@ -261,6 +274,19 @@ describe("task-tracker.sh", () => {
 
   it("exits silently with no session_id", () => {
     runHook(TASK_TRACKER, { hook_event_name: "TaskCreated" });
+    expect(fs.existsSync(`/tmp/cf-tasks-${SESSION_ID}.json`)).toBe(false);
+  });
+
+  it("exits without writing when CF_HOST=codex", () => {
+    runHook(
+      TASK_TRACKER,
+      {
+        hook_event_name: "TaskCreated",
+        session_id: SESSION_ID,
+      },
+      { CF_HOST: "codex" },
+    );
+
     expect(fs.existsSync(`/tmp/cf-tasks-${SESSION_ID}.json`)).toBe(false);
   });
 });

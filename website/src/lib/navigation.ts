@@ -56,6 +56,7 @@ export const docsNavigation: NavSection[] = [
     title: "Getting Started",
     items: [
       { title: "Installation", slug: "getting-started/installation" },
+      { title: "Codex CLI", slug: "getting-started/codex" },
       { title: "Quick Start", slug: "getting-started/quick-start" },
       { title: "Skills Overview", slug: "skills/overview" },
       { title: "Best Practices", slug: "getting-started/best-practices" },

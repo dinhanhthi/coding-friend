@@ -38,6 +38,14 @@ Auto-approve is **off by default**. Enable it in `.coding-friend/config.json`:
 
 Or use the interactive setup: `cf config` or `cf init`.
 
+For Codex CLI, use the separate deterministic-only toggle:
+
+```bash
+cf permission --agent codex --enable-auto-approve
+```
+
+Codex auto-approve writes `autoApproveCodex: true`, does not call the Claude Sonnet classifier, and defers unknown actions to Codex native approval.
+
 ## How It Works
 
 ```

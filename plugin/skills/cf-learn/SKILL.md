@@ -263,7 +263,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `subagent_type: "coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 6: Confirm
 

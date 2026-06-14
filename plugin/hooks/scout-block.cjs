@@ -151,9 +151,24 @@ function isBlocked(filePath, patterns) {
   return null;
 }
 
+// Codex edits files through `apply_patch`; its targets live inside the patch
+// envelope carried in tool_input.command. Tolerate leading whitespace and
+// casing so blocking catches every header Codex would honor.
+const APPLY_PATCH_HEADER_PATTERN =
+  /^[ \t]*\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gim;
+
+function extractApplyPatchPaths(command) {
+  if (typeof command !== "string") return [];
+  const paths = [];
+  for (const match of command.matchAll(APPLY_PATCH_HEADER_PATTERN)) {
+    paths.push(match[1].trim());
+  }
+  return paths;
+}
+
 /**
  * Extract file paths from tool_input JSON.
- * Looks at: file_path, path, pattern
+ * Looks at: file_path, path, pattern, and apply_patch envelopes in command
  */
 function extractPaths(toolInput) {
   if (!toolInput || typeof toolInput !== "object") return [];
@@ -161,6 +176,7 @@ function extractPaths(toolInput) {
   if (toolInput.file_path) paths.push(toolInput.file_path);
   if (toolInput.path) paths.push(toolInput.path);
   if (toolInput.pattern) paths.push(toolInput.pattern);
+  paths.push(...extractApplyPatchPaths(toolInput.command));
   return paths;
 }
 
@@ -174,6 +190,7 @@ module.exports = {
   buildEffectivePatterns,
   pathMatchesPattern,
   isBlocked,
+  extractApplyPatchPaths,
   extractPaths,
 };
 

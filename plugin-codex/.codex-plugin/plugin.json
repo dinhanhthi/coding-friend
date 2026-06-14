@@ -1,0 +1,41 @@
+{
+  "name": "coding-friend",
+  "version": "0.36.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Codex CLI",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "tdd",
+    "debugging",
+    "code-review",
+    "workflows",
+    "knowledge",
+    "agents"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Coding Friend",
+    "shortDescription": "Disciplined engineering workflows for Codex CLI",
+    "longDescription": "Coding Friend adds structured planning, debugging, review, commit, learning, research, and memory workflows to Codex CLI.",
+    "developerName": "Anh-Thi Dinh",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Interactive"
+    ],
+    "websiteURL": "https://cf.dinhanhthi.com/",
+    "defaultPrompt": [
+      "Plan and implement this feature with Coding Friend",
+      "Review my current changes with Coding Friend"
+    ],
+    "brandColor": "#166534"
+  }
+}

@@ -8,7 +8,7 @@ That single check is sufficient — Claude does NOT need to introspect whether c
 
 When active, after implementation completes its own verification (existing tests pass + typecheck/lint clean), run this loop instead of the standard Review Reminder:
 
-1. **Run review** — invoke the cf-review skill (Skill tool, `coding-friend:cf-review`, no extra args). cf-review will analyze uncommitted changes.
+1. **Run review** — invoke the cf-review skill (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). cf-review will analyze uncommitted changes.
 
 2. **Parse findings** — cf-review returns bullets under 4 emoji headers:
    - 🚨 **Critical** → must fix

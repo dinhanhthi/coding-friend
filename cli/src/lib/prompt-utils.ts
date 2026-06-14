@@ -5,6 +5,7 @@ import { run } from "./exec.js";
 import { readJson } from "./json.js";
 import { log } from "./log.js";
 import { globalConfigPath, localConfigPath } from "./paths.js";
+import { type Host, resolveHost, type HostFlags } from "./host.js";
 
 export const BACK = "__back__";
 
@@ -51,6 +52,8 @@ export interface ScopeFlags {
   global?: boolean;
   project?: boolean;
   local?: boolean;
+  agent?: string;
+  codex?: boolean;
 }
 
 /**
@@ -121,6 +124,15 @@ export async function resolveScope(
   }
 
   return askPluginScope(message);
+}
+
+export function resolveHostFlags(opts: HostFlags): { host: Host } {
+  try {
+    return { host: resolveHost(opts) };
+  } catch (err) {
+    log.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
 }
 
 /**

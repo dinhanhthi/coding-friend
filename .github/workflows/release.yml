@@ -1,4 +1,4 @@
-name: Release on Tag Push
+name: Release plugins on tag push
 
 on:
   push:
@@ -11,13 +11,19 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      target_sha: ${{ github.sha }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Extract version from tag
         id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Extract changelog for this version
         id: changelog
@@ -60,3 +66,13 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file /tmp/release-body.md
+
+  release-codex:
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-codex.yml
+    with:
+      target_sha: ${{ needs.release.outputs.target_sha }}
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit

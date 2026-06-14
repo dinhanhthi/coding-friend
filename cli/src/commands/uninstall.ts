@@ -12,6 +12,12 @@ import {
   memoryDepsDir,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
+import {
+  removeCodexMemoryMcpConfig,
+  removeDeployedCodexAgents,
+  setCodexPluginEnabled,
+  CODEX_MARKETPLACE_NAME,
+} from "../lib/codex-config.js";
 import { log, printBanner } from "../lib/log.js";
 import {
   hasShellCompletion,
@@ -22,6 +28,7 @@ import {
   isMarketplaceRegistered,
 } from "../lib/plugin-state.js";
 import {
+  resolveHostFlags,
   resolveScope,
   type ScopeFlags,
   type PluginScope,
@@ -154,7 +161,19 @@ async function uninstallScoped(scope: PluginScope): Promise<void> {
   log.dim("Restart Claude Code to complete the uninstall.");
 }
 
-export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
+export interface UninstallOptions extends ScopeFlags {
+  removeMarketplace?: boolean;
+}
+
+export async function uninstallCommand(
+  opts: UninstallOptions = {},
+): Promise<void> {
+  const { host } = resolveHostFlags(opts);
+  if (host === "codex") {
+    uninstallCodexCommand(opts);
+    return;
+  }
+
   console.log();
   printBanner("👋 Coding Friend Uninstall 👋", { color: chalk.red });
 
@@ -372,4 +391,45 @@ export async function uninstallCommand(opts: ScopeFlags = {}): Promise<void> {
   console.log();
   log.dim("To also remove the CLI tool globally, run:");
   console.log(`  ${chalk.bold("npm uninstall -g coding-friend-cli")}`);
+}
+
+function uninstallCodexCommand(opts: UninstallOptions): void {
+  console.log();
+  printBanner("👋 Coding Friend Codex Uninstall 👋", { color: chalk.red });
+
+  setCodexPluginEnabled(false);
+  log.success("Disabled coding-friend in ~/.codex/config.toml.");
+
+  const removedAgents = removeDeployedCodexAgents();
+  if (removedAgents > 0) {
+    log.success(
+      `Removed ${removedAgents} deployed Coding Friend agent definition(s) from ~/.codex/agents/.`,
+    );
+  }
+
+  if (removeCodexMemoryMcpConfig()) {
+    log.success(
+      "Removed coding-friend-memory registration from ~/.codex/config.toml.",
+    );
+  }
+
+  if (opts.removeMarketplace) {
+    if (!commandExists("codex")) {
+      log.warn("Codex CLI not found; could not remove marketplace via CLI.");
+    } else {
+      const result = run("codex", [
+        "plugin",
+        "marketplace",
+        "remove",
+        CODEX_MARKETPLACE_NAME,
+      ]);
+      if (result === null) {
+        log.warn("Could not remove Codex marketplace registration.");
+      } else {
+        log.success("Removed Codex marketplace registration.");
+      }
+    }
+  }
+
+  log.dim("Restart Codex CLI for the change to take effect.");
 }

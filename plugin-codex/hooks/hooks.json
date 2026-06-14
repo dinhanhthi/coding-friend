@@ -1,0 +1,96 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/memory-capture.codex.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|Glob|Grep|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/privacy-block.sh"
+          },
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/scout-block.cjs"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/session-init.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/session-log.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/agent-tracker.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/agent-tracker.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/rules-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs"
+          }
+        ]
+      }
+    ]
+  }
+}

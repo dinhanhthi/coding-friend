@@ -10,6 +10,8 @@ Interactive setup for Coding Friend. Run it in the root directory of your projec
 
 ```bash
 cf init
+cf init --agent codex
+cf init --agent codex --trust-project
 ```
 
 `cf init` has two modes depending on whether the project has been initialized before:
@@ -20,6 +22,20 @@ cf init
 You can run `cf init` as many times as you want.
 
 💡 To edit individual settings later, you can also use [`cf config`](/docs/cli/cf-config/).
+
+## Codex Mode
+
+Claude Code is the default setup path. Use `cf init --agent codex` to initialize the same project for Codex CLI.
+
+Codex mode:
+
+- Creates `AGENTS.md` with Coding Friend rules and `$cf-*` skill references
+- Registers the `coding-friend-memory` MCP server in Codex config
+- Writes project `.codex/config.toml`
+- Copies generated project agent TOMLs into `.codex/agents/`
+- Sets `agents.max_depth = 2` in `~/.codex/config.toml` for nested Coding Friend agents
+
+Add `--trust-project` when you want the CLI to mark the current project trusted in `~/.codex/config.toml`.
 
 ## Config File Locations
 

@@ -27,6 +27,14 @@ vi.mock("../log.js", () => ({
   },
 }));
 
+vi.mock("../host.js", () => ({
+  resolveHost: vi.fn((opts: { agent?: string; codex?: boolean }) => {
+    if (opts.agent === "bad") throw new Error("bad host");
+    if (opts.codex || opts.agent === "codex") return "codex";
+    return "claude";
+  }),
+}));
+
 // Mock @inquirer/prompts
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
@@ -37,6 +45,7 @@ vi.mock("@inquirer/prompts", () => ({
 import {
   applyDocsDirChange,
   ensureDocsFolders,
+  resolveHostFlags,
   resolveScope,
 } from "../prompt-utils.js";
 import * as paths from "../paths.js";
@@ -383,5 +392,38 @@ describe("resolveScope", () => {
       local: false,
     });
     expect(result).toBe("project");
+  });
+});
+
+describe("resolveHostFlags", () => {
+  let mockExit: MockInstance;
+
+  beforeEach(() => {
+    mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+  });
+
+  afterEach(() => {
+    mockExit.mockRestore();
+  });
+
+  it("defaults to claude", () => {
+    expect(resolveHostFlags({})).toEqual({ host: "claude" });
+  });
+
+  it("resolves --agent codex", () => {
+    expect(resolveHostFlags({ agent: "codex" })).toEqual({ host: "codex" });
+  });
+
+  it("resolves --codex alias", () => {
+    expect(resolveHostFlags({ codex: true })).toEqual({ host: "codex" });
+  });
+
+  it("logs and exits on invalid host flags", () => {
+    resolveHostFlags({ agent: "bad" });
+
+    expect(log.error).toHaveBeenCalledWith("bad host");
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 });

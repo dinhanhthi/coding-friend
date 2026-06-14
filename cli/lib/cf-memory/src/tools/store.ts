@@ -44,8 +44,8 @@ export function registerStore(
         .boolean()
         .optional()
         .describe(
-          "When true, sync this memory to the project's CLAUDE.md regardless of category. " +
-            "Use for memories containing project-wide rules, conventions, or decisions that should be visible in CLAUDE.md. " +
+          "Compatibility alias: when true, sync this memory to the project's host instruction files (CLAUDE.md and/or AGENTS.md) regardless of category. " +
+            "Use for memories containing project-wide rules, conventions, or decisions that should be visible to coding agents. " +
             "Convention memories (type: preference) are always synced automatically.",
         ),
     },
@@ -82,17 +82,17 @@ export function registerStore(
 
       const memory = await backend.store(input);
 
-      // Sync to CLAUDE.md: auto for conventions, opt-in for other categories
+      // Sync host instruction files: auto for conventions, opt-in for others.
       let claudeMdUpdated = false;
       const shouldSync =
         (memory.category === "conventions" || sync_to_claude_md) &&
         ctx?.docsDir;
       if (shouldSync) {
         try {
-          syncToClaudeMd(ctx.docsDir, memory.id, description);
-          claudeMdUpdated = true;
+          claudeMdUpdated =
+            syncToClaudeMd(ctx.docsDir, memory.id, description).length > 0;
         } catch {
-          // Best-effort — don't block store on CLAUDE.md sync errors
+          // Best-effort — don't block store on instruction sync errors.
         }
       }
 

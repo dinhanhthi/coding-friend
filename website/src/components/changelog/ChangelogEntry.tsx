@@ -21,8 +21,7 @@ interface Props {
 function renderInline(text: string) {
   // Match backtick code spans, bold (**…**), and markdown links.
   // Code spans are matched first so markdown inside them stays literal.
-  const tokenRegex =
-    /`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
+  const tokenRegex = /`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
   const result: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;

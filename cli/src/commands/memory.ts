@@ -111,7 +111,9 @@ export async function refreshMemoryAfterUpdate(): Promise<void> {
     }
   } catch {
     // Never let a memory-refresh failure abort the rest of `cf update`.
-    log.warn('Could not refresh memory server — run "cf memory status" to retry.');
+    log.warn(
+      'Could not refresh memory server — run "cf memory status" to retry.',
+    );
   }
 }
 

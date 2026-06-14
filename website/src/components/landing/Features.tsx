@@ -280,7 +280,7 @@ function StatuslineContent() {
                 2:30pm
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs mt-1">
+            <div className="mt-1 flex flex-wrap items-center gap-0 gap-y-1 text-xs">
               <span className="whitespace-nowrap text-slate-400">
                 🆔{" "}
                 <span className="text-slate-500">
@@ -288,7 +288,7 @@ function StatuslineContent() {
                 </span>
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-0 gap-y-1 text-xs mt-1">
+            <div className="mt-1 flex flex-wrap items-center gap-0 gap-y-1 text-xs">
               <span className="whitespace-nowrap text-slate-400">
                 📋 Tasks: <span className="text-emerald-400">2/5</span>
               </span>
@@ -1189,8 +1189,8 @@ function CrossAgentContent() {
           /cf-review --with-codex
         </Link>{" "}
         runs Claude&apos;s review and a Codex review in parallel, then merges
-        both into one report — fully automated. The prompt-based flow below stays
-        for any other agent (Gemini, ChatGPT) or a human reviewer.
+        both into one report — fully automated. The prompt-based flow below
+        stays for any other agent (Gemini, ChatGPT) or a human reviewer.
       </p>
 
       {/* Flow diagram */}

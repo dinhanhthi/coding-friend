@@ -280,7 +280,7 @@ Show the user a 2-line summary:
 
 ### Step 9: Auto-Review
 
-Automatically invoke `/cf-review` — use the **Skill tool** with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
 
 > If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
 
@@ -312,7 +312,7 @@ Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (state 
 If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
 
 1. **Suggest `/cf-learn`** — Ask the user: _"This bug is taking multiple attempts. Want to run `/cf-learn` to capture the debugging insights so far before continuing?"_
-2. If the user agrees, invoke `/cf-learn` via the **Skill tool** with skill name `coding-friend:cf-learn`
+2. If the user agrees, invoke `/cf-learn` — use the Skill tool with skill name `coding-friend:cf-learn`
 3. Then proceed with the 3rd attempt
 
 If you've tried **3 fixes** and the bug persists:

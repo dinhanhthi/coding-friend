@@ -6,7 +6,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol above. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (Skill tool, `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix

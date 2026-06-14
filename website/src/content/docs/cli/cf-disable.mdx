@@ -1,7 +1,7 @@
 ---
 title: "cf disable"
 description: "Disable the Coding Friend plugin without uninstalling it."
-keywords: [disable, deactivate, turn off, cf disable, scope]
+keywords: [disable, deactivate, turn off, cf disable, scope, codex]
 ---
 
 ## Overview
@@ -16,7 +16,10 @@ cf disable --user       # Disable at user scope (all projects)
 cf disable --global     # Same as --user
 cf disable --project    # Disable at project scope
 cf disable --local      # Disable at local scope
+cf disable --agent codex # Disable Coding Friend in Codex config
 ```
+
+For Codex CLI, `cf disable --agent codex` records `coding-friend` as disabled in `~/.codex/config.toml`.
 
 ## Scopes
 

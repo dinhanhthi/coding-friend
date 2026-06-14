@@ -32,6 +32,10 @@ coding-friend uses a layered config system:
   // Default: false
   "autoApprove": false,
 
+  // Enable Codex auto-approve hook (deterministic-only; unknowns defer to Codex)
+  // Default: false
+  "autoApproveCodex": false,
+
   // Additional Bash command prefixes to auto-approve (merged across global + local)
   // These are checked after deny patterns, so they cannot override destructive rules
   // Example: ["cargo test", "pytest", "go test"]
