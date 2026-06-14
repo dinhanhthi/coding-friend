@@ -92,6 +92,8 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 The memory system provides persistent project knowledge across sessions via MCP tools:
 
 - **MCP Tools**: `memory_store`, `memory_search`, `memory_retrieve`, `memory_list`, `memory_update`, `memory_delete`
+- **Registration**: `coding-friend-memory` MCP server is registered once at **user scope** (global) — no per-project `.mcp.json` setup needed. Run `cf mcp` or `cf install` to register.
+- **Runtime resolution**: The server resolves the current project's memory dir at session start from `CLAUDE_PROJECT_DIR` → git main-worktree root → config `docsDir` → `docs/memory`.
 - **3-tier search**: SQLite hybrid (FTS5 + semantic) → MiniSearch (BM25 + fuzzy) → Markdown grep
 - **Auto-capture**: PreCompact hook saves session episodes (opt-in via `memory.autoCapture`)
 - **Smart capture**: cf-fix, cf-sys-debug, cf-review, cf-ask, cf-scan, cf-remember auto-index findings in memory
@@ -102,6 +104,6 @@ Memory files live in `docs/memory/` organized by type: features/ (facts), conven
 
 ## CLI (coding-friend-cli)
 
-Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf learn [host|push], cf mcp, cf guide [create|list], cf memory [status|search|list|rm|start|stop|rebuild|init|config|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
+Install via `npm i -g coding-friend-cli`: cf install [--user|--project|--local], cf uninstall [--user|--project|--local], cf disable [--user|--project|--local], cf enable [--user|--project|--local], cf init, cf learn [host|push], cf mcp (registers both Learn and Memory MCP at user scope — global, no per-project .mcp.json needed), cf guide [create|list], cf memory [status|search|list|rm|start|stop|rebuild|init|config|mcp], cf permission, cf statusline, cf update [--user|--project|--local]
 
 For details on any skill, read `plugin/skills/<name>/SKILL.md`.
