@@ -4,10 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { docsNavigation } from "@/lib/navigation";
+import {
+  useAgent,
+  AgentToggle,
+  withAgentPrefix,
+} from "@/components/docs/AgentContext";
 import PagefindSearch from "./PagefindSearch";
 
 export default function DocsMobileNav() {
   const pathname = usePathname();
+  const { agent } = useAgent();
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,10 +43,16 @@ export default function DocsMobileNav() {
 
       {open && (
         <nav className="max-h-[60vh] space-y-4 overflow-y-auto px-4 pb-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              Agent
+            </span>
+            <AgentToggle />
+          </div>
           {docsNavigation.map((section) => (
             <div key={section.title}>
               <div className="mb-1 text-sm font-semibold tracking-wider text-slate-400 uppercase">
-                {section.title}
+                {withAgentPrefix(section.title, agent)}
               </div>
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
@@ -60,7 +72,7 @@ export default function DocsMobileNav() {
                             : "text-slate-400"
                         }`}
                       >
-                        {item.title}
+                        {withAgentPrefix(item.title, agent)}
                       </Link>
                     </li>
                   );
