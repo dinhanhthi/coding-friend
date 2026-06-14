@@ -17,7 +17,9 @@
 
 ## What It Does
 
-Supported hosts: **Claude Code** and **Codex CLI**. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`.
+Supported hosts: **Claude Code** and **Codex CLI** _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`.
+
+> **Codex support is in beta.** Core skills, agents, hooks, and shared memory work, but some parity gaps remain — see [Codex CLI docs](https://cf.dinhanhthi.com/docs/getting-started/codex/).
 
 Command examples below use Claude's `/cf-*` form. In Codex, invoke the same
 skills as `$cf-*` or choose them from `/skills`.
@@ -60,7 +62,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Cl
 
    ```bash
    cf install                 # Claude Code (default)
-   cf install --agent codex   # Codex CLI (alias: cf install --codex)
+   cf install --agent codex   # Codex CLI — beta (alias: cf install --codex)
    ```
 
    > **`cf` conflict?** If another tool (e.g. Cloudflare's `cf`) already occupies that name, use `cdf` — it's an alias for the same CLI: `cdf install`, `cdf init`, etc.
