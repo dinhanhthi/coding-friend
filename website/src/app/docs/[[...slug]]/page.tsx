@@ -28,6 +28,8 @@ import Badge from "@/components/ui/Badge";
 import TokenBadge from "@/components/ui/TokenBadge";
 import StatusBadge from "@/components/ui/StatusBadge";
 import CopyForAiButton from "@/components/docs/CopyForAiButton";
+import CodexNotice from "@/components/docs/CodexNotice";
+import { AgentLabel } from "@/components/docs/AgentContext";
 
 /**
  * rehype plugin: ensure all <pre><code> elements have the "hljs" class
@@ -181,6 +183,7 @@ export default async function DocPage({ params }: Props) {
   // Bind the page's tier into <ContextFootprint /> so the MDX body line stays
   // in sync with the header badge and token-counts.json (single source).
   const footprintTier = currentNav?.tier;
+  const isSlashSkill = currentNav?.section === "/Slash Skills";
   const components = {
     ...mdxComponents,
     ContextFootprint: footprintTier
@@ -238,7 +241,7 @@ export default async function DocPage({ params }: Props) {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-violet-400">
-              {doc.frontmatter.title}
+              <AgentLabel>{doc.frontmatter.title}</AgentLabel>
             </h1>
             {currentNav?.manualOnly && (
               <Badge className="border border-amber-500/50 bg-amber-900/30 text-amber-400">
@@ -269,6 +272,8 @@ export default async function DocPage({ params }: Props) {
 
         {/* divider */}
         <div className="mb-8 h-px dark:bg-slate-600" />
+
+        {isSlashSkill && <CodexNotice command={doc.frontmatter.title} />}
 
         <div className="prose prose-invert prose-headings:font-semibold prose-a:text-sky-300 prose-a:no-underline prose-a:hover:text-violet-400 prose-code:before:content-none prose-code:after:content-none prose-code:bg-navy-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-base max-w-none">
           <MDXRemote

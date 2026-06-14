@@ -5,6 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { docsNavigation } from "@/lib/navigation";
+import {
+  useAgent,
+  AgentToggle,
+  withAgentPrefix,
+} from "@/components/docs/AgentContext";
 
 const dotColors: Record<string, string> = {
   orange: "bg-orange-400",
@@ -33,6 +38,7 @@ const DEFAULT_COLLAPSED = new Set([
 
 export default function DocsSidebar() {
   const pathname = usePathname();
+  const { agent } = useAgent();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
       docsNavigation.map((s) => [s.title, DEFAULT_COLLAPSED.has(s.title)]),
@@ -64,6 +70,12 @@ export default function DocsSidebar() {
         className="scrollbar-none flex-1 space-y-6 overflow-y-auto p-6"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+            Agent
+          </span>
+          <AgentToggle />
+        </div>
         {docsNavigation.map((section) => {
           const isCollapsed = collapsed[section.title];
 
@@ -73,7 +85,7 @@ export default function DocsSidebar() {
                 onClick={() => toggleSection(section.title)}
                 className="flex w-full cursor-pointer items-center justify-between text-sm font-semibold tracking-wider text-slate-400 uppercase transition-colors hover:text-white"
               >
-                {section.title}
+                {withAgentPrefix(section.title, agent)}
                 <svg
                   className={`h-3.5 w-3.5 transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`}
                   fill="none"
@@ -107,7 +119,7 @@ export default function DocsSidebar() {
                               : "hover:bg-navy-800 text-slate-400 hover:text-white"
                           }`}
                         >
-                          {item.title}
+                          {withAgentPrefix(item.title, agent)}
                           {item.manualOnly && (
                             <svg
                               className="h-3 w-3 shrink-0 opacity-50"

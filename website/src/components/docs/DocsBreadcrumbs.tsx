@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useAgent, withAgentPrefix } from "@/components/docs/AgentContext";
 
 interface Props {
   items: { label: string; href?: string }[];
 }
 
 export default function DocsBreadcrumbs({ items }: Props) {
+  const { agent } = useAgent();
   return (
     <nav className="mb-6 flex items-center gap-1.5 text-base text-slate-400">
       <Link href="/docs/" className="transition-colors hover:text-violet-400">
@@ -30,10 +34,12 @@ export default function DocsBreadcrumbs({ items }: Props) {
               href={item.href}
               className="transition-colors hover:text-violet-400"
             >
-              {item.label}
+              {withAgentPrefix(item.label, agent)}
             </Link>
           ) : (
-            <span className="font-medium text-white">{item.label}</span>
+            <span className="font-medium text-white">
+              {withAgentPrefix(item.label, agent)}
+            </span>
           )}
         </span>
       ))}
