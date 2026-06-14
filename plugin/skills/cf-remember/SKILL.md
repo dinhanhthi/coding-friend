@@ -3,23 +3,18 @@ name: cf-remember
 description: >
   Extract project knowledge from conversation to docs/memory — for AI recall in future sessions.
   Use when the user wants to save project context, capture decisions, document conventions, or
-  preserve knowledge from the current session — e.g. "remember this", "save this to memory",
-  "document what we did", "capture this decision", "write this down", "save for later",
-  "don't forget", "note this", "record this convention", "preserve this knowledge".
-  Auto-invoke when ANY of these signals appear:
-  (1) A bug fix (via cf-fix or cf-sys-debug) involved a non-obvious root cause, a workaround,
-  or required multiple failed attempts before resolving — save to bugs/ so future sessions avoid the same trap.
-  (2) An explicit architecture or approach decision was made in conversation — e.g. "we chose X over Y
-  because...", "we decided to use X instead of Y", "the reason we're doing X is..." — save to decisions/.
-  (3) A new project-wide convention or pattern was established during implementation — e.g. a naming rule,
-  an API design pattern, a structural constraint — save to conventions/.
-  (4) A substantial session ends with newly documented feature flows, non-obvious API behavior, or gotchas
-  that would save significant time in a future session — save to features/.
-  Do NOT auto-invoke for: trivial one-line fixes, simple config changes, purely educational exchanges
-  (use /cf-learn for those), or knowledge already obvious from reading the code.
-  Unlike /cf-learn (educational notes for humans), this saves project context for AI recall.
+  preserve knowledge — e.g. "remember this", "save this to memory", "document what we did",
+  "capture this decision", "write this down", "note this", "record this convention".
+  Auto-invoke when: (1) a bug fix had a non-obvious root cause, a workaround, or took multiple
+  attempts — save to bugs/; (2) an explicit architecture or approach decision was made — save to
+  decisions/; (3) a new project-wide convention or pattern was established — save to conventions/;
+  (4) a substantial session ends with new feature flows, non-obvious API behavior, or gotchas —
+  save to features/.
+  Do NOT auto-invoke for trivial fixes, simple config changes, or purely educational exchanges
+  (use /cf-learn for those). Unlike /cf-learn (educational notes for humans), this saves project
+  context for AI recall.
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-06-14
 ---
 
 # /cf-remember
