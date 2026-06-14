@@ -163,7 +163,7 @@ existing_file_action: append
 - `tags`: 3-5 relevant keywords as array
 - When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `"coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `subagent_type: "coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 5: Index in CF Memory (MANDATORY)
 

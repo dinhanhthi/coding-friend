@@ -13,13 +13,25 @@ import {
   claudeSessionDir,
   claudeProjectSettingsPath,
   claudeSettingsPath,
+  codexAgentsDir,
+  codexConfigDir,
+  codexConfigTomlPath,
+  codexInstalledPluginsPath,
+  codexLocalMarketplacePath,
+  codexMarketplaceClonePath,
+  codexPluginsCacheDir,
+  codexProjectsDir,
+  codexSessionDir,
   installedPluginsPath,
   pluginCachePath,
   knownMarketplacesPath,
 } from "../paths.js";
 
 // Ensure tests are not affected by CLAUDE_CONFIG_DIR set in the caller's shell
-beforeEach(() => vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string));
+beforeEach(() => {
+  vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string);
+  vi.stubEnv("CODEX_HOME", undefined as unknown as string);
+});
 afterEach(() => vi.unstubAllEnvs());
 
 describe("resolvePath", () => {
@@ -168,9 +180,7 @@ describe("CLAUDE_CONFIG_DIR", () => {
 
   it("tilde: claudeSettingsPath expands ~ in CLAUDE_CONFIG_DIR", () => {
     vi.stubEnv("CLAUDE_CONFIG_DIR", "~/cfg");
-    expect(claudeSettingsPath()).toBe(
-      join(homedir(), "cfg", "settings.json"),
-    );
+    expect(claudeSettingsPath()).toBe(join(homedir(), "cfg", "settings.json"));
   });
 
   it("whitespace: claudeSettingsPath trims CLAUDE_CONFIG_DIR", () => {
@@ -220,12 +230,7 @@ describe("CLAUDE_CONFIG_DIR", () => {
   it("set: marketplaceClonePath relocates under CLAUDE_CONFIG_DIR", () => {
     vi.stubEnv("CLAUDE_CONFIG_DIR", "/tmp/cfg");
     expect(marketplaceClonePath()).toBe(
-      join(
-        "/tmp/cfg",
-        "plugins",
-        "marketplaces",
-        "coding-friend-marketplace",
-      ),
+      join("/tmp/cfg", "plugins", "marketplaces", "coding-friend-marketplace"),
     );
   });
 
@@ -239,5 +244,79 @@ describe("CLAUDE_CONFIG_DIR", () => {
     expect(globalConfigPath()).toBe(
       join(homedir(), ".coding-friend", "config.json"),
     );
+  });
+});
+
+describe("Codex paths", () => {
+  it("returns ~/.codex by default", () => {
+    expect(codexConfigDir()).toBe(join(homedir(), ".codex"));
+  });
+
+  it("honors CODEX_HOME", () => {
+    vi.stubEnv("CODEX_HOME", "/tmp/codex-home");
+
+    expect(codexConfigDir()).toBe("/tmp/codex-home");
+    expect(codexConfigTomlPath()).toBe("/tmp/codex-home/config.toml");
+  });
+
+  it("tilde-expands CODEX_HOME", () => {
+    vi.stubEnv("CODEX_HOME", "~/codex-home");
+
+    expect(codexConfigDir()).toBe(join(homedir(), "codex-home"));
+  });
+
+  it("expands bare ~ in CODEX_HOME", () => {
+    vi.stubEnv("CODEX_HOME", "~");
+
+    expect(codexConfigDir()).toBe(homedir());
+  });
+
+  it("trims CODEX_HOME whitespace", () => {
+    vi.stubEnv("CODEX_HOME", "  /tmp/codex-home  ");
+
+    expect(codexConfigDir()).toBe("/tmp/codex-home");
+  });
+
+  it("returns Codex plugin cache paths", () => {
+    vi.stubEnv("CODEX_HOME", "/tmp/codex-home");
+
+    expect(codexPluginsCacheDir()).toBe(
+      join("/tmp/codex-home", "plugins", "cache"),
+    );
+    expect(codexInstalledPluginsPath()).toBe(
+      join(
+        "/tmp/codex-home",
+        "plugins",
+        "cache",
+        "coding-friend-marketplace",
+        "coding-friend",
+      ),
+    );
+    expect(codexMarketplaceClonePath()).toBe(
+      join(
+        "/tmp/codex-home",
+        "plugins",
+        "marketplaces",
+        "coding-friend-marketplace",
+      ),
+    );
+  });
+
+  it("returns Codex session paths", () => {
+    vi.stubEnv("CODEX_HOME", "/tmp/codex-home");
+
+    expect(codexProjectsDir()).toBe(join("/tmp/codex-home", "sessions"));
+    expect(codexSessionDir(new Date(2026, 4, 6))).toBe(
+      join("/tmp/codex-home", "sessions", "2026", "05", "06"),
+    );
+  });
+
+  it("returns repo-local marketplace and personal agents paths", () => {
+    vi.stubEnv("CODEX_HOME", "/tmp/codex-home");
+
+    expect(codexLocalMarketplacePath()).toBe(
+      resolve(process.cwd(), ".agents", "plugins", "marketplace.json"),
+    );
+    expect(codexAgentsDir()).toBe(join("/tmp/codex-home", "agents"));
   });
 });

@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("fs");
+const { execFileSync } = require("child_process");
 const path = require("path");
 
 const HOOKS_JSON = path.resolve(__dirname, "../hooks.json");
@@ -31,5 +32,28 @@ describe("hooks.json path validation", () => {
       .filter((rel) => !fs.existsSync(path.join(PLUGIN_DIR, rel)));
 
     expect(missing).toEqual([]);
+  });
+});
+
+describe("cf-paths.sh", () => {
+  it("aliases PLUGIN_ROOT to CLAUDE_PLUGIN_ROOT for Codex", () => {
+    const script = path.resolve(__dirname, "../../lib/cf-paths.sh");
+    const out = execFileSync(
+      "bash",
+      [
+        "-c",
+        [
+          `source "${script}"`,
+          "cd /tmp",
+          "PLUGIN_ROOT=/tmp/cf-plugin",
+          "unset CLAUDE_PLUGIN_ROOT",
+          "cf_resolve_paths",
+          "printf '%s' \"$CLAUDE_PLUGIN_ROOT\"",
+        ].join("; "),
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(out).toBe("/tmp/cf-plugin");
   });
 });

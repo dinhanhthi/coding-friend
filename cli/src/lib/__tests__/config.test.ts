@@ -256,9 +256,7 @@ describe("loadConfig validation", () => {
       .mockReturnValueOnce({ review: { withCodex: "yes" } });
 
     const config = loadConfig();
-    expect(log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("withCodex"),
-    );
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("withCodex"));
     expect(config.review?.withCodex).toBeUndefined();
   });
 

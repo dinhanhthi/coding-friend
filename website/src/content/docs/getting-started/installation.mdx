@@ -1,15 +1,15 @@
 ---
 title: Installation
-description: Install the Coding Friend CLI and Claude Code plugin to get started.
-keywords: [installation, setup, claude code plugin, npm, cli, scope]
+description: Install the Coding Friend CLI and plugin for Claude Code or Codex CLI.
+keywords:
+  [installation, setup, claude code plugin, codex cli plugin, npm, cli, scope]
 ---
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+ installed
-- [Claude Code](https://claude.com/claude-code) installed
+- [Claude Code](https://claude.com/claude-code) or Codex CLI installed
 - [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
-- (Optional) Codex CLI if you use codex. It's useful for cross-review with [`/cf-review --with-codex`](/docs/skills/cf-review/).
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
 
 ## Install
@@ -18,8 +18,11 @@ keywords: [installation, setup, claude code plugin, npm, cli, scope]
 # 1. Install the CLI globally
 npm i -g coding-friend-cli
 
-# 2. Install the plugin into Claude Code
+# 2a. Install the plugin into Claude Code
 cf install
+
+# 2b. Or install for Codex CLI
+cf install --agent codex
 ```
 
 <Callout type="info">
@@ -28,7 +31,7 @@ cf install
   same CLI: ```bash cdf install cdf init cdf memory status # etc. ```
 </Callout>
 
-If you prefer to install **without the CLI** (you will lose almost 50% the power of CF, see [CLI Requirements](/docs/reference/cli-requirements/) for more), you can add the marketplace and install the plugin manually:
+Claude Code users who prefer to install **without the CLI** (you will lose almost 50% the power of CF, see [CLI Requirements](/docs/reference/cli-requirements/) for more) can add the marketplace and install the plugin manually:
 
 ```bash
 claude plugin marketplace add dinhanhthi/coding-friend
@@ -41,12 +44,22 @@ claude plugin install coding-friend@coding-friend-marketplace
 
 Then continue from step 3 below (skip `cf install`).
 
+<Callout type="info">
+  **Codex CLI users:** `cf install --agent codex` registers the marketplace and
+  deploys generated agents. Codex CLI `0.130.0` still requires one manual plugin
+  install step: open `codex`, run `/plugins`, then install `coding-friend`. See
+  the [Codex CLI guide](/docs/getting-started/codex/) for details.
+</Callout>
+
 ```bash
-# 3. Initialize your workspace (in each project)
+# 3a. Initialize your workspace for Claude Code
 cf init
 
-# 4. Restart Claude Code (or `/exit` then reopen) to load the plugin.
-# Inside Claude Code session, try to type "/cf-plan" to see if the plugin is loaded.
+# 3b. Or initialize for Codex CLI
+cf init --agent codex --trust-project
+
+# 4. Restart your host session to load the plugin.
+# Claude: type "/cf-plan". Codex: type "$cf-plan".
 
 # 5. Verify
 cf status
@@ -112,16 +125,18 @@ Only the steps that write into `.claude/` need repeating per config directory �
   `cf update`, `cf memory`, and `cf dev` read the variable fresh each time, so
   set it in your shell to keep them aligned with the session you launch — e.g.
   add `export CLAUDE_CONFIG_DIR="$HOME/.claude-work"` to your `~/.zshrc`, or use
-  per-command aliases:
-
-  ```bash
-  alias claude-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work claude'
-  alias cf-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work cf'
-  ```
-
-  `cf dev` honors it too — just make sure `cf dev` and `claude` run with the
-  same `CLAUDE_CONFIG_DIR` so the dev plugin lands where the session looks for it.
+  per-command aliases.
 </Callout>
+
+Example aliases:
+
+```bash
+alias claude-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work claude'
+alias cf-work='CLAUDE_CONFIG_DIR=$HOME/.claude-work cf'
+```
+
+`cf dev` honors it too — just make sure `cf dev` and `claude` run with the
+same `CLAUDE_CONFIG_DIR` so the dev plugin lands where the session looks for it.
 
 ## Next Steps
 

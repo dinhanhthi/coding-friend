@@ -5,9 +5,9 @@ const tools = [
     id: "plugin",
     name: "Plugin",
     subtitle: "/cf-* skills",
-    tagline: "Claude Code Plugin",
+    tagline: "Marketplace Plugin",
     description:
-      "The core — skills, agents, hooks, and slash commands that enforce disciplined workflows inside Claude Code.",
+      "The core — skills, agents, hooks, and commands that enforce disciplined workflows inside Claude Code and Codex CLI.",
     color: "violet",
     isPrincipal: true,
     icon: (
@@ -133,6 +133,20 @@ const tools = [
   },
 ];
 
+const hosts = [
+  {
+    name: "Claude Code",
+    detail: "Default install path",
+    classes: "border-violet-500/30 bg-violet-500/10 text-violet-300",
+  },
+  {
+    name: "Codex CLI",
+    detail: "Opt in with --agent codex",
+    classes: "border-teal-500/30 bg-teal-500/10 text-teal-300",
+    beta: true,
+  },
+];
+
 const colorMap: Record<
   string,
   { border: string; bg: string; text: string; badge: string; glow: string }
@@ -219,9 +233,28 @@ export default function EcosystemSection() {
             The Ecosystem
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Five tools, one cohesive workflow. The plugin is the heart — the
-            rest amplify what you build.
+            Two supported hosts, five tools, one cohesive workflow. The plugin
+            is the heart — the rest amplify what you build.
           </p>
+        </div>
+
+        <div className="mx-auto mb-8 flex max-w-2xl flex-col gap-3 sm:flex-row">
+          {hosts.map((host) => (
+            <div
+              key={host.name}
+              className={`flex flex-1 items-center justify-between rounded-lg border px-4 py-3 ${host.classes}`}
+            >
+              <span className="flex items-center gap-2 font-mono text-base font-semibold">
+                {host.name}
+                {host.beta && (
+                  <span className="rounded-full border border-teal-400/40 bg-teal-400/15 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-teal-200 uppercase">
+                    beta
+                  </span>
+                )}
+              </span>
+              <span className="text-sm opacity-80">{host.detail}</span>
+            </div>
+          ))}
         </div>
 
         {/* Tool cards grid */}

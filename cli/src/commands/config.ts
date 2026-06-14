@@ -560,11 +560,10 @@ async function editGuiPlanFormat(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = getMergedValue(
-    "guiPlanFormat",
-    globalCfg,
-    localCfg,
-  ) as "html" | "md" | undefined;
+  const currentValue = getMergedValue("guiPlanFormat", globalCfg, localCfg) as
+    | "html"
+    | "md"
+    | undefined;
   if (currentValue !== undefined) {
     log.dim(`Current: ${currentValue}`);
   }
@@ -593,16 +592,13 @@ async function planDocsSubMenu(): Promise<void> {
     const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
     const localCfg = readJson<CodingFriendConfig>(localConfigPath());
 
-    const disableVal = getMergedValue(
-      "disableGUIPlan",
-      globalCfg,
-      localCfg,
-    ) as boolean | undefined;
-    const formatVal = getMergedValue(
-      "guiPlanFormat",
-      globalCfg,
-      localCfg,
-    ) as "html" | "md" | undefined;
+    const disableVal = getMergedValue("disableGUIPlan", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+    const formatVal = getMergedValue("guiPlanFormat", globalCfg, localCfg) as
+      | "html"
+      | "md"
+      | undefined;
 
     const choice = await select({
       message: "Plan docs settings:",

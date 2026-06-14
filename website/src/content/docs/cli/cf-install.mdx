@@ -1,12 +1,12 @@
 ---
 title: "cf install"
-description: "Install the Coding Friend plugin into Claude Code from the terminal."
-keywords: [install, setup, plugin, cf install, marketplace, scope]
+description: "Install the Coding Friend plugin into Claude Code or Codex CLI from the terminal."
+keywords: [install, setup, plugin, cf install, marketplace, scope, codex]
 ---
 
 ## Overview
 
-`cf install` installs the Coding Friend plugin into Claude Code entirely from the terminal — no need to open Claude Code first.
+`cf install` installs the Coding Friend plugin for the selected host. Claude Code is the default; Codex CLI is opt-in with `--agent codex` or `--codex`.
 
 ## Usage
 
@@ -16,9 +16,13 @@ cf install --user       # Install at user scope (all projects)
 cf install --global     # Same as --user
 cf install --project    # Install at project scope (shared via git)
 cf install --local      # Install at local scope (this machine only)
+cf install --agent codex # Register Codex marketplace + enable plugin config
+cf install --codex       # Alias for --agent codex
 ```
 
 ## Scopes
+
+Scope flags apply to Claude Code installs. Codex CLI uses Codex's own global plugin marketplace plus project setup from [`cf init --agent codex`](/docs/cli/cf-init/).
 
 | Scope       | Flag                                                                | Settings file                 | Use case                         |
 | ----------- | ------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
@@ -32,6 +36,8 @@ Regardless of scope, Claude Code always downloads the plugin to a shared cache d
 
 ## What It Does
 
+### Claude Code
+
 1. **Checks prerequisites** — verifies that the `claude` CLI is available
 2. **Asks for scope** — prompts which scope to install at (or uses the flag)
 3. **Registers marketplace** — adds the `coding-friend-marketplace` if not already registered (always global)
@@ -39,9 +45,17 @@ Regardless of scope, Claude Code always downloads the plugin to a shared cache d
 5. **Version check** — if the plugin is already installed, compares with the latest version and suggests `cf update` if an update is available
 6. **Shell completion** — sets up tab completion for the `cf` command in your shell (bash, zsh, fish, or PowerShell)
 
+### Codex CLI
+
+1. **Checks prerequisites** — verifies that `codex` exists and is at least `0.130.0`
+2. **Registers marketplace** — runs `codex plugin marketplace add dinhanhthi/coding-friend` when needed
+3. **Records plugin enablement** — writes the Coding Friend plugin table in `~/.codex/config.toml`
+4. **Deploys agents** — copies generated `cf-*.toml` agents into Codex's personal agents directory when available
+5. **Prints the manual plugin step** — Codex still requires opening `/plugins` and installing `coding-friend` from the UI
+
 ## Under the Hood
 
-Basically,`cf install` runs these Claude CLI commands for you:
+For Claude Code, `cf install` runs these Claude CLI commands for you:
 
 ```bash
 # Marketplace registration (always global)
@@ -51,10 +65,18 @@ claude plugin marketplace add dinhanhthi/coding-friend
 claude plugin install coding-friend@coding-friend-marketplace --scope <scope>
 ```
 
+For Codex CLI:
+
+```bash
+codex plugin marketplace add dinhanhthi/coding-friend
+# then in Codex: /plugins -> install coding-friend
+```
+
 ## Next Steps
 
 After installing:
 
 - Run `cf init` to initialize your workspace with documentation folders and configuration.
+- For Codex CLI, run `cf init --agent codex --trust-project`.
 - Run `cf memory init` to set up AI memory for the project (also available as a step in `cf init`).
 - Run `cf statusline` to show real-time info in Claude Code.

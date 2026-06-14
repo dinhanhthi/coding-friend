@@ -55,11 +55,13 @@ program
 
 program
   .command("install")
-  .description("Install the Coding Friend plugin into Claude Code")
+  .description("Install the Coding Friend plugin into a supported host")
   .option("--user", "Install at user scope (all projects)")
   .option("--global", "Install at user scope (all projects)")
   .option("--project", "Install at project scope (shared via git)")
   .option("--local", "Install at local scope (this machine only)")
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
   .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
     await installCommand(opts);
@@ -67,11 +69,17 @@ program
 
 program
   .command("uninstall")
-  .description("Uninstall the Coding Friend plugin from Claude Code")
+  .description("Uninstall the Coding Friend plugin from a supported host")
   .option("--user", "Uninstall from user scope (all projects)")
   .option("--global", "Uninstall from user scope (all projects)")
   .option("--project", "Uninstall from project scope")
   .option("--local", "Uninstall from local scope")
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
+  .option(
+    "--remove-marketplace",
+    "Also remove the host marketplace registration",
+  )
   .action(async (opts) => {
     const { uninstallCommand } = await import("./commands/uninstall.js");
     await uninstallCommand(opts);
@@ -84,6 +92,8 @@ program
   .option("--global", "Disable at user scope (all projects)")
   .option("--project", "Disable at project scope")
   .option("--local", "Disable at local scope")
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
   .action(async (opts) => {
     const { disableCommand } = await import("./commands/disable.js");
     await disableCommand(opts);
@@ -96,6 +106,8 @@ program
   .option("--global", "Enable at user scope (all projects)")
   .option("--project", "Enable at project scope")
   .option("--local", "Enable at local scope")
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
   .action(async (opts) => {
     const { enableCommand } = await import("./commands/enable.js");
     await enableCommand(opts);
@@ -104,9 +116,15 @@ program
 program
   .command("init")
   .description("Initialize coding-friend in current project")
-  .action(async () => {
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
+  .option(
+    "--trust-project",
+    "For Codex, mark the current project trusted in ~/.codex/config.toml",
+  )
+  .action(async (opts) => {
     const { initCommand } = await import("./commands/init.js");
-    await initCommand();
+    await initCommand(opts);
   });
 
 program
@@ -189,12 +207,22 @@ program
 
 program
   .command("permission")
-  .description("Manage Claude Code permission rules for Coding Friend")
+  .description("Manage host permission and approval settings for Coding Friend")
   .option("--all", "Apply all recommended permissions without prompts")
   .option("--user", "Save to user-level settings (~/.claude/settings.json)")
   .option(
     "--project",
     "Save to project-level settings (.claude/settings.local.json)",
+  )
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
+  .option(
+    "--enable-auto-approve",
+    "For Codex, enable deterministic Coding Friend auto-approve",
+  )
+  .option(
+    "--disable-auto-approve",
+    "For Codex, disable deterministic Coding Friend auto-approve",
   )
   .action(async (opts) => {
     const { permissionCommand } = await import("./commands/permission.js");
@@ -213,12 +241,14 @@ program
   .command("update")
   .description("Update coding-friend plugin, CLI, and statusline")
   .option("--cli", "Update only the CLI (npm package)")
-  .option("--plugin", "Update only the Claude Code plugin")
+  .option("--plugin", "Update only the host plugin")
   .option("--statusline", "Update only the statusline")
   .option("--user", "Update plugin at user scope (all projects)")
   .option("--global", "Update plugin at user scope (all projects)")
   .option("--project", "Update plugin at project scope")
   .option("--local", "Update plugin at local scope")
+  .option("--agent <agent>", "Operate on host agent: claude or codex", "claude")
+  .option("--codex", "Alias for --agent codex")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);

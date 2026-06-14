@@ -49,7 +49,9 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 - Otherwise, read `review.withCodex` from the config file (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). If it is `true`, set `codex=true` (config-gated default; this is how auto-invokers like `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in without passing the flag). If absent or `false`, `codex=false`.
 - When `codex=true`, the workflow runs Claude's own review (Steps 2–6) **and** a Codex review in parallel, then merges both (Steps 6.5–7). The Codex script (`run-codex-review.sh`) **auto-selects its scope** from git state so it covers committed work, not just the working tree: feature branch → `codex review --base <base>` (committed branch changes); on the base branch with unpushed commits → `--base <upstream>` (local commits not yet pushed); only uncommitted changes → `--uncommitted`; local-only repo → `--commit HEAD`. This lets Codex see a phase's changes even after they are committed — including on the base branch, where `gather-diff.sh` only reports uncommitted work (its committed-vs-base section is gated on being on a feature branch), so Codex covers committed-on-base work that Claude's own review would otherwise miss. Trade-off: a `--base`/`--commit` scope omits uncommitted/untracked files, and when Codex is unavailable that committed-on-base work degrades to a Claude-only review that may see nothing.
 - **Target compatibility:** the auto-scope above only matches the **default target** (empty `$ARGUMENTS`, or a natural-language description that still reviews the default change set). If `$ARGUMENTS` (after stripping flags) is a **file path** or a **commit range** (e.g. `HEAD~3..HEAD`), Claude reviews that specific target but Codex would review the unrelated default change set. In that case do NOT run Codex — print:
+
   > ⚠ `--with-codex` only applies to the default uncommitted-changes review; Codex does not support the target `<target>`. Running Claude-only review.
+
   Set `codex=false` and skip Steps 2.5/6.5.
 
 ### Step 2: Gather the diff
@@ -138,15 +140,25 @@ Skip this step entirely when `codex=false`.
 1. **Wait for the Codex background process to finish.** By the time the cf-reviewer agent (Step 6) returns, the harness has likely already delivered the Codex completion notification. If it has not yet arrived, wait for it — do NOT poll or sleep. Only read the result file after the process has exited.
 2. **Check the Codex exit status** (from the background process — its `CF_CODEX=...` stderr line and exit code):
    - `CF_CODEX=unavailable` (exit 127) → Codex not installed. Print:
+
      > ⚠ Codex unavailable (not on PATH) — proceeding with Claude-only review.
+
      Set `codex=false` and skip the rest of this step (Step 7 will use the cf-reviewer report as-is).
+
    - `CF_CODEX=error` (non-zero exit) → Codex failed (e.g. not logged in). Print:
+
      > ⚠ Codex review failed (<reason from stderr>) — proceeding with Claude-only review.
+
      Set `codex=false` and skip the rest of this step.
+
    - `CF_CODEX=empty` (exit 0, no result file) → nothing committed or uncommitted to review. Print:
+
      > ⚠ Codex found no changes to review — proceeding with Claude-only review.
+
      Set `codex=false` and skip the rest of this step.
+
    - `CF_CODEX=ok <file>` (exit 0) → the review was written to the result file; continue. (An optional `CF_CODEX_SCOPE=...` line on stderr records which scope was used.)
+
 3. Normalize the raw Codex result into the standard 4-section format:
 
    ```bash

@@ -28,6 +28,12 @@ vi.mock("../../lib/json.js", () => ({
 
 vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
+  resolveHostFlags: vi.fn(),
+}));
+
+vi.mock("../../lib/codex-config.js", () => ({
+  CODEX_MARKETPLACE_NAME: "coding-friend-marketplace",
+  getCodexInstalledVersion: vi.fn(),
 }));
 
 vi.mock("../../lib/memory-mcp-register.js", () => ({
@@ -41,7 +47,8 @@ vi.mock("../../lib/memory-prompts.js", () => ({
 
 import { commandExists, run, runWithStderr } from "../../lib/exec.js";
 import { getInstalledVersion, ensureStatusline } from "../../lib/statusline.js";
-import { resolveScope } from "../../lib/prompt-utils.js";
+import { getCodexInstalledVersion } from "../../lib/codex-config.js";
+import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { readJson } from "../../lib/json.js";
 import { isMemoryMcpRegistered, registerMemoryMcp } from "../../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
@@ -52,6 +59,8 @@ const mockRun = vi.mocked(run);
 const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
+const mockGetCodexInstalledVersion = vi.mocked(getCodexInstalledVersion);
+const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockReadJson = vi.mocked(readJson);
@@ -61,15 +70,57 @@ const mockRemoveMemoryMcpEntry = vi.mocked(removeMemoryMcpEntry);
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
+  mockResolveHostFlags.mockReturnValue({ host: "claude" });
 
   // Default: return a package.json with version
   mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
   mockGetInstalledVersion.mockReturnValue("0.7.2");
+  mockGetCodexInstalledVersion.mockReturnValue("0.35.2");
   // getLatestVersion uses run("gh", ...) — return null to skip update
   mockRun.mockReturnValue(null);
   // Memory MCP defaults: already registered, nothing to clean
   mockIsMemoryMcpRegistered.mockReturnValue(true);
   mockRemoveMemoryMcpEntry.mockReturnValue({ removed: false, fileDeleted: false });
+});
+
+describe("updateCommand — Codex", () => {
+  it("runs Codex marketplace upgrade for --agent codex", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    });
+
+    await updateCommand({ agent: "codex", plugin: true });
+
+    expect(mockRunWithStderr).toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "upgrade",
+      "coding-friend-marketplace",
+    ]);
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("points Codex statusline updates to the native command", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ agent: "codex", statusline: true });
+
+    const output = consoleSpy.mock.calls
+      .map((call) => call.join(" "))
+      .join("\n");
+    expect(output).toContain("run /statusline");
+    expect(output).not.toContain("later phase");
+    expect(mockEnsureStatusline).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateCommand — version summary", () => {

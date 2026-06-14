@@ -21,25 +21,33 @@ npm run format:check   # Check formatting without modifying files
 
 Each sub-project has its own README with more details, check section Further Reading. For daily workflow, check [dev-release.md](docs/dev-release.md).
 
-## Update local plugin changes
+## Local dev mode — run the plugin from this repo
 
-Recommended development workflow (Read more: [Plugin README](plugin/README.md)):
+The `cf` CLI is **shared by both hosts**: run `cd cli && npm run build` once (it is
+already `npm link`-ed), or keep `npm run dev` running so it rebuilds on save. Then
+turn on plugin dev mode per host below. The two hosts are independent
+(`~/.claude` vs `~/.codex`) — you can run both at the same time.
+
+### Claude Code — `cf dev` (one command)
+
+Read more: [Plugin README](plugin/README.md).
 
 ```bash
-# One-time setup
-cf dev on /path/to/coding-friend
+cf dev on /path/to/coding-friend   # one-time: switch to the local plugin
 
-# Inner loop (repeat as many times as needed)
-# 1. Go to root and run `npm run dev` (cli, website, mcp, host, memory are running)
-# 2. Modify something
-# 3. - If changes are related to plugin -> run `cf dev sync`
-#    - If plugin version is upgraded -> run `cf dev update`
-#    - If changes are related to CLI -> do nothing, `npm run dev` is working under the hook
-#      - If there is new in cli -> run `cf init` and refresh autocompletion
-# 4. When feature is done — bump version once and commit
+# Inner loop (repeat)
+# 1. From root: `npm run dev` (cli, website, mcp, host, memory all watch)
+# 2. Edit something
+# 3. - plugin/ changed       -> cf dev sync
+#    - plugin version bumped -> cf dev update
+#    - cli/ changed          -> nothing (npm run dev rebuilds); new command -> cf init + refresh completion
+# 4. Done -> bump version once and commit
+
+cf dev off       # switch back to the published (remote) marketplace
+cf dev status    # show current mode + marketplace source
 ```
 
-### Using a custom `CLAUDE_CONFIG_DIR`
+#### Using a custom `CLAUDE_CONFIG_DIR`
 
 If you develop against a custom Claude config directory (see [Installation → Custom config directory](https://cf.dinhanhthi.com/docs/getting-started/installation/)), the dev plugin must be registered **inside that directory**. `cf dev` honors `CLAUDE_CONFIG_DIR`, but it shares a single dev-state file (`~/.coding-friend/dev-state.json`) across config directories — so if you previously ran `cf dev on` against the default `~/.claude`, re-point it at the custom directory by turning dev mode off and on again **with the variable set**:
 
@@ -57,6 +65,56 @@ CLAUDE_CONFIG_DIR=~/.claude-work claude
 ```
 
 Always keep `cf dev` and `claude` on the same `CLAUDE_CONFIG_DIR` — an `export` in your shell profile (or an alias) is the easiest way to avoid a mismatch.
+
+### Codex — manual (`cf dev` is Claude-only)
+
+`cf dev` does not support Codex yet. Codex loads the **generated** `plugin-codex/`
+artifact (see [Codex artifact](#codex-artifact)), so the inner loop is: rebuild the
+artifact, then reload it in Codex.
+
+```bash
+# One-time setup (writes to your real ~/.codex)
+cd cli && npm run build && cd ..                       # shared CLI
+npm run build:codex                                    # generate plugin-codex/ from plugin/
+codex plugin marketplace add /path/to/coding-friend    # LOCAL path
+cf enable --agent codex                                # enable plugin in ~/.codex/config.toml
+#   then in Codex:  /plugins -> install coding-friend  (0.130.0 has no scriptable install)
+cf init --agent codex --trust-project                  # per project you want it in
+
+# Inner loop after editing plugin/
+npm run build:codex                                    # regenerate artifact
+#   then reload in Codex:  /plugins -> reinstall coding-friend  (or restart Codex)
+
+# Turn off
+#   in Codex:  /plugins -> uninstall coding-friend
+codex plugin marketplace remove coding-friend-marketplace
+cf disable --agent codex
+```
+
+**Rules:**
+
+- Do **not** use `cf install --agent codex` to register the local marketplace — it adds
+  the GitHub marketplace (`dinhanhthi/coding-friend` = `main`, no Codex code yet). Add the
+  local path with `codex plugin marketplace add /path/to/coding-friend`.
+- After editing `plugin/`, always `npm run build:codex` before reloading — Codex reads
+  `plugin-codex/`, not `plugin/`. (The pre-commit hook rebuilds it on commit, but live
+  reload needs it manually.)
+- Sandbox option: prefix every `codex` command with `CODEX_HOME=/tmp/cf-codex-dev` to
+  avoid touching `~/.codex` (use the same value for **all** `codex` commands in the session).
+
+## Codex artifact
+
+Claude remains the canonical authoring host for plugin source. Codex support is generated from the same source tree:
+
+- Canonical source: `plugin/`
+- Generated Codex artifact: `plugin-codex/`
+- Agent converter: `scripts/lib/agent-md-to-toml.js`
+- Build command: `npm run build:codex`
+- Drift check: `npm run verify:codex-drift`
+
+When editing shared plugin source, keep host-specific syntax behind placeholders such as `{{cf:slash ...}}`, `{{cf:agent_ref ...}}`, `{{cf:dispatch ...}}`, `{{cf:plugin_root}}`, and `{{cf:host}}`. Do not hard-code Claude-only command, agent, or plugin-root syntax in files that are copied into `plugin-codex/`.
+
+Host-aware CLI code lives in `cli/src/lib/host.ts`, `cli/src/lib/codex-config.ts`, and the Codex branches of lifecycle commands (`install`, `uninstall`, `enable`, `disable`, `update`, `init`, and `permission`). Codex auto-approve uses `autoApproveCodex` and remains deterministic-only; Claude auto-approve keeps `autoApprove` and the Sonnet classifier.
 
 ## Token counts
 

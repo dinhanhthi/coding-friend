@@ -1,13 +1,21 @@
 ---
 title: "cf permission"
-description: "Manage Claude Code permission rules for Coding Friend skills and hooks."
+description: "Manage Coding Friend permissions for Claude Code and Codex CLI."
 keywords:
-  [permission, permissions, claude code, settings, allow rules, cf permission]
+  [
+    permission,
+    permissions,
+    claude code,
+    codex cli,
+    settings,
+    allow rules,
+    cf permission,
+  ]
 ---
 
 ## Overview
 
-Interactive permission manager for Coding Friend. Configures Claude Code permission rules so skills and hooks can run without repeated prompts.
+Interactive permission manager for Coding Friend. By default it configures Claude Code permission rules so skills and hooks can run without repeated prompts. Use `--agent codex` for the Codex-specific auto-approve toggle.
 
 ```bash
 cf permission
@@ -32,6 +40,10 @@ cf permission --user       # ~/.claude/settings.json (all projects)
 
 # Combine: apply all to user scope
 cf permission --all --user
+
+# Codex deterministic auto-approve
+cf permission --agent codex --enable-auto-approve
+cf permission --agent codex --disable-auto-approve
 ```
 
 ## How It Works
@@ -52,6 +64,12 @@ By default, `cf permission` asks you to choose between:
 - **User** (`~/.claude/settings.json`) — applies to all projects
 
 Use `--project` or `--user` to skip the prompt.
+
+## Codex CLI
+
+Codex permissions are separate from Claude Code permission rules. `cf permission --agent codex --enable-auto-approve` writes `autoApproveCodex: true` to `.coding-friend/config.json`.
+
+Codex auto-approve is deterministic-only: known-safe reads and working-directory edits can be approved, destructive actions are blocked, and unknown actions defer to Codex native approval. The Claude Sonnet classifier is not used from Codex hooks.
 
 ## Permission Tiers
 
