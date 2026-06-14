@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import TokenBadge from "@/components/ui/TokenBadge";
@@ -162,7 +165,12 @@ function skillHref(command: string): string {
   return `/docs/skills/${name}/`;
 }
 
-function SkillCard({ skill }: { skill: Skill }) {
+function displayCommand(command: string, prefix?: string): string {
+  if (!prefix || !command.startsWith("/")) return command;
+  return prefix + command.slice(1);
+}
+
+function SkillCard({ skill, prefix }: { skill: Skill; prefix?: string }) {
   return (
     <Link
       href={skillHref(skill.command)}
@@ -170,7 +178,7 @@ function SkillCard({ skill }: { skill: Skill }) {
     >
       <div className="flex items-center justify-between">
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
-          {skill.command}
+          {displayCommand(skill.command, prefix)}
         </code>
         <div className="flex items-center gap-2">
           <StatusBadge beta={skill.beta} temporal={skill.temporal} />
@@ -187,7 +195,44 @@ function SkillCard({ skill }: { skill: Skill }) {
   );
 }
 
+type Agent = "claude" | "codex";
+
+const agentConfig: Record<Agent, { prefix: string; word: string }> = {
+  claude: { prefix: "/", word: "slash" },
+  codex: { prefix: "$", word: "dollar" },
+};
+
+function AgentToggle({
+  agent,
+  onChange,
+}: {
+  agent: Agent;
+  onChange: (agent: Agent) => void;
+}) {
+  return (
+    <div className="mx-auto inline-flex rounded-full border border-[#a0a0a05d] p-1">
+      {(["claude", "codex"] as Agent[]).map((value) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => onChange(value)}
+          className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+            agent === value
+              ? "bg-violet-500/20 text-violet-300"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          {value}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Skills() {
+  const [agent, setAgent] = useState<Agent>("claude");
+  const { prefix, word } = agentConfig[agent];
+
   return (
     <section id="skills" className="py-12">
       <Container>
@@ -195,16 +240,23 @@ export default function Skills() {
         <div className="flex flex-col gap-8 py-12">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-[-0.02em] text-white">
-              <span className="font-mono">/slash</span> skills
+              <span className="font-mono">
+                {prefix}
+                {word}
+              </span>{" "}
+              skills
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
               Manual triggering with natural language. Coding Friend handles the
               rest.
             </p>
+            <div className="mt-5">
+              <AgentToggle agent={agent} onChange={setAgent} />
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {slashCommands.map((f) => (
-              <SkillCard key={f.command} skill={f} />
+              <SkillCard key={f.command} skill={f} prefix={prefix} />
             ))}
           </div>
         </div>
