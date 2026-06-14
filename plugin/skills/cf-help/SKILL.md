@@ -2,26 +2,20 @@
 name: cf-help
 description: >
   Answer questions about Coding Friend — skills, agents, workflows, setup.
-  Auto-invoke this skill when the user asks about Coding Friend capabilities,
-  available skills, how to use a skill, what skills exist, how Coding Friend
-  works, what agents are available, how to configure Coding Friend, or any
-  question about the toolkit itself — e.g. "what skills are available?",
-  "how does coding friend work?", "what can you do?", "list all skills",
-  "what agents exist?", "how do I use cf-plan?", "what is cf-tdd?",
-  "explain this skill", "show me all commands", "what workflows are available?",
-  "how to configure coding friend", "what is coding friend?", "help me with
-  coding friend", "tell me about your skills", "what slash commands exist?",
-  "how do skills work together?", "what auto-invoked skills are there?",
-  "coding friend features", "coding friend setup", "what does cf-fix do?",
-  "which skill should I use?", "how do I get started with coding friend?",
-  "does X require the CLI?", "what works without coding-friend-cli?",
-  "is the CLI required?".
+  Auto-invoke when the user asks about Coding Friend capabilities, available
+  skills, how to use a skill, what skills/agents/commands exist, how it works,
+  or how to configure it — e.g. "what skills are available?", "how does coding
+  friend work?", "what can you do?", "list all skills", "what agents exist?",
+  "how do I use cf-plan?", "what is cf-tdd?", "what does cf-fix do?", "which
+  skill should I use?", "how do I get started?", "coding friend features/setup",
+  "does X require the CLI?", "what works without coding-friend-cli?", "is the
+  CLI required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob]
 created: 2026-02-17
-updated: 2026-06-07
+updated: 2026-06-14
 ---
 
 # /cf-help — Coding Friend Help
