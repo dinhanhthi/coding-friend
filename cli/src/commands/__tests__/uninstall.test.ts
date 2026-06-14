@@ -567,7 +567,9 @@ describe("uninstallCommand", () => {
     mockCommandExists.mockReturnValue(true);
     mockResolveScope.mockResolvedValue("user");
     mockExistsSync.mockReturnValue(false);
-    mockReadFileSync.mockImplementation(() => { throw new Error("not found"); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
     mockHasShellCompletion.mockReturnValue(false);
     mockConfirm.mockResolvedValueOnce(false); // decline uninstall
 
@@ -581,7 +583,10 @@ describe("uninstallCommand", () => {
     mockResolveScope.mockResolvedValue("project");
     mockConfirm.mockResolvedValueOnce(true);
     mockRun.mockReturnValue("ok");
-    vi.mocked(removeMemoryMcpEntry).mockReturnValue({ removed: true, fileDeleted: false });
+    vi.mocked(removeMemoryMcpEntry).mockReturnValue({
+      removed: true,
+      fileDeleted: false,
+    });
 
     await uninstallCommand({ project: true });
 
