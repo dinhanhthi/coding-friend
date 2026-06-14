@@ -8,6 +8,13 @@ keywords: [codex, codex cli, host, plugin, agents, mcp, setup]
 
 Coding Friend supports Codex CLI alongside Claude Code. Claude remains the default host for `cf` commands; use `--agent codex` or the `--codex` alias when you want the Codex path.
 
+<Callout type="warning">
+  **Codex support is in beta.** Core skills, agents, hooks, and shared memory
+  work today, but some parity gaps remain (see [Known
+  Differences](#known-differences)) and the live test pass is still in progress.
+  Claude Code support is unaffected.
+</Callout>
+
 <Callout type="info">
   Codex support targets Codex CLI `0.130.0` or newer. Run `codex --version`
   before setup if you are unsure.

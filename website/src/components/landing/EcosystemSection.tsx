@@ -143,6 +143,7 @@ const hosts = [
     name: "Codex CLI",
     detail: "Opt in with --agent codex",
     classes: "border-teal-500/30 bg-teal-500/10 text-teal-300",
+    beta: true,
   },
 ];
 
@@ -243,8 +244,13 @@ export default function EcosystemSection() {
               key={host.name}
               className={`flex flex-1 items-center justify-between rounded-lg border px-4 py-3 ${host.classes}`}
             >
-              <span className="font-mono text-base font-semibold">
+              <span className="flex items-center gap-2 font-mono text-base font-semibold">
                 {host.name}
+                {host.beta && (
+                  <span className="rounded-full border border-teal-400/40 bg-teal-400/15 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-teal-200 uppercase">
+                    beta
+                  </span>
+                )}
               </span>
               <span className="text-sm opacity-80">{host.detail}</span>
             </div>

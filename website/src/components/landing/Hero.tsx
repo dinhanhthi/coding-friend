@@ -37,8 +37,11 @@ export default function Hero() {
               Claude Code
             </span>
             <span className="text-slate-600">+</span>
-            <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 font-mono text-teal-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 font-mono text-teal-300">
               Codex CLI
+              <span className="rounded-full bg-teal-400/20 px-1.5 text-[0.65em] font-semibold tracking-wide text-teal-200 uppercase">
+                beta
+              </span>
             </span>
             <span className="text-slate-600">+</span>
             <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 font-mono text-violet-300">
