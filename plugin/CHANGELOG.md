@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.35.3 (2026-06-14)
+
+- Restructure `/cf-plan` and `cf-tdd` skills with progressive disclosure — flag-gated blocks (autopilot, resume, TDD mode) now live in separate `modes/` files loaded only when their flag is active, trimming default context cost with no change to behavior [#a1c8c78](https://github.com/dinhanhthi/coding-friend/commit/a1c8c78)
+
 ## v0.35.2 (2026-06-07)
 
 - Make the `/cf-plan` human overview doc **opt-in** — it is now **off by default** (it costs extra tokens); enable per-run with `--gui` (alias `--human`). `--gui` overrides fast mode; precedence is inline > `--gui` > fast > config [#df7fa7e](https://github.com/dinhanhthi/coding-friend/commit/df7fa7e)
