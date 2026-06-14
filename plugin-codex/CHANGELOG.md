@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.36.1 (2026-06-14)
+
+- Fix `cf-help` and `cf-remember` skill descriptions exceeding Codex's 1024-character limit, which caused both skills to be skipped on load in Codex — trimmed under the limit with triggers preserved [#441d825](https://github.com/dinhanhthi/coding-friend/commit/441d825)
+
 ## v0.36.0 (2026-06-14)
 
 - Add Codex CLI as a first-class Coding Friend host alongside Claude Code, with a generated `plugin-codex/` artifact that carries the same skills, host-neutral workflow references, Codex TOML agents, synchronous hooks, and shared memory MCP setup.
