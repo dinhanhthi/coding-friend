@@ -275,7 +275,16 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   }
 
   // Step 3: Update CLI if needed
+  // Pre-load the memory module BEFORE `npm install -g` overwrites the global
+  // install's dist/. tsup ships content-hashed chunks, so a dynamic
+  // import("./memory.js") AFTER the self-update would resolve to the old
+  // process's chunk name (e.g. memory-TRDLADUM.js) which no longer exists on
+  // disk → ERR_MODULE_NOT_FOUND. ESM caches by resolved URL, so loading it now
+  // keeps the module in memory through the on-disk replacement.
+  let refreshMemoryAfterUpdate: (() => Promise<void>) | null = null;
   if (doCli) {
+    ({ refreshMemoryAfterUpdate } = await import("./memory.js"));
+
     if (!latestCliVersion) {
       log.warn("Cannot check latest CLI version from npm.");
     } else {
@@ -312,8 +321,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   // The npm package ships cf-memory as source only, so a global reinstall wipes
   // its built dist/ + node_modules — rebuild now so the memory MCP server is
   // ready for the next Claude Code session.
-  if (doCli) {
-    const { refreshMemoryAfterUpdate } = await import("./memory.js");
+  if (doCli && refreshMemoryAfterUpdate) {
     await refreshMemoryAfterUpdate();
   }
 
