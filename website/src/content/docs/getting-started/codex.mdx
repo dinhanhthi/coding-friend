@@ -52,9 +52,25 @@ cf init --agent codex --trust-project
 
 - Creates the usual Coding Friend docs folders (`docs/plans`, `docs/memory`, `docs/research`, and related folders)
 - Writes `AGENTS.md` with Coding Friend rules and `$cf-*` skill references
-- Registers `coding-friend-memory` in both `~/.codex/config.toml` and project `.codex/config.toml`
-- Writes project-scoped agent TOMLs under `.codex/agents/`
+- Registers `coding-friend-memory` in the project's `.codex/config.toml` (project-scoped — see [Why `.codex/` Is Project-Scoped](#why-codex-is-project-scoped))
+- Deploys one agent TOML per Coding Friend agent under `.codex/agents/`
 - Sets `agents.max_depth = 2` in `~/.codex/config.toml` so nested Coding Friend review and implementation agents can run
+
+## Why `.codex/` Is Project-Scoped
+
+After setup you will find a `.codex/` folder in each project, containing a `config.toml` and an `agents/` directory with one TOML per Coding Friend agent (currently 12). This is expected in every project where you run `cf init --agent codex` — the files are not duplicates and do not need cleanup.
+
+The reason is how Codex registers the memory MCP server. Codex pins an **absolute path** in its config, so a single global `~/.codex/config.toml` entry could only ever point at one project's `docs/memory` — whichever project ran `cf init` last — leaking that project's memory into every other Codex session. To avoid this, Coding Friend writes a per-project `.codex/config.toml` that points the memory MCP at this project's own `docs/memory`. `cf init` then deploys the agent TOMLs alongside it under `.codex/agents/`, so they are available to Codex in this project.
+
+This differs from Claude Code, where the memory server is registered once at user scope and resolves the active project's memory directory at runtime:
+
+| | Claude Code | Codex |
+| --- | --- | --- |
+| Memory MCP registration | Once, at user scope (`~/.claude`) | Per project (`.codex/config.toml`) |
+| Project memory path | Resolved at runtime via `CLAUDE_PROJECT_DIR` | Pinned absolute path in config |
+| Agent files | Loaded in place from the global plugin | Deployed per project under `.codex/agents/` |
+
+These are local working files. `cf init` git-ignores `AGENTS.md` for you; if your project tracks the repo, add `.codex/` to `.gitignore` so the generated TOMLs are not committed.
 
 ## Daily Commands
 
