@@ -238,21 +238,23 @@ export default function EcosystemSection() {
           </p>
         </div>
 
-        <div className="mx-auto mb-8 flex max-w-2xl flex-col gap-3 sm:flex-row">
+        <div className="mx-auto mb-8 flex flex-wrap justify-center gap-3">
           {hosts.map((host) => (
             <div
               key={host.name}
-              className={`flex flex-1 items-center justify-between rounded-lg border px-4 py-3 ${host.classes}`}
+              className={`flex w-fit flex-wrap items-center gap-4 rounded-lg border px-4 py-3 ${host.classes}`}
             >
               <span className="flex items-center gap-2 font-mono text-base font-semibold">
-                {host.name}
-                {host.beta && (
-                  <span className="rounded-full border border-teal-400/40 bg-teal-400/15 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-teal-200 uppercase">
-                    beta
-                  </span>
-                )}
+                <div className="flex flex-nowrap items-center gap-2">
+                  {host.name}
+                  {host.beta && (
+                    <span className="rounded-full border border-teal-400/40 bg-teal-400/15 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-teal-200 uppercase">
+                      beta
+                    </span>
+                  )}
+                </div>
               </span>
-              <span className="text-sm opacity-80">{host.detail}</span>
+              {/* <span className="text-sm opacity-80">{host.detail}</span> */}
             </div>
           ))}
         </div>
