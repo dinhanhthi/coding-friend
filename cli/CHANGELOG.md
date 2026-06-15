@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.38.1 (2026-06-15)
+
+- Fix `cf update` crashing with `ERR_MODULE_NOT_FOUND` right after the CLI self-updates — the post-update memory refresh now loads `./memory.js` before `npm install -g` replaces the global install, so the old content-hashed chunk is already cached in memory and the import no longer resolves to a file that the reinstall removed [#02ed6c6](https://github.com/dinhanhthi/coding-friend/commit/02ed6c6)
+
 ## v1.38.0 (2026-06-14)
 
 - Add host selection to Coding Friend lifecycle commands with `--agent codex` and `--codex`, while preserving Claude Code as the default and keeping each host's installation and enablement state independent.
