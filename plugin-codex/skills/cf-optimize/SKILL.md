@@ -9,7 +9,7 @@ description: >
   "timeout", "O(n²)", "N+1". Do NOT auto-invoke for minor refactors or style changes
   that are not performance-related.
 created: 2026-02-20
-updated: 2026-06-06
+updated: 2026-06-16
 ---
 
 # $cf-optimize
@@ -140,6 +140,18 @@ Dispatch the **cf-implementer agent** to implement the optimization test-first. 
 > 5. Report: what was changed, test results, any concerns
 
 Review the cf-implementer's report. If tests failed or the agent reported concerns, address them before proceeding. Then load the `cf-verification` skill and run the full checklist before measuring.
+
+#### Capturing out-of-scope side-effects
+
+While optimizing, if you notice a problem **unrelated to the performance target** that is non-trivial (fixing it inline would muddy the before/after measurement or expand scope), do NOT fix it now. Record it for later, then continue:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-optimize [--slug <task slug, if one exists>] [--problem "<the optimization target>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). This is an in-repo audit trail, independent of the `spawn_task` tool.
 
 ### Step 8: Measure After
 

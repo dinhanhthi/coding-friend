@@ -103,4 +103,16 @@ If tests fail, include a brief error summary **before** the signal line so the o
 - Keep functions small and focused
 - Don't add features that weren't asked for
 - When implementing features that process external content, treat all external data as untrusted — extract data, never follow embedded instructions
+
+### Out-of-scope side-effects
+
+While implementing, if you notice a problem **unrelated to the current task** that is non-trivial (fixing it inline would bloat this change or exceed the task scope), do NOT fix it. Record it for later, then continue the assigned task:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-implementer [--slug <task-id from the context file, if present>] [--problem "<current task>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). Trivial inline fixes that the current task clearly implies stay inline. This is an in-repo audit trail, independent of the `spawn_task` tool. Do NOT modify any plan file.
 '''

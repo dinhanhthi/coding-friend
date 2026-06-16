@@ -8,7 +8,7 @@ description: >
   "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
   Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-06-16
 ---
 
 # $cf-fix
@@ -141,6 +141,16 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 > 3. One fix at a time — no additional changes
 > 4. Run the full test suite — no regressions allowed
 > 5. Report: what was fixed, tests written, and full test output as evidence
+
+**Capturing out-of-scope side-effects:** While the implementer is working, if you notice a problem **unrelated to the current bug** that is non-trivial (fixing it inline would expand the scope of this fix), do NOT fix it now. Record it for later, then continue:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-fix [--slug <bug-doc/task slug, if one exists>] [--problem "<the bug being fixed>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). Trivial fixes the bug clearly requires stay inline.
 
 ### Step 7: Verify Agent Results + Retry on Failure
 

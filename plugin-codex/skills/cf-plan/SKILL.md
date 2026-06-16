@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-06-14
+updated: 2026-06-16
 ---
 
 # $cf-plan
@@ -212,6 +212,16 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 **Rule**: Only the cf-plan orchestrator edits plan files (`README.md` for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
 
 **Cleanup**: Delete the context file ONLY after all phases are `✅ DONE`. On session interrupt, quota limit, or user Ctrl+C — keep the context file so `--resume` can read it later.
+
+**Capturing out-of-scope side-effects:** If, while executing a phase, an unrelated problem surfaces that is non-trivial (fixing it would expand beyond the approved plan), do NOT fix it now and do NOT silently grow scope. Record it for later, then continue the plan:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-plan --slug <this plan's slug> [--problem "<the phase/task in progress>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). This is an in-repo audit trail, independent of the `spawn_task` tool.
 
 #### Parallel phases
 

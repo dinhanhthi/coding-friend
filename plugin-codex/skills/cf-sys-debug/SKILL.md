@@ -15,7 +15,7 @@ description: >
   Do NOT auto-invoke for trivial typos, one-line fixes, or config errors with an
   obvious cause.
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-06-16
 ---
 
 # Systematic Debugging
@@ -127,6 +127,18 @@ Activate when the symptom is "used to work, now broken" or "broke after an updat
 3. **Write a regression test** that would have caught this bug
 4. **Run the full test suite** — your fix must not break anything else
 5. **Verify the original error is gone** — reproduce the original failure and confirm it's fixed
+
+#### Capturing out-of-scope side-effects
+
+While investigating or fixing, if you uncover a problem **unrelated to the root cause under investigation** that is non-trivial (addressing it inline would derail this fix), do NOT fix it now. Record it for later, then continue:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-sys-debug [--slug <bug-doc/task slug, if one exists>] [--problem "<the bug under investigation>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). This is an in-repo audit trail, independent of the `spawn_task` tool.
 
 ### Phase 5: Document the Bug
 
