@@ -7,7 +7,7 @@ description: >
   Also triggers when the user is done with a feature branch and wants the full
   verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-06-16
 ---
 
 # $cf-ship
@@ -40,6 +40,16 @@ Load the `cf-verification` skill and run the full checklist:
 - [ ] No console errors
 
 If ANY check fails, stop and fix before proceeding.
+
+**Capturing out-of-scope side-effects:** If verification surfaces a problem **unrelated to the work being shipped** that is non-trivial (fixing it inline would block or expand this ship), do NOT fix it now. Record it for later, then continue the ship workflow:
+
+```bash
+bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
+  --name "<short title>" --description "<what & where — enough to act on cold>" \
+  --source cf-ship [--slug <task/plan slug, if one exists>] [--problem "<what is being shipped>"]
+```
+
+This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id) as an in-repo audit trail. Genuine blockers that make the ship unsafe should still stop the workflow, not be deferred.
 
 ### Step 2: Commit
 
