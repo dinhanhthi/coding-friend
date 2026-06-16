@@ -106,6 +106,7 @@ coding-friend/
     ├── plans/                   # Implementation plans
     ├── memory/                  # Project knowledge
     ├── learn/                   # Human learning notes
+    ├── later/                   # Deferred out-of-scope side-effects (capture-later.sh)
     └── research/                # In-depth research results
 ```
 
