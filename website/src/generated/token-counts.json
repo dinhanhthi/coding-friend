@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T10:26:25.395Z",
+  "generatedAt": "2026-07-04T16:03:53.727Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,16 +18,33 @@
     }
   },
   "bootstrap": {
-    "tokens": 2273,
+    "tokens": 2285,
     "tier": "medium"
   },
   "skills": {
     "cf-ask": {
-      "tokens": 3143,
+      "tokens": 3248,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-20",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
+    },
+    "cf-checkpoint": {
+      "tokens": 2113,
+      "tier": "medium",
+      "type": "slash",
+      "created": "2026-07-04",
+      "updated": "2026-07-04",
+      "temporal": "new"
+    },
+    "cf-checkpoint-from": {
+      "tokens": 1389,
+      "tier": "low",
+      "type": "slash",
+      "created": "2026-07-04",
+      "updated": "2026-07-04",
+      "temporal": "new"
     },
     "cf-commit": {
       "tokens": 1134,
@@ -52,11 +69,12 @@
       "updated": "2026-06-16"
     },
     "cf-help": {
-      "tokens": 3039,
+      "tokens": 3129,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-14"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-learn": {
       "tokens": 2663,
@@ -81,7 +99,7 @@
       "temporal": "updated"
     },
     "cf-plan-resume": {
-      "tokens": 1269,
+      "tokens": 1357,
       "tier": "low",
       "type": "slash",
       "created": "2026-07-04",
