@@ -2,6 +2,14 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.37.0 (2026-07-04)
+
+- Add `$cf-checkpoint` and `$cf-checkpoint-from` — capture a concise conversation checkpoint (decisions, breaking changes, next steps) to `docs/context/checkpoints/`, then reload it into a fresh conversation to continue with prior context [#16184107](https://github.com/dinhanhthi/coding-friend/commit/16184107) [#31e1b413](https://github.com/dinhanhthi/coding-friend/commit/31e1b413)
+- `$cf-plan-resume` is now a standalone skill (extracted from `$cf-plan --resume`) — resume a saved plan from where execution last stopped, reusing the shared execution protocol and honoring `auto: true` [#271cec74](https://github.com/dinhanhthi/coding-friend/commit/271cec74) [#8c6c6a58](https://github.com/dinhanhthi/coding-friend/commit/8c6c6a58)
+- Add `capture-later.sh` helper so execution skills (`$cf-plan`, `$cf-fix`, `cf-sys-debug`, `$cf-optimize`, `$cf-ship`, `cf-implementer`) record out-of-scope side-effects to `docs/later/` instead of fixing them inline [#5d67bf6c](https://github.com/dinhanhthi/coding-friend/commit/5d67bf6c) [#e7da810e](https://github.com/dinhanhthi/coding-friend/commit/e7da810e)
+- Fix custom skill guides not being injected — guides now auto-inject via shell injection, with a `$cf-ship` guard that prevents short-circuiting a version-bump/release guide on a clean working tree [#e51d4909](https://github.com/dinhanhthi/coding-friend/commit/e51d4909)
+- Replace Mermaid diagrams with ASCII in `$cf-ask` and the `$cf-plan --gui` overview for reliable rendering across surfaces [#7a0e3bee](https://github.com/dinhanhthi/coding-friend/commit/7a0e3bee) [#603c3faf](https://github.com/dinhanhthi/coding-friend/commit/603c3faf)
+
 ## v0.36.1 (2026-06-14)
 
 - Fix `cf-help` and `cf-remember` skill descriptions exceeding Codex's 1024-character limit, which caused both skills to be skipped on load in Codex — trimmed under the limit with triggers preserved [#441d825](https://github.com/dinhanhthi/coding-friend/commit/441d825)

@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.38.2 (2026-07-04)
+
+- `cf init` onboarding message and the generated Codex `AGENTS.md` skill list now include the new `/cf-checkpoint` and `/cf-checkpoint-from` commands [#31e1b413](https://github.com/dinhanhthi/coding-friend/commit/31e1b413)
+- Stabilize the `cf memory` temporal-decay cap test by freezing the clock, removing an intermittent CI flake [#d303f003](https://github.com/dinhanhthi/coding-friend/commit/d303f003)
+
 ## v1.38.1 (2026-06-15)
 
 - Fix `cf update` crashing with `ERR_MODULE_NOT_FOUND` right after the CLI self-updates — the post-update memory refresh now loads `./memory.js` before `npm install -g` replaces the global install, so the old content-hashed chunk is already cached in memory and the import no longer resolves to a file that the reinstall removed [#02ed6c6](https://github.com/dinhanhthi/coding-friend/commit/02ed6c6)
