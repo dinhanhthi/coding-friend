@@ -10,7 +10,7 @@ description: >
 user-invocable: true
 argument-hint: "[project description]"
 created: 2026-03-16
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # /cf-scan
@@ -39,7 +39,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

@@ -35,7 +35,11 @@ Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining te
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

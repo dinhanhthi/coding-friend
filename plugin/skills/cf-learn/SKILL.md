@@ -11,7 +11,7 @@ description: >
 user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # /cf-learn
@@ -28,7 +28,11 @@ In vibe coding, AI writes the code and human approves it — but the human doesn
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

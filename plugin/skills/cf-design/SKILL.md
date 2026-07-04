@@ -12,7 +12,7 @@ description: >
   system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
   outcome. Invoke via /cf-design — helps Claude produce intentional, consistent UI.
 created: 2026-04-30
-updated: 2026-05-02
+updated: 2026-07-04
 state: beta
 ---
 
@@ -38,7 +38,11 @@ If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal 
 
 ## Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-design`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-design
+```
 
 If output is non-empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

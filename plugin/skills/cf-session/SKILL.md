@@ -9,7 +9,7 @@ disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read]
 created: 2026-03-05
-updated: 2026-06-06
+updated: 2026-07-04
 state: beta
 ---
 
@@ -25,7 +25,11 @@ Label: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-session`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-session
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

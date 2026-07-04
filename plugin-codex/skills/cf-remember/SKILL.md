@@ -14,7 +14,7 @@ description: >
   (use $cf-learn for those). Unlike $cf-learn (educational notes for humans), this saves project
   context for AI recall.
 created: 2026-02-17
-updated: 2026-06-14
+updated: 2026-07-04
 ---
 
 # $cf-remember
@@ -43,7 +43,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

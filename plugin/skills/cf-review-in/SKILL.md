@@ -8,7 +8,7 @@ description: >
 user-invocable: true
 argument-hint: "<label> [service]"
 created: 2026-03-23
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # /cf-review-in
@@ -25,7 +25,11 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

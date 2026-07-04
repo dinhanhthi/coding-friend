@@ -9,7 +9,7 @@ description: >
 user-invocable: true
 argument-hint: "[optional: label, e.g. fix-auth-bypass]"
 created: 2026-03-23
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # /cf-review-out
@@ -28,7 +28,11 @@ Creates a complete, self-contained review document in `docs/reviews/` that any e
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

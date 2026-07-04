@@ -8,7 +8,7 @@ description: >
   verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
 disable-model-invocation: true
 created: 2026-02-17
-updated: 2026-06-16
+updated: 2026-07-04
 ---
 
 # /cf-ship
@@ -21,9 +21,15 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide & Flags
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship`
+Custom guide (auto-loaded at invocation — do NOT skip):
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship
+```
+
+If the block above produced any content, integrate the returned sections: `## Before` → execute **before Step 1**, `## Rules` → apply throughout, `## After` → after the final step.
+
+**Guard — do NOT short-circuit:** If a `## Before` section was injected above, you MUST carry it out before ANY assessment of whether there is something to ship. A clean working tree or being on `main` does NOT by itself mean "nothing to ship" — a `## Before` guide may still require action (e.g. a version-bump / tag / release flow). Never conclude "nothing to ship" until Step 0's `## Before` has been executed.
 
 **Dry-run check**: If `$ARGUMENTS` contains `--dry-run`, enter simulation mode — run all steps below but **do not execute** any destructive action (no commit, no push, no PR creation). Prefix each step's output with `[dry-run]` and show what **would** happen. At the end, print:
 

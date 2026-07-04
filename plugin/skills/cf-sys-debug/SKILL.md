@@ -16,7 +16,7 @@ description: >
   obvious cause.
 user-invocable: false
 created: 2026-02-17
-updated: 2026-06-16
+updated: 2026-07-04
 ---
 
 # Systematic Debugging
@@ -25,7 +25,11 @@ updated: 2026-06-16
 
 ## Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-sys-debug`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-sys-debug
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

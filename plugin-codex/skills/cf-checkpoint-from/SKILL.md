@@ -32,7 +32,11 @@ Load a saved checkpoint into the current (fresh) conversation so work continues 
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-checkpoint-from`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-checkpoint-from
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

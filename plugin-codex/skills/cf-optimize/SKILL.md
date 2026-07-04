@@ -9,7 +9,7 @@ description: >
   "timeout", "O(n²)", "N+1". Do NOT auto-invoke for minor refactors or style changes
   that are not performance-related.
 created: 2026-02-20
-updated: 2026-06-16
+updated: 2026-07-04
 ---
 
 # $cf-optimize
@@ -26,7 +26,11 @@ Structured workflow for optimizing existing features, algorithms, or performance
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-optimize`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-optimize
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
