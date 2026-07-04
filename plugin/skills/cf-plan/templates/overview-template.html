@@ -234,53 +234,16 @@
         margin-top: 1rem;
       }
 
-      /* Ensure Mermaid SVGs scale nicely */
-      .mermaid svg {
-        max-width: 100%;
-        height: auto;
-      }
-
-      /* Mermaid wraps node-label text in <p>; the page's `p { color: var(--fg) }`
-       rule leaks in and overrides the per-node label color, making dark text on
-       bright node fills invisible in dark mode. Inherit the label color instead. */
-      .mermaid p {
-        color: inherit;
-      }
-
-      /* ── Zoom controls (added per diagram by JS) ── */
-      .zoom-controls {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        display: flex;
-        gap: 0.25rem;
-        z-index: 2;
-      }
-
-      .zoom-controls button {
-        width: 1.9rem;
-        height: 1.9rem;
-        border: 1px solid var(--border);
-        background: var(--bg);
+      /* ── ASCII diagram block ── */
+      .ascii-diagram {
+        font-family:
+          "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, "Courier New",
+          monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
         color: var(--fg);
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-        line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .zoom-controls button:hover {
-        background: var(--accent-soft);
-        border-color: var(--accent);
-      }
-
-      .zoom-hint {
-        font-size: 0.75rem;
-        color: var(--fg-muted);
-        margin-top: 0.4rem;
+        overflow-x: auto;
+        white-space: pre;
       }
 
       /* ── Code / inline monospace ── */
@@ -369,15 +332,27 @@
       <!-- ── Diagrams ── -->
       <section id="diagrams">
         <h2>Diagrams</h2>
-        <!-- FILL: Mermaid diagram(s) for structure / flow / state machine / algorithm where a picture beats prose -->
+        <!-- FILL: ASCII diagram(s) (plain text, box-drawing/arrow characters) for structure / flow / state machine / algorithm where a picture beats prose -->
         <!-- Add one .diagram-wrap per diagram; remove placeholder content before shipping -->
 
         <div class="diagram-wrap">
-          <div class="mermaid">
-            graph LR A[User triggers /cf-plan] --> B(cf-planner agent) B -->
-            C{exploration done?} C -- yes --> D[write plan phases] C -- no -->
-            E[explore codebase] E --> C D --> F[cf-writer-deep fills overview]
-          </div>
+          <pre class="ascii-diagram">
+/cf-plan triggered
+      |
+      v
+ cf-planner agent
+      |
+      v
+ exploration done? ----no----> explore codebase --+
+      |                                            |
+     yes                                           |
+      |&lt;-------------------------------------------+
+      v
+ write plan phases
+      |
+      v
+ cf-writer-deep fills overview</pre
+          >
         </div>
       </section>
 
@@ -396,104 +371,5 @@
     </div>
     <!-- /.container -->
 
-    <!-- This overview is a local, git-ignored artifact opened from disk; CDN integrity (SRI) omitted intentionally. To harden: pin an exact version and add integrity="sha384-…" from https://www.jsdelivr.com/ -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
-      crossorigin="anonymous"
-    ></script>
-    <script>
-      // Attach wheel-zoom + drag-pan to one already-rendered diagram. Only transforms
-      // the post-render SVG (no innerHTML of plan text) so label sanitization still holds.
-      function setupPanZoom(wrap) {
-        const svg = wrap.querySelector("svg");
-        if (!svg) return;
-        let scale = 1,
-          tx = 0,
-          ty = 0;
-        const MIN = 0.3,
-          MAX = 5;
-        svg.style.transformOrigin = "0 0";
-        svg.style.cursor = "grab";
-        const apply = () => {
-          svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-        };
-        function zoomAt(factor, cx, cy) {
-          const next = Math.min(MAX, Math.max(MIN, scale * factor));
-          const k = next / scale;
-          tx = cx - (cx - tx) * k;
-          ty = cy - (cy - ty) * k;
-          scale = next;
-          apply();
-        }
-        const center = () => [wrap.clientWidth / 2, wrap.clientHeight / 2];
-
-        wrap.addEventListener(
-          "wheel",
-          (e) => {
-            e.preventDefault();
-            const r = wrap.getBoundingClientRect();
-            zoomAt(
-              e.deltaY < 0 ? 1.1 : 1 / 1.1,
-              e.clientX - r.left,
-              e.clientY - r.top,
-            );
-          },
-          { passive: false },
-        );
-
-        let dragging = false,
-          lastX = 0,
-          lastY = 0;
-        wrap.addEventListener("mousedown", (e) => {
-          dragging = true;
-          lastX = e.clientX;
-          lastY = e.clientY;
-          svg.style.cursor = "grabbing";
-        });
-        window.addEventListener("mouseup", () => {
-          dragging = false;
-          svg.style.cursor = "grab";
-        });
-        window.addEventListener("mousemove", (e) => {
-          if (!dragging) return;
-          tx += e.clientX - lastX;
-          ty += e.clientY - lastY;
-          lastX = e.clientX;
-          lastY = e.clientY;
-          apply();
-        });
-
-        const controls = document.createElement("div");
-        controls.className = "zoom-controls";
-        const mk = (label, title, onClick) => {
-          const b = document.createElement("button");
-          b.type = "button";
-          b.textContent = label;
-          b.title = title;
-          b.addEventListener("click", onClick);
-          controls.appendChild(b);
-        };
-        mk("+", "Zoom in", () => zoomAt(1.25, ...center()));
-        mk("−", "Zoom out", () => zoomAt(0.8, ...center()));
-        mk("↺", "Reset", () => {
-          scale = 1;
-          tx = 0;
-          ty = 0;
-          apply();
-        });
-        wrap.appendChild(controls);
-      }
-
-      (async () => {
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "default",
-        });
-        await mermaid.run();
-        document.querySelectorAll(".diagram-wrap").forEach(setupPanZoom);
-      })();
-    </script>
   </body>
 </html>
