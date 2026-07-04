@@ -23,6 +23,8 @@ const slashCommandMeta: Record<string, string> = {
   "cf-help": "Answer questions about Coding Friend",
   "cf-plan": "Brainstorm and plan",
   "cf-plan-resume": "Resume a saved plan from where it stopped",
+  "cf-checkpoint": "Capture a concise conversation checkpoint",
+  "cf-checkpoint-from": "Load a saved checkpoint into a fresh conversation",
   "cf-review": "Multi-layer code review",
   "cf-review-out": "Generate review prompt for external AI",
   "cf-review-in": "Collect external review results",
@@ -72,6 +74,16 @@ const overviewSlashMeta: Record<
   "cf-plan": {
     description: "Brainstorm and create structured implementation plans",
     triggeredBy: "slash + auto",
+  },
+  "cf-checkpoint": {
+    description:
+      "Capture a concise conversation checkpoint (decisions, breaking changes, next steps) for resuming later",
+    triggeredBy: "slash",
+  },
+  "cf-checkpoint-from": {
+    description:
+      "Load a saved checkpoint into a fresh conversation to continue with prior context",
+    triggeredBy: "slash",
   },
   "cf-fix": {
     description: "Quick bug fix workflow with problem verification",

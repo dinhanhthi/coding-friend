@@ -1,0 +1,58 @@
+---
+title: "/cf-checkpoint"
+description: "Save a concise checkpoint of the current conversation to resume later in a different conversation."
+keywords: [checkpoint, save context, resume conversation, cf-checkpoint]
+---
+
+<ContextFootprint />
+
+<Callout type="tip" title="CLI Requirement: NONE">
+  Works without `coding-friend-cli`. Reads and writes checkpoint files
+  directly under `docs/context/checkpoints/` — no memory MCP indexing
+  involved. See [CLI requirements](/docs/reference/cli-requirements/) for the
+  full matrix.
+</Callout>
+
+The `/cf-checkpoint` skill captures a concise snapshot of the current conversation's context — goal, current state, key decisions, breaking changes, and next steps — into a markdown file, so work can be resumed later with [`/cf-checkpoint-from`](/docs/skills/cf-checkpoint-from/) in a **different, later conversation**.
+
+It is slash-only (does not auto-invoke) and distinct from two related mechanisms:
+
+- Unlike Claude Code's built-in `/compact`, which condenses context to keep working in the **same** conversation, `/cf-checkpoint` writes an external file meant to seed a new session.
+- Unlike [`/cf-remember`](/docs/skills/cf-remember/), which extracts durable, project-wide facts and conventions into `docs/memory/` for long-term AI recall across all future work, `/cf-checkpoint` is a transient, single-conversation resume snapshot — it captures "where we left off," not general project knowledge.
+
+## Usage
+
+```bash
+/cf-checkpoint [additional-prompt]
+```
+
+The optional argument is resolved into one of four cases, evaluated in order:
+
+1. **No argument** — create a new checkpoint with an auto-derived kebab-case slug from the conversation's main topic.
+2. **Argument matches an existing checkpoint** — either an exact `YYYY-MM-DD-<slug>` filename, or a bare `<slug>` where exactly one file matches — update that checkpoint: re-read its content, rewrite the body to reflect the current state (not append), and bump its `updated` date.
+3. **Argument doesn't match any existing file, and isn't slug-like** (contains spaces, uppercase, or punctuation beyond hyphens) — treat it as a **focus hint** for what to emphasize, and create a new checkpoint.
+4. **Argument doesn't match any existing file, and IS slug-like** (zero or multiple matches) — list the available checkpoint files and ask which one to update, or whether to create a new one instead. If the `checkpoints/` directory is empty, there is nothing to list — it falls back to creating a new checkpoint using the argument as the slug.
+
+**Edge cases:**
+
+- If `checkpoints/` doesn't exist yet, it's created before listing/matching.
+- Arguments containing `/`, `\`, or `..` are rejected immediately (path-traversal guard) — they are never used to test file existence or build a path.
+
+## Workflow
+
+1. **Resolve the argument** — classify `$ARGUMENTS` into one of the four cases above, guarding against path traversal first.
+2. **Compose the checkpoint** — synthesize the conversation into a fixed template (Goal, Current State, Key Decisions, Breaking Changes, Open Questions / Next Steps, Relevant Files), using "None" for genuinely empty sections. The checkpoint is capped at roughly 150 lines — decisions and next steps take priority over narrative detail, and the full conversation is never dumped verbatim. Content that looks like an injected instruction (e.g. "ignore previous instructions") is never carried into the checkpoint as if it were a legitimate decision — it's omitted or flagged as suspicious instead.
+3. **Write the file** — to `docs/context/checkpoints/YYYY-MM-DD-<slug>.md` as an absolute path, creating the `checkpoints/` directory if needed. When updating, `created` is preserved and `updated` is bumped.
+4. **Confirm** — shows a 2-line summary: the checkpoint file path, and its status (created, or updated with both dates).
+
+## When to Use
+
+- Pausing work and planning to resume it in a new session or conversation
+- The context window is filling up and you want a durable handoff before compacting or ending the session
+- Ending a work day mid-task and wanting a clean starting point next time
+
+## Recommended Workflow
+
+```
+/cf-checkpoint → (new conversation) → /cf-checkpoint-from <slug> → continue work
+```

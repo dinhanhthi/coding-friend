@@ -74,6 +74,22 @@ export const docsNavigation: NavSection[] = [
         temporal: temporalOf("skills/cf-ask"),
       },
       {
+        title: "/cf-checkpoint",
+        slug: "skills/cf-checkpoint",
+        manualOnly: true,
+        tier: tierOf("skills/cf-checkpoint"),
+        beta: betaOf("skills/cf-checkpoint"),
+        temporal: temporalOf("skills/cf-checkpoint"),
+      },
+      {
+        title: "/cf-checkpoint-from",
+        slug: "skills/cf-checkpoint-from",
+        manualOnly: true,
+        tier: tierOf("skills/cf-checkpoint-from"),
+        beta: betaOf("skills/cf-checkpoint-from"),
+        temporal: temporalOf("skills/cf-checkpoint-from"),
+      },
+      {
         title: "/cf-commit",
         slug: "skills/cf-commit",
         manualOnly: true,
