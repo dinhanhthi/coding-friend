@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { applyTemporalDecay } from "../lib/temporal-decay.js";
 
 describe("applyTemporalDecay()", () => {
@@ -35,10 +35,18 @@ describe("applyTemporalDecay()", () => {
   });
 
   it("caps access boost at 10", () => {
-    const today = new Date().toISOString().split("T")[0];
-    const at10 = applyTemporalDecay(10, today, 10);
-    const at100 = applyTemporalDecay(10, today, 100);
-    expect(at10).toBe(at100);
+    // Freeze the clock so both calls compute an identical ageDays; otherwise
+    // the tiny time drift between calls perturbs the decay factor and breaks
+    // exact equality even though the access boost is genuinely capped.
+    vi.useFakeTimers();
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const at10 = applyTemporalDecay(10, today, 10);
+      const at100 = applyTemporalDecay(10, today, 100);
+      expect(at10).toBe(at100);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("handles zero score", () => {
