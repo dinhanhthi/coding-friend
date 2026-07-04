@@ -9,6 +9,7 @@ description: >
   Unlike /cf-remember (durable project-wide facts/conventions for AI recall across all future
   work), this is a transient per-conversation resume artifact. Does NOT auto-invoke — slash-only.
 disable-model-invocation: true
+model: sonnet
 created: 2026-07-04
 updated: 2026-07-04
 ---

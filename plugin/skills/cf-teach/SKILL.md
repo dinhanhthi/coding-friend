@@ -8,6 +8,7 @@ description: >
   narrative deep-dive for the human to truly understand what happened and why.
 user-invocable: true
 argument-hint: "[optional: topic or specific task to explain]"
+model: sonnet
 created: 2026-03-30
 updated: 2026-07-04
 ---

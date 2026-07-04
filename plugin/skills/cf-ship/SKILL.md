@@ -7,6 +7,7 @@ description: >
   Also triggers when the user is done with a feature branch and wants the full
   verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
 disable-model-invocation: true
+model: sonnet
 created: 2026-02-17
 updated: 2026-07-04
 ---

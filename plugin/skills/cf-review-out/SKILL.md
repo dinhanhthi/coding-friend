@@ -8,6 +8,7 @@ description: >
   "prepare review for gemini", "review prompt".
 user-invocable: true
 argument-hint: "[optional: label, e.g. fix-auth-bypass]"
+model: sonnet
 created: 2026-03-23
 updated: 2026-07-04
 ---
