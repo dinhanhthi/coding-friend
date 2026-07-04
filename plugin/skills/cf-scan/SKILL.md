@@ -9,6 +9,7 @@ description: >
   This is a token-heavy operation — always warn the user before proceeding.
 user-invocable: true
 argument-hint: "[project description]"
+model: sonnet
 created: 2026-03-16
 updated: 2026-07-04
 ---

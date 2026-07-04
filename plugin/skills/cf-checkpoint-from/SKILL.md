@@ -7,6 +7,7 @@ description: >
   "pick up from the saved context", "restore conversation context". Requires an existing
   checkpoint file — does NOT create checkpoints (use /cf-checkpoint for that).
 disable-model-invocation: true
+model: sonnet
 created: 2026-07-04
 updated: 2026-07-04
 ---

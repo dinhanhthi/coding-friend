@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T21:37:15.671Z",
+  "generatedAt": "2026-07-04T21:54:04.126Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -31,7 +31,7 @@
       "temporal": "updated"
     },
     "cf-checkpoint": {
-      "tokens": 2138,
+      "tokens": 2143,
       "tier": "medium",
       "type": "slash",
       "created": "2026-07-04",
@@ -39,7 +39,7 @@
       "temporal": "new"
     },
     "cf-checkpoint-from": {
-      "tokens": 1414,
+      "tokens": 1419,
       "tier": "low",
       "type": "slash",
       "created": "2026-07-04",
@@ -112,7 +112,7 @@
       "temporal": "new"
     },
     "cf-remember": {
-      "tokens": 2942,
+      "tokens": 2947,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
@@ -136,7 +136,7 @@
       "temporal": "updated"
     },
     "cf-review-in": {
-      "tokens": 2647,
+      "tokens": 2652,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-23",
@@ -144,7 +144,7 @@
       "temporal": "updated"
     },
     "cf-review-out": {
-      "tokens": 1351,
+      "tokens": 1356,
       "tier": "low",
       "type": "slash",
       "created": "2026-03-23",
@@ -152,7 +152,7 @@
       "temporal": "updated"
     },
     "cf-scan": {
-      "tokens": 3566,
+      "tokens": 3571,
       "tier": "high",
       "type": "slash",
       "created": "2026-03-16",
@@ -169,7 +169,7 @@
       "temporal": "updated"
     },
     "cf-ship": {
-      "tokens": 1231,
+      "tokens": 1236,
       "tier": "low",
       "type": "slash",
       "created": "2026-02-17",
@@ -193,7 +193,7 @@
       "temporal": "updated"
     },
     "cf-teach": {
-      "tokens": 2572,
+      "tokens": 2577,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-30",
@@ -209,7 +209,7 @@
       "temporal": "updated"
     },
     "cf-warm": {
-      "tokens": 2870,
+      "tokens": 2875,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-31",

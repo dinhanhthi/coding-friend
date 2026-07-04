@@ -13,6 +13,7 @@ description: >
   Do NOT auto-invoke for trivial fixes, simple config changes, or purely educational exchanges
   (use /cf-learn for those). Unlike /cf-learn (educational notes for humans), this saves project
   context for AI recall.
+model: sonnet
 created: 2026-02-17
 updated: 2026-07-04
 ---
