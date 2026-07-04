@@ -8,7 +8,7 @@ description: >
 user-invocable: true
 argument-hint: "[--user <name>] [--n-commits <N>]"
 created: 2026-03-31
-updated: 2026-06-06
+updated: 2026-07-04
 state: beta
 ---
 
@@ -38,7 +38,11 @@ Output goes to `{docsDir}/warm/` (default: `docs/warm/`). Check `.coding-friend/
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-warm`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-warm
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

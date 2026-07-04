@@ -8,7 +8,7 @@ description: >
   commits, or branches.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-06-07
+updated: 2026-07-04
 ---
 
 # /cf-review
@@ -31,7 +31,11 @@ This skill is automatically invoked by other skills — you don't always need to
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

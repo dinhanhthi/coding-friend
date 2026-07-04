@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T16:03:53.727Z",
+  "generatedAt": "2026-07-04T21:37:15.671Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -23,7 +23,7 @@
   },
   "skills": {
     "cf-ask": {
-      "tokens": 3248,
+      "tokens": 3273,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-20",
@@ -31,7 +31,7 @@
       "temporal": "updated"
     },
     "cf-checkpoint": {
-      "tokens": 2113,
+      "tokens": 2138,
       "tier": "medium",
       "type": "slash",
       "created": "2026-07-04",
@@ -39,7 +39,7 @@
       "temporal": "new"
     },
     "cf-checkpoint-from": {
-      "tokens": 1389,
+      "tokens": 1414,
       "tier": "low",
       "type": "slash",
       "created": "2026-07-04",
@@ -47,29 +47,32 @@
       "temporal": "new"
     },
     "cf-commit": {
-      "tokens": 1134,
+      "tokens": 1159,
       "tier": "low",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-design": {
-      "tokens": 2539,
+      "tokens": 2564,
       "tier": "medium",
       "type": "slash",
       "created": "2026-04-30",
-      "updated": "2026-05-02",
-      "state": "beta"
+      "updated": "2026-07-04",
+      "state": "beta",
+      "temporal": "updated"
     },
     "cf-fix": {
-      "tokens": 3944,
+      "tokens": 3969,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-16"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 3129,
+      "tokens": 3154,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -77,21 +80,23 @@
       "temporal": "updated"
     },
     "cf-learn": {
-      "tokens": 2663,
+      "tokens": 2688,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-optimize": {
-      "tokens": 2710,
+      "tokens": 2735,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-20",
-      "updated": "2026-06-16"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 6548,
+      "tokens": 6573,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -99,7 +104,7 @@
       "temporal": "updated"
     },
     "cf-plan-resume": {
-      "tokens": 1357,
+      "tokens": 1382,
       "tier": "low",
       "type": "slash",
       "created": "2026-07-04",
@@ -107,97 +112,110 @@
       "temporal": "new"
     },
     "cf-remember": {
-      "tokens": 2917,
+      "tokens": 2942,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-14"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-research": {
-      "tokens": 3305,
+      "tokens": 3330,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-19",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-review": {
-      "tokens": 3662,
+      "tokens": 3687,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-07"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-review-in": {
-      "tokens": 2622,
+      "tokens": 2647,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-23",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-review-out": {
-      "tokens": 1326,
+      "tokens": 1351,
       "tier": "low",
       "type": "slash",
       "created": "2026-03-23",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-scan": {
-      "tokens": 3541,
+      "tokens": 3566,
       "tier": "high",
       "type": "slash",
       "created": "2026-03-16",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-session": {
-      "tokens": 1234,
+      "tokens": 1259,
       "tier": "low",
       "type": "slash",
       "created": "2026-03-05",
-      "updated": "2026-06-06",
-      "state": "beta"
+      "updated": "2026-07-04",
+      "state": "beta",
+      "temporal": "updated"
     },
     "cf-ship": {
-      "tokens": 1106,
+      "tokens": 1231,
       "tier": "low",
       "type": "slash",
       "created": "2026-02-17",
-      "updated": "2026-06-16"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-sys-debug": {
-      "tokens": 3728,
+      "tokens": 3753,
       "tier": "high",
       "type": "auto",
       "created": "2026-02-17",
-      "updated": "2026-06-16"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-tdd": {
-      "tokens": 2113,
+      "tokens": 2138,
       "tier": "medium",
       "type": "auto",
       "created": "2026-02-17",
-      "updated": "2026-06-14"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-teach": {
-      "tokens": 2547,
+      "tokens": 2572,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-30",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-verification": {
-      "tokens": 637,
+      "tokens": 662,
       "tier": "low",
       "type": "auto",
       "created": "2026-02-17",
-      "updated": "2026-06-06"
+      "updated": "2026-07-04",
+      "temporal": "updated"
     },
     "cf-warm": {
-      "tokens": 2845,
+      "tokens": 2870,
       "tier": "medium",
       "type": "slash",
       "created": "2026-03-31",
-      "updated": "2026-06-06",
-      "state": "beta"
+      "updated": "2026-07-04",
+      "state": "beta",
+      "temporal": "updated"
     }
   },
   "agents": {

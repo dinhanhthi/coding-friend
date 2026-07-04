@@ -55,15 +55,21 @@ All sections are optional — include only what you need.
 
 ## How it works
 
-Every `cf-*` skill has a **Step 0** that runs a bash script (`load-custom-guide.sh`). This script checks for a custom guide in the local path first, then the global path. If found, it outputs the guide content, and the skill integrates the sections into its workflow:
+Every `cf-*` skill has a **Step 0** that auto-runs a bash script (`load-custom-guide.sh`) via an inline shell-injection block:
+
+````markdown
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-<skill>
+```
+````
+
+Because the block is a `!`-prefixed injection, Claude Code executes it **at invocation, before the model reads the skill** — the command output replaces the block in place. This guarantees the guide is present in context and cannot be skipped. The script checks the local path first, then the global path; if a guide is found, its output is injected and the skill integrates the sections into its workflow:
 
 - `## Before` → executes before the first step
 - `## Rules` → applies as additional rules throughout all steps
 - `## After` → executes after the final step
 
-The guide content becomes a direct tool result that the model reads inline — ensuring it is always followed.
-
-Custom guides are loaded **on-demand** — only when the corresponding skill runs. Changes to a guide take effect on the next skill invocation (no `/clear` needed).
+Custom guides are loaded **on-demand** — only when the corresponding skill runs. Changes to a guide take effect on the next skill invocation (no `/clear` needed). Shell injection can be turned off globally with `"disableSkillShellExecution": true` in settings; if disabled, the raw command stays visible and the skill runs it manually as a fallback.
 
 ## Examples
 

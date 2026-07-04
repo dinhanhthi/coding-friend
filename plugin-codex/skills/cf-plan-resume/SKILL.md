@@ -20,7 +20,11 @@ Resume the implementation plan at: **$ARGUMENTS** (a plan folder path, an entry 
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan-resume`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan-resume
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

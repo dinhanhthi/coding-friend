@@ -8,7 +8,7 @@ description: >
   "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
   Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
 created: 2026-02-17
-updated: 2026-06-16
+updated: 2026-07-04
 ---
 
 # $cf-fix
@@ -21,7 +21,11 @@ Fix the bug: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 

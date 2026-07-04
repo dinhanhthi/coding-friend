@@ -9,7 +9,7 @@ disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read, Glob]
 created: 2026-02-17
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # /cf-commit
@@ -22,7 +22,11 @@ Create a commit for the current changes. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Run: `bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-commit`
+Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
+
+```!
+bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-commit
+```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
