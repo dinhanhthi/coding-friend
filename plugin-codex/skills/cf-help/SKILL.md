@@ -12,7 +12,7 @@ description: >
   CLI required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 created: 2026-02-17
-updated: 2026-06-14
+updated: 2026-07-04
 ---
 
 # $cf-help — Coding Friend Help
@@ -50,7 +50,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Codex C
 
 ### Slash Commands (user triggers with /)
 
-- `$cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
+- `$cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates an ASCII flow diagram for "how does X work" / flow / lifecycle questions
 - `$cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
 - `$cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped: reads the plan + its context file, re-runs pending/interrupted tasks, honors `auto: true` frontmatter to continue in autopilot.
 - `$cf-review [target]` — ⚡⚡ — Dispatch code review to subagent.
