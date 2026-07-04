@@ -7,7 +7,7 @@ description: >
   does this use?", "why is this done this way?". Unlike $cf-research (deep multi-doc output),
   this gives a single focused answer.
 created: 2026-02-20
-updated: 2026-06-06
+updated: 2026-07-04
 ---
 
 # $cf-ask
@@ -126,19 +126,20 @@ Wait for the cf-explorer to return its findings.
 4. Use code snippets only when they clarify the answer
 5. Keep it concise — this is a focused answer, not a research paper
 
-**If `IS_FLOW_QUESTION = true`**, also generate a Mermaid diagram as part of the answer:
+**If `IS_FLOW_QUESTION = true`**, also generate an ASCII diagram as part of the answer:
 
-- **Pick the right diagram type** based on the flow's shape:
-  - Discrete states with transitions → `stateDiagram-v2`
-  - Component-to-component interactions with messages → `sequenceDiagram`
-  - Process with decisions / branching → `flowchart TD`
-- **Rubric**: identify actors/states (nodes), then transitions/messages (edges), then add alternate/error paths as dotted or labeled edges. Label every transition with what triggers it. Keep the diagram to the minimum nodes needed to convey the big picture — omit internal implementation details that don't add clarity.
+- **Pick the right layout** based on the flow's shape:
+  - Discrete states with transitions → a state chart: boxed states joined by labeled arrows (e.g. `[Idle] --start--> [Running]`)
+  - Component-to-component interactions with messages → a sequence layout: vertical actor lanes with horizontal `--->` message arrows top-to-bottom
+  - Process with decisions / branching → a top-down flowchart: boxes for steps, a decision node with `yes` / `no` labeled branches
+- **Rubric**: identify actors/states (nodes), then transitions/messages (edges), then add alternate/error paths as labeled arrows. Label every transition with what triggers it. Keep the diagram to the minimum nodes needed to convey the big picture — omit internal implementation details that don't add clarity.
+- **Style**: plain text only, using box-drawing / arrow characters (`┌ ─ ┐ │ └ ┘ → ← ↑ ↓ + | -`). No Mermaid or other rendered-diagram syntax. Render it inside a plain fenced code block so alignment is preserved.
 - The diagram IS the concise answer for flow questions — keep surrounding prose tight.
 
 ### Step 5: Present to User
 
 1. Show the answer directly in the conversation
-2. **If `IS_FLOW_QUESTION = true`**, display the Mermaid diagram inline (inside a `mermaid` fenced code block) before or after the prose — whichever gives the clearest reading order
+2. **If `IS_FLOW_QUESTION = true`**, display the ASCII diagram inline (inside a plain fenced code block) before or after the prose — whichever gives the clearest reading order
 3. List the key files that were consulted
 
 ### Step 6: Save to Memory (via cf-writer agent)
@@ -186,7 +187,7 @@ content: |
   <!-- Include this section only when IS_FLOW_QUESTION = true -->
   ## Flow Diagram
 
-  ```mermaid
+  ```
   <diagram generated in Step 4>
 ````
 
@@ -218,7 +219,7 @@ content: |
 
 ## Flow Diagram
 
-```mermaid
+```
 <diagram generated in Step 4>
 ```
 
