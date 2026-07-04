@@ -51,7 +51,7 @@ coding-friend uses a layered config system:
   // Default: true
   "disableGUIPlan": true,
 
-  // Format for the /cf-plan human overview doc: "html" (styled self-contained file w/ Mermaid) or "md" (markdown w/ mermaid fences)
+  // Format for the /cf-plan human overview doc: "html" (styled self-contained file w/ ASCII diagrams) or "md" (markdown w/ ASCII diagrams in code fences)
   // Default: "html"
   "guiPlanFormat": "html",
 
