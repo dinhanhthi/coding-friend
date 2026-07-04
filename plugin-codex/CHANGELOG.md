@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.37.1 (2026-07-05)
+
+- Pin explicit `model:` frontmatter on most skills (`cf-ask`, `cf-plan`, `cf-review`, `cf-review-in`, `cf-review-out`, `cf-optimize`, `cf-sys-debug`, `cf-learn`, `cf-remember`, `cf-scan`, `cf-checkpoint`, `cf-checkpoint-from`, `cf-ship`, `cf-teach`, `cf-warm`) so each runs on the model best suited to its workload instead of inheriting the session default [#b17e36bf](https://github.com/dinhanhthi/coding-friend/commit/b17e36bf) [#d6fd1abc](https://github.com/dinhanhthi/coding-friend/commit/d6fd1abc)
+
 ## v0.37.0 (2026-07-04)
 
 - Add `$cf-checkpoint` and `$cf-checkpoint-from` — capture a concise conversation checkpoint (decisions, breaking changes, next steps) to `docs/context/checkpoints/`, then reload it into a fresh conversation to continue with prior context [#16184107](https://github.com/dinhanhthi/coding-friend/commit/16184107) [#31e1b413](https://github.com/dinhanhthi/coding-friend/commit/31e1b413)
