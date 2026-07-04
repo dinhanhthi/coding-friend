@@ -55,6 +55,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates a Mermaid flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
+- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped: reads the plan + its context file, re-runs pending/interrupted tasks, honors `auto: true` frontmatter to continue in autopilot.
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report (set `review.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable).
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
