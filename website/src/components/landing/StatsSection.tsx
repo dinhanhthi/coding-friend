@@ -1,6 +1,6 @@
 import Container from "@/components/ui/Container";
 const stats = [
-  { value: "21+", label: "Skills & Commands" },
+  { value: "22+", label: "Skills & Commands" },
   { value: "12+", label: "Specialized Agents" },
   { value: "2", label: "Supported Hosts" },
 ];

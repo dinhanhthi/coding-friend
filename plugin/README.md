@@ -8,7 +8,7 @@ The Coding Friend plugin works without the [`coding-friend-cli`](https://www.npm
 
 | Tier         | Meaning                                                                                                                            | Count today                       |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 9 · Agents: 11 · Hooks: 7 |
+| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 10 · Agents: 11 · Hooks: 7 |
 | **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
 | **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                 |
 

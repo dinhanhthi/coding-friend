@@ -12,7 +12,7 @@ updated: 2026-07-04
 
 # /cf-plan-resume
 
-> **CLI Requirement:** OPTIONAL — Reads the plan file and its context file directly and dispatches cf-implementer. No CLI features are required. See [CLI requirements](../../../docs/cli-requirements.md).
+> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Reads the plan file and its context file directly and dispatches cf-implementer; no CLI features are required. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Resume the implementation plan at: **$ARGUMENTS** (a plan folder path, an entry file path, or a bare `<slug>`).
 

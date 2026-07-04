@@ -70,6 +70,12 @@ const slashCommandMeta: SkillMeta[] = [
       "Brainstorm and create phased implementation plans with parallel execution",
   },
   {
+    command: "/cf-plan-resume",
+    title: "Plan Resume",
+    description:
+      "Resume a saved implementation plan from where execution last stopped",
+  },
+  {
     command: "/cf-remember",
     title: "Remember",
     description: "Capture project knowledge for AI memory across sessions",
