@@ -25,7 +25,7 @@ Create an implementation plan for: **$ARGUMENTS**
 | **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent. **No plan file** when the result is single-phase (plan stays in chat, tracked with an inline checklist). Falls back to writing the file if the plan turns out multi-phase (user mis-flagged it) or when combined with `--auto`. **No human overview doc in fast mode** unless `--gui` is passed. | Task is clear, single-module, additive                                           |
 | **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                                                                                                                                                                   | Breaking changes, migrations, multi-module refactors                             |
 | **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode.                                                                                                                                     | Hands-off end-to-end execution after plan approval                               |
-| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked with an inline checklist. Combines with `--fast`/`--hard`. Incompatible with `--auto` and `--resume`.                                                                                                                                                  | Small one-off task where the user wants planning thought but no on-disk artifact |
+| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked with an inline checklist. Combines with `--fast`/`--hard`. Incompatible with `--auto`.                                                                                                                                                  | Small one-off task where the user wants planning thought but no on-disk artifact |
 
 Flags are parsed from `$ARGUMENTS`. Strip the flag before using the remaining text as the task description. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human` → `--gui`) are normalized to their canonical form. The user's single-dash `-gui` / `-human` are also normalized to `--gui`.
 
@@ -41,15 +41,15 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 
 ### Step 0.5: Determine Mode
 
-1. **Resume flag** — if `--resume <path>` is present in `$ARGUMENTS`, extract the plan file path and skip Steps 1–6 entirely. (If `--inline`/`--no-file` is also present, refuse: there is no file to resume from. Tell the user and stop.) → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/resume.md` now and follow it.
-2. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
-   2a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
-   2b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked with an inline checklist.`
-   2c. **Human overview doc** — off by default (it costs extra tokens). Normalize `--human`/`-gui`/`-human` → `--gui`. Resolve humanDoc with this precedence: if `--gui` is present, set humanDoc=true and strip it (explicit opt-in — overrides fast mode and config). Otherwise, if fast mode is active (`--fast`/`--quick`, or auto-detected fast in steps 3–4), humanDoc=false. Otherwise resolve `disableGUIPlan` by merging the global config `~/.coding-friend/config.json` with the local `CF_CONFIG_FILE` (default `.coding-friend/config.json`), where **local overrides global** (the documented config precedence — `cf config`/`cf init` can save the key at global scope, so a global-only setting must still take effect); set humanDoc=true only when the merged `disableGUIPlan` is **explicitly `false`**, else humanDoc=false (unset means disabled). When humanDoc=true, use the merged `guiPlanFormat` (default `html`). The overview is only produced when a plan file is written (Step 6); `--inline` writes no file, so it produces none regardless (even with `--gui`).
-3. **Auto-detect** — scan the task for signals (need 2+ to trigger):
+0. **Legacy resume guard** — if a bare `--resume` token appears in `$ARGUMENTS`, do NOT plan. Resuming moved to its own command: `> ℹ️ Resuming a plan is now \`$cf-plan-resume <plan>\` (not \`$cf-plan --resume\`).` and stop.
+1. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
+   1a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
+   1b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked with an inline checklist.`
+   1c. **Human overview doc** — off by default (it costs extra tokens). Normalize `--human`/`-gui`/`-human` → `--gui`. Resolve humanDoc with this precedence: if `--gui` is present, set humanDoc=true and strip it (explicit opt-in — overrides fast mode and config). Otherwise, if fast mode is active (`--fast`/`--quick`, or auto-detected fast in steps 2–3), humanDoc=false. Otherwise resolve `disableGUIPlan` by merging the global config `~/.coding-friend/config.json` with the local `CF_CONFIG_FILE` (default `.coding-friend/config.json`), where **local overrides global** (the documented config precedence — `cf config`/`cf init` can save the key at global scope, so a global-only setting must still take effect); set humanDoc=true only when the merged `disableGUIPlan` is **explicitly `false`**, else humanDoc=false (unset means disabled). When humanDoc=true, use the merged `guiPlanFormat` (default `html`). The overview is only produced when a plan file is written (Step 6); `--inline` writes no file, so it produces none regardless (even with `--gui`).
+2. **Auto-detect** — scan the task for signals (need 2+ to trigger):
    - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
    - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
-4. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal. When fast mode is applied (whether via `--fast` or auto-detected), note in the announcement that a single-phase plan stays in chat with no file written — unless combined with `--auto`, which always writes the file (see Step 6).
+3. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal. When fast mode is applied (whether via `--fast` or auto-detected), note in the announcement that a single-phase plan stays in chat with no file written — unless combined with `--auto`, which always writes the file (see Step 6).
 
 ### Step 0.7: Check Memory
 
@@ -159,7 +159,7 @@ Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` 
 After saving, present: folder path created, phase count, task count, entry point (`README.md`), and the overview path (if generated).
 
 1. Create a task checklist and keep it updated.
-2. Set the `slug:` frontmatter field in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>`, identical to the task-id from Step 1.5). This is what the user copies to mention the plan or pass to `--resume <slug>`. Include the slug in the post-save summary so it is easy to copy.
+2. Set the `slug:` frontmatter field in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>`, identical to the task-id from Step 1.5). This is what the user copies to mention the plan or pass to `$cf-plan-resume <slug>`. Include the slug in the post-save summary so it is easy to copy.
 3. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
 4. Present the plan summary to the user.
 5. When autopilot=true, add `auto: true` to the YAML frontmatter at the top of `README.md`. For **big plans**, the `## AUTOPILOT` section is ALSO copied into EVERY `phase-N-*.md` file (so any phase file Codex re-opens during a long conversation carries the rules).
@@ -176,82 +176,9 @@ When humanDoc=true AND a plan file was written, generate a concise human-readabl
 
 ### Step 7: Offer Implementation
 
-Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → use the existing Sequential/Parallel phases protocols unchanged.
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → follow the Sequential/Parallel phases protocols in `modes/execute.md` (see pointer below).
 
-#### Sequential phases
-
-Dispatch **cf-implementer** (`cf-implementer` custom agent) per task:
-
-> Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
-> If `--add-tests` was passed to `$cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
-
-**Checkpoint before dispatch**: Edit the file containing this task's row — `README.md` for small plans, or the **relevant phase file** (`phase-N-<name>.md`) for big plans. Change the task's `⬜ TODO` → `🔄 IN PROGRESS` in the Progress table. **Big plan only** — if this is the first task of the phase to leave `⬜ TODO`, also edit `README.md` and flip that phase's row to `🔄 IN PROGRESS` (see "Big plan phase sync" below).
-
-Parse the **last non-empty line** for the result signal — strict regex `^\[CF-RESULT: (success|failure)( .*)?\]$`:
-
-- `[CF-RESULT: success]` → Edit the same file targeted at dispatch — change `🔄 IN PROGRESS` → `✅ DONE`. Then advance to next task.
-- `[CF-RESULT: failure] <reason>` → retry once
-- Missing/malformed/not-on-last-line → treat as failure (`empty-output`). Never assume silent success.
-
-**Retry protocol** (max 1 per task):
-
-1. Notify: `> ⟳ Task N attempt 1 failed (<reason>). Retrying...`
-2. Add `previous_failure` key to context file (reason, error summary, attempt number).
-3. Re-dispatch cf-implementer.
-4. Second failure → Edit the same file targeted at dispatch — change `🔄 IN PROGRESS` → `❌ FAILED`. **Big plan only** — also edit `README.md` and flip that phase's row to `❌ FAILED`. Report both failures, ask: "Continue to next task or stop?"
-
-**Big plan phase sync** — every flip is its own file edits applied **immediately**, never batched at the end of the plan:
-
-- **Phase start** — when the first task of a phase flips to `🔄 IN PROGRESS` in the phase file, also flip that phase's row in `README.md` to `🔄 IN PROGRESS`.
-- **Task done** — after each task reaches `✅ DONE` in the phase file, check if ALL tasks in that phase file are `✅ DONE`. If yes, update the phase's row in `README.md` to `✅ DONE`.
-- **Phase failed** — when any task in the phase file becomes `❌ FAILED` (after retry), update the phase's row in `README.md` to `❌ FAILED` (overrides any `🔄 IN PROGRESS`).
-- **Plan done** — when all phase rows in `README.md` are `✅ DONE`, update the top-level `**Status:**` field to `✅ DONE`. If any row is `❌ FAILED`, set `**Status:**` to `❌ FAILED` instead.
-- **Parallel phases** — when multiple cf-implementer dispatches in a parallel phase return near-simultaneously, **serialize** the file edits: apply one Edit, wait for it to succeed, then apply the next. Concurrent edits to the same Markdown table will lose updates.
-- **Autopilot override** — when the plan has `auto: true`, the README phase-row flip to ✅ DONE is DEFERRED until Step 6 of the Per-Phase Loop in `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (after `$cf-review` clean + commit success). Do NOT flip the README row to ✅ DONE at last-task-DONE checkpoint time under autopilot — that would mislabel a phase as DONE while review may still fail. If autopilot subsequently stops at review or commit failure, the README row remains in `🔄 IN PROGRESS` and gets flipped to `❌ FAILED` by the stop-handling code paths.
-
-**Rule**: Only the cf-plan orchestrator edits plan files (`README.md` for small plans; the README and phase files for big plans). cf-implementer must NOT modify any plan file.
-
-**Cleanup**: Delete the context file ONLY after all phases are `✅ DONE`. On session interrupt, quota limit, or user Ctrl+C — keep the context file so `--resume` can read it later.
-
-**Capturing out-of-scope side-effects:** If, while executing a phase, an unrelated problem surfaces that is non-trivial (fixing it would expand beyond the approved plan), do NOT fix it now and do NOT silently grow scope. Record it for later, then continue the plan:
-
-```bash
-bash "${PLUGIN_ROOT}/lib/capture-later.sh" \
-  --name "<short title>" --description "<what & where — enough to act on cold>" \
-  --source cf-plan --slug <this plan's slug> [--problem "<the phase/task in progress>"]
-```
-
-This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). This is an in-repo audit trail, independent of the `spawn_task` tool.
-
-#### Parallel phases
-
-**File-overlap guard** (MANDATORY before spawning):
-
-1. Collect declared file lists from each task's `files:` field.
-2. Normalize all paths (absolute, no trailing slashes).
-3. If any path appears in 2+ tasks → STOP. Report duplicates and tasks involved.
-4. Ask: _"Phase N has a file-overlap conflict. (a) Convert to sequential, (b) reorganize so files don't overlap, or (c) abort?"_
-5. Only proceed after user resolves. Do NOT auto-serialize.
-
-After overlap check passes:
-
-1. Ask Codex to spawn one `cf-implementer` custom agent per task in parallel, wait for all agents, and collect each result.
-2. Each agent prompt must be fully self-contained.
-3. Render status table immediately after launch (`running` → `done`/`failed`).
-4. Wait for all to complete; update table as each reports.
-5. All passed → proceed to next phase automatically. Any failed → warn, show details, ask: **"Proceed? (y/n)"**
-
-#### Phase execution order
-
-Phase 1 → Phase 2 → … A phase must complete before the next starts.
-
-→ When autopilot=true, Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block.
-
-#### Post-implementation
-
-1. **Hard mode**: run `$cf-review` after every phase; only continue if review passes.
-2. After all phases, automatically invoke `$cf-review` (load `$cf-review`) (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
-3. If plan involved performance-critical features, suggest `$cf-optimize` as optional next step — do NOT auto-run.
+→ For the Sequential/Parallel phases execution protocols (cf-implementer dispatch, result-signal parsing, retry, big-plan phase sync, out-of-scope side-effect capture, phase order, post-implementation), Read `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` now and follow it. (This is the shared protocol `$cf-plan-resume` also uses.)
 
 ## Plan Templates
 
@@ -263,7 +190,7 @@ Only when `--auto`: the AUTOPILOT CONTRACT block lives in `${PLUGIN_ROOT}/skills
 
 ```markdown
 ---
-slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `--resume <slug>`
+slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
 auto: false # set true when created with --auto
 ---
 
@@ -333,7 +260,7 @@ After implementation: `$cf-review` → `$cf-commit`
 
 ```markdown
 ---
-slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `--resume <slug>`
+slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
 auto: false # set true when created with --auto
 ---
 
