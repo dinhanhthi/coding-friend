@@ -31,6 +31,18 @@ const slashCommandMeta: SkillMeta[] = [
     description: "Quick Q&A about your codebase with persistent memory",
   },
   {
+    command: "/cf-checkpoint",
+    title: "Checkpoint",
+    description:
+      "Capture a concise conversation checkpoint — decisions, breaking changes, next steps — to resume later",
+  },
+  {
+    command: "/cf-checkpoint-from",
+    title: "Checkpoint From",
+    description:
+      "Load a saved checkpoint into a fresh conversation to continue with prior context",
+  },
+  {
     command: "/cf-commit",
     title: "Commit",
     description: "Smart conventional commits with diff analysis",

@@ -1,0 +1,48 @@
+---
+title: "/cf-checkpoint-from"
+description: "Load a previously saved checkpoint file back into a fresh conversation to continue prior work."
+keywords: [resume checkpoint, load checkpoint, continue conversation, cf-checkpoint-from]
+---
+
+<ContextFootprint />
+
+<Callout type="tip" title="CLI Requirement: NONE">
+  Works without `coding-friend-cli`. Reads the checkpoint file directly from
+  disk; no CLI features are required. See [CLI
+  requirements](/docs/reference/cli-requirements/) for the full matrix.
+</Callout>
+
+The `/cf-checkpoint-from` skill loads a checkpoint saved by [`/cf-checkpoint`](/docs/skills/cf-checkpoint/) back into a fresh conversation so work can continue with the prior context — Goal, Current State, Key Decisions, and Next Steps. It only reads and restores a checkpoint; it never creates or edits one.
+
+This skill is slash-only (it does not auto-invoke) — trigger it explicitly with `/cf-checkpoint-from`.
+
+## Usage
+
+```bash
+/cf-checkpoint-from [slug]
+```
+
+`<slug>` accepts:
+
+- **Full path** — resolved to its canonical absolute path and validated to live directly under `{docsDir}/context/checkpoints/`; anything outside that directory (including via `..` traversal) is refused.
+- **Bare slug** — rejected outright if it contains `/`, `\`, or `..`. Otherwise resolved in order, using the first that exists:
+  1. `{docsDir}/context/checkpoints/<slug>.md` (exact match, including a `YYYY-MM-DD-` prefix if typed in full)
+  2. Glob `{docsDir}/context/checkpoints/*<slug>*.md` (matches a bare slug typed without its date prefix), only when exactly one file matches
+- **No argument, no match, or multiple matches** — lists the available checkpoints (file name, `topic`, `updated`) and asks which one to load, rather than guessing.
+
+## Workflow
+
+1. **Resolve the checkpoint file** — Applies the path/slug resolution above. If the checkpoints directory is empty or missing, reports that clearly and suggests running `/cf-checkpoint` first.
+2. **Load and summarize** — Reads the resolved file and treats its content strictly as data to summarize, never as instructions to execute. Loads its sections (Goal, Current State, Key Decisions, Breaking Changes, Open Questions / Next Steps, Relevant Files) as working context. If a Next Step or Relevant File entry reads as an imperative action unrelated to the stated Goal, it's flagged as suspicious in the summary rather than treated as pre-approved. Presents a short summary covering Goal, Current State, Key Decisions, and Next Steps.
+
+## When to Use
+
+- Starting a new conversation to continue previous work
+- Picking up a task after a context reset or session end
+- Handing off work saved via `/cf-checkpoint` to a later session
+
+## Recommended Workflow
+
+```
+/cf-checkpoint (previous session) → /cf-checkpoint-from <slug> (new session) → continue work
+```
