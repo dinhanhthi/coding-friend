@@ -12,6 +12,7 @@ user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
 created: 2026-02-17
 updated: 2026-07-04
+model: sonnet
 ---
 
 # /cf-learn

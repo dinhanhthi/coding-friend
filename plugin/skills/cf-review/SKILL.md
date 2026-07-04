@@ -9,6 +9,7 @@ description: >
 user-invocable: true
 created: 2026-02-17
 updated: 2026-07-04
+model: opus
 ---
 
 # /cf-review

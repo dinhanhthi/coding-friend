@@ -17,6 +17,7 @@ description: >
 user-invocable: false
 created: 2026-02-17
 updated: 2026-07-04
+model: opus
 ---
 
 # Systematic Debugging

@@ -9,6 +9,7 @@ description: >
 disable-model-invocation: true
 created: 2026-02-20
 updated: 2026-07-04
+model: sonnet
 ---
 
 # /cf-ask

@@ -9,6 +9,7 @@ description: >
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
 updated: 2026-07-04
+model: opus
 ---
 
 # /cf-plan

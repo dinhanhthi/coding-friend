@@ -12,6 +12,7 @@ user-invocable: true
 argument-hint: "[target to optimize]"
 created: 2026-02-20
 updated: 2026-07-04
+model: opus
 ---
 
 # /cf-optimize
