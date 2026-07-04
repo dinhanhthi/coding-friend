@@ -35,16 +35,24 @@
 
 ## Diagrams
 
-<!-- FILL: Mermaid diagram(s) for structure / flow / state machine / algorithm where a picture beats prose -->
+<!-- FILL: ASCII diagram(s) (plain text, box-drawing/arrow characters) for structure / flow / state machine / algorithm where a picture beats prose -->
 
-```mermaid
-graph LR
-    A[User triggers $cf-plan] --> B(cf-planner agent)
-    B --> C{exploration done?}
-    C -- yes --> D[write plan phases]
-    C -- no  --> E[explore codebase]
-    E --> C
-    D --> F[cf-writer-deep fills overview]
+```
+$cf-plan triggered
+      |
+      v
+ cf-planner agent
+      |
+      v
+ exploration done? ----no----> explore codebase --+
+      |                                            |
+     yes                                           |
+      |<-------------------------------------------+
+      v
+ write plan phases
+      |
+      v
+ cf-writer-deep fills overview
 ```
 
 ## Not Building
