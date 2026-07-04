@@ -1,0 +1,54 @@
+---
+title: "/cf-plan-resume"
+description: "Resume a saved implementation plan from where execution last stopped."
+keywords: [resume plan, continue plan, cf-plan-resume, autopilot resume]
+---
+
+<ContextFootprint />
+
+<Callout type="tip" title="CLI Requirement: NONE">
+  Works without `coding-friend-cli`. Reads the plan file and its context file
+  directly and dispatches [`cf-implementer`](/docs/reference/agents/#cf-implementer) —
+  no CLI features are required. See [CLI
+  requirements](/docs/reference/cli-requirements/) for the full matrix.
+</Callout>
+
+The `/cf-plan-resume` skill continues a plan created by [`/cf-plan`](/docs/skills/cf-plan/) from where execution last stopped — after a session interrupt, quota limit, or `Ctrl+C`. It reads the plan's Progress table, skips completed tasks, resets any task left mid-flight, and re-runs the rest.
+
+It was split out from `/cf-plan --resume` so that resuming does not load the entire planning workflow — only the lean resume + execution protocol — keeping token usage low on both sides.
+
+## Usage
+
+```bash
+/cf-plan-resume <plan>
+```
+
+`<plan>` accepts any of:
+
+- **Folder path** — `docs/plans/2026-03-05-rest-api-auth/` (uses its `README.md`)
+- **Entry file path** — `docs/plans/2026-03-05-rest-api-auth/README.md`
+- **Bare slug** — `2026-03-05-rest-api-auth` (resolved under `docs/plans/`, with legacy single-file fallback)
+
+## Workflow
+
+1. **Resolve the plan** — Locates the entry file from a folder, file path, or bare slug (with backward-compatible fallbacks for legacy single-file plans).
+2. **Load context** — Derives the task-id from the folder/file name and loads the matching context file at `docs/context/<task-id>.json` (the same context [`cf-implementer`](/docs/reference/agents/#cf-implementer) needs).
+3. **Classify tasks** — Scans the Progress table: `✅ DONE` are skipped; `🔄 IN PROGRESS` is reset to `⬜ TODO` (completion was unreliable when the session ended); `❌ FAILED` prompts whether to re-run; `⬜ TODO` runs as normal.
+4. **Confirm** — Shows the pending tasks and remaining phases, then asks before executing. If every task is already `✅ DONE`, it stops with "nothing to resume."
+5. **Execute** — Runs the pending tasks with the same shared execution protocol `/cf-plan` uses (sequential/parallel phases, retry, phase-sync).
+
+## Autopilot
+
+If the plan's frontmatter has `auto: true` **and** the required `## AUTOPILOT` contract section is present, resuming continues in autopilot mode automatically — dispatch → review → fix → commit per phase, no prompts between phases. If `auto: true` is set but the `## AUTOPILOT` section is missing, it refuses to autopilot and asks you to regenerate it with `/cf-plan --auto` (or remove `auto: true` to resume normally).
+
+## When to Use
+
+- A plan's implementation was interrupted (session end, quota, `Ctrl+C`) and you want to pick it up
+- You created a plan in one session and want to execute it in a later one
+- A phase failed and you want to re-run from the failing task after fixing the blocker
+
+## Recommended Workflow
+
+```
+/cf-plan → (interrupted) → /cf-plan-resume <slug> → /cf-review → /cf-commit
+```

@@ -8,7 +8,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 | Tier     | Meaning                                                                                                                            | Count today                       |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 9 · Agents: 11 · Hooks: 7 |
+| NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 10 · Agents: 11 · Hooks: 7 |
 | OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
 | REQUIRED | Cannot function without CLI.                                                                                                       | 0                                 |
 
@@ -35,6 +35,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 | cf-learn        | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 | cf-optimize     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 | cf-plan         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| cf-plan-resume  | NONE     | —                          | —                                |
 | cf-remember     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 | cf-research     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 | cf-review       | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |

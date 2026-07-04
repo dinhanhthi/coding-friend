@@ -124,6 +124,13 @@ export const docsNavigation: NavSection[] = [
         temporal: temporalOf("skills/cf-plan"),
       },
       {
+        title: "/cf-plan-resume",
+        slug: "skills/cf-plan-resume",
+        tier: tierOf("skills/cf-plan-resume"),
+        beta: betaOf("skills/cf-plan-resume"),
+        temporal: temporalOf("skills/cf-plan-resume"),
+      },
+      {
         title: "/cf-remember",
         slug: "skills/cf-remember",
         tier: tierOf("skills/cf-remember"),
