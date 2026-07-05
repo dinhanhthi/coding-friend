@@ -18,7 +18,12 @@ import { run } from "./exec.js";
  * it against baseDir yields the main worktree root.
  */
 export function resolveMainRepoRoot(baseDir: string): string {
-  const gitCommonDir = run("git", ["-C", baseDir, "rev-parse", "--git-common-dir"]);
+  const gitCommonDir = run("git", [
+    "-C",
+    baseDir,
+    "rev-parse",
+    "--git-common-dir",
+  ]);
 
   if (!gitCommonDir) {
     // Not a git repo or git failed — fall back to baseDir

@@ -53,9 +53,7 @@ if (existsSync(CODEX_CACHE)) {
 // Final reminder — changes only load after a restart.
 console.log("\n  ✅ Local plugin updated.\n");
 console.log("  ⚠ RESTART REQUIRED to load changes:");
-console.log(
-  `    • Codex   — quit and relaunch (re-copies plugin-codex/)`,
-);
+console.log(`    • Codex   — quit and relaunch (re-copies plugin-codex/)`);
 if (claudeSynced) {
   console.log(
     "    • Claude Code — restart, or run `/plugin` and reload coding-friend",

@@ -6,11 +6,11 @@ Claude Code plugin for disciplined engineering workflows.
 
 The Coding Friend plugin works without the [`coding-friend-cli`](https://www.npmjs.com/package/coding-friend-cli). The CLI is a **separate npm package** that adds the memory MCP server (faster indexed search), the learn-host doc server, and workspace utilities. Skills and agents fall back gracefully when the CLI is missing.
 
-| Tier         | Meaning                                                                                                                            | Count today                       |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Tier         | Meaning                                                                                                                            | Count today                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 10 · Agents: 11 · Hooks: 7 |
-| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3 |
-| **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                 |
+| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3  |
+| **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                  |
 
 ### Install the CLI (recommended)
 

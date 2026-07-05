@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  checkMemoryMcpHealth,
-  checkLearnMcpHealth,
-} from "../mcp-health.js";
+import { checkMemoryMcpHealth, checkLearnMcpHealth } from "../mcp-health.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

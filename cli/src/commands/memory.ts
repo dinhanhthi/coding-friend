@@ -7,10 +7,7 @@ import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
-import {
-  memoryConfigMenu,
-  getMemoryMcpStatus,
-} from "../lib/memory-prompts.js";
+import { memoryConfigMenu, getMemoryMcpStatus } from "../lib/memory-prompts.js";
 import {
   registerMemoryMcp,
   isMemoryMcpRegistered,
@@ -226,19 +223,17 @@ export async function memoryStatusCommand(): Promise<void> {
   const mcpStatus = getMemoryMcpStatus();
   if (mcpStatus.userScope && mcpStatus.scope === "local") {
     log.info(
-      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow("⚠ project .mcp.json shadows user-scope server — run \"cf update\" to clean up")}`,
+      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow('⚠ project .mcp.json shadows user-scope server — run "cf update" to clean up')}`,
     );
   } else if (mcpStatus.userScope) {
-    log.info(
-      `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")}`,
-    );
+    log.info(`MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")}`);
   } else if (mcpStatus.configured && mcpStatus.scope === "local") {
     log.info(
-      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(local .mcp.json — run \"cf mcp\" to migrate to user scope)")}`,
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim('(local .mcp.json — run "cf mcp" to migrate to user scope)')}`,
     );
   } else if (mcpStatus.configured && mcpStatus.scope === "global") {
     log.info(
-      `MCP: ${chalk.yellow("configured")} ${chalk.dim("(global ~/.claude/.mcp.json — run \"cf mcp\" to migrate to user scope)")} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
+      `MCP: ${chalk.yellow("configured")} ${chalk.dim('(global ~/.claude/.mcp.json — run "cf mcp" to migrate to user scope)')} ${chalk.yellow("⚠ global config uses a fixed path — only works for one project")}`,
     );
   } else {
     log.info(

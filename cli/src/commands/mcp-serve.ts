@@ -16,7 +16,8 @@ import { log } from "../lib/log.js";
  */
 export async function mcpServeCommand(memoryDir?: string): Promise<void> {
   const resolvedDir =
-    memoryDir ?? resolveProjectMemoryDir(process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
+    memoryDir ??
+    resolveProjectMemoryDir(process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
   log.dim(`memory dir: ${resolvedDir}`);
 
   const mcpDir = getLibPath("cf-memory");

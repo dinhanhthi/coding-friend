@@ -50,7 +50,10 @@ import { getInstalledVersion, ensureStatusline } from "../../lib/statusline.js";
 import { getCodexInstalledVersion } from "../../lib/codex-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { readJson } from "../../lib/json.js";
-import { isMemoryMcpRegistered, registerMemoryMcp } from "../../lib/memory-mcp-register.js";
+import {
+  isMemoryMcpRegistered,
+  registerMemoryMcp,
+} from "../../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
 import { updateCommand } from "../update.js";
 
@@ -80,7 +83,10 @@ beforeEach(() => {
   mockRun.mockReturnValue(null);
   // Memory MCP defaults: already registered, nothing to clean
   mockIsMemoryMcpRegistered.mockReturnValue(true);
-  mockRemoveMemoryMcpEntry.mockReturnValue({ removed: false, fileDeleted: false });
+  mockRemoveMemoryMcpEntry.mockReturnValue({
+    removed: false,
+    fileDeleted: false,
+  });
 });
 
 describe("updateCommand — Codex", () => {
@@ -510,7 +516,10 @@ describe("updateCommand — memory MCP migration", () => {
   });
 
   it("logs success when removeMemoryMcpEntry returns removed:true", async () => {
-    mockRemoveMemoryMcpEntry.mockReturnValue({ removed: true, fileDeleted: false });
+    mockRemoveMemoryMcpEntry.mockReturnValue({
+      removed: true,
+      fileDeleted: false,
+    });
 
     const consoleSpy = vi.spyOn(console, "log");
     await updateCommand({});
@@ -520,7 +529,10 @@ describe("updateCommand — memory MCP migration", () => {
   });
 
   it("logs file-deleted message when removeMemoryMcpEntry returns fileDeleted:true", async () => {
-    mockRemoveMemoryMcpEntry.mockReturnValue({ removed: true, fileDeleted: true });
+    mockRemoveMemoryMcpEntry.mockReturnValue({
+      removed: true,
+      fileDeleted: true,
+    });
 
     const consoleSpy = vi.spyOn(console, "log");
     await updateCommand({});
@@ -530,7 +542,10 @@ describe("updateCommand — memory MCP migration", () => {
   });
 
   it("does not log anything when there is nothing to remove", async () => {
-    mockRemoveMemoryMcpEntry.mockReturnValue({ removed: false, fileDeleted: false });
+    mockRemoveMemoryMcpEntry.mockReturnValue({
+      removed: false,
+      fileDeleted: false,
+    });
 
     const consoleSpy = vi.spyOn(console, "log");
     await updateCommand({});

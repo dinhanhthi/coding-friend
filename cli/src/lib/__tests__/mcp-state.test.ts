@@ -79,9 +79,7 @@ describe("warnStaleMcpJson", () => {
     // Must NOT rewrite — file still has command: "node"
     const afterContent = readFileSync(mcpPath, "utf-8");
     const afterJson = JSON.parse(afterContent);
-    expect(
-      afterJson.mcpServers["coding-friend-memory"].command,
-    ).toBe("node");
+    expect(afterJson.mcpServers["coding-friend-memory"].command).toBe("node");
   });
 
   it("warns but does NOT rewrite .mcp.json for a legacy-valid (path exists) entry", async () => {
@@ -110,8 +108,6 @@ describe("warnStaleMcpJson", () => {
     // Must NOT rewrite — file still has command: "node"
     const afterContent = readFileSync(mcpPath, "utf-8");
     const afterJson = JSON.parse(afterContent);
-    expect(
-      afterJson.mcpServers["coding-friend-memory"].command,
-    ).toBe("node");
+    expect(afterJson.mcpServers["coding-friend-memory"].command).toBe("node");
   });
 });

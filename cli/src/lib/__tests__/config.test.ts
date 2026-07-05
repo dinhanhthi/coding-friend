@@ -24,7 +24,12 @@ vi.mock("../project-root.js", () => ({
 }));
 
 import { readJson } from "../json.js";
-import { loadConfig, resolveMemoryDir, resolveProjectMemoryDir, sanitizeRawConfig } from "../config.js";
+import {
+  loadConfig,
+  resolveMemoryDir,
+  resolveProjectMemoryDir,
+  sanitizeRawConfig,
+} from "../config.js";
 import { resolveMainRepoRoot } from "../project-root.js";
 import { log } from "../log.js";
 

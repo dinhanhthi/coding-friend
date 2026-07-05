@@ -64,11 +64,11 @@ The reason is how Codex registers the memory MCP server. Codex pins an **absolut
 
 This differs from Claude Code, where the memory server is registered once at user scope and resolves the active project's memory directory at runtime:
 
-| | Claude Code | Codex |
-| --- | --- | --- |
-| Memory MCP registration | Once, at user scope (`~/.claude`) | Per project (`.codex/config.toml`) |
-| Project memory path | Resolved at runtime via `CLAUDE_PROJECT_DIR` | Pinned absolute path in config |
-| Agent files | Loaded in place from the global plugin | Deployed per project under `.codex/agents/` |
+|                         | Claude Code                                  | Codex                                       |
+| ----------------------- | -------------------------------------------- | ------------------------------------------- |
+| Memory MCP registration | Once, at user scope (`~/.claude`)            | Per project (`.codex/config.toml`)          |
+| Project memory path     | Resolved at runtime via `CLAUDE_PROJECT_DIR` | Pinned absolute path in config              |
+| Agent files             | Loaded in place from the global plugin       | Deployed per project under `.codex/agents/` |
 
 These are local working files. `cf init` git-ignores `AGENTS.md` for you; if your project tracks the repo, add `.codex/` to `.gitignore` so the generated TOMLs are not committed.
 

@@ -25,33 +25,25 @@ export function warnStaleMcpJson(): void {
   const state = detectMemoryMcpState(mcpJson, existsSync);
 
   if (state.kind === "stale") {
-    console.log(
-      chalk.yellow(`⚠ Stale MCP config detected in .mcp.json`),
-    );
+    console.log(chalk.yellow(`⚠ Stale MCP config detected in .mcp.json`));
     console.log(chalk.dim(`  Path no longer exists: ${state.path}`));
     console.log(
       chalk.dim(
         `  This project-scope coding-friend-memory entry shadows the global (user-scope) memory server.`,
       ),
     );
-    console.log(
-      chalk.dim(`  Run "cf update" to remove it automatically.`),
-    );
+    console.log(chalk.dim(`  Run "cf update" to remove it automatically.`));
     console.log();
   } else if (state.kind === "legacy-valid") {
     console.log(
-      chalk.cyan(
-        `ℹ .mcp.json has a project-scope coding-friend-memory entry.`,
-      ),
+      chalk.cyan(`ℹ .mcp.json has a project-scope coding-friend-memory entry.`),
     );
     console.log(
       chalk.dim(
         `  This shadows the global (user-scope) memory server (Claude Code precedence: local > project > user).`,
       ),
     );
-    console.log(
-      chalk.dim(`  Run "cf update" to remove it automatically.`),
-    );
+    console.log(chalk.dim(`  Run "cf update" to remove it automatically.`));
     console.log();
   }
 }

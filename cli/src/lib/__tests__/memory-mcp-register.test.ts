@@ -98,7 +98,11 @@ describe("registerMemoryMcp", () => {
 
 describe("isMemoryMcpRegistered", () => {
   it("returns true when exit code is 0", () => {
-    mockRunWithStderr.mockReturnValue({ stdout: "...", stderr: "", exitCode: 0 });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "...",
+      stderr: "",
+      exitCode: 0,
+    });
 
     expect(isMemoryMcpRegistered()).toBe(true);
     expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
@@ -109,7 +113,11 @@ describe("isMemoryMcpRegistered", () => {
   });
 
   it("returns false when exit code is non-zero", () => {
-    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "not found", exitCode: 1 });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "not found",
+      exitCode: 1,
+    });
 
     expect(isMemoryMcpRegistered()).toBe(false);
   });
@@ -132,7 +140,11 @@ describe("unregisterMemoryMcp", () => {
   });
 
   it("returns false when removal fails", () => {
-    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "error", exitCode: 1 });
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "error",
+      exitCode: 1,
+    });
 
     expect(unregisterMemoryMcp()).toBe(false);
   });
