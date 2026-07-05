@@ -9,7 +9,10 @@ import { readJson, mergeJson, writeJson } from "./json.js";
 import { log } from "./log.js";
 import { claudeConfigDir, globalConfigPath, localConfigPath } from "./paths.js";
 import { getLibPath } from "./lib-path.js";
-import { registerMemoryMcp, isMemoryMcpRegistered } from "./memory-mcp-register.js";
+import {
+  registerMemoryMcp,
+  isMemoryMcpRegistered,
+} from "./memory-mcp-register.js";
 import type { CodingFriendConfig } from "../types.js";
 import {
   BACK,

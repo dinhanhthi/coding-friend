@@ -119,9 +119,8 @@ describe("writeMemoryMcpEntry", () => {
 
 describe("editMemoryMcp", () => {
   it("calls registerMemoryMcp when not yet registered (first-time path)", async () => {
-    const { isMemoryMcpRegistered, registerMemoryMcp } = await import(
-      "../memory-mcp-register.js"
-    );
+    const { isMemoryMcpRegistered, registerMemoryMcp } =
+      await import("../memory-mcp-register.js");
     vi.mocked(isMemoryMcpRegistered).mockReturnValue(false);
     vi.mocked(registerMemoryMcp).mockReturnValue(true);
 
@@ -141,7 +140,10 @@ describe("removeMemoryMcpEntry", () => {
       mcpPath,
       JSON.stringify({
         mcpServers: {
-          "coding-friend-memory": { command: "npx", args: ["-y", "coding-friend-cli", "mcp-serve"] },
+          "coding-friend-memory": {
+            command: "npx",
+            args: ["-y", "coding-friend-cli", "mcp-serve"],
+          },
           "other-server": { command: "node", args: ["other.js"] },
         },
       }),
@@ -155,7 +157,10 @@ describe("removeMemoryMcpEntry", () => {
     expect(existsSync(mcpPath)).toBe(true);
     const content = JSON.parse(readFileSync(mcpPath, "utf-8"));
     expect(content.mcpServers["coding-friend-memory"]).toBeUndefined();
-    expect(content.mcpServers["other-server"]).toEqual({ command: "node", args: ["other.js"] });
+    expect(content.mcpServers["other-server"]).toEqual({
+      command: "node",
+      args: ["other.js"],
+    });
   });
 
   it("deletes .mcp.json when coding-friend-memory is the only server", async () => {
@@ -164,7 +169,10 @@ describe("removeMemoryMcpEntry", () => {
       mcpPath,
       JSON.stringify({
         mcpServers: {
-          "coding-friend-memory": { command: "npx", args: ["-y", "coding-friend-cli", "mcp-serve"] },
+          "coding-friend-memory": {
+            command: "npx",
+            args: ["-y", "coding-friend-cli", "mcp-serve"],
+          },
         },
       }),
       "utf-8",
@@ -223,7 +231,10 @@ describe("removeMemoryMcpEntry", () => {
       mcpPath,
       JSON.stringify({
         mcpServers: {
-          "coding-friend-memory": { command: "npx", args: ["-y", "coding-friend-cli", "mcp-serve"] },
+          "coding-friend-memory": {
+            command: "npx",
+            args: ["-y", "coding-friend-cli", "mcp-serve"],
+          },
         },
         other: "v",
       }),

@@ -20,10 +20,7 @@ let docsDir: string;
 let counter = 0;
 
 beforeEach(() => {
-  testDir = join(
-    tmpdir(),
-    `cf-memory-lazy-db-test-${Date.now()}-${++counter}`,
-  );
+  testDir = join(tmpdir(), `cf-memory-lazy-db-test-${Date.now()}-${++counter}`);
   mkdirSync(testDir, { recursive: true });
   docsDir = join(testDir, "docs", "memory");
   dbPath = join(testDir, "db.sqlite");
@@ -156,7 +153,10 @@ describe("SqliteBackend — lazy DB creation", () => {
     async () => {
       const backend = new SqliteBackend(docsDir, { dbPath, skipVec: true });
 
-      const result = await backend.update({ id: "nonexistent/id", title: "New Title" });
+      const result = await backend.update({
+        id: "nonexistent/id",
+        title: "New Title",
+      });
 
       expect(result).toBeNull();
       expect(existsSync(dbPath)).toBe(false);

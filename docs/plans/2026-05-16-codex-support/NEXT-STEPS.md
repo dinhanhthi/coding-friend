@@ -36,13 +36,13 @@ marketplace từ local path, và `.agents/plugins/marketplace.json` trỏ
 
 **Bảng đối chiếu với Claude:**
 
-| Việc                          | Claude Code                          | Codex (làm tay)                                                  |
-| ----------------------------- | ------------------------------------ | --------------------------------------------------------------- |
-| Bật dùng bản local            | `cf dev on`                          | mục **A** dưới                                                   |
-| Tắt → quay về remote          | `cf dev off`                         | mục **C** dưới (gỡ marketplace local)                           |
-| Plugin payload                | `plugin/` (copy vào cache `~/.claude`) | `plugin-codex/` (**artifact generate** từ `plugin/`)          |
-| Reload sau khi sửa `plugin/`  | `cf dev sync`                        | `npm run build:codex` rồi reload trong Codex                     |
-| CLI (`cf`)                    | dùng chung — `cd cli && npm run build` (đã `npm link`) | dùng chung — y hệt                            |
+| Việc                         | Claude Code                                            | Codex (làm tay)                                      |
+| ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
+| Bật dùng bản local           | `cf dev on`                                            | mục **A** dưới                                       |
+| Tắt → quay về remote         | `cf dev off`                                           | mục **C** dưới (gỡ marketplace local)                |
+| Plugin payload               | `plugin/` (copy vào cache `~/.claude`)                 | `plugin-codex/` (**artifact generate** từ `plugin/`) |
+| Reload sau khi sửa `plugin/` | `cf dev sync`                                          | `npm run build:codex` rồi reload trong Codex         |
+| CLI (`cf`)                   | dùng chung — `cd cli && npm run build` (đã `npm link`) | dùng chung — y hệt                                   |
 
 #### A. Setup một lần (vào `~/.codex` thật để Codex luôn dùng bản local)
 
@@ -253,7 +253,7 @@ Thiết kế đã hỗ trợ sẵn — hai host độc lập hoàn toàn
 
 4. **Những thứ giữ riêng theo host:**
    - State plugin: `~/.claude/` vs `~/.codex/` — `cf enable|disable|
-     uninstall --agent codex` không ảnh hưởng Claude và ngược lại.
+uninstall --agent codex` không ảnh hưởng Claude và ngược lại.
    - Auto-approve: `autoApprove` (Claude, có LLM classifier) vs
      `autoApproveCodex` (deterministic-only) — hai opt-in độc lập trong
      `.coding-friend/config.json`.
@@ -273,13 +273,13 @@ Phase 9 đã phủ phần lớn website. Nhưng các fix sau review (commit `cf6
 **đổi behavior mà 3 trang docs chưa được sửa theo** — commit docs `121e06f`
 chỉ sửa cf-clean/cf-config/cf-review:
 
-| #   | File                                                            | Vấn đề                                                                                                                                                                  | Sửa                                                                                                            |
-| --- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| 1   | `website/src/content/docs/getting-started/codex.mdx` (dòng ~48) | Nói memory MCP được đăng ký "in both `~/.codex/config.toml` and project `.codex/config.toml`" — sai sau fix #4 (chỉ project-scoped để tránh cross-project contamination) | Sửa thành project-only + một câu giải thích vì sao không ghi global                                                |
-| 2   | `website/src/content/docs/cli/cf-uninstall.mdx` (dòng ~52)      | Chỉ nói disable plugin + `--remove-marketplace`; thiếu hành vi mới của fix #10                                                                                            | Bổ sung: uninstall xoá cả `~/.codex/agents/cf-*.toml` và entry memory MCP global; liệt kê residue cố ý để lại       |
-| 3   | `website/src/content/docs/cli/cf-init.mdx` (dòng ~33)           | "Registers the memory MCP server in Codex config" — mơ hồ                                                                                                                 | Ghi rõ: chỉ ghi vào project `.codex/config.toml`, cần `--trust-project` (hoặc trust thủ công) thì MCP mới được load |
-| 4   | `website/src/content/docs/reference/auto-approve.mdx` (tùy chọn) | Chưa nhắc Codex auto-approve giờ parse được `apply_patch` envelope (fix #6)                                                                                              | Thêm một câu: edit qua `apply_patch` trong project được approve, ngoài project defer về native                     |
-| 5   | `codex.mdx` — mục Troubleshooting (tùy chọn)                    | Thiếu migration note cho người dùng bản init cũ                                                                                                                            | Thêm mục: cách xoá entry `[mcp_servers.coding-friend-memory]` global bị stale                                       |
+| #   | File                                                             | Vấn đề                                                                                                                                                                   | Sửa                                                                                                                 |
+| --- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| 1   | `website/src/content/docs/getting-started/codex.mdx` (dòng ~48)  | Nói memory MCP được đăng ký "in both `~/.codex/config.toml` and project `.codex/config.toml`" — sai sau fix #4 (chỉ project-scoped để tránh cross-project contamination) | Sửa thành project-only + một câu giải thích vì sao không ghi global                                                 |
+| 2   | `website/src/content/docs/cli/cf-uninstall.mdx` (dòng ~52)       | Chỉ nói disable plugin + `--remove-marketplace`; thiếu hành vi mới của fix #10                                                                                           | Bổ sung: uninstall xoá cả `~/.codex/agents/cf-*.toml` và entry memory MCP global; liệt kê residue cố ý để lại       |
+| 3   | `website/src/content/docs/cli/cf-init.mdx` (dòng ~33)            | "Registers the memory MCP server in Codex config" — mơ hồ                                                                                                                | Ghi rõ: chỉ ghi vào project `.codex/config.toml`, cần `--trust-project` (hoặc trust thủ công) thì MCP mới được load |
+| 4   | `website/src/content/docs/reference/auto-approve.mdx` (tùy chọn) | Chưa nhắc Codex auto-approve giờ parse được `apply_patch` envelope (fix #6)                                                                                              | Thêm một câu: edit qua `apply_patch` trong project được approve, ngoài project defer về native                      |
+| 5   | `codex.mdx` — mục Troubleshooting (tùy chọn)                     | Thiếu migration note cho người dùng bản init cũ                                                                                                                          | Thêm mục: cách xoá entry `[mcp_servers.coding-friend-memory]` global bị stale                                       |
 
 Sau khi sửa:
 

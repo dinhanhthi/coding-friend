@@ -46,8 +46,8 @@ describe("resolveMainRepoRoot", () => {
 
   it("falls back to show-toplevel when git-common-dir does not end in /.git", () => {
     mockRun
-      .mockReturnValueOnce("/some/weird/path")  // git-common-dir
-      .mockReturnValueOnce("/Users/x/repo");     // git show-toplevel
+      .mockReturnValueOnce("/some/weird/path") // git-common-dir
+      .mockReturnValueOnce("/Users/x/repo"); // git show-toplevel
 
     const result = resolveMainRepoRoot("/Users/x/repo-worktree");
 
@@ -63,8 +63,8 @@ describe("resolveMainRepoRoot", () => {
 
   it("returns baseDir when git-common-dir has no /.git suffix and show-toplevel also fails", () => {
     mockRun
-      .mockReturnValueOnce("/some/weird/path")  // git-common-dir
-      .mockReturnValueOnce(null);               // git show-toplevel fails
+      .mockReturnValueOnce("/some/weird/path") // git-common-dir
+      .mockReturnValueOnce(null); // git show-toplevel fails
 
     const result = resolveMainRepoRoot("/Users/x/repo");
 

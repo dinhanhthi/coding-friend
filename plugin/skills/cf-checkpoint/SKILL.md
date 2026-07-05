@@ -77,21 +77,27 @@ topic: "<one-line conversation topic>"
 # Checkpoint: <title>
 
 ## Goal
+
 <what we are trying to achieve — 1-2 sentences>
 
 ## Current State
+
 - <where we are now / what's done>
 
 ## Key Decisions
+
 - <decision> — <one-line rationale>
 
 ## Breaking Changes
+
 - <anything that changes existing behavior/APIs; "None" if none>
 
 ## Open Questions / Next Steps
+
 - <what to do when resuming>
 
 ## Relevant Files
+
 - `path` — <why it matters>
 ```
 

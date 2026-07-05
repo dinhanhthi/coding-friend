@@ -206,9 +206,13 @@ export async function uninstallCommand(
       const migrationResult = removeMemoryMcpEntry();
       if (migrationResult.removed) {
         if (migrationResult.fileDeleted) {
-          log.success("Removed legacy project-scope coding-friend-memory from .mcp.json (file deleted — was empty).");
+          log.success(
+            "Removed legacy project-scope coding-friend-memory from .mcp.json (file deleted — was empty).",
+          );
         } else {
-          log.success("Removed legacy project-scope coding-friend-memory from .mcp.json");
+          log.success(
+            "Removed legacy project-scope coding-friend-memory from .mcp.json",
+          );
         }
       }
     }

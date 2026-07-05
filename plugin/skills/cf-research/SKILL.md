@@ -54,10 +54,10 @@ Research is token-intensive due to web fetches and parallel subagents. Before pr
 
 Before proceeding, confirm the mode with the user:
 
-| Mode                    | Goal                                                                          | Entry       | Output                              |
-| ----------------------- | ----------------------------------------------------------------------------- | ----------- | ----------------------------------- |
+| Mode                    | Goal                                                                          | Entry       | Output                                         |
+| ----------------------- | ----------------------------------------------------------------------------- | ----------- | ---------------------------------------------- |
 | **Deep Research**       | Understand a domain in depth — build a comprehensive reference for `/cf-plan` | Step 1      | Full `docs/research/YYYY-MM-DD-<slug>/` folder |
-| **Quick Reference**     | Build a working mental model fast — no full document set needed               | Step 2 only | `docs/research/YYYY-MM-DD-<slug>/_notes.md`      |
+| **Quick Reference**     | Build a working mental model fast — no full document set needed               | Step 2 only | `docs/research/YYYY-MM-DD-<slug>/_notes.md`    |
 | **Write to Understand** | Already have materials collected — structure and document them                | Step 2      | Full `docs/research/YYYY-MM-DD-<slug>/` folder |
 
 If the user has not specified, suggest **Quick Reference** for exploratory questions and **Deep Research** for pre-implementation research.

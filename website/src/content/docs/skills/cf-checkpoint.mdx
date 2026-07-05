@@ -7,10 +7,9 @@ keywords: [checkpoint, save context, resume conversation, cf-checkpoint]
 <ContextFootprint />
 
 <Callout type="tip" title="CLI Requirement: NONE">
-  Works without `coding-friend-cli`. Reads and writes checkpoint files
-  directly under `docs/context/checkpoints/` — no memory MCP indexing
-  involved. See [CLI requirements](/docs/reference/cli-requirements/) for the
-  full matrix.
+  Works without `coding-friend-cli`. Reads and writes checkpoint files directly
+  under `docs/context/checkpoints/` — no memory MCP indexing involved. See [CLI
+  requirements](/docs/reference/cli-requirements/) for the full matrix.
 </Callout>
 
 The `/cf-checkpoint` skill captures a concise snapshot of the current conversation's context — goal, current state, key decisions, breaking changes, and next steps — into a markdown file, so work can be resumed later with [`/cf-checkpoint-from`](/docs/skills/cf-checkpoint-from/) in a **different, later conversation**.

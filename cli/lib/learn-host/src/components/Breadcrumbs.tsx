@@ -7,7 +7,7 @@ interface Crumb {
 
 export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
-    <nav className="mb-4 flex min-w-0 items-center gap-2 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+    <nav className="mb-4 flex min-w-0 items-center gap-2 text-sm whitespace-nowrap text-slate-500 dark:text-slate-400">
       <Link
         href="/"
         className="shrink-0 hover:text-amber-600 dark:hover:text-amber-400"

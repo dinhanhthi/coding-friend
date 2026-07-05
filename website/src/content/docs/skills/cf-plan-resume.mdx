@@ -8,9 +8,10 @@ keywords: [resume plan, continue plan, cf-plan-resume, autopilot resume]
 
 <Callout type="tip" title="CLI Requirement: NONE">
   Works without `coding-friend-cli`. Reads the plan file and its context file
-  directly and dispatches [`cf-implementer`](/docs/reference/agents/#cf-implementer) —
-  no CLI features are required. See [CLI
-  requirements](/docs/reference/cli-requirements/) for the full matrix.
+  directly and dispatches
+  [`cf-implementer`](/docs/reference/agents/#cf-implementer) — no CLI features
+  are required. See [CLI requirements](/docs/reference/cli-requirements/) for
+  the full matrix.
 </Callout>
 
 The `/cf-plan-resume` skill continues a plan created by [`/cf-plan`](/docs/skills/cf-plan/) from where execution last stopped — after a session interrupt, quota limit, or `Ctrl+C`. It reads the plan's Progress table, skips completed tasks, resets any task left mid-flight, and re-runs the rest.
