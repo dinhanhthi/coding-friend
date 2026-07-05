@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.38.0 (2026-07-05)
+
+- `$cf-review` can now dispatch headless external reviewers (`--claude`, `--gemini`, `--cursor`, `--grok`) in parallel with Claude's own review, merging all surviving reports through the reducer; add `--out` to instead export a `$cf-review-out`-style prompt (with Claude's own findings embedded) for manual round-trips via `$cf-review-in` [#474f5006](https://github.com/dinhanhthi/coding-friend/commit/474f5006)
+- Fix `$cf-plan --auto` skipping `🔄 IN PROGRESS` progress checkpoints — the AUTOPILOT CONTRACT and parallel-phase protocol now explicitly require `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` flips (never jump directly to DONE) [#5d2664e5](https://github.com/dinhanhthi/coding-friend/commit/5d2664e5)
+- `$cf-research` now saves output to `docs/research/YYYY-MM-DD-<slug>/` instead of `docs/research/<slug>/`, matching the date-prefixed naming used by `$cf-plan` and `$cf-checkpoint` [#a86fb6f8](https://github.com/dinhanhthi/coding-friend/commit/a86fb6f8)
+
 ## v0.37.1 (2026-07-05)
 
 - Pin explicit `model:` frontmatter on most skills (`cf-ask`, `cf-plan`, `cf-review`, `cf-review-in`, `cf-review-out`, `cf-optimize`, `cf-sys-debug`, `cf-learn`, `cf-remember`, `cf-scan`, `cf-checkpoint`, `cf-checkpoint-from`, `cf-ship`, `cf-teach`, `cf-warm`) so each runs on the model best suited to its workload instead of inheriting the session default [#b17e36bf](https://github.com/dinhanhthi/coding-friend/commit/b17e36bf) [#d6fd1abc](https://github.com/dinhanhthi/coding-friend/commit/d6fd1abc)
