@@ -28,7 +28,14 @@ Different behavior is expected based on the value of `[target]`:
 ### Flags
 
 - `--deep` / `--quick` — force a review depth instead of auto-detecting
-- `--with-codex` — run a [Codex](https://developers.openai.com/codex/cli/) second-opinion review in parallel with Claude's, then merge both into one report (see [Dual Review with Codex](#dual-review-with-codex))
+- `--with-codex` / `--codex` — run a [Codex](https://developers.openai.com/codex/cli/) second-opinion review in parallel with Claude's, then merge both into one report (see [Dual Review with Codex](#dual-review-with-codex))
+- `--claude` / `--with-claude` — run a headless Claude CLI review in parallel (skipped when already in Claude Code — `HOST=claude`)
+- `--gemini` / `--with-gemini` — run a headless [Gemini CLI](https://github.com/google-gemini/gemini-cli) review in parallel
+- `--cursor` / `--with-cursor` — run a headless [Cursor Agent](https://cursor.com) review in parallel (`cursor-agent --mode ask`)
+- `--grok` / `--with-grok` — run a headless Grok CLI review in parallel
+- `--out` — run Claude's review first, then export a [`/cf-review-out`](/docs/skills/cf-review-out/)-style prompt file with Claude's findings embedded for the manual [`/cf-review-in`](/docs/skills/cf-review-in/) round-trip. Mutually exclusive with the auto reviewer flags above.
+
+All headless reviewer flags (`--claude`, `--gemini`, `--cursor`, `--grok`) review the **exact diff** Claude's own review sees (via `gather-diff.sh`). They apply only to the default uncommitted-changes target — not file paths or commit ranges. Each agent runs read-only and degrades gracefully if unavailable, errors, times out, or finds no changes.
 
 ## Examples
 
@@ -66,6 +73,16 @@ Different behavior is expected based on the value of `[target]`:
 ```bash
 # Review with Claude AND Codex, merged into one report
 /cf-review --with-codex
+```
+
+```bash
+# Review with Claude AND Gemini + Cursor, merged into one report
+/cf-review --gemini --cursor
+```
+
+```bash
+# Run Claude's review, then export a prompt for manual external review
+/cf-review --out
 ```
 
 ## Workflow
@@ -122,6 +139,24 @@ Findings from all 5 layers are collected and organized into 4 severity categorie
 Auth module is functional but has one critical SQL injection vulnerability in the query builder.
 ```
 
+## External Reviewers
+
+`/cf-review` can run headless external CLI reviewers in parallel with Claude's own multi-agent review. Each reviewer is invoked read-only, fed the same diff Claude sees, and its output is merged through the reducer with provenance tags (`[Codex]`, `[Gemini]`, `[Cursor]`, etc.).
+
+| Flag       | CLI                             | Read-only mode                                                 |
+| ---------- | ------------------------------- | -------------------------------------------------------------- |
+| `--codex`  | `codex review` (dedicated path) | Codex's own review subcommand                                  |
+| `--claude` | `claude -p`                     | `--permission-mode plan` (Claude's first-class read-only mode) |
+| `--gemini` | `gemini -p`                     | `--approval-mode plan`¹                                        |
+| `--cursor` | `cursor-agent -p`               | `--mode ask`¹                                                  |
+| `--grok`   | `grok --prompt-file`            | `--sandbox read-only` (OS kernel sandbox — Seatbelt/Landlock)  |
+
+¹ `gemini` and `cursor` use their documented read-only answer modes, but this has not been end-to-end verified. `claude` (plan mode) and `grok` (OS sandbox) are empirically verified to block repo writes while still returning a review. `grok`'s tool-permission flags (`--disallowed-tools`, `--permission-mode plan`) do **not** enforce read-only in headless mode — only the kernel `--sandbox` does.
+
+Each agent runs under a per-agent timeout (default **300s**, override via `review.agentTimeout` in config). On timeout, the agent is dropped with a warning — the rest of the review still completes.
+
+For a **manual round-trip** with any external AI (or a human), use `--out`: Claude's review runs first, then a prompt file is written with Claude's findings embedded as context. Collect results later via [`/cf-review-in`](/docs/skills/cf-review-in/).
+
 ## Dual Review with Codex
 
 If you have the [Codex CLI](https://developers.openai.com/codex/cli/) installed and logged in, `/cf-review --with-codex` gets you a second independent opinion automatically — no copy-paste round-trip.
@@ -136,12 +171,15 @@ How it works:
 Enable it by default for every review (including the auto-triggered ones from `/cf-plan`, `/cf-fix`, `/cf-optimize`) by setting `review.withCodex: true` in [`.coding-friend/config.json`](/docs/configuration/config-json/).
 
 <Callout type="info" title="Graceful fallback">
-  If Codex is not installed or not logged in, `/cf-review --with-codex` prints a
-  warning and continues with a Claude-only review — it never blocks. This is the
-  automated alternative to the manual
+  If any external reviewer is not installed, not logged in, times out, or
+  errors, `/cf-review` prints a warning and continues without that reviewer — it
+  never blocks. The built-in headless flags (`--claude`, `--gemini`, `--cursor`,
+  `--grok`, `--codex`) are the no-copy-paste path.
   [`/cf-review-out`](/docs/skills/cf-review-out/) +
-  [`/cf-review-in`](/docs/skills/cf-review-in/) flow, which remains the path for
-  other external AIs (Gemini, ChatGPT) or human reviewers.
+  [`/cf-review-in`](/docs/skills/cf-review-in/) remains the path for other
+  external AIs (ChatGPT, Copilot) or human reviewers; [`/cf-review
+  --out`](/docs/skills/cf-review/) bridges into that flow with Claude's context
+  embedded.
 </Callout>
 
 ## Auto-Triggered

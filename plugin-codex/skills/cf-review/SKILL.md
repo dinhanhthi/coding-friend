@@ -7,7 +7,7 @@ description: >
   "what do you think of these changes?". Also triggers on requests to review specific files,
   commits, or branches.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-07-05
 ---
 
 # $cf-review
@@ -145,7 +145,9 @@ Display the full report followed by the status banner in a **single message**.
 
 **IMPORTANT**: The structured report from step 8 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 
-Display the cf-reviewer's report first, then append the appropriate banner.
+Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: Claude + …` suffix listing Claude plus each external agent/codex that actually contributed (e.g. `· Reviewed by: Claude + Codex + Gemini`). Omit the suffix when only Claude ran.
+
+Skip this step's banner when `out=true` — Step 6.7 already showed the export panel.
 
 **If NO critical issues were found:**
 
