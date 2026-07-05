@@ -4,6 +4,8 @@ Execute the plan phase by phase using the protocols below. Both `$cf-plan` (afte
 
 > **No-file mode guard** — if no plan file was written (cf-plan `--inline`, or single-phase `--fast` without `--auto`), there is no `README.md`/phase file to edit: replace every "Edit the plan file / Progress table" checkpoint below with a `TaskUpdate` on the matching task. `$cf-plan-resume` always has a plan file, so this never applies when resuming.
 
+**Progress checkpoint rule (MANDATORY — autopilot does NOT skip this):** Every task MUST pass through `🔄 IN PROGRESS` before `✅ DONE`. Apply each icon flip as its **own** Edit tool call **before** dispatching cf-implementer and **immediately after** each result — never batch flips, never jump `⬜ TODO` → `✅ DONE` directly. This applies under `--auto`/autopilot the same as manual execution; the `## AUTOPILOT` section in the plan file does not override it.
+
 #### Sequential phases
 
 Dispatch **cf-implementer** (`cf-implementer` custom agent) per task:
@@ -61,11 +63,11 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
 
 After overlap check passes:
 
-1. Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.
-2. Each agent prompt must be fully self-contained.
-3. Render status table immediately after launch (`running` → `done`/`failed`).
-4. Wait for all to complete; update table as each reports.
-5. All passed → proceed to next phase automatically. Any failed → warn, show details, ask: **"Proceed? (y/n)"**
+1. **Checkpoint before dispatch** — For each task, edit the Progress table: `⬜ TODO` → `🔄 IN PROGRESS` (one Edit per task). **Big plan only** — if this is the first task of the phase to leave `⬜ TODO`, also edit `README.md` and flip that phase's row to `🔄 IN PROGRESS`.
+2. Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.
+3. Each agent prompt must be fully self-contained.
+4. As each agent returns, edit the Progress table: `🔄 IN PROGRESS` → `✅ DONE` on `[CF-RESULT: success]`, or follow the retry protocol on failure. Serialize concurrent edits to the same table.
+5. All passed → proceed to next phase automatically. Any failed → warn, show details, ask: **"Proceed? (y/n)"** (autopilot: STOP per stop conditions in `autopilot.md`).
 
 #### Phase execution order
 

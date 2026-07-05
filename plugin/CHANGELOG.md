@@ -4,6 +4,7 @@
 
 ## v0.37.2 (2026-07-05)
 
+- Fix `/cf-plan --auto` skipping `🔄 IN PROGRESS` progress checkpoints — the AUTOPILOT CONTRACT and parallel-phase protocol now explicitly require `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` flips (never jump directly to DONE)
 - `/cf-research` now saves output to `docs/research/YYYY-MM-DD-<slug>/` instead of `docs/research/<slug>/`, matching the date-prefixed naming used by `/cf-plan` and `/cf-checkpoint`
 
 ## v0.37.1 (2026-07-05)

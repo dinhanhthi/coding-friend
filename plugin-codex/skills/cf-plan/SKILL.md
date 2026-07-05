@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-07-05
 ---
 
 # $cf-plan
@@ -180,7 +180,7 @@ When humanDoc=true AND a plan file was written, generate a concise human-readabl
 
 ### Step 7: Offer Implementation
 
-Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. If autopilot=false → follow the Sequential/Parallel phases protocols in `modes/execute.md` (see pointer below).
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. **Progress checkpoints (`⬜` → `🔄` → `✅`) still apply under autopilot** — see `modes/execute.md`. If autopilot=false → follow the Sequential/Parallel phases protocols in `modes/execute.md` (see pointer below).
 
 → For the Sequential/Parallel phases execution protocols (cf-implementer dispatch, result-signal parsing, retry, big-plan phase sync, out-of-scope side-effect capture, phase order, post-implementation), Read `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` now and follow it. (This is the shared protocol `$cf-plan-resume` also uses.)
 
