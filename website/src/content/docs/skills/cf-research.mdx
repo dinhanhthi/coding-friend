@@ -24,7 +24,7 @@ The `/cf-research` skill performs thorough technical research using web search a
 2. **Plans Structure** — Breaks the topic into logical parts that can be researched independently
 3. **Parallel Search** — Launches multiple subagents to research each part simultaneously
 4. **Synthesizes Findings** — Creates a summary document linking all parts with key findings
-5. **Saves to Research Dir** — Stores in `docs/research/<topic-slug>/` for future use
+5. **Saves to Research Dir** — Stores in `docs/research/YYYY-MM-DD-<topic-slug>/` for future use
 
 ## Examples
 
@@ -45,7 +45,7 @@ The skill adapts its approach based on what you're researching:
 Research output uses numbered part files with a summary:
 
 ```
-docs/research/<topic-slug>/
+docs/research/YYYY-MM-DD-<topic-slug>/
   ├── _summary.md          # Overall summary with links to all parts
   ├── 01-<part-name>.md    # Part 1 findings
   ├── 02-<part-name>.md    # Part 2 findings

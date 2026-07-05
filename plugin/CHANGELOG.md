@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.37.2 (2026-07-05)
+
+- `/cf-research` now saves output to `docs/research/YYYY-MM-DD-<slug>/` instead of `docs/research/<slug>/`, matching the date-prefixed naming used by `/cf-plan` and `/cf-checkpoint`
+
 ## v0.37.1 (2026-07-05)
 
 - Pin explicit `model:` frontmatter on most skills (`cf-ask`, `cf-plan`, `cf-review`, `cf-review-in`, `cf-review-out`, `cf-optimize`, `cf-sys-debug`, `cf-learn`, `cf-remember`, `cf-scan`, `cf-checkpoint`, `cf-checkpoint-from`, `cf-ship`, `cf-teach`, `cf-warm`) so each runs on the model best suited to its workload instead of inheriting the session default [#b17e36bf](https://github.com/dinhanhthi/coding-friend/commit/b17e36bf) [#d6fd1abc](https://github.com/dinhanhthi/coding-friend/commit/d6fd1abc)

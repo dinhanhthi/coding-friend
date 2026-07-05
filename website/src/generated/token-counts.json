@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T21:54:04.126Z",
+  "generatedAt": "2026-07-05T09:21:35.860Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -23,7 +23,7 @@
   },
   "skills": {
     "cf-ask": {
-      "tokens": 3273,
+      "tokens": 3278,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-20",
@@ -80,7 +80,7 @@
       "temporal": "updated"
     },
     "cf-learn": {
-      "tokens": 2688,
+      "tokens": 2693,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-17",
@@ -88,7 +88,7 @@
       "temporal": "updated"
     },
     "cf-optimize": {
-      "tokens": 2735,
+      "tokens": 2739,
       "tier": "medium",
       "type": "slash",
       "created": "2026-02-20",
@@ -96,7 +96,7 @@
       "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 6573,
+      "tokens": 6577,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -120,15 +120,15 @@
       "temporal": "updated"
     },
     "cf-research": {
-      "tokens": 3330,
+      "tokens": 3623,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-19",
-      "updated": "2026-07-04",
+      "updated": "2026-07-05",
       "temporal": "updated"
     },
     "cf-review": {
-      "tokens": 3687,
+      "tokens": 3691,
       "tier": "high",
       "type": "slash",
       "created": "2026-02-17",
@@ -177,7 +177,7 @@
       "temporal": "updated"
     },
     "cf-sys-debug": {
-      "tokens": 3753,
+      "tokens": 3757,
       "tier": "high",
       "type": "auto",
       "created": "2026-02-17",
