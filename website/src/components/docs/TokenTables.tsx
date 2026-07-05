@@ -25,7 +25,7 @@ const slashCommandMeta: Record<string, string> = {
   "cf-plan-resume": "Resume a saved plan from where it stopped",
   "cf-checkpoint": "Capture a concise conversation checkpoint",
   "cf-checkpoint-from": "Load a saved checkpoint into a fresh conversation",
-  "cf-review": "Multi-layer code review",
+  "cf-review": "Multi-layer code review; optional headless external reviewers",
   "cf-review-out": "Generate review prompt for external AI",
   "cf-review-in": "Collect external review results",
   "cf-optimize": "Structured optimization",
@@ -102,7 +102,8 @@ const overviewSlashMeta: Record<
     triggeredBy: "slash",
   },
   "cf-review": {
-    description: "Multi-layer code review in a forked subagent",
+    description:
+      "Multi-layer code review in a forked subagent; optional --codex/--claude/--gemini/--cursor/--grok parallel reviewers or --out export",
     triggeredBy: "slash + auto",
   },
   "cf-commit": {

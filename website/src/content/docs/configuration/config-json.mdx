@@ -294,6 +294,13 @@ Settings for the [`/cf-review`](/docs/skills/cf-review/) skill.
 - When `true`, every `/cf-review` (including the auto-invoked ones from `/cf-plan`, `/cf-fix`, `/cf-optimize`) runs a Codex review in parallel and merges both reviews into one report. Codex auto-selects its scope (committed branch changes via `--base`, unpushed commits on the base branch, or `--uncommitted`) so it covers a phase even after it is committed
 - Requires the Codex CLI installed and logged in; degrades gracefully to a Claude-only review with a warning if Codex is unavailable
 
+#### `review.agentTimeout`
+
+- **Type**: `number` (seconds)
+- **Default**: `300`
+- Per-agent timeout for headless external reviewers (`--claude`, `--gemini`, `--cursor`, `--grok`) invoked by `/cf-review`
+- On expiry the CLI process is killed and that agent is dropped with a warning — the rest of the review still completes
+
 ## Layered Config
 
 Local settings override global settings **at the top-level key level** (not deep merge).

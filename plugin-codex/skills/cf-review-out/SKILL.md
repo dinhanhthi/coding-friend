@@ -7,7 +7,7 @@ description: >
   "external review", "review out", "send for review", "cf-review-out", "outside review",
   "prepare review for gemini", "review prompt".
 created: 2026-03-23
-updated: 2026-07-04
+updated: 2026-07-05
 ---
 
 # $cf-review-out
@@ -20,7 +20,7 @@ Generate a review prompt for an external agent: **$ARGUMENTS**
 
 Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`$cf-review-in`](/docs/skills/cf-review-in/) to collect results.
 
-> **Using Codex?** Run `$cf-review` directly. The review-out/review-in round trip remains available for other external reviewers or humans.
+> **Built-in headless reviewers?** If you have the relevant CLIs installed, you don't need this manual round-trip — run [`$cf-review`](/docs/skills/cf-review/) with `--claude`, `--gemini`, `--cursor`, `--grok`, or `--codex` instead. Each flag invokes that agent automatically, runs Claude's own review in parallel, and merges all surviving sources into one report with no copy-paste. For a manual round-trip **with Claude's context embedded**, use [`$cf-review --out`](/docs/skills/cf-review/) — it runs Claude's review first, then writes a prompt file here for [`$cf-review-in`](/docs/skills/cf-review-in/). This `$cf-review-out` + `$cf-review-in` flow remains the path for any other external AI (ChatGPT, Copilot) or a human reviewer.
 
 ## Workflow
 
