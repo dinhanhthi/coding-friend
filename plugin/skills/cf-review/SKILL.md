@@ -8,7 +8,7 @@ description: >
   commits, or branches.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-07-05
+updated: 2026-07-06
 model: opus
 ---
 
@@ -62,9 +62,11 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 **External headless-reviewer flags:**
 
 - After the codex block, parse `--claude`, `--gemini`, `--cursor`, `--grok` (and `--with-<agent>` aliases). Collect matched ones into an `agents=[…]` list; strip the flags from `$ARGUMENTS`.
-- **Host-match no-op:** read `HOST` from the session bootstrap context; if `HOST=claude` and `--claude` was passed, drop `claude` from the list and print:
+- **Host-match no-op:** read `HOST` from the session bootstrap context. Only skip a matching flag when there is **positive evidence** of the in-session host: a `HOST:` line exists **and** its value matches the flag. Concretely, if a `HOST:` line is present and equals `claude` and `--claude` was passed, drop `claude` from the list and print:
 
   > ⚠ `--claude` skipped: Claude is already the in-session reviewer.
+
+  If **no** `HOST:` line is present — e.g. running under a host that does not emit the coding-friend session bootstrap, such as Grok, Cursor, or Gemini — or its value is anything other than the requested flag, do **NOT** skip: run the requested reviewer. Never assume the in-session assistant is Claude just because a flag says `--claude`. When in doubt, run it: skipping wrongly loses a review the user explicitly asked for, whereas running an extra review is harmless.
 
 - When `agents` is non-empty, the workflow runs Claude's own review (Steps 2–6) **and** each requested agent review in parallel (Steps 2.5/6.5), then merges all surviving sources (Step 7). Each agent is invoked via `run-agent-review.sh`, which feeds `gather-diff.sh` output through `build-review-prompt.sh` and runs the headless CLI in read-only mode. The four agents review the **exact diff `gather-diff.sh` produces** — the same change set Claude's own review sees (deliberately different from Codex's auto-scope).
 - **Target compatibility:** same restriction as codex — only the **default target** (empty `$ARGUMENTS`, or a natural-language description). If `$ARGUMENTS` (after stripping flags) is a **file path** or **commit range**, print:
@@ -313,7 +315,7 @@ Display the full report followed by the status banner in a **single message**.
 
 **IMPORTANT**: The structured report from step 8 and the banner below MUST appear together in the same final response. Do NOT split them across separate messages. This ensures the complete review is visible in the last message.
 
-Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: Claude + …` suffix listing Claude plus each external agent/codex that actually contributed (e.g. `· Reviewed by: Claude + Codex + Gemini`). Omit the suffix when only Claude ran.
+Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix listing the in-session reviewer plus each external agent/codex that actually contributed (e.g. `· Reviewed by: Claude + Codex + Gemini`). Label the in-session reviewer by the `HOST` value from the session bootstrap context, capitalized (`claude` → `Claude`, `codex` → `Codex`); if no `HOST:` line is present, use the neutral label `In-session AI` — do NOT hardcode `Claude`, since the assistant running this skill may be another host (Grok, Cursor, …). Omit the suffix when only the in-session reviewer ran.
 
 Skip this step's banner when `out=true` — Step 6.7 already showed the export panel.
 
