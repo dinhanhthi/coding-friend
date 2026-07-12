@@ -25,12 +25,12 @@ It is slash-only (does not auto-invoke) and distinct from two related mechanisms
 /cf-checkpoint [additional-prompt]
 ```
 
-The optional argument is resolved into one of four cases, evaluated in order:
+The optional argument decides create vs. update:
 
 1. **No argument** — create a new checkpoint with an auto-derived kebab-case slug from the conversation's main topic.
-2. **Argument matches an existing checkpoint** — either an exact `YYYY-MM-DD-<slug>` filename, or a bare `<slug>` where exactly one file matches — update that checkpoint: re-read its content, rewrite the body to reflect the current state (not append), and bump its `updated` date.
-3. **Argument doesn't match any existing file, and isn't slug-like** (contains spaces, uppercase, or punctuation beyond hyphens) — treat it as a **focus hint** for what to emphasize, and create a new checkpoint.
-4. **Argument doesn't match any existing file, and IS slug-like** (zero or multiple matches) — list the available checkpoint files and ask which one to update, or whether to create a new one instead. If the `checkpoints/` directory is empty, there is nothing to list — it falls back to creating a new checkpoint using the argument as the slug.
+2. **Argument matches exactly one existing checkpoint** — either an exact `<slug>.md` filename, or a glob match — update that checkpoint: re-read its content, rewrite the body to reflect the current state (not append), and bump its `updated` date.
+3. **Argument matches two or more existing checkpoints** — list them and ask which one to update, or whether to create a new one instead.
+4. **Argument matches no existing checkpoint** — create a new checkpoint, using the argument as the slug if it looks slug-like (lowercase letters, digits, hyphens only), or as a **focus hint** for what to emphasize otherwise.
 
 **Edge cases:**
 

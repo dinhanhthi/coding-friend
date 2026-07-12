@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.38.1 (2026-07-12)
+
+- `$cf-checkpoint-from` now takes an optional message after the slug (what to do once context is loaded) and makes the restored-context recap opt-in via `--recap`; `$cf-checkpoint`'s create-vs-update matching logic is simplified [#18a7730b](https://github.com/dinhanhthi/coding-friend/commit/18a7730b)
+- Fix `$cf-review`'s `--claude`/`--gemini`/`--cursor`/`--grok` host-match no-op wrongly skipping a requested reviewer when the in-session host isn't Claude — it now only skips when the session's `HOST` value positively matches the flag, and never assumes Claude by default [#4b9c0957](https://github.com/dinhanhthi/coding-friend/commit/4b9c0957)
+
 ## v0.38.0 (2026-07-05)
 
 - `$cf-review` can now dispatch headless external reviewers (`--claude`, `--gemini`, `--cursor`, `--grok`) in parallel with Claude's own review, merging all surviving reports through the reducer; add `--out` to instead export a `$cf-review-out`-style prompt (with Claude's own findings embedded) for manual round-trips via `$cf-review-in` [#474f5006](https://github.com/dinhanhthi/coding-friend/commit/474f5006)
