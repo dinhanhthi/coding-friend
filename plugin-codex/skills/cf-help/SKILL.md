@@ -70,7 +70,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Codex C
 - `$cf-session [label]` — ⚡⚡ — Save current session to sync folder for cross-machine resume
 - `$cf-warm [user]` — ⚡⚡ — Catch up after absence — git history summary for a user
 - `$cf-checkpoint [additional-prompt]` — ⚡⚡ — Capture a concise conversation checkpoint (decisions, breaking changes, next steps) → docs/context/checkpoints/; updates an existing checkpoint when the arg matches one.
-- `$cf-checkpoint-from [slug]` — ⚡⚡ — Load a saved checkpoint into a fresh conversation to continue with the prior context.
+- `$cf-checkpoint-from <slug> [message]` — ⚡⚡ — Load a saved checkpoint as context, then do the message (first word is the slug, the rest is what to do next). Add `--recap` to also print a summary of the restored context.
 - `$cf-help [question]` — ⚡⚡ — This skill — answer questions about Coding Friend. Also auto-invoked.
 
 ### Auto-Invoked Skills (activate automatically when relevant)

@@ -9,7 +9,7 @@ description: >
   Unlike $cf-remember (durable project-wide facts/conventions for AI recall across all future
   work), this is a transient per-conversation resume artifact. Does NOT auto-invoke — slash-only.
 created: 2026-07-04
-updated: 2026-07-04
+updated: 2026-07-12
 ---
 
 # $cf-checkpoint
@@ -45,18 +45,18 @@ bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-checkpoint
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
-### Step 1: Resolve Argument Case
+### Step 1: Create or Update
 
-Ensure `{CF_DOCS_ROOT}/context/checkpoints/` exists (create it if missing). List existing files in it. If `$ARGUMENTS` contains `/`, `\`, or `..`, reject it immediately (report: "Invalid checkpoint name — slugs cannot contain path separators or `..`." and stop) — never use a raw argument containing those sequences to test file existence or construct a path, since doing so could reference a file outside `{CF_DOCS_ROOT}/context/checkpoints/`. Once the argument passes this check, classify `$ARGUMENTS`:
+Ensure `{CF_DOCS_ROOT}/context/checkpoints/` exists (create it if missing). If `$ARGUMENTS` contains `/`, `\`, or `..`, reject it immediately (report: "Invalid checkpoint name — slugs cannot contain path separators or `..`." and stop) — never use a raw argument containing those sequences to test file existence or construct a path, since doing so could reference a file outside the checkpoints directory.
 
-Evaluate cases **in this exact order** — the first case that matches wins (this ordering, not the slug-like definition alone, is what keeps cases 2 and 4 mutually exclusive):
+Then decide **create vs update** by matching `$ARGUMENTS` against existing files:
 
-1. **No argument** → CREATE a new checkpoint. Auto-derive a short kebab-case slug from the conversation's main topic. Filename: `YYYY-MM-DD-<slug>.md`.
-2. **Argument resolves to an existing checkpoint file** — either (a) an exact `YYYY-MM-DD-<slug>` filename match, or (b) a bare `<slug>` where glob `{CF_DOCS_ROOT}/context/checkpoints/*<slug>*.md` returns **exactly one** file (regardless of whether the argument also looks slug-like) → UPDATE that file: re-read its current content, produce a refreshed concise snapshot reflecting the latest state (do NOT blindly append), and bump its `updated` date. This case is checked BEFORE cases 3/4 below — a single fuzzy match always resolves silently to UPDATE and never falls through to case 4's list-and-ask.
-3. **Argument does not match case 2 (glob returned zero files), AND the argument is NOT slug-like (per the definition below)** → treat it as a **focus hint** (what to emphasize in the checkpoint) and CREATE a new checkpoint with an auto-derived slug.
-4. **Argument does not match case 2 (glob returned zero or 2+ files), AND the argument IS slug-like (per the definition below)** → if `checkpoints/` already contains at least one file, LIST the matching/available checkpoint files (name + topic if readable) and ASK the user which one to update, or whether to create a new checkpoint instead. Use a direct user question if available, otherwise ask a plain question in the conversation. Do NOT guess. If `checkpoints/` is empty (no existing checkpoint files at all), there is nothing to list or ask about — do NOT ask the user to pick from an empty list. Instead fall back to case 1/3: CREATE a new checkpoint, using the argument as the literal slug (since it's slug-like) or as a focus hint.
+- **No argument** → CREATE. Auto-derive a short kebab-case slug from the conversation's main topic.
+- **Argument matches exactly one existing checkpoint** — an exact `<slug>.md` filename match, or a glob `{CF_DOCS_ROOT}/context/checkpoints/*<arg>*.md` returning exactly one file → UPDATE that file.
+- **Argument matches two or more existing checkpoints** → do NOT guess. List the matches (name + topic if readable) and ask which one to update, or whether to create a new one instead.
+- **Argument matches no existing checkpoint** → CREATE. Use the argument as the slug if it looks slug-like (`^[a-z0-9-]+$`, optional `YYYY-MM-DD-` prefix), otherwise treat it as a focus hint and auto-derive the slug.
 
-**Slug-like definition:** an argument counts as "slug-like" (relevant to cases 3/4 only — case 2 is decided purely by glob-match count, independent of this definition) if it matches `^[a-z0-9-]+$`, optionally prefixed with `YYYY-MM-DD-` — i.e. lowercase letters, digits, and hyphens only, no spaces, no uppercase, no other punctuation. If the argument contains spaces, uppercase letters, or punctuation beyond hyphens, it is NEVER slug-like — it is always case 3 when case 2 doesn't match.
+New checkpoint filename: `YYYY-MM-DD-<slug>.md`.
 
 ### Step 2: Compose the Checkpoint
 
@@ -103,7 +103,7 @@ topic: "<one-line conversation topic>"
 
 **Length budget (enforced):** target under ~150 lines total. Prioritize Key Decisions, Breaking Changes, and Next Steps over narrative prose or transcript detail. Do not restate the full conversation — summarize.
 
-When updating an existing checkpoint (Step 1 case 2), preserve `created`, bump `updated`, and rewrite the body sections to reflect current state rather than appending a second copy of stale sections.
+When updating an existing checkpoint, preserve `created`, bump `updated`, re-read its current content, and rewrite the body sections to reflect current state rather than appending a second copy of stale sections.
 
 ### Step 3: Write the File
 
@@ -121,6 +121,6 @@ Show the user a 2-line summary:
 - Enforce the concise length budget (~150 lines) — this is a resume aid, not a transcript archive.
 - Never dump the whole conversation verbatim; always synthesize.
 - Create `{CF_DOCS_ROOT}/context/checkpoints/` if missing.
-- When an argument is ambiguous (case 4 above), always list candidates and ask — never guess which checkpoint to update.
+- When an argument matches two or more existing checkpoints, always list candidates and ask — never guess which one to update.
 - When updating an existing checkpoint, rewrite the content to reflect the current state — do not just append.
 - Always confirm with the 2-line summary after writing.
