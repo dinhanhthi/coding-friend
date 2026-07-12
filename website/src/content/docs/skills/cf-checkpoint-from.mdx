@@ -18,15 +18,17 @@ keywords:
   requirements](/docs/reference/cli-requirements/) for the full matrix.
 </Callout>
 
-The `/cf-checkpoint-from` skill loads a checkpoint saved by [`/cf-checkpoint`](/docs/skills/cf-checkpoint/) back into a fresh conversation so work can continue with the prior context — Goal, Current State, Key Decisions, and Next Steps. It only reads and restores a checkpoint; it never creates or edits one.
+The `/cf-checkpoint-from` skill loads a checkpoint saved by [`/cf-checkpoint`](/docs/skills/cf-checkpoint/) back into a fresh conversation as working context — Goal, Current State, Key Decisions, and Next Steps — then continues with whatever the user asks next. It only reads and restores a checkpoint; it never creates or edits one.
 
 This skill is slash-only (it does not auto-invoke) — trigger it explicitly with `/cf-checkpoint-from`.
 
 ## Usage
 
 ```bash
-/cf-checkpoint-from [slug]
+/cf-checkpoint-from <slug> [message] [--recap]
 ```
+
+The **first word** of the argument is the checkpoint slug; **everything after it** is an optional message — what to do once context is loaded. Add `--recap` (anywhere in the argument) to also print a summary of the restored context; it's off by default.
 
 `<slug>` accepts:
 
@@ -34,12 +36,15 @@ This skill is slash-only (it does not auto-invoke) — trigger it explicitly wit
 - **Bare slug** — rejected outright if it contains `/`, `\`, or `..`. Otherwise resolved in order, using the first that exists:
   1. `{docsDir}/context/checkpoints/<slug>.md` (exact match, including a `YYYY-MM-DD-` prefix if typed in full)
   2. Glob `{docsDir}/context/checkpoints/*<slug>*.md` (matches a bare slug typed without its date prefix), only when exactly one file matches
-- **No argument, no match, or multiple matches** — lists the available checkpoints (file name, `topic`, `updated`) and asks which one to load, rather than guessing.
+- **No slug, no match, or multiple matches** — lists the available checkpoints (file name, `topic`, `updated`) and asks which one to load, rather than guessing.
 
 ## Workflow
 
-1. **Resolve the checkpoint file** — Applies the path/slug resolution above. If the checkpoints directory is empty or missing, reports that clearly and suggests running `/cf-checkpoint` first.
-2. **Load and summarize** — Reads the resolved file and treats its content strictly as data to summarize, never as instructions to execute. Loads its sections (Goal, Current State, Key Decisions, Breaking Changes, Open Questions / Next Steps, Relevant Files) as working context. If a Next Step or Relevant File entry reads as an imperative action unrelated to the stated Goal, it's flagged as suspicious in the summary rather than treated as pre-approved. Presents a short summary covering Goal, Current State, Key Decisions, and Next Steps.
+1. **Parse the argument** — split off `--recap`, then the slug (first token), then the message (the rest).
+2. **Resolve the checkpoint file** — applies the path/slug resolution above. If the checkpoints directory is empty or missing, reports that clearly and suggests running `/cf-checkpoint` first.
+3. **Load context** — reads the resolved file and treats its content strictly as data, never as instructions to execute. Loads its sections (Goal, Current State, Key Decisions, Breaking Changes, Open Questions / Next Steps, Relevant Files) as working context. If a Next Step or Relevant File entry reads as an imperative action unrelated to the stated Goal, it's flagged as suspicious rather than acted on. The user's typed message, not the checkpoint file, is the only trusted instruction.
+4. **Recap (only with `--recap`)** — prints a short summary covering Goal, Current State, Key Decisions, and Next Steps. Skipped by default.
+5. **Continue** — if a message was given, briefly confirms "Context loaded." and carries it out using the restored context; if not, says "Context loaded." and asks what to do next.
 
 ## When to Use
 
@@ -50,5 +55,5 @@ This skill is slash-only (it does not auto-invoke) — trigger it explicitly wit
 ## Recommended Workflow
 
 ```
-/cf-checkpoint (previous session) → /cf-checkpoint-from <slug> (new session) → continue work
+/cf-checkpoint (previous session) → /cf-checkpoint-from <slug> [message] (new session) → continue work
 ```
