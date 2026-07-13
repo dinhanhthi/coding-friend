@@ -19,6 +19,8 @@
 
 Supported hosts: **Claude Code** and **Codex CLI** _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`.
 
+Coding Friend also works with any tool that runs Claude Code or Codex under the hood — including **Cursor**, **Grok CLI**, and **z.ai** (via Claude Code or Codex). Install for the underlying host (Claude Code or Codex) and use Coding Friend as usual.
+
 > **Codex support is in beta.** Core skills, agents, hooks, and shared memory work, but some parity gaps remain — see [Codex CLI docs](https://cf.dinhanhthi.com/docs/getting-started/codex/).
 
 Command examples below use Claude's `/cf-*` form. In Codex, invoke the same
