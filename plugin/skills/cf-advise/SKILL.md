@@ -33,10 +33,10 @@ Turn a raw idea, question, prompt, or URL into an actionable **decision** throug
 
 Parsed from `$ARGUMENTS`; strip before using the rest as the topic.
 
-| Flag | Effect |
-| --- | --- |
-| `--quick` (alias `--fast`) | Fewer interview questions (aim for 2–3, the highest-signal ones). Use when the decision is narrow. |
-| `--save` | After delivering the verdict, persist it to `docs/memory/decisions/` and index it in memory (Step 6). Off by default — advice stays in chat. |
+| Flag                       | Effect                                                                                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--quick` (alias `--fast`) | Fewer interview questions (aim for 2–3, the highest-signal ones). Use when the decision is narrow.                                           |
+| `--save`                   | After delivering the verdict, persist it to `docs/memory/decisions/` and index it in memory (Step 6). Off by default — advice stays in chat. |
 
 ## Folder
 

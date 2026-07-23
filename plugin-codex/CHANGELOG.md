@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.39.0 (2026-07-23)
+
+- Add `$cf-advise` — a decision-advisory skill that interviews one question at a time to surface hidden requirements, then delivers a verdict-first recommendation with pitfalls and ranked alternatives. Advisory-only — never writes code or plans; `$cf-plan` now points to it when the decision to build isn't made yet. Flags: `--quick` (fewer questions), `--save` (persist the decision to `docs/memory/decisions/`) [#5ad1b59d](https://github.com/dinhanhthi/coding-friend/commit/5ad1b59d)
+
 ## v0.38.1 (2026-07-12)
 
 - `$cf-checkpoint-from` now takes an optional message after the slug (what to do once context is loaded) and makes the restored-context recap opt-in via `--recap`; `$cf-checkpoint`'s create-vs-update matching logic is simplified [#18a7730b](https://github.com/dinhanhthi/coding-friend/commit/18a7730b)
