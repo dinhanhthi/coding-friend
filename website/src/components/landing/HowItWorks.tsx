@@ -931,6 +931,15 @@ export default function HowItWorks() {
           <p className="mt-2 text-center text-sm text-slate-400">
             Plus utility skills:{" "}
             <a
+              href="/docs/skills/cf-advise/"
+              target="_blank"
+              rel="noopener"
+              className="font-mono text-violet-400 transition-colors hover:text-violet-300"
+            >
+              /cf-advise
+            </a>
+            ,{" "}
+            <a
               href="/docs/skills/cf-ask/"
               target="_blank"
               rel="noopener"
@@ -1025,6 +1034,15 @@ export default function HowItWorks() {
         </div>
         <p className="mb-8 text-center text-sm text-slate-500">
           Plus utility skills:{" "}
+          <a
+            href="/docs/skills/cf-advise/"
+            target="_blank"
+            rel="noopener"
+            className="font-mono text-slate-400 transition-colors hover:text-slate-300"
+          >
+            /cf-advise
+          </a>
+          ,{" "}
           <a
             href="/docs/skills/cf-ask/"
             target="_blank"

@@ -146,6 +146,7 @@ async function main() {
       tokens: number;
       tier: Tier;
       type: "slash" | "auto";
+      model: string;
       created?: string;
       updated?: string;
       state?: string;
@@ -181,6 +182,7 @@ async function main() {
       tokens,
       tier: getTier(tokens),
       type,
+      model: frontmatter["model"] || "inherit",
     };
     if (frontmatter["created"]) entry.created = frontmatter["created"];
     if (frontmatter["updated"]) entry.updated = frontmatter["updated"];

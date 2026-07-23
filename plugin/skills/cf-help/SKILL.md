@@ -57,6 +57,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 
 ### Slash Commands (user triggers with /)
 
+- `/cf-advise [decision]` — ⚡⚡ — Decision advisory: a structured interview (one question at a time) that surfaces hidden requirements, confirms a reframing, then delivers a verdict-first recommendation with pitfalls and ranked alternatives. Advisory-only — never writes code or plans (that's `/cf-plan`). Flags: `--quick` fewer questions, `--save` persist the decision to `docs/memory/decisions/`.
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates an ASCII flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped: reads the plan + its context file, re-runs pending/interrupted tasks, honors `auto: true` frontmatter to continue in autopilot.
