@@ -8,8 +8,8 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 | Tier     | Meaning                                                                                                                            | Count today                        |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 10 · Agents: 11 · Hooks: 7 |
-| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3  |
+| NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 12 · Agents: 11 · Hooks: 7 |
+| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 13 · Agents: 1 · Hooks: 3  |
 | REQUIRED | Cannot function without CLI.                                                                                                       | 0                                  |
 
 ---
@@ -25,30 +25,33 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 ## Per-Skill Table
 
-| Skill           | Tier     | Without CLI you lose...    | Manual workaround                |
-| --------------- | -------- | -------------------------- | -------------------------------- |
-| cf-ask          | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-commit       | NONE     | —                          | —                                |
-| cf-design       | NONE     | —                          | —                                |
-| cf-fix          | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-help         | NONE     | —                          | —                                |
-| cf-learn        | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-optimize     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-plan         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-plan-resume  | NONE     | —                          | —                                |
-| cf-remember     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-research     | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review       | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review-in    | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-review-out   | NONE     | —                          | —                                |
-| cf-scan         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-session      | NONE     | —                          | —                                |
-| cf-ship         | NONE     | —                          | —                                |
-| cf-sys-debug    | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
-| cf-tdd          | NONE     | —                          | —                                |
-| cf-teach        | NONE     | —                          | —                                |
-| cf-verification | NONE     | —                          | —                                |
-| cf-warm         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
+| Skill              | Tier     | Without CLI you lose...                             | Manual workaround                |
+| ------------------ | -------- | --------------------------------------------------- | -------------------------------- |
+| cf-advise          | OPTIONAL | Fast indexed memory search (only the `--save` flow) | `grep -r '<query>' docs/memory/` |
+| cf-ask             | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-checkpoint      | NONE     | —                                                   | —                                |
+| cf-checkpoint-from | NONE     | —                                                   | —                                |
+| cf-commit          | NONE     | —                                                   | —                                |
+| cf-design          | NONE     | —                                                   | —                                |
+| cf-fix             | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-help            | NONE     | —                                                   | —                                |
+| cf-learn           | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-optimize        | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-plan            | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-plan-resume     | NONE     | —                                                   | —                                |
+| cf-remember        | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-research        | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-review          | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-review-in       | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-review-out      | NONE     | —                                                   | —                                |
+| cf-scan            | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-session         | NONE     | —                                                   | —                                |
+| cf-ship            | NONE     | —                                                   | —                                |
+| cf-sys-debug       | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
+| cf-tdd             | NONE     | —                                                   | —                                |
+| cf-teach           | NONE     | —                                                   | —                                |
+| cf-verification    | NONE     | —                                                   | —                                |
+| cf-warm            | OPTIONAL | Fast indexed memory search                          | `grep -r '<query>' docs/memory/` |
 
 ---
 

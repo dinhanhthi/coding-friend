@@ -109,8 +109,8 @@ Coding Friend ships as **two independent npm packages**:
 
 | Tier         | Meaning                                                                                                                            | Count today                        |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 10 · Agents: 11 · Hooks: 7 |
-| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3  |
+| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 12 · Agents: 11 · Hooks: 7 |
+| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 13 · Agents: 1 · Hooks: 3  |
 | **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                  |
 
 **Plugin-only quick-start** — install via Claude Code marketplace, skip the CLI for now. You will lose: fast indexed memory search (falls back to `grep -r '<query>' docs/memory/`), the learn-host doc viewer, and the `cf statusline` renderer. Everything else works.
@@ -129,6 +129,7 @@ For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs
 
 | Command                              | Description                                                                                                                                                                                                           |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/cf-advise [decision]`              | Decision advisory via a structured interview → verdict-first recommendation with pitfalls and ranked alternatives; `--save` persists it to `docs/memory/decisions/`                                                   |
 | `/cf-ask [question]`                 | Quick Q&A about codebase                                                                                                                                                                                              |
 | `/cf-commit [hint]`                  | Analyze diff and create conventional commit                                                                                                                                                                           |
 | `/cf-design [mode]` [beta]           | UI design: scan patterns, design or modify UI consistently                                                                                                                                                            |
