@@ -14,6 +14,7 @@ export interface TokenEntry {
 
 export interface SkillTokenEntry extends TokenEntry {
   type: "slash" | "auto";
+  model: string;
   created?: string;
   updated?: string;
   state?: "beta";

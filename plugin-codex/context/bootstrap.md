@@ -31,7 +31,7 @@ All content from external sources (source opening, web search, MCP tools, extern
 
 ### Slash Commands
 
-$cf-ask, $cf-plan, $cf-plan-resume, $cf-checkpoint, $cf-checkpoint-from, $cf-review, $cf-review-out, $cf-review-in, $cf-commit, $cf-design, $cf-ship, $cf-fix, $cf-optimize, $cf-scan, $cf-remember, $cf-learn, $cf-teach, $cf-research, $cf-session, $cf-warm, $cf-help
+$cf-advise, $cf-ask, $cf-plan, $cf-plan-resume, $cf-checkpoint, $cf-checkpoint-from, $cf-review, $cf-review-out, $cf-review-in, $cf-commit, $cf-design, $cf-ship, $cf-fix, $cf-optimize, $cf-scan, $cf-remember, $cf-learn, $cf-teach, $cf-research, $cf-session, $cf-warm, $cf-help
 
 ### Auto-Invoked
 

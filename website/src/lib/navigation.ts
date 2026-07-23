@@ -66,6 +66,14 @@ export const docsNavigation: NavSection[] = [
     title: "/Slash Skills",
     items: [
       {
+        title: "/cf-advise",
+        slug: "skills/cf-advise",
+        manualOnly: true,
+        tier: tierOf("skills/cf-advise"),
+        beta: betaOf("skills/cf-advise"),
+        temporal: temporalOf("skills/cf-advise"),
+      },
+      {
         title: "/cf-ask",
         slug: "skills/cf-ask",
         manualOnly: true,

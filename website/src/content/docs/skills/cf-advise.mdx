@@ -1,0 +1,74 @@
+---
+title: "/cf-advise"
+description: "Decision advisory through a structured interview that ends in a verdict-first recommendation."
+keywords: [decision, advisory, interview, cf-advise]
+---
+
+<ContextFootprint />
+
+<Callout type="info" title="CLI Requirement: OPTIONAL">
+  Only the `--save` flow uses the memory MCP from [`coding-friend-cli`](/docs/cli/) for indexed storage. Without the CLI: falls back to a direct file write under `docs/memory/decisions/`. The advisory itself needs no CLI. See [CLI requirements](/docs/reference/cli-requirements/).
+</Callout>
+
+The `/cf-advise` skill helps you **decide**, not build. It turns a vague question into an actionable decision through a structured interview — surfacing the hidden requirements behind the surface question — then delivers a verdict-first recommendation with pitfalls and ranked alternatives. It sits **before** [`/cf-plan`](/docs/skills/cf-plan/) in the workflow: **decide → plan → build**.
+
+It is **advisory-only** — it never writes or edits code, and never writes a plan file. To act on the advice, you run [`/cf-plan`](/docs/skills/cf-plan/).
+
+## Usage
+
+```bash
+/cf-advise [question]
+```
+
+### Flags
+
+| Flag | Effect |
+| --- | --- |
+| `--quick` (alias `--fast`) | Fewer interview questions — aim for the 2–3 highest-signal ones. Use when the decision is narrow. |
+| `--save` | After the verdict, persist the decision to `docs/memory/decisions/` and index it in memory. Off by default — advice stays in chat. |
+
+## What It Does
+
+1. **Analyzes the Input** — Reads the decision, extracts what's *stated*, what's *implied*, and the *hidden assumptions* baked into the question. Classifies the decision as codebase-relevant or abstract.
+2. **Scouts the Codebase (conditional)** — For codebase-relevant decisions, launches the [`cf-explorer`](/docs/agents/cf-explorer/) agent to ground the advice in real constraints and prior art, and searches existing decisions in memory.
+3. **Interviews One Question at a Time** — Never batches questions. Asks one, waits, and forms the next from your answer — walking the arc *why → pros/cons → alternatives → constraints → convergence* (4–8 questions, 2–3 with `--quick`).
+4. **Confirms the Reframing** — Restates the decision as concrete requirements and goals, not the original vague question, and gets your explicit confirmation before advising.
+5. **Delivers the Verdict** — Leads with the recommendation, then justifies.
+6. **Emits Outputs** — By default the advice stays in chat with a pointer that acting on it is `/cf-plan`. With `--save`, persists and indexes the decision.
+
+## Verdict-First Output
+
+The recommendation is delivered in this order — the answer first, never buried:
+
+1. **Verdict** — the recommendation in one or two sentences, no hedging preamble.
+2. **Why** — the reasoning, grounded in your interview answers and (if gathered) codebase evidence.
+3. **Recommended actions** — the concrete next steps if you follow the verdict.
+4. **Pitfalls** — what to watch for and what commonly goes wrong with this choice.
+5. **Ranked alternatives** — the other options, ordered, each with a one-line "choose this instead if…".
+
+## Examples
+
+```bash
+/cf-advise Should we adopt a monorepo or keep separate repos?
+```
+
+```bash
+/cf-advise --quick Is it worth adding Redis caching to the API?
+```
+
+```bash
+/cf-advise --save Which state management library should we standardize on?
+```
+
+## When to Use
+
+- Deciding *whether* or *which* — not *how to build*
+- Weighing a trade-off between concrete options
+- Pressure-testing a vague idea before committing to a plan
+- Any question shaped like "should I", "is X worth it", "which approach", "am I overthinking this"
+
+## How It Differs
+
+- Unlike [`/cf-plan`](/docs/skills/cf-plan/) — decides *whether / which*, not *how to build*. No plan doc, no execution.
+- Unlike [`/cf-ask`](/docs/skills/cf-ask/) — reasons about a decision or trade-off, rather than looking up how existing code works.
+- Unlike [`/cf-research`](/docs/skills/cf-research/) — a focused verdict for one decision, not a multi-doc research dump.

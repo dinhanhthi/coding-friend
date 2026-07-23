@@ -8,7 +8,7 @@ description: >
   "plan out", "figure out how to", "what's the best way to build". Also triggers on task
   descriptions that imply multi-step implementation work requiring upfront planning.
 created: 2026-02-17
-updated: 2026-07-05
+updated: 2026-07-23
 model: opus
 ---
 
@@ -63,6 +63,8 @@ If `memory_search` is available, search for keywords related to the task. Use an
 ### Step 1: Discovery & Brainstorm
 
 > **Fast mode**: Skip — proceed to Step 2.
+
+> **Not sure this is worth building, or which direction to take?** If the discovery below reveals the user hasn't actually decided _whether_ or _which approach_ — they're weighing options or questioning if the work is worth it — pause and suggest `/cf-advise` first. It runs a structured interview and returns a verdict-first recommendation. `cf-plan` assumes the decision to build is already made; it plans _how_, not _whether_.
 
 Use `AskUserQuestion` for each round. Do NOT batch questions.
 

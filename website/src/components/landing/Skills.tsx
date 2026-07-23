@@ -20,11 +20,34 @@ interface SkillMeta {
 
 interface Skill extends SkillMeta {
   tier: Tier;
+  model: string;
   beta?: boolean;
   temporal?: "new" | "updated" | null;
 }
 
+const modelDisplayName: Record<string, string> = {
+  haiku: "Haiku",
+  sonnet: "Sonnet",
+  opus: "Opus",
+  fable: "Fable",
+  inherit: "Inherit",
+};
+
+const modelColors: Record<string, string> = {
+  Haiku: "text-emerald-400 border-emerald-400/30",
+  Sonnet: "text-sky-400 border-sky-400/30",
+  Opus: "text-violet-400 border-violet-400/30",
+  Fable: "text-amber-400 border-amber-400/30",
+  Inherit: "text-slate-400 border-slate-400/30",
+};
+
 const slashCommandMeta: SkillMeta[] = [
+  {
+    command: "/cf-advise",
+    title: "Advise",
+    description:
+      "Decision advisory — a structured interview that ends in a verdict-first recommendation. Never writes code.",
+  },
   {
     command: "/cf-ask",
     title: "Ask",
@@ -171,7 +194,13 @@ function enrichWithTier(items: SkillMeta[]): Skill[] {
     const name = item.command.replace(/^\//, "");
     const entry = skills[name];
     const { beta, temporal } = getItemStatus(entry?.state, entry?.temporal);
-    return { ...item, tier: entry?.tier ?? "low", beta, temporal };
+    return {
+      ...item,
+      tier: entry?.tier ?? "low",
+      model: modelDisplayName[entry?.model] ?? entry?.model ?? "Inherit",
+      beta,
+      temporal,
+    };
   });
 }
 
@@ -188,11 +217,22 @@ function displayCommand(command: string, prefix?: string): string {
   return prefix + command.slice(1);
 }
 
-function SkillCard({ skill, prefix }: { skill: Skill; prefix?: string }) {
+function SkillCard({
+  skill,
+  prefix,
+  showModel,
+}: {
+  skill: Skill;
+  prefix?: string;
+  showModel?: boolean;
+}) {
+  const colorClass =
+    modelColors[skill.model] ?? "text-slate-400 border-slate-400/30";
+
   return (
     <Link
       href={skillHref(skill.command)}
-      className="group bg-navy-950/50 cursor-pointer rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5"
+      className="group bg-navy-950/50 flex cursor-pointer flex-col rounded-xl border border-[#a0a0a05d] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/5"
     >
       <div className="flex items-center justify-between">
         <code className="rounded-full border border-[#a0a0a05d] px-2.5 py-1 text-base font-medium whitespace-nowrap text-violet-400">
@@ -206,9 +246,18 @@ function SkillCard({ skill, prefix }: { skill: Skill; prefix?: string }) {
       <h3 className="mt-3 text-base font-semibold whitespace-nowrap text-white">
         {skill.title}
       </h3>
-      <p className="mt-1.5 text-base leading-relaxed text-slate-400">
+      <p className="mt-1.5 flex-1 text-base leading-relaxed text-slate-400">
         {skill.description}
       </p>
+      {showModel && (
+        <div className="mt-3 flex items-center justify-end">
+          <span
+            className={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium ${colorClass}`}
+          >
+            {skill.model}
+          </span>
+        </div>
+      )}
     </Link>
   );
 }
@@ -274,7 +323,12 @@ export default function Skills() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {slashCommands.map((f) => (
-              <SkillCard key={f.command} skill={f} prefix={prefix} />
+              <SkillCard
+                key={f.command}
+                skill={f}
+                prefix={prefix}
+                showModel={agent === "claude"}
+              />
             ))}
           </div>
         </div>
@@ -292,7 +346,11 @@ export default function Skills() {
           </div>
           <div className="grid grid-cols-1 justify-items-center gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {autoSkills.map((f) => (
-              <SkillCard key={f.command} skill={f} />
+              <SkillCard
+                key={f.command}
+                skill={f}
+                showModel={agent === "claude"}
+              />
             ))}
           </div>
         </div>
