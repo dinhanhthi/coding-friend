@@ -16,7 +16,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 | Tier     | Meaning                                                                                                                            | Count today                        |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | NONE     | Skill / agent / hook works with zero CLI involvement.                                                                              | Skills: 12 · Agents: 11 · Hooks: 7 |
-| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 12 · Agents: 1 · Hooks: 3  |
+| OPTIONAL | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 13 · Agents: 1 · Hooks: 3  |
 | REQUIRED | Cannot function without CLI.                                                                                                       | 0                                  |
 
 ## What `coding-friend-cli` Provides
@@ -30,6 +30,7 @@ Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend
 
 | Skill                                                  | Tier     | Without CLI you lose...    | Manual workaround                |
 | ------------------------------------------------------ | -------- | -------------------------- | -------------------------------- |
+| [cf-advise](/docs/skills/cf-advise/)                   | OPTIONAL | Fast indexed memory search (only the `--save` flow) | `grep -r '<query>' docs/memory/` |
 | [cf-ask](/docs/skills/cf-ask/)                         | OPTIONAL | Fast indexed memory search | `grep -r '<query>' docs/memory/` |
 | [cf-checkpoint](/docs/skills/cf-checkpoint/)           | NONE     | —                          | —                                |
 | [cf-checkpoint-from](/docs/skills/cf-checkpoint-from/) | NONE     | —                          | —                                |
