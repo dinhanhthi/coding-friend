@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.40.0 (2026-07-24)
+
+- Add `$cf-later-do` — a slash skill that works through the deferred side-tasks captured under `docs/later/` (the read/resolve side of `capture-later.sh`): it lists each item oldest-first, lets you pick one, routes the fix to `$cf-fix` (bugs) or `$cf-plan` (features), removes the file only after the fix reaches verified-done, then suggests the next item. Delete is guarded to files inside `docs/later/` and never fires on a failed or aborted fix [#337a7018](https://github.com/dinhanhthi/coding-friend/commit/337a7018)
+- Sync `$cf-advise` and the `$cf-checkpoint` skills into the CLI-requirements tables so the per-skill tier matrix stays complete [#9ebbefb9](https://github.com/dinhanhthi/coding-friend/commit/9ebbefb9)
+
 ## v0.39.0 (2026-07-23)
 
 - Add `$cf-advise` — a decision-advisory skill that interviews one question at a time to surface hidden requirements, then delivers a verdict-first recommendation with pitfalls and ranked alternatives. Advisory-only — never writes code or plans; `$cf-plan` now points to it when the decision to build isn't made yet. Flags: `--quick` (fewer questions), `--save` (persist the decision to `docs/memory/decisions/`) [#5ad1b59d](https://github.com/dinhanhthi/coding-friend/commit/5ad1b59d)
