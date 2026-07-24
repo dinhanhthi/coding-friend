@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.40.1 (2026-07-24)
+
+- `$cf-plan` fast mode (`--fast`, without `--auto`) now never writes a plan file to disk — it presents the plan inline, tracks progress via tasks, and offers to remove the plan doc on completion [#cc6472c6](https://github.com/dinhanhthi/coding-friend/commit/cc6472c6)
+- `$cf-plan` now records the plan's terminal status (`done`/`failed`) in the `README.md` frontmatter so `cf clean` can sweep only completed plans [#22752f1c](https://github.com/dinhanhthi/coding-friend/commit/22752f1c)
+- Fix orphaned agent context files: no-file modes (`--inline`, single-phase `--fast`) now delete their `docs/context/<task-id>.json` file whenever the run ends — completion, failure, or cancel — instead of keeping it for a `$cf-plan-resume` that can never happen without a plan file [#8d1001db](https://github.com/dinhanhthi/coding-friend/commit/8d1001db)
+
 ## v0.40.0 (2026-07-24)
 
 - Add `$cf-later-do` — a slash skill that works through the deferred side-tasks captured under `docs/later/` (the read/resolve side of `capture-later.sh`): it lists each item oldest-first, lets you pick one, routes the fix to `$cf-fix` (bugs) or `$cf-plan` (features), removes the file only after the fix reaches verified-done, then suggests the next item. Delete is guarded to files inside `docs/later/` and never fires on a failed or aborted fix [#337a7018](https://github.com/dinhanhthi/coding-friend/commit/337a7018)
