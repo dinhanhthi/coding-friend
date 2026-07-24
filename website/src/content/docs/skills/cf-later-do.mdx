@@ -1,0 +1,48 @@
+---
+title: "/cf-later-do"
+description: "Work through deferred side-tasks captured in docs/later/ — pick, fix, remove, repeat."
+keywords: [deferred tasks, docs/later, backlog, cf-later-do, capture-later, resolve later]
+---
+
+<ContextFootprint />
+
+<Callout type="tip" title="CLI Requirement: NONE">
+  Works without `coding-friend-cli`. Reads the `docs/later/` files directly and
+  dispatches [`/cf-fix`](/docs/skills/cf-fix/) or
+  [`/cf-plan`](/docs/skills/cf-plan/) — no CLI features are required. See [CLI
+  requirements](/docs/reference/cli-requirements/) for the full matrix.
+</Callout>
+
+The `/cf-later-do` skill closes the loop on deferred work. When execution skills like [`/cf-plan`](/docs/skills/cf-plan/), [`/cf-fix`](/docs/skills/cf-fix/), `cf-sys-debug`, [`/cf-optimize`](/docs/skills/cf-optimize/), and [`/cf-ship`](/docs/skills/cf-ship/) hit an out-of-scope problem, they record it as a Markdown stub under `docs/later/` (the **write side**, via `capture-later.sh`). `/cf-later-do` is the **read/resolve side**: it lists those stubs, lets you pick one, routes the fix to the right skill, and removes the file once the fix is verified.
+
+## Usage
+
+```bash
+/cf-later-do
+```
+
+## Workflow
+
+1. **Scan** — Reads every `docs/later/*.md`, parsing each stub's frontmatter (`date`, `source`, `slug`, `problem`, `conversation_id`), title, and body. If the folder is empty, it stops cleanly.
+2. **Pick** — Presents a numbered list, oldest-first (longest-deferred first). You choose one item, or quit.
+3. **Route** — Classifies the item by nature: bug-like items (from `cf-fix` / `cf-sys-debug`, or describing an error) go to [`/cf-fix`](/docs/skills/cf-fix/); feature/refactor items (from `cf-plan` / `cf-optimize` / `cf-ship`) go to [`/cf-plan`](/docs/skills/cf-plan/). The item's `problem` + body becomes the task description; `slug` / `conversation_id` are surfaced as human-readable references only.
+4. **Fix** — Runs the routed skill to completion in the same session.
+5. **Remove — only on verified completion** — The stub is deleted **only** when the routed skill reaches its verified-DONE state (tests/verify pass, or the plan's phases complete). Any other outcome (failed, blocked, aborted) keeps the file. Deletion is guarded to files inside `docs/later/` only.
+6. **Suggest next** — Re-scans the backlog, suggests the next item to tackle, and loops until the backlog is empty or you stop.
+
+## When to Use
+
+- Your `docs/later/` has accumulated deferred problems and you want to work through them
+- After a focused feature is shipped and you want to clear the side-tasks it spawned
+- You want a guided, one-at-a-time way to burn down technical debt captured during other workflows
+
+## Not This Skill
+
+- It does **not** capture new deferred items — that is `capture-later.sh`, invoked automatically by execution skills.
+- It does **not** restore a past session from `conversation_id` — that field is shown only as a reference pointer.
+
+## Recommended Workflow
+
+```
+/cf-later-do → (pick item) → /cf-fix or /cf-plan → (verified) → file removed → next
+```

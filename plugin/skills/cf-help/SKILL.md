@@ -15,7 +15,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob]
 created: 2026-02-17
-updated: 2026-07-05
+updated: 2026-07-24
 ---
 
 # /cf-help — Coding Friend Help
@@ -61,6 +61,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates an ASCII flow diagram for "how does X work" / flow / lifecycle questions
 - `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default).
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped: reads the plan + its context file, re-runs pending/interrupted tasks, honors `auto: true` frontmatter to continue in autopilot.
+- `/cf-later-do [item]` — ⚡⚡ — Work through deferred side-tasks in `docs/later/`: list captured items, pick one, route the fix to `/cf-fix` (bugs) or `/cf-plan` (features), remove the file only after the fix is verified-done, then suggest the next. The read/resolve side of `capture-later.sh`.
 - `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent. Unavailable agents are skipped with a warning.
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
