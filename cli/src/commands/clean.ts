@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, rmSync, statSync } from "fs";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "fs";
 import { join, relative } from "path";
 
 import { confirm, input, select } from "@inquirer/prompts";
@@ -65,6 +65,43 @@ export function matchesRange(
   }
 }
 
+// First token after `status:`, stopping at whitespace or an inline `# comment`
+// (plan templates ship the field with a trailing `# ...` note).
+const STATUS_RE = /^status:\s*([^\s#]+)/m;
+
+// Read the `status:` frontmatter value of a plan entry. A plan is either a
+// folder (`<slug>/README.md`) or a legacy single file (`<slug>.md`). Returns
+// the lowercased status, or null when missing/unreadable/not a plan file.
+export function readPlanStatus(entryPath: string, isDirectory: boolean): string | null {
+  let file: string;
+  if (isDirectory) {
+    file = join(entryPath, "README.md");
+  } else if (entryPath.endsWith(".md")) {
+    file = entryPath;
+  } else {
+    return null;
+  }
+  if (!existsSync(file)) return null;
+  try {
+    const content = readFileSync(file, "utf8");
+    // Only look inside the leading `---` frontmatter block.
+    if (!content.startsWith("---")) return null;
+    const end = content.indexOf("\n---", 3);
+    if (end === -1) return null;
+    const frontmatter = content.slice(3, end);
+    const m = STATUS_RE.exec(frontmatter);
+    return m ? m[1].trim().toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+// Gate for the `plans` directory: only completed plans are sweepable. Fails
+// safe — anything without a readable `status: done` is kept.
+export function isDonePlan(entryPath: string, isDirectory: boolean): boolean {
+  return readPlanStatus(entryPath, isDirectory) === "done";
+}
+
 function countFiles(dir: string): number {
   if (!existsSync(dir)) return 0;
   let count = 0;
@@ -84,12 +121,14 @@ function deleteMatchingEntries(
   range: DateRange,
   cutoff: Date | null,
   now: Date,
+  extraFilter?: (entryPath: string, isDirectory: boolean) => boolean,
 ): { deleted: number; failed: number } {
   if (!existsSync(dir)) return { deleted: 0, failed: 0 };
   let deleted = 0;
   let failed = 0;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const entryPath = join(dir, entry.name);
+    if (extraFilter && !extraFilter(entryPath, entry.isDirectory())) continue;
     if (matchesRange(entryPath, entry.name, range, cutoff, now)) {
       const filesBefore = entry.isDirectory() ? countFiles(entryPath) : 1;
       try {
@@ -182,9 +221,15 @@ export async function cleanCommand(): Promise<void> {
     const { range, cutoff } = await promptDateRange();
 
     const isMemory = entry.key === "memory";
-    const message = isMemory
-      ? `Delete matching contents of ${relPath}/? (includes SQLite databases — stop memory daemon first if running)`
-      : `Delete matching contents of ${relPath}/?`;
+    const isPlans = entry.key === "plans";
+    let message: string;
+    if (isMemory) {
+      message = `Delete matching contents of ${relPath}/? (includes SQLite databases — stop memory daemon first if running)`;
+    } else if (isPlans) {
+      message = `Delete matching plans in ${relPath}/? (only plans with frontmatter status: done are removed — in-progress/failed plans are kept)`;
+    } else {
+      message = `Delete matching contents of ${relPath}/?`;
+    }
 
     const ok = await confirm({ message, default: false });
 
@@ -195,6 +240,7 @@ export async function cleanCommand(): Promise<void> {
         range,
         cutoff,
         now,
+        isPlans ? isDonePlan : undefined,
       );
       summary.push({ key: entry.key, deleted });
       const failNote = failed > 0 ? `, ${failed} failed` : "";

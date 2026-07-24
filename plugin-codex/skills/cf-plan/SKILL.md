@@ -198,6 +198,7 @@ Only when `--auto`: the AUTOPILOT CONTRACT block lives in `${PLUGIN_ROOT}/skills
 ---
 slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
 auto: false # set true when created with --auto
+status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Set at creation; flipped to done/failed at terminal completion (see modes/execute.md "Plan done").
 ---
 
 # Plan: <title>
@@ -268,6 +269,7 @@ After implementation: `$cf-review` → `$cf-commit`
 ---
 slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
 auto: false # set true when created with --auto
+status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Frontmatter is the authority; the body **Status:** line mirrors it for humans (see modes/execute.md "Plan done").
 ---
 
 # Plan: <title>
