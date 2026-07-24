@@ -89,6 +89,12 @@ const slashCommandMeta: SkillMeta[] = [
       "Answer questions about Coding Friend — skills, agents, workflows. Also auto-invoked when you ask naturally.",
   },
   {
+    command: "/cf-later-do",
+    title: "Later Do",
+    description:
+      "Work through deferred docs/later tasks — pick one, route the fix to /cf-fix or /cf-plan, remove it once verified, then suggest the next",
+  },
+  {
     command: "/cf-learn",
     title: "Learn",
     description: "Extract human learning docs from vibe coding sessions",

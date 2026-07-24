@@ -127,6 +127,14 @@ export const docsNavigation: NavSection[] = [
         temporal: temporalOf("skills/cf-help"),
       },
       {
+        title: "/cf-later-do",
+        slug: "skills/cf-later-do",
+        manualOnly: true,
+        tier: tierOf("skills/cf-later-do"),
+        beta: betaOf("skills/cf-later-do"),
+        temporal: temporalOf("skills/cf-later-do"),
+      },
+      {
         title: "/cf-learn",
         slug: "skills/cf-learn",
         tier: tierOf("skills/cf-learn"),

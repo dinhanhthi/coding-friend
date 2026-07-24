@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T07:31:38.172Z",
+  "generatedAt": "2026-07-24T10:17:41.543Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -18,12 +18,12 @@
     }
   },
   "bootstrap": {
-    "tokens": 2291,
+    "tokens": 2298,
     "tier": "medium"
   },
   "skills": {
     "cf-advise": {
-      "tokens": 2800,
+      "tokens": 2807,
       "tier": "medium",
       "type": "slash",
       "model": "fable",
@@ -83,12 +83,22 @@
       "updated": "2026-07-04"
     },
     "cf-help": {
-      "tokens": 3342,
+      "tokens": 3436,
       "tier": "high",
       "type": "slash",
       "model": "haiku",
       "created": "2026-02-17",
-      "updated": "2026-07-05"
+      "updated": "2026-07-24",
+      "temporal": "updated"
+    },
+    "cf-later-do": {
+      "tokens": 1722,
+      "tier": "medium",
+      "type": "slash",
+      "model": "inherit",
+      "created": "2026-07-24",
+      "updated": "2026-07-24",
+      "temporal": "new"
     },
     "cf-learn": {
       "tokens": 2693,

@@ -23,6 +23,7 @@ const slashCommandMeta: Record<string, string> = {
   "cf-help": "Answer questions about Coding Friend",
   "cf-plan": "Brainstorm and plan",
   "cf-plan-resume": "Resume a saved plan from where it stopped",
+  "cf-later-do": "Work through deferred docs/later tasks",
   "cf-checkpoint": "Capture a concise conversation checkpoint",
   "cf-checkpoint-from": "Load a saved checkpoint into a fresh conversation",
   "cf-review": "Multi-layer code review; optional headless external reviewers",
@@ -74,6 +75,11 @@ const overviewSlashMeta: Record<
   "cf-plan": {
     description: "Brainstorm and create structured implementation plans",
     triggeredBy: "slash + auto",
+  },
+  "cf-later-do": {
+    description:
+      "Work through deferred side-tasks in docs/later/ — pick one, route the fix to /cf-fix or /cf-plan, remove the file once verified, then suggest the next",
+    triggeredBy: "slash",
   },
   "cf-checkpoint": {
     description:

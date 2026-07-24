@@ -109,7 +109,7 @@ Coding Friend ships as **two independent npm packages**:
 
 | Tier         | Meaning                                                                                                                            | Count today                        |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 12 · Agents: 11 · Hooks: 7 |
+| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 13 · Agents: 11 · Hooks: 7 |
 | **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 13 · Agents: 1 · Hooks: 3  |
 | **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                  |
 
@@ -139,6 +139,7 @@ For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs
 | `/cf-optimize [target]`              | Structured optimization with measurement                                                                                                                                                                              |
 | `/cf-plan [task]`                    | Brainstorm and write implementation plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase); `--gui` also generates the human overview doc (off by default)                             |
 | `/cf-plan-resume <plan>`             | Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped; honors `auto: true` frontmatter to continue in autopilot                                                           |
+| `/cf-later-do [item]`                | Work through deferred side-tasks in `docs/later/` — pick one, route the fix to `/cf-fix` or `/cf-plan`, remove the file once verified, then suggest the next                                                          |
 | `/cf-checkpoint [additional-prompt]` | Capture a concise conversation checkpoint (decisions, breaking changes, next steps) → docs/context/checkpoints/                                                                                                       |
 | `/cf-checkpoint-from [slug]`         | Load a saved checkpoint into a fresh conversation to continue with prior context                                                                                                                                      |
 | `/cf-remember [topic]`               | Capture project knowledge                                                                                                                                                                                             |
