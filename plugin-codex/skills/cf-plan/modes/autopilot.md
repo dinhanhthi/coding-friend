@@ -33,7 +33,7 @@ EOF
    - NEVER use `--no-verify`. NEVER include AI/Claude co-author lines (project rule #6).
    - If `git commit` fails (pre-commit hook), do NOT amend — fix the issue, re-stage, create a NEW commit. If repeated failure → STOP and surface to user.
 
-6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" in the Big plan phase sync section of `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md`. Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
+6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" in the Big plan phase sync section of `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md`. **If this was the final phase** (all task/phase rows are now ✅ DONE), also apply the "Plan done (frontmatter `status:`)" flip from execute.md now — set frontmatter `status: done` (and body `**Status:** ✅ DONE` for big plans). Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
 
 **Stop conditions (only these end autopilot)**:
 

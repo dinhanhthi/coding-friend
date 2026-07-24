@@ -8,6 +8,8 @@ import {
   olderThanDays,
   matchesRange,
   getEffectiveDate,
+  readPlanStatus,
+  isDonePlan,
 } from "../clean.js";
 
 // ─── parseDateFromName ─────────────────────────────────────────────────────
@@ -198,6 +200,107 @@ describe("getEffectiveDate", () => {
   it("returns epoch (Date(0)) for non-existent path with no date prefix", () => {
     const d = getEffectiveDate("/does/not/exist/file.md", "no-date.md");
     expect(d.getTime()).toBe(0);
+  });
+});
+
+// ─── readPlanStatus / isDonePlan ───────────────────────────────────────────
+
+describe("readPlanStatus / isDonePlan", () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = mkdtempSync(join(tmpdir(), "cf-clean-status-"));
+  });
+
+  const writePlanFolder = (slug: string, frontmatter: string) => {
+    const folder = join(testDir, slug);
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, "README.md"), frontmatter);
+    return folder;
+  };
+
+  it("reads status from a plan folder's README.md frontmatter", () => {
+    const folder = writePlanFolder(
+      "2024-06-01-done-plan",
+      "---\nslug: 2024-06-01-done-plan\nstatus: done\n---\n\n# Plan\n",
+    );
+    expect(readPlanStatus(folder, true)).toBe("done");
+    expect(isDonePlan(folder, true)).toBe(true);
+  });
+
+  it("reads status from a legacy single .md file", () => {
+    const file = join(testDir, "2024-06-01-legacy.md");
+    writeFileSync(file, "---\nstatus: done\n---\n\n# Plan\n");
+    expect(readPlanStatus(file, false)).toBe("done");
+    expect(isDonePlan(file, false)).toBe(true);
+  });
+
+  it("ignores a trailing inline # comment on the status line", () => {
+    const folder = writePlanFolder(
+      "2024-06-01-comment",
+      "---\nstatus: done # machine-readable: in-progress | done | failed\n---\n\n# Plan\n",
+    );
+    expect(readPlanStatus(folder, true)).toBe("done");
+    expect(isDonePlan(folder, true)).toBe(true);
+  });
+
+  it("lowercase-normalizes the status value", () => {
+    const folder = writePlanFolder(
+      "2024-06-01-upper",
+      "---\nstatus: DONE\n---\n\n# Plan\n",
+    );
+    expect(readPlanStatus(folder, true)).toBe("done");
+    expect(isDonePlan(folder, true)).toBe(true);
+  });
+
+  it("is not done for in-progress or failed plans", () => {
+    const inProgress = writePlanFolder(
+      "2024-06-01-wip",
+      "---\nstatus: in-progress\n---\n\n# Plan\n",
+    );
+    const failed = writePlanFolder(
+      "2024-06-01-failed",
+      "---\nstatus: failed\n---\n\n# Plan\n",
+    );
+    expect(isDonePlan(inProgress, true)).toBe(false);
+    expect(isDonePlan(failed, true)).toBe(false);
+  });
+
+  it("fails safe (not done) when status frontmatter is missing", () => {
+    const folder = writePlanFolder(
+      "2024-06-01-nostatus",
+      "---\nslug: 2024-06-01-nostatus\nauto: false\n---\n\n# Plan\n",
+    );
+    expect(readPlanStatus(folder, true)).toBeNull();
+    expect(isDonePlan(folder, true)).toBe(false);
+  });
+
+  it("fails safe when there is no frontmatter block at all", () => {
+    const folder = writePlanFolder("2024-06-01-plain", "# Plan\n\nstatus: done\n");
+    expect(readPlanStatus(folder, true)).toBeNull();
+    expect(isDonePlan(folder, true)).toBe(false);
+  });
+
+  it("fails safe when README.md is missing from the folder", () => {
+    const folder = join(testDir, "2024-06-01-empty");
+    mkdirSync(folder, { recursive: true });
+    expect(readPlanStatus(folder, true)).toBeNull();
+    expect(isDonePlan(folder, true)).toBe(false);
+  });
+
+  it("ignores a status: line outside the frontmatter block", () => {
+    const folder = writePlanFolder(
+      "2024-06-01-body",
+      "---\nstatus: in-progress\n---\n\n# Plan\n\nstatus: done\n",
+    );
+    expect(readPlanStatus(folder, true)).toBe("in-progress");
+    expect(isDonePlan(folder, true)).toBe(false);
+  });
+
+  it("returns null for non-md files", () => {
+    const file = join(testDir, "notes.txt");
+    writeFileSync(file, "---\nstatus: done\n---\n");
+    expect(readPlanStatus(file, false)).toBeNull();
   });
 });
 
