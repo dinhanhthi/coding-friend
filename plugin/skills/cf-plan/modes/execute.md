@@ -44,6 +44,8 @@ Parse the **last non-empty line** for the result signal — strict regex `^\[CF-
 
 **Cleanup**: Delete the context file ONLY after all phases are `✅ DONE`. On session interrupt, quota limit, or user Ctrl+C — keep the context file so `/cf-plan-resume` can read it later.
 
+> **No-file mode exception (`--inline` / single-phase `--fast`)** — these modes write no plan file, so `/cf-plan-resume` can never resume them: there is nothing to keep the context file for. Delete the context file when the run ends **for any reason** — completion, failure, or user cancel — mirroring cf-fix/cf-tdd. Never leave it for a resume that cannot happen.
+
 **Capturing out-of-scope side-effects:** If, while executing a phase, an unrelated problem surfaces that is non-trivial (fixing it would expand beyond the approved plan), do NOT fix it now and do NOT silently grow scope. Record it for later, then continue the plan:
 
 ```bash
