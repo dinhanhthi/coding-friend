@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.38.3 (2026-07-24)
+
+- `cf init` onboarding message and the generated Codex `AGENTS.md` skill list now include the new `/cf-later-do` command [#337a7018](https://github.com/dinhanhthi/coding-friend/commit/337a7018)
+
 ## v1.38.2 (2026-07-04)
 
 - `cf init` onboarding message and the generated Codex `AGENTS.md` skill list now include the new `/cf-checkpoint` and `/cf-checkpoint-from` commands [#31e1b413](https://github.com/dinhanhthi/coding-friend/commit/31e1b413)
