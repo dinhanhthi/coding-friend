@@ -82,6 +82,13 @@ Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `c
 - **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
 - **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
 
+<Callout type="info">
+  **Using [ZCode](https://zcode.z.ai/)?** If the plugin doesn't update there,
+  uninstall just the plugin (keep the marketplace) via `/plugin` → Manage
+  plugins → `coding-friend` → Uninstall, then reinstall it from the same
+  marketplace.
+</Callout>
+
 ## Custom config directory (`CLAUDE_CONFIG_DIR`)
 
 Claude Code lets you override its global config directory (default `~/.claude`) with the [`CLAUDE_CONFIG_DIR`](https://code.claude.com/docs/en/env-vars) environment variable — useful for running multiple accounts side by side. Coding Friend honors it everywhere: the `cf` CLI, the plugin hooks, and skill scripts all read/write under the directory you set instead of `~/.claude`.
