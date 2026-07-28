@@ -99,14 +99,14 @@ export default function InstallSection() {
           </div>
 
           <div className="flex justify-center">
-            <div className="bg-navy-950 inline-flex rounded-lg border border-[#a0a0a01c] p-1">
+            <div className="inline-flex rounded-full border border-[#a0a0a05d] p-1">
               {HOSTS.map((h) => (
                 <button
                   key={h.id}
                   onClick={() => setHostId(h.id)}
-                  className={`cursor-pointer rounded-md px-4 py-2 text-base font-medium transition-colors ${
+                  className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
                     hostId === h.id
-                      ? "bg-violet-500 text-white"
+                      ? "bg-violet-500/20 text-violet-300"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
