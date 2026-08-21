@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const {
@@ -210,6 +211,41 @@ test("renders Codex-native plan and session alternatives", () => {
   assert.match(session, /codex resume/);
   assert.match(session, /codex fork/);
   assert.doesNotMatch(session, /Claude session implementation/);
+});
+
+test("rewrites cf-plan --model spawn and cf-help for Codex", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const planSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-plan/SKILL.md"),
+    "utf8",
+  );
+  const plan = renderCodexFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    planSource,
+  );
+  const step3Start = plan.indexOf("### Step 3:");
+  const step3End = plan.indexOf("### Step 4:");
+  assert.notEqual(step3Start, -1);
+  assert.notEqual(step3End, -1);
+  const step3 = plan.slice(step3Start, step3End);
+  assert.match(step3, /explicit spawn model/);
+  assert.doesNotMatch(step3, /subagent_type|context: fork|model: <alias>/);
+  assert.match(plan, /`--model` vs resolved fast mode/);
+
+  const helpSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-help/SKILL.md"),
+    "utf8",
+  );
+  const help = renderCodexFile(
+    "/repo/plugin/skills/cf-help/SKILL.md",
+    helpSource,
+  );
+  assert.doesNotMatch(help, /`--model <alias>`/);
+  assert.match(help, /`--model <name>`/);
+  assert.match(help, /gpt-5\.5/);
 });
 
 test("creates stamped Codex plugin manifest", () => {
