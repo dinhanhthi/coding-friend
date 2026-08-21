@@ -21,6 +21,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 /cf-plan --auto [task description]    # Autopilot: review + fix + commit per phase, no prompts
 /cf-plan --add-tests [task description]  # Implement with TDD (alias: --tdd)
 /cf-plan --gui [task description]     # Also generate the human overview doc for this run (alias: --human)
+/cf-plan --model opus [task description]  # Pin cf-planner model at brainstorm (alias also --model=opus)
 ```
 
 <Callout type="info" title="Resuming a plan">
@@ -34,6 +35,7 @@ The `/cf-plan` skill helps you design solutions before writing code. It clarifie
 - **Hard** (`--hard`) — Extra discovery round (risk & rollback), deeper blast-radius exploration, rollback strategy per task, review gates during implementation. Best for breaking changes, migrations, multi-module refactors
 - **Autopilot** (`--auto`) — Orthogonal flag (combines with fast/hard/normal). After you approve the plan once, every phase runs end-to-end: dispatch tasks → auto [`/cf-review`](/docs/skills/cf-review/) → if Critical or Important findings, auto-dispatch a fix task → re-review (max 2 review rounds) → single conventional commit per phase → continue to the next phase, **never** asking for confirmation between phases. Suggestions (💡) are logged in the commit body but don't block. The plan file embeds a `## AUTOPILOT` contract section + `auto: true` frontmatter so the workflow survives long conversations where Claude's context may evict the skill. Resuming with [`/cf-plan-resume`](/docs/skills/cf-plan-resume/) honors `auto: true` and continues in autopilot mode automatically.
 - **GUI overview** (`--gui` / `--human`) — Also generate the human-readable overview doc for this run (off by default — it costs extra tokens). Does not affect the agent plan files. Overrides fast mode, which otherwise skips the overview.
+- **Model** (`--model <alias>`) — Orthogonal, planner-only: pin the model for **cf-planner** at brainstorm. Does not affect cf-explorer, cf-implementer, or cf-plan itself. Skipped when fast mode is active (including auto-detect); still works with `--hard`. Valid aliases: `opus` / `sonnet` / `haiku` / `fable`. Invalid values warn and continue.
 
 If no flag is given, the skill auto-detects the appropriate mode based on task signals (e.g. "just add a command like X" → fast, "rewrite the auth pipeline" → hard). Auto-detected modes are confirmed with you before proceeding. `--auto` is never auto-detected — it must be opted in explicitly.
 
@@ -75,6 +77,9 @@ Autopilot only stops when one of these fires (otherwise it keeps going):
 
 # Combine: fast planning + autopilot execution
 /cf-plan --fast --auto Add a hello.txt with a greeting
+
+# Pin cf-planner to opus for brainstorming
+/cf-plan --model opus Add a healthz endpoint
 ```
 
 The skill will:

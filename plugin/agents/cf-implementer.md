@@ -12,9 +12,9 @@ description: >
   code directly without tests; use `--add-tests` in the prompt for TDD (RED→GREEN→REFACTOR).
   Do NOT use this agent for single-file trivial changes, documentation, or config edits —
   use inline implementation (cf-tdd skill) for small changes instead.
-model: sonnet
+model: inherit
 created: 2026-02-17
-updated: 2026-06-16
+updated: 2026-08-21
 ---
 
 # Implementer Agent
