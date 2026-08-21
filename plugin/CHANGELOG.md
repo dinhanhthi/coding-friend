@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.40.2 (2026-08-21)
+
+- `/cf-plan`, `cf-planner`, and `cf-implementer` now inherit the session's active model instead of hardcoding `opus`/`sonnet`; `/cf-plan --model <alias>` pins `cf-planner` at brainstorm (`opus`/`sonnet`/`haiku`/`fable` on Claude; a Codex model name such as `gpt-5.5` on Codex). Fast mode skips the flag. [#da3623e5](https://github.com/dinhanhthi/coding-friend/commit/da3623e5)
+
 ## v0.40.1 (2026-07-24)
 
 - `/cf-plan` fast mode (`--fast`, without `--auto`) now never writes a plan file to disk — it presents the plan inline, tracks progress via tasks, and offers to remove the plan doc on completion [#cc6472c6](https://github.com/dinhanhthi/coding-friend/commit/cc6472c6)
