@@ -224,7 +224,7 @@ Exit codes:
 | `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                              |
 | `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists                    |
 | `cf-explorer`          | haiku   | Codebase exploration + writes structured context file for downstream agents  |
-| `cf-implementer`       | opus    | TDD implementation with context file handoff, result signals, and auto-retry |
+| `cf-implementer`       | inherit | TDD implementation with context file handoff, result signals, and auto-retry |
 | `cf-planner`           | inherit | Task decomposition (parallel/sequential phases) + writes context file        |
 | `cf-writer`            | haiku   | Lightweight document writing and markdown generation                         |
 | `cf-writer-deep`       | sonnet  | Deep reasoning for nuanced technical documentation                           |

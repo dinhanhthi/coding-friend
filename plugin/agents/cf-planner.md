@@ -12,9 +12,9 @@ description: >
   cons, effort estimates, risk levels, and a recommended path. It does NOT implement — only
   plans. Do NOT use this agent for simple questions, single-file changes, or tasks that don't
   need upfront planning.
-model: opus
+model: inherit
 created: 2026-02-17
-updated: 2026-04-05
+updated: 2026-08-21
 ---
 
 # Planner Agent

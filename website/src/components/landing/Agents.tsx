@@ -27,6 +27,8 @@ const modelDisplayName: Record<string, string> = {
   haiku: "Haiku",
   sonnet: "Sonnet",
   opus: "Opus",
+  fable: "Fable",
+  inherit: "Inherit",
 };
 
 const agentMeta: AgentMeta[] = [
@@ -96,6 +98,8 @@ const modelColors: Record<string, string> = {
   Haiku: "text-emerald-400 border-emerald-400/30",
   Sonnet: "text-sky-400 border-sky-400/30",
   Opus: "text-violet-400 border-violet-400/30",
+  Fable: "text-amber-400 border-amber-400/30",
+  Inherit: "text-slate-400 border-slate-400/30",
 };
 
 function AgentCard({ agent }: { agent: Agent }) {

@@ -205,6 +205,13 @@ function renderCodexPlanSkill(input) {
     .replace(
       /Spawn one cf-implementer \*\*per task\*\* with `run_in_background: true` — all in a \*\*single message block\*\*\./g,
       "Ask Codex to spawn one `cf-implementer` custom agent per task in parallel, wait for all agents, and collect each result.",
+    )
+    .replace(
+      / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
+      [
+        "",
+        '   Accept both `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token, e.g. `--model=gpt-5.5`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive "strip the flag" would leave the value behind (e.g. leftover `gpt-5.5` would leak into the task description and get passed to cf-explorer). Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex; pass a Codex model name such as `gpt-5.5`. Do not accept `inherit`. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If **fast mode is currently active** — `--fast`/`--quick`, **OR fast auto-detected in steps 2–3** — print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Gate on "fast is currently active", NOT on whether the literal `--fast` token is present (the auto-detect case is the easy-to-miss one). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid Codex model name was parsed, spawn `cf-planner` with that explicit model (an explicit spawn model takes precedence over `agents.default_subagent_model`). If no `--model` was given, or the value was invalid/skipped (fast mode), omit an explicit spawn model so `cf-planner` inherits the session model.',
+      ].join("\n"),
     );
 }
 

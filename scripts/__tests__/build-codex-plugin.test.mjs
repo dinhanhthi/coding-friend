@@ -189,6 +189,20 @@ test("renders Codex-native plan and session alternatives", () => {
   );
   assert.doesNotMatch(plan, /TaskCreate|AskUserQuestion|run_in_background/);
 
+  const modelFlag = renderCodexFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    [
+      "   1d. **`--model` flag** <!-- cf-plan-model-flag -->",
+      "   Accept both `--model <alias>` (two tokens, e.g. `--model opus`) AND `--model=<alias>` (one token, e.g. `--model=sonnet`). Valid aliases: `opus`, `sonnet`, `haiku`, `fable` — the Agent tool `model` param enum.",
+      "2. **Auto-detect** — scan the task for signals (need 2+ to trigger):",
+    ].join("\n"),
+  );
+  assert.match(modelFlag, /`--model`/);
+  assert.match(modelFlag, /gpt-5\.5/);
+  assert.match(modelFlag, /2\. \*\*Auto-detect\*\*/);
+  assert.doesNotMatch(modelFlag, /Agent tool/);
+  assert.doesNotMatch(modelFlag, /opus|sonnet|haiku|fable/);
+
   const session = renderCodexFile(
     "/repo/plugin/skills/cf-session/SKILL.md",
     "Claude session implementation",
