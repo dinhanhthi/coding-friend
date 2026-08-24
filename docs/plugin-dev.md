@@ -23,9 +23,10 @@ Each sub-project has its own README with more details, check section Further Rea
 
 ## Local dev mode — run the plugin from this repo
 
-The `cf` CLI is **shared by both hosts**: run `cd cli && npm run build` once (it is
-already `npm link`-ed), or keep `npm run dev` running so it rebuilds on save. The two
-hosts are independent (`~/.claude` vs `~/.codex`) — you can run both at the same time.
+The `cf` CLI is **shared by all hosts**: run `cd cli && npm run build` once (it is
+already `npm link`-ed), or keep `npm run dev` running so it rebuilds on save. The
+hosts are independent (`~/.claude` vs `~/.codex` vs `~/.omp`) — you can run them at
+the same time.
 
 Read more: [Plugin README](plugin/README.md).
 
@@ -105,6 +106,15 @@ for you. A few non-obvious points:
   local path with `codex plugin marketplace add /path/to/coding-friend`.
 - Sandbox option: prefix every `codex` command with `CODEX_HOME=/tmp/cf-codex-dev` to
   avoid touching `~/.codex` (use the same value for **all** `codex` commands in the session).
+
+### omp notes
+
+omp is a third host _(beta)_, independent of `~/.claude` and `~/.codex`. It is
+**bridge mode** — no `plugin-omp/` artifact. [`plugin/omp/extension.ts`](../plugin/omp/extension.ts)
+shells [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`; skills inherit from
+`~/.claude`; agents land in `~/.omp/agent/agents/`. `cf dev` is Claude-only.
+
+Local-dev setup, inner loop, and gotchas: [omp-dev.md](omp-dev.md).
 
 ## Codex artifact
 

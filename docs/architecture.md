@@ -2,7 +2,7 @@
 
 ## Overview
 
-coding-friend is a lean toolkit for Claude Code that enforces disciplined engineering workflows. It solves two problems specific to vibe coding:
+coding-friend is a lean toolkit for Claude Code (default), Codex CLI _(beta)_, and [omp](https://omp.sh/) (oh-my-pi) _(beta)_ that enforces disciplined engineering workflows. It solves two problems specific to vibe coding:
 
 1. **Project knowledge loss** — After many sessions, no one remembers logic/conventions/decisions
 2. **Human learning gap** — AI writes code, human approves without learning anything
@@ -13,7 +13,7 @@ coding-friend is a lean toolkit for Claude Code that enforces disciplined engine
 
 Coding Friend is split into **two independent npm packages** with independent release cycles:
 
-- **Plugin (`coding-friend`)** — Skills, agents, hooks, and lib scripts (`load-custom-guide.sh`, `cf-paths.sh`) installed into Claude Code via the marketplace. All workflow logic lives here.
+- **Plugin (`coding-friend`)** — Skills, agents, hooks, and lib scripts (`load-custom-guide.sh`, `cf-paths.sh`) installed into Claude Code via the marketplace (Codex via generated `plugin-codex/`; omp via the `plugin/omp/` bridge). All workflow logic lives here.
 - **CLI (`coding-friend-cli`)** — Ships the `coding-friend-memory` MCP server (SQLite + markdown index for fast recall), the `coding-friend-learn-host` MCP server (HTTP doc viewer), and workspace utilities (`cf init`, `cf install`, `cf statusline`, etc.).
 
 **Communication boundary.** Skills never call the `cf` binary directly. The plugin reaches the CLI's services through MCP tools (`memory_search`, `memory_store`, etc.) which are advertised by the runtime when the CLI is installed. When those tools are absent, skills fall back to grep + direct file writes. This boundary keeps the plugin functional standalone and makes the CLI a strict enhancement, not a prerequisite.
@@ -73,19 +73,22 @@ coding-friend/
 │   │   ├── cf-sys-debug/            # 4-phase debugging (auto-invoked)
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
-│   └── agents/
-│       ├── cf-reviewer.md           # Review orchestrator (dispatches specialists)
-│       ├── cf-reviewer-plan.md      # Plan alignment specialist (sonnet)
-│       ├── cf-reviewer-security.md  # Security specialist (sonnet)
-│       ├── cf-reviewer-quality.md   # Code quality + slop detection (haiku)
-│       ├── cf-reviewer-tests.md     # Test coverage specialist (haiku)
-│       ├── cf-reviewer-rules.md     # Project rules compliance (haiku)
-│       ├── cf-reviewer-reducer.md   # Dedup + severity ranking (haiku)
-│       ├── cf-explorer.md           # Codebase explorer (writes context files)
-│       ├── cf-implementer.md        # TDD implementation subagent
-│       ├── cf-planner.md            # Exploration + task breakdown
-│       ├── cf-writer.md             # Lightweight doc writer
-│       └── cf-writer-deep.md        # Deep reasoning doc writer
+│   ├── agents/
+│   │   ├── cf-reviewer.md           # Review orchestrator (dispatches specialists)
+│   │   ├── cf-reviewer-plan.md      # Plan alignment specialist (sonnet)
+│   │   ├── cf-reviewer-security.md  # Security specialist (sonnet)
+│   │   ├── cf-reviewer-quality.md   # Code quality + slop detection (haiku)
+│   │   ├── cf-reviewer-tests.md     # Test coverage specialist (haiku)
+│   │   ├── cf-reviewer-rules.md     # Project rules compliance (haiku)
+│   │   ├── cf-reviewer-reducer.md   # Dedup + severity ranking (haiku)
+│   │   ├── cf-explorer.md           # Codebase explorer (writes context files)
+│   │   ├── cf-implementer.md        # TDD implementation subagent
+│   │   ├── cf-planner.md            # Exploration + task breakdown
+│   │   ├── cf-writer.md             # Lightweight doc writer
+│   │   └── cf-writer-deep.md        # Deep reasoning doc writer
+│   │
+│   └── omp/                     # omp bridge (not a Claude marketplace plugin)
+│       └── extension.ts         # spawn plugin/hooks/*.sh with CF_HOST=omp
 │
 ├── cli/                         # CLI tool (published as coding-friend-cli)
 │   ├── src/                     # CLI source code
@@ -272,6 +275,10 @@ Agents pass structured context to each other via a JSON context file at `{docsDi
 - `plugin/agents/` — subagent definitions
 
 Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/` are excluded.
+
+### omp bridge
+
+[omp](https://omp.sh/) (oh-my-pi) is a third host _(beta)_, opt-in with `--agent omp` / `--omp`. It is **not** a Claude marketplace plugin. [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) shells out to shared [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`. Agents are deployed to `~/.omp/agent/agents/`; skills inherit from `~/.claude`. Local-dev, install layout, and gotchas: [omp-dev.md](./omp-dev.md).
 
 ---
 
