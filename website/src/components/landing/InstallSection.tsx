@@ -14,7 +14,7 @@ const MANAGERS = [
 const HOSTS = [
   { id: "claude", label: "Claude", suffix: "" },
   { id: "codex", label: "Codex", suffix: " --agent codex" },
-  { id: "omp", label: "omp", suffix: " --agent omp" },
+  { id: "omp", label: "oh-my-pi", suffix: " --agent omp" },
 ] as const;
 
 type ManagerId = (typeof MANAGERS)[number]["id"];
@@ -105,7 +105,7 @@ export default function InstallSection() {
                 <button
                   key={h.id}
                   onClick={() => setHostId(h.id)}
-                  className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+                  className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                     hostId === h.id
                       ? "bg-violet-500/20 text-violet-300"
                       : "text-slate-400 hover:text-slate-200"
