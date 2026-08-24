@@ -1,11 +1,41 @@
 import { runWithStderr } from "./exec.js";
-import { resolvePath } from "./paths.js";
+import type { Host } from "./host.js";
 import { log } from "./log.js";
+import {
+  readOmpMcpJson,
+  removeOmpMcpEntry,
+  writeOmpMcpEntry,
+} from "./omp-config.js";
+import { resolvePath } from "./paths.js";
 
 const MCP_NAME = "coding-friend-learn";
 
-export function registerLearnMcp(learnDir: string): boolean {
+function hasOmpLearnEntry(): boolean {
+  const data = readOmpMcpJson();
+  return data !== null && MCP_NAME in data.mcpServers;
+}
+
+export function registerLearnMcp(
+  learnDir: string,
+  host: Host = "claude",
+): boolean {
   const resolved = resolvePath(learnDir);
+
+  if (host === "omp") {
+    try {
+      writeOmpMcpEntry(MCP_NAME, {
+        command: "npx",
+        args: ["-y", "coding-friend-cli", "mcp-serve-learn", resolved],
+      });
+      return true;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not register MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  // "codex" falls through to the Claude CLI — no dedicated Codex learn MCP writer.
   const result = runWithStderr("claude", [
     "mcp",
     "add",
@@ -33,12 +63,25 @@ export function registerLearnMcp(learnDir: string): boolean {
   return true;
 }
 
-export function isLearnMcpRegistered(): boolean {
+export function isLearnMcpRegistered(host: Host = "claude"): boolean {
+  if (host === "omp") return hasOmpLearnEntry();
+
   const result = runWithStderr("claude", ["mcp", "get", MCP_NAME]);
   return result.exitCode === 0;
 }
 
-export function unregisterLearnMcp(): boolean {
+export function unregisterLearnMcp(host: Host = "claude"): boolean {
+  if (host === "omp") {
+    try {
+      removeOmpMcpEntry(MCP_NAME);
+      return !hasOmpLearnEntry();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not unregister MCP: ${detail}`);
+      return false;
+    }
+  }
+
   const result = runWithStderr("claude", [
     "mcp",
     "remove",

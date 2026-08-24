@@ -21,15 +21,16 @@ vi.mock("../omp-config.js", () => ({
 import { runWithStderr } from "../exec.js";
 import { log } from "../log.js";
 import {
-  registerMemoryMcp,
-  isMemoryMcpRegistered,
-  unregisterMemoryMcp,
-} from "../memory-mcp-register.js";
+  registerLearnMcp,
+  isLearnMcpRegistered,
+  unregisterLearnMcp,
+} from "../learn-prompts.js";
 import {
   readOmpMcpJson,
   removeOmpMcpEntry,
   writeOmpMcpEntry,
 } from "../omp-config.js";
+import { resolvePath } from "../paths.js";
 
 const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockLog = vi.mocked(log);
@@ -37,33 +38,39 @@ const mockWriteOmpMcpEntry = vi.mocked(writeOmpMcpEntry);
 const mockReadOmpMcpJson = vi.mocked(readOmpMcpJson);
 const mockRemoveOmpMcpEntry = vi.mocked(removeOmpMcpEntry);
 
-const OMP_MEMORY_SERVER = {
+const LEARN_DIR = "/tmp/learn";
+const RESOLVED_LEARN_DIR = resolvePath(LEARN_DIR);
+
+const CLAUDE_ADD_ARGS = [
+  "mcp",
+  "add",
+  "--scope",
+  "user",
+  "coding-friend-learn",
+  "--",
+  "npx",
+  "-y",
+  "coding-friend-cli",
+  "mcp-serve-learn",
+  RESOLVED_LEARN_DIR,
+];
+
+const OMP_LEARN_SERVER = {
   command: "npx",
-  args: ["-y", "coding-friend-cli", "mcp-serve"],
+  args: ["-y", "coding-friend-cli", "mcp-serve-learn", RESOLVED_LEARN_DIR],
 };
 
 beforeEach(() => {
   vi.resetAllMocks();
 });
 
-describe("registerMemoryMcp", () => {
-  it("invokes claude with the exact expected args (no trailing path)", () => {
+describe("registerLearnMcp", () => {
+  it("invokes claude with the exact expected args including resolved learn dir", () => {
     mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    const result = registerMemoryMcp();
+    const result = registerLearnMcp(LEARN_DIR);
 
-    expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
-      "mcp",
-      "add",
-      "--scope",
-      "user",
-      "coding-friend-memory",
-      "--",
-      "npx",
-      "-y",
-      "coding-friend-cli",
-      "mcp-serve",
-    ]);
+    expect(mockRunWithStderr).toHaveBeenCalledWith("claude", CLAUDE_ADD_ARGS);
     expect(result).toBe(true);
   });
 
@@ -74,12 +81,12 @@ describe("registerMemoryMcp", () => {
       exitCode: 1,
     });
 
-    const result = registerMemoryMcp();
+    const result = registerLearnMcp(LEARN_DIR);
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.stringContaining(
-        "claude mcp add --scope user coding-friend-memory -- npx -y coding-friend-cli mcp-serve",
+        `claude mcp add --scope user coding-friend-learn -- npx -y coding-friend-cli mcp-serve-learn ${RESOLVED_LEARN_DIR}`,
       ),
     );
   });
@@ -91,7 +98,7 @@ describe("registerMemoryMcp", () => {
       exitCode: 127,
     });
 
-    const result = registerMemoryMcp();
+    const result = registerLearnMcp(LEARN_DIR);
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
@@ -106,7 +113,7 @@ describe("registerMemoryMcp", () => {
       exitCode: 1,
     });
 
-    const result = registerMemoryMcp();
+    const result = registerLearnMcp(LEARN_DIR);
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
@@ -117,30 +124,19 @@ describe("registerMemoryMcp", () => {
   it("invokes claude CLI when host is explicit \"claude\"", () => {
     mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    const result = registerMemoryMcp("claude");
+    const result = registerLearnMcp(LEARN_DIR, "claude");
 
-    expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
-      "mcp",
-      "add",
-      "--scope",
-      "user",
-      "coding-friend-memory",
-      "--",
-      "npx",
-      "-y",
-      "coding-friend-cli",
-      "mcp-serve",
-    ]);
+    expect(mockRunWithStderr).toHaveBeenCalledWith("claude", CLAUDE_ADD_ARGS);
     expect(result).toBe(true);
     expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
   });
 
   it("writes the omp mcp.json entry when host is \"omp\"", () => {
-    const result = registerMemoryMcp("omp");
+    const result = registerLearnMcp(LEARN_DIR, "omp");
 
     expect(mockWriteOmpMcpEntry).toHaveBeenCalledWith(
-      "coding-friend-memory",
-      OMP_MEMORY_SERVER,
+      "coding-friend-learn",
+      OMP_LEARN_SERVER,
     );
     expect(result).toBe(true);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
@@ -151,7 +147,7 @@ describe("registerMemoryMcp", () => {
       throw new Error("EACCES");
     });
 
-    const result = registerMemoryMcp("omp");
+    const result = registerLearnMcp(LEARN_DIR, "omp");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
@@ -161,7 +157,7 @@ describe("registerMemoryMcp", () => {
   });
 });
 
-describe("isMemoryMcpRegistered", () => {
+describe("isLearnMcpRegistered", () => {
   it("returns true when exit code is 0", () => {
     mockRunWithStderr.mockReturnValue({
       stdout: "...",
@@ -169,11 +165,11 @@ describe("isMemoryMcpRegistered", () => {
       exitCode: 0,
     });
 
-    expect(isMemoryMcpRegistered()).toBe(true);
+    expect(isLearnMcpRegistered()).toBe(true);
     expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
       "mcp",
       "get",
-      "coding-friend-memory",
+      "coding-friend-learn",
     ]);
   });
 
@@ -184,17 +180,17 @@ describe("isMemoryMcpRegistered", () => {
       exitCode: 1,
     });
 
-    expect(isMemoryMcpRegistered()).toBe(false);
+    expect(isLearnMcpRegistered()).toBe(false);
   });
 
-  it("returns true when omp mcp.json has coding-friend-memory", () => {
+  it("returns true when omp mcp.json has coding-friend-learn", () => {
     mockReadOmpMcpJson.mockReturnValue({
       mcpServers: {
-        "coding-friend-memory": OMP_MEMORY_SERVER,
+        "coding-friend-learn": OMP_LEARN_SERVER,
       },
     });
 
-    expect(isMemoryMcpRegistered("omp")).toBe(true);
+    expect(isLearnMcpRegistered("omp")).toBe(true);
     expect(mockReadOmpMcpJson).toHaveBeenCalled();
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
@@ -202,34 +198,37 @@ describe("isMemoryMcpRegistered", () => {
   it("returns false when omp mcp.json is null", () => {
     mockReadOmpMcpJson.mockReturnValue(null);
 
-    expect(isMemoryMcpRegistered("omp")).toBe(false);
+    expect(isLearnMcpRegistered("omp")).toBe(false);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
 
-  it("returns false when omp mcp.json is missing coding-friend-memory", () => {
+  it("returns false when omp mcp.json is missing coding-friend-learn", () => {
     mockReadOmpMcpJson.mockReturnValue({
       mcpServers: {
-        "coding-friend-learn": OMP_MEMORY_SERVER,
+        "coding-friend-memory": {
+          command: "npx",
+          args: ["-y", "coding-friend-cli", "mcp-serve"],
+        },
       },
     });
 
-    expect(isMemoryMcpRegistered("omp")).toBe(false);
+    expect(isLearnMcpRegistered("omp")).toBe(false);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
 });
 
-describe("unregisterMemoryMcp", () => {
-  it("invokes claude mcp remove --scope user coding-friend-memory", () => {
+describe("unregisterLearnMcp", () => {
+  it("invokes claude mcp remove --scope user coding-friend-learn", () => {
     mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
 
-    const result = unregisterMemoryMcp();
+    const result = unregisterLearnMcp();
 
     expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
       "mcp",
       "remove",
       "--scope",
       "user",
-      "coding-friend-memory",
+      "coding-friend-learn",
     ]);
     expect(result).toBe(true);
   });
@@ -241,15 +240,15 @@ describe("unregisterMemoryMcp", () => {
       exitCode: 1,
     });
 
-    expect(unregisterMemoryMcp()).toBe(false);
+    expect(unregisterLearnMcp()).toBe(false);
   });
 
   it("removes the omp mcp.json entry when host is \"omp\"", () => {
     mockReadOmpMcpJson.mockReturnValue({ mcpServers: {} });
 
-    const result = unregisterMemoryMcp("omp");
+    const result = unregisterLearnMcp("omp");
 
-    expect(mockRemoveOmpMcpEntry).toHaveBeenCalledWith("coding-friend-memory");
+    expect(mockRemoveOmpMcpEntry).toHaveBeenCalledWith("coding-friend-learn");
     expect(result).toBe(true);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
@@ -259,7 +258,7 @@ describe("unregisterMemoryMcp", () => {
       throw new Error("EACCES");
     });
 
-    const result = unregisterMemoryMcp("omp");
+    const result = unregisterLearnMcp("omp");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
