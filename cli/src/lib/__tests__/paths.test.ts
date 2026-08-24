@@ -25,12 +25,25 @@ import {
   installedPluginsPath,
   pluginCachePath,
   knownMarketplacesPath,
+  ompHome,
+  ompAgentDir,
+  ompAgentsDir,
+  ompMcpJsonPath,
+  ompConfigYmlPath,
+  ompExtensionsDir,
+  ompCodingFriendAgentsDir,
+  ompProjectDir,
+  ompProjectMcpJsonPath,
+  ompProjectAgentsDir,
+  ompProjectCodingFriendAgentsDir,
+  ompProjectExtensionsDir,
 } from "../paths.js";
 
 // Ensure tests are not affected by CLAUDE_CONFIG_DIR set in the caller's shell
 beforeEach(() => {
   vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string);
   vi.stubEnv("CODEX_HOME", undefined as unknown as string);
+  vi.stubEnv("OMP_HOME", undefined as unknown as string);
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -318,5 +331,68 @@ describe("Codex paths", () => {
       resolve(process.cwd(), ".agents", "plugins", "marketplace.json"),
     );
     expect(codexAgentsDir()).toBe(join("/tmp/codex-home", "agents"));
+  });
+});
+
+describe("omp paths", () => {
+  it("returns ~/.omp by default", () => {
+    expect(ompHome()).toBe(join(homedir(), ".omp"));
+  });
+
+  it("honors OMP_HOME", () => {
+    vi.stubEnv("OMP_HOME", "/tmp/omp-home");
+
+    expect(ompHome()).toBe("/tmp/omp-home");
+  });
+
+  it("tilde-expands OMP_HOME", () => {
+    vi.stubEnv("OMP_HOME", "~/omp-home");
+
+    expect(ompHome()).toBe(join(homedir(), "omp-home"));
+  });
+
+  it("expands bare ~ in OMP_HOME", () => {
+    vi.stubEnv("OMP_HOME", "~");
+
+    expect(ompHome()).toBe(homedir());
+  });
+
+  it("trims OMP_HOME whitespace", () => {
+    vi.stubEnv("OMP_HOME", "  /tmp/omp-home  ");
+
+    expect(ompHome()).toBe("/tmp/omp-home");
+  });
+
+  it("returns derived user-level paths under OMP_HOME", () => {
+    vi.stubEnv("OMP_HOME", "/tmp/omp-home");
+
+    expect(ompAgentDir()).toBe(join("/tmp/omp-home", "agent"));
+    expect(ompAgentsDir()).toBe(join("/tmp/omp-home", "agents"));
+    expect(ompMcpJsonPath()).toBe(join("/tmp/omp-home", "agent", "mcp.json"));
+    expect(ompConfigYmlPath()).toBe(
+      join("/tmp/omp-home", "agent", "config.yml"),
+    );
+    expect(ompExtensionsDir()).toBe(
+      join("/tmp/omp-home", "agent", "extensions"),
+    );
+    expect(ompCodingFriendAgentsDir()).toBe(
+      join("/tmp/omp-home", "agents", "coding-friend"),
+    );
+  });
+
+  it("returns project-level paths under <cwd>/.omp", () => {
+    expect(ompProjectDir()).toBe(resolve(process.cwd(), ".omp"));
+    expect(ompProjectMcpJsonPath()).toBe(
+      resolve(process.cwd(), ".omp", "mcp.json"),
+    );
+    expect(ompProjectAgentsDir()).toBe(
+      resolve(process.cwd(), ".omp", "agents"),
+    );
+    expect(ompProjectCodingFriendAgentsDir()).toBe(
+      resolve(process.cwd(), ".omp", "agents", "coding-friend"),
+    );
+    expect(ompProjectExtensionsDir()).toBe(
+      resolve(process.cwd(), ".omp", "extensions"),
+    );
   });
 });
