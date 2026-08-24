@@ -1,35 +1,57 @@
 import { commandExists, run } from "./exec.js";
 
-export type Host = "claude" | "codex";
+export type Host = "claude" | "codex" | "omp";
 
 export interface HostFlags {
   agent?: string;
   codex?: boolean;
+  omp?: boolean;
 }
 
 const CODEX_MIN_VERSION = "0.130.0";
+const OMP_MIN_VERSION = "0.1.0";
 
 export function detectHostsAvailable(): Host[] {
   const hosts: Host[] = [];
   if (commandExists("claude")) hosts.push("claude");
   if (commandExists("codex")) hosts.push("codex");
+  if (commandExists("omp")) hosts.push("omp");
   return hosts;
 }
 
 export function resolveHost(opts: HostFlags = {}): Host {
   const agent = opts.agent?.trim().toLowerCase();
   const codexAlias = opts.codex === true;
+  const ompAlias = opts.omp === true;
 
-  if (agent && agent !== "claude" && agent !== "codex") {
+  if (agent && agent !== "claude" && agent !== "codex" && agent !== "omp") {
     throw new Error(
-      `Unsupported agent "${opts.agent}". Use "claude" or "codex".`,
+      `Unsupported agent "${opts.agent}". Use "claude", "codex", or "omp".`,
     );
+  }
+
+  if (codexAlias && ompAlias) {
+    throw new Error("Use either --codex or --omp, not both.");
   }
 
   if (codexAlias && agent === "claude") {
     throw new Error("Use either --agent claude or --codex, not both.");
   }
 
+  if (ompAlias && agent === "claude") {
+    throw new Error("Use either --agent claude or --omp, not both.");
+  }
+
+  if (ompAlias && agent === "codex") {
+    throw new Error("Use either --agent codex or --omp, not both.");
+  }
+
+  if (codexAlias && agent === "omp") {
+    throw new Error("Use either --agent omp or --codex, not both.");
+  }
+
+  if (ompAlias) return "omp";
+  if (agent === "omp") return "omp";
   if (codexAlias) return "codex";
   if (agent === "codex") return "codex";
   return "claude";
@@ -37,6 +59,10 @@ export function resolveHost(opts: HostFlags = {}): Host {
 
 export function getCodexMinVersion(): string {
   return CODEX_MIN_VERSION;
+}
+
+export function getOmpMinVersion(): string {
+  return OMP_MIN_VERSION;
 }
 
 export interface CodexVersionCheck {
@@ -48,6 +74,18 @@ export interface CodexVersionCheck {
 export function checkCodexVersion(): CodexVersionCheck {
   const min = getCodexMinVersion();
   const output = run("codex", ["--version"]);
+  const actual = output ? extractVersion(output) : undefined;
+
+  return {
+    ok: actual ? compareVersions(actual, min) >= 0 : false,
+    actual,
+    min,
+  };
+}
+
+export function checkOmpVersion(): CodexVersionCheck {
+  const min = getOmpMinVersion();
+  const output = run("omp", ["--version"]);
   const actual = output ? extractVersion(output) : undefined;
 
   return {

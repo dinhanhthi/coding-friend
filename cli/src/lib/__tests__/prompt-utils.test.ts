@@ -28,11 +28,14 @@ vi.mock("../log.js", () => ({
 }));
 
 vi.mock("../host.js", () => ({
-  resolveHost: vi.fn((opts: { agent?: string; codex?: boolean }) => {
-    if (opts.agent === "bad") throw new Error("bad host");
-    if (opts.codex || opts.agent === "codex") return "codex";
-    return "claude";
-  }),
+  resolveHost: vi.fn(
+    (opts: { agent?: string; codex?: boolean; omp?: boolean }) => {
+      if (opts.agent === "bad") throw new Error("bad host");
+      if (opts.omp || opts.agent === "omp") return "omp";
+      if (opts.codex || opts.agent === "codex") return "codex";
+      return "claude";
+    },
+  ),
 }));
 
 // Mock @inquirer/prompts
@@ -418,6 +421,14 @@ describe("resolveHostFlags", () => {
 
   it("resolves --codex alias", () => {
     expect(resolveHostFlags({ codex: true })).toEqual({ host: "codex" });
+  });
+
+  it("resolves --agent omp", () => {
+    expect(resolveHostFlags({ agent: "omp" })).toEqual({ host: "omp" });
+  });
+
+  it("resolves --omp alias", () => {
+    expect(resolveHostFlags({ omp: true })).toEqual({ host: "omp" });
   });
 
   it("logs and exits on invalid host flags", () => {
