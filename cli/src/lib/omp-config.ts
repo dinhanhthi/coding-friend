@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "path";
 
 import { compareVersions } from "./host.js";
 import { readJson, writeJson } from "./json.js";
+import { getOmpExtensionPath } from "./lib-path.js";
 import {
   ompConfigYmlPath,
   ompExtensionsDir,
@@ -21,6 +22,8 @@ import {
   ompUserAgentsDir,
   pluginCachePath,
 } from "./paths.js";
+
+export { getOmpExtensionPath };
 
 export { checkOmpVersion } from "./host.js";
 
@@ -169,9 +172,7 @@ function repoPluginCandidate(repoRoot: string, ...parts: string[]): string {
   return direct;
 }
 
-function latestCachedPluginDir(
-  cacheRoot = pluginCachePath(),
-): string | null {
+function latestCachedPluginDir(cacheRoot = pluginCachePath()): string | null {
   if (!existsSync(cacheRoot)) return null;
   if (existsSync(join(cacheRoot, "agents"))) return cacheRoot;
 
@@ -363,9 +364,7 @@ function parseDisabledAgentsAt(
   );
   if (!range) return [];
 
-  const flow = lines[range.start].match(
-    /disabledAgents:\s*\[(.*)\]\s*(#.*)?$/,
-  );
+  const flow = lines[range.start].match(/disabledAgents:\s*\[(.*)\]\s*(#.*)?$/);
   if (flow) return parseFlowNameList(flow[1]);
 
   const names: string[] = [];
@@ -461,9 +460,7 @@ function writeTextFile(filePath: string, content: string): void {
   writeFileSync(filePath, ensureNl(content), "utf8");
 }
 
-export function readOmpMcpJson(
-  filePath = ompMcpJsonPath(),
-): OmpMcpJson | null {
+export function readOmpMcpJson(filePath = ompMcpJsonPath()): OmpMcpJson | null {
   const data = readJson<Record<string, unknown>>(filePath);
   if (!data || !isPlainObject(data.mcpServers)) return null;
   return data as unknown as OmpMcpJson;
@@ -526,9 +523,7 @@ export function convertClaudeAgentToOmp(sourceMd: string): string {
   return `${lines.join("\n")}\n\n${normalizeAgentBody(body)}`;
 }
 
-export function findOmpAgentSourceDir(
-  repoRoot = process.cwd(),
-): string | null {
+export function findOmpAgentSourceDir(repoRoot = process.cwd()): string | null {
   const repoAgents = repoPluginCandidate(repoRoot, "plugin", "agents");
   if (existsSync(repoAgents)) return repoAgents;
 
@@ -538,24 +533,6 @@ export function findOmpAgentSourceDir(
   if (existsSync(cachedAgents)) return cachedAgents;
   const nested = join(cached, "plugin", "agents");
   return existsSync(nested) ? nested : null;
-}
-
-export function getOmpExtensionPath(repoRoot = process.cwd()): string {
-  const repoPath = repoPluginCandidate(
-    repoRoot,
-    "plugin",
-    "omp",
-    "extension.ts",
-  );
-  if (existsSync(repoPath)) return repoPath;
-
-  const cached = latestCachedPluginDir();
-  if (cached) {
-    const cachedPath = join(cached, "omp", "extension.ts");
-    if (existsSync(cachedPath)) return cachedPath;
-  }
-
-  return repoPath;
 }
 
 export function deployOmpAgents(
@@ -621,6 +598,13 @@ export function writeOmpExtensionEntry(
   repoRoot = process.cwd(),
 ): void {
   const extensionPath = getOmpExtensionPath(repoRoot);
+  if (!extensionPath || !existsSync(extensionPath)) {
+    throw new Error(
+      extensionPath
+        ? `omp extension not found: ${extensionPath}. Run from the coding-friend repo or install the plugin first.`
+        : "omp extension not found. Run from the coding-friend repo or install the plugin first.",
+    );
+  }
   const pluginRoot = dirname(dirname(extensionPath));
   const shim = [
     `// CODING_FRIEND_PLUGIN_ROOT=${pluginRoot}`,
@@ -647,13 +631,8 @@ export function setOmpAgentEnabled(scope: OmpScope): boolean {
 
 export function setOmpAgentDisabled(scope: OmpScope): void {
   const filePath = configYmlForScope(scope);
-  const current = existsSync(filePath)
-    ? readFileSync(filePath, "utf8")
-    : "";
-  writeTextFile(
-    filePath,
-    upsertDisabledAgents(current, ourAgentNames(scope)),
-  );
+  const current = existsSync(filePath) ? readFileSync(filePath, "utf8") : "";
+  writeTextFile(filePath, upsertDisabledAgents(current, ourAgentNames(scope)));
 }
 
 export function isOmpAgentInstalled(scope: OmpScope): boolean {
@@ -662,8 +641,7 @@ export function isOmpAgentInstalled(scope: OmpScope): boolean {
   try {
     return readdirSync(dir, { withFileTypes: true }).some(
       (entry) =>
-        (entry.isFile() || entry.isSymbolicLink()) &&
-        isCfAgentFile(entry.name),
+        (entry.isFile() || entry.isSymbolicLink()) && isCfAgentFile(entry.name),
     );
   } catch {
     return false;
