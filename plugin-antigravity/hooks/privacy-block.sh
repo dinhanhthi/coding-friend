@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+PLUGIN_ROOT="${AGY_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 # shellcheck source=../lib/cf-paths.sh
 source "$PLUGIN_ROOT/lib/cf-paths.sh"
 cf_resolve_paths

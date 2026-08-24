@@ -9,7 +9,7 @@ CWD=$(pwd)
 ENCODED=$(echo "$CWD" | sed 's|/|-|g')
 
 # Resolve Claude global config dir (honors CLAUDE_CONFIG_DIR; default ~/.claude).
-# Inlined here — this standalone skill script has no CLAUDE_PLUGIN_ROOT to source
+# Inlined here — this standalone skill script has no AGY_PLUGIN_ROOT to source
 # plugin/lib/cf-paths.sh from. Mirrors cf_claude_dir(): tilde-expand leading ~, else verbatim.
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR-}"
 CLAUDE_DIR="${CLAUDE_DIR#"${CLAUDE_DIR%%[![:space:]]*}"}"
