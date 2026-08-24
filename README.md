@@ -17,7 +17,7 @@
 
 ## What It Does
 
-Supported hosts: **Claude Code**, **Codex CLI** _(beta)_, and **omp** _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`; omp is opt-in with `--agent omp` or `--omp`.
+Supported hosts: **Claude Code**, **Codex CLI** _(beta)_, and [**omp**](https://github.com/can1357/oh-my-pi) _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`; omp is opt-in with `--agent omp` or `--omp`.
 
 Coding Friend also works with any tool that runs Claude Code or Codex under the hood — including **Cursor**, **Grok CLI**, and **z.ai** (via Claude Code or Codex). Install for the underlying host (Claude Code or Codex) and use Coding Friend as usual.
 
