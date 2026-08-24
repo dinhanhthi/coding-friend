@@ -126,6 +126,18 @@ export function isCodexMarketplaceRegistered(
     );
 }
 
+export function isCodexMarketplaceLocal(
+  configPath = codexConfigTomlPath(),
+): boolean {
+  const table = getTable(
+    readToml(configPath),
+    `marketplaces.${CODEX_MARKETPLACE_NAME}`,
+  );
+  return table.some((line) =>
+    /^\s*source_type\s*=\s*["']local["']\s*(?:#.*)?$/.test(line),
+  );
+}
+
 export function setCodexPluginEnabled(
   enabled: boolean,
   configPath = codexConfigTomlPath(),

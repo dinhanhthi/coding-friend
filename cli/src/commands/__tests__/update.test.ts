@@ -35,6 +35,7 @@ vi.mock("../../lib/codex-config.js", () => ({
   CODEX_MARKETPLACE_NAME: "coding-friend-marketplace",
   getCodexInstalledVersion: vi.fn(),
   isCodexMarketplaceRegistered: vi.fn(),
+  isCodexMarketplaceLocal: vi.fn(),
 }));
 
 vi.mock("../../lib/host.js", () => ({
@@ -65,6 +66,7 @@ import { getInstalledVersion, ensureStatusline } from "../../lib/statusline.js";
 import {
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
+  isCodexMarketplaceLocal,
 } from "../../lib/codex-config.js";
 import { detectHostsAvailable } from "../../lib/host.js";
 import { isPluginInstalled } from "../../lib/plugin-state.js";
@@ -91,6 +93,7 @@ const mockGetCodexInstalledVersion = vi.mocked(getCodexInstalledVersion);
 const mockIsCodexMarketplaceRegistered = vi.mocked(
   isCodexMarketplaceRegistered,
 );
+const mockIsCodexMarketplaceLocal = vi.mocked(isCodexMarketplaceLocal);
 const mockDetectHostsAvailable = vi.mocked(detectHostsAvailable);
 const mockIsPluginInstalled = vi.mocked(isPluginInstalled);
 const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
@@ -135,6 +138,7 @@ describe("updateCommand — Codex", () => {
   it("runs Codex marketplace upgrade for --agent codex", async () => {
     mockResolveHostFlags.mockReturnValue({ host: "codex" });
     mockCommandExists.mockReturnValue(true);
+    mockIsCodexMarketplaceLocal.mockReturnValue(false);
     mockRun.mockImplementation((cmd) => {
       if (cmd === "npm") return "1.0.0";
       return null;
@@ -154,6 +158,58 @@ describe("updateCommand — Codex", () => {
       "coding-friend-marketplace",
     ]);
     expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("skips marketplace upgrade and points to /plugins when the Codex marketplace is a local dev source", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockIsCodexMarketplaceLocal.mockReturnValue(true);
+    mockGetCodexInstalledVersion.mockReturnValue("0.40.3");
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ agent: "codex", plugin: true });
+
+    expect(mockRunWithStderr).not.toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "upgrade",
+      "coding-friend-marketplace",
+    ]);
+    const output = consoleSpy.mock.calls
+      .map((call) => call.join(" "))
+      .join("\n");
+    expect(output).toContain("local dev source");
+    expect(output).toContain("/plugins");
+  });
+
+  it("warns to install via /plugins when the local Codex marketplace has no plugin installed", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockIsCodexMarketplaceLocal.mockReturnValue(true);
+    mockGetCodexInstalledVersion.mockReturnValue(null);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ agent: "codex", plugin: true });
+
+    expect(mockRunWithStderr).not.toHaveBeenCalledWith("codex", [
+      "plugin",
+      "marketplace",
+      "upgrade",
+      "coding-friend-marketplace",
+    ]);
+    const output = consoleSpy.mock.calls
+      .map((call) => call.join(" "))
+      .join("\n");
+    expect(output).toContain("not installed yet");
+    expect(output).toContain("/plugins");
   });
 
   it("points Codex statusline updates to the native command", async () => {

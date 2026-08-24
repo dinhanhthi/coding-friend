@@ -8,6 +8,7 @@ import {
   findCodexAgentSourceDir,
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
+  isCodexMarketplaceLocal,
   isCodexPluginDisabled,
   removeCodexMemoryMcpConfig,
   removeDeployedCodexAgents,
@@ -70,6 +71,57 @@ describe("codex-config", () => {
     );
 
     expect(isCodexMarketplaceRegistered(file)).toBe(true);
+  });
+
+  it("detects a local dev marketplace source", () => {
+    const file = tempFile();
+    writeFileSync(
+      file,
+      '[marketplaces.coding-friend-marketplace]\nsource_type = "local"\nsource = "/Users/dev/coding-friend"\n',
+    );
+
+    expect(isCodexMarketplaceLocal(file)).toBe(true);
+  });
+
+  it("does not flag a git marketplace source as local", () => {
+    const file = tempFile();
+    writeFileSync(
+      file,
+      '[marketplaces.coding-friend-marketplace]\nsource_type = "git"\nsource = "dinhanhthi/coding-friend"\n',
+    );
+
+    expect(isCodexMarketplaceLocal(file)).toBe(false);
+  });
+
+  it("scopes source_type to the coding-friend table amongst sibling marketplaces", () => {
+    const file = tempFile();
+    writeFileSync(
+      file,
+      [
+        "[marketplaces.openai-bundled]",
+        'source_type = "local"',
+        'source = "/Users/dev/.codex/.tmp/openai-bundled"',
+        "",
+        "[marketplaces.coding-friend-marketplace]",
+        'last_updated = "2026-06-14T19:52:35Z"',
+        'source_type = "git"',
+        'source = "dinhanhthi/coding-friend"',
+        "",
+        '[projects."/repo"]',
+        'trust_level = "trusted"',
+        "",
+      ].join("\n"),
+    );
+
+    // A sibling local marketplace must not leak into the coding-friend check.
+    expect(isCodexMarketplaceLocal(file)).toBe(false);
+  });
+
+  it("returns false when no marketplace table is present", () => {
+    const file = tempFile();
+    writeFileSync(file, '[model]\nname = "gpt-5"\n');
+
+    expect(isCodexMarketplaceLocal(file)).toBe(false);
   });
 
   it("writes memory MCP and project trust tables without clobbering config", () => {

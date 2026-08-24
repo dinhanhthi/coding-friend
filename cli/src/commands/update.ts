@@ -8,6 +8,7 @@ import {
   CODEX_MARKETPLACE_NAME,
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
+  isCodexMarketplaceLocal,
 } from "../lib/codex-config.js";
 import { detectHostsAvailable, type Host } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
@@ -480,6 +481,19 @@ async function updateCodexCommand(
 
     if (!commandExists("codex")) {
       log.error("Codex CLI not found. Cannot update Codex plugin.");
+    } else if (isCodexMarketplaceLocal()) {
+      if (beforeVersion) {
+        log.info(
+          "Codex marketplace is a local dev source — skipping git upgrade (it only works on git marketplaces).",
+        );
+        log.dim(
+          `Codex runs a cached copy at v${beforeVersion}; to pick up working-tree changes, reinstall via Codex → /plugins.`,
+        );
+      } else {
+        log.warn(
+          "Codex marketplace is a local dev source, but coding-friend is not installed yet. Open Codex and run /plugins to install it.",
+        );
+      }
     } else {
       log.step("Updating Codex marketplace...");
       const result = runWithStderr("codex", [

@@ -38,6 +38,8 @@ codex plugin marketplace upgrade coding-friend-marketplace
 
 If Codex reports that the marketplace was upgraded but the plugin is not installed yet, open Codex and use `/plugins` to install `coding-friend`.
 
+If the Codex marketplace is registered as a local source (`codex plugin marketplace add <path>`), the git upgrade is skipped — `marketplace upgrade` only works on git marketplaces. Codex runs a version-pinned cached copy, so to pick up working-tree changes reinstall the plugin via Codex → `/plugins`.
+
 ## Scope Flags
 
 Scope flags (`--user`, `--global`, `--project`, `--local`) only apply to **plugin updates**. CLI and statusline updates are always global.
