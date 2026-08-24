@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.39.0 (2026-08-24)
+
+- Add `--agent omp` and `--omp` flags to lifecycle commands (install, uninstall, enable, disable, update, permission, init) [#eadc446d](https://github.com/dinhanhthi/coding-friend/commit/eadc446d)
+- `cf update` with no `--agent` flag updates every installed host [#eadc446d](https://github.com/dinhanhthi/coding-friend/commit/eadc446d)
+- Parameterize memory and learn MCP registration by host so `cf mcp` targets omp [#bb6d9d16](https://github.com/dinhanhthi/coding-friend/commit/bb6d9d16)
+- Add `cli/src/lib/omp-config.ts`, omp host type/resolver, and omp path helpers [#864ef1c2](https://github.com/dinhanhthi/coding-friend/commit/864ef1c2)
+
 ## v1.38.4 (2026-07-24)
 
 - `cf clean` now only removes plans whose `README.md` frontmatter `status:` is `done`, leaving in-progress and failed plans untouched so they can still be resumed [#22752f1c](https://github.com/dinhanhthi/coding-friend/commit/22752f1c)
