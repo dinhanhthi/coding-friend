@@ -1,14 +1,24 @@
 ---
 title: Installation
-description: Install the Coding Friend CLI and plugin for Claude Code or Codex CLI.
+description: Install the Coding Friend CLI and plugin for Claude Code, Codex CLI, or oh-my-pi (omp).
 keywords:
-  [installation, setup, claude code plugin, codex cli plugin, npm, cli, scope]
+  [
+    installation,
+    setup,
+    claude code plugin,
+    codex cli plugin,
+    oh-my-pi,
+    omp,
+    npm,
+    cli,
+    scope,
+  ]
 ---
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+ installed
-- [Claude Code](https://claude.com/claude-code) or Codex CLI installed
+- [Claude Code](https://claude.com/claude-code), Codex CLI, or [oh-my-pi](https://omp.sh/) (`omp`) installed
 - [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
 
@@ -23,6 +33,9 @@ cf install
 
 # 2b. Or install for Codex CLI
 cf install --agent codex
+
+# 2c. Or install for oh-my-pi (omp)
+cf install --agent omp
 ```
 
 <Callout type="info">
@@ -51,6 +64,14 @@ Then continue from step 3 below (skip `cf install`).
   the [Codex CLI guide](/docs/getting-started/codex/) for details.
 </Callout>
 
+<Callout type="info">
+  **oh-my-pi users:** `cf install --agent omp` (alias `--omp`) writes agents,
+  the hook extension, and the memory MCP into `~/.omp/`. Skills are inherited
+  from the Claude plugin cache — install Coding Friend for Claude Code as well,
+  or `cf-*` skills will not show up. See the [oh-my-pi
+  guide](/docs/getting-started/omp/) for details.
+</Callout>
+
 ```bash
 # 3a. Initialize your workspace for Claude Code
 cf init
@@ -58,8 +79,12 @@ cf init
 # 3b. Or initialize for Codex CLI
 cf init --agent codex --trust-project
 
+# 3c. Or initialize for oh-my-pi
+cf init --agent omp
+
 # 4. Restart your host session to load the plugin.
 # Claude: type "/cf-plan". Codex: type "$cf-plan".
+# oh-my-pi: start a new `omp` session.
 
 # 5. Verify
 cf status
@@ -77,10 +102,13 @@ cf config
 
 ## Update
 
-Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `cf update` twice to make it work). In case of any issues, you can try manually:
+Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `cf update` twice to make it work). With no `--agent` flag, `cf update` refreshes every host that already has Coding Friend installed (Claude, Codex, and oh-my-pi). Use `cf update --agent omp` to refresh only oh-my-pi.
+
+In case of any issues, you can try manually:
 
 - **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
 - **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
+- **oh-my-pi**: `cf update --agent omp` rewrites agents, the extension shim, and the memory MCP entry. Restart `omp` afterwards.
 
 <Callout type="info">
   **Using [ZCode](https://zcode.z.ai/)?** If the plugin doesn't update there,

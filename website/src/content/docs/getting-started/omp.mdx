@@ -1,0 +1,117 @@
+---
+title: "oh-my-pi"
+description: "Use Coding Friend as a first-class oh-my-pi (omp) host via bridge mode."
+keywords: [omp, oh-my-pi, host, plugin, agents, mcp, setup, beta]
+---
+
+## Overview
+
+Coding Friend supports [oh-my-pi](https://omp.sh/) (`omp`) as a third host alongside Claude Code and Codex CLI. Claude remains the default for `cf` commands. Use `--agent omp` or the `--omp` alias for the omp path.
+
+<Callout type="warning">
+  **oh-my-pi support is in beta.** Install is opt-in (`--agent omp`). Skills are
+  inherited from the Claude plugin cache — if Claude Code is not installed,
+  `cf-*` skills will not appear in omp. Claude Code and Codex CLI are
+  unaffected.
+</Callout>
+
+oh-my-pi is **not** a Claude marketplace plugin. Coding Friend uses **bridge mode**: skills come from `~/.claude`, agents are converted at install time, and shared bash hooks run through a TypeScript extension with `CF_HOST=omp`.
+
+## Install
+
+```bash
+# 1. Install the shared CLI
+npm i -g coding-friend-cli
+
+# 2. Install omp if you have not already
+# https://omp.sh/
+
+# 3. Deploy agents, the hook extension, and memory MCP
+cf install --agent omp
+# alias: cf install --omp
+
+# 4. Initialize this project (creates .omp/mcp.json)
+cf init --agent omp
+
+# 5. Restart omp
+```
+
+`--project` / `--local` writes agents and the extension under `<cwd>/.omp/` instead of `~/.omp/`. Memory MCP is always registered in the user file `~/.omp/agent/mcp.json`.
+
+## What Gets Written
+
+`cf install --agent omp` (user scope):
+
+| Path | What it is |
+| --- | --- |
+| `~/.omp/agent/agents/cf-*.md` | 12 converted Coding Friend agents (flat files — omp does **not** scan subdirectories) |
+| `~/.omp/agent/extensions/coding-friend.ts` | Re-export of `plugin/omp/extension.ts` (hooks) |
+| `~/.omp/agent/mcp.json` | `coding-friend-memory` → `npx -y coding-friend-cli mcp-serve` |
+
+`cf init --agent omp` creates project `.omp/mcp.json` if missing and writes `.coding-friend/config.json`.
+
+There is no `omp mcp add` CLI and no omp marketplace. Coding Friend writes those files directly.
+
+## Skills Need the Claude Plugin Cache
+
+omp inherits skills from Claude (priority 80) **and** from `~/.claude/plugins/cache/` (priority 70). Coding Friend's `cf-*` skills live in the **plugin cache**, not in `~/.claude/skills/`.
+
+That means a typical omp install still needs Coding Friend installed for Claude Code (`cf install`, no `--agent`). Without that cache, omp will not list `cf-plan`, `cf-fix`, and the rest.
+
+Agents are **not** inherited from `~/.claude/agents/` (different frontmatter). `cf install --agent omp` converts `plugin/agents/*.md` so `systemPrompt` is the markdown **body**, not a YAML field.
+
+## Daily Commands
+
+```bash
+cf install --agent omp
+cf init --agent omp
+cf update --agent omp
+cf enable --agent omp
+cf disable --agent omp
+cf uninstall --agent omp
+```
+
+`cf update` with **no** `--agent` refreshes every installed host (Claude, Codex, omp). `cf update --agent omp` only rewrites omp agents, the extension shim, and the memory MCP entry. Restart `omp` afterwards.
+
+`cf disable --agent omp` does not delete files. It adds Coding Friend agent names to `task.disabledAgents` in `~/.omp/agent/config.yml`. `cf enable --agent omp` removes those names.
+
+`cf uninstall --agent omp` deletes `cf-*.md` agents and the extension shim. Memory MCP is unregistered only on **user-scope** uninstall, so a project-scope uninstall does not strip a user-level MCP entry.
+
+## Hooks
+
+The extension shells out to the same `plugin/hooks/` scripts used by Claude, with `CF_HOST=omp`:
+
+- `session_start` → `session-init.sh`
+- `tool_call` → `privacy-block.sh`, then `scout-block.cjs`, then `auto-approve.cjs`
+- compact events → `memory-capture.sh`
+- `session_shutdown` → `session-log.sh`
+- `before_agent_start` → `agent-tracker.sh`
+
+Privacy and scout **fail closed** if a hook file is missing. omp has its own TUI and approval-mode: `cf statusline` and `cf permission --agent omp` are no-ops (`omp config` for permissions).
+
+## Known Differences
+
+- No marketplace / `/plugins` install. File-based only.
+- Skills require a Claude plugin cache with Coding Friend installed. Native omp skills dirs (`~/.omp/agent/skills`) win at priority 100 if you add files there.
+- Agent path is `~/.omp/agent/agents/cf-*.md`, **not** `~/.omp/agents/coding-friend/`.
+- `cf dev on/sync` is Claude-only. omp's extension re-exports the repo or plugin-cache `extension.ts`; restart omp after hook/extension edits. Redeploy agents with `cf update --agent omp`.
+- A project `.omp/` directory can make Claude's `session-init.sh` detect `CF_HOST=omp` if `CF_HOST` is unset. Set `CF_HOST=claude` when launching Claude in a mixed repo.
+- The extension shim resolves `plugin/omp/extension.ts` from the current repo or the Claude plugin cache. CLI-only machines without that file cannot write the shim.
+
+## Troubleshooting
+
+```bash
+omp --version
+cf install --agent omp
+ls ~/.omp/agent/agents/cf-*.md
+cat ~/.omp/agent/extensions/coding-friend.ts
+jq '.mcpServers["coding-friend-memory"]' ~/.omp/agent/mcp.json
+cf update --agent omp
+```
+
+- **0 agents after install** — run `cf` from the Coding Friend repo, or install the Claude plugin so `plugin/agents` exists in cache.
+- **Skills missing** — install Coding Friend for Claude Code, then restart omp.
+- **Hooks silent** — `cat` the shim and `test -f` the `from "..."` path. `CODING_FRIEND_PLUGIN_ROOT` must contain `hooks/privacy-block.sh`.
+- **`--omp` conflicts with `--agent claude`** — use `--omp` **or** `--agent omp`, not both with an explicit `claude`.
+
+Contributor / local-dev detail: [docs/omp-dev.md](https://github.com/dinhanhthi/coding-friend/blob/main/docs/omp-dev.md) in the repo.
