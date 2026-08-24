@@ -26,18 +26,25 @@ trap 'echo "ERROR: session-init.sh failed at line $LINENO (exit $?)" >>"$LOG_FIL
 
 PLUGIN_ROOT="${PLUGIN_ROOT:-${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
-# Only CODEX_SESSION_ID is session-scoped evidence of the running host.
-# CODEX_HOME is a profile-scoped customization a dual-host user may export
-# globally, so it must not flip Claude sessions to codex.
+# Host probe (highest wins): explicit CF_HOST > CODEX_SESSION_ID >
+# OMP_SESSION_ID > $PWD/.omp directory > claude.
+# CODEX_HOME is profile-scoped and must not flip Claude sessions to codex.
 CF_HOST="${CF_HOST:-}"
 if [ -z "$CF_HOST" ]; then
   if [ -n "${CODEX_SESSION_ID:-}" ]; then
     CF_HOST="codex"
+  elif [ -n "${OMP_SESSION_ID:-}" ]; then
+    CF_HOST="omp"
+  elif [ -d "${PWD}/.omp" ]; then
+    CF_HOST="omp"
   else
     CF_HOST="claude"
   fi
 fi
 export CF_HOST
+if [ "$CF_HOST" = "omp" ]; then
+  echo "detected CF_HOST=omp" >&2
+fi
 
 # Source the shared path resolver
 # shellcheck source=../lib/cf-paths.sh

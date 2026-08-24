@@ -464,8 +464,33 @@ describe("setOmpAgentDisabled / setOmpAgentEnabled", () => {
   });
 });
 
+function stageOmpExtensionSource(): string {
+  const repoRoot = makeTemp("cf-omp-ext-repo-");
+  const destDir = join(repoRoot, "plugin", "omp");
+  mkdirSync(destDir, { recursive: true });
+  copyFileSync(
+    join(REPO_ROOT, "plugin", "omp", "extension.ts"),
+    join(destDir, "extension.ts"),
+  );
+  process.chdir(repoRoot);
+  return join(process.cwd(), "plugin", "omp", "extension.ts");
+}
+
+function parseExtensionShim(shim: string): {
+  pluginRoot: string;
+  fromPath: string;
+} {
+  const pluginRoot = shim.match(/^\/\/ CODING_FRIEND_PLUGIN_ROOT=(.*)$/m)?.[1];
+  const fromLiteral = shim.match(/export \{ default \} from (".*")/)?.[1];
+  if (!pluginRoot || !fromLiteral) {
+    throw new Error(`invalid extension shim:\n${shim}`);
+  }
+  return { pluginRoot, fromPath: JSON.parse(fromLiteral) as string };
+}
+
 describe("writeOmpExtensionEntry / removeOmpExtensionEntry", () => {
   it("round-trips the user-scope extension shim under OMP_HOME", () => {
+    const extensionPath = stageOmpExtensionSource();
     const file = join(
       process.env.OMP_HOME!,
       "agent",
@@ -480,10 +505,46 @@ describe("writeOmpExtensionEntry / removeOmpExtensionEntry", () => {
     expect(shim).toContain("CODING_FRIEND_PLUGIN_ROOT=");
     expect(shim).toMatch(/export \{ default \} from /);
 
+    const { pluginRoot, fromPath } = parseExtensionShim(shim);
+    expect(fromPath).toBe(extensionPath);
+    expect(existsSync(fromPath)).toBe(true);
+    expect(pluginRoot).toBe(dirname(dirname(fromPath)));
+
     removeOmpExtensionEntry("user");
     expect(existsSync(file)).toBe(false);
 
     removeOmpExtensionEntry("user");
     expect(existsSync(file)).toBe(false);
+  });
+
+  it("writes the project-scope shim under cwd/.omp/extensions", () => {
+    const extensionPath = stageOmpExtensionSource();
+    const file = join(process.cwd(), ".omp", "extensions", "coding-friend.ts");
+
+    writeOmpExtensionEntry("project");
+
+    expect(existsSync(file)).toBe(true);
+    const { pluginRoot, fromPath } = parseExtensionShim(
+      readFileSync(file, "utf8"),
+    );
+    expect(fromPath).toBe(extensionPath);
+    expect(existsSync(fromPath)).toBe(true);
+    expect(pluginRoot).toBe(dirname(dirname(fromPath)));
+  });
+
+  it("does not write a shim when extension.ts is missing", () => {
+    const repoRoot = makeTemp("cf-omp-no-ext-");
+    process.chdir(repoRoot);
+    const shim = join(
+      process.env.OMP_HOME!,
+      "agent",
+      "extensions",
+      "coding-friend.ts",
+    );
+
+    expect(() => writeOmpExtensionEntry("user", repoRoot)).toThrow(
+      /omp extension not found/,
+    );
+    expect(existsSync(shim)).toBe(false);
   });
 });
