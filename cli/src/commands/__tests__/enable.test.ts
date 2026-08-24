@@ -18,11 +18,16 @@ vi.mock("../../lib/codex-config.js", () => ({
   setCodexPluginEnabled: vi.fn(),
 }));
 
+vi.mock("../../lib/omp-config.js", () => ({
+  setOmpAgentEnabled: vi.fn(),
+}));
+
 import { isPluginDisabled, setPluginEnabled } from "../../lib/plugin-state.js";
 import {
   isCodexPluginDisabled,
   setCodexPluginEnabled,
 } from "../../lib/codex-config.js";
+import { setOmpAgentEnabled } from "../../lib/omp-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { enableCommand } from "../enable.js";
 
@@ -32,6 +37,7 @@ const mockResolveScope = vi.mocked(resolveScope);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockIsCodexPluginDisabled = vi.mocked(isCodexPluginDisabled);
 const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
+const mockSetOmpAgentEnabled = vi.mocked(setOmpAgentEnabled);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -40,6 +46,7 @@ beforeEach(() => {
   mockResolveScope.mockResolvedValue("user");
   mockIsPluginDisabled.mockReturnValue(true); // disabled by default for enable tests
   mockIsCodexPluginDisabled.mockReturnValue(true);
+  mockSetOmpAgentEnabled.mockReturnValue(true);
 });
 
 describe("enableCommand", () => {
@@ -91,5 +98,56 @@ describe("enableCommand", () => {
 
     expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(true);
     expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("enables omp agents without resolving Claude scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await enableCommand({ agent: "omp" });
+
+    expect(mockSetOmpAgentEnabled).toHaveBeenCalledWith("user");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockSetPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+  });
+
+  it("maps omp --project to project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await enableCommand({ agent: "omp", project: true });
+
+    expect(mockSetOmpAgentEnabled).toHaveBeenCalledWith("project");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("maps omp --local to project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await enableCommand({ agent: "omp", local: true });
+
+    expect(mockSetOmpAgentEnabled).toHaveBeenCalledWith("project");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("logs info instead of success when omp config is missing", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockSetOmpAgentEnabled.mockReturnValue(false);
+
+    await enableCommand({ agent: "omp" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("already enabled");
+    expect(output).not.toContain("Coding Friend enabled for omp at");
+  });
+
+  it("logs success when omp enable writes a disable-list change", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockSetOmpAgentEnabled.mockReturnValue(true);
+
+    await enableCommand({ agent: "omp" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("Coding Friend enabled for omp at");
+    expect(output).not.toContain("already enabled");
   });
 });

@@ -1,8 +1,17 @@
 import { existsSync, rmSync } from "fs";
+import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import { readJson, writeJson } from "../lib/json.js";
+import { unregisterLearnMcp } from "../lib/learn-prompts.js";
+import { unregisterMemoryMcp } from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
+import {
+  isOmpAgentInstalled,
+  removeOmpAgents,
+  removeOmpExtensionEntry,
+  type OmpScope,
+} from "../lib/omp-config.js";
 import {
   claudeSettingsPath,
   devStatePath,
@@ -10,6 +19,8 @@ import {
   marketplaceCachePath,
   marketplaceClonePath,
   memoryDepsDir,
+  ompExtensionsDir,
+  ompProjectExtensionsDir,
 } from "../lib/paths.js";
 import { run, commandExists } from "../lib/exec.js";
 import {
@@ -171,6 +182,10 @@ export async function uninstallCommand(
   const { host } = resolveHostFlags(opts);
   if (host === "codex") {
     uninstallCodexCommand(opts);
+    return;
+  }
+  if (host === "omp") {
+    uninstallOmpCommand(opts);
     return;
   }
 
@@ -395,6 +410,43 @@ export async function uninstallCommand(
   console.log();
   log.dim("To also remove the CLI tool globally, run:");
   console.log(`  ${chalk.bold("npm uninstall -g coding-friend-cli")}`);
+}
+
+const OMP_EXTENSION_SHIM = "coding-friend.ts";
+
+/** Claude plugin scopes collapse onto omp's user|project. */
+function toOmpScope(opts: UninstallOptions): OmpScope {
+  if (opts.project || opts.local) return "project";
+  return "user";
+}
+
+function isOmpExtensionPresent(scope: OmpScope): boolean {
+  const dir =
+    scope === "project" ? ompProjectExtensionsDir() : ompExtensionsDir();
+  return existsSync(join(dir, OMP_EXTENSION_SHIM));
+}
+
+function uninstallOmpCommand(opts: UninstallOptions): void {
+  console.log();
+  printBanner("👋 Coding Friend omp Uninstall 👋", { color: chalk.red });
+
+  const scope = toOmpScope(opts);
+
+  if (!isOmpAgentInstalled(scope) && !isOmpExtensionPresent(scope)) {
+    log.info("Nothing to uninstall");
+    return;
+  }
+
+  log.step(`Uninstalling Coding Friend from omp (${scope} scope)...`);
+  removeOmpAgents(scope);
+  removeOmpExtensionEntry(scope);
+  if (scope === "user") {
+    unregisterMemoryMcp("omp");
+    unregisterLearnMcp("omp");
+  }
+
+  log.success(`Coding Friend uninstalled from omp (${scope} scope).`);
+  log.dim("Restart omp for the change to take effect.");
 }
 
 function uninstallCodexCommand(opts: UninstallOptions): void {

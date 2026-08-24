@@ -44,6 +44,20 @@ vi.mock("../../lib/memory-prompts.js", () => ({
   removeMemoryMcpEntry: vi.fn(() => ({ removed: false, fileDeleted: false })),
 }));
 
+vi.mock("../../lib/omp-config.js", () => ({
+  isOmpAgentInstalled: vi.fn(() => false),
+  removeOmpAgents: vi.fn(),
+  removeOmpExtensionEntry: vi.fn(),
+}));
+
+vi.mock("../../lib/memory-mcp-register.js", () => ({
+  unregisterMemoryMcp: vi.fn(() => true),
+}));
+
+vi.mock("../../lib/learn-prompts.js", () => ({
+  unregisterLearnMcp: vi.fn(() => true),
+}));
+
 import { existsSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { confirm } from "@inquirer/prompts";
 import { commandExists, run } from "../../lib/exec.js";
@@ -54,6 +68,13 @@ import {
 import { setCodexPluginEnabled } from "../../lib/codex-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
+import {
+  isOmpAgentInstalled,
+  removeOmpAgents,
+  removeOmpExtensionEntry,
+} from "../../lib/omp-config.js";
+import { unregisterMemoryMcp } from "../../lib/memory-mcp-register.js";
+import { unregisterLearnMcp } from "../../lib/learn-prompts.js";
 import { uninstallCommand } from "../uninstall.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -68,6 +89,11 @@ const mockRemoveShellCompletion = vi.mocked(removeShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
+const mockIsOmpAgentInstalled = vi.mocked(isOmpAgentInstalled);
+const mockRemoveOmpAgents = vi.mocked(removeOmpAgents);
+const mockRemoveOmpExtensionEntry = vi.mocked(removeOmpExtensionEntry);
+const mockUnregisterMemoryMcp = vi.mocked(unregisterMemoryMcp);
+const mockUnregisterLearnMcp = vi.mocked(unregisterLearnMcp);
 
 const home = homedir();
 const installedPluginsFile = join(
@@ -628,5 +654,107 @@ describe("uninstallCommand", () => {
       "remove",
       "coding-friend-marketplace",
     ]);
+  });
+
+  // ─── omp uninstall ──────────────────────────────────────────────────
+
+  it("removes omp agents, extension, and MCP registrations at user scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp" });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("omp");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("omp");
+  });
+
+  it("does not touch Claude or Codex paths on the omp branch", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp" });
+
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+    expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
+    expect(mockCommandExists).not.toHaveBeenCalledWith("codex");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(mockRmSync).not.toHaveBeenCalled();
+  });
+
+  it("maps --project to omp project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp", project: true });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+
+  it("does not unregister user-level MCP on project-scope omp uninstall", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp", project: true });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockUnregisterMemoryMcp).not.toHaveBeenCalled();
+    expect(mockUnregisterLearnMcp).not.toHaveBeenCalled();
+  });
+
+  it("maps --local to omp project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp", local: true });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+
+  it("maps --global to omp user scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "omp", global: true });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("user");
+  });
+
+  it("logs nothing to uninstall when omp agents and extension are absent", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(false);
+    mockExistsSync.mockReturnValue(false);
+
+    await uninstallCommand({ agent: "omp" });
+
+    expect(mockRemoveOmpAgents).not.toHaveBeenCalled();
+    expect(mockRemoveOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(mockUnregisterMemoryMcp).not.toHaveBeenCalled();
+    expect(mockUnregisterLearnMcp).not.toHaveBeenCalled();
+    expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("Nothing to uninstall");
+  });
+
+  it("uninstalls when only the omp extension is present", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockIsOmpAgentInstalled.mockReturnValue(false);
+    mockExistsSync.mockImplementation((p) =>
+      String(p).endsWith("coding-friend.ts"),
+    );
+
+    await uninstallCommand({ agent: "omp" });
+
+    expect(mockRemoveOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("omp");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("omp");
   });
 });

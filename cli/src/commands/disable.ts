@@ -4,6 +4,7 @@ import {
   setCodexPluginEnabled,
 } from "../lib/codex-config.js";
 import { log } from "../lib/log.js";
+import { setOmpAgentDisabled } from "../lib/omp-config.js";
 import { isPluginDisabled, setPluginEnabled } from "../lib/plugin-state.js";
 import {
   resolveHostFlags,
@@ -23,6 +24,17 @@ export async function disableCommand(opts: ScopeFlags = {}): Promise<void> {
     setCodexPluginEnabled(false);
     log.success("Coding Friend disabled for Codex.");
     log.dim("Restart Codex CLI for the change to take effect.");
+    return;
+  }
+
+  if (host === "omp") {
+    const ompScope = opts.project || opts.local ? "project" : "user";
+    log.step(`Disabling omp agents (${chalk.cyan(ompScope)} scope)...`);
+    setOmpAgentDisabled(ompScope);
+    log.success(
+      `Coding Friend disabled for omp at ${chalk.cyan(ompScope)} scope.`,
+    );
+    log.dim("Restart omp for the change to take effect.");
     return;
   }
 

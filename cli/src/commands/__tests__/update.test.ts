@@ -34,6 +34,21 @@ vi.mock("../../lib/prompt-utils.js", () => ({
 vi.mock("../../lib/codex-config.js", () => ({
   CODEX_MARKETPLACE_NAME: "coding-friend-marketplace",
   getCodexInstalledVersion: vi.fn(),
+  isCodexMarketplaceRegistered: vi.fn(),
+}));
+
+vi.mock("../../lib/host.js", () => ({
+  detectHostsAvailable: vi.fn(() => []),
+}));
+
+vi.mock("../../lib/plugin-state.js", () => ({
+  isPluginInstalled: vi.fn(() => false),
+}));
+
+vi.mock("../../lib/omp-config.js", () => ({
+  deployOmpAgents: vi.fn(() => ({ deployed: ["cf-explorer.md"], skipped: [] })),
+  writeOmpExtensionEntry: vi.fn(),
+  isOmpAgentInstalled: vi.fn(() => false),
 }));
 
 vi.mock("../../lib/memory-mcp-register.js", () => ({
@@ -47,7 +62,17 @@ vi.mock("../../lib/memory-prompts.js", () => ({
 
 import { commandExists, run, runWithStderr } from "../../lib/exec.js";
 import { getInstalledVersion, ensureStatusline } from "../../lib/statusline.js";
-import { getCodexInstalledVersion } from "../../lib/codex-config.js";
+import {
+  getCodexInstalledVersion,
+  isCodexMarketplaceRegistered,
+} from "../../lib/codex-config.js";
+import { detectHostsAvailable } from "../../lib/host.js";
+import { isPluginInstalled } from "../../lib/plugin-state.js";
+import {
+  deployOmpAgents,
+  isOmpAgentInstalled,
+  writeOmpExtensionEntry,
+} from "../../lib/omp-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { readJson } from "../../lib/json.js";
 import {
@@ -63,17 +88,34 @@ const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
 const mockGetCodexInstalledVersion = vi.mocked(getCodexInstalledVersion);
+const mockIsCodexMarketplaceRegistered = vi.mocked(
+  isCodexMarketplaceRegistered,
+);
+const mockDetectHostsAvailable = vi.mocked(detectHostsAvailable);
+const mockIsPluginInstalled = vi.mocked(isPluginInstalled);
+const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
+const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
+const mockIsOmpAgentInstalled = vi.mocked(isOmpAgentInstalled);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockReadJson = vi.mocked(readJson);
 const mockIsMemoryMcpRegistered = vi.mocked(isMemoryMcpRegistered);
+const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
 const mockRemoveMemoryMcpEntry = vi.mocked(removeMemoryMcpEntry);
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
   mockResolveHostFlags.mockReturnValue({ host: "claude" });
+  mockDetectHostsAvailable.mockReturnValue([]);
+  mockIsPluginInstalled.mockReturnValue(false);
+  mockIsCodexMarketplaceRegistered.mockReturnValue(false);
+  mockIsOmpAgentInstalled.mockReturnValue(false);
+  mockDeployOmpAgents.mockReturnValue({
+    deployed: ["cf-explorer.md"],
+    skipped: [],
+  });
 
   // Default: return a package.json with version
   mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
@@ -497,7 +539,6 @@ describe("updateCommand — memory MCP migration", () => {
 
     await updateCommand({});
 
-    const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
     expect(mockRegisterMemoryMcp).toHaveBeenCalledOnce();
     expect(mockRemoveMemoryMcpEntry).toHaveBeenCalledOnce();
     // Invariant: register must happen before strip so the user is never left without a memory MCP
@@ -552,5 +593,139 @@ describe("updateCommand — memory MCP migration", () => {
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).not.toContain("legacy project-scope coding-friend-memory");
+  });
+});
+
+describe("updateCommand — auto-detect installed hosts", () => {
+  function capturedOutput(): string {
+    return vi
+      .mocked(console.log)
+      .mock.calls.map((call) => call.join(" "))
+      .join("\n");
+  }
+
+  it("updates claude only when no host flag and only claude is installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["claude", "omp"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockIsOmpAgentInstalled.mockReturnValue(false);
+
+    await updateCommand({});
+
+    expect(mockDetectHostsAvailable).toHaveBeenCalledOnce();
+    expect(mockIsPluginInstalled).toHaveBeenCalled();
+    expect(mockGetInstalledVersion).toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockWriteOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(capturedOutput()).not.toContain("── omp ──");
+  });
+
+  it("updates omp at project scope when only project is installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["omp"]);
+    mockIsOmpAgentInstalled.mockImplementation((scope) => scope === "project");
+
+    await updateCommand({});
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledTimes(1);
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledTimes(1);
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+  });
+
+  it("updates each installed omp scope when both user and project are installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["omp"]);
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await updateCommand({});
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledTimes(1);
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+  });
+
+  it("updates claude and omp with section headers when both are installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["claude", "omp"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockIsOmpAgentInstalled.mockReturnValue(true);
+
+    await updateCommand({});
+
+    expect(mockDetectHostsAvailable).toHaveBeenCalledOnce();
+    expect(mockGetInstalledVersion).toHaveBeenCalled();
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+
+    const output = capturedOutput();
+    expect(output).toContain("── Claude ──");
+    expect(output).toContain("── omp ──");
+  });
+
+  it("falls through to the existing claude path when no host is installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["claude", "omp"]);
+    mockIsPluginInstalled.mockReturnValue(false);
+    mockIsOmpAgentInstalled.mockReturnValue(false);
+    mockIsCodexMarketplaceRegistered.mockReturnValue(false);
+
+    await updateCommand({});
+
+    expect(mockDetectHostsAvailable).toHaveBeenCalledOnce();
+    expect(mockGetInstalledVersion).toHaveBeenCalled();
+    expect(mockRemoveMemoryMcpEntry).toHaveBeenCalledOnce();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    const output = capturedOutput();
+    expect(output).not.toContain("── Claude ──");
+    expect(output).not.toContain("── omp ──");
+  });
+});
+
+describe("updateCommand — omp single-host", () => {
+  it("redeploys omp agents, extension, and memory MCP for --agent omp", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await updateCommand({ agent: "omp" });
+
+    expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+    expect(mockRunWithStderr).not.toHaveBeenCalledWith(
+      "claude",
+      expect.anything(),
+    );
+  });
+
+  it("redeploys omp agents for the --omp alias", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await updateCommand({ omp: true });
+
+    expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+  });
+
+  it("maps --project to project scope for omp update", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await updateCommand({ agent: "omp", project: true });
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+
+  it("maps --local to project scope for omp update", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await updateCommand({ agent: "omp", local: true });
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledTimes(1);
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledTimes(1);
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
   });
 });

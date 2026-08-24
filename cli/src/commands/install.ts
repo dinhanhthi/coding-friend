@@ -1,6 +1,6 @@
 import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
-import { checkCodexVersion } from "../lib/host.js";
+import { checkCodexVersion, checkOmpVersion } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
 import { devStatePath } from "../lib/paths.js";
 import {
@@ -9,6 +9,8 @@ import {
   isCodexMarketplaceRegistered,
   setCodexPluginEnabled,
 } from "../lib/codex-config.js";
+import { registerMemoryMcp } from "../lib/memory-mcp-register.js";
+import { deployOmpAgents, writeOmpExtensionEntry } from "../lib/omp-config.js";
 import {
   isMarketplaceRegistered,
   isPluginDisabled,
@@ -28,6 +30,9 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   const { host } = resolveHostFlags(opts);
   if (host === "codex") {
     await installCodexCommand();
+    return;
+  } else if (host === "omp") {
+    await installOmpCommand(opts);
     return;
   }
 
@@ -215,4 +220,44 @@ async function installCodexCommand(): Promise<void> {
     "Codex CLI v0.130.0 exposes marketplace registration but not scriptable plugin install.",
   );
   log.dim("Run cf update --agent codex for on-demand plugin updates.");
+}
+
+const OMP_INSTALL_URL = "https://omp.sh/";
+const OMP_INSTALL_HINT = `curl -fsSL ${OMP_INSTALL_URL}install | sh`;
+
+async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
+  printBanner("✨ Coding Friend omp Install (beta) ✨");
+  console.log();
+
+  if (!commandExists("omp")) {
+    log.error(
+      `omp CLI not found. Install it first: ${OMP_INSTALL_URL} (${OMP_INSTALL_HINT})`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  const version = checkOmpVersion();
+  if (!version.ok) {
+    log.error(
+      `omp CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires omp CLI >= ${version.min}. Install or upgrade: ${OMP_INSTALL_URL} (${OMP_INSTALL_HINT})`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  const ompScope = opts.project || opts.local ? "project" : "user";
+
+  const { deployed } = deployOmpAgents(ompScope);
+  log.success(`Deployed ${deployed.length} omp agent definition(s).`);
+
+  writeOmpExtensionEntry(ompScope);
+  log.success("Wrote omp extension entry.");
+
+  registerMemoryMcp("omp");
+
+  console.log();
+  log.success("Installed for omp (beta).");
+  log.dim("Skills inherit from ~/.claude — no extra skill install needed.");
+  log.dim("Restart omp (or start a new session) to pick up agents and MCP.");
 }
