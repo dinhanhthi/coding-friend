@@ -7,10 +7,12 @@ vi.mock("../exec.js", () => ({
 
 import {
   checkCodexVersion,
+  checkOmpVersion,
   compareVersions,
   detectHostsAvailable,
   extractVersion,
   getCodexMinVersion,
+  getOmpMinVersion,
   resolveHost,
 } from "../host.js";
 import { commandExists, run } from "../exec.js";
@@ -34,7 +36,29 @@ describe("detectHostsAvailable", () => {
   it("includes codex when installed", () => {
     mockCommandExists.mockReturnValue(true);
 
-    expect(detectHostsAvailable()).toEqual(["claude", "codex"]);
+    expect(detectHostsAvailable()).toEqual(["claude", "codex", "omp"]);
+  });
+
+  it("returns omp when only omp is installed", () => {
+    mockCommandExists.mockImplementation((cmd) => cmd === "omp");
+
+    expect(detectHostsAvailable()).toEqual(["omp"]);
+  });
+
+  it("returns claude and omp in canonical order when codex is missing", () => {
+    mockCommandExists.mockImplementation(
+      (cmd) => cmd === "claude" || cmd === "omp",
+    );
+
+    expect(detectHostsAvailable()).toEqual(["claude", "omp"]);
+  });
+
+  it("returns codex and omp in canonical order when claude is missing", () => {
+    mockCommandExists.mockImplementation(
+      (cmd) => cmd === "codex" || cmd === "omp",
+    );
+
+    expect(detectHostsAvailable()).toEqual(["codex", "omp"]);
   });
 });
 
@@ -64,6 +88,48 @@ describe("resolveHost", () => {
   it("rejects conflicting --agent claude and --codex", () => {
     expect(() => resolveHost({ agent: "claude", codex: true })).toThrow(
       "Use either --agent claude or --codex",
+    );
+  });
+
+  it("resolves --agent omp", () => {
+    expect(resolveHost({ agent: "omp" })).toBe("omp");
+  });
+
+  it("resolves --omp alias", () => {
+    expect(resolveHost({ omp: true })).toBe("omp");
+  });
+
+  it("allows --agent omp with --omp alias", () => {
+    expect(resolveHost({ agent: "omp", omp: true })).toBe("omp");
+  });
+
+  it("rejects unknown agents listing all valid hosts", () => {
+    expect(() => resolveHost({ agent: "unknown" })).toThrow(
+      'Unsupported agent "unknown". Use "claude", "codex", or "omp".',
+    );
+  });
+
+  it("rejects conflicting --agent claude and --omp", () => {
+    expect(() => resolveHost({ agent: "claude", omp: true })).toThrow(
+      "Use either --agent claude or --omp, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent codex and --omp", () => {
+    expect(() => resolveHost({ agent: "codex", omp: true })).toThrow(
+      "Use either --agent codex or --omp, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent omp and --codex", () => {
+    expect(() => resolveHost({ agent: "omp", codex: true })).toThrow(
+      "Use either --agent omp or --codex, not both.",
+    );
+  });
+
+  it("rejects conflicting --codex and --omp aliases", () => {
+    expect(() => resolveHost({ codex: true, omp: true })).toThrow(
+      "Use either --codex or --omp, not both.",
     );
   });
 });
@@ -110,6 +176,41 @@ describe("version helpers", () => {
       ok: false,
       actual: undefined,
       min: "0.130.0",
+    });
+  });
+
+  it("returns the locked omp minimum", () => {
+    expect(getOmpMinVersion()).toBe("0.1.0");
+  });
+
+  it("passes when omp is at the minimum", () => {
+    mockRun.mockReturnValue("omp 0.1.0");
+
+    expect(checkOmpVersion()).toEqual({
+      ok: true,
+      actual: "0.1.0",
+      min: "0.1.0",
+    });
+    expect(mockRun).toHaveBeenCalledWith("omp", ["--version"]);
+  });
+
+  it("fails when omp is too old", () => {
+    mockRun.mockReturnValue("omp 0.0.9");
+
+    expect(checkOmpVersion()).toEqual({
+      ok: false,
+      actual: "0.0.9",
+      min: "0.1.0",
+    });
+  });
+
+  it("fails when omp is missing", () => {
+    mockRun.mockReturnValue(null);
+
+    expect(checkOmpVersion()).toEqual({
+      ok: false,
+      actual: undefined,
+      min: "0.1.0",
     });
   });
 });
