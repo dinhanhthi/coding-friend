@@ -199,3 +199,83 @@ export function codexLocalMarketplacePath(): string {
 export function codexAgentsDir(): string {
   return join(codexConfigDir(), "agents");
 }
+
+/**
+ * Resolve omp's global home directory.
+ * Honors OMP_HOME (default ~/.omp), matching Codex CLI's env lookup.
+ */
+export function ompHome(): string {
+  const env = process.env.OMP_HOME?.trim();
+  if (!env) return join(homedir(), ".omp");
+  if (env === "~") return homedir();
+  if (env.startsWith("~/")) return join(homedir(), env.slice(2));
+  return env;
+}
+
+/** Path to omp agent config dir (~/.omp/agent) */
+export function ompAgentDir(): string {
+  return join(ompHome(), "agent");
+}
+
+/**
+ * Path to omp user-discovered agents (~/.omp/agent/agents).
+ * Flat, non-recursive *.md — this is the directory omp actually scans.
+ */
+export function ompUserAgentsDir(): string {
+  return join(ompAgentDir(), "agents");
+}
+
+/** Path to omp subagent registry (~/.omp/agents) */
+export function ompAgentsDir(): string {
+  return join(ompHome(), "agents");
+}
+
+/** Path to omp user-level MCP file (~/.omp/agent/mcp.json) */
+export function ompMcpJsonPath(): string {
+  return join(ompAgentDir(), "mcp.json");
+}
+
+/** Path to omp user-level config (~/.omp/agent/config.yml) */
+export function ompConfigYmlPath(): string {
+  return join(ompAgentDir(), "config.yml");
+}
+
+/** Path to omp user-level extensions (~/.omp/agent/extensions) */
+export function ompExtensionsDir(): string {
+  return join(ompAgentDir(), "extensions");
+}
+
+/** Path to Coding Friend agents under omp (~/.omp/agents/coding-friend) */
+export function ompCodingFriendAgentsDir(): string {
+  return join(ompAgentsDir(), "coding-friend");
+}
+
+/** Path to project-level omp override root (<cwd>/.omp) */
+export function ompProjectDir(): string {
+  return resolve(process.cwd(), ".omp");
+}
+
+/** Path to project-level omp MCP file (<cwd>/.omp/mcp.json) */
+export function ompProjectMcpJsonPath(): string {
+  return resolve(ompProjectDir(), "mcp.json");
+}
+
+/** Path to project-level omp config (<cwd>/.omp/config.yml) */
+export function ompProjectConfigYmlPath(): string {
+  return resolve(ompProjectDir(), "config.yml");
+}
+
+/** Path to project-level omp agents (<cwd>/.omp/agents) */
+export function ompProjectAgentsDir(): string {
+  return resolve(ompProjectDir(), "agents");
+}
+
+/** Path to project-level Coding Friend agents (<cwd>/.omp/agents/coding-friend) */
+export function ompProjectCodingFriendAgentsDir(): string {
+  return resolve(ompProjectAgentsDir(), "coding-friend");
+}
+
+/** Path to project-level omp extensions (<cwd>/.omp/extensions) */
+export function ompProjectExtensionsDir(): string {
+  return resolve(ompProjectDir(), "extensions");
+}
