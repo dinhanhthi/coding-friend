@@ -14,6 +14,7 @@ const MANAGERS = [
 const HOSTS = [
   { id: "claude", label: "Claude", suffix: "" },
   { id: "codex", label: "Codex", suffix: " --agent codex" },
+  { id: "omp", label: "omp", suffix: " --agent omp" },
 ] as const;
 
 type ManagerId = (typeof MANAGERS)[number]["id"];
@@ -99,7 +100,7 @@ export default function InstallSection() {
           </div>
 
           <div className="flex justify-center">
-            <div className="inline-flex rounded-full border border-[#a0a0a05d] p-1">
+            <div className="inline-flex flex-wrap justify-center rounded-full border border-[#a0a0a05d] p-1">
               {HOSTS.map((h) => (
                 <button
                   key={h.id}
