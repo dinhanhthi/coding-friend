@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 // Refresh local plugin installs after editing anything under plugin/.
-// Runs three steps so both clients pick up your source changes:
+// Runs four steps so all clients pick up your source changes:
 //   1. build:codex  → regenerate plugin-codex/ from plugin/
 //   2. cf dev sync  → copy plugin/ into the Claude Code dev cache
+//   2b. cf update --agent omp --plugin → re-deploy converted agents into ~/.omp
+//       (omp reads skills from the Claude cache and hooks/extension live from the repo)
 //   3. clear Codex cache → Codex re-copies plugin-codex/ on next launch
 // Wired as: npm run ud-plugin-local
 
@@ -41,6 +43,20 @@ try {
   );
 }
 
+// 2b. Re-deploy converted agents into ~/.omp so omp picks up plugin/agents/ edits.
+//     Skills/hooks/extension are read live (Claude cache / repo), only agents are copied.
+//     Skips gracefully if omp is not installed or `cf` is not on PATH.
+let ompSynced = false;
+console.log("\n  → cf update --agent omp --plugin");
+try {
+  run("cf", ["update", "--agent", "omp", "--plugin"]);
+  ompSynced = true;
+} catch {
+  console.log(
+    "  ⚠ omp redeploy skipped — is omp installed and is `cf` on PATH?",
+  );
+}
+
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
 console.log("\n  → clearing Codex cache");
 if (existsSync(CODEX_CACHE)) {
@@ -61,6 +77,11 @@ if (claudeSynced) {
 } else {
   console.log(
     "    • Claude Code — not synced; run `cf dev on .` then this script again",
+  );
+}
+if (ompSynced) {
+  console.log(
+    "    • oh-my-pi — restart omp (agents redeployed; hooks/extension read live from repo)",
   );
 }
 console.log("");
