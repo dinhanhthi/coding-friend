@@ -145,6 +145,12 @@ const hosts = [
     classes: "border-teal-500/30 bg-teal-500/10 text-teal-300",
     beta: true,
   },
+  {
+    name: "omp (oh-my-pi)",
+    detail: "Opt in with --agent omp",
+    classes: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+    beta: true,
+  },
 ];
 
 const colorMap: Record<
@@ -233,7 +239,7 @@ export default function EcosystemSection() {
             The Ecosystem
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Two supported hosts, five tools, one cohesive workflow. The plugin
+            Three supported hosts, five tools, one cohesive workflow. The plugin
             is the heart — the rest amplify what you build.
           </p>
         </div>

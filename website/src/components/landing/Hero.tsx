@@ -19,7 +19,7 @@ export default function Hero() {
             priority
           />
           <p className="mb-4 text-base font-medium tracking-wider text-slate-500 uppercase">
-            Claude Code + Codex CLI
+            Claude Code + Codex CLI + omp (beta)
           </p>
           <h1 className="text-4xl leading-[1.1] font-bold tracking-[-0.03em] text-balance text-white sm:text-5xl lg:text-6xl">
             Disciplined Engineering{" "}
@@ -40,6 +40,13 @@ export default function Hero() {
             <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 font-mono text-teal-300">
               Codex CLI
               <span className="rounded-full bg-teal-400/20 px-1.5 text-[0.65em] font-semibold tracking-wide text-teal-200 uppercase">
+                beta
+              </span>
+            </span>
+            <span className="text-slate-600">+</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-mono text-amber-300">
+              omp
+              <span className="rounded-full bg-amber-400/20 px-1.5 text-[0.65em] font-semibold tracking-wide text-amber-200 uppercase">
                 beta
               </span>
             </span>
