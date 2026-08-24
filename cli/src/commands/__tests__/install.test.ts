@@ -31,6 +31,7 @@ vi.mock("../../lib/prompt-utils.js", () => ({
 
 vi.mock("../../lib/host.js", () => ({
   checkCodexVersion: vi.fn(),
+  checkOmpVersion: vi.fn(),
 }));
 
 vi.mock("../../lib/codex-config.js", () => ({
@@ -38,6 +39,15 @@ vi.mock("../../lib/codex-config.js", () => ({
   findCodexAgentSourceDir: vi.fn(),
   isCodexMarketplaceRegistered: vi.fn(),
   setCodexPluginEnabled: vi.fn(),
+}));
+
+vi.mock("../../lib/omp-config.js", () => ({
+  deployOmpAgents: vi.fn(),
+  writeOmpExtensionEntry: vi.fn(),
+}));
+
+vi.mock("../../lib/memory-mcp-register.js", () => ({
+  registerMemoryMcp: vi.fn(),
 }));
 
 vi.mock("fs", async () => {
@@ -54,7 +64,7 @@ import {
 } from "../../lib/plugin-state.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
-import { checkCodexVersion } from "../../lib/host.js";
+import { checkCodexVersion, checkOmpVersion } from "../../lib/host.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import {
   deployCodexAgents,
@@ -62,6 +72,11 @@ import {
   isCodexMarketplaceRegistered,
   setCodexPluginEnabled,
 } from "../../lib/codex-config.js";
+import {
+  deployOmpAgents,
+  writeOmpExtensionEntry,
+} from "../../lib/omp-config.js";
+import { registerMemoryMcp } from "../../lib/memory-mcp-register.js";
 import { installCommand } from "../install.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -81,6 +96,10 @@ const mockIsCodexMarketplaceRegistered = vi.mocked(
 const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
 const mockFindCodexAgentSourceDir = vi.mocked(findCodexAgentSourceDir);
 const mockDeployCodexAgents = vi.mocked(deployCodexAgents);
+const mockCheckOmpVersion = vi.mocked(checkOmpVersion);
+const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
+const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
+const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -97,6 +116,16 @@ beforeEach(() => {
   });
   mockFindCodexAgentSourceDir.mockReturnValue("/repo/plugin-codex/agents");
   mockDeployCodexAgents.mockReturnValue(12);
+  mockCheckOmpVersion.mockReturnValue({
+    ok: true,
+    actual: "18.0.3",
+    min: "0.1.0",
+  });
+  mockDeployOmpAgents.mockReturnValue({
+    deployed: ["cf-explorer.md"],
+    skipped: [],
+  });
+  mockRegisterMemoryMcp.mockReturnValue(true);
 });
 
 describe("installCommand", () => {
@@ -245,6 +274,9 @@ describe("installCommand", () => {
     expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
     expect(mockFindCodexAgentSourceDir).not.toHaveBeenCalled();
     expect(mockDeployCodexAgents).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockWriteOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
   });
 
   it("does not pass --scope to marketplace add (always global)", async () => {
@@ -351,5 +383,105 @@ describe("installCommand", () => {
       "add",
       "dinhanhthi/coding-friend",
     ]);
+  });
+
+  it("deploys omp agents, extension, and memory MCP for --agent omp", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "omp" });
+
+    expect(mockCommandExists).toHaveBeenCalledWith("omp");
+    expect(mockCheckOmpVersion).toHaveBeenCalled();
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("user");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("user");
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockDeployCodexAgents).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalledWith(
+      "claude",
+      expect.anything(),
+    );
+  });
+
+  it("reports omp beta install success and skill inheritance", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "omp" });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("Installed for omp (beta)"),
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("~/.claude"),
+    );
+  });
+
+  it("uses project omp scope for --project", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "omp", project: true });
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+
+  it("maps --local to project omp scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "omp", local: true });
+
+    expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
+    expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+
+  it("exits when omp CLI is missing without deploying", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(false);
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "omp" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("https://omp.sh/"),
+    );
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockWriteOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("exits when omp version is unsupported without deploying", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+    mockCheckOmpVersion.mockReturnValue({
+      ok: false,
+      actual: "0.0.1",
+      min: "0.1.0",
+    });
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "omp" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("https://omp.sh/"),
+    );
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockWriteOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
   });
 });

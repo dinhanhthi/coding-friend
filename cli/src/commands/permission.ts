@@ -278,12 +278,20 @@ export async function permissionCommand(opts: {
   project?: boolean;
   agent?: string;
   codex?: boolean;
+  omp?: boolean;
   enableAutoApprove?: boolean;
   disableAutoApprove?: boolean;
 }): Promise<void> {
   const { host } = resolveHostFlags(opts satisfies ScopeFlags);
   if (host === "codex") {
     codexPermissionCommand(opts);
+    return;
+  }
+  if (host === "omp") {
+    log.info(
+      "omp uses its own approval-mode; run `omp config` / omp approval settings — coding-friend does not manage omp permissions.",
+    );
+    log.dim("See docs/omp-dev.md.");
     return;
   }
 

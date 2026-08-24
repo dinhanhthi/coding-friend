@@ -635,12 +635,14 @@ export function removeOmpExtensionEntry(scope: OmpScope): void {
   if (existsSync(filePath)) rmSync(filePath);
 }
 
-export function setOmpAgentEnabled(scope: OmpScope): void {
+export function setOmpAgentEnabled(scope: OmpScope): boolean {
   const filePath = configYmlForScope(scope);
-  if (!existsSync(filePath)) return;
+  if (!existsSync(filePath)) return false;
   const current = readFileSync(filePath, "utf8");
   const next = removeOurDisabledAgents(current, ourAgentNames(scope));
-  if (next !== current) writeFileSync(filePath, next, "utf8");
+  if (next === current) return false;
+  writeFileSync(filePath, next, "utf8");
+  return true;
 }
 
 export function setOmpAgentDisabled(scope: OmpScope): void {

@@ -27,17 +27,6 @@ vi.mock("../log.js", () => ({
   },
 }));
 
-vi.mock("../host.js", () => ({
-  resolveHost: vi.fn(
-    (opts: { agent?: string; codex?: boolean; omp?: boolean }) => {
-      if (opts.agent === "bad") throw new Error("bad host");
-      if (opts.omp || opts.agent === "omp") return "omp";
-      if (opts.codex || opts.agent === "codex") return "codex";
-      return "claude";
-    },
-  ),
-}));
-
 // Mock @inquirer/prompts
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
@@ -434,7 +423,18 @@ describe("resolveHostFlags", () => {
   it("logs and exits on invalid host flags", () => {
     resolveHostFlags({ agent: "bad" });
 
-    expect(log.error).toHaveBeenCalledWith("bad host");
+    expect(log.error).toHaveBeenCalledWith(
+      'Unsupported agent "bad". Use "claude", "codex", or "omp".',
+    );
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it("logs and exits when --agent claude conflicts with --omp", () => {
+    resolveHostFlags({ agent: "claude", omp: true });
+
+    expect(log.error).toHaveBeenCalledWith(
+      "Use either --agent claude or --omp, not both.",
+    );
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 });

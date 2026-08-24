@@ -23,6 +23,8 @@ import {
   codexConfigTomlPath,
   globalConfigPath,
   localConfigPath,
+  ompProjectDir,
+  ompProjectMcpJsonPath,
   resolvePath,
 } from "../lib/paths.js";
 import {
@@ -32,6 +34,7 @@ import {
   writeCodexAgentLimits,
   writeCodexMemoryMcpConfig,
 } from "../lib/codex-config.js";
+import { isOmpAgentInstalled } from "../lib/omp-config.js";
 import {
   hasShellCompletion,
   ensureShellCompletion,
@@ -1368,6 +1371,10 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
     initCodexCommand(opts);
     return;
   }
+  if (host === "omp") {
+    initOmpCommand(opts);
+    return;
+  }
 
   _stepIndex = 0;
   console.log();
@@ -1649,6 +1656,37 @@ function initCodexCommand(opts: InitOptions): void {
   console.log();
   log.congrats("Codex setup complete!");
   log.dim("Restart Codex CLI or start a new session to use Coding Friend.");
+}
+
+function initOmpCommand(_opts: InitOptions): void {
+  _stepIndex = 0;
+  console.log();
+  printBanner("✨ Coding Friend OMP Setup ✨");
+  console.log();
+
+  mkdirSync(ompProjectDir(), { recursive: true });
+
+  const mcpPath = ompProjectMcpJsonPath();
+  if (!existsSync(mcpPath)) {
+    writeJson(mcpPath, { mcpServers: {} });
+    log.success("Created project .omp/mcp.json.");
+  } else {
+    log.dim(".omp/mcp.json already exists; left unchanged.");
+  }
+
+  if (!existsSync(localConfigPath())) {
+    writeJson(localConfigPath(), {});
+    log.success("Created .coding-friend/config.json.");
+  } else {
+    log.dim(".coding-friend/config.json already exists; left unchanged.");
+  }
+
+  console.log();
+  log.congrats("OMP setup complete!");
+  if (!isOmpAgentInstalled("user") && !isOmpAgentInstalled("project")) {
+    log.dim("Next: cf install --agent omp");
+  }
+  log.dim("Restart omp or start a new session to use Coding Friend.");
 }
 
 function renderCodexAgentsMd(): string {

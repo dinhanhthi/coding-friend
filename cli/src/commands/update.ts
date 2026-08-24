@@ -7,8 +7,17 @@ import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
 import {
   CODEX_MARKETPLACE_NAME,
   getCodexInstalledVersion,
+  isCodexMarketplaceRegistered,
 } from "../lib/codex-config.js";
+import { detectHostsAvailable, type Host } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
+import {
+  deployOmpAgents,
+  isOmpAgentInstalled,
+  writeOmpExtensionEntry,
+  type OmpScope,
+} from "../lib/omp-config.js";
+import { isPluginInstalled } from "../lib/plugin-state.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import {
@@ -102,16 +111,106 @@ export interface UpdateOptions extends ScopeFlags {
   statusline?: boolean;
 }
 
+interface UpdateRunMode {
+  skipBanner?: boolean;
+  skipCli?: boolean;
+}
+
+function argvHasAgentFlag(): boolean {
+  return process.argv.some((a) => a === "--agent" || a.startsWith("--agent="));
+}
+
+/** True when the user (or a direct API caller) named a host, not Commander's default. */
+function hasExplicitHost(opts: UpdateOptions): boolean {
+  if (opts.codex === true || opts.omp === true) return true;
+  if (argvHasAgentFlag()) return true;
+  const agent = opts.agent?.trim().toLowerCase();
+  return agent === "codex" || agent === "omp";
+}
+
+/**
+ * Strip a leftover `--agent claude` when the caller used `--codex` / `--omp`
+ * without an explicit `--agent` on argv. resolveHost() treats that pair as a conflict.
+ */
+function flagsForHostResolve(opts: UpdateOptions): UpdateOptions {
+  if (
+    !argvHasAgentFlag() &&
+    opts.agent === "claude" &&
+    (opts.codex === true || opts.omp === true)
+  ) {
+    return { ...opts, agent: undefined };
+  }
+  return opts;
+}
+
+function isHostInstalled(host: Host): boolean {
+  switch (host) {
+    case "claude":
+      return isPluginInstalled();
+    case "codex":
+      return isCodexMarketplaceRegistered();
+    case "omp":
+      return isOmpAgentInstalled("user") || isOmpAgentInstalled("project");
+  }
+}
+
+function hostSectionTitle(host: Host): string {
+  switch (host) {
+    case "claude":
+      return "Claude";
+    case "codex":
+      return "Codex";
+    case "omp":
+      return "omp";
+  }
+}
+
+async function updateHost(
+  host: Host,
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
+  if (host === "codex") return updateCodexCommand(opts, mode);
+  if (host === "omp") return updateOmpCommand(opts, mode);
+  return updateClaudeCommand(opts, mode);
+}
+
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
-  const { host } = resolveHostFlags(opts);
-  if (host === "codex") {
-    await updateCodexCommand(opts);
+  if (hasExplicitHost(opts)) {
+    const { host } = resolveHostFlags(flagsForHostResolve(opts));
+    await updateHost(host, opts);
     return;
   }
 
+  const installed = detectHostsAvailable().filter(isHostInstalled);
+  if (installed.length === 0) {
+    await updateClaudeCommand(opts);
+    return;
+  }
+  if (installed.length === 1) {
+    await updateHost(installed[0], opts);
+    return;
+  }
+
+  printBanner("✨ Coding Friend Update ✨");
+  console.log();
+  for (const [index, host] of installed.entries()) {
+    console.log(chalk.bold(`── ${hostSectionTitle(host)} ──`));
+    console.log();
+    await updateHost(host, opts, {
+      skipBanner: true,
+      skipCli: index > 0,
+    });
+  }
+}
+
+async function updateClaudeCommand(
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
   // If no component flags specified, update everything
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = updateAll || !!opts.cli;
+  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
   const doStatusline = updateAll || !!opts.statusline;
 
@@ -130,8 +229,10 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     scope = "user";
   }
 
-  printBanner("✨ Coding Friend Update ✨");
-  console.log();
+  if (!mode?.skipBanner) {
+    printBanner("✨ Coding Friend Update ✨");
+    console.log();
+  }
 
   // Step 1: Gather info
   const currentVersion = getInstalledVersion();
@@ -358,13 +459,18 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   log.dim("Restart Claude Code (or start a new session) to see changes.");
 }
 
-async function updateCodexCommand(opts: UpdateOptions): Promise<void> {
+async function updateCodexCommand(
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = updateAll || !!opts.cli;
+  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
 
-  printBanner("✨ Coding Friend Codex Update ✨");
-  console.log();
+  if (!mode?.skipBanner) {
+    printBanner("✨ Coding Friend Codex Update ✨");
+    console.log();
+  }
 
   if (doPlugin) {
     const beforeVersion = getCodexInstalledVersion();
@@ -441,4 +547,82 @@ async function updateCodexCommand(opts: UpdateOptions): Promise<void> {
 
   console.log();
   log.dim("Restart Codex CLI (or start a new session) to see changes.");
+}
+
+function ompUpdateScopes(opts: UpdateOptions): OmpScope[] {
+  if (opts.project || opts.local) return ["project"];
+  if (opts.user || opts.global) return ["user"];
+  const scopes: OmpScope[] = [];
+  if (isOmpAgentInstalled("user")) scopes.push("user");
+  if (isOmpAgentInstalled("project")) scopes.push("project");
+  return scopes.length > 0 ? scopes : ["user"];
+}
+
+async function updateOmpCommand(
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
+  const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
+  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
+  const doPlugin = updateAll || !!opts.plugin;
+  const scopes = ompUpdateScopes(opts);
+
+  if (!mode?.skipBanner) {
+    printBanner("✨ Coding Friend omp Update ✨");
+    console.log();
+  }
+
+  if (doPlugin) {
+    const cliVersion = getCliVersion();
+    console.log(`  CLI         ${cliVersion}`);
+    for (const scope of scopes) {
+      log.step(`Updating omp agents (${scope} scope)...`);
+      const { deployed, skipped } = deployOmpAgents(scope);
+      writeOmpExtensionEntry(scope);
+      const fileLabel = deployed.length === 1 ? "file" : "files";
+      log.success(
+        `omp agents updated (${deployed.length} ${fileLabel}, ${scope} scope).`,
+      );
+      if (skipped.length > 0) {
+        log.warn(`Skipped ${skipped.length} agent file(s).`);
+      }
+      log.success("omp extension entry refreshed.");
+    }
+    registerMemoryMcp("omp");
+    log.success("omp memory MCP entry refreshed.");
+  }
+
+  if (doCli) {
+    const cliVersion = getCliVersion();
+    const latestCliVersion = getLatestCliVersion();
+    if (!latestCliVersion) {
+      log.warn("Cannot check latest CLI version from npm.");
+    } else {
+      const cmp = semverCompare(cliVersion, latestCliVersion);
+      if (cmp < 0) {
+        log.step(
+          `CLI update available: ${chalk.yellow(`v${cliVersion}`)} → ${chalk.green(`v${latestCliVersion}`)}`,
+        );
+        const result = run("npm", [
+          "install",
+          "-g",
+          "coding-friend-cli@latest",
+        ]);
+        if (result === null) {
+          log.error(
+            "CLI update failed. Try manually: npm install -g coding-friend-cli@latest",
+          );
+        } else {
+          log.success(`CLI updated to ${chalk.green(`v${latestCliVersion}`)}`);
+        }
+      }
+    }
+  }
+
+  if (opts.statusline) {
+    log.warn("omp does not use the Claude statusline. Skipping.");
+  }
+
+  console.log();
+  log.dim("Restart omp (or start a new session) to see changes.");
 }

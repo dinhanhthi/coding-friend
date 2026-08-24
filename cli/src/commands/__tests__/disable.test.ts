@@ -18,11 +18,16 @@ vi.mock("../../lib/codex-config.js", () => ({
   setCodexPluginEnabled: vi.fn(),
 }));
 
+vi.mock("../../lib/omp-config.js", () => ({
+  setOmpAgentDisabled: vi.fn(),
+}));
+
 import { isPluginDisabled, setPluginEnabled } from "../../lib/plugin-state.js";
 import {
   isCodexPluginDisabled,
   setCodexPluginEnabled,
 } from "../../lib/codex-config.js";
+import { setOmpAgentDisabled } from "../../lib/omp-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { disableCommand } from "../disable.js";
 
@@ -32,6 +37,7 @@ const mockResolveScope = vi.mocked(resolveScope);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockIsCodexPluginDisabled = vi.mocked(isCodexPluginDisabled);
 const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
+const mockSetOmpAgentDisabled = vi.mocked(setOmpAgentDisabled);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -90,6 +96,35 @@ describe("disableCommand", () => {
     await disableCommand({ agent: "codex" });
 
     expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(false);
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("disables omp agents without resolving Claude scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await disableCommand({ agent: "omp" });
+
+    expect(mockSetOmpAgentDisabled).toHaveBeenCalledWith("user");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockSetPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+  });
+
+  it("maps omp --project to project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await disableCommand({ agent: "omp", project: true });
+
+    expect(mockSetOmpAgentDisabled).toHaveBeenCalledWith("project");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("maps omp --local to project scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+
+    await disableCommand({ agent: "omp", local: true });
+
+    expect(mockSetOmpAgentDisabled).toHaveBeenCalledWith("project");
     expect(mockResolveScope).not.toHaveBeenCalled();
   });
 });

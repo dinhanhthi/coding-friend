@@ -381,6 +381,18 @@ describe("setOmpAgentDisabled / setOmpAgentEnabled", () => {
     expect(existsSync(file)).toBe(false);
   });
 
+  it("returns false when enabling and config.yml is missing", () => {
+    expect(existsSync(userConfigPath())).toBe(false);
+    expect(setOmpAgentEnabled("user")).toBe(false);
+  });
+
+  it("returns true when enable writes a disable-list change", () => {
+    seedUserConfig(USER_TASK_CONFIG);
+    setOmpAgentDisabled("user");
+
+    expect(setOmpAgentEnabled("user")).toBe(true);
+  });
+
   it("does not emit a second task key when a managed block already exists", () => {
     const file = seedUserConfig(USER_TASK_CONFIG);
 
