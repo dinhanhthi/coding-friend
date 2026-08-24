@@ -1,9 +1,38 @@
 import { runWithStderr } from "./exec.js";
+import type { Host } from "./host.js";
 import { log } from "./log.js";
+import {
+  readOmpMcpJson,
+  removeOmpMcpEntry,
+  writeOmpMcpEntry,
+  type OmpMcpServer,
+} from "./omp-config.js";
 
 const MCP_NAME = "coding-friend-memory";
 
-export function registerMemoryMcp(): boolean {
+const OMP_MEMORY_SERVER: OmpMcpServer = {
+  command: "npx",
+  args: ["-y", "coding-friend-cli", "mcp-serve"],
+};
+
+function hasOmpMemoryEntry(): boolean {
+  const data = readOmpMcpJson();
+  return data !== null && MCP_NAME in data.mcpServers;
+}
+
+export function registerMemoryMcp(host: Host = "claude"): boolean {
+  if (host === "omp") {
+    try {
+      writeOmpMcpEntry(MCP_NAME, OMP_MEMORY_SERVER);
+      return true;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not register MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  // "codex" uses writeCodexMemoryMcpConfig(memoryDir) in init.ts — keep the Claude CLI path here.
   const result = runWithStderr("claude", [
     "mcp",
     "add",
@@ -30,12 +59,25 @@ export function registerMemoryMcp(): boolean {
   return true;
 }
 
-export function isMemoryMcpRegistered(): boolean {
+export function isMemoryMcpRegistered(host: Host = "claude"): boolean {
+  if (host === "omp") return hasOmpMemoryEntry();
+
   const result = runWithStderr("claude", ["mcp", "get", MCP_NAME]);
   return result.exitCode === 0;
 }
 
-export function unregisterMemoryMcp(): boolean {
+export function unregisterMemoryMcp(host: Host = "claude"): boolean {
+  if (host === "omp") {
+    try {
+      removeOmpMcpEntry(MCP_NAME);
+      return !hasOmpMemoryEntry();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not unregister MCP: ${detail}`);
+      return false;
+    }
+  }
+
   const result = runWithStderr("claude", [
     "mcp",
     "remove",
