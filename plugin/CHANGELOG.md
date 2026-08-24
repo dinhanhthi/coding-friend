@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.41.0 (2026-08-24)
+
+- Add omp (oh-my-pi) as a third first-class Coding Friend host alongside Claude Code and Codex, via bridge mode: skills inherited from `~/.claude`, 12 cf-* agents deployed to `~/.omp/agent/agents/`, shared bash hooks proxied through `plugin/omp/extension.ts` with `CF_HOST=omp`, memory MCP registered by writing `~/.omp/agent/mcp.json` [#02719a4b](https://github.com/dinhanhthi/coding-friend/commit/02719a4b)
+
 ## v0.40.3 (2026-08-21)
 
 - Fix `/cf-plan --model` on Codex: Step 3 now spawns `cf-planner` with an explicit Codex model instead of Claude Agent API wording, `$cf-help` advertises `--model <name>` (Codex model names), and the fast-mode skip warning for auto-detected fast prints after mode is resolved [#2612ffe9](https://github.com/dinhanhthi/coding-friend/commit/2612ffe9)
