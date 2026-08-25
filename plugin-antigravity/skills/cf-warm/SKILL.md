@@ -39,7 +39,7 @@ Output goes to `{docsDir}/warm/` (default: `docs/warm/`). Check `.coding-friend/
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-warm
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-warm
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -143,7 +143,7 @@ Use the `language` setting from config for the report language.
 
 **6a. Delegate to cf-writer agent:**
 
-Construct a write spec and invoke the cf-writer agent via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
+Construct a write spec and invoke the cf-writer agent by calling `invoke_subagent` with agent `cf-writer`.
 
 ```
 WRITE SPEC

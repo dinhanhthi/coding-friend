@@ -29,7 +29,7 @@ Creates a complete, self-contained review document in `docs/reviews/` that any e
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-review-out
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -56,8 +56,8 @@ Construct the **full label** by prepending today's date: `YYYY-MM-DD-<label>` (e
 
 ```bash
 mkdir -p <docsDir>/reviews && \
-  bash "${AGY_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
-  bash "${AGY_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
+  bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh" | \
+  bash "<plugin-root>/skills/cf-review-out/scripts/build-review-prompt.sh" \
     "YYYY-MM-DD-<label>" "<docsDir>" \
   > <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md
 ```

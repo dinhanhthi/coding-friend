@@ -2,13 +2,17 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.41.0 (2026-08-24)
+
+- Add omp (oh-my-pi) as a third first-class Coding Friend host alongside Claude Code and Codex, via bridge mode: skills inherited from `~/.claude`, 12 cf-* agents deployed to `~/.omp/agent/agents/`, shared bash hooks proxied through `plugin/omp/extension.ts` with `CF_HOST=omp`, memory MCP registered by writing `~/.omp/agent/mcp.json` [#02719a4b](https://github.com/dinhanhthi/coding-friend/commit/02719a4b)
+
 ## v0.40.3 (2026-08-21)
 
 - Fix `/cf-plan --model` on Codex: Step 3 now spawns `cf-planner` with an explicit Codex model instead of Claude Agent API wording, `$cf-help` advertises `--model <name>` (Codex model names), and the fast-mode skip warning for auto-detected fast prints after mode is resolved [#2612ffe9](https://github.com/dinhanhthi/coding-friend/commit/2612ffe9)
 
 ## v0.40.2 (2026-08-21)
 
-- `/cf-plan`, `cf-planner`, and `cf-implementer` now inherit the session's active model instead of hardcoding `pro`/`pro`; `/cf-plan --model <alias>` pins `cf-planner` at brainstorm (`pro`/`pro`/`flash`/`fable` on Claude; a Codex model name such as `gpt-5.5` on Codex). Fast mode skips the flag. [#da3623e5](https://github.com/dinhanhthi/coding-friend/commit/da3623e5)
+- `/cf-plan`, `cf-planner`, and `cf-implementer` now inherit the session's active model instead of hardcoding `opus`/`sonnet`; `/cf-plan --model <alias>` pins `cf-planner` at brainstorm (`opus`/`sonnet`/`haiku`/`fable` on Claude; a Codex model name such as `gpt-5.5` on Codex). Fast mode skips the flag. [#da3623e5](https://github.com/dinhanhthi/coding-friend/commit/da3623e5)
 
 ## v0.40.1 (2026-07-24)
 
@@ -228,7 +232,7 @@
 ## v0.21 (2026-04-01)
 
 - Add `/cf-warm` skill — catch up after absence by summarizing git history for a specific user, with dry-run safety, topic clustering, and memory indexing [#a507a96](https://github.com/dinhanhthi/coding-friend/commit/a507a96)
-- Expand GEMINI.md sync to all memory categories with opt-in `sync_to_claude_md` parameter [#a0b2a5b](https://github.com/dinhanhthi/coding-friend/commit/a0b2a5b)
+- Expand CLAUDE.md sync to all memory categories with opt-in `sync_to_claude_md` parameter [#a0b2a5b](https://github.com/dinhanhthi/coding-friend/commit/a0b2a5b)
 - Use label-based folder names instead of UUIDs in `/cf-session` [#674bec8](https://github.com/dinhanhthi/coding-friend/commit/674bec8)
 - Add stats count verification and `StatsSection` update rules to `cf-plan-custom` guide [#bfc7a4e](https://github.com/dinhanhthi/coding-friend/commit/bfc7a4e)
 
@@ -248,7 +252,7 @@
 ## v0.18 (2026-03-30)
 
 - Refactor `auto-approve` hook to Claude Code Auto-Mode style 3-step classification (auto-approve → LLM classify → block) [#4c57e1f](https://github.com/dinhanhthi/coding-friend/commit/4c57e1f)
-- Show GEMINI.md update status in `cf-memory` output instead of raw file path [#f2b9022](https://github.com/dinhanhthi/coding-friend/commit/f2b9022)
+- Show CLAUDE.md update status in `cf-memory` output instead of raw file path [#f2b9022](https://github.com/dinhanhthi/coding-friend/commit/f2b9022)
 - Restructure code review output to unified 4-category format with consistent emoji headers [#2857066](https://github.com/dinhanhthi/coding-friend/commit/2857066) [#bf9c94e](https://github.com/dinhanhthi/coding-friend/commit/bf9c94e)
 - Add critical verification step to `cf-review-in` before acting on external review findings [#8b33fc3](https://github.com/dinhanhthi/coding-friend/commit/8b33fc3)
 - Add skill invocation guard to prevent false positive skill activation when discussing skills [#9eee92a](https://github.com/dinhanhthi/coding-friend/commit/9eee92a)
@@ -266,7 +270,7 @@
 - Add `--fast` and `--hard` mode flags to `/cf-plan` with auto-detect — fast mode skips discovery for simple tasks, hard mode adds risk analysis, rollback strategy, and review gates [#fc68f25](https://github.com/dinhanhthi/coding-friend/commit/fc68f25)
 - Move `token-counts.json` output from `plugin/generated/` to `website/src/generated/` — website reads tiers dynamically, eliminating hardcoded values [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
 - Fix `cf-review-out` tier badge (medium → low) [#4650b30](https://github.com/dinhanhthi/coding-friend/commit/4650b30)
-- Consolidate review system into unified `cf-reviewer` agent with GEMINI.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
+- Consolidate review system into unified `cf-reviewer` agent with CLAUDE.md compliance checking, git history analysis, and universal confidence filtering [#a92f282](https://github.com/dinhanhthi/coding-friend/commit/a92f282) [#f0c6bf5](https://github.com/dinhanhthi/coding-friend/commit/f0c6bf5)
 
 ## v0.15 (2026-03-26)
 
@@ -307,7 +311,7 @@
 
 - Add CF Memory priority to skills and agents — memory-aware skills now prioritize recall before task execution [#2f5724e](https://github.com/dinhanhthi/coding-friend/commit/2f5724e)
 - Add built-in security-review skill to `cf-review` workflow [#812794a](https://github.com/dinhanhthi/coding-friend/commit/812794a)
-- Force `cf-planner` agent to always use pro model [#79a94b8](https://github.com/dinhanhthi/coding-friend/commit/79a94b8)
+- Force `cf-planner` agent to always use opus model [#79a94b8](https://github.com/dinhanhthi/coding-friend/commit/79a94b8)
 - Compact statusline layout with brighter green levels [#1d7bef1](https://github.com/dinhanhthi/coding-friend/commit/1d7bef1)
 - Make `memory_store` MCP calls mandatory and explicit in `cf-remember`, `cf-ask`, `cf-fix`, `cf-sys-debug` — split into separate MANDATORY steps to prevent skipping [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
 - Add `cf-remember` to smart capture list in bootstrap context [#1220ad0](https://github.com/dinhanhthi/coding-friend/commit/1220ad0)
@@ -331,7 +335,7 @@
 - Add refactoring triggers to `cf-tdd`, Common Workflows to `cf-help`, PR title guidance to `cf-ship` ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
 - Extract `cf-research` templates and `cf-session` scripts to separate files ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b), [#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
 - Fix `cf-sys-debug` heading: "5-Phase Process" → "4-Phase Process + Documentation" ([#3bfdfe9](https://github.com/dinhanhthi/coding-friend/commit/3bfdfe9))
-- Add `model: flash` to `cf-session` for cost efficiency ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
+- Add `model: haiku` to `cf-session` for cost efficiency ([#021739b](https://github.com/dinhanhthi/coding-friend/commit/021739b))
 
 ## v0.7 (2026-03-08)
 
@@ -415,7 +419,7 @@
 
 - Add 15 skills: `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-optimize`, `/cf-review`, `/cf-commit`, `/cf-ship`, `/cf-remember`, `/cf-learn`, `/cf-research` + 5 auto-invoked (`cf-tdd`, `cf-sys-debug`, `cf-auto-review`, `cf-verification`, `cf-learn`)
 - Add 7 hooks: session init, dev rules reminder, privacy block, scout block, statusline, compact marker, context tracker
-- Add 5 agents: `code-reviewer`, `implementer`, `planner`, `writer` (`flash`), `writer-deep` (`pro`)
+- Add 5 agents: `code-reviewer`, `implementer`, `planner`, `writer` (`haiku`), `writer-deep` (`sonnet`)
 - Add CLI companion (`coding-friend-cli` on npm): `cf init`, `cf host`, `cf mcp`, `cf statusline`, `cf update`
 - Add learning docs host (`cf host`) with ISR, Pagefind full-text search, and modern UI with command palette
 - Add MCP server (`cf mcp`) for LLM integration with learning docs

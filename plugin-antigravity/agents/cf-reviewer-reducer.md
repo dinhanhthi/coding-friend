@@ -1,12 +1,8 @@
 ---
 name: cf-reviewer-reducer
 description: >
-  Review reducer agent. Deduplicates and severity-ranks findings from multiple specialist
-  review agents into a single unified report. Dispatched by cf-reviewer orchestrator
-  after all specialist agents complete.
+  Review reducer agent. Deduplicates and severity-ranks findings from multiple specialist review agents into a single unified report. Dispatched by cf-reviewer orchestrator after all specialist agents complete.
 model: flash
-created: 2026-04-04
-updated: 2026-04-30
 ---
 
 # Review Reducer

@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 
 // Refresh local plugin installs after editing anything under plugin/.
-// Runs four steps so all clients pick up your source changes:
-//   1. build:codex  → regenerate plugin-codex/ from plugin/
-//   2. cf dev sync  → copy plugin/ into the Claude Code dev cache
+// Covers four hosts (Claude Code, Codex, omp, Antigravity):
+//   1.  build:codex → regenerate plugin-codex/ from plugin/
+//   1b. build:agy   → regenerate plugin-antigravity/ from plugin/
+//   2.  cf dev sync → copy plugin/ into the Claude Code dev cache
 //   2b. cf update --agent omp --plugin → re-deploy converted agents into ~/.omp
 //       (omp reads skills from the Claude cache and hooks/extension live from the repo)
-//   3. clear Codex cache → Codex re-copies plugin-codex/ on next launch
+//   2c. deploy agy  → copy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend
+//       (direct copy now; Phase 3 task 6 switches to `cf update --agent agy --plugin`)
+//   3.  clear Codex cache → Codex re-copies plugin-codex/ on next launch
 // Wired as: npm run ud-plugin-local
 
 const { execFileSync } = require("node:child_process");
-const { rmSync, existsSync } = require("node:fs");
+const { rmSync, existsSync, cpSync, mkdirSync } = require("node:fs");
 const { homedir } = require("node:os");
 const path = require("node:path");
 
@@ -18,6 +21,11 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const CODEX_CACHE = path.join(
   homedir(),
   ".codex/plugins/cache/coding-friend-marketplace",
+);
+const GEMINI_HOME = path.join(homedir(), ".gemini");
+const AGY_PLUGIN_INSTALL = path.join(
+  GEMINI_HOME,
+  "config/plugins/coding-friend",
 );
 
 function run(cmd, args) {
@@ -29,6 +37,10 @@ console.log("\n  \u{1F4E6} Updating local plugin installs...\n");
 // 1. Regenerate plugin-codex/ from plugin/ source (same as `npm run build:codex`)
 console.log("  → build:codex");
 run("node", [path.join(REPO_ROOT, "scripts", "build-codex-plugin.js")]);
+
+// 1b. Regenerate plugin-antigravity/ from plugin/ source (same as `npm run build:agy`)
+console.log("\n  → build:agy");
+run("node", [path.join(REPO_ROOT, "scripts", "build-antigravity-plugin.js")]);
 
 // 2. Sync plugin/ into the Claude Code dev cache.
 //    Skips gracefully if dev mode is OFF or `cf` is not on PATH.
@@ -57,6 +69,23 @@ try {
   );
 }
 
+// 2c. Deploy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend.
+//     Direct copy for now; Phase 3 task 6 will switch this to
+//     `cf update --agent agy --plugin`.
+let agySynced = false;
+console.log("\n  → deploy agy plugin");
+if (existsSync(GEMINI_HOME)) {
+  mkdirSync(path.dirname(AGY_PLUGIN_INSTALL), { recursive: true });
+  rmSync(AGY_PLUGIN_INSTALL, { recursive: true, force: true });
+  cpSync(path.join(REPO_ROOT, "plugin-antigravity"), AGY_PLUGIN_INSTALL, {
+    recursive: true,
+  });
+  agySynced = true;
+  console.log(`  ✓ copied plugin-antigravity → ${AGY_PLUGIN_INSTALL}`);
+} else {
+  console.log("  ⚠ agy deploy skipped — ~/.gemini not found");
+}
+
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
 console.log("\n  → clearing Codex cache");
 if (existsSync(CODEX_CACHE)) {
@@ -82,6 +111,15 @@ if (claudeSynced) {
 if (ompSynced) {
   console.log(
     "    • oh-my-pi — restart omp (agents redeployed; hooks/extension read live from repo)",
+  );
+}
+if (agySynced) {
+  console.log(
+    "    • Antigravity — quit and relaunch (reloads ~/.gemini/config/plugins/coding-friend/)",
+  );
+} else {
+  console.log(
+    "    • Antigravity — not deployed; create ~/.gemini then run this script again",
   );
 }
 console.log("");

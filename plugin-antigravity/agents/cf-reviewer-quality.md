@@ -1,13 +1,8 @@
 ---
 name: cf-reviewer-quality
 description: >
-  Code quality review specialist. Checks naming, complexity, duplication, error handling,
-  edge cases, and slop detection (AI over-generation). Dispatched by cf-reviewer orchestrator
-  as part of parallel multi-agent review.
+  Code quality review specialist. Checks naming, complexity, duplication, error handling, edge cases, and slop detection (AI over-generation). Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review.
 model: flash
-tools: Read, Glob, Grep, Bash
-created: 2026-04-04
-updated: 2026-04-06
 ---
 
 # Code Quality Reviewer

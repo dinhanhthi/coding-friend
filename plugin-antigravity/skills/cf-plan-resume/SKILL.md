@@ -23,7 +23,7 @@ Resume the implementation plan at: **$ARGUMENTS** (a plan folder path, an entry 
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan-resume
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-plan-resume
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -43,6 +43,6 @@ If output is not empty, integrate returned sections: `## Before` → before firs
    - `⬜ TODO` → pending, run as normal.
 5. If ALL tasks are `✅ DONE` → inform user: "Plan is already complete. Nothing to resume." Stop.
 6. Show user: list of pending tasks and estimated phases remaining. Ask: "Resume from the first pending task? (y/n)"
-7. If confirmed → first set the plan entry file's frontmatter `status:` field to `in-progress` (a resumed plan is active again — this clears any prior `failed` value; leave it `in-progress` if already so). Then execute pending tasks using the shared execution protocol in `${AGY_PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` (Read it now and follow the Sequential/Parallel phases protocols), passing the context file loaded in step 3 to each cf-implementer dispatch. Completion re-sets `status:` to `done`/`failed` per the "Plan done" rule in `execute.md`.
+7. If confirmed → first set the plan entry file's frontmatter `status:` field to `in-progress` (a resumed plan is active again — this clears any prior `failed` value; leave it `in-progress` if already so). Then execute pending tasks using the shared execution protocol in `<plugin-root>/skills/cf-plan/modes/execute.md` (Read it now and follow the Sequential/Parallel phases protocols), passing the context file loaded in step 3 to each cf-implementer dispatch. Completion re-sets `status:` to `done`/`failed` per the "Plan done" rule in `execute.md`.
    - **Autopilot gating** — Before honoring `auto: true` in frontmatter, verify the plan body (`README.md` for small plans; README.md and every phase file for big plans) actually contains a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. If the section is missing in any file that should have it, do NOT autopilot — warn the user: `> ⚠️ Plan has \`auto: true\` in frontmatter but the \`## AUTOPILOT\` section is missing in <path>. Refusing to autopilot. Re-run \`/cf-plan --auto\` to regenerate the section, or remove \`auto: true\` to resume normally.` Stop.
-   - Otherwise (frontmatter has `auto: true` AND section is present): **Read the full Autopilot Per-Phase Loop in `${AGY_PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now** (it holds Step 6's big-plan README phase-row ✅ finalization, which the embedded CONTRACT block in the plan's README omits), then run the remaining phases under it instead of the standard protocol. Announce to user when resuming: `> 🤖 This plan has \`auto: true\` — continuing in autopilot mode.`
+   - Otherwise (frontmatter has `auto: true` AND section is present): **Read the full Autopilot Per-Phase Loop in `<plugin-root>/skills/cf-plan/modes/autopilot.md` now** (it holds Step 6's big-plan README phase-row ✅ finalization, which the embedded CONTRACT block in the plan's README omits), then run the remaining phases under it instead of the standard protocol. Announce to user when resuming: `> 🤖 This plan has \`auto: true\` — continuing in autopilot mode.`

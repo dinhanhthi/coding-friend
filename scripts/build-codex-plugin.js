@@ -6,35 +6,33 @@ const { pathToFileURL } = require("node:url");
 const {
   agentMarkdownToToml: convertAgentMarkdownToToml,
 } = require("./lib/agent-md-to-toml.js");
+const {
+  assertSourceDir,
+  copyFilePreservingMode,
+  copyRenderedTree,
+  stableJson,
+  stripClaudeSkillFrontmatter,
+} = require("./lib/plugin-build-common.js");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PLUGIN_SOURCE_DIR = path.join(REPO_ROOT, "plugin");
 const CODEX_PLUGIN_DIR = path.join(REPO_ROOT, "plugin-codex");
 
-const TEXT_EXTENSIONS = new Set([
-  ".cjs",
-  ".html",
-  ".js",
-  ".json",
-  ".md",
-  ".py",
-  ".sh",
-  ".txt",
-]);
-
-const TEXT_FILENAMES = new Set(["CHANGELOG", "LICENSE", "README"]);
-const IGNORED_COPY_ENTRIES = new Set([
-  ".DS_Store",
-  "__tests__",
-  "PLACEHOLDERS.md",
-]);
-// Claude-only files (relative to plugin/) that would ship as dead or
-// self-contradictory weight in the Codex artifact: the generated cf-review
-// forbids the nested-Codex flow, the generated cf-session routes to native
-// session controls, and task/memory hooks have Codex replacements.
+// Claude-only and AGY-only files (relative to plugin/) that would ship as
+// dead or self-contradictory weight in the Codex artifact: the generated
+// cf-review forbids the nested-Codex flow, the generated cf-session routes
+// to native session controls, task/memory hooks have Codex replacements,
+// and `.agy.*` adapters plus `lib/agy-hook-io.sh` belong to Antigravity.
 const CODEX_EXCLUDED_SOURCE_PATHS = new Set([
   "hooks/memory-capture.sh",
   "hooks/task-tracker.sh",
+  "hooks/privacy-block.agy.sh",
+  "hooks/scout-block.agy.cjs",
+  "hooks/auto-approve.agy.cjs",
+  "hooks/session-init.agy.sh",
+  "hooks/rules-reminder.agy.sh",
+  "hooks/session-log.agy.sh",
+  "lib/agy-hook-io.sh",
   "skills/cf-review/scripts/normalize-codex-review.sh",
   "skills/cf-review/scripts/run-codex-review.sh",
   "skills/cf-session/scripts",
@@ -50,17 +48,6 @@ const CODEX_HOOK_EVENTS = new Set([
   "SubagentStart",
   "SubagentStop",
 ]);
-
-function stableJson(value) {
-  return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-function isTextFile(filePath) {
-  const basename = path.basename(filePath);
-  return (
-    TEXT_EXTENSIONS.has(path.extname(filePath)) || TEXT_FILENAMES.has(basename)
-  );
-}
 
 function renderCodexText(input) {
   return input
@@ -283,22 +270,6 @@ path and keep durable project knowledge in \`docs/memory/\`.
 `;
 }
 
-function stripClaudeSkillFrontmatter(input) {
-  const match = input.match(/^---\n([\s\S]*?)\n---\n?/);
-  if (!match) return input;
-
-  const filtered = match[1]
-    .split("\n")
-    .filter(
-      (line) =>
-        !/^(?:model|allowed-tools|user-invocable|disable-model-invocation|argument-hint):/.test(
-          line,
-        ),
-    )
-    .join("\n");
-  return `---\n${filtered}\n---\n${input.slice(match[0].length)}`;
-}
-
 function renderCodexFile(sourcePath, input) {
   const normalizedPath = sourcePath.split(path.sep).join("/");
   const isSkill = normalizedPath.endsWith("/SKILL.md");
@@ -355,41 +326,6 @@ function renderCodexFile(sourcePath, input) {
   }
 
   return rendered;
-}
-
-async function copyRenderedFile(sourcePath, targetPath) {
-  await fs.mkdir(path.dirname(targetPath), { recursive: true });
-  const mode = (await fs.stat(sourcePath)).mode & 0o777;
-  if (!isTextFile(sourcePath)) {
-    await fs.copyFile(sourcePath, targetPath);
-    await fs.chmod(targetPath, mode);
-    return;
-  }
-  const source = await fs.readFile(sourcePath, "utf8");
-  await fs.writeFile(targetPath, renderCodexFile(sourcePath, source));
-  await fs.chmod(targetPath, mode);
-}
-
-async function copyRenderedTree(sourceDir, targetDir, relativePrefix = "") {
-  const entries = await fs.readdir(sourceDir, { withFileTypes: true });
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (IGNORED_COPY_ENTRIES.has(entry.name)) continue;
-
-    const relativePath = relativePrefix
-      ? `${relativePrefix}/${entry.name}`
-      : entry.name;
-    if (CODEX_EXCLUDED_SOURCE_PATHS.has(relativePath)) continue;
-
-    const sourcePath = path.join(sourceDir, entry.name);
-    const targetPath = path.join(targetDir, entry.name);
-    if (entry.isDirectory()) {
-      await copyRenderedTree(sourcePath, targetPath, relativePath);
-      continue;
-    }
-    if (entry.isFile()) {
-      await copyRenderedFile(sourcePath, targetPath);
-    }
-  }
 }
 
 async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
@@ -556,17 +492,7 @@ function createCodexMcpConfig() {
 async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
   const pluginSourceDir = path.join(repoRoot, "plugin");
   const codexPluginDir = path.join(repoRoot, "plugin-codex");
-  try {
-    const sourceStat = await fs.stat(pluginSourceDir);
-    if (!sourceStat.isDirectory()) {
-      throw new Error(`Missing plugin source directory: ${pluginSourceDir}`);
-    }
-  } catch (error) {
-    if (error && error.code === "ENOENT") {
-      throw new Error(`Missing plugin source directory: ${pluginSourceDir}`);
-    }
-    throw error;
-  }
+  await assertSourceDir(pluginSourceDir);
 
   const packageJson = JSON.parse(
     await fs.readFile(path.join(repoRoot, "package.json"), "utf8"),
@@ -575,31 +501,37 @@ async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
   await fs.rm(codexPluginDir, { recursive: true, force: true });
   await fs.mkdir(codexPluginDir, { recursive: true });
 
+  const treeOptions = {
+    render: renderCodexFile,
+    exclude: CODEX_EXCLUDED_SOURCE_PATHS,
+  };
   await copyRenderedTree(
     path.join(pluginSourceDir, "skills"),
     path.join(codexPluginDir, "skills"),
-    "skills",
+    { ...treeOptions, prefix: "skills" },
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "hooks"),
     path.join(codexPluginDir, "hooks"),
-    "hooks",
+    { ...treeOptions, prefix: "hooks" },
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "lib"),
     path.join(codexPluginDir, "lib"),
-    "lib",
+    { ...treeOptions, prefix: "lib" },
   );
   await copyRenderedTree(
     path.join(pluginSourceDir, "context"),
     path.join(codexPluginDir, "context"),
-    "context",
+    { ...treeOptions, prefix: "context" },
   );
 
   for (const filename of ["README.md", "CHANGELOG.md"]) {
-    await copyRenderedFile(
-      path.join(pluginSourceDir, filename),
+    const sourcePath = path.join(pluginSourceDir, filename);
+    await copyFilePreservingMode(
+      sourcePath,
       path.join(codexPluginDir, filename),
+      (content) => renderCodexFile(sourcePath, content),
     );
   }
 

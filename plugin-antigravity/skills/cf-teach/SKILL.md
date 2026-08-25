@@ -27,7 +27,7 @@ In any coding session, the AI does the heavy thinking — but the human often wa
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-teach
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-teach
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -105,7 +105,7 @@ File path: `{outputDir}/{category}/YYYY-MM-DD-{name}.md`
 Before creating a new file, check if a relevant file already exists in the target category:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
+bash "<plugin-root>/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
 ```
 
 For each potentially relevant file, read its first 20 lines. If the new teaching narrative fits an existing file, use a different name to avoid overwriting.
@@ -170,7 +170,7 @@ What lessons from this work apply to completely different contexts? Connect the 
 
 After displaying the narrative in chat, delegate to the **cf-writer-deep agent** (always — never cf-writer) to save it as a file.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer-deep"` and include this write spec:
+Use the `invoke_subagent` with `invoke_subagent` with agent `cf-writer-deep` and include this write spec:
 
 ```
 WRITE SPEC

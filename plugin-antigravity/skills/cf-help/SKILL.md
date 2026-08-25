@@ -12,7 +12,7 @@ description: >
   CLI required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 created: 2026-02-17
-updated: 2026-08-21
+updated: 2026-08-25
 ---
 
 # /cf-help — Coding Friend Help
@@ -28,7 +28,7 @@ Answer questions about the Coding Friend toolkit. Provide a brief overview when 
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-help
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -45,21 +45,23 @@ Determine what the user is asking about:
 
 ### Step 2: Provide overview (if general question)
 
-Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Core philosophy:
+Coding Friend is a lean toolkit for disciplined engineering workflows in Google Antigravity. Core philosophy:
 
 1. **Check skills first** — Before any task, check if a relevant skill exists
 2. **Test before code** — RED → GREEN → REFACTOR
 3. **Verify before claiming** — Never claim done without running tests
 4. **Commit with purpose** — Conventional commits with clear "why"
 
+Supported hosts: Claude Code (default), Codex CLI (beta), omp (beta), and **Google Antigravity (beta)** (`--agent agy` / `--agy`).
+
 ### Slash Commands (user triggers with /)
 
 - `/cf-advise [decision]` — ⚡⚡ — Decision advisory: a structured interview (one question at a time) that surfaces hidden requirements, confirms a reframing, then delivers a verdict-first recommendation with pitfalls and ranked alternatives. Advisory-only — never writes code or plans (that's `/cf-plan`). Flags: `--quick` fewer questions, `--save` persist the decision to `docs/memory/decisions/`.
 - `/cf-ask [question]` — ⚡⚡ — Quick Q&A about codebase → docs/memory/; auto-generates an ASCII flow diagram for "how does X work" / flow / lifecycle questions
-- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default), `--model <alias>` pin the model for cf-planner at the brainstorm step.
+- `/cf-plan [task]` — ⚡⚡ — Brainstorm and create phased implementation plans with parallel execution. Flags: `--fast` (alias `--quick`) lighter workflow, `--hard` deeper exploration + rollback, `--auto` end-to-end autopilot (auto review + fix Critical/Important + commit per phase), `--inline` (alias `--no-file`) plan in chat only without writing a file, `--gui` (alias `--human`) also generate the human-readable overview doc for this run (off by default), `--model <alias>` pin the model for cf-planner at the brainstorm step (valid: `inherit`, `flash`, `pro`).
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped: reads the plan + its context file, re-runs pending/interrupted tasks, honors `auto: true` frontmatter to continue in autopilot.
 - `/cf-later-do [item]` — ⚡⚡ — Work through deferred side-tasks in `docs/later/`: list captured items, pick one, route the fix to `/cf-fix` (bugs) or `/cf-plan` (features), remove the file only after the fix is verified-done, then suggest the next. The read/resolve side of `capture-later.sh`.
-- `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent. Unavailable agents are skipped with a warning.
+- `/cf-review [target]` — ⚡⚡ — Dispatch code review to subagent. Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent. Unavailable agents are skipped with a warning.
 - `/cf-commit [hint]` — ⚡ — Analyze diff, soft review check, and create conventional commit
 - `/cf-design [mode]` — ⚡⚡ — UI design workflow: scan existing patterns, design new UI, or modify UI consistently
 - `/cf-ship [hint]` — ⚡ — Verify, commit, push, and create PR (supports `--dry-run`)
@@ -91,7 +93,7 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
   - **cf-reviewer-security** (pro) — Security vulnerabilities
   - **cf-reviewer-quality** (flash) — Code quality + slop detection
   - **cf-reviewer-tests** (flash) — Test coverage
-  - **cf-reviewer-rules** (flash) — Project rules compliance (GEMINI.md)
+  - **cf-reviewer-rules** (flash) — Project rules compliance (AGENTS.md)
   - **cf-reviewer-reducer** (flash) — Deduplicates and ranks findings
 - **cf-implementer** — ⚡ — Implementation subagent: direct coding by default, TDD with `--add-tests` (reads structured context file, returns result signals, supports auto-retry on failure). Does not own autopilot loops — cf-plan / cf-tdd orchestrate review / fix / commit when `--auto` is active.
 - **cf-explorer** — ⚡ — Codebase exploration and context gathering (writes structured context files for downstream agents)
@@ -148,7 +150,6 @@ Common issues:
 - **Skill not triggering?** Check description in SKILL.md — it may not match the user's phrasing. Use `/cf-<skill-name>` to trigger manually.
 - **Custom guide not loading?** Verify the path: `.coding-friend/skills/<skill-name>-custom/SKILL.md` and that it has `## Before`, `## Rules`, or `## After` sections.
 - **Config not applied?** Local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`. Check both.
-- **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
 - **More issues?** Point the user to the [Troubleshooting page](https://cf.dinhanhthi.com/docs/reference/troubleshooting/) for memory daemon, install, hook, and MCP issues.
 
 ### Step 6: Answer concisely

@@ -10,7 +10,7 @@ description: >
   when the user says things like "make it look like", "update the styling", "redesign this",
   "match the existing style", "what design patterns does this project use", "extract the design
   system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
-  outcome. Invoke via /cf-design — helps Claude produce intentional, consistent UI.
+  outcome. Invoke via /cf-design — helps Antigravity produce intentional, consistent UI.
 created: 2026-04-30
 updated: 2026-07-04
 state: beta
@@ -41,14 +41,14 @@ If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal 
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-design
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-design
 ```
 
 If output is non-empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
 
 ## Step 0.5: Load Existing Design Context
 
-Run: `bash "${AGY_PLUGIN_ROOT}/skills/cf-design/scripts/load-design-context.sh"`
+Run: `bash "<plugin-root>/skills/cf-design/scripts/load-design-context.sh"`
 
 - If `DESIGN.md` exists: read it now and keep it in working memory for all subsequent steps. This is the project's source of truth for visual style.
 - If not found: note that patterns are unknown and will either be extracted (scan mode) or defined fresh.
@@ -73,7 +73,7 @@ Goal: understand the project's visual DNA and write it down so every future desi
 2. **Read the design styles reference** to calibrate what you're looking for:
 
    ```
-   Read: ${AGY_PLUGIN_ROOT}/skills/cf-design/scripts/design-styles.md
+   Read: <plugin-root>/skills/cf-design/scripts/design-styles.md
    ```
 
 3. **Scan UI files** — look for and extract:
@@ -128,7 +128,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
 1. **Read design principles**:
 
    ```
-   Read: ${AGY_PLUGIN_ROOT}/skills/cf-design/scripts/design-principles.md
+   Read: <plugin-root>/skills/cf-design/scripts/design-principles.md
    ```
 
 2. **Parse the user's description** — extract:
@@ -141,7 +141,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    - If `DESIGN.md` exists → use it as the design foundation. The user's description refines on top.
    - If no patterns exist → ask: _"No design patterns found. Should I (a) quick-scan the UI first, or (b) design fresh from your description?"_
 
-4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use WebSearch:
+4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use search_web:
    - Query pattern: `"[style name] UI design [year] best practices"`
    - Example: `"glassmorphism UI 2024 best practices"`
    - Extract 2-3 specific, applicable techniques from the results. Summarize briefly.
@@ -193,7 +193,7 @@ Goal: change a specific part of the UI without breaking the visual consistency o
    - Does it introduce a new pattern (animation, glassmorphism, etc.)? Does it fit the style?
    - If something diverges, explain why it's intentional and worth the consistency trade-off.
 
-4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), use WebSearch to find the current best implementation approach.
+4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), use search_web to find the current best implementation approach.
 
 5. **Implement** — apply the same design dials from Step 3. Stay within the existing system unless the user explicitly wants to diverge.
 

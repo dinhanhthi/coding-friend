@@ -1,20 +1,8 @@
 ---
 name: cf-implementer
 description: >
-  Implementation agent — direct coding by default, TDD opt-in. Use this agent when you need
-  to implement code changes. Dispatched by cf-tdd for substantial implementations (3+ files,
-  complex algorithms, multi-step features), by cf-plan for executing plan tasks, and by cf-fix
-  for bug fixes. Trigger this agent when the user asks to implement, build, create, or write
-  production code that spans multiple files or involves complex logic — e.g. "implement this
-  feature", "build the API endpoint", "create the service layer", "write the authentication
-  flow", "add the data pipeline", "implement the webhook handler", "build the migration",
-  "create the CLI command", "write the integration", "add the middleware". By default writes
-  code directly without tests; use `--add-tests` in the prompt for TDD (RED→GREEN→REFACTOR).
-  Do NOT use this agent for single-file trivial changes, documentation, or config edits —
-  use inline implementation (cf-tdd skill) for small changes instead.
+  Implementation agent — direct coding by default, TDD opt-in. Use this agent when you need to implement code changes. Dispatched by cf-tdd for substantial implementations (3+ files, complex algorithms, multi-step features), by cf-plan for executing plan tasks, and by cf-fix for bug fixes. Trigger this agent when the user asks to implement, build, create, or write production code that spans multiple files or involves complex logic — e.g. "implement this feature", "build the API endpoint", "create the service layer", "write the authentication flow", "add the data pipeline", "implement the webhook handler", "build the migration", "create the CLI command", "write the integration", "add the middleware". By default writes code directly without tests; use `--add-tests` in the prompt for TDD (RED→GREEN→REFACTOR). Do NOT use this agent for single-file trivial changes, documentation, or config edits — use inline implementation (cf-tdd skill) for small changes instead.
 model: inherit
-created: 2026-02-17
-updated: 2026-08-21
 ---
 
 # Implementer Agent
@@ -124,7 +112,7 @@ If tests fail, include a brief error summary **before** the signal line so the o
 While implementing, if you notice a problem **unrelated to the current task** that is non-trivial (fixing it inline would bloat this change or exceed the task scope), do NOT fix it. Record it for later, then continue the assigned task:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/lib/capture-later.sh" \
+bash "<plugin-root>/lib/capture-later.sh" \
   --name "<short title>" --description "<what & where — enough to act on cold>" \
   --source cf-implementer [--slug <task-id from the context file, if present>] [--problem "<current task>"]
 ```

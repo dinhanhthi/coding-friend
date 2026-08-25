@@ -1,21 +1,8 @@
 ---
 name: cf-explorer
 description: >
-  Codebase explorer for understanding project structure, finding relevant files, tracing
-  dependencies, and answering specific questions about code. Dispatched by cf-plan before
-  planning, by cf-fix before diagnosing bugs, and by cf-ask for gathering code context.
-  Trigger this agent when you need codebase context before making decisions — e.g. "explore
-  the codebase", "find where this is used", "trace the data flow", "what calls this function",
-  "map the dependencies", "find related files", "how does this module work", "where is this
-  defined", "show me the project structure", "what files are affected". This agent handles
-  exploration only — it does not plan, implement, or write files. It runs on Haiku for cost
-  efficiency. Do NOT use this agent for implementing changes, writing production code, or
-  generating documents — only for exploration and context gathering (plus writing structured
-  context files when requested by the orchestrating skill).
+  Codebase explorer for understanding project structure, finding relevant files, tracing dependencies, and answering specific questions about code. Dispatched by cf-plan before planning, by cf-fix before diagnosing bugs, and by cf-ask for gathering code context. Trigger this agent when you need codebase context before making decisions — e.g. "explore the codebase", "find where this is used", "trace the data flow", "what calls this function", "map the dependencies", "find related files", "how does this module work", "where is this defined", "show me the project structure", "what files are affected". This agent handles exploration only — it does not plan, implement, or write files. It uses flash for cost efficiency. Do NOT use this agent for implementing changes, writing production code, or generating documents — only for exploration and context gathering (plus writing structured context files when requested by the orchestrating skill).
 model: flash
-tools: Read, Write, Glob, Grep, Bash, mcp__coding-friend-memory__memory_search
-created: 2026-03-03
-updated: 2026-04-05
 ---
 
 # Explorer Agent

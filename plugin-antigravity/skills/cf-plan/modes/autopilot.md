@@ -4,9 +4,9 @@
 
 When the plan was created with `--auto` (or has `auto: true` in frontmatter), each phase runs through this loop. The orchestrator MUST follow this exactly and MUST NOT ask the user for confirmation between phases.
 
-1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol in `${AGY_PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` (Read it now if you have not already). **Apply the Progress checkpoint rule on every task** (`⬜ TODO` → `🔄 IN PROGRESS` before dispatch; `🔄 IN PROGRESS` → `✅ DONE` on success) — autopilot does NOT skip `🔄 IN PROGRESS`; never flip `⬜ TODO` directly to `✅ DONE`. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
+1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol in `<plugin-root>/skills/cf-plan/modes/execute.md` (Read it now if you have not already). **Apply the Progress checkpoint rule on every task** (`⬜ TODO` → `🔄 IN PROGRESS` before dispatch; `🔄 IN PROGRESS` → `✅ DONE` on success) — autopilot does NOT skip `🔄 IN PROGRESS`; never flip `⬜ TODO` directly to `✅ DONE`. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (activate the `cf-review` skill (type `/cf-review`), no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.)
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix
@@ -33,7 +33,7 @@ EOF
    - NEVER use `--no-verify`. NEVER include AI/Claude co-author lines (project rule #6).
    - If `git commit` fails (pre-commit hook), do NOT amend — fix the issue, re-stage, create a NEW commit. If repeated failure → STOP and surface to user.
 
-6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" in the Big plan phase sync section of `${AGY_PLUGIN_ROOT}/skills/cf-plan/modes/execute.md`. **If this was the final phase** (all task/phase rows are now ✅ DONE), also apply the "Plan done (frontmatter `status:`)" flip from execute.md now — set frontmatter `status: done` (and body `**Status:** ✅ DONE` for big plans). Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
+6. **Advance** — Now that commit succeeded, finalize plan bookkeeping. For small plans: per-task ✅ DONE flips already happened at task-checkpoint time; nothing extra here. For **big plans under autopilot**: flip the phase row in `README.md` to ✅ DONE in THIS step (after commit succeeded), NOT at the last-task-DONE checkpoint — see the "Autopilot override" in the Big plan phase sync section of `<plugin-root>/skills/cf-plan/modes/execute.md`. **If this was the final phase** (all task/phase rows are now ✅ DONE), also apply the "Plan done (frontmatter `status:`)" flip from execute.md now — set frontmatter `status: done` (and body `**Status:** ✅ DONE` for big plans). Then IMMEDIATELY proceed to the next phase. Do NOT ask "Continue? (y/n)". Do NOT prompt for anything.
 
 **Stop conditions (only these end autopilot)**:
 
@@ -44,7 +44,7 @@ EOF
 - User explicitly interrupts.
 - All phases reach ✅ DONE in plan file.
 
-**Drift guard**: if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan, that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
+**Drift guard**: if Antigravity finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan, that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
 
 ### AUTOPILOT CONTRACT block
 
@@ -84,5 +84,5 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 - User explicitly interrupts (Ctrl+C, message).
 - Plan file shows all phases ✅ DONE.
 
-**Drift guard:** if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an `auto: true` plan, that is a drift bug. Re-read this section and proceed.
+**Drift guard:** if Antigravity finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an `auto: true` plan, that is a drift bug. Re-read this section and proceed.
 ```

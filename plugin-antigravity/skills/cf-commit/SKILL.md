@@ -22,7 +22,7 @@ Create a commit for the current changes. Hint: **$ARGUMENTS**
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-commit
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-commit
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -30,7 +30,7 @@ If output is not empty, integrate returned sections: `## Before` → before firs
 ### Step 1: Analyze Changes
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/skills/cf-commit/scripts/analyze-changes.sh"
+bash "<plugin-root>/skills/cf-commit/scripts/analyze-changes.sh"
 ```
 
 ### Step 2: Identify Conversation-Related Changes
@@ -52,7 +52,7 @@ Review the current conversation to understand what task was performed and which 
 **Secret scan** — after staging, check for accidental secrets:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/skills/cf-commit/scripts/scan-secrets.sh"
+bash "<plugin-root>/skills/cf-commit/scripts/scan-secrets.sh"
 ```
 
 The script prints `SECRETS=<count>` and, if `SECRETS > 0`, shows matching lines with context.

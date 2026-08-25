@@ -5,7 +5,7 @@
  * 3-step classification:
  *   Step 1 (rules)       — pattern-based allow/deny/ask for known tools/commands
  *   Step 2 (working-dir) — Write/Edit auto-approved if file is inside cwd
- *   Step 3 (LLM)         — `claude --print --model pro` classifier for all unknown tools
+ *   Step 3 (LLM)         — `claude --print --model sonnet` classifier for all unknown tools
  *
  * Integration contract:
  *   stdin  – JSON with tool_name, tool_input
@@ -1193,7 +1193,7 @@ Respond in the exact format: CLASSIFICATION|reason`;
 
     const result = cp.execFileSync(
       "claude",
-      ["--print", "--model", "pro", "--no-session-persistence", prompt],
+      ["--print", "--model", "sonnet", "--no-session-persistence", prompt],
       { encoding: "utf8", timeout: llmTimeout },
     );
 

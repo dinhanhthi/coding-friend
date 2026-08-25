@@ -29,7 +29,7 @@ Structured workflow for optimizing existing features, algorithms, or performance
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-optimize
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-optimize
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -70,7 +70,7 @@ Assess whether the optimization target is **simple** (single file/function, clea
 
 - **Simple target** (e.g., "optimize this function"): Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<optimization target keywords — e.g. performance, latency, bottleneck, caching>", "limit": 5 }`. Then read the relevant source files directly.
 
-- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Call `invoke_subagent` with agent `cf-explorer`. Pass:
 
   > Explore the codebase to understand the performance context for: [optimization target]
   >
@@ -122,7 +122,7 @@ Memory and explorer results are **hints** — always verify against actual code 
 
 ### Step 7: Implement (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to implement the optimization test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
+Dispatch the **cf-implementer agent** to implement the optimization test-first. Call `invoke_subagent` with agent `cf-implementer`.
 
 **Prompt template:**
 
@@ -150,7 +150,7 @@ Review the cf-implementer's report. If tests failed or the agent reported concer
 While optimizing, if you notice a problem **unrelated to the performance target** that is non-trivial (fixing it inline would muddy the before/after measurement or expand scope), do NOT fix it now. Record it for later, then continue:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/lib/capture-later.sh" \
+bash "<plugin-root>/lib/capture-later.sh" \
   --name "<short title>" --description "<what & where — enough to act on cold>" \
   --source cf-optimize [--slug <task slug, if one exists>] [--problem "<the optimization target>"]
 ```
@@ -178,9 +178,9 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
 
 ### Step 10: Auto-Review
 
-Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+Automatically invoke `/cf-review` — activate the `cf-review` skill (type `/cf-review`). Do NOT ask the user first, just run it.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
+> On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
 
 ## Completion Protocol
 

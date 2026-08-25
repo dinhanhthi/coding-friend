@@ -26,7 +26,7 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-in
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-review-in
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -83,7 +83,7 @@ b. **Verify the claim against reality:**
 - Does the issue actually exist in the current code?
 - Did the reviewer miss surrounding context that addresses the concern? (e.g., validation done elsewhere, error handled upstream, intentional design choice)
 - Is the reviewer applying a generic best practice that doesn't apply to this specific codebase or situation?
-- Is the reviewer suggesting something that would contradict project conventions (check GEMINI.md, `docs/memory/conventions/`)?
+- Is the reviewer suggesting something that would contradict project conventions (check AGENTS.md, `docs/memory/conventions/`)?
 
 c. **Classify each finding:**
 

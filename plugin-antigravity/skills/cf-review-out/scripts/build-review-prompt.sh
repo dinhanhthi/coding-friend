@@ -158,7 +158,7 @@ ${change_source_lines}
 Evaluate the code changes against these 5 layers:
 
 ### Layer 0: Project Rules Compliance
-- If a \`GEMINI.md\` file exists at the project root or in directories touched by the diff, read it
+- If a \`AGENTS.md\` file exists at the project root or in directories touched by the diff, read it
 - Check changes against stated conventions, required patterns, and forbidden patterns
 - Only flag violations of **specific, unambiguous rules** (MUST/SHOULD/ALWAYS/NEVER language)
 - MUST/ALWAYS/NEVER violations → Critical; SHOULD violations → Important
@@ -236,7 +236,7 @@ For example, if you are Gemini: \`${DOCS_DIR}/reviews/${LABEL}-result-gemini.md\
 
 ## After You Finish
 
-Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Claude Code to collect the results:
+Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Google Antigravity to collect the results:
 
 \`\`\`
 /cf-review-in ${LABEL}

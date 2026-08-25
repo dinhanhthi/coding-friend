@@ -1,7 +1,7 @@
 {
   "name": "coding-friend",
-  "version": "0.40.3",
-  "description": "Lean toolkit for disciplined engineering workflows with Google Antigravity (AGY)",
+  "version": "0.41.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Google Antigravity (beta)",
   "author": {
     "name": "Anh-Thi Dinh",
     "email": "me@dinhanhthi.com",

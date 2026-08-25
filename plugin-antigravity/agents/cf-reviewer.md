@@ -1,21 +1,8 @@
 ---
 name: cf-reviewer
 description: >
-  Code review orchestrator. Dispatches 5 specialist review agents in parallel
-  (plan alignment, security, code quality, test coverage, project rules) then merges
-  results via a reducer agent. Dispatched by cf-review and cf-ship for thorough review
-  before merge. Trigger this agent when the user asks to review code changes — e.g.
-  "review this", "review my changes", "check the code", "look over this", "code review",
-  "any issues with this?", "is this code ok?", "review before merge", "review the diff",
-  "what do you think of these changes?". This agent runs in an isolated context, reads
-  the full diff plus surrounding file context, and orchestrates a multi-agent review
-  pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories
-  (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line
-  numbers. Never use tables — always bullet lists. Do NOT use this agent for quick
-  questions about code — only for actual review of changes.
+  Code review orchestrator. Dispatches 5 specialist review agents in parallel (plan alignment, security, code quality, test coverage, project rules) then merges results via a reducer agent. Dispatched by cf-review and cf-ship for thorough review before merge. Trigger this agent when the user asks to review code changes — e.g. "review this", "review my changes", "check the code", "look over this", "code review", "any issues with this?", "is this code ok?", "review before merge", "review the diff", "what do you think of these changes?". This agent runs in an isolated context, reads the full diff plus surrounding file context, and orchestrates a multi-agent review pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line numbers. Never use tables — always bullet lists. Do NOT use this agent for quick questions about code — only for actual review of changes.
 model: inherit
-created: 2026-02-17
-updated: 2026-04-30
 ---
 
 # Code Review Orchestrator
@@ -46,7 +33,7 @@ Gather the shared context that all specialist agents need:
 
 ### Step 2: Dispatch Specialist Agents
 
-Launch specialist agents **in parallel** using the Agent tool. Each agent receives the same diff + changed files + mode.
+Launch specialist agents **in parallel** using `invoke_subagent`. Each agent receives the same diff + changed files + mode.
 
 **QUICK mode** — dispatch these 3 agents in parallel:
 
@@ -75,7 +62,7 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: flash by default — honor the `CF_REDUCER_MODEL` environment variable if set to `pro` or `pro`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
+Launch the `cf-reviewer-reducer` agent (model: flash by default — honor the `CF_REDUCER_MODEL` environment variable if set to `pro`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
 2. Rank by multi-agent agreement then confidence

@@ -27,7 +27,7 @@ updated: 2026-07-04
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-sys-debug
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-sys-debug
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -137,7 +137,7 @@ Activate when the symptom is "used to work, now broken" or "broke after an updat
 While investigating or fixing, if you uncover a problem **unrelated to the root cause under investigation** that is non-trivial (addressing it inline would derail this fix), do NOT fix it now. Record it for later, then continue:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/lib/capture-later.sh" \
+bash "<plugin-root>/lib/capture-later.sh" \
   --name "<short title>" --description "<what & where — enough to act on cold>" \
   --source cf-sys-debug [--slug <bug-doc/task slug, if one exists>] [--problem "<the bug under investigation>"]
 ```
@@ -150,7 +150,7 @@ cf-sys-debug is only invoked for hard bugs — always document the findings.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
 2. Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`. Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) — do NOT search sub-folders. Use `CF_DOCS_ROOT` as the docs base dir.
-3. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute `file_path`):
+3. Construct a write spec and delegate to **cf-writer agent** by calling `invoke_subagent` with agent `cf-writer` (use absolute `file_path`):
 
 ```
 WRITE SPEC

@@ -42,7 +42,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ask
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-ask
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -89,7 +89,7 @@ Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
 
 Launch the **cf-explorer agent** to gather codebase context for the question.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+Call `invoke_subagent` with agent `cf-explorer`. Pass:
 
 > Explore the codebase to answer the following question: [question from Step 1]
 >
@@ -158,7 +158,7 @@ Wait for the cf-explorer to return its findings.
 
 > **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename — do not add a date prefix to already-created files.
 
-Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`.
+Construct a write spec and delegate to **cf-writer agent** by calling `invoke_subagent` with agent `cf-writer`.
 
 **When creating** a new file (use absolute path for `file_path`):
 

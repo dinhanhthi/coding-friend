@@ -23,7 +23,7 @@ Ship the current work. Hint: **$ARGUMENTS**
 Custom guide (auto-loaded at invocation — do NOT skip):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-ship
 ```
 
 If the block above produced any content, integrate the returned sections: `## Before` → execute **before Step 1**, `## Rules` → apply throughout, `## After` → after the final step.
@@ -50,7 +50,7 @@ If ANY check fails, stop and fix before proceeding.
 **Capturing out-of-scope side-effects:** If verification surfaces a problem **unrelated to the work being shipped** that is non-trivial (fixing it inline would block or expand this ship), do NOT fix it now. Record it for later, then continue the ship workflow:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/lib/capture-later.sh" \
+bash "<plugin-root>/lib/capture-later.sh" \
   --name "<short title>" --description "<what & where — enough to act on cold>" \
   --source cf-ship [--slug <task/plan slug, if one exists>] [--problem "<what is being shipped>"]
 ```

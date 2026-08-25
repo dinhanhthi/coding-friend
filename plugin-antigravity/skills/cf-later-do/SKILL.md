@@ -30,7 +30,7 @@ Process the deferred side-tasks in `docs/later/`: pick one, fix it (via `/cf-fix
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-later-do
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-later-do
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -50,7 +50,7 @@ Show a **numbered** list, sorted by `date` **oldest-first** (longest-deferred fi
 
 `[N] <title> — <date> · source: <source> · <problem or one-line body summary>`
 
-Ask the user to choose: a number `N`, or `q` to quit. (Use a plain numbered list + an open question — do NOT use `AskUserQuestion`, since the item count is dynamic and may exceed 4.) If the user quits → stop cleanly.
+Ask the user to choose: a number `N`, or `q` to quit. (Use a plain numbered list + an open question — do NOT use a direct user question, since the item count is dynamic and may exceed 4.) If the user quits → stop cleanly.
 
 ### Step 4: Classify and route the chosen item
 

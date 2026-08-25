@@ -29,7 +29,7 @@ In vibe coding, AI writes the code and human approves it — but the human doesn
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-learn
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -106,7 +106,7 @@ File path: `{outputDir}/{category}/{name}.md`
 Before creating a new file, check if a relevant file already exists in the target category:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
+bash "<plugin-root>/skills/cf-learn/scripts/list-learn-files.sh" "/absolute/path/to/outputDir"
 ```
 
 Replace `/absolute/path/to/outputDir` with the resolved absolute path from Step 0 before running.
@@ -133,7 +133,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content t
 
 ### Step 5: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate cf-writer agent via the **Agent tool**.
+Construct a write spec and invoke the appropriate cf-writer agent via the `invoke_subagent`.
 
 ### Determine Task Type
 
@@ -265,7 +265,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` or `subagent_type: "coding-friend:cf-writer-deep"` (based on Step 3 assessment) with the complete write spec as the prompt.
+Use the `invoke_subagent` with `invoke_subagent` with agent `cf-writer` or `invoke_subagent` with agent `cf-writer-deep` (based on Step 3 assessment) with the complete write spec as the prompt.
 
 ### Step 6: Confirm
 

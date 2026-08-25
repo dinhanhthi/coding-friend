@@ -1,15 +1,8 @@
 ---
 name: cf-reviewer-security
 description: >
-  Security review specialist. Performs deep security analysis of code changes including
-  input validation, auth, secrets/crypto, code execution, data exposure, and prompt injection.
-  Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review.
-  Includes exploit scenarios for Critical findings. Traces data flow from untrusted input
-  through processing to sensitive operations.
+  Security review specialist. Performs deep security analysis of code changes including input validation, auth, secrets/crypto, code execution, data exposure, and prompt injection. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review. Includes exploit scenarios for Critical findings. Traces data flow from untrusted input through processing to sensitive operations.
 model: pro
-tools: Read, Glob, Grep, Bash
-created: 2026-04-04
-updated: 2026-04-06
 ---
 
 # Security Reviewer

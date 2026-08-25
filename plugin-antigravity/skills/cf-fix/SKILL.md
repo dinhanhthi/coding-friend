@@ -24,7 +24,7 @@ Fix the bug: **$ARGUMENTS**
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-fix
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -68,7 +68,7 @@ Include any relevant findings as context for the explorer.
 
 Launch the **cf-explorer agent** to gather context around the bug, passing the context file path so it writes structured findings.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+Call `invoke_subagent` with agent `cf-explorer`. Pass:
 
 > Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
 >
@@ -122,7 +122,7 @@ Before changing code:
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
+Dispatch the **cf-implementer agent** to fix the bug test-first. Call `invoke_subagent` with agent `cf-implementer`.
 
 Pass the context file path from Step 3b so the agent can read the explorer's structured findings.
 
@@ -149,7 +149,7 @@ Pass the context file path from Step 3b so the agent can read the explorer's str
 **Capturing out-of-scope side-effects:** While the implementer is working, if you notice a problem **unrelated to the current bug** that is non-trivial (fixing it inline would expand the scope of this fix), do NOT fix it now. Record it for later, then continue:
 
 ```bash
-bash "${AGY_PLUGIN_ROOT}/lib/capture-later.sh" \
+bash "<plugin-root>/lib/capture-later.sh" \
   --name "<short title>" --description "<what & where — enough to act on cold>" \
   --source cf-fix [--slug <bug-doc/task slug, if one exists>] [--problem "<the bug being fixed>"]
 ```
@@ -219,7 +219,7 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
 **Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
+2. Construct a write spec and delegate to **cf-writer agent** by calling `invoke_subagent` with agent `cf-writer` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
 
 ```
 WRITE SPEC
@@ -294,9 +294,9 @@ Show the user a 2-line summary:
 
 ### Step 9: Auto-Review
 
-Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+Automatically invoke `/cf-review` — activate the `cf-review` skill (type `/cf-review`). Do NOT ask the user first, just run it.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
+> On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
 
 ### Step 10: Performance Suggestion (conditional)
 
@@ -326,7 +326,7 @@ Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (state 
 If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
 
 1. **Suggest `/cf-learn`** — Ask the user: _"This bug is taking multiple attempts. Want to run `/cf-learn` to capture the debugging insights so far before continuing?"_
-2. If the user agrees, invoke `/cf-learn` — use the Skill tool with skill name `coding-friend:cf-learn`
+2. If the user agrees, invoke `/cf-learn` — activate the `cf-learn` skill (type `/cf-learn`)
 3. Then proceed with the 3rd attempt
 
 If you've tried **3 fixes** and the bug persists:

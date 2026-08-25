@@ -8,22 +8,27 @@ cd "$repo_root"
 staged_files="$(git diff --cached --name-only --diff-filter=ACDMR --)"
 
 if ! printf '%s\n' "$staged_files" \
-  | grep -Eq '^(plugin/|package\.json$|scripts/build-codex-plugin\.js$|scripts/lib/agent-md-to-toml\.js$)'; then
+  | grep -Eq '^(plugin/|package\.json$|scripts/build-codex-plugin\.js$|scripts/build-antigravity-plugin\.js$|scripts/lib/agent-md-to-toml\.js$|scripts/lib/plugin-build-common\.js$)'; then
   exit 0
 fi
 
-generation_inputs='plugin package.json scripts/build-codex-plugin.js scripts/lib/agent-md-to-toml.js'
+generation_inputs='plugin package.json scripts/build-codex-plugin.js scripts/build-antigravity-plugin.js scripts/lib/agent-md-to-toml.js scripts/lib/plugin-build-common.js'
 unstaged_files="$(git diff --name-only --diff-filter=ACDMR -- $generation_inputs)"
 untracked_files="$(git ls-files --others --exclude-standard -- $generation_inputs)"
 
 if [ -n "$unstaged_files" ] || [ -n "$untracked_files" ]; then
-  printf '%s\n' "Cannot regenerate plugin-codex with unstaged source inputs." >&2
+  printf '%s\n' "Cannot regenerate plugin-codex and plugin-antigravity with unstaged source inputs." >&2
   printf '%s\n' "Stage or revert these files before committing:" >&2
   printf '%s\n%s\n' "$unstaged_files" "$untracked_files" \
     | sed '/^$/d; s/^/  - /' >&2
   exit 1
 fi
 
-printf '%s\n' "Regenerating plugin-codex from staged source changes..."
+printf '%s\n' "Regenerating plugin-codex and plugin-antigravity from staged source changes..."
 npm run build:codex
 git add -A -- plugin-codex
+npm run build:agy
+git add -A -- plugin-antigravity
+# AGENTS.md is globally gitignored; force-add the generated rules file in
+# case the .gitignore negation is not yet in the same commit.
+git add -f -- plugin-antigravity/rules/AGENTS.md

@@ -1,19 +1,8 @@
 ---
 name: cf-writer-deep
 description: >
-  Deep reasoning document writer for nuanced technical content, complex multi-concept
-  synthesis, or very long context. Dispatched by cf-learn when deep reasoning is enabled, and
-  by skills needing thorough technical explanations. Trigger this agent instead of cf-writer
-  when the content involves advanced architecture explanations, subtle debugging insights,
-  complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write
-  a detailed explanation", "document this architecture", "explain this complex concept",
-  "write deep analysis", "create technical documentation". Runs on Sonnet for deeper reasoning
-  than Haiku. Do NOT use this agent for simple notes, factual memory entries, or quick
-  summaries — use cf-writer instead.
+  Deep reasoning document writer for nuanced technical content, complex multi-concept synthesis, or very long context. Dispatched by cf-learn when deep reasoning is enabled, and by skills needing thorough technical explanations. Trigger this agent instead of cf-writer when the content involves advanced architecture explanations, subtle debugging insights, complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write a detailed explanation", "document this architecture", "explain this complex concept", "write deep analysis", "create technical documentation". Uses pro for deeper analysis. Do NOT use this agent for simple notes, factual memory entries, or quick summaries — use cf-writer instead.
 model: pro
-tools: Read, Write, Edit, Glob, Bash
-created: 2026-02-20
-updated: 2026-03-20
 ---
 
 > **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
@@ -58,8 +47,8 @@ mkdir -p "$(dirname "<file_path>")"
 
 ### 3. Write the File
 
-- Use the Write tool for new files
-- Use the Edit tool for appending to or updating existing files
+- Create new files with write_to_file
+- Edit existing files with replace_file_content
 - Preserve exact formatting from the write spec's `content` field
 - If `content` includes frontmatter (---), keep it at the top of the file
 

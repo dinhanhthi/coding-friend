@@ -123,7 +123,7 @@ function resolveWorkspaceRoot(parsed) {
 function loadEffectivePatterns(workspaceRoot) {
   let userContent = "";
   const pluginRoot =
-    process.env.PLUGIN_ROOT || path.resolve(__dirname, "..");
+    process.env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, "..");
   const localIgnore = path.join(workspaceRoot, ".coding-friend", "ignore");
   const pluginIgnore = path.join(pluginRoot, ".coding-friend", "ignore");
 

@@ -40,7 +40,7 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
-bash "${AGY_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-scan
 ```
 
 If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
@@ -87,7 +87,7 @@ Use Glob to check for these files (read whichever exist):
 | Package/language | `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`, `composer.json`, `mix.exs` |
 | Config           | `tsconfig.json`, `.eslintrc*`, `prettier.config*`, `biome.json`, `.editorconfig`                                           |
 | Infrastructure   | `Dockerfile`, `docker-compose.yml`, `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Makefile`, `Justfile`                    |
-| Documentation    | `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `GEMINI.md`, `docs/`                                                    |
+| Documentation    | `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `AGENTS.md`, `docs/`                                                    |
 | Test             | `jest.config*`, `vitest.config*`, `pytest.ini`, `setup.cfg`, `.mocharc*`, `cypress.config*`                                |
 
 **2b. Read and extract:**

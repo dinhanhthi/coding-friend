@@ -1,0 +1,50 @@
+{
+  "coding-friend": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "CF_HOST=agy ./hooks/session-init.agy.sh",
+        "timeout": 15
+      },
+      {
+        "type": "command",
+        "command": "CF_HOST=agy ./hooks/rules-reminder.agy.sh",
+        "timeout": 10
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "view_file|grep_search|find_by_name|list_dir|write_to_file|replace_file_content|multi_replace_file_content|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=agy ./hooks/privacy-block.agy.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "CF_HOST=agy ./hooks/scout-block.agy.cjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=agy node ./hooks/auto-approve.agy.cjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "CF_HOST=agy ./hooks/session-log.agy.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}
