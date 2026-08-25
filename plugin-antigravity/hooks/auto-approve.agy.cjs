@@ -184,12 +184,7 @@ function classifyRunCommand(args, roots, allowExtra) {
   const cwd = runCommandCwd(args);
   const projectDir = roots[0];
   const toolInput = { command: cmd };
-  const decision = classifyByRules(
-    "Bash",
-    toolInput,
-    projectDir,
-    allowExtra,
-  );
+  const decision = classifyByRules("Bash", toolInput, projectDir, allowExtra);
   if (decision === "deny") return "deny";
   if (decision !== "allow") return "ask";
 

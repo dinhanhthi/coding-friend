@@ -248,7 +248,10 @@ test("rewrites skill plugin-root for workspace cwd, not plugin cwd", () => {
     script,
     /ROOT="\$\(cd "\$\(dirname "\$0"\)\/\.\.\/\.\.\/\.\." && pwd\)"/,
   );
-  assert.doesNotMatch(script, /CLAUDE_PLUGIN_ROOT|AGY_PLUGIN_ROOT|<plugin-root>/);
+  assert.doesNotMatch(
+    script,
+    /CLAUDE_PLUGIN_ROOT|AGY_PLUGIN_ROOT|<plugin-root>/,
+  );
 
   const nestedCjs = renderAgyFile(
     "/repo/plugin/skills/cf-commit/scripts/helper.cjs",

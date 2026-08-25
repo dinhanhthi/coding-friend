@@ -72,9 +72,7 @@ try {
   run("cf", ["update", "--agent", "agy", "--plugin"]);
   agySynced = true;
 } catch {
-  console.log(
-    "  ⚠ agy update skipped — is agy installed and is `cf` on PATH?",
-  );
+  console.log("  ⚠ agy update skipped — is agy installed and is `cf` on PATH?");
 }
 
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.

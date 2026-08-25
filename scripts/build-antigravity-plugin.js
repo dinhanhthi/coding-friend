@@ -142,10 +142,7 @@ function renderAgyInstructionText(input) {
     .replace(/\bAgent tool\b/g, "`invoke_subagent`")
     .replace(/`AskUserQuestion`/g, "a direct user question")
     .replace(/\bAskUserQuestion\b/g, "a direct user question")
-    .replace(
-      /tracked via TaskCreate/g,
-      "tracked with an inline checklist",
-    )
+    .replace(/tracked via TaskCreate/g, "tracked with an inline checklist")
     .replace(
       /register tasks via TaskCreate/g,
       "register tasks in an inline checklist",
@@ -206,10 +203,7 @@ function renderAgyInstructionText(input) {
       /it runs on Haiku for cost\s+efficiency\./gi,
       "It uses flash for cost efficiency.",
     )
-    .replace(
-      /Runs on Haiku for speed\./g,
-      "Uses flash for speed.",
-    )
+    .replace(/Runs on Haiku for speed\./g, "Uses flash for speed.")
     .replace(
       /Runs on Sonnet for deeper reasoning\s+than Haiku\./g,
       "Uses pro for deeper analysis.",
@@ -246,7 +240,7 @@ function renderAgyPlanSkill(input) {
       / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
       [
         "",
-        "   Accept both `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive \"strip the flag\" would leave the value behind (e.g. leftover `pro` would leak into the task description and get passed to cf-explorer). Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases (`opus`, `sonnet`, `haiku`, `fable`) or full model IDs. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.",
+        '   Accept both `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive "strip the flag" would leave the value behind (e.g. leftover `pro` would leak into the task description and get passed to cf-explorer). Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases (`opus`, `sonnet`, `haiku`, `fable`) or full model IDs. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.',
       ].join("\n"),
     )
     .replace(

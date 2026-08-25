@@ -264,6 +264,19 @@ grep hooks_manager ~/.gemini/antigravity-cli/cli.log | tail -1
 # kỳ vọng: loaded N named hooks, có coding-friend
 ```
 
+### Đã verify (2026-08-25, máy local, `agy` 1.1.19, `cf dev` ON)
+
+Tự động (không cần TUI):
+
+- `cf install --agent agy` (dev source) → 77 files; `agy plugin validate ~/.gemini/config/plugins/coding-friend` → skills 26, agents 12, mcpServers 1, hooks 1 (commands skipped — không ship workflow stubs).
+- `agy agents` liệt kê đủ 12 `cf-*` (`cf-explorer` … `cf-writer-deep`).
+- Synthetic `privacy-block.agy.sh` `view_file` `/x/.env` → `{"decision":"deny",…}`.
+- Synthetic `session-init.agy.sh` `invocationNum:1` → `injectSteps` chứa `HOST: agy` + `MAIN_REPO_ROOT`.
+- `hooks_manager.go`: `loaded 1 named hooks from 1 hooks.json file(s)` (group `coding-friend`).
+- `agy plugin list` in `No imported plugins.` — plugin sống dưới `~/.gemini/config/plugins/` (config scan), không phải “imported” via `agy plugin install`. Agents vẫn list.
+
+Cần session `agy` tương tác (chưa chạy ở đây): `/cf-help`, đọc `.env` bị chặn trong TUI, `invoke_subagent` `cf-explorer`.
+
 ---
 
 ## 9. Known differences / gotchas
@@ -298,6 +311,9 @@ grep hooks_manager ~/.gemini/antigravity-cli/cli.log | tail -1
     gọi `agy plugin install` subprocess.
 12. **`agy -p` (print mode) không chạy tool/hook** — đừng dùng `-p` để test
     privacy-block.
+13. **`agy plugin list` = "No imported plugins"** khi copy vào
+    `~/.gemini/config/plugins/` — không có nghĩa plugin không load; dùng
+    `agy plugin validate` + `agy agents`.
 
 ---
 

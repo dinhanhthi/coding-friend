@@ -16,8 +16,7 @@ function runHook(script, payload, { cwd } = {}) {
   delete env.CF_HOST;
   delete env.CODEX_SESSION_ID;
   delete env.OMP_SESSION_ID;
-  const input =
-    typeof payload === "string" ? payload : JSON.stringify(payload);
+  const input = typeof payload === "string" ? payload : JSON.stringify(payload);
   const stdout = execFileSync("bash", [script], {
     cwd: cwd || PLUGIN_ROOT,
     input,
@@ -77,9 +76,7 @@ describe("session-init.agy.sh", () => {
       expect(msg).toContain("MAIN_REPO_ROOT");
       expect(msg).toContain(workspace);
       expect(msg).toContain("PROJECT_TYPE: single-repo");
-      expect(msg).not.toContain(
-        "You have the coding-friend toolkit loaded",
-      );
+      expect(msg).not.toContain("You have the coding-friend toolkit loaded");
       expect(msg.length).toBeLessThan(12000);
     } finally {
       fs.rmSync(workspace, { recursive: true, force: true });
@@ -87,7 +84,10 @@ describe("session-init.agy.sh", () => {
   });
 
   it("PreInvocation invocationNum:2 emits {}", () => {
-    const stdout = runHook(INIT, { invocationNum: 2, workspacePaths: ["/tmp"] });
+    const stdout = runHook(INIT, {
+      invocationNum: 2,
+      workspacePaths: ["/tmp"],
+    });
     expect(JSON.parse(stdout)).toEqual({});
   });
 });

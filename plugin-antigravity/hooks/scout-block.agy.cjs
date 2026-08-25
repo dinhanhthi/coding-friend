@@ -158,7 +158,11 @@ function main() {
     }
 
     const workspaceRoot = resolveWorkspaceRoot(parsed);
-    const configPath = path.join(workspaceRoot, ".coding-friend", "config.json");
+    const configPath = path.join(
+      workspaceRoot,
+      ".coding-friend",
+      "config.json",
+    );
     if (fs.existsSync(configPath)) {
       try {
         const config = JSON.parse(fs.readFileSync(configPath, "utf8"));

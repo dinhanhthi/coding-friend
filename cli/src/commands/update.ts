@@ -696,9 +696,7 @@ async function updateAgyCommand(
 
       const afterVersion = readAgyPluginVersion();
       const versionPart = afterVersion ? `, v${afterVersion}` : "";
-      log.success(
-        `Antigravity plugin updated (${files} files${versionPart}).`,
-      );
+      log.success(`Antigravity plugin updated (${files} files${versionPart}).`);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       log.error(detail);
@@ -737,7 +735,5 @@ async function updateAgyCommand(
   }
 
   console.log();
-  log.dim(
-    "Restart Antigravity (or start a new `agy` session) to see changes.",
-  );
+  log.dim("Restart Antigravity (or start a new `agy` session) to see changes.");
 }
