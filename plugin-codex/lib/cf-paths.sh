@@ -12,7 +12,7 @@
 #   3. Non-git directory    — git command fails; falls back to $PWD
 
 cf_resolve_paths() {
-  : "${PLUGIN_ROOT:=${PLUGIN_ROOT:-}}"
+  : "${PLUGIN_ROOT:=${PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
 
   local git_common_dir
   git_common_dir=$(git -C "$PWD" rev-parse --git-common-dir 2>/dev/null || true)
