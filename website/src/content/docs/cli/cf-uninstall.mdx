@@ -1,14 +1,15 @@
 ---
 title: "cf uninstall"
-description: "Remove or disable the Coding Friend plugin from Claude Code or Codex CLI."
-keywords: [uninstall, remove, cleanup, cf uninstall, scope, codex]
+description: "Remove or disable the Coding Friend plugin from Claude Code, Codex CLI, or Google Antigravity."
+keywords:
+  [uninstall, remove, cleanup, cf uninstall, scope, codex, agy, antigravity]
 ---
 
 ## Overview
 
 `cf uninstall` removes the Coding Friend plugin from Claude Code. The cleanup behavior depends on the scope.
 
-Use `cf uninstall --agent codex` for Codex CLI.
+Use `cf uninstall --agent codex` for Codex CLI, or `cf uninstall --agent agy` for Google Antigravity.
 
 ## Usage
 
@@ -20,6 +21,8 @@ cf uninstall --project  # Uninstall from project scope only
 cf uninstall --local    # Uninstall from local scope only
 cf uninstall --agent codex
 cf uninstall --agent codex --remove-marketplace
+cf uninstall --agent agy
+cf uninstall --agy
 ```
 
 ## Scope-Dependent Behavior
@@ -50,6 +53,10 @@ Only removes the plugin registration from `.claude/settings.local.json`. Does no
 ### Codex CLI (`--agent codex`)
 
 Disables `coding-friend` in `~/.codex/config.toml`. Add `--remove-marketplace` to run `codex plugin marketplace remove coding-friend-marketplace` as well.
+
+### Google Antigravity (`--agent agy`)
+
+Removes the copied plugin at `~/.gemini/config/plugins/coding-friend/`, unregisters memory MCP from `mcp_config.json`, and deletes the `plugins["coding-friend"]` entry in `~/.gemini/config/config.json`. Restart Antigravity afterwards.
 
 ## What It Does NOT Do
 

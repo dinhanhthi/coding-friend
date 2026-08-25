@@ -25,8 +25,8 @@ Each sub-project has its own README with more details, check section Further Rea
 
 The `cf` CLI is **shared by all hosts**: run `cd cli && npm run build` once (it is
 already `npm link`-ed), or keep `npm run dev` running so it rebuilds on save. The
-hosts are independent (`~/.claude` vs `~/.codex` vs `~/.omp`) — you can run them at
-the same time.
+hosts are independent (`~/.claude` vs `~/.codex` vs `~/.omp` vs `~/.gemini`) — you can
+run them at the same time.
 
 Read more: [Plugin README](plugin/README.md).
 
@@ -46,21 +46,25 @@ cf init --agent codex --trust-project                  # per project you want it
 
 ### Inner loop — after editing `plugin/`
 
-One command refreshes both hosts:
+One command refreshes all hosts:
 
 ```bash
 npm run ud-plugin-local
 ```
 
-It runs three steps: `build:codex` (regenerate `plugin-codex/` — Codex reads the
-artifact, not `plugin/`) → `cf dev sync` (copy `plugin/` into the Claude Code dev
-cache) → clear `~/.codex/plugins/cache/coding-friend-marketplace` (so Codex re-copies
-on next launch).
+It runs `build:codex` (regenerate `plugin-codex/` — Codex reads the artifact, not
+`plugin/`) → `build:agy` (regenerate `plugin-antigravity/`) → `cf dev sync` (copy
+`plugin/` into the Claude Code dev cache) → `cf update --agent omp --plugin` →
+`cf update --agent agy --plugin` (copy into `~/.gemini/config/plugins/coding-friend/`)
+→ clear `~/.codex/plugins/cache/coding-friend-marketplace` (so Codex re-copies on next
+launch).
 
 Then **restart to load changes**:
 
 - **Codex** — quit and relaunch
 - **Claude Code** — restart, or `/plugin` → reload coding-friend
+- **omp** — restart omp
+- **Antigravity** — quit and relaunch
 
 > Edge cases: a **plugin version bump** or a change to `hooks.json` event types needs a
 > full reinstall — `cf dev update` (Claude) and reinstall in Codex (`/plugins`). A
@@ -115,6 +119,24 @@ shells [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`; skills inheri
 `~/.claude`; agents land in `~/.omp/agent/agents/`. `cf dev` is Claude-only.
 
 Local-dev setup, inner loop, and gotchas: [omp-dev.md](omp-dev.md).
+
+### Antigravity notes
+
+Google Antigravity is a fourth host _(beta)_. Unlike omp's bridge, it is **artifact
+mode** — `npm run build:agy` generates `plugin-antigravity/` from `plugin/` (AGY
+`hooks.json` at the plugin root, `rules/AGENTS.md`, agents with `model: flash|pro`).
+`cf dev` is Claude-only.
+
+`npm run ud-plugin-local` already runs `build:agy` and `cf update --agent agy --plugin`
+(redeploy to `~/.gemini/config/plugins/coding-friend/`). For a manual copy:
+
+```bash
+npm run build:agy
+cp -R plugin-antigravity/. ~/.gemini/config/plugins/coding-friend/
+agy plugin validate ~/.gemini/config/plugins/coding-friend
+```
+
+Then restart `agy`. Local-dev setup, inner loop, and gotchas: [agy-dev.md](agy-dev.md).
 
 ## Codex artifact
 

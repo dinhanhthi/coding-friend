@@ -5,7 +5,7 @@
 <h1 align="center">Coding Friend</h1>
 
 <p align="center">
-  Lean toolkit for disciplined engineering workflows with Claude Code, Codex CLI, and omp.
+  Lean toolkit for disciplined engineering workflows with Claude Code, Codex CLI, omp, and Google Antigravity.
 </p>
 
 <p align="center">
@@ -17,13 +17,15 @@
 
 ## What It Does
 
-Supported hosts: **Claude Code**, **Codex CLI** _(beta)_, and [**omp**](https://github.com/can1357/oh-my-pi) _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`; omp is opt-in with `--agent omp` or `--omp`.
+Supported hosts: **Claude Code**, **Codex CLI** _(beta)_, [**omp**](https://github.com/can1357/oh-my-pi) _(beta)_, and **Google Antigravity** _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`; omp is opt-in with `--agent omp` or `--omp`; Antigravity is opt-in with `--agent agy` or `--agy`.
 
 Coding Friend also works with any tool that runs Claude Code or Codex under the hood — including **Cursor**, **Grok CLI**, and **z.ai** (via Claude Code or Codex). Install for the underlying host (Claude Code or Codex) and use Coding Friend as usual.
 
 > **Codex support is in beta.** Core skills, agents, hooks, and shared memory work, but some parity gaps remain — see [Codex CLI docs](https://cf.dinhanhthi.com/docs/getting-started/codex/).
 
 > **omp support is in beta.** Skills inherit from Claude; agents and hooks are bridged. Some parity gaps remain — see [oh-my-pi](https://omp.sh/) and [omp local-dev](docs/omp-dev.md).
+
+> **Antigravity support is in beta.** Skills (as `/cf-*` slash commands), agents, PreToolUse/PreInvocation/Stop hooks and shared memory work; task/agent tracking, memory auto-capture and statusline have no Antigravity equivalent — see [Antigravity docs](https://cf.dinhanhthi.com/docs/getting-started/antigravity/) and [agy local-dev](docs/agy-dev.md).
 
 Command examples below use Claude's `/cf-*` form. In Codex, invoke the same
 skills as `$cf-*` or choose them from `/skills`.
@@ -59,7 +61,7 @@ For full details, visit the **[official website](https://cf.dinhanhthi.com/#feat
 
 ## Quick Start
 
-Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Claude Code](https://claude.com/claude-code), Codex CLI, or [omp](https://omp.sh/) (oh-my-pi).
+Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Claude Code](https://claude.com/claude-code), Codex CLI, [omp](https://omp.sh/) (oh-my-pi), or Google Antigravity.
 
 1. Install the CLI: `npm i -g coding-friend-cli`
 2. Install the plugin for your host:
@@ -68,6 +70,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Cl
    cf install                 # Claude Code (default)
    cf install --agent codex   # Codex CLI — beta (alias: cf install --codex)
    cf install --agent omp     # omp (oh-my-pi) — beta (alias: cf install --omp)
+   cf install --agent agy     # Google Antigravity — beta (alias: cf install --agy)
    ```
 
    > **`cf` conflict?** If another tool (e.g. Cloudflare's `cf`) already occupies that name, use `cdf` — it's an alias for the same CLI: `cdf install`, `cdf init`, etc.
@@ -94,6 +97,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Cl
    cf init                 # Claude Code
    cf init --agent codex   # Codex CLI
    cf init --agent omp     # omp (oh-my-pi)
+   cf init --agent agy     # Google Antigravity
    ```
 
 4. Restart your host session
@@ -108,7 +112,7 @@ Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Cl
 
 Coding Friend ships as **two independent npm packages**:
 
-- **Plugin** (`coding-friend`) — skills, agents, and hooks for Claude Code and Codex CLI (marketplace) or omp (`cf install --agent omp`). Fully functional standalone.
+- **Plugin** (`coding-friend`) — skills, agents, and hooks for Claude Code and Codex CLI (marketplace), omp (`cf install --agent omp`), or Google Antigravity (`cf install --agent agy`). Fully functional standalone.
 - **CLI** (`coding-friend-cli`, binary `cf`) — optional companion that adds the memory MCP server (fast indexed recall), the learn-host doc viewer, statusline rendering, and workspace setup utilities.
 
 | Tier         | Meaning                                                                                                                            | Count today                        |
@@ -159,11 +163,11 @@ Auto-invoked skills (no slash needed): `cf-tdd` (add `--auto` for autopilot revi
 
 ## CLI Commands
 
-The plugin is managed by the CLI `cf` command. Lifecycle commands (`cf install`, `cf uninstall`, `cf enable`, `cf disable`, `cf update`, `cf init`, `cf permission`) accept `--agent codex` / `--codex` or `--agent omp` / `--omp` when you want those hosts instead of the Claude default. Learn more about the CLI in the [CLI documentation](cli/README.md).
+The plugin is managed by the CLI `cf` command. Lifecycle commands (`cf install`, `cf uninstall`, `cf enable`, `cf disable`, `cf update`, `cf init`, `cf permission`) accept `--agent codex` / `--codex`, `--agent omp` / `--omp`, or `--agent agy` / `--agy` when you want those hosts instead of the Claude default. Learn more about the CLI in the [CLI documentation](cli/README.md).
 
 ## Plugin development
 
-For plugin developers, check [plugin-dev.md](docs/plugin-dev.md). omp-specific local-dev: [omp-dev.md](docs/omp-dev.md).
+For plugin developers, check [plugin-dev.md](docs/plugin-dev.md). omp-specific local-dev: [omp-dev.md](docs/omp-dev.md). Antigravity local-dev: [agy-dev.md](docs/agy-dev.md).
 
 ## Further Reading
 

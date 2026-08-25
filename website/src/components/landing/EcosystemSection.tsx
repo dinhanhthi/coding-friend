@@ -151,6 +151,12 @@ const hosts = [
     classes: "border-amber-500/30 bg-amber-500/10 text-amber-300",
     beta: true,
   },
+  {
+    name: "Google Antigravity",
+    detail: "Opt in with --agent agy",
+    classes: "border-sky-500/30 bg-sky-500/10 text-sky-300",
+    beta: true,
+  },
 ];
 
 const colorMap: Record<
@@ -239,7 +245,7 @@ export default function EcosystemSection() {
             The Ecosystem
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-400">
-            Three supported hosts, five tools, one cohesive workflow. The plugin
+            Four supported hosts, five tools, one cohesive workflow. The plugin
             is the heart — the rest amplify what you build.
           </p>
         </div>

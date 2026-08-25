@@ -1,7 +1,8 @@
 ---
 title: "cf init"
 description: "Initialize workspace with documentation folders and platform configuration."
-keywords: [init, initialization, project setup, cf init]
+keywords:
+  [init, initialization, project setup, cf init, agy, antigravity, codex]
 ---
 
 ## Overview
@@ -12,6 +13,8 @@ Interactive setup for Coding Friend. Run it in the root directory of your projec
 cf init
 cf init --agent codex
 cf init --agent codex --trust-project
+cf init --agent agy
+cf init --agy
 ```
 
 `cf init` has two modes depending on whether the project has been initialized before:
@@ -36,6 +39,19 @@ Codex mode:
 - Sets `agents.max_depth = 2` in `~/.codex/config.toml` for nested Coding Friend agents
 
 Add `--trust-project` when you want the CLI to mark the current project trusted in `~/.codex/config.toml`.
+
+## Antigravity Mode
+
+Use `cf init --agent agy` (alias `--agy`) to initialize the same project for Google Antigravity.
+
+Antigravity mode:
+
+- Creates the usual Coding Friend docs folders (`docs/plans`, `docs/memory`, and related folders)
+- Writes `.coding-friend/config.json` if missing
+- Creates `AGENTS.md` when that file does not already exist
+- Warns if the Antigravity plugin is not installed yet (`cf install --agent agy`)
+
+Restart Antigravity or start a new `agy` session afterwards. See the [Google Antigravity guide](/docs/getting-started/antigravity/).
 
 ## Config File Locations
 
