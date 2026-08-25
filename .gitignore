@@ -73,8 +73,3 @@ docs/context
 
 .codex/
 AGENTS.md
-
-# Keep codex-support plan (ignore everything else under docs/plans)
-!docs/plans/
-docs/plans/*
-!docs/plans/2026-05-16-codex-support/
