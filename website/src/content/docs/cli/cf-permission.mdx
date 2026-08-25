@@ -1,12 +1,14 @@
 ---
 title: "cf permission"
-description: "Manage Coding Friend permissions for Claude Code and Codex CLI."
+description: "Manage Coding Friend permissions for Claude Code, Codex CLI, and Google Antigravity."
 keywords:
   [
     permission,
     permissions,
     claude code,
     codex cli,
+    antigravity,
+    agy,
     settings,
     allow rules,
     cf permission,
@@ -15,7 +17,7 @@ keywords:
 
 ## Overview
 
-Interactive permission manager for Coding Friend. By default it configures Claude Code permission rules so skills and hooks can run without repeated prompts. Use `--agent codex` for the Codex-specific auto-approve toggle.
+Interactive permission manager for Coding Friend. By default it configures Claude Code permission rules so skills and hooks can run without repeated prompts. Use `--agent codex` for the Codex-specific auto-approve toggle, or `--agent agy` for Antigravity (native `/permissions` plus the shared `autoApprove` config key).
 
 ```bash
 cf permission
@@ -44,6 +46,10 @@ cf permission --all --user
 # Codex deterministic auto-approve
 cf permission --agent codex --enable-auto-approve
 cf permission --agent codex --disable-auto-approve
+
+# Antigravity — native permissions; auto-approve is a config key
+cf permission --agent agy
+cf permission --agy
 ```
 
 ## How It Works
@@ -70,6 +76,18 @@ Use `--project` or `--user` to skip the prompt.
 Codex permissions are separate from Claude Code permission rules. `cf permission --agent codex --enable-auto-approve` writes `autoApproveCodex: true` to `.coding-friend/config.json`.
 
 Codex auto-approve is deterministic-only: known-safe reads and working-directory edits can be approved, destructive actions are blocked, and unknown actions defer to Codex native approval. The Claude Sonnet classifier is not used from Codex hooks.
+
+## Google Antigravity
+
+Antigravity permissions are managed natively (`/permissions` in `agy`). `cf permission --agent agy` does not write allow rules; it reminds you that Coding Friend auto-approve is the same `autoApprove` key as Claude in `.coding-friend/config.json`:
+
+```json
+{
+  "autoApprove": true
+}
+```
+
+Antigravity auto-approve is deterministic-only: known-safe reads and working-directory edits can be allowed, destructive actions are denied, and unknown actions return `ask`. The Claude Sonnet classifier is not used from Antigravity hooks. There is no `--enable-auto-approve` flag for `--agent agy`.
 
 ## Permission Tiers
 

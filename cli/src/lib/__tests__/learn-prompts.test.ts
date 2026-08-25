@@ -18,6 +18,12 @@ vi.mock("../omp-config.js", () => ({
   removeOmpMcpEntry: vi.fn(),
 }));
 
+vi.mock("../agy-config.js", () => ({
+  writeAgyMcpEntry: vi.fn(),
+  readAgyMcpConfig: vi.fn(),
+  removeAgyMcpEntry: vi.fn(),
+}));
+
 import { runWithStderr } from "../exec.js";
 import { log } from "../log.js";
 import {
@@ -121,7 +127,7 @@ describe("registerLearnMcp", () => {
     );
   });
 
-  it("invokes claude CLI when host is explicit \"claude\"", () => {
+  it('invokes claude CLI when host is explicit "claude"', () => {
     mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
 
     const result = registerLearnMcp(LEARN_DIR, "claude");
@@ -131,7 +137,7 @@ describe("registerLearnMcp", () => {
     expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
   });
 
-  it("writes the omp mcp.json entry when host is \"omp\"", () => {
+  it('writes the omp mcp.json entry when host is "omp"', () => {
     const result = registerLearnMcp(LEARN_DIR, "omp");
 
     expect(mockWriteOmpMcpEntry).toHaveBeenCalledWith(
@@ -243,7 +249,7 @@ describe("unregisterLearnMcp", () => {
     expect(unregisterLearnMcp()).toBe(false);
   });
 
-  it("removes the omp mcp.json entry when host is \"omp\"", () => {
+  it('removes the omp mcp.json entry when host is "omp"', () => {
     mockReadOmpMcpJson.mockReturnValue({ mcpServers: {} });
 
     const result = unregisterLearnMcp("omp");

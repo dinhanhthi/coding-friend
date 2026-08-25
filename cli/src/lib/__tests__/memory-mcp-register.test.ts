@@ -18,6 +18,12 @@ vi.mock("../omp-config.js", () => ({
   removeOmpMcpEntry: vi.fn(),
 }));
 
+vi.mock("../agy-config.js", () => ({
+  writeAgyMcpEntry: vi.fn(),
+  readAgyMcpConfig: vi.fn(),
+  removeAgyMcpEntry: vi.fn(),
+}));
+
 import { runWithStderr } from "../exec.js";
 import { log } from "../log.js";
 import {
@@ -25,6 +31,11 @@ import {
   isMemoryMcpRegistered,
   unregisterMemoryMcp,
 } from "../memory-mcp-register.js";
+import {
+  readAgyMcpConfig,
+  removeAgyMcpEntry,
+  writeAgyMcpEntry,
+} from "../agy-config.js";
 import {
   readOmpMcpJson,
   removeOmpMcpEntry,
@@ -36,6 +47,9 @@ const mockLog = vi.mocked(log);
 const mockWriteOmpMcpEntry = vi.mocked(writeOmpMcpEntry);
 const mockReadOmpMcpJson = vi.mocked(readOmpMcpJson);
 const mockRemoveOmpMcpEntry = vi.mocked(removeOmpMcpEntry);
+const mockWriteAgyMcpEntry = vi.mocked(writeAgyMcpEntry);
+const mockReadAgyMcpConfig = vi.mocked(readAgyMcpConfig);
+const mockRemoveAgyMcpEntry = vi.mocked(removeAgyMcpEntry);
 
 const OMP_MEMORY_SERVER = {
   command: "npx",
@@ -114,7 +128,7 @@ describe("registerMemoryMcp", () => {
     );
   });
 
-  it("invokes claude CLI when host is explicit \"claude\"", () => {
+  it('invokes claude CLI when host is explicit "claude"', () => {
     mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
 
     const result = registerMemoryMcp("claude");
@@ -135,7 +149,7 @@ describe("registerMemoryMcp", () => {
     expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
   });
 
-  it("writes the omp mcp.json entry when host is \"omp\"", () => {
+  it('writes the omp mcp.json entry when host is "omp"', () => {
     const result = registerMemoryMcp("omp");
 
     expect(mockWriteOmpMcpEntry).toHaveBeenCalledWith(
@@ -152,6 +166,32 @@ describe("registerMemoryMcp", () => {
     });
 
     const result = registerMemoryMcp("omp");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Could not register MCP: EACCES"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it('writes the agy plugin mcp_config entry when host is "agy"', () => {
+    const result = registerMemoryMcp("agy");
+
+    expect(mockWriteAgyMcpEntry).toHaveBeenCalledWith(
+      "coding-friend-memory",
+      OMP_MEMORY_SERVER,
+    );
+    expect(result).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("returns false and warns when agy write throws", () => {
+    mockWriteAgyMcpEntry.mockImplementation(() => {
+      throw new Error("EACCES");
+    });
+
+    const result = registerMemoryMcp("agy");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(
@@ -216,6 +256,25 @@ describe("isMemoryMcpRegistered", () => {
     expect(isMemoryMcpRegistered("omp")).toBe(false);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
+
+  it("returns true when agy mcp_config has coding-friend-memory", () => {
+    mockReadAgyMcpConfig.mockReturnValue({
+      mcpServers: {
+        "coding-friend-memory": OMP_MEMORY_SERVER,
+      },
+    });
+
+    expect(isMemoryMcpRegistered("agy")).toBe(true);
+    expect(mockReadAgyMcpConfig).toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("returns false when agy mcp_config is null", () => {
+    mockReadAgyMcpConfig.mockReturnValue(null);
+
+    expect(isMemoryMcpRegistered("agy")).toBe(false);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
 });
 
 describe("unregisterMemoryMcp", () => {
@@ -244,7 +303,7 @@ describe("unregisterMemoryMcp", () => {
     expect(unregisterMemoryMcp()).toBe(false);
   });
 
-  it("removes the omp mcp.json entry when host is \"omp\"", () => {
+  it('removes the omp mcp.json entry when host is "omp"', () => {
     mockReadOmpMcpJson.mockReturnValue({ mcpServers: {} });
 
     const result = unregisterMemoryMcp("omp");
@@ -260,6 +319,31 @@ describe("unregisterMemoryMcp", () => {
     });
 
     const result = unregisterMemoryMcp("omp");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Could not unregister MCP: EACCES"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it('removes the agy mcp_config entry when host is "agy"', () => {
+    mockReadAgyMcpConfig.mockReturnValue({ mcpServers: {} });
+
+    const result = unregisterMemoryMcp("agy");
+
+    expect(mockRemoveAgyMcpEntry).toHaveBeenCalledWith("coding-friend-memory");
+    expect(result).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockRemoveOmpMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("returns false and warns when agy remove throws", () => {
+    mockRemoveAgyMcpEntry.mockImplementation(() => {
+      throw new Error("EACCES");
+    });
+
+    const result = unregisterMemoryMcp("agy");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(

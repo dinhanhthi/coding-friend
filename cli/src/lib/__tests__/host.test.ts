@@ -6,11 +6,13 @@ vi.mock("../exec.js", () => ({
 }));
 
 import {
+  checkAgyVersion,
   checkCodexVersion,
   checkOmpVersion,
   compareVersions,
   detectHostsAvailable,
   extractVersion,
+  getAgyMinVersion,
   getCodexMinVersion,
   getOmpMinVersion,
   resolveHost,
@@ -36,7 +38,7 @@ describe("detectHostsAvailable", () => {
   it("includes codex when installed", () => {
     mockCommandExists.mockReturnValue(true);
 
-    expect(detectHostsAvailable()).toEqual(["claude", "codex", "omp"]);
+    expect(detectHostsAvailable()).toEqual(["claude", "codex", "omp", "agy"]);
   });
 
   it("returns omp when only omp is installed", () => {
@@ -59,6 +61,21 @@ describe("detectHostsAvailable", () => {
     );
 
     expect(detectHostsAvailable()).toEqual(["codex", "omp"]);
+  });
+
+  it("includes agy when the agy binary is on PATH", () => {
+    mockCommandExists.mockImplementation((cmd) => cmd === "agy");
+
+    expect(detectHostsAvailable()).toEqual(["agy"]);
+    expect(mockCommandExists).toHaveBeenCalledWith("agy");
+  });
+
+  it("returns claude and agy in canonical order", () => {
+    mockCommandExists.mockImplementation(
+      (cmd) => cmd === "claude" || cmd === "agy",
+    );
+
+    expect(detectHostsAvailable()).toEqual(["claude", "agy"]);
   });
 });
 
@@ -105,7 +122,7 @@ describe("resolveHost", () => {
 
   it("rejects unknown agents listing all valid hosts", () => {
     expect(() => resolveHost({ agent: "unknown" })).toThrow(
-      'Unsupported agent "unknown". Use "claude", "codex", or "omp".',
+      'Unsupported agent "unknown". Use "claude", "codex", "omp", or "agy".',
     );
   });
 
@@ -130,6 +147,48 @@ describe("resolveHost", () => {
   it("rejects conflicting --codex and --omp aliases", () => {
     expect(() => resolveHost({ codex: true, omp: true })).toThrow(
       "Use either --codex or --omp, not both.",
+    );
+  });
+
+  it("resolves --agent agy", () => {
+    expect(resolveHost({ agent: "agy" })).toBe("agy");
+  });
+
+  it("resolves --agy alias", () => {
+    expect(resolveHost({ agy: true })).toBe("agy");
+  });
+
+  it("allows --agent agy with --agy alias", () => {
+    expect(resolveHost({ agent: "agy", agy: true })).toBe("agy");
+  });
+
+  it("rejects conflicting --agy and --codex aliases", () => {
+    expect(() => resolveHost({ agy: true, codex: true })).toThrow(
+      "Use either --agy or --codex, not both.",
+    );
+  });
+
+  it("rejects conflicting --agy and --omp aliases", () => {
+    expect(() => resolveHost({ agy: true, omp: true })).toThrow(
+      "Use either --agy or --omp, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent claude and --agy", () => {
+    expect(() => resolveHost({ agent: "claude", agy: true })).toThrow(
+      "Use either --agent claude or --agy, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent agy and --codex", () => {
+    expect(() => resolveHost({ agent: "agy", codex: true })).toThrow(
+      "Use either --agent agy or --codex, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent agy and --omp", () => {
+    expect(() => resolveHost({ agent: "agy", omp: true })).toThrow(
+      "Use either --agent agy or --omp, not both.",
     );
   });
 });
@@ -211,6 +270,51 @@ describe("version helpers", () => {
       ok: false,
       actual: undefined,
       min: "0.1.0",
+    });
+  });
+
+  it("returns the locked agy minimum", () => {
+    expect(getAgyMinVersion()).toBe("1.1.0");
+  });
+
+  it("passes when agy is at the minimum", () => {
+    mockRun.mockReturnValue("agy 1.1.0");
+
+    expect(checkAgyVersion()).toEqual({
+      ok: true,
+      actual: "1.1.0",
+      min: "1.1.0",
+    });
+    expect(mockRun).toHaveBeenCalledWith("agy", ["--version"]);
+  });
+
+  it("passes when agy is above the minimum", () => {
+    mockRun.mockReturnValue("agy 1.2.0");
+
+    expect(checkAgyVersion()).toEqual({
+      ok: true,
+      actual: "1.2.0",
+      min: "1.1.0",
+    });
+  });
+
+  it("fails when agy is too old", () => {
+    mockRun.mockReturnValue("agy 1.0.9");
+
+    expect(checkAgyVersion()).toEqual({
+      ok: false,
+      actual: "1.0.9",
+      min: "1.1.0",
+    });
+  });
+
+  it("fails when agy is missing", () => {
+    mockRun.mockReturnValue(null);
+
+    expect(checkAgyVersion()).toEqual({
+      ok: false,
+      actual: undefined,
+      min: "1.1.0",
     });
   });
 });

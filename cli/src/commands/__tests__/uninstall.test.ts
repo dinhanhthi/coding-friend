@@ -50,6 +50,12 @@ vi.mock("../../lib/omp-config.js", () => ({
   removeOmpExtensionEntry: vi.fn(),
 }));
 
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginInstalled: vi.fn(() => false),
+  removeAgyPlugin: vi.fn(),
+  removeAgyPluginConfigEntry: vi.fn(() => false),
+}));
+
 vi.mock("../../lib/memory-mcp-register.js", () => ({
   unregisterMemoryMcp: vi.fn(() => true),
 }));
@@ -68,6 +74,11 @@ import {
 import { setCodexPluginEnabled } from "../../lib/codex-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { removeMemoryMcpEntry } from "../../lib/memory-prompts.js";
+import {
+  isAgyPluginInstalled,
+  removeAgyPlugin,
+  removeAgyPluginConfigEntry,
+} from "../../lib/agy-config.js";
 import {
   isOmpAgentInstalled,
   removeOmpAgents,
@@ -94,6 +105,9 @@ const mockRemoveOmpAgents = vi.mocked(removeOmpAgents);
 const mockRemoveOmpExtensionEntry = vi.mocked(removeOmpExtensionEntry);
 const mockUnregisterMemoryMcp = vi.mocked(unregisterMemoryMcp);
 const mockUnregisterLearnMcp = vi.mocked(unregisterLearnMcp);
+const mockIsAgyPluginInstalled = vi.mocked(isAgyPluginInstalled);
+const mockRemoveAgyPlugin = vi.mocked(removeAgyPlugin);
+const mockRemoveAgyPluginConfigEntry = vi.mocked(removeAgyPluginConfigEntry);
 
 const home = homedir();
 const installedPluginsFile = join(
@@ -756,5 +770,33 @@ describe("uninstallCommand", () => {
     expect(mockRemoveOmpExtensionEntry).toHaveBeenCalledWith("user");
     expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("omp");
     expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("omp");
+  });
+
+  it("removes the Antigravity plugin dir, config entry, and memory MCP", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockIsAgyPluginInstalled.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "agy" });
+
+    expect(mockRemoveAgyPlugin).toHaveBeenCalled();
+    expect(mockRemoveAgyPluginConfigEntry).toHaveBeenCalled();
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("agy");
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+    expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockRemoveOmpAgents).not.toHaveBeenCalled();
+  });
+
+  it("logs nothing to uninstall when Antigravity plugin and config are absent", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockIsAgyPluginInstalled.mockReturnValue(false);
+    mockRemoveAgyPluginConfigEntry.mockReturnValue(false);
+
+    await uninstallCommand({ agent: "agy" });
+
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("Nothing to uninstall");
+    expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
+    expect(mockResolveScope).not.toHaveBeenCalled();
   });
 });

@@ -47,6 +47,22 @@ const CODEX_PATTERNS = [
   { name: "unsupported agent tools key", regex: /^tools\s*=/gm },
 ];
 
+const AGY_PATTERNS = [
+  { name: "unresolved host placeholder", regex: /\{\{cf:[^}]+\}\}/g },
+  { name: "Claude plugin root", regex: /\$\{CLAUDE_PLUGIN_ROOT\}/g },
+  { name: "AGY plugin root leftover", regex: /\bAGY_PLUGIN_ROOT\b/g },
+  { name: "Claude question tool", regex: /\bAskUserQuestion\b/g },
+  { name: "Claude task tool", regex: /\b(?:TaskCreate|TaskUpdate)\b/g },
+  { name: "Claude subagent type", regex: /subagent_type:/g },
+  { name: "Claude agent tool", regex: /\bAgent tool\b/g },
+  { name: "Claude WebFetch", regex: /\bWebFetch\b/g },
+  { name: "Claude WebSearch", regex: /\bWebSearch\b/g },
+  { name: "Claude Skill tool", regex: /\bSkill tool\b/g },
+  { name: "Claude hook output", regex: /\bhookSpecificOutput\b/g },
+  { name: "Claude instruction file", regex: /\bCLAUDE\.md\b/g },
+  { name: "Claude resume command", regex: /\bclaude --resume\b/g },
+];
+
 async function collectInstructionFiles(root, relativePrefix) {
   const skillDir = path.join(root, "skills");
   const agentDir = path.join(root, "agents");
@@ -130,11 +146,43 @@ export async function findCodexArtifactLintIssues(root = repoRoot) {
   return findIssues(files.sort(), CODEX_PATTERNS, root);
 }
 
+export async function findAntigravityArtifactLintIssues(root = repoRoot) {
+  const files = await collectInstructionFiles(
+    path.join(root, "plugin-antigravity"),
+    "plugin-antigravity",
+  );
+
+  const rulesDir = path.join(root, "plugin-antigravity", "rules");
+  try {
+    const ruleEntries = await readdir(rulesDir, { withFileTypes: true });
+    for (const entry of ruleEntries) {
+      if (entry.isFile() && entry.name.endsWith(".md")) {
+        files.push(path.join("plugin-antigravity", "rules", entry.name));
+      }
+    }
+  } catch {
+    // Fixture repos may omit rules/.
+  }
+
+  const hooksJsonPath = "plugin-antigravity/hooks.json";
+  try {
+    await access(path.join(root, hooksJsonPath));
+    files.push(hooksJsonPath);
+  } catch {
+    // Fixture repos may omit hooks.json.
+  }
+
+  return findIssues(files.sort(), AGY_PATTERNS, root);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
-  const issues = [
-    ...(await findPlaceholderLintIssues()),
-    ...(await findCodexArtifactLintIssues()),
-  ];
+  const agyOnly = process.argv.includes("--agy");
+  const issues = agyOnly
+    ? await findAntigravityArtifactLintIssues()
+    : [
+        ...(await findPlaceholderLintIssues()),
+        ...(await findCodexArtifactLintIssues()),
+      ];
   if (issues.length > 0) {
     console.error("Found unresolved or host-incompatible references:");
     for (const issue of issues) {

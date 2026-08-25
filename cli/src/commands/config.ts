@@ -15,7 +15,6 @@ import { listMdFilesRecursive } from "../lib/fs-utils.js";
 import { registerLearnMcp, unregisterLearnMcp } from "../lib/learn-prompts.js";
 import {
   claudeLocalSettingsPath,
-  claudeProjectSettingsPath,
   claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
@@ -54,7 +53,11 @@ import {
   ensureShellCompletion,
   removeShellCompletion,
 } from "../lib/shell-completion.js";
-import { getAllRules, getExistingRules } from "../lib/permissions.js";
+import {
+  afterAutoApproveEnabled,
+  getAllRules,
+  getExistingRules,
+} from "../lib/permissions.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -696,7 +699,7 @@ async function editAutoApprove(
 
   const value = await confirm({
     message:
-      "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
     default: currentValue ?? false,
   });
 
@@ -704,23 +707,32 @@ async function editAutoApprove(
   if (scope === "back") return;
   writeToScope(scope, { autoApprove: value });
 
-  // Audit dangerous rules if auto-approve is being enabled
   if (value) {
-    const { runDangerousRulesAudit } = await import("../lib/permissions.js");
-    await runDangerousRulesAudit(
-      [
-        claudeProjectSettingsPath(),
-        claudeLocalSettingsPath(),
-        claudeSettingsPath(),
-      ],
-      log,
-      (message) => confirm({ message, default: true }),
+    await afterAutoApproveEnabled(log, (message) =>
+      confirm({ message, default: true }),
     );
-    log.dim(
-      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
-    );
-    log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
   }
+}
+
+async function editPrivacyBlock(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("privacyBlock", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message: "Keep privacy-block enabled? (deny .env / credentials / keys)",
+    default: currentValue !== false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { privacyBlock: value });
 }
 
 // ─── Statusline ──────────────────────────────────────────────────────
@@ -1008,6 +1020,17 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const privacyBlockScope = getScopeLabel(
+      "privacyBlock",
+      globalCfg,
+      localCfg,
+    );
+    const privacyBlockVal = getMergedValue(
+      "privacyBlock",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
     const reviewScope = getScopeLabel("review", globalCfg, localCfg);
     const withCodexVal = (
       getMergedValue("review", globalCfg, localCfg) as
@@ -1074,7 +1097,13 @@ export async function configCommand(): Promise<void> {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
-              "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
+              "  Claude: LLM classifier; Antigravity: deterministic rules. Codex uses autoApproveCodex",
+          },
+          {
+            name: `Privacy-block ${formatScopeLabel(privacyBlockScope)}${privacyBlockVal !== undefined ? ` (${privacyBlockVal})` : ""}`,
+            value: "privacyBlock",
+            description:
+              "  Block reads of .env, keys, and similar secrets (all hosts)",
           },
           {
             name: `Codex dual-review ${formatScopeLabel(reviewScope)}${withCodexVal !== undefined ? ` (${withCodexVal})` : ""}`,
@@ -1139,6 +1168,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);
+        break;
+      case "privacyBlock":
+        await editPrivacyBlock(globalCfg, localCfg);
         break;
       case "review":
         await editReviewWithCodex(globalCfg, localCfg);

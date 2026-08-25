@@ -55,6 +55,7 @@ export interface ScopeFlags {
   agent?: string;
   codex?: boolean;
   omp?: boolean;
+  agy?: boolean;
 }
 
 /**

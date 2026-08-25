@@ -15,6 +15,7 @@ import {
   checkLearnMcpHealth,
   printHealthSection,
 } from "../lib/mcp-health.js";
+import { isAgyPluginInstalled, readAgyMcpConfig } from "../lib/agy-config.js";
 import { readJson } from "../lib/json.js";
 import { listMdFilesRecursive } from "../lib/fs-utils.js";
 import {
@@ -141,6 +142,20 @@ export async function mcpCommand(): Promise<void> {
 
   // Memory MCP section
   await printMemoryMcp();
+
+  printAgyMcpStatus();
+}
+
+function printAgyMcpStatus(): void {
+  if (!isAgyPluginInstalled()) return;
+
+  console.log();
+  printBanner("Antigravity MCP");
+  const cfg = readAgyMcpConfig();
+  const servers = cfg?.mcpServers ?? {};
+  const status =
+    "coding-friend-memory" in servers ? "registered" : "not registered";
+  log.info(`coding-friend-memory: ${status} in plugin mcp_config.json`);
 }
 
 async function printMemoryMcp(): Promise<void> {

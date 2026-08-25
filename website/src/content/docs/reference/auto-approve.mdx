@@ -46,6 +46,15 @@ cf permission --agent codex --enable-auto-approve
 
 Codex auto-approve writes `autoApproveCodex: true`, does not call the Claude Sonnet classifier, and defers unknown actions to Codex native approval.
 
+For Google Antigravity, use the same `autoApprove: true` key. There is no `--enable-auto-approve` flag for `--agent agy`. Antigravity auto-approve is deterministic-only: known-safe reads and working-directory edits can be allowed, destructive actions are denied, and unknown actions return `ask`. The Claude Sonnet classifier is not used from Antigravity hooks.
+
+<Callout type="warning" title="One key, two hosts">
+  `autoApprove: true` enables **both** the Claude Code hook (LLM classifier) and
+  the Antigravity hook (deterministic rules). There is no per-host override.
+  Codex still uses the separate `autoApproveCodex` key. `autoApproveIgnore` is
+  Claude Code only — Antigravity does not read it.
+</Callout>
+
 ## How It Works
 
 ```
@@ -202,8 +211,8 @@ makes the hook return no decision — so Claude Code's native
 - Both global and local configs are merged (union), same as
   `autoApproveAllowExtra`.
 - **When to use which:**
-  - `autoApproveAllowExtra` — you want the hook to silently approve (no prompt, no Claude Code check)
-  - `autoApproveIgnore` — you want Claude Code's native patterns to decide (respects your `.claude/settings.json` allow rules)
+  - `autoApproveAllowExtra` — you want the hook to silently approve (no prompt, no Claude Code check). Shared across Claude, Antigravity, and Codex.
+  - `autoApproveIgnore` — you want Claude Code's native patterns to decide (respects your `.claude/settings.json` allow rules). **Claude Code only** — Antigravity does not read this key.
 
 ### Step 2: Working-Dir Check (instant)
 

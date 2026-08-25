@@ -224,6 +224,40 @@ describe("loadConfig validation", () => {
     ]);
   });
 
+  it("warns on the removed autoApproveAgy key", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ autoApproveAgy: true });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("autoApproveAgy"),
+    );
+    expect(
+      (config as Record<string, unknown>)["autoApproveAgy"],
+    ).toBeUndefined();
+  });
+
+  it("accepts privacyBlock as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ privacyBlock: false });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.privacyBlock).toBe(false);
+  });
+
+  it("accepts scoutBlock as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ scoutBlock: false });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.scoutBlock).toBe(false);
+  });
+
   it("accepts autoApproveAllowExtra as a valid config key (array of strings)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

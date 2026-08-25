@@ -5,6 +5,15 @@ import { readJson } from "../lib/json.js";
 import { claudeSettingsPath } from "../lib/paths.js";
 import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
 import {
+  deployAgyPlugin,
+  isAgyPluginInstalled,
+  readAgyMcpConfig,
+  readAgyPluginVersion,
+  resolveAgyPluginSource,
+  writeAgyMcpEntry,
+  type AgyMcpJson,
+} from "../lib/agy-config.js";
+import {
   CODEX_MARKETPLACE_NAME,
   getCodexInstalledVersion,
   isCodexMarketplaceRegistered,
@@ -123,21 +132,22 @@ function argvHasAgentFlag(): boolean {
 
 /** True when the user (or a direct API caller) named a host, not Commander's default. */
 function hasExplicitHost(opts: UpdateOptions): boolean {
-  if (opts.codex === true || opts.omp === true) return true;
+  if (opts.codex === true || opts.omp === true || opts.agy === true)
+    return true;
   if (argvHasAgentFlag()) return true;
   const agent = opts.agent?.trim().toLowerCase();
-  return agent === "codex" || agent === "omp";
+  return agent === "codex" || agent === "omp" || agent === "agy";
 }
 
 /**
- * Strip a leftover `--agent claude` when the caller used `--codex` / `--omp`
+ * Strip a leftover `--agent claude` when the caller used `--codex` / `--omp` / `--agy`
  * without an explicit `--agent` on argv. resolveHost() treats that pair as a conflict.
  */
 function flagsForHostResolve(opts: UpdateOptions): UpdateOptions {
   if (
     !argvHasAgentFlag() &&
     opts.agent === "claude" &&
-    (opts.codex === true || opts.omp === true)
+    (opts.codex === true || opts.omp === true || opts.agy === true)
   ) {
     return { ...opts, agent: undefined };
   }
@@ -152,6 +162,8 @@ function isHostInstalled(host: Host): boolean {
       return isCodexMarketplaceRegistered();
     case "omp":
       return isOmpAgentInstalled("user") || isOmpAgentInstalled("project");
+    case "agy":
+      return isAgyPluginInstalled();
   }
 }
 
@@ -163,6 +175,8 @@ function hostSectionTitle(host: Host): string {
       return "Codex";
     case "omp":
       return "omp";
+    case "agy":
+      return "Antigravity";
   }
 }
 
@@ -173,6 +187,7 @@ async function updateHost(
 ): Promise<void> {
   if (host === "codex") return updateCodexCommand(opts, mode);
   if (host === "omp") return updateOmpCommand(opts, mode);
+  if (host === "agy") return updateAgyCommand(opts, mode);
   return updateClaudeCommand(opts, mode);
 }
 
@@ -639,4 +654,86 @@ async function updateOmpCommand(
 
   console.log();
   log.dim("Restart omp (or start a new session) to see changes.");
+}
+
+function restoreAgyExtraMcpServers(previous: AgyMcpJson | null): void {
+  if (!previous) return;
+  const current = readAgyMcpConfig();
+  const currentServers = current?.mcpServers ?? {};
+  for (const [name, server] of Object.entries(previous.mcpServers)) {
+    if (!(name in currentServers)) {
+      writeAgyMcpEntry(name, server);
+    }
+  }
+}
+
+async function updateAgyCommand(
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
+  const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
+  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
+  const doPlugin = updateAll || !!opts.plugin;
+
+  if (!mode?.skipBanner) {
+    printBanner("✨ Coding Friend Antigravity Update (beta) ✨");
+    console.log();
+  }
+
+  if (doPlugin) {
+    try {
+      const previousMcp = readAgyMcpConfig();
+      const beforeVersion = readAgyPluginVersion();
+      console.log(
+        `  Plugin      ${beforeVersion ? beforeVersion : chalk.dim("not installed")}`,
+      );
+
+      const source = resolveAgyPluginSource();
+      log.step(`Updating Antigravity plugin (${source.kind} source)...`);
+      const { files } = deployAgyPlugin(source.path);
+      registerMemoryMcp("agy");
+      restoreAgyExtraMcpServers(previousMcp);
+
+      const afterVersion = readAgyPluginVersion();
+      const versionPart = afterVersion ? `, v${afterVersion}` : "";
+      log.success(`Antigravity plugin updated (${files} files${versionPart}).`);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      log.error(detail);
+    }
+  }
+
+  if (doCli) {
+    const cliVersion = getCliVersion();
+    const latestCliVersion = getLatestCliVersion();
+    if (!latestCliVersion) {
+      log.warn("Cannot check latest CLI version from npm.");
+    } else {
+      const cmp = semverCompare(cliVersion, latestCliVersion);
+      if (cmp < 0) {
+        log.step(
+          `CLI update available: ${chalk.yellow(`v${cliVersion}`)} → ${chalk.green(`v${latestCliVersion}`)}`,
+        );
+        const result = run("npm", [
+          "install",
+          "-g",
+          "coding-friend-cli@latest",
+        ]);
+        if (result === null) {
+          log.error(
+            "CLI update failed. Try manually: npm install -g coding-friend-cli@latest",
+          );
+        } else {
+          log.success(`CLI updated to ${chalk.green(`v${latestCliVersion}`)}`);
+        }
+      }
+    }
+  }
+
+  if (opts.statusline) {
+    log.warn("Antigravity does not use the Claude statusline. Skipping.");
+  }
+
+  console.log();
+  log.dim("Restart Antigravity (or start a new `agy` session) to see changes.");
 }

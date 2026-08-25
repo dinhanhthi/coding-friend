@@ -6,6 +6,12 @@ import { listMdFilesRecursive } from "../lib/fs-utils.js";
 import { getInstalledVersion } from "../lib/statusline.js";
 import { readJson } from "../lib/json.js";
 import {
+  isAgyPluginEnabled,
+  isAgyPluginInstalled,
+  readAgyPluginVersion,
+} from "../lib/agy-config.js";
+import {
+  agyPluginDir,
   claudeSettingsPath,
   devStatePath,
   globalConfigPath,
@@ -256,6 +262,22 @@ export async function statusCommand(): Promise<void> {
   console.log(
     `${pad("Permissions", VERSION_COL)}${rules.length} rules ${chalk.dim('→ Run "cf permission" for details')}`,
   );
+
+  if (!isAgyPluginInstalled()) {
+    console.log(
+      `${pad("Antigravity", VERSION_COL)}${chalk.dim("not installed")}`,
+    );
+  } else {
+    const agyVersion = readAgyPluginVersion();
+    const agyEnabled = isAgyPluginEnabled();
+    const versionPart = agyVersion ? `v${agyVersion} ` : "";
+    const enabledPart = agyEnabled
+      ? chalk.green("enabled")
+      : chalk.yellow("disabled");
+    console.log(
+      `${pad("Antigravity", VERSION_COL)}${versionPart}${enabledPart}  ${chalk.dim(agyPluginDir())}`,
+    );
+  }
 
   // ─── Memory ──────────────────────────────────────────────────────
   console.log();

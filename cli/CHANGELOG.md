@@ -5,6 +5,14 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## Unreleased
+
+- Add `--agent agy` / `--agy` (Google Antigravity, beta) to install/uninstall/enable/disable/init/update/permission/status; memory MCP registered into the plugin's `mcp_config.json`
+- `cf init --agent agy` runs an Antigravity wizard (docsDir, language, gitignore, learn MCP, `autoApprove`, `privacyBlock`) instead of only writing `AGENTS.md`
+- Recognize `privacyBlock` and `scoutBlock` in the config schema (`cf config` can set `privacyBlock`)
+- Antigravity auto-approve uses the same `autoApprove` key as Claude (no `autoApproveAgy`)
+- `cf init --agent agy` always creates docs subfolders; enabling `autoApprove` warns that the key is shared with Claude and runs the dangerous-rules audit
+
 ## v1.39.1 (2026-08-24)
 
 - Fix `cf update --agent codex` crashing with `not configured as a Git marketplace` when the Codex marketplace is registered as a local dev source; it now skips the git upgrade and points to the manual `/plugins` reinstall (or warns if the plugin is not installed yet) [#4867407](https://github.com/dinhanhthi/coding-friend/commit/4867407)

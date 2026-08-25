@@ -5,7 +5,6 @@ import { readJson, mergeJson } from "../lib/json.js";
 import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
-  claudeProjectSettingsPath,
   claudeSettingsPath,
   globalConfigPath,
   localConfigPath,
@@ -19,7 +18,8 @@ import {
   cleanupStalePluginRules,
   logPluginScriptWarning,
   extractTag,
-  runDangerousRulesAudit,
+  afterAutoApproveEnabled,
+  AUTO_APPROVE_CROSS_HOST_NOTE,
 } from "../lib/permissions.js";
 import type { PermissionRule } from "../lib/permissions.js";
 import type { CodingFriendConfig } from "../types.js";
@@ -237,7 +237,7 @@ async function autoApproveFlow(): Promise<void> {
       ` ${scopeLabel}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
   );
   log.dim(
-    "Auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns",
+    "Claude: LLM classifier; Antigravity: deterministic rules. Codex uses autoApproveCodex.",
   );
   console.log();
 
@@ -254,21 +254,10 @@ async function autoApproveFlow(): Promise<void> {
   mergeJson(targetPath, { autoApprove: value });
   log.success(`Saved to ${targetPath}`);
 
-  // Audit dangerous rules if auto-approve is being enabled
   if (value) {
-    await runDangerousRulesAudit(
-      [
-        claudeProjectSettingsPath(),
-        claudeLocalSettingsPath(),
-        claudeSettingsPath(),
-      ],
-      log,
-      (message) => confirm({ message, default: true }),
+    await afterAutoApproveEnabled(log, (message) =>
+      confirm({ message, default: true }),
     );
-    log.dim(
-      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
-    );
-    log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
   }
 }
 
@@ -279,6 +268,7 @@ export async function permissionCommand(opts: {
   agent?: string;
   codex?: boolean;
   omp?: boolean;
+  agy?: boolean;
   enableAutoApprove?: boolean;
   disableAutoApprove?: boolean;
 }): Promise<void> {
@@ -292,6 +282,13 @@ export async function permissionCommand(opts: {
       "omp uses its own approval-mode; run `omp config` / omp approval settings — coding-friend does not manage omp permissions.",
     );
     log.dim("See docs/omp-dev.md.");
+    return;
+  }
+  if (host === "agy") {
+    log.info(
+      "Antigravity permissions are managed natively (`/permissions` in agy); Coding Friend auto-approve is `autoApprove` in config (same key as Claude Code)",
+    );
+    log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
     return;
   }
 

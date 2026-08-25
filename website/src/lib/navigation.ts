@@ -58,6 +58,11 @@ export const docsNavigation: NavSection[] = [
       { title: "Installation", slug: "getting-started/installation" },
       { title: "Codex CLI", slug: "getting-started/codex" },
       { title: "oh-my-pi", slug: "getting-started/omp", beta: true },
+      {
+        title: "Google Antigravity",
+        slug: "getting-started/antigravity",
+        beta: true,
+      },
       { title: "Quick Start", slug: "getting-started/quick-start" },
       { title: "Skills Overview", slug: "skills/overview" },
       { title: "Best Practices", slug: "getting-started/best-practices" },

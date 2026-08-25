@@ -1,6 +1,6 @@
 # CLI Requirements
 
-Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend`) and the **CLI** (`coding-friend-cli`). The plugin installs skills, agents, and hooks directly into Claude Code — it is fully functional as a standalone install. The CLI (`cf`) is an optional companion that adds workspace setup commands, manages the memory MCP server, and hosts the learn-doc server. Installing the plugin without the CLI gives you all AI-powered workflows; the CLI unlocks faster indexed memory recall and additional tooling conveniences.
+Coding Friend ships as two separate npm packages: the **plugin** (`coding-friend`) and the **CLI** (`coding-friend-cli`). The plugin installs skills, agents, and hooks directly into Claude Code — it is fully functional as a standalone install. Codex CLI, omp, and Google Antigravity (beta) use the same toolkit via `cf install --agent <host>`. The CLI (`cf`) is an optional companion that adds workspace setup commands, manages the memory MCP server, and hosts the learn-doc server. Installing the plugin without the CLI gives you all AI-powered workflows; the CLI unlocks faster indexed memory recall and additional tooling conveniences.
 
 ---
 

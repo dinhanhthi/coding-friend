@@ -32,6 +32,14 @@ vi.mock("../../lib/prompt-utils.js", () => ({
 vi.mock("../../lib/host.js", () => ({
   checkCodexVersion: vi.fn(),
   checkOmpVersion: vi.fn(),
+  checkAgyVersion: vi.fn(),
+}));
+
+vi.mock("../../lib/agy-config.js", () => ({
+  deployAgyPlugin: vi.fn(),
+  resolveAgyPluginSource: vi.fn(),
+  setAgyPluginEnabled: vi.fn(),
+  validateAgyPlugin: vi.fn(),
 }));
 
 vi.mock("../../lib/codex-config.js", () => ({
@@ -64,7 +72,17 @@ import {
 } from "../../lib/plugin-state.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
-import { checkCodexVersion, checkOmpVersion } from "../../lib/host.js";
+import {
+  checkAgyVersion,
+  checkCodexVersion,
+  checkOmpVersion,
+} from "../../lib/host.js";
+import {
+  deployAgyPlugin,
+  resolveAgyPluginSource,
+  setAgyPluginEnabled,
+  validateAgyPlugin,
+} from "../../lib/agy-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import {
   deployCodexAgents,
@@ -100,6 +118,11 @@ const mockCheckOmpVersion = vi.mocked(checkOmpVersion);
 const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
 const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
 const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
+const mockCheckAgyVersion = vi.mocked(checkAgyVersion);
+const mockResolveAgyPluginSource = vi.mocked(resolveAgyPluginSource);
+const mockDeployAgyPlugin = vi.mocked(deployAgyPlugin);
+const mockSetAgyPluginEnabled = vi.mocked(setAgyPluginEnabled);
+const mockValidateAgyPlugin = vi.mocked(validateAgyPlugin);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -126,6 +149,17 @@ beforeEach(() => {
     skipped: [],
   });
   mockRegisterMemoryMcp.mockReturnValue(true);
+  mockCheckAgyVersion.mockReturnValue({
+    ok: true,
+    actual: "1.1.0",
+    min: "1.1.0",
+  });
+  mockResolveAgyPluginSource.mockReturnValue({
+    path: "/repo/plugin-antigravity",
+    kind: "dev",
+  });
+  mockDeployAgyPlugin.mockReturnValue({ files: 12 });
+  mockValidateAgyPlugin.mockReturnValue({ stdout: "ok", status: 0 });
 });
 
 describe("installCommand", () => {
@@ -398,10 +432,7 @@ describe("installCommand", () => {
     expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("omp");
     expect(mockResolveScope).not.toHaveBeenCalled();
     expect(mockDeployCodexAgents).not.toHaveBeenCalled();
-    expect(mockRun).not.toHaveBeenCalledWith(
-      "claude",
-      expect.anything(),
-    );
+    expect(mockRun).not.toHaveBeenCalledWith("claude", expect.anything());
   });
 
   it("reports omp beta install success and skill inheritance", async () => {
@@ -415,9 +446,7 @@ describe("installCommand", () => {
       expect.anything(),
       expect.stringContaining("Installed for omp (beta)"),
     );
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("~/.claude"),
-    );
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("~/.claude"));
   });
 
   it("uses project omp scope for --project", async () => {
@@ -482,6 +511,65 @@ describe("installCommand", () => {
     );
     expect(mockDeployOmpAgents).not.toHaveBeenCalled();
     expect(mockWriteOmpExtensionEntry).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("deploys the Antigravity plugin and memory MCP for --agent agy", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "agy" });
+
+    expect(mockCommandExists).toHaveBeenCalledWith("agy");
+    expect(mockCheckAgyVersion).toHaveBeenCalled();
+    expect(mockResolveAgyPluginSource).toHaveBeenCalled();
+    expect(mockDeployAgyPlugin).toHaveBeenCalledWith(
+      "/repo/plugin-antigravity",
+    );
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("agy");
+    expect(mockSetAgyPluginEnabled).toHaveBeenCalledWith(true);
+    expect(mockValidateAgyPlugin).toHaveBeenCalled();
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockDeployCodexAgents).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalledWith("claude", expect.anything());
+  });
+
+  it("exits when agy CLI is missing without deploying", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockCommandExists.mockReturnValue(false);
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "agy" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("https://antigravity.google/"),
+    );
+    expect(mockDeployAgyPlugin).not.toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("exits when agy version is unsupported without deploying", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockCommandExists.mockReturnValue(true);
+    mockCheckAgyVersion.mockReturnValue({
+      ok: false,
+      actual: "1.0.0",
+      min: "1.1.0",
+    });
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+
+    await installCommand({ agent: "agy" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockDeployAgyPlugin).not.toHaveBeenCalled();
     expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
   });
 });

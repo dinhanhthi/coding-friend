@@ -3,6 +3,11 @@ import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import { readJson, writeJson } from "../lib/json.js";
+import {
+  isAgyPluginInstalled,
+  removeAgyPlugin,
+  removeAgyPluginConfigEntry,
+} from "../lib/agy-config.js";
 import { unregisterLearnMcp } from "../lib/learn-prompts.js";
 import { unregisterMemoryMcp } from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
@@ -186,6 +191,10 @@ export async function uninstallCommand(
   }
   if (host === "omp") {
     uninstallOmpCommand(opts);
+    return;
+  }
+  if (host === "agy") {
+    uninstallAgyCommand();
     return;
   }
 
@@ -424,6 +433,28 @@ function isOmpExtensionPresent(scope: OmpScope): boolean {
   const dir =
     scope === "project" ? ompProjectExtensionsDir() : ompExtensionsDir();
   return existsSync(join(dir, OMP_EXTENSION_SHIM));
+}
+
+function uninstallAgyCommand(): void {
+  console.log();
+  printBanner("👋 Coding Friend Antigravity Uninstall 👋", {
+    color: chalk.red,
+  });
+
+  const installed = isAgyPluginInstalled();
+  unregisterMemoryMcp("agy");
+  removeAgyPlugin();
+  const removedConfig = removeAgyPluginConfigEntry();
+
+  if (!installed && !removedConfig) {
+    log.info("Nothing to uninstall");
+    return;
+  }
+
+  log.success("Coding Friend uninstalled from Antigravity.");
+  log.dim(
+    "Restart Antigravity (or start a new `agy` session) for the change to take effect.",
+  );
 }
 
 function uninstallOmpCommand(opts: UninstallOptions): void {

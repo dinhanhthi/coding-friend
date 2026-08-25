@@ -1,7 +1,8 @@
 ---
 title: "cf disable"
 description: "Disable the Coding Friend plugin without uninstalling it."
-keywords: [disable, deactivate, turn off, cf disable, scope, codex]
+keywords:
+  [disable, deactivate, turn off, cf disable, scope, codex, agy, antigravity]
 ---
 
 ## Overview
@@ -17,9 +18,13 @@ cf disable --global     # Same as --user
 cf disable --project    # Disable at project scope
 cf disable --local      # Disable at local scope
 cf disable --agent codex # Disable Coding Friend in Codex config
+cf disable --agent agy   # Disable Coding Friend in Antigravity config
+cf disable --agy         # Alias for --agent agy
 ```
 
 For Codex CLI, `cf disable --agent codex` records `coding-friend` as disabled in `~/.codex/config.toml`.
+
+For Google Antigravity, `cf disable --agent agy` sets `plugins["coding-friend"].enabled` to `false` in `~/.gemini/config/config.json` without deleting plugin files. Restart Antigravity, then `cf enable --agy` to turn it back on.
 
 ## Scopes
 

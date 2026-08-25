@@ -15,7 +15,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob]
 created: 2026-02-17
-updated: 2026-08-21
+updated: 2026-08-25
 ---
 
 # /cf-help — Coding Friend Help
@@ -54,6 +54,8 @@ Coding Friend is a lean toolkit for disciplined engineering workflows in Claude 
 2. **Test before code** — RED → GREEN → REFACTOR
 3. **Verify before claiming** — Never claim done without running tests
 4. **Commit with purpose** — Conventional commits with clear "why"
+
+Supported hosts: Claude Code (default), Codex CLI (beta), omp (beta), and **Google Antigravity (beta)** (`--agent agy` / `--agy`).
 
 ### Slash Commands (user triggers with /)
 

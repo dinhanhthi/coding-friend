@@ -57,6 +57,7 @@ cf install --global     # Same as --user
 cf install --project    # Install at project scope (shared via git)
 cf install --local      # Install at local scope (this machine only)
 cf install --agent codex  # Register/install Coding Friend for Codex CLI
+cf install --agent agy    # Google Antigravity (beta); alias --agy
                         # 💡 Safe to run multiple times (idempotent).
 cf uninstall            # Uninstall plugin (interactive scope chooser)
 cf uninstall --user     # Uninstall from user scope (full cleanup)
@@ -64,6 +65,7 @@ cf uninstall --global   # Same as --user
 cf uninstall --project  # Uninstall from project scope only
 cf uninstall --local    # Uninstall from local scope only
 cf uninstall --agent codex  # Disable Coding Friend in Codex CLI
+cf uninstall --agent agy    # Google Antigravity (beta); alias --agy
                         # 💡 Interactive — asks for confirmation before acting.
 cf disable             # Disable plugin (interactive scope chooser)
 cf disable --user      # Disable at user scope (all projects)
@@ -78,6 +80,7 @@ cf enable --project    # Enable at project scope
 cf enable --local      # Enable at local scope
 cf init              # Initialize workspace (interactive)
 cf init --agent codex  # Initialize workspace for Codex CLI
+cf init --agent agy    # Google Antigravity (beta); alias --agy
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
                      # 💡 Edit docsDir, language, learn settings, and more.
@@ -93,6 +96,7 @@ cf permission --all        # Apply all recommended permissions without prompts
 cf permission --user       # Save to user-level settings (~/.claude/settings.json)
 cf permission --project    # Save to project-level settings (.claude/settings.local.json)
 cf permission --agent codex --enable-auto-approve
+cf permission --agent agy  # Antigravity (beta); alias --agy
 cf permission --all --user # Apply all recommended permissions to user settings
 cf statusline        # Setup coding-friend statusline
 cf update               # Update plugin + CLI + statusline
@@ -102,6 +106,7 @@ cf update --cli         # Update only the CLI (npm package)
 cf update --plugin      # Update only the Claude Code plugin
 cf update --statusline  # Update only the statusline
 cf update --agent codex # Update Codex marketplace/plugin cache
+cf update --agent agy   # Google Antigravity (beta); alias --agy
 cf update --project     # Update plugin at project scope
 cf update --local       # Update plugin at local scope
 cf dev on [path]     # Switch to local plugin source for development

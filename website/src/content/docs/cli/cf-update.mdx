@@ -1,7 +1,7 @@
 ---
 title: "cf update"
 description: "Update the plugin, CLI and fix statusline configuration."
-keywords: [update, upgrade, version, cf update, scope]
+keywords: [update, upgrade, version, cf update, scope, agy, antigravity, codex]
 ---
 
 ## Usage
@@ -14,6 +14,8 @@ cf update --statusline  # Update only the statusline
 cf update --project     # Update plugin at project scope
 cf update --local       # Update plugin at local scope
 cf update --agent codex # Upgrade the Codex marketplace/plugin cache
+cf update --agent agy   # Re-copy the Antigravity plugin (beta)
+cf update --agy         # Alias for --agent agy
 ```
 
 ## What It Does
@@ -39,6 +41,14 @@ codex plugin marketplace upgrade coding-friend-marketplace
 If Codex reports that the marketplace was upgraded but the plugin is not installed yet, open Codex and use `/plugins` to install `coding-friend`.
 
 If the Codex marketplace is registered as a local source (`codex plugin marketplace add <path>`), the git upgrade is skipped — `marketplace upgrade` only works on git marketplaces. Codex runs a version-pinned cached copy, so to pick up working-tree changes reinstall the plugin via Codex → `/plugins`.
+
+## Google Antigravity
+
+Use `cf update --agent agy` for Antigravity. It re-copies `plugin-antigravity/` into `~/.gemini/config/plugins/coding-friend/` and re-registers the memory MCP entry. Extra MCP servers already in `mcp_config.json` are preserved.
+
+`--statusline` is skipped (Antigravity has no Coding Friend statusline). Restart Antigravity afterwards.
+
+With no `--agent` flag, `cf update` refreshes every host that already has Coding Friend installed, including Antigravity when the plugin directory is present.
 
 ## Scope Flags
 

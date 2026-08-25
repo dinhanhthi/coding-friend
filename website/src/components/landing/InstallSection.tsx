@@ -15,6 +15,7 @@ const HOSTS = [
   { id: "claude", label: "Claude", suffix: "" },
   { id: "codex", label: "Codex", suffix: " --agent codex" },
   { id: "omp", label: "oh-my-pi", suffix: " --agent omp" },
+  { id: "agy", label: "Antigravity", suffix: " --agent agy" },
 ] as const;
 
 type ManagerId = (typeof MANAGERS)[number]["id"];

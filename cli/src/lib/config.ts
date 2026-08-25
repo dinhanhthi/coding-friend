@@ -94,6 +94,8 @@ const ConfigSchema = z.strictObject({
   autoApproveCodex: z.boolean().optional(),
   autoApproveIgnore: z.array(z.string()).optional(),
   autoApproveAllowExtra: z.array(z.string()).optional(),
+  privacyBlock: z.boolean().optional(),
+  scoutBlock: z.boolean().optional(),
   disableGUIPlan: z.boolean().optional(),
   guiPlanFormat: z.enum(["html", "md"]).optional(),
 });
@@ -111,6 +113,8 @@ const KNOWN_KEYS = [
   "autoApproveCodex",
   "autoApproveIgnore",
   "autoApproveAllowExtra",
+  "privacyBlock",
+  "scoutBlock",
   "disableGUIPlan",
   "guiPlanFormat",
 ];

@@ -1,7 +1,7 @@
 ---
 title: "cf enable"
 description: "Re-enable the Coding Friend plugin after it has been disabled."
-keywords: [enable, activate, turn on, cf enable, scope, codex]
+keywords: [enable, activate, turn on, cf enable, scope, codex, agy, antigravity]
 ---
 
 ## Overview
@@ -17,9 +17,13 @@ cf enable --global     # Same as --user
 cf enable --project    # Enable at project scope
 cf enable --local      # Enable at local scope
 cf enable --agent codex # Enable Coding Friend in Codex config
+cf enable --agent agy   # Enable Coding Friend in Antigravity config
+cf enable --agy         # Alias for --agent agy
 ```
 
 For Codex CLI, `cf enable --agent codex` records `coding-friend` as enabled in `~/.codex/config.toml`.
+
+For Google Antigravity, `cf enable --agent agy` sets `plugins["coding-friend"].enabled` to `true` in `~/.gemini/config/config.json`. Restart Antigravity for the change to take effect.
 
 ## Scopes
 

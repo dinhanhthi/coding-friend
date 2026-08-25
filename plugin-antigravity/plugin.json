@@ -1,0 +1,22 @@
+{
+  "name": "coding-friend",
+  "version": "0.41.0",
+  "description": "Lean toolkit for disciplined engineering workflows with Google Antigravity (beta)",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "antigravity",
+    "agy",
+    "skills",
+    "tdd",
+    "debugging",
+    "code-review",
+    "workflows",
+    "knowledge",
+    "memory"
+  ]
+}

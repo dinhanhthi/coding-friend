@@ -1,0 +1,199 @@
+---
+title: "Google Antigravity"
+description: "Use Coding Friend as a first-class Google Antigravity (agy) host (beta)."
+keywords:
+  [antigravity, agy, google antigravity, host, plugin, agents, mcp, setup, beta]
+---
+
+## Overview
+
+Coding Friend supports [Google Antigravity](https://antigravity.google/) (`agy`)
+as a fourth host alongside Claude Code, Codex CLI, and oh-my-pi. Claude remains
+the default for `cf` commands. Use `--agent agy` or the `--agy` alias for the
+Antigravity path.
+
+<Callout type="warning">
+  **Antigravity support is in beta.** Install is opt-in (`--agent agy`). Skills
+  (as `/cf-*` slash commands), agents, PreToolUse / PreInvocation / Stop hooks,
+  and shared memory work; task/agent tracking, memory auto-capture, and
+  statusline have no Antigravity equivalent. Claude Code, Codex CLI, and
+  oh-my-pi are unaffected.
+</Callout>
+
+<Callout type="info">
+  Antigravity support targets the `agy` CLI **1.1.0** or newer. Run `agy
+  --version` before setup if you are unsure.
+</Callout>
+
+Unlike oh-my-pi (bridge mode), Antigravity uses a **generated plugin artifact**:
+`plugin-antigravity/` is copied to `~/.gemini/config/plugins/coding-friend/`.
+There is no marketplace install.
+
+## Install
+
+```bash
+# 1. Install the shared CLI
+npm i -g coding-friend-cli
+
+# 2. Install Google Antigravity if you have not already
+# https://antigravity.google/
+
+# 3. Copy the plugin, enable it, and register memory MCP
+cf install --agent agy
+# alias: cf install --agy
+
+# 4. Initialize this project (docs folders, config, AGENTS.md)
+cf init --agent agy
+
+# 5. Restart Antigravity (or start a new `agy` session)
+```
+
+`agy --version` must be **≥ 1.1.0**. Scope flags (`--user` / `--project` /
+`--local`) do not apply — Antigravity has a single install location. Override
+the config root with `ANTIGRAVITY_HOME` (default `~/.gemini`).
+
+## What Gets Installed
+
+`cf install --agent agy`:
+
+| Path                                                     | What it is                                                       |
+| -------------------------------------------------------- | ---------------------------------------------------------------- |
+| `~/.gemini/config/plugins/coding-friend/`                | Copied plugin tree (skills, agents, hooks, rules, `plugin.json`) |
+| `~/.gemini/config/config.json`                           | `plugins["coding-friend"].enabled: true`                         |
+| `~/.gemini/config/plugins/coding-friend/mcp_config.json` | `coding-friend-memory` → `npx -y coding-friend-cli mcp-serve`    |
+
+`cf init --agent agy` runs an Antigravity setup wizard: docs folder and
+language, `.gitignore`, Learn MCP (plugin `mcp_config.json`), `autoApprove`,
+and `privacyBlock`. It also creates `AGENTS.md` when that file does not already
+exist. It does not configure the Claude statusline or Claude permissions.
+
+There is no `agy mcp add` CLI and no Antigravity marketplace. Coding Friend
+writes those files directly. The plugin is sourced from `plugin-antigravity/`
+in a local `cf dev` checkout, the Claude marketplace clone, or a shallow git
+clone of the Coding Friend repo.
+
+## Using Skills And Agents
+
+In Antigravity, Coding Friend skills are slash commands:
+
+```text
+/cf-plan add dark mode to the dashboard
+/cf-review --target HEAD~1..HEAD
+/cf-fix investigate the checkout crash
+```
+
+Agents live in the plugin `agents/` directory. Spawn them with Antigravity's
+`invoke_subagent` tool (for example `cf-explorer`, `cf-implementer`,
+`cf-planner`). Generated agent models map Claude tiers to Antigravity:
+`haiku` → `flash`, `sonnet` / `opus` → `pro`.
+
+## Daily Commands
+
+```bash
+cf install --agent agy
+cf init --agent agy
+cf update --agent agy
+cf enable --agent agy
+cf disable --agent agy
+cf uninstall --agent agy
+```
+
+`cf update` with **no** `--agent` refreshes every installed host (Claude,
+Codex, omp, and Antigravity). `cf update --agent agy` only re-copies the plugin
+and re-registers memory MCP (extra MCP servers in `mcp_config.json` are
+preserved). Restart Antigravity afterwards.
+
+`cf disable --agent agy` does not delete files. It sets
+`plugins["coding-friend"].enabled` to `false` in
+`~/.gemini/config/config.json`. `cf enable --agent agy` sets it back to `true`.
+
+`cf uninstall --agent agy` removes the plugin directory, unregisters memory
+MCP, and deletes the `plugins["coding-friend"]` config entry.
+
+## Hooks
+
+Antigravity exposes five hook events. Coding Friend registers three of them:
+
+| Event           | Scripts                                                               | Purpose                                                              |
+| --------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `PreToolUse`    | `privacy-block.agy.sh`, `scout-block.agy.cjs`, `auto-approve.agy.cjs` | Block secrets and ignored paths; optional deterministic auto-approve |
+| `PreInvocation` | `session-init.agy.sh`, `rules-reminder.agy.sh`                        | Bootstrap context and project-rules reminder                         |
+| `Stop`          | `session-log.agy.sh`                                                  | Append the turn log (JSONL)                                          |
+
+Privacy and scout **fail open** on malformed JSON (a missing hook file is a
+host-level skip, not a CF deny). Auto-approve is
+opt-in (`autoApprove`, same key as Claude). `cf statusline` has no Antigravity
+equivalent. `cf permission --agent agy` points you at native `/permissions`
+plus `autoApprove`.
+
+## Config
+
+Relevant keys in `.coding-friend/config.json`:
+
+```json
+{
+  "autoApprove": true,
+  "privacyBlock": true
+}
+```
+
+- **`autoApprove`** — same opt-in key as Claude. On Antigravity the hook is
+  deterministic: known-safe reads and working-directory edits can be allowed;
+  destructive actions are denied; unknown actions return `ask`. No Claude
+  Sonnet classifier. Default `false`.
+- **`privacyBlock`** — block reads of `.env`, keys, and similar secrets.
+  Default `true`. Set `false` to disable.
+
+See [Config File](/docs/configuration/config-json/) and
+[Auto-Approve](/docs/reference/auto-approve/).
+
+## Known Differences
+
+- No marketplace / `agy plugin install` from a registry. File copy only.
+- No TaskCreated / SubagentStart events — no task or agent tracking
+  (statusline counters stay Claude-only).
+- No PreCompact event — memory auto-capture (`memory.autoCapture`) does not
+  run on Antigravity.
+- No Coding Friend statusline.
+- `/cf-session` routes to native Antigravity session controls
+  (`agy --continue` or IDE `/resume`). Session files are not copied.
+- `--with-codex` / `review.withCodex` is ignored — `/cf-review` does not spawn
+  a nested Codex review from Antigravity.
+- `cf dev on/sync` is Claude-only. After editing the artifact, run
+  `cf update --agent agy` and restart Antigravity.
+- Scope flags (`--user` / `--project` / `--local`) do not apply.
+
+## Update / Uninstall
+
+```bash
+cf update --agent agy
+cf uninstall --agent agy
+```
+
+Restart Antigravity (or start a new `agy` session) after either command.
+
+## Troubleshooting
+
+```bash
+agy --version
+cf install --agent agy
+ls ~/.gemini/config/plugins/coding-friend/
+jq '.plugins["coding-friend"]' ~/.gemini/config/config.json
+jq '.mcpServers["coding-friend-memory"]' ~/.gemini/config/plugins/coding-friend/mcp_config.json
+agy plugin validate ~/.gemini/config/plugins/coding-friend
+cf update --agent agy
+```
+
+- **`agy` CLI not found / version unsupported** — install or upgrade from
+  [antigravity.google](https://antigravity.google/) so `agy --version` reports
+  ≥ 1.1.0.
+- **Skills missing after install** — restart Antigravity. Confirm
+  `plugins["coding-friend"].enabled` is `true`.
+- **Hooks silent** — `agy plugin validate` the plugin dir. Look for
+  `hooks_manager` lines in `~/.gemini/antigravity-cli/cli.log`.
+- **`--agy` conflicts with `--agent claude`** — use `--agy` **or**
+  `--agent agy`, not both with an explicit `claude`.
+
+Contributor / local-dev detail:
+[docs/agy-dev.md](https://github.com/dinhanhthi/coding-friend/blob/main/docs/agy-dev.md)
+in the repo.

@@ -29,7 +29,7 @@ if [ ! -d "$SESSION_DIR" ]; then
   exit 1
 fi
 
-LATEST=$(ls -t "$SESSION_DIR"/*.jsonl 2>/dev/null | grep -v '/agent-' | head -1)
+LATEST=$(ls -t "$SESSION_DIR"/*.jsonl 2>/dev/null | grep -v '/agent-' | head -1 || true)
 
 if [ -z "$LATEST" ]; then
   echo "ERROR: No session files found in $SESSION_DIR" >&2

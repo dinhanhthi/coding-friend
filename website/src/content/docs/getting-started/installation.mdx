@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install the Coding Friend CLI and plugin for Claude Code, Codex CLI, or oh-my-pi (omp).
+description: Install the Coding Friend CLI and plugin for Claude Code, Codex CLI, oh-my-pi (omp), or Google Antigravity.
 keywords:
   [
     installation,
@@ -9,6 +9,8 @@ keywords:
     codex cli plugin,
     oh-my-pi,
     omp,
+    antigravity,
+    agy,
     npm,
     cli,
     scope,
@@ -18,7 +20,7 @@ keywords:
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+ installed
-- [Claude Code](https://claude.com/claude-code), Codex CLI, or [oh-my-pi](https://omp.sh/) (`omp`) installed
+- [Claude Code](https://claude.com/claude-code), Codex CLI, [oh-my-pi](https://omp.sh/) (`omp`), or [Google Antigravity](https://antigravity.google/) (`agy`) installed
 - [curl](https://curl.se/) and [jq](https://jqlang.github.io/jq/) for [statusline](/docs/cli/cf-statusline/) rate limit display
 - (Optional) [GitHub CLI](https://cli.github.com/) for PR-related skills: `brew install gh && gh auth login`
 
@@ -36,6 +38,9 @@ cf install --agent codex
 
 # 2c. Or install for oh-my-pi (omp)
 cf install --agent omp
+
+# 2d. Or install for Google Antigravity
+cf install --agent agy
 ```
 
 <Callout type="info">
@@ -72,6 +77,13 @@ Then continue from step 3 below (skip `cf install`).
   guide](/docs/getting-started/omp/) for details.
 </Callout>
 
+<Callout type="info">
+  **Google Antigravity users:** `cf install --agent agy` (alias `--agy`) copies
+  the plugin into `~/.gemini/config/plugins/coding-friend/` and enables it in
+  `~/.gemini/config/config.json`. Requires `agy --version` ≥ 1.1.0. See the
+  [Google Antigravity guide](/docs/getting-started/antigravity/) for details.
+</Callout>
+
 ```bash
 # 3a. Initialize your workspace for Claude Code
 cf init
@@ -82,9 +94,13 @@ cf init --agent codex --trust-project
 # 3c. Or initialize for oh-my-pi
 cf init --agent omp
 
+# 3d. Or initialize for Google Antigravity
+cf init --agent agy
+
 # 4. Restart your host session to load the plugin.
 # Claude: type "/cf-plan". Codex: type "$cf-plan".
 # oh-my-pi: start a new `omp` session.
+# Antigravity: restart the IDE or start a new `agy` session.
 
 # 5. Verify
 cf status
@@ -102,13 +118,14 @@ cf config
 
 ## Update
 
-Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `cf update` twice to make it work). With no `--agent` flag, `cf update` refreshes every host that already has Coding Friend installed (Claude, Codex, and oh-my-pi). Use `cf update --agent omp` to refresh only oh-my-pi.
+Just run `cf update` to update the plugin and CLI (Sometimes, you need to run `cf update` twice to make it work). With no `--agent` flag, `cf update` refreshes every host that already has Coding Friend installed (Claude, Codex, oh-my-pi, and Google Antigravity). Use `cf update --agent omp` to refresh only oh-my-pi, or `cf update --agent agy` to refresh only Antigravity.
 
 In case of any issues, you can try manually:
 
 - **Plugin** — auto-update is enabled already. If it wasn't (e.g., file permission issues), enable manually via `/plugin` → Marketplace → `coding-friend-marketplace` → auto-update.
 - **CLI**: Run `npm update -g coding-friend-cli` (npm) or `yarn global upgrade coding-friend-cli` (yarn) or `pnpm update -g coding-friend-cli` (pnpm).
 - **oh-my-pi**: `cf update --agent omp` rewrites agents, the extension shim, and the memory MCP entry. Restart `omp` afterwards.
+- **Google Antigravity**: `cf update --agent agy` re-copies the plugin into `~/.gemini/config/plugins/coding-friend/` and re-registers memory MCP. Restart Antigravity afterwards.
 
 <Callout type="info">
   **Using [ZCode](https://zcode.z.ai/)?** If the plugin doesn't update there,

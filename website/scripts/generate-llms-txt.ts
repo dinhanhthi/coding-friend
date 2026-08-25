@@ -44,7 +44,7 @@ function generateLlmsTxt() {
   lines.push("# Coding Friend");
   lines.push("");
   lines.push(
-    "> Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code and Codex CLI. It provides skills, agents, hooks, and CLI tools for structured development practices like TDD, code review, and smart commits.",
+    "> Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code, Codex CLI, omp, and Google Antigravity. It provides skills, agents, hooks, and CLI tools for structured development practices like TDD, code review, and smart commits.",
   );
   lines.push("");
 
@@ -70,7 +70,7 @@ function generateLlmsFullTxt() {
   lines.push("# Coding Friend");
   lines.push("");
   lines.push(
-    "> Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code and Codex CLI. It provides skills, agents, hooks, and CLI tools for structured development practices like TDD, code review, and smart commits.",
+    "> Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code, Codex CLI, omp, and Google Antigravity. It provides skills, agents, hooks, and CLI tools for structured development practices like TDD, code review, and smart commits.",
   );
   lines.push("");
 

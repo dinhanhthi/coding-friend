@@ -7,10 +7,10 @@ const path = require("path");
 
 const SCRIPT = path.resolve(__dirname, "../privacy-block.sh");
 
-function runHook(payload) {
+function runHook(payload, bashBin = "bash") {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-privacy-block-"));
   try {
-    const stdout = execFileSync("bash", [SCRIPT], {
+    const stdout = execFileSync(bashBin, [SCRIPT], {
       cwd,
       input: JSON.stringify(payload),
       encoding: "utf8",
@@ -25,6 +25,15 @@ function runHook(payload) {
 }
 
 describe("privacy-block.sh", () => {
+  it("allows an empty payload under /bin/bash and bash", () => {
+    const payload = { tool_name: "Read", tool_input: {} };
+    for (const bashBin of ["/bin/bash", "bash"]) {
+      const result = runHook(payload, bashBin);
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe("{}");
+    }
+  });
+
   it("blocks a sensitive file_path", () => {
     const result = runHook({
       tool_name: "Read",
@@ -32,6 +41,15 @@ describe("privacy-block.sh", () => {
     });
     expect(result.status).toBe(2);
     expect(result.stdout).toContain('"decision": "block"');
+  });
+
+  it("allows a safe .env.example file_path", () => {
+    const result = runHook({
+      tool_name: "Read",
+      tool_input: { file_path: ".env.example" },
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe("{}");
   });
 
   it("allows a normal file_path", () => {

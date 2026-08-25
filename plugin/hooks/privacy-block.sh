@@ -22,6 +22,8 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 # shellcheck source=../lib/cf-paths.sh
 source "$PLUGIN_ROOT/lib/cf-paths.sh"
 cf_resolve_paths
+# shellcheck source=../lib/privacy-patterns.sh
+source "$PLUGIN_ROOT/lib/privacy-patterns.sh"
 
 # Check if hook is disabled via config
 CONFIG_FILE="$CF_CONFIG_FILE"
@@ -63,34 +65,18 @@ if printf '%s' "$INPUT" | grep -q '"command"'; then
   ' 2>/dev/null || true)
 fi
 
-# Collect all paths to check
-PATHS_TO_CHECK="$FILE_PATH $PATTERN $PATCH_PATHS"
+# Collect all paths to check as an array
+PATHS_ARRAY=()
+[ -n "$FILE_PATH" ] && PATHS_ARRAY+=("$FILE_PATH")
+[ -n "$PATTERN" ] && PATHS_ARRAY+=("$PATTERN")
+if [ -n "$PATCH_PATHS" ]; then
+  while IFS= read -r patch_path; do
+    [ -n "$patch_path" ] && PATHS_ARRAY+=("$patch_path")
+  done <<< "$PATCH_PATHS"
+fi
 
-# Sensitive patterns
-SENSITIVE_PATTERNS=(
-  '\.env$'
-  '\.env\.'
-  'credentials'
-  '\.pem$'
-  '\.key$'
-  'id_rsa'
-  'id_ed25519'
-  '\.ssh/'
-  'secret'
-  '\.aws/'
-  '\.gnupg/'
-)
-
-# Safe patterns (allowlist)
-SAFE_PATTERNS=(
-  '\.example$'
-  '\.sample$'
-  '\.template$'
-  '\.env\.example'
-  '\.env\.sample'
-)
-
-for path in $PATHS_TO_CHECK; do
+# bash 3.2 + set -u: "${arr[@]}" aborts on empty arrays; [@]:- yields one empty word.
+for path in "${PATHS_ARRAY[@]:-}"; do
   [ -z "$path" ] && continue
 
   # Check safe patterns first

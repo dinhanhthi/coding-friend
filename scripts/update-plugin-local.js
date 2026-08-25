@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 // Refresh local plugin installs after editing anything under plugin/.
-// Runs four steps so all clients pick up your source changes:
-//   1. build:codex  → regenerate plugin-codex/ from plugin/
-//   2. cf dev sync  → copy plugin/ into the Claude Code dev cache
+// Covers four hosts (Claude Code, Codex, omp, Antigravity):
+//   1.  build:codex → regenerate plugin-codex/ from plugin/
+//   1b. build:agy   → regenerate plugin-antigravity/ from plugin/
+//   2.  cf dev sync → copy plugin/ into the Claude Code dev cache
 //   2b. cf update --agent omp --plugin → re-deploy converted agents into ~/.omp
 //       (omp reads skills from the Claude cache and hooks/extension live from the repo)
-//   3. clear Codex cache → Codex re-copies plugin-codex/ on next launch
+//   2c. cf update --agent agy --plugin → re-deploy plugin-antigravity/ into
+//       ~/.gemini/config/plugins/coding-friend
+//   3.  clear Codex cache → Codex re-copies plugin-codex/ on next launch
 // Wired as: npm run ud-plugin-local
 
 const { execFileSync } = require("node:child_process");
@@ -29,6 +32,10 @@ console.log("\n  \u{1F4E6} Updating local plugin installs...\n");
 // 1. Regenerate plugin-codex/ from plugin/ source (same as `npm run build:codex`)
 console.log("  → build:codex");
 run("node", [path.join(REPO_ROOT, "scripts", "build-codex-plugin.js")]);
+
+// 1b. Regenerate plugin-antigravity/ from plugin/ source (same as `npm run build:agy`)
+console.log("\n  → build:agy");
+run("node", [path.join(REPO_ROOT, "scripts", "build-antigravity-plugin.js")]);
 
 // 2. Sync plugin/ into the Claude Code dev cache.
 //    Skips gracefully if dev mode is OFF or `cf` is not on PATH.
@@ -57,6 +64,17 @@ try {
   );
 }
 
+// 2c. Re-deploy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend.
+//     Skips gracefully if agy is not installed or `cf` is not on PATH.
+let agySynced = false;
+console.log("\n  → cf update --agent agy --plugin");
+try {
+  run("cf", ["update", "--agent", "agy", "--plugin"]);
+  agySynced = true;
+} catch {
+  console.log("  ⚠ agy update skipped — is agy installed and is `cf` on PATH?");
+}
+
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
 console.log("\n  → clearing Codex cache");
 if (existsSync(CODEX_CACHE)) {
@@ -82,6 +100,15 @@ if (claudeSynced) {
 if (ompSynced) {
   console.log(
     "    • oh-my-pi — restart omp (agents redeployed; hooks/extension read live from repo)",
+  );
+}
+if (agySynced) {
+  console.log(
+    "    • Antigravity — quit and relaunch (reloads ~/.gemini/config/plugins/coding-friend/)",
+  );
+} else {
+  console.log(
+    "    • Antigravity — not updated; install agy and ensure `cf` is on PATH, then run this script again",
   );
 }
 console.log("");

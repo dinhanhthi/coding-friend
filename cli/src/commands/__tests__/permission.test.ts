@@ -29,6 +29,9 @@ vi.mock("../../lib/permissions.js", () => ({
   logPluginScriptWarning: vi.fn(),
   extractTag: vi.fn(),
   runDangerousRulesAudit: vi.fn(),
+  afterAutoApproveEnabled: vi.fn(),
+  AUTO_APPROVE_CROSS_HOST_NOTE:
+    "autoApprove enables Claude Code (LLM classifier) and Antigravity (deterministic rules). Codex uses autoApproveCodex.",
 }));
 
 import { select } from "@inquirer/prompts";
@@ -116,6 +119,32 @@ describe("permissionCommand — omp", () => {
     mockResolveHostFlags.mockReturnValue({ host: "omp" });
 
     await permissionCommand({ agent: "omp" });
+
+    expect(mockGetExistingRules).not.toHaveBeenCalled();
+    expect(mockGetAllRules).not.toHaveBeenCalled();
+    expect(mockApplyPermissions).not.toHaveBeenCalled();
+    expect(mockMergeJson).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+});
+
+describe("permissionCommand — agy", () => {
+  it("prints that Antigravity permissions are native and mentions autoApprove", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await permissionCommand({ agent: "agy" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("/permissions");
+    expect(output).toContain("autoApprove");
+    expect(output).toContain("Claude");
+    expect(output).not.toContain("autoApproveAgy");
+  });
+
+  it("does not call Claude permission writers for --agy", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await permissionCommand({ agy: true });
 
     expect(mockGetExistingRules).not.toHaveBeenCalled();
     expect(mockGetAllRules).not.toHaveBeenCalled();

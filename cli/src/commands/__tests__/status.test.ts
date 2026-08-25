@@ -33,6 +33,13 @@ vi.mock("../../lib/paths.js", () => ({
   claudeLocalSettingsPath: vi.fn(
     () => "/mock/project/.claude/settings.local.json",
   ),
+  agyPluginDir: vi.fn(() => "/mock/.gemini/config/plugins/coding-friend"),
+}));
+
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginInstalled: vi.fn(() => false),
+  isAgyPluginEnabled: vi.fn(() => false),
+  readAgyPluginVersion: vi.fn(() => null),
 }));
 
 vi.mock("../../lib/config.js", async (importOriginal) => {
@@ -242,6 +249,16 @@ describe("statusCommand — plugin section", () => {
     expect(devLine).toContain("on");
     const autoLine = output.find((l) => l.includes("Auto-update"));
     expect(autoLine).toContain("on");
+  });
+
+  it("shows Antigravity as not installed by default", async () => {
+    const output = captureOutput();
+
+    await statusCommand();
+
+    const line = output.find((l) => l.includes("Antigravity"));
+    expect(line).toBeDefined();
+    expect(line).toContain("not installed");
   });
 
   it("shows permission rule count", async () => {

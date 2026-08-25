@@ -1,3 +1,8 @@
+import {
+  readAgyMcpConfig,
+  removeAgyMcpEntry,
+  writeAgyMcpEntry,
+} from "./agy-config.js";
 import { runWithStderr } from "./exec.js";
 import type { Host } from "./host.js";
 import { log } from "./log.js";
@@ -10,8 +15,23 @@ import { resolvePath } from "./paths.js";
 
 const MCP_NAME = "coding-friend-learn";
 
+function learnServer(resolvedDir: string): {
+  command: string;
+  args: string[];
+} {
+  return {
+    command: "npx",
+    args: ["-y", "coding-friend-cli", "mcp-serve-learn", resolvedDir],
+  };
+}
+
 function hasOmpLearnEntry(): boolean {
   const data = readOmpMcpJson();
+  return data !== null && MCP_NAME in data.mcpServers;
+}
+
+function hasAgyLearnEntry(): boolean {
+  const data = readAgyMcpConfig();
   return data !== null && MCP_NAME in data.mcpServers;
 }
 
@@ -23,10 +43,18 @@ export function registerLearnMcp(
 
   if (host === "omp") {
     try {
-      writeOmpMcpEntry(MCP_NAME, {
-        command: "npx",
-        args: ["-y", "coding-friend-cli", "mcp-serve-learn", resolved],
-      });
+      writeOmpMcpEntry(MCP_NAME, learnServer(resolved));
+      return true;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not register MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  if (host === "agy") {
+    try {
+      writeAgyMcpEntry(MCP_NAME, learnServer(resolved));
       return true;
     } catch (error) {
       const detail = error instanceof Error ? error.message : "unknown error";
@@ -65,6 +93,7 @@ export function registerLearnMcp(
 
 export function isLearnMcpRegistered(host: Host = "claude"): boolean {
   if (host === "omp") return hasOmpLearnEntry();
+  if (host === "agy") return hasAgyLearnEntry();
 
   const result = runWithStderr("claude", ["mcp", "get", MCP_NAME]);
   return result.exitCode === 0;
@@ -75,6 +104,17 @@ export function unregisterLearnMcp(host: Host = "claude"): boolean {
     try {
       removeOmpMcpEntry(MCP_NAME);
       return !hasOmpLearnEntry();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not unregister MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  if (host === "agy") {
+    try {
+      removeAgyMcpEntry(MCP_NAME);
+      return !hasAgyLearnEntry();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "unknown error";
       log.warn(`Could not unregister MCP: ${detail}`);

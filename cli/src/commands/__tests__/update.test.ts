@@ -52,6 +52,18 @@ vi.mock("../../lib/omp-config.js", () => ({
   isOmpAgentInstalled: vi.fn(() => false),
 }));
 
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginInstalled: vi.fn(() => false),
+  resolveAgyPluginSource: vi.fn(() => ({
+    path: "/mock/plugin-antigravity",
+    kind: "dev",
+  })),
+  deployAgyPlugin: vi.fn(() => ({ files: 10 })),
+  readAgyPluginVersion: vi.fn(() => "0.41.0"),
+  readAgyMcpConfig: vi.fn(() => null),
+  writeAgyMcpEntry: vi.fn(),
+}));
+
 vi.mock("../../lib/memory-mcp-register.js", () => ({
   isMemoryMcpRegistered: vi.fn(),
   registerMemoryMcp: vi.fn(),
@@ -70,6 +82,13 @@ import {
 } from "../../lib/codex-config.js";
 import { detectHostsAvailable } from "../../lib/host.js";
 import { isPluginInstalled } from "../../lib/plugin-state.js";
+import {
+  deployAgyPlugin,
+  isAgyPluginInstalled,
+  readAgyMcpConfig,
+  readAgyPluginVersion,
+  resolveAgyPluginSource,
+} from "../../lib/agy-config.js";
 import {
   deployOmpAgents,
   isOmpAgentInstalled,
@@ -99,6 +118,11 @@ const mockIsPluginInstalled = vi.mocked(isPluginInstalled);
 const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
 const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
 const mockIsOmpAgentInstalled = vi.mocked(isOmpAgentInstalled);
+const mockIsAgyPluginInstalled = vi.mocked(isAgyPluginInstalled);
+const mockResolveAgyPluginSource = vi.mocked(resolveAgyPluginSource);
+const mockDeployAgyPlugin = vi.mocked(deployAgyPlugin);
+const mockReadAgyPluginVersion = vi.mocked(readAgyPluginVersion);
+const mockReadAgyMcpConfig = vi.mocked(readAgyMcpConfig);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockReadFileSync = vi.mocked(readFileSync);
@@ -115,10 +139,18 @@ beforeEach(() => {
   mockIsPluginInstalled.mockReturnValue(false);
   mockIsCodexMarketplaceRegistered.mockReturnValue(false);
   mockIsOmpAgentInstalled.mockReturnValue(false);
+  mockIsAgyPluginInstalled.mockReturnValue(false);
   mockDeployOmpAgents.mockReturnValue({
     deployed: ["cf-explorer.md"],
     skipped: [],
   });
+  mockResolveAgyPluginSource.mockReturnValue({
+    path: "/mock/plugin-antigravity",
+    kind: "dev",
+  });
+  mockDeployAgyPlugin.mockReturnValue({ files: 10 });
+  mockReadAgyPluginVersion.mockReturnValue("0.41.0");
+  mockReadAgyMcpConfig.mockReturnValue(null);
 
   // Default: return a package.json with version
   mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
@@ -783,5 +815,21 @@ describe("updateCommand — omp single-host", () => {
     expect(mockDeployOmpAgents).toHaveBeenCalledWith("project");
     expect(mockWriteOmpExtensionEntry).toHaveBeenCalledTimes(1);
     expect(mockWriteOmpExtensionEntry).toHaveBeenCalledWith("project");
+  });
+});
+
+describe("updateCommand — agy host", () => {
+  it("does not run Claude or omp update for --agent agy", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await updateCommand({ agent: "agy" });
+
+    expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
+    expect(mockGetInstalledVersion).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalledWith(
+      "claude",
+      expect.anything(),
+    );
   });
 });

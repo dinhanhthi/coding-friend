@@ -28,6 +28,8 @@ PLUGIN_ROOT="${PLUGIN_ROOT:-${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
 # Host probe (highest wins): explicit CF_HOST > CODEX_SESSION_ID >
 # OMP_SESSION_ID > $PWD/.omp directory > claude.
+# Explicit CF_HOST accepts claude|codex|omp|agy. agy is explicit-only
+# (AGY hooks.json commands are prefixed CF_HOST=agy; no filesystem probe).
 # CODEX_HOME is profile-scoped and must not flip Claude sessions to codex.
 CF_HOST="${CF_HOST:-}"
 if [ -z "$CF_HOST" ]; then
@@ -65,43 +67,9 @@ CONTENT=$(cat "$BOOTSTRAP_FILE")
 CONFIG_FILE="$CF_CONFIG_FILE"
 DOCS_DIR="$CF_DOCS_ROOT"
 
-# Detect project type
-PROJECT_TYPE="unknown"
-if [ -f "package.json" ]; then
-  if [ -d "packages" ] || [ -f "pnpm-workspace.yaml" ] || [ -f "lerna.json" ]; then
-    PROJECT_TYPE="monorepo"
-  else
-    PROJECT_TYPE="single-repo"
-  fi
-elif [ -f "Cargo.toml" ]; then
-  PROJECT_TYPE="rust"
-elif [ -f "go.mod" ]; then
-  PROJECT_TYPE="go"
-elif [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
-  PROJECT_TYPE="python"
-fi
-
-# Detect package manager
-PKG_MANAGER="unknown"
-if [ -f "bun.lockb" ] || [ -f "bun.lock" ]; then
-  PKG_MANAGER="bun"
-elif [ -f "pnpm-lock.yaml" ]; then
-  PKG_MANAGER="pnpm"
-elif [ -f "yarn.lock" ]; then
-  PKG_MANAGER="yarn"
-elif [ -f "package-lock.json" ]; then
-  PKG_MANAGER="npm"
-fi
-
-# Load ignore patterns if present
-CFIGNORE_PATTERNS=""
-CFIGNORE_FILE="$PLUGIN_ROOT/.coding-friend/ignore"
-if [ -f "$MAIN_REPO_ROOT/.coding-friend/ignore" ]; then
-  CFIGNORE_FILE="$MAIN_REPO_ROOT/.coding-friend/ignore"
-fi
-if [ -f "$CFIGNORE_FILE" ]; then
-  CFIGNORE_PATTERNS=$(grep -v '^#' "$CFIGNORE_FILE" | grep -v '^$' | tr '\n' '|' | sed 's/|$//')
-fi
+# shellcheck source=../lib/session-detect.sh
+source "$PLUGIN_ROOT/lib/session-detect.sh"
+cf_detect_session
 
 # ─── Vacuum orphaned agent context files (older than 7 days) ──────
 # When a workflow is aborted mid-run, the orchestrating skill may not

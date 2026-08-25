@@ -420,11 +420,19 @@ describe("resolveHostFlags", () => {
     expect(resolveHostFlags({ omp: true })).toEqual({ host: "omp" });
   });
 
+  it("resolves --agent agy", () => {
+    expect(resolveHostFlags({ agent: "agy" })).toEqual({ host: "agy" });
+  });
+
+  it("resolves --agy alias", () => {
+    expect(resolveHostFlags({ agy: true })).toEqual({ host: "agy" });
+  });
+
   it("logs and exits on invalid host flags", () => {
     resolveHostFlags({ agent: "bad" });
 
     expect(log.error).toHaveBeenCalledWith(
-      'Unsupported agent "bad". Use "claude", "codex", or "omp".',
+      'Unsupported agent "bad". Use "claude", "codex", "omp", or "agy".',
     );
     expect(mockExit).toHaveBeenCalledWith(1);
   });
