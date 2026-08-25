@@ -62,9 +62,10 @@ the config root with `ANTIGRAVITY_HOME` (default `~/.gemini`).
 | `~/.gemini/config/config.json`                           | `plugins["coding-friend"].enabled: true`                         |
 | `~/.gemini/config/plugins/coding-friend/mcp_config.json` | `coding-friend-memory` → `npx -y coding-friend-cli mcp-serve`    |
 
-`cf init --agent agy` creates the usual Coding Friend docs folders, writes
-`.coding-friend/config.json` if missing, and creates `AGENTS.md` when that file
-does not already exist.
+`cf init --agent agy` runs an Antigravity setup wizard: docs folder and
+language, `.gitignore`, Learn MCP (plugin `mcp_config.json`), `autoApprove`,
+and `privacyBlock`. It also creates `AGENTS.md` when that file does not already
+exist. It does not configure the Claude statusline or Claude permissions.
 
 There is no `agy mcp add` CLI and no Antigravity marketplace. Coding Friend
 writes those files directly. The plugin is sourced from `plugin-antigravity/`
@@ -121,9 +122,9 @@ Antigravity exposes five hook events. Coding Friend registers three of them:
 
 Privacy and scout **fail open** on malformed JSON (a missing hook file is a
 host-level skip, not a CF deny). Auto-approve is
-opt-in (`autoApproveAgy`). `cf statusline` has no Antigravity equivalent.
-`cf permission --agent agy` points you at native `/permissions` plus
-`autoApproveAgy`.
+opt-in (`autoApprove`, same key as Claude). `cf statusline` has no Antigravity
+equivalent. `cf permission --agent agy` points you at native `/permissions`
+plus `autoApprove`.
 
 ## Config
 
@@ -131,13 +132,13 @@ Relevant keys in `.coding-friend/config.json`:
 
 ```json
 {
-  "autoApproveAgy": true,
+  "autoApprove": true,
   "privacyBlock": true
 }
 ```
 
-- **`autoApproveAgy`** — opt-in deterministic auto-approve for Antigravity
-  PreToolUse. Known-safe reads and working-directory edits can be allowed;
+- **`autoApprove`** — same opt-in key as Claude. On Antigravity the hook is
+  deterministic: known-safe reads and working-directory edits can be allowed;
   destructive actions are denied; unknown actions return `ask`. No Claude
   Sonnet classifier. Default `false`.
 - **`privacyBlock`** — block reads of `.env`, keys, and similar secrets.

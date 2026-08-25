@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## Unreleased
+
+- Antigravity auto-approve hook reads `autoApprove` (same key as Claude); the classifier stays deterministic (no LLM)
+
 ## v0.41.0 (2026-08-24)
 
 - Add omp (oh-my-pi) as a third first-class Coding Friend host alongside Claude Code and Codex, via bridge mode: skills inherited from `~/.claude`, 12 cf-\* agents deployed to `~/.omp/agent/agents/`, shared bash hooks proxied through `plugin/omp/extension.ts` with `CF_HOST=omp`, memory MCP registered by writing `~/.omp/agent/mcp.json` [#02719a4b](https://github.com/dinhanhthi/coding-friend/commit/02719a4b)

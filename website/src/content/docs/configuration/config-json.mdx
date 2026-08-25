@@ -54,7 +54,6 @@ Edit interactively with `cf config`, or manually edit the JSON files.
   },
   "autoApprove": false,
   "autoApproveCodex": false,
-  "autoApproveAgy": false,
   "autoApproveAllowExtra": [],
   "autoApproveIgnore": [],
   "disableGUIPlan": true,
@@ -184,7 +183,10 @@ Settings for the statusline display (global config only).
 - **Type**: `boolean`
 - **Default**: `false`
 - Enables the [auto-approve hook](/docs/reference/auto-approve) that reduces permission prompts
-- Uses a 3-step classification pipeline (rules → working-dir → LLM) to auto-approve safe operations
+- **Claude Code:** 3-step classification pipeline (rules → working-dir → LLM)
+- **Google Antigravity:** deterministic rules only; unknown actions return `ask`; no Claude Sonnet classifier
+- One key enables **both** hosts. There is no per-host override. Codex uses `autoApproveCodex`
+- Set with `cf init`, `cf init --agent agy`, `cf config`, or `.coding-friend/config.json`
 
 ### `autoApproveCodex`
 
@@ -193,14 +195,6 @@ Settings for the statusline display (global config only).
 - Enables deterministic-only auto-approve for Codex CLI
 - Unknown actions defer to Codex native approval; the Claude Sonnet classifier is not used from Codex hooks
 - Set with `cf permission --agent codex --enable-auto-approve` or `cf permission --agent codex --disable-auto-approve`
-
-### `autoApproveAgy`
-
-- **Type**: `boolean`
-- **Default**: `false`
-- Enables deterministic-only auto-approve for Google Antigravity
-- Unknown actions return `ask`; the Claude Sonnet classifier is not used from Antigravity hooks
-- Set in `.coding-friend/config.json`. `cf permission --agent agy` documents the key; it does not toggle it
 
 ### `autoApproveAllowExtra`
 
@@ -217,6 +211,7 @@ Settings for the statusline display (global config only).
 - **Type**: `string[]`
 - **Default**: `[]`
 - Bash command prefixes the hook should **not classify** — returns no decision so Claude Code's native `permissions.allow` patterns handle them
+- **Claude Code only** — Antigravity does not read `autoApproveIgnore`
 - Only applies to commands that would be prompted ("ask") or sent to the LLM classifier ("unknown"). Security DENY patterns are always enforced
 - For compound commands (pipes, chains), the first segment is checked
 - Both global and local configs are merged (union, deduped)

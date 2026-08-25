@@ -85,6 +85,8 @@ export interface CodingFriendConfig {
   autoApproveCodex?: boolean;
   autoApproveIgnore?: string[];
   autoApproveAllowExtra?: string[];
+  privacyBlock?: boolean;
+  scoutBlock?: boolean;
   disableGUIPlan?: boolean;
   guiPlanFormat?: "html" | "md";
 }

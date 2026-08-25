@@ -7,7 +7,7 @@ const path = require("path");
 
 const SCRIPT = path.resolve(__dirname, "../auto-approve.agy.cjs");
 
-function makeProject(config = { autoApproveAgy: true }) {
+function makeProject(config = { autoApprove: true }) {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-agy-approve-"));
   if (config) {
     fs.mkdirSync(path.join(cwd, ".coding-friend"), { recursive: true });
@@ -48,8 +48,8 @@ function runHook(cwd, payload) {
 }
 
 describe("auto-approve.agy.cjs", () => {
-  it("asks when autoApproveAgy is disabled", () => {
-    const cwd = makeProject({ autoApproveAgy: false });
+  it("asks when autoApprove is disabled", () => {
+    const cwd = makeProject({ autoApprove: false });
     try {
       const result = runHook(cwd, {
         workspacePaths: [cwd],
@@ -67,6 +67,23 @@ describe("auto-approve.agy.cjs", () => {
 
   it("asks when config is missing", () => {
     const cwd = makeProject(null);
+    try {
+      const result = runHook(cwd, {
+        workspacePaths: [cwd],
+        toolCall: {
+          name: "view_file",
+          args: { AbsolutePath: path.join(cwd, "README.md") },
+        },
+      });
+      expect(result.status).toBe(0);
+      expect(result.json).toEqual({ decision: "ask" });
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("does not enable from autoApproveAgy alone", () => {
+    const cwd = makeProject({ autoApproveAgy: true });
     try {
       const result = runHook(cwd, {
         workspacePaths: [cwd],
@@ -215,6 +232,36 @@ describe("auto-approve.agy.cjs", () => {
       expect(result.json.decision).toBe("ask");
     } finally {
       fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("does not honor autoApproveIgnore (Claude-only)", () => {
+    const withIgnore = makeProject({
+      autoApprove: true,
+      autoApproveIgnore: ["npm test"],
+    });
+    const withoutIgnore = makeProject({ autoApprove: true });
+    try {
+      const payload = {
+        workspacePaths: [withIgnore],
+        toolCall: {
+          name: "run_command",
+          args: { CommandLine: "npm test" },
+        },
+      };
+      const ignored = runHook(withIgnore, {
+        ...payload,
+        workspacePaths: [withIgnore],
+      });
+      const baseline = runHook(withoutIgnore, {
+        workspacePaths: [withoutIgnore],
+        toolCall: payload.toolCall,
+      });
+      expect(ignored.status).toBe(0);
+      expect(ignored.json.decision).toBe(baseline.json.decision);
+    } finally {
+      fs.rmSync(withIgnore, { recursive: true, force: true });
+      fs.rmSync(withoutIgnore, { recursive: true, force: true });
     }
   });
 

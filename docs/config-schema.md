@@ -28,13 +28,23 @@ coding-friend uses a layered config system:
   // Default: true
   "devRulesReminder": true,
 
-  // Enable smart auto-approve hook (3-step: rules → working-dir → LLM classifier)
+  // Enable auto-approve hook for Claude AND Antigravity (one key, both hosts).
+  // Claude: rules → working-dir → LLM classifier.
+  // Antigravity: deterministic-only, unknowns return ask.
   // Default: false
   "autoApprove": false,
 
   // Enable Codex auto-approve hook (deterministic-only; unknowns defer to Codex)
   // Default: false
   "autoApproveCodex": false,
+
+  // Privacy-block hook (deny .env, keys, credentials). Set false to disable.
+  // Default: true (hook on unless explicitly false)
+  "privacyBlock": true,
+
+  // Scout-block hook (deny ignored dirs like node_modules). Set false to disable.
+  // Default: true
+  "scoutBlock": true,
 
   // Additional Bash command prefixes to auto-approve (merged across global + local)
   // These are checked after deny patterns, so they cannot override destructive rules
@@ -43,6 +53,7 @@ coding-friend uses a layered config system:
   "autoApproveAllowExtra": [],
 
   // Bash command prefixes to always require user review, even if they match an allow rule
+  // Claude Code only — Antigravity does not read this key
   // Default: []
   "autoApproveIgnore": [],
 

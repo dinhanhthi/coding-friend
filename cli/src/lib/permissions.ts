@@ -1,5 +1,10 @@
 import { readJson, writeJson } from "./json.js";
-import { pluginCachePath } from "./paths.js";
+import {
+  claudeLocalSettingsPath,
+  claudeProjectSettingsPath,
+  claudeSettingsPath,
+  pluginCachePath,
+} from "./paths.js";
 
 export interface PermissionRule {
   rule: string;
@@ -622,6 +627,37 @@ export async function runDangerousRulesAudit(
       }
     }
   }
+}
+
+export const AUTO_APPROVE_CROSS_HOST_NOTE =
+  "autoApprove enables Claude Code (LLM classifier) and Antigravity (deterministic rules). Codex uses autoApproveCodex.";
+
+/**
+ * Side effects after the user opts into `autoApprove`: audit Claude settings
+ * (the same key enables the Sonnet classifier) and print the cross-host note.
+ */
+export async function afterAutoApproveEnabled(
+  log: {
+    warn: (msg: string) => void;
+    dim: (msg: string) => void;
+    success: (msg: string) => void;
+  },
+  promptConfirm: (message: string) => Promise<boolean>,
+): Promise<void> {
+  await runDangerousRulesAudit(
+    [
+      claudeProjectSettingsPath(),
+      claudeLocalSettingsPath(),
+      claudeSettingsPath(),
+    ],
+    log,
+    promptConfirm,
+  );
+  log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
+  log.dim(
+    "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
+  );
+  log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
 }
 
 // ─── Shared UI helpers ──────────────────────────────────────────────

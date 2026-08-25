@@ -44,11 +44,14 @@ Add `--trust-project` when you want the CLI to mark the current project trusted 
 
 Use `cf init --agent agy` (alias `--agy`) to initialize the same project for Google Antigravity.
 
-Antigravity mode:
+Antigravity mode runs a **host-specific wizard** (not the Claude Code wizard). It does **not** configure statusline or Claude permissions.
 
-- Creates the usual Coding Friend docs folders (`docs/plans`, `docs/memory`, and related folders)
-- Writes `.coding-friend/config.json` if missing
-- Creates `AGENTS.md` when that file does not already exist
+- Docs folder, docs language, and `.gitignore` (same questions as Claude, saved to Coding Friend config)
+- `/cf-learn` config and Learn MCP written to the plugin `mcp_config.json` (when the plugin is installed)
+- Memory MCP registered in the plugin `mcp_config.json` if missing
+- `autoApprove` (same key as Claude; deterministic on Antigravity, no LLM; default off)
+- `privacyBlock` (deny `.env` / keys; default on)
+- Creates `AGENTS.md` with `/cf-*` slash commands when that file does not already exist
 - Warns if the Antigravity plugin is not installed yet (`cf install --agent agy`)
 
 Restart Antigravity or start a new `agy` session afterwards. See the [Google Antigravity guide](/docs/getting-started/antigravity/).

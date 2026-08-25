@@ -8,8 +8,9 @@
  *   Exit 0 always (including deny). Malformed JSON fails open with ask.
  *
  * Configuration:
- *   "autoApproveAgy": true in CF_CONFIG_FILE or
+ *   "autoApprove": true in CF_CONFIG_FILE or
  *   {workspacePaths[0]|cwd}/.coding-friend/config.json (opt-in).
+ *   Same key as Claude Code; this adapter stays deterministic (no LLM).
  *   Default (false or missing) → {"decision":"ask"}.
  */
 
@@ -91,7 +92,7 @@ function loadAgyAutoApproveConfig(homeDir, projectDir) {
   ];
 
   return {
-    enabled: merged.autoApproveAgy === true,
+    enabled: merged.autoApprove === true,
     allowExtra,
   };
 }

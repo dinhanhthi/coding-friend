@@ -14,11 +14,11 @@ import {
   applyPermissions,
   cleanupStalePluginRules,
   logPluginScriptWarning,
+  afterAutoApproveEnabled,
 } from "../lib/permissions.js";
 import { log, printBanner } from "../lib/log.js";
 import {
   claudeLocalSettingsPath,
-  claudeProjectSettingsPath,
   claudeSettingsPath,
   codexConfigTomlPath,
   globalConfigPath,
@@ -876,12 +876,12 @@ async function stepAutoApprove(
 
   printStepHeader(
     `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
-    "Auto-approves safe tool calls, blocks destructive ones, prompts for ambiguous.",
+    "Same `autoApprove` key for Claude (LLM classifier) and Antigravity (deterministic; unknown → ask).",
   );
 
   const autoApproveChoice = await confirm({
     message:
-      "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
     default: currentValue ?? false,
   });
 
@@ -897,20 +897,9 @@ async function stepAutoApprove(
   log.success(`Saved to ${targetPath}`);
 
   if (autoApproveChoice) {
-    const { runDangerousRulesAudit } = await import("../lib/permissions.js");
-    await runDangerousRulesAudit(
-      [
-        claudeProjectSettingsPath(),
-        claudeLocalSettingsPath(),
-        claudeSettingsPath(),
-      ],
-      log,
-      (message) => confirm({ message, default: true }),
+    await afterAutoApproveEnabled(log, (message) =>
+      confirm({ message, default: true }),
     );
-    log.dim(
-      "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
-    );
-    log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
   }
 }
 
@@ -1269,7 +1258,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       case "autoApprove": {
         const autoApproveChoice = await confirm({
           message:
-            "Enable auto-approve? (auto-approves read-only tools + working-dir file edits, LLM classifier for unknowns)",
+            "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
           default: autoApproveVal ?? false,
         });
         const autoApproveTargetScope = await askScope();
@@ -1282,24 +1271,9 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           log.success(`Saved to ${targetPath}`);
         }
 
-        // Audit dangerous rules if auto-approve is being enabled
         if (autoApproveChoice) {
-          const { runDangerousRulesAudit } =
-            await import("../lib/permissions.js");
-          await runDangerousRulesAudit(
-            [
-              claudeProjectSettingsPath(),
-              claudeLocalSettingsPath(),
-              claudeSettingsPath(),
-            ],
-            log,
-            (message) => confirm({ message, default: true }),
-          );
-          log.dim(
-            "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
-          );
-          log.dim(
-            "Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/",
+          await afterAutoApproveEnabled(log, (message) =>
+            confirm({ message, default: true }),
           );
         }
         break;
@@ -1377,7 +1351,7 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
     return;
   }
   if (host === "agy") {
-    initAgyCommand();
+    await initAgyCommand();
     return;
   }
 
@@ -1663,16 +1637,45 @@ function initCodexCommand(opts: InitOptions): void {
   log.dim("Restart Codex CLI or start a new session to use Coding Friend.");
 }
 
-function initAgyCommand(): void {
+async function initAgyCommand(): Promise<void> {
   _stepIndex = 0;
   console.log();
   printBanner("✨ Coding Friend Antigravity Setup (beta) ✨");
   console.log();
+  showConfigHint();
 
-  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  if (!isAgyPluginInstalled()) {
+    log.warn(
+      "Antigravity plugin is not installed. Run: cf install --agent agy",
+    );
+    log.dim(
+      "Learn/memory MCP cannot be written into the plugin until it is installed.",
+    );
+    console.log();
+  }
+
+  const gitAvailable = isGitRepo();
+  if (!gitAvailable) {
+    log.warn("Not inside a git repo -- git-related steps will be skipped.");
+    console.log();
+  }
+
+  const proceed = await confirm({
+    message: "Run Antigravity setup wizard?",
+    default: true,
+  });
+  if (!proceed) {
+    log.dim("Init cancelled. Run `cf init --agent agy` anytime to resume.");
+    return;
+  }
+
+  let globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  let localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+  await stepDocsDir(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
   const docsDir = getDocsDir(globalCfg, localCfg);
-
   ensureDocsFolders(docsDir, [
     "plans",
     "memory",
@@ -1681,6 +1684,55 @@ function initAgyCommand(): void {
     "reviews",
     "warm",
   ]);
+
+  if (gitAvailable) {
+    await stepGitignore(docsDir);
+  } else {
+    printStepHeader(
+      `Configure .gitignore ${chalk.dim("[skipped]")}`,
+      "Keeps AI-generated docs and config out of your git history.",
+    );
+    log.dim("Skipped — not inside a git repo.");
+  }
+
+  await stepDocsLanguage(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+  const { outputDir } = await stepLearnConfig(globalCfg);
+  if (isAgyPluginInstalled()) {
+    if (isLearnMcpRegistered("agy")) {
+      log.dim(
+        "coding-friend-learn: already registered in plugin mcp_config.json",
+      );
+    } else {
+      const registered = registerLearnMcp(outputDir, "agy");
+      if (registered) {
+        log.success(
+          "Registered CF Learn MCP in the Antigravity plugin mcp_config.json.",
+        );
+      }
+    }
+    if (isMemoryMcpRegistered("agy")) {
+      log.dim(
+        "coding-friend-memory: already registered in plugin mcp_config.json",
+      );
+    } else {
+      const registered = registerMemoryMcp("agy");
+      if (registered) {
+        log.success(
+          "Registered coding-friend-memory in the Antigravity plugin mcp_config.json.",
+        );
+      }
+    }
+  }
+
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await stepAgyAutoApprove(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await stepPrivacyBlock(globalCfg, localCfg);
 
   if (!existsSync(localConfigPath())) {
     writeJson(localConfigPath(), {});
@@ -1705,6 +1757,68 @@ function initAgyCommand(): void {
   log.dim(
     "Restart Antigravity or start a new `agy` session to use Coding Friend.",
   );
+}
+
+async function stepAgyAutoApprove(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("autoApprove", globalCfg, localCfg);
+
+  printStepHeader(
+    `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Same `autoApprove` key for Claude (LLM classifier) and Antigravity (deterministic; unknown → ask).",
+  );
+
+  const enabled = await confirm({
+    message:
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped auto-approve.");
+    return;
+  }
+  writeToScope(scope, { autoApprove: enabled });
+
+  if (enabled) {
+    await afterAutoApproveEnabled(log, (message) =>
+      confirm({ message, default: true }),
+    );
+  }
+}
+
+async function stepPrivacyBlock(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("privacyBlock", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("privacyBlock", globalCfg, localCfg);
+  const enabledByDefault = currentValue !== false;
+
+  printStepHeader(
+    `Privacy-block ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Deny reads of .env, keys, and similar secrets on PreToolUse.",
+  );
+
+  const enabled = await confirm({
+    message: "Keep privacy-block enabled? (deny .env / credentials / keys)",
+    default: enabledByDefault,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped privacy-block.");
+    return;
+  }
+  writeToScope(scope, { privacyBlock: enabled });
 }
 
 function initOmpCommand(_opts: InitOptions): void {

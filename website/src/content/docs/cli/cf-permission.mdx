@@ -17,7 +17,7 @@ keywords:
 
 ## Overview
 
-Interactive permission manager for Coding Friend. By default it configures Claude Code permission rules so skills and hooks can run without repeated prompts. Use `--agent codex` for the Codex-specific auto-approve toggle, or `--agent agy` for Antigravity (native `/permissions` plus `autoApproveAgy`).
+Interactive permission manager for Coding Friend. By default it configures Claude Code permission rules so skills and hooks can run without repeated prompts. Use `--agent codex` for the Codex-specific auto-approve toggle, or `--agent agy` for Antigravity (native `/permissions` plus the shared `autoApprove` config key).
 
 ```bash
 cf permission
@@ -79,11 +79,11 @@ Codex auto-approve is deterministic-only: known-safe reads and working-directory
 
 ## Google Antigravity
 
-Antigravity permissions are managed natively (`/permissions` in `agy`). `cf permission --agent agy` does not write allow rules; it reminds you that Coding Friend auto-approve is the `autoApproveAgy` key in `.coding-friend/config.json`:
+Antigravity permissions are managed natively (`/permissions` in `agy`). `cf permission --agent agy` does not write allow rules; it reminds you that Coding Friend auto-approve is the same `autoApprove` key as Claude in `.coding-friend/config.json`:
 
 ```json
 {
-  "autoApproveAgy": true
+  "autoApprove": true
 }
 ```
 
