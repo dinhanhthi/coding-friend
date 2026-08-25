@@ -699,7 +699,7 @@ async function editAutoApprove(
 
   const value = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
     default: currentValue ?? false,
   });
 
@@ -1097,7 +1097,7 @@ export async function configCommand(): Promise<void> {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
-              "  Claude: LLM classifier; Antigravity: deterministic rules. Codex uses autoApproveCodex",
+              "  Claude: LLM classifier; Antigravity/Codex: deterministic rules",
           },
           {
             name: `Privacy-block ${formatScopeLabel(privacyBlockScope)}${privacyBlockVal !== undefined ? ` (${privacyBlockVal})` : ""}`,

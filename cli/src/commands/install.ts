@@ -327,6 +327,6 @@ async function installAgyCommand(): Promise<void> {
     "Restart Antigravity (or start a new `agy` session) to pick up the plugin.",
   );
   log.dim(
-    "Note: autoApprove in config enables Claude Code (LLM classifier) and Antigravity (deterministic rules).",
+    "Note: autoApprove in config enables Claude Code (LLM classifier), Antigravity, and Codex (deterministic rules).",
   );
 }

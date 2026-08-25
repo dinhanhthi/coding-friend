@@ -38,21 +38,21 @@ Auto-approve is **off by default**. Enable it in `.coding-friend/config.json`:
 
 Or use the interactive setup: `cf config` or `cf init`.
 
-For Codex CLI, use the separate deterministic-only toggle:
+For Codex CLI, the same `autoApprove: true` key applies. It can also be toggled with a convenience flag:
 
 ```bash
 cf permission --agent codex --enable-auto-approve
 ```
 
-Codex auto-approve writes `autoApproveCodex: true`, does not call the Claude Sonnet classifier, and defers unknown actions to Codex native approval.
+This writes `autoApprove: true`. Codex auto-approve is deterministic-only: it does not call the Claude Sonnet classifier and defers unknown actions to Codex native approval.
 
 For Google Antigravity, use the same `autoApprove: true` key. There is no `--enable-auto-approve` flag for `--agent agy`. Antigravity auto-approve is deterministic-only: known-safe reads and working-directory edits can be allowed, destructive actions are denied, and unknown actions return `ask`. The Claude Sonnet classifier is not used from Antigravity hooks.
 
-<Callout type="warning" title="One key, two hosts">
-  `autoApprove: true` enables **both** the Claude Code hook (LLM classifier) and
-  the Antigravity hook (deterministic rules). There is no per-host override.
-  Codex still uses the separate `autoApproveCodex` key. `autoApproveIgnore` is
-  Claude Code only — Antigravity does not read it.
+<Callout type="warning" title="One key, all hosts">
+  `autoApprove: true` enables the Claude Code hook (LLM classifier), the
+  Antigravity hook, and the Codex hook (both deterministic rules). There is no
+  per-host override. `autoApproveIgnore` is Claude Code only — Antigravity and
+  Codex do not read it.
 </Callout>
 
 ## How It Works

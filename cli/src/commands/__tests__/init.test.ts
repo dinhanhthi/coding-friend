@@ -337,3 +337,116 @@ describe("initCommand — agy", () => {
     expect(runDangerousRulesAudit).not.toHaveBeenCalled();
   });
 });
+
+describe("initCommand — codex", () => {
+  let testDir: string;
+  let origCwd: string;
+  let logs: string[];
+
+  beforeEach(() => {
+    origCwd = process.cwd();
+    testDir = mkdtempSync(join(tmpdir(), "cf-init-codex-"));
+    process.chdir(testDir);
+    logs = [];
+    vi.clearAllMocks();
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    });
+    vi.mocked(confirm).mockImplementation((async (opts: {
+      message?: string;
+      default?: boolean;
+    }) => {
+      const message = String(opts.message ?? "");
+      if (message.includes("wizard")) return true;
+      if (message.includes("auto-approve")) return true;
+      if (message.includes("privacy")) return true;
+      return Boolean(opts.default);
+    }) as unknown as typeof confirm);
+    vi.mocked(input).mockImplementation((async (opts: { default?: string }) =>
+      String(opts.default ?? "docs")) as unknown as typeof input);
+    vi.mocked(select).mockImplementation((async (opts: {
+      message?: string;
+      choices?: ReadonlyArray<{ value?: unknown } | string>;
+    }) => {
+      const message = String(opts.message ?? "");
+      if (message.includes("Save to")) return "local";
+      if (message.includes("gitignore")) return "none";
+      if (message.includes("language") || message.includes("written in")) {
+        return "en";
+      }
+      if (message.includes("learn folder")) return "default";
+      if (message.includes("Categories")) return "defaults";
+      if (message.includes("indexed")) return "none";
+      if (message.includes("How to configure")) return "configure";
+      const first = opts.choices?.find(
+        (choice) =>
+          choice &&
+          typeof choice === "object" &&
+          "value" in choice &&
+          choice.value !== "__back__",
+      );
+      return first && typeof first === "object" && "value" in first
+        ? first.value
+        : "local";
+    }) as unknown as typeof select);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    vi.restoreAllMocks();
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("runs the wizard and writes AGENTS.md plus shared config keys", async () => {
+    await initCommand({ agent: "codex" });
+
+    const agentsMd = readFileSync(join(testDir, "AGENTS.md"), "utf8");
+    expect(agentsMd).toContain("$cf-plan");
+    expect(agentsMd).not.toContain("/cf-plan");
+
+    const localCfg = readJsonFile(
+      join(testDir, ".coding-friend", "config.json"),
+    ) as Record<string, unknown>;
+    expect(localCfg.docsDir).toBe("docs");
+    expect(localCfg.language).toBe("en");
+    expect(localCfg.autoApprove).toBe(true);
+    expect(localCfg.privacyBlock).toBe(true);
+
+    expect(writeCodexMemoryMcpConfig).toHaveBeenCalled();
+    expect(writeCodexAgentLimits).toHaveBeenCalled();
+    expect(registerLearnMcp).not.toHaveBeenCalled();
+    expect(registerMemoryMcp).not.toHaveBeenCalled();
+    expect(afterAutoApproveEnabled).toHaveBeenCalled();
+  });
+
+  it("creates docs subfolders when global docsDir already matches the default", async () => {
+    const globalDir = join(testDir, ".coding-friend-global");
+    mkdirSync(globalDir, { recursive: true });
+    writeFileSync(
+      join(globalDir, "config.json"),
+      JSON.stringify({ docsDir: "docs" }, null, 2) + "\n",
+    );
+
+    await initCommand({ agent: "codex" });
+
+    expect(existsSync(join(testDir, "docs", "plans"))).toBe(true);
+    expect(existsSync(join(testDir, "docs", "memory"))).toBe(true);
+  });
+
+  it("marks the project trusted when --trust-project is passed", async () => {
+    await initCommand({ agent: "codex", trustProject: true });
+
+    expect(trustCodexProject).toHaveBeenCalled();
+    expect(String(vi.mocked(trustCodexProject).mock.calls[0]?.[0])).toContain(
+      "cf-init-codex-",
+    );
+  });
+
+  it("does not run the Antigravity or omp wizards", async () => {
+    await initCommand({ agent: "codex" });
+
+    expect(existsSync(join(testDir, ".omp"))).toBe(false);
+    const output = logs.join("\n");
+    expect(output).not.toContain("Antigravity setup");
+  });
+});

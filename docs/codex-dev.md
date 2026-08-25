@@ -101,7 +101,7 @@ nên các điểm sau suy ra từ plugin khác, cần kiểm chứng khi chạy 
    thì Codex có chịu copy đè bản mới lên version-dir cũ không?
 3. **4 probe bắt buộc** (chi tiết ở [NEXT-STEPS.md §1.3](plans/2026-05-16-codex-support/NEXT-STEPS.md)):
    privacy-block qua `apply_patch`, matcher bắt `apply_patch`, memory MCP precedence,
-   auto-approve `autoApproveCodex`.
+   auto-approve `autoApprove`.
 
 Ghi kết quả vào [plans/2026-05-16-codex-support/probe-results.md](plans/2026-05-16-codex-support/probe-results.md).
 

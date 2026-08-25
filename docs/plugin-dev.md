@@ -150,7 +150,7 @@ Claude remains the canonical authoring host for plugin source. Codex support is 
 
 When editing shared plugin source, keep host-specific syntax behind placeholders such as `{{cf:slash ...}}`, `{{cf:agent_ref ...}}`, `{{cf:dispatch ...}}`, `{{cf:plugin_root}}`, and `{{cf:host}}`. Do not hard-code Claude-only command, agent, or plugin-root syntax in files that are copied into `plugin-codex/`.
 
-Host-aware CLI code lives in `cli/src/lib/host.ts`, `cli/src/lib/codex-config.ts`, and the Codex branches of lifecycle commands (`install`, `uninstall`, `enable`, `disable`, `update`, `init`, and `permission`). Claude and Antigravity share `autoApprove` (Claude: Sonnet classifier; Antigravity: deterministic). Codex auto-approve uses `autoApproveCodex` and remains deterministic-only.
+Host-aware CLI code lives in `cli/src/lib/host.ts`, `cli/src/lib/codex-config.ts`, and the Codex branches of lifecycle commands (`install`, `uninstall`, `enable`, `disable`, `update`, `init`, and `permission`). Claude, Antigravity, and Codex share a single `autoApprove` key (Claude: Sonnet classifier; Antigravity/Codex: deterministic). There is no per-host override.
 
 ## Token counts
 

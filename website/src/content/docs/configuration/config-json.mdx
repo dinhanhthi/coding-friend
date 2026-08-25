@@ -53,7 +53,6 @@ Edit interactively with `cf config`, or manually edit the JSON files.
     }
   },
   "autoApprove": false,
-  "autoApproveCodex": false,
   "autoApproveAllowExtra": [],
   "autoApproveIgnore": [],
   "disableGUIPlan": true,
@@ -185,16 +184,9 @@ Settings for the statusline display (global config only).
 - Enables the [auto-approve hook](/docs/reference/auto-approve) that reduces permission prompts
 - **Claude Code:** 3-step classification pipeline (rules → working-dir → LLM)
 - **Google Antigravity:** deterministic rules only; unknown actions return `ask`; no Claude Sonnet classifier
-- One key enables **both** hosts. There is no per-host override. Codex uses `autoApproveCodex`
-- Set with `cf init`, `cf init --agent agy`, `cf config`, or `.coding-friend/config.json`
-
-### `autoApproveCodex`
-
-- **Type**: `boolean`
-- **Default**: `false`
-- Enables deterministic-only auto-approve for Codex CLI
-- Unknown actions defer to Codex native approval; the Claude Sonnet classifier is not used from Codex hooks
-- Set with `cf permission --agent codex --enable-auto-approve` or `cf permission --agent codex --disable-auto-approve`
+- **Codex CLI:** deterministic rules only; unknown actions defer to Codex native approval; no Claude Sonnet classifier
+- One key enables **all** hosts. There is no per-host override
+- Set with `cf init`, `cf init --agent agy`, `cf init --agent codex`, `cf config`, or `.coding-friend/config.json`
 
 ### `autoApproveAllowExtra`
 

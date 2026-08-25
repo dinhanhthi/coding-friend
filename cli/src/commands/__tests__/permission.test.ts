@@ -31,7 +31,7 @@ vi.mock("../../lib/permissions.js", () => ({
   runDangerousRulesAudit: vi.fn(),
   afterAutoApproveEnabled: vi.fn(),
   AUTO_APPROVE_CROSS_HOST_NOTE:
-    "autoApprove enables Claude Code (LLM classifier) and Antigravity (deterministic rules). Codex uses autoApproveCodex.",
+    "autoApprove enables Claude Code (LLM classifier), Antigravity, and Codex (deterministic rules).",
 }));
 
 import { select } from "@inquirer/prompts";
@@ -70,7 +70,7 @@ describe("permissionCommand — Codex", () => {
 
     expect(mockMergeJson).toHaveBeenCalledWith(
       expect.stringContaining(".coding-friend/config.json"),
-      { autoApproveCodex: true },
+      { autoApprove: true },
     );
   });
 
@@ -82,7 +82,7 @@ describe("permissionCommand — Codex", () => {
 
     expect(mockMergeJson).toHaveBeenCalledWith(
       expect.stringContaining(".coding-friend/config.json"),
-      { autoApproveCodex: false },
+      { autoApprove: false },
     );
   });
 

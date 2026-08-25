@@ -106,14 +106,14 @@ The generated files omit Claude's tool-list frontmatter because `tools` is not a
 
 ## Auto-Approve
 
-Codex auto-approve is separate from Claude auto-approve:
+Codex auto-approve uses the same `autoApprove` key shared with Claude and Antigravity:
 
 ```bash
 cf permission --agent codex --enable-auto-approve
 cf permission --agent codex --disable-auto-approve
 ```
 
-This writes `autoApproveCodex` in `.coding-friend/config.json`. Codex v1 auto-approve is deterministic-only: known-safe reads and working-directory edits can be approved, destructive actions are blocked, and unknown actions defer to Codex native approval. The Claude Sonnet classifier is intentionally not used from Codex hooks.
+This writes `autoApprove` in `.coding-friend/config.json`. Codex v1 auto-approve is deterministic-only: known-safe reads and working-directory edits can be approved, destructive actions are blocked, and unknown actions defer to Codex native approval. The Claude Sonnet classifier is intentionally not used from Codex hooks.
 
 ## Known Differences
 

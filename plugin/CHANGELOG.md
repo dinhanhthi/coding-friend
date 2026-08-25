@@ -5,6 +5,7 @@
 ## Unreleased
 
 - Antigravity auto-approve hook reads `autoApprove` (same key as Claude); the classifier stays deterministic (no LLM)
+- Codex auto-approve hook reads the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed
 
 ## v0.41.0 (2026-08-24)
 

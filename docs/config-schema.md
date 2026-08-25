@@ -28,15 +28,12 @@ coding-friend uses a layered config system:
   // Default: true
   "devRulesReminder": true,
 
-  // Enable auto-approve hook for Claude AND Antigravity (one key, both hosts).
+  // Enable auto-approve for Claude, Antigravity, and Codex (one key).
   // Claude: rules → working-dir → LLM classifier.
   // Antigravity: deterministic-only, unknowns return ask.
+  // Codex: deterministic-only, unknowns defer to native approval.
   // Default: false
   "autoApprove": false,
-
-  // Enable Codex auto-approve hook (deterministic-only; unknowns defer to Codex)
-  // Default: false
-  "autoApproveCodex": false,
 
   // Privacy-block hook (deny .env, keys, credentials). Set false to disable.
   // Default: true (hook on unless explicitly false)

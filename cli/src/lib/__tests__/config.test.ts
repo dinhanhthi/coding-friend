@@ -238,6 +238,23 @@ describe("loadConfig validation", () => {
     ).toBeUndefined();
   });
 
+  it("points autoApproveCodex at the shared autoApprove key", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ autoApproveCodex: true });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("autoApprove"),
+    );
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("autoApproveCodex"),
+    );
+    expect(
+      (config as Record<string, unknown>)["autoApproveCodex"],
+    ).toBeUndefined();
+  });
+
   it("accepts privacyBlock as a valid config key (boolean)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

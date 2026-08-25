@@ -7,29 +7,54 @@ const path = require("path");
 
 const SCRIPT = path.resolve(__dirname, "../auto-approve.codex.cjs");
 
-function makeProject(config = { autoApproveCodex: true }) {
+function makeProject(config = { autoApprove: true }) {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-codex-approve-"));
-  fs.mkdirSync(path.join(cwd, ".coding-friend"), { recursive: true });
-  fs.writeFileSync(
-    path.join(cwd, ".coding-friend", "config.json"),
-    JSON.stringify(config),
-  );
+  if (config) {
+    fs.mkdirSync(path.join(cwd, ".coding-friend"), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, ".coding-friend", "config.json"),
+      JSON.stringify(config),
+    );
+  }
   return cwd;
 }
 
 function runHook(cwd, payload) {
-  const stdout = execFileSync("node", [SCRIPT], {
-    cwd,
-    input: JSON.stringify({ cwd, ...payload }),
-    encoding: "utf8",
-    timeout: 5000,
-  });
-  return JSON.parse(stdout || "{}");
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "cf-codex-approve-home-"));
+  const env = { ...process.env, HOME: home };
+  delete env.CF_AUTO_APPROVE_CODEX_ENABLED;
+  try {
+    const stdout = execFileSync("node", [SCRIPT], {
+      cwd,
+      input: JSON.stringify({ cwd, ...payload }),
+      encoding: "utf8",
+      timeout: 5000,
+      env,
+    });
+    return JSON.parse(stdout || "{}");
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 }
 
 describe("auto-approve.codex.cjs", () => {
-  it("does nothing when autoApproveCodex is disabled", () => {
-    const cwd = makeProject({ autoApproveCodex: false });
+  it("does nothing when autoApprove is disabled", () => {
+    const cwd = makeProject({ autoApprove: false });
+    try {
+      expect(
+        runHook(cwd, {
+          hookEventName: "PermissionRequest",
+          tool_name: "Read",
+          tool_input: { file_path: "README.md" },
+        }),
+      ).toEqual({});
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("does not enable from autoApproveCodex alone", () => {
+    const cwd = makeProject({ autoApproveCodex: true });
     try {
       expect(
         runHook(cwd, {
@@ -206,7 +231,7 @@ describe("auto-approve.codex.cjs", () => {
 
   it("honors autoApproveAllowExtra prefixes for Bash", () => {
     const cwd = makeProject({
-      autoApproveCodex: true,
+      autoApprove: true,
       autoApproveAllowExtra: ["npm test"],
     });
     try {
@@ -223,7 +248,7 @@ describe("auto-approve.codex.cjs", () => {
 
   it("never lets allowExtra override deny patterns", () => {
     const cwd = makeProject({
-      autoApproveCodex: true,
+      autoApprove: true,
       autoApproveAllowExtra: ["git reset"],
     });
     try {
@@ -239,7 +264,7 @@ describe("auto-approve.codex.cjs", () => {
   });
 
   it("supports the CF_AUTO_APPROVE_CODEX_ENABLED override", () => {
-    const cwd = makeProject({ autoApproveCodex: false });
+    const cwd = makeProject({ autoApprove: false });
     try {
       const stdout = execFileSync("node", [SCRIPT], {
         cwd,

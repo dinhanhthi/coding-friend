@@ -876,12 +876,12 @@ async function stepAutoApprove(
 
   printStepHeader(
     `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
-    "Same `autoApprove` key for Claude (LLM classifier) and Antigravity (deterministic; unknown → ask).",
+    "Same `autoApprove` key for Claude (LLM classifier), Antigravity, and Codex (deterministic).",
   );
 
   const autoApproveChoice = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
     default: currentValue ?? false,
   });
 
@@ -1258,7 +1258,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       case "autoApprove": {
         const autoApproveChoice = await confirm({
           message:
-            "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
+            "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
           default: autoApproveVal ?? false,
         });
         const autoApproveTargetScope = await askScope();
@@ -1343,7 +1343,7 @@ export interface InitOptions extends ScopeFlags {
 export async function initCommand(opts: InitOptions = {}): Promise<void> {
   const { host } = resolveHostFlags(opts);
   if (host === "codex") {
-    initCodexCommand(opts);
+    await initCodexCommand(opts);
     return;
   }
   if (host === "omp") {
@@ -1562,18 +1562,35 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
   );
 }
 
-function initCodexCommand(opts: InitOptions): void {
+async function initCodexCommand(opts: InitOptions): Promise<void> {
   _stepIndex = 0;
   console.log();
   printBanner("✨ Coding Friend Codex Setup ✨");
   console.log();
+  showConfigHint();
 
   const gitAvailable = isGitRepo();
-  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  const docsDir = getDocsDir(globalCfg, localCfg);
-  const memoryDir = join(process.cwd(), docsDir, "memory");
+  if (!gitAvailable) {
+    log.warn("Not inside a git repo -- git-related steps will be skipped.");
+    console.log();
+  }
 
+  const proceed = await confirm({
+    message: "Run Codex setup wizard?",
+    default: true,
+  });
+  if (!proceed) {
+    log.dim("Init cancelled. Run `cf init --agent codex` anytime to resume.");
+    return;
+  }
+
+  let globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  let localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+  await stepDocsDir(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const docsDir = getDocsDir(globalCfg, localCfg);
   ensureDocsFolders(docsDir, [
     "plans",
     "memory",
@@ -1582,6 +1599,32 @@ function initCodexCommand(opts: InitOptions): void {
     "reviews",
     "warm",
   ]);
+
+  if (gitAvailable) {
+    await stepGitignore(docsDir);
+  } else {
+    printStepHeader(
+      `Configure .gitignore ${chalk.dim("[skipped]")}`,
+      "Keeps AI-generated docs and config out of your git history.",
+    );
+    log.dim("Skipped — not inside a git repo.");
+  }
+
+  await stepDocsLanguage(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+
+  await stepLearnConfig(globalCfg);
+  log.dim(
+    "Learn MCP is not registered into Codex config (no dedicated Codex writer). Settings are saved to Coding Friend config.",
+  );
+
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await stepAutoApprove(globalCfg, localCfg);
+  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await stepPrivacyBlock(globalCfg, localCfg);
 
   if (!existsSync(localConfigPath())) {
     writeJson(localConfigPath(), {});
@@ -1605,6 +1648,7 @@ function initCodexCommand(opts: InitOptions): void {
   writeCodexAgentLimits(codexConfigTomlPath());
   log.success("Configured Codex agent depth for nested Coding Friend agents.");
 
+  const memoryDir = join(process.cwd(), docsDir, "memory");
   const projectCodexDir = join(process.cwd(), ".codex");
   const projectConfigPath = join(projectCodexDir, "config.toml");
   writeCodexMemoryMcpConfig(memoryDir, projectConfigPath);
@@ -1729,7 +1773,7 @@ async function initAgyCommand(): Promise<void> {
 
   globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  await stepAgyAutoApprove(globalCfg, localCfg);
+  await stepAutoApprove(globalCfg, localCfg);
   globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   localCfg = readJson<CodingFriendConfig>(localConfigPath());
   await stepPrivacyBlock(globalCfg, localCfg);
@@ -1757,40 +1801,6 @@ async function initAgyCommand(): Promise<void> {
   log.dim(
     "Restart Antigravity or start a new `agy` session to use Coding Friend.",
   );
-}
-
-async function stepAgyAutoApprove(
-  globalCfg: CodingFriendConfig | null,
-  localCfg: CodingFriendConfig | null,
-): Promise<void> {
-  const currentValue = getMergedValue("autoApprove", globalCfg, localCfg) as
-    | boolean
-    | undefined;
-  const scopeLabel = getScopeLabel("autoApprove", globalCfg, localCfg);
-
-  printStepHeader(
-    `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
-    "Same `autoApprove` key for Claude (LLM classifier) and Antigravity (deterministic; unknown → ask).",
-  );
-
-  const enabled = await confirm({
-    message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity: deterministic rules, no LLM)",
-    default: currentValue ?? false,
-  });
-
-  const scope = await askScope();
-  if (scope === "back") {
-    log.dim("Skipped auto-approve.");
-    return;
-  }
-  writeToScope(scope, { autoApprove: enabled });
-
-  if (enabled) {
-    await afterAutoApproveEnabled(log, (message) =>
-      confirm({ message, default: true }),
-    );
-  }
 }
 
 async function stepPrivacyBlock(

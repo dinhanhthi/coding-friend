@@ -91,7 +91,6 @@ const ConfigSchema = z.strictObject({
   memory: MemoryConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),
   autoApprove: z.boolean().optional(),
-  autoApproveCodex: z.boolean().optional(),
   autoApproveIgnore: z.array(z.string()).optional(),
   autoApproveAllowExtra: z.array(z.string()).optional(),
   privacyBlock: z.boolean().optional(),
@@ -110,7 +109,6 @@ const KNOWN_KEYS = [
   "memory",
   "review",
   "autoApprove",
-  "autoApproveCodex",
   "autoApproveIgnore",
   "autoApproveAllowExtra",
   "privacyBlock",
@@ -118,6 +116,11 @@ const KNOWN_KEYS = [
   "disableGUIPlan",
   "guiPlanFormat",
 ];
+
+/** Removed keys mapped to their replacement, for a migration hint */
+const RENAMED_KEYS: Record<string, string> = {
+  autoApproveCodex: "autoApprove",
+};
 
 function suggestKey(unknown: string): string | null {
   let best: string | null = null;
@@ -171,8 +174,13 @@ function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
       for (const key of keys) {
         const isNested = issue.path.length > 0;
         const fullKey = isNested ? `${issue.path.join(".")}.${key}` : key;
+        const renamedTo = isNested ? undefined : RENAMED_KEYS[key];
         const suggestion = isNested ? null : suggestKey(key);
-        const hint = suggestion ? ` Did you mean '${suggestion}'?` : "";
+        const hint = renamedTo
+          ? ` It was replaced by '${renamedTo}' — set that instead.`
+          : suggestion
+            ? ` Did you mean '${suggestion}'?`
+            : "";
         log.warn(`Unknown config key '${fullKey}'.${hint}`);
         stripPath(sanitized, [...issue.path, key]);
       }

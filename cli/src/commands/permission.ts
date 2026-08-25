@@ -236,9 +236,7 @@ async function autoApproveFlow(): Promise<void> {
     chalk.bold("Auto-approve") +
       ` ${scopeLabel}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
   );
-  log.dim(
-    "Claude: LLM classifier; Antigravity: deterministic rules. Codex uses autoApproveCodex.",
-  );
+  log.dim("Claude: LLM classifier; Antigravity/Codex: deterministic rules.");
   console.log();
 
   const value = await confirm({
@@ -437,20 +435,27 @@ function codexPermissionCommand(opts: {
       : undefined;
 
   if (nextValue === undefined) {
-    const cfg = readJson<CodingFriendConfig>(localConfigPath());
-    const current = cfg?.autoApproveCodex === true;
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+    const current =
+      (getMergedValue("autoApprove", globalCfg, localCfg) as
+        | boolean
+        | undefined) === true;
     log.info(`Codex auto-approve is ${current ? "enabled" : "disabled"}.`);
     log.dim(
-      "Use --enable-auto-approve or --disable-auto-approve to change it.",
+      "Use --enable-auto-approve or --disable-auto-approve to change it (writes `autoApprove`).",
     );
     return;
   }
 
-  mergeJson(localConfigPath(), { autoApproveCodex: nextValue });
+  mergeJson(localConfigPath(), { autoApprove: nextValue });
   log.success(
     `Codex auto-approve ${nextValue ? "enabled" : "disabled"} in .coding-friend/config.json.`,
   );
   log.dim(
     "Codex v1 auto-approve is deterministic-only; unknown actions defer to Codex native approval.",
   );
+  if (nextValue) {
+    log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
+  }
 }

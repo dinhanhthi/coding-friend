@@ -91,7 +91,7 @@ Format (only for cf-\* names): `> ✨ **CODING FRIEND** → <name> activated`
 ## Auto-Approve
 
 - **Claude Code auto-approve**: PreToolUse hook with 3-step classification — auto-approves read-only tools and working-dir file edits, uses LLM classifier (Sonnet) for unknown actions, blocks destructive patterns. Opt-in via `autoApprove` in config.
-- **Codex auto-approve**: PermissionRequest hook with deterministic rules only — auto-approves known-safe tools and blocks known-destructive commands. Unknown or ask-level actions defer to Codex native approval. Opt-in via `autoApproveCodex` in config.
+- **Codex auto-approve**: PermissionRequest hook with deterministic rules only — auto-approves known-safe tools and blocks known-destructive commands. Unknown or ask-level actions defer to Codex native approval. Opt-in via the same `autoApprove` key as Claude.
 - **Antigravity auto-approve**: PreToolUse hook with deterministic rules; unknown → `ask`. Opt-in via the same `autoApprove` key as Claude (no LLM on Antigravity).
 
 ## Memory System

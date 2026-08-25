@@ -5,6 +5,8 @@
  * This intentionally reuses the deterministic classifier from Claude's
  * auto-approve hook but does not use the LLM fallback. Unknown or ask-level
  * actions emit no decision so Codex's native approval flow remains in charge.
+ *
+ * Enable with `autoApprove: true` (same key as Claude/Antigravity).
  */
 
 "use strict";
@@ -98,7 +100,7 @@ function loadCodexAutoApproveConfig(homeDir, cwd) {
   ];
 
   return {
-    enabled: merged.autoApproveCodex === true,
+    enabled: merged.autoApprove === true,
     allowExtra,
   };
 }

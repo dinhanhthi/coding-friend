@@ -12,6 +12,8 @@
 - Recognize `privacyBlock` and `scoutBlock` in the config schema (`cf config` can set `privacyBlock`)
 - Antigravity auto-approve uses the same `autoApprove` key as Claude (no `autoApproveAgy`)
 - `cf init --agent agy` always creates docs subfolders; enabling `autoApprove` warns that the key is shared with Claude and runs the dangerous-rules audit
+- `cf init --agent codex` runs a Codex wizard (docsDir, language, gitignore, learn settings, `autoApprove`, `privacyBlock`) then the existing Codex project files
+- Codex auto-approve uses the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed
 
 ## v1.39.1 (2026-08-24)
 

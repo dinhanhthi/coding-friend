@@ -82,7 +82,6 @@ export interface CodingFriendConfig {
   memory?: MemoryConfig;
   review?: ReviewConfig;
   autoApprove?: boolean;
-  autoApproveCodex?: boolean;
   autoApproveIgnore?: string[];
   autoApproveAllowExtra?: string[];
   privacyBlock?: boolean;
