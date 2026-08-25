@@ -27,6 +27,10 @@ vi.mock("../../lib/codex-config.js", () => ({
   writeCodexMemoryMcpConfig: vi.fn(),
 }));
 
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginInstalled: vi.fn(() => false),
+}));
+
 import {
   deployCodexAgents,
   findCodexAgentSourceDir,

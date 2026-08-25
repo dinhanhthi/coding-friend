@@ -124,3 +124,27 @@ describe("permissionCommand — omp", () => {
     expect(process.exit).not.toHaveBeenCalled();
   });
 });
+
+describe("permissionCommand — agy", () => {
+  it("prints that Antigravity permissions are native and mentions autoApproveAgy", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await permissionCommand({ agent: "agy" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("/permissions");
+    expect(output).toContain("autoApproveAgy");
+  });
+
+  it("does not call Claude permission writers for --agy", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await permissionCommand({ agy: true });
+
+    expect(mockGetExistingRules).not.toHaveBeenCalled();
+    expect(mockGetAllRules).not.toHaveBeenCalled();
+    expect(mockApplyPermissions).not.toHaveBeenCalled();
+    expect(mockMergeJson).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+});

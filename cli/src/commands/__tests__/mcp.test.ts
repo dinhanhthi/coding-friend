@@ -1,4 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginInstalled: vi.fn(() => false),
+  readAgyMcpConfig: vi.fn(() => null),
+}));
+
 import { detectMemoryMcpState, printHealthSection } from "../mcp.js";
 import type { McpHealthResult } from "../../lib/mcp-health.js";
 

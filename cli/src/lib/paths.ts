@@ -279,3 +279,40 @@ export function ompProjectCodingFriendAgentsDir(): string {
 export function ompProjectExtensionsDir(): string {
   return resolve(ompProjectDir(), "extensions");
 }
+
+/**
+ * Resolve Antigravity's config root.
+ * Honors ANTIGRAVITY_HOME (default ~/.gemini).
+ */
+export function agyConfigRoot(): string {
+  const env = process.env.ANTIGRAVITY_HOME?.trim();
+  if (!env) return join(homedir(), ".gemini");
+  if (env === "~") return homedir();
+  if (env.startsWith("~/")) return join(homedir(), env.slice(2));
+  return env;
+}
+
+/** Path to Antigravity config dir (<root>/config) */
+export function agyConfigDir(): string {
+  return join(agyConfigRoot(), "config");
+}
+
+/** Path to Antigravity plugins dir (<config>/plugins) */
+export function agyPluginsDir(): string {
+  return join(agyConfigDir(), "plugins");
+}
+
+/** Path to Coding Friend plugin under Antigravity (<config>/plugins/coding-friend) */
+export function agyPluginDir(): string {
+  return join(agyPluginsDir(), "coding-friend");
+}
+
+/** Path to Antigravity config.json (<config>/config.json) */
+export function agyConfigJsonPath(): string {
+  return join(agyConfigDir(), "config.json");
+}
+
+/** Shallow-clone cache for Antigravity plugin source (~/.coding-friend/agy-src) */
+export function agySourceCloneDir(): string {
+  return join(homedir(), ".coding-friend", "agy-src");
+}

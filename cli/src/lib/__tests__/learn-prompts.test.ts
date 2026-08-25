@@ -18,6 +18,12 @@ vi.mock("../omp-config.js", () => ({
   removeOmpMcpEntry: vi.fn(),
 }));
 
+vi.mock("../agy-config.js", () => ({
+  writeAgyMcpEntry: vi.fn(),
+  readAgyMcpConfig: vi.fn(),
+  removeAgyMcpEntry: vi.fn(),
+}));
+
 import { runWithStderr } from "../exec.js";
 import { log } from "../log.js";
 import {

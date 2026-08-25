@@ -60,9 +60,10 @@ program
   .option("--global", "Install at user scope (all projects)")
   .option("--project", "Install at project scope (shared via git)")
   .option("--local", "Install at local scope (this machine only)")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
     await installCommand(opts);
@@ -75,9 +76,10 @@ program
   .option("--global", "Uninstall from user scope (all projects)")
   .option("--project", "Uninstall from project scope")
   .option("--local", "Uninstall from local scope")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .option(
     "--remove-marketplace",
     "Also remove the host marketplace registration",
@@ -94,9 +96,10 @@ program
   .option("--global", "Disable at user scope (all projects)")
   .option("--project", "Disable at project scope")
   .option("--local", "Disable at local scope")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .action(async (opts) => {
     const { disableCommand } = await import("./commands/disable.js");
     await disableCommand(opts);
@@ -109,9 +112,10 @@ program
   .option("--global", "Enable at user scope (all projects)")
   .option("--project", "Enable at project scope")
   .option("--local", "Enable at local scope")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .action(async (opts) => {
     const { enableCommand } = await import("./commands/enable.js");
     await enableCommand(opts);
@@ -120,9 +124,10 @@ program
 program
   .command("init")
   .description("Initialize coding-friend in current project")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .option(
     "--trust-project",
     "For Codex, mark the current project trusted in ~/.codex/config.toml",
@@ -219,9 +224,10 @@ program
     "--project",
     "Save to project-level settings (.claude/settings.local.json)",
   )
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .option(
     "--enable-auto-approve",
     "For Codex, enable deterministic Coding Friend auto-approve",
@@ -253,9 +259,10 @@ program
   .option("--global", "Update plugin at user scope (all projects)")
   .option("--project", "Update plugin at project scope")
   .option("--local", "Update plugin at local scope")
-  .option("--agent <agent>", "Operate on host agent: claude, codex, or omp")
+  .option("--agent <agent>", "Operate on host agent: claude, codex, omp, or agy")
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
+  .option("--agy", "Shortcut for --agent agy (beta)")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);

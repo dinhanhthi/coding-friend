@@ -7,13 +7,13 @@
 //   2.  cf dev sync → copy plugin/ into the Claude Code dev cache
 //   2b. cf update --agent omp --plugin → re-deploy converted agents into ~/.omp
 //       (omp reads skills from the Claude cache and hooks/extension live from the repo)
-//   2c. deploy agy  → copy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend
-//       (direct copy now; Phase 3 task 6 switches to `cf update --agent agy --plugin`)
+//   2c. cf update --agent agy --plugin → re-deploy plugin-antigravity/ into
+//       ~/.gemini/config/plugins/coding-friend
 //   3.  clear Codex cache → Codex re-copies plugin-codex/ on next launch
 // Wired as: npm run ud-plugin-local
 
 const { execFileSync } = require("node:child_process");
-const { rmSync, existsSync, cpSync, mkdirSync } = require("node:fs");
+const { rmSync, existsSync } = require("node:fs");
 const { homedir } = require("node:os");
 const path = require("node:path");
 
@@ -21,11 +21,6 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const CODEX_CACHE = path.join(
   homedir(),
   ".codex/plugins/cache/coding-friend-marketplace",
-);
-const GEMINI_HOME = path.join(homedir(), ".gemini");
-const AGY_PLUGIN_INSTALL = path.join(
-  GEMINI_HOME,
-  "config/plugins/coding-friend",
 );
 
 function run(cmd, args) {
@@ -69,21 +64,17 @@ try {
   );
 }
 
-// 2c. Deploy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend.
-//     Direct copy for now; Phase 3 task 6 will switch this to
-//     `cf update --agent agy --plugin`.
+// 2c. Re-deploy plugin-antigravity/ into ~/.gemini/config/plugins/coding-friend.
+//     Skips gracefully if agy is not installed or `cf` is not on PATH.
 let agySynced = false;
-console.log("\n  → deploy agy plugin");
-if (existsSync(GEMINI_HOME)) {
-  mkdirSync(path.dirname(AGY_PLUGIN_INSTALL), { recursive: true });
-  rmSync(AGY_PLUGIN_INSTALL, { recursive: true, force: true });
-  cpSync(path.join(REPO_ROOT, "plugin-antigravity"), AGY_PLUGIN_INSTALL, {
-    recursive: true,
-  });
+console.log("\n  → cf update --agent agy --plugin");
+try {
+  run("cf", ["update", "--agent", "agy", "--plugin"]);
   agySynced = true;
-  console.log(`  ✓ copied plugin-antigravity → ${AGY_PLUGIN_INSTALL}`);
-} else {
-  console.log("  ⚠ agy deploy skipped — ~/.gemini not found");
+} catch {
+  console.log(
+    "  ⚠ agy update skipped — is agy installed and is `cf` on PATH?",
+  );
 }
 
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
@@ -119,7 +110,7 @@ if (agySynced) {
   );
 } else {
   console.log(
-    "    • Antigravity — not deployed; create ~/.gemini then run this script again",
+    "    • Antigravity — not updated; install agy and ensure `cf` is on PATH, then run this script again",
   );
 }
 console.log("");

@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { isAgyPluginEnabled, setAgyPluginEnabled } from "../lib/agy-config.js";
 import {
   isCodexPluginDisabled,
   setCodexPluginEnabled,
@@ -41,6 +42,19 @@ export async function enableCommand(opts: ScopeFlags = {}): Promise<void> {
       `Coding Friend enabled for omp at ${chalk.cyan(ompScope)} scope.`,
     );
     log.dim("Restart omp for the change to take effect.");
+    return;
+  }
+
+  if (host === "agy") {
+    if (isAgyPluginEnabled()) {
+      log.info("Coding Friend is already enabled for Antigravity.");
+      return;
+    }
+
+    log.step("Enabling Antigravity plugin...");
+    setAgyPluginEnabled(true);
+    log.success("Coding Friend enabled for Antigravity.");
+    log.dim("Restart Antigravity for the change to take effect.");
     return;
   }
 

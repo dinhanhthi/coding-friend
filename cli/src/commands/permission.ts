@@ -279,6 +279,7 @@ export async function permissionCommand(opts: {
   agent?: string;
   codex?: boolean;
   omp?: boolean;
+  agy?: boolean;
   enableAutoApprove?: boolean;
   disableAutoApprove?: boolean;
 }): Promise<void> {
@@ -292,6 +293,12 @@ export async function permissionCommand(opts: {
       "omp uses its own approval-mode; run `omp config` / omp approval settings — coding-friend does not manage omp permissions.",
     );
     log.dim("See docs/omp-dev.md.");
+    return;
+  }
+  if (host === "agy") {
+    log.info(
+      "Antigravity permissions are managed natively (`/permissions` in agy); Coding Friend auto-approve is `autoApproveAgy` in config",
+    );
     return;
   }
 

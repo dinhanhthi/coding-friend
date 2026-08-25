@@ -34,6 +34,7 @@ import {
   writeCodexAgentLimits,
   writeCodexMemoryMcpConfig,
 } from "../lib/codex-config.js";
+import { isAgyPluginInstalled } from "../lib/agy-config.js";
 import { isOmpAgentInstalled } from "../lib/omp-config.js";
 import {
   hasShellCompletion,
@@ -1375,6 +1376,10 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
     initOmpCommand(opts);
     return;
   }
+  if (host === "agy") {
+    initAgyCommand();
+    return;
+  }
 
   _stepIndex = 0;
   console.log();
@@ -1658,6 +1663,50 @@ function initCodexCommand(opts: InitOptions): void {
   log.dim("Restart Codex CLI or start a new session to use Coding Friend.");
 }
 
+function initAgyCommand(): void {
+  _stepIndex = 0;
+  console.log();
+  printBanner("✨ Coding Friend Antigravity Setup (beta) ✨");
+  console.log();
+
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  const docsDir = getDocsDir(globalCfg, localCfg);
+
+  ensureDocsFolders(docsDir, [
+    "plans",
+    "memory",
+    "research",
+    "sessions",
+    "reviews",
+    "warm",
+  ]);
+
+  if (!existsSync(localConfigPath())) {
+    writeJson(localConfigPath(), {});
+  }
+
+  const agentsMdPath = join(process.cwd(), "AGENTS.md");
+  if (!existsSync(agentsMdPath)) {
+    writeFileSync(agentsMdPath, renderAgyAgentsMd(), "utf8");
+    log.success("Created AGENTS.md.");
+  } else {
+    log.dim("AGENTS.md already exists; left unchanged.");
+  }
+
+  if (!isAgyPluginInstalled()) {
+    log.warn(
+      "Antigravity plugin is not installed. Run: cf install --agent agy",
+    );
+  }
+
+  console.log();
+  log.congrats("Antigravity setup complete!");
+  log.dim(
+    "Restart Antigravity or start a new `agy` session to use Coding Friend.",
+  );
+}
+
 function initOmpCommand(_opts: InitOptions): void {
   _stepIndex = 0;
   console.log();
@@ -1689,10 +1738,34 @@ function initOmpCommand(_opts: InitOptions): void {
   log.dim("Restart omp or start a new session to use Coding Friend.");
 }
 
-function renderCodexAgentsMd(): string {
+const AGENTS_MD_SKILLS = [
+  "cf-ask",
+  "cf-plan",
+  "cf-later-do",
+  "cf-review",
+  "cf-review-out",
+  "cf-review-in",
+  "cf-commit",
+  "cf-design",
+  "cf-ship",
+  "cf-fix",
+  "cf-optimize",
+  "cf-scan",
+  "cf-remember",
+  "cf-learn",
+  "cf-teach",
+  "cf-research",
+  "cf-session",
+  "cf-warm",
+  "cf-checkpoint",
+  "cf-checkpoint-from",
+  "cf-help",
+];
+
+function renderAgentsMd(intro: string, skillPrefix: string): string {
   return `# Coding Friend
 
-Use Coding Friend skills with Codex's $skill syntax.
+${intro}
 
 ## Rules
 
@@ -1703,8 +1776,22 @@ Use Coding Friend skills with Codex's $skill syntax.
 
 ## Skills
 
-$cf-ask, $cf-plan, $cf-later-do, $cf-review, $cf-review-out, $cf-review-in, $cf-commit, $cf-design, $cf-ship, $cf-fix, $cf-optimize, $cf-scan, $cf-remember, $cf-learn, $cf-teach, $cf-research, $cf-session, $cf-warm, $cf-checkpoint, $cf-checkpoint-from, $cf-help
+${AGENTS_MD_SKILLS.map((name) => `${skillPrefix}${name}`).join(", ")}
 `;
+}
+
+function renderCodexAgentsMd(): string {
+  return renderAgentsMd(
+    "Use Coding Friend skills with Codex's $skill syntax.",
+    "$",
+  );
+}
+
+function renderAgyAgentsMd(): string {
+  return renderAgentsMd(
+    "Use Coding Friend skills with Antigravity slash commands (`/cf-*`).",
+    "/",
+  );
 }
 
 function ensureGitignoreEntry(entry: string): void {

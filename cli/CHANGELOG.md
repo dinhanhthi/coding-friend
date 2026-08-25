@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## Unreleased
+
+- Add `--agent agy` / `--agy` (Google Antigravity, beta) to install/uninstall/enable/disable/init/update/permission/status; memory MCP registered into the plugin's `mcp_config.json`
+
 ## v1.39.1 (2026-08-24)
 
 - Fix `cf update --agent codex` crashing with `not configured as a Git marketplace` when the Codex marketplace is registered as a local dev source; it now skips the git upgrade and points to the manual `/plugins` reinstall (or warns if the plugin is not installed yet) [#4867407](https://github.com/dinhanhthi/coding-friend/commit/4867407)

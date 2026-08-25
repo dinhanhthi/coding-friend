@@ -1,8 +1,18 @@
 import { existsSync } from "fs";
 import { run, commandExists } from "../lib/exec.js";
-import { checkCodexVersion, checkOmpVersion } from "../lib/host.js";
+import {
+  checkAgyVersion,
+  checkCodexVersion,
+  checkOmpVersion,
+} from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
-import { devStatePath } from "../lib/paths.js";
+import { agyPluginDir, devStatePath } from "../lib/paths.js";
+import {
+  deployAgyPlugin,
+  resolveAgyPluginSource,
+  setAgyPluginEnabled,
+  validateAgyPlugin,
+} from "../lib/agy-config.js";
 import {
   deployCodexAgents,
   findCodexAgentSourceDir,
@@ -33,6 +43,9 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     return;
   } else if (host === "omp") {
     await installOmpCommand(opts);
+    return;
+  } else if (host === "agy") {
+    await installAgyCommand();
     return;
   }
 
@@ -260,4 +273,57 @@ async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
   log.success("Installed for omp (beta).");
   log.dim("Skills inherit from ~/.claude — no extra skill install needed.");
   log.dim("Restart omp (or start a new session) to pick up agents and MCP.");
+}
+
+const AGY_INSTALL_URL = "https://antigravity.google/";
+
+async function installAgyCommand(): Promise<void> {
+  printBanner("✨ Coding Friend Antigravity Install (beta) ✨");
+  console.log();
+
+  if (!commandExists("agy")) {
+    log.error(`agy CLI not found. Install it first: ${AGY_INSTALL_URL}`);
+    process.exit(1);
+    return;
+  }
+
+  const version = checkAgyVersion();
+  if (!version.ok) {
+    log.error(
+      `agy CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires agy CLI >= ${version.min}. Install or upgrade: ${AGY_INSTALL_URL}`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  try {
+    const source = resolveAgyPluginSource();
+    log.step(`Installing Antigravity plugin (${source.kind} source)...`);
+    const { files } = deployAgyPlugin(source.path);
+    log.success(`Deployed ${files} Antigravity plugin file(s).`);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    log.error(detail);
+    process.exit(1);
+    return;
+  }
+
+  registerMemoryMcp("agy");
+  setAgyPluginEnabled(true);
+
+  const validation = validateAgyPlugin(agyPluginDir());
+  if (validation.stdout.trim()) {
+    console.log(validation.stdout.trimEnd());
+  }
+  if (validation.status !== 0) {
+    log.warn(
+      "agy plugin validate reported issues. Plugin files are still installed.",
+    );
+  }
+
+  console.log();
+  log.success("Installed for Antigravity (beta).");
+  log.dim(
+    "Restart Antigravity (or start a new `agy` session) to pick up the plugin.",
+  );
 }

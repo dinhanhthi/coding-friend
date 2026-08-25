@@ -22,11 +22,20 @@ vi.mock("../../lib/omp-config.js", () => ({
   setOmpAgentEnabled: vi.fn(),
 }));
 
+vi.mock("../../lib/agy-config.js", () => ({
+  isAgyPluginEnabled: vi.fn(),
+  setAgyPluginEnabled: vi.fn(),
+}));
+
 import { isPluginDisabled, setPluginEnabled } from "../../lib/plugin-state.js";
 import {
   isCodexPluginDisabled,
   setCodexPluginEnabled,
 } from "../../lib/codex-config.js";
+import {
+  isAgyPluginEnabled,
+  setAgyPluginEnabled,
+} from "../../lib/agy-config.js";
 import { setOmpAgentEnabled } from "../../lib/omp-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { enableCommand } from "../enable.js";
@@ -38,6 +47,8 @@ const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockIsCodexPluginDisabled = vi.mocked(isCodexPluginDisabled);
 const mockSetCodexPluginEnabled = vi.mocked(setCodexPluginEnabled);
 const mockSetOmpAgentEnabled = vi.mocked(setOmpAgentEnabled);
+const mockIsAgyPluginEnabled = vi.mocked(isAgyPluginEnabled);
+const mockSetAgyPluginEnabled = vi.mocked(setAgyPluginEnabled);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -47,6 +58,7 @@ beforeEach(() => {
   mockIsPluginDisabled.mockReturnValue(true); // disabled by default for enable tests
   mockIsCodexPluginDisabled.mockReturnValue(true);
   mockSetOmpAgentEnabled.mockReturnValue(true);
+  mockIsAgyPluginEnabled.mockReturnValue(false);
 });
 
 describe("enableCommand", () => {
@@ -149,5 +161,28 @@ describe("enableCommand", () => {
     const output = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(output).toContain("Coding Friend enabled for omp at");
     expect(output).not.toContain("already enabled");
+  });
+
+  it("enables Antigravity plugin without resolving Claude scope", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+
+    await enableCommand({ agent: "agy" });
+
+    expect(mockSetAgyPluginEnabled).toHaveBeenCalledWith(true);
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockSetPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetOmpAgentEnabled).not.toHaveBeenCalled();
+  });
+
+  it("logs info instead of success when Antigravity is already enabled", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockIsAgyPluginEnabled.mockReturnValue(true);
+
+    await enableCommand({ agent: "agy" });
+
+    expect(mockSetAgyPluginEnabled).not.toHaveBeenCalled();
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("already enabled");
   });
 });
