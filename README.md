@@ -78,7 +78,7 @@ Details: https://cf.dinhanhthi.com/#features
 
 Auto-invoked: cf-tdd, cf-sys-debug, cf-verification
 
-https://cf.dinhanhthi.com/#skills
+https://cf.dinhanhthi.com/#features
 
 ## Agents
 

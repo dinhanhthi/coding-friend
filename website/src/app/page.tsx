@@ -65,24 +65,26 @@ export default function Home() {
           />
         </article>
       </main>
-      <footer className="border-border bg-nav fixed inset-x-0 bottom-0 z-50 h-14 border-t">
-        <div className="text-text-muted mx-auto flex h-full max-w-3xl items-center gap-x-4 px-4 text-sm sm:px-6">
-          <span>
-            Made by{" "}
+      <footer className="border-border bg-nav fixed inset-x-0 bottom-0 z-50 border-t">
+        <div className="text-text-muted mx-auto flex flex-col sm:flex-row h-full max-w-3xl gap-1 sm:gap-x-2 px-4 py-3 text-sm w-full justify-center items-center">
+          <span className="text-center whitespace-nowrap">
+            💝 Made by{" "}
             <FooterLink href="https://dinhanhthi.com">Anh-Thi Dinh</FooterLink>
           </span>
-          <span aria-hidden="true">•</span>
-          <FooterLink href="https://github.com/dinhanhthi/coding-friend">
-            GitHub
-          </FooterLink>
-          <span aria-hidden="true">•</span>
-          <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
-            npm
-          </FooterLink>
-          <span aria-hidden="true">•</span>
-          <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
-            Changelog
-          </FooterLink>
+          <span className="hidden sm:block" aria-hidden="true">•</span>
+          <div className="flex items-center gap-x-2">
+            <FooterLink href="https://github.com/dinhanhthi/coding-friend">
+              GitHub
+            </FooterLink>
+            <span aria-hidden="true">•</span>
+            <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
+              npm
+            </FooterLink>
+            <span aria-hidden="true">•</span>
+            <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+              Changelog
+            </FooterLink>
+          </div>
         </div>
       </footer>
     </>

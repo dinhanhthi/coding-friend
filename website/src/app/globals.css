@@ -196,3 +196,13 @@ a > code {
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
 }
+
+li > .code-block-wrapper > pre {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+li > img {
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
