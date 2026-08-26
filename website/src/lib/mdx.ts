@@ -1,3 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
+import GithubSlugger from "github-slugger";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import rehypeSlug from "rehype-slug";
 import { visit } from "unist-util-visit";
 
 /**
@@ -85,3 +91,38 @@ export function rehypeHighlightCfKeywords() {
     });
   };
 }
+
+export const INDEX_PATH = path.join(process.cwd(), "src/content/index.md");
+
+export function readIndexMd(): string {
+  return fs.readFileSync(INDEX_PATH, "utf8");
+}
+
+export function getSections(source: string): { id: string; text: string }[] {
+  const withoutFences = source.replace(/```[\s\S]*?```/g, "");
+  const slugger = new GithubSlugger();
+  const sections: { id: string; text: string }[] = [];
+
+  for (const match of withoutFences.matchAll(/^## (.+)$/gm)) {
+    let text = (match[1] ?? "").trim();
+    if (!text || text.startsWith("#")) continue;
+    text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    sections.push({ id: slugger.slug(text), text });
+  }
+
+  return sections;
+}
+
+export const mdxOptions = {
+  mdxOptions: {
+    format: "md" as const,
+    remarkPlugins: [remarkGfm],
+    rehypePlugins: [
+      rehypeHighlight,
+      rehypeCodeHljs,
+      rehypeHighlightCfKeywords,
+      rehypeSlug,
+    ],
+  },
+  blockJS: false,
+};
