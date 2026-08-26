@@ -74,6 +74,8 @@ git show <hash> --stat
 
 **Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
+**Only edit `plugin/CHANGELOG.md` and `cli/CHANGELOG.md`.** `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json` and `plugin-antigravity/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
+
 These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
 
 ### Step B5: Ship (commit + push)
@@ -86,10 +88,16 @@ Proceed with the **standard cf-ship workflow** (verify → commit → push). Use
 
 After the commit is pushed, create git tags and push them to trigger CI/CD:
 
-**Tag patterns:**
+**Tag patterns — only these two are pushed by hand:**
 
 - Plugin: `v{version}` (e.g. `v0.15.0`) → GitHub Release
 - CLI: `cli-v{version}` (e.g. `cli-v1.24.0`) → npm publish + GitHub Release
+
+**Do NOT push a codex tag.** `codex-v{version}` is created by CI: `.github/workflows/release.yml` (trigger `v*`) calls `release-codex.yml` via `workflow_call`, which verifies the locked versions in `package.json`, `plugin/.claude-plugin/plugin.json`, and `plugin-codex/.codex-plugin/plugin.json`, then creates the `codex-v*` tag and release on the same commit. Pushing it manually races that workflow.
+
+**There is no agy tag or release pipeline.** `plugin-antigravity/` is generated and committed, but nothing tags or publishes it — no `agy-v*` tag has ever existed and no workflow watches for one. Do not invent one during a ship; if agy needs its own release, that is a separate task (a new `release-agy.yml`).
+
+**The repo may have more than one remote** (e.g. a contributor fork). Always name `origin` explicitly in tag pushes and confirm it points at the canonical repo first: `git remote get-url origin`.
 
 ```bash
 # Create tags (one per released package)
@@ -99,6 +107,15 @@ git tag <tag>
 # Order: 1. cli-v* (first)  2. v* (plugin — always last)
 git push origin <tag>
 ```
+
+**Verify the tag actually landed** — a push that prints success is not proof the release started:
+
+```bash
+git ls-remote --tags origin | grep -F "<tag>"        # tag present on origin?
+gh run list --workflow=release.yml --limit 3         # release workflow triggered?
+```
+
+If the tag is missing or no run appeared, report it — do NOT silently re-push or assume success.
 
 **IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually. When both CLI and plugin tags exist, **always push the plugin tag (`v*`) last** — the plugin GitHub Release workflow updates the marketplace cache, which must include the latest CLI version.
 
@@ -124,6 +141,8 @@ Check CI/CD status:
 - Changelog sections use today's date directly — NEVER use `(unpublished)`.
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
+- NEVER hand-edit generated artifacts: `plugin-codex/**` and `plugin-antigravity/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
+- Only `v*` and `cli-v*` are pushed by hand. `codex-v*` is created by CI; agy has no release pipeline.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
 ## After
