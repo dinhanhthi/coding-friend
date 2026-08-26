@@ -95,7 +95,7 @@ After the commit is pushed, create git tags and push them to trigger CI/CD:
 
 **Do NOT push a codex tag.** `codex-v{version}` is created by CI: `.github/workflows/release.yml` (trigger `v*`) calls `release-codex.yml` via `workflow_call`, which verifies the locked versions in `package.json`, `plugin/.claude-plugin/plugin.json`, and `plugin-codex/.codex-plugin/plugin.json`, then creates the `codex-v*` tag and release on the same commit. Pushing it manually races that workflow.
 
-**There is no agy tag or release pipeline.** `plugin-antigravity/` is generated and committed, but nothing tags or publishes it — no `agy-v*` tag has ever existed and no workflow watches for one. Do not invent one during a ship; if agy needs its own release, that is a separate task (a new `release-agy.yml`).
+**Do NOT push an agy tag either.** `agy-v{version}` is created the same way: `release.yml` also calls `release-agy.yml`, which verifies the locked versions in `package.json`, `plugin/.claude-plugin/plugin.json`, and `plugin-antigravity/plugin.json`, then creates the `agy-v*` tag and release. Pushing `v{version}` releases all three platforms (claude, codex, agy) from one commit.
 
 **The repo may have more than one remote** (e.g. a contributor fork). Always name `origin` explicitly in tag pushes and confirm it points at the canonical repo first: `git remote get-url origin`.
 
@@ -142,7 +142,7 @@ Check CI/CD status:
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
 - NEVER hand-edit generated artifacts: `plugin-codex/**` and `plugin-antigravity/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
-- Only `v*` and `cli-v*` are pushed by hand. `codex-v*` is created by CI; agy has no release pipeline.
+- Only `v*` and `cli-v*` are pushed by hand. `codex-v*` and `agy-v*` are created by CI from the `v*` tag — never push them yourself.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
 ## After

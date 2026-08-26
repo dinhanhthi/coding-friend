@@ -76,3 +76,13 @@ jobs:
       target_sha: ${{ needs.release.outputs.target_sha }}
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
+
+  release-agy:
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-agy.yml
+    with:
+      target_sha: ${{ needs.release.outputs.target_sha }}
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
