@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
 
@@ -55,9 +53,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-navy-900 text-slate-50 antialiased">
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

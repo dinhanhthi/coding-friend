@@ -1,12 +1,3 @@
-import Hero from "@/components/landing/Hero";
-import StatsSection from "@/components/landing/StatsSection";
-import EcosystemSection from "@/components/landing/EcosystemSection";
-import Features from "@/components/landing/Features";
-import Skills from "@/components/landing/Skills";
-import Agents from "@/components/landing/Agents";
-import HowItWorks from "@/components/landing/HowItWorks";
-import InstallSection from "@/components/landing/InstallSection";
-
 export default function Home() {
   const jsonLd = {
     "@context": "https://schema.org",
@@ -30,28 +21,12 @@ export default function Home() {
   };
 
   return (
-    <div className="overflow-x-hidden">
+    <main>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Hero has its own gradient bg */}
-      <Hero />
-      <div className="bg-navy-950/50">
-        <StatsSection />
-      </div>
-      <EcosystemSection />
-      <div className="bg-navy-950/50">
-        <Features />
-      </div>
-      <HowItWorks />
-      <div className="bg-navy-950/50">
-        <Skills />
-      </div>
-      <Agents />
-      <div className="bg-navy-950/50">
-        <InstallSection />
-      </div>
-    </div>
+      <h1>Coding Friend</h1>
+    </main>
   );
 }

@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_PLUGIN_VERSION: pluginMeta.version,
   },
+  async redirects() {
+    return [
+      { source: "/docs/:path*", destination: "/", permanent: true },
+      { source: "/docs", destination: "/", permanent: true },
+      { source: "/changelog", destination: "https://github.com/dinhanhthi/coding-friend/releases", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
