@@ -1,38 +1,38 @@
-# Làm việc với omp (local dev)
+# Working with omp (local dev)
 
-> Tài liệu tham khảo độc lập cho việc phát triển/​test Coding Friend trên **omp**
-> ([oh-my-pi](https://omp.sh/)). omp là host thứ ba (beta), **bridge mode** —
-> không có artifact `plugin-omp/` song song với `plugin-codex/`.
-> Host Codex: [codex-dev.md](codex-dev.md). Quy trình dev chung: [plugin-dev.md](plugin-dev.md).
+> Standalone reference for developing/testing Coding Friend on **omp**
+> ([oh-my-pi](https://omp.sh/)). omp is the third host (beta), **bridge mode** —
+> there is no `plugin-omp/` artifact alongside `plugin-codex/`.
+> Codex host: [codex-dev.md](codex-dev.md). Shared dev process: [plugin-dev.md](plugin-dev.md).
 
-**Cập nhật:** 2026-08-24 · omp CLI ≥ 0.1.0 · labelled **beta**.
+**Updated:** 2026-08-24 · omp CLI ≥ 0.1.0 · labelled **beta**.
 
 ---
 
 ## 1. Overview — bridge model
 
-omp **không** nhận Coding Friend như một Claude marketplace plugin. `cf install --agent omp` ghi file vào `~/.omp/` (hoặc `OMP_HOME`). Source canonical vẫn là `plugin/` (Claude-native).
+omp does **not** receive Coding Friend as a Claude marketplace plugin. `cf install --agent omp` writes files into `~/.omp/` (or `OMP_HOME`). The canonical source is still `plugin/` (Claude-native).
 
-| Lớp        | Cách omp nhận                                                                                             | Không làm gì                          |
-| ---------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Skills     | Inherit từ `~/.claude` (priority **80**; omp native = 100, Codex = 70)                                    | Không copy `plugin/skills/`           |
-| Agents     | Convert 12 file `plugin/agents/cf-*.md` lúc install → `~/.omp/agent/agents/cf-*.md` (flat, không đệ quy)  | **Không** inherit `~/.claude/agents/` |
-| Hooks      | [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) `spawnSync` `plugin/hooks/*.sh` với `CF_HOST=omp` | Không port bash → TS từng hook        |
-| MCP        | Ghi trực tiếp `~/.omp/agent/mcp.json` (không có `omp mcp add`)                                            | —                                     |
-| Statusline | Bỏ qua — omp có TUI riêng                                                                                 | `cf statusline` / `cf permission`     |
+| Layer      | How omp receives it                                                                                           | What it does not do                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Skills     | Inherit from `~/.claude` (priority **80**; omp native = 100, Codex = 70)                                      | Does not copy `plugin/skills/`        |
+| Agents     | Convert 12 `plugin/agents/cf-*.md` files at install → `~/.omp/agent/agents/cf-*.md` (flat, not recursive)     | Does **not** inherit `~/.claude/agents/` |
+| Hooks      | [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) `spawnSync`s `plugin/hooks/*.sh` with `CF_HOST=omp`   | Does not port each hook bash → TS     |
+| MCP        | Writes `~/.omp/agent/mcp.json` directly (no `omp mcp add`)                                                    | —                                     |
+| Statusline | Skipped — omp has its own TUI                                                                                 | `cf statusline` / `cf permission`     |
 
-**Path agent đúng (đã verify 2026-08-24):** `~/.omp/agent/agents/*.md` — discovery **non-recursive**. **Không** deploy vào `~/.omp/agents/coding-friend/` (sai parent **và** subdirectory không được scan). Helper `ompUserAgentsDir()` trong [`cli/src/lib/paths.ts`](../cli/src/lib/paths.ts) trỏ đúng chỗ; `ompCodingFriendAgentsDir()` là path cũ, **không dùng** lúc install.
+**Correct agent path (verified 2026-08-24):** `~/.omp/agent/agents/*.md` — discovery is **non-recursive**. Do **not** deploy into `~/.omp/agents/coding-friend/` (wrong parent **and** the subdirectory is not scanned). The `ompUserAgentsDir()` helper in [`cli/src/lib/paths.ts`](../cli/src/lib/paths.ts) points at the right place; `ompCodingFriendAgentsDir()` is the old path and is **not used** at install time.
 
-`systemPrompt` = **markdown body** sau frontmatter (`name` + `description` bắt buộc). Không nhét `systemPrompt` vào YAML. Converter: `convertClaudeAgentToOmp()` trong [`cli/src/lib/omp-config.ts`](../cli/src/lib/omp-config.ts).
+`systemPrompt` = the **markdown body** after frontmatter (`name` + `description` required). Do not put `systemPrompt` in the YAML. Converter: `convertClaudeAgentToOmp()` in [`cli/src/lib/omp-config.ts`](../cli/src/lib/omp-config.ts).
 
 ---
 
-## 2. Kiến trúc: source → shim → spawn
+## 2. Architecture: source → shim → spawn
 
 ```
-plugin/                ← source DUY NHẤT (Claude-native)
-├── skills/            ← omp inherit từ ~/.claude (priority 80)
-├── agents/cf-*.md     ← convert lúc install → ~/.omp/agent/agents/cf-*.md
+plugin/                ← ONLY source (Claude-native)
+├── skills/            ← omp inherits from ~/.claude (priority 80)
+├── agents/cf-*.md     ← convert at install → ~/.omp/agent/agents/cf-*.md
 └── hooks/*.sh         ← shared bash
        ▲
 plugin/omp/extension.ts  (pi.on → spawnSync, CF_HOST=omp)
@@ -40,11 +40,11 @@ plugin/omp/extension.ts  (pi.on → spawnSync, CF_HOST=omp)
 ~/.omp/agent/extensions/coding-friend.ts  (re-export shim)
 ```
 
-- Shim do `writeOmpExtensionEntry()` ghi: comment `// CODING_FRIEND_PLUGIN_ROOT=<abs>` rồi `export { default } from "<abs-to-plugin/omp/extension.ts>"`.
-- Factory `(pi: HookAPI) => void` đăng ký `pi.on(...)`; mỗi handler `spawnSync` bash/`node` với env `CF_HOST=omp`, `CODING_FRIEND_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT`.
-- `plugin/omp/` **không** nằm trong `.claude-plugin/marketplace.json` — không phải Claude plugin. Chi tiết runtime: [`plugin/omp/README.md`](../plugin/omp/README.md).
+- The shim is written by `writeOmpExtensionEntry()`: a `// CODING_FRIEND_PLUGIN_ROOT=<abs>` comment then `export { default } from "<abs-to-plugin/omp/extension.ts>"`.
+- The factory `(pi: HookAPI) => void` registers `pi.on(...)`; each handler `spawnSync`s bash/`node` with env `CF_HOST=omp`, `CODING_FRIEND_PLUGIN_ROOT`, `CLAUDE_PLUGIN_ROOT`.
+- `plugin/omp/` is **not** listed in `.claude-plugin/marketplace.json` — it is not a Claude plugin. Runtime details: [`plugin/omp/README.md`](../plugin/omp/README.md).
 
-Map event (đã đối chiếu docs omp compact events):
+Event map (checked against omp compact-event docs):
 
 | omp event                                                                                          | Claude hook   | Script                                                      |
 | -------------------------------------------------------------------------------------------------- | ------------- | ----------------------------------------------------------- |
@@ -58,56 +58,56 @@ Privacy/scout **fail closed** (missing script / spawn error → `{ block: true }
 
 ---
 
-## 3. Quy trình local dev cho omp
+## 3. Local-dev workflow for omp
 
-> `cf dev on/off/sync` **chỉ hỗ trợ Claude** ([`plugin-dev.md`](plugin-dev.md)). omp không có cache copy kiểu Codex — shim re-export path tuyệt đối tới `plugin/omp/extension.ts`. Hai host độc lập (`~/.claude` / `~/.codex` / `~/.omp`); `cf` CLI dùng chung. Codex: [codex-dev.md](codex-dev.md).
+> `cf dev on/off/sync` **only supports Claude** ([`plugin-dev.md`](plugin-dev.md)). omp has no Codex-style cache copy — the shim re-exports an absolute path to `plugin/omp/extension.ts`. The hosts are independent (`~/.claude` / `~/.codex` / `~/.omp`); the `cf` CLI is shared. Codex: [codex-dev.md](codex-dev.md).
 
-### A. Setup một lần
+### A. One-time setup
 
 ```bash
-cd cli && npm run build && cd ..          # 1. CLI local (cf đã npm link)
+cd cli && npm run build && cd ..          # 1. local CLI (cf already npm-linked)
 # omp CLI: https://omp.sh/  →  curl -fsSL https://omp.sh/install | sh
 cf install --agent omp                    # 2. agents + shim + memory MCP
 #    alias: cf install --omp
-cf init --agent omp                       # 3. mỗi project: .omp/mcp.json + .coding-friend/
-# restart omp / session mới
+cf init --agent omp                       # 3. per project: .omp/mcp.json + .coding-friend/
+# restart omp / start a new session
 ```
 
-`--project` / `--local` → project scope (`<cwd>/.omp/agents/cf-*.md`, `<cwd>/.omp/extensions/coding-friend.ts`). Default = user. Memory MCP **luôn** ghi `~/.omp/agent/mcp.json` (user).
+`--project` / `--local` → project scope (`<cwd>/.omp/agents/cf-*.md`, `<cwd>/.omp/extensions/coding-friend.ts`). Default = user. Memory MCP **always** writes `~/.omp/agent/mcp.json` (user).
 
-> Sandbox: `OMP_HOME=/tmp/cf-omp-dev` cho **mọi** lệnh `cf`/`omp` trong phiên (giống `CODEX_HOME` ở [codex-dev.md](codex-dev.md)).
+> Sandbox: `OMP_HOME=/tmp/cf-omp-dev` for **every** `cf`/`omp` command in the session (same idea as `CODEX_HOME` in [codex-dev.md](codex-dev.md)).
 
-### B. Inner loop (sau mỗi lần sửa)
+### B. Inner loop (after each edit)
 
-- Sửa `cli/src/**` → `cd cli && npm run build` (hoặc `npm run watch`).
-- Sửa `plugin/omp/extension.ts` → **restart omp** (shim trỏ file repo nếu install từ cwd).
-- Sửa `plugin/hooks/*.sh` → lần spawn kế tiếp đã thấy (không rebuild).
-- Sửa `plugin/agents/*.md` → `cf update --agent omp` (hoặc `cf install --agent omp`) để convert lại.
-- Sửa `plugin/skills/**` → omp inherit Claude; inner loop Claude (`cf dev sync`) nếu inheritance đọc plugin cache (xem §5 R2).
+- Edit `cli/src/**` → `cd cli && npm run build` (or `npm run watch`).
+- Edit `plugin/omp/extension.ts` → **restart omp** (the shim points at the repo file if installed from cwd).
+- Edit `plugin/hooks/*.sh` → the next spawn already sees it (no rebuild).
+- Edit `plugin/agents/*.md` → `cf update --agent omp` (or `cf install --agent omp`) to reconvert.
+- Edit `plugin/skills/**` → omp inherits Claude; use the Claude inner loop (`cf dev sync`) if inheritance reads the plugin cache (see §5 R2).
 
-### C. Tắt / dọn dẹp
+### C. Disable / clean up
 
 ```bash
-cf disable --agent omp     # task.disabledAgents trong config.yml — file còn
-cf enable --agent omp      # gỡ tên cf-* khỏi disabledAgents
-cf uninstall --agent omp   # xóa agents + shim; MCP chỉ khi user scope
+cf disable --agent omp     # task.disabledAgents in config.yml — files remain
+cf enable --agent omp      # remove cf-* names from disabledAgents
+cf uninstall --agent omp   # delete agents + shim; MCP only when user scope
 ```
 
-Claude/Codex **không** bị đụng. Không có marketplace omp để `remove`.
+Claude/Codex are **not** touched. There is no omp marketplace to `remove`.
 
 ---
 
-## 4. File `cf install --agent omp` ghi (user scope)
+## 4. Files written by `cf install --agent omp` (user scope)
 
-| Path                                                           | Nội dung                                                                                                                                                                                                                                             |
+| Path                                                           | Contents                                                                                                                                                                                                                                             |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `~/.omp/agent/agents/cf-*.md`                                  | 12 agent đã convert: `cf-explorer`, `cf-implementer`, `cf-planner`, `cf-reviewer`, `cf-reviewer-plan`, `cf-reviewer-quality`, `cf-reviewer-reducer`, `cf-reviewer-rules`, `cf-reviewer-security`, `cf-reviewer-tests`, `cf-writer`, `cf-writer-deep` |
+| `~/.omp/agent/agents/cf-*.md`                                  | 12 converted agents: `cf-explorer`, `cf-implementer`, `cf-planner`, `cf-reviewer`, `cf-reviewer-plan`, `cf-reviewer-quality`, `cf-reviewer-reducer`, `cf-reviewer-rules`, `cf-reviewer-security`, `cf-reviewer-tests`, `cf-writer`, `cf-writer-deep` |
 | `~/.omp/agent/extensions/coding-friend.ts`                     | Re-export shim → [`plugin/omp/extension.ts`](../plugin/omp/extension.ts)                                                                                                                                                                             |
 | `~/.omp/agent/mcp.json` → `mcpServers["coding-friend-memory"]` | `{ command: "npx", args: ["-y", "coding-friend-cli", "mcp-serve"] }`                                                                                                                                                                                 |
 
-`cf disable --agent omp` **không** xóa các file trên; chỉ upsert `task.disabledAgents` (block `# coding-friend-managed`) trong `~/.omp/agent/config.yml` (user) hoặc `<cwd>/.omp/config.yml` (project).
+`cf disable --agent omp` does **not** delete the files above; it only upserts `task.disabledAgents` (block `# coding-friend-managed`) in `~/.omp/agent/config.yml` (user) or `<cwd>/.omp/config.yml` (project).
 
-`cf update` **không** `--agent` → update mọi host đang cài (Claude → Codex → omp). `--agent omp` / `--omp` = chỉ omp.
+`cf update` with **no** `--agent` updates every installed host (Claude → Codex → omp). `--agent omp` / `--omp` = omp only.
 
 ---
 
@@ -117,47 +117,47 @@ Claude/Codex **không** bị đụng. Không có marketplace omp để `remove`.
 
 | Artifact                      | User (`--user` / default)                                                | Project (`--project` / `--local`)            |
 | ----------------------------- | ------------------------------------------------------------------------ | -------------------------------------------- |
-| `cf-*.md` agents              | Xóa file khớp `^cf-.*\.md$` trong `~/.omp/agent/agents/` (file khác giữ) | Tương tự `<cwd>/.omp/agents/`                |
-| `coding-friend.ts` shim       | Xóa `~/.omp/agent/extensions/coding-friend.ts`                           | Xóa `<cwd>/.omp/extensions/coding-friend.ts` |
-| `coding-friend-memory` MCP    | `removeOmpMcpEntry` trên `~/.omp/agent/mcp.json`                         | **Không** unregister                         |
-| `coding-friend-learn` MCP     | Unregister nếu từng được `cf config`/`cf learn` ghi                      | **Không** unregister                         |
-| `~/.claude/**`, `~/.codex/**` | Không đụng                                                               | Không đụng                                   |
-| `config.yml` `disabledAgents` | Không revert (vô hại sau khi file agent đã xóa)                          | Không revert                                 |
+| `cf-*.md` agents              | Delete files matching `^cf-.*\.md$` in `~/.omp/agent/agents/` (keep others) | Same for `<cwd>/.omp/agents/`             |
+| `coding-friend.ts` shim       | Delete `~/.omp/agent/extensions/coding-friend.ts`                        | Delete `<cwd>/.omp/extensions/coding-friend.ts` |
+| `coding-friend-memory` MCP    | `removeOmpMcpEntry` on `~/.omp/agent/mcp.json`                           | Does **not** unregister                      |
+| `coding-friend-learn` MCP     | Unregister if it was ever written by `cf config`/`cf learn`              | Does **not** unregister                      |
+| `~/.claude/**`, `~/.codex/**` | Untouched                                                                | Untouched                                    |
+| `config.yml` `disabledAgents` | Not reverted (harmless after the agent files are gone)                   | Not reverted                                 |
 
-Không có gì để gỡ → `"Nothing to uninstall"`. Restart omp sau uninstall.
+Nothing to remove → `"Nothing to uninstall"`. Restart omp after uninstall.
 
 ---
 
 ## 6. Known gotchas
 
-1. **Agent frontmatter / `systemPrompt` (R1)** — omp `parseAgent` lấy `systemPrompt` từ **body**, không phải YAML. Converter chỉ giữ `model` ∈ `{haiku, sonnet, opus}`. Thiếu `name`/`description` → skip file đó lúc deploy.
-2. **Skills inheritance path (R2, verified 2026-08-24, omp 18.0.3)** — Không có `omp skills list` (chỉ flag launch `--skills=<glob>` / `--no-skills`). omp đọc **cả hai** bề mặt Claude: user/project `.claude/skills/*/SKILL.md` (provider `claude`, priority **80**) **và** marketplace cache `~/.claude/plugins/cache/` qua `installed_plugins.json` (provider `claude-plugins`, priority **70**). Native omp (`~/.omp/agent/skills`, `.omp/skills`) vẫn priority **100**. Skill `cf-*` của Coding Friend sống trong plugin cache Claude — **không** có trong `~/.claude/skills/` trừ khi user copy. User không cài Claude Code (cache trống) **không** thấy `cf-*`. Fallback (chưa ship): copy vào `~/.omp/agent/skills/` lúc install.
-3. **TS extension API (R3)** — `pi.on` theo docs compact events chính thức: `session_before_compact`, `session.compacting`, `session_compact`; `session_compacting` chỉ là alias rẻ. Shim types: [`plugin/omp/pi-types.d.ts`](../plugin/omp/pi-types.d.ts). Nếu omp từ chối re-export `.ts` (R8), fallback: copy `extension.ts` vào `extensions/`.
-4. **`.omp/` dir probe false-positive trên Claude (R4)** — [`plugin/hooks/session-init.sh`](../plugin/hooks/session-init.sh) khi `CF_HOST` trống: `CODEX_SESSION_ID` > `OMP_SESSION_ID` > `$PWD/.omp` > `claude`. `cf init --agent omp` tạo `.omp/` → session Claude trong cùng repo có thể bị detect `CF_HOST=omp`. Extension **luôn** set `CF_HOST=omp` khi spawn; Claude hooks.json thì không. Mitigation: export `CF_HOST=claude` khi chạy Claude trên repo mixed-host.
-5. **`--omp` không được có Commander default trên `--agent` (đã fix)** — `.option("--agent <agent>", ...)` **không** default `"claude"`. Nếu default, `cf install --omp` thành `{ agent: "claude", omp: true }` → `resolveHost()` conflict. `cf update` còn `flagsForHostResolve()` để strip leftover `agent: "claude"` khi argv không có `--agent`. Default host khi không flag: `"claude"` trong [`cli/src/lib/host.ts`](../cli/src/lib/host.ts), không phải Commander.
-6. **Sai path `~/.omp/agents/coding-friend/`** — omp không scan. Luôn flat `~/.omp/agent/agents/cf-*.md`.
-7. **`cf permission --agent omp`** — no-op: omp tự quản approval-mode (`omp config`).
-8. **Không `OMP_SESSION_ID` chính thức** — probe dùng env nếu có, rồi `.omp/` cwd. Đừng dựa vào session id.
+1. **Agent frontmatter / `systemPrompt` (R1)** — omp `parseAgent` takes `systemPrompt` from the **body**, not the YAML. The converter only keeps `model` ∈ `{haiku, sonnet, opus}`. Missing `name`/`description` → that file is skipped at deploy time.
+2. **Skills inheritance path (R2, verified 2026-08-24, omp 18.0.3)** — There is no `omp skills list` (only launch flags `--skills=<glob>` / `--no-skills`). omp reads **both** Claude surfaces: user/project `.claude/skills/*/SKILL.md` (provider `claude`, priority **80**) **and** the marketplace cache `~/.claude/plugins/cache/` via `installed_plugins.json` (provider `claude-plugins`, priority **70**). Native omp (`~/.omp/agent/skills`, `.omp/skills`) still has priority **100**. Coding Friend `cf-*` skills live in the Claude plugin cache — they are **not** in `~/.claude/skills/` unless the user copies them. A user who has not installed Claude Code (empty cache) **will not** see `cf-*`. Fallback (not shipped): copy into `~/.omp/agent/skills/` at install time.
+3. **TS extension API (R3)** — `pi.on` follows the official compact-event docs: `session_before_compact`, `session.compacting`, `session_compact`; `session_compacting` is only a cheap alias. Shim types: [`plugin/omp/pi-types.d.ts`](../plugin/omp/pi-types.d.ts). If omp rejects a `.ts` re-export (R8), fallback: copy `extension.ts` into `extensions/`.
+4. **`.omp/` dir probe false-positive on Claude (R4)** — [`plugin/hooks/session-init.sh`](../plugin/hooks/session-init.sh) when `CF_HOST` is empty: `CODEX_SESSION_ID` > `OMP_SESSION_ID` > `$PWD/.omp` > `claude`. `cf init --agent omp` creates `.omp/` → a Claude session in the same repo can be detected as `CF_HOST=omp`. The extension **always** sets `CF_HOST=omp` when spawning; Claude hooks.json does not. Mitigation: export `CF_HOST=claude` when running Claude on a mixed-host repo.
+5. **`--omp` must not have a Commander default on `--agent` (fixed)** — `.option("--agent <agent>", ...)` must **not** default to `"claude"`. If it did, `cf install --omp` became `{ agent: "claude", omp: true }` → `resolveHost()` conflict. `cf update` still has `flagsForHostResolve()` to strip a leftover `agent: "claude"` when argv has no `--agent`. The default host when there is no flag is `"claude"` in [`cli/src/lib/host.ts`](../cli/src/lib/host.ts), not Commander.
+6. **Wrong path `~/.omp/agents/coding-friend/`** — omp does not scan it. Always use the flat `~/.omp/agent/agents/cf-*.md`.
+7. **`cf permission --agent omp`** — no-op: omp manages approval-mode itself (`omp config`).
+8. **No official `OMP_SESSION_ID`** — the probe uses the env if present, then `.omp/` in cwd. Do not rely on a session id.
 
 ---
 
 ## 7. Troubleshooting
 
-| Triệu chứng                               | Kiểm tra                                                                      | Sửa                                                                                                           |
+| Symptom                                   | Check                                                                         | Fix                                                                                                           |
 | ----------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `omp CLI not found`                       | `command -v omp`                                                              | [omp.sh](https://omp.sh/) / `curl -fsSL https://omp.sh/install \| sh`                                         |
-| 0 agent sau install                       | `ls ~/.omp/agent/agents/cf-*.md`; **không** `ls ~/.omp/agents/coding-friend/` | Chạy từ repo coding-friend hoặc đã `cf install` Claude (source = `plugin/agents` hoặc plugin cache)           |
-| Agent không hiện trong omp                | Discovery non-recursive; `cf disable --agent omp` có thể đã disable           | `ls` đúng dir; `cf enable --agent omp`; restart omp                                                           |
-| Skills `cf-*` biến mất                    | R2: Claude chưa cài / cache trống                                             | Cài plugin Claude; `cf dev sync` nếu dev; ghi nhận path omp thực sự đọc                                       |
-| Hook không chạy                           | Shim + `CODING_FRIEND_PLUGIN_ROOT` trỏ file thật                              | `cat ~/.omp/agent/extensions/coding-friend.ts`; `test -f` path `from "..."`                                   |
-| Privacy block mọi tool                    | Fail closed khi script thiếu / spawn lỗi                                      | `CODING_FRIEND_PLUGIN_ROOT` phải chứa `hooks/privacy-block.sh`                                                |
-| Session Claude bị `HOST: omp`             | R4: repo có `.omp/`                                                           | `CF_HOST=claude` khi launch Claude; hoặc đừng `cf init --agent omp` trên repo Claude-only                     |
-| `--omp` báo conflict với `--agent claude` | Commander default cũ                                                          | `--agent` không được `.option(..., "claude")`; dùng `--omp` **hoặc** `--agent omp`                            |
-| MCP không connect                         | `jq . ~/.omp/agent/mcp.json`                                                  | Phải có `coding-friend-memory`; `npx -y coding-friend-cli mcp-serve`; uninstall **project** không gỡ MCP user |
-| `cf update` không đụng omp                | `isOmpAgentInstalled`                                                         | Cần ít nhất một `cf-*.md` user hoặc project                                                                   |
-| Sửa hook/extension không thấy             | omp không copy cache như Codex                                                | Restart omp; agents thì `cf update --agent omp`                                                               |
+| 0 agents after install                    | `ls ~/.omp/agent/agents/cf-*.md`; **not** `ls ~/.omp/agents/coding-friend/`   | Run from the coding-friend repo or after a Claude `cf install` (source = `plugin/agents` or the plugin cache) |
+| Agent not showing in omp                  | Discovery is non-recursive; `cf disable --agent omp` may have disabled them   | `ls` the correct dir; `cf enable --agent omp`; restart omp                                                    |
+| `cf-*` skills disappear                   | R2: Claude not installed / cache empty                                        | Install the Claude plugin; `cf dev sync` if in dev; note the path omp actually reads                          |
+| Hook not running                          | Shim + `CODING_FRIEND_PLUGIN_ROOT` must point at a real file                  | `cat ~/.omp/agent/extensions/coding-friend.ts`; `test -f` the path in `from "..."`                            |
+| Privacy blocks every tool                 | Fail closed when the script is missing / spawn fails                          | `CODING_FRIEND_PLUGIN_ROOT` must contain `hooks/privacy-block.sh`                                             |
+| Claude session shows `HOST: omp`          | R4: the repo has `.omp/`                                                      | `CF_HOST=claude` when launching Claude; or do not `cf init --agent omp` on a Claude-only repo                 |
+| `--omp` reports a conflict with `--agent claude` | Old Commander default                                                  | `--agent` must not use `.option(..., "claude")`; use `--omp` **or** `--agent omp`                             |
+| MCP does not connect                      | `jq . ~/.omp/agent/mcp.json`                                                  | Must have `coding-friend-memory`; `npx -y coding-friend-cli mcp-serve`; a **project** uninstall does not remove the user MCP |
+| `cf update` does not touch omp            | `isOmpAgentInstalled`                                                         | Need at least one user or project `cf-*.md`                                                                   |
+| Hook/extension edit not visible           | omp does not cache-copy like Codex                                            | Restart omp; for agents, `cf update --agent omp`                                                              |
 
-Log session-init: `${TMPDIR:-/tmp}/coding-friend-session-init.log` — path omp in `detected CF_HOST=omp`.
+session-init log: `${TMPDIR:-/tmp}/coding-friend-session-init.log` — the omp path prints `detected CF_HOST=omp`.
 
 ```bash
 # sanity user-scope
@@ -168,11 +168,11 @@ jq '.mcpServers["coding-friend-memory"]' ~/.omp/agent/mcp.json
 
 ---
 
-## 8. Tham khảo
+## 8. References
 
-- [plugin-dev.md](plugin-dev.md) — quy trình dev/release chung (Claude + Codex)
-- [codex-dev.md](codex-dev.md) — host Codex (artifact `plugin-codex/`, khác bridge omp)
-- [architecture.md](architecture.md) — tổng quan plugin vs CLI
+- [plugin-dev.md](plugin-dev.md) — shared dev/release process (Claude + Codex)
+- [codex-dev.md](codex-dev.md) — Codex host (`plugin-codex/` artifact, different from the omp bridge)
+- [architecture.md](architecture.md) — plugin vs CLI overview
 - [`plugin/omp/README.md`](../plugin/omp/README.md) — bridge runtime + event map
 - [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) — `pi.on` → `spawnSync`
 - Host-aware CLI: [`cli/src/lib/host.ts`](../cli/src/lib/host.ts), [`cli/src/lib/omp-config.ts`](../cli/src/lib/omp-config.ts), [`cli/src/lib/paths.ts`](../cli/src/lib/paths.ts)

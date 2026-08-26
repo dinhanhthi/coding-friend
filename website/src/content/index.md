@@ -2,7 +2,7 @@
 
 _A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer._
 
-> 💡 If you have problems with CF, use `/cf-help` to get help.
+> 💡 If you have problems with CF, use `/cf-help` to get help or ask in the [GitHub Discussions](https://github.com/dinhanhthi/coding-friend/discussions).
 
 Coding Friend adds skills, agents, and hooks to the tools you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learning notes in `~/.coding-friend/learn/`. A memory system runs underneath, along with useful hooks and mechanisms to protect your privacy and security.
 
