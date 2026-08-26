@@ -15,6 +15,19 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {
     root: __dirname,
+    rules: {
+      "*.md": {
+        loaders: [resolve(__dirname, "loaders/raw-string-loader.cjs")],
+        as: "*.js",
+      },
+    },
+  },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.md$/,
+      type: "asset/source",
+    });
+    return config;
   },
   env: {
     NEXT_PUBLIC_PLUGIN_VERSION: pluginMeta.version,

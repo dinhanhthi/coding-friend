@@ -1,8 +1,8 @@
-# Coding Friend
+# Coding Friend or `CF`
 
 _A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer._
 
-Coding Friend adds skills, agents, and hooks to the agent you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learn notes in `~/.coding-friend/learn/`. One install covers Claude Code; pass `--agent` for Codex, omp, or Antigravity.
+Coding Friend adds skills, agents, and hooks to the tools you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learning notes in `~/.coding-friend/learn/`. A memory system runs underneath, along with useful hooks and mechanisms to protect your privacy and security.
 
 ```text
 ┌─────┐   ┌──────────────┐   ┌────────────────────────┐   ┌───────────┐
@@ -20,35 +20,28 @@ Coding Friend adds skills, agents, and hooks to the agent you already use. You g
                              └─────────────────────────────────────────┘
 ```
 
-## Supported agents
+> 🚫 **Without CF**: You can only rely on the harness and default settings of the tool you’re using, or sometimes no harness at all. Even small tool changes can affect your usual workflow without you noticing..
+>
+> ✅ **With CF**: Besides the harness for the tool you’re using, CF suggests best-practice standards for daily workflows—from planning and code reviews to bug fixes, research, and optimization. CF also includes a memory system that helps agents avoid spending too many tokens on topics they’ve worked on before. You can also build a learning hub for readers as you work with CF; the system will help summarize everything and turn it into a polished website.
+
+## 🤝 Supported Tools
 
 Coding Friend installs on the host you already use.
 
-| Host        | Support    | Notes                                                    |
-| ----------- | ---------- | -------------------------------------------------------- |
-| Claude Code | 100%       | Default.                                                 |
-| omp         | 95%        | Beta. Skills come from the Claude plugin cache.          |
-| Codex CLI   | 77%        | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
-| Antigravity | 73%        | Beta. Requires agy >= 1.1.0. No memory auto-capture.     |
-| Cursor      | 100% / 77% | Runs Claude Code / Codex underneath.                     |
-| Grok CLI    | 100% / 77% | Same as Cursor.                                          |
+| Host | Support | Command | Notes |
+| --- | --- | --- | --- |
+| [Claude Code](https://claude.com/product/claude-code) | 100% | `cf install` | Default. |
+| [oh-my-pi](https://github.com/can1357/oh-my-pi) | 95% | `cf install --agent omp` | Beta. Skills come from the Claude plugin cache. |
+| [Codex](https://openai.com/codex/) | 77% | `cf install --agent codex` | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
+| [Antigravity](https://antigravity.google/) | 73% | `cf install --agent agy` | Beta. Requires agy >= 1.1.0. No memory auto-capture. |
+| [Cursor](https://cursor.com/) | 100% | comes with Claude | Runs Claude Code / Codex underneath. |
+| [Grok Build](https://x.ai/build) | 100% | comes with Claude | Same as Cursor. |
 
 % = share of the 11 host-agnostic features (skills, auto-invoked skills, agents, hooks, memory MCP, memory auto-capture, auto-approve, learn host/MCP, cross-agent review, custom guides, CLI lifecycle). Partial = ½.
 
-Claude only: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
+**Claude only**: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
 
-Install for your host:
-
-| Host        | Command                         |
-| ----------- | ------------------------------- |
-| Claude Code | `cf install`                    |
-| Codex CLI   | `cf install --agent codex`      |
-| omp         | `cf install --agent omp`        |
-| Antigravity | `cf install --agent agy`        |
-| Cursor      | install for the underlying host |
-| Grok CLI    | install for the underlying host |
-
-## Install
+## 📦 Install
 
 You need Node 20+ and a supported host.
 
@@ -57,17 +50,18 @@ npm i -g coding-friend-cli
 cf install            # Claude Code (default)  |  --agent codex | omp | agy
 cf init               # per project: docs/, .coding-friend/config.json
 cf update             # later: pull the newest plugin
+
+# Need help?
+cf help
 ```
 
-Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy`.
+Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy`. Then use `/cf-help` inside your agent to ask anything about CF.
 
-Then type `/cf-help` inside your agent.
+After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
-## Features
+## ✨ Features
 
-Workflows, memory, and hooks you opt into after install.
-
-### Workflow
+### 🔁 Workflow
 
 You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and `cf-sys-debug`.
 
@@ -91,37 +85,85 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
                             └──────────────────────────┘
 ```
 
-### Memory
+Simple to remember for a daily workflow (read more in [Skills](#skills)):
 
-Search falls through three local tiers: SQLite (FTS5 + vectors), then MiniSearch, then grep. Markdown in `docs/memory/` is the source of truth.
+- Plan with `/cf-plan` (and then resume at anytime with `/cf-plan-resume`) or just need an advice with `/cf-advise` (no code writing);
+- Fix bugs with `/cf-fix`;
+- Let something later do with `/cf-later-do` or create a checkpoint and resume with `/cf-checkpoint` and `/cf-checkpoint-from`;
+- Review code with `/cf-review` then commit with `/cf-commit`;
+- Ask about codebase with `/cf-ask` or scan the project with `/cf-scan`;
+- Research about some topics with `/cf-research`;
+- Learn what you did with `/cf-learn` or ask LLM to teach you with `/cf-teach` and then host the learning notes with `cf learn host`;
+- Ship with `/cf-ship`;
+- Optimize codes with `/cf-optimize` and more.
+- To quickly remind after a long vacation, use `/cf-warm`.
+
+Or you can add your additional custom guide for any CF builtin skills with `cf guide create cf-<skill-name>`.
+
+### 🧠 Memory System
+
+Every AI session starts from scratch — repeating mistakes, forgetting decisions. CF Memory gives your AI persistent, searchable memory across sessions with 3-tier graceful degradation. The markdown files in `docs/memory/` are the source of truth.
+
+You can use CF Memory with other LLM services via its MCP server, just run `cf mcp` to see.
+
+To configure in `config.json`, run `cf config` and follow the instructions.
 
 ```text
-┌─────────────────────────┐
-│ SQLite (FTS5 + vectors) │
-└─────────────────────────┘
-             ↓
-┌─────────────────────────┐
-│ MiniSearch              │
-└─────────────────────────┘
-             ↓
-┌─────────────────────────┐
-│ grep                    │
-└─────────────────────────┘
+                       ┌──────────────────┐
+                       │ Claude Code      │
+                       │ Session          │
+                       └────────┬─────────┘
+                                │
+                       ┌────────▼─────────┐
+                       │ MCP Server       │
+                       │ stdio            │
+                       └───┬────┬────┬────┘
+                           │    │    │
+                  direct   │    │    │   direct
+          ┌────────────────┘    │    └────────────────┐
+          │                     │ HTTP/UDS            │
+┌─────────▼──────────┐  ┌───────▼──────────┐  ┌───────▼──────────┐
+│ TIER 1  SQLite     │  │ Daemon           │  │ TIER 3  Grep     │
+│ FTS5 + vectors     │  │ Hono + UDS       │  │ file scan        │
+└───┬───────────┬────┘  └──┬────┬─────┬────┘  └────┬──────────┬──┘
+    │           │ fallback │    │     │ fallback   │          │
+    │           └──────────┘    │     └────────────┘          │
+    │                 watch     │                             │
+    │                  ┌────────▼─────────┐                   │
+    │                  │ TIER 2           │                   │
+    │                  │ MiniSearch       │                   │
+    │                  │ BM25 + fuzzy     │                   │
+    │                  └────────┬─────────┘                   │
+    │                           │                             │
+    └───────────────────────┐   │   ┌─────────────────────────┘
+                            │   │   │
+                     ┌──────▼───▼───▼──────┐
+                     │ Markdown Files      │
+                     │ docs/memory/*.md    │
+                     └─────────────────────┘
 ```
 
-### Auto-approve
+### ✅ Auto-approve
 
-Claude classifies in three steps. Codex, agy, and omp use deterministic rules only.
+Smart permission gate that auto-approves safe tool calls, working-dir edits, and uses an LLM classifier for everything else.
 
 ```text
-┌───────┐   ┌─────────────┐   ┌──────────────────────────────┐
-│ rules │ → │ working-dir │ → │ LLM classifier (Claude only) │
-└───────┘   └─────────────┘   └──────────────────────────────┘
+┌──────────────┐   ┌─────────────┐   ┌──────────────────────────────┐
+│ Rule-Based   │ → │ Working-Dir │ → │ LLM Classifier (Claude only) │
+└──────────────┘   └─────────────┘   └──────────────────────────────┘ 
 ```
 
-### Security
+- **Rule-Based Gate**: Instant pattern matching — read-only tools auto-approved, destructive commands blocked.
+- **Working-Dir Edits**: File edits (Write/Edit) inside your project directory are auto-approved.
+- **LLM Classifier**: A LLM that is used to classify the action into a safe or unsafe category. This is only available for Claude.
 
-Three layers: isolation, extraction, then alert. Fetched content is data, never instructions.
+> **Not 100% safe**: You can still get unsafe actions if you use the wrong command or the LLM classifier makes a mistake.
+
+Run `cf config` to configure the auto-approve hook.
+
+### 🛡️ Security
+
+Layered prompt injection defense to protect your workflow. Three layers: isolation, extraction, then alert. Fetched content is data, never instructions.
 
 ```text
 ┌────────────┐   ┌────────────┐   ┌───────┐
@@ -129,7 +171,7 @@ Three layers: isolation, extraction, then alert. Fetched content is data, never 
 └────────────┘   └────────────┘   └───────┘
 ```
 
-### Learn & teach
+### 📚 Learn & teach
 
 Extract notes with `/cf-learn` or `/cf-teach`. Notes default to `~/.coding-friend/learn/`. Set `learn.outputDir` if you want a different folder. Host them with `cf learn host`, or share them with `cf mcp`.
 
@@ -141,9 +183,11 @@ Extract notes with `/cf-learn` or `/cf-teach`. Notes default to `~/.coding-frien
 └───────────┘   └──────────────────────────┘   └───────────────┘
 ```
 
+Run `cf learn host` and you will get a website like this:
+
 ![Learn host](/cf-host.png)
 
-### Research
+### 🔍 Research
 
 Run `/cf-research` for web search with parallel subagents. Output lands in `docs/research/`.
 
@@ -153,7 +197,7 @@ Run `/cf-research` for web search with parallel subagents. Output lands in `docs
 └──────────────┘   └────────────────────┘   └────────────────┘
 ```
 
-### Cross-agent review
+### 👀 Cross-agent review
 
 Pass `--codex`, `--gemini`, `--cursor`, or `--grok` on `/cf-review` to run a second review in parallel, then merge. Or export with `/cf-review-out` and collect with `/cf-review-in`.
 
@@ -169,7 +213,7 @@ Pass `--codex`, `--gemini`, `--cursor`, or `--grok` on `/cf-review` to run a sec
 └───────────────┘   └────────┘   └──────────────┘
 ```
 
-### Sessions & checkpoints
+### 💾 Sessions & checkpoints
 
 Claude only for `/cf-session`. `/cf-checkpoint` writes a note; `/cf-checkpoint-from` loads it in a new chat.
 
@@ -183,17 +227,17 @@ Claude only for `/cf-session`. `/cf-checkpoint` writes a note; `/cf-checkpoint-f
 └─────────────────┘     └──────────────────────┘
 ```
 
-### Statusline
+### 📟 Statusline
 
 Claude only. Run `cf statusline` to install the renderer.
 
 ![Statusline](/statusline.png)
 
-## Skills
+## 🛠️ Skills
 
 Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation appears.
 
-### Plan & build
+### 🗺️ Plan & build
 
 - `/cf-plan` — Brainstorm and write a phased implementation plan. Use when you want to build or implement something. Flags: `--auto`, `--fast`, `--hard`.
 - `/cf-plan-resume` — Resume a saved plan from where execution last stopped. Use when you want to continue a plan under `docs/plans/`.
@@ -201,14 +245,14 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 - `/cf-design` — Scan existing UI patterns, design new UI, or modify UI so it stays consistent. Use when a component or page should match the rest of the project.
 - `/cf-optimize` — Baseline, analyze, optimize, measure, compare. Use when something is slow or you want a measured performance change.
 
-### Fix & debug
+### 🐛 Fix & debug
 
 - `/cf-fix` — Quick bug-fix workflow: reproduce, state a hypothesis, then fix. Use when something is broken, throws, or fails a test.
 - `cf-sys-debug` — Four-phase debugging: root cause, hypothesis tests, regression-guarded fix, bug doc. Auto-invoked for hard, recurring, or unclear bugs.
 - `cf-tdd` — Direct implementation by default. Auto-invoked when production code is about to be written. Pass `--add-tests` for RED → GREEN → REFACTOR.
 - `cf-verification` — Run tests and show evidence before claiming work is done. Auto-invoked after code-changing work.
 
-### Review & ship
+### 🚀 Review & ship
 
 - `/cf-review` — Multi-layer code review in a separate subagent. Use when you want changes checked before merge.
 - `/cf-review-out` — Write a self-contained review prompt for an external AI. Use when you want a second opinion you will paste elsewhere.
@@ -216,7 +260,7 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 - `/cf-commit` — Conventional commit from the diff. Use when you want to save the current work.
 - `/cf-ship` — Verify, commit, push, and open a PR. Use when a branch is ready. Supports `--dry-run`.
 
-### Knowledge
+### 💡 Knowledge
 
 - `/cf-ask` — Focused Q&A about the codebase, saved to `docs/memory`. Use when you need to know how something works.
 - `/cf-scan` — Scan the project and bootstrap memory (architecture, conventions, stack). Use on a new repo or when you want to refresh project understanding.
@@ -225,7 +269,7 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 - `/cf-teach` — Conversational story of what happened and why. Use when you want a deep-dive, not a short note.
 - `/cf-research` — In-depth research with web search, saved under `docs/research/`. Use before you build, not instead of planning.
 
-### Context & session
+### 📌 Context & session
 
 - `/cf-session` — Save the current session to `docs/sessions/`. Claude only. Use when you will continue on another machine.
 - `/cf-checkpoint` — Snapshot this conversation (decisions, breaking changes, next steps) to resume later. Use before you start a fresh chat.
@@ -233,7 +277,7 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 - `/cf-warm` — Summarize git history after you were away. Use when you need to catch up on the project.
 - `/cf-later-do` — Work through deferred items in `docs/later/`. Use when you want to clear that backlog.
 
-### Help
+### ❓ Help
 
 - `/cf-help` — Answers questions about Coding Friend (skills, agents, setup). Slash command, and auto-invoked when you ask about the toolkit itself.
 
@@ -289,7 +333,7 @@ Tests:        [pass/fail count, regression test location]
 Status: DONE
 ```
 
-## Agents
+## 🧭 Agents
 
 Skills dispatch agents as subagents that run in their own context.
 
@@ -343,7 +387,7 @@ Decisions — reuse the omp host branch; no new flag.
 [CF-RESULT: success]
 ```
 
-## Config
+## ⚙️ Config
 
 You have two config files. Global is `~/.coding-friend/config.json`. Project is `.coding-friend/config.json` — local overrides global at the same top-level keys.
 
@@ -391,9 +435,3 @@ Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configura
 - `autoStart` — boolean. Start the memory daemon when the MCP server connects.
 
 Extend a built-in skill with `.coding-friend/skills/<name>-custom/SKILL.md`, and list gitignore-style paths in `.coding-friend/ignore` so scout-block skips them.
-
-## Changelog
-
-Releases and changelogs live on GitHub: [github.com/dinhanhthi/coding-friend/releases](https://github.com/dinhanhthi/coding-friend/releases).
-
-`cf update` upgrades the CLI and plugin.

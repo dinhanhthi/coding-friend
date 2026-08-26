@@ -23,7 +23,7 @@ Read more on the [website](https://cf.dinhanhthi.com) or in [website/src/content
 | Cursor / Grok CLI / z.ai | | install for the underlying host (Claude Code or Codex) |
 
 % = share of the 11 host-agnostic features; partial = ½. Claude only (not counted): statusline, `/cf-session`, task tracking.
-In Codex, skills are `$cf-*`. See https://cf.dinhanhthi.com/#supported-agents
+In Codex, skills are `$cf-*`. See https://cf.dinhanhthi.com/#supported-ai-coding-tools
 
 ## Quick start
 
