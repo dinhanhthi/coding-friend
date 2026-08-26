@@ -74,21 +74,15 @@ git show <hash> --stat
 
 **Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
-### Step B5: Sync website docs
+These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
 
-If source files changed, update corresponding website docs:
-
-- `plugin/skills/{name}/SKILL.md` → `website/src/content/docs/skills/{name}.mdx`
-- `cli/src/commands/{name}.ts` → `website/src/content/docs/cli/cf-{name}.mdx`
-- `plugin/hooks/*.sh` → `website/src/content/docs/reference/hooks.mdx`
-
-### Step B6: Ship (commit + push)
+### Step B5: Ship (commit + push)
 
 Proceed with the **standard cf-ship workflow** (verify → commit → push). Use `bump <packages> to <versions>` as the commit hint.
 
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
-### Step B7: Create tags and push
+### Step B6: Create tags and push
 
 After the commit is pushed, create git tags and push them to trigger CI/CD:
 
@@ -108,7 +102,7 @@ git push origin <tag>
 
 **IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually. When both CLI and plugin tags exist, **always push the plugin tag (`v*`) last** — the plugin GitHub Release workflow updates the marketplace cache, which must include the latest CLI version.
 
-### Step B8: Print summary
+### Step B7: Print summary
 
 ```
 Released:
@@ -128,6 +122,7 @@ Check CI/CD status:
 - ALWAYS keep `plugin/.claude-plugin/plugin.json` + root `package.json` in sync.
 - NEVER add duplicate changelog entries. One feature = one bullet. Entries must reflect net changes vs the previous released version — do NOT list intermediate additions/removals that cancel each other out within the same version.
 - Changelog sections use today's date directly — NEVER use `(unpublished)`.
+- Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
