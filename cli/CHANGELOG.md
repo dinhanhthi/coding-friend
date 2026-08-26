@@ -5,15 +5,15 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
-## Unreleased
+## v1.40.0 (2026-08-26)
 
-- Add `--agent agy` / `--agy` (Google Antigravity, beta) to install/uninstall/enable/disable/init/update/permission/status; memory MCP registered into the plugin's `mcp_config.json`
-- `cf init --agent agy` runs an Antigravity wizard (docsDir, language, gitignore, learn MCP, `autoApprove`, `privacyBlock`) instead of only writing `AGENTS.md`
-- Recognize `privacyBlock` and `scoutBlock` in the config schema (`cf config` can set `privacyBlock`)
-- Antigravity auto-approve uses the same `autoApprove` key as Claude (no `autoApproveAgy`)
-- `cf init --agent agy` always creates docs subfolders; enabling `autoApprove` warns that the key is shared with Claude and runs the dangerous-rules audit
-- `cf init --agent codex` runs a Codex wizard (docsDir, language, gitignore, learn settings, `autoApprove`, `privacyBlock`) then the existing Codex project files
-- Codex auto-approve uses the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed
+- Add `--agent agy` / `--agy` (Google Antigravity, beta) to install/uninstall/enable/disable/init/update/permission/status; memory MCP registered into the plugin's `mcp_config.json` [#87022c6f](https://github.com/dinhanhthi/coding-friend/commit/87022c6f)
+- `cf init --agent agy` runs an Antigravity wizard (docsDir, language, gitignore, learn MCP, `autoApprove`, `privacyBlock`) instead of only writing `AGENTS.md` [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
+- Recognize `privacyBlock` and `scoutBlock` in the config schema (`cf config` can set `privacyBlock`) [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
+- Antigravity auto-approve uses the same `autoApprove` key as Claude (no `autoApproveAgy`) [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
+- `cf init --agent agy` always creates docs subfolders; enabling `autoApprove` warns that the key is shared with Claude and runs the dangerous-rules audit [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
+- `cf init --agent codex` runs a Codex wizard (docsDir, language, gitignore, learn settings, `autoApprove`, `privacyBlock`) then the existing Codex project files [#87869527](https://github.com/dinhanhthi/coding-friend/commit/87869527)
+- Codex auto-approve uses the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed [#87869527](https://github.com/dinhanhthi/coding-friend/commit/87869527)
 
 ## v1.39.1 (2026-08-24)
 

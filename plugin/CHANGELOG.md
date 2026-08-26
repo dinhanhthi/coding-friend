@@ -2,15 +2,15 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
-## Unreleased
+## v0.42.0 (2026-08-26)
 
-- Antigravity auto-approve hook reads `autoApprove` (same key as Claude); the classifier stays deterministic (no LLM)
-- Codex auto-approve hook reads the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed
+- Add Google Antigravity (agy) as a fourth beta host: generated `plugin-antigravity/` artifact (AGY hooks.json, `rules/AGENTS.md`, agents with `model: flash|pro`), `.agy.*` hook adapters (privacy-block, scout-block, auto-approve, session-init, rules-reminder, session-log) [#a1f7d2e2](https://github.com/dinhanhthi/coding-friend/commit/a1f7d2e2) [#5ebfff25](https://github.com/dinhanhthi/coding-friend/commit/5ebfff25)
+- Antigravity auto-approve hook reads `autoApprove` (same key as Claude); the classifier stays deterministic (no LLM) [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
+- Codex auto-approve hook reads the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed [#87869527](https://github.com/dinhanhthi/coding-friend/commit/87869527)
 
 ## v0.41.0 (2026-08-24)
 
 - Add omp (oh-my-pi) as a third first-class Coding Friend host alongside Claude Code and Codex, via bridge mode: skills inherited from `~/.claude`, 12 cf-\* agents deployed to `~/.omp/agent/agents/`, shared bash hooks proxied through `plugin/omp/extension.ts` with `CF_HOST=omp`, memory MCP registered by writing `~/.omp/agent/mcp.json` [#02719a4b](https://github.com/dinhanhthi/coding-friend/commit/02719a4b)
-- Add Google Antigravity (agy) as a fourth beta host: generated `plugin-antigravity/` artifact (AGY hooks.json, `rules/AGENTS.md`, agents with `model: flash|pro`), `.agy.*` hook adapters (privacy-block, scout-block, auto-approve, session-init, rules-reminder, session-log)
 
 ## v0.40.3 (2026-08-21)
 
