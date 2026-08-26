@@ -61,7 +61,11 @@ export default function Navbar({ sections }: { sections: Section[] }) {
   return (
     <header className="border-border bg-nav sticky top-0 z-50 h-14 border-b">
       <div className="flex h-full items-center justify-between px-4 sm:px-6">
-        <Link href="/" aria-label="Coding Friend home" className="shrink-0 flex items-center gap-2">
+        <Link
+          href="/"
+          aria-label="Coding Friend home"
+          className="flex shrink-0 items-center gap-2"
+        >
           <Image src="/logo.svg" width={24} height={24} alt="" unoptimized />
           <span className="text-heading font-semibold">Coding Friend</span>
         </Link>

@@ -14,13 +14,13 @@ Read more on the [website](https://cf.dinhanhthi.com) or in [website/src/content
 
 ## Supported agents
 
-| Host | Support | Install |
-| --- | --- | --- |
-| Claude Code | **100%** | `cf install` |
-| omp | **95%** | `cf install --agent omp` |
-| Codex CLI | **77%** | `cf install --agent codex` |
-| Antigravity | **73%** | `cf install --agent agy` |
-| Cursor / Grok CLI / z.ai | | install for the underlying host (Claude Code or Codex) |
+| Host                     | Support  | Install                                                |
+| ------------------------ | -------- | ------------------------------------------------------ |
+| Claude Code              | **100%** | `cf install`                                           |
+| omp                      | **95%**  | `cf install --agent omp`                               |
+| Codex CLI                | **77%**  | `cf install --agent codex`                             |
+| Antigravity              | **73%**  | `cf install --agent agy`                               |
+| Cursor / Grok CLI / z.ai |          | install for the underlying host (Claude Code or Codex) |
 
 % = share of the 11 host-agnostic features; partial = ½. Claude only (not counted): statusline, `/cf-session`, task tracking.
 In Codex, skills are `$cf-*`. See https://cf.dinhanhthi.com/#supported-ai-coding-tools

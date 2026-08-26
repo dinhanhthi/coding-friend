@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 
 type TocItem = { id: string; text: string; level: 2 | 3 };
-type TocNode = { id: string; text: string; children: { id: string; text: string }[] };
+type TocNode = {
+  id: string;
+  text: string;
+  children: { id: string; text: string }[];
+};
 
 const HEADER_OFFSET_PX = 88;
 

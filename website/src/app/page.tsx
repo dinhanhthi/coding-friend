@@ -10,13 +10,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 const footerLinkClass =
   "hover:text-heading underline-offset-4 transition-colors duration-150 hover:underline";
 
-function FooterLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: ReactNode;
-}) {
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
       href={href}

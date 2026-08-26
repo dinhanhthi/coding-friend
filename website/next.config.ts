@@ -36,7 +36,11 @@ const nextConfig: NextConfig = {
     return [
       { source: "/docs/:path*", destination: "/", permanent: true },
       { source: "/docs", destination: "/", permanent: true },
-      { source: "/changelog", destination: "https://github.com/dinhanhthi/coding-friend/releases", permanent: true },
+      {
+        source: "/changelog",
+        destination: "https://github.com/dinhanhthi/coding-friend/releases",
+        permanent: true,
+      },
     ];
   },
 };

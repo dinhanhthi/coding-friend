@@ -28,14 +28,14 @@ Coding Friend adds skills, agents, and hooks to the tools you already use. You g
 
 Coding Friend installs on the host you already use.
 
-| Host | Support | Command | Notes |
-| --- | --- | --- | --- |
-| [Claude Code](https://claude.com/product/claude-code) | 100% | `cf install` | Default. |
-| [oh-my-pi](https://github.com/can1357/oh-my-pi) | 95% | `cf install --agent omp` | Beta. Skills come from the Claude plugin cache. |
-| [Codex](https://openai.com/codex/) | 77% | `cf install --agent codex` | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
-| [Antigravity](https://antigravity.google/) | 73% | `cf install --agent agy` | Beta. Requires agy >= 1.1.0. No memory auto-capture. |
-| [Cursor](https://cursor.com/) | 100% | comes with Claude | Runs Claude Code / Codex underneath. |
-| [Grok Build](https://x.ai/build) | 100% | comes with Claude | Same as Cursor. |
+| Host                                                  | Support | Command                    | Notes                                                    |
+| ----------------------------------------------------- | ------- | -------------------------- | -------------------------------------------------------- |
+| [Claude Code](https://claude.com/product/claude-code) | 100%    | `cf install`               | Default.                                                 |
+| [oh-my-pi](https://github.com/can1357/oh-my-pi)       | 95%     | `cf install --agent omp`   | Beta. Skills come from the Claude plugin cache.          |
+| [Codex](https://openai.com/codex/)                    | 77%     | `cf install --agent codex` | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
+| [Antigravity](https://antigravity.google/)            | 73%     | `cf install --agent agy`   | Beta. Requires agy >= 1.1.0. No memory auto-capture.     |
+| [Cursor](https://cursor.com/)                         | 100%    | comes with Claude          | Runs Claude Code / Codex underneath.                     |
+| [Grok Build](https://x.ai/build)                      | 100%    | comes with Claude          | Same as Cursor.                                          |
 
 % = share of the 11 host-agnostic features (skills, auto-invoked skills, agents, hooks, memory MCP, memory auto-capture, auto-approve, learn host/MCP, cross-agent review, custom guides, CLI lifecycle). Partial = ½.
 
@@ -53,6 +53,9 @@ cf update             # later: pull the newest plugin
 
 # Need help?
 cf help
+
+# Get Started in any project
+cf init
 ```
 
 Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy`. Then use `/cf-help` inside your agent to ask anything about CF.
@@ -150,7 +153,7 @@ Smart permission gate that auto-approves safe tool calls, working-dir edits, and
 ```text
 ┌──────────────┐   ┌─────────────┐   ┌──────────────────────────────┐
 │ Rule-Based   │ → │ Working-Dir │ → │ LLM Classifier (Claude only) │
-└──────────────┘   └─────────────┘   └──────────────────────────────┘ 
+└──────────────┘   └─────────────┘   └──────────────────────────────┘
 ```
 
 - **Rule-Based Gate**: Instant pattern matching — read-only tools auto-approved, destructive commands blocked.
