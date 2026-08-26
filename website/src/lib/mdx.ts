@@ -92,6 +92,19 @@ export function rehypeHighlightCfKeywords() {
   };
 }
 
+/**
+ * Treat raw HTML in markdown as literal text so `{docsDir}` / `<host>`
+ * (and similar) render escaped instead of being dropped as unknown tags.
+ * `format: "md"` already disables MDX expressions; CommonMark still parses HTML.
+ */
+export function remarkHtmlAsText() {
+  return (tree: any) => {
+    visit(tree, "html", (node: any) => {
+      node.type = "text";
+    });
+  };
+}
+
 export const INDEX_PATH = path.join(process.cwd(), "src/content/index.md");
 
 export function readIndexMd(): string {
@@ -116,7 +129,7 @@ export function getSections(source: string): { id: string; text: string }[] {
 export const mdxOptions = {
   mdxOptions: {
     format: "md" as const,
-    remarkPlugins: [remarkGfm],
+    remarkPlugins: [remarkGfm, remarkHtmlAsText],
     rehypePlugins: [
       rehypeHighlight,
       rehypeCodeHljs,
