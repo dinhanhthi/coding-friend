@@ -1,34 +1,36 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
-const siteTitle = "Coding Friend — Claude Code Plugin";
-const siteDescription =
-  "A lean toolkit for systematic debugging, smart commits, code review, and knowledge capture — with optional TDD support. As a Claude Code plugin.";
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
-    default: siteTitle,
-    template: "%s | Coding Friend",
+    default: SITE_TITLE,
+    template: `%s | ${SITE_TITLE}`,
   },
-  description: siteDescription,
+  description: SITE_DESCRIPTION,
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
     type: "website",
-    siteName: "Coding Friend",
-    title: siteTitle,
-    description: siteDescription,
+    siteName: SITE_TITLE,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: siteTitle,
-    description: siteDescription,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   alternates: {
     canonical: "https://cf.dinhanhthi.com",
@@ -41,24 +43,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" data-scroll-behavior="smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="bg-navy-900 text-slate-50 antialiased">
-        <Header />
-        <main>{children}</main>
-        <Footer />
-      </body>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
+      <body className="bg-bg text-text font-sans antialiased">{children}</body>
     </html>
   );
 }

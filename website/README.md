@@ -1,16 +1,11 @@
-# Coding Friend Website
+# Coding Friend website
 
-Documentation and landing page for the [Coding Friend](https://github.com/user/coding-friend) Claude Code plugin.
+One-page site for [Coding Friend](https://github.com/dinhanhthi/coding-friend), rendered from `src/content/index.md`.
 
-Built with Next.js 16, Tailwind CSS 4, and MDX.
-
-## Local Development
+## Local development
 
 ```bash
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
 ```
 
@@ -23,43 +18,19 @@ npm run build
 npm start
 ```
 
-The build compiles all pages and runs [Pagefind](https://pagefind.app/) to index the documentation for full-text search.
-
-## Project Structure
+## Structure
 
 ```
 src/
-  app/            # Next.js App Router pages
-    docs/         # Documentation route ([[...slug]])
-    changelog/    # Changelog page
+  app/                          # Next.js App Router (`layout`, `page`)
   components/
-    landing/      # Landing page sections (Hero, Features, HowItWorks, etc.)
-    docs/         # Docs layout, sidebar, search, navigation
-    layout/       # Header, Footer
-    ui/           # Shared UI primitives (Container, CopyButton)
-  content/
-    docs/         # MDX documentation files
-  lib/            # Utilities (docs loader, sidebar config)
-public/
-  logo.svg        # Site logo
-  _pagefind/      # Generated search index (after build)
+    Navbar.tsx                  # H2 anchors (hamburger below md)
+    CodeBlock.tsx               # fenced code + copy
+    MdxLink.tsx                 # in-page / external links
+  lib/mdx.ts                    # load index.md, slug H2s, MDX options
+  content/index.md              # all page copy
 ```
 
-## Documentation
+Edit content only in `src/content/index.md`. H2 headings become navbar items. ASCII diagram conventions: [docs/DESIGN.md](../docs/DESIGN.md).
 
-Docs are authored as `.mdx` files in `src/content/docs/`. Each file uses YAML frontmatter:
-
-```mdx
----
-title: Page Title
-description: Short description for meta tags.
----
-
-Content here...
-```
-
-Sidebar order and grouping are configured in `src/lib/sidebar.ts`.
-
-## Deployment
-
-Optimized for Vercel. Push to deploy.
+No Pagefind. No docs route — `/docs/*` redirects to `/`.

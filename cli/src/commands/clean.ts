@@ -72,7 +72,10 @@ const STATUS_RE = /^status:\s*([^\s#]+)/m;
 // Read the `status:` frontmatter value of a plan entry. A plan is either a
 // folder (`<slug>/README.md`) or a legacy single file (`<slug>.md`). Returns
 // the lowercased status, or null when missing/unreadable/not a plan file.
-export function readPlanStatus(entryPath: string, isDirectory: boolean): string | null {
+export function readPlanStatus(
+  entryPath: string,
+  isDirectory: boolean,
+): string | null {
   let file: string;
   if (isDirectory) {
     file = join(entryPath, "README.md");

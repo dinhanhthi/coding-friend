@@ -4,7 +4,7 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
   return (
     <footer
       className={`dark:bg-navy-950 fixed right-0 bottom-0 z-40 border-t border-slate-200 bg-slate-50 dark:border-[#a0a0a01c] ${
-        isHome ? "left-0" : "left-0 md:left-64 lg:left-[300px]"
+        isHome ? "left-0" : "left-0 md:left-64 lg:left-75"
       }`}
     >
       <div className="flex flex-row flex-wrap items-center gap-1 px-6 py-3 text-center text-xs text-slate-600 dark:text-slate-400">

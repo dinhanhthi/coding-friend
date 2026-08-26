@@ -34,6 +34,7 @@
     "@types/node": "^25.5.0",
     "concurrently": "^9.2.1",
     "prettier": "^3.8.1",
-    "prettier-plugin-sh": "^0.17.0"
+    "prettier-plugin-sh": "^0.17.0",
+    "raw-loader": "^4.0.2"
   }
 }

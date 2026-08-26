@@ -2,29 +2,35 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: #23262e;
+  --color-nav: #1c1e25;
+  --color-surface: #2a2d36;
+  --color-surface-2: #31353f;
+  --color-code-bg: #1d2027;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #e4e5ea;
+  --color-text-muted: #9a9ca6;
+  --color-heading: #f5f5f7;
+  --color-link: #8ab4f8;
+  --color-accent: #a78bfa;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 
-  /* Dark scale — subtle cool depth, not flat neutral */
-  --color-navy-800: #2f3038;
-  --color-navy-900: #282a31;
-  --color-navy-950: #21222a;
-
-  /* Violet accent */
-  --color-accent: #7c3aed;
-  --color-accent-light: #a78bfa;
-  --color-accent-dark: #6d28d9;
-
-  --color-surface: #282a31;
-  --color-surface-secondary: #2f3038;
-  --color-border: rgba(160, 160, 160, 0.12);
-  --color-text: #f5f5f7;
-  --color-text-muted: #9898a4;
-  --color-link: #58adfb;
+@theme inline {
+  --font-sans:
+    var(--font-inter), -apple-system, "system-ui", "Segoe UI", system-ui,
+    sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 5rem;
+  scroll-padding-top: 4.5rem;
+  scroll-padding-bottom: 4.5rem;
+}
+
+h2,
+h3 {
+  scroll-margin-top: 4.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -56,17 +62,6 @@ html {
   background: transparent;
 }
 
-/* Subtle grain noise overlay — breaks digital flatness */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 /* Hide scrollbar utility */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
@@ -85,7 +80,7 @@ pre {
 }
 
 .hljs-cf-keyword {
-  color: var(--color-accent-light);
+  color: var(--color-accent);
   font-weight: 500;
 }
 
@@ -123,9 +118,10 @@ pre {
   font-weight: 500;
 }
 
-:not(pre) > code {
+.prose :not(pre) > code {
   background: none !important;
-  border: 1px solid #a0a0a06b;
+  border: 1px solid var(--color-border);
+  color: var(--color-accent);
   font-size: 85%;
   padding: 2px 5px !important;
   border-radius: 4px;
@@ -155,73 +151,58 @@ a > code {
   margin-bottom: 0.35em;
 }
 
-/* No-wrap for first column in prose tables */
-.prose
-  :where(table td:first-child):not(
-    :where([class~="not-prose"], [class~="not-prose"] *)
-  ) {
-  white-space: nowrap;
+.prose h2 {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.375rem;
+  margin-top: 3.5rem;
 }
 
-/* Scroll-triggered animations */
-.animate-on-scroll {
-  opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity 0.6s ease-out,
-    transform 0.6s ease-out;
+.prose blockquote {
+  font-size: inherit;
+  font-style: normal;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
-.animate-on-scroll.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+.prose blockquote p::before,
+.prose blockquote p::after {
+  content: none;
 }
 
-.animate-on-scroll.delay-1 {
-  transition-delay: 0.1s;
-}
-.animate-on-scroll.delay-2 {
-  transition-delay: 0.2s;
-}
-.animate-on-scroll.delay-3 {
-  transition-delay: 0.3s;
-}
-.animate-on-scroll.delay-4 {
-  transition-delay: 0.4s;
-}
-.animate-on-scroll.delay-5 {
-  transition-delay: 0.5s;
+.prose pre {
+  background: var(--color-code-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow-x: auto;
 }
 
-/* Zigzag connector animated dashes */
-.zigzag-dash-animate {
-  animation: dash-flow 1.2s linear infinite;
+.prose pre code {
+  font-size: 0.875rem;
 }
 
-@keyframes dash-flow {
-  to {
-    stroke-dashoffset: -26;
+@media (max-width: 640px) {
+  .prose pre code {
+    font-size: 0.8125rem;
   }
 }
 
-/* Slower dash flow for auto-invoked / agent connections */
-.auto-dash-animate {
-  animation: dash-flow-slow 2s linear infinite;
+.prose table {
+  display: block;
+  overflow-x: auto;
 }
 
-@keyframes dash-flow-slow {
-  to {
-    stroke-dashoffset: -16;
-  }
+.prose img {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
 }
 
-/* Memory architecture diagram dash animation */
-.mem-dash-animate {
-  animation: dash-flow-mem 1.8s linear infinite;
+li > .code-block-wrapper > pre {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
-@keyframes dash-flow-mem {
-  to {
-    stroke-dashoffset: -20;
-  }
+li > img {
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
 }

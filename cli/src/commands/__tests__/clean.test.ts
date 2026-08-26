@@ -276,7 +276,10 @@ describe("readPlanStatus / isDonePlan", () => {
   });
 
   it("fails safe when there is no frontmatter block at all", () => {
-    const folder = writePlanFolder("2024-06-01-plain", "# Plan\n\nstatus: done\n");
+    const folder = writePlanFolder(
+      "2024-06-01-plain",
+      "# Plan\n\nstatus: done\n",
+    );
     expect(readPlanStatus(folder, true)).toBeNull();
     expect(isDonePlan(folder, true)).toBe(false);
   });

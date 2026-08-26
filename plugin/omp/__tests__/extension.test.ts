@@ -199,7 +199,9 @@ describe("omp extension spawnSync adapter", () => {
     );
     expect(privacyCall).toBeDefined();
     const privacyInput = JSON.parse(
-      String((privacyCall?.[2] as { input?: string } | undefined)?.input ?? "{}"),
+      String(
+        (privacyCall?.[2] as { input?: string } | undefined)?.input ?? "{}",
+      ),
     ) as { tool_input?: { file_path?: string } };
     expect(privacyInput.tool_input?.file_path).toBe(".env");
   });
@@ -304,9 +306,7 @@ describe("omp extension spawnSync adapter", () => {
     expect(scripts.some((file) => file.endsWith("privacy-block.sh"))).toBe(
       true,
     );
-    expect(scripts.some((file) => file.endsWith("scout-block.cjs"))).toBe(
-      true,
-    );
+    expect(scripts.some((file) => file.endsWith("scout-block.cjs"))).toBe(true);
   });
 
   it("does not use eval or shell: true", () => {
@@ -349,7 +349,9 @@ describe("omp extension event contracts", () => {
     );
     expect(compactCall).toBeDefined();
     const parsed = JSON.parse(
-      String((compactCall?.[2] as { input?: string } | undefined)?.input ?? "{}"),
+      String(
+        (compactCall?.[2] as { input?: string } | undefined)?.input ?? "{}",
+      ),
     ) as { session_id?: string; messages?: unknown };
     expect(parsed.session_id).toBe("real-session");
     expect(parsed.messages).toBeUndefined();

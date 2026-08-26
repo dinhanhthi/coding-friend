@@ -4,6 +4,7 @@
 
 ## v0.42.0 (2026-08-26)
 
+- Expand `$cf-help` into a full CF reference: complete skill / agent / hook / CLI catalog (adds the missing `$cf-review-out`, `$cf-review-in`, `$cf-teach`), a `topics.md` lookup index (flags, config, memory, hosts), and a never-guess read-the-source protocol so users can ask anything about CF from one command
 - Add Google Antigravity (agy) as a fourth beta host: generated `plugin-antigravity/` artifact (AGY hooks.json, `rules/AGENTS.md`, agents with `model: flash|pro`), `.agy.*` hook adapters (privacy-block, scout-block, auto-approve, session-init, rules-reminder, session-log) [#a1f7d2e2](https://github.com/dinhanhthi/coding-friend/commit/a1f7d2e2) [#5ebfff25](https://github.com/dinhanhthi/coding-friend/commit/5ebfff25)
 - Antigravity auto-approve hook reads `autoApprove` (same key as Claude); the classifier stays deterministic (no LLM) [#1eb231da](https://github.com/dinhanhthi/coding-friend/commit/1eb231da)
 - Codex auto-approve hook reads the shared `autoApprove` key (same as Claude/Antigravity); the `autoApproveCodex` key is removed [#87869527](https://github.com/dinhanhthi/coding-friend/commit/87869527)
