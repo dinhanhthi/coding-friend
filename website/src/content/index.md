@@ -66,6 +66,15 @@ Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `
 
 After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
+### Manual install
+
+```bash
+plugin marketplace add dinhanhthi/coding-friend
+plugin install coding-friend@coding-friend-marketplace
+```
+
+Or ask your agent to install it.
+
 ## ✨ Features
 
 Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation appears. Settings that live in `config.json` — run `cf config` and follow the instructions there. To extend a built-in skill, see [Custom Guides](#custom-guides).
