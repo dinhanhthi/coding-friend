@@ -17,7 +17,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), -apple-system, "system-ui", "Segoe UI", system-ui, sans-serif;
+  --font-sans:
+    var(--font-inter), -apple-system, "system-ui", "Segoe UI", system-ui,
+    sans-serif;
 }
 
 html {

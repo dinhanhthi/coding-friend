@@ -3,14 +3,14 @@ import Navbar from "@/components/Navbar";
 import CodeBlock from "@/components/CodeBlock";
 import MdxLink from "@/components/MdxLink";
 import { readIndexMd, getSections, mdxOptions } from "@/lib/mdx";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
 export default function Home() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Coding Friend",
-    description:
-      "A lean toolkit for systematic debugging, smart commits, code review, and knowledge capture — with optional TDD support across your engineering workflow.",
+    name: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     url: "https://cf.dinhanhthi.com",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",

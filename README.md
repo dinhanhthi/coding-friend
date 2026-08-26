@@ -1,177 +1,98 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="Coding Friend Logo" width="100" />
-</p>
+<p align="center"><img src="assets/logo.svg" alt="Coding Friend Logo" width="100" /></p>
 
 <h1 align="center">Coding Friend</h1>
 
-<p align="center">
-  Lean toolkit for disciplined engineering workflows with Claude Code, Codex CLI, omp, and Google Antigravity.
-</p>
+<p align="center"><em>A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer.</em></p>
 
-<p align="center">
-  <a href="https://cf.dinhanhthi.com">Website</a> ·
-  <a href="https://cf.dinhanhthi.com/docs">Documentation</a> ·
-  <a href="https://cf.dinhanhthi.com/changelog">Changelog</a> ·
-  <a href="https://github.com/dinhanhthi/coding-friend/issues">Report Bug</a>
-</p>
+<p align="center"><a href="https://cf.dinhanhthi.com">Website</a> · <a href="https://github.com/dinhanhthi/coding-friend/releases">Releases</a> · <a href="https://github.com/dinhanhthi/coding-friend/issues">Report Bug</a></p>
 
-## What It Does
+## What it does
 
-Supported hosts: **Claude Code**, **Codex CLI** _(beta)_, [**omp**](https://github.com/can1357/oh-my-pi) _(beta)_, and **Google Antigravity** _(beta)_. Claude remains the default; Codex is opt-in with `--agent codex` or `--codex`; omp is opt-in with `--agent omp` or `--omp`; Antigravity is opt-in with `--agent agy` or `--agy`.
+Coding Friend adds skills, agents, and hooks to the agent you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learn notes in `~/.coding-friend/learn/`. One install covers [Claude Code](https://claude.com/product/claude-code) (principal); pass `--agent` for [Codex](https://openai.com/codex/), oh-my-pi, Cursor, Grok CLI, or Antigravity.
 
-Coding Friend also works with any tool that runs Claude Code or Codex under the hood — including **Cursor**, **Grok CLI**, and **z.ai** (via Claude Code or Codex). Install for the underlying host (Claude Code or Codex) and use Coding Friend as usual.
+Read more on the [website](https://cf.dinhanhthi.com) or in [website/src/content/index.md](website/src/content/index.md).
 
-> **Codex support is in beta.** Core skills, agents, hooks, and shared memory work, but some parity gaps remain — see [Codex CLI docs](https://cf.dinhanhthi.com/docs/getting-started/codex/).
+## Supported agents
 
-> **omp support is in beta.** Skills inherit from Claude; agents and hooks are bridged. Some parity gaps remain — see [oh-my-pi](https://omp.sh/) and [omp local-dev](docs/omp-dev.md).
+| Host | Support | Install |
+| --- | --- | --- |
+| Claude Code | **100%** | `cf install` |
+| omp | **95%** | `cf install --agent omp` |
+| Codex CLI | **77%** | `cf install --agent codex` |
+| Antigravity | **73%** | `cf install --agent agy` |
+| Cursor / Grok CLI / z.ai | | install for the underlying host (Claude Code or Codex) |
 
-> **Antigravity support is in beta.** Skills (as `/cf-*` slash commands), agents, PreToolUse/PreInvocation/Stop hooks and shared memory work; task/agent tracking, memory auto-capture and statusline have no Antigravity equivalent — see [Antigravity docs](https://cf.dinhanhthi.com/docs/getting-started/antigravity/) and [agy local-dev](docs/agy-dev.md).
+% = share of the 11 host-agnostic features; partial = ½. Claude only (not counted): statusline, `/cf-session`, task tracking.
+In Codex, skills are `$cf-*`. See https://cf.dinhanhthi.com/#supported-agents
 
-Command examples below use Claude's `/cf-*` form. In Codex, invoke the same
-skills as `$cf-*` or choose them from `/skills`.
+## Quick start
 
-- Supports test-driven development (TDD) — opt-in via `--add-tests` flag or `tdd: true` in config
-- Provides systematic debugging methodology
-- Quick bug fix workflow (`/cf-fix`)
-- Structured optimization with before/after measurement (`/cf-optimize`)
-- Quick Q&A about codebase with memory (`/cf-ask`)
-- Ensures verification before claiming done
-- Smart conventional commits and code review
-- ✨ Automated Codex dual review (`/cf-review --with-codex`) — runs Claude's review and a Codex review in parallel, merges both into one report, no copy-paste
-- ✨ Cross-agent code review (`/cf-review-out` + `/cf-review-in`) — generate a review prompt for any AI agent (Gemini, Codex, ChatGPT, or human), collect results when ready
-- Captures project knowledge across sessions (`/cf-remember`)
-- ✨ Persistent AI memory with 3-tier hybrid search (`cf memory`) — stores facts, preferences, debug episodes across sessions with automatic recall
-- ✨ Helps humans learn from vibe coding sessions (`/cf-learn` for concise notes, `/cf-teach` for deep conversational breakdowns) — browse as a searchable website (`cf learn host`) or share with other LLM clients via MCP server (`cf mcp`)
-- In-depth research with web search and parallel subagents (`/cf-research`)
-- Custom skill guides — extend built-in skills with your own Before/Rules/After per skill
-- ✨ Session continuity — Claude can save/load synchronized chats with `/cf-session`; Codex uses native `/resume` and `/fork`
-- ✨ Smart auto-approve — Claude uses a 3-step hook (rules → working-dir check → Sonnet LLM classifier); Codex uses deterministic rules and defers unknown actions to Codex native approval. Available to all users, opt-in via config
-- Prompt injection defense — layered content isolation protects against malicious instructions
-- CLI utilities — manage plugin installation, project setup, and updates with a single `cf` command. Claude permissions use `cf permission`; Codex sandbox posture remains native `/permissions`
-- ✨ Customizable Claude Code statusline with account info and rate limits; Codex users configure built-in footer fields with `/statusline`
-  ```
-  🧠 Opus (1M)
-  cf v0.3.0 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
-  ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
-  🆔 a1b2c3d4-e5f6-7890-abcd-ef1234567890
-  📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
-  ```
-
-For full details, visit the **[official website](https://cf.dinhanhthi.com/#features)**.
-
-## Quick Start
-
-Requires [Node.js](https://nodejs.org/) 20+ and at least one supported host: [Claude Code](https://claude.com/claude-code), Codex CLI, [omp](https://omp.sh/) (oh-my-pi), or Google Antigravity.
-
-1. Install the CLI: `npm i -g coding-friend-cli`
-2. Install the plugin for your host:
-
-   ```bash
-   cf install                 # Claude Code (default)
-   cf install --agent codex   # Codex CLI — beta (alias: cf install --codex)
-   cf install --agent omp     # omp (oh-my-pi) — beta (alias: cf install --omp)
-   cf install --agent agy     # Google Antigravity — beta (alias: cf install --agy)
-   ```
-
-   > **`cf` conflict?** If another tool (e.g. Cloudflare's `cf`) already occupies that name, use `cdf` — it's an alias for the same CLI: `cdf install`, `cdf init`, etc.
-
-   <details>
-   <summary>Or install manually (no CLI)</summary>
-
-   ```bash
-   claude plugin marketplace add dinhanhthi/coding-friend
-   claude plugin install coding-friend@coding-friend-marketplace
-
-   # Or inside Claude Code session:
-   /plugin marketplace add dinhanhthi/coding-friend
-   /plugin install coding-friend@coding-friend-marketplace
-   ```
-
-   </details>
-
-   Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the terminal, but plugin install still requires one manual step inside Codex: open `codex`, run `/plugins`, then install `coding-friend`.
-
-3. Initialize your workspace:
-
-   ```bash
-   cf init                 # Claude Code
-   cf init --agent codex   # Codex CLI
-   cf init --agent omp     # omp (oh-my-pi)
-   cf init --agent agy     # Google Antigravity
-   ```
-
-4. Restart your host session
-5. **(Optional) Host your learning docs** — browse `/cf-learn` and `/cf-teach` notes as a website or expose to other LLM clients:
-   ```bash
-   cf learn host        # Serve ~/.coding-friend/learn as a website at localhost:3333
-   cf mcp               # Setup an MCP server so other LLM clients can read your notes
-   ```
-   Learn more: [cf learn host](cli/lib/learn-host/README.md), [cf mcp](cli/lib/learn-mcp/README.md).
-
-## CLI vs Plugin — what do you need?
-
-Coding Friend ships as **two independent npm packages**:
-
-- **Plugin** (`coding-friend`) — skills, agents, and hooks for Claude Code and Codex CLI (marketplace), omp (`cf install --agent omp`), or Google Antigravity (`cf install --agent agy`). Fully functional standalone.
-- **CLI** (`coding-friend-cli`, binary `cf`) — optional companion that adds the memory MCP server (fast indexed recall), the learn-host doc viewer, statusline rendering, and workspace setup utilities.
-
-| Tier         | Meaning                                                                                                                            | Count today                        |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| **NONE**     | Works with zero CLI involvement.                                                                                                   | Skills: 13 · Agents: 11 · Hooks: 7 |
-| **OPTIONAL** | Uses CLI-installed memory MCP for speed; falls back to grep + direct file writes when CLI is absent. Full functionality preserved. | Skills: 13 · Agents: 1 · Hooks: 3  |
-| **REQUIRED** | Cannot function without CLI.                                                                                                       | 0                                  |
-
-**Plugin-only quick-start** — install via Claude Code marketplace, skip the CLI for now. You will lose: fast indexed memory search (falls back to `grep -r '<query>' docs/memory/`), the learn-host doc viewer, and the `cf statusline` renderer. Everything else works.
-
-**Add the CLI later:**
+Requires Node.js 20+ and a host.
 
 ```bash
 npm i -g coding-friend-cli
+cf install            # --agent codex | omp | agy
 cf init
-cf memory init
+# restart your host, then type /cf-help
 ```
 
-For the full per-skill / per-agent / per-hook matrix and workarounds, see [`docs/cli-requirements.md`](docs/cli-requirements.md).
+If `cf` is taken, use `cdf`.
 
-## Commands
+<details>
+<summary>Or install manually (no CLI)</summary>
 
-| Command                              | Description                                                                                                                                                                                                                                |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/cf-advise [decision]`              | Decision advisory via a structured interview → verdict-first recommendation with pitfalls and ranked alternatives; `--save` persists it to `docs/memory/decisions/`                                                                        |
-| `/cf-ask [question]`                 | Quick Q&A about codebase                                                                                                                                                                                                                   |
-| `/cf-commit [hint]`                  | Analyze diff and create conventional commit                                                                                                                                                                                                |
-| `/cf-design [mode]` [beta]           | UI design: scan patterns, design or modify UI consistently                                                                                                                                                                                 |
-| `/cf-fix [bug]`                      | Quick bug fix workflow                                                                                                                                                                                                                     |
-| `/cf-help [question]`                | Answer questions about Coding Friend                                                                                                                                                                                                       |
-| `/cf-learn [topic]`                  | Extract learnings for human review                                                                                                                                                                                                         |
-| `/cf-optimize [target]`              | Structured optimization with measurement                                                                                                                                                                                                   |
-| `/cf-plan [task]`                    | Brainstorm and write implementation plan; `--auto` runs the whole thing end-to-end (auto review + fix + commit per phase); `--gui` also generates the human overview doc (off by default); `--model <alias>` pins the model for cf-planner |
-| `/cf-plan-resume <plan>`             | Resume a saved plan (folder path, entry file, or bare `<slug>`) from where execution last stopped; honors `auto: true` frontmatter to continue in autopilot                                                                                |
-| `/cf-later-do [item]`                | Work through deferred side-tasks in `docs/later/` — pick one, route the fix to `/cf-fix` or `/cf-plan`, remove the file once verified, then suggest the next                                                                               |
-| `/cf-checkpoint [additional-prompt]` | Capture a concise conversation checkpoint (decisions, breaking changes, next steps) → docs/context/checkpoints/                                                                                                                            |
-| `/cf-checkpoint-from [slug]`         | Load a saved checkpoint into a fresh conversation to continue with prior context                                                                                                                                                           |
-| `/cf-remember [topic]`               | Capture project knowledge                                                                                                                                                                                                                  |
-| `/cf-research [topic]`               | In-depth research with web search                                                                                                                                                                                                          |
-| `/cf-review [target]`                | Code review in forked subagent; `--codex`/`--claude`/`--gemini`/`--cursor`/`--grok` add parallel headless external reviews merged into one report; `--out` exports a prompt with Claude's context for `/cf-review-in`                      |
-| `/cf-scan [desc]`                    | Scan project and bootstrap memory                                                                                                                                                                                                          |
-| `/cf-session` [beta]                 | Save/load Claude Code sessions                                                                                                                                                                                                             |
-| `/cf-ship [hint]`                    | Verify, commit, push, and create PR                                                                                                                                                                                                        |
-| `/cf-teach [topic]`                  | Personal teacher — conversational breakdown                                                                                                                                                                                                |
-| `/cf-warm [--user]` [beta]           | Catch up after absence — git history summary                                                                                                                                                                                               |
+```bash
+claude plugin marketplace add dinhanhthi/coding-friend
+claude plugin install coding-friend@coding-friend-marketplace
 
-Auto-invoked skills (no slash needed): `cf-tdd` (add `--auto` for autopilot review+fix+commit after implementation), `cf-sys-debug`, `cf-verification`.
+# Or inside Claude Code session:
+/plugin marketplace add dinhanhthi/coding-friend
+/plugin install coding-friend@coding-friend-marketplace
+```
 
-## CLI Commands
+</details>
 
-The plugin is managed by the CLI `cf` command. Lifecycle commands (`cf install`, `cf uninstall`, `cf enable`, `cf disable`, `cf update`, `cf init`, `cf permission`) accept `--agent codex` / `--codex`, `--agent omp` / `--omp`, or `--agent agy` / `--agy` when you want those hosts instead of the Claude default. Learn more about the CLI in the [CLI documentation](cli/README.md).
+Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the terminal, but plugin install still requires one manual step inside Codex: open `codex`, run `/plugins`, then install `coding-friend`.
 
-## Plugin development
+## Features
 
-For plugin developers, check [plugin-dev.md](docs/plugin-dev.md). omp-specific local-dev: [omp-dev.md](docs/omp-dev.md). Antigravity local-dev: [agy-dev.md](docs/agy-dev.md).
+- Plan with autopilot (`/cf-plan --auto`)
+- TDD, opt-in (`--add-tests`)
+- Systematic debugging
+- Code review + cross-agent review
+- Conventional commits & ship
+- Persistent memory, 3-tier search (`cf memory`)
+- Learn & teach (`/cf-learn`, `/cf-teach`, `cf learn host`, `cf mcp`)
+- Research (`/cf-research`)
+- Smart auto-approve
+- Prompt-injection defense
+- Custom skill guides
+- Sessions & checkpoints
+- Statusline (Claude only)
 
-## Further Reading
+Details: https://cf.dinhanhthi.com/#features
 
-Read the [official documentation](https://cf.dinhanhthi.com).
+## Skills
+
+`/cf-advise`, `/cf-ask`, `/cf-checkpoint`, `/cf-checkpoint-from`, `/cf-commit`, `/cf-design`, `/cf-fix`, `/cf-help`, `/cf-later-do`, `/cf-learn`, `/cf-optimize`, `/cf-plan`, `/cf-plan-resume`, `/cf-remember`, `/cf-research`, `/cf-review`, `/cf-review-in`, `/cf-review-out`, `/cf-scan`, `/cf-session`, `/cf-ship`, `/cf-teach`, `/cf-warm`
+
+Auto-invoked: cf-tdd, cf-sys-debug, cf-verification
+
+https://cf.dinhanhthi.com/#skills
+
+## Agents
+
+`cf-explorer`, `cf-implementer`, `cf-planner`, `cf-reviewer`, `cf-reviewer-plan`, `cf-reviewer-quality`, `cf-reviewer-reducer`, `cf-reviewer-rules`, `cf-reviewer-security`, `cf-reviewer-tests`, `cf-writer`, `cf-writer-deep`
+
+https://cf.dinhanhthi.com/#agents
+
+## CLI
+
+`cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy` (aliases `--codex`/`--omp`/`--agy`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
+
+## Development
+
+[docs/plugin-dev.md](docs/plugin-dev.md) · [docs/omp-dev.md](docs/omp-dev.md) · [docs/agy-dev.md](docs/agy-dev.md)
 
 ## License
 

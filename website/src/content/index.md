@@ -1,6 +1,6 @@
 # Coding Friend
 
-*A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer.*
+_A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer._
 
 Coding Friend adds skills, agents, and hooks to the agent you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learn notes in `~/.coding-friend/learn/`. One install covers Claude Code; pass `--agent` for Codex, omp, or Antigravity.
 
@@ -24,14 +24,14 @@ Coding Friend adds skills, agents, and hooks to the agent you already use. You g
 
 Coding Friend installs on the host you already use.
 
-| Host | Support | Notes |
-| --- | --- | --- |
-| Claude Code | 100% | Default. |
-| omp | 95% | Beta. Skills come from the Claude plugin cache. |
-| Codex CLI | 77% | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
-| Antigravity | 73% | Beta. Requires agy >= 1.1.0. No memory auto-capture. |
-| Cursor | 100% / 77% | Runs Claude Code / Codex underneath. |
-| Grok CLI | 100% / 77% | Same as Cursor. |
+| Host        | Support    | Notes                                                    |
+| ----------- | ---------- | -------------------------------------------------------- |
+| Claude Code | 100%       | Default.                                                 |
+| omp         | 95%        | Beta. Skills come from the Claude plugin cache.          |
+| Codex CLI   | 77%        | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
+| Antigravity | 73%        | Beta. Requires agy >= 1.1.0. No memory auto-capture.     |
+| Cursor      | 100% / 77% | Runs Claude Code / Codex underneath.                     |
+| Grok CLI    | 100% / 77% | Same as Cursor.                                          |
 
 % = share of the 11 host-agnostic features (skills, auto-invoked skills, agents, hooks, memory MCP, memory auto-capture, auto-approve, learn host/MCP, cross-agent review, custom guides, CLI lifecycle). Partial = ½.
 
@@ -39,14 +39,14 @@ Claude only: statusline, session save/restore (`/cf-session`), and task tracking
 
 Install for your host:
 
-| Host | Command |
-| --- | --- |
-| Claude Code | `cf install` |
-| Codex CLI | `cf install --agent codex` |
-| omp | `cf install --agent omp` |
-| Antigravity | `cf install --agent agy` |
-| Cursor | install for the underlying host |
-| Grok CLI | install for the underlying host |
+| Host        | Command                         |
+| ----------- | ------------------------------- |
+| Claude Code | `cf install`                    |
+| Codex CLI   | `cf install --agent codex`      |
+| omp         | `cf install --agent omp`        |
+| Antigravity | `cf install --agent agy`        |
+| Cursor      | install for the underlying host |
+| Grok CLI    | install for the underlying host |
 
 ## Install
 
@@ -293,20 +293,20 @@ Status: DONE
 
 Skills dispatch agents as subagents that run in their own context.
 
-| Agent | Model | Does | Dispatched by |
-| --- | --- | --- | --- |
-| cf-explorer | haiku | Maps the repo and writes context files | /cf-plan, /cf-fix, /cf-ask |
-| cf-planner | inherit | Compares approaches and breaks work into tasks | /cf-plan |
-| cf-implementer | inherit | Writes the code (TDD with --add-tests) | /cf-plan, /cf-fix, cf-tdd |
-| cf-reviewer | inherit | Orchestrates the five-specialist review | /cf-review, /cf-ship |
-| cf-reviewer-plan | sonnet | Checks the diff against the plan | cf-reviewer |
-| cf-reviewer-security | sonnet | Finds security issues in the diff | cf-reviewer |
-| cf-reviewer-quality | haiku | Names, complexity, duplication, slop | cf-reviewer |
-| cf-reviewer-tests | haiku | Coverage and missing tests | cf-reviewer |
-| cf-reviewer-rules | haiku | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER | cf-reviewer |
-| cf-reviewer-reducer | haiku | Deduplicates and ranks findings | cf-reviewer |
-| cf-writer | haiku | Writes straightforward markdown | /cf-learn, /cf-remember, /cf-scan, /cf-fix, /cf-ask |
-| cf-writer-deep | sonnet | Writes deep technical docs | /cf-learn |
+| Agent                | Model   | Does                                           | Dispatched by                                       |
+| -------------------- | ------- | ---------------------------------------------- | --------------------------------------------------- |
+| cf-explorer          | haiku   | Maps the repo and writes context files         | /cf-plan, /cf-fix, /cf-ask                          |
+| cf-planner           | inherit | Compares approaches and breaks work into tasks | /cf-plan                                            |
+| cf-implementer       | inherit | Writes the code (TDD with --add-tests)         | /cf-plan, /cf-fix, cf-tdd                           |
+| cf-reviewer          | inherit | Orchestrates the five-specialist review        | /cf-review, /cf-ship                                |
+| cf-reviewer-plan     | sonnet  | Checks the diff against the plan               | cf-reviewer                                         |
+| cf-reviewer-security | sonnet  | Finds security issues in the diff              | cf-reviewer                                         |
+| cf-reviewer-quality  | haiku   | Names, complexity, duplication, slop           | cf-reviewer                                         |
+| cf-reviewer-tests    | haiku   | Coverage and missing tests                     | cf-reviewer                                         |
+| cf-reviewer-rules    | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | cf-reviewer                                         |
+| cf-reviewer-reducer  | haiku   | Deduplicates and ranks findings                | cf-reviewer                                         |
+| cf-writer            | haiku   | Writes straightforward markdown                | /cf-learn, /cf-remember, /cf-scan, /cf-fix, /cf-ask |
+| cf-writer-deep       | sonnet  | Writes deep technical docs                     | /cf-learn                                           |
 
 Review fan-out:
 
@@ -367,21 +367,21 @@ You have two config files. Global is `~/.coding-friend/config.json`. Project is 
 
 Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configurable). `docsDir` is for plans, memory, and research — not the default learn output.
 
-| Key | Description |
-| --- | --- |
-| `language` | Language for docs (plans, memory, research, ask). Default: `en`. |
-| `docsDir` | Base docs directory relative to project root (plans, memory, research). Default: `docs`. Not the default learn output. |
-| `autoApprove` | Enable the auto-approve hook. Default: `false`. |
-| `privacyBlock` | Privacy-block hook (deny `.env`, keys, credentials). Default: `true`. |
-| `scoutBlock` | Scout-block hook (deny ignored dirs). Default: `true`. |
-| `autoApproveAllowExtra` | Bash command prefixes to auto-approve (merged across global + local). |
-| `autoApproveIgnore` | Bash command prefixes to always require user review. |
-| `disableGUIPlan` | Disable the human overview doc `/cf-plan` generates. Default: `true`. |
-| `guiPlanFormat` | Format for the GUI plan: `html` or `md`. Default: `html`. |
-| `learn` | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`. |
-| `review` | Review settings. Nested object; `withCodex` runs a Codex second opinion. |
-| `tdd` | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default. |
-| `memory` | Object. MemoryConfig for search tier, embeddings, and capture. |
+| Key                     | Description                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `language`              | Language for docs (plans, memory, research, ask). Default: `en`.                                                       |
+| `docsDir`               | Base docs directory relative to project root (plans, memory, research). Default: `docs`. Not the default learn output. |
+| `autoApprove`           | Enable the auto-approve hook. Default: `false`.                                                                        |
+| `privacyBlock`          | Privacy-block hook (deny `.env`, keys, credentials). Default: `true`.                                                  |
+| `scoutBlock`            | Scout-block hook (deny ignored dirs). Default: `true`.                                                                 |
+| `autoApproveAllowExtra` | Bash command prefixes to auto-approve (merged across global + local).                                                  |
+| `autoApproveIgnore`     | Bash command prefixes to always require user review.                                                                   |
+| `disableGUIPlan`        | Disable the human overview doc `/cf-plan` generates. Default: `true`.                                                  |
+| `guiPlanFormat`         | Format for the GUI plan: `html` or `md`. Default: `html`.                                                              |
+| `learn`                 | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`.                  |
+| `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion.                                               |
+| `tdd`                   | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default.                                                                   |
+| `memory`                | Object. MemoryConfig for search tier, embeddings, and capture.                                                         |
 
 `memory` (MemoryConfig) keys:
 
