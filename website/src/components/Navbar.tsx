@@ -7,6 +7,7 @@ import { useState } from "react";
 type Section = { id: string; text: string };
 
 const GITHUB_HREF = "https://github.com/dinhanhthi/coding-friend";
+const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
 
 const NAV_LABELS: Record<string, string> = {
   "supported-ai-coding-tools": "Supported Tools",
@@ -68,11 +69,16 @@ export default function Navbar({ sections }: { sections: Section[] }) {
         >
           <Image src="/logo.svg" width={24} height={24} alt="" unoptimized />
           <span className="text-heading font-semibold">Coding Friend</span>
+          {PLUGIN_VERSION ? (
+            <span className="border-border bg-surface text-accent rounded-full border px-1.5 py-px font-mono text-[11px] leading-4">
+              v{PLUGIN_VERSION}
+            </span>
+          ) : null}
         </Link>
 
         <div className="flex items-center">
           <nav
-            className="hidden items-center gap-1 overflow-x-auto md:flex"
+            className="hidden items-center gap-1 overflow-x-auto lg:flex"
             aria-label="Sections"
           >
             <SectionLinks sections={sections} />

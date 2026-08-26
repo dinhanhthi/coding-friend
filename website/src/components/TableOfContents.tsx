@@ -77,7 +77,7 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
   return (
     <nav
       aria-label="Table of contents"
-      className="fixed top-20 right-[max(1rem,calc(50%-24rem-13rem-1rem))] z-40 hidden max-h-[calc(100dvh-9.5rem)] w-52 overflow-x-hidden overflow-y-auto overscroll-contain lg:block"
+      className="fixed top-20 right-[max(1rem,calc(50%-24rem-13rem-1rem))] z-40 hidden max-h-[calc(100dvh-9.5rem)] w-52 overflow-x-hidden overflow-y-auto overscroll-contain xl:block"
     >
       <p className="text-heading mb-2 text-xs font-semibold tracking-wide uppercase">
         Contents

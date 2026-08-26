@@ -2,7 +2,7 @@
 
 ## Overview
 
-coding-friend is a lean toolkit for Claude Code (default), Codex CLI _(beta)_, and [omp](https://omp.sh/) (oh-my-pi) _(beta)_ that enforces disciplined engineering workflows. It solves two problems specific to vibe coding:
+coding-friend is a lean toolkit for Claude Code (default), Codex CLI _(beta)_, [omp](https://omp.sh/) (oh-my-pi) _(beta)_, and Google Antigravity _(beta)_ that enforces disciplined engineering workflows. It solves two problems specific to vibe coding:
 
 1. **Project knowledge loss** — After many sessions, no one remembers logic/conventions/decisions
 2. **Human learning gap** — AI writes code, human approves without learning anything
@@ -13,7 +13,7 @@ coding-friend is a lean toolkit for Claude Code (default), Codex CLI _(beta)_, a
 
 Coding Friend is split into **two independent npm packages** with independent release cycles:
 
-- **Plugin (`coding-friend`)** — Skills, agents, hooks, and lib scripts (`load-custom-guide.sh`, `cf-paths.sh`) installed into Claude Code via the marketplace (Codex via generated `plugin-codex/`; omp via the `plugin/omp/` bridge). All workflow logic lives here.
+- **Plugin (`coding-friend`)** — Skills, agents, hooks, and lib scripts (`load-custom-guide.sh`, `cf-paths.sh`) installed into Claude Code via the marketplace (Codex via generated `plugin-codex/`; Antigravity via generated `plugin-antigravity/`; omp via the `plugin/omp/` bridge). All workflow logic lives here.
 - **CLI (`coding-friend-cli`)** — Ships the `coding-friend-memory` MCP server (SQLite + markdown index for fast recall), the `coding-friend-learn-host` MCP server (HTTP doc viewer), and workspace utilities (`cf init`, `cf install`, `cf statusline`, etc.).
 
 **Communication boundary.** Skills never call the `cf` binary directly. The plugin reaches the CLI's services through MCP tools (`memory_search`, `memory_store`, etc.) which are advertised by the runtime when the CLI is installed. When those tools are absent, skills fall back to grep + direct file writes. This boundary keeps the plugin functional standalone and makes the CLI a strict enhancement, not a prerequisite.
@@ -276,9 +276,13 @@ Agents pass structured context to each other via a JSON context file at `{docsDi
 
 Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `website/` are excluded.
 
-### omp bridge
+### Other hosts
 
-[omp](https://omp.sh/) (oh-my-pi) is a third host _(beta)_, opt-in with `--agent omp` / `--omp`. It is **not** a Claude marketplace plugin. [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) shells out to shared [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`. Agents are deployed to `~/.omp/agent/agents/`; skills inherit from `~/.claude`. Local-dev, install layout, and gotchas: [omp-dev.md](./omp-dev.md).
+Local-dev, install layout, and host differences: [plugin-dev.md](./plugin-dev.md).
+
+- **Codex** _(beta)_ — generated `plugin-codex/` artifact; Codex copies it into `~/.codex/plugins/cache/`.
+- **omp** ([oh-my-pi](https://omp.sh/)) _(beta)_ — **bridge**, not a marketplace plugin. [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) shells [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`. Agents go to `~/.omp/agent/agents/`; skills inherit from `~/.claude`.
+- **Antigravity** _(beta)_ — generated `plugin-antigravity/` artifact copied to `~/.gemini/config/plugins/coding-friend/`.
 
 ---
 

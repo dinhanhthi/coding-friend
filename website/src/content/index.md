@@ -1,4 +1,4 @@
-# Coding Friend or `CF`
+# Coding Friend (CF)
 
 _A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer._
 
@@ -38,10 +38,9 @@ Coding Friend installs on the host you already use.
 | [Antigravity](https://antigravity.google/)            | 73%     | `cf install --agent agy`   | Beta. Requires agy >= 1.1.0. No memory auto-capture.     |
 | [Cursor](https://cursor.com/)                         | 100%    | comes with Claude          | Runs Claude Code / Codex underneath.                     |
 | [Grok Build](https://x.ai/build)                      | 100%    | comes with Claude          | Same as Cursor.                                          |
+| [ZCode](https://zcode.z.ai/en)                        | 100%    | via github marketplace     | not tested 100%                                          |
 
-% = share of the 11 host-agnostic features (skills, auto-invoked skills, agents, hooks, memory MCP, memory auto-capture, auto-approve, learn host/MCP, cross-agent review, custom guides, CLI lifecycle). Partial = ½.
-
-**Claude only**: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
+% = Claude is a baseline with all skills, agents, hooks. Some are **Claude only**: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
 
 ## 📦 Install
 
@@ -49,6 +48,8 @@ You need Node 20+ and a supported host.
 
 ```bash
 npm i -g coding-friend-cli
+# If `cf` is taken, use `cdf`
+
 cf install               # Claude Code (default)
 cf install --agent codex # or 'omp', 'agy'
 
@@ -116,6 +117,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   - `--add-tests` / `--tdd` — not a plan mode; forwarded to every `cf-implementer` so each task uses TDD. Without it, implementers write code with no new tests
 
   Example output:
+
   ```text
   Progress
 
@@ -127,6 +129,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
   #### Phase 1 [sequential]
   ```
+
 - `/cf-plan-resume` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan-resume/SKILL.md)) — Reloads a saved plan and its context file, skips DONE tasks, re-runs the rest via the same execute protocol. If the plan has `auto: true` and an `AUTOPILOT` section, it continues in autopilot.
 - `/cf-advise` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-advise/SKILL.md)) — Interviews one question at a time, then a verdict-first recommendation with pitfalls and ranked alternatives. Never writes code or a plan. Flags: `--quick` / `--fast` (2–3 questions), `--save` (write to `docs/memory/decisions/`).
 - `/cf-design` (beta) ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-design/SKILL.md)) — Makes new or changed UI match the project's existing look. The first word of the argument picks the mode (empty → it asks which one):
@@ -138,8 +141,9 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 ### 🐛 Fix & debug
 
 - `/cf-fix` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-fix/SKILL.md)) — Reproduces the bug, searches past bug docs, explores, fixes, verifies, then reviews. Escalates hard bugs to `cf-sys-debug`. `--add-tests` (or `--tdd`) writes a failing test first when none exists.
-  
+
   Example output:
+
   ```text
   > ✨ **CODING FRIEND** → /cf-fix activated
 
@@ -149,6 +153,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   Tests:        [pass/fail count, regression test location]
   Status: DONE
   ```
+
 - `cf-sys-debug` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-sys-debug/SKILL.md)) — Four phases: state a file:line hypothesis before touching code, test it, apply a regression-guarded fix, write a bug doc. Auto-invoked for recurring or unclear bugs.
 - `cf-tdd` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-tdd/SKILL.md)) — Auto-loaded before production code. Direct mode (default) writes no new tests. TDD mode is `--add-tests` or `--tdd`, or `tdd: true` via `cf config`. `--auto` then reviews, fixes Critical/Important, and commits.
 - `cf-verification` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-verification/SKILL.md)) — Auto-invoked after code changes. Runs tests / build / lint, shows the output, and blocks a "done" claim without evidence.
@@ -158,6 +163,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 - `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Gathers the diff, forks `cf-reviewer` (five specialists + reducer). Depth is auto QUICK / STANDARD / DEEP from change size, or `--quick` / `--deep`. A second host in parallel: `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok`, then merge. `--out` writes a `/cf-review-out` prompt with Claude's findings (cannot combine with those agent flags). Codex-as-default: `cf config`.
 
   Example output:
+
   ```text
   🚨 Critical
   - None.
@@ -171,6 +177,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   📋 Summary
   No blocking issues found. You're clear to commit.
   ```
+
 - `/cf-review-out` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review-out/SKILL.md)) — Writes a self-contained prompt + diff to `docs/reviews/` for any external AI or a human.
 - `/cf-review-in` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review-in/SKILL.md)) — Reads that result file, presents findings, offers to fix.
 - `/cf-commit` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-commit/SKILL.md)) — Analyzes the diff, soft-review check, conventional commit focused on why.
@@ -302,20 +309,20 @@ Claude only. Run `cf statusline` to install the renderer.
 
 Skills dispatch agents as subagents that run in their own context.
 
-| Agent | Model | Does | Dispatched by |
-| ----- | ----- | ---- | ------------- |
-| `cf-explorer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-explorer.md)) | haiku | Maps the repo and writes context files | `/cf-plan`, `/cf-fix`, `/cf-ask` |
-| `cf-planner` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-planner.md)) | inherit | Compares approaches and breaks work into tasks | `/cf-plan` |
-| `cf-implementer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-implementer.md)) | inherit | Writes the code (TDD with `--add-tests`) | `/cf-plan`, `/cf-fix`, `cf-tdd` |
-| `cf-reviewer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer.md)) | inherit | Orchestrates the five-specialist review | `/cf-review`, `/cf-ship` |
-| `cf-reviewer-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md)) | sonnet | Checks the diff against the plan | `cf-reviewer` |
-| `cf-reviewer-security` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md)) | sonnet | Finds security issues in the diff | `cf-reviewer` |
-| `cf-reviewer-quality` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md)) | haiku | Names, complexity, duplication, slop | `cf-reviewer` |
-| `cf-reviewer-tests` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md)) | haiku | Coverage and missing tests | `cf-reviewer` |
-| `cf-reviewer-rules` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md)) | haiku | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER | `cf-reviewer` |
-| `cf-reviewer-reducer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md)) | haiku | Deduplicates and ranks findings | `cf-reviewer` |
-| `cf-writer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer.md)) | haiku | Writes straightforward markdown | `/cf-learn`, `/cf-remember`, `/cf-scan`, `/cf-fix`, `/cf-ask` |
-| `cf-writer-deep` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer-deep.md)) | sonnet | Writes deep technical docs | `/cf-learn` |
+| Agent                                                                                                                          | Model   | Does                                           | Dispatched by                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------------------- | ------------------------------------------------------------- |
+| `cf-explorer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-explorer.md))                   | haiku   | Maps the repo and writes context files         | `/cf-plan`, `/cf-fix`, `/cf-ask`                              |
+| `cf-planner` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-planner.md))                     | inherit | Compares approaches and breaks work into tasks | `/cf-plan`                                                    |
+| `cf-implementer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-implementer.md))             | inherit | Writes the code (TDD with `--add-tests`)       | `/cf-plan`, `/cf-fix`, `cf-tdd`                               |
+| `cf-reviewer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer.md))                   | inherit | Orchestrates the five-specialist review        | `/cf-review`, `/cf-ship`                                      |
+| `cf-reviewer-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md))         | sonnet  | Checks the diff against the plan               | `cf-reviewer`                                                 |
+| `cf-reviewer-security` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md)) | sonnet  | Finds security issues in the diff              | `cf-reviewer`                                                 |
+| `cf-reviewer-quality` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md))   | haiku   | Names, complexity, duplication, slop           | `cf-reviewer`                                                 |
+| `cf-reviewer-tests` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md))       | haiku   | Coverage and missing tests                     | `cf-reviewer`                                                 |
+| `cf-reviewer-rules` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md))       | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | `cf-reviewer`                                                 |
+| `cf-reviewer-reducer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md))   | haiku   | Deduplicates and ranks findings                | `cf-reviewer`                                                 |
+| `cf-writer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer.md))                       | haiku   | Writes straightforward markdown                | `/cf-learn`, `/cf-remember`, `/cf-scan`, `/cf-fix`, `/cf-ask` |
+| `cf-writer-deep` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer-deep.md))             | sonnet  | Writes deep technical docs                     | `/cf-learn`                                                   |
 
 ## 📘 Custom Guides
 
@@ -328,10 +335,10 @@ cf guide list               # local guides in this project
 
 `cf guide create` writes a project file. The skill name must match a built-in skill (`cf-commit`, `cf-plan`, …). It will not overwrite an existing guide.
 
-| Scope  | Path                                                      | Who it applies to                          |
-| ------ | --------------------------------------------------------- | ------------------------------------------ |
-| Local  | `.coding-friend/skills/<skill-name>-custom/SKILL.md`      | This project. Wins if both exist.          |
-| Global | `~/.coding-friend/skills/<skill-name>-custom/SKILL.md`    | All projects. Create this file yourself.   |
+| Scope  | Path                                                   | Who it applies to                        |
+| ------ | ------------------------------------------------------ | ---------------------------------------- |
+| Local  | `.coding-friend/skills/<skill-name>-custom/SKILL.md`   | This project. Wins if both exist.        |
+| Global | `~/.coding-friend/skills/<skill-name>-custom/SKILL.md` | All projects. Create this file yourself. |
 
 Local and global are not merged — if the local file exists, the global one is ignored. The loader resolves the path from the git project root, so it still works if your shell is in a subdirectory.
 
@@ -358,6 +365,7 @@ The next time you run `/cf-commit`, that guide is loaded. No `/clear` needed.
 You have two config files. Global is `~/.coding-friend/config.json`. Project is `.coding-friend/config.json` — local overrides global at the same top-level keys.
 
 ```json
+// Some examples
 {
   "language": "en",
   "docsDir": "docs",

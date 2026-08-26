@@ -103,14 +103,14 @@ describe("permissionCommand — Codex", () => {
 });
 
 describe("permissionCommand — omp", () => {
-  it("prints that omp uses its own approval-mode and points at docs/omp-dev.md", async () => {
+  it("prints that omp uses its own approval-mode and points at docs/plugin-dev.md", async () => {
     mockResolveHostFlags.mockReturnValue({ host: "omp" });
 
     await permissionCommand({ agent: "omp" });
 
     const output = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(output).toContain("approval-mode");
-    expect(output).toContain("docs/omp-dev.md");
+    expect(output).toContain("docs/plugin-dev.md");
     expect(output).toContain("omp config");
     expect(output).toContain("does not manage omp permissions");
   });

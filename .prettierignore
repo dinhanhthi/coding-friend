@@ -8,3 +8,4 @@ cli/lib/learn-host/out
 pnpm-lock.yaml
 package-lock.json
 plugin-antigravity
+cli/src/lib/__tests__/fixtures

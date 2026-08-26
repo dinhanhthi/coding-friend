@@ -66,12 +66,14 @@ export default function Home() {
         </article>
       </main>
       <footer className="border-border bg-nav fixed inset-x-0 bottom-0 z-50 border-t">
-        <div className="text-text-muted mx-auto flex flex-col sm:flex-row h-full max-w-3xl gap-1 sm:gap-x-2 px-4 py-3 text-sm w-full justify-center items-center">
+        <div className="text-text-muted mx-auto flex h-full w-full max-w-3xl flex-col items-center justify-center gap-1 px-4 py-3 text-sm sm:flex-row sm:gap-x-2">
           <span className="text-center whitespace-nowrap">
             💝 Made by{" "}
             <FooterLink href="https://dinhanhthi.com">Anh-Thi Dinh</FooterLink>
           </span>
-          <span className="hidden sm:block" aria-hidden="true">•</span>
+          <span className="hidden sm:block" aria-hidden="true">
+            •
+          </span>
           <div className="flex items-center gap-x-2">
             <FooterLink href="https://github.com/dinhanhthi/coding-friend">
               GitHub

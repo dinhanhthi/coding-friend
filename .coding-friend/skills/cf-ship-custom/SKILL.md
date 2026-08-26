@@ -82,6 +82,19 @@ These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`) are the sou
 
 Proceed with the **standard cf-ship workflow** (verify → commit → push). Use `bump <packages> to <versions>` as the commit hint.
 
+**Verification — run ALL of these, this repo has two separate test suites and root-only checks miss the CLI one:**
+
+```bash
+npm run test:scripts        # root: generator/catalog tests (~29)
+(cd cli && npm test)        # CLI + hooks: what tests.yml actually runs (~67 + ~15 files)
+npm run verify:codex-drift  # plugin-codex artifact in sync
+npm run verify:agy-drift    # plugin-antigravity artifact in sync
+npm run lint:codex
+npm run lint:agy
+```
+
+`npm run test:scripts` alone is NOT enough — `.github/workflows/tests.yml` has a separate `cli` job running `npm test` inside `cli/`, and a release shipped on a red CLI suite before because only the root suite was run. Never report "verification passed" without the `cli` line above.
+
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
 ### Step B6: Create tags and push
