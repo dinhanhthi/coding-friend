@@ -276,6 +276,7 @@ function renderCodexFile(sourcePath, input) {
   const isInstruction =
     isSkill ||
     normalizedPath.includes("/context/") ||
+    normalizedPath.includes("/skills/cf-help/") ||
     normalizedPath.endsWith("/plugin/README.md");
   let rendered = isInstruction
     ? renderCodexInstructionText(input)
