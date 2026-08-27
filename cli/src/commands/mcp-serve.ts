@@ -2,7 +2,6 @@ import { spawn } from "child_process";
 import { join } from "path";
 import { resolveProjectMemoryDir } from "../lib/config.js";
 import { getLibPath } from "../lib/lib-path.js";
-import { log } from "../lib/log.js";
 
 /**
  * Start the cf-memory MCP server as a long-lived stdio process.
@@ -18,7 +17,8 @@ export async function mcpServeCommand(memoryDir?: string): Promise<void> {
   const resolvedDir =
     memoryDir ??
     resolveProjectMemoryDir(process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
-  log.dim(`memory dir: ${resolvedDir}`);
+  // MCP stdio protocol: stdout is reserved for JSON-RPC — diagnostics go to stderr
+  console.error(`memory dir: ${resolvedDir}`);
 
   const mcpDir = getLibPath("cf-memory");
   const serverPath = join(mcpDir, "dist", "index.js");
@@ -28,7 +28,7 @@ export async function mcpServeCommand(memoryDir?: string): Promise<void> {
   });
 
   child.on("error", (err) => {
-    log.error(`Failed to start memory MCP server: ${err.message}`);
+    console.error(`Failed to start memory MCP server: ${err.message}`);
     process.exit(1);
   });
 

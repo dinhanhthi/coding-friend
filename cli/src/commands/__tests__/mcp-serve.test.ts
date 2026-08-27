@@ -150,4 +150,36 @@ describe("mcpServeCommand", () => {
     const spawnArgs = mockSpawn.mock.calls[0];
     expect(spawnArgs[1][1]).toBe("/explicit/path");
   });
+
+  // MCP stdio protocol: stdout is reserved for JSON-RPC — a stray line breaks
+  // strict clients (omp reports "Transport closed")
+  it("writes nothing to stdout", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const stdoutSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+
+    const { mcpServeCommand } = await import("../mcp-serve.js");
+    await mcpServeCommand("/some/memory/dir");
+
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(stdoutSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+    stdoutSpy.mockRestore();
+  });
+
+  it("writes the memory dir diagnostic to stderr", async () => {
+    const fakeProcess = new EventEmitter();
+    mockSpawn.mockReturnValue(fakeProcess);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { mcpServeCommand } = await import("../mcp-serve.js");
+    await mcpServeCommand("/some/memory/dir");
+
+    const output = errorSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("memory dir: /some/memory/dir");
+    errorSpy.mockRestore();
+  });
 });
