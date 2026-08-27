@@ -9,8 +9,9 @@ description: >
   /cf-plan, removes the file only after the fix is verified-done, then suggests the next item.
   Slash-only — NOT auto-invoked. Requires items under docs/later/. Does NOT capture new items
   (that is capture-later.sh, the write side) — this is the read/resolve side.
+disable-model-invocation: true
 created: 2026-07-24
-updated: 2026-07-24
+updated: 2026-08-27
 ---
 
 # /cf-later-do

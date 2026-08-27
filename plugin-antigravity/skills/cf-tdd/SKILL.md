@@ -14,6 +14,7 @@ description: >
   or when the user is only asking questions about code without requesting changes.
 created: 2026-02-17
 updated: 2026-07-04
+disable-slash-command: true
 ---
 
 # Implementation Workflow

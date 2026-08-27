@@ -10,7 +10,7 @@ description: >
   Slash-only — NOT auto-invoked. Requires items under docs/later/. Does NOT capture new items
   (that is capture-later.sh, the write side) — this is the read/resolve side.
 created: 2026-07-24
-updated: 2026-07-24
+updated: 2026-08-27
 ---
 
 # /cf-later-do

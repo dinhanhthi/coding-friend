@@ -13,7 +13,7 @@ description: >
   required?".
   Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
 created: 2026-02-17
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # /cf-help — Coding Friend Help
@@ -41,7 +41,7 @@ Classify the question (more than one is fine):
 - **General overview** — what is Coding Friend, what can it do, how does it work?
 - **Specific skill** — how does /cf-commit work? what flags does /cf-plan have?
 - **Specific agent** — what is the cf-reviewer agent?
-- **Hooks** — what hooks exist? what does privacy-block do? how does auto-approve work?
+- **Hooks** — what hooks exist? what does privacy-block do? how does auto-approve work? how do I get fewer permission prompts?
 - **CLI** — what does `cf init` do? memory commands? install scopes?
 - **Setup / config** — keys, custom guides, ignore patterns, hosts
 - **Memory / MCP** — tiers, tools, `/cf-remember` vs `/cf-learn`
@@ -128,7 +128,7 @@ Claude events live in `hooks/hooks.json`. Adapters: `*.agy.*` (Antigravity); Cod
 - **rules-reminder.sh** — UserPromptSubmit — inject core rules
 - **privacy-block.sh** — PreToolUse — block `.env` / credentials (`privacyBlock`)
 - **scout-block.cjs** — PreToolUse — respect `.coding-friend/ignore` (`scoutBlock`)
-- **auto-approve.cjs** — PreToolUse — opt-in auto-approve (`autoApprove`)
+- **auto-approve.cjs** — PreToolUse — opt-in auto-approve (`autoApprove`). Claude LLM classifier is opt-in (`autoApproveLLM`, default false → unknown defers to native). Native host modes: `topics.md`.
 - **session-log.sh** — Stop — turn log for memory capture
 - **task-tracker.sh** — TaskCreated/Completed — statusline progress (Claude)
 - **agent-tracker.sh** — SubagentStart/Stop — statusline active agent
@@ -194,6 +194,7 @@ Common issues:
 - **Skill not triggering?** Check description in SKILL.md — it may not match the user's phrasing. Use `/cf-<skill-name>` to trigger manually.
 - **Custom guide not loading?** Verify the path: `.coding-friend/skills/<skill-name>-custom/SKILL.md` and that it has `## Before`, `## Rules`, or `## After` sections.
 - **Config not applied?** Local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`. Check both.
+- **Permission prompts?** Hosts have native modes that reduce prompts (Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo` default). CF `autoApprove` is the plugin hook. Details: `topics.md`.
 - **More issues?** Point the user to the [Troubleshooting page](https://cf.dinhanhthi.com/docs/reference/troubleshooting/) for memory daemon, install, hook, and MCP issues.
 
 ### Step 6: Answer concisely

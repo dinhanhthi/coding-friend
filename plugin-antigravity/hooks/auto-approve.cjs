@@ -5,7 +5,7 @@
  * 3-step classification:
  *   Step 1 (rules)       — pattern-based allow/deny/ask for known tools/commands
  *   Step 2 (working-dir) — Write/Edit auto-approved if file is inside cwd
- *   Step 3 (LLM)         — `claude --print --model sonnet` classifier for all unknown tools
+ *   Step 3 (LLM)         — opt-in via autoApproveLLM: true; Sonnet classifier for unknown tools
  *
  * Integration contract:
  *   stdin  – JSON with tool_name, tool_input
@@ -16,6 +16,8 @@
  *   Reads global (~/.coding-friend/config.json) then local (.coding-friend/config.json).
  *   Local overrides global. "autoApprove": true in either enables the hook.
  *   Default (false or missing in both) → exit 0 with {}.
+ *   "autoApproveLLM": true restores the Sonnet classifier for unknown tools.
+ *   Default (false or missing) → after a deterministic miss, emit {} (defer native).
  *   Can also be force-enabled via CF_AUTO_APPROVE_ENABLED=1 env var (for tests).
  *   Fails open on any error (malformed config in one file does not block the other).
  */
@@ -1249,12 +1251,13 @@ Respond in the exact format: CLASSIFICATION|reason`;
  *
  * Merge strategy:
  *   - `autoApprove` (boolean) — local overrides global (object spread semantics)
+ *   - `autoApproveLLM` (boolean) — same merge as `autoApprove`; default false
  *   - `autoApproveAllowExtra` (string[]) — union of global + local, deduped,
  *     non-string entries silently dropped, non-array values ignored entirely
  *
  * @param {string} homeDir — user home directory (for global config)
  * @param {string} cwd — current working directory (for local config)
- * @returns {{ enabled: boolean, allowExtra: string[] }}
+ * @returns {{ enabled: boolean, llmEnabled: boolean, allowExtra: string[], ignore: string[] }}
  */
 function loadAutoApproveConfig(homeDir, cwd) {
   /** Read and parse a single config file. Returns {} on any error. */
@@ -1316,6 +1319,7 @@ function loadAutoApproveConfig(homeDir, cwd) {
 
   return {
     enabled: merged.autoApprove === true,
+    llmEnabled: merged.autoApproveLLM === true,
     allowExtra,
     ignore,
   };
@@ -1393,7 +1397,7 @@ function main() {
 
     // Load config (even when force-enabled) so we can pick up allowExtra
     const homeDir = os.homedir();
-    const { enabled, allowExtra, ignore } = loadAutoApproveConfig(
+    const { enabled, allowExtra, ignore, llmEnabled } = loadAutoApproveConfig(
       homeDir,
       projectDir,
     );
@@ -1463,8 +1467,12 @@ function main() {
       }
     }
 
-    // Tier 2: LLM fallback for unknown tools (Bash and non-Bash)
+    // Tier 2: LLM fallback for unknown tools — opt-in via autoApproveLLM
     if (decision === "unknown") {
+      if (!llmEnabled) {
+        process.stdout.write("{}");
+        process.exit(0);
+      }
       const llmResult = classifyWithLLM(toolName, toolInput);
       decision = llmResult.decision;
       reasonContext = { source: "llm", reason: llmResult.reason };

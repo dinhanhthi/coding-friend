@@ -480,6 +480,103 @@ test("strips Claude skill frontmatter when closing fence has no trailing newline
   );
 });
 
+function skillFrontmatter(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(match, "rendered skill is missing YAML frontmatter");
+  return match[1];
+}
+
+test("maps user-invocable: false to disable-slash-command by field, not skill name", () => {
+  const hidden = renderAgyFile(
+    "/repo/plugin/skills/cf-hidden/SKILL.md",
+    [
+      "---",
+      "name: cf-hidden",
+      "description: Auto-only helper",
+      "user-invocable: false",
+      "model: haiku",
+      "---",
+      "",
+      "Body stays.",
+    ].join("\n"),
+  );
+  const hiddenFm = skillFrontmatter(hidden);
+  assert.match(hiddenFm, /^disable-slash-command: true$/m);
+  assert.doesNotMatch(hiddenFm, /^user-invocable:/m);
+  assert.doesNotMatch(hiddenFm, /^model:/m);
+  assert.match(hidden, /Body stays\./);
+
+  const invocableTrue = renderAgyFile(
+    "/repo/plugin/skills/cf-hidden/SKILL.md",
+    [
+      "---",
+      "name: cf-hidden",
+      "description: Explicitly invocable",
+      "user-invocable: true",
+      "---",
+      "",
+      "Body.",
+    ].join("\n"),
+  );
+  assert.doesNotMatch(skillFrontmatter(invocableTrue), /disable-slash-command/);
+  assert.doesNotMatch(skillFrontmatter(invocableTrue), /^user-invocable:/m);
+});
+
+test("does not emit disable-slash-command for slash skills without user-invocable: false", () => {
+  const plan = renderAgyFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    [
+      "---",
+      "name: cf-plan",
+      "description: Plan",
+      "---",
+      "",
+      "Use TaskCreate to create a task list.",
+    ].join("\n"),
+  );
+  assert.doesNotMatch(skillFrontmatter(plan), /disable-slash-command/);
+});
+
+test("maps real user-invocable:false skills and leaves slash skills unmarked", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+
+  for (const skillName of ["cf-tdd", "cf-sys-debug", "cf-verification"]) {
+    const source = await fs.readFile(
+      path.join(repoRoot, "plugin/skills", skillName, "SKILL.md"),
+      "utf8",
+    );
+    assert.match(
+      source,
+      /^user-invocable:\s*false$/m,
+      `${skillName} source should declare user-invocable: false`,
+    );
+    const rendered = renderAgyFile(
+      `/repo/plugin/skills/${skillName}/SKILL.md`,
+      source,
+    );
+    assert.match(
+      skillFrontmatter(rendered),
+      /^disable-slash-command: true$/m,
+      `${skillName} AGY frontmatter should disable slash command`,
+    );
+    assert.doesNotMatch(skillFrontmatter(rendered), /^user-invocable:/m);
+  }
+
+  const planSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-plan/SKILL.md"),
+    "utf8",
+  );
+  assert.doesNotMatch(planSource, /^user-invocable:\s*false$/m);
+  const plan = renderAgyFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    planSource,
+  );
+  assert.doesNotMatch(skillFrontmatter(plan), /disable-slash-command/);
+});
+
 test("builds Antigravity plugin fixture idempotently", async () => {
   const repoRoot = await createFixtureRepo();
   const agyPluginDir = path.join(repoRoot, "plugin-antigravity");

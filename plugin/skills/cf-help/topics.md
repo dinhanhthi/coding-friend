@@ -32,6 +32,7 @@ Skills never call the `cf` binary. They use MCP tools (`memory_search`, `memory_
 | A skill's steps / flags | `skills/<name>/SKILL.md`                                   | `skills/<name>/modes/*` if present                                      |
 | An agent                | `agents/<name>.md`                                         | —                                                                       |
 | Hooks / events          | this file + `hooks/hooks.json`                             | `hooks/<file>`                                                          |
+| Auto-approve / fewer prompts | this file (native prompt reduction)                   | `hooks/auto-approve.cjs` (Claude), `hooks/auto-approve.codex.cjs`, `hooks/auto-approve.agy.cjs` |
 | Config keys             | this file                                                  | project `.coding-friend/config.json` and `~/.coding-friend/config.json` |
 | CLI commands            | this file                                                  | `cf <cmd> --help` if the CLI is installed                               |
 | Memory / MCP            | this file                                                  | —                                                                       |
@@ -115,7 +116,7 @@ Source of truth: `hooks/hooks.json`. Host adapters: `*.agy.*` (Antigravity), Cod
 | `rules-reminder.sh` | UserPromptSubmit                       | Inject core rules (`devRulesReminder`)                                                                                       |
 | `privacy-block.sh`  | PreToolUse (Read/Write/Edit/Glob/Grep) | Block `.env`, keys, credentials (`privacyBlock`)                                                                             |
 | `scout-block.cjs`   | PreToolUse (same)                      | Block `.coding-friend/ignore` paths (`scoutBlock`)                                                                           |
-| `auto-approve.cjs`  | PreToolUse                             | Opt-in approve safe calls (`autoApprove`). Claude: rules → working-dir → LLM. Codex / agy: deterministic only; unknowns ask. |
+| `auto-approve.cjs`  | PreToolUse                             | Opt-in approve safe calls (`autoApprove`). Claude: rules → working-dir → LLM only if `autoApproveLLM: true` (default false → unknown defers to native). Codex / agy: deterministic only; unknowns ask. Native host modes below. |
 | `session-log.sh`    | Stop                                   | Turn log for memory capture                                                                                                  |
 | `task-tracker.sh`   | TaskCreated / TaskCompleted            | Statusline progress (Claude)                                                                                                 |
 | `agent-tracker.sh`  | SubagentStart / SubagentStop           | Statusline active agent                                                                                                      |
@@ -123,6 +124,42 @@ Source of truth: `hooks/hooks.json`. Host adapters: `*.agy.*` (Antigravity), Cod
 | `statusline.sh`     | Statusline (Claude)                    | Installed by `cf statusline`, not via `hooks.json`                                                                           |
 
 Env overrides for auto-approve: `CF_AUTO_APPROVE_ENABLED=1`, `CF_AUTO_APPROVE_LLM_TIMEOUT` (default 45000), `CF_AUTO_APPROVE_CACHE_FILE`.
+
+### Native prompt reduction (per host)
+
+CF `autoApprove` is the plugin hook. Hosts also have native mechanisms that cut prompts without it. Prefer native where it covers the case; the hook still helps for a deterministic first-call allowlist.
+
+**Claude**
+
+- Native `auto` permission mode — classifier reviews non-read-only / non-working-dir actions. Default starting mode on Pro/Max/Team.
+- `acceptEdits` — auto-accepts file edits plus `mkdir`, `touch`, `rm`, `rmdir`, `mv`, `cp`, `sed` for paths in cwd / `additionalDirectories`.
+- Bash sandbox auto-allow: `/sandbox`, or `sandbox.enabled: true` + `sandbox.autoAllowBashIfSandboxed` (default `true`). A sandboxed Bash command runs without prompting even under a bare `Bash` ask rule.
+- CF `autoApproveIgnore` — Bash prefixes that always ask (Claude only). DENY rules still apply.
+- CF `autoApproveLLM` — default `false`: unknown tools emit no hook decision (defer to native flow / `auto` mode). `true` restores the Sonnet classifier.
+
+**Codex**
+
+- `approval_policy` values: `untrusted` | `on-request` | `never` (plus a granular object form). **`on-failure` is deprecated** — do not use it; the config reference says use `on-request` (interactive) or `never` (non-interactive).
+- Recommended local preset: `sandbox_mode = "workspace-write"` + `approval_policy = "on-request"`.
+- `rules` execpolicy (experimental): `.rules` files under `~/.codex/rules/` or `<repo>/.codex/rules/` with `prefix_rule(...)`. Test with `codex execpolicy check --rules <file> -- <command>`.
+- Smart Approvals (default-on): during an escalation Codex may propose a `prefix_rule` (written to `~/.codex/rules/default.rules` when you accept the TUI allow-list action).
+- `approvals_reviewer = "auto_review"` / **`--approve-for-me`** (0.147.0) — a reviewer subagent handles eligible prompts without changing the sandbox.
+- CF `PermissionRequest` hook (`auto-approve.codex.cjs`) already uses the current documented schema — keep it; position native `rules` + Smart Approvals alongside it.
+- `$cf-*` skills are plugin-bundled `SKILL.md` from the marketplace plugin root — local `plugin-codex/` or `~/.codex/plugins/cache/coding-friend-marketplace/coding-friend/<ver>/`. They are **not** copied to `~/.codex/prompts` (that folder is gone from current Codex docs) or `~/.codex/skills`. `cf install --agent codex` registers the marketplace + enables the plugin + deploys agent TOMLs; it does not copy skills.
+
+**AGY (Antigravity)**
+
+- From 2026-07-31 (IDE v2.5.0): approved permissions are remembered for the rest of the conversation. The CF hook is still needed for the first call and for new conversations.
+- Named `always-proceed` permission mode exists (CLI v1.1.21 also auto-approves MCP tool calls in that mode).
+- **CLI vs IDE:** coding-friend hooks have been observed firing in the `agy` CLI (PreInvocation `session-init` / `rules-reminder` injects in real transcripts). Treat the IDE / 2.0 desktop app as hook-less per an unofficial community report — do not claim IDE hook coverage until a user smoke-tests it.
+- Build emits `disable-slash-command: true` when source frontmatter has `user-invocable: false` (CLI ≥1.1.12). Min version is **not** bumped (`AGY_MIN_VERSION` stays 1.1.0). Residual risk on CLI <1.1.12: ignore-vs-fail for the unknown frontmatter key is unverified.
+
+**omp (oh-my-pi)**
+
+- Session-wide `tools.approvalMode`: `always-ask` (auto only `read`), `write` (auto `read`+`write`), **`yolo` (default — auto-approves everything)**. `--auto-approve` / `--yolo` force yolo for the session.
+- Per-tool overrides: `tools.approval.<toolName>: allow|deny|prompt` (honored in every mode). A tool-declared `policy: deny` always wins.
+- `bash` has hardcoded safety overrides that still prompt in yolo (`rm -rf /`, fork bombs, remote-fetch-then-execute, `/etc/passwd` writes, shutdown). Configurable `bash.patterns` (`deny`/`prompt`/`allow`) apply to `bash` only, not `eval`.
+- Subagents always run with `tools.approvalMode: yolo`.
 
 ---
 
@@ -163,6 +200,7 @@ Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/con
 | `tdd`                   | `false`                                     | Default TDD mode for `cf-tdd` / implementers                                         |
 | `devRulesReminder`      | `true`                                      | Rules-reminder hook                                                                  |
 | `autoApprove`           | `false`                                     | Auto-approve hook (Claude + Codex + agy)                                             |
+| `autoApproveLLM`        | `false`                                     | Claude only. When `autoApprove` is on: `false` defers unknown tools to native permission flow / `auto` mode; `true` restores the Sonnet classifier |
 | `privacyBlock`          | `true`                                      | Privacy-block hook                                                                   |
 | `scoutBlock`            | `true`                                      | Scout-block hook                                                                     |
 | `autoApproveAllowExtra` | `[]`                                        | Extra Bash prefixes to auto-approve                                                  |

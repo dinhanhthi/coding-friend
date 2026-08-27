@@ -16,6 +16,7 @@ description: >
   obvious cause.
 created: 2026-02-17
 updated: 2026-07-04
+disable-slash-command: true
 ---
 
 # Systematic Debugging

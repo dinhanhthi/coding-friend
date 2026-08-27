@@ -322,6 +322,19 @@ function isAgyInstructionFile(normalizedPath) {
   return normalizedPath.includes("/skills/") && normalizedPath.endsWith(".md");
 }
 
+function sourceHasUserInvocableFalse(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return false;
+  return /^user-invocable:\s*false\s*$/m.test(match[1]);
+}
+
+function insertAgyDisableSlashCommand(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return markdown;
+  if (/^disable-slash-command:/m.test(match[1])) return markdown;
+  return `---\n${match[1]}\ndisable-slash-command: true\n---\n${markdown.slice(match[0].length)}`;
+}
+
 function renderAgyFile(sourcePath, input) {
   const normalizedPath = sourcePath.split(path.sep).join("/");
   const isSkill = normalizedPath.endsWith("/SKILL.md");
@@ -333,7 +346,11 @@ function renderAgyFile(sourcePath, input) {
     : renderAgyText(source);
 
   if (isSkill) {
+    const disableSlash = sourceHasUserInvocableFalse(input);
     rendered = stripClaudeSkillFrontmatter(rendered);
+    if (disableSlash) {
+      rendered = insertAgyDisableSlashCommand(rendered);
+    }
   }
 
   if (normalizedPath.includes("/skills/cf-plan/")) {
