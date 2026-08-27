@@ -9,6 +9,10 @@ const pluginMeta = JSON.parse(
   ),
 );
 
+const cliMeta = JSON.parse(
+  readFileSync(resolve(__dirname, "../cli/package.json"), "utf-8"),
+);
+
 const nextConfig: NextConfig = {
   trailingSlash: true,
   cacheComponents: true,
@@ -31,6 +35,7 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_PLUGIN_VERSION: pluginMeta.version,
+    NEXT_PUBLIC_CLI_VERSION: cliMeta.version,
   },
   async redirects() {
     return [

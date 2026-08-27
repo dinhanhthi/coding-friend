@@ -39,7 +39,7 @@ Single-page site at `website/`. Dark only. Visual reference: [dinhanhthi.com](ht
 - Panel / list: `border border-border rounded-lg bg-surface`. List panel hairline like dinhanhthi.com.
 - Tables: full-width, hairline rows, no zebra.
 - Code / ASCII: `pre` = panel with `bg-code-bg`, `overflow-x: auto`, no window chrome. ASCII ≤ 72 columns.
-- Footer: one muted line — `Made by Anh-Thi Dinh · GitHub · npm`.
+- Footer: muted line — `Made by Anh-Thi Dinh · GitHub · npm · Changelog · plugin vX · cli vY`. Version numbers are `font-mono` and link to releases / npm.
 - Signature: ASCII big picture after the pitch; box-drawing `┌─┐│└┘`; arrows `→ ↓`. No gradient, animation, stat counter, or icon set.
 
 **Notes**: Dark only. Tokens live in `@theme` in `globals.css`. One accent only (`--color-accent`). Diagrams are fenced ASCII, not mermaid or SVG.

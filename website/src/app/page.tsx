@@ -7,6 +7,9 @@ import MdxLink from "@/components/MdxLink";
 import { readIndexMd, getSections, getTocItems, mdxOptions } from "@/lib/mdx";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
+const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
+const CLI_VERSION = process.env.NEXT_PUBLIC_CLI_VERSION;
+
 const footerLinkClass =
   "hover:text-heading underline-offset-4 transition-colors duration-150 hover:underline";
 
@@ -75,18 +78,32 @@ export default function Home() {
             •
           </span>
           <div className="flex items-center gap-x-2">
-            <FooterLink href="https://github.com/dinhanhthi/coding-friend">
-              GitHub
-            </FooterLink>
-            <span aria-hidden="true">•</span>
-            <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
-              npm
-            </FooterLink>
-            <span aria-hidden="true">•</span>
             <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
               Changelog
             </FooterLink>
           </div>
+          {PLUGIN_VERSION || CLI_VERSION ? (
+            <>
+              <span className="hidden sm:block" aria-hidden="true">
+                •
+              </span>
+              <div className="flex items-center gap-x-2">
+                {PLUGIN_VERSION ? (
+                  <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+                    plugin <span className="font-mono">v{PLUGIN_VERSION}</span>
+                  </FooterLink>
+                ) : null}
+                {PLUGIN_VERSION && CLI_VERSION ? (
+                  <span aria-hidden="true">•</span>
+                ) : null}
+                {CLI_VERSION ? (
+                  <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
+                    cli <span className="font-mono">v{CLI_VERSION}</span>
+                  </FooterLink>
+                ) : null}
+              </div>
+            </>
+          ) : null}
         </div>
       </footer>
     </>
