@@ -1,14 +1,12 @@
 ---
 name: cf-plan
 description: >
-  Brainstorm and write an implementation plan. Use when the user wants to plan, build, create,
-  or implement something — e.g. "let's build", "let's create", "I want to create", "create for me",
-  "build for me", "add feature", "implement", "make a", "set up", "I need a", "can you build",
-  "help me build", "how should we implement", "design a solution", "architect", "scaffold",
-  "plan out", "figure out how to", "what's the best way to build". Also triggers on task
-  descriptions that imply multi-step implementation work requiring upfront planning.
+  Brainstorm and write an implementation plan. Use when the user wants to plan, build,
+  create, or implement something — e.g. "let's build", "let's create", "add feature",
+  "implement", "set up", "design a solution", "architect", "scaffold", "plan out", "what's
+  the best way to build". Also triggers on multi-step work needing planning.
 created: 2026-02-17
-updated: 2026-08-21
+updated: 2026-08-27
 ---
 
 # $cf-plan

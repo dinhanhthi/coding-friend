@@ -1,13 +1,11 @@
 ---
 name: cf-review-out
 description: >
-  Generate a review prompt for an external AI agent. Creates a self-contained document
-  that any AI (Gemini, Codex, ChatGPT, or even a human) can read and use to review your
-  code changes. Use when the user wants an outside review — e.g. "get a second opinion",
-  "external review", "review out", "send for review", "cf-review-out", "outside review",
-  "prepare review for gemini", "review prompt".
+  Generate a review prompt for an external AI (Gemini, Codex, ChatGPT, or a human).
+  Triggers: "get a second opinion", "external review", "review out", "send for review",
+  "cf-review-out", "prepare review for gemini".
 created: 2026-03-23
-updated: 2026-07-05
+updated: 2026-08-27
 ---
 
 # /cf-review-out

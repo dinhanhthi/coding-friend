@@ -1,21 +1,14 @@
 ---
 name: cf-sys-debug
 description: >
-  Systematic 4-phase debugging — root cause investigation, hypothesis testing,
-  regression-guarded fix, mandatory bug doc. Auto-invoke when a bug is non-trivial
-  or a previous fix didn't stick — signals: bug recurs ("still broken", "same error
-  again", "came back"), flaky / intermittent / race / timing, "used to work, now
-  broken", regression after update or dependency bump, hard-to-reproduce, works
-  locally but fails in CI (or vice versa), multi-stage pipeline failure, stack
-  trace into a library, user already tried fixes that didn't help, or user asks
-  to "find the root cause", "investigate", "diagnose", "why is this happening",
-  "trace this", "bisect", "deep dive". Also load BEFORE touching code whenever
-  the cause is unclear and a hypothesis must be stated first. Prefer over cf-fix
-  for hard, recurring, or investigation-heavy bugs (cf-fix may delegate here).
-  Do NOT auto-invoke for trivial typos, one-line fixes, or config errors with an
-  obvious cause.
+  Systematic 4-phase debugging — root cause, hypothesis testing, regression-guarded fix,
+  mandatory bug doc. Auto-invoke for non-trivial or recurring bugs — signals: "still
+  broken", "same error again", "came back", flaky/intermittent/race, "used to work, now
+  broken", hard-to-reproduce, works locally fails in CI, "find the root cause",
+  "investigate", "diagnose", "why is this happening". Prefer over cf-fix for hard bugs. Do
+  NOT auto-invoke for trivial typos, one-line fixes, or obvious config errors.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # Systematic Debugging

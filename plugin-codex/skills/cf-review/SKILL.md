@@ -1,13 +1,11 @@
 ---
 name: cf-review
 description: >
-  Dispatch code review to a subagent. Use when the user wants code reviewed — e.g.
-  "review this", "review my changes", "check the code", "look over this", "code review",
-  "any issues with this?", "is this code ok?", "review before merge", "review the diff",
-  "what do you think of these changes?". Also triggers on requests to review specific files,
-  commits, or branches.
+  Dispatch code review to a subagent. Triggers: "review this", "review my changes", "check
+  the code", "code review", "any issues with this?", "review before merge", "review the
+  diff". Also for reviewing specific files, commits, or branches.
 created: 2026-02-17
-updated: 2026-07-06
+updated: 2026-08-27
 ---
 
 # $cf-review

@@ -1,13 +1,11 @@
 ---
 name: cf-plan-resume
 description: >
-  Resume an existing implementation plan created by $cf-plan, continuing from where execution
-  last stopped. Use when the user wants to continue, resume, pick up, or finish a previously
-  saved plan — e.g. "resume the plan", "continue the plan", "pick up where we left off",
-  "finish the plan", "continue implementing the plan", "resume <slug>". Requires an existing
-  plan file under docs/plans/. Does NOT create new plans — use $cf-plan for that.
+  Resume an existing $cf-plan from where execution last stopped. Triggers: "resume the
+  plan", "continue the plan", "pick up where we left off", "finish the plan", "resume
+  <slug>". Requires a plan under docs/plans/. Does NOT create new plans (use $cf-plan).
 created: 2026-07-04
-updated: 2026-07-24
+updated: 2026-08-27
 ---
 
 # $cf-plan-resume

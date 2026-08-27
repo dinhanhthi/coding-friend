@@ -1,14 +1,12 @@
 ---
 name: cf-fix
 description: >
-  Quick bug fix workflow. Use when the user reports a bug, error, or broken behavior — e.g.
-  "fix this", "it's broken", "not working", "there's a bug", "I'm getting an error",
-  "this crashes", "something is wrong", "why does this fail", "debug this", "it throws",
-  "fix the issue", "resolve this error", "help me fix", "can you fix", "this doesn't work",
-  "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
-  Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
+  Quick bug fix workflow. Use when the user reports a bug or broken behavior — e.g. "fix
+  this", "it's broken", "not working", "there's a bug", "this crashes", "debug this", "it
+  throws", "failing test", "regression", "unexpected behavior". Also triggers on stack
+  traces or error messages.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # $cf-fix

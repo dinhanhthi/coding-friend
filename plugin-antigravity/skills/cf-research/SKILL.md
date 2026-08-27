@@ -1,14 +1,11 @@
 ---
 name: cf-research
 description: >
-  In-depth research on a topic with web search and structured output. Use when the user wants
-  deep research before building — e.g. "research this", "look into this library", "investigate
-  how X works", "compare these options", "what are the best practices for", "deep dive into",
-  "study this technology", "analyze this repo", "explore the ecosystem around". Also triggers
-  when the user needs to understand a technology, library, or architecture pattern in depth
-  before making decisions.
+  In-depth research with web search and structured output. Triggers: "research this",
+  "look into this library", "investigate how X works", "compare these options", "best
+  practices for", "deep dive into", "study this technology".
 created: 2026-02-19
-updated: 2026-07-05
+updated: 2026-08-27
 ---
 
 # /cf-research

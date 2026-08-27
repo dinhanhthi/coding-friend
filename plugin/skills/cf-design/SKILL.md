@@ -1,18 +1,12 @@
 ---
 name: cf-design
 description: >
-  UI design workflow — scan existing UI patterns, design new UI from a description, or modify
-  existing UI while keeping it visually consistent with the rest of the project.
-
-  Use when the user wants to: design or redesign a component, page, or section; change colors,
-  typography, spacing, or visual style; understand the project's current design system; add new
-  UI that should match existing patterns; or ensure a UI change doesn't look out of place. Use
-  when the user says things like "make it look like", "update the styling", "redesign this",
-  "match the existing style", "what design patterns does this project use", "extract the design
-  system", "add a dark mode", "make it more minimal/bold/clean", or describes a desired visual
-  outcome. Invoke via /cf-design — helps Claude produce intentional, consistent UI.
+  UI design workflow — scan patterns, design new UI, or modify UI consistently. Use to
+  redesign a component/page, change colors/typography/style, or extract the design system.
+  Triggers: "make it look like", "update the styling", "redesign this", "match the
+  existing style", "add a dark mode", "make it more minimal".
 created: 2026-04-30
-updated: 2026-07-04
+updated: 2026-08-27
 state: beta
 ---
 

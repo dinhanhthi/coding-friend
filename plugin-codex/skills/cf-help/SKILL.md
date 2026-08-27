@@ -1,17 +1,11 @@
 ---
 name: cf-help
 description: >
-  Answer questions about Coding Friend — skills, agents, hooks, CLI, config,
-  memory, hosts, parameters. Auto-invoke when the user asks about Coding Friend
-  capabilities, available skills, how to use a skill, what skills / agents /
-  commands / hooks exist, flags or parameters, how it works, or how to
-  configure it — e.g. "what skills are available?", "how does coding friend
-  work?", "what can you do?", "list all skills", "what agents exist?", "how do
-  I use cf-plan?", "what is cf-tdd?", "what flags does X have?", "what hooks
-  exist?", "how do I get started?", "coding friend features/setup", "does X
-  require the CLI?", "what works without coding-friend-cli?", "is the CLI
-  required?".
-  Do NOT auto-invoke for general coding questions unrelated to Coding Friend itself.
+  Answer questions about Coding Friend — skills, agents, hooks, CLI, config, memory,
+  hosts, parameters. Auto-invoke for CF capabilities or how to use a skill — e.g. "what
+  skills are available?", "how does coding friend work?", "list all skills", "how do I use
+  cf-plan?", "what is cf-tdd?", "is the CLI required?". Do NOT auto-invoke for general
+  coding questions unrelated to Coding Friend.
 created: 2026-02-17
 updated: 2026-08-27
 ---

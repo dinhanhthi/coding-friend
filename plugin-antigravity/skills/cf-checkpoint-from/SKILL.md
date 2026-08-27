@@ -1,15 +1,12 @@
 ---
 name: cf-checkpoint-from
 description: >
-  Load a previously saved checkpoint file back into a fresh conversation as working context, then
-  do what the user asks next. Use when the user wants to resume from a saved checkpoint — e.g.
-  "resume from checkpoint", "load checkpoint", "continue from checkpoint", "cf-checkpoint-from",
-  "pick up from the saved context", "restore conversation context". First word of the argument is
-  the checkpoint slug; anything after it is what to do once context is loaded. Pass `--recap` to
-  also print a summary of the restored context. Requires an existing checkpoint file — does NOT
-  create checkpoints (use /cf-checkpoint for that).
+  Load a saved checkpoint as working context, then do the next ask. Triggers: "resume from
+  checkpoint", "load checkpoint", "continue from checkpoint", "cf-checkpoint-from",
+  "restore conversation context". First word is the slug; `--recap` prints a summary. Does
+  NOT create checkpoints (use /cf-checkpoint).
 created: 2026-07-04
-updated: 2026-07-12
+updated: 2026-08-27
 ---
 
 # /cf-checkpoint-from

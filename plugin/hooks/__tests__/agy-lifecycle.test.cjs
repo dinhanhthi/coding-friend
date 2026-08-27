@@ -99,6 +99,10 @@ describe("rules-reminder.agy.sh", () => {
     const msg = parsed.injectSteps[0].ephemeralMessage;
     expect(msg).toContain("<system-reminder>");
     expect(msg).toContain("RULES:");
+    expect(msg).toContain("SECURITY");
+    expect(msg).toContain("INVOKE GUARD");
+    expect(msg).toContain("CRITICAL");
+    expect(msg).toContain("cf-tdd");
   });
 
   it("emits {} on invocationNum 1", () => {

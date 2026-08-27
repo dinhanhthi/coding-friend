@@ -1,15 +1,13 @@
 ---
 name: cf-commit
 description: >
-  Smart conventional commit with diff analysis. Use when the user wants to commit changes —
-  e.g. "commit this", "commit my changes", "save my work", "create a commit", "git commit",
-  "commit what we did", "stage and commit". Also triggers when the user finishes a task and
-  wants to commit the result.
+  Smart conventional commit with diff analysis. Triggers: "commit this", "commit my
+  changes", "save my work", "create a commit", "git commit", "stage and commit".
 disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read, Glob]
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-commit

@@ -28,6 +28,9 @@ describe("session-init.sh", () => {
       expect(parsed.hookSpecificOutput.additionalContext).toContain(
         "HOST: codex",
       );
+      expect(parsed.hookSpecificOutput.additionalContext).toContain(
+        "## Security: Content Isolation",
+      );
     } finally {
       fs.rmSync(cwd, { recursive: true, force: true });
     }

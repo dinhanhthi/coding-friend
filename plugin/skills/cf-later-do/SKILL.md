@@ -1,14 +1,11 @@
 ---
 name: cf-later-do
 description: >
-  Work through deferred side-tasks captured in docs/later/. Use when the user wants to process,
-  resolve, or clear the backlog of out-of-scope problems that earlier skills (cf-plan, cf-fix,
-  cf-sys-debug, cf-optimize, cf-ship, cf-implementer) recorded for later — e.g. "do the later tasks", "process
-  docs/later", "work through the backlog", "what did we defer", "resolve deferred items",
-  "cf-later-do". Lists each deferred item, lets the user pick one, routes the fix to /cf-fix or
-  /cf-plan, removes the file only after the fix is verified-done, then suggests the next item.
-  Slash-only — NOT auto-invoked. Requires items under docs/later/. Does NOT capture new items
-  (that is capture-later.sh, the write side) — this is the read/resolve side.
+  Work through deferred side-tasks in docs/later/. Triggers: "do the later tasks",
+  "process docs/later", "work through the backlog", "what did we defer", "resolve deferred
+  items", "cf-later-do". Routes to /cf-fix or /cf-plan; removes the file only after
+  verified-done. Slash-only — NOT auto-invoked. Does NOT capture new items (that is
+  capture-later.sh).
 disable-model-invocation: true
 created: 2026-07-24
 updated: 2026-08-27

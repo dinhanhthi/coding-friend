@@ -1,19 +1,15 @@
 ---
 name: cf-tdd
 description: >
-  Use when writing new production code, adding features, implementing changes, or refactoring
-  existing code — e.g. "implement this", "build this feature", "create a function", "add a new
-  endpoint", "write the implementation", "refactor this", "clean up this code", "extract into
-  a module", "simplify this function", "scaffold", "write a test", "add tests", "create a
-  component", "implement the API", "add a route", "write a service", "create the handler".
-  Also auto-invoke when the conversation transitions from planning/discussion to actual code
-  writing — any time production code is about to be written, this skill MUST be loaded first.
-  By default uses direct implementation (no new tests written). TDD is enabled when `--add-tests`
-  is present or config `tdd: true`. This is the gate for all code writing in the project.
-  Do NOT auto-invoke for documentation-only changes, config edits, non-code file updates,
-  or when the user is only asking questions about code without requesting changes.
+  Use when writing new production code, adding features, implementing, or refactoring —
+  e.g. "implement this", "build this feature", "create a function", "add a new endpoint",
+  "write the implementation", "refactor this", "write a test", "add tests", "create a
+  component", "implement the API", "add a route". Also auto-invoke when planning shifts to
+  writing production code — load this first. Default: direct implementation (no new
+  tests). TDD when `--add-tests` or config `tdd: true`. Do NOT auto-invoke for docs-only,
+  config edits, or questions without requested changes.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 disable-slash-command: true
 ---
 

@@ -1,17 +1,15 @@
 ---
 name: cf-optimize
 description: >
-  Structured optimization workflow — baseline, analyze, optimize, measure, compare.
-  Auto-invoke this skill when the conversation involves performance optimization,
-  speed improvements, or the user mentions something is slow — e.g. "this is slow",
-  "make it faster", "optimize", "performance", "bottleneck", "too many queries",
-  "high latency", "memory leak", "reduce load time", "speed up", "takes too long",
-  "timeout", "O(n²)", "N+1". Do NOT auto-invoke for minor refactors or style changes
-  that are not performance-related.
+  Structured optimization — baseline, analyze, optimize, measure, compare. Auto-invoke for
+  performance/speed — e.g. "this is slow", "make it faster", "optimize", "performance",
+  "bottleneck", "too many queries", "high latency", "memory leak", "speed up", "timeout",
+  "N+1". Do NOT auto-invoke for minor refactors or style changes that are not
+  performance-related.
 user-invocable: true
 argument-hint: "[target to optimize]"
 created: 2026-02-20
-updated: 2026-07-04
+updated: 2026-08-27
 model: opus
 ---
 

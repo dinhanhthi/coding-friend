@@ -1,20 +1,14 @@
 ---
 name: cf-remember
 description: >
-  Extract project knowledge from conversation to docs/memory — for AI recall in future sessions.
-  Use when the user wants to save project context, capture decisions, document conventions, or
-  preserve knowledge — e.g. "remember this", "save this to memory", "document what we did",
-  "capture this decision", "write this down", "note this", "record this convention".
-  Auto-invoke when: (1) a bug fix had a non-obvious root cause, a workaround, or took multiple
-  attempts — save to bugs/; (2) an explicit architecture or approach decision was made — save to
-  decisions/; (3) a new project-wide convention or pattern was established — save to conventions/;
-  (4) a substantial session ends with new feature flows, non-obvious API behavior, or gotchas —
-  save to features/.
-  Do NOT auto-invoke for trivial fixes, simple config changes, or purely educational exchanges
-  (use /cf-learn for those). Unlike /cf-learn (educational notes for humans), this saves project
-  context for AI recall.
+  Extract project knowledge to docs/memory for AI recall. Triggers: "remember this", "save
+  this to memory", "document what we did", "capture this decision", "write this down",
+  "note this", "record this convention". Auto-invoke: non-obvious bug fix → bugs/;
+  architecture decision → decisions/; new convention → conventions/; feature flows or
+  gotchas → features/. Do NOT auto-invoke for trivial fixes, simple config changes, or
+  educational exchanges (use /cf-learn).
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-remember
