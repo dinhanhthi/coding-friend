@@ -63,6 +63,7 @@ describe("session-init.sh omp host detection", () => {
   it("defaults to claude when no host clues are present", () => {
     const { context } = runSessionInit();
     expect(context).toContain("HOST: claude");
+    expect(context).toContain("## Security: Content Isolation");
   });
 
   it("lets explicit CF_HOST=claude win over OMP_SESSION_ID and .omp", () => {

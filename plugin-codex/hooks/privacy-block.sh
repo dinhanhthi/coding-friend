@@ -95,8 +95,9 @@ for path in "${PATHS_ARRAY[@]:-}"; do
       cat <<EOF
 {
   "hookSpecificOutput": {
-    "decision": "block",
-    "reason": "Access to '$path' blocked by privacy-block. File matches sensitive pattern: $pattern"
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Access to '$path' blocked by privacy-block. File matches sensitive pattern: $pattern"
   }
 }
 EOF

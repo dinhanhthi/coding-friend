@@ -1,14 +1,11 @@
 ---
 name: cf-scan
 description: >
-  Scan project and populate memory with knowledge — architecture, conventions, tech stack,
-  key features, infrastructure. Use when a project has no memories yet, or when the user wants to
-  refresh/rebuild project understanding — e.g. "scan the project", "scan the codebase",
-  "bootstrap memory", "initialize memory with project knowledge", "populate memory",
-  "build project understanding", "scan this aspect", "analyze the project".
-  This is a token-heavy operation — always warn the user before proceeding.
+  Scan the project and populate memory (architecture, conventions, stack, features).
+  Triggers: "scan the project", "scan the codebase", "bootstrap memory", "populate
+  memory", "analyze the project". Token-heavy — always warn before proceeding.
 created: 2026-03-16
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # $cf-scan

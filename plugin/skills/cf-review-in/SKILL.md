@@ -1,15 +1,14 @@
 ---
 name: cf-review-in
 description: >
-  Collect and act on review results from an external AI agent. Reads the result file
-  written by an external reviewer and presents findings, then offers to fix issues.
-  Use when the user wants to collect an outside review — e.g. "review in", "collect review",
-  "check review results", "cf-review-in", "read external review", "import review".
+  Collect and act on an external AI review. Reads the result file, presents findings,
+  offers to fix. Triggers: "review in", "collect review", "check review results",
+  "cf-review-in", "import review".
 user-invocable: true
 argument-hint: "<label> [service]"
 model: sonnet
 created: 2026-03-23
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-review-in

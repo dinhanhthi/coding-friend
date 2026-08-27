@@ -1,15 +1,14 @@
 ---
 name: cf-warm
 description: >
-  Catch up after absence — summarize git history for a specific user. Use when a user
-  returns after time away from a project and needs to understand what happened — e.g.
-  "warm up", "catch me up", "what happened while I was away", "what did I work on",
-  "summarize recent changes", "what changed since I left", "warm up the project".
+  Catch up after absence — summarize git history for a user. Triggers: "warm up", "catch
+  me up", "what happened while I was away", "summarize recent changes", "what changed
+  since I left".
 user-invocable: true
 argument-hint: "[--user <name>] [--n-commits <N>]"
 model: sonnet
 created: 2026-03-31
-updated: 2026-07-04
+updated: 2026-08-27
 state: beta
 ---
 

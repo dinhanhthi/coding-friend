@@ -1,13 +1,11 @@
 ---
 name: cf-teach
 description: >
-  Personal teacher skill — after any task, explains what happened in a conversational, storytelling
-  way (like a sharp friend over coffee). Covers: approach taken, alternatives rejected, how parts
-  connect, tools used, tradeoffs, mistakes made, pitfalls to watch, expert observations, and
-  transferable lessons. Unlike /cf-learn (concise structured reference notes), this creates a
-  narrative deep-dive for the human to truly understand what happened and why.
+  Personal teacher — after a task, explains what happened as a conversational narrative
+  (approach, alternatives, tradeoffs, pitfalls, lessons). Unlike /cf-learn (structured
+  notes), this is a deep-dive so the human understands what happened and why.
 created: 2026-03-30
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-teach

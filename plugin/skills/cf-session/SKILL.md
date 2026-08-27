@@ -1,15 +1,14 @@
 ---
 name: cf-session
 description: >
-  Save the current Claude Code session to docs/sessions/ for cross-machine resume. Use when
-  the user wants to save their session — e.g. "save this session", "I want to continue on
-  another machine", "save my progress", "export this conversation", "sync this session",
-  "bookmark this session". Pairs with `cf session load` + `claude --resume` on the target machine.
+  Save the current session to docs/sessions/ for cross-machine resume. Triggers: "save
+  this session", "continue on another machine", "export this conversation", "sync this
+  session", "bookmark this session".
 disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read]
 created: 2026-03-05
-updated: 2026-07-04
+updated: 2026-08-27
 state: beta
 ---
 

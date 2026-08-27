@@ -1,14 +1,12 @@
 ---
 name: cf-ask
 description: >
-  Quick Q&A about codebase — explores code to answer, saves to docs/memory. Use when the user
-  asks a focused question about the project — e.g. "how does X work?", "where is Y defined?",
-  "what's the flow for Z?", "explain this module", "how are these connected?", "what pattern
-  does this use?", "why is this done this way?". Unlike /cf-research (deep multi-doc output),
-  this gives a single focused answer.
+  Quick Q&A about the codebase → docs/memory. Use for focused project questions — e.g.
+  "how does X work?", "where is Y defined?", "what's the flow for Z?", "explain this
+  module", "why is this done this way?". Unlike /cf-research, one answer.
 disable-model-invocation: true
 created: 2026-02-20
-updated: 2026-07-04
+updated: 2026-08-27
 model: sonnet
 ---
 

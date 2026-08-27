@@ -3,7 +3,7 @@ name: cf-verification
 description: Verify before claiming work is complete
 user-invocable: false
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # Verification Before Completion

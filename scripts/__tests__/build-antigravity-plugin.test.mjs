@@ -350,6 +350,18 @@ test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
     /`--model <alias>` pin the model for cf-planner at the brainstorm step \(valid: `inherit`, `flash`, `pro`\)/,
   );
   assert.doesNotMatch(help, /cf dev sync/);
+  assert.match(
+    help,
+    /`--with-codex`\/`--codex` and `review\.withCodex` are ignored on Google Antigravity/,
+  );
+
+  const fixSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-fix/SKILL.md"),
+    "utf8",
+  );
+  const fix = renderAgyFile("/repo/plugin/skills/cf-fix/SKILL.md", fixSource);
+  assert.doesNotMatch(fix, /runs a Codex second opinion/);
+  assert.match(fix, /ignores the Claude-only `review\.withCodex` setting/);
 
   for (const skillName of ["cf-commit", "cf-review"]) {
     const source = await fs.readFile(
@@ -367,6 +379,82 @@ test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
       /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/,
     );
   }
+});
+
+test("rewrites cf-review for Antigravity", async () => {
+  const reviewFixture = renderAgyFile(
+    "/repo/plugin/skills/cf-review/SKILL.md",
+    [
+      "**Codex dual-review flag:**",
+      "",
+      "- If `$ARGUMENTS` contains `--with-codex`, set `codex=true`.",
+      "",
+      "### Step 2: Gather the diff",
+      "",
+      "### Step 2.5: Spawn Codex review in the background (only when `codex=true`)",
+      "",
+      "bash run-codex-review.sh",
+      "",
+      "### Step 3: Assess change size",
+      "",
+      "### Step 6.5: Collect & normalize the Codex review (only when `codex=true`)",
+      "",
+      "bash normalize-codex-review.sh",
+      "",
+      "### Step 7: Collect the report",
+      "",
+      "When any external source survived, merge.",
+      "",
+      "### Step 8: Mark review complete and display status",
+      "",
+      "Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix. Omit the suffix when only the in-session reviewer ran.",
+    ].join("\n"),
+  );
+  assert.match(reviewFixture, /Antigravity host behavior/);
+  assert.match(reviewFixture, /Ignore `--with-codex`/);
+  assert.match(
+    reviewFixture,
+    /The result of Step 6 is the final formatted report/,
+  );
+  assert.doesNotMatch(reviewFixture, /Codex dual-review flag/);
+  assert.doesNotMatch(reviewFixture, /Step 2\.5: Spawn Codex review/);
+  assert.doesNotMatch(
+    reviewFixture,
+    /Step 6\.5: Collect & normalize the Codex review/,
+  );
+  assert.doesNotMatch(reviewFixture, /run-codex-review\.sh/);
+  assert.doesNotMatch(reviewFixture, /normalize-codex-review\.sh/);
+  assert.doesNotMatch(reviewFixture, /When any external source contributed/);
+
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const reviewSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-review/SKILL.md"),
+    "utf8",
+  );
+  const review = renderAgyFile(
+    "/repo/plugin/skills/cf-review/SKILL.md",
+    reviewSource,
+  );
+  assert.match(review, /Antigravity host behavior/);
+  assert.match(review, /Ignore `--with-codex`/);
+  assert.match(review, /The result of Step 6 is the final formatted report/);
+  assert.match(review, /<plugin-root>\/skills\/cf-review\//);
+  assert.doesNotMatch(review, /Codex dual-review flag/);
+  assert.doesNotMatch(review, /Step 2\.5: Spawn Codex review/);
+  assert.doesNotMatch(
+    review,
+    /Step 6\.5: Collect & normalize the Codex review/,
+  );
+  assert.doesNotMatch(
+    review,
+    /run-codex-review\.sh|normalize-codex-review\.sh/,
+  );
+  assert.doesNotMatch(review, /codex=(?:true|false)/);
+  assert.doesNotMatch(review, /When any external source contributed/);
+  assert.doesNotMatch(review, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);
 });
 
 test("creates stamped Antigravity plugin manifest", () => {
@@ -478,6 +566,103 @@ test("strips Claude skill frontmatter when closing fence has no trailing newline
     stripClaudeSkillFrontmatter(withoutNewline),
     ["---", "name: cf-example", "description: Example", "---", ""].join("\n"),
   );
+});
+
+function skillFrontmatter(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(match, "rendered skill is missing YAML frontmatter");
+  return match[1];
+}
+
+test("maps user-invocable: false to disable-slash-command by field, not skill name", () => {
+  const hidden = renderAgyFile(
+    "/repo/plugin/skills/cf-hidden/SKILL.md",
+    [
+      "---",
+      "name: cf-hidden",
+      "description: Auto-only helper",
+      "user-invocable: false",
+      "model: haiku",
+      "---",
+      "",
+      "Body stays.",
+    ].join("\n"),
+  );
+  const hiddenFm = skillFrontmatter(hidden);
+  assert.match(hiddenFm, /^disable-slash-command: true$/m);
+  assert.doesNotMatch(hiddenFm, /^user-invocable:/m);
+  assert.doesNotMatch(hiddenFm, /^model:/m);
+  assert.match(hidden, /Body stays\./);
+
+  const invocableTrue = renderAgyFile(
+    "/repo/plugin/skills/cf-hidden/SKILL.md",
+    [
+      "---",
+      "name: cf-hidden",
+      "description: Explicitly invocable",
+      "user-invocable: true",
+      "---",
+      "",
+      "Body.",
+    ].join("\n"),
+  );
+  assert.doesNotMatch(skillFrontmatter(invocableTrue), /disable-slash-command/);
+  assert.doesNotMatch(skillFrontmatter(invocableTrue), /^user-invocable:/m);
+});
+
+test("does not emit disable-slash-command for slash skills without user-invocable: false", () => {
+  const plan = renderAgyFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    [
+      "---",
+      "name: cf-plan",
+      "description: Plan",
+      "---",
+      "",
+      "Use TaskCreate to create a task list.",
+    ].join("\n"),
+  );
+  assert.doesNotMatch(skillFrontmatter(plan), /disable-slash-command/);
+});
+
+test("maps real user-invocable:false skills and leaves slash skills unmarked", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+
+  for (const skillName of ["cf-tdd", "cf-sys-debug", "cf-verification"]) {
+    const source = await fs.readFile(
+      path.join(repoRoot, "plugin/skills", skillName, "SKILL.md"),
+      "utf8",
+    );
+    assert.match(
+      source,
+      /^user-invocable:\s*false$/m,
+      `${skillName} source should declare user-invocable: false`,
+    );
+    const rendered = renderAgyFile(
+      `/repo/plugin/skills/${skillName}/SKILL.md`,
+      source,
+    );
+    assert.match(
+      skillFrontmatter(rendered),
+      /^disable-slash-command: true$/m,
+      `${skillName} AGY frontmatter should disable slash command`,
+    );
+    assert.doesNotMatch(skillFrontmatter(rendered), /^user-invocable:/m);
+  }
+
+  const planSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-plan/SKILL.md"),
+    "utf8",
+  );
+  assert.doesNotMatch(planSource, /^user-invocable:\s*false$/m);
+  const plan = renderAgyFile(
+    "/repo/plugin/skills/cf-plan/SKILL.md",
+    planSource,
+  );
+  assert.doesNotMatch(skillFrontmatter(plan), /disable-slash-command/);
 });
 
 test("builds Antigravity plugin fixture idempotently", async () => {

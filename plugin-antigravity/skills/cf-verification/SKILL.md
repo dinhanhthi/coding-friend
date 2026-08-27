@@ -2,7 +2,8 @@
 name: cf-verification
 description: Verify before claiming work is complete
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
+disable-slash-command: true
 ---
 
 # Verification Before Completion

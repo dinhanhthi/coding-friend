@@ -1,14 +1,12 @@
 ---
 name: cf-fix
 description: >
-  Quick bug fix workflow. Use when the user reports a bug, error, or broken behavior — e.g.
-  "fix this", "it's broken", "not working", "there's a bug", "I'm getting an error",
-  "this crashes", "something is wrong", "why does this fail", "debug this", "it throws",
-  "fix the issue", "resolve this error", "help me fix", "can you fix", "this doesn't work",
-  "stopped working", "regression", "unexpected behavior", "failing test", "broken after update".
-  Also triggers on stack traces, error messages, or descriptions of incorrect program behavior.
+  Quick bug fix workflow. Use when the user reports a bug or broken behavior — e.g. "fix
+  this", "it's broken", "not working", "there's a bug", "this crashes", "debug this", "it
+  throws", "failing test", "regression", "unexpected behavior". Also triggers on stack
+  traces or error messages.
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-fix
@@ -21,132 +19,110 @@ Fix the bug: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
 
 ### Step 1: Understand the Bug
 
-1. Read the error message or bug description from `$ARGUMENTS`
-2. If no clear error, **ask the user** to describe the expected vs actual behavior
-3. If the bug description is vague, ask: what did you expect? what happened instead? when does it happen?
+1. Read the error or description from `$ARGUMENTS`
+2. If unclear, ask expected vs actual, and when it happens
 
 ### Step 2: Verify the Problem Exists
 
-1. Run the failing test or command that triggers the bug
-2. Capture the exact error output
-3. If you **cannot reproduce**, tell the user and ask for more context — do NOT guess
-4. If no test exists AND `--add-tests` flag was used, write one that demonstrates the failure. Otherwise, reproduce by running the code directly or via existing tests.
+1. Run the failing test or command; capture exact output
+2. If you **cannot reproduce**, tell the user and ask for context — do NOT guess
+3. No test AND `--add-tests` (alias `--tdd`) → write one that fails. Else reproduce via existing tests or by running the code.
 
 ### Step 3: Recall Past Bugs + Explore Relevant Code
 
 **3a. Check existing bug docs** (memory recall):
 
-Before exploring, search for related past bugs. Extract 2-3 keywords from the bug description.
+Extract 2–3 keywords from the bug.
 
-**Primary — Memory MCP** (if `memory_search` tool is available):
-Call `memory_search` with: `{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
+**Primary — Memory MCP** (if `memory_search` is available):
+`{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
 
-**Fallback — grep** (if memory MCP unavailable):
-Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
+**Fallback — grep** (`{docsDir}` from `.coding-friend/config.json`, default `docs`):
 
-1. Grep `^description:` lines across `{docsDir}/memory/bugs/**/*.md` — match against bug keywords
-2. If no match, grep `^tags:` lines across `{docsDir}/memory/bugs/**/*.md`
+1. Grep `^description:` in `{docsDir}/memory/bugs/**/*.md`
+2. Else grep `^tags:`
 
-If matches found, read the top 1-2 matched files — they may reveal known root causes or patterns.
-Include any relevant findings as context for the explorer.
+Read the top 1–2 matches; pass relevant findings to the explorer.
 
-**3b. Generate task-id and explore relevant code** (via cf-explorer agent):
+**3b. Generate task-id and explore** (cf-explorer):
 
-1. **Generate a task-id**: use format `YYYY-MM-DD-<short-descriptor>` (e.g., `2026-05-03-fix-auth-race`)
-2. **Determine docsDir**: read from `.coding-friend/config.json` if present, default to `docs`
-3. **Context file path**: `{docsDir}/context/{task-id}.json`
-
-Launch the **cf-explorer agent** to gather context around the bug, passing the context file path so it writes structured findings.
+1. **task-id**: `YYYY-MM-DD-<short-descriptor>`
+2. **docsDir**: `.coding-friend/config.json` or `docs`
+3. **Context file**: `{docsDir}/context/{task-id}.json`
 
 Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
 
-> Explore the codebase to help diagnose this bug: [bug description from $ARGUMENTS]
->
-> Error output: [from Step 2]
->
-> **Context file:** Write your structured findings to [docsDir/context/<task-id>.json]
->
-> [If past bug docs were found in 3a]:
-> Related past bugs found in memory:
-> [summary of relevant findings]
->
-> Questions to answer:
->
-> 1. What does the code path look like from the error location backward to the origin?
-> 2. What are the relevant files, functions, and dependencies involved?
-> 3. Are there existing tests covering this area?
-> 4. What patterns or conventions might be relevant to the fix?
+> Diagnose this bug: [from $ARGUMENTS]
+> Error output: [Step 2]
+> **Context file:** write structured findings to [docsDir/context/<task-id>.json]
+> [If 3a hits]: Related past bugs: [summary]
+> Answer: (1) error path backward to origin (2) files/functions/deps (3) existing tests (4) relevant patterns
 
-Wait for the cf-explorer to return its findings.
+Wait for findings.
 
 ### Step 4: Locate Root Cause
 
-Using the cf-explorer's findings:
+Using explorer findings:
 
-1. Read the error — full stack trace, not just the message
-2. Trace backward from where the error appears to where it originates
-3. The bug is usually NOT where the error shows up
-4. **State your hypothesis** using this exact template before fixing:
+1. Read the full stack trace, not just the message
+2. Trace backward from the error to its origin
+3. **Hypothesis** (exact template) before fixing:
 
    > "I believe the root cause is [X] because [evidence]."
 
-   Name a specific file, function, and line. "A state management issue" is not a hypothesis. "Stale cache in `useUser` at `src/hooks/user.ts:42` because the dependency array is missing `userId`" is a hypothesis.
+   Name file, function, and line. Vague labels are not a hypothesis.
 
-5. **Rationalization Watch** — if any of these surface, stop and re-examine:
+4. **Rationalization Watch** — stop and re-examine if any appear:
 
-   | Thought                             | What it means                             | Rule                                                                              |
-   | ----------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
-   | "I'll just try this one thing"      | No hypothesis, random-walking             | Stop. Write the hypothesis first.                                                 |
-   | "Probably the same issue as before" | Treating a new symptom as a known pattern | Re-read the execution path from scratch.                                          |
-   | "One more restart should fix it"    | Avoiding the error message                | Read the last error verbatim. Never restart more than twice without new evidence. |
-   | "I'm confident it's X"              | Confidence is not evidence                | Run an instrument that proves it.                                                 |
+   | Thought                             | Rule                                                                |
+   | ----------------------------------- | ------------------------------------------------------------------- |
+   | "I'll just try this one thing"      | Write the hypothesis first                                          |
+   | "Probably the same issue as before" | Re-read the execution path from scratch                             |
+   | "One more restart should fix it"    | Read the last error verbatim. Max two restarts without new evidence |
+   | "I'm confident it's X"              | Confidence is not evidence — instrument it                          |
 
 ### Step 5: Confirm Approach
 
 Before changing code:
 
-1. Tell the user what you believe the root cause is (using the template from Step 4)
-2. Explain what you plan to change and why
-3. If you're not confident, say so — ask for the user's input
-4. **Same symptom after a fix = hard stop.** Do not attempt a second fix until you can state a new hypothesis with new evidence. Escalate immediately to cf-sys-debug if the symptom recurs unchanged.
+1. State the root cause (Step 4 template)
+2. Say what you will change and why
+3. If unsure, say so and ask
+4. **Same symptom after a fix = hard stop.** New hypothesis + new evidence required. Escalate to cf-sys-debug if the symptom recurs unchanged.
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to fix the bug test-first. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`.
-
-Pass the context file path from Step 3b so the agent can read the explorer's structured findings.
+Dispatch the **cf-implementer** agent. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass the Step 3b context file.
 
 **Prompt template:**
 
 > Fix the following bug:
 >
-> **Bug:** [description from $ARGUMENTS]
-> **Context file:** [path to docsDir/context/<task-id>.json]
-> **Root cause:** [from Step 4]
-> **Fix approach:** [confirmed in Step 5]
-> **Failing test/command:** [from Step 2]
-> **Relevant files:** [paths from explorer findings + root cause analysis in Step 4]
-> **Test patterns:** [framework, test file locations, run command]
+> **Bug:** [from $ARGUMENTS]
+> **Context file:** [docsDir/context/<task-id>.json]
+> **Root cause:** [Step 4]
+> **Fix approach:** [Step 5]
+> **Failing test/command:** [Step 2]
+> **Relevant files:** [explorer + Step 4]
+> **Test patterns:** [framework, locations, run command]
 >
 > Requirements:
 >
-> 1. If `--add-tests` was passed and no regression test exists for this bug, write one first that demonstrates the failure. Otherwise, skip test writing and fix directly.
-> 2. Fix the root cause — not the symptom. No try/catch to suppress errors.
-> 3. One fix at a time — no additional changes
-> 4. Run the full test suite — no regressions allowed
-> 5. Report: what was fixed, tests written, and full test output as evidence
+> 1. `--add-tests` and no regression test → write a failing test first. Else fix directly.
+> 2. Fix the root cause, not the symptom. No try/catch to suppress errors.
+> 3. One fix at a time
+> 4. Full test suite — no regressions
+> 5. Report: what was fixed, tests written, full test output
 
-**Capturing out-of-scope side-effects:** While the implementer is working, if you notice a problem **unrelated to the current bug** that is non-trivial (fixing it inline would expand the scope of this fix), do NOT fix it now. Record it for later, then continue:
+**Out-of-scope side-effects:** if you notice a non-trivial problem **unrelated to this bug**, do not fix it inline. Record it, then continue:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/lib/capture-later.sh" \
@@ -154,54 +130,47 @@ bash "${CLAUDE_PLUGIN_ROOT}/lib/capture-later.sh" \
   --source cf-fix [--slug <bug-doc/task slug, if one exists>] [--problem "<the bug being fixed>"]
 ```
 
-This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, problem, conversation_id). Trivial fixes the bug clearly requires stay inline.
+Writes `<docsDir>/later/YYYY-MM-DD-<name>.md` (frontmatter: slug, problem, conversation_id). Trivial fixes the bug requires stay inline.
 
 ### Step 7: Verify Agent Results + Retry on Failure
 
-**Parse the last non-empty line** of the cf-implementer's response for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
+Parse the **last non-empty line** of the implementer response — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
 
-- `[CF-RESULT: success]` → proceed to Step 8
-- `[CF-RESULT: failure] <reason>` → trigger retry (see below)
-- **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
+- `[CF-RESULT: success]` → Step 8
+- `[CF-RESULT: failure] <reason>` → retry
+- Missing, malformed, or not last non-empty line → failure, reason `empty-output`. Never assume silent success.
 
-**On success:**
-
-1. Review the report — confirm the fix addresses the root cause from Step 4
-2. Proceed to Step 8
+**On success:** confirm the report matches the Step 4 root cause, then Step 8.
 
 **Retry protocol** (max 1 retry):
 
-1. **Notify the user** (always visible):
+1. Notify:
 
    ```
    > ⟳ Attempt 1 failed (<reason>). Retrying with error context...
    ```
 
-2. **Update the context file** — read the existing `{docsDir}/context/{task-id}.json`, add the `previous_failure` key, and write it back:
+2. Update `{docsDir}/context/{task-id}.json` — add `previous_failure`:
 
    ```json
    {
-     "task_id": "<task-id>",
-     "task_summary": "<original task>",
-     "relevant_files": ["..."],
-     "key_findings": ["..."],
-     "constraints": ["..."],
-     "suggested_approach": "...",
      "previous_failure": {
        "reason": "<tests-failed|compile-error|empty-output>",
-       "error_summary": "<brief error details from the agent's response>",
+       "error_summary": "<brief details from the agent>",
        "attempt": 1
      }
    }
    ```
 
-3. **Re-dispatch cf-implementer** with the updated context file and an amended prompt:
+   Keep existing keys (`task_id`, `task_summary`, `relevant_files`, `key_findings`, `constraints`, `suggested_approach`).
+
+3. Re-dispatch cf-implementer:
 
    > **RETRY** — Previous attempt failed: [reason]. Error details: [summary].
    > Review the context file at [path] for full failure context.
    > [original prompt from Step 6]
 
-4. **If retry also fails**, escalate to user:
+4. Retry fails → escalate:
 
    ```
    > ✗ Both attempts failed. Summary:
@@ -210,16 +179,16 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
    > Please review and guide the next step.
    ```
 
-   Then fall back to inline fixing following TDD discipline, or load `cf-sys-debug` if the user prefers.
+   Then inline-fix with TDD discipline, or load `cf-sys-debug` if the user prefers.
 
-5. **Cleanup**: Delete the context file after the workflow completes (success or escalation) or if the user cancels.
+5. **Cleanup:** delete the context file after success, escalation, or cancel.
 
 ### Step 8: Save Bug Knowledge (conditional)
 
-**Only run this step if the fix required more than 1 attempt** (i.e., the first fix attempt in Step 6/7 did not succeed and required re-dispatch or inline fixing). If the fix succeeded on the first attempt, skip to Step 9.
+**Only if the first Step 6/7 attempt failed** (re-dispatch or inline fix). First-attempt success → skip to Step 9.
 
-1. Read `language` config (local `.coding-friend/config.json` overrides global, default: `en`)
-2. Construct a write spec and delegate to **cf-writer agent** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"` (use absolute path for `file_path` — use `MAIN_REPO_ROOT` from bootstrap context (fallback: `pwd`), read config from `CF_CONFIG_FILE`, use `CF_DOCS_ROOT` as docs base dir):
+1. Read `language` (local `.coding-friend/config.json` overrides global, default `en`)
+2. Delegate to **cf-writer** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`. Absolute `file_path`: `MAIN_REPO_ROOT` from bootstrap (fallback `pwd`), config from `CF_CONFIG_FILE`, docs base `CF_DOCS_ROOT`.
 
 ```
 WRITE SPEC
@@ -242,73 +211,59 @@ content: |
   # <Bug Title>
 
   ## Overview
-  <What went wrong — symptom and context>
+  <Symptom and context>
 
   ## Root Cause
-  <What was actually wrong — the real cause, not the symptom>
+  <Real cause, not the symptom>
 
   ## Fix
-  <What was changed to fix it>
+  <What changed>
 
   ## Prevention
-  <How to avoid this bug in the future>
+  <How to avoid it>
 
   ## Related Files
-  - `path/to/file1`
-  - `path/to/file2`
+  - `path/to/file`
 readme_update: false
 auto_commit: false
 existing_file_action: skip
 ```
 
-> **Backward compat:** Existing bug memory files without a date prefix are still readable — do not rename them.
+Existing bug files without a date prefix stay as-is — do not rename.
 
-**Frontmatter rules:**
-
-- `description`: factual summary for grep recall. Good: `"Race condition in webhook handler causing duplicate payment processing"`. Bad: `"Fixed a bug"`.
-- `tags`: include error type, affected module, root cause category (e.g., `[race-condition, webhooks, payments]`)
+**Frontmatter:** `description` is a factual grep summary (not "Fixed a bug"). `tags`: error type, module, root-cause category.
 
 ### Step 8b: Index in CF Memory (MANDATORY)
 
-**This step is REQUIRED — do NOT skip it.**
+**Required — do not skip.** After cf-writer saves the file, call `memory_store` yourself (the writer does not):
 
-After the cf-writer saves the bug doc, you MUST call the `memory_store` MCP tool to index it in the database. This is a separate action from writing the file — the cf-writer agent does NOT do this.
-
-Call `memory_store` with:
-
-- `title`: from the frontmatter title
-- `description`: from the frontmatter description
+- `title` / `description` / `tags` from frontmatter
 - `type`: `episode`
-- `tags`: from the frontmatter tags
-- `content`: the full markdown content (including frontmatter)
-- `importance`: 3 (default)
+- `content`: full markdown including frontmatter
+- `importance`: 3
 - `source`: "auto-capture"
 - `index_only`: true
 
-If the MCP tool is unavailable, log a warning to the user but do NOT fail silently.
+If MCP is unavailable, warn the user — do not fail silently.
 
-Show the user a 2-line summary:
+2-line summary:
 
 - **Markdown file:** `{docsDir}/memory/bugs/...md` (created or updated)
 - **Memory DB:** indexed ✓ — or: MCP unavailable, file only
 
 ### Step 9: Auto-Review
 
-Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do NOT ask the user first, just run it.
+Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do not ask first.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here (cf-review reads the config itself).
+If `review.withCodex: true` in config, cf-review runs a Codex second opinion and merges — no flag needed here.
 
 ### Step 10: Performance Suggestion (conditional)
 
-If the bug fix involved **performance-critical code** — e.g. database queries, API endpoints, loops over large datasets, memory management, caching, or I/O operations — suggest running `/cf-optimize` on the affected code path. Present it as an optional next step, do NOT auto-run.
-
-Example: _"The fix touched a database query path. Want to run `/cf-optimize` on it to verify performance hasn't regressed and look for optimization opportunities?"_
-
-If the fix was not performance-related, skip this step.
+If the fix touched performance-critical code (queries, APIs, large loops, memory, cache, I/O), suggest `/cf-optimize` as optional — do not auto-run. Skip otherwise.
 
 ## Completion Protocol
 
-When the fix is complete (after Step 9/10), report using this format:
+After Step 9/10:
 
 **On success:**
 
@@ -319,28 +274,22 @@ Confirmed:    [evidence or test that proves the fix]
 Tests:        [pass/fail count, regression test location]
 ```
 
-Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (state what is unknown and what information is needed to proceed).
+Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (what is unknown and what is needed).
 
 ## Escalation
 
-If you've tried **2 fixes** and the bug still persists, before attempting a 3rd fix:
+After **2 failed fixes**, before a 3rd:
 
-1. **Suggest `/cf-learn`** — Ask the user: _"This bug is taking multiple attempts. Want to run `/cf-learn` to capture the debugging insights so far before continuing?"_
+1. Suggest `/cf-learn` to capture debugging insights so far
 2. If the user agrees, invoke `/cf-learn` — use the Skill tool with skill name `coding-friend:cf-learn`
-3. Then proceed with the 3rd attempt
+3. Then attempt the 3rd fix
 
-If you've tried **3 fixes** and the bug persists:
+After **3 failed fixes**:
 
-1. Stop fixing
-2. Load the `cf-sys-debug` skill
-3. Follow its full 4-phase process — the bug is likely deeper than expected
+1. Stop
+2. Load `cf-sys-debug`
+3. Follow its 4-phase process
 
 ## Quick Checks
 
-Before diving deep, try these common causes first:
-
-- **Typo in variable/function name?** Check spelling
-- **Wrong import path?** Check relative vs absolute
-- **Stale cache/build?** Clean and rebuild
-- **Missing dependency?** Check package.json/requirements
-- **Environment mismatch?** Check env vars, node version, etc.
+Try first: typo / wrong import / stale cache or build / missing dependency / env or runtime mismatch.

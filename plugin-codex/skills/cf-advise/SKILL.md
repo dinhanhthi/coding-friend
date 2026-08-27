@@ -1,15 +1,12 @@
 ---
 name: cf-advise
 description: >
-  Decision advisory through a structured interview — never writes code or plans. Use when the
-  user wants help DECIDING, not building — e.g. "should I", "is X worth it", "which approach",
-  "help me decide between A and B", "does it make sense to", "am I overthinking this", "what
-  would you recommend", "is this a good idea", "pros and cons of". Interviews one question at a
-  time to surface hidden requirements, then delivers a verdict-first recommendation with pitfalls
-  and ranked alternatives. Unlike $cf-plan (writes an implementation plan / builds), this only
-  advises. Unlike $cf-ask (looks up how existing code works), this reasons about a decision.
+  Decision advisory via structured interview — never writes code or plans. Use when the
+  user wants help DECIDING — e.g. "should I", "is X worth it", "which approach", "help me
+  decide between A and B", "am I overthinking this", "what would you recommend", "pros and
+  cons of". Unlike $cf-plan (builds) or $cf-ask (looks up code), this only advises.
 created: 2026-07-23
-updated: 2026-07-23
+updated: 2026-08-27
 ---
 
 # $cf-advise

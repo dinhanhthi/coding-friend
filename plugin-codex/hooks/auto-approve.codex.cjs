@@ -154,8 +154,7 @@ function main() {
       return;
     }
 
-    const projectDir =
-      process.env.CODEX_PROJECT_DIR || parsed.cwd || process.cwd();
+    const projectDir = parsed.cwd || process.cwd();
     const { enabled, allowExtra } = loadCodexAutoApproveConfig(
       os.homedir(),
       projectDir,

@@ -1,15 +1,12 @@
 ---
 name: cf-checkpoint
 description: >
-  Save a concise checkpoint of the current conversation's context — goal, decisions, breaking
-  changes, next steps — into a file for resuming later in a DIFFERENT conversation. Use when the
-  user says things like "save a checkpoint", "checkpoint this conversation", "capture context",
-  "snapshot the conversation", "cf-checkpoint". Unlike /compact (condenses context within the
-  SAME conversation), this produces a durable, resumable snapshot for a fresh conversation.
-  Unlike $cf-remember (durable project-wide facts/conventions for AI recall across all future
-  work), this is a transient per-conversation resume artifact. Does NOT auto-invoke — slash-only.
+  Save a conversation checkpoint (goal, decisions, breaking changes, next steps) for a
+  DIFFERENT conversation. Triggers: "save a checkpoint", "checkpoint this conversation",
+  "capture context", "snapshot the conversation", "cf-checkpoint". Unlike /compact (same
+  chat) or $cf-remember (project facts). Slash-only — does NOT auto-invoke.
 created: 2026-07-04
-updated: 2026-07-12
+updated: 2026-08-27
 ---
 
 # $cf-checkpoint

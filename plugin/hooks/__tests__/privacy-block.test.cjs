@@ -1,9 +1,31 @@
 "use strict";
 
+const { describe: nodeDescribe, it: nodeIt } = require("node:test");
+const assert = require("node:assert/strict");
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+
+const describe =
+  typeof globalThis.describe === "function"
+    ? globalThis.describe
+    : nodeDescribe;
+const it = typeof globalThis.it === "function" ? globalThis.it : nodeIt;
+
+function expect(actual) {
+  return {
+    toBe(expected) {
+      assert.strictEqual(actual, expected);
+    },
+    toContain(expected) {
+      assert.ok(
+        String(actual).includes(expected),
+        `expected ${JSON.stringify(actual)} to contain ${JSON.stringify(expected)}`,
+      );
+    },
+  };
+}
 
 const SCRIPT = path.resolve(__dirname, "../privacy-block.sh");
 
@@ -40,7 +62,10 @@ describe("privacy-block.sh", () => {
       tool_input: { file_path: "config/.env" },
     });
     expect(result.status).toBe(2);
-    expect(result.stdout).toContain('"decision": "block"');
+    expect(result.stdout).toContain('"hookEventName": "PreToolUse"');
+    expect(result.stdout).toContain('"permissionDecision": "deny"');
+    expect(result.stdout).toContain('"permissionDecisionReason"');
+    expect(result.stdout).toContain("config/.env");
   });
 
   it("allows a safe .env.example file_path", () => {
@@ -79,7 +104,10 @@ describe("privacy-block.sh", () => {
       tool_input: { command },
     });
     expect(result.status).toBe(2);
-    expect(result.stdout).toContain('"decision": "block"');
+    expect(result.stdout).toContain('"hookEventName": "PreToolUse"');
+    expect(result.stdout).toContain('"permissionDecision": "deny"');
+    expect(result.stdout).toContain('"permissionDecisionReason"');
+    expect(result.stdout).toContain("config/secrets.env");
   });
 
   it("allows an apply_patch that only touches safe files", () => {

@@ -282,11 +282,20 @@ function onToolCall(
   return undefined;
 }
 
+function captureMemory(event: unknown): string {
+  return runHook("memory-capture.sh", {}, toHookStdin(event)).stdout.trim();
+}
+
+function onSessionBeforeCompact(event: unknown): void {
+  // Real contract is { cancel, compaction } — we do not use that.
+  // Capture may run as fire-and-forget; never return { context }.
+  captureMemory(event);
+}
+
 function onSessionCompacting(
   event: unknown,
 ): { context: string[] } | undefined {
-  const result = runHook("memory-capture.sh", {}, toHookStdin(event));
-  const text = result.stdout.trim();
+  const text = captureMemory(event);
   if (!text) return undefined;
   return { context: [text] };
 }
@@ -306,11 +315,11 @@ function onBeforeAgentStart(event: unknown): void {
 export default function createExtension(pi: HookAPI): void {
   pi.on("session_start", (event) => onSessionStart(pi, event));
   pi.on("tool_call", onToolCall);
-  // Official compact events (hooks.md / extensions.md); session_compacting is a cheap alias.
-  pi.on("session_before_compact", onSessionCompacting);
+  // Official compact events (hooks.md / extensions.md). Only
+  // session.compacting accepts { context }; session_compacting is not real.
+  pi.on("session_before_compact", onSessionBeforeCompact);
   pi.on("session.compacting", onSessionCompacting);
   pi.on("session_compact", onSessionCompacting);
-  pi.on("session_compacting", onSessionCompacting);
   pi.on("session_shutdown", onSessionShutdown);
   pi.on("before_agent_start", onBeforeAgentStart);
 }

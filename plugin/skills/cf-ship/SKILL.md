@@ -1,15 +1,12 @@
 ---
 name: cf-ship
 description: >
-  Verify, commit, push, and create PR. Use when the user wants to ship their work — e.g.
-  "ship it", "push and create PR", "let's ship", "deploy this", "send it", "push my changes",
-  "create a PR", "open a pull request", "ready to merge", "let's get this merged".
-  Also triggers when the user is done with a feature branch and wants the full
-  verify → commit → push → PR workflow. Supports --dry-run to preview without pushing.
+  Verify, commit, push, and create a PR. Triggers: "ship it", "push and create PR", "let's
+  ship", "create a PR", "open a pull request", "ready to merge". Supports --dry-run.
 disable-model-invocation: true
 model: sonnet
 created: 2026-02-17
-updated: 2026-07-04
+updated: 2026-08-27
 ---
 
 # /cf-ship

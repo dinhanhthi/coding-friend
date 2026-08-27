@@ -231,6 +231,10 @@ function renderAgyInstructionText(input) {
     .replace(
       /\(If `review\.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here\.\)/g,
       "(On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.)",
+    )
+    .replace(
+      /If `review\.withCodex: true` in config, cf-review runs a Codex second opinion and merges — no flag needed here\./g,
+      "On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.",
     );
 }
 
@@ -240,7 +244,7 @@ function renderAgyPlanSkill(input) {
       / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
       [
         "",
-        '   Accept both `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive "strip the flag" would leave the value behind (e.g. leftover `pro` would leak into the task description and get passed to cf-explorer). Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases (`opus`, `sonnet`, `haiku`, `fable`) or full model IDs. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.',
+        "   Accept `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value**. Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases or full model IDs. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.",
       ].join("\n"),
     )
     .replace(
@@ -284,7 +288,7 @@ function renderAgyReviewSkill(input) {
     .replace(/Claude's own review/g, "Coding Friend's multi-agent review")
     .replace(/Claude-only review/g, "Coding Friend review")
     .replace(
-      /Display the cf-reviewer's report first, then append the appropriate banner\. When `codex=true`, add a `· Reviewed by: Claude \+ Codex` suffix to the `Mode:` line of whichever banner is shown \(when `codex=false`, omit the suffix\)\./,
+      /Display the cf-reviewer's report first, then append the appropriate banner\. When any external source contributed,[\s\S]*?Omit the suffix when only the in-session reviewer ran\./,
       "Display the cf-reviewer's report first, then append the appropriate banner.",
     )
     .replace(/\n{3,}/g, "\n\n");
@@ -322,6 +326,19 @@ function isAgyInstructionFile(normalizedPath) {
   return normalizedPath.includes("/skills/") && normalizedPath.endsWith(".md");
 }
 
+function sourceHasUserInvocableFalse(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return false;
+  return /^user-invocable:\s*false\s*$/m.test(match[1]);
+}
+
+function insertAgyDisableSlashCommand(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return markdown;
+  if (/^disable-slash-command:/m.test(match[1])) return markdown;
+  return `---\n${match[1]}\ndisable-slash-command: true\n---\n${markdown.slice(match[0].length)}`;
+}
+
 function renderAgyFile(sourcePath, input) {
   const normalizedPath = sourcePath.split(path.sep).join("/");
   const isSkill = normalizedPath.endsWith("/SKILL.md");
@@ -333,7 +350,11 @@ function renderAgyFile(sourcePath, input) {
     : renderAgyText(source);
 
   if (isSkill) {
+    const disableSlash = sourceHasUserInvocableFalse(input);
     rendered = stripClaudeSkillFrontmatter(rendered);
+    if (disableSlash) {
+      rendered = insertAgyDisableSlashCommand(rendered);
+    }
   }
 
   if (normalizedPath.includes("/skills/cf-plan/")) {

@@ -32,7 +32,7 @@ test("cf-help catalog lists every skill", () => {
     .filter((entry) => entry.isDirectory() && entry.name.startsWith("cf-"))
     .map((entry) => entry.name)
     .sort();
-  assert.ok(skills.length >= 20, `expected many skills, got ${skills.length}`);
+  assert.equal(skills.length, 26, `expected 26 skills, got ${skills.length}`);
   for (const skill of skills) {
     assert.ok(listed(skill), `cf-help catalog is missing skill ${skill}`);
   }
@@ -45,7 +45,7 @@ test("cf-help catalog lists every agent", () => {
     .filter((name) => /^cf-.*\.md$/.test(name))
     .map((name) => name.replace(/\.md$/, ""))
     .sort();
-  assert.ok(agents.length >= 10, `expected many agents, got ${agents.length}`);
+  assert.equal(agents.length, 12, `expected 12 agents, got ${agents.length}`);
   for (const agent of agents) {
     assert.ok(listed(agent), `cf-help catalog is missing agent ${agent}`);
   }
