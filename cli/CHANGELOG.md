@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.40.1 (2026-08-27)
+
+- Fix `cf mcp-serve` writing a diagnostic line to stdout, which corrupted the MCP stdio stream and left the `coding-friend-memory` server "not connected" in strict MCP clients (e.g. omp); diagnostics now go to stderr [#35d6a160](https://github.com/dinhanhthi/coding-friend/commit/35d6a160)
+
 ## v1.40.0 (2026-08-26)
 
 - Add `--agent agy` / `--agy` (Google Antigravity, beta) to install/uninstall/enable/disable/init/update/permission/status; memory MCP registered into the plugin's `mcp_config.json` [#87022c6f](https://github.com/dinhanhthi/coding-friend/commit/87022c6f)
