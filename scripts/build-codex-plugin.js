@@ -155,6 +155,10 @@ function renderCodexInstructionText(input) {
     .replace(
       /\(If `review\.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here\.\)/g,
       "(On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.)",
+    )
+    .replace(
+      /If `review\.withCodex: true` in config, cf-review runs a Codex second opinion and merges — no flag needed here\./g,
+      "On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.",
     );
 }
 
@@ -197,7 +201,7 @@ function renderCodexPlanSkill(input) {
       / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
       [
         "",
-        '   Accept both `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token, e.g. `--model=gpt-5.5`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive "strip the flag" would leave the value behind (e.g. leftover `gpt-5.5` would leak into the task description and get passed to cf-explorer). Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex; pass a Codex model name such as `gpt-5.5`. Do not accept `inherit`. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.',
+        "   Accept `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token). **Strip both the flag and the value**. Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex. Do not accept `inherit`. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.",
       ].join("\n"),
     )
     .replace(
@@ -241,7 +245,7 @@ function renderCodexReviewSkill(input) {
     .replace(/Claude's own review/g, "Coding Friend's multi-agent review")
     .replace(/Claude-only review/g, "Coding Friend review")
     .replace(
-      /Display the cf-reviewer's report first, then append the appropriate banner\. When `codex=true`, add a `· Reviewed by: Claude \+ Codex` suffix to the `Mode:` line of whichever banner is shown \(when `codex=false`, omit the suffix\)\./,
+      /Display the cf-reviewer's report first, then append the appropriate banner\. When any external source contributed,[\s\S]*?Omit the suffix when only the in-session reviewer ran\./,
       "Display the cf-reviewer's report first, then append the appropriate banner.",
     )
     .replace(/\n{3,}/g, "\n\n");
@@ -301,6 +305,10 @@ function renderCodexFile(sourcePath, input) {
       .replace(
         / Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report \(set `review\.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable\)\./,
         "",
+      )
+      .replace(
+        /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\$cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default; `review\.agentTimeout` \(default 300s\) bounds each external agent\. Unavailable agents are skipped with a warning\./,
+        "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `$cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Codex (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent. Unavailable agents are skipped with a warning.",
       )
       .replace(
         /\n- \*\*After editing plugin files\?\*\* Run `cf dev sync` to copy changes to the cached version\./,

@@ -246,6 +246,93 @@ test("rewrites cf-plan --model spawn and cf-help for Codex", async () => {
   assert.doesNotMatch(help, /`--model <alias>`/);
   assert.match(help, /`--model <name>`/);
   assert.match(help, /gpt-5\.5/);
+  assert.doesNotMatch(help, /Flags: `--with-codex`/);
+  assert.match(
+    help,
+    /`--with-codex`\/`--codex` and `review\.withCodex` are ignored on Codex/,
+  );
+});
+
+test("rewrites cf-review for Codex", async () => {
+  const reviewFixture = renderCodexFile(
+    "/repo/plugin/skills/cf-review/SKILL.md",
+    [
+      "**Codex dual-review flag:**",
+      "",
+      "- If `$ARGUMENTS` contains `--with-codex`, set `codex=true`.",
+      "",
+      "### Step 2: Gather the diff",
+      "",
+      "### Step 2.5: Spawn Codex review in the background (only when `codex=true`)",
+      "",
+      "bash run-codex-review.sh",
+      "",
+      "### Step 3: Assess change size",
+      "",
+      "### Step 6.5: Collect & normalize the Codex review (only when `codex=true`)",
+      "",
+      "bash normalize-codex-review.sh",
+      "",
+      "### Step 7: Collect the report",
+      "",
+      "When any external source survived, merge.",
+      "",
+      "### Step 8: Mark review complete and display status",
+      "",
+      "Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix. Omit the suffix when only the in-session reviewer ran.",
+    ].join("\n"),
+  );
+  assert.match(reviewFixture, /Codex host behavior/);
+  assert.match(reviewFixture, /Ignore `--with-codex`/);
+  assert.match(
+    reviewFixture,
+    /The result of Step 6 is the final formatted report/,
+  );
+  assert.doesNotMatch(reviewFixture, /Codex dual-review flag/);
+  assert.doesNotMatch(reviewFixture, /Step 2\.5: Spawn Codex review/);
+  assert.doesNotMatch(
+    reviewFixture,
+    /Step 6\.5: Collect & normalize the Codex review/,
+  );
+  assert.doesNotMatch(reviewFixture, /run-codex-review\.sh/);
+  assert.doesNotMatch(reviewFixture, /normalize-codex-review\.sh/);
+  assert.doesNotMatch(reviewFixture, /When any external source contributed/);
+
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const reviewSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-review/SKILL.md"),
+    "utf8",
+  );
+  const review = renderCodexFile(
+    "/repo/plugin/skills/cf-review/SKILL.md",
+    reviewSource,
+  );
+  assert.match(review, /Codex host behavior/);
+  assert.match(review, /Ignore `--with-codex`/);
+  assert.match(review, /The result of Step 6 is the final formatted report/);
+  assert.doesNotMatch(review, /Codex dual-review flag/);
+  assert.doesNotMatch(review, /Step 2\.5: Spawn Codex review/);
+  assert.doesNotMatch(review, /Step 6\.5: Collect & normalize the Codex review/);
+  assert.doesNotMatch(review, /run-codex-review\.sh|normalize-codex-review\.sh/);
+  assert.doesNotMatch(review, /codex=(?:true|false)/);
+  assert.doesNotMatch(review, /When any external source contributed/);
+
+  const fixSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-fix/SKILL.md"),
+    "utf8",
+  );
+  const fix = renderCodexFile(
+    "/repo/plugin/skills/cf-fix/SKILL.md",
+    fixSource,
+  );
+  assert.doesNotMatch(fix, /runs a Codex second opinion/);
+  assert.match(
+    fix,
+    /ignores the Claude-only `review\.withCodex` setting/,
+  );
 });
 
 test("creates stamped Codex plugin manifest", () => {

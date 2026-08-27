@@ -17,108 +17,98 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-| Mode          | Flag                           | Steps skipped/added                                                                                                                                                                                                                                                                                                                                                                                                                   | When to use                                                                      |
-| ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Normal**    | (none)                         | Full workflow                                                                                                                                                                                                                                                                                                                                                                                                                         | Default — most tasks                                                             |
-| **Fast**      | `--fast` (alias `--quick`)     | Skip discovery, inline exploration, skip planner agent. **Never writes a plan file** — the plan stays in chat, tracked with an inline checklist. If the plan turns out multi-phase (user mis-flagged it), fast is abandoned and the run **switches to normal mode**, which writes the plan file. When combined with `--auto`, the file is always written (autopilot needs it). **No human overview doc in fast mode** unless `--gui` is passed. | Task is clear, single-module, additive                                           |
-| **Hard**      | `--hard`                       | Extra discovery round, deeper exploration, rollback planning                                                                                                                                                                                                                                                                                                                                                                          | Breaking changes, migrations, multi-module refactors                             |
-| **Autopilot** | `--auto`                       | Orthogonal — adds autopilot: after Step 7 approval, run all phases autonomously (auto review + fix Critical/Important + commit per phase, no confirmation prompts between phases). Combines with any mode.                                                                                                                                                                                                                            | Hands-off end-to-end execution after plan approval                               |
-| **Inline**    | `--inline` (alias `--no-file`) | Orthogonal — skip Step 6 (no plan file written). Plan is presented in chat only; progress tracked with an inline checklist. Combines with `--fast`/`--hard`. Incompatible with `--auto`.                                                                                                                                                                                                                                                        | Small one-off task where the user wants planning thought but no on-disk artifact |
-| **Model**     | `--model <alias>`              | Orthogonal — pin the model for **cf-planner** at Step 3 (brainstorm approaches). Does not affect cf-explorer, cf-implementer, or cf-plan itself.                                                                                                                                                                                                                                                                                      | Want brainstorming on a stronger model than the current session                  |
+| Mode          | Flag                       | Effect                                                                                                                                                                                                                          | When to use                    |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Normal**    | (none)                     | Full workflow                                                                                                                                                                                                                   | Default                        |
+| **Fast**      | `--fast` (alias `--quick`) | Skip discovery + planner. **Never writes a plan file** — stays in chat, tracked with an inline checklist. Multi-phase → switch to normal (writes file). With `--auto`, always write. No human overview unless `--gui`.                     | Clear, single-module, additive |
+| **Hard**      | `--hard`                   | Extra discovery, deeper exploration, rollback planning                                                                                                                                                                          | Breaking / multi-module        |
+| **Autopilot** | `--auto`                   | Orthogonal — after Step 7 approval, run all phases (auto review + fix Critical/Important + commit per phase, no between-phase prompts). Combines with any mode.                                                                 | Hands-off after approval       |
+| **Inline**    | `--inline` (`--no-file`)   | Orthogonal — skip Step 6 (no plan file). Plan in chat only; progress tracked with an inline checklist. Combines with `--fast`/`--hard`. Incompatible with `--auto`.                                                                       | One-off, no on-disk artifact   |
+| **Model**     | `--model <alias>`          | Orthogonal — pin **cf-planner** at Step 3. Does not affect cf-explorer, cf-implementer, or cf-plan.                                                                                                                             | Stronger brainstorm model      |
 
-Flags are parsed from `$ARGUMENTS`. Strip each flag before using the remaining text as the task description. `--model` carries a value (`--model <alias>` or `--model=<alias>`) — strip both the flag and the value. Aliases (`--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human` → `--gui`) are normalized to their canonical form. The user's single-dash `-gui` / `-human` are also normalized to `--gui`.
+Parse flags from `$ARGUMENTS`; strip them (and `--model`'s value) before using the rest as the task. Normalize: `--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human`/`-gui`/`-human` → `--gui`. `--model` is `--model <alias>` or `--model=<alias>`.
 
-**Human overview doc:** off by default (it costs extra tokens). Pass `--gui` (alias `--human`) to also generate a concise, human-readable `overview.html` (or `overview.md`) alongside the agent plan — see Step 6 — or enable it globally by setting `disableGUIPlan: false` in config. Format is chosen by the `guiPlanFormat` config (`html` default, or `md`).
+**Human overview doc:** off by default. `--gui` (or config `disableGUIPlan: false`) generates `overview.html`/`overview.md` at Step 6. Format: `guiPlanFormat` (`html` default, or `md`). Fast: no overview unless `--gui`. `--inline`: never (no plan file).
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-plan
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
 
 ### Step 0.5: Determine Mode
 
-0. **Legacy resume guard** — if a bare `--resume` token appears in `$ARGUMENTS`, do NOT plan. Resuming moved to its own command: `> ℹ️ Resuming a plan is now \`$cf-plan-resume <plan>\` (not \`$cf-plan --resume\`).` and stop.
-1. **Explicit flag** — normalize `--quick` → `--fast` first, then use `--fast` or `--hard` if present in `$ARGUMENTS`.
-   1a. **Autopilot flag** — if `--auto` is present in `$ARGUMENTS`, set autopilot=true. This is orthogonal to fast/hard/normal — autopilot can combine with any. Strip `--auto` from the task description before using it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
-   1b. **Inline flag** — normalize `--no-file` → `--inline` first. If `--inline` is present, set inline=true. Strip `--inline` from the task description. If `--auto` is also set, refuse the combination: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Otherwise announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked with an inline checklist.`
-   1c. **Human overview doc** — off by default (it costs extra tokens). Normalize `--human`/`-gui`/`-human` → `--gui`. Resolve humanDoc with this precedence: if `--gui` is present, set humanDoc=true and strip it (explicit opt-in — overrides fast mode and config). Otherwise, if fast mode is active (`--fast`/`--quick`, or auto-detected fast in steps 2–3), humanDoc=false. Otherwise resolve `disableGUIPlan` by merging the global config `~/.coding-friend/config.json` with the local `CF_CONFIG_FILE` (default `.coding-friend/config.json`), where **local overrides global** (the documented config precedence — `cf config`/`cf init` can save the key at global scope, so a global-only setting must still take effect); set humanDoc=true only when the merged `disableGUIPlan` is **explicitly `false`**, else humanDoc=false (unset means disabled). When humanDoc=true, use the merged `guiPlanFormat` (default `html`). The overview is only produced when a plan file is written (Step 6); `--inline` writes no file, so it produces none regardless (even with `--gui`).
+0. **Legacy resume guard** — bare `--resume` in `$ARGUMENTS` → do NOT plan. Print `> ℹ️ Resuming a plan is now \`$cf-plan-resume <plan>\` (not \`$cf-plan --resume\`).` and stop.
+1. **Explicit flag** — normalize `--quick` → `--fast`, then honor `--fast` or `--hard`.
+   1a. **Autopilot flag** — `--auto` → autopilot=true (orthogonal). Strip it. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
+   1b. **Inline flag** — normalize `--no-file` → `--inline`. If present, inline=true and strip. Combined with `--auto` → refuse: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` and stop. Else announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Progress tracked with an inline checklist.`
+   1c. **Human overview doc** — normalize `--human`/`-gui`/`-human` → `--gui`. Precedence: `--gui` present → humanDoc=true and strip (overrides fast + config). Else if fast (`--fast`/`--quick` or auto-detected in steps 2–3) → humanDoc=false. Else merge `~/.coding-friend/config.json` with `CF_CONFIG_FILE` (default `.coding-friend/config.json`); **local overrides global**. humanDoc=true only when merged `disableGUIPlan` is **explicitly `false`** (unset = disabled). When true, use merged `guiPlanFormat` (default `html`). Overview only when a plan file is written (Step 6); `--inline` produces none even with `--gui`.
    1d. **`--model` flag**
-   Accept both `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token, e.g. `--model=gpt-5.5`). **Strip both the flag and the value** from the task description before using the remainder. This is the first two-token flag in this skill — every other flag is a boolean one-token flag, so a naive "strip the flag" would leave the value behind (e.g. leftover `gpt-5.5` would leak into the task description and get passed to cf-explorer). Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex; pass a Codex model name such as `gpt-5.5`. Do not accept `inherit`. Invalid value → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner, so the flag remains effective in hard mode. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.
-2. **Auto-detect** — scan the task for signals (need 2+ to trigger):
-   - **Fast**: matches existing codebase pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
-   - **Hard**: multi-module, breaking changes/migrations/schema, security-sensitive, user says "refactor/migrate/rewrite/across all", external system deps, public API changes
-3. **Confirm**: 3+ signals → apply automatically (announce reasons); 2 signals → propose and ask; mixed/unclear → use normal. When fast mode is applied (whether via `--fast` or auto-detected), note in the announcement that the plan stays in chat with no file written; if it turns out multi-phase the run switches to normal mode and writes the file — unless combined with `--auto`, which always writes the file (see Step 6).
-4. **`--model` vs resolved fast mode** — after mode is resolved (explicit `--fast`/`--quick` **or** auto-detect in steps 2–3): if a `--model` value was parsed and fast mode is now active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (do not print twice if 1d already warned for an explicit `--fast`/`--quick`) and do not pass the model at Step 3.
+   Accept `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token). **Strip both the flag and the value**. Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex. Do not accept `inherit`. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.
+2. **Auto-detect** — need 2+ signals:
+   - **Fast**: existing pattern, single module/file, no external deps, additive-only, user says "just/simple/quick/same as"
+   - **Hard**: multi-module, breaking/migrations/schema, security-sensitive, "refactor/migrate/rewrite/across all", external deps, public API changes
+3. **Confirm**: 3+ signals → apply (announce reasons); 2 → propose and ask; mixed/unclear → normal. Fast (flag or auto): announce plan stays in chat with no file; multi-phase → switch to normal and write — unless `--auto`, which always writes (Step 6).
+4. **`--model` vs resolved fast mode** — after mode is resolved (explicit `--fast`/`--quick` **or** auto-detect in steps 2–3): if a `--model` value was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (do not print twice if 1d already warned) and do not pass the model at Step 3.
 
 ### Step 0.7: Check Memory
 
-If `memory_search` is available, search for keywords related to the task. Use any relevant results as starting context; otherwise skip.
+If `memory_search` is available, search task keywords. Use hits as starting context; otherwise skip.
 
 ### Step 1: Discovery & Brainstorm
 
 > **Fast mode**: Skip — proceed to Step 2.
 
-> **Not sure this is worth building, or which direction to take?** If the discovery below reveals the user hasn't actually decided _whether_ or _which approach_ — they're weighing options or questioning if the work is worth it — pause and suggest `$cf-advise` first. It runs a structured interview and returns a verdict-first recommendation. `cf-plan` assumes the decision to build is already made; it plans _how_, not _whether_.
+> If discovery shows the user hasn't decided _whether_ to build — pause and suggest `$cf-advise`. `cf-plan` plans _how_, not _whether_.
 
 Use a direct user question for each round. Do NOT batch questions.
 
-**Round 1 — Understand:** List ambiguities and assumptions; ask probing questions about objectives, constraints, success criteria; ask about preferred libraries/APIs — never guess.
+**Round 1 — Understand:** List ambiguities and assumptions; ask about objectives, constraints, success criteria, preferred libraries/APIs — never guess.
 
-**Check for official solutions first (before proposing anything):**
+**Official solutions first:** (1) framework built-ins, (2) official patterns/guides, (3) ecosystem standards. Official solution = **Option 1**; recommend custom only if official is insufficient for this case.
 
-1. **Framework built-ins** — search official docs for native components or methods that solve this directly (e.g., React Suspense for loading states, Next.js Server Actions for mutations).
-2. **Official patterns** — check framework best practices and migration guides for the recommended approach.
-3. **Ecosystem standards** — identify officially maintained or widely adopted libraries for this use case.
+**Round 2 — Challenge:** Question the path (user/dev/ops/business). YAGNI, KISS, DRY. Attack the recommended approach:
 
-If an official solution exists, it must be **Option 1** in the approach list. If recommending a custom approach over it, explain why the official solution is insufficient for this specific case.
+| Attack             | Question                                                      |
+| ------------------ | ------------------------------------------------------------- |
+| Dependency failure | If an external API/service/tool goes down, can the plan degrade? |
+| Scale explosion    | At 10x load, which step breaks first?                         |
+| Rollback cost      | If the direction is wrong after launch, what can we return to? |
+| Premise collapse   | Which assumption is most fragile? What if it fails?           |
 
-**Round 2 — Challenge:** Question whether the proposed approach is the best path. Consider user/dev/ops/business angles. Be honest about feasibility and trade-offs. Apply YAGNI, KISS, DRY.
+If an attack holds, deform the design. If it shatters the approach, discard it and say why. Do not present a failed attack without disclosing it.
 
-Run these **attack angles** against the recommended approach before presenting it:
+**Round 3 — Converge** (if needed): 2–3 approaches with pros/cons; ask which. Skip if already clear.
 
-| Attack angle       | Question                                                                                |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| Dependency failure | If an external API, service, or tool goes down, can the plan degrade gracefully?        |
-| Scale explosion    | At 10x data volume or user load, which step breaks first?                               |
-| Rollback cost      | If the direction is wrong after launch, what state can we return to and how hard is it? |
-| Premise collapse   | Which assumption in this plan is most fragile? What happens if it does not hold?        |
+> **Hard mode** — **Round 4: Risk & Rollback**: failure modes, blast radius, rollback, feature flags / gradual rollout, incremental vs all-or-nothing.
 
-If an attack holds, deform the design and present the deformed version. If it shatters the approach entirely, discard it and tell the user why. Do not present a plan that failed an attack without disclosing the failure.
-
-**Round 3 — Converge** (if needed): Present 2-3 approaches with pros/cons; ask which to pursue. Skip if request was already clear.
-
-> **Hard mode** — add **Round 4: Risk & Rollback**: failure modes and blast radius; rollback plan; feature flags / gradual rollout options; incremental vs. all-or-nothing deployment.
-
-If the user wants to skip brainstorming ("just plan it"), respect that and move on.
+If the user says "just plan it", skip brainstorming.
 
 ### Step 1.5: Generate Task ID
 
 1. **task-id**: `YYYY-MM-DD-<short-descriptor>` (e.g. `2026-05-03-add-auth-middleware`)
-2. **docsDir**: read from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json` from bootstrap context, fallback to `.coding-friend/config.json` in CWD) or default to `docs`. Use `CF_DOCS_ROOT` as the absolute docs base dir.
+2. **docsDir**: from `CF_CONFIG_FILE` (`$MAIN_REPO_ROOT/.coding-friend/config.json`, fallback `.coding-friend/config.json`) or default `docs`. `CF_DOCS_ROOT` is the absolute docs base.
 3. **Context file**: `{docsDir}/context/{task-id}.json`
 
 ### Step 2: Explore Codebase
 
-> **Fast mode**: Inline search with Glob/Grep only — no agents, no deep exploration.
-> **Normal**: Launch cf-explorer agent once.
-> **Hard**: Launch cf-explorer twice — standard exploration, then blast-radius analysis.
+> **Fast mode**: Inline Glob/Grep only — no agents.
+> **Normal**: Launch cf-explorer once.
+> **Hard**: Launch cf-explorer twice — standard, then blast-radius.
 
 Launch **cf-explorer** (`cf-explorer` custom agent):
 
 > Explore the codebase for: [user request]
 > Context file: [docsDir/context/<task-id>.json]
 > Confirmed assumptions: [from Step 1] | Scope: [from Step 1]
-> Answer: (1) project structure & relevant modules, (2) affected files/functions, (3) patterns/conventions/dependencies, (4) existing tests/configs/docs
+> Answer: (1) structure & modules, (2) affected files/functions, (3) patterns/conventions/deps, (4) existing tests/configs/docs
 
-> **Hard mode** — second cf-explorer call:
-> Blast-radius for [files from first call]: (1) what imports/depends on changed code, (2) what breaks, (3) affected public API consumers, (4) test coverage gaps
+> **Hard mode** — second call:
+> Blast-radius for [files from first call]: (1) importers/dependents, (2) what breaks, (3) public API consumers, (4) test coverage gaps
 
 ### Step 3: Brainstorm Approaches
 
@@ -133,230 +123,86 @@ When a valid Codex model name was parsed in 1d, spawn `cf-planner` with that exp
 > Codebase context: [full cf-explorer report]
 > Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
 
-> **Hard mode**: Generate 3-4 approaches; each must include migration path, rollback strategy, incremental deployment option. Include blast-radius findings.
+> **Hard mode**: 3–4 approaches; each needs migration path, rollback, incremental deploy. Include blast-radius findings.
 
 ### Step 4: Validate with User
 
 > **Fast mode**: Skip — go to Step 5.
 
-Present: key codebase findings, approaches with pros/cons, recommended approach and why, open questions. Wait for approval or corrections.
+Present: key findings, approaches with pros/cons, recommended approach and why, open questions. Wait for approval or corrections.
 
 ### Step 5: Write the Plan
 
-> **Keep the agent plan agent-only.** Write only what cf-implementer needs to execute: tasks, files, verify steps, phase markers, and the minimum Context/Assumptions/Approach to act correctly. Narrative, rationale, big-picture framing, and "why this matters" belong in the **human overview doc** (Step 6), not here — do not pad the agent plan with tutorial prose.
+> **Keep the agent plan agent-only.** Only what cf-implementer needs: tasks, files, verify steps, phase markers, minimum Context/Assumptions/Approach. Narrative and "why" belong in the **human overview doc** (Step 6).
 
-1. Break the chosen approach into tasks grouped into **phases**; each task completable in one session.
+1. Break the approach into tasks grouped into **phases**; each task completable in one session.
 2. Per task: what to do (files, functions, tests), expected outcome, how to verify.
-3. Phase markers: `#### Phase N [parallel]` (no shared files, run concurrently) or `#### Phase N [sequential]` (ordered). If no cf-planner or flat task list, wrap in a single `[sequential]` phase.
-4. When autopilot=true, the plan body MUST include a `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Copy the AUTOPILOT CONTRACT block verbatim — Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now and copy its fenced block exactly.
+3. Phase markers: `#### Phase N [parallel]` (no shared files) or `#### Phase N [sequential]`. No planner / flat list → one `[sequential]` phase.
+4. When autopilot=true, the plan body MUST include `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)`. Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now and copy its fenced block exactly.
 
-> **Hard mode**: Each task adds a **Rollback** field; add `## Migration & Rollback` section with overall rollback strategy.
+> **Hard mode**: Each task adds a **Rollback** field; add `## Migration & Rollback` with overall strategy.
 
 ### Step 6: Save the Plan
 
 > **Inline mode** (`--inline`): Skip the file write entirely. Create an inline checklist containing every task from the plan (one task per implementation task, in phase order). Present the full plan body (Context, Approach, Tasks per phase, Risks) inline in chat. Do NOT create any file under `{docsDir}/plans/`. Skip the rest of this step and proceed to Step 7. Progress tracking in Step 7 updates the inline checklist instead of editing a plan file; all "edit the plan file" / "Progress table" instructions in Step 7 become "update the corresponding checklist item". The context file at `{docsDir}/context/<task-id>.json` is still created (cf-implementer needs it).
 
-> **Fast mode** (`--fast`, no `--auto`, no `--inline`): **Never write a plan file.** Follow the **Inline mode** path above (present the plan in chat, register tasks in an inline checklist, still create the context file). Because no file is written, the whole rest of the workflow tracks this plan inline: in Step 7, update the corresponding checklist item instead of editing a plan file — the "small plan → edit `README.md`" instructions do NOT apply. If the plan turns out to have **2+ phases**, the task was bigger than fast scope assumed — fast is not suitable: announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.`, treat the run as **normal mode** from here on, and write the plan folder per the Layout rules below (normal Step 7 file-edit tracking applies). When `--fast` is combined with `--auto`, always write the file (autopilot reads `auto: true` from the on-disk plan), regardless of phase count.
+> **Fast mode** (`--fast`, no `--auto`, no `--inline`): **Never write a plan file.** Follow the **Inline mode** path above (present the plan in chat, register tasks in an inline checklist, still create the context file). Because no file is written, the whole rest of the workflow tracks this plan inline: in Step 7, update the corresponding checklist item instead of editing a plan file — the "small plan → edit `README.md`" instructions do NOT apply. If the plan turns out to have **2+ phases**, announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.`, treat as **normal mode**, and write the plan folder per Layout below. When `--fast` is combined with `--auto`, always write the file (autopilot reads `auto: true` from the on-disk plan), regardless of phase count.
 
-**Layout** — every written plan is a **subfolder** `{docsDir}/plans/YYYY-MM-DD-<slug>/`; the entry point is always `README.md`. Phase count only decides whether phases are split into separate files (it no longer decides file-vs-folder):
+**Layout** — written plans live in `{docsDir}/plans/YYYY-MM-DD-<slug>/`; entry point is always `README.md`:
 
-- **Small plan** (exactly 1 phase) → `README.md` holds the full plan inline (Context, Assumptions, Approach, Progress, Tasks, Risks — the Small plan template body). No separate phase files. No task-count ceiling.
-- **Big plan** (2+ phases) → `README.md` (overview + Progress table) + one `phase-N-<name>.md` per phase — see Big plan template below.
+- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files.
+- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase.
 
-Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent failure after max retries)
+Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent after max retries)
 
-After saving, present: folder path created, phase count, task count, entry point (`README.md`), and the overview path (if generated).
+After saving, present: folder path, phase count, task count, entry point (`README.md`), overview path (if generated).
 
 1. Create a task checklist and keep it updated.
-2. Set the `slug:` frontmatter field in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>`, identical to the task-id from Step 1.5). This is what the user copies to mention the plan or pass to `$cf-plan-resume <slug>`. Include the slug in the post-save summary so it is easy to copy.
+2. Set `slug:` in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>` = task-id from Step 1.5). Include it in the post-save summary.
 3. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
-4. Present the plan summary to the user.
-5. When autopilot=true, add `auto: true` to the YAML frontmatter at the top of `README.md`. For **big plans**, the `## AUTOPILOT` section is ALSO copied into EVERY `phase-N-*.md` file (so any phase file Codex re-opens during a long conversation carries the rules).
+4. Present the plan summary.
+5. When autopilot=true, add `auto: true` to `README.md` frontmatter. For **big plans**, also copy `## AUTOPILOT` into EVERY `phase-N-*.md`.
 
 #### Human overview doc
 
-When humanDoc=true AND a plan file was written, generate a concise human-readable overview next to `README.md`. (humanDoc is off by default — it is only true when `--gui`/`--human` is passed or `disableGUIPlan: false` is set; `--inline` writes no plan file at all — so it never reaches this step.):
+When humanDoc=true AND a plan file was written:
 
-- **Output**: `{plan-folder}/overview.html` when `guiPlanFormat` = `html` (default), or `{plan-folder}/overview.md` when `guiPlanFormat` = `md`.
-- **Generator**: dispatch **cf-writer-deep** (`cf-writer-deep` custom agent). Give it: the just-written plan (the `README.md` + any `phase-N-*.md`), the matching template at `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Instruct it to fill the template's `<!-- FILL: … -->` markers from the plan and replace the placeholder content. For HTML output, it must HTML-escape prose values it injects (so `<`, `&`, and generic types like `Foo<T>` render correctly).
-- **Content rules**: SHORT and decision-focused — a **Plan at a Glance** summary (Phases = number of phases, Tasks = total tasks across all phases; both counts come straight from the just-written plan), the original problem/intent, the solution big picture, the key decisions (one concise line each), and an ASCII diagram (plain text, box-drawing/arrow characters, inside a `<pre>`/code fence — no Mermaid or other rendered-diagram syntax) for any structure/flow/state-machine/algorithm where a picture beats prose. **Write Problem & Intent and Solution as concise bullet lists, not paragraphs** (the templates already use `<ul class="bullets">` / `-` bullets — fill those, don't replace with `<p>`). Do NOT copy the step-by-step task list — that lives in the agent plan.
-- **Point-in-time**: generated once here; NOT updated as the Progress table changes during implementation.
-- **Skip** entirely when humanDoc=false — i.e. whenever `--gui`/`--human` is absent and `disableGUIPlan` is not explicitly `false` (the default), in **fast mode** without `--gui`, or in `--inline` mode (no plan file at all).
+- **Output**: `{plan-folder}/overview.html` (`guiPlanFormat` = `html`, default) or `overview.md` (`md`).
+- **Generator**: dispatch **cf-writer-deep** (`cf-writer-deep` custom agent). Give it the just-written plan (`README.md` + any `phase-N-*.md`), the matching template at `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Fill `<!-- FILL: … -->` markers. HTML-escape injected prose (`<`, `&`, `Foo<T>`).
+- **Content**: SHORT, decision-focused — **Plan at a Glance** (Phases + Tasks counts from the plan), problem/intent, solution big picture, key decisions (one line each), ASCII diagram in `<pre>`/code fence (no Mermaid). Write Problem & Intent and Solution as bullet lists (`<ul class="bullets">` / `-`), not paragraphs. Do NOT copy the task list.
+- **Point-in-time**: generated once; not updated with Progress.
+- **Skip** when humanDoc=false — default, fast without `--gui`, or `--inline`.
 
 ### Step 7: Offer Implementation
 
-Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now — it holds the Per-Phase Loop and the AUTOPILOT CONTRACT block. **Progress checkpoints (`⬜` → `🔄` → `✅`) still apply under autopilot** — see `modes/execute.md`. If autopilot=false → follow the Sequential/Parallel phases protocols in `modes/execute.md` (see pointer below).
+Ask: **"Ready to start implementing?"** If yes, execute phase by phase. If user approves AND autopilot=true → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` now. **Progress checkpoints (`⬜` → `🔄` → `✅`) still apply under autopilot** — see `modes/execute.md`. If autopilot=false → follow Sequential/Parallel protocols in `modes/execute.md`.
 
-→ For the Sequential/Parallel phases execution protocols (cf-implementer dispatch, result-signal parsing, retry, big-plan phase sync, out-of-scope side-effect capture, phase order, post-implementation), Read `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` now and follow it. (This is the shared protocol `$cf-plan-resume` also uses.)
+→ For Sequential/Parallel phases (cf-implementer dispatch, result-signal parsing, retry, big-plan phase sync, out-of-scope capture, phase order, post-implementation), Read `${PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` now and follow it. (Shared with `$cf-plan-resume`.)
 
 ## Plan Templates
 
+Read `${PLUGIN_ROOT}/skills/cf-plan/templates/plan-templates.md` now when writing the plan file. Use those skeletons exactly.
+
 ### AUTOPILOT CONTRACT block
 
-Only when `--auto`: the AUTOPILOT CONTRACT block lives in `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (Step 5 #4 loads it for that case). Skip in normal runs.
+Only when `--auto`: lives in `${PLUGIN_ROOT}/skills/cf-plan/modes/autopilot.md` (Step 5 #4). Skip in normal runs.
 
 ### Small plan (1 phase — written as `README.md` inside the plan folder)
 
-```markdown
----
-slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
-auto: false # set true when created with --auto
-status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Set at creation; flipped to done/failed at terminal completion (see modes/execute.md "Plan done").
----
-
-# Plan: <title>
-
-**Mode:** normal | fast | hard
-
-## Context
-
-<1-2 sentences>
-
-## Assumptions
-
-- <assumption> — basis: <why>
-
-## Approach
-
-<chosen approach and why>
-
-## Not Building
-
-- <explicit out-of-scope item>
-
-## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
-
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" (under ## Plan Templates) here verbatim; omit this whole section when auto: false -->
-
-## Progress
-
-<!-- small plans are always exactly 1 phase; multi-phase plans use the Big template -->
-
-| Status  | Phase   | Task        |
-| ------- | ------- | ----------- |
-| ⬜ TODO | Phase 1 | Task 1 name |
-| ⬜ TODO | Phase 1 | Task 2 name |
-
-## Tasks
-
-#### Phase 1 [sequential]
-
-1. <task 1>
-   - Files: <specific files>
-   - Verify: <how to verify>
-   - Rollback: <how to undo — hard mode only>
-2. <task 2>
-   - Files: <specific files>
-   - Verify: <how to verify>
-
-## Risks
-
-- <risk and mitigation>
-
-## Migration & Rollback (hard mode only)
-
-- Overall rollback strategy: <how to revert all>
-- Point of no return: <which task>
-- Incremental deployment: <gradual rollout option>
-
-## Next Steps
-
-After implementation: `$cf-review` → `$cf-commit`
-```
+Skeleton in `templates/plan-templates.md` → **Small plan**.
 
 ### Big plan (subfolder)
 
-**README.md** (entry point):
-
-```markdown
----
-slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-resume <slug>`
-auto: false # set true when created with --auto
-status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Frontmatter is the authority; the body **Status:** line mirrors it for humans (see modes/execute.md "Plan done").
----
-
-# Plan: <title>
-
-**Mode:** normal | fast | hard
-**Created:** YYYY-MM-DD
-**Status:** IN PROGRESS
-
-## Overview
-
-<1-2 sentences about the problem and chosen approach>
-
-## Not Building
-
-- <explicit out-of-scope item>
-
-## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
-
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" (under ## Plan Templates) here verbatim; omit this whole section when auto: false -->
-
-## Progress
-
-| Status  | Phase           | File                                     | Tasks   |
-| ------- | --------------- | ---------------------------------------- | ------- |
-| ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
-| ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
-
-## Assumptions
-
-- <assumption> — basis: <why>
-
-## Risks
-
-- <risk and mitigation>
-
-## Migration & Rollback (hard mode only)
-
-- Overall rollback strategy: <how to revert all>
-- Point of no return: <which task>
-- Incremental deployment: <gradual rollout option>
-
-## Next Steps
-
-After implementation: `$cf-review` → `$cf-commit`
-```
-
-**phase-N-\<name\>.md** (one per phase):
-
-```markdown
-# Phase N: <name>
-
-**Plan:** [README.md](./README.md)
-**Type:** parallel | sequential
-
-## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
-
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" (under ## Plan Templates) here verbatim; omit this whole section when auto: false -->
-
-## Progress
-
-| Status  | Task          |
-| ------- | ------------- |
-| ⬜ TODO | <task 1 name> |
-| ⬜ TODO | <task 2 name> |
-
-## Tasks
-
-1. <task 1>
-   - Files: <specific files>
-   - Verify: <how to verify>
-   - Rollback: <how to undo — hard mode only>
-2. <task 2>
-   - Files: <specific files>
-   - Verify: <how to verify>
-```
+Skeletons in `templates/plan-templates.md` → **Big plan** (`README.md` + `phase-N-<name>.md`).
 
 ### Human overview doc templates
 
-The human overview doc (Step 6) is generated by cf-writer-deep from one of these skeleton templates (do NOT inline them here — they live as separate files so they don't inflate this skill's token footprint):
+Do not inline. Use:
 
-- `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.html` — styled, self-contained HTML; diagrams as plain ASCII text in a `<pre>` block (no external dependency).
-- `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.md` — Markdown mirror; diagrams as ASCII text in a plain code fence.
+- `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.html`
+- `${PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.md`
 
-Both carry `<!-- FILL: … -->` markers for: Problem & Intent, Solution (big picture), Key Decisions, diagram(s), Not Building.
+Both have `<!-- FILL: … -->` markers for Problem & Intent, Solution, Key Decisions, diagram(s), Not Building.
 
 ## Completion Protocol
 
@@ -366,13 +212,13 @@ Both carry `<!-- FILL: … -->` markers for: Problem & Intent, Solution (big pic
 
 ## Rules
 
-- **Plan first, implement second** — never start coding before the plan is saved and user approves. (Inline mode: never start before the plan is **presented** in chat and user approves.)
+- **Plan first, implement second** — never start coding before the plan is saved and user approves. (Inline: never start before the plan is **presented** in chat and user approves.)
 - **Brainstorm first, plan second** — challenge assumptions, explore alternatives. Use a direct user question. (Relaxed in fast mode.)
-- **Delegate exploration** — use cf-explorer for codebase exploration, cf-planner for approach brainstorming. (Fast mode: inline search only.)
-- **Delegate implementation** — use cf-implementer. If it fails after retry, fall back to inline TDD (load cf-tdd).
-- **Respect the mode** — do not escalate without user consent. If mode seems wrong mid-workflow, pause and ask.
-- **Honor autopilot** — if `auto: true` is in the plan frontmatter, never prompt between phases. Re-read the plan file's `## AUTOPILOT` section whenever uncertain.
+- **Delegate exploration** — cf-explorer for codebase, cf-planner for approaches. (Fast: inline search only.)
+- **Delegate implementation** — cf-implementer. After retry failure, fall back to inline TDD (load cf-tdd).
+- **Respect the mode** — do not escalate without consent. If mode seems wrong mid-workflow, pause and ask.
+- **Honor autopilot** — if `auto: true` is in plan frontmatter, never prompt between phases. Re-read `## AUTOPILOT` when uncertain.
 - When uncertain, say so and ask.
 - Do NOT assume libraries, APIs, or tools — ask.
 - Plans must be concrete: exact file paths, function names, test commands.
-- **No placeholders in approved plans.** Every step must be concrete before the user approves. Forbidden patterns: `TBD`, `TODO`, `"implement later"`, `"similar to step N"`, `"details to be determined"`. A plan with placeholders is a promise to plan later.
+- **No placeholders in approved plans.** Forbidden: `TBD`, `TODO`, `"implement later"`, `"similar to step N"`, `"details to be determined"`.
