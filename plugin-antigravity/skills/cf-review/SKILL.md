@@ -57,11 +57,11 @@ bash "<plugin-root>/skills/cf-review/scripts/assess-changes.sh"
 
 Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, `MODE`. Use `MODE` as-is.
 
-| Mode         | Condition                                          | Behavior                                                          |
-| ------------ | -------------------------------------------------- | ----------------------------------------------------------------- |
-| **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection. Skip context research.      |
-| **STANDARD** | 4–10 files OR 51–300 lines                         | Full 5-layer review. All security phases, concise.                |
-| **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 5-layer + extended security. Data-flow tracing. Exploits.    |
+| Mode         | Condition                                          | Behavior                                                       |
+| ------------ | -------------------------------------------------- | -------------------------------------------------------------- |
+| **QUICK**    | ≤3 files AND ≤50 lines AND no sensitive paths      | Layer 3: secrets + obvious injection. Skip context research.   |
+| **STANDARD** | 4–10 files OR 51–300 lines                         | Full 5-layer review. All security phases, concise.             |
+| **DEEP**     | >10 files OR >300 lines OR sensitive paths touched | Full 5-layer + extended security. Data-flow tracing. Exploits. |
 
 `SENSITIVE > 0` → always **DEEP**.
 

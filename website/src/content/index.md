@@ -259,17 +259,17 @@ Every session starts from scratch. CF Memory is persistent, searchable project k
 
 ### ✅ Auto-approve
 
-Permission gate that auto-approves safe tool calls and working-dir edits, then uses an LLM classifier for everything else (Claude only). Run `cf config`.
+Permission gate that auto-approves safe tool calls and working-dir edits. Unknown tools defer to Claude's native permission flow / auto mode unless you opt in to the LLM classifier via `autoApproveLLM`. Run `cf config`.
 
 ```text
-┌──────────────┐   ┌─────────────┐   ┌──────────────────────────────┐
-│ Rule-Based   │ → │ Working-Dir │ → │ LLM Classifier (Claude only) │
-└──────────────┘   └─────────────┘   └──────────────────────────────┘
+┌──────────────┐   ┌─────────────┐   ┌─────────────────────────────────────────┐
+│ Rule-Based   │ → │ Working-Dir │ → │ LLM Classifier (opt-in, Claude only)    │
+└──────────────┘   └─────────────┘   └─────────────────────────────────────────┘
 ```
 
 - **Rule-Based Gate**: Instant pattern matching — read-only tools auto-approved, destructive commands blocked.
 - **Working-Dir Edits**: File edits (Write/Edit) inside your project directory are auto-approved.
-- **LLM Classifier**: Classifies the action as safe or unsafe. Claude only.
+- **LLM Classifier**: Opt-in via `autoApproveLLM` (default `false`). When off, unknown tools emit no hook decision and defer to Claude's native permission flow / auto mode. When on, CF shells out to `claude --print --model sonnet`. Claude only — Codex already has Smart Approvals / `--approve-for-me`, AGY remembers approvals per chat; spawning those models from a hook would deadlock or race native. Grok / Cursor have no CF hook adapter.
 
 You can extend the Bash allow/deny lists in config:
 
@@ -279,11 +279,13 @@ You can extend the Bash allow/deny lists in config:
   // extra command prefixes to auto-approve. Merged across global + local
   "autoApproveAllowExtra": ["cargo check", "npm test"],
   // use below setting to bypass CF auto-approve and let Claude Code handle them.
-  "autoApproveIgnore": ["cargo test", "cargo build"]
+  "autoApproveIgnore": ["cargo test", "cargo build"],
+  // opt-in Sonnet classifier for unknown tools (default: defer to Claude native)
+  "autoApproveLLM": false
 }
 ```
 
-> ⚠️ **Not 100% safe**: CF auto-approve is an additional layer that helps reduce prompts, but it doesn't guarantee 100% safety. You can still trigger unsafe actions if you use the wrong command or if the LLM classifier makes a mistake.
+> ⚠️ **Not 100% safe**: CF auto-approve is an additional layer that helps reduce prompts, but it doesn't guarantee 100% safety. You can still trigger unsafe actions if you use the wrong command or if the LLM classifier (when enabled) makes a mistake.
 
 ### 🛡️ Security
 
@@ -371,6 +373,7 @@ You have two config files. Global is `~/.coding-friend/config.json`. Project is 
   "docsDir": "docs",
   "tdd": false,
   "autoApprove": false,
+  "autoApproveLLM": false,
   "review": {
     "withCodex": false
   },
@@ -390,6 +393,7 @@ Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configura
 | `language`              | Language for docs (plans, memory, research, ask). Default: `en`.                                                       |
 | `docsDir`               | Base docs directory relative to project root (plans, memory, research). Default: `docs`. Not the default learn output. |
 | `autoApprove`           | Enable the auto-approve hook. Default: `false`.                                                                        |
+| `autoApproveLLM`        | Opt-in Sonnet classifier for unknown tools (Claude only). Default: `false` — unknowns defer to Claude native / auto.   |
 | `privacyBlock`          | Privacy-block hook (deny `.env`, keys, credentials). Default: `true`.                                                  |
 | `scoutBlock`            | Scout-block hook (deny ignored dirs). Default: `true`.                                                                 |
 | `autoApproveAllowExtra` | Bash command prefixes to auto-approve (merged across global + local).                                                  |

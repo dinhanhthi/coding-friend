@@ -2613,9 +2613,7 @@ describe("integration: LLM fallback for unmatched tools", () => {
 
 describe("integration: autoApproveLLM config gate", () => {
   function runUnknownWithConfig(config, extraEnv = {}) {
-    const tmpHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "aa-llm-gate-home-"),
-    );
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "aa-llm-gate-home-"));
     const tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), "aa-llm-gate-cwd-"));
     try {
       const cfDir = path.join(tmpCwd, ".coding-friend");

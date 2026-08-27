@@ -315,8 +315,14 @@ test("rewrites cf-review for Codex", async () => {
   assert.match(review, /The result of Step 6 is the final formatted report/);
   assert.doesNotMatch(review, /Codex dual-review flag/);
   assert.doesNotMatch(review, /Step 2\.5: Spawn Codex review/);
-  assert.doesNotMatch(review, /Step 6\.5: Collect & normalize the Codex review/);
-  assert.doesNotMatch(review, /run-codex-review\.sh|normalize-codex-review\.sh/);
+  assert.doesNotMatch(
+    review,
+    /Step 6\.5: Collect & normalize the Codex review/,
+  );
+  assert.doesNotMatch(
+    review,
+    /run-codex-review\.sh|normalize-codex-review\.sh/,
+  );
   assert.doesNotMatch(review, /codex=(?:true|false)/);
   assert.doesNotMatch(review, /When any external source contributed/);
 
@@ -324,15 +330,9 @@ test("rewrites cf-review for Codex", async () => {
     path.join(repoRoot, "plugin/skills/cf-fix/SKILL.md"),
     "utf8",
   );
-  const fix = renderCodexFile(
-    "/repo/plugin/skills/cf-fix/SKILL.md",
-    fixSource,
-  );
+  const fix = renderCodexFile("/repo/plugin/skills/cf-fix/SKILL.md", fixSource);
   assert.doesNotMatch(fix, /runs a Codex second opinion/);
-  assert.match(
-    fix,
-    /ignores the Claude-only `review\.withCodex` setting/,
-  );
+  assert.match(fix, /ignores the Claude-only `review\.withCodex` setting/);
 });
 
 test("creates stamped Codex plugin manifest", () => {

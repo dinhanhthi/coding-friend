@@ -8,20 +8,20 @@ Paths are relative to `${CLAUDE_PLUGIN_ROOT}` (git checkout: `plugin/`). Repo-on
 
 ## Topic → source
 
-| Ask about | Read first | Then |
-| --------- | ---------- | ---- |
-| Skill steps / flags | `skills/<name>/SKILL.md` | `skills/<name>/modes/*` |
-| An agent | `agents/<name>.md` | — |
-| Hooks / events | this file + `hooks/hooks.json` | `hooks/<file>` |
-| Auto-approve / fewer prompts | this file (native prompt reduction) | `auto-approve.cjs` / `.codex.cjs` / `.agy.cjs` |
-| Config keys | this file | `.coding-friend/config.json` + `~/.coding-friend/config.json` |
-| CLI commands | this file | `cf <cmd> --help` |
-| Memory / MCP | this file | — |
-| Custom guides | this file | `.coding-friend/skills/<name>-custom/SKILL.md` |
-| CLI required? | `docs/cli-requirements.md` (repo) or CLI tiers below | — |
-| Architecture | `docs/architecture.md` (repo) | — |
-| Local plugin / host dev | `docs/plugin-dev.md` (repo) | — |
-| Tokens / troubleshooting | https://cf.dinhanhthi.com/docs/reference/ | — |
+| Ask about                    | Read first                                           | Then                                                          |
+| ---------------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
+| Skill steps / flags          | `skills/<name>/SKILL.md`                             | `skills/<name>/modes/*`                                       |
+| An agent                     | `agents/<name>.md`                                   | —                                                             |
+| Hooks / events               | this file + `hooks/hooks.json`                       | `hooks/<file>`                                                |
+| Auto-approve / fewer prompts | this file (native prompt reduction)                  | `auto-approve.cjs` / `.codex.cjs` / `.agy.cjs`                |
+| Config keys                  | this file                                            | `.coding-friend/config.json` + `~/.coding-friend/config.json` |
+| CLI commands                 | this file                                            | `cf <cmd> --help`                                             |
+| Memory / MCP                 | this file                                            | —                                                             |
+| Custom guides                | this file                                            | `.coding-friend/skills/<name>-custom/SKILL.md`                |
+| CLI required?                | `docs/cli-requirements.md` (repo) or CLI tiers below | —                                                             |
+| Architecture                 | `docs/architecture.md` (repo)                        | —                                                             |
+| Local plugin / host dev      | `docs/plugin-dev.md` (repo)                          | —                                                             |
+| Tokens / troubleshooting     | https://cf.dinhanhthi.com/docs/reference/            | —                                                             |
 
 Resolve plugin files as `${CLAUDE_PLUGIN_ROOT}/<path>`. If that misses (developing this repo), try `plugin/<path>` from the workspace root.
 
@@ -31,34 +31,34 @@ Resolve plugin files as `${CLAUDE_PLUGIN_ROOT}/<path>`. If that misses (developi
 
 Strip flags from `$ARGUMENTS` before treating the rest as the topic. Aliases in parentheses.
 
-| Skill | Args / flags |
-| ----- | ------------ |
-| `/cf-advise` | `[decision]` · `--quick` (`--fast`) · `--save` → `docs/memory/decisions/` |
-| `/cf-ask` | `[question]` |
-| `/cf-plan` | `[task]` · `--fast` (`--quick`) inline unless `--auto` · `--hard` extra discovery + rollback · `--auto` autopilot · `--inline` (`--no-file`) chat only, not with `--auto` · `--gui` (`--human`) overview · `--model <alias>` pin cf-planner (Claude `opus`/`sonnet`/`haiku`/`fable`; Codex model name; AGY `inherit`/`flash`/`pro`) · `--add-tests` (`--tdd`) to implementers. Resume = `/cf-plan-resume`, not a flag. |
-| `/cf-plan-resume` | `<plan>` path, entry file, or slug. Honors `auto: true`. |
-| `/cf-later-do` | `[item]` from `docs/later/` → `/cf-fix` or `/cf-plan` |
-| `/cf-review` | `[target]` · `--quick` / `--deep` · `--with-codex` (`--codex`) · `--claude` · `--gemini` · `--cursor` · `--grok` · `--out` (no agent flags). Config: `review.withCodex`, `review.agentTimeout` (300s). |
-| `/cf-review-out` | `[label]` → `docs/reviews/` prompt + diff |
-| `/cf-review-in` | `<label> [service]` |
-| `/cf-commit` | `[hint]` |
-| `/cf-design` | mode: `scan [path]` · `[description]` · `modify [what] -- [how]` · empty → ask |
-| `/cf-ship` | `[hint]` · `--dry-run` |
-| `/cf-fix` | `[bug]` · `--add-tests` (`--tdd`) |
-| `/cf-optimize` | `[target]` |
-| `/cf-scan` | `[description]` optional focus |
-| `/cf-remember` | `[topic]` |
-| `/cf-learn` | `[topic]` · config `learn` |
-| `/cf-teach` | `[topic]` · default `docs/learn` (not `/cf-learn`) |
-| `/cf-research` | `[topic]` → `docs/research/YYYY-MM-DD-<slug>/` |
-| `/cf-session` | `[label]` Claude → `docs/sessions/` |
-| `/cf-warm` | `--user <name>` · `--n-commits <N>` (defaults: git user, 10) |
-| `/cf-checkpoint` | `[additional-prompt]` → `docs/context/checkpoints/` |
-| `/cf-checkpoint-from` | `<slug> [message]` · `--recap` |
-| `/cf-help` | `[question]` |
-| `cf-tdd` | `--add-tests` (`--tdd`) · `--no-tdd` (default) · `--auto`. Config `tdd: true`. |
-| `cf-sys-debug` | no flags |
-| `cf-verification` | no flags |
+| Skill                 | Args / flags                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/cf-advise`          | `[decision]` · `--quick` (`--fast`) · `--save` → `docs/memory/decisions/`                                                                                                                                                                                                                                                                                                                                              |
+| `/cf-ask`             | `[question]`                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `/cf-plan`            | `[task]` · `--fast` (`--quick`) inline unless `--auto` · `--hard` extra discovery + rollback · `--auto` autopilot · `--inline` (`--no-file`) chat only, not with `--auto` · `--gui` (`--human`) overview · `--model <alias>` pin cf-planner (Claude `opus`/`sonnet`/`haiku`/`fable`; Codex model name; AGY `inherit`/`flash`/`pro`) · `--add-tests` (`--tdd`) to implementers. Resume = `/cf-plan-resume`, not a flag. |
+| `/cf-plan-resume`     | `<plan>` path, entry file, or slug. Honors `auto: true`.                                                                                                                                                                                                                                                                                                                                                               |
+| `/cf-later-do`        | `[item]` from `docs/later/` → `/cf-fix` or `/cf-plan`                                                                                                                                                                                                                                                                                                                                                                  |
+| `/cf-review`          | `[target]` · `--quick` / `--deep` · `--with-codex` (`--codex`) · `--claude` · `--gemini` · `--cursor` · `--grok` · `--out` (no agent flags). Config: `review.withCodex`, `review.agentTimeout` (300s).                                                                                                                                                                                                                 |
+| `/cf-review-out`      | `[label]` → `docs/reviews/` prompt + diff                                                                                                                                                                                                                                                                                                                                                                              |
+| `/cf-review-in`       | `<label> [service]`                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/cf-commit`          | `[hint]`                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/cf-design`          | mode: `scan [path]` · `[description]` · `modify [what] -- [how]` · empty → ask                                                                                                                                                                                                                                                                                                                                         |
+| `/cf-ship`            | `[hint]` · `--dry-run`                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `/cf-fix`             | `[bug]` · `--add-tests` (`--tdd`)                                                                                                                                                                                                                                                                                                                                                                                      |
+| `/cf-optimize`        | `[target]`                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `/cf-scan`            | `[description]` optional focus                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/cf-remember`        | `[topic]`                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/cf-learn`           | `[topic]` · config `learn`                                                                                                                                                                                                                                                                                                                                                                                             |
+| `/cf-teach`           | `[topic]` · default `docs/learn` (not `/cf-learn`)                                                                                                                                                                                                                                                                                                                                                                     |
+| `/cf-research`        | `[topic]` → `docs/research/YYYY-MM-DD-<slug>/`                                                                                                                                                                                                                                                                                                                                                                         |
+| `/cf-session`         | `[label]` Claude → `docs/sessions/`                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/cf-warm`            | `--user <name>` · `--n-commits <N>` (defaults: git user, 10)                                                                                                                                                                                                                                                                                                                                                           |
+| `/cf-checkpoint`      | `[additional-prompt]` → `docs/context/checkpoints/`                                                                                                                                                                                                                                                                                                                                                                    |
+| `/cf-checkpoint-from` | `<slug> [message]` · `--recap`                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/cf-help`            | `[question]`                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `cf-tdd`              | `--add-tests` (`--tdd`) · `--no-tdd` (default) · `--auto`. Config `tdd: true`.                                                                                                                                                                                                                                                                                                                                         |
+| `cf-sys-debug`        | no flags                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `cf-verification`     | no flags                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 Shared: `--add-tests` / `--tdd` on plan / fix / tdd / implementer.
 
@@ -66,20 +66,20 @@ Shared: `--add-tests` / `--tdd` on plan / fix / tdd / implementer.
 
 ## Agents
 
-| Agent | Model | Dispatched by |
-| ----- | ----- | ------------- |
-| `cf-explorer` | haiku | `/cf-plan`, `/cf-fix`, `/cf-ask` |
-| `cf-planner` | inherit | `/cf-plan` (`--model` pins this one) |
-| `cf-implementer` | inherit | `/cf-plan`, `/cf-fix`, `cf-tdd` — writes code; `[CF-RESULT]`; no autopilot |
-| `cf-reviewer` | inherit | `/cf-review`, `/cf-ship` |
-| `cf-reviewer-plan` | sonnet | `cf-reviewer` |
-| `cf-reviewer-security` | sonnet | `cf-reviewer` |
-| `cf-reviewer-quality` | haiku | `cf-reviewer` |
-| `cf-reviewer-tests` | haiku | `cf-reviewer` |
-| `cf-reviewer-rules` | haiku | `cf-reviewer` (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER) |
-| `cf-reviewer-reducer` | haiku | `cf-reviewer` |
-| `cf-writer` | haiku | learn / remember / scan / fix / ask |
-| `cf-writer-deep` | sonnet | `/cf-learn` |
+| Agent                  | Model   | Dispatched by                                                              |
+| ---------------------- | ------- | -------------------------------------------------------------------------- |
+| `cf-explorer`          | haiku   | `/cf-plan`, `/cf-fix`, `/cf-ask`                                           |
+| `cf-planner`           | inherit | `/cf-plan` (`--model` pins this one)                                       |
+| `cf-implementer`       | inherit | `/cf-plan`, `/cf-fix`, `cf-tdd` — writes code; `[CF-RESULT]`; no autopilot |
+| `cf-reviewer`          | inherit | `/cf-review`, `/cf-ship`                                                   |
+| `cf-reviewer-plan`     | sonnet  | `cf-reviewer`                                                              |
+| `cf-reviewer-security` | sonnet  | `cf-reviewer`                                                              |
+| `cf-reviewer-quality`  | haiku   | `cf-reviewer`                                                              |
+| `cf-reviewer-tests`    | haiku   | `cf-reviewer`                                                              |
+| `cf-reviewer-rules`    | haiku   | `cf-reviewer` (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER)                         |
+| `cf-reviewer-reducer`  | haiku   | `cf-reviewer`                                                              |
+| `cf-writer`            | haiku   | learn / remember / scan / fix / ask                                        |
+| `cf-writer-deep`       | sonnet  | `/cf-learn`                                                                |
 
 Review depth: QUICK / STANDARD / DEEP (auto, or `--quick` / `--deep`).
 
@@ -89,18 +89,18 @@ Review depth: QUICK / STANDARD / DEEP (auto, or `--quick` / `--deep`).
 
 Source: `hooks/hooks.json`. Adapters: `*.agy.*`; Codex uses a transformed manifest. Keys in parentheses.
 
-| File | Event | Purpose |
-| ---- | ----- | ------- |
-| `session-init.sh` | SessionStart | Bootstrap + ignore. `CF_HOST=omp` on omp |
-| `rules-reminder.sh` | UserPromptSubmit | Core rules (`devRulesReminder`) |
-| `privacy-block.sh` | PreToolUse (Read/Write/Edit/Glob/Grep) | Block `.env` / keys (`privacyBlock`) |
-| `scout-block.cjs` | PreToolUse (same) | `.coding-friend/ignore` (`scoutBlock`) |
-| `auto-approve.cjs` | PreToolUse | Opt-in (`autoApprove`). Claude: rules → cwd → LLM only if `autoApproveLLM: true` (default false → unknown defers to native). Codex / agy: deterministic; unknowns ask |
-| `session-log.sh` | Stop | Turn log |
-| `task-tracker.sh` | TaskCreated / TaskCompleted | Statusline progress (Claude) |
-| `agent-tracker.sh` | SubagentStart / SubagentStop | Statusline agent |
-| `memory-capture.sh` | PreCompact | Episode (`memory.autoCapture`). Codex: `memory-capture.codex.sh` |
-| `statusline.sh` | Statusline (Claude) | `cf statusline`, not `hooks.json` |
+| File                | Event                                  | Purpose                                                                                                                                                               |
+| ------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session-init.sh`   | SessionStart                           | Bootstrap + ignore. `CF_HOST=omp` on omp                                                                                                                              |
+| `rules-reminder.sh` | UserPromptSubmit                       | Core rules (`devRulesReminder`)                                                                                                                                       |
+| `privacy-block.sh`  | PreToolUse (Read/Write/Edit/Glob/Grep) | Block `.env` / keys (`privacyBlock`)                                                                                                                                  |
+| `scout-block.cjs`   | PreToolUse (same)                      | `.coding-friend/ignore` (`scoutBlock`)                                                                                                                                |
+| `auto-approve.cjs`  | PreToolUse                             | Opt-in (`autoApprove`). Claude: rules → cwd → LLM only if `autoApproveLLM: true` (default false → unknown defers to native). Codex / agy: deterministic; unknowns ask |
+| `session-log.sh`    | Stop                                   | Turn log                                                                                                                                                              |
+| `task-tracker.sh`   | TaskCreated / TaskCompleted            | Statusline progress (Claude)                                                                                                                                          |
+| `agent-tracker.sh`  | SubagentStart / SubagentStop           | Statusline agent                                                                                                                                                      |
+| `memory-capture.sh` | PreCompact                             | Episode (`memory.autoCapture`). Codex: `memory-capture.codex.sh`                                                                                                      |
+| `statusline.sh`     | Statusline (Claude)                    | `cf statusline`, not `hooks.json`                                                                                                                                     |
 
 Env: `CF_AUTO_APPROVE_ENABLED=1`, `CF_AUTO_APPROVE_LLM_TIMEOUT` (45000), `CF_AUTO_APPROVE_CACHE_FILE`.
 
@@ -119,23 +119,23 @@ CF `autoApprove` is the plugin hook (first-call allowlist). Prefer native where 
 
 Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project` / `--local`. Host: `--agent claude|codex|omp|agy` or `--codex` / `--omp` / `--agy`.
 
-| Command | What |
-| ------- | ---- |
+| Command                                                      | What                                                                                         |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
 | `cf install` / `uninstall` / `enable` / `disable` / `update` | Lifecycle. `update` also `--cli` `--plugin` `--statusline`. `uninstall --remove-marketplace` |
-| `cf init` | Per-project `docs/` + `.coding-friend/config.json` |
-| `cf config` | Interactive config |
-| `cf permission` | Host approval (`--all`, `--user`, `--agent`) |
-| `cf statusline` | Claude statusline renderer |
-| `cf memory` | `status` `search` `list` `rm` `init` `config` `rebuild` `mcp` `start-daemon` `stop-daemon` |
-| `cf learn host [path]` | Learn-doc site (`-p/--port` 3333) |
-| `cf learn push [path]` | Commit + push learn docs |
-| `cf mcp` | Register Learn + Memory MCP (user scope) |
-| `cf mcp-serve [memoryDir]` | Internal Memory MCP stdio |
-| `cf status` | Install / config / memory |
-| `cf clean` | Sweep generated `docs/` files |
-| `cf session save` / `load` | Cross-machine Claude sessions (`-l/--label`) |
-| `cf guide create <skill>` / `list` | Custom skill guides |
-| `cf dev on\|off\|status\|sync\|restart [path]` | Local plugin source |
+| `cf init`                                                    | Per-project `docs/` + `.coding-friend/config.json`                                           |
+| `cf config`                                                  | Interactive config                                                                           |
+| `cf permission`                                              | Host approval (`--all`, `--user`, `--agent`)                                                 |
+| `cf statusline`                                              | Claude statusline renderer                                                                   |
+| `cf memory`                                                  | `status` `search` `list` `rm` `init` `config` `rebuild` `mcp` `start-daemon` `stop-daemon`   |
+| `cf learn host [path]`                                       | Learn-doc site (`-p/--port` 3333)                                                            |
+| `cf learn push [path]`                                       | Commit + push learn docs                                                                     |
+| `cf mcp`                                                     | Register Learn + Memory MCP (user scope)                                                     |
+| `cf mcp-serve [memoryDir]`                                   | Internal Memory MCP stdio                                                                    |
+| `cf status`                                                  | Install / config / memory                                                                    |
+| `cf clean`                                                   | Sweep generated `docs/` files                                                                |
+| `cf session save` / `load`                                   | Cross-machine Claude sessions (`-l/--label`)                                                 |
+| `cf guide create <skill>` / `list`                           | Custom skill guides                                                                          |
+| `cf dev on\|off\|status\|sync\|restart [path]`               | Local plugin source                                                                          |
 
 `cf host` is a hidden alias for `cf learn host`.
 
@@ -145,31 +145,31 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/config.json` (local). Local overrides global at the **top-level key**. Nested objects (e.g. `learn`) are replaced whole if present locally.
 
-| Key | Default | Meaning |
-| --- | ------- | ------- |
-| `language` | `en` | Plans / memory / research / ask (`en`, `vi`, or any name) |
-| `docsDir` | `docs` | Plans / memory / research / reviews / later / checkpoints |
-| `tdd` | `false` | Default TDD for `cf-tdd` / implementers |
-| `devRulesReminder` | `true` | Rules-reminder hook |
-| `autoApprove` | `false` | Auto-approve hook (Claude + Codex + agy) |
-| `autoApproveLLM` | `false` | Claude only. `false` defers unknowns to native / `auto`; `true` restores Sonnet |
-| `privacyBlock` | `true` | Privacy-block hook |
-| `scoutBlock` | `true` | Scout-block hook |
-| `autoApproveAllowExtra` | `[]` | Extra Bash prefixes to auto-approve |
-| `autoApproveIgnore` | `[]` | Bash prefixes that always ask (Claude only) |
-| `disableGUIPlan` | `true` | Hide `/cf-plan` overview unless `--gui` |
-| `guiPlanFormat` | `html` | `html` or `md` |
-| `learn.language` | falls back to `language` | `/cf-learn` language |
-| `learn.outputDir` | `~/.coding-friend/learn` | `/`, `~/`, or project-relative |
-| `learn.categories` | concepts/patterns/languages/tools/debugging | Folder + description |
-| `learn.autoCommit` | `false` | Git-commit after learn docs |
-| `learn.readmeIndex` | `false` | `false` / `true` / `"per-category"` |
-| `review.withCodex` | `false` | Always add Codex on `/cf-review` |
-| `review.agentTimeout` | `300` | Seconds per external reviewer |
-| `memory.tier` | `auto` | `auto` / `full` / `lite` / `markdown` |
-| `memory.embedding` | — | `{ provider: transformers\|ollama, model, ollamaUrl }` |
-| `memory.autoCapture` | `false` | PreCompact episode capture |
-| `memory.autoStart` | — | Start daemon when MCP connects |
+| Key                     | Default                                     | Meaning                                                                         |
+| ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `language`              | `en`                                        | Plans / memory / research / ask (`en`, `vi`, or any name)                       |
+| `docsDir`               | `docs`                                      | Plans / memory / research / reviews / later / checkpoints                       |
+| `tdd`                   | `false`                                     | Default TDD for `cf-tdd` / implementers                                         |
+| `devRulesReminder`      | `true`                                      | Rules-reminder hook                                                             |
+| `autoApprove`           | `false`                                     | Auto-approve hook (Claude + Codex + agy)                                        |
+| `autoApproveLLM`        | `false`                                     | Claude only. `false` defers unknowns to native / `auto`; `true` restores Sonnet |
+| `privacyBlock`          | `true`                                      | Privacy-block hook                                                              |
+| `scoutBlock`            | `true`                                      | Scout-block hook                                                                |
+| `autoApproveAllowExtra` | `[]`                                        | Extra Bash prefixes to auto-approve                                             |
+| `autoApproveIgnore`     | `[]`                                        | Bash prefixes that always ask (Claude only)                                     |
+| `disableGUIPlan`        | `true`                                      | Hide `/cf-plan` overview unless `--gui`                                         |
+| `guiPlanFormat`         | `html`                                      | `html` or `md`                                                                  |
+| `learn.language`        | falls back to `language`                    | `/cf-learn` language                                                            |
+| `learn.outputDir`       | `~/.coding-friend/learn`                    | `/`, `~/`, or project-relative                                                  |
+| `learn.categories`      | concepts/patterns/languages/tools/debugging | Folder + description                                                            |
+| `learn.autoCommit`      | `false`                                     | Git-commit after learn docs                                                     |
+| `learn.readmeIndex`     | `false`                                     | `false` / `true` / `"per-category"`                                             |
+| `review.withCodex`      | `false`                                     | Always add Codex on `/cf-review`                                                |
+| `review.agentTimeout`   | `300`                                       | Seconds per external reviewer                                                   |
+| `memory.tier`           | `auto`                                      | `auto` / `full` / `lite` / `markdown`                                           |
+| `memory.embedding`      | —                                           | `{ provider: transformers\|ollama, model, ollamaUrl }`                          |
+| `memory.autoCapture`    | `false`                                     | PreCompact episode capture                                                      |
+| `memory.autoStart`      | —                                           | Start daemon when MCP connects                                                  |
 
 Ignore list: `.coding-friend/ignore` (gitignore syntax) — scout-block skips these paths.
 

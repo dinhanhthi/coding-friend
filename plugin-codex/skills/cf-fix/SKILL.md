@@ -82,12 +82,12 @@ Using explorer findings:
 
 4. **Rationalization Watch** — stop and re-examine if any appear:
 
-   | Thought                             | Rule                                                                  |
-   | ----------------------------------- | --------------------------------------------------------------------- |
-   | "I'll just try this one thing"      | Write the hypothesis first                                            |
-   | "Probably the same issue as before" | Re-read the execution path from scratch                               |
-   | "One more restart should fix it"    | Read the last error verbatim. Max two restarts without new evidence   |
-   | "I'm confident it's X"              | Confidence is not evidence — instrument it                            |
+   | Thought                             | Rule                                                                |
+   | ----------------------------------- | ------------------------------------------------------------------- |
+   | "I'll just try this one thing"      | Write the hypothesis first                                          |
+   | "Probably the same issue as before" | Re-read the execution path from scratch                             |
+   | "One more restart should fix it"    | Read the last error verbatim. Max two restarts without new evidence |
+   | "I'm confident it's X"              | Confidence is not evidence — instrument it                          |
 
 ### Step 5: Confirm Approach
 

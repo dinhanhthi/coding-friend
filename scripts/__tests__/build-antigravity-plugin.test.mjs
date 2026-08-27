@@ -359,15 +359,9 @@ test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
     path.join(repoRoot, "plugin/skills/cf-fix/SKILL.md"),
     "utf8",
   );
-  const fix = renderAgyFile(
-    "/repo/plugin/skills/cf-fix/SKILL.md",
-    fixSource,
-  );
+  const fix = renderAgyFile("/repo/plugin/skills/cf-fix/SKILL.md", fixSource);
   assert.doesNotMatch(fix, /runs a Codex second opinion/);
-  assert.match(
-    fix,
-    /ignores the Claude-only `review\.withCodex` setting/,
-  );
+  assert.match(fix, /ignores the Claude-only `review\.withCodex` setting/);
 
   for (const skillName of ["cf-commit", "cf-review"]) {
     const source = await fs.readFile(
@@ -450,8 +444,14 @@ test("rewrites cf-review for Antigravity", async () => {
   assert.match(review, /<plugin-root>\/skills\/cf-review\//);
   assert.doesNotMatch(review, /Codex dual-review flag/);
   assert.doesNotMatch(review, /Step 2\.5: Spawn Codex review/);
-  assert.doesNotMatch(review, /Step 6\.5: Collect & normalize the Codex review/);
-  assert.doesNotMatch(review, /run-codex-review\.sh|normalize-codex-review\.sh/);
+  assert.doesNotMatch(
+    review,
+    /Step 6\.5: Collect & normalize the Codex review/,
+  );
+  assert.doesNotMatch(
+    review,
+    /run-codex-review\.sh|normalize-codex-review\.sh/,
+  );
   assert.doesNotMatch(review, /codex=(?:true|false)/);
   assert.doesNotMatch(review, /When any external source contributed/);
   assert.doesNotMatch(review, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);

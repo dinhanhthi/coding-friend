@@ -18,14 +18,14 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-| Mode          | Flag                       | Effect                                                                                                                                                                                                                          | When to use                    |
-| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Normal**    | (none)                     | Full workflow                                                                                                                                                                                                                   | Default                        |
-| **Fast**      | `--fast` (alias `--quick`) | Skip discovery + planner. **Never writes a plan file** — stays in chat, tracked via TaskCreate. Multi-phase → switch to normal (writes file). With `--auto`, always write. No human overview unless `--gui`.                     | Clear, single-module, additive |
-| **Hard**      | `--hard`                   | Extra discovery, deeper exploration, rollback planning                                                                                                                                                                          | Breaking / multi-module        |
-| **Autopilot** | `--auto`                   | Orthogonal — after Step 7 approval, run all phases (auto review + fix Critical/Important + commit per phase, no between-phase prompts). Combines with any mode.                                                                 | Hands-off after approval       |
-| **Inline**    | `--inline` (`--no-file`)   | Orthogonal — skip Step 6 (no plan file). Plan in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto`.                                                                       | One-off, no on-disk artifact   |
-| **Model**     | `--model <alias>`          | Orthogonal — pin **cf-planner** at Step 3. Does not affect cf-explorer, cf-implementer, or cf-plan.                                                                                                                             | Stronger brainstorm model      |
+| Mode          | Flag                       | Effect                                                                                                                                                                                                       | When to use                    |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| **Normal**    | (none)                     | Full workflow                                                                                                                                                                                                | Default                        |
+| **Fast**      | `--fast` (alias `--quick`) | Skip discovery + planner. **Never writes a plan file** — stays in chat, tracked via TaskCreate. Multi-phase → switch to normal (writes file). With `--auto`, always write. No human overview unless `--gui`. | Clear, single-module, additive |
+| **Hard**      | `--hard`                   | Extra discovery, deeper exploration, rollback planning                                                                                                                                                       | Breaking / multi-module        |
+| **Autopilot** | `--auto`                   | Orthogonal — after Step 7 approval, run all phases (auto review + fix Critical/Important + commit per phase, no between-phase prompts). Combines with any mode.                                              | Hands-off after approval       |
+| **Inline**    | `--inline` (`--no-file`)   | Orthogonal — skip Step 6 (no plan file). Plan in chat only; progress tracked via TaskCreate. Combines with `--fast`/`--hard`. Incompatible with `--auto`.                                                    | One-off, no on-disk artifact   |
+| **Model**     | `--model <alias>`          | Orthogonal — pin **cf-planner** at Step 3. Does not affect cf-explorer, cf-implementer, or cf-plan.                                                                                                          | Stronger brainstorm model      |
 
 Parse flags from `$ARGUMENTS`; strip them (and `--model`'s value) before using the rest as the task. Normalize: `--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human`/`-gui`/`-human` → `--gui`. `--model` is `--model <alias>` or `--model=<alias>`.
 
@@ -74,12 +74,12 @@ Use `AskUserQuestion` for each round. Do NOT batch questions.
 
 **Round 2 — Challenge:** Question the path (user/dev/ops/business). YAGNI, KISS, DRY. Attack the recommended approach:
 
-| Attack             | Question                                                      |
-| ------------------ | ------------------------------------------------------------- |
+| Attack             | Question                                                         |
+| ------------------ | ---------------------------------------------------------------- |
 | Dependency failure | If an external API/service/tool goes down, can the plan degrade? |
-| Scale explosion    | At 10x load, which step breaks first?                         |
-| Rollback cost      | If the direction is wrong after launch, what can we return to? |
-| Premise collapse   | Which assumption is most fragile? What if it fails?           |
+| Scale explosion    | At 10x load, which step breaks first?                            |
+| Rollback cost      | If the direction is wrong after launch, what can we return to?   |
+| Premise collapse   | Which assumption is most fragile? What if it fails?              |
 
 If an attack holds, deform the design. If it shatters the approach, discard it and say why. Do not present a failed attack without disclosing it.
 

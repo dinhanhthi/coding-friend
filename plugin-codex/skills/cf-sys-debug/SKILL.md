@@ -204,16 +204,16 @@ If MCP is unavailable, warn the user — do not fail silently.
 
 ## Gotchas
 
-| What happened                         | Rule                                                          |
-| ------------------------------------- | ------------------------------------------------------------- |
-| Patched symptom file, not origin      | Trace the path backward first                                 |
-| Switched tools after MCP/API failure  | Diagnose server, key, config first                            |
-| Pipeline "RUNNING" but a stage is bad | Test each stage in isolation                                  |
-| Race diagnosed as stale state         | Inspect timestamps and ordering before state                  |
-| Local repro, CI fail                  | Align env (runtime, vars, timezone) before chasing code       |
-| Stack deep in a library               | Walk back 3 frames into your code                             |
-| `try/catch` to hide the error         | Find the root cause                                           |
-| Multiple changes at once              | One change at a time; test after each                         |
+| What happened                         | Rule                                                    |
+| ------------------------------------- | ------------------------------------------------------- |
+| Patched symptom file, not origin      | Trace the path backward first                           |
+| Switched tools after MCP/API failure  | Diagnose server, key, config first                      |
+| Pipeline "RUNNING" but a stage is bad | Test each stage in isolation                            |
+| Race diagnosed as stale state         | Inspect timestamps and ordering before state            |
+| Local repro, CI fail                  | Align env (runtime, vars, timezone) before chasing code |
+| Stack deep in a library               | Walk back 3 frames into your code                       |
+| `try/catch` to hide the error         | Find the root cause                                     |
+| Multiple changes at once              | One change at a time; test after each                   |
 
 ## Debugging Tools
 

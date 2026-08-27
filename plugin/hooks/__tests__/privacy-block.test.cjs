@@ -8,7 +8,9 @@ const os = require("os");
 const path = require("path");
 
 const describe =
-  typeof globalThis.describe === "function" ? globalThis.describe : nodeDescribe;
+  typeof globalThis.describe === "function"
+    ? globalThis.describe
+    : nodeDescribe;
 const it = typeof globalThis.it === "function" ? globalThis.it : nodeIt;
 
 function expect(actual) {
