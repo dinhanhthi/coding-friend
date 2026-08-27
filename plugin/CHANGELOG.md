@@ -2,6 +2,17 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.42.2 (2026-08-27)
+
+- Fix `privacy-block` hook output to the current PreToolUse schema (`permissionDecision: deny`) so hosts honor the block [#95a8c383](https://github.com/dinhanhthi/coding-friend/commit/95a8c383)
+- Fix omp compaction: drop the nonexistent `session_compacting` event; only `session.compacting` returns `{context}` [#95a8c383](https://github.com/dinhanhthi/coding-friend/commit/95a8c383)
+- Gate the Claude auto-approve Sonnet classifier behind `autoApproveLLM` (default `false` — unknown tools defer to Claude native / `auto`; `true` restores the classifier). Codex / AGY stay deterministic [#ad4df9fc](https://github.com/dinhanhthi/coding-friend/commit/ad4df9fc)
+- Antigravity build now maps `user-invocable: false` to `disable-slash-command: true` (cf-tdd, cf-sys-debug, cf-verification) [#ad4df9fc](https://github.com/dinhanhthi/coding-friend/commit/ad4df9fc)
+- Mark `/cf-later-do` `disable-model-invocation: true` so the model cannot self-invoke the backlog skill [#ad4df9fc](https://github.com/dinhanhthi/coding-friend/commit/ad4df9fc)
+- Stop reading undocumented `CODEX_PROJECT_DIR` in the Codex auto-approve hook [#ad4df9fc](https://github.com/dinhanhthi/coding-friend/commit/ad4df9fc)
+- Cut always-on token load: 26 skill descriptions (~47%), `bootstrap.md`, and the per-prompt rules reminder [#debd9790](https://github.com/dinhanhthi/coding-friend/commit/debd9790)
+- Trim the six heaviest skill bodies (`/cf-plan`, `/cf-review`, `/cf-help`, `/cf-research`, `/cf-fix`, `/cf-sys-debug`) without changing flags or workflows [#45d78ea5](https://github.com/dinhanhthi/coding-friend/commit/45d78ea5)
+
 ## v0.42.1 (2026-08-26)
 
 - Expand `/cf-help` into a full CF reference: complete skill / agent / hook / CLI catalog (adds the missing `/cf-review-out`, `/cf-review-in`, `/cf-teach`), a `topics.md` lookup index (flags, config, memory, hosts), and a never-guess read-the-source protocol so users can ask anything about CF from one command [#0083c9aa](https://github.com/dinhanhthi/coding-friend/commit/0083c9aa)
