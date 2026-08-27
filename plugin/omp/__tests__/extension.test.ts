@@ -335,11 +335,42 @@ describe("omp extension event contracts", () => {
     expect(registered["session_before_compact"]).toBeTypeOf("function");
     expect(registered["session.compacting"]).toBeTypeOf("function");
     expect(registered["session_compact"]).toBeTypeOf("function");
+    expect(registered["session_compacting"]).toBeUndefined();
+  });
+
+  it("returns compact context from session.compacting when memory-capture prints text", () => {
+    spawnSyncMock.mockReturnValue(
+      spawnResult({ stdout: "episode memory prompt\n" }),
+    );
+    const { registered } = loadExtension();
+
+    const result = registered["session.compacting"]?.({
+      sessionId: "sess-1",
+    });
+
+    expect(result).toEqual({ context: ["episode memory prompt"] });
+  });
+
+  it("returns void from session_before_compact even when memory-capture prints text", () => {
+    spawnSyncMock.mockReturnValue(
+      spawnResult({ stdout: "episode memory prompt\n" }),
+    );
+    const { registered } = loadExtension();
+
+    const result = registered["session_before_compact"]?.({
+      sessionId: "sess-1",
+    });
+
+    expect(result).toBeUndefined();
+    const captureCall = spawnSyncMock.mock.calls.find((call) =>
+      String(call[1]?.[0] ?? "").endsWith("memory-capture.sh"),
+    );
+    expect(captureCall).toBeDefined();
   });
 
   it("sends top-level session_id without compacting messages", () => {
     const { registered } = loadExtension();
-    registered["session_before_compact"]?.({
+    registered["session.compacting"]?.({
       sessionId: "real-session",
       messages: [{ session_id: "attacker-owned" }],
     });

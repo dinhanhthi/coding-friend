@@ -2175,7 +2175,7 @@ describe("classifyWithLLM", () => {
     });
   });
 
-  it("returns ask with unavailable reason on timeout (fail-open)", () => {
+  it("returns ask with unavailable reason on timeout (fail-to-ask)", () => {
     cp.execFileSync = () => {
       const err = new Error("ETIMEDOUT");
       err.killed = true;
@@ -2188,7 +2188,7 @@ describe("classifyWithLLM", () => {
     });
   });
 
-  it("returns ask with unavailable reason on error (fail-open)", () => {
+  it("returns ask with unavailable reason on error (fail-to-ask)", () => {
     cp.execFileSync = () => {
       throw new Error("spawn ENOENT");
     };
@@ -2199,7 +2199,7 @@ describe("classifyWithLLM", () => {
     });
   });
 
-  it("returns ask with unavailable reason when claude is not on PATH (fail-open)", () => {
+  it("returns ask with unavailable reason when claude is not on PATH (fail-to-ask)", () => {
     cp.execFileSync = () => {
       const err = new Error("spawn claude ENOENT");
       err.code = "ENOENT";
@@ -2292,7 +2292,7 @@ describe("classifyWithLLM — cache", () => {
     expect(callCount).toBe(1);
   });
 
-  it("does NOT cache fail-open (error) results", () => {
+  it("does NOT cache fail-to-ask (error) results", () => {
     let callCount = 0;
     cp.execFileSync = () => {
       callCount++;
@@ -2552,8 +2552,8 @@ describe("integration: LLM fallback for unmatched tools", () => {
     expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
-  it("unknown MCP tool -> exit 0, permissionDecision ask (LLM fail-open)", () => {
-    // Force LLM timeout to 1ms to test fail-open behavior without real API call
+  it("unknown MCP tool -> exit 0, permissionDecision ask (LLM fail-to-ask)", () => {
+    // Force LLM timeout to 1ms to test fail-to-ask behavior without real API call
     const { exitCode, stdout } = run(
       {
         tool_name: "mcp__some-unknown-server__some_tool",
@@ -2579,7 +2579,7 @@ describe("integration: LLM fallback for unmatched tools", () => {
   });
 });
 
-describe("integration: config and fail-open", () => {
+describe("integration: config and fail-safe (defer)", () => {
   it("outputs {} when autoApprove is disabled", () => {
     // Without CF_AUTO_APPROVE_ENABLED env, the hook reads config
     // By default autoApprove is false, so it should exit 0 with {}

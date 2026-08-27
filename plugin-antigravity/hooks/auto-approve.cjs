@@ -1159,7 +1159,7 @@ function clearLLMCache() {
 /**
  * Classify a tool call using the LLM (claude CLI).
  * Results are cached to a file by tool+input key across process invocations.
- * Error/fail-open results are NOT cached so retries can succeed.
+ * Error/fail-to-ask results are NOT cached so retries can succeed.
  * @param {string} toolName
  * @param {object} toolInput
  * @returns {{ decision: "allow"|"deny"|"ask", reason: string }}
@@ -1170,7 +1170,7 @@ function classifyWithLLM(toolName, toolInput) {
   const cached = cache[cacheKey];
   if (cached) return cached;
 
-  // Allow tests to override the timeout (e.g., 1ms to force fail-open)
+  // Allow tests to override the timeout (e.g., 1ms to force fail-to-ask)
   const llmTimeout =
     parseInt(process.env.CF_AUTO_APPROVE_LLM_TIMEOUT, 10) || 45000;
 
@@ -1226,7 +1226,7 @@ Respond in the exact format: CLASSIFICATION|reason`;
     writeLLMCacheEntry(cacheKey, llmResult);
     return llmResult;
   } catch (err) {
-    // Timeout, ENOENT, any error → fail-open
+    // Timeout, ENOENT, any error → fail-to-ask
     const errMsg = err && err.message ? err.message : String(err);
     const isTimeout = err && err.killed;
     process.stderr.write(
@@ -1488,7 +1488,7 @@ function main() {
       process.exit(0);
     }
   } catch (err) {
-    // Unexpected error — fail open, but log to stderr for debugging
+    // Unexpected error — fail-safe (defer), but log to stderr for debugging
     process.stderr.write(
       `[auto-approve] unexpected error: ${err && err.message ? err.message : err}\n`,
     );
