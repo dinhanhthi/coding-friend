@@ -29,6 +29,12 @@ jobs:
       - name: Lint placeholders and Codex artifact
         run: npm run lint:codex
 
+      - name: Lint placeholders and Antigravity artifact
+        run: npm run lint:agy
+
+      - name: Verify generated Antigravity plugin
+        run: npm run verify:agy-drift
+
       - name: Run build and conversion tests
         run: npm run test:scripts
 

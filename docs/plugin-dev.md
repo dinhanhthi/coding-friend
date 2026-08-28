@@ -554,6 +554,10 @@ modified — and before release to keep website data in sync.
 | Plugin  | `plugin/.claude-plugin/plugin.json` + root `package.json` | `plugin/CHANGELOG.md` | `v*`        |
 | CLI     | `cli/package.json`                                        | `cli/CHANGELOG.md`    | `cli-v*`    |
 
+> Codex (`plugin-codex/`) and Antigravity (`plugin-antigravity/`) ship on the
+> same `v*` tag — generated artifacts in the tagged commit. Do not add extra
+> host tag patterns.
+
 > Learn MCP, Learn Host, and CF Memory are bundled libs inside CLI — versioned
 > and released as part of CLI.
 

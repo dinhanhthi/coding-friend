@@ -11,19 +11,84 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    outputs:
-      target_sha: ${{ github.sha }}
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
 
       - name: Extract version from tag
         id: version
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid release version: $TAG"
+            exit 1
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify locked versions
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const expected = process.env.VERSION;
+          const files = [
+            ["package.json", JSON.parse(fs.readFileSync("package.json", "utf8")).version],
+            [
+              "plugin/.claude-plugin/plugin.json",
+              JSON.parse(
+                fs.readFileSync("plugin/.claude-plugin/plugin.json", "utf8"),
+              ).version,
+            ],
+            [
+              "plugin-codex/.codex-plugin/plugin.json",
+              JSON.parse(
+                fs.readFileSync(
+                  "plugin-codex/.codex-plugin/plugin.json",
+                  "utf8",
+                ),
+              ).version,
+            ],
+            [
+              "plugin-antigravity/plugin.json",
+              JSON.parse(
+                fs.readFileSync("plugin-antigravity/plugin.json", "utf8"),
+              ).version,
+            ],
+          ];
+
+          const mismatches = files.filter(([, version]) => version !== expected);
+          if (mismatches.length > 0) {
+            for (const [file, version] of mismatches) {
+              console.error(`${file}: expected ${expected}, found ${version}`);
+            }
+            process.exit(1);
+          }
+          NODE
+
+      - name: Verify generated Codex plugin
+        run: npm run verify:codex-drift
+
+      - name: Verify generated Antigravity plugin
+        run: npm run verify:agy-drift
+
+      - name: Lint placeholders and Codex artifact
+        run: npm run lint:codex
+
+      - name: Lint placeholders and Antigravity artifact
+        run: npm run lint:agy
 
       - name: Extract changelog for this version
         id: changelog
@@ -66,23 +131,3 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file /tmp/release-body.md
-
-  release-codex:
-    needs: release
-    permissions:
-      contents: write
-    uses: ./.github/workflows/release-codex.yml
-    with:
-      target_sha: ${{ needs.release.outputs.target_sha }}
-      version: ${{ needs.release.outputs.version }}
-    secrets: inherit
-
-  release-agy:
-    needs: release
-    permissions:
-      contents: write
-    uses: ./.github/workflows/release-agy.yml
-    with:
-      target_sha: ${{ needs.release.outputs.target_sha }}
-      version: ${{ needs.release.outputs.version }}
-    secrets: inherit

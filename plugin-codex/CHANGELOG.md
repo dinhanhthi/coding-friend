@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.42.3 (2026-08-28)
+
+- Ship Claude, Codex, and Antigravity from a single `v*` tag; drop `agy-v*` / `codex-v*` release workflows. New plugin releases use only `v*`
+
 ## v0.42.2 (2026-08-27)
 
 - Fix `privacy-block` hook output to the current PreToolUse schema (`permissionDecision: deny`) so hosts honor the block [#95a8c383](https://github.com/dinhanhthi/coding-friend/commit/95a8c383)

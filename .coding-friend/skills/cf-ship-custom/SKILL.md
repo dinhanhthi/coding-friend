@@ -105,12 +105,10 @@ After the commit is pushed, create git tags and push them to trigger CI/CD.
 
 | What you push | Tag | What it triggers |
 | ------------- | --- | ---------------- |
-| Plugin (Claude marketplace) | `v{version}` e.g. `v0.15.0` | GitHub Release for Claude **and** CI creates Codex + AGY tags/releases |
+| Plugin | `v{version}` e.g. `v0.15.0` | One GitHub Release covering Claude + Codex + AGY (generated trees in the same tagged commit) |
 | CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release |
 
-**Do NOT create or push `codex-v*` or `agy-v*`.** Those two tags are **not missing** — they are created by CI after `v*` lands, on the same commit. Manual push races the workflow and can fail the release.
-
-How it works: `.github/workflows/release.yml` (trigger `v*`) publishes the Claude release, then `workflow_call`s `release-codex.yml` and `release-agy.yml`. Those jobs verify locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, plus `plugin-codex/.codex-plugin/plugin.json` or `plugin-antigravity/plugin.json`) and then create `codex-v{version}` / `agy-v{version}` + their GitHub Releases. One `v*` push = Claude + Codex + AGY.
+How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`) plus Codex/AGY drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`) and Antigravity (`plugin-antigravity/`) ship as generated artifacts in the tagged commit — not as extra tags.
 
 **The repo may have more than one remote** (e.g. a contributor fork). Always name `origin` explicitly in tag pushes and confirm it points at the canonical repo first: `git remote get-url origin`.
 
@@ -130,13 +128,7 @@ git ls-remote --tags origin | grep -F "<tag>"        # hand-pushed tag present o
 gh run list --workflow=release.yml --limit 3         # release workflow triggered?
 ```
 
-If you pushed `v*`, also confirm CI created the host tags (they appear a minute or two after the `v*` run starts — do **not** create them yourself if they are still missing; wait / re-check):
-
-```bash
-git ls-remote --tags origin | grep -E "refs/tags/(codex-v|agy-v)${VERSION}$"
-```
-
-If the hand-pushed tag is missing or no `release.yml` run appeared, report it — do NOT silently re-push or assume success. If `v*` is on origin but `codex-v*` / `agy-v*` never appear after the workflow finishes, report a CI failure — do not push those tags by hand unless the user explicitly asks.
+If the hand-pushed tag is missing or no `release.yml` run appeared, report it — do NOT silently re-push or assume success.
 
 **IMPORTANT**: Do NOT use `git push origin main --tags`. Pushing multiple tags at once may fail to trigger GitHub Actions workflows. Push each tag individually. When both CLI and plugin tags exist, **always push the plugin tag (`v*`) last** — the plugin GitHub Release workflow updates the marketplace cache, which must include the latest CLI version.
 
@@ -144,16 +136,16 @@ If the hand-pushed tag is missing or no `release.yml` run appeared, report it �
 
 ```
 Released:
-  Plugin v0.15.0   → tag v0.15.0 pushed (you) → Claude GitHub Release
-  Codex            → tag codex-v0.15.0 created by CI (do not push)
-  Antigravity      → tag agy-v0.15.0 created by CI (do not push)
+  Plugin v0.15.0   → tag v0.15.0 pushed (you) → one GitHub Release (Claude + Codex + AGY)
+  Codex            → ships on the same v0.15.0 tag (`plugin-codex/` in the tagged commit)
+  Antigravity      → ships on the same v0.15.0 tag (`plugin-antigravity/` in the tagged commit)
   CLI v1.24.0      → tag cli-v1.24.0 pushed (you) → npm publish + GitHub Release
 
 Check CI/CD status:
   https://github.com/dinhanhthi/coding-friend/actions
 ```
 
-Always list Codex and AGY in this summary when a plugin `v*` was pushed, even though you did not create those tags. If they are not on `origin` yet, say "CI still creating" and point at the `release.yml` run — do not treat that as a missed step.
+Always list Codex and AGY in this summary when a plugin `v*` was pushed — they ship on that same tag, not as extra tags. If `release.yml` has not finished, point at the run; do not treat that as a missed step.
 
 **NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs, not for tagging. Analyze, decide, and execute autonomously.
 
@@ -167,7 +159,7 @@ Always list Codex and AGY in this summary when a plugin `v*` was pushed, even th
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
 - NEVER hand-edit generated artifacts: `plugin-codex/**` and `plugin-antigravity/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
-- Only `v*` and `cli-v*` are pushed by hand. `codex-v*` and `agy-v*` are created by CI from the `v*` tag — never push them yourself.
+- Only `v*` and `cli-v*` are pushed by hand. Do not invent extra host tags.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
 ## After
