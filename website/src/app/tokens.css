@@ -1,0 +1,56 @@
+/* Hallmark tokens — theme: Lumen · drop: Night Foundry (cool-violet near-black · molten-brass emit · coral chord) */
+:root {
+  /* Paper + ink — late-night studio, violet tilt (H 265) */
+  --color-paper: oklch(13% 0.014 265);
+  --color-paper-2: oklch(17% 0.016 265);
+  --color-paper-3: oklch(22% 0.016 265);
+  --color-ink: oklch(96% 0.006 262);
+  --color-ink-2: oklch(86% 0.01 262);
+  --color-muted: oklch(67% 0.012 262);
+  --color-rule: oklch(96% 0.006 262 / 0.1);
+  --color-rule-2: oklch(96% 0.006 262 / 0.18);
+
+  /* Molten brass — the emitting accent */
+  --color-accent: oklch(76% 0.17 50);
+  --color-accent-ink: oklch(13% 0.014 265);
+  /* Coral chord — the verb landmark */
+  --color-accent-2: oklch(68% 0.16 18);
+  --color-focus: oklch(76% 0.17 50);
+
+  /* Emission physics */
+  --color-glow: oklch(80% 0.16 50 / 0.42);
+  --color-glow-soft: oklch(80% 0.16 50 / 0.12);
+  --color-paper-emit: oklch(76% 0.17 50 / 0.04);
+  --rule-blueprint: oklch(96% 0.006 262 / 0.04);
+
+  /* Chrome */
+  --color-scrim: oklch(0% 0 0 / 0.55);
+  --shadow-chrome: 0 24px 60px -28px oklch(0% 0 0 / 0.55);
+
+  /* Status */
+  --color-ok: oklch(72% 0.14 160);
+
+  /* Spacing — 4pt scale */
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --dur-pulse: 4s;
+
+  /* Radii */
+  --radius-btn: 6px;
+  --radius-card: 10px;
+}

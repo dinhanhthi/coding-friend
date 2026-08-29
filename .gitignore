@@ -39,6 +39,9 @@ _pagefind/
 website/public/llms.txt
 website/public/llms-full.txt
 
+# Hallmark design-skill metadata
+.hallmark/
+
 .understand-anything/
 
 graphify-out/

@@ -1,36 +1,57 @@
+/* Hallmark · genre: atmospheric · macrostructure: Marquee Hero (user-directed repeat of run 1 — knob deltas: apparatus replaces terminal card, mono eyebrow added, meter strip added) · theme: Lumen · drop: Night Foundry · enrichment: Tier-B codebase-graph apparatus (SVG, hand-built) + 6 fireworks-tech-graph doc diagrams (public/diagrams/, Lumen-tokened, validator-passed) + zoom lightbox (user-requested blur backdrop) · nav: N1b lowercase three-section + ⌘K palette kept keyboard-first · footer: Ft5 statement (lowercase serif closing line)
+ * deviations: docs prose body keeps original case + italics (technical reference — file paths, flags, acronyms are case-semantic); Lumen's total-lowercase register applies to chrome (nav · hero · prose headings · footer) only. gate 25 — docs body keeps the original max-w-3xl measure (~86ch) so ASCII diagrams + tables fit; preserved IA.
+ * contrast: pass (40–41) · slop: pass (42–45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · mobile: pass (34, 49, 50–57) */
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 */
 @import "tailwindcss";
+@import "./tokens.css";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  --color-bg: #23262e;
-  --color-nav: #1c1e25;
-  --color-surface: #2a2d36;
-  --color-surface-2: #31353f;
-  --color-code-bg: #1d2027;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-text: #e4e5ea;
-  --color-text-muted: #9a9ca6;
-  --color-heading: #f5f5f7;
-  --color-link: #8ab4f8;
-  --color-accent: #a78bfa;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 @theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-2: var(--color-paper-2);
+  --color-paper-3: var(--color-paper-3);
+  --color-ink: var(--color-ink);
+  --color-ink-2: var(--color-ink-2);
+  --color-muted: var(--color-muted);
+  --color-rule: var(--color-rule);
+  --color-rule-2: var(--color-rule-2);
+  --color-accent: var(--color-accent);
+  --color-accent-ink: var(--color-accent-ink);
+  --color-accent-2: var(--color-accent-2);
+  --color-focus: var(--color-focus);
+  --color-scrim: var(--color-scrim);
+  --color-ok: var(--color-ok);
   --font-sans:
-    var(--font-inter), -apple-system, "system-ui", "Segoe UI", system-ui,
+    var(--font-geist), -apple-system, "system-ui", "Segoe UI", system-ui,
     sans-serif;
+  --font-display:
+    var(--font-instrument-serif), "Tiempos Headline", ui-serif, Georgia, serif;
+  --font-mono:
+    var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
 }
 
 html {
+  overflow-x: clip;
   scroll-behavior: smooth;
-  scroll-padding-top: 4.5rem;
-  scroll-padding-bottom: 4.5rem;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  overflow-x: clip;
+  font-variant-numeric: tabular-nums;
 }
 
 h2,
 h3 {
-  scroll-margin-top: 4.5rem;
+  scroll-margin-top: 5rem;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -46,17 +67,17 @@ h3 {
   }
 }
 
-/* Scrollbar */
+/* Scrollbar — dark */
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #d1d5db4c;
+  background: var(--color-rule-2);
   border-radius: 10px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #d1d5dbce;
+  background: var(--color-muted);
 }
 *::-webkit-scrollbar-track {
   background: transparent;
@@ -67,16 +88,260 @@ h3 {
   display: none;
 }
 
-/* Syntax highlighting */
+/* Nav / footer link — brass underline-grow on hover */
+.u-grow {
+  background: linear-gradient(var(--color-accent), var(--color-accent))
+    no-repeat left bottom / 0% 1px;
+  transition:
+    background-size var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+.u-grow:hover,
+.u-grow:focus-visible {
+  background-size: 100% 1px;
+}
+
+/* Mono label register — the ONLY uppercase surface */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Hero — blueprint grid (4%) + inner-emit wash, glow clipped inside */
+.hero-foundry {
+  overflow: clip;
+  background:
+    linear-gradient(var(--rule-blueprint) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--rule-blueprint) 1px, transparent 1px) 0 0 /
+      48px 48px,
+    radial-gradient(
+      60% 50% at 74% 34%,
+      var(--color-paper-emit) 0%,
+      transparent 65%
+    ),
+    var(--color-paper);
+}
+
+/* Lowercase serif headline — verb landmark: coral + draw-in underline, upright */
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: 0.012em;
+  text-transform: lowercase;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.hero-title em {
+  font-style: normal;
+  color: var(--color-accent-2);
+  position: relative;
+  white-space: nowrap;
+}
+.hero-title em::after {
+  content: "";
+  position: absolute;
+  left: 0.05em;
+  right: 0.05em;
+  bottom: 0.04em;
+  height: 1px;
+  background: var(--color-accent-2);
+  transform-origin: left;
+  animation: verb-underline 320ms var(--ease-out) 900ms backwards;
+}
+@keyframes verb-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Apparatus — codebase graph (hand-built SVG, one per page) */
+.apparatus {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+.graph-edge {
+  stroke: var(--color-rule-2);
+  stroke-width: 1;
+  stroke-dasharray: 2 7;
+  animation: edge-flow 6s linear infinite;
+}
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+.graph-core {
+  fill: var(--color-accent);
+  filter: drop-shadow(0 0 10px var(--color-glow))
+    drop-shadow(0 0 32px var(--color-glow-soft));
+  animation: core-pulse var(--dur-pulse) ease-in-out infinite;
+}
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.86;
+  }
+}
+.graph-core-ring {
+  fill: none;
+  stroke: var(--color-rule-2);
+}
+.graph-node {
+  fill: var(--color-paper-2);
+  stroke: var(--color-rule-2);
+}
+.graph-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--color-muted);
+}
+.graph-core-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--color-accent-ink);
+}
+.callout {
+  position: absolute;
+  top: var(--y);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.callout--left {
+  left: 0;
+  padding-right: 2.5rem;
+}
+.callout--right {
+  right: 0;
+  padding-left: 2.5rem;
+}
+.callout::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 2rem;
+  height: 1px;
+  background: var(--color-rule-2);
+}
+.callout--left::before {
+  right: 0;
+}
+.callout--right::before {
+  left: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .graph-edge,
+  .graph-core {
+    animation: none;
+  }
+  .hero-title em::after {
+    animation: none;
+  }
+}
+
+/* Meter strip — printed readout beneath the hero (static, real labels) */
+.meter {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-block: 1px solid var(--color-rule);
+  background:
+    linear-gradient(var(--rule-blueprint) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--color-paper);
+}
+.meter-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  height: 26px;
+  overflow: hidden;
+}
+.meter-bars > span {
+  flex: none;
+  width: 2px;
+  background: var(--color-accent);
+  border-radius: 0.5px;
+}
+
+/* Image zoom modal — scale + fade in/out, blurred scrim (user-requested) */
+.zoom-modal {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity 220ms var(--ease-in),
+    transform 220ms var(--ease-in),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+.zoom-modal[open] {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 300ms var(--ease-out),
+    transform 300ms var(--ease-out),
+    overlay 300ms allow-discrete,
+    display 300ms allow-discrete;
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.zoom-modal:focus-visible {
+  outline: none;
+}
+.zoom-modal::backdrop {
+  background: var(--color-scrim);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition:
+    opacity 220ms var(--ease-in),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+.zoom-modal[open]::backdrop {
+  opacity: 1;
+  transition:
+    opacity 300ms var(--ease-out),
+    overlay 300ms allow-discrete,
+    display 300ms allow-discrete;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Syntax highlighting — code cards lit by hairline, not shadow */
 pre code {
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-card);
   font-size: 0.875rem;
   line-height: 1.7;
 }
 
 pre {
   padding: 0;
+}
+
+.prose pre code.hljs {
+  background: transparent;
 }
 
 .hljs-cf-keyword {
@@ -95,23 +360,69 @@ pre {
   right: 0.5rem;
   z-index: 10;
   cursor: pointer;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-btn);
   padding: 0.375rem;
-  color: #94a3b8;
+  color: var(--color-muted);
   opacity: 0;
   transition:
-    opacity 0.2s,
-    color 0.2s,
-    background-color 0.2s;
+    opacity var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
 }
 
-.code-block-wrapper:hover .code-copy-btn {
+.code-block-wrapper:hover .code-copy-btn,
+.code-copy-btn:focus-visible {
   opacity: 1;
 }
 
 .code-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+}
+
+.code-copy-btn:active {
+  transform: translateY(1px);
+}
+
+/* Prose — Lumen Night palette */
+.prose {
+  --tw-prose-body: var(--color-ink-2);
+  --tw-prose-headings: var(--color-ink);
+  --tw-prose-lead: var(--color-ink-2);
+  --tw-prose-links: var(--color-accent);
+  --tw-prose-bold: var(--color-ink);
+  --tw-prose-counters: var(--color-muted);
+  --tw-prose-bullets: var(--color-rule-2);
+  --tw-prose-hr: var(--color-rule);
+  --tw-prose-quotes: var(--color-ink-2);
+  --tw-prose-quote-borders: var(--color-rule-2);
+  --tw-prose-captions: var(--color-muted);
+  --tw-prose-code: var(--color-ink);
+  --tw-prose-pre-code: var(--color-ink-2);
+  --tw-prose-pre-bg: var(--color-paper-2);
+  --tw-prose-th-borders: var(--color-rule-2);
+  --tw-prose-td-borders: var(--color-rule);
+}
+
+/* Prose headings — lowercase classical serif (Lumen chrome register) */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.018em;
+  text-transform: lowercase;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.prose h2 {
+  font-size: 1.9em;
+}
+
+.prose h3 {
+  font-size: 1.45em;
 }
 
 :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
@@ -119,12 +430,18 @@ pre {
 }
 
 .prose :not(pre) > code {
-  background: none !important;
-  border: 1px solid var(--color-border);
-  color: var(--color-accent);
+  background: var(--color-paper-2) !important;
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink);
   font-size: 85%;
   padding: 2px 5px !important;
   border-radius: 4px;
+  text-transform: none;
+}
+
+.prose a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 a > code {
@@ -152,17 +469,30 @@ a > code {
 }
 
 .prose h2 {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-rule);
   padding-bottom: 0.375rem;
   margin-top: 3.5rem;
 }
 
+/* Blockquote — hairline card lit from within (4% emit) */
 .prose blockquote {
   font-size: inherit;
   font-style: normal;
   font-weight: inherit;
   line-height: inherit;
   color: inherit;
+  background:
+    radial-gradient(
+      120% 100% at 0% 0%,
+      var(--color-paper-emit) 0%,
+      transparent 60%
+    ),
+    var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-inline-start: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-btn);
+  padding-block: 0.5rem;
+  padding-inline-end: 1rem;
 }
 
 .prose blockquote p::before,
@@ -171,9 +501,9 @@ a > code {
 }
 
 .prose pre {
-  background: var(--color-code-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
   overflow-x: auto;
 }
 
@@ -193,8 +523,8 @@ a > code {
 }
 
 .prose img {
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
 }
 
 li > .code-block-wrapper > pre {
@@ -202,7 +532,7 @@ li > .code-block-wrapper > pre {
   margin-bottom: 0 !important;
 }
 
-li > img {
+li img {
   margin-top: 1rem !important;
   margin-bottom: 1rem !important;
 }

@@ -31,13 +31,14 @@ function tocLinkClass(active: boolean, nested: boolean) {
     "block border-l-2 py-1 leading-snug transition-colors duration-150",
     nested ? "pl-3 text-xs" : "pl-2 text-sm",
     active
-      ? "border-accent text-heading"
-      : "text-text-muted hover:text-heading border-transparent",
+      ? "border-accent text-ink"
+      : "text-muted hover:text-ink border-transparent",
   ].join(" ");
 }
 
 export default function TableOfContents({ items }: { items: TocItem[] }) {
   const [activeId, setActiveId] = useState(items[0]?.id ?? "");
+  const [pastHero, setPastHero] = useState(false);
   const tree = groupToc(items);
 
   useEffect(() => {
@@ -54,6 +55,13 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
         }
       }
       setActiveId((prev) => (prev === current ? prev : current));
+      // The rail lives in the hero's right margin — keep it hidden until
+      // the docs content has scrolled up under the navbar.
+      const main = document.getElementById("top");
+      const visible = main
+        ? main.getBoundingClientRect().top <= HEADER_OFFSET_PX
+        : true;
+      setPastHero((prev) => (prev === visible ? prev : visible));
       ticking = false;
     };
 
@@ -72,14 +80,14 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
     };
   }, [items]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 || !pastHero) return null;
 
   return (
     <nav
       aria-label="Table of contents"
       className="fixed top-20 right-[max(1rem,calc(50%-24rem-13rem-1rem))] z-40 hidden max-h-[calc(100dvh-9.5rem)] w-52 overflow-x-hidden overflow-y-auto overscroll-contain xl:block"
     >
-      <p className="text-heading mb-2 text-xs font-semibold tracking-wide uppercase">
+      <p className="text-muted mb-2 font-mono text-[11px] tracking-[0.08em] uppercase">
         Contents
       </p>
       <ul>

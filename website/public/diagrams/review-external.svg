@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" width="960" height="340"
+  data-generator="fireworks-tech-graph" data-schema-version="1" data-style-id="8"
+  data-visual-theme="Lumen Night Foundry" data-diagram-type="flowchart"
+  data-quality-profile="showcase" data-max-bends-per-edge="2" data-max-total-bends="8"
+  data-max-route-stretch="1.35" data-max-bridged-crossings="0" data-min-node-gap="40"
+  data-min-container-gutter="20" data-min-label-clearance="4" data-min-segment-length="16">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .nm { font-size: 13px; font-weight: 600; fill: oklch(96% 0.006 262); }
+    .dt { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+    .al { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+  </style>
+  <defs>
+    <marker id="arr-brass" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="oklch(76% 0.17 50)"/>
+    </marker>
+    <marker id="arr-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="oklch(67% 0.012 262)"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="340" fill="oklch(17% 0.016 265)" data-graph-role="background"/>
+
+  <path id="handoff" data-graph-role="edge" data-edge-id="handoff" data-source="review" data-target="review-out" data-edge-kind="dependency" data-flow="dependency" data-bends="2" data-route-stretch="1" d="M 380 122 V 170 H 180 V 230" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" stroke-dasharray="6 3" marker-end="url(#arr-muted)"/>
+  <path id="prompt" data-graph-role="edge" data-edge-id="prompt" data-source="review-out" data-target="any-ai" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 280 262 H 430" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="results" data-graph-role="edge" data-edge-id="results" data-source="any-ai" data-target="review-in" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 550 262 H 700" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+
+  <rect id="review" data-node-id="review" x="290" y="50" width="380" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(76% 0.17 50)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="290,50,670,122"/>
+  <text x="304" y="76" class="nm">/cf-review</text>
+  <text x="304" y="94" class="dt">--codex · --gemini · --cursor · --grok</text>
+  <text x="304" y="110" class="dt">parallel, then merge</text>
+
+  <rect id="review-out" data-node-id="review-out" x="80" y="230" width="200" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="80,230,280,294"/>
+  <text x="94" y="258" class="nm">/cf-review-out</text>
+  <text x="94" y="276" class="dt">prompt + diff → docs/reviews/</text>
+
+  <rect id="any-ai" data-node-id="any-ai" x="430" y="230" width="120" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="430,230,550,294"/>
+  <text x="444" y="258" class="nm">any ai</text>
+  <text x="444" y="276" class="dt">or a human</text>
+
+  <rect id="review-in" data-node-id="review-in" x="700" y="230" width="200" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="700,230,900,294"/>
+  <text x="714" y="258" class="nm">/cf-review-in</text>
+  <text x="714" y="276" class="dt">reads results · offers to fix</text>
+
+  <text x="280" y="162" text-anchor="middle" class="al" data-graph-role="label" data-owner="handoff">manual handoff</text>
+  <text x="355" y="254" text-anchor="middle" class="al" data-graph-role="label" data-owner="prompt">prompt</text>
+  <text x="625" y="254" text-anchor="middle" class="al" data-graph-role="label" data-owner="results">results</text>
+</svg>

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" width="960" height="500"
+  data-generator="fireworks-tech-graph" data-schema-version="1" data-style-id="8"
+  data-visual-theme="Lumen Night Foundry" data-diagram-type="architecture"
+  data-quality-profile="showcase" data-max-bends-per-edge="2" data-max-total-bends="8"
+  data-max-route-stretch="1.35" data-max-bridged-crossings="0" data-min-node-gap="40"
+  data-min-container-gutter="20" data-min-label-clearance="4" data-min-segment-length="16">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .nm { font-size: 13px; font-weight: 600; fill: oklch(96% 0.006 262); }
+    .dt { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+    .al { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+  </style>
+  <defs>
+    <marker id="arr-brass" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="oklch(76% 0.17 50)"/>
+    </marker>
+    <marker id="arr-coral" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto-start-reverse">
+      <polygon points="0 0,10 3.5,0 7" fill="oklch(68% 0.16 18)"/>
+    </marker>
+    <marker id="arr-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="oklch(67% 0.012 262)"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="500" fill="oklch(17% 0.016 265)" data-graph-role="background"/>
+
+  <path id="invoke" data-graph-role="edge" data-edge-id="invoke" data-source="you" data-target="skills" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 168 92 H 258" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="dispatch" data-graph-role="edge" data-edge-id="dispatch" data-source="skills" data-target="agents" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 448 92 H 538" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="write" data-graph-role="edge" data-edge-id="write" data-source="agents" data-target="repo" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 748 92 H 812" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="intercept" data-graph-role="edge" data-edge-id="intercept" data-source="skills" data-target="hooks" data-edge-kind="dependency" data-flow="dependency" data-bends="0" data-route-stretch="1" d="M 353 124 V 240" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" stroke-dasharray="6 3" marker-end="url(#arr-muted)"/>
+  <path id="record" data-graph-role="edge" data-edge-id="record" data-source="agents" data-target="docs" data-edge-kind="flow" data-flow="data" data-bends="0" data-route-stretch="1" d="M 643 124 V 240" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" marker-end="url(#arr-muted)"/>
+  <path id="memory-io" data-graph-role="edge" data-edge-id="memory-io" data-source="memory" data-target="docs" data-edge-kind="feedback" data-flow="feedback" data-bends="0" data-route-stretch="1" d="M 643 390 V 312" fill="none" stroke="oklch(68% 0.16 18)" stroke-width="1.5" stroke-dasharray="4 3" marker-start="url(#arr-coral)" marker-end="url(#arr-coral)"/>
+
+  <rect id="you" data-node-id="you" x="48" y="60" width="120" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="48,60,168,124"/>
+  <text x="62" y="88" class="nm">you</text>
+  <text x="62" y="106" class="dt">one prompt</text>
+
+  <rect id="skills" data-node-id="skills" x="258" y="60" width="190" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(76% 0.17 50)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="258,60,448,124"/>
+  <text x="272" y="88" class="nm">/cf-* skills</text>
+  <text x="272" y="106" class="dt">slash + auto-invoked</text>
+
+  <rect id="agents" data-node-id="agents" x="538" y="60" width="210" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(76% 0.17 50)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="538,60,748,124"/>
+  <text x="552" y="88" class="nm">agents</text>
+  <text x="552" y="106" class="dt">explorer · planner · reviewer</text>
+
+  <rect id="repo" data-node-id="repo" x="812" y="60" width="100" height="64" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="812,60,912,124"/>
+  <text x="826" y="88" class="nm">your repo</text>
+  <text x="826" y="106" class="dt">the code</text>
+
+  <rect id="hooks" data-node-id="hooks" x="258" y="240" width="190" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="258,240,448,312"/>
+  <text x="272" y="266" class="nm">hooks</text>
+  <text x="272" y="284" class="dt">auto-approve · security</text>
+  <text x="272" y="300" class="dt">statusline</text>
+
+  <rect id="docs" data-node-id="docs" x="538" y="240" width="210" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="538,240,748,312"/>
+  <text x="552" y="266" class="nm">docs/</text>
+  <text x="552" y="284" class="dt">memory · plans · research</text>
+  <text x="552" y="300" class="dt">project knowledge</text>
+
+  <rect id="memory" data-node-id="memory" x="538" y="390" width="210" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="538,390,748,446"/>
+  <text x="552" y="414" class="nm">cf memory</text>
+  <text x="552" y="432" class="dt">mcp server</text>
+
+  <text x="213" y="84" text-anchor="middle" class="al" data-graph-role="label" data-owner="invoke">invoke</text>
+  <text x="493" y="84" text-anchor="middle" class="al" data-graph-role="label" data-owner="dispatch">dispatch</text>
+  <text x="780" y="84" text-anchor="middle" class="al" data-graph-role="label" data-owner="write">write</text>
+  <text x="361" y="186" class="al" data-graph-role="label" data-owner="intercept">intercept</text>
+  <text x="651" y="186" class="al" data-graph-role="label" data-owner="record">record</text>
+  <text x="651" y="354" class="al" data-graph-role="label" data-owner="memory-io">reads + writes</text>
+</svg>

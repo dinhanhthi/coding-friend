@@ -6,21 +6,7 @@ _A lean, opinionated toolkit that makes your AI coding agent work like a discipl
 
 Coding Friend adds skills, agents, and hooks to the tools you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learning notes in `~/.coding-friend/learn/`. A memory system runs underneath, along with useful hooks and mechanisms to protect your privacy and security.
 
-```text
-┌─────┐   ┌──────────────┐   ┌────────────────────────┐   ┌───────────┐
-│ you │ → │ /cf-* skills │ → │ agents                 │ → │ your repo │
-└─────┘   └──────────────┘   │ explorer · planner     │   └───────────┘
-                  ↓          │ implementer            │         ↓
-          ┌──────────────┐   │ reviewer · writer      │
-          │ hooks        │   └────────────────────────┘
-          │ auto-approve │   ┌─────────────────────────────────────────┐
-          │ security     │   │ docs/ (memory · plans · research)       │
-          │ statusline   │   └─────────────────────────────────────────┘
-          └──────────────┘                        ↓
-                             ┌─────────────────────────────────────────┐
-                             │ CF Memory (MCP) reads and writes docs/  │
-                             └─────────────────────────────────────────┘
-```
+![How Coding Friend works: you invoke /cf-* skills, skills dispatch agents, agents write to your repo; hooks intercept skills, agents record to docs/, and CF Memory (MCP) reads and writes docs/](/diagrams/architecture.svg)
 
 > 🚫 **Without CF**: You can only rely on the harness and default settings of the tool you’re using, or sometimes no harness at all. Even small tool changes can affect your usual workflow without you noticing..
 >
@@ -84,25 +70,7 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 
 You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and `cf-sys-debug`.
 
-```text
-┌─────────┐   ┌─────────────────┐   ┌───────────┐
-│ /cf-plan│ → │ cf-tdd/implement│ → │ /cf-review│
-└─────────┘   └─────────────────┘   └───────────┘
-                     ↓                     ↓
-              ┌─────────────┐       ┌───────────┐
-              │ /cf-fix     │       │ /cf-commit│
-              │      ↓      │       └───────────┘
-              │ cf-sys-debug│              ↓
-              │      ↓      │       ┌───────────┐
-              │ /cf-fix     │       │ /cf-ship  │
-              └─────────────┘       └───────────┘
-                                           ↓
-                            ┌──────────────────────────┐
-                            │ cf-verification          │
-                            │ /cf-remember → docs/     │
-                            │ /cf-learn (global notes) │
-                            └──────────────────────────┘
-```
+![The daily workflow: /cf-plan hands tasks to cf-tdd/implement, the diff goes to /cf-review, then /cf-commit and /cf-ship; under the hood cf-explorer and cf-planner serve /cf-plan, cf-implementer runs tasks, cf-reviewer dispatches 5 specialists, cf-writer writes docs; bugs loop through /cf-fix and cf-sys-debug; after the merge, cf-verification, /cf-remember, and /cf-learn run](/diagrams/workflow.svg)
 
 ### 🗺️ Plan & build
 
@@ -183,17 +151,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 - `/cf-commit` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-commit/SKILL.md)) — Analyzes the diff, soft-review check, conventional commit focused on why.
 - `/cf-ship` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-ship/SKILL.md)) — Verify → commit → push → PR. `--dry-run` simulates and does not commit, push, or open a PR. Custom Before guides run first (for example a version bump).
 
-```text
-┌─────────────────────────────────────────┐
-│ /cf-review                              │
-│   --codex|--gemini|--cursor|--grok      │
-│   parallel, then merge                  │
-└─────────────────────────────────────────┘
-                  ↓
-┌───────────────┐   ┌────────┐   ┌──────────────┐
-│ /cf-review-out│ → │ any AI │ → │ /cf-review-in│
-└───────────────┘   └────────┘   └──────────────┘
-```
+![External review: /cf-review runs --codex, --gemini, --cursor, or --grok in parallel and merges; or hand off manually — /cf-review-out writes a prompt for any AI, /cf-review-in reads the results back](/diagrams/review-external.svg)
 
 ### 💡 Knowledge
 
@@ -222,50 +180,13 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 Every session starts from scratch. CF Memory is persistent, searchable project knowledge. Markdown in `docs/memory/` is the source of truth. Three search tiers degrade gracefully (SQLite → MiniSearch → grep). Use it from other LLM tools via the MCP server (`cf mcp`). Run `cf config` for tier, embeddings, and capture.
 
-```text
-                       ┌──────────────────┐
-                       │ Claude Code      │
-                       │ Session          │
-                       └────────┬─────────┘
-                                │
-                       ┌────────▼─────────┐
-                       │ MCP Server       │
-                       │ stdio            │
-                       └───┬────┬────┬────┘
-                           │    │    │
-                  direct   │    │    │   direct
-          ┌────────────────┘    │    └────────────────┐
-          │                     │ HTTP/UDS            │
-┌─────────▼──────────┐  ┌───────▼──────────┐  ┌───────▼──────────┐
-│ TIER 1  SQLite     │  │ Daemon           │  │ TIER 3  Grep     │
-│ FTS5 + vectors     │  │ Hono + UDS       │  │ file scan        │
-└───┬───────────┬────┘  └──┬────┬─────┬────┘  └────┬──────────┬──┘
-    │           │ fallback │    │     │ fallback   │          │
-    │           └──────────┘    │     └────────────┘          │
-    │                 watch     │                             │
-    │                  ┌────────▼─────────┐                   │
-    │                  │ TIER 2           │                   │
-    │                  │ MiniSearch       │                   │
-    │                  │ BM25 + fuzzy     │                   │
-    │                  └────────┬─────────┘                   │
-    │                           │                             │
-    └───────────────────────┐   │   ┌─────────────────────────┘
-                            │   │   │
-                     ┌──────▼───▼───▼──────┐
-                     │ Markdown Files      │
-                     │ docs/memory/*.md    │
-                     └─────────────────────┘
-```
+![CF Memory architecture: a Claude Code session calls the MCP server over stdio; searches go direct to tier 1 SQLite (FTS5 + vectors), over HTTP/UDS to the Hono daemon serving tier 2 MiniSearch (BM25 + fuzzy), or direct to tier 3 grep; SQLite falls back to the daemon and the daemon falls back to grep; all three tiers read the markdown files in docs/memory/](/diagrams/memory-tiers.svg)
 
 ### ✅ Auto-approve
 
 Permission gate that auto-approves safe tool calls and working-dir edits. Unknown tools defer to Claude's native permission flow / auto mode unless you opt in to the LLM classifier via `autoApproveLLM`. Run `cf config`.
 
-```text
-┌──────────────┐   ┌─────────────┐   ┌─────────────────────────────────────────┐
-│ Rule-Based   │ → │ Working-Dir │ → │ LLM Classifier (opt-in, Claude only)    │
-└──────────────┘   └─────────────┘   └─────────────────────────────────────────┘
-```
+![Auto-approve pipeline: rule-based checks, then working-dir checks, then the opt-in LLM classifier (Claude only)](/diagrams/auto-approve.svg)
 
 - **Rule-Based Gate**: Instant pattern matching — read-only tools auto-approved, destructive commands blocked.
 - **Working-Dir Edits**: File edits (Write/Edit) inside your project directory are auto-approved.
@@ -291,11 +212,7 @@ You can extend the Bash allow/deny lists in config:
 
 Layered prompt-injection defense. Three layers: isolation, extraction, then alert. Fetched content is data, never instructions.
 
-```text
-┌────────────┐   ┌────────────┐   ┌───────┐
-│ isolation  │ → │ extraction │ → │ alert │
-└────────────┘   └────────────┘   └───────┘
-```
+![Security layers: isolation of fetched content as data, extraction of facts only, then alert on injection attempts](/diagrams/security-pipeline.svg)
 
 - **Isolation**: External content flagged as untrusted data — never treated as instructions.
 - **Extraction**: Only facts and information extracted — embedded commands discarded.

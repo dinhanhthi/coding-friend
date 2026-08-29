@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720" width="960" height="720"
+  data-generator="fireworks-tech-graph" data-schema-version="1" data-style-id="8"
+  data-visual-theme="Lumen Night Foundry" data-diagram-type="architecture"
+  data-quality-profile="showcase" data-max-bends-per-edge="2" data-max-total-bends="8"
+  data-max-route-stretch="1.35" data-max-bridged-crossings="0" data-min-node-gap="40"
+  data-min-container-gutter="20" data-min-label-clearance="4" data-min-segment-length="16">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .nm { font-size: 13px; font-weight: 600; fill: oklch(96% 0.006 262); }
+    .dt { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+    .al { font-size: 10.5px; fill: oklch(67% 0.012 262); }
+  </style>
+  <defs>
+    <marker id="arr-brass" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="oklch(76% 0.17 50)"/>
+    </marker>
+    <marker id="arr-coral" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0,10 3.5,0 7" fill="oklch(68% 0.16 18)"/>
+    </marker>
+    <marker id="arr-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="oklch(67% 0.012 262)"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="720" fill="oklch(17% 0.016 265)" data-graph-role="background"/>
+
+  <path id="tools" data-graph-role="edge" data-edge-id="tools" data-source="session" data-target="mcp" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 480 106 V 190" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="direct-1" data-graph-role="edge" data-edge-id="direct-1" data-source="mcp" data-target="tier1" data-edge-kind="flow" data-flow="primary" data-bends="2" data-route-stretch="1" d="M 410 246 V 290 H 160 V 340" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="serve" data-graph-role="edge" data-edge-id="serve" data-source="mcp" data-target="daemon" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 480 246 V 340" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="direct-3" data-graph-role="edge" data-edge-id="direct-3" data-source="mcp" data-target="tier3" data-edge-kind="flow" data-flow="primary" data-bends="2" data-route-stretch="1" d="M 550 246 V 290 H 800 V 340" fill="none" stroke="oklch(76% 0.17 50)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="fallback-1" data-graph-role="edge" data-edge-id="fallback-1" data-source="tier1" data-target="daemon" data-edge-kind="feedback" data-flow="feedback" data-bends="0" data-route-stretch="1" d="M 280 376 H 360" fill="none" stroke="oklch(68% 0.16 18)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr-coral)"/>
+  <path id="fallback-2" data-graph-role="edge" data-edge-id="fallback-2" data-source="daemon" data-target="tier3" data-edge-kind="feedback" data-flow="feedback" data-bends="0" data-route-stretch="1" d="M 600 376 H 680" fill="none" stroke="oklch(68% 0.16 18)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr-coral)"/>
+  <path id="watch" data-graph-role="edge" data-edge-id="watch" data-source="daemon" data-target="tier2" data-edge-kind="flow" data-flow="data" data-bends="0" data-route-stretch="1" d="M 480 412 V 500" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" marker-end="url(#arr-muted)"/>
+  <path id="read-1" data-graph-role="edge" data-edge-id="read-1" data-source="tier1" data-target="files" data-edge-kind="flow" data-flow="data" data-bends="2" data-route-stretch="1" d="M 160 412 V 600 H 390 V 630" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" marker-end="url(#arr-muted)"/>
+  <path id="read-2" data-graph-role="edge" data-edge-id="read-2" data-source="tier2" data-target="files" data-edge-kind="flow" data-flow="data" data-bends="0" data-route-stretch="1" d="M 480 572 V 630" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" marker-end="url(#arr-muted)"/>
+  <path id="read-3" data-graph-role="edge" data-edge-id="read-3" data-source="tier3" data-target="files" data-edge-kind="flow" data-flow="data" data-bends="2" data-route-stretch="1" d="M 800 412 V 600 H 570 V 630" fill="none" stroke="oklch(67% 0.012 262)" stroke-width="1.5" marker-end="url(#arr-muted)"/>
+
+  <rect id="session" data-node-id="session" x="370" y="50" width="220" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="370,50,590,106"/>
+  <text x="384" y="74" class="nm">claude code session</text>
+  <text x="384" y="92" class="dt">or any llm tool</text>
+
+  <rect id="mcp" data-node-id="mcp" x="370" y="190" width="220" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(76% 0.17 50)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="370,190,590,246"/>
+  <text x="384" y="214" class="nm">cf memory · mcp server</text>
+  <text x="384" y="232" class="dt">stdio</text>
+
+  <rect id="tier1" data-node-id="tier1" x="40" y="340" width="240" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="40,340,280,412"/>
+  <text x="54" y="366" class="nm">tier 1 · sqlite</text>
+  <text x="54" y="384" class="dt">fts5 + vectors</text>
+
+  <rect id="daemon" data-node-id="daemon" x="360" y="340" width="240" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="360,340,600,412"/>
+  <text x="374" y="366" class="nm">daemon</text>
+  <text x="374" y="384" class="dt">hono + uds</text>
+
+  <rect id="tier3" data-node-id="tier3" x="680" y="340" width="240" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="680,340,920,412"/>
+  <text x="694" y="366" class="nm">tier 3 · grep</text>
+  <text x="694" y="384" class="dt">file scan</text>
+
+  <rect id="tier2" data-node-id="tier2" x="360" y="500" width="240" height="72" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="360,500,600,572"/>
+  <text x="374" y="526" class="nm">tier 2 · minisearch</text>
+  <text x="374" y="544" class="dt">bm25 + fuzzy</text>
+
+  <rect id="files" data-node-id="files" x="330" y="630" width="300" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="330,630,630,686"/>
+  <text x="344" y="654" class="nm">docs/memory/*.md</text>
+  <text x="344" y="672" class="dt">markdown · source of truth</text>
+
+  <text x="488" y="152" class="al" data-graph-role="label" data-owner="tools">memory_* tools</text>
+  <text x="285" y="282" text-anchor="middle" class="al" data-graph-role="label" data-owner="direct-1">direct</text>
+  <text x="472" y="320" text-anchor="end" class="al" data-graph-role="label" data-owner="serve">http · uds</text>
+  <text x="675" y="282" text-anchor="middle" class="al" data-graph-role="label" data-owner="direct-3">direct</text>
+  <text x="320" y="368" text-anchor="middle" class="al" data-graph-role="label" data-owner="fallback-1">fallback</text>
+  <text x="640" y="368" text-anchor="middle" class="al" data-graph-role="label" data-owner="fallback-2">fallback</text>
+  <text x="488" y="462" class="al" data-graph-role="label" data-owner="watch">watch + serve</text>
+</svg>

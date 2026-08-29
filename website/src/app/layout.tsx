@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist",
+  display: "swap",
+});
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -43,8 +56,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
-      <body className="bg-bg text-text font-sans antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${geist.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
+      data-scroll-behavior="smooth"
+    >
+      <body className="bg-paper text-ink-2 font-sans antialiased">
+        {children}
+      </body>
     </html>
   );
 }

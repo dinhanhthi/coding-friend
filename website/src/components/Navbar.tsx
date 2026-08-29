@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import CommandPalette, { type PaletteItem } from "./CommandPalette";
 
 type Section = { id: string; text: string };
 
@@ -12,9 +13,6 @@ const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
 const NAV_LABELS: Record<string, string> = {
   "supported-ai-coding-tools": "Supported Tools",
 };
-
-const linkClassName =
-  "whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-text-muted hover:bg-surface-2 hover:text-heading";
 
 function navLabel(id: string, text: string) {
   return NAV_LABELS[id] ?? text;
@@ -33,131 +31,129 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-function SectionLinks({
-  sections,
-  onNavigate,
-}: {
-  sections: Section[];
-  onNavigate?: () => void;
-}) {
+function SearchIcon({ className }: { className?: string }) {
   return (
-    <>
-      {sections.map(({ id, text }) => (
-        <a
-          key={id}
-          href={`#${id}`}
-          className={linkClassName}
-          onClick={onNavigate}
-        >
-          {navLabel(id, text)}
-        </a>
-      ))}
-    </>
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"
+      />
+    </svg>
   );
 }
 
-export default function Navbar({ sections }: { sections: Section[] }) {
-  const [open, setOpen] = useState(false);
+export default function Navbar({
+  sections,
+  tocItems,
+}: {
+  sections: Section[];
+  tocItems: PaletteItem[];
+}) {
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // N1b: brand left · a small centre link cluster · actions right.
+  // "Install" is dropped from the link row because the CTA button covers it;
+  // every section stays reachable through the ⌘K palette.
+  const visibleSections = sections
+    .filter(({ id }) => id !== "install")
+    .slice(0, 3);
 
   return (
-    <header className="border-border bg-nav sticky top-0 z-50 h-14 border-b">
-      <div className="flex h-full items-center justify-between px-4 sm:px-6">
+    <header className="border-rule bg-paper sticky top-0 z-50 h-16 border-b">
+      <div className="mx-auto grid h-full w-full max-w-5xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"
           aria-label="Coding Friend home"
-          className="flex shrink-0 items-center gap-2"
+          className="flex shrink-0 items-center gap-2 whitespace-nowrap lg:justify-self-start"
         >
           <Image src="/logo.svg" width={24} height={24} alt="" unoptimized />
-          <span className="text-heading font-semibold">Coding Friend</span>
+          <span className="font-display text-ink text-lg tracking-[0.025em] lowercase">
+            Coding Friend
+          </span>
           {PLUGIN_VERSION ? (
-            <span className="border-border bg-surface text-accent rounded-full border px-1.5 py-px font-mono text-[11px] leading-4">
+            <span className="border-rule bg-paper-2 text-muted rounded border px-1.5 py-px font-mono text-[11px] leading-4">
               v{PLUGIN_VERSION}
             </span>
           ) : null}
         </Link>
 
-        <div className="flex items-center">
-          <nav
-            className="hidden items-center gap-1 overflow-x-auto lg:flex"
-            aria-label="Sections"
-          >
-            <SectionLinks sections={sections} />
+        <nav
+          className="hidden items-center justify-center gap-6 lg:flex"
+          aria-label="Sections"
+        >
+          {visibleSections.map(({ id, text }) => (
             <a
-              href={GITHUB_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              className="text-text-muted hover:bg-surface-2 hover:text-heading rounded-md p-1.5"
+              key={id}
+              href={`#${id}`}
+              className="u-grow text-ink-2 hover:text-ink pb-0.5 text-sm whitespace-nowrap lowercase"
             >
-              <GitHubIcon className="h-5 w-5" />
+              {navLabel(id, text)}
             </a>
-          </nav>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2 justify-self-end sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Search sections (⌘K)"
+            className="border-rule bg-paper-2 text-muted hover:border-rule-2 hover:text-ink hidden h-8 items-center rounded border px-2 font-mono text-[11px] tracking-[0.1em] whitespace-nowrap uppercase transition-colors duration-[220ms] [transition-timing-function:var(--ease-out)] md:inline-flex"
+          >
+            ⌘K
+          </button>
 
           <button
             type="button"
-            className="text-text-muted hover:bg-surface-2 hover:text-heading rounded-md p-2 md:hidden"
-            aria-label="Toggle menu"
-            aria-expanded={open}
-            aria-controls="nav-menu"
-            onClick={() => setOpen((prev) => !prev)}
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Search sections"
+            className="text-muted hover:bg-paper-2 hover:text-ink rounded-[6px] p-2 md:hidden"
           >
-            {open ? (
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            )}
+            <SearchIcon className="h-5 w-5" />
           </button>
+
+          <a
+            href={GITHUB_HREF}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            className="text-muted hover:bg-paper-2 hover:text-ink rounded-[6px] p-2"
+          >
+            <GitHubIcon className="h-5 w-5" />
+          </a>
+
+          <a
+            href="#install"
+            className="bg-accent text-accent-ink hidden h-9 items-center rounded-[6px] px-3.5 text-sm font-medium whitespace-nowrap lowercase transition-[transform,opacity] duration-[220ms] [transition-timing-function:var(--ease-out)] hover:-translate-y-[1px] hover:opacity-95 active:translate-y-0 sm:inline-flex"
+          >
+            Install
+          </a>
         </div>
       </div>
 
-      {open && (
-        <nav
-          id="nav-menu"
-          className="border-border bg-nav absolute inset-x-0 top-14 border-b px-4 py-2 md:hidden"
-        >
-          <div className="flex flex-col gap-1">
-            <SectionLinks
-              sections={sections}
-              onNavigate={() => setOpen(false)}
-            />
-            <a
-              href={GITHUB_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={linkClassName}
-              onClick={() => setOpen(false)}
-            >
-              GitHub
-            </a>
-          </div>
-        </nav>
-      )}
+      <CommandPalette
+        items={tocItems}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+      />
     </header>
   );
 }
