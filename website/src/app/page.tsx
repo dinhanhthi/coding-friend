@@ -6,7 +6,14 @@ import TableOfContents from "@/components/TableOfContents";
 import CodeBlock from "@/components/CodeBlock";
 import MdxLink from "@/components/MdxLink";
 import ZoomableImage from "@/components/ZoomableImage";
-import { readIndexMd, getSections, getTocItems, mdxOptions } from "@/lib/mdx";
+import CompareSplit from "@/components/CompareSplit";
+import {
+  readIndexMd,
+  extractCompareSplit,
+  getSections,
+  getTocItems,
+  mdxOptions,
+} from "@/lib/mdx";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
 const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
@@ -59,8 +66,13 @@ export default function Home() {
   };
 
   const source = readIndexMd();
+  const compare = extractCompareSplit(source);
   const sections = getSections(source);
   const tocItems = getTocItems(source);
+  const before = compare
+    ? stripHeroContent(compare.before)
+    : stripHeroContent(source);
+  const after = compare?.after ?? "";
 
   return (
     <>
@@ -74,10 +86,20 @@ export default function Home() {
       <main id="top" className="mx-auto max-w-3xl px-4 pt-12 pb-20 sm:px-6">
         <article className="prose prose-code:before:content-none prose-code:after:content-none max-w-none">
           <MDXRemote
-            source={stripHeroContent(source)}
+            source={before}
             components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
             options={mdxOptions}
           />
+          {compare ? (
+            <CompareSplit without={compare.without} withCf={compare.withCf} />
+          ) : null}
+          {after ? (
+            <MDXRemote
+              source={after}
+              components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
+              options={mdxOptions}
+            />
+          ) : null}
         </article>
       </main>
       <footer className="border-rule border-t">

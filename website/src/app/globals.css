@@ -474,6 +474,111 @@ a > code {
   margin-top: 3.5rem;
 }
 
+/* Compare split — foundry plate: void chamber vs emitting chamber */
+.compare-split {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 2rem 0 2.75rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  overflow: clip;
+  min-width: 0;
+  background: var(--color-paper-2);
+}
+
+.compare-pane {
+  min-width: 0;
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+
+.compare-pane--without {
+  background: var(--color-paper-2);
+  border-bottom: 1px dashed var(--color-rule-2);
+}
+
+.compare-pane--with {
+  background:
+    radial-gradient(
+      130% 90% at 0% 0%,
+      var(--color-paper-emit) 0%,
+      transparent 62%
+    ),
+    var(--color-paper-2);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.compare-pane--with .mono-label {
+  color: var(--color-accent);
+}
+
+.compare-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.018em;
+  text-transform: lowercase;
+  color: var(--color-ink);
+  font-size: clamp(1.45rem, 1.2vw + 1.15rem, 1.85rem);
+  line-height: 1.12;
+  margin: 0.45rem 0 0.85rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.compare-pane--without .compare-title {
+  color: var(--color-muted);
+}
+
+.compare-pane--with .compare-title span {
+  color: var(--color-accent-2);
+}
+
+.compare-body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--color-ink-2);
+}
+
+.compare-join {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .compare-split {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .compare-pane {
+    padding: 1.5rem 1.5rem 1.75rem;
+  }
+
+  .compare-pane--without {
+    border-bottom: none;
+    border-right: 1px dashed var(--color-rule-2);
+  }
+
+  .compare-join {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    left: calc(5 / 12 * 100%);
+    top: 50%;
+    z-index: 1;
+    width: 1.75rem;
+    height: 1.75rem;
+    transform: translate(-50%, -50%);
+    border: 1px solid var(--color-rule-2);
+    border-radius: 999px;
+    background: var(--color-paper);
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+}
+
 /* Blockquote — hairline card lit from within (4% emit) */
 .prose blockquote {
   font-size: inherit;

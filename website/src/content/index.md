@@ -8,7 +8,7 @@ Coding Friend adds skills, agents, and hooks to the tools you already use. You g
 
 ![How Coding Friend works: you invoke /cf-* skills, skills dispatch agents, agents write to your repo; hooks intercept skills, agents record to docs/, and CF Memory (MCP) reads and writes docs/](/diagrams/architecture.svg)
 
-> 🚫 **Without CF**: You can only rely on the harness and default settings of the tool you’re using, or sometimes no harness at all. Even small tool changes can affect your usual workflow without you noticing..
+> 🚫 **Without CF**: You can only rely on the harness and default settings of the tool you’re using, or sometimes no harness at all. Even small tool changes can affect your usual workflow without you noticing.
 >
 > ✅ **With CF**: Besides the harness for the tool you’re using, CF suggests best-practice standards for daily workflows—from planning and code reviews to bug fixes, research, and optimization. CF also includes a memory system that helps agents avoid spending too many tokens on topics they’ve worked on before. You can also build a learning hub for readers as you work with CF; the system will help summarize everything and turn it into a polished website.
 

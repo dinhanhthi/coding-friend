@@ -106,6 +106,76 @@ export function readIndexMd(): string {
   return indexMd;
 }
 
+export type CompareSplitContent = {
+  before: string;
+  after: string;
+  without: string;
+  withCf: string;
+};
+
+const WITHOUT_LINE = /^> (?:.*?)?\*\*Without CF\*\*:\s*(.*)$/;
+const WITH_LINE = /^> (?:.*?)?\*\*With CF\*\*:\s*(.*)$/;
+
+function quoteBody(line: string): string {
+  return line.replace(/^>\s?/, "");
+}
+
+function collectQuote(
+  lines: string[],
+  start: number,
+  stopBefore: number,
+  opener: RegExp,
+): { text: string; end: number } | null {
+  const first = lines[start]?.match(opener);
+  if (!first) return null;
+  const parts = [(first[1] ?? "").trim()];
+  let i = start + 1;
+  while (i < stopBefore && i < lines.length) {
+    const line = lines[i];
+    if (!line.startsWith(">")) break;
+    const body = quoteBody(line).trim();
+    if (body === "" || body.startsWith("**")) break;
+    parts.push(body);
+    i += 1;
+  }
+  return { text: parts.join(" ").replace(/\s+/g, " ").trim(), end: i };
+}
+
+/** Pull the Without/With CF blockquote out of index.md so the page can render it as a plate. */
+export function extractCompareSplit(
+  source: string,
+): CompareSplitContent | null {
+  const lines = source.split("\n");
+  let withoutStart = -1;
+  let withStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (WITHOUT_LINE.test(lines[i] ?? "")) withoutStart = i;
+    if (WITH_LINE.test(lines[i] ?? "")) withStart = i;
+  }
+  if (withoutStart < 0 || withStart < 0 || withStart <= withoutStart) {
+    return null;
+  }
+
+  const without = collectQuote(lines, withoutStart, withStart, WITHOUT_LINE);
+  const withCf = collectQuote(lines, withStart, lines.length, WITH_LINE);
+  if (!without || !withCf || !without.text || !withCf.text) return null;
+
+  let afterLine = withCf.end;
+  while (
+    afterLine < lines.length &&
+    (lines[afterLine] === ">" || lines[afterLine] === "> " || lines[afterLine] === "")
+  ) {
+    afterLine += 1;
+  }
+
+  return {
+    before: lines.slice(0, withoutStart).join("\n").replace(/\n+$/, "\n"),
+    after: lines.slice(afterLine).join("\n").replace(/^\n+/, ""),
+    without: without.text,
+    withCf: withCf.text,
+  };
+}
+
 /** Strip emoji so slugs stay `#supported-ai-coding-tools`, not `#-supported-ai-coding-tools`. */
 export function headingTextForSlug(text: string): string {
   return text
