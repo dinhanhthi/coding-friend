@@ -8,7 +8,7 @@ user-invocable: true
 argument-hint: "[--user <name>] [--n-commits <N>]"
 model: sonnet
 created: 2026-03-31
-updated: 2026-08-27
+updated: 2026-09-03
 state: beta
 ---
 
@@ -31,7 +31,7 @@ Output goes to `{docsDir}/warm/` (default: `docs/warm/`). Check `.coding-friend/
 - Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`.
 - Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) — do NOT search sub-folders
 - Use `CF_DOCS_ROOT` as the docs base dir (= `$MAIN_REPO_ROOT/{docsDir}` where `docsDir` comes from config, default `docs`)
-- Always resolve `file_path` as an **absolute path**: `{CF_DOCS_ROOT}/warm/{name}.md`
+- Always resolve `file_path` as an **absolute path**: `{CF_DOCS_ROOT}/warm/YYYY-MM-DD-{name}.md`
 - Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
 
 ## Workflow
@@ -64,6 +64,8 @@ Parse `$ARGUMENTS` for flags:
 If `--user` is not provided AND `git config user.name` returns empty, ask the user to provide a name with `--user`.
 
 Store resolved values as `$USER_NAME` and `$N_COMMITS`.
+
+Derive `$USER_SLUG` from `$USER_NAME`: lowercase, non-alphanumerics → `-`, collapse and trim dashes (e.g. `John Smith` → `john-smith`).
 
 Confirm to the user: "🟢 Warming up as **$USER_NAME**, looking at your last **$N_COMMITS** commits."
 
@@ -151,7 +153,7 @@ Construct a write spec and invoke the cf-writer agent via the **Agent tool** wit
 WRITE SPEC
 ----------
 task: create
-file_path: {CF_DOCS_ROOT}/warm/warm-YYYY-MM-DD.md
+file_path: {CF_DOCS_ROOT}/warm/YYYY-MM-DD-$USER_SLUG.md
 language: {language from config}
 content: |
   ---
@@ -208,7 +210,7 @@ After the file is written, display a concise summary directly in the terminal:
 - <Most impactful change 1>
 - <Most impactful change 2>
 
-📄 Full report: {docsDir}/warm/warm-YYYY-MM-DD.md
+📄 Full report: {docsDir}/warm/YYYY-MM-DD-$USER_SLUG.md
 ```
 
 ### Step 7: Index in Memory
@@ -228,7 +230,7 @@ If MCP tools are unavailable, log a warning but do NOT fail — the file was alr
 
 Show the user a 2-line summary:
 
-- **Markdown file:** `{docsDir}/warm/warm-YYYY-MM-DD.md` (created)
+- **Markdown file:** `{docsDir}/warm/YYYY-MM-DD-$USER_SLUG.md` (created)
 - **Memory DB:** indexed ✓ — or: MCP unavailable, file only
 
 ## Interpreting `$ARGUMENTS`
@@ -253,6 +255,6 @@ Examples:
 - **Dry run first** — always count commits before fetching to warn about volume.
 - **Safety cap** — maximum 200 "other" commits. If more exist, take the most recent 200 and note the truncation.
 - **Respect language** — write the report in the configured `language` setting.
-- **No duplicate reports** — each report gets a unique date-stamped filename. Multiple runs on the same day overwrite the same file.
+- **No duplicate reports** — filename is `YYYY-MM-DD-$USER_SLUG.md`. Multiple runs on the same day for the same user overwrite the same file.
 - Be concise — summaries over exhaustive lists.
 - Group related commits — don't list every commit individually if they're part of the same feature.
