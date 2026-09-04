@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.40.2 (2026-09-04)
+
+- Add `review.maxRounds` (default 5) to the config schema — caps `/cf-plan --auto` and `cf-tdd --auto` review/fix-loop rounds [#8a5be07c](https://github.com/dinhanhthi/coding-friend/commit/8a5be07c)
+
 ## v1.40.1 (2026-08-27)
 
 - Fix `cf mcp-serve` writing a diagnostic line to stdout, which corrupted the MCP stdio stream and left the `coding-friend-memory` server "not connected" in strict MCP clients (e.g. omp); diagnostics now go to stderr [#35d6a160](https://github.com/dinhanhthi/coding-friend/commit/35d6a160)

@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.42.4 (2026-09-04)
+
+- `/cf-plan --auto` and `cf-tdd --auto` fix loops now repeat until clean or `review.maxRounds` (default 5) is hit, instead of stopping after a single fix round [#8a5be07c](https://github.com/dinhanhthi/coding-friend/commit/8a5be07c)
+- `cf-warm` reports are now named `YYYY-MM-DD-<user>.md` [#d020872d](https://github.com/dinhanhthi/coding-friend/commit/d020872d)
+- Fix Codex/Antigravity `cf-help` builds to rewrite `review.maxRounds` docs consistently with the host [#ee280a53](https://github.com/dinhanhthi/coding-friend/commit/ee280a53)
+
 ## v0.42.3 (2026-08-28)
 
 - Ship Claude, Codex, and Antigravity from a single `v*` tag; drop `agy-v*` / `codex-v*` release workflows. New plugin releases use only `v*`
