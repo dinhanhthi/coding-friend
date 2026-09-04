@@ -22,9 +22,11 @@ import {
 } from "../lib/paths.js";
 import {
   DEFAULT_CONFIG,
+  DEFAULT_REVIEW_MAX_ROUNDS,
   ALL_COMPONENT_IDS,
   type CodingFriendConfig,
   type LearnCategory,
+  type ReviewConfig,
 } from "../types.js";
 import {
   BACK,
@@ -657,17 +659,23 @@ async function editTdd(
   writeToScope(scope, { tdd: value });
 }
 
-// ─── Review (Codex dual-review) ──────────────────────────────────────
+// ─── Review ──────────────────────────────────────────────────────────
+
+function getReviewConfig(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): ReviewConfig {
+  return {
+    ...(globalCfg?.review ?? {}),
+    ...(localCfg?.review ?? {}),
+  };
+}
 
 async function editReviewWithCodex(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
 ): Promise<void> {
-  const currentValue = (
-    getMergedValue("review", globalCfg, localCfg) as
-      | { withCodex?: boolean }
-      | undefined
-  )?.withCodex;
+  const currentValue = getReviewConfig(globalCfg, localCfg).withCodex;
   if (currentValue !== undefined) {
     log.dim(`Current: ${currentValue}`);
   }
@@ -682,6 +690,69 @@ async function editReviewWithCodex(
   const scope = await askScope();
   if (scope === "back") return;
   writeNestedField("review", scope, "withCodex", value);
+}
+
+async function editReviewMaxRounds(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getReviewConfig(globalCfg, localCfg).maxRounds;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+  log.dim(
+    "Caps how many /cf-review rounds /cf-plan --auto and /cf-tdd --auto run before waiting for you (initial review + fix re-reviews).",
+  );
+
+  const raw = await input({
+    message: "Maximum review rounds:",
+    default: String(currentValue ?? DEFAULT_REVIEW_MAX_ROUNDS),
+    validate: (val) => {
+      const n = Number(val);
+      if (!Number.isInteger(n) || n < 1) return "Must be an integer ≥ 1";
+      return true;
+    },
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeNestedField("review", scope, "maxRounds", Number(raw));
+}
+
+async function reviewSubMenu(): Promise<void> {
+  while (true) {
+    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+    const localCfg = readJson<CodingFriendConfig>(localConfigPath());
+    const review = getReviewConfig(globalCfg, localCfg);
+
+    const choice = await select({
+      message: "Review settings:",
+      choices: injectBackChoice(
+        [
+          {
+            name: `Codex dual-review (${review.withCodex ?? false})`,
+            value: "withCodex",
+          },
+          {
+            name: `Max review rounds (${review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS})`,
+            value: "maxRounds",
+          },
+        ],
+        "Back",
+      ),
+    });
+
+    if (choice === BACK) return;
+
+    switch (choice) {
+      case "withCodex":
+        await editReviewWithCodex(globalCfg, localCfg);
+        break;
+      case "maxRounds":
+        await editReviewMaxRounds(globalCfg, localCfg);
+        break;
+    }
+  }
 }
 
 // ─── Auto-Approve ────────────────────────────────────────────────────
@@ -1032,11 +1103,8 @@ export async function configCommand(): Promise<void> {
     ) as boolean | undefined;
 
     const reviewScope = getScopeLabel("review", globalCfg, localCfg);
-    const withCodexVal = (
-      getMergedValue("review", globalCfg, localCfg) as
-        | { withCodex?: boolean }
-        | undefined
-    )?.withCodex;
+    const reviewVal = getReviewConfig(globalCfg, localCfg);
+    const maxRoundsVal = reviewVal.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS;
 
     const planDocsScope = getScopeLabel("disableGUIPlan", globalCfg, localCfg);
 
@@ -1106,10 +1174,10 @@ export async function configCommand(): Promise<void> {
               "  Block reads of .env, keys, and similar secrets (all hosts)",
           },
           {
-            name: `Codex dual-review ${formatScopeLabel(reviewScope)}${withCodexVal !== undefined ? ` (${withCodexVal})` : ""}`,
+            name: `Review settings ${formatScopeLabel(reviewScope)} (${maxRoundsVal} rounds)`,
             value: "review",
             description:
-              "  Run a Codex second-opinion review alongside Claude's on every /cf-review",
+              "  Autopilot review-fix rounds + Codex second-opinion on every /cf-review",
           },
           {
             name: `Plan docs ${formatScopeLabel(planDocsScope)}`,
@@ -1173,7 +1241,7 @@ export async function configCommand(): Promise<void> {
         await editPrivacyBlock(globalCfg, localCfg);
         break;
       case "review":
-        await editReviewWithCodex(globalCfg, localCfg);
+        await reviewSubMenu();
         break;
       case "planDocs":
         await planDocsSubMenu();

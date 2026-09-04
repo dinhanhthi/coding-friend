@@ -10,7 +10,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-04
 ---
 
 # /cf-help — Coding Friend Help
@@ -54,10 +54,10 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 - `/cf-advise [decision]` — ⚡⚡ — Advisory interview. `--quick`, `--save`
 - `/cf-ask [question]` — ⚡⚡ — Codebase Q&A → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step.
+- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot review-fix cap: `review.maxRounds` (default 5).
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors `auto: true`.
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
-- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent. Unavailable agents are skipped with a warning.
+- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.
 - `/cf-review-out [label]` — ⚡⚡ — Prompt + diff → `docs/reviews/`
 - `/cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
 - `/cf-commit [hint]` — ⚡ — Conventional commit
@@ -78,7 +78,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### Auto-Invoked Skills (activate automatically when relevant)
 
-- **cf-tdd** — ⚡⚡ — Code-writing gate. Default direct; TDD with `--add-tests` or `tdd: true`. `--auto` = review + fix + commit.
+- **cf-tdd** — ⚡⚡ — Code-writing gate. Default direct; TDD with `--add-tests` or `tdd: true`. `--auto` = review + fix + commit (`review.maxRounds`, default 5).
 - **cf-sys-debug** — ⚡⚡ — 4-phase debug
 - **cf-verification** — ⚡ — Evidence gate before claiming done
 - **cf-learn** / **cf-remember** / **cf-help** — also auto-invoked (see above)

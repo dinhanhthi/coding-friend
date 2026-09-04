@@ -6,7 +6,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` (Read it now if you have not already). **Apply the Progress checkpoint rule on every task** (`⬜ TODO` → `🔄 IN PROGRESS` before dispatch; `🔄 IN PROGRESS` → `✅ DONE` on success) — autopilot does NOT skip `🔄 IN PROGRESS`; never flip `⬜ TODO` directly to `✅ DONE`. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.)
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.) Count this as review round 1.
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix
@@ -15,12 +15,15 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
    - 📋 **Summary** → informational
      If you cannot reliably parse the review output (unexpected format), STOP autopilot and surface to user — do NOT default to "looks clean".
 
-4. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
-   - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced by the findings.
-   - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Mark phase ❌ FAILED (revert README phase row from ✅ DONE → ❌ FAILED for big plans if already flipped). Surface the failure to user.
-   - Otherwise, re-run `/cf-review` (round 2).
-   - If round 2 still has Critical or Important → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface BOTH review outputs and the fix attempt, ask user.
-   - Hard cap: never more than 2 reviews per phase. Never more than 1 fix attempt per phase.
+4. **Fix loop** — If Critical or Important findings exist:
+   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + `CF_CONFIG_FILE` (default `.coding-friend/config.json`); **local field overrides global**. Absent, non-integer, or `< 1` → **5**. This is the maximum number of `/cf-review` runs per phase (the initial review in step 2 counts as round 1).
+   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds`:
+     - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets from the latest review>". Files: union of files referenced by those findings.
+     - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume another review round. Mark phase ❌ FAILED (revert README phase row from ✅ DONE → ❌ FAILED for big plans if already flipped). Surface the failure to user.
+     - Otherwise, re-run `/cf-review` (next round).
+     - If that review is clean (only Suggestions/Summary) → exit the fix loop and continue to commit.
+   - If Critical or Important still remain after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface ALL review outputs and fix attempts, ask user.
+   - Hard cap: never more than `maxRounds` reviews per phase. Do not start a fix after the last allowed review — that review is the gate.
 
 5. **Commit the phase** — On clean review (or only Suggestions remaining):
    - `git add -A`
@@ -38,7 +41,7 @@ EOF
 **Stop conditions (only these end autopilot)**:
 
 - Task fails after its 1 retry.
-- Review round 2 still has Critical or Important findings.
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
 - Review output cannot be parsed.
 - `git commit` fails repeatedly after fix attempts.
 - User explicitly interrupts.
@@ -58,16 +61,19 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 **Per-phase loop:**
 
 1. Dispatch all tasks in the current phase using the standard cf-implementer protocol (sequential or parallel as marked). **Progress checkpoints are mandatory:** before each dispatch, edit the Progress table `⬜ TODO` → `🔄 IN PROGRESS`; on `[CF-RESULT: success]`, edit `🔄 IN PROGRESS` → `✅ DONE` — never skip `🔄 IN PROGRESS`, even under autopilot. Apply normal retry rules. If a task ends ❌ FAILED after retry → STOP autopilot, mark the failing task ❌ FAILED in the plan file (and revert the phase row in `README.md` from ✅ DONE to ❌ FAILED for big plans if it was already flipped), report to user.
-2. After all tasks in the phase reach ✅ DONE, run `/cf-review` on the uncommitted changes (no extra arguments — reviews everything that has not been committed yet, which is this phase's work).
+2. After all tasks in the phase reach ✅ DONE, run `/cf-review` on the uncommitted changes (no extra arguments — reviews everything that has not been committed yet, which is this phase's work). This is review round 1.
 3. Parse review findings:
    - 🚨 **Critical** and ⚠️ **Important** → must be fixed.
    - 💡 **Suggestions** → log them in the upcoming commit body, do NOT block.
 4. If Critical/Important findings exist:
-   - Dispatch one cf-implementer call with a fix task that lists the findings verbatim. Files: union of files referenced by the findings.
-   - If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately (do NOT consume the second review round). Mark the phase ❌ FAILED (and revert the README phase row from ✅ DONE to ❌ FAILED if applicable). Surface the failure to user.
-   - Otherwise, re-run `/cf-review`.
-   - If Critical/Important still present after this 2nd review → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report both review outputs to user.
-   - Maximum 2 review rounds per phase total (initial + 1 fix attempt).
+   - Read `review.maxRounds` from config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json` at the field; default **5**). This is the maximum number of `/cf-review` runs per phase (initial + fix re-reviews).
+   - Repeat while Critical/Important remain and review rounds used < `maxRounds`:
+     - Dispatch one cf-implementer call with a fix task that lists the latest findings verbatim. Files: union of files referenced by the findings.
+     - If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately (do NOT consume another review round). Mark the phase ❌ FAILED (and revert the README phase row from ✅ DONE to ❌ FAILED if applicable). Surface the failure to user.
+     - Otherwise, re-run `/cf-review`.
+     - If that review is clean → continue to commit.
+   - If Critical/Important still present after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report all review outputs to user.
+   - Never exceed `review.maxRounds` reviews per phase. Do not start a fix after the last allowed review.
 5. Once review is clean (no Critical/Important):
    - `git add -A`
    - `git commit -m "<type>(<scope>): <phase-name>` (conventional commit). Body lists tasks completed + any Suggestion-level findings that were intentionally left as follow-ups.
@@ -77,8 +83,8 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 **Stop conditions (only these):**
 
 - Task fails after its 1 retry.
-- The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume the second review round).
-- Review round 2 still has Critical or Important findings.
+- The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume another review round).
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
 - Review output from `/cf-review` cannot be reliably parsed.
 - `git commit` fails repeatedly after attempted hook fixes.
 - User explicitly interrupts (Ctrl+C, message).

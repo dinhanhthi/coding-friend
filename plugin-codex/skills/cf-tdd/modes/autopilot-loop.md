@@ -8,7 +8,7 @@ That single check is sufficient — Claude does NOT need to introspect whether c
 
 When active, after implementation completes its own verification (existing tests pass + typecheck/lint clean), run this loop instead of the standard Review Reminder:
 
-1. **Run review** — invoke the cf-review skill (load `$cf-review`, no extra args). cf-review will analyze uncommitted changes.
+1. **Run review** — invoke the cf-review skill (load `$cf-review`, no extra args). cf-review will analyze uncommitted changes. Count this as review round 1.
 
 2. **Parse findings** — cf-review returns bullets under 4 emoji headers:
    - 🚨 **Critical** → must fix
@@ -17,12 +17,15 @@ When active, after implementation completes its own verification (existing tests
    - 📋 **Summary** → informational
      If output is unparseable, STOP autopilot and surface to user.
 
-3. **Fix loop (max 1 fix round = 2 reviews total)** — If Critical or Important findings exist:
-   - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets>". Files: union of files referenced.
-   - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume the second review round. Surface the failure to user.
-   - Otherwise, re-run `$cf-review` (round 2).
-   - If round 2 still has Critical or Important → STOP autopilot, surface both review outputs and the fix attempt, ask user.
-   - Hard cap: 2 reviews total, 1 fix attempt.
+3. **Fix loop** — If Critical or Important findings exist:
+   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + local `.coding-friend/config.json`; **local field overrides global**. Absent, non-integer, or `< 1` → **5**. This is the maximum number of `$cf-review` runs (the initial review in step 1 counts as round 1).
+   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds`:
+     - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets from the latest review>". Files: union of files referenced.
+     - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume another review round. Surface the failure to user.
+     - Otherwise, re-run `$cf-review` (next round).
+     - If that review is clean (only Suggestions/Summary) → exit the fix loop and continue to commit.
+   - If Critical or Important still remain after `maxRounds` reviews → STOP autopilot, surface all review outputs and fix attempts, ask user.
+   - Hard cap: never more than `maxRounds` reviews. Do not start a fix after the last allowed review.
 
 4. **Commit** — On clean review (or only Suggestions):
    - `git add -A`
@@ -40,8 +43,8 @@ EOF
 **Stop conditions (only these end autopilot)**:
 
 - Implementation fails its own verification (typecheck/test failure that cannot be auto-fixed).
-- The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume the second review round).
-- Review round 2 still has Critical or Important findings.
+- The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume another review round).
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
 - Review output cannot be parsed.
 - `git commit` fails repeatedly.
 - User explicitly interrupts.

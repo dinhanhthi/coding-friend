@@ -80,6 +80,7 @@ const MemoryConfigSchema = z.object({
 
 const ReviewConfigSchema = z.strictObject({
   withCodex: z.boolean().optional(),
+  maxRounds: z.number().int().min(1).optional(),
 });
 
 const ConfigSchema = z.strictObject({

@@ -316,6 +316,47 @@ describe("loadConfig validation", () => {
     expect(config.review?.withCodex).toBeUndefined();
   });
 
+  it("accepts review.maxRounds as a valid config key (integer ≥ 1)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { maxRounds: 5 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.maxRounds).toBe(5);
+  });
+
+  it("keeps review.withCodex and review.maxRounds when both are set", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({
+      review: { withCodex: true, maxRounds: 8 },
+    });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.withCodex).toBe(true);
+    expect(config.review?.maxRounds).toBe(8);
+  });
+
+  it("warns and strips review.maxRounds when it is the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { maxRounds: "five" } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("maxRounds"));
+    expect(config.review?.maxRounds).toBeUndefined();
+  });
+
+  it("warns and strips review.maxRounds when it is not a positive integer", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { maxRounds: 0 } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("maxRounds"));
+    expect(config.review?.maxRounds).toBeUndefined();
+  });
+
   it("accepts disableGUIPlan as a valid config key (boolean)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

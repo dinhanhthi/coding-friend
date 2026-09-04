@@ -292,7 +292,8 @@ You have two config files. Global is `~/.coding-friend/config.json`. Project is 
   "autoApprove": false,
   "autoApproveLLM": false,
   "review": {
-    "withCodex": false
+    "withCodex": false,
+    "maxRounds": 5
   },
   "memory": {
     "autoCapture": false
@@ -318,7 +319,7 @@ Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configura
 | `disableGUIPlan`        | Disable the human overview doc `/cf-plan` generates. Default: `true`.                                                  |
 | `guiPlanFormat`         | Format for the GUI plan: `html` or `md`. Default: `html`.                                                              |
 | `learn`                 | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`.                  |
-| `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion.                                               |
+| `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion; `maxRounds` (default 5) caps the autopilot review-fix loop. |
 | `tdd`                   | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default.                                                                   |
 | `memory`                | Object. MemoryConfig for search tier, embeddings, and capture.                                                         |
 

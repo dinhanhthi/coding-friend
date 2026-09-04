@@ -71,7 +71,12 @@ export interface MemoryConfig {
 
 export interface ReviewConfig {
   withCodex?: boolean;
+  /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
+  maxRounds?: number;
 }
+
+/** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */
+export const DEFAULT_REVIEW_MAX_ROUNDS = 5;
 
 export interface CodingFriendConfig {
   language?: string;

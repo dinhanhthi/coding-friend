@@ -122,6 +122,13 @@ coding-friend uses a layered config system:
     // Claude-only review with a warning if Codex is unavailable.
     // Default: false
     "withCodex": false,
+
+    // Maximum /cf-review rounds in the autopilot fix loop
+    // (/cf-plan --auto and /cf-tdd --auto): initial review + fix re-reviews.
+    // After this many reviews still have Critical or Important findings,
+    // autopilot stops and waits for the user. Integer ≥ 1.
+    // Default: 5
+    "maxRounds": 5,
   },
 }
 ```
