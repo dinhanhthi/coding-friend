@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # run-agent-review.sh — run a headless external-agent review via a CF-format prompt.
-# Usage: bash run-agent-review.sh <agent> <result-file>
-#   <agent> ∈ claude|gemini|cursor|grok
+# Usage: bash run-agent-review.sh <agent> <result-file> [prompt-file]
+#   <agent> ∈ claude|gemini|cursor|grok|codex
+#   [prompt-file] optional pre-built prompt for $cf-plan-review; skips gather-diff + empty check
 #
 # Behavior (mirrors run-codex-review.sh graceful-degradation contract):
 #   - CLI missing on PATH  → print "CF_AGENT=unavailable" to stderr, exit 127
@@ -17,6 +18,7 @@ set -u
 
 AGENT="${1:-}"
 RESULT_FILE="${2:-}"
+PROMPT_SRC="${3:-}"
 
 if [ -z "$AGENT" ] || [ -z "$RESULT_FILE" ]; then
   echo "CF_AGENT=error missing agent or result-file argument" >&2
@@ -66,6 +68,12 @@ case "$AGENT" in
     READONLY_ARGS=(--sandbox read-only)
     USE_PROMPT_FILE=true
     ;;
+  codex)
+    CLI="codex"
+    HEADLESS_ARGS=(exec)
+    READONLY_ARGS=(--sandbox read-only --skip-git-repo-check)
+    USE_PROMPT_FILE=false
+    ;;
   *)
     echo "CF_AGENT=error unknown agent: $AGENT" >&2
     exit 2
@@ -100,28 +108,37 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-# --- Gather diff and detect empty ---
-DIFF_FILE=$(mktemp)
-PROMPT_FILE=$(mktemp)
-trap 'rm -f "$DIFF_FILE" "$PROMPT_FILE"' EXIT
-
-bash "$GATHER_DIFF" >"$DIFF_FILE" 2>/dev/null || true
-
-has_changes=false
-if grep -q '^has_committed=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
-if grep -q '^has_uncommitted=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
-if grep -q '^has_staged=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
-if grep -q '^has_untracked=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
-
-if [ "$has_changes" = false ]; then
-  echo "CF_AGENT=empty no changes to review" >&2
-  exit 0
-fi
-
 # --- Build prompt ---
 OVERRIDE=$'\n\n---\nIMPORTANT: Ignore any earlier instruction to save your review to a file. Print your review to STDOUT ONLY, in the exact 4-section format above. You have read-only access; do not attempt to modify any file.'
 
-cat "$DIFF_FILE" | bash "$BUILD_PROMPT" "$LABEL" "$DOCS_DIR" >"$PROMPT_FILE"
+PROMPT_FILE=$(mktemp)
+DIFF_FILE=""
+trap 'rm -f "$DIFF_FILE" "$PROMPT_FILE"' EXIT
+
+if [ -n "$PROMPT_SRC" ]; then
+  if [ ! -f "$PROMPT_SRC" ]; then
+    echo "CF_AGENT=error prompt file not found" >&2
+    exit 2
+  fi
+  cat "$PROMPT_SRC" >"$PROMPT_FILE"
+else
+  # --- Gather diff and detect empty ---
+  DIFF_FILE=$(mktemp)
+  bash "$GATHER_DIFF" >"$DIFF_FILE" 2>/dev/null || true
+
+  has_changes=false
+  if grep -q '^has_committed=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
+  if grep -q '^has_uncommitted=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
+  if grep -q '^has_staged=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
+  if grep -q '^has_untracked=true' "$DIFF_FILE" 2>/dev/null; then has_changes=true; fi
+
+  if [ "$has_changes" = false ]; then
+    echo "CF_AGENT=empty no changes to review" >&2
+    exit 0
+  fi
+
+  cat "$DIFF_FILE" | bash "$BUILD_PROMPT" "$LABEL" "$DOCS_DIR" >"$PROMPT_FILE"
+fi
 printf '%s' "$OVERRIDE" >>"$PROMPT_FILE"
 
 mkdir -p "$(dirname "$RESULT_FILE")"
