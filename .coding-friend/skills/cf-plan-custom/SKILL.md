@@ -22,7 +22,7 @@ Before planning anything, challenge the idea rigorously. Ask the user these ques
 
 1. **What specific gap does this fill?** What can't you do today with existing skills? Be concrete — "it would be nice" is not a gap.
 
-2. **Can an existing skill be extended instead?** Read `plugin/context/bootstrap.md` at runtime to get the current inventory of skills and agents (do not rely on a hardcoded list — skills change over time). Could any of them be extended with new steps, modes, or flags to cover this use case?
+2. **Can an existing skill be extended instead?** Read `CLAUDE.md` (## Skills / ## Agents) at runtime to get the current inventory of skills and agents (do not rely on a hardcoded list — skills change over time). Could any of them be extended with new steps, modes, or flags to cover this use case?
 
 3. **Can existing skills be combined/chained?** Could a workflow combining 2-3 existing skills achieve the same result? For example, `/cf-scan` + `/cf-remember` or `/cf-fix` + `/cf-review`. If yes, a small doc describing the combo may be all that's needed.
 
@@ -69,7 +69,7 @@ These rules apply **only** when the Before section detected a new skill/agent pl
 
 - The plan **MUST** reference and incorporate ALL items from `docs/memory/conventions/new-skill-agent-checklist.md`. Read this file at runtime — do not rely on cached knowledge.
 - Every task in the plan must map to at least one checklist item. If a checklist item has no corresponding task, add one.
-- For skills: 12 locations must be covered. For agents: 6 locations.
+- For skills: 10 locations must be covered. For agents: 12 locations.
 
 ### Integration Requirements
 
@@ -78,6 +78,7 @@ These rules apply **only** when the Before section detected a new skill/agent pl
   - **Auto-invokes**: should any existing skill auto-invoke this? Under what conditions?
   - **Invoked by this**: which skills/agents does this skill dispatch or reference?
   - **Replaces/overlaps**: does this partially overlap with an existing skill? If yes, how is the boundary drawn?
+- When the new skill produces or consumes a plan, the plan must state that `brief.md` is written by `/cf-plan` in normal/hard mode and suggest `/cf-plan-review` when that review step is appropriate.
 
 ### Naming
 
@@ -85,42 +86,12 @@ These rules apply **only** when the Before section detected a new skill/agent pl
 - All agent names follow the `cf-*` pattern (e.g., `cf-deployer`)
 - Names should be short (1-2 words after `cf-`), descriptive, and verb-oriented for skills
 
-### Stats Update
+### README + Website Listing Update
 
-- When the plan includes adding a new skill or agent, it **MUST** include a task to update `website/src/components/landing/StatsSection.tsx` with the correct counts.
-- To get the counts, read `plugin/context/bootstrap.md` at runtime:
-  - **Skills count**: count ALL unique skill names from both the "Slash Commands" list and the "Auto-Invoked" list (deduplicate names that appear in both, e.g. `cf-help`). Format as `"N+"`.
-  - **Agents count**: count the items in the "Available Agents" list. Format as `"N"`.
-- Update the `stats` array values in `StatsSection.tsx` to match the new counts.
-- This task should come AFTER the checklist tasks that create the new skill/agent files.
-
-### TokenTables Metadata Update
-
-- When the plan includes adding a new skill or agent, it **MUST** include a task to update `website/src/components/docs/TokenTables.tsx` with metadata for the new entry.
-- For a new **slash command**: add an entry to `slashCommandMeta` (short description) AND `overviewSlashMeta` (description + triggeredBy: "slash" | "slash + auto"). Keep entries sorted alphabetically by key.
-- For a new **auto-invoked skill**: add an entry to `autoSkillMeta` (activates-when text) AND `overviewAutoMeta` (activatesWhen + whatItDoes). Keep entries sorted alphabetically by key.
-- For a new **agent**: add an entry to `agentMeta` (short purpose) AND `agentRefMeta` (longer purpose description). Keep entries sorted alphabetically by key.
-- This task should come AFTER the checklist tasks that create the new skill/agent files.
-
-### Landing Skills Metadata Update
-
-- When the plan includes adding a new skill, it **MUST** include a task to update `website/src/components/landing/Skills.tsx` with metadata for the new entry.
-- For a new **slash command**: add an entry to `slashCommandMeta` array with `command`, `title`, and `description`. Keep the array sorted alphabetically by `command`.
-- For a new **auto-invoked skill**: add an entry to `autoSkillMeta` array with `command` (no `/` prefix), `title`, and `description`. Keep the array sorted alphabetically by `command`.
-- This task should come AFTER the checklist tasks that create the new skill/agent files.
-
-### README Commands Table Update
-
-- When the plan includes adding a new **slash command**, it **MUST** include a task to update the `## Commands` table in `README.md` with a new row: `| /cf-<name> [args] | Short description |`.
-- Keep the table in the same order as existing entries (grouped logically, not strictly alphabetical).
-- If the new skill is **auto-invoked only** (no slash), add it to the "Auto-invoked skills" line instead.
+- When the plan includes adding a new **slash command**, it **MUST** include a task to add it to the backtick command list in `README.md` (around line ~92) and a bullet with a GitHub source link in `website/src/content/index.md`.
+- Keep both listings in the same order as existing entries (grouped logically, not strictly alphabetical).
+- If the new skill is **auto-invoked only** (no slash), add it to the README "Auto-invoked" line and the matching website auto-invoked listing instead.
 - This task should come AFTER the checklist tasks that create the new skill files.
-
-### LLMs.txt Regeneration
-
-- When the plan includes adding a new skill or agent with a website doc page, it **MUST** include a task to regenerate `llms.txt` and `llms-full.txt`: `cd website && npx tsx scripts/generate-llms-txt.ts`
-- These files are auto-generated from `docsNavigation` in `website/src/lib/navigation.ts` — never edit them manually
-- This task should come AFTER creating the website doc page and updating `navigation.ts`
 
 ### Composition Over Creation
 
@@ -143,12 +114,7 @@ This section runs when the Before section detected a new skill/agent planning ta
 1. Read `docs/memory/conventions/new-skill-agent-checklist.md`
 2. Compare every checklist item against the plan's tasks
 3. List any **missing items** — add tasks for them before saving the plan
-4. Print: `Checklist coverage: X/12 items covered (skill)` or `Checklist coverage: X/6 items covered (agent)`
-
-### Stats Update Verification (Outcome C only)
-
-- Verify the plan includes a task to update `StatsSection.tsx` with recounted skill/agent numbers
-- If missing → add the task before saving
+4. Print: `Checklist coverage: X/10 items covered (skill)` or `Checklist coverage: X/12 items covered (agent)`
 
 ### Integration Verification (Outcome C only)
 

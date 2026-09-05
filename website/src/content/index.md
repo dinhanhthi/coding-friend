@@ -74,7 +74,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 ### 🗺️ Plan & build
 
-- `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/`. Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Available modes:
+- `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Available modes:
   - (none) — normal: full workflow, writes the plan file
   - `--fast` / `--quick` — skip discovery and the planner; plan stays in chat, no file. If the plan turns multi-phase it switches to normal and writes the file. Combined with `--auto`, the file is always written
   - `--hard` — extra discovery plus rollback planning
@@ -99,6 +99,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   ```
 
 - `/cf-plan-resume` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan-resume/SKILL.md)) — Reloads a saved plan and its context file, skips DONE tasks, re-runs the rest via the same execute protocol. If the plan has `auto: true` and an `AUTOPILOT` section, it continues in autopilot.
+- `/cf-plan-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan-review/SKILL.md)) — Reviews a saved plan folder with a fresh in-session reviewer before you implement it; `--codex` / `--gemini` / `--claude` / `--cursor` / `--grok` add external reviewers in parallel and merge. Writes `review.md` next to the plan and offers to apply Critical/Important findings.
 - `/cf-advise` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-advise/SKILL.md)) — Interviews one question at a time, then a verdict-first recommendation with pitfalls and ranked alternatives. Never writes code or a plan. Flags: `--quick` / `--fast` (2–3 questions), `--save` (write to `docs/memory/decisions/`).
 - `/cf-design` (beta) ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-design/SKILL.md)) — Makes new or changed UI match the project's existing look. The first word of the argument picks the mode (empty → it asks which one):
   - `scan [path]` — read existing UI files, extract colors / type / spacing / components, write `docs/DESIGN.md`

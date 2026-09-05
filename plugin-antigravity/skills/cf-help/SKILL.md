@@ -7,7 +7,7 @@ description: >
   cf-plan?", "what is cf-tdd?", "is the CLI required?". Do NOT auto-invoke for general
   coding questions unrelated to Coding Friend.
 created: 2026-02-17
-updated: 2026-09-04
+updated: 2026-09-05
 ---
 
 # /cf-help — Coding Friend Help
@@ -51,8 +51,9 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 - `/cf-advise [decision]` — ⚡⚡ — Advisory interview. `--quick`, `--save`
 - `/cf-ask [question]` — ⚡⚡ — Codebase Q&A → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step (valid: `inherit`, `flash`, `pro`). Autopilot review-fix cap: `review.maxRounds` (default 5).
+- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step (valid: `inherit`, `flash`, `pro`). Autopilot review-fix cap: `review.maxRounds` (default 5). Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors `auto: true`.
+- `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped). Writes `review.md` into the plan folder, offers to apply Critical/Important findings.
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
 - `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.
 - `/cf-review-out [label]` — ⚡⚡ — Prompt + diff → `docs/reviews/`

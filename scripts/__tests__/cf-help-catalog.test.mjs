@@ -32,7 +32,7 @@ test("cf-help catalog lists every skill", () => {
     .filter((entry) => entry.isDirectory() && entry.name.startsWith("cf-"))
     .map((entry) => entry.name)
     .sort();
-  assert.equal(skills.length, 26, `expected 26 skills, got ${skills.length}`);
+  assert.equal(skills.length, 27, `expected 27 skills, got ${skills.length}`);
   for (const skill of skills) {
     assert.ok(listed(skill), `cf-help catalog is missing skill ${skill}`);
   }

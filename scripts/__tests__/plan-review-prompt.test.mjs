@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -14,7 +15,7 @@ const script = path.join(
   "plugin/skills/cf-plan-review/scripts/build-plan-review-prompt.sh",
 );
 
-function run(entryFile, docsDir = "docs") {
+function run(entryFile, docsDir) {
   return spawnSync("bash", [script, entryFile, docsDir], {
     cwd: repoRoot,
     encoding: "utf8",
@@ -22,8 +23,24 @@ function run(entryFile, docsDir = "docs") {
   });
 }
 
+function makeFixtureRoot() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "plan-review-prompt-"));
+}
+
 test("embeds cf-plan-review folder files and the four output headings", () => {
-  const result = run("docs/plans/2026-09-05-cf-plan-review/README.md");
+  const tmp = makeFixtureRoot();
+  const planDir = path.join(tmp, "plans", "sample-folder-plan");
+  fs.mkdirSync(planDir, { recursive: true });
+  fs.writeFileSync(path.join(planDir, "brief.md"), "# Brief\n");
+  fs.writeFileSync(path.join(planDir, "README.md"), "# Plan\n");
+  fs.writeFileSync(
+    path.join(planDir, "phase-1-cf-plan-brief.md"),
+    "# Phase 1\n",
+  );
+  fs.writeFileSync(path.join(planDir, "overview.md"), "# Overview\n");
+  fs.writeFileSync(path.join(planDir, "review.md"), "# Review\n");
+
+  const result = run(path.join(planDir, "README.md"), tmp);
   assert.equal(result.status, 0, result.stderr);
   const stdout = result.stdout;
   assert.ok(stdout.includes("## Plan Files"), "missing ## Plan Files");
@@ -46,9 +63,12 @@ test("embeds cf-plan-review folder files and the four output headings", () => {
 });
 
 test("reports missing brief.md for a folder plan without one", () => {
-  const result = run(
-    "docs/plans/2026-08-30-website-without-with-cf/README.md",
-  );
+  const tmp = makeFixtureRoot();
+  const planDir = path.join(tmp, "plans", "readme-only-plan");
+  fs.mkdirSync(planDir, { recursive: true });
+  fs.writeFileSync(path.join(planDir, "README.md"), "# Plan without brief\n");
+
+  const result = run(path.join(planDir, "README.md"), tmp);
   assert.equal(result.status, 0, result.stderr);
   assert.ok(
     result.stdout.includes("brief.md not found"),
@@ -59,6 +79,10 @@ test("reports missing brief.md for a folder plan without one", () => {
 
 test("exits nonzero when the plan entry file does not exist", () => {
   assert.ok(fs.existsSync(script), `script missing: ${script}`);
-  const result = run("docs/plans/does-not-exist-zzzz/README.md");
+  const tmp = makeFixtureRoot();
+  const result = run(
+    path.join(tmp, "plans", "does-not-exist-zzzz", "README.md"),
+    tmp,
+  );
   assert.notEqual(result.status, 0);
 });
