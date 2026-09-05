@@ -21,7 +21,7 @@ You receive:
 
 ## Process
 
-1. **Find the plan** — Look for the most recently modified plan in `docs/plans/`. Each plan is a subfolder (`<slug>/`); read its `README.md` (the entry point) plus any `phase-N-*.md` files. **Ignore `overview.html` / `overview.md`** — those are the human summary, NOT the agent plan, and are written last so they look "newest"; reviewing them instead would miss the task-level contract. (Legacy flat plans are a single `<slug>.md` file — read that.) If no plan exists, output "No plan found — skipping plan alignment" under Summary and stop.
+1. **Find the plan** — Look for the most recently modified plan in `docs/plans/`. Each plan is a subfolder (`<slug>/`); read its `README.md` (the entry point) plus any `phase-N-*.md` files. **Ignore `overview.html` / `overview.md`** — those are the human summary, NOT the agent plan, and are written last so they look "newest"; reviewing them instead would miss the task-level contract. Also ignore `review.md` (output of `/cf-plan-review`); if `brief.md` exists, read it as context for the user's original intent and confirmed assumptions — it is NOT the task contract; the task-level contract stays in `README.md` and `phase-N-*.md`. (Legacy flat plans are a single `<slug>.md` file — read that.) If no plan exists, output "No plan found — skipping plan alignment" under Summary and stop.
 2. **Map plan to changes** — For each planned item, check if the diff implements it
 3. **Flag deviations**:
    - **Missing**: Planned items not implemented in the diff

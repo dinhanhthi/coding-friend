@@ -157,3 +157,51 @@ After implementation: `$cf-review` → `$cf-commit`
    - Files: <specific files>
    - Verify: <how to verify>
 ```
+
+## Brief (brief.md — normal/hard mode only)
+
+<!-- Write brief.md only in normal/hard mode (Step 6). Do not write it for `--fast`, `--inline`, or when fast is promoted to normal (no discovery ran). Reviewers (`$cf-plan-review` and `cf-reviewer-plan`) read brief.md as context — the user's original request and discovery — not as the task contract. -->
+
+```markdown
+---
+slug: YYYY-MM-DD-<slug> # = plan folder name
+created: YYYY-MM-DD
+mode: normal | hard
+---
+
+# Brief: <title>
+
+## Request
+
+<original request verbatim after stripping flags>
+
+Flags: <flags that were stripped, or none>
+
+## Discovery Q&A
+
+### Round N — <name>
+
+**<question>**
+
+<answer verbatim>
+
+## Confirmed Assumptions
+
+- <assumption> — basis: <why>
+
+## Rejected Alternatives
+
+- <alternative> — <reason rejected>
+
+## Success Criteria
+
+- <verifiable criterion>
+
+## Constraints
+
+- <constraint>
+
+## Out of Scope
+
+- <explicit out-of-scope item>
+```

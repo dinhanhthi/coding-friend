@@ -6,7 +6,7 @@ description: >
   "implement", "set up", "design a solution", "architect", "scaffold", "plan out", "what's
   the best way to build". Also triggers on multi-step work needing planning.
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-05
 ---
 
 # /cf-plan
@@ -28,7 +28,7 @@ Create an implementation plan for: **$ARGUMENTS**
 
 Parse flags from `$ARGUMENTS`; strip them (and `--model`'s value) before using the rest as the task. Normalize: `--quick` → `--fast`, `--no-file` → `--inline`, `--tdd` → `--add-tests`, `--human`/`-gui`/`-human` → `--gui`. `--model` is `--model <alias>` or `--model=<alias>`.
 
-**Human overview doc:** off by default. `--gui` (or config `disableGUIPlan: false`) generates `overview.html`/`overview.md` at Step 6. Format: `guiPlanFormat` (`html` default, or `md`). Fast: no overview unless `--gui`. `--inline`: never (no plan file).
+**Human overview doc:** off by default. `--gui` (or config `disableGUIPlan: false`) generates `overview.html`/`overview.md` at Step 6. Format: `guiPlanFormat` (`html` default, or `md`). Fast: no overview unless `--gui`. `--inline`: never (no plan file). `brief.md` (Step 6) is separate from the overview and is written in native normal/hard only — never `--fast`, `--inline` (even with `--hard`), or fast promoted to normal.
 
 ## Workflow
 
@@ -60,6 +60,8 @@ If output is not empty: `## Before` → before first step, `## Rules` → throug
 If `memory_search` is available, search task keywords. Use hits as starting context; otherwise skip.
 
 ### Step 1: Discovery & Brainstorm
+
+Keep each round's questions and answers verbatim so they can be written into `brief.md` at Step 6.
 
 > **Fast mode**: Skip — proceed to Step 2.
 
@@ -146,22 +148,25 @@ Present: key findings, approaches with pros/cons, recommended approach and why, 
 
 > **Inline mode** (`--inline`): Skip the file write entirely. Create an inline checklist containing every task from the plan (one task per implementation task, in phase order). Present the full plan body (Context, Approach, Tasks per phase, Risks) inline in chat. Do NOT create any file under `{docsDir}/plans/`. Skip the rest of this step and proceed to Step 7. Progress tracking in Step 7 updates the inline checklist instead of editing a plan file; all "edit the plan file" / "Progress table" instructions in Step 7 become "update the corresponding checklist item". The context file at `{docsDir}/context/<task-id>.json` is still created (cf-implementer needs it).
 
-> **Fast mode** (`--fast`, no `--auto`, no `--inline`): **Never write a plan file.** Follow the **Inline mode** path above (present the plan in chat, register tasks in an inline checklist, still create the context file). Because no file is written, the whole rest of the workflow tracks this plan inline: in Step 7, update the corresponding checklist item instead of editing a plan file — the "small plan → edit `README.md`" instructions do NOT apply. If the plan turns out to have **2+ phases**, announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.`, treat as **normal mode**, and write the plan folder per Layout below. When `--fast` is combined with `--auto`, always write the file (autopilot reads `auto: true` from the on-disk plan), regardless of phase count.
+> **Fast mode** (`--fast`, no `--auto`, no `--inline`): **Never write a plan file.** Follow the **Inline mode** path above (present the plan in chat, register tasks in an inline checklist, still create the context file). Because no file is written, the whole rest of the workflow tracks this plan inline: in Step 7, update the corresponding checklist item instead of editing a plan file — the "small plan → edit `README.md`" instructions do NOT apply. If the plan turns out to have **2+ phases**, announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.`, treat as **normal mode**, and write the plan folder per Layout below. Do NOT write `brief.md` after this promotion — discovery never ran. When `--fast` is combined with `--auto`, always write the file (autopilot reads `auto: true` from the on-disk plan), regardless of phase count; still do NOT write `brief.md` (discovery never ran).
 
 **Layout** — written plans live in `{docsDir}/plans/YYYY-MM-DD-<slug>/`; entry point is always `README.md`:
 
-- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files.
-- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase.
+- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
+- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
 
 Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent after max retries)
 
-After saving, present: folder path, phase count, task count, entry point (`README.md`), overview path (if generated).
+After saving, present: folder path, phase count, task count, entry point (`README.md`), overview path (if generated), `brief.md` path (if written).
+
+> 💡 Review this plan before implementing: `/cf-plan-review <slug>`
 
 1. Create a task checklist and keep it updated.
 2. Set `slug:` in `README.md` to the plan folder name (`YYYY-MM-DD-<slug>` = task-id from Step 1.5). Include it in the post-save summary.
-3. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
-4. Present the plan summary.
-5. When autopilot=true, add `auto: true` to `README.md` frontmatter. For **big plans**, also copy `## AUTOPILOT` into EVERY `phase-N-*.md`.
+3. Native normal/hard mode only (not `--fast`, `--inline`, or fast promoted to normal): write `{plan-folder}/brief.md` from the **Brief** skeleton in `templates/plan-templates.md` — verbatim request, per-round Q&A, confirmed assumptions, rejected alternatives, success criteria, constraints, out of scope.
+4. Generate the human overview doc (see **Human overview doc** below) unless humanDoc=false.
+5. Present the plan summary.
+6. When autopilot=true, add `auto: true` to `README.md` frontmatter. For **big plans**, also copy `## AUTOPILOT` into EVERY `phase-N-*.md`.
 
 #### Human overview doc
 
