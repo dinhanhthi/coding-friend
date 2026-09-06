@@ -89,7 +89,7 @@ Details: [website/src/content/index.md#-features](website/src/content/index.md#-
 
 ## Skills
 
-`/cf-advise`, `/cf-ask`, `/cf-checkpoint`, `/cf-checkpoint-from`, `/cf-commit`, `/cf-design`, `/cf-fix`, `/cf-help`, `/cf-later-do`, `/cf-learn`, `/cf-optimize`, `/cf-plan`, `/cf-plan-resume`, `/cf-remember`, `/cf-research`, `/cf-review`, `/cf-review-in`, `/cf-review-out`, `/cf-scan`, `/cf-session`, `/cf-ship`, `/cf-teach`, `/cf-warm`
+`/cf-advise`, `/cf-ask`, `/cf-checkpoint`, `/cf-checkpoint-from`, `/cf-commit`, `/cf-design`, `/cf-fix`, `/cf-help`, `/cf-later-do`, `/cf-learn`, `/cf-optimize`, `/cf-plan`, `/cf-plan-review`, `/cf-plan-resume`, `/cf-remember`, `/cf-research`, `/cf-review`, `/cf-review-in`, `/cf-review-out`, `/cf-scan`, `/cf-session`, `/cf-ship`, `/cf-teach`, `/cf-warm`
 
 Auto-invoked: `cf-tdd`, `cf-sys-debug`, `cf-verification`
 

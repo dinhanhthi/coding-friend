@@ -397,7 +397,7 @@ pre {
   --tw-prose-quotes: var(--color-ink-2);
   --tw-prose-quote-borders: var(--color-rule-2);
   --tw-prose-captions: var(--color-muted);
-  --tw-prose-code: var(--color-ink);
+  --tw-prose-code: var(--color-accent-2);
   --tw-prose-pre-code: var(--color-ink-2);
   --tw-prose-pre-bg: var(--color-paper-2);
   --tw-prose-th-borders: var(--color-rule-2);
@@ -432,7 +432,7 @@ pre {
 .prose :not(pre) > code {
   background: var(--color-paper-2) !important;
   border: 1px solid var(--color-rule);
-  color: var(--color-ink);
+  color: var(--color-accent-2);
   font-size: 85%;
   padding: 2px 5px !important;
   border-radius: 4px;
