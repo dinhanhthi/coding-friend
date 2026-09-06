@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.0 (2026-09-06)
+
+- Add `$cf-plan-review` skill: review a saved `$cf-plan` folder with a fresh reviewer (optional `--codex`/`--gemini`/`--claude`/`--cursor`/`--grok` in parallel), write `review.md` into the plan folder, and offer to apply Critical/Important findings [#2efea65e](https://github.com/dinhanhthi/coding-friend/commit/2efea65e) [#53e4492f](https://github.com/dinhanhthi/coding-friend/commit/53e4492f)
+- `$cf-plan` now persists discovery notes to `brief.md` so `$cf-plan-review` has context to review against [#4fb6f3ab](https://github.com/dinhanhthi/coding-friend/commit/4fb6f3ab)
+
 ## v0.42.4 (2026-09-04)
 
 - `$cf-plan --auto` and `cf-tdd --auto` fix loops now repeat until clean or `review.maxRounds` (default 5) is hit, instead of stopping after a single fix round [#8a5be07c](https://github.com/dinhanhthi/coding-friend/commit/8a5be07c)
