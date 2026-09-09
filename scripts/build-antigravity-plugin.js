@@ -39,6 +39,7 @@ const AGY_EXCLUDED_SOURCE_PATHS = new Set([
   "skills/cf-session/scripts",
   "skills/cf-review/scripts/run-codex-review.sh",
   "skills/cf-review/scripts/normalize-codex-review.sh",
+  "skills/cf-review/references/external-reviewers.md",
 ]);
 
 const AGY_AGENT_MODELS = {
@@ -118,22 +119,6 @@ function renderAgyText(input) {
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, AGY_PLUGIN_ROOT_TOKEN)
     .replace(/\bCLAUDE\.md\b/g, "AGENTS.md")
     .replace(
-      /use the Skill tool with skill name `coding-friend:(cf-[a-z0-9-]+)`/g,
-      (_match, name) => `activate the \`${name}\` skill (type \`/${name}\`)`,
-    )
-    .replace(
-      /Use the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\./g,
-      (_match, name) => `Call \`invoke_subagent\` with agent \`${name}\`.`,
-    )
-    .replace(
-      /via the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
-      (_match, name) => `by calling \`invoke_subagent\` with agent \`${name}\``,
-    )
-    .replace(
-      /\(Agent tool, `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\)/g,
-      (_match, name) => `(\`invoke_subagent\` with agent \`${name}\`)`,
-    )
-    .replace(
       /`subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
       (_match, name) => `\`invoke_subagent\` with agent \`${name}\``,
     );
@@ -141,68 +126,11 @@ function renderAgyText(input) {
 
 function renderAgyInstructionText(input) {
   return renderAgyText(input)
-    .replace(/\busing the Agent tool\b/gi, "using `invoke_subagent`")
     .replace(/\*\*Agent tool\*\*/g, "`invoke_subagent`")
     .replace(/\bAgent tool\b/g, "`invoke_subagent`")
-    .replace(/`AskUserQuestion`/g, "a direct user question")
-    .replace(/\bAskUserQuestion\b/g, "a direct user question")
-    .replace(/tracked via TaskCreate/g, "tracked with an inline checklist")
-    .replace(
-      /register tasks via TaskCreate/g,
-      "register tasks in an inline checklist",
-    )
-    .replace(
-      /Progress tracked via TaskCreate/g,
-      "Progress tracked with an inline checklist",
-    )
-    .replace(
-      /Use TaskCreate to register every task from the plan/g,
-      "Create an inline checklist containing every task from the plan",
-    )
-    .replace(
-      /Use TaskCreate to create a task list\./g,
-      "Create a task checklist and keep it updated.",
-    )
-    .replace(
-      /Progress tracking in Step 7 uses TaskUpdate/g,
-      "Progress tracking in Step 7 updates the inline checklist",
-    )
-    .replace(
-      /use TaskUpdate on the corresponding task/g,
-      "update the corresponding checklist item",
-    )
-    .replace(
-      /call TaskUpdate on the corresponding task/g,
-      "update the corresponding checklist item",
-    )
-    .replace(
-      /with a `TaskUpdate` on the matching task/g,
-      "with a checklist update on the matching task",
-    )
-    .replace(/`TaskCreate`/g, "an inline checklist")
-    .replace(/\bTaskCreate\b/g, "an inline checklist")
-    .replace(/`TaskUpdate`/g, "the inline checklist")
-    .replace(/\bTaskUpdate\b/g, "the inline checklist")
-    .replace(
-      /Spawn one cf-implementer \*\*per task\*\* with `run_in_background: true` — all in a \*\*single message block\*\*\./g,
-      "Call `invoke_subagent` with agent `cf-implementer` once per task in parallel, wait for all agents, and collect each result.",
-    )
     .replace(/\(haiku\)/g, "(flash)")
     .replace(/\(sonnet\)/g, "(pro)")
     .replace(/\(opus\)/g, "(pro)")
-    .replace(/\bWebSearch and WebFetch\b/g, "search_web and read_url_content")
-    .replace(/\bWebSearch\b/g, "search_web")
-    .replace(/\bWebFetch\b/g, "read_url_content")
-    .replace(
-      /Use the Write tool for new files/g,
-      "Create new files with write_to_file",
-    )
-    .replace(
-      /Use the Edit tool for appending to or updating existing files/g,
-      "Edit existing files with replace_file_content",
-    )
-    .replace(/\bEdit tool calls?\b/g, "file edits")
-    .replace(/\bEdit calls?\b/g, "file edits")
     .replace(
       /it runs on Haiku for cost\s+efficiency\./gi,
       "It uses flash for cost efficiency.",
@@ -247,7 +175,7 @@ function renderAgyPlanSkill(input) {
     .replace(
       / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
       [
-        "",
+        " <!-- cf-plan-model-flag -->",
         "   Accept `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value**. Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases or full model IDs. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.",
       ].join("\n"),
     )
@@ -277,7 +205,7 @@ function renderAgyReviewSkill(input) {
       "",
     )
     .replace(
-      /### Step 6\.5: Collect & normalize the Codex review \(only when `codex=true`\)[\s\S]*?(?=\n### Step 7: Collect the report)/,
+      /### Step 6\.5: Collect & normalize the Codex review \(only when `codex=true`\)[\s\S]*?(?=\n### Step 6\.7|\n### Step 7)/,
       "",
     )
     .replace(
@@ -289,8 +217,6 @@ function renderAgyReviewSkill(input) {
         "",
       ].join("\n"),
     )
-    .replace(/Claude's own review/g, "Coding Friend's multi-agent review")
-    .replace(/Claude-only review/g, "Coding Friend review")
     .replace(
       /Display the cf-reviewer's report first, then append the appropriate banner\. When any external source contributed,[\s\S]*?Omit the suffix when only the in-session reviewer ran\./,
       "Display the cf-reviewer's report first, then append the appropriate banner.",
@@ -654,6 +580,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  AGY_EXCLUDED_SOURCE_PATHS,
   buildAntigravityPlugin,
   createAntigravityMcpConfig,
   createAntigravityPluginManifest,

@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const {
+  AGY_EXCLUDED_SOURCE_PATHS,
   buildAntigravityPlugin,
   createAntigravityMcpConfig,
   createAntigravityPluginManifest,
@@ -187,12 +188,6 @@ test("renders Claude-native Coding Friend references for Antigravity", () => {
     "Call `invoke_subagent` with agent `cf-explorer` and this task: Explore the repo",
   );
   assert.equal(
-    renderAgyText(
-      'Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`.',
-    ),
-    "Call `invoke_subagent` with agent `cf-explorer`.",
-  );
-  assert.equal(
     renderAgyText("{{cf:plugin_root}}"),
     "the plugin directory (the parent of the `skills/` folder that contains this SKILL.md)",
   );
@@ -201,8 +196,6 @@ test("renders Claude-native Coding Friend references for Antigravity", () => {
     [
       "{{cf:slash cf-review}}",
       '{{cf:dispatch agent=cf-explorer prompt="Explore the repo"}}',
-      'Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`.',
-      "use the Skill tool with skill name `coding-friend:cf-learn`",
       "{{cf:slash cf-plan}}",
       "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "Use cf-writer (sonnet) and read CLAUDE.md.",
@@ -214,8 +207,6 @@ test("renders Claude-native Coding Friend references for Antigravity", () => {
     [
       "/cf-review",
       "Call `invoke_subagent` with agent `cf-explorer` and this task: Explore the repo",
-      "Call `invoke_subagent` with agent `cf-explorer`.",
-      "activate the `cf-learn` skill (type `/cf-learn`)",
       "/cf-plan",
       "<plugin-root>/hooks/rules-reminder.sh",
       "Use cf-writer (pro) and read AGENTS.md.",
@@ -277,21 +268,13 @@ test("rewrites skill plugin-root for workspace cwd, not plugin cwd", () => {
 });
 
 test("renders AGY-native plan and session alternatives", () => {
-  const plan = renderAgyFile(
-    "/repo/plugin/skills/cf-plan/SKILL.md",
-    [
-      "Use TaskCreate to create a task list.",
-      "Use `AskUserQuestion` for each round.",
-      "Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.",
-    ].join("\n"),
-  );
-  assert.match(plan, /Create a task checklist and keep it updated/);
-  assert.match(plan, /a direct user question/);
-  assert.doesNotMatch(plan, /`a direct user question`/);
-  assert.match(
-    plan,
-    /Call `invoke_subagent` with agent `cf-implementer` once per task in parallel/,
-  );
+  const planInput = [
+    "Track progress: one item per task.",
+    "Ask the user each round.",
+    "Dispatch `cf-implementer` once per task, all in one message; wait for all results.",
+  ].join("\n");
+  const plan = renderAgyFile("/repo/plugin/skills/cf-plan/SKILL.md", planInput);
+  assert.equal(plan, planInput);
   assert.doesNotMatch(plan, /TaskCreate|AskUserQuestion|run_in_background/);
 
   const modelFlag = renderAgyFile(
@@ -346,6 +329,8 @@ test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
   assert.match(step3, /explicit model/);
   assert.doesNotMatch(step3, /subagent_type|context: fork|model: <alias>/);
   assert.match(plan, /`--model` vs resolved fast mode/);
+  assert.match(plan, /<!-- cf-plan-model-flag -->/);
+  assert.match(plan, /2\. \*\*Auto-detect\*\*/);
   assert.match(plan, /<plugin-root>\/lib\/load-custom-guide\.sh/);
   assert.doesNotMatch(plan, /bash "\.\/(?:skills|lib)\//);
   assert.doesNotMatch(plan, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);
@@ -415,6 +400,10 @@ test("rewrites cf-review for Antigravity", async () => {
       "",
       "bash normalize-codex-review.sh",
       "",
+      "### Step 6.7: Emit `--out` prompt file (only when `out=true`)",
+      "",
+      "Emit --out",
+      "",
       "### Step 7: Collect the report",
       "",
       "When any external source survived, merge.",
@@ -422,6 +411,8 @@ test("rewrites cf-review for Antigravity", async () => {
       "### Step 8: Mark review complete and display status",
       "",
       "Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix. Omit the suffix when only the in-session reviewer ran.",
+      "",
+      "MUST: display the full report and the status banner in **one message**; do NOT split them.",
     ].join("\n"),
   );
   assert.match(reviewFixture, /Antigravity host behavior/);
@@ -439,6 +430,8 @@ test("rewrites cf-review for Antigravity", async () => {
   assert.doesNotMatch(reviewFixture, /run-codex-review\.sh/);
   assert.doesNotMatch(reviewFixture, /normalize-codex-review\.sh/);
   assert.doesNotMatch(reviewFixture, /When any external source contributed/);
+  assert.match(reviewFixture, /Step 6\.7: Emit `--out`/);
+  assert.match(reviewFixture, /one message/);
 
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -468,7 +461,124 @@ test("rewrites cf-review for Antigravity", async () => {
   );
   assert.doesNotMatch(review, /codex=(?:true|false)/);
   assert.doesNotMatch(review, /When any external source contributed/);
+  assert.doesNotMatch(review, /references\/external-reviewers\.md/);
   assert.doesNotMatch(review, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);
+  assert.match(review, /Step 6\.7/);
+  assert.match(review, /Flag parse:/);
+  assert.match(review, /`--out`/);
+  assert.match(review, /`--claude`/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-codex-review\.sh/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-agent-review\.sh/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/normalize-codex-review\.sh/);
+  assert.match(reviewSource, /or when `out=true`/);
+  assert.match(reviewSource, /CF_AGENT/);
+  assert.match(reviewSource, /one message/);
+  assert.match(review, /one message/);
+  assert.match(
+    reviewSource,
+    /`run-codex-review\.sh` only when `codex=true` and `out=false`/,
+  );
+  assert.match(
+    reviewSource,
+    /`run-agent-review\.sh` only when `agents` is non-empty and `out=false`/,
+  );
+  assert.match(
+    reviewSource,
+    /Collect `CF_CODEX` only when a Codex job was spawned/,
+  );
+  assert.match(
+    reviewSource,
+    /collect `CF_AGENT` only when agent jobs were spawned/,
+  );
+  assert.match(reviewSource, /`--gemini` alone must NOT spawn Codex/);
+  assert.match(
+    reviewSource,
+    /`--with-codex` alone must NOT run `run-agent-review\.sh` with literal `<agent>`/,
+  );
+  assert.match(reviewSource, /HOST.*is `claude`|`--claude` when `HOST` is `claude`/);
+});
+
+test("excludes cf-review external-reviewers from Antigravity artifact", () => {
+  assert.ok(
+    AGY_EXCLUDED_SOURCE_PATHS.has(
+      "skills/cf-review/references/external-reviewers.md",
+    ),
+  );
+  for (const kept of [
+    "skills/cf-plan/modes/brainstorm.md",
+    "skills/cf-plan/templates/plan-templates.md",
+    "skills/cf-scan/references/scan-templates.md",
+    "skills/cf-ask/references/ask-templates.md",
+  ]) {
+    assert.equal(
+      AGY_EXCLUDED_SOURCE_PATHS.has(kept),
+      false,
+      `expected Antigravity builder to copy ${kept}`,
+    );
+  }
+});
+
+test("copies plan/ask/scan templates into Antigravity dest and keeps external-reviewers excluded", async () => {
+  const repoRoot = await createFixtureRepo();
+  const kept = [
+    ["skills/cf-plan/modes/brainstorm.md", "Official solutions first"],
+    ["skills/cf-plan/templates/plan-templates.md", "Plan file skeletons"],
+    ["skills/cf-scan/references/scan-templates.md", "Scan templates"],
+    ["skills/cf-ask/references/ask-templates.md", "[Idle] --start--> [Running]"],
+  ];
+  for (const [rel, body] of kept) {
+    await writeText(path.join(repoRoot, "plugin", rel), `${body}\n`);
+  }
+  await writeText(
+    path.join(
+      repoRoot,
+      "plugin/skills/cf-review/references/external-reviewers.md",
+    ),
+    "should not copy\n",
+  );
+
+  await buildAntigravityPlugin({ repoRoot });
+
+  for (const [rel, body] of kept) {
+    const dest = await fs.readFile(
+      path.join(repoRoot, "plugin-antigravity", rel),
+      "utf8",
+    );
+    assert.match(dest, new RegExp(body.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  await assert.rejects(
+    () =>
+      fs.readFile(
+        path.join(
+          repoRoot,
+          "plugin-antigravity/skills/cf-review/references/external-reviewers.md",
+        ),
+      ),
+    { code: "ENOENT" },
+  );
+});
+
+test("live Antigravity tree copies distinctive brainstorm and ask-templates strings", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const brainstorm = await fs.readFile(
+    path.join(
+      repoRoot,
+      "plugin-antigravity/skills/cf-plan/modes/brainstorm.md",
+    ),
+    "utf8",
+  );
+  const askTemplates = await fs.readFile(
+    path.join(
+      repoRoot,
+      "plugin-antigravity/skills/cf-ask/references/ask-templates.md",
+    ),
+    "utf8",
+  );
+  assert.match(brainstorm, /Official solutions first/);
+  assert.match(askTemplates, /\[Idle\] --start--> \[Running\]/);
 });
 
 test("rewrites bootstrap Dispatch verb for Antigravity", async () => {
@@ -774,7 +884,7 @@ test("builds Antigravity plugin fixture idempotently", async () => {
     "utf8",
   );
   assert.match(skill, /Use \/cf-review\./);
-  assert.match(skill, /Call `invoke_subagent` with agent `cf-writer`\./);
+  assert.match(skill, /`invoke_subagent` with agent `cf-writer`/);
   assert.match(
     skill,
     /bash "<plugin-root>\/skills\/cf-example\/scripts\/run\.sh"/,
@@ -872,4 +982,18 @@ test("live Antigravity tree includes implementer-result protocol", async () => {
   );
   assert.match(source, /previous_failure/);
   assert.match(artifact, /previous_failure/);
+});
+
+test("Antigravity builder no longer ships dead Claude tool phrase replaces", async () => {
+  const source = await fs.readFile(
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../build-antigravity-plugin.js",
+    ),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /TaskCreate|AskUserQuestion|Skill tool|WebFetch|Write tool/,
+  );
 });

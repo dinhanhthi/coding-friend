@@ -35,6 +35,7 @@ const CODEX_EXCLUDED_SOURCE_PATHS = new Set([
   "lib/agy-hook-io.sh",
   "skills/cf-review/scripts/normalize-codex-review.sh",
   "skills/cf-review/scripts/run-codex-review.sh",
+  "skills/cf-review/references/external-reviewers.md",
   "skills/cf-session/scripts",
 ]);
 const CODEX_HOOK_EVENTS = new Set([
@@ -77,22 +78,6 @@ function renderCodexText(input) {
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, "${PLUGIN_ROOT}")
     .replace(/CLAUDE_PLUGIN_ROOT/g, "PLUGIN_ROOT")
     .replace(
-      /use the Skill tool with skill name `coding-friend:(cf-[a-z0-9-]+)`/g,
-      (_match, name) => `load \`$${name}\``,
-    )
-    .replace(
-      /Use the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\./g,
-      (_match, name) => `Spawn the \`${name}\` custom agent.`,
-    )
-    .replace(
-      /via the \*\*Agent tool\*\* with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
-      (_match, name) => `by spawning the \`${name}\` custom agent`,
-    )
-    .replace(
-      /\(Agent tool, `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`\)/g,
-      (_match, name) => `(spawn the \`${name}\` custom agent)`,
-    )
-    .replace(
       /`subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
       (_match, name) => `\`${name}\` custom agent`,
     )
@@ -104,28 +89,12 @@ function renderCodexText(input) {
 
 function renderCodexInstructionText(input) {
   return renderCodexText(input)
-    .replace(/\busing the Agent tool\b/gi, "using Codex subagent orchestration")
     .replace(/\*\*Agent tool\*\*/g, "Codex subagent workflow")
     .replace(/\bAgent tool\b/g, "Codex subagent workflow")
-    .replace(/`AskUserQuestion`/g, "a direct user question")
-    .replace(/\bAskUserQuestion\b/g, "a direct user question")
     .replace(/\(haiku\)/g, "(low reasoning effort)")
     .replace(/\(sonnet\)/g, "(medium reasoning effort)")
     .replace(/\(opus\)/g, "(high reasoning effort)")
     .replace(/\bCLAUDE\.md\b/g, "AGENTS.md")
-    .replace(/\bWebSearch and WebFetch\b/g, "web search and source opening")
-    .replace(/\bWebSearch\b/g, "web search")
-    .replace(/\bWebFetch\b/g, "source opening")
-    .replace(
-      /Use the Write tool for new files/g,
-      "Create new files with the available file-editing tool",
-    )
-    .replace(
-      /Use the Edit tool for appending to or updating existing files/g,
-      "Edit existing files with the available file-editing tool",
-    )
-    .replace(/\bEdit tool calls?\b/g, "file edits")
-    .replace(/\bEdit calls?\b/g, "file edits")
     .replace(
       /it runs on Haiku for cost\s+efficiency\./gi,
       "it uses low reasoning effort for cost efficiency.",
@@ -168,43 +137,10 @@ function renderCodexInstructionText(input) {
 
 function renderCodexPlanSkill(input) {
   return input
-    .replace(/tracked via TaskCreate/g, "tracked with an inline checklist")
-    .replace(
-      /register tasks via TaskCreate/g,
-      "register tasks in an inline checklist",
-    )
-    .replace(
-      /Progress tracked via TaskCreate/g,
-      "Progress tracked with an inline checklist",
-    )
-    .replace(
-      /Use TaskCreate to register every task from the plan/g,
-      "Create an inline checklist containing every task from the plan",
-    )
-    .replace(
-      /Use TaskCreate to create a task list\./g,
-      "Create a task checklist and keep it updated.",
-    )
-    .replace(
-      /Progress tracking in Step 7 uses TaskUpdate/g,
-      "Progress tracking in Step 7 updates the inline checklist",
-    )
-    .replace(
-      /use TaskUpdate on the corresponding task/g,
-      "update the corresponding checklist item",
-    )
-    .replace(
-      /call TaskUpdate on the corresponding task/g,
-      "update the corresponding checklist item",
-    )
-    .replace(
-      /Spawn one cf-implementer \*\*per task\*\* with `run_in_background: true` — all in a \*\*single message block\*\*\./g,
-      "Ask Codex to spawn one `cf-implementer` custom agent per task in parallel, wait for all agents, and collect each result.",
-    )
     .replace(
       / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
       [
-        "",
+        " <!-- cf-plan-model-flag -->",
         "   Accept `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token). **Strip both the flag and the value**. Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex. Do not accept `inherit`. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.",
       ].join("\n"),
     )
@@ -234,7 +170,7 @@ function renderCodexReviewSkill(input) {
       "",
     )
     .replace(
-      /### Step 6\.5: Collect & normalize the Codex review \(only when `codex=true`\)[\s\S]*?(?=\n### Step 7: Collect the report)/,
+      /### Step 6\.5: Collect & normalize the Codex review \(only when `codex=true`\)[\s\S]*?(?=\n### Step 6\.7|\n### Step 7)/,
       "",
     )
     .replace(
@@ -246,8 +182,6 @@ function renderCodexReviewSkill(input) {
         "",
       ].join("\n"),
     )
-    .replace(/Claude's own review/g, "Coding Friend's multi-agent review")
-    .replace(/Claude-only review/g, "Coding Friend review")
     .replace(
       /Display the cf-reviewer's report first, then append the appropriate banner\. When any external source contributed,[\s\S]*?Omit the suffix when only the in-session reviewer ran\./,
       "Display the cf-reviewer's report first, then append the appropriate banner.",
@@ -608,6 +542,7 @@ module.exports = {
       renderText: renderCodexInstructionText,
     }),
   buildCodexPlugin,
+  CODEX_EXCLUDED_SOURCE_PATHS,
   createCodexMcpConfig,
   createCodexPluginManifest,
   renderCodexFile,

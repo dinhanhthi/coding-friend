@@ -21,17 +21,7 @@ Quick, focused Q&A about the codebase. Proactively explores code to find the ans
 - Unlike `/cf-research`: single focused answer, no multi-doc output
 - Unlike `/cf-remember`: proactively explores the codebase to answer vs extracting knowledge already in conversation
 
-## Folder
-
-Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
-
-**IMPORTANT — path resolution:**
-
-- Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`.
-- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) — do NOT search sub-folders
-- Use `CF_DOCS_ROOT` as the docs base dir (= `$MAIN_REPO_ROOT/{docsDir}` where `docsDir` comes from config, default `docs`)
-- Always resolve `file_path` as an **absolute path**: `{CF_DOCS_ROOT}/memory/{category}/{name}.md`
-- Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
+Output: `{CF_DOCS_ROOT}/memory/{category}/{name}.md`. Never use relative paths in write specs (nested git repos); always `{CF_DOCS_ROOT}` / absolute.
 
 ## Workflow
 
@@ -54,32 +44,17 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 ### Step 2: Check Existing Memory (Memory Recall)
 
-Before exploring the codebase, search existing memory docs. Extract 2-3 keywords from the question.
+Before exploring the codebase, search existing memory docs.
 
-**Primary method — Memory MCP tool** (if `memory_search` tool is available):
-
-Call the `memory_search` MCP tool with: `{ "query": "<keywords from question>", "limit": 5 }`
-
-If the tool call fails (MCP not configured), fall back to the grep method below.
-
-**Fallback — 3-tier grep** (if memory MCP unavailable):
-
-Check `{docsDir}` from `.coding-friend/config.json` (default: `docs`).
-
-1. Grep `^description:` lines across `{docsDir}/memory/**/*.md` — match against question keywords
-2. If no match, grep `^tags:` lines across `{docsDir}/memory/**/*.md`
-3. If no match, grep file content for the keywords (`output_mode: "files_with_matches"`)
+Recall memory (see Verbs) with 2–3 keywords from the question: `{ "query": "<keywords>", "limit": 5 }`; grep scope `{CF_DOCS_ROOT}/memory/**/*.md`, third tier = file content.
 
 **After finding matches:**
 
-1. Read the top 2-3 most relevant matched files
-2. If a **direct match** is found (same or very similar question already answered):
-   - Present the existing answer to the user (cite the memory file)
-   - Ask if they want a fresh exploration or if the existing answer is sufficient
-   - If sufficient → skip to Step 7 (no save needed)
-3. If **related context** is found (useful background, not a direct answer):
-   - Collect it as supplementary context to pass along to Step 3
-4. If **no relevant memory** is found → proceed to Step 3
+Read the top 2–3 most relevant matched files before treating a hit as a direct answer.
+
+- **Direct match** (same or very similar question already answered): present the existing answer (cite the file); ask if they want a fresh exploration or if it's sufficient. If sufficient → skip to Step 7 (no save).
+- **Related** (useful background, not a direct answer): carry it to Step 3 as supplementary context.
+- **None** → Step 3.
 
 ### Step 3: Explore the Codebase (via cf-explorer agent)
 
@@ -126,15 +101,7 @@ Wait for the cf-explorer to return its findings.
 4. Use code snippets only when they clarify the answer
 5. Keep it concise — this is a focused answer, not a research paper
 
-**If `IS_FLOW_QUESTION = true`**, also generate an ASCII diagram as part of the answer:
-
-- **Pick the right layout** based on the flow's shape:
-  - Discrete states with transitions → a state chart: boxed states joined by labeled arrows (e.g. `[Idle] --start--> [Running]`)
-  - Component-to-component interactions with messages → a sequence layout: vertical actor lanes with horizontal `--->` message arrows top-to-bottom
-  - Process with decisions / branching → a top-down flowchart: boxes for steps, a decision node with `yes` / `no` labeled branches
-- **Rubric**: identify actors/states (nodes), then transitions/messages (edges), then add alternate/error paths as labeled arrows. Label every transition with what triggers it. Keep the diagram to the minimum nodes needed to convey the big picture — omit internal implementation details that don't add clarity.
-- **Style**: plain text only, using box-drawing / arrow characters (`┌ ─ ┐ │ └ ┘ → ← ↑ ↓ + | -`). No Mermaid or other rendered-diagram syntax. Render it inside a plain fenced code block so alignment is preserved.
-- The diagram IS the concise answer for flow questions — keep surrounding prose tight.
+If IS_FLOW_QUESTION: add a plain-text ASCII diagram (box/arrow characters, no Mermaid) in a fenced block — state chart, sequence lanes, or flowchart; layout rubric in `references/ask-templates.md`.
 
 ### Step 5: Present to User
 
@@ -152,90 +119,7 @@ Wait for the cf-explorer to return its findings.
    - `decisions/YYYY-MM-DD-<name>.md` — for architecture/design decisions
 4. Use kebab-case for file names
 
-> **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename — do not add a date prefix to already-created files.
-
-Dispatch `cf-writer` with the write spec below.
-
-**When creating** a new file (use absolute path for `file_path`):
-
-````
-WRITE SPEC
-----------
-task: create
-file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
-language: {language from config}
-content: |
-  ---
-  title: "<Title>"
-  description: "<One-line summary for grep-based recall, under 100 chars>"
-  tags: [tag1, tag2, tag3]
-  created: YYYY-MM-DD
-  updated: YYYY-MM-DD
-  ---
-
-  # <Title>
-
-  ## Overview
-  <1-2 sentences>
-
-  ## Q&A: <short question summary> (YYYY-MM-DD)
-
-  **Q:** <question>
-
-  **A:** <concise answer>
-
-  <!-- Include this section only when IS_FLOW_QUESTION = true -->
-  ## Flow Diagram
-
-  ```
-  <diagram generated in Step 4>
-````
-
-**Related files:** `path/to/file1`, `path/to/file2`
-readme_update: false
-auto_commit: false
-existing_file_action: skip
-
-```
-
-**When appending** to an existing file (use absolute path for `file_path`):
-
-```
-
-## WRITE SPEC
-
-task: update
-file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
-language: {language from config}
-content: |
-
-## Q&A: <short question summary> (YYYY-MM-DD)
-
-**Q:** <question>
-
-**A:** <concise answer>
-
-  <!-- Include this section only when IS_FLOW_QUESTION = true -->
-
-## Flow Diagram
-
-```
-<diagram generated in Step 4>
-```
-
-**Related files:** `path/to/file1`, `path/to/file2`
-readme_update: false
-auto_commit: false
-existing_file_action: append
-
-```
-
-When appending, also instruct cf-writer to update the `updated` date in the existing frontmatter.
-
-**Frontmatter rules:**
-
-- `description`: factual, searchable summary under 100 chars. Good: `"JWT auth flow with refresh tokens and OAuth2 integration"`. Bad: `"About auth"`.
-- `tags`: 3-5 keywords as array
+Dispatch `cf-writer` with the create or append spec from `references/ask-templates.md` (absolute `file_path`; append also updates `updated`).
 
 ### Step 7: Index in CF Memory (MANDATORY)
 
@@ -279,4 +163,3 @@ Show the user a 2-line summary:
 - Respect `.coding-friend/ignore` patterns
 - Use `language` config for answer language
 - Create directories as needed
-```

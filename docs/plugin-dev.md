@@ -194,7 +194,7 @@ plugin-codex/      ← GENERATED artifact (committed)
 - Marketplace: `.agents/plugins/marketplace.json` → `source: local, path: ./plugin-codex`
   (Claude's is `.claude-plugin/marketplace.json` → `./plugin`).
 - The build converts `/cf-x` → `$cf-x`, `${CLAUDE_PLUGIN_ROOT}` → `${PLUGIN_ROOT}`,
-  `subagent_type` → custom agent, model alias → reasoning effort,
+  Dispatch verb → custom agent, model alias → reasoning effort,
   `CLAUDE.md` → `AGENTS.md`, …
 - Guards: `npm run lint:codex` (no leftover Claude-isms),
   `npm run verify:codex-drift` (committed artifact matches the build).

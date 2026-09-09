@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const {
   agentMarkdownToToml,
   buildCodexPlugin,
+  CODEX_EXCLUDED_SOURCE_PATHS,
   createCodexPluginManifest,
   createCodexMcpConfig,
   renderCodexFile,
@@ -153,8 +154,6 @@ test("renders Claude-native Coding Friend references for Codex", () => {
   const rendered = renderCodexInstructionText(
     [
       "/cf-review",
-      'Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`.',
-      "use the Skill tool with skill name `coding-friend:cf-learn`",
       "/cf-plan",
       "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.CLAUDE_PLUGIN_ROOT",
@@ -166,8 +165,6 @@ test("renders Claude-native Coding Friend references for Codex", () => {
     rendered,
     [
       "$cf-review",
-      "Spawn the `cf-explorer` custom agent.",
-      "load `$cf-learn`",
       "$cf-plan",
       "${PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.PLUGIN_ROOT",
@@ -177,21 +174,16 @@ test("renders Claude-native Coding Friend references for Codex", () => {
 });
 
 test("renders Codex-native plan and session alternatives", () => {
+  const planInput = [
+    "Track progress: one item per task.",
+    "Ask the user each round.",
+    "Dispatch `cf-implementer` once per task, all in one message; wait for all results.",
+  ].join("\n");
   const plan = renderCodexFile(
     "/repo/plugin/skills/cf-plan/SKILL.md",
-    [
-      "Use TaskCreate to create a task list.",
-      "Use `AskUserQuestion` for each round.",
-      "Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.",
-    ].join("\n"),
+    planInput,
   );
-  assert.match(plan, /Create a task checklist and keep it updated/);
-  assert.match(plan, /a direct user question/);
-  assert.doesNotMatch(plan, /`a direct user question`/);
-  assert.match(
-    plan,
-    /spawn one `cf-implementer` custom agent per task in parallel/,
-  );
+  assert.equal(plan, planInput);
   assert.doesNotMatch(plan, /TaskCreate|AskUserQuestion|run_in_background/);
 
   const modelFlag = renderCodexFile(
@@ -238,6 +230,13 @@ test("rewrites cf-plan --model spawn and cf-help for Codex", async () => {
   assert.match(step3, /explicit spawn model/);
   assert.doesNotMatch(step3, /subagent_type|context: fork|model: <alias>/);
   assert.match(plan, /`--model` vs resolved fast mode/);
+  assert.match(plan, /<!-- cf-plan-model-flag -->/);
+  assert.match(plan, /2\. \*\*Auto-detect\*\*/);
+  assert.match(planSource, /Read now: `modes\/brainstorm\.md` at Step 1 rounds/);
+  assert.match(
+    planSource,
+    /Read now: `templates\/plan-templates\.md` for Step 2\/3 prompts AND when writing the plan file/,
+  );
 
   const helpSource = await fs.readFile(
     path.join(repoRoot, "plugin/skills/cf-help/SKILL.md"),
@@ -277,6 +276,10 @@ test("rewrites cf-review for Codex", async () => {
       "",
       "bash normalize-codex-review.sh",
       "",
+      "### Step 6.7: Emit `--out` prompt file (only when `out=true`)",
+      "",
+      "Emit --out",
+      "",
       "### Step 7: Collect the report",
       "",
       "When any external source survived, merge.",
@@ -284,6 +287,8 @@ test("rewrites cf-review for Codex", async () => {
       "### Step 8: Mark review complete and display status",
       "",
       "Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix. Omit the suffix when only the in-session reviewer ran.",
+      "",
+      "MUST: display the full report and the status banner in **one message**; do NOT split them.",
     ].join("\n"),
   );
   assert.match(reviewFixture, /Codex host behavior/);
@@ -301,6 +306,8 @@ test("rewrites cf-review for Codex", async () => {
   assert.doesNotMatch(reviewFixture, /run-codex-review\.sh/);
   assert.doesNotMatch(reviewFixture, /normalize-codex-review\.sh/);
   assert.doesNotMatch(reviewFixture, /When any external source contributed/);
+  assert.match(reviewFixture, /Step 6\.7: Emit `--out`/);
+  assert.match(reviewFixture, /one message/);
 
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -329,6 +336,65 @@ test("rewrites cf-review for Codex", async () => {
   );
   assert.doesNotMatch(review, /codex=(?:true|false)/);
   assert.doesNotMatch(review, /When any external source contributed/);
+  assert.doesNotMatch(review, /references\/external-reviewers\.md/);
+  assert.match(review, /Step 6\.7/);
+  assert.match(review, /Flag parse:/);
+  assert.match(review, /`--out`/);
+  assert.match(review, /`--claude`/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-codex-review\.sh/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-agent-review\.sh/);
+  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/normalize-codex-review\.sh/);
+  assert.match(reviewSource, /or when `out=true`/);
+  assert.match(reviewSource, /CF_AGENT/);
+  assert.match(reviewSource, /one message/);
+  assert.match(review, /one message/);
+  assert.match(
+    reviewSource,
+    /`run-codex-review\.sh` only when `codex=true` and `out=false`/,
+  );
+  assert.match(
+    reviewSource,
+    /`run-agent-review\.sh` only when `agents` is non-empty and `out=false`/,
+  );
+  assert.match(
+    reviewSource,
+    /Collect `CF_CODEX` only when a Codex job was spawned/,
+  );
+  assert.match(
+    reviewSource,
+    /collect `CF_AGENT` only when agent jobs were spawned/,
+  );
+  assert.match(reviewSource, /`--gemini` alone must NOT spawn Codex/);
+  assert.match(
+    reviewSource,
+    /`--with-codex` alone must NOT run `run-agent-review\.sh` with literal `<agent>`/,
+  );
+  assert.match(reviewSource, /HOST.*is `claude`|`--claude` when `HOST` is `claude`/);
+  assert.match(
+    reviewSource,
+    /Read now: `references\/external-reviewers\.md` before parsing flags/,
+  );
+
+  const askSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-ask/SKILL.md"),
+    "utf8",
+  );
+  const scanSource = await fs.readFile(
+    path.join(repoRoot, "plugin/skills/cf-scan/SKILL.md"),
+    "utf8",
+  );
+  assert.match(
+    askSource,
+    /Never use relative paths in write specs \(nested git repos\); always `\{CF_DOCS_ROOT\}` \/ absolute/,
+  );
+  assert.match(
+    scanSource,
+    /Never use relative paths in write specs \(nested git repos\); always `\{CF_DOCS_ROOT\}` \/ absolute/,
+  );
+  assert.match(
+    askSource,
+    /Read the top 2–3 most relevant matched files/,
+  );
 
   const fixSource = await fs.readFile(
     path.join(repoRoot, "plugin/skills/cf-fix/SKILL.md"),
@@ -337,6 +403,80 @@ test("rewrites cf-review for Codex", async () => {
   const fix = renderCodexFile("/repo/plugin/skills/cf-fix/SKILL.md", fixSource);
   assert.doesNotMatch(fix, /runs a Codex second opinion/);
   assert.match(fix, /ignores the Claude-only `review\.withCodex` setting/);
+});
+
+test("excludes cf-review external-reviewers from Codex artifact", () => {
+  assert.ok(
+    CODEX_EXCLUDED_SOURCE_PATHS.has(
+      "skills/cf-review/references/external-reviewers.md",
+    ),
+  );
+  for (const kept of [
+    "skills/cf-plan/modes/brainstorm.md",
+    "skills/cf-plan/templates/plan-templates.md",
+    "skills/cf-scan/references/scan-templates.md",
+    "skills/cf-ask/references/ask-templates.md",
+  ]) {
+    assert.equal(
+      CODEX_EXCLUDED_SOURCE_PATHS.has(kept),
+      false,
+      `expected Codex builder to copy ${kept}`,
+    );
+  }
+});
+
+test("copies plan/ask/scan templates into Codex dest and keeps external-reviewers excluded", async () => {
+  const repoRoot = await createFixtureRepo();
+  const kept = [
+    ["skills/cf-plan/modes/brainstorm.md", "Official solutions first"],
+    ["skills/cf-plan/templates/plan-templates.md", "Plan file skeletons"],
+    ["skills/cf-scan/references/scan-templates.md", "Scan templates"],
+    ["skills/cf-ask/references/ask-templates.md", "[Idle] --start--> [Running]"],
+  ];
+  for (const [rel, body] of kept) {
+    await writeText(path.join(repoRoot, "plugin", rel), `${body}\n`);
+  }
+  await writeText(
+    path.join(
+      repoRoot,
+      "plugin/skills/cf-review/references/external-reviewers.md",
+    ),
+    "should not copy\n",
+  );
+
+  await buildCodexPlugin({ repoRoot });
+
+  for (const [rel, body] of kept) {
+    const dest = await fs.readFile(path.join(repoRoot, "plugin-codex", rel), "utf8");
+    assert.match(dest, new RegExp(body.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  await assert.rejects(
+    () =>
+      fs.readFile(
+        path.join(
+          repoRoot,
+          "plugin-codex/skills/cf-review/references/external-reviewers.md",
+        ),
+      ),
+    { code: "ENOENT" },
+  );
+});
+
+test("live Codex tree copies distinctive brainstorm and ask-templates strings", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const brainstorm = await fs.readFile(
+    path.join(repoRoot, "plugin-codex/skills/cf-plan/modes/brainstorm.md"),
+    "utf8",
+  );
+  const askTemplates = await fs.readFile(
+    path.join(repoRoot, "plugin-codex/skills/cf-ask/references/ask-templates.md"),
+    "utf8",
+  );
+  assert.match(brainstorm, /Official solutions first/);
+  assert.match(askTemplates, /\[Idle\] --start--> \[Running\]/);
 });
 
 test("rewrites fenced run_in_background outside cf-plan", () => {
@@ -349,11 +489,13 @@ test("rewrites fenced run_in_background outside cf-plan", () => {
 });
 
 test("renders Codex instruction rewrites on skill sub-files", () => {
+  const executeInput =
+    "Dispatch `cf-implementer` once per task, all in one message; wait for all results.";
   const execute = renderCodexFile(
     "/repo/plugin/skills/cf-plan/modes/execute.md",
-    "Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.",
+    executeInput,
   );
-  assert.match(execute, /per task in parallel/);
+  assert.equal(execute, executeInput);
   assert.doesNotMatch(execute, /run_in_background/);
 
   const tddMode = renderCodexFile(
@@ -599,4 +741,15 @@ test("live Codex tree includes implementer-result protocol", async () => {
   );
   assert.match(source, /previous_failure/);
   assert.match(artifact, /previous_failure/);
+});
+
+test("Codex builder no longer ships dead Claude tool phrase replaces", async () => {
+  const source = await fs.readFile(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../build-codex-plugin.js"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /TaskCreate|AskUserQuestion|Skill tool|WebFetch|Write tool/,
+  );
 });

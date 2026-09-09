@@ -205,3 +205,46 @@ Flags: <flags that were stripped, or none>
 
 - <explicit out-of-scope item>
 ```
+
+## Layout
+
+Written plans live in `{docsDir}/plans/YYYY-MM-DD-<slug>/`; entry point is always `README.md`.
+
+- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
+- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
+
+Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent after max retries)
+
+## Human overview doc
+
+When humanDoc=true AND a plan file was written:
+
+- **Output**: `{plan-folder}/overview.html` (`guiPlanFormat` = `html`, default) or `overview.md` (`md`).
+- **Generator**: Dispatch `cf-writer-deep`. Give it the just-written plan (`README.md` + any `phase-N-*.md`), the matching template at `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/templates/overview-template.{html,md}`, and the output path. Fill `<!-- FILL: … -->` markers. HTML-escape injected prose (`<`, `&`, `Foo<T>`).
+- **Content**: SHORT, decision-focused — **Plan at a Glance** (Phases + Tasks counts from the plan), problem/intent, solution big picture, key decisions (one line each), ASCII diagram in `<pre>`/code fence (no Mermaid). Write Problem & Intent and Solution as bullet lists (`<ul class="bullets">` / `-`), not paragraphs. Do NOT copy the task list.
+- **Point-in-time**: generated once; not updated with Progress.
+- **Skip** when humanDoc=false — default, fast without `--gui`, or `--inline`.
+
+## Step 2 explorer prompt
+
+Use when dispatching `cf-explorer`:
+
+> Explore the codebase for: [user request]
+> Context file: [docsDir/context/<task-id>.json]
+> Confirmed assumptions: [from Step 1] | Scope: [from Step 1]
+> Answer: (1) structure & modules, (2) affected files/functions, (3) patterns/conventions/deps, (4) existing tests/configs/docs
+
+> **Hard mode** — second call:
+> Blast-radius for [files from first call]: (1) importers/dependents, (2) what breaks, (3) public API consumers, (4) test coverage gaps
+
+## Step 3 planner prompt
+
+Use when dispatching `cf-planner` (after the spawn/`model` line in SKILL.md):
+
+> Plan: [user request]
+> Context file: [docsDir/context/<task-id>.json] (cf-explorer findings already written; read it, then update with plan findings)
+> Confirmed assumptions: [from Step 1] | User preferences: [from Step 1]
+> Codebase context: [full cf-explorer report]
+> Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
+
+> **Hard mode**: 3–4 approaches; each needs migration path, rollback, incremental deploy. Include blast-radius findings.

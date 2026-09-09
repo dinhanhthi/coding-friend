@@ -212,6 +212,27 @@ test("Codex must-contain fails on unreadable files even in fixture mode", async 
   assert.ok(hit, "expected unreadable must-contain file to fail, not skip");
 });
 
+test("Codex lint reports leftover subagent_type", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-subagent-"));
+  await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.writeFile(
+    path.join(root, "plugin-codex", "skills", "cf-x", "SKILL.md"),
+    "Dispatch mentions subagent_type leftover.\n",
+  );
+
+  const issues = await findCodexArtifactLintIssues(root, { strict: false });
+  const hit = issues.find(
+    (issue) =>
+      issue.file === "plugin-codex/skills/cf-x/SKILL.md" &&
+      issue.type === "Claude subagent type",
+  );
+  assert.ok(hit, "expected bare subagent_type to be reported");
+  assert.match(hit.value, /subagent_type/);
+});
+
 test("Codex lint reports fenced run_in_background in skill sub-files", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-fenced-bg-"));
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x", "modes"), {
@@ -288,7 +309,7 @@ test("source lint reports leftover Claude tool names in plugin skills", async ()
   }
 });
 
-test("source lint skips Phase 3 leftover files", async () => {
+test("source lint reports leftovers in cf-plan/cf-review and still skips bootstrap", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-source-skip-"));
   await writeSourceLintFixture(root, {
     "plugin/skills/cf-plan/SKILL.md":
@@ -312,8 +333,14 @@ test("source lint skips Phase 3 leftover files", async () => {
     leftoverFiles.includes("plugin/skills/cf-x/SKILL.md"),
     "expected in-scope skill to be reported for Agent tool",
   );
-  assert.equal(leftoverFiles.includes("plugin/skills/cf-plan/SKILL.md"), false);
-  assert.equal(leftoverFiles.includes("plugin/skills/cf-review/SKILL.md"), false);
+  assert.ok(
+    leftoverFiles.includes("plugin/skills/cf-plan/SKILL.md"),
+    "expected cf-plan leftovers to be reported",
+  );
+  assert.ok(
+    leftoverFiles.includes("plugin/skills/cf-review/SKILL.md"),
+    "expected cf-review leftovers to be reported",
+  );
   assert.equal(leftoverFiles.includes("plugin/context/bootstrap.md"), false);
 
   for (const excluded of [

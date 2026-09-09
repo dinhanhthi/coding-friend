@@ -8,8 +8,6 @@ const repoRoot = path.resolve(path.dirname(scriptPath), "..");
 const SHARED_MARKDOWN_FILES = ["plugin/context/bootstrap.md", "README.md"];
 
 const SOURCE_PHASE3_EXCLUDED = new Set([
-  "plugin/skills/cf-plan/SKILL.md",
-  "plugin/skills/cf-review/SKILL.md",
   "plugin/context/bootstrap.md",
 ]);
 
@@ -56,7 +54,7 @@ const CODEX_PATTERNS = [
   { name: "Claude plugin root", regex: /CLAUDE_PLUGIN_ROOT/g },
   {
     name: "Claude subagent type",
-    regex: /subagent_type:\s*"coding-friend:cf-[a-z0-9-]+"/g,
+    regex: /\bsubagent_type\b/g,
   },
   { name: "Claude question tool", regex: /\bAskUserQuestion\b/g },
   { name: "Claude task tool", regex: /\b(?:TaskCreate|TaskUpdate)\b/g },

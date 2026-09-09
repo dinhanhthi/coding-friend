@@ -47,6 +47,8 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 bash "${PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
 ```
 
+**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
+
 ### Step 3: Assess change size
 
 ```bash
@@ -67,7 +69,7 @@ Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANG
 
 - **QUICK mode**: Skip.
 - **STANDARD mode**: If `memory_search` is available, call `{ "query": "<area — e.g. auth, API, database>", "limit": 5 }`. Hints only.
-- **DEEP mode**: Launch **cf-explorer**. Spawn the `cf-explorer` custom agent. Pass changed files; ask callers, deps, nearby conventions, related tests. cf-explorer searches memory itself — do NOT also call `memory_search`.
+- **DEEP mode**: Dispatch `cf-explorer`. Pass changed files; ask callers, deps, nearby conventions, related tests. cf-explorer searches memory itself — do NOT also call `memory_search`.
 
 Memory and explorer results are **hints** — verify against code.
 
@@ -77,7 +79,7 @@ Read each changed file in full — not just the diff.
 
 ### Step 6: Dispatch the cf-reviewer agent
 
-Spawn the `cf-reviewer` custom agent. Pass:
+Dispatch `cf-reviewer`. Pass:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
 >
@@ -93,6 +95,10 @@ Spawn the `cf-reviewer` custom agent. Pass:
 > Run the review now. Return the unified report in the 🚨/⚠️/💡/📋 format.
 
 Wait for the report.
+
+### Step 6.7: Emit `--out` prompt file (only when `out=true`)
+
+Write the in-session report to a temp file, then run the build-prompt pipeline (sets `CF_EMBED_CONTEXT_FILE` on the build stage). Show the report, then the "📝 Review Prompt Ready" panel and `> When all external agents finish, run $cf-review-in <label> to collect all results.`; skip Steps 7 and 10's banner.
 
 ### Step 7: Collect the report
 
@@ -110,32 +116,12 @@ If the review found **architectural insights** or **recurring patterns**, call `
 
 ### Step 10: Final output
 
-Display the full report and the status banner in one message. Do NOT split them.
-
 Display the cf-reviewer's report first, then append the appropriate banner.
 
-Skip this banner when `out=true` — Step 6.7 already showed the export panel.
+MUST: display the full report and the status banner in **one message**; do NOT split them.
 
-**If NO critical issues were found:**
+Skip when `out=true`. One banner: `[✅ Code Review Complete | ⚠️ Review Complete — Action Needed]`
 
-```
-╔══════════════════════════════════════════════════╗
-║  ✅  Code Review Complete                        ║
-╚══════════════════════════════════════════════════╝
-```
+> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found. `$cf-commit` when ready.
 
-> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
->
-> You're clear to commit. Run `$cf-commit` when ready.
-
-**If critical issues were found** — show the banner, then wait for the user's answer:
-
-```
-╔══════════════════════════════════════════════════╗
-║  ⚠️  Review Complete — Action Needed             ║
-╚══════════════════════════════════════════════════╝
-```
-
-> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
->
-> Resolve the critical issues listed above. Shall I help fix them now?
+> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** — resolve before commit. Fix now?
