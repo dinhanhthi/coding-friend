@@ -3,8 +3,12 @@ import {
   claudeLocalSettingsPath,
   claudeProjectSettingsPath,
   claudeSettingsPath,
+  knownMarketplacesPath,
   pluginCachePath,
 } from "./paths.js";
+import { join } from "path";
+
+const MARKETPLACE_NAME = "coding-friend-marketplace";
 
 export interface PermissionRule {
   rule: string;
@@ -313,7 +317,23 @@ export const STATIC_RULES: PermissionRule[] = [
  * Read rules use ~ when CLAUDE_CONFIG_DIR is unset (Read() expands ~);
  * when CLAUDE_CONFIG_DIR is set the absolute path from pluginCachePath() is used.
  */
-export function buildPluginScriptRules(): PermissionRule[] {
+/**
+ * The plugin root Claude Code passes as `${CLAUDE_PLUGIN_ROOT}`: the
+ * marketplace's install location plus the `plugin/` subdir. A directory-source
+ * marketplace (`cf dev on`) resolves to the repo; a fetched one to the clone
+ * under `~/.claude/plugins/marketplaces/`. Null when not registered.
+ */
+export function resolveMarketplacePluginRoot(): string | null {
+  const data = readJson<Record<string, { installLocation?: string }>>(
+    knownMarketplacesPath(),
+  );
+  const installLocation = data?.[MARKETPLACE_NAME]?.installLocation;
+  return installLocation ? join(installLocation, "plugin") : null;
+}
+
+export function buildPluginScriptRules(
+  marketplaceRoot: string | null = resolveMarketplacePluginRoot(),
+): PermissionRule[] {
   // Bash rules require absolute path — ~ is not expanded for Bash()
   const absBase = pluginCachePath();
   // Read rules prefer ~ form (Read expands it); fall back to absolute when config dir is overridden
@@ -349,14 +369,43 @@ export function buildPluginScriptRules(): PermissionRule[] {
       category: "Plugin Scripts",
       recommended: true,
     },
+    // Skills and hooks self-reference via ${CLAUDE_PLUGIN_ROOT}, which points at
+    // the marketplace's install location — the repo itself in dev mode, the
+    // clone under ~/.claude/plugins/marketplaces/ otherwise. Neither is the
+    // versioned cache above, so those paths need their own rules.
+    ...(marketplaceRoot
+      ? [
+          {
+            rule: `Bash(bash ${marketplaceRoot}/*)`,
+            description:
+              "[execute] Run plugin scripts from the marketplace root (unquoted) · Used by: all skills",
+            category: "Plugin Scripts",
+            recommended: true,
+          },
+          {
+            rule: `Bash(bash "${marketplaceRoot}/*)`,
+            description:
+              "[execute] Run plugin scripts from the marketplace root (quoted) · Used by: all skills",
+            category: "Plugin Scripts",
+            recommended: true,
+          },
+          {
+            rule: `Read(${marketplaceRoot}/**)`,
+            description:
+              "[read-only] Read plugin files from the marketplace root · Used by: hooks, agents",
+            category: "Plugin Scripts",
+            recommended: true,
+          },
+        ]
+      : []),
   ];
 }
 
 /**
  * Get all permission rules: Tier 1 (static) + Tier 2 (plugin scripts).
  */
-export function getAllRules(): PermissionRule[] {
-  return [...STATIC_RULES, ...buildPluginScriptRules()];
+export function getAllRules(marketplaceRoot?: string | null): PermissionRule[] {
+  return [...STATIC_RULES, ...buildPluginScriptRules(marketplaceRoot)];
 }
 
 /** Backward-compatible alias. */
@@ -565,9 +614,11 @@ export function extractTag(description: string): string | null {
 
 // ─── Migration ──────────────────────────────────────────────────────
 
-/** Pattern that identifies old per-script plugin-path permissions. */
-const OLD_PLUGIN_PATH_PATTERN =
-  "/.claude/plugins/cache/coding-friend-marketplace/coding-friend/";
+/** Patterns that identify old per-script plugin-path permissions. */
+const OLD_PLUGIN_PATH_PATTERNS = [
+  "/.claude/plugins/cache/coding-friend-marketplace/coding-friend/",
+  `/.claude/plugins/marketplaces/${MARKETPLACE_NAME}/plugin/`,
+];
 
 /**
  * Remove stale old-format per-script plugin rules from a settings file.
@@ -581,7 +632,9 @@ export function cleanupStalePluginRules(settingsPath: string): number {
 
   // Find old plugin-path rules that are NOT in the current rule set
   const stale = existing.filter(
-    (r) => r.includes(OLD_PLUGIN_PATH_PATTERN) && !currentRules.has(r),
+    (r) =>
+      OLD_PLUGIN_PATH_PATTERNS.some((p) => r.includes(p)) &&
+      !currentRules.has(r),
   );
 
   if (stale.length === 0) return 0;

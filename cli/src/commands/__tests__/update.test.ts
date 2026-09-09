@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, lstatSync } from "fs";
 
 vi.mock("fs", async () => {
   const actual = await vi.importActual<typeof import("fs")>("fs");
-  return { ...actual, readFileSync: vi.fn() };
+  return { ...actual, readFileSync: vi.fn(), lstatSync: vi.fn() };
 });
 
 vi.mock("../../lib/exec.js", () => ({
@@ -126,6 +126,7 @@ const mockReadAgyMcpConfig = vi.mocked(readAgyMcpConfig);
 const mockResolveHostFlags = vi.mocked(resolveHostFlags);
 const mockResolveScope = vi.mocked(resolveScope);
 const mockReadFileSync = vi.mocked(readFileSync);
+const mockLstatSync = vi.mocked(lstatSync);
 const mockReadJson = vi.mocked(readJson);
 const mockIsMemoryMcpRegistered = vi.mocked(isMemoryMcpRegistered);
 const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
@@ -831,5 +832,38 @@ describe("updateCommand — agy host", () => {
       "claude",
       expect.anything(),
     );
+  });
+});
+
+describe("updateCommand — local dev link guard", () => {
+  const CLI_INSTALL_ARGS = ["install", "-g", "coding-friend-cli@latest"];
+
+  function setupCliUpdateAvailable(linked: boolean) {
+    // repo CLI 1.0.0 (from the mocked package.json) is behind npm 2.0.0
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "npm" && args?.[0] === "view") return "2.0.0";
+      if (cmd === "npm" && args?.[0] === "prefix") return "/usr/local";
+      return null;
+    });
+    mockLstatSync.mockImplementation(((p: unknown) => {
+      if (!String(p).includes("coding-friend-cli")) throw new Error("ENOENT");
+      return { isSymbolicLink: () => linked };
+    }) as unknown as typeof lstatSync);
+  }
+
+  it("skips the CLI self-update when the global CLI is npm-linked to a repo", async () => {
+    setupCliUpdateAvailable(true);
+
+    await updateCommand({ cli: true });
+
+    expect(mockRun).not.toHaveBeenCalledWith("npm", CLI_INSTALL_ARGS);
+  });
+
+  it("runs the CLI self-update on a normal global install", async () => {
+    setupCliUpdateAvailable(false);
+
+    await updateCommand({ cli: true });
+
+    expect(mockRun).toHaveBeenCalledWith("npm", CLI_INSTALL_ARGS);
   });
 });

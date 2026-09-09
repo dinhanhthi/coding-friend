@@ -107,7 +107,7 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 ## Development
 
-[docs/plugin-dev.md](docs/plugin-dev.md) — Claude, Codex, omp, and Antigravity local-dev in one place.
+[CONTRIBUTING.md](CONTRIBUTING.md) — how local dev works and what to do after each change.
 
 ## License
 

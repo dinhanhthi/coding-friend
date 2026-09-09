@@ -37,6 +37,7 @@ vi.mock("../../lib/shell-completion.js", () => ({
 
 vi.mock("../../lib/statusline.js", () => ({
   ensureStatusline: vi.fn(),
+  getInstalledVersion: vi.fn(() => null),
 }));
 
 vi.mock("../../lib/log.js", () => ({
@@ -52,7 +53,7 @@ vi.mock("../../lib/log.js", () => ({
 }));
 
 import { ensureShellCompletion } from "../../lib/shell-completion.js";
-import { ensureStatusline } from "../../lib/statusline.js";
+import { ensureStatusline, getInstalledVersion } from "../../lib/statusline.js";
 import { readJson } from "../../lib/json.js";
 import { existsSync } from "fs";
 import {
@@ -67,6 +68,7 @@ import { run } from "../../lib/exec.js";
 
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockEnsureStatusline = vi.mocked(ensureStatusline);
+const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockReaddirSync = vi.mocked(readdirSync);
 const mockStatSync = vi.mocked(statSync);
@@ -214,14 +216,11 @@ describe("devSyncCommand", () => {
     mockReadJson.mockReset();
     mockReadJson.mockReturnValue(devState);
     mockExistsSync.mockReturnValue(true);
-    // readdirSync: first call lists cache versions, subsequent calls list dir contents for copy
-    let readdirCallCount = 0;
-    mockReaddirSync.mockImplementation(() => {
-      readdirCallCount++;
-      if (readdirCallCount === 1)
-        return ["0.21.0"] as unknown as ReturnType<typeof readdirSync>;
-      return [] as unknown as ReturnType<typeof readdirSync>; // empty dir for copyDirRecursive
-    });
+    mockGetInstalledVersion.mockReturnValue("0.21.0");
+    // Empty dirs — copyDirRecursive has nothing to walk
+    mockReaddirSync.mockReturnValue(
+      [] as unknown as ReturnType<typeof readdirSync>,
+    );
     mockStatSync.mockReturnValue({
       isDirectory: () => true,
       mtimeMs: Date.now(),
@@ -267,5 +266,46 @@ describe("devSyncCommand", () => {
     expect(log.warn).not.toHaveBeenCalledWith(
       expect.stringContaining("hooks.json"),
     );
+  });
+
+  it("syncs into the installed version dir, not the newest-mtime one", async () => {
+    setupSyncMocks();
+    mockGetInstalledVersion.mockReturnValue("0.43.0");
+    // An orphaned dir left by an earlier version bump, touched more recently
+    mockReaddirSync.mockImplementation(
+      (p: Parameters<typeof readdirSync>[0]) =>
+        (String(p).includes("coding-friend-marketplace")
+          ? ["0.42.4", "0.43.0"]
+          : []) as unknown as ReturnType<typeof readdirSync>,
+    );
+    mockStatSync.mockImplementation(
+      (p: Parameters<typeof statSync>[0]) =>
+        ({
+          isDirectory: () => true,
+          mtimeMs: String(p).includes("0.42.4") ? 2000 : 1000,
+        }) as unknown as ReturnType<typeof statSync>,
+    );
+
+    await devSyncCommand();
+
+    expect(log.step).toHaveBeenCalledWith(expect.stringContaining("0.43.0"));
+    expect(log.step).not.toHaveBeenCalledWith(
+      expect.stringContaining("0.42.4"),
+    );
+  });
+
+  it("errors when the installed version dir is missing from the cache", async () => {
+    setupSyncMocks();
+    mockGetInstalledVersion.mockReturnValue("0.43.0");
+    mockExistsSync.mockImplementation(
+      (p: Parameters<typeof existsSync>[0]) => !String(p).includes("0.43.0"),
+    );
+
+    await devSyncCommand();
+
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining("cached plugin version"),
+    );
+    expect(mockCopyFileSync).not.toHaveBeenCalled();
   });
 });

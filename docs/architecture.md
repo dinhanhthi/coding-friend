@@ -278,7 +278,7 @@ Only the `plugin/` directory is cached by Claude Code — `cli/`, `docs/`, `webs
 
 ### Other hosts
 
-Local-dev, install layout, and host differences: [plugin-dev.md](./plugin-dev.md).
+Local-dev setup and the per-change update flow: [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 - **Codex** _(beta)_ — generated `plugin-codex/` artifact; Codex copies it into `~/.codex/plugins/cache/`.
 - **omp** ([oh-my-pi](https://omp.sh/)) _(beta)_ — **bridge**, not a marketplace plugin. [`plugin/omp/extension.ts`](../plugin/omp/extension.ts) shells [`plugin/hooks/*.sh`](../plugin/hooks/) with `CF_HOST=omp`. Agents go to `~/.omp/agent/agents/`; skills inherit from `~/.claude`.

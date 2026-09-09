@@ -5,12 +5,10 @@ description: >
   Triggers: "scan the project", "scan the codebase", "bootstrap memory", "populate
   memory", "analyze the project". Token-heavy — always warn before proceeding.
 created: 2026-03-16
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-scan
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Scan the project and bootstrap the memory system. User input: **$ARGUMENTS**
 
@@ -18,29 +16,17 @@ Scan the project and bootstrap the memory system. User input: **$ARGUMENTS**
 
 New projects start with empty memory. This skill scans the codebase, extracts structured knowledge (architecture, conventions, tech stack, features, infrastructure), and stores it as memories. Safe to run multiple times — existing memories are updated, not duplicated.
 
-## Folder
-
-Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-friend/config.json` for custom `docsDir` if it exists.
-
-**IMPORTANT — path resolution:**
-
-- Use `MAIN_REPO_ROOT` from the SessionStart bootstrap context (injected via session-init.sh). If absent, fall back to running `pwd` for `$CWD` and use `$CWD` as `MAIN_REPO_ROOT`.
-- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) — do NOT search sub-folders
-- Use `CF_DOCS_ROOT` as the docs base dir (= `$MAIN_REPO_ROOT/{docsDir}` where `docsDir` comes from config, default `docs`)
-- Always resolve `file_path` as an **absolute path**: `{CF_DOCS_ROOT}/memory/{category}/{name}.md`
-- Never use relative paths in write specs — they may resolve incorrectly when the working directory contains nested git repos
+Output: `{CF_DOCS_ROOT}/memory/{category}/{name}.md`. Never use relative paths in write specs (nested git repos); always `{CF_DOCS_ROOT}` / absolute.
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 0.5: Context Budget Check
 
@@ -62,14 +48,11 @@ Tell the user:
 > - New memories will be **created** for discovered knowledge
 > - Target: ~10-15 memories covering architecture, conventions, features, infrastructure
 
-If `$ARGUMENTS` is provided, show it back: "I'll use your description to guide the scan: _{$ARGUMENTS}_"
+`$ARGUMENTS` is an optional free-form project description; when provided, show it back ("I'll use your description to guide the scan: _{$ARGUMENTS}_") and include it in every explorer prompt.
 
 **Ask the user to confirm before proceeding.** If they decline, stop.
 
-Read config:
-
-- Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) and `language` (default: `en`)
-- Store the project description from `$ARGUMENTS` (if any) for use in explorer prompts
+Read config from `CF_CONFIG_FILE` (= `$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default: `docs`) and `language` (default: `en`).
 
 ### Step 2: Structural Scan (Phase 1 — Main Agent)
 
@@ -204,60 +187,12 @@ Based on explorer findings, plan ~10-15 memories across categories:
 **4c. For each planned memory:**
 
 1. Check if a memory with matching `{category}/{slug}` exists in the lookup map
-2. If **exists** → delegate to cf-writer with `task: update` and `existing_file_action: overwrite`, then call `memory_update` with params: `id` (e.g. "features/auth-module"), `content` (full new markdown), `tags` (updated tags array)
+2. If **exists** → Dispatch `cf-writer` with `task: update` and `existing_file_action: overwrite`, then call `memory_update` with params: `id` (e.g. "features/auth-module"), `content` (full new markdown), `tags` (updated tags array)
 3. If **new** → assess complexity:
-   - Simple (short, factual) → delegate to **cf-writer** agent (low reasoning effort)
-   - Complex (nuanced architecture, deep trade-offs) → delegate to **cf-writer-deep** agent (medium reasoning effort)
+   - Simple (short, factual) → Dispatch `cf-writer` (low reasoning effort)
+   - Complex (nuanced architecture, deep trade-offs) → Dispatch `cf-writer-deep` (medium reasoning effort)
 
-**Write spec for cf-writer (same format as $cf-remember):**
-
-> **Backward compat:** When updating existing memory files without a date prefix, preserve the existing filename. Only new files use the `YYYY-MM-DD-<name>.md` format.
-
-```
-WRITE SPEC
-----------
-task: create | update
-file_path: {CF_DOCS_ROOT}/memory/{category}/YYYY-MM-DD-{name}.md
-language: {language from config}
-content: |
-  ---
-  title: "<Title>"
-  description: "<One-line summary for grep-based recall, under 100 chars>"
-  tags: [tag1, tag2, tag3]
-  created: YYYY-MM-DD
-  updated: YYYY-MM-DD
-  type: "<type based on category>"
-  importance: 3
-  source: scan
-  ---
-
-  # <Title>
-
-  ## Overview
-  <1-2 sentences>
-
-  ## Key Points
-  - <point>
-
-  ## State Machine
-  <If applicable: states, transitions, triggers, side effects>
-
-  ## Details
-  <Longer explanation>
-
-  ## Related
-  - <key files>
-readme_update: false
-auto_commit: false
-existing_file_action: overwrite
-```
-
-**Frontmatter rules:**
-
-- `source: scan` (not "conversation") — this distinguishes scanned memories from manually captured ones
-- `description` must be factual, searchable, under 100 chars
-- When updating: set `task: update`, update `updated` date, do NOT change `created`
-- `existing_file_action: overwrite` — scan always replaces full content (not append)
+Write spec (same format as $cf-remember) and frontmatter rules: `references/scan-templates.md` — `source: scan`, `existing_file_action: overwrite`, keep filenames of existing memories.
 
 **4d. Index via MCP:**
 
@@ -268,36 +203,7 @@ After each cf-writer saves a file, call `memory_store` (for new) or `memory_upda
 
 ### Step 5: Summary
 
-Print a summary table:
-
-```
-## Scan Complete
-
-| # | Category | Title | Action | Description |
-|---|----------|-------|--------|-------------|
-| 1 | features | Auth Module | created | JWT auth with httpOnly cookies and RS256 |
-| 2 | conventions | Naming Patterns | updated | PascalCase components, camelCase utils |
-| ... | | | | |
-
-Total: X memories (Y created, Z updated)
-Memory DB: indexed ✓ — or: MCP unavailable, files only
-```
-
-Then suggest next steps:
-
-> - Run `$cf-scan` again anytime to refresh project knowledge
-> - Use `$cf-remember` to capture specific knowledge from conversations
-> - Use `$cf-ask` to query the memory system
-
-## Interpreting `$ARGUMENTS`
-
-`$ARGUMENTS` is an optional free-form project description. Examples:
-
-- `$cf-scan` — scan with no additional context
-- `$cf-scan This is a Next.js e-commerce app with Stripe payments and PostgreSQL` — use description to guide scan
-- `$cf-scan Focus on the API layer and auth system` — narrow the scan focus
-
-When provided, include `$ARGUMENTS` in every explorer prompt so the scan is guided by the user's context.
+Print the summary table from `references/scan-templates.md`, then suggest `$cf-scan` again, `$cf-remember`, `$cf-ask`.
 
 ## Rules
 

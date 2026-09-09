@@ -1,24 +1,27 @@
 ---
 name: cf-verification
-description: Verify before claiming work is complete
+description: >
+  Completion gate — demands fresh verification evidence (test run, command output,
+  manual check) before any claim that work is done. TRIGGER — about to say "done",
+  "complete", "fixed", "passing", "ready to commit" or "ready to ship", or to
+  summarize finished work; the end of any cf-tdd, cf-fix, cf-plan, or cf-optimize
+  run; the user asks "is it done?" or "does it work?". SKIP — mid-task progress
+  notes, exploratory or read-only answers, and plans that have not been
+  implemented yet.
 user-invocable: false
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # Verification Before Completion
 
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
-
 ## Custom Guide
-
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-verification
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ## The Gate
 

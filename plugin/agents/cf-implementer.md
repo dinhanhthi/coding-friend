@@ -14,12 +14,10 @@ description: >
   use inline implementation (cf-tdd skill) for small changes instead.
 model: inherit
 created: 2026-02-17
-updated: 2026-08-21
+updated: 2026-09-09
 ---
 
 # Implementer Agent
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
 
 You are an implementation agent. By default you write code directly and efficiently. You support TDD when explicitly requested.
 

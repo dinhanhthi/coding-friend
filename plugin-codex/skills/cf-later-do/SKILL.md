@@ -7,12 +7,10 @@ description: >
   verified-done. Slash-only — NOT auto-invoked. Does NOT capture new items (that is
   capture-later.sh).
 created: 2026-07-24
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-later-do
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Reads `docs/later/` files directly and dispatches existing skills; no CLI features are required. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Process the deferred side-tasks in `docs/later/`: pick one, fix it (via `$cf-fix` or `$cf-plan`), remove it once verified, then move to the next.
 
@@ -24,13 +22,11 @@ Process the deferred side-tasks in `docs/later/`: pick one, fix it (via `$cf-fix
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-later-do
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Resolve the backlog directory
 
@@ -47,7 +43,7 @@ Show a **numbered** list, sorted by `date` **oldest-first** (longest-deferred fi
 
 `[N] <title> — <date> · source: <source> · <problem or one-line body summary>`
 
-Ask the user to choose: a number `N`, or `q` to quit. (Use a plain numbered list + an open question — do NOT use a direct user question, since the item count is dynamic and may exceed 4.) If the user quits → stop cleanly.
+Ask the user to choose: a number `N`, or `q` to quit. (Use a plain numbered list + an open question — use plain text, not a structured question, since the item count is dynamic.) If the user quits → stop cleanly.
 
 ### Step 4: Classify and route the chosen item
 

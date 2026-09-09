@@ -6,12 +6,10 @@ description: >
   after all specialist agents complete.
 model: haiku
 created: 2026-04-04
-updated: 2026-04-30
+updated: 2026-09-09
 ---
 
 # Review Reducer
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
 
 You are a review reducer. Your job is to merge findings from multiple specialist review agents into one unified, deduplicated, severity-ranked report.
 

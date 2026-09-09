@@ -1,17 +1,18 @@
 ---
 name: cf-fix
 description: >
-  Quick bug fix workflow. Use when the user reports a bug or broken behavior — e.g. "fix
-  this", "it's broken", "not working", "there's a bug", "this crashes", "debug this", "it
-  throws", "failing test", "regression", "unexpected behavior". Also triggers on stack
-  traces or error messages.
+  Quick bug-fix workflow — reproduce, find the root cause, fix via cf-implementer,
+  verify, auto-review. TRIGGER — the user reports a bug or broken behavior: "fix
+  this", "it's broken", "not working", "there's a bug", "this crashes", "debug
+  this", "it throws", "failing test", "regression", "unexpected behavior"; a pasted
+  stack trace or error message. SKIP — new features (use cf-plan or cf-tdd),
+  performance complaints (use cf-optimize), and recurring or hard-to-reproduce
+  bugs after a failed fix (use cf-sys-debug).
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-fix
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Fix the bug: **$ARGUMENTS**
 
@@ -23,7 +24,7 @@ Fix the bug: **$ARGUMENTS**
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-fix
 ```
 
-If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Understand the Bug
 
@@ -40,15 +41,7 @@ If output is not empty: `## Before` → before first step, `## Rules` → throug
 
 **3a. Check existing bug docs** (memory recall):
 
-Extract 2–3 keywords from the bug.
-
-**Primary — Memory MCP** (if `memory_search` is available):
-`{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
-
-**Fallback — grep** (`{docsDir}` from `.coding-friend/config.json`, default `docs`):
-
-1. Grep `^description:` in `{docsDir}/memory/bugs/**/*.md`
-2. Else grep `^tags:`
+Recall memory (Verbs in `${CLAUDE_PLUGIN_ROOT}/context/bootstrap.md`) with 2–3 keywords from the bug: `{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`; grep scope `{CF_DOCS_ROOT}/memory/bugs/**/*.md`.
 
 Read the top 1–2 matches; pass relevant findings to the explorer.
 
@@ -58,7 +51,7 @@ Read the top 1–2 matches; pass relevant findings to the explorer.
 2. **docsDir**: `.coding-friend/config.json` or `docs`
 3. **Context file**: `{docsDir}/context/{task-id}.json`
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass:
+Dispatch `cf-explorer`. Pass:
 
 > Diagnose this bug: [from $ARGUMENTS]
 > Error output: [Step 2]
@@ -100,7 +93,7 @@ Before changing code:
 
 ### Step 6: Implement Fix (via cf-implementer agent)
 
-Dispatch the **cf-implementer** agent. Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass the Step 3b context file.
+Dispatch `cf-implementer`. Pass the Step 3b context file.
 
 **Prompt template:**
 
@@ -134,61 +127,14 @@ Writes `<docsDir>/later/YYYY-MM-DD-<name>.md` (frontmatter: slug, problem, conve
 
 ### Step 7: Verify Agent Results + Retry on Failure
 
-Parse the **last non-empty line** of the implementer response — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
-
-- `[CF-RESULT: success]` → Step 8
-- `[CF-RESULT: failure] <reason>` → retry
-- Missing, malformed, or not last non-empty line → failure, reason `empty-output`. Never assume silent success.
-
-**On success:** confirm the report matches the Step 4 root cause, then Step 8.
-
-**Retry protocol** (max 1 retry):
-
-1. Notify:
-
-   ```
-   > ⟳ Attempt 1 failed (<reason>). Retrying with error context...
-   ```
-
-2. Update `{docsDir}/context/{task-id}.json` — add `previous_failure`:
-
-   ```json
-   {
-     "previous_failure": {
-       "reason": "<tests-failed|compile-error|empty-output>",
-       "error_summary": "<brief details from the agent>",
-       "attempt": 1
-     }
-   }
-   ```
-
-   Keep existing keys (`task_id`, `task_summary`, `relevant_files`, `key_findings`, `constraints`, `suggested_approach`).
-
-3. Re-dispatch cf-implementer:
-
-   > **RETRY** — Previous attempt failed: [reason]. Error details: [summary].
-   > Review the context file at [path] for full failure context.
-   > [original prompt from Step 6]
-
-4. Retry fails → escalate:
-
-   ```
-   > ✗ Both attempts failed. Summary:
-   > - Attempt 1: <reason>
-   > - Attempt 2: <reason>
-   > Please review and guide the next step.
-   ```
-
-   Then inline-fix with TDD discipline, or load `cf-sys-debug` if the user prefers.
-
-5. **Cleanup:** delete the context file after success, escalation, or cancel.
+Follow `${CLAUDE_PLUGIN_ROOT}/lib/protocols/implementer-result.md` (parse `[CF-RESULT:`, one retry with `previous_failure`, escalate, cleanup). On success: confirm the report matches the Step 4 root cause, then Step 8.
 
 ### Step 8: Save Bug Knowledge (conditional)
 
 **Only if the first Step 6/7 attempt failed** (re-dispatch or inline fix). First-attempt success → skip to Step 9.
 
 1. Read `language` (local `.coding-friend/config.json` overrides global, default `en`)
-2. Delegate to **cf-writer** via the **Agent tool** with `subagent_type: "coding-friend:cf-writer"`. Absolute `file_path`: `MAIN_REPO_ROOT` from bootstrap (fallback `pwd`), config from `CF_CONFIG_FILE`, docs base `CF_DOCS_ROOT`.
+2. Dispatch `cf-writer`. Absolute `file_path`: `MAIN_REPO_ROOT` from bootstrap (fallback `pwd`), config from `CF_CONFIG_FILE`, docs base `CF_DOCS_ROOT`.
 
 ```
 WRITE SPEC
@@ -253,7 +199,7 @@ If MCP is unavailable, warn the user — do not fail silently.
 
 ### Step 9: Auto-Review
 
-Automatically invoke `/cf-review` — use the Skill tool with skill name `coding-friend:cf-review`. Do not ask first.
+Load `/cf-review` now. Do not ask first.
 
 If `review.withCodex: true` in config, cf-review runs a Codex second opinion and merges — no flag needed here.
 
@@ -281,7 +227,7 @@ Status: **DONE**, **DONE_WITH_CONCERNS** (state caveats), or **BLOCKED** (what i
 After **2 failed fixes**, before a 3rd:
 
 1. Suggest `/cf-learn` to capture debugging insights so far
-2. If the user agrees, invoke `/cf-learn` — use the Skill tool with skill name `coding-friend:cf-learn`
+2. If the user agrees, Load `/cf-learn`
 3. Then attempt the 3rd fix
 
 After **3 failed fixes**:

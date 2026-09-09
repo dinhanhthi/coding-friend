@@ -279,7 +279,7 @@ export async function permissionCommand(opts: {
     log.info(
       "omp uses its own approval-mode; run `omp config` / omp approval settings — coding-friend does not manage omp permissions.",
     );
-    log.dim("See docs/plugin-dev.md (omp).");
+    log.dim("See plugin/omp/README.md.");
     return;
   }
   if (host === "agy") {

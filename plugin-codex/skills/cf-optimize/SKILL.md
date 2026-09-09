@@ -1,18 +1,17 @@
 ---
 name: cf-optimize
 description: >
-  Structured optimization — baseline, analyze, optimize, measure, compare. Auto-invoke for
-  performance/speed — e.g. "this is slow", "make it faster", "optimize", "performance",
-  "bottleneck", "too many queries", "high latency", "memory leak", "speed up", "timeout",
-  "N+1". Do NOT auto-invoke for minor refactors or style changes that are not
-  performance-related.
+  Structured performance work — baseline, analyze, optimize, measure, compare.
+  TRIGGER — "this is slow", "make it faster", "optimize", "performance",
+  "bottleneck", "too many queries", "high latency", "memory leak", "speed up",
+  "timeout", "N+1", or any request to reduce time, memory, or query count with
+  numbers to prove it. SKIP — minor refactors, readability or style changes, and
+  correctness bugs that are not performance-related (use cf-fix).
 created: 2026-02-20
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-optimize
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Optimize: **$ARGUMENTS**
 
@@ -24,13 +23,11 @@ Structured workflow for optimizing existing features, algorithms, or performance
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-optimize
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Detect Available Tools
 
@@ -68,7 +65,7 @@ Assess whether the optimization target is **simple** (single file/function, clea
 
 - **Simple target** (e.g., "optimize this function"): Search memory only (if `memory_search` tool is available). Call `memory_search` with: `{ "query": "<optimization target keywords — e.g. performance, latency, bottleneck, caching>", "limit": 5 }`. Then read the relevant source files directly.
 
-- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Launch the **cf-explorer agent** to map the system context. Spawn the `cf-explorer` custom agent. Pass:
+- **Complex target** (e.g., "API is slow", "reduce page load time", cross-module performance): Dispatch `cf-explorer` to map the system context. Pass:
 
   > Explore the codebase to understand the performance context for: [optimization target]
   >
@@ -120,7 +117,7 @@ Memory and explorer results are **hints** — always verify against actual code 
 
 ### Step 7: Implement (via cf-implementer agent)
 
-Dispatch the **cf-implementer agent** to implement the optimization test-first. Spawn the `cf-implementer` custom agent.
+Dispatch `cf-implementer` to implement the optimization test-first.
 
 **Prompt template:**
 
@@ -176,9 +173,9 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
 
 ### Step 10: Auto-Review
 
-Automatically invoke `$cf-review` — load `$cf-review`. Do NOT ask the user first, just run it.
+Load `$cf-review` now. Do not ask first.
 
-> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
+> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside the in-session review and merges both — no flag needed here (cf-review reads the config itself).
 
 ## Completion Protocol
 

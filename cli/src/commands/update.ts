@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { lstatSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
@@ -64,6 +64,42 @@ export function getCliVersion(): string {
 
 export function getLatestCliVersion(): string | null {
   return run("npm", ["view", "coding-friend-cli", "version"]);
+}
+
+/**
+ * Gate the CLI self-update: refuse it when the global install is a dev link.
+ */
+function shouldUpdateCli(requested: boolean): boolean {
+  if (!requested) return false;
+  if (isCliGlobalLinked()) {
+    log.info(
+      "CLI is npm-linked to a local repo — skipping CLI update. Build it there instead (`npm run dev`).",
+    );
+    return false;
+  }
+  return true;
+}
+
+/**
+ * True when the global `coding-friend-cli` is an `npm link` into a source repo.
+ * `npm install -g coding-friend-cli@latest` would replace that link with a
+ * registry copy, silently breaking a local dev setup, so the CLI self-update is
+ * skipped in that case.
+ */
+export function isCliGlobalLinked(): boolean {
+  const prefix = run("npm", ["prefix", "-g"]);
+  if (!prefix) return false;
+  const modules = "node_modules";
+  return [
+    join(prefix.trim(), "lib", modules, "coding-friend-cli"),
+    join(prefix.trim(), modules, "coding-friend-cli"),
+  ].some((p) => {
+    try {
+      return lstatSync(p).isSymbolicLink();
+    } catch {
+      return false;
+    }
+  });
 }
 
 export function getLatestVersion(): string | null {
@@ -226,7 +262,6 @@ async function updateClaudeCommand(
 ): Promise<void> {
   // If no component flags specified, update everything
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
   const doStatusline = updateAll || !!opts.statusline;
 
@@ -249,6 +284,8 @@ async function updateClaudeCommand(
     printBanner("✨ Coding Friend Update ✨");
     console.log();
   }
+
+  const doCli = shouldUpdateCli((updateAll || !!opts.cli) && !mode?.skipCli);
 
   // Step 1: Gather info
   const currentVersion = getInstalledVersion();
@@ -480,13 +517,14 @@ async function updateCodexCommand(
   mode?: UpdateRunMode,
 ): Promise<void> {
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
 
   if (!mode?.skipBanner) {
     printBanner("✨ Coding Friend Codex Update ✨");
     console.log();
   }
+
+  const doCli = shouldUpdateCli((updateAll || !!opts.cli) && !mode?.skipCli);
 
   if (doPlugin) {
     const beforeVersion = getCodexInstalledVersion();
@@ -592,7 +630,6 @@ async function updateOmpCommand(
   mode?: UpdateRunMode,
 ): Promise<void> {
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
   const scopes = ompUpdateScopes(opts);
 
@@ -600,6 +637,8 @@ async function updateOmpCommand(
     printBanner("✨ Coding Friend omp Update ✨");
     console.log();
   }
+
+  const doCli = shouldUpdateCli((updateAll || !!opts.cli) && !mode?.skipCli);
 
   if (doPlugin) {
     const cliVersion = getCliVersion();
@@ -672,13 +711,14 @@ async function updateAgyCommand(
   mode?: UpdateRunMode,
 ): Promise<void> {
   const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
-  const doCli = (updateAll || !!opts.cli) && !mode?.skipCli;
   const doPlugin = updateAll || !!opts.plugin;
 
   if (!mode?.skipBanner) {
     printBanner("✨ Coding Friend Antigravity Update (beta) ✨");
     console.log();
   }
+
+  const doCli = shouldUpdateCli((updateAll || !!opts.cli) && !mode?.skipCli);
 
   if (doPlugin) {
     try {

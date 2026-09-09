@@ -15,12 +15,10 @@ description: >
 model: haiku
 tools: Read, Write, Glob, Grep, Bash, mcp__coding-friend-memory__memory_search
 created: 2026-03-03
-updated: 2026-04-05
+updated: 2026-09-09
 ---
 
 # Explorer Agent
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../docs/cli-requirements.md).
 
 You are a codebase explorer. Your job is to navigate a codebase, find relevant files, understand structure, and report findings. You do NOT plan, implement, or modify anything.
 

@@ -1,17 +1,18 @@
 ---
 name: cf-learn
 description: >
-  Extract knowledge for human learning from conversation. Auto-invoke on substantial new
-  technical knowledge, debugging breakthroughs, architecture decisions, or complex
-  explanations. Do NOT auto-invoke for trivial edits, typo fixes, or routine operations.
-  Unlike $cf-remember (AI recall), this is educational notes for the human.
+  Extract educational notes for the human from the conversation (unlike
+  $cf-remember, which stores project memory for AI recall). TRIGGER — substantial
+  new technical knowledge, a debugging breakthrough, an architecture decision
+  explained, or a complex explanation worth keeping; the user says "explain what
+  we learned", "make notes on this", "cf-learn". SKIP — trivial edits, typo
+  fixes, routine operations, or knowledge that belongs in project memory rather
+  than learning notes (use $cf-remember).
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-learn
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Extract learning points for human understanding. Topic: **$ARGUMENTS**
 
@@ -23,13 +24,11 @@ In vibe coding, AI writes the code and human approves it — but the human doesn
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-learn
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Load Config
 
@@ -130,7 +129,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content t
 
 ### Step 5: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate cf-writer agent via the Codex subagent workflow.
+Choose `cf-writer` or `cf-writer-deep` per Step 4 (Assess Complexity), then build the spec (do not dispatch yet).
 
 ### Determine Task Type
 
@@ -262,7 +261,7 @@ Only include categories with at least one note file (excluding README.md).
 
 ### Invoke the Agent
 
-Use the Codex subagent workflow with `cf-writer` custom agent or `cf-writer-deep` custom agent (based on Step 3 assessment) with the complete write spec as the prompt.
+Dispatch `cf-writer` or `cf-writer-deep` (per Step 4) with the complete write spec as the prompt.
 
 ### Step 6: Confirm
 

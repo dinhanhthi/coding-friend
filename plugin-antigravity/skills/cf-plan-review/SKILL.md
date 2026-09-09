@@ -3,12 +3,10 @@ name: cf-plan-review
 description: >
   Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; does NOT review code (use /cf-review).
 created: 2026-09-05
-updated: 2026-09-05
+updated: 2026-09-09
 ---
 
 # /cf-plan-review
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Reads the plan folder and writes `review.md` directly; optional external reviewers are headless CLIs already on PATH. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Review the plan: **$ARGUMENTS**
 
@@ -23,13 +21,11 @@ Review a saved `/cf-plan` folder (not application code) with a fresh, clean-cont
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-plan-review
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Resolve the plan and flags
 
@@ -46,7 +42,7 @@ Read `docsDir` from `.coding-friend/config.json` (default: `docs`). Prefer `CF_D
 
 What remains is `<plan>`.
 
-If `<plan>` is empty: list folders in `{docsDir}/plans/` newest first (`ls -t`) and ask which plan to review using a direct user question.
+If `<plan>` is empty: list folders in `{docsDir}/plans/` newest first (`ls -t`) and Ask the user which plan to review.
 
 **Resolve the plan entry file** (same rules as `/cf-plan-resume`):
 
@@ -72,10 +68,9 @@ mkdir -p "${CF_DOCS_ROOT}/reviews" && \
 
 Skip when `agents=[]`.
 
-For each agent, spawn one background Bash. Do **not** wait; the harness reports when each finishes. No poll/sleep.
+For each agent, run one Bash command in the background (do not wait); the harness reports when each finishes.
 
 ```
-run_in_background: true
 bash "<plugin-root>/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<slug>-plan-result-<agent>.md" "${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md"
 ```
 
@@ -83,7 +78,7 @@ Proceed immediately to Step 4.
 
 ### Step 4: In-session review
 
-Use the `invoke_subagent` with a fresh subagent. Do **not** set `context: fork`. Do **not** pass a `subagent_type`. A fresh default-type subagent inherits this skill's model.
+Dispatch a fresh general-purpose subagent (no Coding Friend agent name; not a fork of this context). It inherits this skill's model.
 
 Prompt = the contents of `${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md`, plus:
 
@@ -110,7 +105,7 @@ Never block on an external reviewer — failures degrade gracefully.
 
 **When no external source survived:** use Source 1 as-is. Do not reformat.
 
-**When any external source survived:** merge via **cf-reviewer-reducer** (`invoke_subagent` with agent `cf-reviewer-reducer`). Source 1 is the in-session report; each surviving external review is a numbered source:
+**When any external source survived:** merge via Dispatch `cf-reviewer-reducer`. Source 1 is the in-session report; each surviving external review is a numbered source:
 
 > Merge these review reports into one unified, deduplicated, severity-ranked report.
 >
@@ -138,7 +133,7 @@ Delete `${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md`. Keep `*-plan-result-*.md
 
 ### Step 8: Offer to apply findings
 
-If any 🚨 or ⚠️ findings exist, ask with a direct user question: "Apply Critical/Important findings to the plan?"
+If any 🚨 or ⚠️ findings exist, Ask the user: "Apply Critical/Important findings to the plan?"
 
 If the user agrees, edit `README.md` / `phase-N-*.md` yourself (do **not** dispatch cf-implementer). For a legacy single-file plan, edit `<slug>.md`.
 

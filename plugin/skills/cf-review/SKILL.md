@@ -1,18 +1,20 @@
 ---
 name: cf-review
 description: >
-  Dispatch code review to a subagent. Triggers: "review this", "review my changes", "check
-  the code", "code review", "any issues with this?", "review before merge", "review the
-  diff". Also for reviewing specific files, commits, or branches.
+  Dispatch a multi-agent code review of the current changes and report Critical /
+  Important / Suggestions / Summary. TRIGGER — "review this", "review my changes",
+  "check the code", "code review", "any issues with this?", "review before merge",
+  "review the diff"; reviewing specific files, commits, or branches;
+  automatically after cf-plan, cf-fix, and cf-optimize complete. SKIP — reviewing
+  a plan document (use /cf-plan-review), quick questions about how code works
+  (use /cf-ask), and formatting-only changes.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 model: opus
 ---
 
 # /cf-review
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 > ✨ **CODING FRIEND** → /cf-review activated
 
@@ -30,7 +32,7 @@ Invoked by `/cf-plan` (after all tasks), `/cf-fix` (after verified fix), and `/c
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review
 ```
 
-If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Identify the target
 
@@ -42,42 +44,11 @@ If output is not empty: `## Before` → before first step, `## Rules` → throug
 
 **Codex dual-review flag:**
 
-- `--with-codex` (alias `--codex`) → `codex=true`; strip the flag before other parsing.
-- Else read `review.withCodex` from config (`CF_CONFIG_FILE`, default `.coding-friend/config.json`). `true` → `codex=true` (how `/cf-plan`, `/cf-fix`, `/cf-optimize` opt in). Absent/`false` → `codex=false`.
-- When `codex=true`, run Claude's own review (Steps 2–6) **and** Codex in parallel, then merge (Steps 6.5–7). `run-codex-review.sh` auto-scopes: feature branch → `codex review --base <base>`; base branch with unpushed commits → `--base <upstream>`; only uncommitted → `--uncommitted`; local-only → `--commit HEAD`. Covers committed-on-base work that `gather-diff.sh` misses. `--base`/`--commit` omit uncommitted/untracked files.
-- **Target compatibility:** auto-scope matches the **default target** only (empty `$ARGUMENTS`, or natural-language that still reviews the default set). File path or commit range → do NOT run Codex. Print:
-
-  > ⚠ `--with-codex` only applies to the default uncommitted-changes review; Codex does not support the target `<target>`. Running Claude-only review.
-
-  Set `codex=false`; skip Steps 2.5/6.5.
-
-**External headless-reviewer flags:**
-
-- After the codex block, parse `--claude`, `--gemini`, `--cursor`, `--grok` (and `--with-<agent>` aliases) into `agents=[…]`; strip them.
-- **Host-match no-op:** skip a matching flag only when a `HOST:` line exists **and** equals the flag. If `HOST:` is `claude` and `--claude` was passed, drop `claude` and print:
-
-  > ⚠ `--claude` skipped: Claude is already the in-session reviewer.
-
-  No `HOST:` line or a different value → do **NOT** skip. When in doubt, run it.
-
-- When `agents` is non-empty, run Claude's own review (Steps 2–6) **and** each agent in parallel (Steps 2.5/6.5), then merge (Step 7). Each agent: `run-agent-review.sh` (read-only headless CLI) on the **exact `gather-diff.sh` diff** (same set as Claude, unlike Codex auto-scope).
-- **Target compatibility:** same as Codex — default target only. File path or commit range → print:
-
-  > ⚠ External reviewer flags only apply to the default uncommitted-changes review; they do not support the target `<target>`. Running Claude-only review.
-
-  Clear `agents=[]`; skip agent Steps 2.5/6.5.
-
-**`--out` flag (manual external-review round-trip):**
-
-- `--out` → `out=true`; strip it.
-- **Mutual exclusivity:** `--out` + any headless-agent flag (`--claude`/`--gemini`/`--cursor`/`--grok`/`--codex`) → print:
-
-  > ⚠ `--out` (manual external review) can't combine with auto reviewer flags — ignoring the agent flags.
-
-  Clear `agents=[]`, set `codex=false`.
-
-- `--out` is default-target only; file-path/commit-range → warn, set `out=false`.
-- When `out=true`: Claude's own review (Steps 2–6), then a `/cf-review-out`-style prompt (Step 6.7). Skip Steps 2.5/6.5 and Step 7. Show Claude's report, then the "📝 Review Prompt Ready" panel.
+- `--with-codex`/`--codex` → `codex=true`; else `review.withCodex` from config
+- `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`
+- `--out` → `out=true` (exclusive with agent flags)
+- Default target only — file path or commit range disables all external reviewers.
+- Read now: `references/external-reviewers.md` before parsing flags / before spawn if needed.
 
 ### Step 2: Gather the diff
 
@@ -85,29 +56,16 @@ If output is not empty: `## Before` → before first step, `## Rules` → throug
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh"
 ```
 
+**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
+
 ### Step 2.5: Spawn Codex review in the background (only when `codex=true`)
 
-Skip when `codex=false`.
-
-Docs root + label `YYYY-MM-DD-review`. Use `CF_DOCS_ROOT` (absolute, from bootstrap) — not cwd-relative `docsDir`. Fallback: `$MAIN_REPO_ROOT/<docsDir>`. Background Bash (`run_in_background: true`) so Steps 3–6 run concurrently:
+Skip when no Codex/agent job applies, or when `out=true`. Label `YYYY-MM-DD-review`; `CF_DOCS_ROOT`. Background (do not wait; harness notifies). Run `run-codex-review.sh` only when `codex=true` and `out=false` (`--gemini` alone must NOT spawn Codex). Run `run-agent-review.sh` only when `agents` is non-empty and `out=false` (`--with-codex` alone must NOT run `run-agent-review.sh` with literal `<agent>`):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" ${CF_DOCS_ROOT}/reviews/<label>-result-codex.md
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> ${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md
 ```
-
-**Do NOT wait or inspect here.** Proceed to Step 3. Harness notifies on exit — no poll/sleep/`/tasks`. Check Codex in Step 6.5.
-
-**Spawn external agent reviews in the background (only when `agents` is non-empty):**
-
-Skip when `agents=[]` or `out=true`.
-
-For each agent, spawn background Bash (`run_in_background: true`):
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md"
-```
-
-Same `${CF_DOCS_ROOT}` and `<label>` as Codex. **Do NOT wait** — proceed to Step 3.
 
 ### Step 3: Assess change size
 
@@ -129,7 +87,7 @@ Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANG
 
 - **QUICK mode**: Skip.
 - **STANDARD mode**: If `memory_search` is available, call `{ "query": "<area — e.g. auth, API, database>", "limit": 5 }`. Hints only.
-- **DEEP mode**: Launch **cf-explorer**. Use the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`. Pass changed files; ask callers, deps, nearby conventions, related tests. cf-explorer searches memory itself — do NOT also call `memory_search`.
+- **DEEP mode**: Dispatch `cf-explorer`. Pass changed files; ask callers, deps, nearby conventions, related tests. cf-explorer searches memory itself — do NOT also call `memory_search`.
 
 Memory and explorer results are **hints** — verify against code.
 
@@ -139,7 +97,7 @@ Read each changed file in full — not just the diff.
 
 ### Step 6: Dispatch the cf-reviewer agent
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-reviewer"`. Pass:
+Dispatch `cf-reviewer`. Pass:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
 >
@@ -158,97 +116,15 @@ Wait for the report.
 
 ### Step 6.5: Collect & normalize the Codex review (only when `codex=true`)
 
-Skip when `codex=false`.
-
-1. **Wait for Codex.** After Step 6 the harness has usually notified. If not, wait — no poll/sleep. Read the result file only after exit.
-2. **Check Codex exit** (`CF_CODEX=...` stderr + exit code):
-   - `CF_CODEX=unavailable` (exit 127) → Codex not installed. Print:
-
-     > ⚠ Codex unavailable (not on PATH) — proceeding without it.
-
-     Set `codex=false`; skip the rest (Step 7 uses the cf-reviewer report as-is).
-
-   - `CF_CODEX=error` (non-zero) → print:
-
-     > ⚠ Codex review failed (<reason from stderr>) — proceeding with Claude-only review.
-
-     Set `codex=false`; skip the rest.
-
-   - `CF_CODEX=empty` (exit 0, no result file) → print:
-
-     > ⚠ Codex found no changes to review — proceeding with Claude-only review.
-
-     Set `codex=false`; skip the rest.
-
-   - `CF_CODEX=ok <file>` (exit 0) → continue. Optional `CF_CODEX_SCOPE=...` on stderr records the scope.
-
-3. Normalize to the standard 4-section format:
-
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
-   ```
-
-   Same `${CF_DOCS_ROOT}` path as Step 2.5. Emits `## 🔍 Codex Review` tagged `**[Codex]**`; map `[P2]`→⚠️, `[P3]`→💡, else (incl. `[P1]`/`[P0]`)→🚨. Unparseable output goes into Summary — never drop content.
-
-Never block on Codex — failure degrades to a Claude-only review.
-
-**Collect external agent reviews (only when `agents` was non-empty at spawn time):**
-
-Skip when `agents=[]` or `out=true`.
-
-1. **Wait for each agent** (same contract as Codex — harness notify, no polling).
-2. **Check each** (`CF_AGENT=…` stderr + exit code):
-   - `unavailable` (127) → `> ⚠ \<Agent\> unavailable (not on PATH) — proceeding without it.` Drop it.
-   - `error` (non-zero) → `> ⚠ \<Agent\> review failed (\<reason from stderr\>) — proceeding without it.` Drop it.
-   - `empty` (0) → `> ⚠ \<Agent\> found no changes to review — proceeding without it.` Drop it.
-   - `timeout` (124) → `> ⚠ \<Agent\> review timed out (\>Ns) — proceeding without it.` Drop it. (N = `review.agentTimeout`, default 300.)
-   - `ok <file>` (0) → keep the result file. **No normalize** — already CF-format.
-
-Never block on any external agent — failures degrade gracefully.
+Skip when no Codex/agent job applies, or when `out=true`. Wait for each spawned background job (no poll/sleep). Collect `CF_CODEX` only when a Codex job was spawned; collect `CF_AGENT` only when agent jobs were spawned. On stderr: `ok <file>` → keep (normalize Codex with `bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" <file>`; agents are already CF-format); any other status → print the matching `> ⚠ …` warning from `references/external-reviewers.md` and drop that source. Never block — failures degrade to the in-session review.
 
 ### Step 6.7: Emit `--out` prompt file (only when `out=true`)
 
-Skip when `out=false`.
-
-After Step 6, emit a `/cf-review-out`-style prompt with Claude's findings:
-
-1. Write Claude's Step 6 report to a temp file.
-2. Build the prompt:
-
-   ```bash
-   # CF_EMBED_CONTEXT_FILE must be set on the build-review-prompt.sh stage (it reads
-   # the var) — NOT as a pipeline-leading prefix, which would only reach gather-diff.sh.
-   mkdir -p "${CF_DOCS_ROOT}/reviews" && \
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" | \
-   CF_EMBED_CONTEXT_FILE="$tmp_report" \
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review-out/scripts/build-review-prompt.sh" \
-     "<label>" "<docsDir>" \
-   > "${CF_DOCS_ROOT}/reviews/<label>-prompt.md"
-   ```
-
-3. Show the "📝 Review Prompt Ready" panel and `> When all external agents finish, run /cf-review-in <label> to collect all results.`
-4. Display Claude's report **before** the panel.
-5. Skip Steps 7–10's completion banner. Step 8 if appropriate, then stop.
+Write the in-session report to a temp file, then run the build-prompt pipeline (sets `CF_EMBED_CONTEXT_FILE` on the build stage). Show the report, then the "📝 Review Prompt Ready" panel and `> When all external agents finish, run /cf-review-in <label> to collect all results.`; skip Steps 7 and 10's banner.
 
 ### Step 7: Collect the report
 
-Skip when `out=true` (Step 6.7 handles output).
-
-**When no external sources survived** (`codex=false` and all agents dropped): Step 6 is the final report (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary). Do NOT reformat — use as-is in Step 10.
-
-**When any external source survived** (codex and/or agents): merge via **cf-reviewer-reducer** (Agent tool, `subagent_type: "coding-friend:cf-reviewer-reducer"`). Claude's report = Source 1; each surviving external review = a numbered source:
-
-> Merge these review reports into one unified, deduplicated, severity-ranked report.
->
-> **Source 1 — Claude multi-agent review:**
-> [the full report from Step 6]
->
-> **Source K — \<Agent\> review:** (for each surviving external source)
-> [normalized Codex block for Codex; raw result file for claude/gemini/cursor/grok]
->
-> Tag each external finding with `[\<Agent\>]` (Codex → `[Codex]`, gemini → `[Gemini]`, etc.). Same file:line + same issue → one finding (highest severity) and note agreement. Output 🚨/⚠️/💡/📋.
-
-Use the reducer's merge in Step 10.
+Skip when `out=true`. No surviving externals → Step 6 is the final report (🚨/⚠️/💡/📋); use as-is. Else merge via Dispatch `cf-reviewer-reducer`. Source 1 — in-session review; each surviving external = Source K (normalized Codex; raw file for agents). Tag `[<Agent>]`. Same file:line + issue → one finding (highest severity). Use the merge in Step 10.
 
 ### Step 8: Mark review complete and display status
 
@@ -262,32 +138,12 @@ If the review found **architectural insights** or **recurring patterns**, call `
 
 ### Step 10: Final output
 
-Display the full report and the status banner in one message. Do NOT split them.
-
 Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix (e.g. `· Reviewed by: Claude + Codex + Gemini`). Label from `HOST` (capitalized); if no `HOST:` line, use `In-session AI` — do NOT hardcode `Claude`. Omit the suffix when only the in-session reviewer ran.
 
-Skip this banner when `out=true` — Step 6.7 already showed the export panel.
+MUST: display the full report and the status banner in **one message**; do NOT split them.
 
-**If NO critical issues were found:**
+Skip when `out=true`. One banner: `[✅ Code Review Complete | ⚠️ Review Complete — Action Needed]`
 
-```
-╔══════════════════════════════════════════════════╗
-║  ✅  Code Review Complete                        ║
-╚══════════════════════════════════════════════════╝
-```
+> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found. `/cf-commit` when ready.
 
-> Mode: **[QUICK|STANDARD|DEEP]** · No blocking issues found.
->
-> You're clear to commit. Run `/cf-commit` when ready.
-
-**If critical issues were found** — show the banner, then wait for the user's answer:
-
-```
-╔══════════════════════════════════════════════════╗
-║  ⚠️  Review Complete — Action Needed             ║
-╚══════════════════════════════════════════════════╝
-```
-
-> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** must be resolved before committing.
->
-> Resolve the critical issues listed above. Shall I help fix them now?
+> Mode: **[QUICK|STANDARD|DEEP]** · **[N] critical issue(s)** — resolve before commit. Fix now?

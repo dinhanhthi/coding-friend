@@ -20,7 +20,7 @@ Paths are relative to `${PLUGIN_ROOT}` (git checkout: `plugin/`). Repo-only `doc
 | Custom guides                | this file                                            | `.coding-friend/skills/<name>-custom/SKILL.md`                |
 | CLI required?                | `docs/cli-requirements.md` (repo) or CLI tiers below | —                                                             |
 | Architecture                 | `docs/architecture.md` (repo)                        | —                                                             |
-| Local plugin / host dev      | `docs/plugin-dev.md` (repo)                          | —                                                             |
+| Local plugin / host dev      | `CONTRIBUTING.md` (repo)                             | —                                                             |
 | Tokens / troubleshooting     | https://cf.dinhanhthi.com/docs/reference/            | —                                                             |
 
 Resolve plugin files as `${PLUGIN_ROOT}/<path>`. If that misses (developing this repo), try `plugin/<path>` from the workspace root.

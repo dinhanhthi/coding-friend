@@ -5,12 +5,10 @@ description: >
   Triggers: "get a second opinion", "external review", "review out", "send for review",
   "cf-review-out", "prepare review for gemini".
 created: 2026-03-23
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-review-out
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Generate a review prompt for an external agent: **$ARGUMENTS**
 
@@ -18,19 +16,17 @@ Generate a review prompt for an external agent: **$ARGUMENTS**
 
 Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`$cf-review-in`](/docs/skills/cf-review-in/) to collect results.
 
-> **Built-in headless reviewers?** If you have the relevant CLIs installed, you don't need this manual round-trip — run [`$cf-review`](/docs/skills/cf-review/) with `--claude`, `--gemini`, `--cursor`, `--grok`, or `--codex` instead. Each flag invokes that agent automatically, runs Claude's own review in parallel, and merges all surviving sources into one report with no copy-paste. For a manual round-trip **with Claude's context embedded**, use [`$cf-review --out`](/docs/skills/cf-review/) — it runs Claude's review first, then writes a prompt file here for [`$cf-review-in`](/docs/skills/cf-review-in/). This `$cf-review-out` + `$cf-review-in` flow remains the path for any other external AI (ChatGPT, Copilot) or a human reviewer.
+> **Built-in headless reviewers?** If you have the relevant CLIs installed, you don't need this manual round-trip — run [`$cf-review`](/docs/skills/cf-review/) with `--claude`, `--gemini`, `--cursor`, `--grok`, or `--codex` instead. Each flag invokes that agent automatically, runs the in-session review in parallel, and merges all surviving sources into one report with no copy-paste. For a manual round-trip **with the in-session findings embedded**, use [`$cf-review --out`](/docs/skills/cf-review/) — it runs the in-session review first, then writes a prompt file here for [`$cf-review-in`](/docs/skills/cf-review-in/). This `$cf-review-out` + `$cf-review-in` flow remains the path for any other external AI (ChatGPT, Copilot) or a human reviewer.
 
 ## Workflow
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review-out
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Determine the label
 

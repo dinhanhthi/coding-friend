@@ -4,11 +4,11 @@
 
 This section activates **iff `--auto` is present in the current cf-tdd invocation's arguments**.
 
-That single check is sufficient — Claude does NOT need to introspect whether cf-tdd was loaded transitively. Why: cf-plan owns the autopilot loop when a plan has `auto: true`, and cf-plan's contract explicitly forbids propagating `--auto` to cf-implementer (see "Autopilot note" in the Subagent Dispatch section above). So a transitively-loaded cf-tdd (e.g. cf-plan falling back to inline TDD when cf-implementer fails) will never see `--auto` in its own arguments, and this section will not fire. Direct user invocations like `$cf-tdd --auto …` always carry the flag and correctly activate this loop.
+That single check is sufficient — you do NOT need to introspect whether cf-tdd was loaded transitively. Why: cf-plan owns the autopilot loop when a plan has `auto: true`, and cf-plan's contract explicitly forbids propagating `--auto` to cf-implementer (see "Autopilot note" in the Subagent Dispatch section above). So a transitively-loaded cf-tdd (e.g. cf-plan falling back to inline TDD when cf-implementer fails) will never see `--auto` in its own arguments, and this section will not fire. Direct user invocations like `$cf-tdd --auto …` always carry the flag and correctly activate this loop.
 
 When active, after implementation completes its own verification (existing tests pass + typecheck/lint clean), run this loop instead of the standard Review Reminder:
 
-1. **Run review** — invoke the cf-review skill (load `$cf-review`, no extra args). cf-review will analyze uncommitted changes. Count this as review round 1.
+1. **Run review** — Load `$cf-review` (no extra args). cf-review will analyze uncommitted changes. Count this as review round 1.
 
 2. **Parse findings** — cf-review returns bullets under 4 emoji headers:
    - 🚨 **Critical** → must fix

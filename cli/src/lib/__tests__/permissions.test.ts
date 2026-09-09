@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -15,6 +15,7 @@ import {
   applyPermissions,
   groupByCategory,
   cleanupStalePluginRules,
+  resolveMarketplacePluginRoot,
   extractTag,
   auditDangerousRules,
   stripDangerousRules,
@@ -358,7 +359,7 @@ describe("STATIC_RULES", () => {
 
 describe("buildPluginScriptRules", () => {
   it("returns version-independent rules with absolute path for Bash", () => {
-    const rules = buildPluginScriptRules();
+    const rules = buildPluginScriptRules(null);
     expect(rules.length).toBe(4); // 2 Bash (unquoted + quoted) + 1 Read plugin + 1 Read config
     const bashRules = rules.filter((r) => r.rule.startsWith("Bash("));
     expect(bashRules).toHaveLength(2);
@@ -381,7 +382,7 @@ describe("buildPluginScriptRules", () => {
   });
 
   it("Read rules use tilde path (Read expands ~)", () => {
-    const rules = buildPluginScriptRules();
+    const rules = buildPluginScriptRules(null);
     const readRules = rules.filter((r) => r.rule.startsWith("Read("));
     for (const rule of readRules) {
       expect(rule.rule).toContain("~");
@@ -390,14 +391,14 @@ describe("buildPluginScriptRules", () => {
   });
 
   it("all rules have category Plugin Scripts", () => {
-    const rules = buildPluginScriptRules();
+    const rules = buildPluginScriptRules(null);
     for (const rule of rules) {
       expect(rule.category).toBe("Plugin Scripts");
     }
   });
 
   it("includes Read rules for plugin files and global config", () => {
-    const rules = buildPluginScriptRules();
+    const rules = buildPluginScriptRules(null);
     const readRules = rules.filter((r) => r.rule.startsWith("Read("));
     expect(readRules).toHaveLength(2);
     expect(
@@ -409,27 +410,100 @@ describe("buildPluginScriptRules", () => {
 
 describe("getAllRules", () => {
   it("always includes static rules", () => {
-    const all = getAllRules();
+    const all = getAllRules(null);
     const staticRules = all.filter((r) => r.category !== "Plugin Scripts");
     expect(staticRules.length).toBe(STATIC_RULES.length);
   });
 
   it("includes plugin rules", () => {
-    const all = getAllRules();
+    const all = getAllRules(null);
     const pluginRules = all.filter((r) => r.category === "Plugin Scripts");
     expect(pluginRules.length).toBe(4);
     expect(all.length).toBe(STATIC_RULES.length + pluginRules.length);
   });
 
   it("has no duplicate rules across tiers", () => {
-    const all = getAllRules();
+    const all = getAllRules("/repo/plugin");
     const ruleStrings = all.map((r) => r.rule);
     const unique = new Set(ruleStrings);
     expect(unique.size).toBe(ruleStrings.length);
   });
 });
 
+describe("buildPluginScriptRules — marketplace plugin root", () => {
+  it("adds rules for the resolved plugin root", () => {
+    const rules = buildPluginScriptRules("/Users/me/git/coding-friend/plugin");
+    expect(rules.map((r) => r.rule)).toEqual(
+      expect.arrayContaining([
+        "Bash(bash /Users/me/git/coding-friend/plugin/*)",
+        'Bash(bash "/Users/me/git/coding-friend/plugin/*)',
+        "Read(/Users/me/git/coding-friend/plugin/**)",
+      ]),
+    );
+  });
+
+  it("keeps the cache rules alongside the resolved root", () => {
+    const rules = buildPluginScriptRules("/repo/plugin");
+    expect(
+      rules.some((r) => r.rule.includes("plugins/cache/coding-friend")),
+    ).toBe(true);
+    expect(rules).toHaveLength(7);
+  });
+
+  it("emits only the cache rules when no marketplace is registered", () => {
+    expect(buildPluginScriptRules(null)).toHaveLength(4);
+  });
+});
+
+describe("resolveMarketplacePluginRoot", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null when the marketplace file is absent", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", join(testDir, "nope"));
+    expect(resolveMarketplacePluginRoot()).toBeNull();
+  });
+
+  it("appends the plugin subdir to the marketplace installLocation", () => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", testDir);
+    mkdirSync(join(testDir, "plugins"), { recursive: true });
+    writeFileSync(
+      join(testDir, "plugins", "known_marketplaces.json"),
+      JSON.stringify({
+        "coding-friend-marketplace": {
+          source: { source: "directory", path: "/Users/me/git/coding-friend" },
+          installLocation: "/Users/me/git/coding-friend",
+        },
+      }),
+    );
+
+    expect(resolveMarketplacePluginRoot()).toBe(
+      "/Users/me/git/coding-friend/plugin",
+    );
+  });
+});
+
 describe("cleanupStalePluginRules", () => {
+  it("removes stale marketplace-path per-script rules", () => {
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: {
+          allow: [
+            'Bash(bash "/Users/me/.claude/plugins/marketplaces/coding-friend-marketplace/plugin/lib/load-custom-guide.sh" cf-tdd)',
+            'Bash(bash "/Users/me/.claude/plugins/marketplaces/coding-friend-marketplace/plugin/skills/cf-review/scripts/gather-diff.sh")',
+            "Bash(git status)",
+          ],
+        },
+      }),
+    );
+
+    expect(cleanupStalePluginRules(file)).toBe(2);
+    expect(getExistingRules(file)).toEqual(["Bash(git status)"]);
+  });
+
   it("removes old per-script plugin rules", () => {
     const file = join(testDir, "settings.json");
     writeFileSync(

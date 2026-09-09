@@ -6,13 +6,11 @@ description: >
   Triggers: "make it look like", "update the styling", "redesign this", "match the
   existing style", "add a dark mode", "make it more minimal".
 created: 2026-04-30
-updated: 2026-08-27
+updated: 2026-09-09
 state: beta
 ---
 
 # /cf-design
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Design UI with intent and consistency: **$ARGUMENTS**
 
@@ -32,13 +30,11 @@ If `$ARGUMENTS` is empty, ask the user which mode they want and what their goal 
 
 ## Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-design
 ```
 
-If output is non-empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ## Step 0.5: Load Existing Design Context
 
@@ -135,7 +131,7 @@ Goal: implement intentional, project-consistent UI from a description. Avoid gen
    - If `DESIGN.md` exists → use it as the design foundation. The user's description refines on top.
    - If no patterns exist → ask: _"No design patterns found. Should I (a) quick-scan the UI first, or (b) design fresh from your description?"_
 
-4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, use WebSearch:
+4. **Research if needed**: If the user asks for a specific style, trend, or technique you want to verify is current, Search the web:
    - Query pattern: `"[style name] UI design [year] best practices"`
    - Example: `"glassmorphism UI 2024 best practices"`
    - Extract 2-3 specific, applicable techniques from the results. Summarize briefly.
@@ -187,7 +183,7 @@ Goal: change a specific part of the UI without breaking the visual consistency o
    - Does it introduce a new pattern (animation, glassmorphism, etc.)? Does it fit the style?
    - If something diverges, explain why it's intentional and worth the consistency trade-off.
 
-4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), use WebSearch to find the current best implementation approach.
+4. **Research if needed**: for specific techniques (e.g., "blur backdrop", "scroll-triggered animation"), Search the web to find the current best implementation approach.
 
 5. **Implement** — apply the same design dials from Step 3. Stay within the existing system unless the user explicitly wants to diverge.
 

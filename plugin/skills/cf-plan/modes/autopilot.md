@@ -6,7 +6,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 1. **Dispatch tasks** — Run all tasks in the current phase using the standard Sequential or Parallel phases protocol in `${CLAUDE_PLUGIN_ROOT}/skills/cf-plan/modes/execute.md` (Read it now if you have not already). **Apply the Progress checkpoint rule on every task** (`⬜ TODO` → `🔄 IN PROGRESS` before dispatch; `🔄 IN PROGRESS` → `✅ DONE` on success) — autopilot does NOT skip `🔄 IN PROGRESS`; never flip `⬜ TODO` directly to `✅ DONE`. Apply normal task retry (max 1 retry per task). If any task ends ❌ FAILED after retry → STOP autopilot, mark phase ❌ FAILED in plan file, surface failure to user, ask "Continue from next phase, retry this phase, or stop?". Do NOT silently skip.
 
-2. **Run review** — Once all tasks in the phase reach ✅ DONE, invoke the cf-review skill on uncommitted changes (use the Skill tool with skill name `coding-friend:cf-review`, no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.) Count this as review round 1.
+2. **Run review** — Once all tasks in the phase reach ✅ DONE, Load `/cf-review` (no extra args). The uncommitted diff is this phase's work (prior phases are already committed). (If `review.withCodex: true` is set in the config, cf-review automatically adds a Codex second-opinion review and merges both — no flag needed here.) Count this as review round 1.
 
 3. **Parse findings** — cf-review returns bullets under 4 emoji headers. Treat each:
    - 🚨 **Critical** → must fix
@@ -47,7 +47,7 @@ EOF
 - User explicitly interrupts.
 - All phases reach ✅ DONE in plan file.
 
-**Drift guard**: if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan, that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
+**Drift guard**: if you find yourself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan, that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
 
 ### AUTOPILOT CONTRACT block
 
@@ -90,5 +90,5 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 - User explicitly interrupts (Ctrl+C, message).
 - Plan file shows all phases ✅ DONE.
 
-**Drift guard:** if Claude finds itself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an `auto: true` plan, that is a drift bug. Re-read this section and proceed.
+**Drift guard:** if you find yourself about to ask the user "should I commit?" or "should I continue to the next phase?" while running an `auto: true` plan, that is a drift bug. Re-read this section and proceed.
 ```

@@ -8,12 +8,10 @@ user-invocable: true
 argument-hint: "[optional: topic or specific task to explain]"
 model: sonnet
 created: 2026-03-30
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-teach
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 You are my personal teacher. Explain what just happened: **$ARGUMENTS**
 
@@ -25,13 +23,11 @@ In any coding session, the AI does the heavy thinking — but the human often wa
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-teach
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Load Config
 
@@ -171,7 +167,7 @@ What lessons from this work apply to completely different contexts? Connect the 
 
 After displaying the narrative in chat, delegate to the **cf-writer-deep agent** (always — never cf-writer) to save it as a file.
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-writer-deep"` and include this write spec:
+Dispatch `cf-writer-deep` with the complete write spec as the prompt.
 
 ```
 WRITE SPEC
