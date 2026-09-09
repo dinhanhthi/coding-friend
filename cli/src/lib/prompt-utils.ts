@@ -1,5 +1,6 @@
-import { select, Separator } from "@inquirer/prompts";
+import { checkbox, confirm, input, select, Separator } from "@inquirer/prompts";
 import { existsSync } from "fs";
+import { emitKeypressEvents } from "readline";
 import chalk from "chalk";
 import { run } from "./exec.js";
 import { readJson } from "./json.js";
@@ -8,6 +9,63 @@ import { globalConfigPath, localConfigPath } from "./paths.js";
 import { type Host, resolveHost, type HostFlags } from "./host.js";
 
 export const BACK = "__back__";
+
+// ─── Esc = go back ────────────────────────────────────────────────────
+
+/** Thrown by the esc* prompt wrappers when the user presses Esc. */
+export class BackError extends Error {
+  constructor() {
+    super("back");
+    this.name = "BackError";
+  }
+}
+
+let escArmed = false;
+
+/**
+ * Arm/disarm Esc handling. Only step runners that catch {@link BackError}
+ * should arm it — everywhere else Esc stays inert.
+ */
+export function setEscArmed(armed: boolean): void {
+  escArmed = armed;
+}
+
+async function withEsc<T>(
+  run: (ctx?: { signal: AbortSignal }) => Promise<T>,
+): Promise<T> {
+  if (!escArmed) return run();
+
+  const controller = new AbortController();
+  const onKey = (_str: string, key?: { name?: string }) => {
+    if (key?.name === "escape") controller.abort();
+  };
+  emitKeypressEvents(process.stdin);
+  process.stdin.on("keypress", onKey);
+  try {
+    return await run({ signal: controller.signal });
+  } catch (err) {
+    if ((err as Error)?.name === "AbortPromptError") throw new BackError();
+    throw err;
+  } finally {
+    process.stdin.off("keypress", onKey);
+  }
+}
+
+export const escSelect = <V>(
+  config: Parameters<typeof select<V>>[0],
+): Promise<V> => withEsc((ctx) => select<V>(config, ctx));
+
+export const escInput = (
+  config: Parameters<typeof input>[0],
+): Promise<string> => withEsc((ctx) => input(config, ctx));
+
+export const escConfirm = (
+  config: Parameters<typeof confirm>[0],
+): Promise<boolean> => withEsc((ctx) => confirm(config, ctx));
+
+export const escCheckbox = <V>(
+  config: Parameters<typeof checkbox<V>>[0],
+): Promise<V[]> => withEsc((ctx) => checkbox<V>(config, ctx));
 
 /**
  * Inject a separator + "Back" (or custom label) at the bottom of select choices.
@@ -32,7 +90,7 @@ export function injectBackChoice<T extends string>(
 export async function askScope(
   label = "Save to:",
 ): Promise<"global" | "local" | "back"> {
-  return select({
+  return escSelect({
     message: label,
     choices: [
       { name: "This project only", value: "local" as const },

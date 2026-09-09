@@ -1,4 +1,3 @@
-import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -59,6 +58,12 @@ import {
 } from "../types.js";
 import {
   BACK,
+  BackError,
+  setEscArmed,
+  escCheckbox as checkbox,
+  escConfirm as confirm,
+  escInput as input,
+  escSelect as select,
   injectBackChoice,
   askScope,
   resolveHostFlags,
@@ -109,6 +114,42 @@ function printStepHeader(label: string, description?: string): void {
     console.log(`     ${chalk.dim(description)}`);
   }
   console.log(`${line}`);
+  console.log(chalk.dim("     (esc: back to previous step)"));
+}
+
+/**
+ * Run steps in order, letting Esc walk back one step. Nothing already saved
+ * is undone — a step simply re-runs and shows the current values.
+ */
+async function runSteps(steps: Array<() => Promise<void>>): Promise<void> {
+  setEscArmed(Boolean(process.stdin.isTTY));
+  try {
+    let i = 0;
+    while (i < steps.length) {
+      _stepIndex = i;
+      try {
+        await steps[i]();
+        i++;
+      } catch (err) {
+        if (!(err instanceof BackError)) throw err;
+        console.log();
+        if (i === 0) log.dim("Already at the first step.");
+        else i--;
+      }
+    }
+  } finally {
+    setEscArmed(false);
+  }
+}
+
+function readCfgs(): {
+  globalCfg: CodingFriendConfig | null;
+  localCfg: CodingFriendConfig | null;
+} {
+  return {
+    globalCfg: readJson<CodingFriendConfig>(globalConfigPath()),
+    localCfg: readJson<CodingFriendConfig>(localConfigPath()),
+  };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -1215,120 +1256,129 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
 
     // Suppress step headers in menu mode — user already selected from menu
     _suppressStepHeaders = true;
+    setEscArmed(Boolean(process.stdin.isTTY));
 
-    switch (choice) {
-      case "docsDir":
-        await stepDocsDir(globalCfg, localCfg);
-        break;
-      case "gitignore":
-        await stepGitignore(docsDir);
-        break;
-      case "language":
-        await stepDocsLanguage(globalCfg, localCfg);
-        break;
-      case "learn":
-        await stepLearnConfig(globalCfg);
-        break;
-      case "completion":
-        await stepShellCompletion();
-        break;
-      case "statusline":
-        await stepStatusline();
-        break;
-      case "memory":
-        await stepMemory(docsDir, { menuMode: true });
-        break;
-      case "tdd": {
-        const tddChoice = await confirm({
-          message:
-            "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
-          default: tddVal ?? false,
-        });
-        const tddTargetScope = await askScope();
-        if (tddTargetScope !== "back") {
-          const targetPath =
-            tddTargetScope === "global"
-              ? globalConfigPath()
-              : localConfigPath();
-          mergeJson(targetPath, { tdd: tddChoice });
-          log.success(`Saved to ${targetPath}`);
-        }
-        break;
-      }
-      case "autoApprove": {
-        const autoApproveChoice = await confirm({
-          message:
-            "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
-          default: autoApproveVal ?? false,
-        });
-        const autoApproveTargetScope = await askScope();
-        if (autoApproveTargetScope !== "back") {
-          const targetPath =
-            autoApproveTargetScope === "global"
-              ? globalConfigPath()
-              : localConfigPath();
-          mergeJson(targetPath, { autoApprove: autoApproveChoice });
-          log.success(`Saved to ${targetPath}`);
-        }
-
-        if (autoApproveChoice) {
-          await afterAutoApproveEnabled(log, (message) =>
-            confirm({ message, default: true }),
-          );
-        }
-        break;
-      }
-      case "planDocs": {
-        const planDocsDisableChoice = await confirm({
-          message: "Disable the /cf-plan human overview doc? (off by default)",
-          default: planDocsDisableVal ?? true,
-        });
-        let planDocsFormatChoice: string | undefined;
-        if (!planDocsDisableChoice) {
-          const fmt = await select({
-            message: "Format for the human overview doc?",
-            choices: injectBackChoice(
-              [
-                { name: "HTML", value: "html" },
-                { name: "Markdown", value: "md" },
-              ],
-              "Skip plan docs config",
-            ),
-            default: planDocsFormatVal ?? "html",
+    try {
+      switch (choice) {
+        case "docsDir":
+          await stepDocsDir(globalCfg, localCfg);
+          break;
+        case "gitignore":
+          await stepGitignore(docsDir);
+          break;
+        case "language":
+          await stepDocsLanguage(globalCfg, localCfg);
+          break;
+        case "learn":
+          await stepLearnConfig(globalCfg);
+          break;
+        case "completion":
+          await stepShellCompletion();
+          break;
+        case "statusline":
+          await stepStatusline();
+          break;
+        case "memory":
+          await stepMemory(docsDir, { menuMode: true });
+          break;
+        case "tdd": {
+          const tddChoice = await confirm({
+            message:
+              "Enable TDD by default? (writes failing tests before code — RED → GREEN → REFACTOR)",
+            default: tddVal ?? false,
           });
-          if (fmt === BACK) {
-            log.dim("Skipped plan docs config.");
-            break;
+          const tddTargetScope = await askScope();
+          if (tddTargetScope !== "back") {
+            const targetPath =
+              tddTargetScope === "global"
+                ? globalConfigPath()
+                : localConfigPath();
+            mergeJson(targetPath, { tdd: tddChoice });
+            log.success(`Saved to ${targetPath}`);
           }
-          planDocsFormatChoice = fmt;
+          break;
         }
-        const planDocsTargetScope = await askScope();
-        if (planDocsTargetScope !== "back") {
-          const targetPath =
-            planDocsTargetScope === "global"
-              ? globalConfigPath()
-              : localConfigPath();
-          mergeJson(targetPath, {
-            disableGUIPlan: planDocsDisableChoice,
-            ...(planDocsFormatChoice !== undefined
-              ? { guiPlanFormat: planDocsFormatChoice }
-              : {}),
+        case "autoApprove": {
+          const autoApproveChoice = await confirm({
+            message:
+              "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
+            default: autoApproveVal ?? false,
           });
-          log.success(`Saved to ${targetPath}`);
-        }
-        break;
-      }
-      case "permissions": {
-        const learnCfg = globalCfg?.learn;
-        const learnOutputDir =
-          learnCfg?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
-        const learnAutoCommit = learnCfg?.autoCommit || false;
-        await stepClaudePermissions(learnOutputDir, learnAutoCommit);
-        break;
-      }
-    }
+          const autoApproveTargetScope = await askScope();
+          if (autoApproveTargetScope !== "back") {
+            const targetPath =
+              autoApproveTargetScope === "global"
+                ? globalConfigPath()
+                : localConfigPath();
+            mergeJson(targetPath, { autoApprove: autoApproveChoice });
+            log.success(`Saved to ${targetPath}`);
+          }
 
-    _suppressStepHeaders = false;
+          if (autoApproveChoice) {
+            await afterAutoApproveEnabled(log, (message) =>
+              confirm({ message, default: true }),
+            );
+          }
+          break;
+        }
+        case "planDocs": {
+          const planDocsDisableChoice = await confirm({
+            message:
+              "Disable the /cf-plan human overview doc? (off by default)",
+            default: planDocsDisableVal ?? true,
+          });
+          let planDocsFormatChoice: string | undefined;
+          if (!planDocsDisableChoice) {
+            const fmt = await select({
+              message: "Format for the human overview doc?",
+              choices: injectBackChoice(
+                [
+                  { name: "HTML", value: "html" },
+                  { name: "Markdown", value: "md" },
+                ],
+                "Skip plan docs config",
+              ),
+              default: planDocsFormatVal ?? "html",
+            });
+            if (fmt === BACK) {
+              log.dim("Skipped plan docs config.");
+              break;
+            }
+            planDocsFormatChoice = fmt;
+          }
+          const planDocsTargetScope = await askScope();
+          if (planDocsTargetScope !== "back") {
+            const targetPath =
+              planDocsTargetScope === "global"
+                ? globalConfigPath()
+                : localConfigPath();
+            mergeJson(targetPath, {
+              disableGUIPlan: planDocsDisableChoice,
+              ...(planDocsFormatChoice !== undefined
+                ? { guiPlanFormat: planDocsFormatChoice }
+                : {}),
+            });
+            log.success(`Saved to ${targetPath}`);
+          }
+          break;
+        }
+        case "permissions": {
+          const learnCfg = globalCfg?.learn;
+          const learnOutputDir =
+            learnCfg?.outputDir ?? DEFAULT_CONFIG.learn.outputDir;
+          const learnAutoCommit = learnCfg?.autoCommit || false;
+          await stepClaudePermissions(learnOutputDir, learnAutoCommit);
+          break;
+        }
+      }
+    } catch (err) {
+      if (!(err instanceof BackError)) throw err;
+      console.log();
+      log.dim("Back to menu.");
+    } finally {
+      setEscArmed(false);
+      _suppressStepHeaders = false;
+    }
 
     console.log();
   }
@@ -1463,91 +1513,110 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
     }
   }
 
-  // ─── Linear step flow ──────────────────────────────────────────────
+  // ─── Linear step flow (esc = back one step) ────────────────────────
 
-  // Step 1: docsDir
-  await stepDocsDir(globalCfg, localCfg);
+  const learnCfg = globalCfg?.learn;
+  let learn = {
+    outputDir: learnCfg?.outputDir ?? DEFAULT_CONFIG.learn.outputDir,
+    autoCommit: learnCfg?.autoCommit ?? false,
+  };
 
-  // Re-read configs after docsDir may have been written
-  const updatedGlobal = readJson<CodingFriendConfig>(globalConfigPath());
-  const updatedLocal = readJson<CodingFriendConfig>(localConfigPath());
-  const docsDir = getDocsDir(updatedGlobal, updatedLocal);
+  await runSteps([
+    // Step 1: docsDir
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepDocsDir(g, l);
+    },
 
-  // Step 2: .gitignore (only in git repos)
-  if (gitAvailable) {
-    await stepGitignore(docsDir);
-  } else {
-    printStepHeader(
-      `Configure .gitignore ${chalk.dim("[skipped]")}`,
-      "Keeps AI-generated docs and config out of your git history.",
-    );
-    log.dim("Skipped — not inside a git repo.");
-  }
+    // Step 2: .gitignore (only in git repos)
+    async () => {
+      if (!gitAvailable) {
+        printStepHeader(
+          `Configure .gitignore ${chalk.dim("[skipped]")}`,
+          "Keeps AI-generated docs and config out of your git history.",
+        );
+        log.dim("Skipped — not inside a git repo.");
+        return;
+      }
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepGitignore(getDocsDir(g, l));
+    },
 
-  // Step 3: Docs language
-  await stepDocsLanguage(globalCfg, localCfg);
+    // Step 3: Docs language
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepDocsLanguage(g, l);
+    },
 
-  // Step 4: /cf-learn config
-  const { outputDir, autoCommit } = await stepLearnConfig(updatedGlobal);
+    // Step 4: /cf-learn config + MCP registration
+    async () => {
+      const { globalCfg: g } = readCfgs();
+      learn = await stepLearnConfig(g);
 
-  // Register CF Learn MCP (user scope, global)
-  if (isLearnMcpRegistered()) {
-    log.dim("coding-friend-learn: already registered");
-    log.dim(
-      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-learn && cf mcp)",
-    );
-  } else {
-    const registered = registerLearnMcp(outputDir);
-    if (registered) {
-      log.success(
-        "Registered CF Learn MCP (user scope). Restart Claude Code to activate.",
+      // Register CF Learn MCP (user scope, global)
+      if (isLearnMcpRegistered()) {
+        log.dim("coding-friend-learn: already registered");
+        log.dim(
+          "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-learn && cf mcp)",
+        );
+      } else if (registerLearnMcp(learn.outputDir)) {
+        log.success(
+          "Registered CF Learn MCP (user scope). Restart Claude Code to activate.",
+        );
+      }
+
+      // Register CF Memory MCP (user scope, global)
+      if (isMemoryMcpRegistered()) {
+        log.dim("coding-friend-memory: already registered (user scope)");
+        log.dim(
+          "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-memory && cf mcp)",
+        );
+      } else if (registerMemoryMcp()) {
+        log.success(
+          "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
+        );
+      }
+    },
+
+    // Step 5: Shell completion
+    stepShellCompletion,
+
+    // Step 6: Statusline
+    stepStatusline,
+
+    // Step 7: CF Memory
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepMemory(getDocsDir(g, l));
+    },
+
+    // Step 8: TDD
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepTdd(g, l);
+    },
+
+    // Step 9: Auto-approve
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepAutoApprove(g, l);
+    },
+
+    // Step 10: Plan docs
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepPlanDocs(g, l);
+    },
+
+    // Step 11: Claude permissions
+    async () => {
+      printStepHeader(
+        "Configure Claude permissions",
+        "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
       );
-    }
-  }
-
-  // Register CF Memory MCP (user scope, global)
-  if (isMemoryMcpRegistered()) {
-    log.dim("coding-friend-memory: already registered (user scope)");
-    log.dim(
-      "  (If it points to an old path, run: claude mcp remove --scope user coding-friend-memory && cf mcp)",
-    );
-  } else {
-    const registered = registerMemoryMcp();
-    if (registered) {
-      log.success(
-        "Registered coding-friend-memory (user scope). Restart Claude Code to activate.",
-      );
-    }
-  }
-
-  // Step 5: Shell completion
-  await stepShellCompletion();
-
-  // Step 6: Statusline
-  await stepStatusline();
-
-  // Step 7: CF Memory
-  await stepMemory(docsDir);
-
-  // Re-read configs to pick up any changes from previous steps
-  const finalGlobal = readJson<CodingFriendConfig>(globalConfigPath());
-  const finalLocal = readJson<CodingFriendConfig>(localConfigPath());
-
-  // Step 8: TDD
-  await stepTdd(finalGlobal, finalLocal);
-
-  // Step 9: Auto-approve
-  await stepAutoApprove(finalGlobal, finalLocal);
-
-  // Step 10: Plan docs
-  await stepPlanDocs(finalGlobal, finalLocal);
-
-  // Step 11: Claude permissions
-  printStepHeader(
-    "Configure Claude permissions",
-    "Grants Coding Friend skills/hooks the permissions they need, so you get fewer prompts.",
-  );
-  await stepClaudePermissions(outputDir, autoCommit);
+      await stepClaudePermissions(learn.outputDir, learn.autoCommit);
+    },
+  ]);
 
   // Ensure .coding-friend/config.json exists as init marker
   if (!existsSync(localConfigPath())) {
@@ -1584,47 +1653,59 @@ async function initCodexCommand(opts: InitOptions): Promise<void> {
     return;
   }
 
-  let globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  let localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await runSteps([
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsDir(globalCfg, localCfg);
+      const cfgs = readCfgs();
+      ensureDocsFolders(getDocsDir(cfgs.globalCfg, cfgs.localCfg), [
+        "plans",
+        "memory",
+        "research",
+        "sessions",
+        "reviews",
+        "warm",
+      ]);
+    },
 
-  await stepDocsDir(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  const docsDir = getDocsDir(globalCfg, localCfg);
-  ensureDocsFolders(docsDir, [
-    "plans",
-    "memory",
-    "research",
-    "sessions",
-    "reviews",
-    "warm",
+    async () => {
+      if (!gitAvailable) {
+        printStepHeader(
+          `Configure .gitignore ${chalk.dim("[skipped]")}`,
+          "Keeps AI-generated docs and config out of your git history.",
+        );
+        log.dim("Skipped — not inside a git repo.");
+        return;
+      }
+      const { globalCfg, localCfg } = readCfgs();
+      await stepGitignore(getDocsDir(globalCfg, localCfg));
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsLanguage(globalCfg, localCfg);
+    },
+
+    async () => {
+      await stepLearnConfig(readCfgs().globalCfg);
+      log.dim(
+        "Learn MCP is not registered into Codex config (no dedicated Codex writer). Settings are saved to Coding Friend config.",
+      );
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepAutoApprove(globalCfg, localCfg);
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepPrivacyBlock(globalCfg, localCfg);
+    },
   ]);
 
-  if (gitAvailable) {
-    await stepGitignore(docsDir);
-  } else {
-    printStepHeader(
-      `Configure .gitignore ${chalk.dim("[skipped]")}`,
-      "Keeps AI-generated docs and config out of your git history.",
-    );
-    log.dim("Skipped — not inside a git repo.");
-  }
-
-  await stepDocsLanguage(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-
-  await stepLearnConfig(globalCfg);
-  log.dim(
-    "Learn MCP is not registered into Codex config (no dedicated Codex writer). Settings are saved to Coding Friend config.",
-  );
-
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  await stepAutoApprove(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  await stepPrivacyBlock(globalCfg, localCfg);
+  const codexCfgs = readCfgs();
+  const docsDir = getDocsDir(codexCfgs.globalCfg, codexCfgs.localCfg);
 
   if (!existsSync(localConfigPath())) {
     writeJson(localConfigPath(), {});
@@ -1713,70 +1794,79 @@ async function initAgyCommand(): Promise<void> {
     return;
   }
 
-  let globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  let localCfg = readJson<CodingFriendConfig>(localConfigPath());
+  await runSteps([
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsDir(globalCfg, localCfg);
+      const cfgs = readCfgs();
+      ensureDocsFolders(getDocsDir(cfgs.globalCfg, cfgs.localCfg), [
+        "plans",
+        "memory",
+        "research",
+        "sessions",
+        "reviews",
+        "warm",
+      ]);
+    },
 
-  await stepDocsDir(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  const docsDir = getDocsDir(globalCfg, localCfg);
-  ensureDocsFolders(docsDir, [
-    "plans",
-    "memory",
-    "research",
-    "sessions",
-    "reviews",
-    "warm",
+    async () => {
+      if (!gitAvailable) {
+        printStepHeader(
+          `Configure .gitignore ${chalk.dim("[skipped]")}`,
+          "Keeps AI-generated docs and config out of your git history.",
+        );
+        log.dim("Skipped — not inside a git repo.");
+        return;
+      }
+      const { globalCfg, localCfg } = readCfgs();
+      await stepGitignore(getDocsDir(globalCfg, localCfg));
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsLanguage(globalCfg, localCfg);
+    },
+
+    async () => {
+      const { outputDir } = await stepLearnConfig(readCfgs().globalCfg);
+      if (isAgyPluginInstalled()) {
+        if (isLearnMcpRegistered("agy")) {
+          log.dim(
+            "coding-friend-learn: already registered in plugin mcp_config.json",
+          );
+        } else {
+          const registered = registerLearnMcp(outputDir, "agy");
+          if (registered) {
+            log.success(
+              "Registered CF Learn MCP in the Antigravity plugin mcp_config.json.",
+            );
+          }
+        }
+        if (isMemoryMcpRegistered("agy")) {
+          log.dim(
+            "coding-friend-memory: already registered in plugin mcp_config.json",
+          );
+        } else {
+          const registered = registerMemoryMcp("agy");
+          if (registered) {
+            log.success(
+              "Registered coding-friend-memory in the Antigravity plugin mcp_config.json.",
+            );
+          }
+        }
+      }
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepAutoApprove(globalCfg, localCfg);
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepPrivacyBlock(globalCfg, localCfg);
+    },
   ]);
-
-  if (gitAvailable) {
-    await stepGitignore(docsDir);
-  } else {
-    printStepHeader(
-      `Configure .gitignore ${chalk.dim("[skipped]")}`,
-      "Keeps AI-generated docs and config out of your git history.",
-    );
-    log.dim("Skipped — not inside a git repo.");
-  }
-
-  await stepDocsLanguage(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-
-  const { outputDir } = await stepLearnConfig(globalCfg);
-  if (isAgyPluginInstalled()) {
-    if (isLearnMcpRegistered("agy")) {
-      log.dim(
-        "coding-friend-learn: already registered in plugin mcp_config.json",
-      );
-    } else {
-      const registered = registerLearnMcp(outputDir, "agy");
-      if (registered) {
-        log.success(
-          "Registered CF Learn MCP in the Antigravity plugin mcp_config.json.",
-        );
-      }
-    }
-    if (isMemoryMcpRegistered("agy")) {
-      log.dim(
-        "coding-friend-memory: already registered in plugin mcp_config.json",
-      );
-    } else {
-      const registered = registerMemoryMcp("agy");
-      if (registered) {
-        log.success(
-          "Registered coding-friend-memory in the Antigravity plugin mcp_config.json.",
-        );
-      }
-    }
-  }
-
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  await stepAutoApprove(globalCfg, localCfg);
-  globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-  localCfg = readJson<CodingFriendConfig>(localConfigPath());
-  await stepPrivacyBlock(globalCfg, localCfg);
 
   if (!existsSync(localConfigPath())) {
     writeJson(localConfigPath(), {});

@@ -31,14 +31,19 @@ vi.mock("../log.js", () => ({
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
   confirm: vi.fn(),
+  input: vi.fn(),
+  checkbox: vi.fn(),
   Separator: class Separator {},
 }));
 
 import {
   applyDocsDirChange,
+  BackError,
   ensureDocsFolders,
+  escSelect,
   resolveHostFlags,
   resolveScope,
+  setEscArmed,
 } from "../prompt-utils.js";
 import * as paths from "../paths.js";
 import { log } from "../log.js";
@@ -444,5 +449,53 @@ describe("resolveHostFlags", () => {
       "Use either --agent claude or --omp, not both.",
     );
     expect(mockExit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe("escSelect — Esc goes back", () => {
+  afterEach(() => {
+    setEscArmed(false);
+    vi.mocked(select).mockReset();
+  });
+
+  /** Fake prompt that rejects like inquirer does when its signal aborts. */
+  function abortablePrompt(_cfg: unknown, ctx?: { signal: AbortSignal }) {
+    return new Promise((_resolve, reject) => {
+      ctx?.signal.addEventListener("abort", () => {
+        const err = new Error("aborted");
+        err.name = "AbortPromptError";
+        reject(err);
+      });
+    });
+  }
+
+  it("throws BackError when Esc is pressed while armed", async () => {
+    setEscArmed(true);
+    vi.mocked(select).mockImplementation(abortablePrompt as never);
+
+    const pending = escSelect({ message: "x", choices: [] });
+    process.stdin.emit("keypress", "", { name: "escape" });
+
+    await expect(pending).rejects.toBeInstanceOf(BackError);
+  });
+
+  it("ignores Esc when not armed", async () => {
+    vi.mocked(select).mockImplementation((async () => "picked") as never);
+
+    await expect(escSelect({ message: "x", choices: [] })).resolves.toBe(
+      "picked",
+    );
+    // no signal is passed through when disarmed
+    expect(vi.mocked(select).mock.calls[0][1]).toBeUndefined();
+  });
+
+  it("removes its keypress listener after the prompt resolves", async () => {
+    setEscArmed(true);
+    const before = process.stdin.listenerCount("keypress");
+    vi.mocked(select).mockImplementation((async () => "ok") as never);
+
+    await escSelect({ message: "x", choices: [] });
+
+    expect(process.stdin.listenerCount("keypress")).toBe(before);
   });
 });
