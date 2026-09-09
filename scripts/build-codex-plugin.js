@@ -70,6 +70,10 @@ function renderCodexText(input) {
           "Wait for it to finish and use its output.",
         ].join("\n"),
     )
+    .replace(
+      /use the Agent tool with `subagent_type: "coding-friend:<agent>"`/g,
+      "spawn the `<agent>` custom agent",
+    )
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, "${PLUGIN_ROOT}")
     .replace(/CLAUDE_PLUGIN_ROOT/g, "PLUGIN_ROOT")
     .replace(
@@ -278,10 +282,11 @@ function renderCodexFile(sourcePath, input) {
   const normalizedPath = sourcePath.split(path.sep).join("/");
   const isSkill = normalizedPath.endsWith("/SKILL.md");
   const isInstruction =
-    isSkill ||
-    normalizedPath.includes("/context/") ||
-    normalizedPath.includes("/skills/cf-help/") ||
-    normalizedPath.endsWith("/plugin/README.md");
+    normalizedPath.endsWith(".md") &&
+    (normalizedPath.includes("/skills/") ||
+      normalizedPath.includes("/lib/") ||
+      normalizedPath.includes("/context/") ||
+      normalizedPath.endsWith("/plugin/README.md"));
   let rendered = isInstruction
     ? renderCodexInstructionText(input)
     : renderCodexText(input);
@@ -290,7 +295,7 @@ function renderCodexFile(sourcePath, input) {
     rendered = stripClaudeSkillFrontmatter(rendered);
   }
 
-  if (normalizedPath.endsWith("/skills/cf-plan/SKILL.md")) {
+  if (normalizedPath.includes("/skills/cf-plan/")) {
     rendered = renderCodexPlanSkill(rendered);
   } else if (normalizedPath.endsWith("/skills/cf-review/SKILL.md")) {
     rendered = renderCodexReviewSkill(rendered);
@@ -334,7 +339,7 @@ function renderCodexFile(sourcePath, input) {
     );
   }
 
-  return rendered;
+  return rendered.replace(/run_in_background:\s*true/g, "run in the background");
 }
 
 async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
@@ -575,7 +580,9 @@ async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
   const { findCodexArtifactLintIssues } = await import(
     pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
   );
-  const lintIssues = await findCodexArtifactLintIssues(repoRoot);
+  const lintIssues = await findCodexArtifactLintIssues(repoRoot, {
+    strict: path.resolve(repoRoot) === path.resolve(REPO_ROOT),
+  });
   if (lintIssues.length > 0) {
     const details = lintIssues
       .map(

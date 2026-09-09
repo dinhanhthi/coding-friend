@@ -2,7 +2,7 @@
 
 Execute the plan phase by phase using the protocols below. Both `/cf-plan` (after the user approves at Step 7) and `/cf-plan-resume` (after the user confirms resuming) read this file.
 
-> **No-file mode guard** — if no plan file was written (cf-plan `--inline`, or single-phase `--fast` without `--auto`), there is no `README.md`/phase file to edit: replace every "Edit the plan file / Progress table" checkpoint below with a `TaskUpdate` on the matching task. `/cf-plan-resume` always has a plan file, so this never applies when resuming.
+> **No-file mode guard** — if no plan file was written (cf-plan `--inline`, or single-phase `--fast` without `--auto`), there is no `README.md`/phase file to edit: replace every "Edit the plan file / Progress table" checkpoint below with an update to the matching progress item (Track progress). `/cf-plan-resume` always has a plan file, so this never applies when resuming.
 
 **Progress checkpoint rule (MANDATORY — autopilot does NOT skip this):** Every task MUST pass through `🔄 IN PROGRESS` before `✅ DONE`. Apply each icon flip as its **own** Edit tool call **before** dispatching cf-implementer and **immediately after** each result — never batch flips, never jump `⬜ TODO` → `✅ DONE` directly. This applies under `--auto`/autopilot the same as manual execution; the `## AUTOPILOT` section in the plan file does not override it.
 

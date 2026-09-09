@@ -23,7 +23,11 @@ const CODEX_PATTERNS = [
   },
   { name: "Claude question tool", regex: /\bAskUserQuestion\b/g },
   { name: "Claude task tool", regex: /\b(?:TaskCreate|TaskUpdate)\b/g },
-  { name: "Claude background flag", regex: /\brun_in_background\b/g },
+  {
+    name: "Claude background flag",
+    regex: /\brun_in_background\b/g,
+    scanRaw: true,
+  },
   { name: "Claude agent tool", regex: /\bAgent tool\b/g },
   {
     name: "Claude skill frontmatter",
@@ -45,6 +49,43 @@ const CODEX_PATTERNS = [
   },
   { name: "Claude-only dev workflow", regex: /\bcf dev sync\b/g },
   { name: "unsupported agent tools key", regex: /^tools\s*=/gm },
+  {
+    name: "Claude-specific review prose",
+    regex: /Claude's own review|Claude-only review/g,
+  },
+  {
+    name: "Claude host name",
+    regex: /\bin Claude Code\b|if Claude finds itself|Claude does NOT need/g,
+  },
+  {
+    name: "Anthropic model prose",
+    regex:
+      /Runs on Haiku for speed|Runs on Sonnet for deeper reasoning|\(model:\s*(?:haiku|sonnet|opus)\)|CF_REDUCER_MODEL=sonnet/g,
+  },
+];
+
+const CODEX_MUST_CONTAIN = [
+  {
+    file: "plugin-codex/context/bootstrap.md",
+    regex: /spawn the `<agent>` custom agent/,
+  },
+  { file: "plugin-codex/skills/cf-plan/SKILL.md", regex: /\$cf-/ },
+  {
+    file: "plugin-codex/skills/cf-review/SKILL.md",
+    regex: /Codex host behavior/,
+  },
+];
+
+const AGY_MUST_CONTAIN = [
+  { file: "plugin-antigravity/rules/AGENTS.md", regex: /invoke_subagent/ },
+  {
+    file: "plugin-antigravity/skills/cf-review/SKILL.md",
+    regex: /Antigravity host behavior/,
+  },
+  {
+    file: "plugin-antigravity/skills/cf-plan/SKILL.md",
+    regex: /explicit model/,
+  },
 ];
 
 const AGY_PATTERNS = [
@@ -57,31 +98,74 @@ const AGY_PATTERNS = [
   { name: "Claude agent tool", regex: /\bAgent tool\b/g },
   { name: "Claude WebFetch", regex: /\bWebFetch\b/g },
   { name: "Claude WebSearch", regex: /\bWebSearch\b/g },
+  {
+    name: "Claude background flag",
+    regex: /\brun_in_background\b/g,
+    scanRaw: true,
+  },
   { name: "Claude Skill tool", regex: /\bSkill tool\b/g },
   { name: "Claude hook output", regex: /\bhookSpecificOutput\b/g },
   { name: "Claude instruction file", regex: /\bCLAUDE\.md\b/g },
   { name: "Claude resume command", regex: /\bclaude --resume\b/g },
+  {
+    name: "Claude-specific review prose",
+    regex: /Claude's own review|Claude-only review/g,
+  },
+  {
+    name: "Claude host name",
+    regex: /\bin Claude Code\b|if Claude finds itself|Claude does NOT need/g,
+  },
+  {
+    name: "Anthropic model prose",
+    regex:
+      /Runs on Haiku for speed|Runs on Sonnet for deeper reasoning|\(model:\s*(?:haiku|sonnet|opus)\)|CF_REDUCER_MODEL=sonnet/g,
+  },
 ];
 
+async function collectFilesRecursive(dir, relativePrefix, predicate) {
+  const files = [];
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return files;
+  }
+
+  for (const entry of entries) {
+    const absolutePath = path.join(dir, entry.name);
+    const relativePath = path.join(relativePrefix, entry.name);
+    if (entry.isDirectory()) {
+      files.push(
+        ...(await collectFilesRecursive(absolutePath, relativePath, predicate)),
+      );
+    } else if (entry.isFile() && predicate(entry.name, relativePath)) {
+      files.push(relativePath);
+    }
+  }
+
+  return files;
+}
+
 async function collectInstructionFiles(root, relativePrefix) {
-  const skillDir = path.join(root, "skills");
-  const agentDir = path.join(root, "agents");
+  const skillFiles = await collectFilesRecursive(
+    path.join(root, "skills"),
+    path.join(relativePrefix, "skills"),
+    (name) => name.endsWith(".md"),
+  );
 
-  const skillEntries = await readdir(skillDir, { withFileTypes: true });
-  const skillFiles = skillEntries
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith("cf-"))
-    .map((entry) =>
-      path.join(relativePrefix, "skills", entry.name, "SKILL.md"),
-    );
+  const agentFiles = await collectFilesRecursive(
+    path.join(root, "agents"),
+    path.join(relativePrefix, "agents"),
+    (name) => /\.(?:md|toml)$/.test(name),
+  );
 
-  const agentEntries = await readdir(agentDir, { withFileTypes: true });
-  const agentFiles = agentEntries
-    .filter(
-      (entry) => entry.isFile() && /^cf-.*\.(?:md|toml)$/.test(entry.name),
-    )
-    .map((entry) => path.join(relativePrefix, "agents", entry.name));
+  const libFiles = await collectFilesRecursive(
+    path.join(root, "lib"),
+    path.join(relativePrefix, "lib"),
+    (name) => name.endsWith(".md") && name !== "PLACEHOLDERS.md",
+  );
 
-  return [...skillFiles, ...agentFiles].sort();
+  return [...skillFiles, ...agentFiles, ...libFiles].sort();
 }
 
 function stripFencedCode(markdown) {
@@ -95,15 +179,23 @@ function lineNumberForIndex(source, index) {
   return source.slice(0, index).split("\n").length;
 }
 
+function mustContainStrict(options = {}) {
+  if (options.strict === false || options.optional === true) {
+    return false;
+  }
+  return true;
+}
+
 async function findIssues(files, patterns, root = repoRoot) {
   const issues = [];
 
   for (const relativePath of files) {
     const absolutePath = path.join(root, relativePath);
     const raw = await readFile(absolutePath, "utf8");
-    const searchable = stripFencedCode(raw);
+    const stripped = stripFencedCode(raw);
 
     for (const pattern of patterns) {
+      const searchable = pattern.scanRaw ? raw : stripped;
       pattern.regex.lastIndex = 0;
       for (const match of searchable.matchAll(pattern.regex)) {
         issues.push({
@@ -113,6 +205,41 @@ async function findIssues(files, patterns, root = repoRoot) {
           value: match[0],
         });
       }
+    }
+  }
+
+  return issues;
+}
+
+async function findMissingRequired(root, list, options = {}) {
+  const issues = [];
+  const strict = mustContainStrict(options);
+
+  for (const { file, regex } of list) {
+    let raw;
+    try {
+      raw = await readFile(path.join(root, file), "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT" && !strict) {
+        continue;
+      }
+      const missing = error?.code === "ENOENT";
+      issues.push({
+        file,
+        line: 0,
+        type: missing ? "missing required file" : "unreadable required file",
+        value: missing ? regex.source : (error?.code ?? String(error)),
+      });
+      continue;
+    }
+    regex.lastIndex = 0;
+    if (!regex.test(raw)) {
+      issues.push({
+        file,
+        line: 0,
+        type: "missing required host phrasing",
+        value: regex.source,
+      });
     }
   }
 
@@ -131,7 +258,7 @@ export async function findPlaceholderLintIssues(root = repoRoot) {
   );
 }
 
-export async function findCodexArtifactLintIssues(root = repoRoot) {
+export async function findCodexArtifactLintIssues(root = repoRoot, options = {}) {
   const files = await collectInstructionFiles(
     path.join(root, "plugin-codex"),
     "plugin-codex",
@@ -143,10 +270,16 @@ export async function findCodexArtifactLintIssues(root = repoRoot) {
   } catch {
     // Fixture repos may not include a bootstrap context file.
   }
-  return findIssues(files.sort(), CODEX_PATTERNS, root);
+  return [
+    ...(await findIssues(files.sort(), CODEX_PATTERNS, root)),
+    ...(await findMissingRequired(root, CODEX_MUST_CONTAIN, options)),
+  ];
 }
 
-export async function findAntigravityArtifactLintIssues(root = repoRoot) {
+export async function findAntigravityArtifactLintIssues(
+  root = repoRoot,
+  options = {},
+) {
   const files = await collectInstructionFiles(
     path.join(root, "plugin-antigravity"),
     "plugin-antigravity",
@@ -172,7 +305,10 @@ export async function findAntigravityArtifactLintIssues(root = repoRoot) {
     // Fixture repos may omit hooks.json.
   }
 
-  return findIssues(files.sort(), AGY_PATTERNS, root);
+  return [
+    ...(await findIssues(files.sort(), AGY_PATTERNS, root)),
+    ...(await findMissingRequired(root, AGY_MUST_CONTAIN, options)),
+  ];
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {

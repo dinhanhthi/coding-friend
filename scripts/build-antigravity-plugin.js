@@ -110,6 +110,10 @@ function renderAgyText(input) {
       (_match, agent, prompt) =>
         `Call \`invoke_subagent\` with agent \`${agent}\` and this task: ${prompt}`,
     )
+    .replace(
+      /use the Agent tool with `subagent_type: "coding-friend:<agent>"`/g,
+      "call `invoke_subagent` with agent `<agent>`",
+    )
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}\//g, `${AGY_PLUGIN_ROOT_TOKEN}/`)
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, AGY_PLUGIN_ROOT_TOKEN)
     .replace(/\bCLAUDE\.md\b/g, "AGENTS.md")
@@ -323,6 +327,9 @@ function isAgyInstructionFile(normalizedPath) {
   if (normalizedPath.includes("/context/")) return true;
   if (normalizedPath.includes("/agents/")) return true;
   if (normalizedPath.includes("/rules/")) return true;
+  if (normalizedPath.includes("/lib/") && normalizedPath.endsWith(".md")) {
+    return true;
+  }
   return normalizedPath.includes("/skills/") && normalizedPath.endsWith(".md");
 }
 
@@ -401,7 +408,7 @@ function renderAgyFile(sourcePath, input) {
     );
   }
 
-  return rendered;
+  return rendered.replace(/run_in_background:\s*true/g, "run in the background");
 }
 
 function renderAgyAgentMarkdown(markdown) {
@@ -624,7 +631,9 @@ async function buildAntigravityPlugin({ repoRoot = REPO_ROOT } = {}) {
   const { findAntigravityArtifactLintIssues } = await import(
     pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
   );
-  const lintIssues = await findAntigravityArtifactLintIssues(repoRoot);
+  const lintIssues = await findAntigravityArtifactLintIssues(repoRoot, {
+    strict: path.resolve(repoRoot) === path.resolve(REPO_ROOT),
+  });
   if (lintIssues.length > 0) {
     const details = lintIssues
       .map(

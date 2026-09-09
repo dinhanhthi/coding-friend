@@ -75,7 +75,7 @@ Skip when `agents=[]`.
 For each agent, spawn one background Bash. Do **not** wait; the harness reports when each finishes. No poll/sleep.
 
 ```
-run_in_background: true
+run in the background
 bash "${PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<slug>-plan-result-<agent>.md" "${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md"
 ```
 

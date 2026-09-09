@@ -335,6 +335,47 @@ test("rewrites cf-review for Codex", async () => {
   assert.match(fix, /ignores the Claude-only `review\.withCodex` setting/);
 });
 
+test("rewrites fenced run_in_background outside cf-plan", () => {
+  const rendered = renderCodexFile(
+    "/repo/plugin/skills/cf-plan-review/SKILL.md",
+    "```\nrun_in_background: true\nbash x\n```",
+  );
+  assert.match(rendered, /run in the background/);
+  assert.doesNotMatch(rendered, /run_in_background/);
+});
+
+test("renders Codex instruction rewrites on skill sub-files", () => {
+  const execute = renderCodexFile(
+    "/repo/plugin/skills/cf-plan/modes/execute.md",
+    "Spawn one cf-implementer **per task** with `run_in_background: true` — all in a **single message block**.",
+  );
+  assert.match(execute, /per task in parallel/);
+  assert.doesNotMatch(execute, /run_in_background/);
+
+  const tddMode = renderCodexFile(
+    "/repo/plugin/skills/cf-tdd/modes/x.md",
+    "Claude does NOT need",
+  );
+  assert.equal(tddMode, "Codex does NOT need");
+});
+
+test("rewrites bootstrap Dispatch verb for Codex", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const source = await fs.readFile(
+    path.join(repoRoot, "plugin/context/bootstrap.md"),
+    "utf8",
+  );
+  const rendered = renderCodexFile(
+    "/repo/plugin/context/bootstrap.md",
+    source,
+  );
+  assert.match(rendered, /spawn the `<agent>` custom agent/);
+  assert.doesNotMatch(rendered, /subagent_type/);
+});
+
 test("creates stamped Codex plugin manifest", () => {
   const manifest = createCodexPluginManifest({ version: "1.2.3" });
   assert.equal(manifest.name, "coding-friend");

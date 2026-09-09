@@ -100,6 +100,7 @@ async function createFixtureRepo() {
       "# coding-friend",
       "",
       "Follow {{cf:slash cf-review}} and read CLAUDE.md.",
+      'use the Agent tool with `subagent_type: "coding-friend:<agent>"`.',
       "",
     ].join("\n"),
   );
@@ -311,6 +312,15 @@ test("renders AGY-native plan and session alternatives", () => {
   assert.doesNotMatch(session, /Claude session implementation/);
 });
 
+test("rewrites fenced run_in_background outside cf-plan", () => {
+  const rendered = renderAgyFile(
+    "/repo/plugin/skills/cf-plan-review/SKILL.md",
+    "```\nrun_in_background: true\nbash x\n```",
+  );
+  assert.match(rendered, /run in the background/);
+  assert.doesNotMatch(rendered, /run_in_background/);
+});
+
 test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -455,6 +465,27 @@ test("rewrites cf-review for Antigravity", async () => {
   assert.doesNotMatch(review, /codex=(?:true|false)/);
   assert.doesNotMatch(review, /When any external source contributed/);
   assert.doesNotMatch(review, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);
+});
+
+test("rewrites bootstrap Dispatch verb for Antigravity", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const source = await fs.readFile(
+    path.join(repoRoot, "plugin/context/bootstrap.md"),
+    "utf8",
+  );
+  const agentsMd = [
+    "# Coding Friend (Antigravity, beta)",
+    "",
+    "HOST: agy",
+    "",
+    renderAgyInstructionText(source),
+  ].join("\n");
+  assert.match(agentsMd, /call `invoke_subagent` with agent `<agent>`/);
+  assert.doesNotMatch(agentsMd, /Agent tool/);
+  assert.ok(agentsMd.length < 12000);
 });
 
 test("creates stamped Antigravity plugin manifest", () => {
@@ -775,6 +806,8 @@ test("builds Antigravity plugin fixture idempotently", async () => {
     "utf8",
   );
   assert.ok(agentsMd.length < 12000);
+  assert.match(agentsMd, /call `invoke_subagent` with agent `<agent>`/);
+  assert.doesNotMatch(agentsMd, /Agent tool/);
   assert.match(agentsMd, /# Coding Friend \(Antigravity, beta\)/);
   assert.match(agentsMd, /HOST: agy/);
   assert.match(
