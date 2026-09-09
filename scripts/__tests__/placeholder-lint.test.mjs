@@ -236,3 +236,94 @@ test("Codex lint reports fenced run_in_background in skill sub-files", async () 
   assert.ok(hit, "expected fenced run_in_background to be reported");
   assert.match(hit.value, /run_in_background/);
 });
+
+async function writeSourceLintFixture(root, files) {
+  await fs.writeFile(path.join(root, "README.md"), "# fixture\n");
+  await fs.mkdir(path.join(root, "plugin", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin", "lib"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin", "context"), { recursive: true });
+  if (!("plugin/context/bootstrap.md" in files)) {
+    await fs.writeFile(
+      path.join(root, "plugin", "context", "bootstrap.md"),
+      "# bootstrap\n",
+    );
+  }
+  for (const [relativePath, content] of Object.entries(files)) {
+    const absolutePath = path.join(root, relativePath);
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, content);
+  }
+}
+
+test("source lint reports leftover Claude tool names in plugin skills", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-source-tools-"));
+  await writeSourceLintFixture(root, {
+    "plugin/skills/cf-x/SKILL.md": [
+      "Use the Agent tool",
+      "AskUserQuestion",
+      "run_in_background",
+      "Skill tool",
+      "if Claude finds itself",
+      "Claude does NOT need",
+      "Claude's own review",
+      "",
+    ].join("\n"),
+  });
+
+  const issues = await findPlaceholderLintIssues(root);
+  const values = issues.map((issue) => issue.value);
+  for (const expected of [
+    "Agent tool",
+    "AskUserQuestion",
+    "run_in_background",
+    "Skill tool",
+    "if Claude finds itself",
+    "Claude does NOT need",
+    "Claude's own review",
+  ]) {
+    assert.ok(
+      values.includes(expected),
+      `expected source lint to report ${expected}, got ${JSON.stringify(values)}`,
+    );
+  }
+});
+
+test("source lint skips Phase 3 leftover files", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-source-skip-"));
+  await writeSourceLintFixture(root, {
+    "plugin/skills/cf-plan/SKILL.md":
+      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
+    "plugin/skills/cf-review/SKILL.md":
+      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
+    "plugin/context/bootstrap.md":
+      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
+    "plugin/skills/cf-x/SKILL.md": "Use the Agent tool here.\n",
+  });
+
+  const issues = await findPlaceholderLintIssues(root);
+  const leftoverFiles = issues
+    .filter((issue) => issue.type === "Claude agent tool")
+    .map((issue) => issue.file);
+  const placeholderFiles = issues
+    .filter((issue) => issue.type === "unresolved host placeholder")
+    .map((issue) => issue.file);
+
+  assert.ok(
+    leftoverFiles.includes("plugin/skills/cf-x/SKILL.md"),
+    "expected in-scope skill to be reported for Agent tool",
+  );
+  assert.equal(leftoverFiles.includes("plugin/skills/cf-plan/SKILL.md"), false);
+  assert.equal(leftoverFiles.includes("plugin/skills/cf-review/SKILL.md"), false);
+  assert.equal(leftoverFiles.includes("plugin/context/bootstrap.md"), false);
+
+  for (const excluded of [
+    "plugin/skills/cf-plan/SKILL.md",
+    "plugin/skills/cf-review/SKILL.md",
+    "plugin/context/bootstrap.md",
+  ]) {
+    assert.ok(
+      placeholderFiles.includes(excluded),
+      `expected unresolved host placeholder in ${excluded}, got ${JSON.stringify(placeholderFiles)}`,
+    );
+  }
+});

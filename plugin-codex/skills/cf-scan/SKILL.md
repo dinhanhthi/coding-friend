@@ -5,12 +5,10 @@ description: >
   Triggers: "scan the project", "scan the codebase", "bootstrap memory", "populate
   memory", "analyze the project". Token-heavy — always warn before proceeding.
 created: 2026-03-16
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-scan
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Scan the project and bootstrap the memory system. User input: **$ARGUMENTS**
 
@@ -34,13 +32,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-scan
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 0.5: Context Budget Check
 
@@ -206,8 +202,8 @@ Based on explorer findings, plan ~10-15 memories across categories:
 1. Check if a memory with matching `{category}/{slug}` exists in the lookup map
 2. If **exists** → delegate to cf-writer with `task: update` and `existing_file_action: overwrite`, then call `memory_update` with params: `id` (e.g. "features/auth-module"), `content` (full new markdown), `tags` (updated tags array)
 3. If **new** → assess complexity:
-   - Simple (short, factual) → delegate to **cf-writer** agent (low reasoning effort)
-   - Complex (nuanced architecture, deep trade-offs) → delegate to **cf-writer-deep** agent (medium reasoning effort)
+   - Simple (short, factual) → Dispatch **cf-writer** agent (low reasoning effort)
+   - Complex (nuanced architecture, deep trade-offs) → Dispatch **cf-writer-deep** agent (medium reasoning effort)
 
 **Write spec for cf-writer (same format as $cf-remember):**
 

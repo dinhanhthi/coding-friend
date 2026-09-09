@@ -10,8 +10,6 @@ updated: 2026-09-09
 
 # /cf-review-out
 
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
-
 Generate a review prompt for an external agent: **$ARGUMENTS**
 
 ## Purpose
@@ -24,13 +22,11 @@ Creates a complete, self-contained review document in `docs/reviews/` that any e
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-review-out
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Determine the label
 

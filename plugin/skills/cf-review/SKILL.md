@@ -6,13 +6,11 @@ description: >
   diff". Also for reviewing specific files, commits, or branches.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 model: opus
 ---
 
 # /cf-review
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 > ✨ **CODING FRIEND** → /cf-review activated
 
@@ -30,7 +28,7 @@ Invoked by `/cf-plan` (after all tasks), `/cf-fix` (after verified fix), and `/c
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-review
 ```
 
-If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Identify the target
 

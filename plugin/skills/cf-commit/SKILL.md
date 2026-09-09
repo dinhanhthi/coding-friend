@@ -7,12 +7,10 @@ disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read, Glob]
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-commit
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Create a commit for the current changes. Hint: **$ARGUMENTS**
 
@@ -20,13 +18,11 @@ Create a commit for the current changes. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-commit
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Analyze Changes
 

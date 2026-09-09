@@ -7,12 +7,10 @@ description: >
 model: haiku
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-04-06
+updated: 2026-09-09
 ---
 
 # Code Quality Reviewer
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
 
 You are a code quality specialist. Your job is to evaluate naming, structure, complexity, and detect AI slop in code changes.
 

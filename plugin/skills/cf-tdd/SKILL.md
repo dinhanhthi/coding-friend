@@ -10,22 +10,18 @@ description: >
   config edits, or questions without requested changes.
 user-invocable: false
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # Implementation Workflow
 
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
-
 ## Custom Guide
-
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
 
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-tdd
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ## Mode Detection
 
@@ -89,7 +85,7 @@ If dispatching cf-explorer or cf-planner first, pass the context file path so th
 
 ### Dispatch
 
-Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pass:
+Dispatch `cf-implementer`. Pass:
 
 - Task description and expected behavior
 - `--add-tests` in the prompt if TDD mode is active
@@ -113,54 +109,7 @@ Use the **Agent tool** with `subagent_type: "coding-friend:cf-implementer"`. Pas
 
 ### Retry on Failure
 
-After the cf-implementer returns, **parse the last non-empty line** of its response for the result signal using a strict regex match — `^\[CF-RESULT: (success|failure)( .*)?\]$`:
-
-- `[CF-RESULT: success]` → proceed to Review Reminder
-- `[CF-RESULT: failure] <reason>` → trigger retry (see below)
-- **Sentinel missing, malformed, or not on the last non-empty line → treat as failure** with reason `empty-output`. Never assume silent success — a truncated or aborted agent run may produce output that looks complete but skipped the result signal.
-
-**Retry protocol** (max 1 retry):
-
-1. **Notify the user** (always visible — never retry silently):
-
-   ```
-   > ⟳ Attempt 1 failed (<reason>). Retrying with error context...
-   ```
-
-2. **Update the context file** — write the failure details to `{docsDir}/context/{task-id}.json`:
-
-   ```json
-   {
-     "task_id": "<task-id>",
-     "task_summary": "<original task>",
-     "relevant_files": ["..."],
-     "key_findings": ["..."],
-     "constraints": ["..."],
-     "suggested_approach": "...",
-     "previous_failure": {
-       "reason": "<tests-failed|compile-error|empty-output>",
-       "error_summary": "<brief error details from the agent's response>",
-       "attempt": 1
-     }
-   }
-   ```
-
-3. **Re-dispatch cf-implementer** with the updated context file path and an amended prompt:
-
-   > **RETRY** — Previous attempt failed: [reason]. Error details: [summary].
-   > Review the context file at [path] for full failure context.
-   > [original prompt]
-
-4. **If retry also fails**, escalate to user:
-
-   ```
-   > ✗ Both attempts failed. Summary:
-   > - Attempt 1: <reason>
-   > - Attempt 2: <reason>
-   > Please review and guide the next step.
-   ```
-
-5. **Cleanup**: If the workflow completes (success or final escalation), delete the context file if it still exists. If the user cancels mid-workflow, delete the context file to avoid orphans.
+Follow `${CLAUDE_PLUGIN_ROOT}/lib/protocols/implementer-result.md` (parse `[CF-RESULT:`, one retry with `previous_failure`, escalate, cleanup). On success → Review Reminder. On both-attempts failure → wait for the user / Review Reminder; do not auto inline-fix.
 
 **When NOT to dispatch** (implement inline instead):
 

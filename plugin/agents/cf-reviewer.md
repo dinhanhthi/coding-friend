@@ -15,12 +15,10 @@ description: >
   questions about code — only for actual review of changes.
 model: inherit
 created: 2026-02-17
-updated: 2026-04-30
+updated: 2026-09-09
 ---
 
 # Code Review Orchestrator
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
 
 You are a code review orchestrator. Your job is to dispatch specialist review agents in parallel, then merge their findings into a unified report.
 
@@ -46,7 +44,7 @@ Gather the shared context that all specialist agents need:
 
 ### Step 2: Dispatch Specialist Agents
 
-Launch specialist agents **in parallel** using the Agent tool. Each agent receives the same diff + changed files + mode.
+Dispatch the specialist agents **in parallel** (one message). Each agent receives the same diff + changed files + mode.
 
 **QUICK mode** — dispatch these 3 agents in parallel:
 

@@ -95,6 +95,10 @@ async function createFixtureRepo() {
     "export const root = process.env.CLAUDE_PLUGIN_ROOT;\n",
   );
   await writeText(
+    path.join(repoRoot, "plugin", "lib", "protocols", "implementer-result.md"),
+    "# CF-RESULT-FIXTURE-PROTOCOL\n",
+  );
+  await writeText(
     path.join(repoRoot, "plugin", "context", "bootstrap.md"),
     [
       "# coding-friend",
@@ -716,6 +720,7 @@ test("builds Antigravity plugin fixture idempotently", async () => {
       "hooks/session-init.agy.sh",
       "hooks.json",
       "lib/helper.js",
+      "lib/protocols/implementer-result.md",
       "mcp_config.json",
       "plugin.json",
       "README.md",
@@ -826,6 +831,12 @@ test("builds Antigravity plugin fixture idempotently", async () => {
     await fs.stat(path.join(agyPluginDir, "hooks", "session-init.agy.sh"))
   ).mode;
   assert.equal(shellMode & 0o111, 0o111);
+
+  const protocol = await fs.readFile(
+    path.join(agyPluginDir, "lib/protocols/implementer-result.md"),
+    "utf8",
+  );
+  assert.match(protocol, /CF-RESULT-FIXTURE-PROTOCOL/);
 });
 
 test("fails fast when plugin source directory is missing", async () => {
@@ -841,4 +852,24 @@ test("fails fast when plugin source directory is missing", async () => {
       `Missing plugin source directory: ${path.join(repoRoot, "plugin").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
     ),
   );
+});
+
+test("live Antigravity tree includes implementer-result protocol", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const source = await fs.readFile(
+    path.join(repoRoot, "plugin/lib/protocols/implementer-result.md"),
+    "utf8",
+  );
+  const artifact = await fs.readFile(
+    path.join(
+      repoRoot,
+      "plugin-antigravity/lib/protocols/implementer-result.md",
+    ),
+    "utf8",
+  );
+  assert.match(source, /previous_failure/);
+  assert.match(artifact, /previous_failure/);
 });

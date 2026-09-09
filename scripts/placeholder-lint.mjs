@@ -7,10 +7,47 @@ const repoRoot = path.resolve(path.dirname(scriptPath), "..");
 
 const SHARED_MARKDOWN_FILES = ["plugin/context/bootstrap.md", "README.md"];
 
+const SOURCE_PHASE3_EXCLUDED = new Set([
+  "plugin/skills/cf-plan/SKILL.md",
+  "plugin/skills/cf-review/SKILL.md",
+  "plugin/context/bootstrap.md",
+]);
+
 const SOURCE_PATTERNS = [
   {
     name: "unresolved host placeholder",
     regex: /\{\{cf:[^}]+\}\}/g,
+  },
+  {
+    name: "Claude agent tool",
+    regex: /\bAgent tool\b/g,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
+  },
+  {
+    name: "Claude question tool",
+    regex: /\bAskUserQuestion\b/g,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
+  },
+  {
+    name: "Claude background flag",
+    regex: /\brun_in_background\b/g,
+    scanRaw: true,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
+  },
+  {
+    name: "Claude Skill tool",
+    regex: /\bSkill tool\b/g,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
+  },
+  {
+    name: "Claude host name",
+    regex: /if Claude finds itself|Claude does NOT need/g,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
+  },
+  {
+    name: "Claude-specific review prose",
+    regex: /Claude's own review/g,
+    excludeFiles: SOURCE_PHASE3_EXCLUDED,
   },
 ];
 
@@ -195,6 +232,7 @@ async function findIssues(files, patterns, root = repoRoot) {
     const stripped = stripFencedCode(raw);
 
     for (const pattern of patterns) {
+      if (pattern.excludeFiles?.has(relativePath)) continue;
       const searchable = pattern.scanRaw ? raw : stripped;
       pattern.regex.lastIndex = 0;
       for (const match of searchable.matchAll(pattern.regex)) {

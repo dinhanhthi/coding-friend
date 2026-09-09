@@ -7,8 +7,6 @@ model: pro
 
 # Security Reviewer
 
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
-
 You are a security specialist. Your job is to find security vulnerabilities in code changes.
 
 ## Input

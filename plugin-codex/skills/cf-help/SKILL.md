@@ -7,12 +7,10 @@ description: >
   cf-plan?", "what is cf-tdd?", "is the CLI required?". Do NOT auto-invoke for general
   coding questions unrelated to Coding Friend.
 created: 2026-02-17
-updated: 2026-09-05
+updated: 2026-09-09
 ---
 
 # $cf-help — Coding Friend Help
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Matrix: [CLI requirements](../../../docs/cli-requirements.md).
 
 Catalog = what exists. Flags / config / hooks → lookup rule. Never guess.
 
@@ -20,13 +18,11 @@ Catalog = what exists. Flags / config / hooks → lookup rule. Never guess.
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-help
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Understand the question
 

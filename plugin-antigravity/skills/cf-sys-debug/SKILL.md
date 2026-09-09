@@ -8,13 +8,11 @@ description: >
   "investigate", "diagnose", "why is this happening". Prefer over cf-fix for hard bugs. Do
   NOT auto-invoke for trivial typos, one-line fixes, or obvious config errors.
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 disable-slash-command: true
 ---
 
 # Systematic Debugging
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 ## Custom Guide
 
@@ -22,7 +20,7 @@ disable-slash-command: true
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-sys-debug
 ```
 
-If output is not empty: `## Before` → before first step, `## Rules` → throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ## Core Constraint
 
@@ -65,15 +63,7 @@ Do not claim progress without observable evidence matching at least one signal.
 
 **1a. Check existing bug docs** (memory recall):
 
-Extract 2–3 keywords.
-
-**Primary — Memory MCP** (if `memory_search` is available):
-`{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`
-
-**Fallback — grep** (`{docsDir}` from `.coding-friend/config.json`, default `docs`):
-
-1. Grep `^description:` in `{docsDir}/memory/bugs/**/*.md`
-2. Else grep `^tags:`
+Recall memory (Verbs in `<plugin-root>/context/bootstrap.md`) with 2–3 keywords from the bug: `{ "query": "<bug keywords>", "type": "episode", "limit": 3 }`; grep scope `{CF_DOCS_ROOT}/memory/bugs/**/*.md`.
 
 Read the top 1–2 matches.
 
@@ -137,7 +127,7 @@ Hard bugs always get a doc.
 
 1. Read `language` (local `.coding-friend/config.json` overrides global, default `en`)
 2. `MAIN_REPO_ROOT` from SessionStart bootstrap (`session-init.sh`); else `pwd`. Config from `CF_CONFIG_FILE` (`$MAIN_REPO_ROOT/.coding-friend/config.json`) for `docsDir` (default `docs`) — do not search sub-folders. Docs base: `CF_DOCS_ROOT`.
-3. Delegate to **cf-writer** by calling `invoke_subagent` with agent `cf-writer` (absolute `file_path`):
+3. Dispatch `cf-writer` (absolute `file_path`):
 
 ```
 WRITE SPEC

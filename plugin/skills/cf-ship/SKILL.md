@@ -6,12 +6,10 @@ description: >
 disable-model-invocation: true
 model: sonnet
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-ship
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Ship the current work. Hint: **$ARGUMENTS**
 
@@ -19,13 +17,11 @@ Ship the current work. Hint: **$ARGUMENTS**
 
 ### Step 0: Custom Guide & Flags
 
-Custom guide (auto-loaded at invocation — do NOT skip):
-
 ```!
 bash "${CLAUDE_PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-ship
 ```
 
-If the block above produced any content, integrate the returned sections: `## Before` → execute **before Step 1**, `## Rules` → apply throughout, `## After` → after the final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 **Guard — do NOT short-circuit:** If a `## Before` section was injected above, you MUST carry it out before ANY assessment of whether there is something to ship. A clean working tree or being on `main` does NOT by itself mean "nothing to ship" — a `## Before` guide may still require action (e.g. a version-bump / tag / release flow). Never conclude "nothing to ship" until Step 0's `## Before` has been executed.
 

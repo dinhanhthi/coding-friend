@@ -5,12 +5,10 @@ description: >
   plan", "continue the plan", "pick up where we left off", "finish the plan", "resume
   <slug>". Requires a plan under docs/plans/. Does NOT create new plans (use /cf-plan).
 created: 2026-07-04
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-plan-resume
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Reads the plan file and its context file directly and dispatches cf-implementer; no CLI features are required. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Resume the implementation plan at: **$ARGUMENTS** (a plan folder path, an entry file path, or a bare `<slug>`).
 
@@ -18,13 +16,11 @@ Resume the implementation plan at: **$ARGUMENTS** (a plan folder path, an entry 
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-plan-resume
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Resume Protocol
 

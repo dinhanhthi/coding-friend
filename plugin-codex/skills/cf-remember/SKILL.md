@@ -8,12 +8,10 @@ description: >
   gotchas → features/. Do NOT auto-invoke for trivial fixes, simple config changes, or
   educational exchanges (use $cf-learn).
 created: 2026-02-17
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # $cf-remember
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Extract and save project knowledge. User input: **$ARGUMENTS**
 
@@ -37,13 +35,11 @@ Output goes to `{docsDir}/memory/` (default: `docs/memory/`). Check `.coding-fri
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "${PLUGIN_ROOT}/lib/load-custom-guide.sh" cf-remember
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Analyze the Conversation
 
@@ -96,7 +92,7 @@ Before delegating to the cf-writer agent, assess the complexity of the content:
 
 ### Step 4: Delegate to cf-writer Agent
 
-Construct a write spec and invoke the appropriate cf-writer agent via the Codex subagent workflow.
+Dispatch `cf-writer` or `cf-writer-deep` (per Step 3) with the complete write spec as the prompt.
 
 Check if the target file already exists:
 
@@ -156,7 +152,7 @@ existing_file_action: append
 - `tags`: 3-5 relevant keywords as array
 - When `task: update`, update the `updated` date in the existing frontmatter. Do NOT change `created`.
 
-Use the Codex subagent workflow with `cf-writer` custom agent or `cf-writer-deep` custom agent (based on Step 3 assessment) with the complete write spec as the prompt.
+Dispatch `cf-writer` or `cf-writer-deep` (per Step 3) with the complete write spec as the prompt.
 
 ### Step 5: Index in CF Memory (MANDATORY)
 

@@ -7,8 +7,6 @@ model: flash
 
 # Code Quality Reviewer
 
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
-
 You are a code quality specialist. Your job is to evaluate naming, structure, complexity, and detect AI slop in code changes.
 
 ## Input

@@ -6,12 +6,10 @@ description: >
   "restore conversation context". First word is the slug; `--recap` prints a summary. Does
   NOT create checkpoints (use /cf-checkpoint).
 created: 2026-07-04
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-checkpoint-from
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. Reads the checkpoint file directly from disk; no CLI features are required. See [CLI requirements](../../../docs/cli-requirements.md) for the full matrix.
 
 Argument: **$ARGUMENTS**
 
@@ -31,13 +29,11 @@ Load a saved checkpoint into the current (fresh) conversation as working context
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-checkpoint-from
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Parse the argument
 

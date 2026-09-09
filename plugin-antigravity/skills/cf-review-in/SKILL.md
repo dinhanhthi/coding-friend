@@ -5,12 +5,10 @@ description: >
   offers to fix. Triggers: "review in", "collect review", "check review results",
   "cf-review-in", "import review".
 created: 2026-03-23
-updated: 2026-08-27
+updated: 2026-09-09
 ---
 
 # /cf-review-in
-
-> **CLI Requirement:** OPTIONAL — Uses the memory MCP from `coding-friend-cli` for fast indexed search and storage. Without the CLI: falls back to grep over `docs/memory/` and direct file writes. Full functionality preserved, slower memory recall. See [CLI requirements](../../../docs/cli-requirements.md).
 
 Collect external review results for: **$ARGUMENTS**
 
@@ -22,13 +20,11 @@ Reads the review results written by an external AI agent (generated via [`/cf-re
 
 ### Step 0: Custom Guide
 
-Custom guide — auto-loaded below (if the raw command shows instead of its output, run it yourself):
-
 ```!
 bash "<plugin-root>/lib/load-custom-guide.sh" cf-review-in
 ```
 
-If output is not empty, integrate returned sections: `## Before` → before first step, `## Rules` → apply throughout, `## After` → after final step.
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
 
 ### Step 1: Determine the label and optional service
 

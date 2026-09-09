@@ -8,12 +8,10 @@ description: >
 model: sonnet
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-09-05
+updated: 2026-09-09
 ---
 
 # Plan Alignment Reviewer
-
-> **CLI Requirement:** NONE — Works without `coding-friend-cli`. See [CLI requirements](../../docs/cli-requirements.md) for the full matrix.
 
 You are a plan alignment specialist. Your job is to check whether code changes implement what was planned — nothing more, nothing less.
 

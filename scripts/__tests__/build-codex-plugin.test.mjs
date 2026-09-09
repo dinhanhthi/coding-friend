@@ -91,6 +91,10 @@ async function createFixtureRepo() {
     "export const root = process.env.CLAUDE_PLUGIN_ROOT;\n",
   );
   await writeText(
+    path.join(repoRoot, "plugin", "lib", "protocols", "implementer-result.md"),
+    "# CF-RESULT-FIXTURE-PROTOCOL\n",
+  );
+  await writeText(
     path.join(repoRoot, "plugin", "context", "notes.md"),
     "Run /cf-plan before dispatch.\n",
   );
@@ -509,6 +513,7 @@ test("builds Codex plugin fixture idempotently", async () => {
       "hooks/hooks.json",
       "hooks/privacy-block.sh",
       "lib/helper.js",
+      "lib/protocols/implementer-result.md",
       "README.md",
       "skills/cf-example/SKILL.md",
     ],
@@ -554,6 +559,12 @@ test("builds Codex plugin fixture idempotently", async () => {
     await fs.stat(path.join(codexPluginDir, "hooks", "privacy-block.sh"))
   ).mode;
   assert.equal(shellMode & 0o111, 0o111);
+
+  const protocol = await fs.readFile(
+    path.join(codexPluginDir, "lib/protocols/implementer-result.md"),
+    "utf8",
+  );
+  assert.match(protocol, /CF-RESULT-FIXTURE-PROTOCOL/);
 });
 
 test("fails fast when plugin source directory is missing", async () => {
@@ -571,4 +582,21 @@ test("fails fast when plugin source directory is missing", async () => {
       `Missing plugin source directory: ${path.join(repoRoot, "plugin").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
     ),
   );
+});
+
+test("live Codex tree includes implementer-result protocol", async () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const source = await fs.readFile(
+    path.join(repoRoot, "plugin/lib/protocols/implementer-result.md"),
+    "utf8",
+  );
+  const artifact = await fs.readFile(
+    path.join(repoRoot, "plugin-codex/lib/protocols/implementer-result.md"),
+    "utf8",
+  );
+  assert.match(source, /previous_failure/);
+  assert.match(artifact, /previous_failure/);
 });
