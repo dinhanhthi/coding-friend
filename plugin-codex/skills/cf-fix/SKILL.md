@@ -1,10 +1,13 @@
 ---
 name: cf-fix
 description: >
-  Quick bug fix workflow. Use when the user reports a bug or broken behavior — e.g. "fix
-  this", "it's broken", "not working", "there's a bug", "this crashes", "debug this", "it
-  throws", "failing test", "regression", "unexpected behavior". Also triggers on stack
-  traces or error messages.
+  Quick bug-fix workflow — reproduce, find the root cause, fix via cf-implementer,
+  verify, auto-review. TRIGGER — the user reports a bug or broken behavior: "fix
+  this", "it's broken", "not working", "there's a bug", "this crashes", "debug
+  this", "it throws", "failing test", "regression", "unexpected behavior"; a pasted
+  stack trace or error message. SKIP — new features (use cf-plan or cf-tdd),
+  performance complaints (use cf-optimize), and recurring or hard-to-reproduce
+  bugs after a failed fix (use cf-sys-debug).
 created: 2026-02-17
 updated: 2026-09-09
 ---

@@ -1,6 +1,13 @@
 ---
 name: cf-verification
-description: Verify before claiming work is complete
+description: >
+  Completion gate — demands fresh verification evidence (test run, command output,
+  manual check) before any claim that work is done. TRIGGER — about to say "done",
+  "complete", "fixed", "passing", "ready to commit" or "ready to ship", or to
+  summarize finished work; the end of any cf-tdd, cf-fix, cf-plan, or cf-optimize
+  run; the user asks "is it done?" or "does it work?". SKIP — mid-task progress
+  notes, exploratory or read-only answers, and plans that have not been
+  implemented yet.
 user-invocable: false
 created: 2026-02-17
 updated: 2026-09-09

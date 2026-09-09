@@ -1,11 +1,12 @@
 ---
 name: cf-help
 description: >
-  Answer questions about Coding Friend — skills, agents, hooks, CLI, config, memory,
-  hosts, parameters. Auto-invoke for CF capabilities or how to use a skill — e.g. "what
-  skills are available?", "how does coding friend work?", "list all skills", "how do I use
-  cf-plan?", "what is cf-tdd?", "is the CLI required?". Do NOT auto-invoke for general
-  coding questions unrelated to Coding Friend.
+  Answer questions about Coding Friend itself — skills, agents, hooks, CLI, config,
+  memory, hosts, parameters. TRIGGER — "what skills are available?", "how does
+  coding friend work?", "list all skills", "how do I use cf-plan?", "what is
+  cf-tdd?", "is the CLI required?", or any question about a cf-* name, flag, hook,
+  or config key. SKIP — general coding questions unrelated to Coding Friend, and
+  requests to run a skill (invoke that skill instead).
 user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]

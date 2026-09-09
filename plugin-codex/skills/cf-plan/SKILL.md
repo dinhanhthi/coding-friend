@@ -1,10 +1,13 @@
 ---
 name: cf-plan
 description: >
-  Brainstorm and write an implementation plan. Use when the user wants to plan, build,
-  create, or implement something — e.g. "let's build", "let's create", "add feature",
-  "implement", "set up", "design a solution", "architect", "scaffold", "plan out", "what's
-  the best way to build". Also triggers on multi-step work needing planning.
+  Brainstorm and write an implementation plan before coding. TRIGGER — the user
+  wants to plan, build, create, or implement something: "let's build", "let's
+  create", "add feature", "implement", "set up", "design a solution", "architect",
+  "scaffold", "plan out", "what's the best way to build"; any multi-step or
+  multi-file work that needs sequencing. SKIP — a single obvious edit, a reported
+  bug (use cf-fix), deciding whether to build at all (use $cf-advise), or resuming
+  an existing plan (use $cf-plan-resume).
 created: 2026-02-17
 updated: 2026-09-09
 ---

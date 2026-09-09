@@ -1,9 +1,13 @@
 ---
 name: cf-review
 description: >
-  Dispatch code review to a subagent. Triggers: "review this", "review my changes", "check
-  the code", "code review", "any issues with this?", "review before merge", "review the
-  diff". Also for reviewing specific files, commits, or branches.
+  Dispatch a multi-agent code review of the current changes and report Critical /
+  Important / Suggestions / Summary. TRIGGER — "review this", "review my changes",
+  "check the code", "code review", "any issues with this?", "review before merge",
+  "review the diff"; reviewing specific files, commits, or branches;
+  automatically after cf-plan, cf-fix, and cf-optimize complete. SKIP — reviewing
+  a plan document (use /cf-plan-review), quick questions about how code works
+  (use /cf-ask), and formatting-only changes.
 user-invocable: true
 created: 2026-02-17
 updated: 2026-09-09

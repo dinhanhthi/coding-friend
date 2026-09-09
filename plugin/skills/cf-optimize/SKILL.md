@@ -1,11 +1,12 @@
 ---
 name: cf-optimize
 description: >
-  Structured optimization — baseline, analyze, optimize, measure, compare. Auto-invoke for
-  performance/speed — e.g. "this is slow", "make it faster", "optimize", "performance",
-  "bottleneck", "too many queries", "high latency", "memory leak", "speed up", "timeout",
-  "N+1". Do NOT auto-invoke for minor refactors or style changes that are not
-  performance-related.
+  Structured performance work — baseline, analyze, optimize, measure, compare.
+  TRIGGER — "this is slow", "make it faster", "optimize", "performance",
+  "bottleneck", "too many queries", "high latency", "memory leak", "speed up",
+  "timeout", "N+1", or any request to reduce time, memory, or query count with
+  numbers to prove it. SKIP — minor refactors, readability or style changes, and
+  correctness bugs that are not performance-related (use cf-fix).
 user-invocable: true
 argument-hint: "[target to optimize]"
 created: 2026-02-20

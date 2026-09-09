@@ -1,10 +1,13 @@
 ---
 name: cf-learn
 description: >
-  Extract knowledge for human learning from conversation. Auto-invoke on substantial new
-  technical knowledge, debugging breakthroughs, architecture decisions, or complex
-  explanations. Do NOT auto-invoke for trivial edits, typo fixes, or routine operations.
-  Unlike $cf-remember (AI recall), this is educational notes for the human.
+  Extract educational notes for the human from the conversation (unlike
+  $cf-remember, which stores project memory for AI recall). TRIGGER — substantial
+  new technical knowledge, a debugging breakthrough, an architecture decision
+  explained, or a complex explanation worth keeping; the user says "explain what
+  we learned", "make notes on this", "cf-learn". SKIP — trivial edits, typo
+  fixes, routine operations, or knowledge that belongs in project memory rather
+  than learning notes (use $cf-remember).
 created: 2026-02-17
 updated: 2026-09-09
 ---

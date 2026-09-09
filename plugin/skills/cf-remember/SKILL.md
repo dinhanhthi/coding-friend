@@ -1,11 +1,12 @@
 ---
 name: cf-remember
 description: >
-  Extract project knowledge to docs/memory for AI recall. Triggers: "remember this", "save
-  this to memory", "document what we did", "capture this decision", "write this down",
-  "note this", "record this convention". Auto-invoke: non-obvious bug fix → bugs/;
-  architecture decision → decisions/; new convention → conventions/; feature flows or
-  gotchas → features/. Do NOT auto-invoke for trivial fixes, simple config changes, or
+  Save project knowledge to docs/memory for AI recall (unlike /cf-learn, which
+  writes educational notes for the human). TRIGGER — "remember this", "save this
+  to memory", "document what we did", "capture this decision", "write this down",
+  "note this", "record this convention"; after a non-obvious bug fix → bugs/, an
+  architecture decision → decisions/, a new convention → conventions/, a feature
+  flow or gotcha → features/. SKIP — trivial fixes, simple config changes, or
   educational exchanges (use /cf-learn).
 model: sonnet
 created: 2026-02-17

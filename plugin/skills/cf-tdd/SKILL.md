@@ -1,13 +1,14 @@
 ---
 name: cf-tdd
 description: >
-  Use when writing new production code, adding features, implementing, or refactoring —
-  e.g. "implement this", "build this feature", "create a function", "add a new endpoint",
-  "write the implementation", "refactor this", "write a test", "add tests", "create a
-  component", "implement the API", "add a route". Also auto-invoke when planning shifts to
-  writing production code — load this first. Default: direct implementation (no new
-  tests). TDD when `--add-tests` or config `tdd: true`. Do NOT auto-invoke for docs-only,
-  config edits, or questions without requested changes.
+  Gate before writing production code — direct implementation by default, TDD
+  (RED→GREEN→REFACTOR) with `--add-tests` or config `tdd: true`. TRIGGER — any new
+  feature, implementation, or refactor: "implement this", "build this feature",
+  "create a function", "add a new endpoint", "write the implementation", "refactor
+  this", "write a test", "add tests", "create a component", "implement the API",
+  "add a route"; also when planning shifts into writing code — load this first.
+  SKIP — docs-only changes, config edits, non-code files, or questions with no
+  requested change.
 user-invocable: false
 created: 2026-02-17
 updated: 2026-09-09
