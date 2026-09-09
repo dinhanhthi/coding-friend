@@ -22,7 +22,7 @@ import {
   isMarketplaceRegistered,
 } from "../lib/plugin-state.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
-import { ensureStatusline } from "../lib/statusline.js";
+import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import chalk from "chalk";
 
 const REMOTE_URL = "https://github.com/dinhanhthi/coding-friend.git";
@@ -305,29 +305,15 @@ export async function devSyncCommand(): Promise<void> {
     return;
   }
 
-  const cacheBase = pluginCachePath();
+  // Target the version Claude Code actually loads. Uninstall leaves orphaned
+  // dirs from earlier version bumps behind in the cache, so picking by mtime
+  // can lock onto a dir Claude Code never reads.
+  const installedVersion = getInstalledVersion();
+  const cacheVersionDir = installedVersion
+    ? join(pluginCachePath(), installedVersion)
+    : null;
 
-  // Find the cached version directory
-  let cacheVersionDir: string | null = null;
-  if (existsSync(cacheBase)) {
-    const versions = readdirSync(cacheBase).filter((v) =>
-      statSync(join(cacheBase, v)).isDirectory(),
-    );
-    if (versions.length > 0) {
-      // Use the most recently modified version dir
-      cacheVersionDir = join(
-        cacheBase,
-        versions.sort((a, b) => {
-          return (
-            statSync(join(cacheBase, b)).mtimeMs -
-            statSync(join(cacheBase, a)).mtimeMs
-          );
-        })[0],
-      );
-    }
-  }
-
-  if (!cacheVersionDir) {
+  if (!cacheVersionDir || !existsSync(cacheVersionDir)) {
     log.error(
       "No cached plugin version found. Run `cf dev off && cf dev on` first.",
     );
