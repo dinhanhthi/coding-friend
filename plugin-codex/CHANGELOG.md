@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.1 (2026-09-09)
+
+- Trim `TRIGGER`/`SKIP` descriptions into auto-invoked skills for clearer routing [#6451e3de](https://github.com/dinhanhthi/coding-friend/commit/6451e3de)
+- Bring `$cf-plan`, `$cf-review`, `$cf-scan`, `$cf-ask` under 3000 tokens each; drop dead builder anchors [#237a0ba6](https://github.com/dinhanhthi/coding-friend/commit/237a0ba6)
+- Drop CLI banners from shared skill text, unify the custom-guide line, and use host-neutral verbs so skill bodies read the same across Claude/Codex/Antigravity [#3159673b](https://github.com/dinhanhthi/coding-friend/commit/3159673b) [#4d61e2b5](https://github.com/dinhanhthi/coding-friend/commit/4d61e2b5)
+- Replace `docs/plugin-dev.md` with a simplified `CONTRIBUTING.md` covering how local dev resolves `${PLUGIN_ROOT}` and what to do after each change [#65c1cf4c](https://github.com/dinhanhthi/coding-friend/commit/65c1cf4c)
+
 ## v0.43.0 (2026-09-06)
 
 - Add `$cf-plan-review` skill: review a saved `$cf-plan` folder with a fresh reviewer (optional `--codex`/`--gemini`/`--claude`/`--cursor`/`--grok` in parallel), write `review.md` into the plan folder, and offer to apply Critical/Important findings [#2efea65e](https://github.com/dinhanhthi/coding-friend/commit/2efea65e) [#53e4492f](https://github.com/dinhanhthi/coding-friend/commit/53e4492f)

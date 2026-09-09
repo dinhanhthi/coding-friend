@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.40.3 (2026-09-09)
+
+- Pressing `Esc` in `cf init` now goes back a step instead of exiting the wizard [#3ad1d70a](https://github.com/dinhanhthi/coding-friend/commit/3ad1d70a)
+- Fix `cf dev sync` copying into whichever cached plugin version had the newest mtime instead of the one Claude Code actually has installed — an orphaned dir from an earlier version bump could win the pick and silently swallow the sync [#a2cb9815](https://github.com/dinhanhthi/coding-friend/commit/a2cb9815)
+- Fix `cf update` running `npm install -g coding-friend-cli@latest` even when the global `coding-friend-cli` is `npm link`-ed to a local checkout, which would replace the dev link with a registry copy [#288ae6ab](https://github.com/dinhanhthi/coding-friend/commit/288ae6ab)
+- Fix `cf permission` never granting (or cleaning up stale) rules for the marketplace's actual plugin root — only the versioned cache path was covered, so a directory-source (`cf dev on`) or fetched marketplace install kept asking for approval on every plugin script [#a8e3a0aa](https://github.com/dinhanhthi/coding-friend/commit/a8e3a0aa)
+
 ## v1.40.2 (2026-09-04)
 
 - Add `review.maxRounds` (default 5) to the config schema — caps `/cf-plan --auto` and `cf-tdd --auto` review/fix-loop rounds [#8a5be07c](https://github.com/dinhanhthi/coding-friend/commit/8a5be07c)
