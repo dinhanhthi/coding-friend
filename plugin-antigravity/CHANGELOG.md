@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.2 (2026-09-10)
+
+- Restrict `cf-reviewer*` agent tool allow-lists to stop background permission hangs [#8d2e4ebb](https://github.com/dinhanhthi/coding-friend/commit/8d2e4ebb)
+- Lint tool allow-lists across agents, restrict `cf-planner`/`cf-implementer` to referenced tools, tighten the `SENSITIVE` regex [#1af88963](https://github.com/dinhanhthi/coding-friend/commit/1af88963) [#ceb7e80c](https://github.com/dinhanhthi/coding-friend/commit/ceb7e80c)
+
 ## v0.43.1 (2026-09-09)
 
 - Trim `TRIGGER`/`SKIP` descriptions into auto-invoked skills for clearer routing [#6451e3de](https://github.com/dinhanhthi/coding-friend/commit/6451e3de)
