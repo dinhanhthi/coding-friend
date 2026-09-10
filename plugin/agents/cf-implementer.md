@@ -13,7 +13,7 @@ description: >
   Do NOT use this agent for single-file trivial changes, documentation, or config edits —
   use inline implementation (cf-tdd skill) for small changes instead.
 model: inherit
-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch
+tools: Read, Write, Edit, Glob, Grep, Bash
 created: 2026-02-17
 updated: 2026-09-10
 ---
