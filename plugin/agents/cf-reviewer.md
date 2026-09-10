@@ -7,15 +7,16 @@ description: >
   before merge. Trigger this agent when the user asks to review code changes — e.g.
   "review this", "review my changes", "check the code", "look over this", "code review",
   "any issues with this?", "is this code ok?", "review before merge", "review the diff",
-  "what do you think of these changes?". This agent runs in an isolated context, reads
-  the full diff plus surrounding file context, and orchestrates a multi-agent review
-  pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories
+  "what do you think of these changes?". This agent runs in an isolated context, obtains the
+  diff itself (specialists read the changed files they need), and orchestrates a
+  multi-agent review pipeline. Reports findings as bullet lists grouped into 4 emoji-headed categories
   (🚨 Critical / ⚠️ Important / 💡 Suggestions / 📋 Summary) with file paths and line
   numbers. Never use tables — always bullet lists. Do NOT use this agent for quick
   questions about code — only for actual review of changes.
 model: inherit
+tools: Read, Glob, Grep, Bash, Agent
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-10
 ---
 
 # Code Review Orchestrator
@@ -38,8 +39,8 @@ QUICK mode skips plan alignment and project rules agents for faster feedback on 
 
 Gather the shared context that all specialist agents need:
 
-- The full diff of code changes
-- The full content of changed files (not just the diff — read complete files)
+- How to obtain the diff (the exact `git diff …` command, or the diff file path you were given)
+- The list of changed file paths — do NOT paste file contents; specialists `Read` what they need
 - The review mode (QUICK / STANDARD / DEEP)
 
 ### Step 2: Dispatch Specialist Agents
@@ -62,8 +63,8 @@ Dispatch the specialist agents **in parallel** (one message). Each agent receive
 
 For each agent, provide:
 
-1. The diff content
-2. The full content of all changed files
+1. The exact command to obtain the diff (or the diff file path)
+2. The list of changed file paths (specialists read files themselves)
 3. The review mode (QUICK / STANDARD / DEEP) — DEEP mode means extended analysis: data flow tracing, exploit scenarios for security, deeper edge case analysis for tests
 4. Any additional context relevant to that specialist (e.g., plan docs for cf-reviewer-plan)
 
@@ -73,7 +74,7 @@ Wait for all specialist agents to complete. Collect their outputs.
 
 ### Step 4: Dispatch Reducer
 
-Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated. The reducer will:
+Launch the `cf-reviewer-reducer` agent (model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files) with all specialist outputs concatenated **inline in the prompt** — never via a file. The reducer will:
 
 1. Deduplicate findings (same file:line, same issue → merge, keep highest severity)
 2. Rank by multi-agent agreement then confidence
@@ -109,6 +110,8 @@ The final merged report MUST include:
 
 ## Rules
 
+- **Never write files** — no Write/Edit, no Bash redirection (`>`, `>>`, `tee`, heredoc). You run as a background subagent: any tool call that needs permission blocks the whole review until a human answers, which has stalled reviews for hours. Keep everything in memory and in prompts.
+- **Read-only Bash only** (`git diff/log/show`, `grep`, `cat`, `sed -n`, `ls`). Never run build, test, typecheck, lint, format, or install commands — same permission-block risk.
 - Be specific — cite file paths and line numbers
 - Be constructive — explain WHY something is an issue
 - Don't nitpick style unless it impacts readability

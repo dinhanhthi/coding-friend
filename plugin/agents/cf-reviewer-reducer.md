@@ -5,8 +5,9 @@ description: >
   review agents into a single unified report. Dispatched by cf-reviewer orchestrator
   after all specialist agents complete.
 model: haiku
+tools: Read
 created: 2026-04-04
-updated: 2026-09-09
+updated: 2026-09-10
 ---
 
 # Review Reducer

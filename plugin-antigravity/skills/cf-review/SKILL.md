@@ -9,7 +9,7 @@ description: >
   a plan document (use /cf-plan-review), quick questions about how code works
   (use /cf-ask), and formatting-only changes.
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-10
 ---
 
 # /cf-review
@@ -77,9 +77,9 @@ Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANG
 
 Memory and explorer results are **hints** — verify against code.
 
-### Step 5: Read changed files
+### Step 5: List changed files
 
-Read each changed file in full — not just the diff.
+Collect the changed file paths from Step 2, including untracked ones (the `--- new file:` entries) — tag those `(new, untracked)`. Do **not** read or paste their contents — the specialists read what they need themselves.
 
 ### Step 6: Dispatch the cf-reviewer agent
 
@@ -87,11 +87,10 @@ Dispatch `cf-reviewer`. Pass:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
 >
-> **Diff:**
-> [full diff from Step 2]
+> **Diff:** obtain it with `bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh"` (default target — covers staged, unstaged, and untracked files) or, for a file / commit-range target, the exact `git diff <range> -- <path>` command.
 >
-> **Changed files (full content):**
-> [full content from Step 5]
+> **Changed files:**
+> [paths from Step 5]
 >
 > **Context (if gathered in Step 4):**
 > [memory or cf-explorer findings]
