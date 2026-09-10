@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  findAgentFrontmatterIssues,
   findAntigravityArtifactLintIssues,
   findCodexArtifactLintIssues,
   findPlaceholderLintIssues,
@@ -30,7 +31,9 @@ test("Codex lint reports Claude host name in skill sub-files", async () => {
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x", "modes"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.writeFile(
     path.join(root, "plugin-codex", "skills", "cf-x", "SKILL.md"),
     "# clean\n",
@@ -52,8 +55,12 @@ test("Codex lint reports Claude host name in skill sub-files", async () => {
 
 test("Codex must-contain reports missing required host phrasing", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-must-"));
-  await fs.mkdir(path.join(root, "plugin-codex", "skills"), { recursive: true });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "skills"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.mkdir(path.join(root, "plugin-codex", "context"), {
     recursive: true,
   });
@@ -99,7 +106,9 @@ test("Codex production lint fails when a must-contain file is missing", async ()
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-review"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.writeFile(
     path.join(root, "plugin-codex", "skills", "cf-plan", "SKILL.md"),
     "Use $cf-plan to start.\n",
@@ -130,7 +139,9 @@ test("Codex must-contain reports present-but-wrong host phrasing", async () => {
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-review"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.writeFile(
     path.join(root, "plugin-codex", "context", "bootstrap.md"),
     "# coding-friend\nNo dispatch verb.\n",
@@ -149,14 +160,11 @@ test("Codex must-contain reports present-but-wrong host phrasing", async () => {
     (issue) => issue.type === "missing required host phrasing",
   );
   assert.equal(phrasing.length, 3);
-  assert.deepEqual(
-    phrasing.map((issue) => issue.file).sort(),
-    [
-      "plugin-codex/context/bootstrap.md",
-      "plugin-codex/skills/cf-plan/SKILL.md",
-      "plugin-codex/skills/cf-review/SKILL.md",
-    ],
-  );
+  assert.deepEqual(phrasing.map((issue) => issue.file).sort(), [
+    "plugin-codex/context/bootstrap.md",
+    "plugin-codex/skills/cf-plan/SKILL.md",
+    "plugin-codex/skills/cf-review/SKILL.md",
+  ]);
 });
 
 test("AGY must-contain reports present-but-wrong host phrasing", async () => {
@@ -188,22 +196,24 @@ test("AGY must-contain reports present-but-wrong host phrasing", async () => {
     (issue) => issue.type === "missing required host phrasing",
   );
   assert.equal(phrasing.length, 3);
-  assert.deepEqual(
-    phrasing.map((issue) => issue.file).sort(),
-    [
-      "plugin-antigravity/rules/AGENTS.md",
-      "plugin-antigravity/skills/cf-plan/SKILL.md",
-      "plugin-antigravity/skills/cf-review/SKILL.md",
-    ],
-  );
+  assert.deepEqual(phrasing.map((issue) => issue.file).sort(), [
+    "plugin-antigravity/rules/AGENTS.md",
+    "plugin-antigravity/skills/cf-plan/SKILL.md",
+    "plugin-antigravity/skills/cf-review/SKILL.md",
+  ]);
 });
 
 test("Codex must-contain fails on unreadable files even in fixture mode", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-unread-"));
-  await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-plan", "SKILL.md"), {
+  await fs.mkdir(
+    path.join(root, "plugin-codex", "skills", "cf-plan", "SKILL.md"),
+    {
+      recursive: true,
+    },
+  );
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
 
   const issues = await findCodexArtifactLintIssues(root, { strict: false });
   const hit = issues.find(
@@ -217,7 +227,9 @@ test("Codex lint reports leftover subagent_type", async () => {
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.writeFile(
     path.join(root, "plugin-codex", "skills", "cf-x", "SKILL.md"),
     "Dispatch mentions subagent_type leftover.\n",
@@ -238,7 +250,9 @@ test("Codex lint reports fenced run_in_background in skill sub-files", async () 
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x", "modes"), {
     recursive: true,
   });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), { recursive: true });
+  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
+    recursive: true,
+  });
   await fs.writeFile(
     path.join(root, "plugin-codex", "skills", "cf-x", "SKILL.md"),
     "# clean\n",
@@ -277,7 +291,9 @@ async function writeSourceLintFixture(root, files) {
 }
 
 test("source lint reports leftover Claude tool names in plugin skills", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-source-tools-"));
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "cf-lint-source-tools-"),
+  );
   await writeSourceLintFixture(root, {
     "plugin/skills/cf-x/SKILL.md": [
       "Use the Agent tool",
@@ -353,4 +369,27 @@ test("source lint reports leftovers in cf-plan/cf-review and still skips bootstr
       `expected unresolved host placeholder in ${excluded}, got ${JSON.stringify(placeholderFiles)}`,
     );
   }
+});
+
+test("agent lint reports agents without a tools allow-list", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-agent-tools-"));
+  await fs.mkdir(path.join(root, "plugin", "agents"), { recursive: true });
+  await fs.writeFile(
+    path.join(root, "plugin", "agents", "cf-open.md"),
+    "---\nname: cf-open\nmodel: haiku\n---\n# open\n",
+  );
+  await fs.writeFile(
+    path.join(root, "plugin", "agents", "cf-closed.md"),
+    "---\nname: cf-closed\ntools: Read, Grep\nmodel: haiku\n---\n# closed\n",
+  );
+
+  const issues = await findAgentFrontmatterIssues(root);
+  assert.deepEqual(issues, [
+    {
+      file: "plugin/agents/cf-open.md",
+      line: 1,
+      type: "missing agent tools allow-list",
+      value: "tools:",
+    },
+  ]);
 });

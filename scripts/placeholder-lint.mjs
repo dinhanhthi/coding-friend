@@ -7,9 +7,7 @@ const repoRoot = path.resolve(path.dirname(scriptPath), "..");
 
 const SHARED_MARKDOWN_FILES = ["plugin/context/bootstrap.md", "README.md"];
 
-const SOURCE_PHASE3_EXCLUDED = new Set([
-  "plugin/context/bootstrap.md",
-]);
+const SOURCE_PHASE3_EXCLUDED = new Set(["plugin/context/bootstrap.md"]);
 
 const SOURCE_PATTERNS = [
   {
@@ -282,19 +280,50 @@ async function findMissingRequired(root, list, options = {}) {
   return issues;
 }
 
+// Every agent must declare a `tools:` allow-list. Omitting it inherits every
+// tool (including Write/Edit); a background subagent then blocks on the first
+// permission prompt nobody answers (cf-reviewer hung for hours this way).
+export async function findAgentFrontmatterIssues(root = repoRoot) {
+  const agentFiles = await collectFilesRecursive(
+    path.join(root, "plugin", "agents"),
+    path.join("plugin", "agents"),
+    (name) => name.endsWith(".md"),
+  );
+  const issues = [];
+  for (const relativePath of agentFiles) {
+    const raw = await readFile(path.join(root, relativePath), "utf8");
+    const frontmatter = raw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
+    if (!/^tools:\s*\S/m.test(frontmatter)) {
+      issues.push({
+        file: relativePath,
+        line: 1,
+        type: "missing agent tools allow-list",
+        value: "tools:",
+      });
+    }
+  }
+  return issues;
+}
+
 export async function findPlaceholderLintIssues(root = repoRoot) {
   const pluginFiles = await collectInstructionFiles(
     path.join(root, "plugin"),
     "plugin",
   );
-  return findIssues(
-    [...pluginFiles, ...SHARED_MARKDOWN_FILES].sort(),
-    SOURCE_PATTERNS,
-    root,
-  );
+  return [
+    ...(await findIssues(
+      [...pluginFiles, ...SHARED_MARKDOWN_FILES].sort(),
+      SOURCE_PATTERNS,
+      root,
+    )),
+    ...(await findAgentFrontmatterIssues(root)),
+  ];
 }
 
-export async function findCodexArtifactLintIssues(root = repoRoot, options = {}) {
+export async function findCodexArtifactLintIssues(
+  root = repoRoot,
+  options = {},
+) {
   const files = await collectInstructionFiles(
     path.join(root, "plugin-codex"),
     "plugin-codex",

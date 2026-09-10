@@ -5,7 +5,11 @@
 
 FILES_CHANGED=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
 LINES_CHANGED=$(git diff --stat HEAD 2>/dev/null | tail -1 | grep -oE '[0-9]+ insertion|[0-9]+ deletion' | grep -oE '[0-9]+' | paste -sd+ - | bc 2>/dev/null || echo 0)
-SENSITIVE=$(git diff --name-only HEAD 2>/dev/null | grep -ciE "(auth|security|crypto|token|session|middleware|api/|login|password|secret|\.env)" 2>/dev/null)
+# High-signal terms match as substrings (useAuth.ts, authService.ts); noisy terms
+# (token, session, security) must be a whole path word so tokens.css,
+# tokenDiscipline.test.ts, or sessions.ts do not force DEEP mode.
+SENSITIVE_RE='(auth|crypto|login|password|secret|middleware|api/|[.]env)|(^|[^[:alnum:]])(token|session|security)([^[:alnum:]]|$)'
+SENSITIVE=$(git diff --name-only HEAD 2>/dev/null | grep -ciE "${SENSITIVE_RE}" 2>/dev/null)
 SENSITIVE="${SENSITIVE:-0}"
 CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null | tr '\n' ' ')
 
