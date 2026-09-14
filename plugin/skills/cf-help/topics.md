@@ -103,6 +103,8 @@ Source: `hooks/hooks.json`. Adapters: `*.agy.*`; Codex uses a transformed manife
 | `memory-capture.sh` | PreCompact                             | Episode (`memory.autoCapture`). Codex: `memory-capture.codex.sh`                                                                                                      |
 | `statusline.sh`     | Statusline (Claude)                    | `cf statusline`, not `hooks.json`                                                                                                                                     |
 
+Test runners are always allowed by `auto-approve.cjs`, across every language (`npm`/`pnpm`/`yarn`/`bun test`, `npx`/`pnpm exec` + jest/vitest/playwright/cypress/mocha, `pytest`, `tox`, `go test`, `cargo test`/`nextest`, `dotnet`/`mvn`/`gradlew`/`sbt`/`mix`/`swift`/`flutter`/`dart`/`deno`/`make`/`rake test`, `rspec`, `phpunit`). Also honoured per segment inside a pipe or chain (`npm test 2>&1 | tail`, `cd web && pnpm exec playwright test`) when every other segment is safe. Re-gate with `autoApproveIgnore`, which now overrides an allow too.
+
 Env: `CF_AUTO_APPROVE_ENABLED=1`, `CF_AUTO_APPROVE_LLM_TIMEOUT` (45000), `CF_AUTO_APPROVE_CACHE_FILE`.
 
 ### Native prompt reduction (per host)

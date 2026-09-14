@@ -191,6 +191,7 @@ Permission gate that auto-approves safe tool calls and working-dir edits. Unknow
 
 - **Rule-Based Gate**: Instant pattern matching — read-only tools auto-approved, destructive commands blocked.
 - **Working-Dir Edits**: File edits (Write/Edit) inside your project directory are auto-approved.
+- **Test Runners**: `npm test`, `pnpm exec playwright test`, `pytest`, `go test`, `cargo test`, `mvn test`, `rspec` and friends are always auto-approved, in every language — including piped and chained forms like `npm test 2>&1 | tail -50`, as long as every other segment is safe too. Re-gate them with `autoApproveIgnore`.
 - **LLM Classifier**: Opt-in via `autoApproveLLM` (default `false`). When off, unknown tools emit no hook decision and defer to Claude's native permission flow / auto mode. When on, CF shells out to `claude --print --model sonnet`. Claude only — Codex already has Smart Approvals / `--approve-for-me`, AGY remembers approvals per chat; spawning those models from a hook would deadlock or race native. Grok / Cursor have no CF hook adapter.
 
 You can extend the Bash allow/deny lists in config:
@@ -199,8 +200,9 @@ You can extend the Bash allow/deny lists in config:
 {
   "autoApprove": true,
   // extra command prefixes to auto-approve. Merged across global + local
-  "autoApproveAllowExtra": ["cargo check", "npm test"],
+  "autoApproveAllowExtra": ["cargo check", "terraform plan"],
   // use below setting to bypass CF auto-approve and let Claude Code handle them.
+  // this is also how you re-gate test runners
   "autoApproveIgnore": ["cargo test", "cargo build"],
   // opt-in Sonnet classifier for unknown tools (default: defer to Claude native)
   "autoApproveLLM": false

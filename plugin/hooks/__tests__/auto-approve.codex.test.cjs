@@ -105,7 +105,7 @@ describe("auto-approve.codex.cjs", () => {
         runHook(cwd, {
           hookEventName: "PermissionRequest",
           tool_name: "Bash",
-          tool_input: { command: "npm test" },
+          tool_input: { command: "npm run build" },
         }),
       ).toEqual({});
     } finally {

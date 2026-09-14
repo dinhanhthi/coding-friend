@@ -173,15 +173,15 @@ const BASH_ALLOW_PREFIXES = [
   "git stash push",
   "git stash save",
   // Node.js / npm — dev workflow (read-only / non-executing only)
-  // NOTE: npm test, npm run, npx jest/vitest/tsx/eslint execute arbitrary
-  // code from test files, package.json scripts, proc-macros, or eslint
-  // plugins. A prompt-injection attack could plant malicious code in those
-  // files and auto-approve would run it silently. Those go to ASK instead.
+  // NOTE: test runners are handled separately by TEST_RUNNER_PATTERN (always
+  // allowed). Non-test script runners (npm run <script>, npx tsx/eslint) still
+  // execute arbitrary code from package.json scripts or plugins, so they stay
+  // in BASH_ASK_PREFIXES.
   "npx tsc --noEmit",
   "npx prettier",
-  // pnpm — pure formatter only (prettier). Other pnpm subcommands run package
-  // scripts/plugins and stay in BASH_ASK_PREFIXES. Allow-list match runs before
-  // the "pnpm" ask check, so this exception is honored.
+  // pnpm — pure formatter only (prettier). Other non-test pnpm subcommands run
+  // package scripts/plugins and stay in BASH_ASK_PREFIXES. Allow-list match runs
+  // before the "pnpm" ask check, so this exception is honored.
   "pnpm prettier",
   "pnpm exec prettier",
   // Version checks — read-only
@@ -198,8 +198,9 @@ const BASH_ALLOW_PREFIXES = [
   "rustup show",
   "rustup --version",
   "go version",
-  // Cargo — read-only subcommands only. Build/test/run/check all execute
-  // arbitrary code via build.rs scripts and proc-macros, so those go to ASK.
+  // Cargo — read-only subcommands only. Build/run/check execute arbitrary code
+  // via build.rs scripts and proc-macros, so those go to ASK. `cargo test` is
+  // covered by TEST_RUNNER_PATTERN.
   "cargo --version",
   "cargo -V",
   "cargo version",
@@ -615,6 +616,7 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
       ) {
         return true;
       }
+      if (TEST_RUNNER_PATTERN.test(trimmed)) return true;
       for (const prefix of effectiveAllow) {
         if (matchesPrefix(trimmed, prefix)) {
           return postMatchSafety(trimmed, prefix) === "allow";
@@ -674,34 +676,152 @@ const BASH_DENY_PATTERNS = [
 ];
 
 /**
+ * Test runners — always auto-approved, across every language and framework.
+ *
+ * These do execute code the repo controls (test files, build scripts), which is
+ * the same trust level as the source the agent is already editing. Running the
+ * suite is the core verification loop, so prompting every time costs more than
+ * it protects. Non-test script runners (`npm run build`, `npx tsx`) and package
+ * installs stay in BASH_ASK_PREFIXES.
+ *
+ * Also honoured per segment inside a pipe or chain (isSafeCompoundCommand), so
+ * `npm test 2>&1 | tail -50` and `cd web && pnpm exec playwright test` pass —
+ * every other segment still has to be safe on its own.
+ *
+ * Opt back out with `autoApproveIgnore`.
+ */
+
+/** Optional launcher prefixes that delegate to a test binary. */
+const TEST_LAUNCHERS = [
+  "npx",
+  "pnpm\\s+exec",
+  "pnpm\\s+dlx",
+  "pnpm",
+  "yarn\\s+exec",
+  "yarn\\s+dlx",
+  "yarn",
+  "bunx",
+  "bun\\s+x",
+  "bun",
+  "uvx",
+  "uv\\s+run",
+  "poetry\\s+run",
+  "pipenv\\s+run",
+  "hatch\\s+run",
+  "pdm\\s+run",
+  "python3?\\s+-m",
+  "bundle\\s+exec",
+  "deno\\s+run\\s+(?:-\\S+\\s+)*",
+];
+
+/**
+ * Local binary directories a test binary may be invoked through — these attach
+ * directly to the binary name (`vendor/bin/phpunit`), with no space separator.
+ */
+const TEST_BIN_DIRS =
+  "(?:\\.?/)?(?:vendor/bin|node_modules/\\.bin|\\.?venv/bin|bin)/";
+
+/**
+ * Test binaries invoked directly or via a launcher.
+ * `playwright`/`cypress` are narrowed to their run subcommands — bare
+ * `playwright install` shells out to a package manager (sudo apt-get).
+ */
+const TEST_BINARIES = [
+  "jest",
+  "vitest",
+  "mocha",
+  "ava",
+  "tap",
+  "karma",
+  "jasmine",
+  "playwright\\s+test",
+  "cypress\\s+run",
+  "wdio",
+  "testcafe",
+  "nightwatch",
+  "pytest",
+  "py\\.test",
+  "tox",
+  "nose2",
+  "unittest",
+  "rspec",
+  "minitest",
+  "cucumber",
+  "phpunit",
+  "pest",
+  "codecept",
+  "ctest",
+  "gotestsum",
+  "busted",
+];
+
+/** Whole commands that are test runs in their own right (no launcher). */
+const TEST_COMMANDS = [
+  "(?:npm|pnpm|yarn|bun)\\s+(?:test|t)",
+  "(?:npm|pnpm|yarn|bun)\\s+run\\s+test\\S*",
+  "go\\s+test",
+  "cargo\\s+(?:test|nextest)",
+  "dotnet\\s+test",
+  "mvn\\s+test",
+  "\\.?/?gradlew?\\s+test",
+  "mix\\s+test",
+  "swift\\s+test",
+  "flutter\\s+test",
+  "dart\\s+test",
+  "deno\\s+test",
+  "bazel\\s+test",
+  "make\\s+test",
+  "just\\s+test",
+  "rake\\s+test",
+  "sbt\\s+test",
+  "stack\\s+test",
+  "cabal\\s+test",
+  "zig\\s+build\\s+test",
+  "ninja\\s+test",
+  "meson\\s+test",
+];
+
+/**
+ * Matches a test-runner invocation. Lookahead (not \\b) after the binary name so
+ * `jest-codemods` and `pytest-watch` do not match.
+ */
+const TEST_RUNNER_PATTERN = new RegExp(
+  "^(?:" +
+    `(?:(?:${TEST_LAUNCHERS.join("|")})\\s+|${TEST_BIN_DIRS})?` +
+    `(?:${TEST_BINARIES.join("|")})` +
+    "|" +
+    `(?:${TEST_COMMANDS.join("|")})` +
+    ")(?=\\s|$)",
+);
+
+/**
  * Bash commands that need user confirmation (not blocked, but not auto-approved).
  *
- * Test runners, build tools, and package managers live here — not the allowlist —
- * because they execute arbitrary code from files that a prompt-injection attacker
- * could tamper with (test files, build.rs scripts, proc-macros, package.json
- * scripts, ESLint plugins, cargo build scripts). Requiring a prompt at least once
- * gives the user a chance to notice unexpected executions.
+ * Build tools, package installs, and generic script runners live here — not the
+ * allowlist — because they execute arbitrary code from files that a
+ * prompt-injection attacker could tamper with (build.rs scripts, proc-macros,
+ * package.json scripts, ESLint plugins). Requiring a prompt at least once gives
+ * the user a chance to notice unexpected executions.
+ *
+ * Test runners are the deliberate exception — see TEST_RUNNER_PATTERN, which is
+ * checked first and always allows them.
  *
  * Users who trust their repo and want fewer prompts can add these to their
  * Claude Code `permissions.allow` in `.claude/settings.json` — e.g.
- * `"Bash(cargo test *)"`, `"Bash(npm test *)"`, `"Bash(npx vitest *)"`.
+ * `"Bash(npm run build *)"`, `"Bash(cargo build *)"`.
  */
 const BASH_ASK_PREFIXES = [
   "git push",
-  // npm / npx — execute arbitrary code from test files, scripts, or plugins
-  "npm test",
+  // npm / npx — execute arbitrary code from scripts or plugins
   "npm run",
   "npm install",
   "npm publish",
-  "npx jest",
-  "npx vitest",
   "npx tsx",
   "npx eslint",
   // cargo — every non-read-only subcommand runs build.rs, proc-macros, or
   // test binaries, any of which can execute attacker-controlled code
   "cargo check",
   "cargo build",
-  "cargo test",
   "cargo run",
   "cargo clippy",
   "cargo fix",
@@ -719,8 +839,7 @@ const BASH_ASK_PREFIXES = [
   "cargo yank",
   "cargo owner",
   "cargo login",
-  // pnpm — executes arbitrary scripts, same risk as npm run/test
-  "pnpm test",
+  // pnpm — executes arbitrary scripts, same risk as npm run
   "pnpm run",
   "pnpm exec",
   "pnpm install",
@@ -1020,6 +1139,9 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
 
       // Coding-friend related commands (scripts, cf CLI) — safe when simple
       if (isCodingFriendBash(trimmed)) return "allow";
+
+      // Test runners (any language / framework) — always allowed
+      if (TEST_RUNNER_PATTERN.test(trimmed)) return "allow";
     }
 
     // Check ask prefixes
@@ -1344,6 +1466,7 @@ module.exports = {
   loadAutoApproveConfig,
   SHELL_OPERATOR_PATTERN,
   UNSAFE_COMPOUND_PATTERN,
+  TEST_RUNNER_PATTERN,
   PLUGIN_ROOT,
 };
 
@@ -1445,8 +1568,11 @@ function main() {
     // Ignore check: let Claude Code's native permissions handle these commands.
     // Runs BEFORE the LLM fallback to avoid wasting an LLM call on commands
     // the user wants Claude Code to decide on via its native permissions.allow.
+    // Also overrides an "allow" — that is the documented contract ("even if
+    // they match an allow rule") and the only way to re-gate a command the hook
+    // allows by default, such as a test runner. DENY still wins.
     if (
-      (decision === "ask" || decision === "unknown") &&
+      (decision === "ask" || decision === "unknown" || decision === "allow") &&
       toolName === "Bash" &&
       ignore.length > 0
     ) {

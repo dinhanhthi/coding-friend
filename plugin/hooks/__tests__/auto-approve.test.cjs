@@ -641,20 +641,22 @@ describe("classifyByRules — normal prompt (ask)", () => {
     );
   });
 
-  it("asks for Bash npm test (executes arbitrary test code)", () => {
-    expect(classifyByRules("Bash", { command: "npm test" })).toBe("ask");
+  it("allows Bash npm test (test runner)", () => {
+    expect(classifyByRules("Bash", { command: "npm test" })).toBe("allow");
   });
 
   it("asks for Bash npm run <script> (executes arbitrary script)", () => {
     expect(classifyByRules("Bash", { command: "npm run build" })).toBe("ask");
   });
 
-  it("asks for Bash npx jest (executes test files)", () => {
-    expect(classifyByRules("Bash", { command: "npx jest src/" })).toBe("ask");
+  it("allows Bash npx jest (test runner)", () => {
+    expect(classifyByRules("Bash", { command: "npx jest src/" })).toBe("allow");
   });
 
-  it("asks for Bash npx vitest (executes test files)", () => {
-    expect(classifyByRules("Bash", { command: "npx vitest run" })).toBe("ask");
+  it("allows Bash npx vitest (test runner)", () => {
+    expect(classifyByRules("Bash", { command: "npx vitest run" })).toBe(
+      "allow",
+    );
   });
 
   it("asks for Bash npx tsx (executes arbitrary TS)", () => {
@@ -677,9 +679,9 @@ describe("classifyByRules — normal prompt (ask)", () => {
     );
   });
 
-  it("asks for Bash cargo test (executes test binaries)", () => {
+  it("allows Bash cargo test (test runner)", () => {
     expect(classifyByRules("Bash", { command: "cargo test --lib" })).toBe(
-      "ask",
+      "allow",
     );
   });
 
@@ -765,18 +767,44 @@ describe("classifyByRules — normal prompt (ask)", () => {
     expect(classifyByRules("Bash", { command: "cargo login" })).toBe("ask");
   });
 
-  it("asks for npm test piped to grep (risky prefix wins over pipe)", () => {
+  it("allows npm test piped to grep (every segment is safe)", () => {
     expect(
       classifyByRules("Bash", { command: "npm test 2>&1 | grep FAIL" }),
-    ).toBe("ask");
+    ).toBe("allow");
   });
 
-  it("asks for npx jest piped to tail (risky prefix wins over pipe)", () => {
+  it("allows npx jest piped to tail (every segment is safe)", () => {
     expect(
       classifyByRules("Bash", {
         command: "npx jest --verbose 2>&1 | tail -50",
       }),
-    ).toBe("ask");
+    ).toBe("allow");
+  });
+
+  it("allows cd into a subproject chained with a test run", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "cd website && pnpm exec playwright test",
+      }),
+    ).toBe("allow");
+  });
+
+  it("does not allow a test run chained with an unsafe command", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test && npm run deploy" }),
+    ).not.toBe("allow");
+  });
+
+  it("does not allow a test run piped into a shell", () => {
+    expect(classifyByRules("Bash", { command: "npm test | sh" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does not allow a test run with an output redirect", () => {
+    expect(
+      classifyByRules("Bash", { command: "npm test > /etc/passwd" }),
+    ).not.toBe("allow");
   });
 
   it("asks for cargo compound command from real user scenario", () => {
@@ -792,6 +820,48 @@ describe("classifyByRules — normal prompt (ask)", () => {
     ).toBe("ask");
   });
 
+  it.each([
+    "pnpm exec playwright test",
+    "pnpm exec playwright test --project=chromium",
+    "npx playwright test",
+    "npx cypress run",
+    "npm run test:e2e",
+    "yarn test",
+    "bun test",
+    "pytest -x tests/",
+    "python3 -m unittest discover",
+    "uv run pytest",
+    "poetry run pytest -q",
+    "go test ./...",
+    "cargo nextest run",
+    "dotnet test",
+    "mvn test",
+    "./gradlew test",
+    "bundle exec rspec",
+    "vendor/bin/phpunit",
+    "swift test",
+    "flutter test",
+    "deno test -A",
+    "mix test",
+    "make test",
+    "tox",
+  ])("allows test runner: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).toBe("allow");
+  });
+
+  it.each([
+    // Install/setup subcommands shell out to package managers — not test runs.
+    "npx playwright install",
+    "npx playwright install --with-deps",
+    "npx cypress install",
+    // Prefix collisions must not be mistaken for a test runner.
+    "jest-codemods --force",
+    "pytest-watch",
+    "testlike-thing",
+  ])("does not allow non-test command: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
   it("asks for Bash docker run", () => {
     expect(classifyByRules("Bash", { command: "docker run nginx" })).toBe(
       "ask",
@@ -802,8 +872,8 @@ describe("classifyByRules — normal prompt (ask)", () => {
     expect(classifyByRules("Bash", { command: "pnpm run build" })).toBe("ask");
   });
 
-  it("asks for pnpm test (executes arbitrary test code)", () => {
-    expect(classifyByRules("Bash", { command: "pnpm test" })).toBe("ask");
+  it("allows pnpm test (test runner)", () => {
+    expect(classifyByRules("Bash", { command: "pnpm test" })).toBe("allow");
   });
 
   it("asks for pnpm install (installs packages)", () => {
@@ -814,8 +884,14 @@ describe("classifyByRules — normal prompt (ask)", () => {
     expect(classifyByRules("Bash", { command: "pnpm add react" })).toBe("ask");
   });
 
-  it("asks for pnpm exec (executes package binary)", () => {
+  it("allows pnpm exec <test runner>", () => {
     expect(classifyByRules("Bash", { command: "pnpm exec vitest run" })).toBe(
+      "allow",
+    );
+  });
+
+  it("asks for pnpm exec on a non-test binary", () => {
+    expect(classifyByRules("Bash", { command: "pnpm exec tsc --build" })).toBe(
       "ask",
     );
   });
@@ -1549,7 +1625,7 @@ describe("classifyByRules — safe compound commands", () => {
 
   it("does NOT allow && chained commands when a segment is unsafe", () => {
     expect(
-      classifyByRules("Bash", { command: "npm test && rm -rf dist" }),
+      classifyByRules("Bash", { command: "npm test && npm run deploy" }),
     ).not.toBe("allow");
   });
 
@@ -1664,9 +1740,9 @@ describe("classifyByRules — safe compound commands", () => {
     expect(classifyByRules("Bash", { command: "git config -l" })).toBe("allow");
   });
 
-  it("does NOT allow && chain with unsafe segment (npm test)", () => {
+  it("does NOT allow && chain with unsafe segment (npm run <script>)", () => {
     expect(
-      classifyByRules("Bash", { command: "git status && npm test" }),
+      classifyByRules("Bash", { command: "git status && npm run build" }),
     ).not.toBe("allow");
   });
 
@@ -1922,12 +1998,12 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
     expect(isSafeCompoundCommand("ls && cat package.json")).toBe(true);
   });
 
-  it("rejects && chain when a segment is unsafe (npm test)", () => {
-    expect(isSafeCompoundCommand("git status && npm test")).toBe(false);
+  it("rejects && chain when a segment is unsafe (npm run <script>)", () => {
+    expect(isSafeCompoundCommand("git status && npm run build")).toBe(false);
   });
 
-  it("rejects && chain when a segment is dangerous (rm -rf dist)", () => {
-    expect(isSafeCompoundCommand("npm test && rm -rf dist")).toBe(false);
+  it("rejects && chain when a segment is dangerous (rm outside the project)", () => {
+    expect(isSafeCompoundCommand("npm test && rm -rf /etc/hosts")).toBe(false);
   });
 
   it("allows || chain when all segments are safe", () => {
@@ -1962,8 +2038,8 @@ describe("isSafeCompoundCommand — direct unit tests", () => {
     );
   });
 
-  it("rejects || chain when one clause is unsafe (npm test is ask-only)", () => {
-    expect(isSafeCompoundCommand("npm test || echo done")).toBe(false);
+  it("rejects || chain when one clause is unsafe (npm run is ask-only)", () => {
+    expect(isSafeCompoundCommand("npm run build || echo done")).toBe(false);
   });
 
   it("rejects || at start of command (empty first clause)", () => {
@@ -3130,12 +3206,12 @@ describe("classifyByRules — allowExtra param", () => {
 
   it("still asks when allowExtra is empty", () => {
     expect(
-      classifyByRules("Bash", { command: "cargo test --lib" }, undefined, []),
+      classifyByRules("Bash", { command: "cargo build --lib" }, undefined, []),
     ).toBe("ask");
   });
 
   it("still asks when allowExtra is not provided", () => {
-    expect(classifyByRules("Bash", { command: "cargo test --lib" })).toBe(
+    expect(classifyByRules("Bash", { command: "cargo build --lib" })).toBe(
       "ask",
     );
   });
@@ -3234,7 +3310,7 @@ describe("integration: autoApproveAllowExtra config", () => {
     }
   });
 
-  it("hook still asks for cargo test when allowExtra does not include it", () => {
+  it("hook still asks for cargo build when allowExtra does not include it", () => {
     const tmpHome = fs.mkdtempSync(
       path.join(os.tmpdir(), "aa-allow-extra-home-"),
     );
@@ -3248,12 +3324,12 @@ describe("integration: autoApproveAllowExtra config", () => {
         path.join(cfDir, "config.json"),
         JSON.stringify({
           autoApprove: true,
-          autoApproveAllowExtra: ["cargo build"],
+          autoApproveAllowExtra: ["cargo clippy"],
         }),
       );
       const input = JSON.stringify({
         tool_name: "Bash",
-        tool_input: { command: "cargo test --lib" },
+        tool_input: { command: "cargo build --lib" },
         cwd: tmpCwd,
       });
       const stdout = execFileSync("node", [SCRIPT], {
@@ -3381,6 +3457,11 @@ describe("integration: autoApproveIgnore config", () => {
   }
 
   it("outputs {} for an ignored command that would otherwise be ask", () => {
+    const stdout = setupIgnoreTest(["cargo build"], "cargo build --lib");
+    expect(stdout).toBe("{}");
+  });
+
+  it("outputs {} for an ignored test runner (ignore beats TEST_RUNNER_PATTERN)", () => {
     const stdout = setupIgnoreTest(["cargo test"], "cargo test --lib");
     expect(stdout).toBe("{}");
   });
@@ -3442,8 +3523,11 @@ describe("integration: autoApproveIgnore config", () => {
     }
   });
 
-  it("does NOT bypass ALLOW when command matches ignore — still allows", () => {
-    // ls is in the built-in ALLOW list — ignore should not downgrade it
+  it("downgrades an ALLOW when command matches ignore", () => {
+    // autoApproveIgnore is documented as "always require user review, even if
+    // they match an allow rule" — it is the only way to re-gate something the
+    // hook allows by default (e.g. a test runner), so it beats ALLOW. DENY
+    // still wins (covered by the test above).
     const tmpHome = fs.mkdtempSync(
       path.join(os.tmpdir(), "aa-ignore-allow-home-"),
     );
@@ -3477,8 +3561,7 @@ describe("integration: autoApproveIgnore config", () => {
         cwd: tmpCwd,
         timeout: 5000,
       });
-      const result = JSON.parse(stdout);
-      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+      expect(stdout).toBe("{}");
     } finally {
       fs.rmSync(tmpHome, { recursive: true, force: true });
       fs.rmSync(tmpCwd, { recursive: true, force: true });

@@ -45,7 +45,7 @@ coding-friend uses a layered config system:
 
   // Additional Bash command prefixes to auto-approve (merged across global + local)
   // These are checked after deny patterns, so they cannot override destructive rules
-  // Example: ["cargo test", "pytest", "go test"]
+  // Example: ["cargo check", "terraform plan"] (test runners are already allowed)
   // Default: []
   "autoApproveAllowExtra": [],
 
