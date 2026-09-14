@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.3 (2026-09-14)
+
+- Auto-approve test runners across languages (`pytest`, `go test`, `cargo test`, `mvn test`, etc.) without needing an explicit allow-list entry [#cdd376ca](https://github.com/dinhanhthi/coding-friend/commit/cdd376ca)
+
 ## v0.43.2 (2026-09-10)
 
 - Restrict `cf-reviewer*` agent tool allow-lists to stop background permission hangs [#8d2e4ebb](https://github.com/dinhanhthi/coding-friend/commit/8d2e4ebb)
