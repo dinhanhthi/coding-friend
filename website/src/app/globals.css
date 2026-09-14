@@ -1,10 +1,20 @@
 /* Hallmark · genre: atmospheric · macrostructure: Marquee Hero (user-directed repeat of run 1 — knob deltas: apparatus replaces terminal card, mono eyebrow added, meter strip added) · theme: Lumen · drop: Night Foundry · enrichment: Tier-B codebase-graph apparatus (SVG, hand-built) + 6 fireworks-tech-graph doc diagrams (public/diagrams/, Lumen-tokened, validator-passed) + zoom lightbox (user-requested blur backdrop) · nav: N1b lowercase three-section + ⌘K palette kept keyboard-first · footer: Ft5 statement (lowercase serif closing line)
- * deviations: docs prose body keeps original case + italics (technical reference — file paths, flags, acronyms are case-semantic); Lumen's total-lowercase register applies to chrome (nav · hero · prose headings · footer) only. gate 25 — docs body keeps the original max-w-3xl measure (~86ch) so ASCII diagrams + tables fit; preserved IA.
+ * deviations: docs prose body keeps original case + italics (technical reference — file paths, flags, acronyms are case-semantic); Lumen's total-lowercase register applies to chrome (nav · hero · prose headings · footer) only. gate 25 — docs body measure is 48rem (~86ch), widening to 60rem at >=96rem viewports so ASCII diagrams + tables breathe on wide screens (--doc-w, TOC rail offset tracks it); preserved IA.
  * contrast: pass (40–41) · slop: pass (42–45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · mobile: pass (34, 49, 50–57) */
 /* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 */
 @import "tailwindcss";
 @import "./tokens.css";
 @plugin "@tailwindcss/typography";
+
+/* Docs column width. The TOC rail offset is derived from this — keep both in sync. */
+:root {
+  --doc-w: 48rem;
+}
+@media (min-width: 96rem) {
+  :root {
+    --doc-w: 60rem;
+  }
+}
 
 @theme inline {
   --color-paper: var(--color-paper);
