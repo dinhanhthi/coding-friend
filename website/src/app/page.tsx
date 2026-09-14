@@ -83,7 +83,10 @@ export default function Home() {
       <Navbar sections={sections} tocItems={tocItems} />
       <Hero />
       <TableOfContents items={tocItems} />
-      <main id="top" className="mx-auto max-w-[var(--doc-w)] px-4 pt-12 pb-20 sm:px-6">
+      <main
+        id="top"
+        className="mx-auto max-w-[var(--doc-w)] px-4 pt-12 pb-20 sm:px-6"
+      >
         <article className="prose prose-code:before:content-none prose-code:after:content-none max-w-none">
           <MDXRemote
             source={before}
