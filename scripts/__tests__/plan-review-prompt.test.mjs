@@ -39,6 +39,8 @@ test("embeds cf-plan-review folder files and the four output headings", () => {
   );
   fs.writeFileSync(path.join(planDir, "overview.md"), "# Overview\n");
   fs.writeFileSync(path.join(planDir, "review.md"), "# Review\n");
+  fs.writeFileSync(path.join(planDir, "baseline.md"), "# Baseline\n");
+  fs.writeFileSync(path.join(planDir, "notes.txt"), "not markdown\n");
 
   const result = run(path.join(planDir, "README.md"), tmp);
   assert.equal(result.status, 0, result.stderr);
@@ -50,6 +52,17 @@ test("embeds cf-plan-review folder files and the four output headings", () => {
     stdout.includes("### phase-1-cf-plan-brief.md"),
     "missing ### phase-1-cf-plan-brief.md",
   );
+  // Supporting docs (baseline, review-request, …) must be embedded after phases.
+  assert.ok(
+    /^### baseline\.md$/m.test(stdout),
+    "missing supporting ### baseline.md",
+  );
+  assert.ok(
+    stdout.indexOf("### phase-1-cf-plan-brief.md") <
+      stdout.indexOf("### baseline.md"),
+    "supporting files must come after phase files",
+  );
+  assert.ok(!/^### notes\.txt$/m.test(stdout), "must skip non-markdown files");
   assert.ok(stdout.includes("🚨 Critical Issues"), "missing Critical Issues");
   assert.ok(stdout.includes("⚠️ Important Issues"), "missing Important Issues");
   assert.ok(stdout.includes("💡 Suggestions"), "missing Suggestions");
