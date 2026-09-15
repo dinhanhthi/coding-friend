@@ -124,3 +124,7 @@ After Step 6, emit a `/cf-review-out`-style prompt with in-session findings:
 3. Show the "📝 Review Prompt Ready" panel and `> When all external agents finish, run /cf-review-in <label> to collect all results.`
 4. Display the in-session report **before** the panel.
 5. Skip Steps 7–10's completion banner. Step 8 if appropriate, then stop.
+
+## External status in the merged report
+
+Every external source gets one line under external sources in the merged `### 📋 Summary`: kept, or the exact `> ⚠ …` warning that dropped it. A dropped external never changes `Review status:` when native coverage is otherwise sufficient, and an external report can never substitute for a missing or timed-out native reviewer (see `SKILL.md` → `## Report contract`).

@@ -178,7 +178,7 @@ function renderCodexReviewSkill(input) {
       [
         "### Step 7: Collect the report",
         "",
-        "The result of Step 6 is the final formatted report (Critical / Important / Suggestions / Summary). Do not reformat or restructure it; use it as-is in Step 10.",
+        "The result of Step 6 is the reviewer's report (Critical / Important / Suggestions / Summary). Keep its findings as written, then apply `## Report contract` to the Summary — you own the aggregate `Review status:`, native coverage and uncovered scope, which no single reviewer can know. Use that merged report in Step 10.",
         "",
       ].join("\n"),
     )
@@ -273,7 +273,10 @@ function renderCodexFile(sourcePath, input) {
     );
   }
 
-  return rendered.replace(/run_in_background:\s*true/g, "run in the background");
+  return rendered.replace(
+    /run_in_background:\s*true/g,
+    "run in the background",
+  );
 }
 
 async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
