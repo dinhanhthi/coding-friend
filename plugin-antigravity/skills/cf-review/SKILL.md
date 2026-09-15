@@ -9,7 +9,7 @@ description: >
   a plan document (use /cf-plan-review), quick questions about how code works
   (use /cf-ask), and formatting-only changes.
 created: 2026-02-17
-updated: 2026-09-10
+updated: 2026-09-15
 ---
 
 # /cf-review
@@ -34,7 +34,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 ### Step 1: Identify the target
 
-- Empty `$ARGUMENTS` → all uncommitted changes (`git diff` + `git diff --staged`)
+- Empty `$ARGUMENTS` → all uncommitted changes (net `HEAD` → working tree; staged hunks are included once, not twice)
 - File path → that file
 - Commit range (e.g. `HEAD~3..HEAD`) → those commits
 - Natural-language description (e.g. "the auth logic changes") → default uncommitted set, **focus** findings on that area
@@ -47,19 +47,39 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 ### Step 2: Gather the diff
 
+Pass the Step 1 target explicitly and snapshot the scope once so Step 3 and the reviewers reuse it (`<run-id>` = `<label>`-`<short-sha>`):
+
 ```bash
-bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh"
+bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh" --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
+
+| Step 1 target                          | Flags to add                                        |
+| -------------------------------------- | --------------------------------------------------- |
+| default / natural-language description | _(none)_ — branch commits + uncommitted + untracked |
+| file or directory path                 | `--uncommitted --path <path>` (repeatable)          |
+| commit range                           | `--range <range>` (no untracked files)              |
+
+`--uncommitted` and `--range` are mutually exclusive. Exit `2` = the scope could **not** be collected (bad flag, invalid range, no git) → stop and report the error; never continue as "no changes". Exit `3` = scope collected but something under `=== Excluded from review scope (NOT reviewed) ===` was unreadable → continue, and carry that gap into the final report as uncovered scope, never as clean.
+
+**Only you** write the snapshot (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); reviewer agents read it. If the script warns the snapshot dir is unusable, keep using this command's stdout and note the limitation in the Summary — a background reviewer must never request write permission.
 
 **Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
 
 ### Step 3: Assess change size
 
+Measure the Step 2 snapshot — never a fresh `git diff`, or the depth could be decided on a scope the reviewers never see. Add `--quick` / `--deep` only when Step 1 saw that flag:
+
 ```bash
-bash "<plugin-root>/skills/cf-review/scripts/assess-changes.sh"
+bash "<plugin-root>/skills/cf-review/scripts/assess-changes.sh" --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
 
-Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, `MODE`. Use `MODE` as-is.
+If Step 2 warned the snapshot dir was unusable, run the script with the **same target flags** you passed to `gather-diff.sh` instead.
+
+Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, `SCOPE_COMPLETE`, `MODE_AUTO`, `MODE_FORCED`, `MODE`. Use `MODE` as-is.
+
+- Exit `2` = the snapshot was missing, truncated, or a different version → fix the scope and re-run; never fall back to QUICK.
+- Exit `3` = the metrics are valid (use `MODE`), but `SCOPE_COMPLETE=false` → carry the same uncovered scope into the Summary as Step 2's exit `3`.
+- `--quick` on a sensitive change warns on stderr — repeat that limitation in the Summary and still apply the secrets/injection baseline.
 
 | Mode         | Condition                                          | Behavior                                                       |
 | ------------ | -------------------------------------------------- | -------------------------------------------------------------- |
@@ -87,7 +107,7 @@ Dispatch `cf-reviewer`. Pass:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
 >
-> **Diff:** obtain it with `bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh"` (default target — covers staged, unstaged, and untracked files) or, for a file / commit-range target, the exact `git diff <range> -- <path>` command.
+> **Diff:** read `/tmp/coding-friend/review/<run-id>/diff.txt` (the Step 2 snapshot — covers committed, staged, unstaged, and untracked files, each hunk exactly once). If that file is missing, re-run `bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh"` with the same flags. Read-only: do not write into the snapshot directory.
 >
 > **Changed files:**
 > [paths from Step 5]

@@ -97,7 +97,7 @@ if [ "$meta_has_uncommitted" = "true" ]; then
 fi
 if [ "$meta_has_staged" = "true" ]; then
   change_source_lines="${change_source_lines}
-- **Staged changes**: YES — files added to the index but not yet committed"
+- **Staged changes**: YES — index entries not yet committed; already contained in the uncommitted section above, not repeated separately"
 fi
 if [ "$meta_has_untracked" = "true" ]; then
   change_source_lines="${change_source_lines}
@@ -250,8 +250,8 @@ The diff below may include **multiple sections**, each with a header:
 
 - **\`=== git diff <base>...HEAD (committed branch changes) ===\`** — All committed changes on the current branch vs the base branch.
 - **\`=== git diff HEAD (uncommitted changes) ===\`** — Uncommitted changes (staged + unstaged) for tracked files not yet committed.
-- **\`=== git diff --staged ===\`** — Staged-only changes (subset of uncommitted).
 - **\`=== Untracked files (new, not yet staged) ===\`** — New files not yet added to git. Shown as full file content (not as a diff).
+- **\`=== Excluded from review scope (NOT reviewed) ===\`** — Paths deliberately withheld (privacy/ignore rules or unreadable files). Their content was never loaded; treat them as **uncovered**, not as reviewed-and-clean.
 
 **Review ALL sections equally** — committed, uncommitted, and untracked changes are all part of the review scope. Do not skip or deprioritize any section.
 

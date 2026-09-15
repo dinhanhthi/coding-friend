@@ -49,6 +49,41 @@ describe("PERMISSION_RULES", () => {
       expect(typeof rule.recommended).toBe("boolean");
     }
   });
+
+  // The /cf-review scope snapshot is written by the main agent and read by
+  // background reviewers. A missing rule here means a background subagent can
+  // block on an invisible permission prompt (see the 128-minute stall bug).
+  it("covers the cf-review snapshot dir for mkdir, read and write", () => {
+    const rules = PERMISSION_RULES.map((r) => r.rule);
+    for (const expected of [
+      "Bash(mkdir -p /tmp/coding-friend/review/*)",
+      "Read(//tmp/coding-friend/review/**)",
+      "Edit(//tmp/coding-friend/review/**)",
+      "Write(//tmp/coding-friend/review/**)",
+    ]) {
+      expect(rules).toContain(expected);
+    }
+  });
+
+  it("snapshot rules share the existing /tmp/coding-friend prefix", () => {
+    const snapshotRules = PERMISSION_RULES.filter((r) =>
+      r.rule.includes("/tmp/coding-friend/review/"),
+    );
+    expect(snapshotRules.length).toBe(4);
+    // A single leading slash anchors at the settings source, not the
+    // filesystem root — file rules must use "//" to reach the real /tmp.
+    for (const rule of snapshotRules.filter(
+      (r) => !r.rule.startsWith("Bash("),
+    )) {
+      expect(rule.rule).toContain("(//tmp/coding-friend/review/");
+    }
+    for (const rule of snapshotRules) {
+      expect(rule.recommended).toBe(true);
+      expect(extractTag(rule.description)).toMatch(
+        /^\[(read-only|write|modify)\]$/,
+      );
+    }
+  });
 });
 
 describe("getExistingRules", () => {
