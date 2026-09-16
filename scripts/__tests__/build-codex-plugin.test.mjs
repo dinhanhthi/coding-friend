@@ -777,3 +777,93 @@ test("Codex builder no longer ships dead Claude tool phrase replaces", async () 
     /TaskCreate|AskUserQuestion|Skill tool|WebFetch|Write tool/,
   );
 });
+
+/* ---------------------------------------------------------------------------
+ * Generated-host parity audit (plan task 4.1)
+ * ------------------------------------------------------------------------ */
+
+const liveRepoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+
+const RETAINED_SPECIALISTS = [
+  "cf-reviewer-plan",
+  "cf-reviewer-quality",
+  "cf-reviewer-tests",
+  "cf-reviewer-rules",
+  "cf-reviewer-reducer",
+];
+
+test("Codex keeps ignoring withCodex in every auto-review consumer", async () => {
+  // cf-fix, cf-optimize and cf-plan autopilot each carry their own wording of
+  // the same note. A wording the builder no longer matches ships a Codex host
+  // that promises a nested `codex review` this skill never runs.
+  for (const relPath of [
+    "plugin/skills/cf-fix/SKILL.md",
+    "plugin/skills/cf-optimize/SKILL.md",
+    "plugin/skills/cf-plan/modes/autopilot.md",
+  ]) {
+    const source = await fs.readFile(path.join(liveRepoRoot, relPath), "utf8");
+    const rendered = renderCodexFile(`/repo/${relPath}`, source);
+    assert.doesNotMatch(
+      rendered,
+      /cf-review (automatically |)(runs|adds) a Codex second[- ]opinion/i,
+      `${relPath} still promises a nested Codex review on the Codex host`,
+    );
+    assert.match(
+      rendered,
+      /ignores the Claude-only `review\.withCodex`/,
+      `${relPath} must tell the Codex host that withCodex is ignored`,
+    );
+  }
+});
+
+test("Codex builder ships no dead review-topology replaces", async () => {
+  const source = await fs.readFile(
+    path.join(liveRepoRoot, "scripts/build-codex-plugin.js"),
+    "utf8",
+  );
+  // cf-reviewer.md lost its reducer-model sentences in the flat-topology
+  // change; the rewrites that targeted them can never fire again.
+  assert.doesNotMatch(
+    source,
+    /CF_REDUCER_MODEL/,
+    "the reducer-model rewrites target text no source file contains anymore",
+  );
+});
+
+test("retained review specialists still build into callable Codex agents", async () => {
+  for (const agent of RETAINED_SPECIALISTS) {
+    const markdown = await fs.readFile(
+      path.join(liveRepoRoot, "plugin/agents", `${agent}.md`),
+      "utf8",
+    );
+    const toml = agentMarkdownToToml(markdown);
+    assert.match(
+      toml,
+      new RegExp(`^name = "${agent}"$`, "m"),
+      `${agent} must keep a usable name in its Codex TOML`,
+    );
+    assert.match(
+      toml,
+      /^description = "/m,
+      `${agent} must keep a description the host can select on`,
+    );
+    assert.match(
+      toml,
+      /^developer_instructions = '''/m,
+      `${agent} must keep its instructions`,
+    );
+    // The flat topology retired the fanout; the agents stay directly callable
+    // and must not advertise a dispatcher that no longer exists.
+    assert.doesNotMatch(
+      toml,
+      /Dispatched by cf-reviewer/i,
+      `${agent} still claims cf-reviewer dispatches it`,
+    );
+    await fs.access(
+      path.join(liveRepoRoot, "plugin-codex/agents", `${agent}.toml`),
+    );
+  }
+});

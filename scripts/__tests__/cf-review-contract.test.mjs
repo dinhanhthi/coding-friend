@@ -1169,3 +1169,191 @@ test("the documented nativeTimeout default matches the one Step 6 falls back to"
     "cf-help/SKILL.md must list the same key and default as topics.md",
   );
 });
+
+/* ---------------------------------------------------------------------------
+ * Generated-host parity + subset coverage (plan task 4.1)
+ *
+ * The host builders rewrite cf-review with exact-text `.replace()` calls. These
+ * tests pin, on the generated artifacts themselves, the parts of the flat
+ * topology a future rewrite could silently strip.
+ * ------------------------------------------------------------------------ */
+
+const GENERATED_REVIEW_SKILLS = [
+  "plugin-codex/skills/cf-review/SKILL.md",
+  "plugin-antigravity/skills/cf-review/SKILL.md",
+];
+
+test("generated hosts keep the 1 / 1 / 2 dispatch table intact", () => {
+  for (const generated of GENERATED_REVIEW_SKILLS) {
+    const rows = [
+      ...read(generated).matchAll(
+        /^\|\s*\*\*(QUICK|STANDARD|DEEP)\*\*\s*\|\s*(\d+)\s*\|([^|]*)\|/gm,
+      ),
+    ];
+    assert.deepEqual(
+      rows.map((row) => [row[1], Number(row[2])]),
+      [
+        ["QUICK", 1],
+        ["STANDARD", 1],
+        ["DEEP", 2],
+      ],
+      `${generated} lost the per-mode dispatch counts`,
+    );
+    assert.match(
+      rows[2][3],
+      /cf-reviewer-security/,
+      `${generated} lost the DEEP security reviewer`,
+    );
+  }
+});
+
+test("generated hosts keep the deadline and partial-status instructions", () => {
+  for (const generated of GENERATED_REVIEW_SKILLS) {
+    const text = read(generated);
+    for (const required of [
+      /\*\*Deadline:\*\*/,
+      /review\.nativeTimeout/,
+      /run-with-timeout\.sh/,
+      /Review status: PARTIAL/,
+      /timed_out/,
+      /Job lifecycle \(bounded wait\)/,
+      /Never call shell `timeout` on a native dispatch/,
+      /inline budgeted review/,
+    ]) {
+      assert.match(
+        text,
+        required,
+        `${generated} lost a timeout/partial-status instruction: ${required}`,
+      );
+    }
+  }
+});
+
+test("generated hosts carry no multi-level orchestration or nested Codex path", () => {
+  for (const generated of GENERATED_REVIEW_SKILLS) {
+    const text = read(generated);
+    for (const forbidden of [
+      /cf-reviewer-reducer/,
+      /cf-reviewer-plan/,
+      /cf-reviewer-quality/,
+      /cf-reviewer-tests/,
+      /cf-reviewer-rules/,
+      /cf-explorer/,
+      /Step 2\.5: Spawn Codex review/,
+      /Step 6\.5: Collect & normalize the Codex review/,
+      /codex=true/,
+      /mark-reviewed\.sh/,
+    ]) {
+      assert.doesNotMatch(
+        text,
+        forbidden,
+        `${generated} still carries retired review machinery: ${forbidden}`,
+      );
+    }
+    assert.match(
+      text,
+      /### Step 6\.7: Emit `--out` prompt file/,
+      `${generated} lost the --out export step`,
+    );
+    assert.match(
+      text,
+      /Ignore `--with-codex`/,
+      `${generated} must keep ignoring the Claude-only Codex flag`,
+    );
+  }
+});
+
+/* --- subset coverage travels through --out / external collection --------- */
+
+test("Step 6.7 says a truncated --out export is subset coverage", () => {
+  const step = section(
+    skill,
+    "### Step 6.7: Emit `--out` prompt file (only when `out=true`)",
+  );
+  assert.match(
+    step,
+    /truncat|subset/i,
+    "Step 6.7 must say what happens when the exporter caps the diff",
+  );
+  assert.match(
+    step,
+    /uncovered scope/i,
+    "a capped export must land in Uncovered scope, not in native coverage",
+  );
+  assert.match(
+    step,
+    /never (counts|count).{0,40}native coverage/i,
+    "an external subset must never raise native coverage",
+  );
+});
+
+test("cf-review-in treats a truncated prompt as partial coverage", () => {
+  const reviewIn = read("plugin/skills/cf-review-in/SKILL.md");
+  assert.match(
+    reviewIn,
+    /diff_truncated/,
+    "cf-review-in must read the machine-readable truncation flag",
+  );
+  assert.match(
+    reviewIn,
+    /subset/i,
+    "cf-review-in must say the external result covers a subset",
+  );
+  assert.match(
+    reviewIn,
+    /not.{0,40}(full|whole) coverage|never.{0,60}clear to commit/i,
+    "a subset review must not be presented as covering the whole target",
+  );
+});
+
+test("the exporter documents the cap it enforces", () => {
+  const exporter = read(
+    "plugin/skills/cf-review-out/scripts/build-review-prompt.sh",
+  );
+  assert.match(
+    exporter,
+    /MAX_DIFF_LINES=5000/,
+    "the legacy exporter keeps its 5000-line cap",
+  );
+  assert.match(
+    exporter,
+    /diff_truncated/,
+    "the cap state must be machine-readable in the prompt frontmatter",
+  );
+  assert.match(
+    exporter,
+    /CF_PROMPT_SCOPE=subset/,
+    "the cap state must also be announced to a piping caller",
+  );
+});
+
+/* --- retained specialists stay callable, off the default path ------------ */
+
+test("retained specialists stay callable and claim no dispatcher", () => {
+  for (const agent of [
+    "cf-reviewer-plan",
+    "cf-reviewer-quality",
+    "cf-reviewer-tests",
+    "cf-reviewer-rules",
+    "cf-reviewer-reducer",
+  ]) {
+    const markdown = read(`plugin/agents/${agent}.md`);
+    const meta = frontmatter(markdown);
+    assert.match(meta, new RegExp(`^name: ${agent}$`, "m"));
+    assert.match(meta, /^model: (haiku|sonnet|opus|inherit)$/m);
+    assert.match(meta, /^tools:/m);
+    assert.doesNotMatch(
+      meta,
+      /Dispatched by cf-reviewer/i,
+      `${agent} still advertises the retired cf-reviewer fanout`,
+    );
+    assert.ok(
+      !skill.includes(agent),
+      `cf-review must not dispatch ${agent} by default`,
+    );
+    assert.ok(
+      !reviewer.includes(agent),
+      `cf-reviewer must not dispatch ${agent}`,
+    );
+  }
+});

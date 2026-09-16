@@ -175,7 +175,7 @@ This writes `<docsDir>/later/YYYY-MM-DD-<name>.md` with frontmatter (slug, probl
 
 Load `$cf-review` now. Do not ask first.
 
-> If `review.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside the in-session review and merges both — no flag needed here (cf-review reads the config itself).
+> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.
 
 ## Completion Protocol
 

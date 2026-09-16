@@ -70,3 +70,55 @@ test("cf-help catalog lists every hook from hooks.json plus statusline", () => {
     assert.ok(listed(name), `cf-help catalog is missing hook ${name}`);
   }
 });
+
+/* ---------------------------------------------------------------------------
+ * Topology parity (plan task 4.1)
+ *
+ * cf-help is copied verbatim onto both generated hosts, so a stale fanout
+ * description is the answer Codex and Antigravity users get when they ask how
+ * review works.
+ * ------------------------------------------------------------------------ */
+
+const RETAINED_SPECIALISTS = [
+  "cf-reviewer-plan",
+  "cf-reviewer-quality",
+  "cf-reviewer-tests",
+  "cf-reviewer-rules",
+  "cf-reviewer-reducer",
+];
+
+test("cf-help no longer describes cf-reviewer as a fanout orchestrator", () => {
+  assert.doesNotMatch(
+    catalog,
+    /cf-reviewer\*{0,2}\s*—?\s*⚡?\s*—?\s*Orchestrator/i,
+    "cf-help still calls cf-reviewer an orchestrator",
+  );
+  for (const agent of RETAINED_SPECIALISTS) {
+    const row = new RegExp(
+      `\\\`${agent}\\\`\\s*\\|[^|]*\\|\\s*\\\`cf-reviewer\\\`\\s*[^|]*\\|`,
+    );
+    assert.doesNotMatch(
+      catalog,
+      row,
+      `cf-help still says cf-reviewer dispatches ${agent}`,
+    );
+  }
+});
+
+test("cf-help states the 1 / 1 / 2 review dispatch cf-review actually uses", () => {
+  assert.match(
+    catalog,
+    /cf-reviewer-security/,
+    "the DEEP second reviewer must stay documented",
+  );
+  assert.match(
+    catalog,
+    /1 in QUICK, 1 in STANDARD, 2 in DEEP/,
+    "cf-help must state the per-mode dispatch counts cf-review uses",
+  );
+  assert.match(
+    catalog,
+    /directly callable/i,
+    "cf-help must say the retired specialists are still callable",
+  );
+});

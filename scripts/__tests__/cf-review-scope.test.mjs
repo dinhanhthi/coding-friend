@@ -1216,3 +1216,135 @@ test("missing filter library fails loudly instead of failing open", () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+/* ---------------------------------------------------------------------------
+ * Exporter cap / subset coverage (plan task 4.1)
+ *
+ * build-review-prompt.sh embeds at most MAX_DIFF_LINES of diff. Whoever reads
+ * that prompt then reviewed a SUBSET of the target. The prose note alone is not
+ * enough: the subset state has to be machine-readable so `--out` collection and
+ * the external runner can carry it as uncovered scope instead of full coverage.
+ * ------------------------------------------------------------------------ */
+
+const MAX_DIFF_LINES = 5000;
+
+/** Pipe gather-diff output (or any raw diff+metadata) into the exporter. */
+function buildPrompt(dir, input, label = "2026-09-16-review") {
+  return spawnSync("bash", [buildPromptScript, label, "docs"], {
+    cwd: dir,
+    env: gitEnv,
+    input,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
+/** Parse the `key: value` lines of the prompt's leading frontmatter block. */
+function promptFrontmatter(stdout) {
+  const match = /^---\n([\s\S]*?)\n---\n/.exec(stdout);
+  assert.ok(match, "the review prompt must open with a frontmatter block");
+  const out = {};
+  for (const line of match[1].split("\n")) {
+    const idx = line.indexOf(":");
+    if (idx > 0) out[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+  }
+  return out;
+}
+
+/** The diff body the external reviewer actually receives. */
+function embeddedDiff(stdout) {
+  const match = /<diff>\n([\s\S]*)\n<\/diff>/.exec(stdout);
+  assert.ok(match, "the review prompt must embed the diff in a <diff> block");
+  return match[1];
+}
+
+test("a diff over the exporter cap is exported as an explicit subset", () => {
+  withRepo((dir) => {
+    const body = Array.from(
+      { length: MAX_DIFF_LINES + 500 },
+      (_, i) => `line ${i}`,
+    ).join("\n");
+    fs.writeFileSync(path.join(dir, "big.txt"), `${body}\n`);
+
+    const gathered = gather(dir);
+    assert.equal(gathered.status, 0, gathered.stderr);
+    const total = gathered.stdout
+      .replace(/^=== METADATA ===[\s\S]*?=== END METADATA ===\n?/m, "")
+      .replace(/^\n/, "")
+      .split("\n").length;
+    assert.ok(
+      total > MAX_DIFF_LINES,
+      `fixture must exceed the cap, got ${total} lines`,
+    );
+
+    const prompt = buildPrompt(dir, gathered.stdout);
+    assert.equal(prompt.status, 0, prompt.stderr);
+
+    // 1. the human-readable note survives
+    assert.match(prompt.stdout, /Review covers a subset/);
+
+    // 2. the reviewer only ever sees the capped body
+    assert.equal(
+      embeddedDiff(prompt.stdout).split("\n").length,
+      MAX_DIFF_LINES,
+      "the embedded diff must stop at the cap",
+    );
+
+    // 3. the subset state is machine-readable for /cf-review-in and the runner
+    const meta = promptFrontmatter(prompt.stdout);
+    assert.equal(meta.diff_truncated, "true");
+    assert.equal(Number(meta.diff_lines_included), MAX_DIFF_LINES);
+    assert.ok(
+      Number(meta.diff_lines_total) > MAX_DIFF_LINES,
+      "diff_lines_total must describe the whole target, not the subset",
+    );
+
+    // 4. a caller that only reads stderr still learns coverage was partial
+    assert.match(prompt.stderr, /^CF_PROMPT_SCOPE=subset\b/m);
+  });
+});
+
+test("a diff under the exporter cap is exported as complete coverage", () => {
+  withRepo((dir) => {
+    fs.writeFileSync(path.join(dir, "small.txt"), "PROMPT_MARK\n");
+
+    const gathered = gather(dir);
+    assert.equal(gathered.status, 0, gathered.stderr);
+    const prompt = buildPrompt(dir, gathered.stdout);
+    assert.equal(prompt.status, 0, prompt.stderr);
+
+    assert.doesNotMatch(prompt.stdout, /Review covers a subset/);
+    const meta = promptFrontmatter(prompt.stdout);
+    assert.equal(meta.diff_truncated, "false");
+    assert.equal(meta.diff_lines_included, meta.diff_lines_total);
+    assert.doesNotMatch(
+      prompt.stderr,
+      /CF_PROMPT_SCOPE/,
+      "a complete export must not raise a subset signal",
+    );
+    assert.ok(prompt.stdout.includes("PROMPT_MARK"));
+  });
+});
+
+test("the exporter counts the whole target, not just the embedded subset", () => {
+  withRepo((dir) => {
+    const body = Array.from(
+      { length: MAX_DIFF_LINES + 500 },
+      (_, i) => `line ${i}`,
+    ).join("\n");
+    // A TRACKED edit, so every added line shows up as a `+` line the exporter
+    // counts — an untracked file is embedded as plain content and counts zero.
+    fs.writeFileSync(path.join(dir, "base.txt"), `base\n${body}\n`);
+
+    const gathered = gather(dir);
+    const prompt = buildPrompt(dir, gathered.stdout);
+    assert.equal(prompt.status, 0, prompt.stderr);
+
+    const linesChanged = /\*\*Lines changed:\*\* ~(\d+)/.exec(prompt.stdout);
+    assert.ok(linesChanged, "the prompt header must report a line count");
+    assert.ok(
+      Number(linesChanged[1]) > MAX_DIFF_LINES,
+      `header must describe the full target, got ${linesChanged[1]}`,
+    );
+  });
+});

@@ -207,6 +207,8 @@ Skip when no Codex/agent job applies, or when `out=true`. Wait for each spawned 
 
 Write the in-session report to a temp file, then run the build-prompt pipeline (sets `CF_EMBED_CONTEXT_FILE` on the build stage). Show the report, then the "📝 Review Prompt Ready" panel and `> When all external agents finish, run /cf-review-in <label> to collect all results.`; skip Steps 7 and 10's banner.
 
+The build stage caps the embedded diff at 5000 lines. When it prints `CF_PROMPT_SCOPE=subset` on stderr — the prompt frontmatter then carries `diff_truncated: true` with `diff_lines_included` of `diff_lines_total` — say so in the panel and in the Summary's **Uncovered scope**: whoever reviews that file sees a subset of this target, so it never counts toward native coverage.
+
 ### Step 7: Collect the report
 
 Skip when `out=true`. In DEEP, fold the security reviewer's findings into the same four sections first. No surviving externals → that is the final report (🚨/⚠️/💡/📋); still apply `## Report contract` to its Summary — a reviewer knows nothing about Step 2/3's exit `3` or a scope that moved, so you set the aggregate status, native coverage, and uncovered scope. Else merge inline: Source 1 — in-session review; each surviving external = Source K (normalized Codex; raw file for agents). Tag `[<Agent>]`. Merge, status, and staleness rules: `## Report contract`. A dropped external is a warning line in the Summary — never a status downgrade, never a stand-in for a missing native reviewer. Use the merge in Step 10.

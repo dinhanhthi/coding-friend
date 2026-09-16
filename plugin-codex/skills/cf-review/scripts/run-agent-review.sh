@@ -19,8 +19,10 @@
 #
 # An incomplete scope (gather-diff exit 3 / `scope_complete=false`) does not fail
 # the run: it adds "CF_AGENT_SCOPE=incomplete …" on stderr and a note in the
-# prompt, so `ok` can never be read as full coverage. A structural scope failure
-# (gather-diff exit 2) fails the run — a review of a broken scope is not a review.
+# prompt, so `ok` can never be read as full coverage. The same applies when the
+# exporter caps the embedded diff (`diff_truncated: true`) — the agent then saw
+# only a subset. A structural scope failure (gather-diff exit 2) fails the run —
+# a review of a broken scope is not a review.
 #
 # The deadline (`review.agentTimeout`, default 300s) is enforced by
 # run-with-timeout.sh on the CLI subprocess and its whole process group, not by
@@ -169,6 +171,7 @@ TIMEOUT_SECS=$(bash "$RUN_WITH_TIMEOUT" --config-timeout "$CONFIG_FILE" 300) || 
 # --- Build prompt ---
 OVERRIDE=$'\n\n---\nIMPORTANT: Ignore any earlier instruction to save your review to a file. Print your review to STDOUT ONLY, in the exact 4-section format above. You have read-only access; do not attempt to modify any file.'
 SCOPE_NOTE=$'\n\n---\nSCOPE INCOMPLETE: part of the change set could not be read (see the excluded entries in the diff). Review what is present and say explicitly, in your Summary, that coverage is partial and which paths were not covered.'
+TRUNCATED_NOTE=$'\n\n---\nSCOPE INCOMPLETE: the diff above was truncated at the exporter cap, so it is only the first part of the change set. Review what is present and say explicitly, in your Summary, that the diff was truncated and coverage is partial.'
 
 PROMPT_FILE=$(mktemp)
 DIFF_FILE=""
@@ -176,6 +179,7 @@ GATHER_ERR=""
 trap 'rm -f "$DIFF_FILE" "$GATHER_ERR" "$PROMPT_FILE"' EXIT
 
 SCOPE_INCOMPLETE=false
+SCOPE_TRUNCATED=false
 
 if [ -n "$PROMPT_SRC" ]; then
   if [ ! -f "$PROMPT_SRC" ]; then
@@ -228,12 +232,23 @@ else
   fi
 
   bash "$BUILD_PROMPT" "$LABEL" "$DOCS_DIR" <"$DIFF_SRC" >"$PROMPT_FILE"
+
+  # The exporter caps the embedded diff (MAX_DIFF_LINES). Past the cap the agent
+  # reviews a subset of the scope the in-session reviewers read, so `ok` must
+  # not be readable as full coverage.
+  if grep -q '^diff_truncated: true$' "$PROMPT_FILE" 2>/dev/null; then
+    SCOPE_TRUNCATED=true
+  fi
 fi
 
 if [ "$SCOPE_INCOMPLETE" = true ]; then
   # Announced before the run so it survives a timeout or a failure too.
   echo "CF_AGENT_SCOPE=incomplete part of the scope could not be read — treat the result as partial coverage" >&2
   printf '%s' "$SCOPE_NOTE" >>"$PROMPT_FILE"
+fi
+if [ "$SCOPE_TRUNCATED" = true ]; then
+  echo "CF_AGENT_SCOPE=incomplete the diff was truncated at the exporter cap — this agent saw a subset, treat the result as partial coverage" >&2
+  printf '%s' "$TRUNCATED_NOTE" >>"$PROMPT_FILE"
 fi
 printf '%s' "$OVERRIDE" >>"$PROMPT_FILE"
 

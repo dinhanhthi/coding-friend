@@ -143,21 +143,16 @@ function renderAgyInstructionText(input) {
     .replace(/\(model: sonnet\)/g, "(model: pro)")
     .replace(/\(model: haiku\)/g, "(model: flash)")
     .replace(/\(model: opus\)/g, "(model: pro)")
-    .replace(
-      /Launch the `cf-reviewer-reducer` agent \(model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files\)/g,
-      "Launch the `cf-reviewer-reducer` agent (model: flash by default — honor the `CF_REDUCER_MODEL` environment variable if set to `pro`, to let users upgrade reducer quality without editing agent files)",
-    )
-    .replace(
-      /re-run with `CF_REDUCER_MODEL=sonnet` for a more conservative merge/g,
-      "re-run with `CF_REDUCER_MODEL=pro` for a more conservative merge",
-    )
     .replace(/helps Claude produce/g, "helps Antigravity produce")
     .replace(/phase file Claude re-opens/g, "phase file Antigravity re-opens")
     .replace(/if Claude finds itself/g, "if Antigravity finds itself")
     .replace(/Claude does NOT need/g, "Antigravity does NOT need")
     .replace(/\bCLAUDE_PLUGIN_ROOT\b/g, "the plugin directory")
     .replace(
-      /> If `review\.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here \(cf-review reads the config itself\)\./g,
+      // Tolerates both wordings of the same note ("alongside Claude's" and the
+      // host-neutral "alongside the in-session review") — a rewrite that only
+      // matched one of them shipped hosts still promising a nested Codex run.
+      /> If `review\.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside (?:Claude's|the in-session review) and merges both — no flag needed here \(cf-review reads the config itself\)\./g,
       "> On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.",
     )
     .replace(

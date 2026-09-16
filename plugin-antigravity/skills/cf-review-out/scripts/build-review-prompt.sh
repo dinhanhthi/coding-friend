@@ -57,11 +57,27 @@ fi
 diff_file=$(mktemp)
 printf '%s\n' "$diff_content" > "$diff_file"
 line_count=$(wc -l < "$diff_file" | tr -d ' ')
+
+# Counted on the FULL diff, before any truncation: the header describes the
+# whole target while the frontmatter below says how much of it was embedded.
+# Post-truncation counts would make a subset look like complete coverage.
+# (|| true for grep -c with no match)
+files_changed=$(grep -c '^diff --git' "$diff_file" || true)
+lines_changed=$(grep -cE '^\+[^+]|^-[^-]' "$diff_file" || true)
+
+diff_truncated="false"
+diff_lines_included="$line_count"
 truncated_note=""
 if [ "$line_count" -gt "$MAX_DIFF_LINES" ]; then
   diff_content=$(head -n "$MAX_DIFF_LINES" "$diff_file")
+  diff_truncated="true"
+  diff_lines_included="$MAX_DIFF_LINES"
   truncated_note="
 > NOTE: The diff was truncated from $line_count to $MAX_DIFF_LINES lines. Review covers a subset."
+  # Machine-readable for a piping caller (run-agent-review.sh, /cf-review --out):
+  # whoever reviews this prompt saw a subset and must never be recorded as
+  # covering the whole target.
+  echo "CF_PROMPT_SCOPE=subset diff truncated from $line_count to $MAX_DIFF_LINES lines" >&2
 fi
 rm -f "$diff_file"
 
@@ -80,10 +96,6 @@ fi
 # Branch name and head SHA (prefer metadata, fallback to git)
 branch_name="${meta_current_branch:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")}"
 meta_head_sha="${meta_head_sha:-$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")}"
-
-# File and line counts (use <<< to avoid SIGPIPE with large diffs; || true for grep -c no-match)
-files_changed=$(grep -c '^diff --git' <<< "$diff_content" || true)
-lines_changed=$(grep -cE '^\+[^+]|^-[^-]' <<< "$diff_content" || true)
 
 # --- Build change source summary ---
 change_source_lines=""
@@ -124,6 +136,9 @@ label: ${LABEL}
 date: ${current_date}
 type: review-request
 status: pending
+diff_truncated: ${diff_truncated}
+diff_lines_total: ${line_count}
+diff_lines_included: ${diff_lines_included}
 ---
 
 # Review Request: ${LABEL}

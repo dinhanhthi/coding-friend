@@ -181,6 +181,8 @@ Wait for the report(s) under the lifecycle above.
 
 Write the in-session report to a temp file, then run the build-prompt pipeline (sets `CF_EMBED_CONTEXT_FILE` on the build stage). Show the report, then the "📝 Review Prompt Ready" panel and `> When all external agents finish, run /cf-review-in <label> to collect all results.`; skip Steps 7 and 10's banner.
 
+The build stage caps the embedded diff at 5000 lines. When it prints `CF_PROMPT_SCOPE=subset` on stderr — the prompt frontmatter then carries `diff_truncated: true` with `diff_lines_included` of `diff_lines_total` — say so in the panel and in the Summary's **Uncovered scope**: whoever reviews that file sees a subset of this target, so it never counts toward native coverage.
+
 ### Step 7: Collect the report
 
 The result of Step 6 is the reviewer's report (Critical / Important / Suggestions / Summary). Keep its findings as written, then apply `## Report contract` to the Summary — you own the aggregate `Review status:`, native coverage and uncovered scope, which no single reviewer can know. Use that merged report in Step 10.

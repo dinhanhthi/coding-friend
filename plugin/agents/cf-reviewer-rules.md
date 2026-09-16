@@ -3,12 +3,11 @@ name: cf-reviewer-rules
 description: >
   Project rules compliance specialist. Checks code changes against CLAUDE.md project rules.
   Only flags violations of rules with MUST/SHOULD/ALWAYS/NEVER language.
-  Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review.
-  Skipped in QUICK review mode.
+  Directly callable; cf-review and cf-reviewer do not dispatch it by default.
 model: haiku
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-09-10
+updated: 2026-09-16
 ---
 
 # Project Rules Reviewer

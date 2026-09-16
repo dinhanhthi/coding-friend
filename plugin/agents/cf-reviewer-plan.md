@@ -2,13 +2,12 @@
 name: cf-reviewer-plan
 description: >
   Plan alignment review specialist. Checks whether code changes match the implementation plan.
-  Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review.
+  Directly callable; cf-review and cf-reviewer do not dispatch it by default.
   Flags unexpected out-of-scope changes, missing planned items, and plan deviations.
-  Skipped in QUICK review mode.
 model: sonnet
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-09-10
+updated: 2026-09-16
 ---
 
 # Plan Alignment Reviewer

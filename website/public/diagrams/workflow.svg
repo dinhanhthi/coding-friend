@@ -53,7 +53,7 @@
 
   <rect id="reviewer" data-node-id="reviewer" x="630" y="60" width="160" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="630,60,790,116"/>
   <text x="644" y="84" class="nm">cf-reviewer</text>
-  <text x="644" y="102" class="dt">5 specialists + reducer</text>
+  <text x="644" y="102" class="dt">reviews the diff itself</text>
 
   <rect id="writer" data-node-id="writer" x="990" y="60" width="160" height="56" rx="6" fill="oklch(22% 0.016 265)" stroke="oklch(96% 0.006 262 / 0.18)" stroke-width="1" data-graph-role="node" data-graph-bounds="990,60,1150,116"/>
   <text x="1004" y="84" class="nm">cf-writer</text>

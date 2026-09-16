@@ -5,7 +5,7 @@ description: >
   Triggers: "get a second opinion", "external review", "review out", "send for review",
   "cf-review-out", "prepare review for gemini".
 created: 2026-03-23
-updated: 2026-09-09
+updated: 2026-09-16
 ---
 
 # $cf-review-out
@@ -71,6 +71,8 @@ Show the user:
 > **Label:** `YYYY-MM-DD-<label>`
 > **Prompt file:** `<docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md`
 > **Results expected at:** `<docsDir>/reviews/YYYY-MM-DD-<label>-result-<service>.md`
+
+If Step 3 printed `CF_PROMPT_SCOPE=subset` on stderr, the build stage hit its 5000-line cap: the prompt frontmatter carries `diff_truncated: true` with `diff_lines_included` of `diff_lines_total`. Add that to the panel — whoever reviews this file sees a **subset** of the change set, and `$cf-review-in` will report it as partial coverage, not as the whole target.
 
 Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
 

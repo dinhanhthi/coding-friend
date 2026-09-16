@@ -74,7 +74,7 @@ coding-friend/
 │   │   └── cf-verification/         # Verify before claiming done
 │   │
 │   ├── agents/
-│   │   ├── cf-reviewer.md           # Review orchestrator (dispatches specialists)
+│   │   ├── cf-reviewer.md           # Direct reviewer (all 5 layers, no fanout)
 │   │   ├── cf-reviewer-plan.md      # Plan alignment specialist (sonnet)
 │   │   ├── cf-reviewer-security.md  # Security specialist (sonnet)
 │   │   ├── cf-reviewer-quality.md   # Code quality + slop detection (haiku)
@@ -164,7 +164,7 @@ name: cf-verification
 description: Verify before claiming work is complete
 user-invocable: false
 ---
-# Skill that dispatches the cf-reviewer orchestrator agent inline
+# Skill that dispatches the cf-reviewer agent inline
 ---
 name: cf-review
 description: Dispatch code review to a subagent. Use when the user wants code reviewed...
@@ -219,13 +219,13 @@ Exit codes:
 
 | Agent                  | Model   | Purpose                                                                      |
 | ---------------------- | ------- | ---------------------------------------------------------------------------- |
-| `cf-reviewer`          | inherit | Review orchestrator: dispatches specialists in parallel + reducer            |
-| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist                                                    |
-| `cf-reviewer-security` | sonnet  | Security vulnerability specialist                                            |
-| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist                                     |
-| `cf-reviewer-tests`    | haiku   | Test coverage specialist                                                     |
-| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md)                              |
-| `cf-reviewer-reducer`  | haiku   | Deduplicates and severity-ranks findings from specialists                    |
+| `cf-reviewer`          | inherit | Direct reviewer: all 5 layers itself (1 job; 2 in DEEP with security)        |
+| `cf-reviewer-plan`     | sonnet  | Plan alignment specialist — standalone, off /cf-review's default path        |
+| `cf-reviewer-security` | sonnet  | Security vulnerability specialist — 2nd reviewer in DEEP                     |
+| `cf-reviewer-quality`  | haiku   | Code quality + slop detection specialist — standalone                        |
+| `cf-reviewer-tests`    | haiku   | Test coverage specialist — standalone                                        |
+| `cf-reviewer-rules`    | haiku   | Project rules compliance specialist (CLAUDE.md) — standalone                 |
+| `cf-reviewer-reducer`  | haiku   | Deduplicates and ranks findings — standalone; /cf-review merges inline       |
 | `cf-explorer`          | haiku   | Codebase exploration + writes structured context file for downstream agents  |
 | `cf-implementer`       | inherit | TDD implementation with context file handoff, result signals, and auto-retry |
 | `cf-planner`           | inherit | Task decomposition (parallel/sequential phases) + writes context file        |
@@ -374,21 +374,21 @@ stripFrontmatter(content) → markdownBody
 
 ## Key Design Decisions
 
-| Decision                                    | Rationale                                                                                                             |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| 15 skills total                             | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                        |
-| Shell scripts for hooks                     | Portable, easy to debug, no build step                                                                                |
-| 12 agents                                   | cf-reviewer (orchestrator) + 6 review specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
-| .coding-friend/ignore (gitignore-style)     | Familiar pattern, simple implementation                                                                               |
-| /cf-remember + /cf-learn                    | Unique value: project brain + human learning                                                                          |
-| cf-reviewer dispatched inline by /cf-review | Skill runs inline (activation signal visible immediately), then dispatches cf-reviewer agent with Agent tool          |
-| Layered config                              | Global `~/.coding-friend/config.json` + local per-project, local overrides                                            |
-| Config schema validation (Zod)              | Validates config on load, warns on invalid types and unknown keys with typo suggestions                               |
-| CLI (`cf`) for installation                 | Automates plugin setup, health checks, updates                                                                        |
-| `cf init` for setup                         | Re-runnable, detects previous setup, configures permissions                                                           |
-| Dev mode path validation                    | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                            |
-| Daemon runs forever by default              | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                    |
-| Daemon auto-respawn with 3 retries          | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                           |
+| Decision                                    | Rationale                                                                                                                                                |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15 skills total                             | 3 reference + 12 task (host/mcp/statusline/update via CLI only). Enough coverage without bloat                                                           |
+| Shell scripts for hooks                     | Portable, easy to debug, no build step                                                                                                                   |
+| 12 agents                                   | cf-reviewer (direct reviewer) + cf-reviewer-security (DEEP) + 5 retained specialists, cf-implementer, cf-planner, cf-explorer, cf-writer, cf-writer-deep |
+| .coding-friend/ignore (gitignore-style)     | Familiar pattern, simple implementation                                                                                                                  |
+| /cf-remember + /cf-learn                    | Unique value: project brain + human learning                                                                                                             |
+| cf-reviewer dispatched inline by /cf-review | Skill runs inline (activation signal visible immediately), then dispatches cf-reviewer itself — 1 job, 2 in DEEP                                         |
+| Layered config                              | Global `~/.coding-friend/config.json` + local per-project, local overrides                                                                               |
+| Config schema validation (Zod)              | Validates config on load, warns on invalid types and unknown keys with typo suggestions                                                                  |
+| CLI (`cf`) for installation                 | Automates plugin setup, health checks, updates                                                                                                           |
+| `cf init` for setup                         | Re-runnable, detects previous setup, configures permissions                                                                                              |
+| Dev mode path validation                    | Warns if saved dev plugin path no longer exists (prevents silent breakage)                                                                               |
+| Daemon runs forever by default              | No idle timeout — daemon stays alive until explicit `cf memory stop-daemon` (was 30-min auto-stop)                                                       |
+| Daemon auto-respawn with 3 retries          | On crash, retries 3x with 1s delay before falling back to Tier 3 (markdown)                                                                              |
 
 ---
 
@@ -512,8 +512,8 @@ The project operates as 4 concurrent state machine layers.
     ┌───────────────────────────┐                         │          │
     │     REVIEW/COMMIT ZONE    │                         │          │
     │                           │                         │          │
-    │  /cf-review ──→ cf-reviewer orchestrator (inline)         │          │
-    │                 5 specialist agents in parallel + reducer│          │
+    │  /cf-review ──→ cf-reviewer (inline, all 5 layers)  │          │
+    │                   1 job · 2 in DEEP (+ security)    │          │
     │                                                     │          │
     │  /cf-commit ──→ • Scan for secrets                  │          │
     │                 • Analyze diff                       │          │

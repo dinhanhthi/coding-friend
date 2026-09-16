@@ -931,7 +931,10 @@ test("agent runner: a result path containing spaces works", posixOnly, () => {
 
 /* --- scope handoff ------------------------------------------------------- */
 
-function writeSnapshot(dir, { complete = true, changes = true } = {}) {
+function writeSnapshot(
+  dir,
+  { complete = true, changes = true, diffLines = 0 } = {},
+) {
   const snap = path.join(dir, "snapshot");
   fs.mkdirSync(snap, { recursive: true });
   fs.writeFileSync(
@@ -958,6 +961,7 @@ function writeSnapshot(dir, { complete = true, changes = true } = {}) {
       "",
       "=== git diff main...HEAD (committed branch changes) ===",
       "DUMMY_SNAPSHOT_MARKER",
+      ...Array.from({ length: diffLines }, (_, i) => `+DUMMY_LINE_${i}`),
       "",
     ].join("\n"),
   );
@@ -1017,6 +1021,43 @@ test(
     assert.equal(res.status, 0, res.stderr);
     assert.match(res.stderr, /CF_AGENT_SCOPE=incomplete/);
     assert.match(fs.readFileSync(stdinFile, "utf8"), /SCOPE INCOMPLETE/);
+  },
+);
+
+test(
+  "agent runner: a snapshot past the exporter cap is flagged as partial coverage",
+  posixOnly,
+  () => {
+    // build-review-prompt.sh caps the embedded diff at 5000 lines. The agent
+    // then reviewed a subset, so `ok` must not be readable as full coverage.
+    const dir = mkTmp();
+    const bin = makeBin("claude");
+    const stdinFile = path.join(dir, "stdin");
+    const res = runAgent({
+      args: [
+        "claude",
+        path.join(dir, "result.md"),
+        "--snapshot-dir",
+        writeSnapshot(dir, { diffLines: 5600 }),
+      ],
+      cwd: dir,
+      bin,
+      config: writeConfig(dir, { agentTimeout: 20 }),
+      fake: { CF_FAKE_OUT: "review", CF_FAKE_STDIN_FILE: stdinFile },
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /CF_AGENT=ok/);
+    assert.match(res.stderr, /CF_AGENT_SCOPE=incomplete/);
+    assert.match(
+      res.stderr,
+      /truncated/i,
+      "the reason must name the exporter cap, not a read failure",
+    );
+    assert.match(
+      fs.readFileSync(stdinFile, "utf8"),
+      /SCOPE INCOMPLETE/,
+      "the agent must be told in-prompt that it only got a subset",
+    );
   },
 );
 

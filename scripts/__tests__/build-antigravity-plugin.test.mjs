@@ -1015,3 +1015,86 @@ test("Antigravity builder no longer ships dead Claude tool phrase replaces", asy
     /TaskCreate|AskUserQuestion|Skill tool|WebFetch|Write tool/,
   );
 });
+
+/* ---------------------------------------------------------------------------
+ * Generated-host parity audit (plan task 4.1)
+ * ------------------------------------------------------------------------ */
+
+const liveRepoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+
+const RETAINED_SPECIALISTS = [
+  "cf-reviewer-plan",
+  "cf-reviewer-quality",
+  "cf-reviewer-tests",
+  "cf-reviewer-rules",
+  "cf-reviewer-reducer",
+];
+
+test("Antigravity keeps ignoring withCodex in every auto-review consumer", async () => {
+  for (const relPath of [
+    "plugin/skills/cf-fix/SKILL.md",
+    "plugin/skills/cf-optimize/SKILL.md",
+    "plugin/skills/cf-plan/modes/autopilot.md",
+  ]) {
+    const source = await fs.readFile(path.join(liveRepoRoot, relPath), "utf8");
+    const rendered = renderAgyFile(`/repo/${relPath}`, source);
+    assert.doesNotMatch(
+      rendered,
+      /cf-review (automatically |)(runs|adds) a Codex second[- ]opinion/i,
+      `${relPath} still promises a nested Codex review on the Antigravity host`,
+    );
+    assert.match(
+      rendered,
+      /ignores the Claude-only `review\.withCodex`/,
+      `${relPath} must tell the Antigravity host that withCodex is ignored`,
+    );
+  }
+});
+
+test("Antigravity builder ships no dead review-topology replaces", async () => {
+  const source = await fs.readFile(
+    path.join(liveRepoRoot, "scripts/build-antigravity-plugin.js"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /CF_REDUCER_MODEL/,
+    "the reducer-model rewrites target text no source file contains anymore",
+  );
+});
+
+test("retained review specialists still build into callable AGY agents", async () => {
+  for (const agent of RETAINED_SPECIALISTS) {
+    const markdown = await fs.readFile(
+      path.join(liveRepoRoot, "plugin/agents", `${agent}.md`),
+      "utf8",
+    );
+    const rendered = renderAgyAgentMarkdown(markdown);
+    assert.match(
+      rendered,
+      new RegExp(`^name: ${agent}$`, "m"),
+      `${agent} must keep a usable name in its AGY agent file`,
+    );
+    assert.match(
+      rendered,
+      /^description: /m,
+      `${agent} must keep a description the host can select on`,
+    );
+    assert.match(
+      rendered,
+      /^model: (flash|pro|inherit)$/m,
+      `${agent} must map onto an AGY model`,
+    );
+    assert.doesNotMatch(
+      rendered,
+      /Dispatched by cf-reviewer/i,
+      `${agent} still claims cf-reviewer dispatches it`,
+    );
+    await fs.access(
+      path.join(liveRepoRoot, "plugin-antigravity/agents", `${agent}.md`),
+    );
+  }
+});
