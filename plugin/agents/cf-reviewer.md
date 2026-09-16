@@ -16,7 +16,7 @@ description: >
 model: inherit
 tools: Read, Glob, Grep, Bash
 created: 2026-02-17
-updated: 2026-09-15
+updated: 2026-09-16
 ---
 
 # Code Reviewer
@@ -93,6 +93,8 @@ Review status: COMPLETE | PARTIAL — <what you did not reach>
 All 4 sections required. Empty sections show "None." Use bullet lists only, no tables. Use actual Unicode emoji characters (🚨 ⚠️ 💡 📋) in headings.
 
 The Summary's last line is the status: `COMPLETE` when you covered the whole scope you were given, `PARTIAL` when you ran out of budget or could not read something — then list what you did not reach. Zero findings is still `COMPLETE`. The caller aggregates these statuses; you only report your own.
+
+Nothing can interrupt or cancel you once you start, so budget yourself: track elapsed time as you work and keep enough of it to write the report. Running out with nothing written loses the whole review; `PARTIAL` with what you did cover does not.
 
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
 

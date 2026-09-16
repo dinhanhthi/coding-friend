@@ -146,7 +146,7 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 ## Config
 
-Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/config.json` (local). Local overrides global at the **top-level key**. Nested objects (e.g. `learn`) are replaced whole if present locally.
+Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/config.json` (local). Local overrides global **per field**, including inside nested objects (a local `review.agentTimeout` keeps the global `review.withCodex`). Arrays (e.g. `learn.categories`) are replaced whole.
 
 | Key                     | Default                                     | Meaning                                                                         |
 | ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -169,6 +169,7 @@ Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/con
 | `learn.readmeIndex`     | `false`                                     | `false` / `true` / `"per-category"`                                             |
 | `review.withCodex`      | `false`                                     | Always add Codex on `/cf-review`                                                |
 | `review.agentTimeout`   | `300`                                       | Seconds per external reviewer                                                   |
+| `review.nativeTimeout`  | `600`                                       | Seconds per in-session reviewer job                                             |
 | `review.maxRounds`      | `5`                                         | Autopilot `/cf-review` fix-loop cap (`/cf-plan --auto`, `/cf-tdd --auto`)       |
 | `memory.tier`           | `auto`                                      | `auto` / `full` / `lite` / `markdown`                                           |
 | `memory.embedding`      | —                                           | `{ provider: transformers\|ollama, model, ollamaUrl }`                          |

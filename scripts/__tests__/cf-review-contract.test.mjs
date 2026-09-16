@@ -749,3 +749,423 @@ test("generated hosts are not told to skip the report contract", () => {
     );
   }
 });
+
+/* ---------------------------------------------------------------------------
+ * Native dispatch lifecycle & consumer gates (plan task 3.1)
+ *
+ * Step 6's dispatches need a bounded lifecycle, and the autopilot consumers
+ * must read the aggregate `Review status:` line BEFORE they count findings —
+ * an empty Critical/Important section is not a pass on its own.
+ * ------------------------------------------------------------------------ */
+
+const autopilot = read("plugin/skills/cf-plan/modes/autopilot.md");
+const execute = read("plugin/skills/cf-plan/modes/execute.md");
+const tddLoop = read("plugin/skills/cf-tdd/modes/autopilot-loop.md");
+
+const CONSUMERS = [
+  ["cf-plan/modes/autopilot.md", autopilot],
+  ["cf-plan/modes/execute.md", execute],
+  ["cf-tdd/modes/autopilot-loop.md", tddLoop],
+];
+
+/** The AUTOPILOT CONTRACT block copied verbatim into every generated plan. */
+function autopilotContractBlock() {
+  const match = /```markdown\n([\s\S]*?)\n```/.exec(autopilot);
+  assert.ok(
+    match,
+    "autopilot.md must keep the copied AUTOPILOT CONTRACT block",
+  );
+  assert.match(
+    match[1],
+    /## AUTOPILOT/,
+    "the fenced block must be the AUTOPILOT CONTRACT",
+  );
+  return match[1];
+}
+
+/** Every consumer gate states the same rule, wherever it is copied. */
+function assertStatusGate(text, label) {
+  assert.match(
+    text,
+    /Review status:/,
+    `${label} must name the exact line it parses`,
+  );
+  assert.match(
+    text,
+    /COMPLETE/,
+    `${label} must say that only COMPLETE proceeds to the severity count`,
+  );
+  assert.match(text, /PARTIAL/, `${label} must handle PARTIAL`);
+  assert.match(text, /FAILED/, `${label} must handle FAILED`);
+  assert.match(text, /missing/i, `${label} must handle a missing status line`);
+  assert.match(
+    text,
+    /unparseable/i,
+    `${label} must handle an unparseable status line`,
+  );
+  assert.match(
+    text,
+    /STOP/,
+    `${label} must stop instead of committing on a non-COMPLETE status`,
+  );
+  assert.match(
+    text,
+    /never (infer|treat).{0,40}clean|absence of findings/i,
+    `${label} must forbid inferring clean from an absence of findings`,
+  );
+}
+
+for (const [label, text] of CONSUMERS) {
+  test(`${label} reads Review status: before it counts findings`, () => {
+    assertStatusGate(text, label);
+  });
+}
+
+test("the autopilot consumers gate before the severity count, not after", () => {
+  for (const [label, text] of [
+    ["cf-plan/modes/autopilot.md", autopilot],
+    ["cf-tdd/modes/autopilot-loop.md", tddLoop],
+  ]) {
+    const gate = text.indexOf("Review status:");
+    const count = text.indexOf("🚨");
+    assert.notEqual(gate, -1, `${label} has no status gate`);
+    assert.notEqual(count, -1, `${label} has no severity count`);
+    assert.ok(
+      gate < count,
+      `${label} counts findings before it reads the status line`,
+    );
+  }
+});
+
+test("zero findings never passes the gate on its own", () => {
+  for (const [label, text] of CONSUMERS) {
+    assert.ok(
+      !/If that review is clean \(only Suggestions\/Summary\)/.test(text),
+      `${label} still treats "only Suggestions/Summary" as clean without a status check`,
+    );
+  }
+  assert.match(
+    autopilot,
+    /Review status: `?COMPLETE`?[^\n]*(no |zero )?(Critical|🚨)/i,
+    "autopilot.md must define a clean review as COMPLETE plus no Critical/Important",
+  );
+});
+
+test("the copied AUTOPILOT CONTRACT block carries the same gate", () => {
+  const block = autopilotContractBlock();
+  assertStatusGate(block, "the copied AUTOPILOT CONTRACT block");
+  const gate = block.indexOf("Review status:");
+  const count = block.indexOf("🚨");
+  assert.ok(
+    gate !== -1 && count !== -1 && gate < count,
+    "the copied block must read the status line before counting findings",
+  );
+  assert.match(
+    block,
+    /Stop conditions[\s\S]*Review status/,
+    "a non-COMPLETE review status must be a listed stop condition",
+  );
+});
+
+test("execute.md defines a passing review as Review status: COMPLETE", () => {
+  const post = section(execute, "#### Post-implementation");
+  assert.match(
+    post,
+    /Review status: `?COMPLETE`?/,
+    "execute.md must define review success by the status line, not by silence",
+  );
+});
+
+test("Step 6 gives every native dispatch a bounded lifecycle", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  for (const state of ["pending", "running", "complete", "failed"]) {
+    assert.match(
+      dispatch,
+      new RegExp(`\`${state}\``),
+      `missing state ${state}`,
+    );
+  }
+  assert.match(
+    dispatch,
+    /`timed_out`/,
+    "the lifecycle must name the timed_out state literally",
+  );
+  for (const field of [/job id/i, /start time/i, /deadline/i, /coverage/i]) {
+    assert.match(dispatch, field, `per-job tracking is missing ${field}`);
+  }
+  assert.match(
+    dispatch,
+    /at most 60 ?s(econds)?/i,
+    "each wait step must be bounded at 60s when the host supports it",
+  );
+  assert.match(
+    dispatch,
+    /elapsed/i,
+    "elapsed time must be checked after each wait",
+  );
+});
+
+test("a heartbeat or retry never resets the native deadline", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /heartbeat/i,
+    "the lifecycle must say what a heartbeat does not do",
+  );
+  assert.match(
+    dispatch,
+    /never resets? the deadline/i,
+    "a heartbeat or retry must never reset the deadline",
+  );
+  assert.match(
+    dispatch,
+    /never (auto-)?respawn/i,
+    "a timed-out reviewer is never auto-respawned",
+  );
+  assert.match(dispatch, /forever/i, "no retry may run forever");
+});
+
+test("Step 6 spends the budget through the host's own status and cancel controls", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /cancel/i,
+    "use the host's cancellation when it has one",
+  );
+  assert.match(
+    dispatch,
+    /partial output/i,
+    "when the budget runs out, ask for partial output first",
+  );
+  assert.match(
+    dispatch,
+    /merge what (already )?arrived/i,
+    "whatever arrived before the deadline is still merged",
+  );
+  assert.match(
+    dispatch,
+    /shell `timeout`/,
+    "shell timeout must be named as the wrong mechanism for a native dispatch",
+  );
+  assert.match(
+    dispatch,
+    /external subprocess/i,
+    "shell timeout applies to external subprocesses only",
+  );
+});
+
+test("a host without a timed wait or cancel gets an honest fallback, not a promise", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /inline budgeted review/i,
+    "with no timed wait and no cancel, review inline from the start",
+  );
+  assert.match(
+    dispatch,
+    /from the start/i,
+    "the fallback is decided before dispatch, not after a hang",
+  );
+  assert.match(
+    dispatch,
+    /cannot be interrupted/i,
+    "a single tool call that never returns control cannot be interrupted",
+  );
+  assert.match(
+    dispatch,
+    /contract tests verify the instruction[\s\S]{0,200}live run/i,
+    "the limitation must be stated: tests verify the wording, a live run verifies enforcement",
+  );
+});
+
+test("job states map onto the report contract's coverage words", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /Native coverage/,
+    "Step 6 must map its job states onto the Summary's Native coverage field",
+  );
+  assert.match(
+    dispatch,
+    /unparseable/i,
+    "a failed job is reported as missing or unparseable coverage",
+  );
+});
+
+test("cf-review no longer gates on the dead review marker", () => {
+  assert.ok(
+    !skill.includes("mark-reviewed"),
+    "cf-review must not invoke mark-reviewed.sh — nothing reads that marker",
+  );
+  for (const generated of [
+    "plugin-codex/skills/cf-review/SKILL.md",
+    "plugin-antigravity/skills/cf-review/SKILL.md",
+  ]) {
+    assert.ok(
+      !read(generated).includes("mark-reviewed"),
+      `${generated} must not invoke the dead marker script either`,
+    );
+  }
+  // The host builders anchor their Step 7 replacement on this exact heading.
+  assert.ok(
+    skill.includes("### Step 8: Mark review complete and display status"),
+    "the Step 8 heading is a builder anchor — keep its text",
+  );
+  assert.match(
+    section(skill, "### Step 8: Mark review complete and display status"),
+    /Review status:/,
+    "Step 8 must record completion through the status line, not a marker file",
+  );
+});
+
+test("reviewer agents budget themselves because nothing can cancel them", () => {
+  for (const [name, markdown] of REVIEWERS) {
+    assert.match(
+      markdown,
+      /(cannot be|nothing can) (interrupt|cancel)/i,
+      `${name} must say that nothing can cancel it once it starts`,
+    );
+    assert.match(
+      markdown,
+      /elapsed/i,
+      `${name} must check its elapsed budget between steps`,
+    );
+  }
+});
+
+/* ---------------------------------------------------------------------------
+ * Scope handoff to the external runners (plan task 3.2)
+ *
+ * The runners parse `--snapshot-dir` / `--uncommitted` (see
+ * cf-review-runners.test.mjs); these tests pin the other half — that Step 2.5
+ * actually passes them, and passes the Codex flag the Step 2 metadata calls
+ * for. Without this, dropping a flag here leaves every test green while the
+ * external reviewers re-gather a scope the in-session reviewers never saw.
+ *
+ * Note for whoever edits that section: `section()` ends a section at the next
+ * line starting with `#`, so a bash comment at column 0 inside a fence cuts the
+ * section short. Annotate those commands with trailing `# …` comments.
+ * ------------------------------------------------------------------------ */
+
+const SPAWN_HEADING =
+  "### Step 2.5: Spawn Codex review in the background (only when `codex=true`)";
+
+test("Step 2.5 hands the Step 2 snapshot to the agent runner", () => {
+  const spawn = section(skill, SPAWN_HEADING);
+  assert.match(
+    spawn,
+    /run-agent-review\.sh[^\n]*--snapshot-dir \/tmp\/coding-friend\/review\/<run-id>/,
+    "the agent runner must be given the same snapshot the in-session reviewers read",
+  );
+  assert.match(
+    spawn,
+    /unusable[\s\S]{0,200}drop `--snapshot-dir`/,
+    "an unusable snapshot dir is the one documented reason to omit the flag",
+  );
+});
+
+test("Step 2.5 picks the Codex scope flag from has_committed", () => {
+  const spawn = section(skill, SPAWN_HEADING);
+  const codexLines = spawn
+    .split("\n")
+    .filter((line) => /^bash .*run-codex-review\.sh/.test(line));
+  assert.equal(
+    codexLines.length,
+    2,
+    "both Codex invocations (pinned and flagless) must be shown",
+  );
+  assert.ok(
+    codexLines.some((line) => line.includes("--uncommitted")),
+    "one invocation pins Codex to the working tree",
+  );
+  assert.ok(
+    codexLines.some((line) => !line.includes("--uncommitted")),
+    "the other invocation passes no scope flag",
+  );
+  assert.match(
+    spawn,
+    /`has_committed=false`[^\n]*`--uncommitted`/,
+    "`--uncommitted` is conditional on has_committed=false",
+  );
+  assert.match(
+    spawn,
+    /`has_committed=true`[^\n]*omit the flag/i,
+    "a snapshot with committed work must NOT pin Codex to the working tree",
+  );
+  assert.match(
+    spawn,
+    /has_committed=true[\s\S]{0,400}(less|narrower)/i,
+    "the narrower Codex scope must be stated, not assumed equal",
+  );
+});
+
+test("external-reviewers.md describes the scope Codex actually receives", () => {
+  const externals = read(
+    "plugin/skills/cf-review/references/external-reviewers.md",
+  );
+  const scope = section(externals, "## Codex scope");
+  assert.ok(
+    !/Codex reviews the same working tree the in-session reviewers were given/.test(
+      scope,
+    ),
+    "the unconditional same-scope claim is false once the flag is conditional",
+  );
+  assert.match(
+    scope,
+    /`has_committed`/,
+    "the reference must key the Codex scope off the Step 2 metadata",
+  );
+  assert.match(
+    scope,
+    /(narrower|less)/i,
+    "it must say plainly when Codex sees less than the in-session review",
+  );
+});
+
+/* ---------------------------------------------------------------------------
+ * Native deadline (`review.nativeTimeout`)
+ *
+ * The documented default, the value Step 6 resolves, and the number in the
+ * dispatch payload are one number read from config — not three literals that
+ * can drift apart.
+ * ------------------------------------------------------------------------ */
+
+test("Step 6 resolves the native deadline from review.nativeTimeout", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /run-with-timeout\.sh[^\n]*--config-timeout[^\n]*600 nativeTimeout/,
+    "Step 6 must resolve review.nativeTimeout through the shared config reader",
+  );
+  assert.match(
+    dispatch,
+    /\*\*Deadline:\*\*[^\n]*`<N>` seconds/,
+    "the payload deadline must be phrased from the resolved value",
+  );
+  assert.ok(
+    !/within 5 minutes/.test(dispatch),
+    "the payload must not hardcode a 5-minute deadline",
+  );
+  assert.ok(
+    !/the 5 minutes in the payload/.test(dispatch),
+    "the lifecycle deadline row must not hardcode 5 minutes either",
+  );
+});
+
+test("the documented nativeTimeout default matches the one Step 6 falls back to", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  const fallback = /--config-timeout[^\n]*?(\d+) nativeTimeout/.exec(dispatch);
+  assert.ok(fallback, "Step 6 must pass an explicit default to the resolver");
+  const topics = read("plugin/skills/cf-help/topics.md");
+  assert.match(
+    topics,
+    new RegExp(`\`review\\.nativeTimeout\`\\s*\\|\\s*\`${fallback[1]}\``, "m"),
+    "topics.md must document the default Step 6 actually uses",
+  );
+  const help = read("plugin/skills/cf-help/SKILL.md");
+  assert.match(
+    help,
+    new RegExp(`\`review\\.nativeTimeout\` \\(default ${fallback[1]}s\\)`),
+    "cf-help/SKILL.md must list the same key and default as topics.md",
+  );
+});

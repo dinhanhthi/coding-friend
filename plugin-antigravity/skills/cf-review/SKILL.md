@@ -9,7 +9,7 @@ description: >
   a plan document (use /cf-plan-review), quick questions about how code works
   (use /cf-ask), and formatting-only changes.
 created: 2026-02-17
-updated: 2026-09-15
+updated: 2026-09-16
 ---
 
 # /cf-review
@@ -112,6 +112,14 @@ You dispatch every reviewer yourself, from this conversation. The graph is flat 
 
 In DEEP, send both dispatches in a **single message** so they run in parallel; `cf-reviewer-security` is a second perspective, not a handoff — `cf-reviewer` still owns security of the diff. Fold the two reports into one set of four sections yourself, under the rules in `## Report contract` below. A big diff never changes these counts: never dispatch one reviewer per file or per chunk.
 
+**Resolve the per-job budget first** — `<N>` below is `review.nativeTimeout` in seconds (default `600`), read local-over-global by the same resolver the external runners use:
+
+```bash
+bash "<plugin-root>/skills/cf-review/scripts/run-with-timeout.sh" --config-timeout "${CF_CONFIG_FILE:-.coding-friend/config.json}" 600 nativeTimeout
+```
+
+stdout is `<N>`. A `CF_TIMEOUT=warn` line on stderr is informational (exit 0, `<N>` = 600). Exit `2` = the configured value is unusable → use `600`, and say in the Summary that `review.nativeTimeout` was ignored; never dispatch without a number.
+
 Pass exactly this payload — nothing more:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
@@ -127,7 +135,7 @@ Pass exactly this payload — nothing more:
 >
 > **Context:** [Step 4 memory hints, if any]
 >
-> **Deadline:** return your report within 5 minutes. Nothing can cancel you once you start, so budget yourself: when the time is gone, report what you covered and name what you did not reach.
+> **Deadline:** return your report within [`<N>` seconds — substitute the number Step 6 resolved from `review.nativeTimeout`, default 600]. Nothing can cancel you once you start, so budget yourself: when the time is gone, report what you covered and name what you did not reach.
 >
 > **How to read:** start from the changed hunks — they are the scope. Open surrounding context, callers, or tests only to confirm or kill a specific hypothesis. For a large diff, group the changed files by module and work the groups in order inside this one review, then list covered vs remaining groups in the Summary. Do not skip test files, config, or generated sources when they carry a behavior change; check a generated mirror against its source or the build evidence instead of re-reading it line by line.
 >
@@ -135,7 +143,39 @@ Pass exactly this payload — nothing more:
 
 Never paste the whole conversation or a full file tree into the prompt — the payload above is the whole context a reviewer gets, and it reads the snapshot itself.
 
-Wait for the report(s).
+#### Job lifecycle (bounded wait)
+
+Before you dispatch, check what this host actually gives you: a **timed wait** (a wait you can bound, that returns control to you when the bound expires) and a **cancel/interrupt** for a job that is still running. With neither, take the fallback at the end of this subsection instead of dispatching.
+
+Each dispatch is one job: `pending` → `running` → `complete` | `failed` | `timed_out`. Track these per job, in this conversation:
+
+| Field       | Value                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| job id      | reviewer name + dispatch order, e.g. `cf-reviewer#1`                                       |
+| start time  | wall clock at dispatch (`date +%s`)                                                        |
+| deadline    | start time + the `<N>` seconds in the payload — absolute, set once, per job                |
+| last result | the newest thing that job returned: a report, a fragment, or nothing                       |
+| coverage    | what that result says it covered — this is what **Native coverage** reports in the Summary |
+
+- **Wait in steps.** Bound each wait at **at most 60s** when the host supports a timed wait; after every step, compare elapsed time (`date +%s`) against the deadline and update the job's state. A host with a cancel but no timed wait: wait once, and cancel at the deadline.
+- **The deadline never moves.** A heartbeat, a progress message, a partial answer, or a re-dispatch **never resets the deadline** — it stays absolute from the first dispatch of that job.
+- **Budget spent** (still `running` at the deadline): ask that job for whatever it has as partial output, cancel it if this host can cancel a running job, mark it `timed_out`, and merge what already arrived under `## Report contract`.
+- **Never auto-respawn** a `timed_out` or `failed` job, and never retry in a way that can run forever: at most one re-dispatch per job, only when the first attempt returned nothing at all, and only inside the same deadline — never with a fresh one.
+- **Never call shell `timeout` on a native dispatch.** `timeout` kills an external subprocess, which is a different mechanism and only applies to the external reviewers; a reviewer running inside this host is not a subprocess, so shell `timeout` would leave it running and the report wrong.
+
+Map the end state onto the Summary's **Native coverage** field (`## Report contract` owns the aggregate `Review status:`):
+
+| Job state   | Native coverage reads                                             |
+| ----------- | ----------------------------------------------------------------- |
+| `complete`  | that reviewer's own `COMPLETE` / `PARTIAL` self-report            |
+| `timed_out` | timed out — plus whatever it did cover before the deadline        |
+| `failed`    | missing (nothing arrived) or unparseable (quote the raw fragment) |
+
+**Fallback — no timed wait and no cancel.** Then a dispatch is a single call that never returns control until the reviewer itself stops, and a job like that **cannot be interrupted** by any instruction you write. Do not promise a hard deadline the prompt cannot enforce: skip the dispatch and run an **inline budgeted review** in this conversation from the start — same mode, same layers, same `## Report contract`, and in DEEP the security pass runs inline too, so the 1/1/2 table above is unchanged as a graph and only its execution differs. Say so in the Summary: `Native coverage: inline budgeted review — this host has no timed wait and no cancel`.
+
+This whole subsection is prompt-level: contract tests verify the instruction is present, while only a live run verifies that the host actually enforces the bound.
+
+Wait for the report(s) under the lifecycle above.
 
 ### Step 6.7: Emit `--out` prompt file (only when `out=true`)
 
@@ -147,9 +187,7 @@ The result of Step 6 is the reviewer's report (Critical / Important / Suggestion
 
 ### Step 8: Mark review complete and display status
 
-```bash
-bash "<plugin-root>/skills/cf-review/scripts/mark-reviewed.sh"
-```
+The aggregate `Review status:` line in the 📋 Summary **is** the completion record — there is no marker file, and no consumer reads one. Before you display anything, check that line one last time: exactly one `Review status: COMPLETE | PARTIAL | FAILED` in the Summary, and every Step 6 job accounted for under **Native coverage**. Missing, duplicated, or any other value → fix the report first, because `/cf-plan` and `/cf-tdd` autopilot stop on a status they cannot parse.
 
 ### Step 9: Smart capture (conditional — only if `memory_store` MCP tool is available)
 

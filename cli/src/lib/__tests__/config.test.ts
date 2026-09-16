@@ -357,6 +357,78 @@ describe("loadConfig validation", () => {
     expect(config.review?.maxRounds).toBeUndefined();
   });
 
+  it("accepts review.agentTimeout as a valid config key (positive integer)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { agentTimeout: 300 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.agentTimeout).toBe(300);
+  });
+
+  it("accepts review.nativeTimeout as a valid config key (positive integer)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { nativeTimeout: 600 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.nativeTimeout).toBe(600);
+  });
+
+  // Zero, negative, fractional and string seconds cannot be enforced as a
+  // deadline — each must be reported and dropped, never silently coerced.
+  for (const key of ["agentTimeout", "nativeTimeout"] as const) {
+    for (const bad of [0, -5, 1.5, "300"]) {
+      it(`warns and strips review.${key} when it is ${JSON.stringify(bad)}`, () => {
+        mockReadJson
+          .mockReturnValueOnce(null)
+          .mockReturnValueOnce({ review: { [key]: bad } });
+
+        const config = loadConfig();
+        expect(log.warn).toHaveBeenCalledWith(expect.stringContaining(key));
+        expect(config.review?.[key]).toBeUndefined();
+      });
+    }
+  }
+
+  it("keeps every review key when all four are set", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({
+      review: {
+        withCodex: true,
+        maxRounds: 8,
+        agentTimeout: 120,
+        nativeTimeout: 900,
+      },
+    });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review).toEqual({
+      withCodex: true,
+      maxRounds: 8,
+      agentTimeout: 120,
+      nativeTimeout: 900,
+    });
+  });
+
+  it("lets a local review key override global without dropping its siblings", () => {
+    mockReadJson
+      .mockReturnValueOnce({
+        review: { withCodex: true, maxRounds: 3, agentTimeout: 100 },
+      })
+      .mockReturnValueOnce({ review: { agentTimeout: 200 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review).toEqual({
+      withCodex: true,
+      maxRounds: 3,
+      agentTimeout: 200,
+    });
+  });
+
   it("accepts disableGUIPlan as a valid config key (boolean)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

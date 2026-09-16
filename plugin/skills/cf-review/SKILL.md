@@ -10,7 +10,7 @@ description: >
   (use /cf-ask), and formatting-only changes.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-09-15
+updated: 2026-09-16
 model: opus
 ---
 
@@ -72,12 +72,20 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/gather-diff.sh" --snapshot-
 
 ### Step 2.5: Spawn Codex review in the background (only when `codex=true`)
 
-Skip when no Codex/agent job applies, or when `out=true`. Label `YYYY-MM-DD-review`; `CF_DOCS_ROOT`. Background (do not wait; harness notifies). Run `run-codex-review.sh` only when `codex=true` and `out=false` (`--gemini` alone must NOT spawn Codex). Run `run-agent-review.sh` only when `agents` is non-empty and `out=false` (`--with-codex` alone must NOT run `run-agent-review.sh` with literal `<agent>`):
+Skip when no Codex/agent job applies, or when `out=true`. Label `YYYY-MM-DD-review`; `CF_DOCS_ROOT`. Background (do not inspect at spawn; collect in Step 6.5 under a bounded wait). Run `run-codex-review.sh` only when `codex=true` and `out=false` (`--gemini` alone must NOT spawn Codex). Run `run-agent-review.sh` only when `agents` is non-empty and `out=false` (`--with-codex` alone must NOT run `run-agent-review.sh` with literal `<agent>`):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" ${CF_DOCS_ROOT}/reviews/<label>-result-codex.md
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> ${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" ${CF_DOCS_ROOT}/reviews/<label>-result-codex.md --uncommitted  # only when has_committed=false
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" ${CF_DOCS_ROOT}/reviews/<label>-result-codex.md  # only when has_committed=true — no scope flag
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> ${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
+
+Hand the Step 2 scope over instead of letting a runner re-derive it. Exactly one of the two Codex lines runs — the one `has_committed` in the Step 2 `metadata.txt` selects, because `--uncommitted` unconditionally would send Codex looking for a working tree the snapshot may not be about:
+
+- `has_committed=false` → `--uncommitted`: Codex reviews exactly the working tree in the snapshot.
+- `has_committed=true` → **omit the flag**: `codex review` has no single scope covering committed + uncommitted, so the runner's auto-scope takes the committed range (`--base <base>`) instead of finding nothing. Codex then covers **less** than the in-session reviewers whenever the tree is also dirty — the uncommitted and untracked hunks in the snapshot are not in its scope. Say that in the Summary next to the Codex source line.
+
+`--snapshot-dir` makes the agent read the same `diff.txt` the in-session reviewers read. If Step 2 warned the snapshot dir was unusable, drop `--snapshot-dir` (the runner rejects an unreadable one instead of guessing) and say in the Summary that this agent gathered its own scope. Each runner enforces `review.agentTimeout` (default 300s) on its CLI subprocess and that subprocess's process group, so these jobs are bounded by the runner, not by this conversation.
 
 ### Step 3: Assess change size
 
@@ -126,6 +134,14 @@ You dispatch every reviewer yourself, from this conversation. The graph is flat 
 
 In DEEP, send both dispatches in a **single message** so they run in parallel; `cf-reviewer-security` is a second perspective, not a handoff — `cf-reviewer` still owns security of the diff. Fold the two reports into one set of four sections yourself, under the rules in `## Report contract` below. A big diff never changes these counts: never dispatch one reviewer per file or per chunk.
 
+**Resolve the per-job budget first** — `<N>` below is `review.nativeTimeout` in seconds (default `600`), read local-over-global by the same resolver the external runners use:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-with-timeout.sh" --config-timeout "${CF_CONFIG_FILE:-.coding-friend/config.json}" 600 nativeTimeout
+```
+
+stdout is `<N>`. A `CF_TIMEOUT=warn` line on stderr is informational (exit 0, `<N>` = 600). Exit `2` = the configured value is unusable → use `600`, and say in the Summary that `review.nativeTimeout` was ignored; never dispatch without a number.
+
 Pass exactly this payload — nothing more:
 
 > **Review mode:** [QUICK | STANDARD | DEEP]
@@ -141,7 +157,7 @@ Pass exactly this payload — nothing more:
 >
 > **Context:** [Step 4 memory hints, if any]
 >
-> **Deadline:** return your report within 5 minutes. Nothing can cancel you once you start, so budget yourself: when the time is gone, report what you covered and name what you did not reach.
+> **Deadline:** return your report within [`<N>` seconds — substitute the number Step 6 resolved from `review.nativeTimeout`, default 600]. Nothing can cancel you once you start, so budget yourself: when the time is gone, report what you covered and name what you did not reach.
 >
 > **How to read:** start from the changed hunks — they are the scope. Open surrounding context, callers, or tests only to confirm or kill a specific hypothesis. For a large diff, group the changed files by module and work the groups in order inside this one review, then list covered vs remaining groups in the Summary. Do not skip test files, config, or generated sources when they carry a behavior change; check a generated mirror against its source or the build evidence instead of re-reading it line by line.
 >
@@ -149,11 +165,43 @@ Pass exactly this payload — nothing more:
 
 Never paste the whole conversation or a full file tree into the prompt — the payload above is the whole context a reviewer gets, and it reads the snapshot itself.
 
-Wait for the report(s).
+#### Job lifecycle (bounded wait)
+
+Before you dispatch, check what this host actually gives you: a **timed wait** (a wait you can bound, that returns control to you when the bound expires) and a **cancel/interrupt** for a job that is still running. With neither, take the fallback at the end of this subsection instead of dispatching.
+
+Each dispatch is one job: `pending` → `running` → `complete` | `failed` | `timed_out`. Track these per job, in this conversation:
+
+| Field       | Value                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| job id      | reviewer name + dispatch order, e.g. `cf-reviewer#1`                                       |
+| start time  | wall clock at dispatch (`date +%s`)                                                        |
+| deadline    | start time + the `<N>` seconds in the payload — absolute, set once, per job                |
+| last result | the newest thing that job returned: a report, a fragment, or nothing                       |
+| coverage    | what that result says it covered — this is what **Native coverage** reports in the Summary |
+
+- **Wait in steps.** Bound each wait at **at most 60s** when the host supports a timed wait; after every step, compare elapsed time (`date +%s`) against the deadline and update the job's state. A host with a cancel but no timed wait: wait once, and cancel at the deadline.
+- **The deadline never moves.** A heartbeat, a progress message, a partial answer, or a re-dispatch **never resets the deadline** — it stays absolute from the first dispatch of that job.
+- **Budget spent** (still `running` at the deadline): ask that job for whatever it has as partial output, cancel it if this host can cancel a running job, mark it `timed_out`, and merge what already arrived under `## Report contract`.
+- **Never auto-respawn** a `timed_out` or `failed` job, and never retry in a way that can run forever: at most one re-dispatch per job, only when the first attempt returned nothing at all, and only inside the same deadline — never with a fresh one.
+- **Never call shell `timeout` on a native dispatch.** `timeout` kills an external subprocess, which is a different mechanism and only applies to the external reviewers; a reviewer running inside this host is not a subprocess, so shell `timeout` would leave it running and the report wrong.
+
+Map the end state onto the Summary's **Native coverage** field (`## Report contract` owns the aggregate `Review status:`):
+
+| Job state   | Native coverage reads                                             |
+| ----------- | ----------------------------------------------------------------- |
+| `complete`  | that reviewer's own `COMPLETE` / `PARTIAL` self-report            |
+| `timed_out` | timed out — plus whatever it did cover before the deadline        |
+| `failed`    | missing (nothing arrived) or unparseable (quote the raw fragment) |
+
+**Fallback — no timed wait and no cancel.** Then a dispatch is a single call that never returns control until the reviewer itself stops, and a job like that **cannot be interrupted** by any instruction you write. Do not promise a hard deadline the prompt cannot enforce: skip the dispatch and run an **inline budgeted review** in this conversation from the start — same mode, same layers, same `## Report contract`, and in DEEP the security pass runs inline too, so the 1/1/2 table above is unchanged as a graph and only its execution differs. Say so in the Summary: `Native coverage: inline budgeted review — this host has no timed wait and no cancel`.
+
+This whole subsection is prompt-level: contract tests verify the instruction is present, while only a live run verifies that the host actually enforces the bound.
+
+Wait for the report(s) under the lifecycle above.
 
 ### Step 6.5: Collect & normalize the Codex review (only when `codex=true`)
 
-Skip when no Codex/agent job applies, or when `out=true`. Wait for each spawned background job (no poll/sleep). Collect `CF_CODEX` only when a Codex job was spawned; collect `CF_AGENT` only when agent jobs were spawned. On stderr: `ok <file>` → keep (normalize Codex with `bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" <file>`; agents are already CF-format); any other status → print the matching `> ⚠ …` warning from `references/external-reviewers.md` and drop that source. Never block — failures degrade to the in-session review.
+Skip when no Codex/agent job applies, or when `out=true`. Wait for each spawned background job in bounded steps — each runner kills its own subprocess at the deadline, so the wait always ends; read a result file only after that job exited. Collect `CF_CODEX` only when a Codex job was spawned; collect `CF_AGENT` only when agent jobs were spawned. On stderr: `ok <file>` → keep (normalize Codex with `bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/normalize-codex-review.sh" <file>`; agents are already CF-format); any other status (`unavailable` / `error` / `empty` / `timeout` 124) → print the matching `> ⚠ …` warning from `references/external-reviewers.md` and drop that source; a `CF_*_PARTIAL=` file from a killed run is diagnostic only. An `ok` with `CF_AGENT_SCOPE=incomplete` keeps its findings but goes into **Uncovered scope**. Never block — failures degrade to the in-session review.
 
 ### Step 6.7: Emit `--out` prompt file (only when `out=true`)
 
@@ -165,9 +213,7 @@ Skip when `out=true`. In DEEP, fold the security reviewer's findings into the sa
 
 ### Step 8: Mark review complete and display status
 
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/mark-reviewed.sh"
-```
+The aggregate `Review status:` line in the 📋 Summary **is** the completion record — there is no marker file, and no consumer reads one. Before you display anything, check that line one last time: exactly one `Review status: COMPLETE | PARTIAL | FAILED` in the Summary, and every Step 6 job accounted for under **Native coverage**. Missing, duplicated, or any other value → fix the report first, because `/cf-plan` and `/cf-tdd` autopilot stop on a status they cannot parse.
 
 ### Step 9: Smart capture (conditional — only if `memory_store` MCP tool is available)
 

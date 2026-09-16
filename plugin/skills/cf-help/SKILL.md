@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-16
 ---
 
 # /cf-help — Coding Friend Help
@@ -55,7 +55,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors `auto: true`.
 - `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped). Writes `review.md` into the plan folder, offers to apply Critical/Important findings.
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
-- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.
+- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.
 - `/cf-review-out [label]` — ⚡⚡ — Prompt + diff → `docs/reviews/`
 - `/cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
 - `/cf-commit [hint]` — ⚡ — Conventional commit

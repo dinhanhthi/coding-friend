@@ -1,4 +1,13 @@
 import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+/**
+ * Absolute path to the CLI entrypoint. It must NOT be relative: every test runs
+ * the CLI with `cwd` pointing at its own temp project, so a relative path would
+ * resolve against that temp dir and the CLI would never start (the command
+ * would "fail" with a module-not-found instead of exercising anything).
+ */
+const CLI_ENTRY = fileURLToPath(new URL("../src/index.ts", import.meta.url));
 
 export interface RunResult {
   stdout: string;
@@ -12,7 +21,7 @@ export interface RunResult {
  */
 export function runCf(args: string[], opts?: ExecFileSyncOptions): RunResult {
   try {
-    const stdout = execFileSync("npx", ["tsx", "../src/index.ts", ...args], {
+    const stdout = execFileSync("npx", ["tsx", CLI_ENTRY, ...args], {
       encoding: "utf-8",
       timeout: 30_000,
       cwd: opts?.cwd,

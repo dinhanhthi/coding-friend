@@ -80,6 +80,8 @@ All 4 sections required. Empty sections show "None." Use bullet lists only, no t
 
 The Summary's last line is the status: `COMPLETE` when you covered the whole scope you were given, `PARTIAL` when you ran out of budget or could not read something — then list what you did not reach. Zero findings is still `COMPLETE`. The caller aggregates these statuses; you only report your own.
 
+Nothing can interrupt or cancel you once you start, so budget yourself: track elapsed time as you work and keep enough of it to write the report. Running out with nothing written loses the whole review; `PARTIAL` with what you did cover does not.
+
 You own the review output format. The dispatching skill (cf-review) will append a status banner after your report — do NOT add banners yourself.
 
 ## Rules

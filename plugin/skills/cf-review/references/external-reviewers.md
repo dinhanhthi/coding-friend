@@ -1,10 +1,21 @@
 # External reviewers
 
-Details for `/cf-review` Codex auto-scope, target-compatibility, host-match, `--out` exclusivity, background spawn, per-status collect, normalize mapping, and the `--out` build-prompt pipeline.
+Details for `/cf-review` Codex scope, scope handoff, target-compatibility, host-match, `--out` exclusivity, background spawn, per-status collect, normalize mapping, and the `--out` build-prompt pipeline.
 
-## Codex auto-scope
+## Codex scope
 
-When `codex=true`, run the in-session review (Steps 2–6) **and** Codex in parallel, then merge (Steps 6.5–7). `run-codex-review.sh` auto-scopes: feature branch → `codex review --base <base>`; base branch with unpushed commits → `--base <upstream>`; only uncommitted → `--uncommitted`; local-only → `--commit HEAD`. Covers committed-on-base work that `gather-diff.sh` misses. `--base`/`--commit` omit uncommitted/untracked files.
+When `codex=true`, run the in-session review (Steps 2–6) **and** Codex in parallel, then merge (Steps 6.5–7).
+
+From cf-review the scope flag follows the Step 2 metadata, because `codex review` has no single scope that covers committed and uncommitted work at once:
+
+| Step 2 `has_committed` | Step 2.5 passes | Codex actually reviews                                                         |
+| ---------------------- | --------------- | ------------------------------------------------------------------------------ |
+| `false`                | `--uncommitted` | the same working tree (staged + unstaged + untracked) as the in-session review |
+| `true`                 | _(no flag)_     | the committed range only, via auto-scope `--base <base>`                       |
+
+So Codex matches the in-session scope only in the first row. In the second, its scope is **narrower** whenever the tree is also dirty: the uncommitted and untracked hunks in the snapshot are reviewed in-session and not by Codex — state that next to the Codex line under external sources. Pinning `--uncommitted` unconditionally instead would make a committed, clean-tree branch report `CF_CODEX=empty`, so the `--with-codex` the user asked for would never run.
+
+Auto-scope is what `run-codex-review.sh` does with **no scope flag** — from a direct invocation, and from the `has_committed=true` row above: feature branch → `codex review --base <base>`; base branch with unpushed commits → `--base <upstream>`; only uncommitted → `--uncommitted`; local-only → `--commit HEAD`. `--base`/`--commit` omit uncommitted/untracked files.
 
 ## Target compatibility
 
@@ -44,20 +55,25 @@ When `out=true`: the in-session review (Steps 2–6), then a `/cf-review-out`-st
 
 ## Step 2.5 background
 
-Docs root + label `YYYY-MM-DD-review`. Use `CF_DOCS_ROOT` (absolute, from bootstrap) — not cwd-relative `docsDir`. Fallback: `$MAIN_REPO_ROOT/<docsDir>`. Background Bash so Steps 3–6 run concurrently.
+Docs root + label `YYYY-MM-DD-review`. Use `CF_DOCS_ROOT` (absolute, from bootstrap) — not cwd-relative `docsDir`. Fallback: `$MAIN_REPO_ROOT/<docsDir>`. Background Bash so Steps 3–6 run concurrently. Pass the scope you already captured in Step 2 — neither runner may re-derive it:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"
-bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md" --uncommitted  # only when has_committed=false
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_DOCS_ROOT}/reviews/<label>-result-codex.md"  # only when has_committed=true
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md" --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
 
-**Do NOT wait or inspect at spawn.** Proceed to Step 3. Harness notifies on exit — no poll/sleep/`/tasks`. Check results in Step 6.5.
+Run exactly one Codex line — the one the `has_committed` value in `metadata.txt` selects (see **Codex scope** above for what each one actually covers, and what to say in the Summary when Codex sees less than the in-session review). `--snapshot-dir` makes the agent reuse `diff.txt` from the Step 2 snapshot, so every agent reads the same bytes as the in-session reviewers.
+
+**If Step 2 warned that the snapshot dir was unusable**, spawn `run-agent-review.sh` **without** `--snapshot-dir` — the runner rejects an unreadable snapshot (exit 2) rather than guessing, and the flagless call falls back to its own `gather-diff.sh` run. Note that fallback in the Summary: that agent reviewed a separately gathered scope, not the snapshot the in-session reviewers read.
+
+**Do not inspect at spawn.** Proceed to Step 3 and collect in Step 6.5 under the bounded wait below. Each runner enforces its own deadline (`review.agentTimeout`, default 300s) on the CLI subprocess and its whole process group, so a hung external CLI cannot outlive it.
 
 Skip agent spawn when `agents=[]` or `out=true`. Same `${CF_DOCS_ROOT}` and `<label>` as Codex.
 
 ## Step 6.5 Codex status
 
-1. **Wait for Codex.** After Step 6 the harness has usually notified. If not, wait — no poll/sleep. Read the result file only after exit.
+1. **Wait for Codex, bounded.** After Step 6 the harness has usually notified. If not, wait in steps you can bound (at most 60s each) until the runner's own deadline plus a small margin has passed; the runner kills the subprocess itself, so this wait always ends. Read the result file only after exit — never mid-run, and never a result file from an earlier run.
 2. **Check Codex exit** (`CF_CODEX=...` stderr + exit code):
    - `CF_CODEX=unavailable` (exit 127) → Codex not installed. Print:
 
@@ -71,7 +87,13 @@ Skip agent spawn when `agents=[]` or `out=true`. Same `${CF_DOCS_ROOT}` and `<la
 
      Set `codex=false`; skip the rest.
 
-   - `CF_CODEX=empty` (exit 0, no result file) → print:
+   - `CF_CODEX=timeout` (exit 124) → the runner killed it at the deadline. Print:
+
+     > ⚠ Codex review timed out (>Ns) — proceeding with the in-session review.
+
+     (N = `review.agentTimeout`, default 300.) Set `codex=false`; skip the rest. A `CF_CODEX_PARTIAL=` file is kept for diagnosis only — never normalize or merge it.
+
+   - `CF_CODEX=empty` (exit 0, no changes to review, or exit 0 with an empty result file) → print:
 
      > ⚠ Codex found no changes to review — proceeding with the in-session review.
 
@@ -95,13 +117,15 @@ Same `${CF_DOCS_ROOT}` path as Step 2.5.
 
 Skip when `agents=[]` or `out=true`.
 
-1. **Wait for each agent** (same contract as Codex — harness notify, no polling).
+1. **Wait for each agent** (same bounded contract as Codex — the runner's deadline ends every wait).
 2. **Check each** (`CF_AGENT=…` stderr + exit code):
    - `unavailable` (127) → `> ⚠ \<Agent\> unavailable (not on PATH) — proceeding without it.` Drop it.
    - `error` (non-zero) → `> ⚠ \<Agent\> review failed (\<reason from stderr\>) — proceeding without it.` Drop it.
    - `empty` (0) → `> ⚠ \<Agent\> found no changes to review — proceeding without it.` Drop it.
-   - `timeout` (124) → `> ⚠ \<Agent\> review timed out (\>Ns) — proceeding without it.` Drop it. (N = `review.agentTimeout`, default 300.)
+   - `timeout` (124) → `> ⚠ \<Agent\> review timed out (\>Ns) — proceeding without it.` Drop it. (N = `review.agentTimeout`, default 300.) Any `CF_AGENT_PARTIAL=` file is diagnostic only — a killed run is never merged as a review.
    - `ok <file>` (0) → keep the result file. **No normalize** — already CF-format.
+
+An extra `CF_AGENT_SCOPE=incomplete …` line can accompany `ok`: the scope that agent reviewed was partial. Keep its findings, and carry the gap into **Uncovered scope** with a PARTIAL status — `ok` alone never means full coverage.
 
 Never block on any external agent — failures degrade gracefully.
 

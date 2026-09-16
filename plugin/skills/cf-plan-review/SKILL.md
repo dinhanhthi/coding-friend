@@ -6,7 +6,7 @@ user-invocable: true
 argument-hint: "[plan] [--codex|--gemini|--claude|--cursor|--grok]"
 model: opus
 created: 2026-09-05
-updated: 2026-09-15
+updated: 2026-09-16
 ---
 
 # /cf-plan-review
@@ -71,7 +71,7 @@ mkdir -p "${CF_DOCS_ROOT}/reviews" && \
 
 Skip when `agents=[]`.
 
-For each agent, run one Bash command in the background (do not wait); the harness reports when each finishes.
+For each agent, run one Bash command in the background (do not inspect at spawn); the harness reports when each finishes. The runner enforces `review.agentTimeout` (default 300s) on the CLI subprocess and its process group, so every job is bounded.
 
 ```
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<slug>-plan-result-<agent>.md" "${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md"
@@ -95,13 +95,13 @@ Call this result **Source 1**.
 
 Skip when `agents=[]` at spawn time.
 
-Wait for each agent (harness notify — no polling). Read the `CF_AGENT=` line on stderr:
+Wait for each agent in bounded steps — the runner kills its own subprocess at the deadline, so the wait always ends. Read the `CF_AGENT=` line on stderr:
 
 - `ok` → keep the result file.
 - `unavailable` → print `> ⚠ <Agent> CLI not found — proceeding without it.` Drop it.
 - `timeout` → print `> ⚠ <Agent> review timed out (>Ns) — proceeding without it.` Drop it. (N = `review.agentTimeout`, default 300.)
 - `error` → print `> ⚠ <Agent> review failed — proceeding without it.` Drop it.
-- `empty` → print `> ⚠ <Agent> returned empty output — proceeding without it.` Drop it.
+- `empty` → print `> ⚠ <Agent> returned empty output — proceeding without it.` Drop it (this also covers a CLI that exits 0 writing nothing).
 
 Never block on an external reviewer — failures degrade gracefully.
 
