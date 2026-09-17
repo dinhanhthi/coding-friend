@@ -347,51 +347,58 @@ test("rewrites cf-review for Codex", async () => {
   assert.match(review, /Flag parse:/);
   assert.match(review, /`--out`/);
   assert.match(review, /`--claude`/);
+  // The external-reviewer commands and their per-flag guards live in the
+  // conditional reference (plan task 5.0); the skill keeps the pointer. The
+  // rules below are unchanged — they are asserted where the text now lives.
+  const externalsSource = await fs.readFile(
+    path.join(
+      repoRoot,
+      "plugin/skills/cf-review/references/external-reviewers.md",
+    ),
+    "utf8",
+  );
   assert.match(
-    reviewSource,
+    externalsSource,
     /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-codex-review\.sh/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-agent-review\.sh/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/normalize-codex-review\.sh/,
   );
   assert.match(reviewSource, /or when `out=true`/);
-  assert.match(reviewSource, /CF_AGENT/);
+  assert.match(externalsSource, /CF_AGENT/);
   assert.match(reviewSource, /one message/);
   assert.match(review, /one message/);
   assert.match(
-    reviewSource,
+    externalsSource,
     /`run-codex-review\.sh` only when `codex=true` and `out=false`/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /`run-agent-review\.sh` only when `agents` is non-empty and `out=false`/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /Collect `CF_CODEX` only when a Codex job was spawned/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /collect `CF_AGENT` only when agent jobs were spawned/,
   );
-  assert.match(reviewSource, /`--gemini` alone must NOT spawn Codex/);
+  assert.match(externalsSource, /`--gemini` alone must NOT spawn Codex/);
   assert.match(
-    reviewSource,
+    externalsSource,
     /`--with-codex` alone must NOT run `run-agent-review\.sh` with literal `<agent>`/,
   );
   assert.match(
     reviewSource,
     /HOST.*is `claude`|`--claude` when `HOST` is `claude`/,
   );
-  assert.match(
-    reviewSource,
-    /Read now: `references\/external-reviewers\.md` before parsing flags/,
-  );
+  assert.match(reviewSource, /read `references\/external-reviewers\.md` now/);
 
   const askSource = await fs.readFile(
     path.join(repoRoot, "plugin/skills/cf-ask/SKILL.md"),

@@ -335,14 +335,23 @@ test("cf-review passes a bounded context payload", () => {
   );
 });
 
-test("cf-review states the reviewer reading strategy in the dispatch prompt", () => {
-  const dispatch = section(skill, DISPATCH_HEADING);
-  assert.match(dispatch, /changed hunks/i, "read the changed hunks first");
+// The dispatch payload carries data only: "start from the changed hunks, open
+// context only to confirm or kill a hypothesis" is the reviewer's own reading
+// rule and lives in cf-reviewer.md `## Input`, so the payload no longer repeats
+// it. The module-grouping and don't-skip-test-files rules are *not* in any agent
+// file and both DEEP reviewers need them, so they stay in the payload.
+test("the reviewer agent states its own reading strategy", () => {
+  const input = section(reviewer, "## Input");
+  assert.match(input, /changed hunks/i, "read the changed hunks first");
   assert.match(
-    dispatch,
+    input,
     /hypothesis/i,
     "context and callers are opened only to test a hypothesis",
   );
+});
+
+test("cf-review states the large-diff reading strategy in the dispatch prompt", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
   assert.match(
     dispatch,
     /group .*by module/i,
@@ -703,28 +712,32 @@ test("external-reviewers.md repeats the status rule for external sources", () =>
 // Phase 2 review findings — the skill, the agent, and the generated hosts must
 // agree on depth and on who owns the final Summary.
 
-test("QUICK depth in the skill matches the reviewer agent's QUICK contract", () => {
+test("QUICK depth is defined once — by the reviewer agent, not by the skill", () => {
   const skill = read("plugin/skills/cf-review/SKILL.md");
   const agent = reviewer;
   // The agent runs four of five layers in QUICK (only plan alignment and
-  // data-flow tracing are dropped). A skill table saying "Layer 3 only" would
-  // under-review every QUICK change.
+  // data-flow tracing are dropped). The skill used to restate that depth in a
+  // "Behavior" column, which could drift from the agent (a skill table saying
+  // "Layer 3 only" would under-review every QUICK change). The skill now only
+  // *selects* the mode and passes it through, so the invariant is: the agent
+  // states the depth, and the skill states no depth of its own.
   assert.match(
     agent,
     /### QUICK[\s\S]*?Layers L0, L2, L3, L4/,
     "agent QUICK must list L0/L2/L3/L4",
   );
-  const quickRow = skill.split("\n").find((l) => l.includes("**QUICK**"));
-  assert.ok(quickRow, "skill must document a QUICK row");
+  // Covers every layer spelling, L3 and "Layer 3" included: the drift this
+  // guards against is a skill row re-declaring QUICK as security-only, which
+  // an L0/L1/L2/L4-only pattern would wave through.
   assert.doesNotMatch(
-    quickRow,
-    /Layer 3: secrets/,
-    "skill QUICK row must not describe QUICK as security-only",
+    skill,
+    /\bL[0-4]\b|\bLayer\s+\d/,
+    "the skill must not restate reviewer layer depth — cf-reviewer.md owns it",
   );
   assert.match(
-    quickRow,
-    /L0.*L2.*L3.*L4|plan alignment|data-flow/i,
-    "skill QUICK row must state the same depth the agent applies",
+    section(skill, "### Step 3: Assess change size"),
+    /Use `MODE` as-is/,
+    "the skill passes the resolved mode through instead of interpreting it",
   );
 });
 
@@ -1050,8 +1063,35 @@ test("reviewer agents budget themselves because nothing can cancel them", () => 
 const SPAWN_HEADING =
   "### Step 2.5: Spawn Codex review in the background (only when `codex=true`)";
 
-test("Step 2.5 hands the Step 2 snapshot to the agent runner", () => {
+// The spawn commands and the has_committed rule moved out of SKILL.md into the
+// conditional reference (plan task 5.0): a default `/cf-review` never spawns an
+// external reviewer, so the skill keeps only the pointer and the reference owns
+// the detail. These assertions follow the text — they still pin the same rules,
+// in `## Codex scope` + `## Step 2.5 background`.
+const spawnContract = () =>
+  `${section(externals, "## Codex scope")}\n${section(externals, "## Step 2.5 background")}`;
+
+test("cf-review Step 2.5 points at the external-reviewer reference", () => {
   const spawn = section(skill, SPAWN_HEADING);
+  assert.match(
+    spawn,
+    /references\/external-reviewers\.md/,
+    "Step 2.5 must send the reader to the reference that owns the spawn commands",
+  );
+  assert.match(
+    spawn,
+    /## Step 2\.5 background/,
+    "Step 2.5 must name the reference section to follow",
+  );
+  assert.match(
+    spawn,
+    /Step 2 scope/,
+    "the runners must be handed the Step 2 scope, not re-derive one",
+  );
+});
+
+test("Step 2.5 hands the Step 2 snapshot to the agent runner", () => {
+  const spawn = spawnContract();
   assert.match(
     spawn,
     /run-agent-review\.sh[^\n]*--snapshot-dir \/tmp\/coding-friend\/review\/<run-id>/,
@@ -1065,7 +1105,7 @@ test("Step 2.5 hands the Step 2 snapshot to the agent runner", () => {
 });
 
 test("Step 2.5 picks the Codex scope flag from has_committed", () => {
-  const spawn = section(skill, SPAWN_HEADING);
+  const spawn = spawnContract();
   const codexLines = spawn
     .split("\n")
     .filter((line) => /^bash .*run-codex-review\.sh/.test(line));
@@ -1356,4 +1396,35 @@ test("retained specialists stay callable and claim no dispatcher", () => {
       `cf-reviewer must not dispatch ${agent}`,
     );
   }
+});
+
+// The static-overhead measurement excludes references/external-reviewers.md on
+// the grounds that the skill loads it only when an external reviewer applies.
+// scripts/bench-cf-review.mjs encodes that as REFERENCES[...].unconditional =
+// false. If Step 1 ever goes back to an unconditional read, the file is read
+// every review while the bench still discounts it — the number would be wrong,
+// not just stale. This assertion is what makes that classification honest.
+test("external-reviewers.md is loaded conditionally, as the bench assumes", () => {
+  const step1 = section(skill, "### Step 1: Identify the target");
+  assert.match(
+    step1,
+    /read `references\/external-reviewers\.md` now/,
+    "Step 1 must say when to load the external-reviewer reference",
+  );
+  assert.match(
+    step1,
+    /None set → skip that file entirely/,
+    "Step 1 must state the skip case — this is what makes the load conditional",
+  );
+  assert.doesNotMatch(
+    step1,
+    /Read now: `references\/external-reviewers\.md`/,
+    "an unconditional read would invalidate the bench's reference accounting",
+  );
+  const bench = read("scripts/bench-cf-review.mjs");
+  assert.match(
+    bench,
+    /"external-reviewers\.md":\s*\{\s*unconditional:\s*false/,
+    "the bench must still classify the reference as conditional",
+  );
 });

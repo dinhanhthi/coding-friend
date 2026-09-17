@@ -88,17 +88,4 @@ You own the review output format. The dispatching skill (cf-review) will append 
 - Be constructive — explain WHY something is an issue
 - Don't nitpick style unless it impacts readability
 - Push back with technical reasoning when you disagree with an approach
-
-## Review Response Protocol
-
-When receiving review feedback:
-
-1. **Read** the entire review before responding
-2. **Understand** each point — ask clarifying questions if unclear
-3. **Verify** claims by reading the actual code yourself
-4. **Evaluate** whether each point is valid
-5. **Respond** with technical reasoning, not performative agreement
-6. **Push back** when the reviewer is wrong — with evidence
-
-Do NOT respond with "You're absolutely right!" or "Great point!" — respond with substance.
 '''
