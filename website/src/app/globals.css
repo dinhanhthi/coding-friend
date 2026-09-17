@@ -615,6 +615,91 @@ a > code {
   content: none;
 }
 
+/* Latest changes — green status plate under the help tip */
+.latest-changes {
+  margin: 1.5rem 0 2rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border: 1px solid color-mix(in oklch, var(--color-ok) 26%, transparent);
+  border-inline-start: 2px solid var(--color-ok);
+  border-radius: var(--radius-btn);
+  background:
+    radial-gradient(
+      120% 100% at 0% 0%,
+      color-mix(in oklch, var(--color-ok) 9%, transparent) 0%,
+      transparent 60%
+    ),
+    var(--color-paper-2);
+}
+
+.prose .latest-changes p {
+  margin: 0;
+}
+
+.latest-changes__title {
+  font-weight: 600;
+  color: var(--color-ok);
+}
+
+.latest-changes__entry + .latest-changes__entry {
+  margin-top: 1rem;
+}
+
+.latest-changes__entry {
+  margin-top: 0.85rem;
+}
+
+.latest-changes__version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.latest-changes__version a,
+.latest-changes__all a {
+  text-decoration: none;
+}
+
+.latest-changes__date {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.prose .latest-changes ul {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* Fade the visible bullets while the rest stay collapsed. */
+.latest-changes__entry:has(.latest-changes__more:not([open]))
+  .latest-changes__body {
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+}
+
+.latest-changes__more > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-ok);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+
+.latest-changes__more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.latest-changes__more > summary:hover {
+  opacity: 0.75;
+}
+
+.prose .latest-changes .latest-changes__all {
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+}
+
 .prose pre {
   background: var(--color-paper-2);
   border: 1px solid var(--color-rule);

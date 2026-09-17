@@ -7,6 +7,7 @@ import CodeBlock from "@/components/CodeBlock";
 import MdxLink from "@/components/MdxLink";
 import ZoomableImage from "@/components/ZoomableImage";
 import CompareSplit from "@/components/CompareSplit";
+import LatestChanges from "@/components/LatestChanges";
 import {
   readIndexMd,
   extractCompareSplit,
@@ -14,6 +15,7 @@ import {
   getTocItems,
   mdxOptions,
 } from "@/lib/mdx";
+import { getRecentChanges } from "@/lib/changelog";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
 const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
@@ -42,6 +44,18 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
  */
 function stripHeroContent(source: string): string {
   return source.replace(/^# .+\n+_[^\n]+_\n+/, "");
+}
+
+/**
+ * Split the leading `> 💡 …` tip blockquote off so the latest-changes box can
+ * sit between it and the rest of the document. Falls back to rendering the
+ * source whole if the content no longer opens with a blockquote.
+ */
+function splitLeadingTip(source: string): { tip: string; rest: string } {
+  if (!source.startsWith("> ")) return { tip: "", rest: source };
+  const end = source.indexOf("\n\n");
+  if (end < 0) return { tip: "", rest: source };
+  return { tip: source.slice(0, end), rest: source.slice(end + 2) };
 }
 
 export default function Home() {
@@ -73,6 +87,8 @@ export default function Home() {
     ? stripHeroContent(compare.before)
     : stripHeroContent(source);
   const after = compare?.after ?? "";
+  const { tip, rest } = splitLeadingTip(before);
+  const recentChanges = getRecentChanges();
 
   return (
     <>
@@ -88,8 +104,16 @@ export default function Home() {
         className="mx-auto max-w-[var(--doc-w)] px-4 pt-12 pb-20 sm:px-6"
       >
         <article className="prose prose-code:before:content-none prose-code:after:content-none max-w-none">
+          {tip ? (
+            <MDXRemote
+              source={tip}
+              components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
+              options={mdxOptions}
+            />
+          ) : null}
+          <LatestChanges entries={recentChanges} />
           <MDXRemote
-            source={before}
+            source={rest}
             components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
             options={mdxOptions}
           />
