@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.4 (2026-09-17)
+
+- `cf-review`: single scope snapshot shared between gather and assess, flat 1/1/2 reviewer graph with explicit completion status, and enforced per-reviewer timeouts (`review.agentTimeout`/`review.nativeTimeout`, defaults 300s/600s) that gate commits when a review doesn't finish in time [#f623127b](https://github.com/dinhanhthi/coding-friend/commit/f623127b) [#1adbe558](https://github.com/dinhanhthi/coding-friend/commit/1adbe558) [#289d1015](https://github.com/dinhanhthi/coding-friend/commit/289d1015) [#139c1de8](https://github.com/dinhanhthi/coding-friend/commit/139c1de8)
+- Fix `cf-plan-review` to embed supporting plan files directly in the review prompt [#5eb39ef7](https://github.com/dinhanhthi/coding-friend/commit/5eb39ef7)
+
 ## v0.43.3 (2026-09-14)
 
 - Auto-approve test runners across languages (`pytest`, `go test`, `cargo test`, `mvn test`, etc.) without needing an explicit allow-list entry [#cdd376ca](https://github.com/dinhanhthi/coding-friend/commit/cdd376ca)

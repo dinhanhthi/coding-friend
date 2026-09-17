@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.40.4 (2026-09-17)
+
+- Add `review.agentTimeout` / `review.nativeTimeout` to the config schema (file-only tuning knobs, defaults 300s/600s) backing `cf-review`'s new deadline enforcement [#289d1015](https://github.com/dinhanhthi/coding-friend/commit/289d1015)
+- Add permission rules for the `cf-review` scope snapshot dir (`/tmp/coding-friend/review/<run-id>/`) so background reviewer subagents don't stall on unapproved read/write prompts [#f623127b](https://github.com/dinhanhthi/coding-friend/commit/f623127b)
+
 ## v1.40.3 (2026-09-09)
 
 - Pressing `Esc` in `cf init` now goes back a step instead of exiting the wizard [#3ad1d70a](https://github.com/dinhanhthi/coding-friend/commit/3ad1d70a)
