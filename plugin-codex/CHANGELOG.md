@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.43.5 (2026-09-17)
+
+- Fix `cf-review`'s enforced deadline on hosts with GNU `timeout(1)` (Linux): a reviewer that ignored `TERM` reported `error … exited 137` instead of `timeout`, a reviewer killed by a signal lost its `128+N` exit code, and cancelling a review orphaned the agent CLI instead of stopping it [#beaccd87](https://github.com/dinhanhthi/coding-friend/commit/beaccd87)
+
 ## v0.43.4 (2026-09-17)
 
 - `cf-review`: single scope snapshot shared between gather and assess, flat 1/1/2 reviewer graph with explicit completion status, and enforced per-reviewer timeouts (`review.agentTimeout`/`review.nativeTimeout`, defaults 300s/600s) that gate commits when a review doesn't finish in time [#f623127b](https://github.com/dinhanhthi/coding-friend/commit/f623127b) [#1adbe558](https://github.com/dinhanhthi/coding-friend/commit/1adbe558) [#289d1015](https://github.com/dinhanhthi/coding-friend/commit/289d1015) [#139c1de8](https://github.com/dinhanhthi/coding-friend/commit/139c1de8)
