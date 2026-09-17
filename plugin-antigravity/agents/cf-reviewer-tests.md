@@ -1,7 +1,7 @@
 ---
 name: cf-reviewer-tests
 description: >
-  Test coverage review specialist. Checks whether new code paths are tested, test quality, edge case coverage, and regression prevention. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review.
+  Test coverage review specialist. Checks whether new code paths are tested, test quality, edge case coverage, and regression prevention. Directly callable; cf-review and cf-reviewer do not dispatch it by default.
 model: flash
 ---
 

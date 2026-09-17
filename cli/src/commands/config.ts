@@ -719,6 +719,10 @@ async function editReviewMaxRounds(
   writeNestedField("review", scope, "maxRounds", Number(raw));
 }
 
+// `review.agentTimeout` / `review.nativeTimeout` are deliberately NOT offered
+// here: they are file-only tuning knobs with safe defaults (300s / 600s), and
+// the menu stays the two settings users actually toggle. Both are still typed
+// and strictly validated in lib/config.ts.
 async function reviewSubMenu(): Promise<void> {
   while (true) {
     const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());

@@ -70,7 +70,7 @@ Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation ap
 
 You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and `cf-sys-debug`.
 
-![The daily workflow: /cf-plan hands tasks to cf-tdd/implement, the diff goes to /cf-review, then /cf-commit and /cf-ship; under the hood cf-explorer and cf-planner serve /cf-plan, cf-implementer runs tasks, cf-reviewer dispatches 5 specialists, cf-writer writes docs; bugs loop through /cf-fix and cf-sys-debug; after the merge, cf-verification, /cf-remember, and /cf-learn run](/diagrams/workflow.svg)
+![The daily workflow: /cf-plan hands tasks to cf-tdd/implement, the diff goes to /cf-review, then /cf-commit and /cf-ship; under the hood cf-explorer and cf-planner serve /cf-plan, cf-implementer runs tasks, cf-reviewer reviews the diff itself, cf-writer writes docs; bugs loop through /cf-fix and cf-sys-debug; after the merge, cf-verification, /cf-remember, and /cf-learn run](/diagrams/workflow.svg)
 
 ### 🗺️ Plan & build
 
@@ -129,7 +129,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 ### 🚀 Review & ship
 
-- `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Gathers the diff, forks `cf-reviewer` (five specialists + reducer). Depth is auto QUICK / STANDARD / DEEP from change size, or `--quick` / `--deep`. A second host in parallel: `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok`, then merge. `--out` writes a `/cf-review-out` prompt with Claude's findings (cannot combine with those agent flags). Codex-as-default: `cf config`.
+- `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Gathers the diff into one snapshot, then hands it to `cf-reviewer`, which covers all five layers itself (project rules, plan alignment, correctness, security, tests). Depth is auto QUICK / STANDARD / DEEP from change size, or `--quick` / `--deep`, and it sets how many reviewers run: 1 in QUICK, 1 in STANDARD, 2 in DEEP (`cf-reviewer-security` joins in parallel). External reviewers are opt-in extras counted separately from those: `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run in parallel and merge into the same report. `--out` writes a `/cf-review-out` prompt with the in-session findings (cannot combine with those agent flags). Codex-as-default: `cf config`. The two timeouts are different mechanisms: `review.nativeTimeout` (600s) is a cooperative budget an in-session reviewer is asked to keep (a running in-session job can only be cancelled when the host offers a cancel), while `review.agentTimeout` (300s) is really enforced on the external reviewer's subprocess. Every report ends with `Review status: COMPLETE | PARTIAL | FAILED`; COMPLETE means the required coverage finished, not that there were no findings, and PARTIAL or FAILED stops an autopilot commit. This is a trade-off, not a free win: one generalist covering five layers in a pass reviews each layer differently than five specialists each owning one, so `cf-reviewer-plan`, `-quality`, `-tests`, `-rules`, and `-reducer` stay directly callable when a layer deserves its own pass.
 
   Example output:
 
@@ -145,6 +145,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
   📋 Summary
   No blocking issues found. You're clear to commit.
+  Review status: COMPLETE
   ```
 
 - `/cf-review-out` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review-out/SKILL.md)) — Writes a self-contained prompt + diff to `docs/reviews/` for any external AI or a human.
@@ -236,13 +237,13 @@ Skills dispatch agents as subagents that run in their own context.
 | `cf-explorer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-explorer.md))                   | haiku   | Maps the repo and writes context files         | `/cf-plan`, `/cf-fix`, `/cf-ask`                              |
 | `cf-planner` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-planner.md))                     | inherit | Compares approaches and breaks work into tasks | `/cf-plan`                                                    |
 | `cf-implementer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-implementer.md))             | inherit | Writes the code (TDD with `--add-tests`)       | `/cf-plan`, `/cf-fix`, `cf-tdd`                               |
-| `cf-reviewer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer.md))                   | inherit | Orchestrates the five-specialist review        | `/cf-review`, `/cf-ship`                                      |
-| `cf-reviewer-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md))         | sonnet  | Checks the diff against the plan               | `cf-reviewer`                                                 |
-| `cf-reviewer-security` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md)) | sonnet  | Finds security issues in the diff              | `cf-reviewer`                                                 |
-| `cf-reviewer-quality` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md))   | haiku   | Names, complexity, duplication, slop           | `cf-reviewer`                                                 |
-| `cf-reviewer-tests` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md))       | haiku   | Coverage and missing tests                     | `cf-reviewer`                                                 |
-| `cf-reviewer-rules` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md))       | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | `cf-reviewer`                                                 |
-| `cf-reviewer-reducer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md))   | haiku   | Deduplicates and ranks findings                | `cf-reviewer`                                                 |
+| `cf-reviewer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer.md))                   | inherit | Reviews the diff across all five layers        | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP), `/cf-ship`        |
+| `cf-reviewer-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md))         | sonnet  | Checks the diff against the plan               | direct call only                                              |
+| `cf-reviewer-security` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md)) | sonnet  | Finds security issues in the diff              | `/cf-review` in DEEP (2nd reviewer)                           |
+| `cf-reviewer-quality` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md))   | haiku   | Names, complexity, duplication, slop           | direct call only                                              |
+| `cf-reviewer-tests` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md))       | haiku   | Coverage and missing tests                     | direct call only                                              |
+| `cf-reviewer-rules` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md))       | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | direct call only                                              |
+| `cf-reviewer-reducer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md))   | haiku   | Deduplicates and ranks findings                | direct call only — `/cf-review` merges inline                 |
 | `cf-writer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer.md))                       | haiku   | Writes straightforward markdown                | `/cf-learn`, `/cf-remember`, `/cf-scan`, `/cf-fix`, `/cf-ask` |
 | `cf-writer-deep` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer-deep.md))             | sonnet  | Writes deep technical docs                     | `/cf-learn`                                                   |
 
@@ -309,22 +310,22 @@ You have two config files. Global is `~/.coding-friend/config.json`. Project is 
 
 Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configurable). `docsDir` is for plans, memory, and research — not the default learn output.
 
-| Key                     | Description                                                                                                            |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `language`              | Language for docs (plans, memory, research, ask). Default: `en`.                                                       |
-| `docsDir`               | Base docs directory relative to project root (plans, memory, research). Default: `docs`. Not the default learn output. |
-| `autoApprove`           | Enable the auto-approve hook. Default: `false`.                                                                        |
-| `autoApproveLLM`        | Opt-in Sonnet classifier for unknown tools (Claude only). Default: `false` — unknowns defer to Claude native / auto.   |
-| `privacyBlock`          | Privacy-block hook (deny `.env`, keys, credentials). Default: `true`.                                                  |
-| `scoutBlock`            | Scout-block hook (deny ignored dirs). Default: `true`.                                                                 |
-| `autoApproveAllowExtra` | Bash command prefixes to auto-approve (merged across global + local).                                                  |
-| `autoApproveIgnore`     | Bash command prefixes to always require user review.                                                                   |
-| `disableGUIPlan`        | Disable the human overview doc `/cf-plan` generates. Default: `true`.                                                  |
-| `guiPlanFormat`         | Format for the GUI plan: `html` or `md`. Default: `html`.                                                              |
-| `learn`                 | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`.                  |
-| `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion; `maxRounds` (default 5) caps the autopilot review-fix loop. |
-| `tdd`                   | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default.                                                                   |
-| `memory`                | Object. MemoryConfig for search tier, embeddings, and capture.                                                         |
+| Key                     | Description                                                                                                                                                                                                                                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language`              | Language for docs (plans, memory, research, ask). Default: `en`.                                                                                                                                                                                                                                            |
+| `docsDir`               | Base docs directory relative to project root (plans, memory, research). Default: `docs`. Not the default learn output.                                                                                                                                                                                      |
+| `autoApprove`           | Enable the auto-approve hook. Default: `false`.                                                                                                                                                                                                                                                             |
+| `autoApproveLLM`        | Opt-in Sonnet classifier for unknown tools (Claude only). Default: `false` — unknowns defer to Claude native / auto.                                                                                                                                                                                        |
+| `privacyBlock`          | Privacy-block hook (deny `.env`, keys, credentials). Default: `true`.                                                                                                                                                                                                                                       |
+| `scoutBlock`            | Scout-block hook (deny ignored dirs). Default: `true`.                                                                                                                                                                                                                                                      |
+| `autoApproveAllowExtra` | Bash command prefixes to auto-approve (merged across global + local).                                                                                                                                                                                                                                       |
+| `autoApproveIgnore`     | Bash command prefixes to always require user review.                                                                                                                                                                                                                                                        |
+| `disableGUIPlan`        | Disable the human overview doc `/cf-plan` generates. Default: `true`.                                                                                                                                                                                                                                       |
+| `guiPlanFormat`         | Format for the GUI plan: `html` or `md`. Default: `html`.                                                                                                                                                                                                                                                   |
+| `learn`                 | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`.                                                                                                                                                                                                       |
+| `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion; `agentTimeout` (default 300) is enforced on each external reviewer subprocess; `nativeTimeout` (default 600) is a cooperative budget for each in-session reviewer job; `maxRounds` (default 5) caps the autopilot review-fix loop. |
+| `tdd`                   | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default.                                                                                                                                                                                                                                                        |
+| `memory`                | Object. MemoryConfig for search tier, embeddings, and capture.                                                                                                                                                                                                                                              |
 
 `memory` (MemoryConfig) keys:
 

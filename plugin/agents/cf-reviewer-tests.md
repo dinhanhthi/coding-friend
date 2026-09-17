@@ -2,12 +2,12 @@
 name: cf-reviewer-tests
 description: >
   Test coverage review specialist. Checks whether new code paths are tested, test quality,
-  edge case coverage, and regression prevention. Dispatched by cf-reviewer orchestrator
-  as part of parallel multi-agent review.
+  edge case coverage, and regression prevention.
+  Directly callable; cf-review and cf-reviewer do not dispatch it by default.
 model: haiku
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-09-10
+updated: 2026-09-16
 ---
 
 # Test Coverage Reviewer

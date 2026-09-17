@@ -101,3 +101,16 @@ while IFS= read -r phase; do
 done <<PHASES
 $(find "$plan_dir" -maxdepth 1 -type f -name 'phase-*-*.md' | sort)
 PHASES
+
+# Supporting docs the planner left next to the phases (baseline.md, review-request.md, …).
+while IFS= read -r extra; do
+  [ -n "$extra" ] || continue
+  [ -f "$extra" ] || continue
+  base=$(basename "$extra")
+  case "$base" in
+    README.md | brief.md | overview.* | review.md | phase-*-*.md) continue ;;
+  esac
+  emit_file "$base" "$extra"
+done <<EXTRAS
+$(find "$plan_dir" -maxdepth 1 -type f -name '*.md' | sort)
+EXTRAS

@@ -73,6 +73,10 @@ export interface ReviewConfig {
   withCodex?: boolean;
   /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
   maxRounds?: number;
+  /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */
+  agentTimeout?: number;
+  /** Seconds an in-session reviewer job may run before the main agent stops waiting. Default 600. */
+  nativeTimeout?: number;
 }
 
 /** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */

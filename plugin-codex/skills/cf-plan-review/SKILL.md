@@ -3,7 +3,7 @@ name: cf-plan-review
 description: >
   Review a saved $cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; does NOT review code (use $cf-review).
 created: 2026-09-05
-updated: 2026-09-09
+updated: 2026-09-16
 ---
 
 # $cf-plan-review
@@ -51,7 +51,7 @@ If `<plan>` is empty: list folders in `{docsDir}/plans/` newest first (`ls -t`) 
    - Name only (`<slug>`) → first, reject the argument outright if it contains `/`, `\`, or `..` (report: "Invalid plan name — slugs cannot contain path separators or `..`." and stop). This must happen BEFORE constructing any candidate path, since the candidates below are built by directly interpolating `<slug>` — a slug containing `../` would otherwise escape `{docsDir}/plans/`. Once the slug passes this check, resolve in this order, using the first that exists: `{docsDir}/plans/<slug>/README.md` (current layout) → `{docsDir}/plans/<slug>.md` (legacy single-file) → `{docsDir}/plans/<slug>` (append `.md` if it is a bare file).
    - If none found → report error and stop.
 
-Read `README.md`, every `phase-N-*.md`, and `brief.md` when present. If `brief.md` is missing, print:
+Read `README.md`, every `phase-N-*.md`, `brief.md` when present, and any other `*.md` the planner left in the folder (e.g. `baseline.md`, `review-request.md`; skip `review.md` / `overview.*`). If `brief.md` is missing, print:
 
 > ℹ️ No brief.md — reviewing README.md and phase files only.
 
@@ -68,7 +68,7 @@ mkdir -p "${CF_DOCS_ROOT}/reviews" && \
 
 Skip when `agents=[]`.
 
-For each agent, run one Bash command in the background (do not wait); the harness reports when each finishes.
+For each agent, run one Bash command in the background (do not inspect at spawn); the harness reports when each finishes. The runner enforces `review.agentTimeout` (default 300s) on the CLI subprocess and its process group, so every job is bounded.
 
 ```
 bash "${PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<slug>-plan-result-<agent>.md" "${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md"
@@ -83,6 +83,7 @@ Dispatch a fresh general-purpose subagent (no Coding Friend agent name; not a fo
 Prompt = the contents of `${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md`, plus:
 
 - Spot-check the repo read-only (Read / Glob / Grep). Do not run verify steps. Do not edit files.
+- If the plan folder has a `review-request.md`, answer each of its questions explicitly.
 - Return exactly the four sections: 🚨 Critical Issues / ⚠️ Important Issues / 💡 Suggestions / 📋 Summary.
 
 Call this result **Source 1**.
@@ -91,13 +92,13 @@ Call this result **Source 1**.
 
 Skip when `agents=[]` at spawn time.
 
-Wait for each agent (harness notify — no polling). Read the `CF_AGENT=` line on stderr:
+Wait for each agent in bounded steps — the runner kills its own subprocess at the deadline, so the wait always ends. Read the `CF_AGENT=` line on stderr:
 
 - `ok` → keep the result file.
 - `unavailable` → print `> ⚠ <Agent> CLI not found — proceeding without it.` Drop it.
 - `timeout` → print `> ⚠ <Agent> review timed out (>Ns) — proceeding without it.` Drop it. (N = `review.agentTimeout`, default 300.)
 - `error` → print `> ⚠ <Agent> review failed — proceeding without it.` Drop it.
-- `empty` → print `> ⚠ <Agent> returned empty output — proceeding without it.` Drop it.
+- `empty` → print `> ⚠ <Agent> returned empty output — proceeding without it.` Drop it (this also covers a CLI that exits 0 writing nothing).
 
 Never block on an external reviewer — failures degrade gracefully.
 

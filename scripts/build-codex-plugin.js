@@ -109,20 +109,15 @@ function renderCodexInstructionText(input) {
     )
     .replace(/\(model: sonnet\)/g, "(reasoning: medium)")
     .replace(/\(model: haiku\)/g, "(reasoning: low)")
-    .replace(
-      /Launch the `cf-reviewer-reducer` agent \(model: haiku by default — honor the `CF_REDUCER_MODEL` environment variable if set to `sonnet` or `opus`, to let users upgrade reducer quality without editing agent files\)/g,
-      "Launch the `cf-reviewer-reducer` agent with its configured low reasoning effort",
-    )
-    .replace(
-      /re-run with `CF_REDUCER_MODEL=sonnet` for a more conservative merge/g,
-      "rerun after configuring the reducer with medium reasoning effort for a more conservative merge",
-    )
     .replace(/helps Claude produce/g, "helps Codex produce")
     .replace(/phase file Claude re-opens/g, "phase file Codex re-opens")
     .replace(/if Claude finds itself/g, "if Codex finds itself")
     .replace(/Claude does NOT need/g, "Codex does NOT need")
     .replace(
-      /> If `review\.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside Claude's and merges both — no flag needed here \(cf-review reads the config itself\)\./g,
+      // Tolerates both wordings of the same note ("alongside Claude's" and the
+      // host-neutral "alongside the in-session review") — a rewrite that only
+      // matched one of them shipped hosts still promising a nested Codex run.
+      /> If `review\.withCodex: true` is set in the config, cf-review automatically runs a Codex second-opinion review alongside (?:Claude's|the in-session review) and merges both — no flag needed here \(cf-review reads the config itself\)\./g,
       "> On Codex, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` second-opinion setting.",
     )
     .replace(
@@ -178,7 +173,7 @@ function renderCodexReviewSkill(input) {
       [
         "### Step 7: Collect the report",
         "",
-        "The result of Step 6 is the final formatted report (Critical / Important / Suggestions / Summary). Do not reformat or restructure it; use it as-is in Step 10.",
+        "The result of Step 6 is the reviewer's report (Critical / Important / Suggestions / Summary). Keep its findings as written, then apply `## Report contract` to the Summary — you own the aggregate `Review status:`, native coverage and uncovered scope, which no single reviewer can know. Use that merged report in Step 10.",
         "",
       ].join("\n"),
     )
@@ -246,8 +241,8 @@ function renderCodexFile(sourcePath, input) {
         "",
       )
       .replace(
-        /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\$cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default; `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
-        "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `$cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Codex (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.",
+        /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\$cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default; `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.nativeTimeout` \(default 600s\) bounds each in-session reviewer job; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
+        "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `$cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Codex (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.",
       )
       .replace(
         /\n- \*\*After editing plugin files\?\*\* Run `cf dev sync` to copy changes to the cached version\./,
@@ -273,7 +268,10 @@ function renderCodexFile(sourcePath, input) {
     );
   }
 
-  return rendered.replace(/run_in_background:\s*true/g, "run in the background");
+  return rendered.replace(
+    /run_in_background:\s*true/g,
+    "run in the background",
+  );
 }
 
 async function writeCodexAgents(sourceAgentDir, targetAgentDir) {

@@ -2,12 +2,12 @@
 name: cf-reviewer-reducer
 description: >
   Review reducer agent. Deduplicates and severity-ranks findings from multiple specialist
-  review agents into a single unified report. Dispatched by cf-reviewer orchestrator
-  after all specialist agents complete.
+  review agents into a single unified report.
+  Directly callable; cf-review merges inline and does not dispatch it by default.
 model: haiku
 tools: Read
 created: 2026-04-04
-updated: 2026-09-10
+updated: 2026-09-16
 ---
 
 # Review Reducer

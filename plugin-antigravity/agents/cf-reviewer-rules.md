@@ -1,7 +1,7 @@
 ---
 name: cf-reviewer-rules
 description: >
-  Project rules compliance specialist. Checks code changes against AGENTS.md project rules. Only flags violations of rules with MUST/SHOULD/ALWAYS/NEVER language. Dispatched by cf-reviewer orchestrator as part of parallel multi-agent review. Skipped in QUICK review mode.
+  Project rules compliance specialist. Checks code changes against AGENTS.md project rules. Only flags violations of rules with MUST/SHOULD/ALWAYS/NEVER language. Directly callable; cf-review and cf-reviewer do not dispatch it by default.
 model: flash
 ---
 

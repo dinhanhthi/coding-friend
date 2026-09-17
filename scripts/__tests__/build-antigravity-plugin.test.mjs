@@ -419,7 +419,7 @@ test("rewrites cf-review for Antigravity", async () => {
   assert.match(reviewFixture, /Ignore `--with-codex`/);
   assert.match(
     reviewFixture,
-    /The result of Step 6 is the final formatted report/,
+    /The result of Step 6 is the reviewer's report[\s\S]*apply `## Report contract` to the Summary/,
   );
   assert.doesNotMatch(reviewFixture, /Codex dual-review flag/);
   assert.doesNotMatch(reviewFixture, /Step 2\.5: Spawn Codex review/);
@@ -447,7 +447,10 @@ test("rewrites cf-review for Antigravity", async () => {
   );
   assert.match(review, /Antigravity host behavior/);
   assert.match(review, /Ignore `--with-codex`/);
-  assert.match(review, /The result of Step 6 is the final formatted report/);
+  assert.match(
+    review,
+    /The result of Step 6 is the reviewer's report[\s\S]*apply `## Report contract` to the Summary/,
+  );
   assert.match(review, /<plugin-root>\/skills\/cf-review\//);
   assert.doesNotMatch(review, /Codex dual-review flag/);
   assert.doesNotMatch(review, /Step 2\.5: Spawn Codex review/);
@@ -467,35 +470,57 @@ test("rewrites cf-review for Antigravity", async () => {
   assert.match(review, /Flag parse:/);
   assert.match(review, /`--out`/);
   assert.match(review, /`--claude`/);
-  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-codex-review\.sh/);
-  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-agent-review\.sh/);
-  assert.match(reviewSource, /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/normalize-codex-review\.sh/);
+  // The external-reviewer commands and their per-flag guards live in the
+  // conditional reference (plan task 5.0); the skill keeps the pointer. The
+  // rules below are unchanged — they are asserted where the text now lives.
+  const externalsSource = await fs.readFile(
+    path.join(
+      repoRoot,
+      "plugin/skills/cf-review/references/external-reviewers.md",
+    ),
+    "utf8",
+  );
+  assert.match(
+    externalsSource,
+    /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-codex-review\.sh/,
+  );
+  assert.match(
+    externalsSource,
+    /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/run-agent-review\.sh/,
+  );
+  assert.match(
+    externalsSource,
+    /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/cf-review\/scripts\/normalize-codex-review\.sh/,
+  );
   assert.match(reviewSource, /or when `out=true`/);
-  assert.match(reviewSource, /CF_AGENT/);
+  assert.match(externalsSource, /CF_AGENT/);
   assert.match(reviewSource, /one message/);
   assert.match(review, /one message/);
   assert.match(
-    reviewSource,
+    externalsSource,
     /`run-codex-review\.sh` only when `codex=true` and `out=false`/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /`run-agent-review\.sh` only when `agents` is non-empty and `out=false`/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /Collect `CF_CODEX` only when a Codex job was spawned/,
   );
   assert.match(
-    reviewSource,
+    externalsSource,
     /collect `CF_AGENT` only when agent jobs were spawned/,
   );
-  assert.match(reviewSource, /`--gemini` alone must NOT spawn Codex/);
+  assert.match(externalsSource, /`--gemini` alone must NOT spawn Codex/);
   assert.match(
-    reviewSource,
+    externalsSource,
     /`--with-codex` alone must NOT run `run-agent-review\.sh` with literal `<agent>`/,
   );
-  assert.match(reviewSource, /HOST.*is `claude`|`--claude` when `HOST` is `claude`/);
+  assert.match(
+    reviewSource,
+    /HOST.*is `claude`|`--claude` when `HOST` is `claude`/,
+  );
 });
 
 test("excludes cf-review external-reviewers from Antigravity artifact", () => {
@@ -524,7 +549,10 @@ test("copies plan/ask/scan templates into Antigravity dest and keeps external-re
     ["skills/cf-plan/modes/brainstorm.md", "Official solutions first"],
     ["skills/cf-plan/templates/plan-templates.md", "Plan file skeletons"],
     ["skills/cf-scan/references/scan-templates.md", "Scan templates"],
-    ["skills/cf-ask/references/ask-templates.md", "[Idle] --start--> [Running]"],
+    [
+      "skills/cf-ask/references/ask-templates.md",
+      "[Idle] --start--> [Running]",
+    ],
   ];
   for (const [rel, body] of kept) {
     await writeText(path.join(repoRoot, "plugin", rel), `${body}\n`);
@@ -996,4 +1024,87 @@ test("Antigravity builder no longer ships dead Claude tool phrase replaces", asy
     source,
     /TaskCreate|AskUserQuestion|Skill tool|WebFetch|Write tool/,
   );
+});
+
+/* ---------------------------------------------------------------------------
+ * Generated-host parity audit (plan task 4.1)
+ * ------------------------------------------------------------------------ */
+
+const liveRepoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+
+const RETAINED_SPECIALISTS = [
+  "cf-reviewer-plan",
+  "cf-reviewer-quality",
+  "cf-reviewer-tests",
+  "cf-reviewer-rules",
+  "cf-reviewer-reducer",
+];
+
+test("Antigravity keeps ignoring withCodex in every auto-review consumer", async () => {
+  for (const relPath of [
+    "plugin/skills/cf-fix/SKILL.md",
+    "plugin/skills/cf-optimize/SKILL.md",
+    "plugin/skills/cf-plan/modes/autopilot.md",
+  ]) {
+    const source = await fs.readFile(path.join(liveRepoRoot, relPath), "utf8");
+    const rendered = renderAgyFile(`/repo/${relPath}`, source);
+    assert.doesNotMatch(
+      rendered,
+      /cf-review (automatically |)(runs|adds) a Codex second[- ]opinion/i,
+      `${relPath} still promises a nested Codex review on the Antigravity host`,
+    );
+    assert.match(
+      rendered,
+      /ignores the Claude-only `review\.withCodex`/,
+      `${relPath} must tell the Antigravity host that withCodex is ignored`,
+    );
+  }
+});
+
+test("Antigravity builder ships no dead review-topology replaces", async () => {
+  const source = await fs.readFile(
+    path.join(liveRepoRoot, "scripts/build-antigravity-plugin.js"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /CF_REDUCER_MODEL/,
+    "the reducer-model rewrites target text no source file contains anymore",
+  );
+});
+
+test("retained review specialists still build into callable AGY agents", async () => {
+  for (const agent of RETAINED_SPECIALISTS) {
+    const markdown = await fs.readFile(
+      path.join(liveRepoRoot, "plugin/agents", `${agent}.md`),
+      "utf8",
+    );
+    const rendered = renderAgyAgentMarkdown(markdown);
+    assert.match(
+      rendered,
+      new RegExp(`^name: ${agent}$`, "m"),
+      `${agent} must keep a usable name in its AGY agent file`,
+    );
+    assert.match(
+      rendered,
+      /^description: /m,
+      `${agent} must keep a description the host can select on`,
+    );
+    assert.match(
+      rendered,
+      /^model: (flash|pro|inherit)$/m,
+      `${agent} must map onto an AGY model`,
+    );
+    assert.doesNotMatch(
+      rendered,
+      /Dispatched by cf-reviewer/i,
+      `${agent} still claims cf-reviewer dispatches it`,
+    );
+    await fs.access(
+      path.join(liveRepoRoot, "plugin-antigravity/agents", `${agent}.md`),
+    );
+  }
 });

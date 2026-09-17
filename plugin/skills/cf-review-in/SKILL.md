@@ -8,7 +8,7 @@ user-invocable: true
 argument-hint: "<label> [service]"
 model: sonnet
 created: 2026-03-23
-updated: 2026-09-09
+updated: 2026-09-16
 ---
 
 # /cf-review-in
@@ -69,6 +69,8 @@ For each result file found, check for:
 ### Step 4: Read context (for verification)
 
 Read the prompt file to understand what was reviewed. Try `<docsDir>/reviews/<label>-prompt.md` first (works for both formats since `<label>` includes any date prefix). If not found, also try stripping any leading date prefix from `<label>` and retry. Use the diff from the prompt to understand the code context.
+
+**Check the prompt's coverage frontmatter.** `diff_truncated: true` means the exporter capped the embedded diff at `diff_lines_included` of `diff_lines_total` lines, so **every** result collected for this label reviewed a **subset** of the change set, not the whole target. Carry that through Steps 6 and 8: name the subset explicitly, and never turn a subset review into the "clear to commit" verdict — the uncapped remainder is uncovered, not reviewed-and-clean. An older prompt with no such frontmatter carries no claim either way; say the coverage is unknown rather than assuming it was complete.
 
 ### Step 5: Critical verification — do NOT blindly trust external findings
 
@@ -194,6 +196,8 @@ Count only `Confirmed` and `Questionable` findings across all reviewers (ignore 
 > (N finding(s) from external reviewer(s) were dismissed as false positives.)
 >
 > You're clear to commit. Run `/cf-commit` when ready.
+
+If Step 4 found `diff_truncated: true`, replace that last line with the subset verdict instead — e.g. `> Coverage: subset only (<diff_lines_included> of <diff_lines_total> diff lines). The rest was never reviewed — re-run /cf-review on the remaining scope before you commit.`
 
 **If confirmed or questionable issues were found:**
 

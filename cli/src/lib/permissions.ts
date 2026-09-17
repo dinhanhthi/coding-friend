@@ -109,6 +109,41 @@ export const STATIC_RULES: PermissionRule[] = [
     category: "Core Utilities",
     recommended: true,
   },
+  // The cf-review scope snapshot lives under /tmp/coding-friend/review/<run-id>/.
+  // Only the main agent writes it (gather-diff.sh --snapshot-dir); reviewer
+  // subagents read it. Without these rules a background reviewer can stall for
+  // hours on a write-permission prompt nobody sees.
+  // Read/Edit/Write need a DOUBLE leading slash: a single "/" anchors at the
+  // settings source dir, not the filesystem root. Bash rules take the literal
+  // command text, so mkdir keeps one slash.
+  {
+    rule: "Bash(mkdir -p /tmp/coding-friend/review/*)",
+    description:
+      "[write] Create the review scope snapshot dir · Used by: /cf-review gather-diff --snapshot-dir",
+    category: "Core Utilities",
+    recommended: true,
+  },
+  {
+    rule: "Read(//tmp/coding-friend/review/**)",
+    description:
+      "[read-only] Read the review scope snapshot · Used by: /cf-review reviewer agents",
+    category: "Core Utilities",
+    recommended: true,
+  },
+  {
+    rule: "Edit(//tmp/coding-friend/review/**)",
+    description:
+      "[modify] Update the review scope snapshot · Used by: /cf-review main agent",
+    category: "Core Utilities",
+    recommended: true,
+  },
+  {
+    rule: "Write(//tmp/coding-friend/review/**)",
+    description:
+      "[write] Write the review scope snapshot · Used by: /cf-review main agent",
+    category: "Core Utilities",
+    recommended: true,
+  },
 
   // Git Operations
   {

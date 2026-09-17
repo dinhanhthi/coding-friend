@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T11:02:34.714Z",
+  "generatedAt": "2026-09-17T01:38:19.048Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -87,12 +87,12 @@
       "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 2717,
+      "tokens": 2969,
       "tier": "medium",
       "type": "slash",
       "model": "haiku",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-later-do": {
@@ -141,12 +141,12 @@
       "temporal": "updated"
     },
     "cf-plan-review": {
-      "tokens": 2395,
+      "tokens": 2513,
       "tier": "medium",
       "type": "slash",
       "model": "opus",
       "created": "2026-09-05",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "new"
     },
     "cf-remember": {
@@ -168,30 +168,30 @@
       "temporal": "updated"
     },
     "cf-review": {
-      "tokens": 2247,
-      "tier": "medium",
+      "tokens": 5128,
+      "tier": "high",
       "type": "slash",
       "model": "opus",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-17",
       "temporal": "updated"
     },
     "cf-review-in": {
-      "tokens": 2543,
+      "tokens": 2753,
       "tier": "medium",
       "type": "slash",
       "model": "sonnet",
       "created": "2026-03-23",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-review-out": {
-      "tokens": 1366,
+      "tokens": 1465,
       "tier": "low",
       "type": "slash",
       "model": "sonnet",
       "created": "2026-03-23",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-scan": {
@@ -279,75 +279,75 @@
       "temporal": "updated"
     },
     "cf-implementer": {
-      "tokens": 1592,
+      "tokens": 1607,
       "tier": "medium",
       "model": "inherit",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-10",
       "temporal": "updated"
     },
     "cf-planner": {
-      "tokens": 1640,
+      "tokens": 1653,
       "tier": "medium",
       "model": "inherit",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-10",
       "temporal": "updated"
     },
     "cf-reviewer-plan": {
-      "tokens": 717,
+      "tokens": 817,
       "tier": "low",
       "model": "sonnet",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer-quality": {
-      "tokens": 1013,
+      "tokens": 1122,
       "tier": "low",
       "model": "haiku",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer-reducer": {
-      "tokens": 737,
+      "tokens": 744,
       "tier": "low",
       "model": "haiku",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer-rules": {
-      "tokens": 644,
+      "tokens": 744,
       "tier": "low",
       "model": "haiku",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer-security": {
-      "tokens": 923,
+      "tokens": 1236,
       "tier": "low",
       "model": "sonnet",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer-tests": {
-      "tokens": 669,
+      "tokens": 778,
       "tier": "low",
       "model": "haiku",
       "created": "2026-04-04",
-      "updated": "2026-09-09",
+      "updated": "2026-09-16",
       "temporal": "updated"
     },
     "cf-reviewer": {
-      "tokens": 1509,
+      "tokens": 1775,
       "tier": "medium",
       "model": "inherit",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-17",
       "temporal": "updated"
     },
     "cf-writer-deep": {

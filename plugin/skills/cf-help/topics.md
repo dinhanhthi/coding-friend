@@ -39,7 +39,7 @@ Strip flags from `$ARGUMENTS` before treating the rest as the topic. Aliases in 
 | `/cf-plan-resume`     | `<plan>` path, entry file, or slug. Honors `auto: true`.                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `/cf-plan-review`     | `[plan]` path, entry file, or slug (empty → pick from `docs/plans/`) · `--codex` / `--gemini` / `--claude` / `--cursor` / `--grok` external reviewers, host flag skipped · writes `review.md`, applies 🚨/⚠️ on confirm                                                                                                                                                                                                                                   |
 | `/cf-later-do`        | `[item]` from `docs/later/` → `/cf-fix` or `/cf-plan`                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `/cf-review`          | `[target]` · `--quick` / `--deep` · `--with-codex` (`--codex`) · `--claude` · `--gemini` · `--cursor` · `--grok` · `--out` (no agent flags). Config: `review.withCodex`, `review.agentTimeout` (300s), `review.maxRounds` (5 — autopilot fix-loop cap).                                                                                                                                                                                                   |
+| `/cf-review`          | `[target]` · `--quick` / `--deep` · `--with-codex` (`--codex`) · `--claude` · `--gemini` · `--cursor` · `--grok` · `--out` (no agent flags). Config: `review.withCodex`, `review.agentTimeout` (300s, enforced on the external subprocess), `review.nativeTimeout` (600s, cooperative budget for an in-session reviewer), `review.maxRounds` (5 — autopilot fix-loop cap).                                                                                |
 | `/cf-review-out`      | `[label]` → `docs/reviews/` prompt + diff                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/cf-review-in`       | `<label> [service]`                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `/cf-commit`          | `[hint]`                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -72,17 +72,31 @@ Shared: `--add-tests` / `--tdd` on plan / fix / tdd / implementer.
 | `cf-explorer`          | haiku   | `/cf-plan`, `/cf-fix`, `/cf-ask`                                           |
 | `cf-planner`           | inherit | `/cf-plan` (`--model` pins this one)                                       |
 | `cf-implementer`       | inherit | `/cf-plan`, `/cf-fix`, `cf-tdd` — writes code; `[CF-RESULT]`; no autopilot |
-| `cf-reviewer`          | inherit | `/cf-review`, `/cf-ship`                                                   |
-| `cf-reviewer-plan`     | sonnet  | `cf-reviewer`                                                              |
-| `cf-reviewer-security` | sonnet  | `cf-reviewer`                                                              |
-| `cf-reviewer-quality`  | haiku   | `cf-reviewer`                                                              |
-| `cf-reviewer-tests`    | haiku   | `cf-reviewer`                                                              |
-| `cf-reviewer-rules`    | haiku   | `cf-reviewer` (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER)                         |
-| `cf-reviewer-reducer`  | haiku   | `cf-reviewer`                                                              |
+| `cf-reviewer`          | inherit | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP), `/cf-ship`                     |
+| `cf-reviewer-plan`     | sonnet  | direct call only — off `/cf-review`'s default path                         |
+| `cf-reviewer-security` | sonnet  | `/cf-review` in DEEP (2nd reviewer, in parallel)                           |
+| `cf-reviewer-quality`  | haiku   | direct call only — off `/cf-review`'s default path                         |
+| `cf-reviewer-tests`    | haiku   | direct call only — off `/cf-review`'s default path                         |
+| `cf-reviewer-rules`    | haiku   | direct call only (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER)                      |
+| `cf-reviewer-reducer`  | haiku   | direct call only — `/cf-review` merges inline                              |
 | `cf-writer`            | haiku   | learn / remember / scan / fix / ask                                        |
 | `cf-writer-deep`       | sonnet  | `/cf-learn`                                                                |
 
-Review depth: QUICK / STANDARD / DEEP (auto, or `--quick` / `--deep`).
+### Review pipeline (`/cf-review`)
+
+Depth is auto from the snapshot size, or forced with `--quick` / `--deep`; a sensitive path always forces DEEP. The graph is flat: the skill dispatches every reviewer itself, a reviewer never dispatches anything, and there is no merge agent — the skill merges inline.
+
+| Mode         | Auto when                                  | Layers                                                                                                          | Native reviewers                                        |
+| ------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **QUICK**    | ≤3 files AND ≤50 lines, no sensitive paths | rules, correctness, security, tests — no plan alignment, no data-flow tracing, ≤5 context files beyond the diff | 1 — `cf-reviewer`                                       |
+| **STANDARD** | 4–10 files OR 51–300 lines                 | all five layers                                                                                                 | 1 — `cf-reviewer`                                       |
+| **DEEP**     | >10 files OR >300 lines OR sensitive paths | all five + extended security, end-to-end data-flow tracing, exploit scenarios                                   | 2 — `cf-reviewer` + `cf-reviewer-security`, in parallel |
+
+- **Externals are counted separately.** `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` are opt-in extras on top of the native 1 / 1 / 2, never inside it. An external source that is unavailable, errored, empty, or timed out is a warning line in the Summary and never stands in for a missing native reviewer.
+- **Two different deadline mechanisms.** `review.nativeTimeout` (600s) is a **cooperative** budget: it goes into the in-session reviewer's prompt and bounds the skill's wait. At the deadline the skill cancels the running job only if the host exposes a cancel; otherwise it marks the job `timed_out` and merges whatever arrived (with neither a timed wait nor a cancel, the skill runs the review inline under the same budget). `review.agentTimeout` (300s) is **really enforced**: the runner kills the external CLI subprocess and its process group (TERM, 2s grace, then KILL). Never use shell `timeout` on a native dispatch.
+- **One scope snapshot per run.** `gather-diff.sh` captures it once into `/tmp/coding-friend/review/<run-id>/` (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); `assess-changes.sh` and the reviewers read that same snapshot. Default target = branch commits vs base + net uncommitted (staged hunks appear once, not twice) + untracked files; `--uncommitted [--path P]…` or `--range <range>` narrow it. Running `gather-diff.sh` with **no arguments** stays the legacy interface `/cf-review-out` and `run-agent-review.sh` rely on; no-arg `assess-changes.sh` likewise still measures the live tree.
+- **Report status.** The 📋 Summary ends with exactly one `Review status: COMPLETE | PARTIAL | FAILED`. COMPLETE = the required native coverage finished — **not** that there were no findings (zero findings is a valid complete review). PARTIAL = a dispatched reviewer self-reported partial, timed out, returned nothing or unparseable output, or the scope was incomplete/stale. FAILED = no valid native report at all. `/cf-plan --auto` and `/cf-tdd --auto` read that line **before** counting findings and stop instead of committing on PARTIAL / FAILED.
+- **Trade-off.** One generalist now covers all five layers in a single pass instead of five specialists each owning one layer, so per-layer depth within a pass is different — not automatically better. DEEP buys back a dedicated security pass, and `cf-reviewer-plan` / `-quality` / `-tests` / `-rules` / `-reducer` stay directly callable when one layer deserves its own pass.
 
 ---
 
@@ -146,7 +160,7 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 ## Config
 
-Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/config.json` (local). Local overrides global at the **top-level key**. Nested objects (e.g. `learn`) are replaced whole if present locally.
+Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/config.json` (local). Local overrides global **per field**, including inside nested objects (a local `review.agentTimeout` keeps the global `review.withCodex`). Arrays (e.g. `learn.categories`) are replaced whole.
 
 | Key                     | Default                                     | Meaning                                                                         |
 | ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -168,7 +182,8 @@ Layered: `~/.coding-friend/config.json` (global) + `<project>/.coding-friend/con
 | `learn.autoCommit`      | `false`                                     | Git-commit after learn docs                                                     |
 | `learn.readmeIndex`     | `false`                                     | `false` / `true` / `"per-category"`                                             |
 | `review.withCodex`      | `false`                                     | Always add Codex on `/cf-review`                                                |
-| `review.agentTimeout`   | `300`                                       | Seconds per external reviewer                                                   |
+| `review.agentTimeout`   | `300`                                       | Seconds per external reviewer subprocess — runner-enforced (TERM → KILL)        |
+| `review.nativeTimeout`  | `600`                                       | Seconds per in-session reviewer job — cooperative budget, not a kill            |
 | `review.maxRounds`      | `5`                                         | Autopilot `/cf-review` fix-loop cap (`/cf-plan --auto`, `/cf-tdd --auto`)       |
 | `memory.tier`           | `auto`                                      | `auto` / `full` / `lite` / `markdown`                                           |
 | `memory.embedding`      | —                                           | `{ provider: transformers\|ollama, model, ollamaUrl }`                          |

@@ -82,7 +82,7 @@ Phase 1 → Phase 2 → … A phase must complete before the next starts.
 
 #### Post-implementation
 
-1. **Hard mode**: run `$cf-review` after every phase; only continue if review passes.
+1. **Hard mode**: run `$cf-review` after every phase; only continue if review passes. **A review passes only when its 📋 Summary carries `Review status: COMPLETE`** and no 🚨 Critical / ⚠️ Important findings remain — read that line before you count findings. `PARTIAL`, `FAILED`, a missing line, or an unparseable one → STOP, report the coverage it names as missing, and do not commit; never infer a clean review from an absence of findings (autopilot: STOP per the stop conditions in `autopilot.md`).
 2. After all phases, Load `$cf-review` (the per-phase reviews under autopilot already covered the changes; this final review is optional in autopilot mode but harmless).
 3. If plan involved performance-critical features, suggest `$cf-optimize` as optional next step — do NOT auto-run.
 4. **Offer to remove the plan doc** — once every phase is `✅ DONE`, if a plan file was written (i.e. a `{docsDir}/plans/<slug>/` folder exists — skip this for inline/single-phase-fast runs that have no plan doc), ask the user: `> 🗑️ Plan is complete. Remove the plan doc \`{docsDir}/plans/<slug>/\`? (y/n)`. On **y**, delete the whole plan folder (`README.md`, any `phase-N-_.md`, `brief.md`, `review.md`, and `overview._`). On **n** or no answer, leave it in place. Ask this even under autopilot — it is the terminal step, not a between-phase gate, so it does not violate the no-prompt-between-phases contract.

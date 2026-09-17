@@ -1,113 +1,130 @@
 #!/usr/bin/env bash
-# gather-diff.sh — collect git diff output for cf-review
-# Usage: bash gather-diff.sh
-# Output: metadata block + branch diff (vs base) + uncommitted changes + recent log
+# gather-diff.sh — render the cf-review scope as a reviewer-facing diff document.
 #
-# Produces:
+# Usage:
+#   bash gather-diff.sh                          # legacy target (default)
+#   bash gather-diff.sh --uncommitted [--path P]…
+#   bash gather-diff.sh --range <git-range>
+#   bash gather-diff.sh … --snapshot-dir /tmp/coding-friend/review/<run-id>
+#
+# Targets are mutually exclusive; see review-scope.sh for the full contract.
+# The no-arg legacy target is unchanged for cf-review-out / run-agent-review.sh:
 #   0. Metadata block (machine-readable summary of what's included)
 #   1. Committed changes on current branch vs base (main/master)
-#   2. Uncommitted changes (staged + unstaged vs HEAD) for tracked files
+#   2. Uncommitted changes (net HEAD -> working tree) for tracked files
 #   3. Untracked files (new files not yet git-added)
 #   4. Recent commit log
+#
+# Staged changes are part of section 2 (`git diff HEAD` already contains them)
+# and are NOT repeated in a separate section — `has_staged` still reports them.
+#
+# With --snapshot-dir the same bytes are also written to <dir>/diff.txt next to
+# metadata.txt / files.z / excluded.z, so the assessor and the reviewers reuse
+# one scope instead of re-deriving it. Only this script (run by the main agent)
+# writes there; reviewers read it.
 
-# Detect base branch (main or master)
-if git rev-parse --verify main >/dev/null 2>&1; then
-  BASE_BRANCH="main"
-elif git rev-parse --verify master >/dev/null 2>&1; then
-  BASE_BRANCH="master"
-else
-  BASE_BRANCH=""
-fi
+# Resolved with builtins only, so a broken PATH still reaches the "git is not
+# available" error instead of dying on `dirname`.
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[ "$SCRIPT_DIR" = "${BASH_SOURCE[0]}" ] && SCRIPT_DIR="."
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd)
+# shellcheck source=./review-scope.sh
+. "$SCRIPT_DIR/review-scope.sh"
 
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+cf_scope_parse_args "$@" || exit $?
+cf_scope_snapshot_init || true # warns on stderr and falls back to stdout only
+cf_scope_collect
+collect_status=$?
+# Structural failures must not produce a metadata block: an all-false block is
+# indistinguishable from a clean tree.
+[ "$collect_status" -eq 2 ] && exit 2
 
-# --- Collect all sections into variables first (for metadata) ---
-
-has_committed=false
-commit_range=""
-branch_diff=""
-
-# Section 1: Committed branch changes vs base
-if [ -n "$BASE_BRANCH" ] && [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$BASE_BRANCH" ]; then
-  merge_base=$(git merge-base "$BASE_BRANCH" HEAD 2>/dev/null || true)
-  if [ -n "$merge_base" ]; then
-    branch_diff=$(git diff "$merge_base"..HEAD 2>/dev/null)
-    if [ -n "$branch_diff" ]; then
-      has_committed=true
-      commit_range="${merge_base:0:7}..$(git rev-parse --short HEAD 2>/dev/null)"
-    fi
-  fi
-fi
-
-# Section 2: Uncommitted changes (staged + unstaged) for tracked files
-uncommitted=$(git diff HEAD 2>/dev/null)
-has_uncommitted=false
-if [ -n "$uncommitted" ]; then
-  has_uncommitted=true
-fi
-
-# Section 3: Staged-only (shown separately for clarity)
-staged=$(git diff --staged 2>/dev/null)
-has_staged=false
-if [ -n "$staged" ]; then
-  has_staged=true
-fi
-
-# Section 4: Untracked files
-untracked_files=$(git ls-files --others --exclude-standard 2>/dev/null)
-has_untracked=false
-if [ -n "$untracked_files" ]; then
-  has_untracked=true
-fi
-
-# --- Output metadata block ---
-echo "=== METADATA ==="
-echo "has_committed=${has_committed}"
-echo "commit_range=${commit_range}"
-echo "has_uncommitted=${has_uncommitted}"
-echo "has_staged=${has_staged}"
-echo "has_untracked=${has_untracked}"
-echo "base_branch=${BASE_BRANCH}"
-echo "current_branch=${CURRENT_BRANCH}"
-echo "head_sha=$(git rev-parse --short HEAD 2>/dev/null)"
-echo "=== END METADATA ==="
-echo ""
-
-# --- Output diff sections ---
-
-if [ "$has_committed" = true ]; then
-  echo "=== git diff ${BASE_BRANCH}...HEAD (committed branch changes) ==="
-  echo "$branch_diff"
+render_scope() {
+  echo "=== METADATA ==="
+  echo "has_committed=${CF_SCOPE_HAS_COMMITTED}"
+  echo "commit_range=${CF_SCOPE_COMMIT_RANGE}"
+  echo "has_uncommitted=${CF_SCOPE_HAS_UNCOMMITTED}"
+  echo "has_staged=${CF_SCOPE_HAS_STAGED}"
+  echo "has_untracked=${CF_SCOPE_HAS_UNTRACKED}"
+  echo "base_branch=${CF_SCOPE_BASE_BRANCH}"
+  echo "current_branch=${CF_SCOPE_CURRENT_BRANCH}"
+  echo "head_sha=${CF_SCOPE_HEAD_SHA}"
+  # Additive fields (contract version 1) — older consumers ignore them.
+  echo "scope_version=${CF_SCOPE_VERSION}"
+  echo "scope_mode=${CF_SCOPE_MODE}"
+  echo "scope_range=${CF_SCOPE_RANGE}"
+  echo "scope_paths=${#CF_SCOPE_PATHS[@]}"
+  echo "scope_complete=${CF_SCOPE_COMPLETE}"
+  echo "files_total=${#CF_SCOPE_FILES[@]}"
+  echo "excluded_total=${#CF_SCOPE_EXCLUDED[@]}"
+  echo "snapshot_dir=${CF_SCOPE_SNAPSHOT_DIR}"
+  echo "=== END METADATA ==="
   echo ""
-fi
 
-if [ "$has_uncommitted" = true ]; then
-  echo "=== git diff HEAD (uncommitted changes) ==="
-  echo "$uncommitted"
-  echo ""
-fi
-
-if [ "$has_staged" = true ]; then
-  echo "=== git diff --staged ==="
-  echo "$staged"
-  echo ""
-fi
-
-if [ "$has_untracked" = true ]; then
-  echo "=== Untracked files (new, not yet staged) ==="
-  while IFS= read -r file; do
-    # Skip binary files
-    if file --brief --mime-encoding "$file" 2>/dev/null | grep -q 'binary'; then
-      echo "--- new file: $file (binary, content omitted)"
-      echo ""
+  if [ "$CF_SCOPE_HAS_COMMITTED" = true ]; then
+    if [ "$CF_SCOPE_MODE" = "range" ]; then
+      echo "=== git diff ${CF_SCOPE_RANGE} (committed changes) ==="
     else
-      echo "--- new file: $file"
-      cat "$file" 2>/dev/null
-      echo ""
+      echo "=== git diff ${CF_SCOPE_BASE_BRANCH}...HEAD (committed branch changes) ==="
     fi
-  done <<< "$untracked_files"
-  echo ""
-fi
+    printf '%s\n' "$CF_SCOPE_COMMITTED_DIFF"
+    echo ""
+  fi
 
-echo "=== git log --oneline -10 ==="
-git log --oneline -10 2>/dev/null
+  if [ "$CF_SCOPE_HAS_UNCOMMITTED" = true ]; then
+    echo "=== git diff HEAD (uncommitted changes) ==="
+    printf '%s\n' "$CF_SCOPE_UNCOMMITTED_DIFF"
+    echo ""
+  fi
+
+  if [ ${#CF_SCOPE_UNTRACKED[@]} -gt 0 ]; then
+    echo "=== Untracked files (new, not yet staged) ==="
+    local entry kind path
+    for entry in "${CF_SCOPE_UNTRACKED[@]}"; do
+      kind="${entry%%	*}"
+      path="${entry#*	}"
+      case "$kind" in
+        binary)
+          echo "--- new file: $path (binary, content omitted)"
+          ;;
+        symlink)
+          echo "--- new file: $path (symlink, content omitted)"
+          ;;
+        *)
+          echo "--- new file: $path"
+          cat -- "$path" 2>/dev/null
+          ;;
+      esac
+      echo ""
+    done
+    echo ""
+  fi
+
+  if [ ${#CF_SCOPE_EXCLUDED[@]} -gt 0 ]; then
+    # Coverage gap, never "reviewed": no content of these paths was read.
+    echo "=== Excluded from review scope (NOT reviewed) ==="
+    local ex
+    for ex in "${CF_SCOPE_EXCLUDED[@]}"; do
+      echo "--- excluded (${ex%% *}): ${ex#* }"
+    done
+    echo ""
+  fi
+
+  echo "=== git log --oneline -10 ==="
+  if [ "$CF_SCOPE_BASE_REF" = "HEAD" ]; then
+    git log --oneline -10 2>/dev/null
+  fi
+}
+
+out_file=$(mktemp "${TMPDIR:-/tmp}/cf-gather-diff.XXXXXX") || {
+  # No temp file: still emit the scope, just without a snapshot.
+  render_scope
+  exit "$collect_status"
+}
+trap 'rm -f "$out_file"' EXIT
+
+render_scope >"$out_file"
+cf_scope_write_snapshot "$out_file"
+cat "$out_file"
+
+exit "$collect_status"

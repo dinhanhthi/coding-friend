@@ -8,7 +8,7 @@ description: >
   or config key. SKIP — general coding questions unrelated to Coding Friend, and
   requests to run a skill (invoke that skill instead).
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-16
 ---
 
 # /cf-help — Coding Friend Help
@@ -52,7 +52,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 - `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors `auto: true`.
 - `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped). Writes `review.md` into the plan folder, offers to apply Critical/Important findings.
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
-- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.
+- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning. The two timeouts are different mechanisms: `nativeTimeout` is a cooperative budget carried in the in-session reviewer's prompt and bounding the skill's wait — at the deadline the skill cancels the job only if the host offers a cancel, otherwise it marks it timed out and merges what arrived — while `agentTimeout` is really enforced on the external subprocess (TERM, 2s grace, then KILL). External reviewers are opt-in extras — they never count toward the native 1 / 1 / 2. Every report ends with `Review status: COMPLETE | PARTIAL | FAILED`: COMPLETE means the required coverage finished, **not** that there were no findings, and PARTIAL / FAILED blocks the autopilot commit. Scope, depth table, and the trade-off: `topics.md`.
 - `/cf-review-out [label]` — ⚡⚡ — Prompt + diff → `docs/reviews/`
 - `/cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
 - `/cf-commit [hint]` — ⚡ — Conventional commit
@@ -80,7 +80,8 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-reviewer** — ⚡ — Orchestrator: **cf-reviewer-plan** (pro), **cf-reviewer-security** (pro), **cf-reviewer-quality** (flash), **cf-reviewer-tests** (flash), **cf-reviewer-rules** (flash), **cf-reviewer-reducer** (flash)
+- **cf-reviewer** — ⚡ — Reviews the diff itself, 5 layers. `/cf-review` dispatches it directly: 1 in QUICK, 1 in STANDARD, 2 in DEEP — the second is **cf-reviewer-security** (pro). Flat graph — no sub-dispatch, no merge agent.
+- **cf-reviewer-plan** (pro), **cf-reviewer-quality** (flash), **cf-reviewer-tests** (flash), **cf-reviewer-rules** (flash), **cf-reviewer-reducer** (flash) — ⚡ — retained, directly callable; off `/cf-review`'s default path
 - **cf-implementer** — ⚡ — Writes code; TDD with `--add-tests`. `[CF-RESULT: success|failure]`. No autopilot.
 - **cf-explorer** — ⚡ — Repo map + context files
 - **cf-planner** — ⚡ — Approaches + phased tasks
