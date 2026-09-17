@@ -17,7 +17,9 @@
 # Mechanisms (`CF_TIMEOUT_IMPL`: auto | gnu | fallback; default auto):
 #   gnu       `timeout`/`gtimeout` WITH `--kill-after` support. A `timeout`
 #             that rejects `-k` (old busybox) cannot guarantee the kill, so it
-#             is refused rather than trusted.
+#             is refused rather than trusted. It runs supervised, not exec-ed:
+#             it escapes this run's process group, so the cancel has to be
+#             forwarded to it and its own signal death translated back.
 #   fallback  perl — already this runner's fallback dependency. The child calls
 #             setpgid(0,0) before exec, so the group is created by construction.
 #
@@ -216,9 +218,32 @@ KIND="${MECHANISM%% *}"
 TOOL="${MECHANISM#* }"
 
 if [ "$KIND" = gnu ]; then
-  # timeout(1) without --foreground puts the command in its own process group
-  # and signals that group; -k guarantees the KILL after the grace period.
-  exec "$TOOL" -k "$CF_TIMEOUT_GRACE" "$SECS" "$@"
+  # timeout(1) without --foreground puts ITSELF and the command in a process
+  # group of its own and signals that group; -k guarantees the KILL after the
+  # grace period. That group is out of reach of this run's group, so this shell
+  # must stay alive instead of exec-ing: nothing else is left to forward a
+  # cancel, and timeout(1) leaks two codes of its own — it re-raises the
+  # command's signal on itself, and it dies with the group it KILLs once the
+  # grace period expires. `<&0` is load-bearing: bash gives a background job
+  # /dev/null for stdin unless stdin is redirected explicitly.
+  "$TOOL" -k "$CF_TIMEOUT_GRACE" "$SECS" "$@" <&0 &
+  gnu_pid=$!
+  # Cancelling timeout(1) is enough: it re-signals its own group, so the
+  # command and any grandchild go with it.
+  trap 'kill -TERM "$gnu_pid" 2>/dev/null' TERM INT HUP
+  wait "$gnu_pid"
+  status=$?
+  # A trapped signal returns wait() early, before the child is reaped.
+  while kill -0 "$gnu_pid" 2>/dev/null; do
+    wait "$gnu_pid"
+    status=$?
+  done
+  # Past the deadline a 137 is timeout(1) dying with the group it KILLed, i.e.
+  # the deadline; before it, the command's own death by KILL.
+  if [ "$status" -eq 137 ] && [ "$SECONDS" -ge "$SECS" ]; then
+    status=124
+  fi
+  exit "$status"
 fi
 
 # perl fallback: fork, put the child in its own process group, poll for exit
