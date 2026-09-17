@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "title": "cf-review finite quality corpus — ANSWER KEY",
+  "built_for": "docs/plans/2026-09-15-cf-review-lean-pipeline task 5.1",
+  "warning": "This file is the answer key. It must never be inside the scope of a review that is being scored, and its contents must never be pasted into a reviewer prompt. Materialise a case into a git repo OUTSIDE this repository and dispatch the reviewer from there. A review dispatched from a session whose working directory is the coding-friend repo can grep its way to this file; such a run is contaminated and must be reported as contaminated, not scored as a pass.",
+  "fixture_policy": {
+    "synthetic": "All fixture code is synthetic. It is never executed, imported, built or linted by this repository; it exists only to be read as a diff.",
+    "no_secrets": "No secrets, credentials or user data. Placeholder values use a DUMMY_ marker (DUMMY_APP, DUMMY_EXPORT_BODY).",
+    "no_hints": "The fixture trees contain no comment, name or marker that points at a seeded defect. Every hint lives in this file."
+  },
+  "scoring": {
+    "hit_rule": "A ground-truth entry counts as a hit when the review reports it in the 🚨 Critical or the ⚠️ Important section (both block a commit; a 💡 Suggestion is a miss), cites the ground-truth file, and its text names the mechanism in must_mention. Reported severity is recorded for transparency but Critical-vs-Important disagreement does not change a hit into a miss.",
+    "false_positive_rule": "A false positive is any Critical or Important finding that does not match a ground-truth entry and is contradicted by the code — including any such finding on a bait entry. A blocking finding that turns out to be a real defect nobody seeded is recorded separately as unseeded_true_positive, with the evidence that makes it real. Adjudication is a human judgement and must cite the line it relies on.",
+    "gates": {
+      "critical_recall_min": 1,
+      "important_recall_min": 0.8,
+      "clean_case_max_blocking_findings": 0,
+      "bait_max_blocking_findings": 0,
+      "require_review_status": "COMPLETE",
+      "max_grandchildren": 0,
+      "require_expected_native_agents": true
+    },
+    "gate_notes": "These are the absolute quality gates from the plan README. There is no relative gate against a live baseline: the pre-5.0 specialists took 5–16 minutes each (baseline.md), so a paired live baseline is censored by any run cap worth spending and cannot produce a comparable recall number."
+  },
+  "cases": [
+    {
+      "id": "quick-clean",
+      "title": "Small, genuinely correct change — false-positive control",
+      "expected_mode": "QUICK",
+      "expected_native_agents": 1,
+      "summary": "formatDuration gains a maxParts option that keeps only the N largest units. The implementation, the clamping helper and the new tests are all correct; the required-finding count is zero.",
+      "changed_files": ["src/duration.js", "test/duration.test.js"],
+      "ground_truth": [],
+      "bait": [
+        {
+          "id": "QC-B1",
+          "file": "src/duration.js",
+          "line": 16,
+          "anchor": "for (let i = 0; i <= UNITS.length - 1; i++) {",
+          "looks_like": "An off-by-one: `<=` as the loop comparison.",
+          "why_correct": "The bound is `UNITS.length - 1`, so `i <= UNITS.length - 1` visits indices 0..length-1 exactly once — identical to `i < UNITS.length`. Verbose, not wrong; at most a 💡."
+        },
+        {
+          "id": "QC-B2",
+          "file": "src/duration.js",
+          "line": 22,
+          "anchor": "if (parts.length >= maxParts) {",
+          "looks_like": "A truncation check in the wrong place — it sits inside `if (value > 0)`, so it is skipped whenever a unit contributes nothing.",
+          "why_correct": "`parts` only ever grows inside that same branch, so the length cannot reach `maxParts` on an iteration that pushes nothing; checking anywhere else cannot change the output. `normalizeMaxParts` clamps to [1, UNITS.length], so the default still prints every unit and the loop always terminates."
+        }
+      ]
+    },
+    {
+      "id": "standard-correctness",
+      "title": "Several files with a real correctness bug and a regression-test gap",
+      "expected_mode": "STANDARD",
+      "expected_native_agents": 1,
+      "summary": "A cache store is refactored behind an isFresh() helper, a batch runner gains a progress heartbeat and a retry option, and a new report builder is added untracked.",
+      "changed_files": [
+        "src/cache-store.js",
+        "src/batch-runner.js",
+        "src/run-report.js",
+        "test/batch-runner.test.js"
+      ],
+      "ground_truth": [
+        {
+          "id": "ST-I1",
+          "severity": "important",
+          "layer": "L2",
+          "file": "src/cache-store.js",
+          "line": 17,
+          "anchor": "if (this.isFresh(entry)) {",
+          "description": "The expiry branch in get() is inverted: a fresh entry is deleted and reported as a miss, while an expired entry is returned forever.",
+          "must_mention": "that the freshness condition in get() is inverted (fresh entries are evicted / stale entries are served) — pointing only at the existence of isFresh, or only at prune(), is not a hit",
+          "supporting_evidence": "prune() at src/cache-store.js:30 uses the same helper with the opposite sense (`!this.isFresh`), and test/cache-store.test.js asserts the pre-change behaviour."
+        },
+        {
+          "id": "ST-I2",
+          "severity": "important",
+          "layer": "L2",
+          "file": "src/batch-runner.js",
+          "line": 24,
+          "anchor": "clearInterval(heartbeat);",
+          "description": "The heartbeat interval is cleared only on the success path, so a task that exhausts its retries leaks a live timer.",
+          "must_mention": "that clearInterval is skipped when runOne throws (the rethrow at src/batch-runner.js:46 propagates out of runBatch), leaking the interval — the fix being try/finally or an equivalent",
+          "supporting_evidence": "setInterval at src/batch-runner.js:9; the throw that escapes it at src/batch-runner.js:46."
+        },
+        {
+          "id": "ST-I3",
+          "severity": "important",
+          "layer": "L4",
+          "file": "test/batch-runner.test.js",
+          "line": 31,
+          "anchor": "test(\"accepts the retryFailed option\", async () => {",
+          "description": "The only test added for the retry feature drives a runTask that never fails, so the retry loop, the backoff and the final rethrow have no coverage.",
+          "must_mention": "that no test exercises a failing task, so the new retry/backoff/rethrow branch of runBatch is untested — a generic 'add more tests' remark is not a hit",
+          "supporting_evidence": "The uncovered branch is src/batch-runner.js:36-46."
+        }
+      ],
+      "bait": [
+        {
+          "id": "ST-B1",
+          "file": "src/batch-runner.js",
+          "line": 29,
+          "anchor": "results.length > 0 ? results[results.length - 1].value : undefined,",
+          "looks_like": "An off-by-one index into results.",
+          "why_correct": "`results.length - 1` is the last element by definition and the access is guarded by `results.length > 0` in the same expression."
+        },
+        {
+          "id": "ST-B2",
+          "file": "src/batch-runner.js",
+          "line": 19,
+          "anchor": "handlers.cache.set(task.id, outcome.value);",
+          "looks_like": "A missing `await`, sitting between awaited calls inside an async loop.",
+          "why_correct": "CacheStore.set (src/cache-store.js:24) is synchronous and returns undefined; awaiting it would change nothing. The test at test/batch-runner.test.js:45 passes a synchronous stub."
+        },
+        {
+          "id": "ST-B3",
+          "file": "src/run-report.js",
+          "line": 12,
+          "anchor": "i + 1 < rows.length && rows[i + 1].id === row.id ? \" (duplicate id)\" : \"\";",
+          "looks_like": "An out-of-bounds read on the last row.",
+          "why_correct": "`i + 1 < rows.length` short-circuits before `rows[i + 1]` is evaluated."
+        }
+      ]
+    },
+    {
+      "id": "deep-trust-boundary",
+      "title": "Larger change with a trust-boundary bug, a missing authorization check and a boundary bug",
+      "expected_mode": "DEEP",
+      "expected_native_agents": 2,
+      "summary": "A document service gains an export route, a delete route, a sorted listing and a pagination helper.",
+      "changed_files": [
+        "src/authorize-request.js",
+        "src/document-routes.js",
+        "src/document-store.js",
+        "src/page-range.js",
+        "src/render-queue.js",
+        "test/document-routes.test.js"
+      ],
+      "ground_truth": [
+        {
+          "id": "DP-C1",
+          "severity": "critical",
+          "layer": "L3",
+          "file": "src/document-routes.js",
+          "line": 47,
+          "anchor": "const target = path.join(EXPORT_ROOT, request.query.file);",
+          "description": "Path traversal: the attacker-controlled query parameter `file` is joined onto EXPORT_ROOT and read from disk with no normalization or containment check.",
+          "must_mention": "that request.query.file is untrusted input reaching the filesystem read (src/document-routes.js:48) and that path.join does not contain `..`, so any readable file can be exported",
+          "supporting_evidence": "EXPORT_ROOT at src/document-routes.js:7; the read at src/document-routes.js:48."
+        },
+        {
+          "id": "DP-C2",
+          "severity": "critical",
+          "layer": "L3",
+          "file": "src/document-routes.js",
+          "line": 64,
+          "anchor": "async function deleteDocument(request, deps) {",
+          "description": "The new DELETE route performs no authorization at all: it never calls assertRole and never calls the canDelete helper added in the same change, so any caller can delete any document, including locked ones and ones they do not own.",
+          "must_mention": "that deleteDocument has no role/ownership check while every sibling route calls assertRole, and that the change's own canDelete helper is never called",
+          "supporting_evidence": "assertRole at src/document-routes.js:19, :29 and :43; canDelete defined and exported at src/authorize-request.js:27 with no call site."
+        },
+        {
+          "id": "DP-I1",
+          "severity": "important",
+          "layer": "L2",
+          "file": "src/page-range.js",
+          "line": 9,
+          "anchor": "const end = first + size - 1;",
+          "description": "Boundary bug: slice() is end-exclusive, so every page returns size-1 items and a page size of 1 returns nothing.",
+          "must_mention": "that the exclusive end should be `first + size`, so the last item of every page is dropped (and size 1 yields an empty page)",
+          "supporting_evidence": "The slice at src/page-range.js:10; the route that consumes it at src/document-routes.js:32."
+        },
+        {
+          "id": "DP-I2",
+          "severity": "important",
+          "layer": "L4",
+          "file": "test/document-routes.test.js",
+          "line": 59,
+          "anchor": "test(\"exports a document body for a viewer\", async () => {",
+          "description": "The only test added for this change covers the export happy path. There is no test for the new DELETE route and none asserting that a traversal value of `file` is rejected.",
+          "must_mention": "that the new delete route has no test at all, or that no test covers rejecting a traversal path — a generic 'more tests would help' remark is not a hit",
+          "supporting_evidence": "Routes registered at src/document-routes.js:13-14; the test file ends at line 70 with no DELETE case."
+        }
+      ],
+      "bait": [
+        {
+          "id": "DP-B1",
+          "file": "src/document-routes.js",
+          "line": 53,
+          "anchor": "owner: document.ownerId,",
+          "looks_like": "A null dereference — `document` comes straight from a store lookup that can return null.",
+          "why_correct": "assertExists(document, …) on src/document-routes.js:45 throws NotFoundError when the lookup returned null (src/document-store.js:57-62), so the value is non-null at every later use."
+        },
+        {
+          "id": "DP-B2",
+          "file": "src/document-store.js",
+          "line": 47,
+          "anchor": "`SELECT id, title FROM documents WHERE owner_id = ? ORDER BY ${column} DESC`,",
+          "looks_like": "SQL injection: a template literal interpolated straight into a query on a request-supplied sort value.",
+          "why_correct": "`column` is not the user value. The user value is only a key into the hard-coded SORT_COLUMNS map (src/document-store.js:1-5) and an unknown key falls back to `updated_at`, so the interpolated text is one of three literals. The one user-controlled value, ownerId, still goes through a `?` placeholder."
+        },
+        {
+          "id": "DP-B3",
+          "file": "src/render-queue.js",
+          "line": 19,
+          "anchor": "throw error;",
+          "looks_like": "A catch block that swallows a job failure after logging it.",
+          "why_correct": "It rethrows on the same line, so drain() still rejects and the caller still sees the failure; onError is a notification, not a handler."
+        }
+      ]
+    }
+  ]
+}
