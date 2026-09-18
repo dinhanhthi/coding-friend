@@ -163,7 +163,9 @@ export function extractCompareSplit(
   let afterLine = withCf.end;
   while (
     afterLine < lines.length &&
-    (lines[afterLine] === ">" || lines[afterLine] === "> " || lines[afterLine] === "")
+    (lines[afterLine] === ">" ||
+      lines[afterLine] === "> " ||
+      lines[afterLine] === "")
   ) {
     afterLine += 1;
   }

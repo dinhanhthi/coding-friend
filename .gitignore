@@ -77,3 +77,5 @@ docs/context
 .codex/
 AGENTS.md
 !plugin-antigravity/rules/AGENTS.md
+
+docs/skills-agents-tom-tat.md

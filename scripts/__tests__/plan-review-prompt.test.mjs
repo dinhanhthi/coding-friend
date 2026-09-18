@@ -68,10 +68,7 @@ test("embeds cf-plan-review folder files and the four output headings", () => {
   assert.ok(stdout.includes("💡 Suggestions"), "missing Suggestions");
   assert.ok(stdout.includes("📋 Summary"), "missing Summary");
   // Line-anchored: embedded plan bodies mention these strings in prose.
-  assert.ok(
-    !/^### overview\./m.test(stdout),
-    "must skip overview.* files",
-  );
+  assert.ok(!/^### overview\./m.test(stdout), "must skip overview.* files");
   assert.ok(!/^### review\.md$/m.test(stdout), "must skip review.md");
 });
 

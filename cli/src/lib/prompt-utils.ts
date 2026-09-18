@@ -263,6 +263,22 @@ export function getMergedValue(
   return globalCfg ? (globalCfg as Record<string, unknown>)[key] : undefined;
 }
 
+/** Paths written into the managed `.gitignore` block by `cf init` / `cf config`. */
+export function cfGitignoreEntries(docsDir: string): string[] {
+  return [
+    `${docsDir}/plans/`,
+    `${docsDir}/memory/`,
+    `${docsDir}/research/`,
+    `${docsDir}/sessions/`,
+    `${docsDir}/reviews/`,
+    `${docsDir}/context/`,
+    `${docsDir}/warm/`,
+    `${docsDir}/later/`,
+    `${docsDir}/learn/`,
+    ".coding-friend/",
+  ];
+}
+
 export function ensureDocsFolders(docsDir: string, subfolders: string[]): void {
   if (!existsSync(docsDir)) {
     run("mkdir", ["-p", docsDir]);

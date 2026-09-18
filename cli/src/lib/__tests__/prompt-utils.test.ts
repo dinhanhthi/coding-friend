@@ -39,6 +39,7 @@ vi.mock("@inquirer/prompts", () => ({
 import {
   applyDocsDirChange,
   BackError,
+  cfGitignoreEntries,
   ensureDocsFolders,
   escSelect,
   resolveHostFlags,
@@ -246,6 +247,31 @@ describe("applyDocsDirChange — global scope, no local docsDir", () => {
 
     expect(existsSync(oldDir)).toBe(false);
     expect(existsSync(newPath)).toBe(true);
+  });
+});
+
+// ─── cfGitignoreEntries ──────────────────────────────────────────────
+
+describe("cfGitignoreEntries", () => {
+  it("includes every CF-generated docs folder plus .coding-friend/", () => {
+    expect(cfGitignoreEntries("docs")).toEqual([
+      "docs/plans/",
+      "docs/memory/",
+      "docs/research/",
+      "docs/sessions/",
+      "docs/reviews/",
+      "docs/context/",
+      "docs/warm/",
+      "docs/later/",
+      "docs/learn/",
+      ".coding-friend/",
+    ]);
+  });
+
+  it("prefixes docs folders with a custom docsDir", () => {
+    expect(cfGitignoreEntries("notes")).toContain("notes/later/");
+    expect(cfGitignoreEntries("notes")).toContain("notes/learn/");
+    expect(cfGitignoreEntries("notes")).toContain(".coding-friend/");
   });
 });
 

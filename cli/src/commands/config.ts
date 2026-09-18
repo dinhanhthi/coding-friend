@@ -37,6 +37,7 @@ import {
   formatScopeLabel,
   getMergedValue,
   applyDocsDirChange,
+  cfGitignoreEntries,
 } from "../lib/prompt-utils.js";
 import { run } from "../lib/exec.js";
 import {
@@ -879,16 +880,7 @@ async function editGitignore(
     (globalCfg?.docsDir as string | undefined) ??
     DEFAULT_CONFIG.docsDir;
 
-  const allEntries = [
-    `${docsDir}/plans/`,
-    `${docsDir}/memory/`,
-    `${docsDir}/research/`,
-    `${docsDir}/sessions/`,
-    `${docsDir}/reviews/`,
-    `${docsDir}/context/`,
-    `${docsDir}/warm/`,
-    ".coding-friend/",
-  ];
+  const allEntries = cfGitignoreEntries(docsDir);
 
   const existing = existsSync(".gitignore")
     ? readFileSync(".gitignore", "utf-8")

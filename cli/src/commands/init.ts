@@ -74,6 +74,7 @@ import {
   getMergedValue,
   applyDocsDirChange,
   ensureDocsFolders,
+  cfGitignoreEntries,
 } from "../lib/prompt-utils.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
 import {
@@ -452,16 +453,7 @@ async function stepGitignore(docsDir: string): Promise<void> {
     return;
   }
 
-  const allEntries = [
-    `${docsDir}/plans/`,
-    `${docsDir}/memory/`,
-    `${docsDir}/research/`,
-    `${docsDir}/sessions/`,
-    `${docsDir}/reviews/`,
-    `${docsDir}/context/`,
-    `${docsDir}/warm/`,
-    ".coding-friend/",
-  ];
+  const allEntries = cfGitignoreEntries(docsDir);
 
   let entries = allEntries;
   if (choice === "partial") {

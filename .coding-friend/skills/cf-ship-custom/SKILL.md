@@ -103,10 +103,10 @@ After the commit is pushed, create git tags and push them to trigger CI/CD.
 
 **You only push these by hand** (never invent extra host tags):
 
-| What you push | Tag | What it triggers |
-| ------------- | --- | ---------------- |
-| Plugin | `v{version}` e.g. `v0.15.0` | One GitHub Release covering Claude + Codex + AGY (generated trees in the same tagged commit) |
-| CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release |
+| What you push           | Tag                                 | What it triggers                                                                             |
+| ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| Plugin                  | `v{version}` e.g. `v0.15.0`         | One GitHub Release covering Claude + Codex + AGY (generated trees in the same tagged commit) |
+| CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release                                                                 |
 
 How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`) plus Codex/AGY drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`) and Antigravity (`plugin-antigravity/`) ship as generated artifacts in the tagged commit — not as extra tags.
 
