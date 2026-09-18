@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.40.5 (2026-09-18)
+
+- Fix `cf init` / `cf config` missing `docs/later/` and `docs/learn/` in the `.gitignore` block they write — deferred items from `capture-later.sh` and `/cf-teach` notes were left unignored. Both commands now share one entry list so they cannot drift again [#58992f6d](https://github.com/dinhanhthi/coding-friend/commit/58992f6d)
+
 ## v1.40.4 (2026-09-17)
 
 - Add `review.agentTimeout` / `review.nativeTimeout` to the config schema (file-only tuning knobs, defaults 300s/600s) backing `cf-review`'s new deadline enforcement [#289d1015](https://github.com/dinhanhthi/coding-friend/commit/289d1015)
