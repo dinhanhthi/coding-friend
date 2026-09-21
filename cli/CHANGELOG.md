@@ -7,7 +7,7 @@
 
 ## v1.41.0 (2026-09-21)
 
-- Add `planAuto` to `cf config` and `cf init` so `/cf-plan` can default into autopilot without `--auto` (same editor pattern as `tdd`)
+- Add `planAuto` to `cf config` and `cf init` so `/cf-plan` can default into autopilot without `--auto` (same editor pattern as `tdd`) [#b63cc3b0](https://github.com/dinhanhthi/coding-friend/commit/b63cc3b0)
 
 ## v1.40.5 (2026-09-18)
 
