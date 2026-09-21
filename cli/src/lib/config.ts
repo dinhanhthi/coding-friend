@@ -104,6 +104,7 @@ const ConfigSchema = z.strictObject({
   scoutBlock: z.boolean().optional(),
   disableGUIPlan: z.boolean().optional(),
   guiPlanFormat: z.enum(["html", "md"]).optional(),
+  planAuto: z.boolean().optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -122,6 +123,7 @@ const KNOWN_KEYS = [
   "scoutBlock",
   "disableGUIPlan",
   "guiPlanFormat",
+  "planAuto",
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */

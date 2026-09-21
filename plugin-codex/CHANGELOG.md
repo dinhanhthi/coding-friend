@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.0 (2026-09-21)
+
+- Add `planAuto` config so `$cf-plan` can default into autopilot without `--auto` (local overrides global); `--no-auto` forces off for one run; `$cf-plan-resume` still honors only the saved plan's `auto: true`
+
 ## v0.43.5 (2026-09-17)
 
 - Fix `cf-review`'s enforced deadline on hosts with GNU `timeout(1)` (Linux): a reviewer that ignored `TERM` reported `error … exited 137` instead of `timeout`, a reviewer killed by a signal lost its `128+N` exit code, and cancelling a review orphaned the agent CLI instead of stopping it [#beaccd87](https://github.com/dinhanhthi/coding-friend/commit/beaccd87)

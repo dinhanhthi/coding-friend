@@ -472,6 +472,28 @@ describe("loadConfig validation", () => {
     );
     expect(config.disableGUIPlan).toBeUndefined();
   });
+
+  it("accepts planAuto as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planAuto: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.planAuto).toBe(true);
+  });
+
+  it("warns and strips planAuto when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planAuto: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("planAuto"),
+    );
+    expect(config.planAuto).toBeUndefined();
+  });
 });
 
 describe("resolveProjectMemoryDir", () => {

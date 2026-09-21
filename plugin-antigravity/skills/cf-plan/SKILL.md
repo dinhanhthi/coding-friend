@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use /cf-advise), or resuming
   an existing plan (use /cf-plan-resume).
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-21
 ---
 
 # /cf-plan
@@ -18,10 +18,11 @@ Create an implementation plan for: **$ARGUMENTS**
 
 ## Modes
 
-- `--fast` (`--quick`) — skip discovery + planner; plan stays in chat (Track progress), never writes a file unless `--auto` or 2+ phases (then normal).
+- `--fast` (`--quick`) — skip discovery + planner; plan stays in chat (Track progress), never writes a file unless autopilot (`--auto` / `planAuto`) or 2+ phases (then normal).
 - `--hard` — extra discovery, deeper exploration, rollback planning.
-- `--auto` — after approval, run all phases (review + fix + commit, no prompts). Combines with any mode.
-- `--inline` (`--no-file`) — no plan file; chat only; Track progress. Incompatible with `--auto`.
+- `--auto` — after approval, run all phases (review + fix + commit, no prompts). Combines with any mode. Also on when config `planAuto: true` (local overrides global) unless `--no-auto`.
+- `--no-auto` — force autopilot off for this run, even if `planAuto: true`. Incompatible with `--auto`.
+- `--inline` (`--no-file`) — no plan file; chat only; Track progress. Incompatible with autopilot (`--auto` or `planAuto`).
 - `--gui` (`--human`; or config `disableGUIPlan: false`; `guiPlanFormat` html|md) — overview at Step 6 when a file is written. Fast: none unless `--gui`.
 - `--model <alias>` — pin cf-planner at Step 3 (`--model <alias>` or `--model=<alias>`).
 - `--add-tests` (`--tdd`) — TDD for implementation.
@@ -42,13 +43,13 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 0. **Resume** — bare `--resume` → print `> ℹ️ Resuming a plan is now \`/cf-plan-resume <plan>\` (not \`/cf-plan --resume\`).` and stop.
 1. **Explicit flag** — `--quick` → `--fast`; honor `--fast` or `--hard`.
-   1a. **Autopilot** — `--auto` → true; strip. Announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.`
-   1b. **Inline** — `--no-file` → `--inline`; if with `--auto` refuse: `> ⚠️ --inline cannot be combined with --auto (autopilot relies on the on-disk plan file for state). Pick one.` Else announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Track progress.`
+   1a. **Autopilot** — if `$ARGUMENTS` contains both `--auto` and `--no-auto` → print `> ⚠️ --auto cannot be combined with --no-auto. Pick one.` and stop. `--no-auto` → false; strip. `--auto` → true; strip. Else merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins); true only when `planAuto` is explicitly `true`. When true, announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.` If it came from config (not `--auto`), use: `> 🤖 Autopilot enabled (planAuto: true) — phases will run end-to-end without confirmation prompts.` `/cf-plan-resume` does **not** read `planAuto` — only the saved plan's `auto: true` + `## AUTOPILOT` section.
+   1b. **Inline** — `--no-file` → `--inline`; if autopilot is on (from `--auto` or `planAuto`) refuse: `> ⚠️ --inline cannot be combined with autopilot (--auto or planAuto; autopilot relies on the on-disk plan file for state). Pick one.` Else announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Track progress.`
    1c. **Overview** — `--human`/`-gui`/`-human` → `--gui`. `--gui` → humanDoc=true (overrides fast + config). Else if fast → false. Else merge global+local config (local wins); true only when `disableGUIPlan` is explicitly `false`. Format: `guiPlanFormat` (default `html`). None for `--inline`.
    1d. **`--model` flag** <!-- cf-plan-model-flag -->
    Accept `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value**. Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases or full model IDs. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.
 2. **Auto-detect** — 2+ signals. Fast: existing pattern, single module, additive, "just/simple/quick". Hard: multi-module, breaking/schema, security, "refactor/migrate/rewrite", public API.
-3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless `--auto` (always writes).
+3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless autopilot (always writes).
 4. **`--model` vs resolved fast mode** — after explicit `--fast`/`--quick` or auto-detect: if `--model` was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (skip if 1d already warned); do not pass the model at Step 3.
 
 ### Step 0.7: Check Memory
@@ -92,7 +93,7 @@ Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/App
 
 ### Step 6: Save the Plan
 
-> **No-file modes** (`--inline`, or `--fast` without `--auto`): skip the write; present the plan in chat; Track progress with one item per task; still create the context file. `--fast` with 2+ phases → announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.` and write the folder (no `brief.md`). `--fast --auto` always writes (no `brief.md`).
+> **No-file modes** (`--inline`, or `--fast` without autopilot): skip the write; present the plan in chat; Track progress with one item per task; still create the context file. `--fast` with 2+ phases → announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.` and write the folder (no `brief.md`). `--fast` + autopilot always writes (no `brief.md`).
 
 **Layout & human overview:** `{docsDir}/plans/YYYY-MM-DD-<slug>/`, entry `README.md` (small plan = README only; big plan = README + `phase-N-<name>.md`); `brief.md` normal/hard only. Icons `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED`. Details and the overview doc rules: `templates/plan-templates.md`.
 
@@ -109,7 +110,7 @@ Ask **"Ready to start implementing?"** Yes + autopilot → `modes/autopilot.md` 
 
 ## Templates
 
-Read `<plugin-root>/skills/cf-plan/templates/plan-templates.md` when writing the plan file (Small plan, Big plan, Brief, Layout, Human overview, Step 2/3 prompts; overview templates `overview-template.{html,md}` with `<!-- FILL: … -->` markers). Autopilot block: `modes/autopilot.md` (only with `--auto`).
+Read `<plugin-root>/skills/cf-plan/templates/plan-templates.md` when writing the plan file (Small plan, Big plan, Brief, Layout, Human overview, Step 2/3 prompts; overview templates `overview-template.{html,md}` with `<!-- FILL: … -->` markers). Autopilot block: `modes/autopilot.md` (only when autopilot is on — `--auto` or `planAuto`).
 
 ## Completion Protocol
 

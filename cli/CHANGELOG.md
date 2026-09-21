@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.41.0 (2026-09-21)
+
+- Add `planAuto` to `cf config` and `cf init` so `/cf-plan` can default into autopilot without `--auto` (same editor pattern as `tdd`)
+
 ## v1.40.5 (2026-09-18)
 
 - Fix `cf init` / `cf config` missing `docs/later/` and `docs/learn/` in the `.gitignore` block they write — deferred items from `capture-later.sh` and `/cf-teach` notes were left unignored. Both commands now share one entry list so they cannot drift again [#58992f6d](https://github.com/dinhanhthi/coding-friend/commit/58992f6d)

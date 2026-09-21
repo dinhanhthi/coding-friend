@@ -76,10 +76,11 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 - `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Available modes:
   - (none) — normal: full workflow, writes the plan file
-  - `--fast` / `--quick` — skip discovery and the planner; plan stays in chat, no file. If the plan turns multi-phase it switches to normal and writes the file. Combined with `--auto`, the file is always written
+  - `--fast` / `--quick` — skip discovery and the planner; plan stays in chat, no file. If the plan turns multi-phase it switches to normal and writes the file. Combined with autopilot (`--auto` or `planAuto`), the file is always written
   - `--hard` — extra discovery plus rollback planning
-  - `--auto` — after approval, run every phase (review, fix Critical/Important, commit) with no prompts; combines with any mode
-  - `--inline` / `--no-file` — plan in chat only, no file; cannot combine with `--auto`
+  - `--auto` — after approval, run every phase (review, fix Critical/Important, commit) with no prompts; combines with any mode. Also on when config `planAuto: true` unless `--no-auto`
+  - `--no-auto` — force autopilot off for this run, even if `planAuto: true`
+  - `--inline` / `--no-file` — plan in chat only, no file; cannot combine with autopilot (`--auto` or `planAuto`)
   - `--model <alias>` — pin `cf-planner` (`opus` / `sonnet` / `haiku` / `fable`); ignored in fast
   - `--gui` / `--human` — also write a human overview doc (off by default). To turn that doc on for every run, use `cf config`
   - `--add-tests` / `--tdd` — not a plan mode; forwarded to every `cf-implementer` so each task uses TDD. Without it, implementers write code with no new tests
@@ -293,6 +294,7 @@ You have two config files. Global is `~/.coding-friend/config.json`. Project is 
   "language": "en",
   "docsDir": "docs",
   "tdd": false,
+  "planAuto": false,
   "autoApprove": false,
   "autoApproveLLM": false,
   "review": {
@@ -325,6 +327,7 @@ Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configura
 | `learn`                 | Learn settings: `language`, `outputDir`, `categories`. Default `outputDir`: `~/.coding-friend/learn`.                                                                                                                                                                                                       |
 | `review`                | Review settings. Nested object; `withCodex` runs a Codex second opinion; `agentTimeout` (default 300) is enforced on each external reviewer subprocess; `nativeTimeout` (default 600) is a cooperative budget for each in-session reviewer job; `maxRounds` (default 5) caps the autopilot review-fix loop. |
 | `tdd`                   | Boolean. Enable TDD (RED→GREEN→REFACTOR) by default.                                                                                                                                                                                                                                                        |
+| `planAuto`              | Boolean. Default `/cf-plan` into autopilot without `--auto`. `--no-auto` forces off. `/cf-plan-resume` ignores this key. Default: `false`.                                                                                                                                                                  |
 | `memory`                | Object. MemoryConfig for search tier, embeddings, and capture.                                                                                                                                                                                                                                              |
 
 `memory` (MemoryConfig) keys:

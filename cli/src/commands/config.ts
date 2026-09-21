@@ -660,6 +660,28 @@ async function editTdd(
   writeToScope(scope, { tdd: value });
 }
 
+async function editPlanAuto(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("planAuto", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Enable /cf-plan autopilot by default? (runs phases end-to-end without confirmation — same as --auto)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { planAuto: value });
+}
+
 // ─── Review ──────────────────────────────────────────────────────────
 
 function getReviewConfig(
@@ -1080,6 +1102,11 @@ export async function configCommand(): Promise<void> {
       | boolean
       | undefined;
 
+    const planAutoScope = getScopeLabel("planAuto", globalCfg, localCfg);
+    const planAutoVal = getMergedValue("planAuto", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -1158,6 +1185,12 @@ export async function configCommand(): Promise<void> {
               "  Enable TDD (RED→GREEN→REFACTOR) by default for all implementations",
           },
           {
+            name: `Plan autopilot ${formatScopeLabel(planAutoScope)}${planAutoVal !== undefined ? ` (${planAutoVal})` : ""}`,
+            value: "planAuto",
+            description:
+              "  Enable /cf-plan autopilot by default (same as passing --auto)",
+          },
+          {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
@@ -1229,6 +1262,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "tdd":
         await editTdd(globalCfg, localCfg);
+        break;
+      case "planAuto":
+        await editPlanAuto(globalCfg, localCfg);
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);

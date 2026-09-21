@@ -2,14 +2,14 @@
 
 Copy these when writing the plan at Step 5–6. Do not invent a different layout.
 
-When `--auto`, copy the AUTOPILOT CONTRACT fenced block from `modes/autopilot.md` into every `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Omit that whole section when `auto: false`.
+When autopilot is on (`--auto` or config `planAuto: true`), copy the AUTOPILOT CONTRACT fenced block from `modes/autopilot.md` into every `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Omit that whole section when `auto: false`.
 
 ## Small plan (1 phase — written as `README.md` inside the plan folder)
 
 ```markdown
 ---
 slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `/cf-plan-resume <slug>`
-auto: false # set true when created with --auto
+auto: false # set true when created with --auto or when planAuto defaulted the run
 status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Set at creation; flipped to done/failed at terminal completion (see modes/execute.md "Plan done").
 ---
 
@@ -35,7 +35,7 @@ status: in-progress # machine-readable plan status: in-progress | done | failed.
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
 
 ## Progress
 
@@ -80,7 +80,7 @@ After implementation: `/cf-review` → `/cf-commit`
 ```markdown
 ---
 slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `/cf-plan-resume <slug>`
-auto: false # set true when created with --auto
+auto: false # set true when created with --auto or when planAuto defaulted the run
 status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Frontmatter is the authority; the body **Status:** line mirrors it for humans (see modes/execute.md "Plan done").
 ---
 
@@ -100,7 +100,7 @@ status: in-progress # machine-readable plan status: in-progress | done | failed.
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
 
 ## Progress
 
@@ -138,7 +138,7 @@ After implementation: `/cf-review` → `/cf-commit`
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when --auto: copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
 
 ## Progress
 

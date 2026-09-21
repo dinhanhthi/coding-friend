@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-09-16
+updated: 2026-09-21
 ---
 
 # /cf-help — Coding Friend Help
@@ -43,7 +43,7 @@ Never invent a flag, config key, hook name, CLI command, or host difference.
 
 ### Step 2: Provide overview (if general question)
 
-Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Check skills first; TDD optional (`--add-tests` or `tdd: true`); verify before claiming done.
+Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Check skills first; TDD optional (`--add-tests` or `tdd: true`); `/cf-plan` autopilot optional (`--auto` or `planAuto: true`, `--no-auto` forces off); verify before claiming done.
 
 Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent agy` / `--agy`). Plugin works alone; `coding-friend-cli` is optional. Skills never call `cf`. Flags / config / native prompt-reduction: `topics.md`.
 
@@ -51,8 +51,8 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 - `/cf-advise [decision]` — ⚡⚡ — Advisory interview. `--quick`, `--save`
 - `/cf-ask [question]` — ⚡⚡ — Codebase Q&A → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot review-fix cap: `review.maxRounds` (default 5). Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
-- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors `auto: true`.
+- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--no-auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot also from config `planAuto: true` (local overrides global) unless `--no-auto`. Autopilot review-fix cap: `review.maxRounds` (default 5). Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
+- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors that plan's `auto: true` + `## AUTOPILOT` section. Does **not** read config `planAuto`.
 - `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped). Writes `review.md` into the plan folder, offers to apply Critical/Important findings.
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
 - `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default; `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning. The two timeouts are different mechanisms: `nativeTimeout` is a cooperative budget carried in the in-session reviewer's prompt and bounding the skill's wait — at the deadline the skill cancels the job only if the host offers a cancel, otherwise it marks it timed out and merges what arrived — while `agentTimeout` is really enforced on the external subprocess (TERM, 2s grace, then KILL). External reviewers are opt-in extras — they never count toward the native 1 / 1 / 2. Every report ends with `Review status: COMPLETE | PARTIAL | FAILED`: COMPLETE means the required coverage finished, **not** that there were no findings, and PARTIAL / FAILED blocks the autopilot commit. Scope, depth table, and the trade-off: `topics.md`.

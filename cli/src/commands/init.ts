@@ -898,6 +898,38 @@ async function stepTdd(
   log.success(`Saved to ${targetPath}`);
 }
 
+async function stepPlanAuto(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("planAuto", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  const scopeLabel = getScopeLabel("planAuto", globalCfg, localCfg);
+
+  printStepHeader(
+    `Plan autopilot ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
+    "Enable /cf-plan autopilot by default (same as passing --auto).",
+  );
+
+  const planAutoChoice = await confirm({
+    message:
+      "Enable /cf-plan autopilot by default? (runs phases end-to-end without confirmation — same as --auto)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") {
+    log.dim("Skipped Plan autopilot config.");
+    return;
+  }
+
+  const targetPath =
+    scope === "global" ? globalConfigPath() : localConfigPath();
+  mergeJson(targetPath, { planAuto: planAutoChoice });
+  log.success(`Saved to ${targetPath}`);
+}
+
 async function stepAutoApprove(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
@@ -1130,6 +1162,11 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
       | boolean
       | undefined;
 
+    const planAutoScope = getScopeLabel("planAuto", globalCfg, localCfg);
+    const planAutoVal = getMergedValue("planAuto", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -1217,6 +1254,12 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           "  Enable TDD (RED→GREEN→REFACTOR) by default for all implementations",
       },
       {
+        name: `Plan autopilot ${formatScopeLabel(planAutoScope)}${planAutoVal !== undefined ? ` (${planAutoVal})` : ""}`,
+        value: "planAuto",
+        description:
+          "  Enable /cf-plan autopilot by default (same as passing --auto)",
+      },
+      {
         name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
         value: "autoApprove",
         description:
@@ -1286,6 +1329,23 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
                 ? globalConfigPath()
                 : localConfigPath();
             mergeJson(targetPath, { tdd: tddChoice });
+            log.success(`Saved to ${targetPath}`);
+          }
+          break;
+        }
+        case "planAuto": {
+          const planAutoChoice = await confirm({
+            message:
+              "Enable /cf-plan autopilot by default? (runs phases end-to-end without confirmation — same as --auto)",
+            default: planAutoVal ?? false,
+          });
+          const planAutoTargetScope = await askScope();
+          if (planAutoTargetScope !== "back") {
+            const targetPath =
+              planAutoTargetScope === "global"
+                ? globalConfigPath()
+                : localConfigPath();
+            mergeJson(targetPath, { planAuto: planAutoChoice });
             log.success(`Saved to ${targetPath}`);
           }
           break;
@@ -1588,19 +1648,25 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
       await stepTdd(g, l);
     },
 
-    // Step 9: Auto-approve
+    // Step 9: Plan autopilot
+    async () => {
+      const { globalCfg: g, localCfg: l } = readCfgs();
+      await stepPlanAuto(g, l);
+    },
+
+    // Step 10: Auto-approve
     async () => {
       const { globalCfg: g, localCfg: l } = readCfgs();
       await stepAutoApprove(g, l);
     },
 
-    // Step 10: Plan docs
+    // Step 11: Plan docs
     async () => {
       const { globalCfg: g, localCfg: l } = readCfgs();
       await stepPlanDocs(g, l);
     },
 
-    // Step 11: Claude permissions
+    // Step 12: Claude permissions
     async () => {
       printStepHeader(
         "Configure Claude permissions",

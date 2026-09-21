@@ -54,6 +54,12 @@ coding-friend uses a layered config system:
   // Default: []
   "autoApproveIgnore": [],
 
+  // Default /cf-plan into autopilot without passing --auto.
+  // Local overrides global. --no-auto forces off for one run; --auto forces on.
+  // /cf-plan-resume ignores this key (honors the saved plan's auto: true only).
+  // Default: false
+  "planAuto": false,
+
   // Disable the human overview doc /cf-plan generates next to the agent plan
   // (off by default — costs extra tokens; set false to enable, or pass --gui per run)
   // Default: true

@@ -97,6 +97,7 @@ export interface CodingFriendConfig {
   scoutBlock?: boolean;
   disableGUIPlan?: boolean;
   guiPlanFormat?: "html" | "md";
+  planAuto?: boolean;
 }
 
 export const DEFAULT_CONFIG: Required<
