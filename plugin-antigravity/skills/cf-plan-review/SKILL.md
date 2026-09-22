@@ -1,9 +1,9 @@
 ---
 name: cf-plan-review
 description: >
-  Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; does NOT review code (use /cf-review).
+  Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; --fix/--inline applies Critical/Important findings without asking; does NOT review code (use /cf-review).
 created: 2026-09-05
-updated: 2026-09-16
+updated: 2026-09-22
 ---
 
 # /cf-plan-review
@@ -12,7 +12,7 @@ Review the plan: **$ARGUMENTS**
 
 ## Purpose
 
-Review a saved `/cf-plan` folder (not application code) with a fresh, clean-context subagent of the host that is running this skill. Optionally add external reviewers in parallel. Write `review.md` into the plan folder, then offer to apply Critical/Important findings.
+Review a saved `/cf-plan` folder (not application code) with a fresh, clean-context subagent of the host that is running this skill. Optionally add external reviewers in parallel. Write `review.md` into the plan folder, then offer to apply Critical/Important findings — or apply them immediately with `--fix` (`--inline`).
 
 - Unlike `/cf-review`: that skill reviews a code diff. This skill reviews the plan document before implementation.
 - Unlike `cf-reviewer-plan`: that agent compares implemented code against the plan. This skill checks the plan itself before any code is written.
@@ -39,6 +39,13 @@ Read `docsDir` from `.coding-friend/config.json` (default: `docs`). Prefer `CF_D
   > ⚠ `--<host>` skipped: <Host> is already the in-session reviewer.
 
   No `HOST:` line or a different value → do **NOT** skip. When in doubt, run it.
+
+**Apply flags:**
+
+- Parse `--fix` (alias `--inline`); strip them from `$ARGUMENTS`. `--inline` here means apply findings — it is **not** `/cf-plan`'s no-file mode.
+- If present, set apply=true and print:
+
+  > 🔧 `--fix` — will apply Critical/Important findings after review (no confirmation).
 
 What remains is `<plan>`.
 
@@ -132,11 +139,14 @@ Legacy single-file plan → `{docsDir}/plans/<slug>-review.md`.
 
 Delete `${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md`. Keep `*-plan-result-*.md` and `.log` sidecars.
 
-### Step 8: Offer to apply findings
+### Step 8: Apply findings
 
-If any 🚨 or ⚠️ findings exist, Ask the user: "Apply Critical/Important findings to the plan?"
+If any 🚨 or ⚠️ findings exist:
 
-If the user agrees, edit `README.md` / `phase-N-*.md` yourself (do **not** dispatch cf-implementer). For a legacy single-file plan, edit `<slug>.md`.
+- **`--fix`:** do not Ask. Print `> 🔧 Applying Critical/Important findings to the plan.` and apply immediately.
+- **Default:** Ask the user: "Apply Critical/Important findings to the plan?" Apply only if they agree.
+
+When applying, edit `README.md` / `phase-N-*.md` yourself (do **not** dispatch cf-implementer). For a legacy single-file plan, edit `<slug>.md`.
 
 **MUST guardrails:**
 

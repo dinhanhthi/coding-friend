@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T01:38:19.048Z",
+  "generatedAt": "2026-09-22T08:23:17.447Z",
   "tokenizer": "@lenml/tokenizer-claude",
   "tiers": {
     "low": {
@@ -87,12 +87,12 @@
       "temporal": "updated"
     },
     "cf-help": {
-      "tokens": 2969,
-      "tier": "medium",
+      "tokens": 3061,
+      "tier": "high",
       "type": "slash",
       "model": "haiku",
       "created": "2026-02-17",
-      "updated": "2026-09-16",
+      "updated": "2026-09-22",
       "temporal": "updated"
     },
     "cf-later-do": {
@@ -123,12 +123,12 @@
       "temporal": "updated"
     },
     "cf-plan": {
-      "tokens": 2554,
+      "tokens": 2824,
       "tier": "medium",
       "type": "slash",
       "model": "inherit",
       "created": "2026-02-17",
-      "updated": "2026-09-09",
+      "updated": "2026-09-21",
       "temporal": "updated"
     },
     "cf-plan-resume": {
@@ -141,13 +141,13 @@
       "temporal": "updated"
     },
     "cf-plan-review": {
-      "tokens": 2513,
+      "tokens": 2674,
       "tier": "medium",
       "type": "slash",
       "model": "opus",
       "created": "2026-09-05",
-      "updated": "2026-09-16",
-      "temporal": "new"
+      "updated": "2026-09-22",
+      "temporal": "updated"
     },
     "cf-remember": {
       "tokens": 2742,
