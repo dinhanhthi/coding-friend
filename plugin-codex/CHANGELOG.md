@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.1 (2026-09-22)
+
+- `$cf-plan-review` `--fix` (`--inline`) applies Critical/Important findings immediately after review, without asking [#b693659f](https://github.com/dinhanhthi/coding-friend/commit/b693659f)
+
 ## v0.44.0 (2026-09-21)
 
 - Add `planAuto` config so `$cf-plan` can default into autopilot without `--auto` (local overrides global); `--no-auto` forces off for one run; `$cf-plan-resume` still honors only the saved plan's `auto: true` [#b63cc3b0](https://github.com/dinhanhthi/coding-friend/commit/b63cc3b0)
