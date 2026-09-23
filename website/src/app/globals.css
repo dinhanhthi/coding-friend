@@ -616,6 +616,10 @@ a > code {
   overflow-x: auto;
 }
 
+.prose td:first-child code {
+  white-space: nowrap;
+}
+
 .prose img {
   border: var(--rule);
   border-radius: var(--radius-sm);
