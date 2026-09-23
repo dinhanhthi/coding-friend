@@ -724,7 +724,7 @@ async function editReviewMaxRounds(
     log.dim(`Current: ${currentValue}`);
   }
   log.dim(
-    "Caps how many /cf-review rounds /cf-plan --auto and /cf-tdd --auto run before waiting for you (initial review + fix re-reviews).",
+    "Caps how many /cf-review rounds /cf-plan --auto, /cf-tdd --auto and /cf-review --fix run before waiting for you (initial review + fix re-reviews).",
   );
 
   const raw = await input({

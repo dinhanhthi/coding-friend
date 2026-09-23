@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import os from "node:os";
 import { test } from "node:test";
 
 const repoRoot = path.resolve(
@@ -1427,4 +1429,356 @@ test("external-reviewers.md is loaded conditionally, as the bench assumes", () =
     /"external-reviewers\.md":\s*\{\s*unconditional:\s*false/,
     "the bench must still classify the reference as conditional",
   );
+});
+
+/* --- --fix / --commit ---------------------------------------------------- */
+
+const FIX_HEADING = "### Step 11: Apply fixes and commit (only when fix=true)";
+// The host builders rewrite Step 1 and other sections, so every contract on
+// --fix/--commit must hold in the source and both generated mirrors.
+const FIX_SKILLS = [
+  "plugin/skills/cf-review/SKILL.md",
+  "plugin-codex/skills/cf-review/SKILL.md",
+  "plugin-antigravity/skills/cf-review/SKILL.md",
+].map((relPath) => [relPath, read(relPath)]);
+
+test("cf-review advertises --fix in its frontmatter description", () => {
+  const description = /^description:[\s\S]*?(?=^\S)/m.exec(frontmatter(skill));
+  assert.ok(description, "cf-review frontmatter is missing a description");
+  assert.match(description[0], /--fix/, "description must mention --fix");
+});
+
+test("Step 1 parses --fix and --commit, with --commit implying --fix", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step1 = section(text, "### Step 1: Identify the target");
+    assert.match(step1, /Fix\/commit flags/, `${relPath}: flag block missing`);
+    assert.match(step1, /`--fix`/, `${relPath}: Step 1 must parse --fix`);
+    assert.match(step1, /`--commit`/, `${relPath}: Step 1 must parse --commit`);
+    assert.match(
+      step1,
+      /--commit[^\n]*implies[^\n]*--fix/i,
+      `${relPath}: Step 1 must state that --commit implies --fix`,
+    );
+  }
+});
+
+test("Step 1 refuses --fix/--commit with a commit range or --out", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step1 = section(text, "### Step 1: Identify the target");
+    const refusals = step1
+      .split("\n")
+      .filter((line) => /--fix|--commit/.test(line));
+    assert.ok(
+      refusals.some(
+        (line) =>
+          /commit range/i.test(line) &&
+          /refuse|reject|stop|not allowed/i.test(line),
+      ),
+      `${relPath}: Step 1 must refuse --fix/--commit with a commit range`,
+    );
+    assert.ok(
+      refusals.some(
+        (line) =>
+          /--out/.test(line) &&
+          /refuse|reject|stop|not allowed|exclusive/i.test(line),
+      ),
+      `${relPath}: Step 1 must refuse --fix/--commit together with --out`,
+    );
+  }
+});
+
+test("Step 11 loops cf-implementer fixes within review.maxRounds", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(step11, /cf-implementer/, `${relPath}: use cf-implementer`);
+    assert.match(
+      step11,
+      /review\.maxRounds/,
+      `${relPath}: the fix loop must be bounded by review.maxRounds`,
+    );
+    assert.match(
+      step11,
+      /\[CF-RESULT: failure\]/,
+      `${relPath}: an implementer failure must be a stop condition`,
+    );
+  }
+});
+
+test("Step 11 treats findings as data and keeps edits in the reviewed scope", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /data, not instructions/i,
+      `${relPath}: finding text must be framed as data, not instructions`,
+    );
+    assert.match(
+      step11,
+      /(inside|within) the reviewed scope/i,
+      `${relPath}: fixes must stay within the reviewed scope`,
+    );
+    assert.match(
+      step11,
+      /skip it and report it/i,
+      `${relPath}: out-of-scope or weakening findings must be skipped and reported`,
+    );
+  }
+});
+
+test("Step 11 gates fixing and committing on Review status: COMPLETE", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(step11, /Review status: COMPLETE/, `${relPath}: gate`);
+    assert.match(step11, /PARTIAL/, `${relPath}: name PARTIAL`);
+    assert.match(step11, /FAILED/, `${relPath}: name FAILED`);
+    assert.match(
+      step11,
+      /(PARTIAL|FAILED)[^\n]*(stop|do not commit|never commit|without commit)/i,
+      `${relPath}: PARTIAL/FAILED must stop without committing`,
+    );
+    assert.match(
+      step11,
+      /Commit\*\* only when `commit=true`/,
+      `${relPath}: Step 11 must commit only when commit=true`,
+    );
+  }
+});
+
+test("Step 11 commits inline and never skips hooks", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(step11, /git commit/, `${relPath}: commit inline`);
+    assert.match(
+      step11,
+      /never[^\n]*--no-verify/i,
+      `${relPath}: Step 11 must forbid --no-verify`,
+    );
+    assert.doesNotMatch(
+      step11,
+      /Load `?[/$]cf-commit/i,
+      `${relPath}: cf-commit has disable-model-invocation — do not load it`,
+    );
+  }
+});
+
+test("Step 11 stages only reviewed paths and scans for secrets", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /git add -- <paths>/,
+      `${relPath}: stage explicit paths with git add -- <paths>`,
+    );
+    assert.match(
+      step11,
+      /files\.z/,
+      `${relPath}: stage from the snapshot list`,
+    );
+    // Every mention of a blanket add must be a prohibition, never an instruction.
+    for (const line of step11.split("\n")) {
+      if (/git add (-A|\.)/.test(line)) {
+        assert.match(
+          line,
+          /never[^\n]*git add (-A|\.)/i,
+          `${relPath}: git add -A / git add . may only appear as a "never"`,
+        );
+      }
+    }
+    assert.match(
+      step11,
+      /never[^\n]*git add -A/i,
+      `${relPath}: Step 11 must forbid git add -A`,
+    );
+    assert.match(
+      step11,
+      /cf-commit\/scripts\/scan-secrets\.sh/,
+      `${relPath}: Step 11 must run the cf-commit secret scan`,
+    );
+    assert.match(
+      step11,
+      /SECRETS > 0[^\n]*(stop|do not commit)/i,
+      `${relPath}: a real secret must stop the commit`,
+    );
+  }
+});
+
+test("Step 11 commits only the reviewed paths via an explicit pathspec", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /git commit[^\n]*(-- <paths>|--pathspec-from-file)/,
+      `${relPath}: git commit must name the reviewed paths, not the whole index`,
+    );
+    assert.match(
+      step11,
+      /`origin<SP>added<SP>deleted<SP>path`/,
+      `${relPath}: Step 11 must state the files.z record format`,
+    );
+    assert.ok(
+      step11.includes('"${rec#* * * }"'),
+      `${relPath}: Step 11 must strip the record prefix NUL-safely`,
+    );
+  }
+});
+
+test("Step 11 skips committed records and handles an empty paths.z", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /committed\\?\s*\*\)\s*continue/,
+      `${relPath}: Step 11 must skip files.z records with origin committed`,
+    );
+    assert.match(
+      step11,
+      /Nothing to commit — no uncommitted reviewed paths/,
+      `${relPath}: Step 11 must report an empty paths.z as Nothing to commit`,
+    );
+    assert.match(
+      step11,
+      /repo root[^\n]*git rev-parse --show-toplevel/,
+      `${relPath}: Step 11 must stage from the repo root`,
+    );
+    assert.match(
+      step11,
+      /excluded\.z left uncommitted/,
+      `${relPath}: Step 11 outcome must note excluded.z paths left uncommitted`,
+    );
+  }
+});
+
+test("Step 11 stops on a hook failure without retrying", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /hook fail[^\n]*stop[^\n]*do not retry/i,
+      `${relPath}: a hook failure must stop with no retry`,
+    );
+    assert.doesNotMatch(
+      step11,
+      /Hook failure → fix/i,
+      `${relPath}: never fix and re-commit after a hook failure`,
+    );
+  }
+});
+
+test("Step 11 keeps the round counter and names the clean no-commit outcome", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /never reset/i,
+      `${relPath}: re-running Steps 2–10 must keep the round counter`,
+    );
+    assert.match(
+      step11,
+      /Nothing to fix — not committed \(no --commit\)/,
+      `${relPath}: clean first review without --commit needs its own outcome`,
+    );
+  }
+});
+
+test("Step 10 banner announces the --fix and --commit hand-off", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step10 = section(text, "### Step 10: Final output");
+    assert.match(
+      step10,
+      /Applying fixes \(--fix\)/,
+      `${relPath}: Step 10 must name the --fix banner`,
+    );
+    assert.match(
+      step10,
+      /Committing \(--commit\)/,
+      `${relPath}: Step 10 must name the --commit banner for a clean review`,
+    );
+    assert.match(
+      step10,
+      /`fix=true` → always go to Step 11/,
+      `${relPath}: Step 10 must hand every fix=true run to Step 11`,
+    );
+  }
+});
+
+test("Step 11 lets cf-implementer create new files but never edit existing out-of-scope ones", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /create new files/i,
+      `${relPath}: cf-implementer must be allowed to create new files (e.g. a missing test)`,
+    );
+    assert.match(
+      step11,
+      /never edit an existing file outside the reviewed scope/i,
+      `${relPath}: existing files outside the reviewed scope must stay untouched`,
+    );
+  }
+});
+
+test("Step 11 stops early when every remaining finding needs out-of-scope edits", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /without another review/i,
+      `${relPath}: an all-skipped round must not trigger another review`,
+    );
+    assert.match(
+      step11,
+      /⚠️ Stopped — N finding\(s\) need out-of-scope edits/,
+      `${relPath}: the early stop must print its own outcome`,
+    );
+  }
+});
+
+test("Step 11 unstages only the reviewed paths on a real secret and runs git from the repo root", () => {
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    assert.match(
+      step11,
+      /SECRETS > 0[^\n]*unstage only the reviewed paths/i,
+      `${relPath}: a real secret must unstage only the reviewed paths`,
+    );
+    assert.match(
+      step11,
+      /staging, scan and commit from the repo root/i,
+      `${relPath}: staging, the scan and the commit must all run from the repo root`,
+    );
+  }
+});
+
+test("Step 11 paths.z snippet keeps only uncommitted/untracked paths (behavioral)", (t) => {
+  try {
+    execFileSync("bash", ["-c", "true"]);
+  } catch {
+    t.skip("bash not available");
+    return;
+  }
+  const step11 = section(skill, FIX_HEADING);
+  const match = /`(while IFS= read -r -d '' rec;[^`]*> paths\.z)`/.exec(step11);
+  assert.ok(match, "Step 11 must carry the paths.z extraction snippet");
+  const run = (records) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cf-review-paths-"));
+    try {
+      fs.writeFileSync(
+        path.join(dir, "files.z"),
+        records.map((rec) => `${rec}\0`).join(""),
+      );
+      execFileSync("bash", ["-c", match[1]], { cwd: dir });
+      return fs.readFileSync(path.join(dir, "paths.z"), "utf8");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  assert.equal(
+    run([
+      "committed 1 0 old.md",
+      "uncommitted 2 1 a b.md",
+      "untracked 3 0 new.md",
+    ]),
+    "a b.md\0new.md\0",
+  );
+  assert.equal(run(["committed 1 0 old.md"]), "");
 });

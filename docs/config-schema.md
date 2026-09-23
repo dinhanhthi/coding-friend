@@ -130,9 +130,10 @@ coding-friend uses a layered config system:
     "withCodex": false,
 
     // Maximum /cf-review rounds in the autopilot fix loop
-    // (/cf-plan --auto and /cf-tdd --auto): initial review + fix re-reviews.
+    // (/cf-plan --auto and /cf-tdd --auto) and in the /cf-review --fix /
+    // --commit fix loop: initial review + fix re-reviews.
     // After this many reviews still have Critical or Important findings,
-    // autopilot stops and waits for the user. Integer ≥ 1.
+    // the loop stops and waits for the user. Integer ≥ 1.
     // Default: 5
     "maxRounds": 5,
   },
