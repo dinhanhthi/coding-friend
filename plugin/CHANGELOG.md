@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.2 (2026-09-23)
+
+- `/cf-review` `--fix` applies Critical/Important findings via `cf-implementer` and re-reviews, capped by `review.maxRounds`; `--commit` (implies `--fix`) then commits only the reviewed, still-uncommitted paths by explicit pathspec once the final review is clean, after a secret scan, with a plain-text commit message and no retry on a pre-commit hook failure — refused together with a commit range or `--out` [#214e28fb](https://github.com/dinhanhthi/coding-friend/commit/214e28fb) [#6898f0bb](https://github.com/dinhanhthi/coding-friend/commit/6898f0bb)
+
 ## v0.44.1 (2026-09-22)
 
 - `/cf-plan-review` `--fix` (`--inline`) applies Critical/Important findings immediately after review, without asking [#b693659f](https://github.com/dinhanhthi/coding-friend/commit/b693659f)
