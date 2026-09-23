@@ -96,74 +96,81 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Navbar sections={sections} tocItems={tocItems} />
-      <Hero />
-      <TableOfContents items={tocItems} />
-      <main
-        id="top"
-        className="mx-auto max-w-[var(--doc-w)] px-4 pt-12 pb-20 sm:px-6"
-      >
-        <article className="prose prose-code:before:content-none prose-code:after:content-none max-w-none">
-          {tip ? (
-            <MDXRemote
-              source={tip}
-              components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
-              options={mdxOptions}
-            />
-          ) : null}
-          <LatestChanges entries={recentChanges} />
-          <MDXRemote
-            source={rest}
-            components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
-            options={mdxOptions}
-          />
-          {compare ? (
-            <CompareSplit without={compare.without} withCf={compare.withCf} />
-          ) : null}
-          {after ? (
-            <MDXRemote
-              source={after}
-              components={{ pre: CodeBlock, a: MdxLink, img: ZoomableImage }}
-              options={mdxOptions}
-            />
-          ) : null}
-        </article>
-      </main>
-      <footer className="border-rule border-t">
-        <div className="mx-auto w-full max-w-5xl px-4 py-14 sm:px-6">
-          <p className="font-display text-ink max-w-[26ch] text-[clamp(1.8rem,2.2vw+1rem,2.6rem)] leading-[1.12] tracking-[0.012em] lowercase">
-            plan. implement. review. ship. remember.
-          </p>
-          <div className="text-muted mt-8 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm lowercase">
-            <span className="whitespace-nowrap">
-              Made by{" "}
-              <FooterLink href="https://dinhanhthi.com">
-                Anh-Thi Dinh
-              </FooterLink>
-            </span>
-            <span aria-hidden="true">·</span>
-            <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
-              Changelog
-            </FooterLink>
-            {PLUGIN_VERSION ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
-                  plugin <span className="font-mono">v{PLUGIN_VERSION}</span>
-                </FooterLink>
-              </>
-            ) : null}
-            {CLI_VERSION ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
-                  cli <span className="font-mono">v{CLI_VERSION}</span>
-                </FooterLink>
-              </>
-            ) : null}
+      <div className="page">
+        <Navbar sections={sections} tocItems={tocItems} />
+        <main id="top">
+          <div className="docs-layout">
+            <TableOfContents items={tocItems} />
+            <div className="docs-content">
+              <Hero />
+              <article className="prose prose-code:before:content-none prose-code:after:content-none max-w-none">
+                {tip ? (
+                  <MDXRemote
+                    source={tip}
+                    components={{
+                      pre: CodeBlock,
+                      a: MdxLink,
+                      img: ZoomableImage,
+                    }}
+                    options={mdxOptions}
+                  />
+                ) : null}
+                <LatestChanges entries={recentChanges} />
+                <MDXRemote
+                  source={rest}
+                  components={{
+                    pre: CodeBlock,
+                    a: MdxLink,
+                    img: ZoomableImage,
+                  }}
+                  options={mdxOptions}
+                />
+                {compare ? (
+                  <CompareSplit
+                    without={compare.without}
+                    withCf={compare.withCf}
+                  />
+                ) : null}
+                {after ? (
+                  <MDXRemote
+                    source={after}
+                    components={{
+                      pre: CodeBlock,
+                      a: MdxLink,
+                      img: ZoomableImage,
+                    }}
+                    options={mdxOptions}
+                  />
+                ) : null}
+              </article>
+            </div>
           </div>
-        </div>
-      </footer>
+        </main>
+        <footer className="site-footer">
+          Made by{" "}
+          <FooterLink href="https://dinhanhthi.com">Anh-Thi Dinh</FooterLink>
+          {" · "}
+          <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+            Changelog
+          </FooterLink>
+          {PLUGIN_VERSION ? (
+            <>
+              {" · "}
+              <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+                plugin v{PLUGIN_VERSION}
+              </FooterLink>
+            </>
+          ) : null}
+          {CLI_VERSION ? (
+            <>
+              {" · "}
+              <FooterLink href="https://www.npmjs.com/package/coding-friend-cli">
+                cli v{CLI_VERSION}
+              </FooterLink>
+            </>
+          ) : null}
+        </footer>
+      </div>
     </>
   );
 }

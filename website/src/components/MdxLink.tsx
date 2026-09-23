@@ -1,7 +1,7 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 
 const LINK_CLASS =
-  "text-link no-underline underline-offset-4 transition-colors duration-150 hover:text-heading hover:underline";
+  "text-ink underline underline-offset-4 transition-colors duration-150 hover:text-muted";
 
 function isDangerousHref(href: string): boolean {
   return /^(javascript|data):/i.test(href.trim());

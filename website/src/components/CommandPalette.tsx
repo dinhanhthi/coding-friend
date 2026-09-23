@@ -137,7 +137,7 @@ export default function CommandPalette({
       onClick={(event) => {
         if (event.target === dialogRef.current) handleClose();
       }}
-      className="bg-paper border-rule-2 text-ink-2 backdrop:bg-scrim m-0 mx-auto mt-[12vh] w-[min(560px,calc(100vw-2rem))] rounded-[10px] border p-0 shadow-[var(--shadow-chrome)]"
+      className="bg-paper border-rule text-ink-2 backdrop:bg-scrim m-0 mx-auto mt-[12vh] w-[min(560px,calc(100vw-2rem))] rounded-[var(--radius-card)] border p-0 shadow-lg"
     >
       <div className="border-rule flex items-center gap-3 border-b px-4">
         <svg
@@ -163,7 +163,7 @@ export default function CommandPalette({
           placeholder="Search sections…"
           className="text-ink placeholder:text-muted h-12 w-full bg-transparent text-[15px] outline-none"
         />
-        <kbd className="border-rule text-muted rounded border px-1.5 py-0.5 font-mono text-[11px]">
+        <kbd className="border-rule text-muted rounded-[var(--radius-sm)] border px-1.5 py-0.5 font-mono text-[11px]">
           esc
         </kbd>
       </div>
@@ -193,10 +193,10 @@ export default function CommandPalette({
                 aria-selected={index === active}
                 onMouseEnter={() => setActive(index)}
                 onClick={() => select(row)}
-                className={`flex w-full items-center justify-between rounded-[6px] px-3 py-2 text-left text-sm ${
+                className={`flex w-full items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm ${
                   index === active
                     ? "bg-paper-2 text-ink"
-                    : "text-ink-2 hover:bg-paper-2"
+                    : "text-ink-2 hover:bg-hover"
                 }`}
               >
                 <span className="truncate">{row.label}</span>
@@ -213,13 +213,25 @@ export default function CommandPalette({
 
       <div className="border-rule text-muted flex items-center gap-4 border-t px-4 py-2 font-mono text-[11px]">
         <span>
-          <kbd>↑</kbd> <kbd>↓</kbd> navigate
+          <kbd className="border-rule text-muted rounded-[var(--radius-sm)] border px-1.5 py-0.5 font-mono text-[11px]">
+            ↑
+          </kbd>{" "}
+          <kbd className="border-rule text-muted rounded-[var(--radius-sm)] border px-1.5 py-0.5 font-mono text-[11px]">
+            ↓
+          </kbd>{" "}
+          navigate
         </span>
         <span>
-          <kbd>↵</kbd> open
+          <kbd className="border-rule text-muted rounded-[var(--radius-sm)] border px-1.5 py-0.5 font-mono text-[11px]">
+            ↵
+          </kbd>{" "}
+          open
         </span>
         <span>
-          <kbd>esc</kbd> close
+          <kbd className="border-rule text-muted rounded-[var(--radius-sm)] border px-1.5 py-0.5 font-mono text-[11px]">
+            esc
+          </kbd>{" "}
+          close
         </span>
       </div>
     </dialog>

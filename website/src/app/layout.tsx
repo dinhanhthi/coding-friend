@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { Geist, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "highlight.js/styles/github-dark.css";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
+import { themeInitScript } from "@/lib/theme";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -10,16 +10,9 @@ const geist = Geist({
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  weight: "400",
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-instrument-serif",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -50,6 +43,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#18181b" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -58,10 +58,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
+      data-theme="light"
+      suppressHydrationWarning
+      className={`${geist.variable} ${geistMono.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body className="bg-paper text-ink-2 font-sans antialiased">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="bg-paper text-ink font-sans antialiased">
         {children}
       </body>
     </html>

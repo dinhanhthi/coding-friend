@@ -1,36 +1,27 @@
-/* Hallmark tokens — theme: Lumen · drop: Night Foundry (cool-violet near-black · molten-brass emit · coral chord) */
+/* Hallmark tokens — theme: studied-DNA (source: /Users/thi/git/PopGuy/website) · studied: yes
+ * Coral (monochrome ink · shadcn-zinc) · light + dark (:root[data-theme="dark"]) · anchor hue 264
+ * Full run stamp lives at the top of globals.css.
+ * Fonts come from next/font (see layout.tsx + globals.css @theme), so no --font-* here.
+ */
 :root {
-  /* Paper + ink — late-night studio, violet tilt (H 265) */
-  --color-paper: oklch(13% 0.014 265);
-  --color-paper-2: oklch(17% 0.016 265);
-  --color-paper-3: oklch(22% 0.016 265);
-  --color-ink: oklch(96% 0.006 262);
-  --color-ink-2: oklch(86% 0.01 262);
-  --color-muted: oklch(67% 0.012 262);
-  --color-rule: oklch(96% 0.006 262 / 0.1);
-  --color-rule-2: oklch(96% 0.006 262 / 0.18);
+  color-scheme: light;
+  --color-paper: oklch(99% 0.003 264);
+  --color-paper-2: oklch(97% 0.004 264);
+  --color-paper-3: oklch(94.5% 0.006 264);
+  --color-ink: oklch(20% 0.012 264);
+  --color-ink-2: oklch(32% 0.01 264);
+  --color-muted: oklch(48% 0.012 264);
+  --color-rule: oklch(90% 0.008 264);
+  --color-rule-strong: oklch(84% 0.01 264);
+  --color-accent: oklch(20% 0.012 264);
+  --color-accent-ink: oklch(99% 0.003 264);
+  --color-focus: oklch(48% 0.14 264);
+  --color-hover: oklch(96% 0.005 264);
+  --color-danger: oklch(52% 0.18 25);
+  --color-success: oklch(48% 0.14 155);
+  /* Local extra — zoom modal / palette backdrop */
+  --color-scrim: oklch(20% 0.012 264 / 0.35);
 
-  /* Molten brass — the emitting accent */
-  --color-accent: oklch(76% 0.17 50);
-  --color-accent-ink: oklch(13% 0.014 265);
-  /* Coral chord — the verb landmark */
-  --color-accent-2: oklch(68% 0.16 18);
-  --color-focus: oklch(76% 0.17 50);
-
-  /* Emission physics */
-  --color-glow: oklch(80% 0.16 50 / 0.42);
-  --color-glow-soft: oklch(80% 0.16 50 / 0.12);
-  --color-paper-emit: oklch(76% 0.17 50 / 0.04);
-  --rule-blueprint: oklch(96% 0.006 262 / 0.04);
-
-  /* Chrome */
-  --color-scrim: oklch(0% 0 0 / 0.55);
-  --shadow-chrome: 0 24px 60px -28px oklch(0% 0 0 / 0.55);
-
-  /* Status */
-  --color-ok: oklch(72% 0.14 160);
-
-  /* Spacing — 4pt scale */
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
@@ -40,17 +31,50 @@
   --space-xl: 2.5rem;
   --space-2xl: 4rem;
   --space-3xl: 6rem;
+  --space-4xl: 9rem;
 
-  /* Motion */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-display: clamp(2rem, 4.4vw, 2.75rem);
+  --text-display-s: clamp(1.75rem, 3vw, 2.25rem);
+
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
   --dur-long: 420ms;
-  --dur-pulse: 4s;
 
-  /* Radii */
-  --radius-btn: 6px;
-  --radius-card: 10px;
+  --radius-sm: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-input: 0.75rem;
+  --radius-pill: 999px;
+  --radius: var(--radius-card);
+  --radius-lg: 1rem;
+
+  --rule: 1px solid var(--color-rule);
+}
+
+/* Dark theme — applied via the data-theme attribute on <html> */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: oklch(15% 0.005 264);
+  --color-paper-2: oklch(19% 0.006 264);
+  --color-paper-3: oklch(24% 0.008 264);
+  --color-ink: oklch(96% 0.004 264);
+  --color-ink-2: oklch(88% 0.006 264);
+  --color-muted: oklch(70% 0.01 264);
+  --color-rule: oklch(28% 0.008 264);
+  --color-rule-strong: oklch(36% 0.01 264);
+  --color-accent: oklch(96% 0.004 264);
+  --color-accent-ink: oklch(15% 0.005 264);
+  --color-focus: oklch(72% 0.14 264);
+  --color-hover: oklch(21% 0.006 264);
+  --color-danger: oklch(70% 0.17 25);
+  --color-success: oklch(72% 0.14 155);
+  --color-scrim: oklch(10% 0.005 264 / 0.6);
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { diagramDarkSrc } from "@/lib/theme";
 
 const emptySubscribe = () => () => {};
 /** true on the client after hydration, false during SSR — portal-safe. */
@@ -32,6 +33,9 @@ function ZoomIcon({ className }: { className?: string }) {
   );
 }
 
+const modalImgClass =
+  "border-rule-strong bg-paper-2 max-h-[88vh] w-[min(1400px,94vw)] rounded-[10px] border object-contain";
+
 /**
  * MDX `img` renderer: the image plus a zoom button (top-right) that opens
  * a larger view in a modal. The dialog is portaled to <body> because a
@@ -41,6 +45,8 @@ export default function ZoomableImage(props: React.ComponentProps<"img">) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   const mounted = useMounted();
+  const darkSrc =
+    typeof props.src === "string" ? diagramDarkSrc(props.src) : null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -58,13 +64,31 @@ export default function ZoomableImage(props: React.ComponentProps<"img">) {
 
   return (
     <span className="group relative block">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img {...props} alt={props.alt ?? ""} />
+      {darkSrc ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            {...props}
+            alt={props.alt ?? ""}
+            className={`${props.className ?? ""} themed-light`.trim()}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            {...props}
+            src={darkSrc}
+            alt={props.alt ?? ""}
+            className={`${props.className ?? ""} themed-dark`.trim()}
+          />
+        </>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img {...props} alt={props.alt ?? ""} />
+      )}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="View larger"
-        className="border-rule bg-paper-2/90 text-muted hover:border-rule-2 hover:text-ink absolute top-2 right-2 rounded-[6px] border p-1.5 transition-colors duration-[220ms] [transition-timing-function:var(--ease-out)] active:translate-y-px"
+        className="border-rule bg-paper text-muted hover:text-ink absolute top-2 right-2 rounded-[6px] border p-1.5 transition-colors duration-[220ms] [transition-timing-function:var(--ease-out)] active:translate-y-px"
       >
         <ZoomIcon className="h-4 w-4" />
       </button>
@@ -83,8 +107,18 @@ export default function ZoomableImage(props: React.ComponentProps<"img">) {
             <img
               src={typeof props.src === "string" ? props.src : undefined}
               alt={props.alt ?? ""}
-              className="border-rule-2 bg-paper-2 max-h-[88vh] w-[min(1400px,94vw)] rounded-[10px] border object-contain"
+              className={
+                darkSrc ? `${modalImgClass} themed-light` : modalImgClass
+              }
             />
+            {darkSrc && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={darkSrc}
+                alt={props.alt ?? ""}
+                className={`${modalImgClass} themed-dark`}
+              />
+            )}
           </dialog>,
           document.body,
         )}

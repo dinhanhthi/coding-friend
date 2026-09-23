@@ -13,15 +13,15 @@ type OgFont = {
   name: string;
   data: ArrayBuffer;
   style: "normal";
-  weight: 400 | 700;
+  weight: 400 | 600;
 };
 
-async function loadInter(
-  weight: 400 | 700,
+async function loadGeist(
+  weight: 400 | 600,
   text: string,
 ): Promise<OgFont | null> {
   try {
-    const url = `https://fonts.googleapis.com/css2?family=Inter:wght@${weight}&text=${encodeURIComponent(text)}`;
+    const url = `https://fonts.googleapis.com/css2?family=Geist:wght@${weight}&text=${encodeURIComponent(text)}`;
     const css = await fetch(url, {
       headers: {
         // Safari 5 UA so css2 returns TTF (satori cannot parse woff2).
@@ -43,7 +43,7 @@ async function loadInter(
     if (fontRes.status !== 200) return null;
 
     return {
-      name: "Inter",
+      name: "Geist",
       data: await fontRes.arrayBuffer(),
       style: "normal",
       weight,
@@ -56,7 +56,7 @@ async function loadInter(
 export default async function Image() {
   const subset = `${TITLE} ${SUBTITLE} ${ASCII}`;
   const fonts = (
-    await Promise.all([loadInter(400, subset), loadInter(700, subset)])
+    await Promise.all([loadGeist(400, subset), loadGeist(600, subset)])
   ).filter((font): font is OgFont => font !== null);
 
   return new ImageResponse(
@@ -68,7 +68,7 @@ export default async function Image() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "#23262e",
+        background: "#fafafa",
         padding: 80,
       }}
     >
@@ -76,9 +76,9 @@ export default async function Image() {
         style={{
           display: "flex",
           fontSize: 64,
-          fontWeight: 700,
-          color: "#f5f5f7",
-          fontFamily: "Inter",
+          fontWeight: 600,
+          color: "#18181b",
+          fontFamily: "Geist",
           textAlign: "center",
           lineHeight: 1.2,
         }}
@@ -90,8 +90,8 @@ export default async function Image() {
           display: "flex",
           fontSize: 24,
           fontWeight: 400,
-          color: "#9a9ca6",
-          fontFamily: "Inter",
+          color: "#71717a",
+          fontFamily: "Geist",
           textAlign: "center",
           marginTop: 20,
           maxWidth: 920,
@@ -105,9 +105,11 @@ export default async function Image() {
           display: "flex",
           fontSize: 18,
           fontWeight: 400,
-          color: "#a78bfa",
-          fontFamily: "Inter",
+          color: "#71717a",
+          fontFamily: "Geist",
           marginTop: 40,
+          paddingTop: 24,
+          borderTop: "1px solid #e4e4e7",
         }}
       >
         {ASCII}

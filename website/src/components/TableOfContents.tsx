@@ -9,7 +9,7 @@ type TocNode = {
   children: { id: string; text: string }[];
 };
 
-const HEADER_OFFSET_PX = 88;
+const SPY_OFFSET_PX = 120;
 
 function groupToc(items: TocItem[]): TocNode[] {
   const roots: TocNode[] = [];
@@ -26,19 +26,8 @@ function groupToc(items: TocItem[]): TocNode[] {
   return roots;
 }
 
-function tocLinkClass(active: boolean, nested: boolean) {
-  return [
-    "block border-l-2 py-1 leading-snug transition-colors duration-150",
-    nested ? "pl-3 text-xs" : "pl-2 text-sm",
-    active
-      ? "border-accent text-ink"
-      : "text-muted hover:text-ink border-transparent",
-  ].join(" ");
-}
-
 export default function TableOfContents({ items }: { items: TocItem[] }) {
   const [activeId, setActiveId] = useState(items[0]?.id ?? "");
-  const [pastHero, setPastHero] = useState(false);
   const tree = groupToc(items);
 
   useEffect(() => {
@@ -48,20 +37,20 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
 
     const updateActive = () => {
       let current = items[0]?.id ?? "";
-      for (const item of items) {
-        const el = document.getElementById(item.id);
-        if (el && el.getBoundingClientRect().top <= HEADER_OFFSET_PX) {
-          current = item.id;
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2;
+      if (atBottom) {
+        current = items[items.length - 1].id;
+      } else {
+        for (const item of items) {
+          const el = document.getElementById(item.id);
+          if (el && el.getBoundingClientRect().top <= SPY_OFFSET_PX) {
+            current = item.id;
+          }
         }
       }
       setActiveId((prev) => (prev === current ? prev : current));
-      // The rail lives in the hero's right margin — keep it hidden until
-      // the docs content has scrolled up under the navbar.
-      const main = document.getElementById("top");
-      const visible = main
-        ? main.getBoundingClientRect().top <= HEADER_OFFSET_PX
-        : true;
-      setPastHero((prev) => (prev === visible ? prev : visible));
       ticking = false;
     };
 
@@ -80,51 +69,35 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
     };
   }, [items]);
 
-  if (items.length === 0 || !pastHero) return null;
+  if (items.length === 0) return null;
 
   return (
-    <nav
-      aria-label="Table of contents"
-      className="fixed top-20 right-[max(1rem,calc(50%-var(--doc-w)*0.5-13rem-1rem))] z-40 hidden max-h-[calc(100dvh-9.5rem)] w-52 overflow-x-hidden overflow-y-auto overscroll-contain xl:block"
-    >
-      <p className="text-muted mb-2 font-mono text-[11px] tracking-[0.08em] uppercase">
-        Contents
-      </p>
+    <nav className="toc" aria-label="On this page">
       <ul>
-        {tree.map((section) => {
-          const sectionActive = section.id === activeId;
-          return (
-            <li key={section.id}>
-              <a
-                href={`#${section.id}`}
-                aria-current={sectionActive ? "location" : undefined}
-                onClick={() => setActiveId(section.id)}
-                className={tocLinkClass(sectionActive, false)}
-              >
-                {section.text}
-              </a>
-              {section.children.length > 0 && (
-                <ul className="ml-3">
-                  {section.children.map((child) => {
-                    const childActive = child.id === activeId;
-                    return (
-                      <li key={child.id}>
-                        <a
-                          href={`#${child.id}`}
-                          aria-current={childActive ? "location" : undefined}
-                          onClick={() => setActiveId(child.id)}
-                          className={tocLinkClass(childActive, true)}
-                        >
-                          {child.text}
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </li>
-          );
-        })}
+        {tree.map((section) => (
+          <li key={section.id}>
+            <a
+              href={`#${section.id}`}
+              aria-current={activeId === section.id ? "true" : undefined}
+            >
+              {section.text}
+            </a>
+            {section.children.length > 0 && (
+              <ul>
+                {section.children.map((child) => (
+                  <li key={child.id}>
+                    <a
+                      href={`#${child.id}`}
+                      aria-current={activeId === child.id ? "true" : undefined}
+                    >
+                      {child.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
       </ul>
     </nav>
   );

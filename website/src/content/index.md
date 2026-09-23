@@ -130,7 +130,25 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 ### 🚀 Review & ship
 
-- `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Gathers the diff into one snapshot, then hands it to `cf-reviewer`, which covers all five layers itself (project rules, plan alignment, correctness, security, tests). Depth is auto QUICK / STANDARD / DEEP from change size, or `--quick` / `--deep`, and it sets how many reviewers run: 1 in QUICK, 1 in STANDARD, 2 in DEEP (`cf-reviewer-security` joins in parallel). External reviewers are opt-in extras counted separately from those: `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run in parallel and merge into the same report. `--out` writes a `/cf-review-out` prompt with the in-session findings (cannot combine with those agent flags). Codex-as-default: `cf config`. The two timeouts are different mechanisms: `review.nativeTimeout` (600s) is a cooperative budget an in-session reviewer is asked to keep (a running in-session job can only be cancelled when the host offers a cancel), while `review.agentTimeout` (300s) is really enforced on the external reviewer's subprocess. Every report ends with `Review status: COMPLETE | PARTIAL | FAILED`; COMPLETE means the required coverage finished, not that there were no findings, and PARTIAL or FAILED stops an autopilot commit. `--fix` applies Critical/Important findings and re-reviews (up to `review.maxRounds`, default 5); `--commit` implies `--fix` and commits once the final review is COMPLETE with no Critical/Important left, staging and committing only the reviewed uncommitted paths after a secret scan, and stopping on a pre-commit hook failure (neither works with a commit-range target or `--out`). This is a trade-off, not a free win: one generalist covering five layers in a pass reviews each layer differently than five specialists each owning one, so `cf-reviewer-plan`, `-quality`, `-tests`, `-rules`, and `-reducer` stay directly callable when a layer deserves its own pass.
+- `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Snapshots the diff and hands it to `cf-reviewer`, which checks all five layers: project rules, plan alignment, correctness, security, tests.
+  - **Depth** — auto from change size, or force with `--quick` / `--deep`:
+    - QUICK / STANDARD — 1 reviewer
+    - DEEP — 2 reviewers (`cf-reviewer-security` joins in parallel)
+  - **External reviewers** (opt-in, run in parallel, merged into the same report):
+    - `--with-codex` / `--codex`, `--claude`, `--gemini`, `--cursor`, `--grok`
+    - `--out` — write a `/cf-review-out` prompt instead (not with the flags above)
+    - Codex on by default: `cf config`
+  - **Fix & commit**:
+    - `--fix` — apply Critical/Important findings, then re-review (up to `review.maxRounds`, default 5)
+    - `--commit` — implies `--fix`; commits only the reviewed paths once clean, after a secret scan; stops on a pre-commit hook failure
+    - Neither works with a commit-range target or `--out`
+  - **Report** — always ends with `Review status: COMPLETE | PARTIAL | FAILED`
+    - COMPLETE = full coverage, not "no findings"
+    - PARTIAL / FAILED stops an autopilot commit
+  - **Timeouts**:
+    - `review.nativeTimeout` (600s) — soft budget for in-session reviewers
+    - `review.agentTimeout` (300s) — hard limit on each external reviewer
+  - **Specialists** — one generalist is a trade-off, not a free win. `cf-reviewer-plan`, `-quality`, `-tests`, `-rules`, and `-reducer` stay directly callable when a layer deserves its own pass.
 
   Example output:
 

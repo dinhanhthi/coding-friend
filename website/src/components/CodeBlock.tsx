@@ -22,7 +22,7 @@ export default function CodeBlock(props: React.ComponentProps<"pre">) {
       >
         {copied ? (
           <svg
-            className="text-ok h-4 w-4"
+            className="text-success h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
