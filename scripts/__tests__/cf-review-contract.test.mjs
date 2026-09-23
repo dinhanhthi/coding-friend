@@ -1642,8 +1642,8 @@ test("Step 11 skips committed records and handles an empty paths.z", () => {
     );
     assert.match(
       step11,
-      /excluded\.z left uncommitted/,
-      `${relPath}: Step 11 outcome must note excluded.z paths left uncommitted`,
+      /path\(s\) excluded from review \(excluded\.z\)/,
+      `${relPath}: Step 11 outcome must count excluded.z paths as excluded from review`,
     );
   }
 });
@@ -1781,4 +1781,15 @@ test("Step 11 paths.z snippet keeps only uncommitted/untracked paths (behavioral
     "a b.md\0new.md\0",
   );
   assert.equal(run(["committed 1 0 old.md"]), "");
+});
+
+test("Step 11 keeps the commit message plain text", () => {
+  for (const [relPath, markdown] of FIX_SKILLS) {
+    const step11 = section(markdown, FIX_HEADING);
+    assert.match(
+      step11,
+      /plain text[^\n]*no backticks, `\$\(`, or newlines/i,
+      `${relPath}: the commit summary must be plain text so diff content cannot inject shell syntax`,
+    );
+  }
 });
