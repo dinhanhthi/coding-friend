@@ -4,11 +4,11 @@
  * paper: oklch(99% 0.003 264) (dark: oklch(15% 0.005 264)) · accent: oklch(20% 0.012 264) (monochrome ink)
  * functional chroma: --color-focus oklch(48% 0.14 264) (cf-* keywords, diagram feedback edges) + --color-success oklch(48% 0.14 155) (latest-changes, copy confirm)
  * display + body: Geist · mono: Geist Mono (next/font) · tone: utilitarian · anchor hue: 264
- * nav: N1b (brand + version + 3 links + ⌘K + theme toggle + GitHub) · footer: Ft2 (inline rule, single line)
+ * nav: N1b (brand + version + 3 links + theme toggle + GitHub) · footer: Ft2 (inline rule, single line)
  * theme mode: light/dark via <html data-theme> · system default + toggle
  * enrichment: 6 fireworks-tech-graph diagrams recolored to light/dark zinc pairs
  *   (scripts/recolor-diagrams.mjs) + zoom lightbox with blur backdrop
- * deviations: ⌘K command palette kept (user request) · hero apparatus/terminal card removed (user confirmed)
+ * deviations: hero apparatus/terminal card removed (user confirmed)
  *   · TOC hangs in right margin at >=80rem, hidden below · OG image light zinc
  */
 @import "tailwindcss";

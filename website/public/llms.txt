@@ -1,0 +1,41 @@
+# Coding Friend
+
+> A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer, adding skills, agents, and hooks to Claude Code, Codex, oh-my-pi, and other AI coding tools.
+
+Coding Friend provides a systematic workflow of plan → implement → review → commit, with project knowledge stored in `docs/` and learning notes in `~/.coding-friend/learn/`. It includes a memory system, security hooks, and mechanisms to protect privacy while enhancing AI agent capabilities.
+
+## Documentation
+
+- [Main Documentation](https://cf.dinhanhthi.com): Complete guide to Coding Friend features, installation, and usage
+- [Getting Started Guide](https://cf.dinhanhthi.com#-install): Installation instructions for all supported AI coding tools
+- [Skills Reference](https://cf.dinhanhthi.com#-skills): Complete list of available `/cf-*` skills like plan, review, commit, fix
+- [Agents Reference](https://cf.dinhanhthi.com#-agents): Subagents for exploration, implementation, planning, and code review
+- [CLI Documentation](https://github.com/dinhanhthi/coding-friend/blob/main/cli/README.md): Command-line interface for memory, installation, and configuration
+
+## Repository
+
+- [GitHub Repository](https://github.com/dinhanhthi/coding-friend): Source code, issues, and contributions
+- [Releases](https://github.com/dinhanhthi/coding-friend/releases): Version history and download links
+- [Contributing Guide](https://github.com/dinhanhthi/coding-friend/blob/main/CONTRIBUTING.md): Development setup and contribution guidelines
+- [Issues](https://github.com/dinhanhthi/coding-friend/issues): Bug reports and feature requests
+- [Discussions](https://github.com/dinhanhthi/coding-friend/discussions): Community support and questions
+
+## Features
+
+- [Architecture Overview](https://cf.dinhanhthi.com#how-coding-friend-works): System design and workflow diagrams
+- [Memory System](https://cf.dinhanhthi.com#-memory): Three-tier search and knowledge management
+- [Auto-approve](https://cf.dinhanhthi.com#-auto-approve): Smart automation with security controls
+- [Security Pipeline](https://cf.dinhanhthi.com#-security): Prompt injection defense and content isolation
+- [Cross-agent Review](https://cf.dinhanhthi.com#-review): Multi-AI code review capabilities
+
+## Installation
+
+- [NPM Package](https://www.npmjs.com/package/coding-friend-cli): Command-line interface installation
+- [Claude Code Plugin](https://claude.com/marketplace): Direct installation in Claude Code
+- [Supported Hosts](https://cf.dinhanhthi.com#-supported-tools): Compatibility matrix for AI coding tools
+
+## Optional
+
+- [Website Source](https://github.com/dinhanhthi/coding-friend/tree/main/website): Next.js website source code
+- [Logo Assets](https://github.com/dinhanhthi/coding-friend/blob/main/assets/logo.svg): Branding and visual assets
+- [License](https://github.com/dinhanhthi/coding-friend/blob/main/LICENSE): MIT License

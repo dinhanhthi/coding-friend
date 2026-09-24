@@ -36,7 +36,6 @@ _pagefind/
 # website's static build imports it at compile time.
 
 # Website
-website/public/llms.txt
 website/public/llms-full.txt
 
 # Hallmark design-skill metadata

@@ -2,8 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import CommandPalette, { type PaletteItem } from "./CommandPalette";
 import ThemeToggle from "./ThemeToggle";
 
 type Section = { id: string; text: string };
@@ -29,26 +27,12 @@ function GitHubIcon() {
 
 export default function Navbar({
   sections,
-  tocItems,
 }: {
   sections: Section[];
-  tocItems: PaletteItem[];
 }) {
-  const [paletteOpen, setPaletteOpen] = useState(false);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   // Resolve each label to a real heading slug; labels with no match are skipped.
-  const headings = [...sections, ...tocItems];
+  const headings = sections;
   const navLinks = NAV_LABELS.flatMap((label) => {
     const match = headings.find(({ text }) => text.includes(label));
     return match ? [{ label, id: match.id }] : [];
@@ -65,7 +49,6 @@ export default function Navbar({
       </Link>
 
       <nav aria-label="Primary navigation">
-        {/* Text links drop below 40rem; ⌘K still reaches every section. */}
         <span className="hidden sm:contents">
           {navLinks.map(({ label, id }) => (
             <a key={id} href={`#${id}`} className="nav-link">
@@ -73,14 +56,6 @@ export default function Navbar({
             </a>
           ))}
         </span>
-        <button
-          type="button"
-          onClick={() => setPaletteOpen(true)}
-          aria-label="Search sections (⌘K)"
-          className="nav-link theme-toggle"
-        >
-          ⌘K
-        </button>
         <ThemeToggle />
         <a
           href={GITHUB_HREF}
@@ -92,12 +67,6 @@ export default function Navbar({
           <GitHubIcon />
         </a>
       </nav>
-
-      <CommandPalette
-        items={tocItems}
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-      />
     </header>
   );
 }

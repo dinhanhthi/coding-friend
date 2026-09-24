@@ -97,7 +97,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="page">
-        <Navbar sections={sections} tocItems={tocItems} />
+        <Navbar sections={sections} />
         <main id="top">
           <div className="docs-layout">
             <TableOfContents items={tocItems} />
@@ -147,11 +147,19 @@ export default function Home() {
           </div>
         </main>
         <footer className="site-footer">
+          <FooterLink href="https://github.com/dinhanhthi/coding-friend/blob/main/LICENSE">
+            MIT
+          </FooterLink>
+          {" · "}
           Made by{" "}
           <FooterLink href="https://dinhanhthi.com">Anh-Thi Dinh</FooterLink>
           {" · "}
           <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
             Changelog
+          </FooterLink>
+          {" · "}
+          <FooterLink href="/llms.txt">
+            llms.txt
           </FooterLink>
           {PLUGIN_VERSION ? (
             <>
