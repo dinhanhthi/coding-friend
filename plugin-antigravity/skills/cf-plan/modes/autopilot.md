@@ -36,7 +36,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 5. **Commit the phase** — Only after a review passed the status gate (`Review status: COMPLETE`) with no Critical/Important remaining (Suggestions may remain):
    - `git add -A`
-   - Generate a conventional commit message: `<type>(<scope>): <phase-name>` where `<type>` matches the dominant change (feat/fix/refactor/docs/chore/test), `<scope>` is inferred from the directory of changed files, and `<phase-name>` is the phase title.
+   - Generate a conventional commit message: `<type>(<scope>): phase <N>/<M> <phase-name>` where `<type>` matches the dominant change (feat/fix/refactor/docs/chore/test), `<scope>` is inferred from the directory of changed files, `<N>` is this phase's number, `<M>` is the plan's total phase count (small plan → `1/1`), and `<phase-name>` is the phase title. Example: `feat(cli): phase 2/4 add config loader`. The `phase N/M` marker ties each commit to its plan phase — never omit it.
    - Commit body: bulleted list of completed tasks + any Suggestion-level findings logged as follow-ups.
    - `git commit -m "$(cat <<'EOF'
 <message>
@@ -89,7 +89,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
    - Never exceed `review.maxRounds` reviews per phase. Do not start a fix after the last allowed review.
 5. Once a review passed the status gate (`Review status: COMPLETE`) and has no Critical/Important:
    - `git add -A`
-   - `git commit -m "<type>(<scope>): <phase-name>` (conventional commit). Body lists tasks completed + any Suggestion-level findings that were intentionally left as follow-ups.
+   - `git commit -m "<type>(<scope>): phase <N>/<M> <phase-name>"` (conventional commit; `<N>` = this phase's number, `<M>` = total phases, e.g. `feat(cli): phase 2/4 add config loader`). Body lists tasks completed + any Suggestion-level findings that were intentionally left as follow-ups.
    - NEVER use `--no-verify`. NEVER include AI/Claude co-author lines (project rule #6).
 6. Immediately proceed to the next phase. Do NOT ask "Continue? (y/n)". The user already authorized autopilot at plan approval.
 

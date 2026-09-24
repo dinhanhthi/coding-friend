@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use $cf-advise), or resuming
   an existing plan (use $cf-plan-resume).
 created: 2026-02-17
-updated: 2026-09-21
+updated: 2026-09-24
 ---
 
 # $cf-plan
