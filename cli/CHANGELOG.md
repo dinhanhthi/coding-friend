@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.41.1 (2026-09-25)
+
+- Fix `cf init` / `cf permission` generating `Write(path)` permission rules — Claude Code only matches `Edit(path)` for file permission checks, so these rules triggered a startup warning and did nothing. Trailing slashes in an external learn dir also produced a double-slash `//**` glob. Both are fixed, and stale `Write(path)` rules from earlier runs are now cleaned up automatically [#723ce049](https://github.com/dinhanhthi/coding-friend/commit/723ce049)
+
 ## v1.41.0 (2026-09-21)
 
 - Add `planAuto` to `cf config` and `cf init` so `/cf-plan` can default into autopilot without `--auto` (same editor pattern as `tdd`) [#b63cc3b0](https://github.com/dinhanhthi/coding-friend/commit/b63cc3b0)
