@@ -102,6 +102,7 @@ export interface CodingFriendConfig {
   disableGUIPlan?: boolean;
   guiPlanFormat?: "html" | "md";
   planAuto?: boolean;
+  planCommitPerTask?: boolean;
 }
 
 export const DEFAULT_CONFIG: Required<

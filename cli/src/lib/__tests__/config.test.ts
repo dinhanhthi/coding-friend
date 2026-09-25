@@ -516,6 +516,28 @@ describe("loadConfig validation", () => {
     );
     expect(config.planAuto).toBeUndefined();
   });
+
+  it("accepts planCommitPerTask as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planCommitPerTask: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.planCommitPerTask).toBe(true);
+  });
+
+  it("warns and strips planCommitPerTask when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planCommitPerTask: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("planCommitPerTask"),
+    );
+    expect(config.planCommitPerTask).toBeUndefined();
+  });
 });
 
 describe("resolveProjectMemoryDir", () => {

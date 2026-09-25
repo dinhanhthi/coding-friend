@@ -109,6 +109,7 @@ const ConfigSchema = z.strictObject({
   disableGUIPlan: z.boolean().optional(),
   guiPlanFormat: z.enum(["html", "md"]).optional(),
   planAuto: z.boolean().optional(),
+  planCommitPerTask: z.boolean().optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -128,6 +129,7 @@ const KNOWN_KEYS = [
   "disableGUIPlan",
   "guiPlanFormat",
   "planAuto",
+  "planCommitPerTask",
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
