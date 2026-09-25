@@ -59,7 +59,6 @@ describe("PERMISSION_RULES", () => {
       "Bash(mkdir -p /tmp/coding-friend/review/*)",
       "Read(//tmp/coding-friend/review/**)",
       "Edit(//tmp/coding-friend/review/**)",
-      "Write(//tmp/coding-friend/review/**)",
     ]) {
       expect(rules).toContain(expected);
     }
@@ -69,7 +68,7 @@ describe("PERMISSION_RULES", () => {
     const snapshotRules = PERMISSION_RULES.filter((r) =>
       r.rule.includes("/tmp/coding-friend/review/"),
     );
-    expect(snapshotRules.length).toBe(4);
+    expect(snapshotRules.length).toBe(3);
     // A single leading slash anchors at the settings source, not the
     // filesystem root — file rules must use "//" to reach the real /tmp.
     for (const rule of snapshotRules.filter(
@@ -136,21 +135,30 @@ describe("getMissingRules", () => {
 });
 
 describe("buildLearnDirRules", () => {
-  it("generates 3 rules without autoCommit", () => {
+  it("generates 2 rules without autoCommit", () => {
     const rules = buildLearnDirRules("~/notes", false);
-    expect(rules).toHaveLength(3);
+    expect(rules).toHaveLength(2);
     expect(rules.map((r) => r.rule)).toEqual([
       "Read(~/notes/**)",
       "Edit(~/notes/**)",
-      "Write(~/notes/**)",
     ]);
   });
 
-  it("generates 5 rules with autoCommit", () => {
+  it("strips trailing slashes from the learn path", () => {
+    const rules = buildLearnDirRules("~/notes/", true);
+    expect(rules.map((r) => r.rule)).toEqual([
+      "Read(~/notes/**)",
+      "Edit(~/notes/**)",
+      "Bash(cd ~/notes && git add *)",
+      "Bash(cd ~/notes && git commit *)",
+    ]);
+  });
+
+  it("generates 4 rules with autoCommit", () => {
     const rules = buildLearnDirRules("~/notes", true);
-    expect(rules).toHaveLength(5);
-    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add *)");
-    expect(rules[4].rule).toBe("Bash(cd ~/notes && git commit *)");
+    expect(rules).toHaveLength(4);
+    expect(rules[2].rule).toBe("Bash(cd ~/notes && git add *)");
+    expect(rules[3].rule).toBe("Bash(cd ~/notes && git commit *)");
   });
 
   it("all rules have category 'External Learn Directory'", () => {
@@ -162,25 +170,24 @@ describe("buildLearnDirRules", () => {
 
   it("quotes paths with spaces in autoCommit rules", () => {
     const rules = buildLearnDirRules("~/my notes/learn", true);
-    expect(rules[3].rule).toBe('Bash(cd "~/my notes/learn" && git add *)');
-    expect(rules[4].rule).toBe('Bash(cd "~/my notes/learn" && git commit *)');
+    expect(rules[2].rule).toBe('Bash(cd "~/my notes/learn" && git add *)');
+    expect(rules[3].rule).toBe('Bash(cd "~/my notes/learn" && git commit *)');
   });
 
   it("does not quote paths without spaces", () => {
     const rules = buildLearnDirRules("~/notes", true);
-    expect(rules[3].rule).toBe("Bash(cd ~/notes && git add *)");
+    expect(rules[2].rule).toBe("Bash(cd ~/notes && git add *)");
   });
 });
 
 describe("getMissingRules + buildLearnDirRules integration", () => {
   it("returns only missing learn dir rules when some already exist", () => {
     const learnRules = buildLearnDirRules("~/notes", true);
-    const existing = [learnRules[0].rule, learnRules[2].rule]; // Read + Write
+    const existing = [learnRules[0].rule, learnRules[2].rule]; // Read + git add
     const missing = getMissingRules(existing, learnRules);
-    expect(missing).toHaveLength(3);
+    expect(missing).toHaveLength(2);
     expect(missing.map((r) => r.rule)).toEqual([
       "Edit(~/notes/**)",
-      "Bash(cd ~/notes && git add *)",
       "Bash(cd ~/notes && git commit *)",
     ]);
   });
@@ -585,6 +592,31 @@ describe("cleanupStalePluginRules", () => {
     const result = readJson<Record<string, unknown>>(file);
     const allow = (result?.permissions as { allow: string[] }).allow;
     expect(allow).toHaveLength(2);
+  });
+
+  it("removes Write(path) rules that have a matching Edit(path)", () => {
+    const file = join(testDir, "settings.json");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        permissions: {
+          allow: [
+            "Edit(//tmp/coding-friend/review/**)",
+            "Write(//tmp/coding-friend/review/**)",
+            "Edit(~/notes//**)",
+            "Write(~/notes//**)",
+            "Write(~/other/**)",
+          ],
+        },
+      }),
+    );
+
+    expect(cleanupStalePluginRules(file)).toBe(2);
+    expect(getExistingRules(file)).toEqual([
+      "Edit(//tmp/coding-friend/review/**)",
+      "Edit(~/notes//**)",
+      "Write(~/other/**)",
+    ]);
   });
 
   it("returns 0 when no stale rules exist", () => {

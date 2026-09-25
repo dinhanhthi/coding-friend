@@ -113,9 +113,10 @@ export const STATIC_RULES: PermissionRule[] = [
   // Only the main agent writes it (gather-diff.sh --snapshot-dir); reviewer
   // subagents read it. Without these rules a background reviewer can stall for
   // hours on a write-permission prompt nobody sees.
-  // Read/Edit/Write need a DOUBLE leading slash: a single "/" anchors at the
+  // Read/Edit need a DOUBLE leading slash: a single "/" anchors at the
   // settings source dir, not the filesystem root. Bash rules take the literal
-  // command text, so mkdir keeps one slash.
+  // command text, so mkdir keeps one slash. No Write(path) rule: Claude Code
+  // only matches Edit(path) for file permissions (it covers Write too).
   {
     rule: "Bash(mkdir -p /tmp/coding-friend/review/*)",
     description:
@@ -134,13 +135,6 @@ export const STATIC_RULES: PermissionRule[] = [
     rule: "Edit(//tmp/coding-friend/review/**)",
     description:
       "[modify] Update the review scope snapshot · Used by: /cf-review main agent",
-    category: "Core Utilities",
-    recommended: true,
-  },
-  {
-    rule: "Write(//tmp/coding-friend/review/**)",
-    description:
-      "[write] Write the review scope snapshot · Used by: /cf-review main agent",
     category: "Core Utilities",
     recommended: true,
   },
@@ -553,6 +547,8 @@ export function buildLearnDirRules(
   learnPath: string,
   autoCommit: boolean,
 ): PermissionRule[] {
+  // Drop trailing slashes so "~/notes/" doesn't become "~/notes//**"
+  learnPath = learnPath.replace(/\/+$/, "");
   const rules: PermissionRule[] = [
     {
       rule: `Read(${learnPath}/**)`,
@@ -563,12 +559,6 @@ export function buildLearnDirRules(
     {
       rule: `Edit(${learnPath}/**)`,
       description: "[modify] Edit learning docs · Used by: /cf-learn",
-      category: "External Learn Directory",
-      recommended: true,
-    },
-    {
-      rule: `Write(${learnPath}/**)`,
-      description: "[write] Write learning docs · Used by: /cf-learn",
       category: "External Learn Directory",
       recommended: true,
     },
@@ -659,16 +649,21 @@ const OLD_PLUGIN_PATH_PATTERNS = [
  * Remove stale old-format per-script plugin rules from a settings file.
  * Old rules had individual paths like ".../coding-friend/0.11.1/lib/load-custom-guide.sh *"
  * or glob "*\/" in the middle. The new format uses a single wide rule.
+ * Also removes redundant Write(path) rules older versions added next to Edit(path).
  * Returns the count of removed rules, or 0 if none found.
  */
 export function cleanupStalePluginRules(settingsPath: string): number {
   const existing = getExistingRules(settingsPath);
   const currentRules = new Set(getAllRules().map((r) => r.rule));
 
-  // Find old plugin-path rules that are NOT in the current rule set
+  // Find old plugin-path rules that are NOT in the current rule set, plus
+  // Write(path) rules that have a matching Edit(path) — Claude Code ignores
+  // Write(path) for file permission checks (Edit covers it) and warns on startup.
   const stale = existing.filter(
     (r) =>
-      OLD_PLUGIN_PATH_PATTERNS.some((p) => r.includes(p)) &&
+      (OLD_PLUGIN_PATH_PATTERNS.some((p) => r.includes(p)) ||
+        (r.startsWith("Write(") &&
+          existing.includes(`Edit(${r.slice("Write(".length)}`))) &&
       !currentRules.has(r),
   );
 

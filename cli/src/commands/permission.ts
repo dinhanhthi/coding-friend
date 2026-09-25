@@ -300,6 +300,12 @@ export async function permissionCommand(opts: {
     scope,
   } = await resolveSettingsPath(opts);
 
+  // Clean up stale rules first so it runs on every path, even with no changes
+  const cleaned = cleanupStalePluginRules(settingsPath);
+  if (cleaned > 0) {
+    log.dim(`Removed ${cleaned} stale permission rules.`);
+  }
+
   const existing = getExistingRules(settingsPath);
   const allRules = getAllRules();
   const allRuleStrings = allRules.map((r) => r.rule);
@@ -362,12 +368,6 @@ export async function permissionCommand(opts: {
     }
 
     applyPermissions(settingsPath, toAdd, []);
-
-    // Clean up stale old-format per-script rules
-    const cleaned = cleanupStalePluginRules(settingsPath);
-    if (cleaned > 0) {
-      log.dim(`Removed ${cleaned} stale old-format plugin rules.`);
-    }
 
     log.success(`Added ${toAdd.length} permission rules to ${settingsLabel}.`);
     return;

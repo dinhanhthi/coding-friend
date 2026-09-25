@@ -1055,6 +1055,13 @@ async function stepClaudePermissions(
 
   const settingsPath =
     scope === "user" ? claudeSettingsPath() : claudeLocalSettingsPath();
+
+  // Clean up stale rules first so it runs even when nothing new is added
+  const cleaned = cleanupStalePluginRules(settingsPath);
+  if (cleaned > 0) {
+    log.dim(`Removed ${cleaned} stale permission rules.`);
+  }
+
   const existing = getExistingRules(settingsPath);
 
   // Collect all rules: base + learn dir (if external)
@@ -1106,12 +1113,6 @@ async function stepClaudePermissions(
     missing.map((r) => r.rule),
     [],
   );
-
-  // Clean up stale old-format per-script rules
-  const cleaned = cleanupStalePluginRules(settingsPath);
-  if (cleaned > 0) {
-    log.dim(`Removed ${cleaned} stale old-format plugin rules.`);
-  }
 
   log.success(`Added ${missing.length} permission rules.`);
   log.dim("Fine-tune later with: `cf permission` or `cf config` → Permissions");
