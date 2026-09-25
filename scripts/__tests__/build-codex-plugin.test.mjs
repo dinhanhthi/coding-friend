@@ -231,6 +231,7 @@ test("rewrites cf-plan --model spawn and cf-help for Codex", async () => {
   assert.doesNotMatch(step3, /subagent_type|context: fork|model: <alias>/);
   assert.match(plan, /`--model` vs resolved fast mode/);
   assert.match(plan, /<!-- cf-plan-model-flag -->/);
+  assert.match(plan, /1e\. \*\*Commit per task\*\*/);
   assert.match(plan, /2\. \*\*Auto-detect\*\*/);
   assert.match(
     planSource,

@@ -133,7 +133,7 @@ function renderCodexInstructionText(input) {
 function renderCodexPlanSkill(input) {
   return input
     .replace(
-      / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
+      / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n\s*1[e-z]\. |\n2\. \*\*Auto-detect\*\*)/g,
       [
         " <!-- cf-plan-model-flag -->",
         "   Accept `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token). **Strip both the flag and the value**. Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex. Do not accept `inherit`. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.",

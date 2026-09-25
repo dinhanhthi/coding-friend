@@ -168,7 +168,7 @@ function renderAgyInstructionText(input) {
 function renderAgyPlanSkill(input) {
   return input
     .replace(
-      / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n2\. \*\*Auto-detect\*\*)/g,
+      / <!-- cf-plan-model-flag -->[\s\S]*?(?=\n\s*1[e-z]\. |\n2\. \*\*Auto-detect\*\*)/g,
       [
         " <!-- cf-plan-model-flag -->",
         "   Accept `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value**. Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases or full model IDs. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.",

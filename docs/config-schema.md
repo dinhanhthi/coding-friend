@@ -60,6 +60,13 @@ coding-friend uses a layered config system:
   // Default: false
   "planAuto": false,
 
+  // Under /cf-plan autopilot, commit each task as "phase N/M task i/K <title>"
+  // and review once per phase. Ignored (warned) without autopilot.
+  // Local overrides global. --no-commit-per-task forces off; --commit-per-task forces on.
+  // /cf-plan-resume ignores this key (honors the saved plan's commitPerTask: true only).
+  // Default: false
+  "planCommitPerTask": false,
+
   // Disable the human overview doc /cf-plan generates next to the agent plan
   // (off by default — costs extra tokens; set false to enable, or pass --gui per run)
   // Default: true

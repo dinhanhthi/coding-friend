@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use /cf-advise), or resuming
   an existing plan (use /cf-plan-resume).
 created: 2026-02-17
-updated: 2026-09-24
+updated: 2026-09-25
 model: inherit
 ---
 
@@ -23,6 +23,7 @@ Create an implementation plan for: **$ARGUMENTS**
 - `--hard` — extra discovery, deeper exploration, rollback planning.
 - `--auto` — after approval, run all phases (review + fix + commit, no prompts). Combines with any mode. Also on when config `planAuto: true` (local overrides global) unless `--no-auto`.
 - `--no-auto` — force autopilot off for this run, even if `planAuto: true`. Incompatible with `--auto`.
+- `--commit-per-task` / `--no-commit-per-task` — autopilot only: each task commits as `phase N/M task i/K`; review runs once per phase over its commits (no `review.with*` external reviewers). Also on when config `planCommitPerTask: true` (local overrides global) unless `--no-commit-per-task`.
 - `--inline` (`--no-file`) — no plan file; chat only; Track progress. Incompatible with autopilot (`--auto` or `planAuto`).
 - `--gui` (`--human`; or config `disableGUIPlan: false`; `guiPlanFormat` html|md) — overview at Step 6 when a file is written. Fast: none unless `--gui`.
 - `--model <alias>` — pin cf-planner at Step 3 (`--model <alias>` or `--model=<alias>`).
@@ -49,6 +50,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
    1c. **Overview** — `--human`/`-gui`/`-human` → `--gui`. `--gui` → humanDoc=true (overrides fast + config). Else if fast → false. Else merge global+local config (local wins); true only when `disableGUIPlan` is explicitly `false`. Format: `guiPlanFormat` (default `html`). None for `--inline`.
    1d. **`--model` flag** <!-- cf-plan-model-flag -->
    Accept `--model <alias>` and `--model=<alias>`; strip flag and value. Valid: `opus`, `sonnet`, `haiku`, `fable` (no IDs, no `inherit`). Invalid → print `> ⚠️ --model <value> không hợp lệ (chỉ opus/sonnet/haiku/fable). Bỏ qua, cf-planner chạy theo model đang active.` and continue. If `--fast`/`--quick` is present → print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` and continue; item 4 re-checks auto-detected fast. `--hard` still dispatches cf-planner. A valid alias is passed as the dispatch `model` at Step 3.
+   1e. **Commit per task** — if `$ARGUMENTS` contains both `--commit-per-task` and `--no-commit-per-task` → print `> ⚠️ --commit-per-task cannot be combined with --no-commit-per-task. Pick one.` and stop. `--no-commit-per-task` → false; strip. `--commit-per-task` → true; strip. Else merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins); true only when `planCommitPerTask` is explicitly `true`. If true but autopilot is off → print `> ⚠️ --commit-per-task only applies under autopilot (only autopilot commits). Ignored.` and treat as false. If true with autopilot, announce: `> 🧩 Commit per task — each task commits as "phase N/M task i/K"; review runs once per phase over its commits.`
 2. **Auto-detect** — 2+ signals. Fast: existing pattern, single module, additive, "just/simple/quick". Hard: multi-module, breaking/schema, security, "refactor/migrate/rewrite", public API.
 3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless autopilot (always writes).
 4. **`--model` vs resolved fast mode** — after explicit `--fast`/`--quick` or auto-detect: if `--model` was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (skip if 1d already warned); do not pass the model at Step 3.
@@ -102,7 +104,7 @@ Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/App
 3. Native normal/hard only: write `brief.md` from the Brief skeleton.
 4. Human overview unless humanDoc=false (`templates/plan-templates.md`).
 5. Present path, phase/task counts, `README.md`, overview/`brief.md` if written. Suggest `/cf-plan-review <slug>`.
-6. Autopilot: `auto: true` in README; copy `## AUTOPILOT` into every `phase-N-*.md`.
+6. Autopilot: `auto: true` in README (plus `commitPerTask: true` when commit-per-task resolved true); copy `## AUTOPILOT` into every `phase-N-*.md`.
 
 ### Step 7: Offer Implementation
 
