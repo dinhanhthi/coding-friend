@@ -4,9 +4,10 @@
 
 ### RED — Write a failing test
 
-1. Write the smallest test that describes the desired behavior
-2. Run it. It MUST fail. If it passes, you don't need this code.
-3. The failure message should clearly describe what's missing
+1. Read `<plugin-root>/lib/protocols/test-scope.md` first — decide whether a new test is needed at all. If not, implement directly and say why.
+2. Write the smallest test that describes the desired behavior
+3. Run it. It MUST fail. If it passes, you don't need this code.
+4. The failure message should clearly describe what's missing
 
 ### GREEN — Make it pass
 
@@ -31,5 +32,5 @@
 ## Anti-Patterns (TDD mode only)
 
 1. **Testing mocks, not behavior** — If your test only verifies mock calls, it tests nothing
-2. **Test-only methods in production** — Never add methods just to make testing easier
+2. **Test-only seams in production** — Never add methods, exports, or wrappers just to make testing easier
 3. **Integration test as afterthought** — Unit tests first, then integration tests for boundaries

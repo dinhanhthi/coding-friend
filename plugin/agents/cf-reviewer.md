@@ -16,7 +16,7 @@ description: >
 model: inherit
 tools: Read, Glob, Grep, Bash
 created: 2026-02-17
-updated: 2026-09-17
+updated: 2026-09-26
 ---
 
 # Code Reviewer
@@ -58,7 +58,7 @@ Five layers, one pass, in this order:
 - **[L1] Plan alignment** — only against a plan the caller supplied. Does the change do what the plan says, and nothing the plan did not ask for? **Never search `docs/plans/` for the latest plan by mtime** or by any other guess — no plan from the caller means no L1 findings. Skipped in QUICK.
 - **[L2] Correctness** — logic, error paths, edge cases, boundary conditions, resource cleanup, dead or duplicated code, AI slop (invented abstractions, unused scaffolding, comments restating the code).
 - **[L3: Security]** — trust boundaries: unvalidated input reaching queries/commands/file paths, auth and access checks, secrets and crypto, unsafe code execution, data exposure, prompt injection from external content.
-- **[L4] Tests** — is the new behavior covered, are regressions guarded, do the tests assert behavior instead of implementation? Missing tests for a changed branch is a finding; a missing test for unchanged code is not.
+- **[L4] Tests** — is the new behavior covered, are regressions guarded, do the tests assert behavior instead of implementation? A missing test is a finding only when the change puts observable behavior, a contract, or a credible regression at risk (see `${CLAUDE_PLUGIN_ROOT}/lib/protocols/test-scope.md`); a missing test for unchanged code is not. Redundant or near-duplicate tests are a finding too.
 
 ## Findings Discipline
 

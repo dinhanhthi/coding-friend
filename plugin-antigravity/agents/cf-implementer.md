@@ -50,6 +50,7 @@ Check if the prompt or context contains `--add-tests`. Also check if the context
 
 > Only in TDD mode (`--add-tests` or `"tdd": true`).
 
+- Read `<plugin-root>/lib/protocols/test-scope.md` first — skip the test when it adds no protection, and say why in the Report
 - Write the smallest test that describes the desired behavior
 - Run it — it MUST fail
 - If it doesn't fail, you don't need this code
@@ -98,8 +99,8 @@ If tests fail, include a brief error summary **before** the signal line so the o
 ## Rules
 
 - In direct mode: implement efficiently, do NOT write new tests unless `--add-tests` is present
-- In TDD mode: NEVER write production code before a failing test
-- ONE behavior per test (TDD mode)
+- In TDD mode: NEVER write production code before a failing test, unless `<plugin-root>/lib/protocols/test-scope.md` says no test is needed (say why in the Report)
+- ONE behavior per test, and only tests `<plugin-root>/lib/protocols/test-scope.md` allows (TDD mode)
 - Run tests after every change (TDD mode), or run existing tests once at the end (direct mode)
 - Keep functions small and focused
 - Don't add features that weren't asked for

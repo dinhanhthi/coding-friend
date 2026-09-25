@@ -152,7 +152,7 @@ export default function Home() {
           </FooterLink>
           {" · "}
           Made by{" "}
-          <FooterLink href="https://dinhanhthi.com">Anh-Thi Dinh</FooterLink>
+          <FooterLink href="https://dinhanhthi.com">Thi</FooterLink>
           {" · "}
           <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
             Changelog

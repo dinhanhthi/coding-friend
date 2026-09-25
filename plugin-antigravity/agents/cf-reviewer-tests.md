@@ -54,6 +54,7 @@ Read-only. Never write files (no redirection, `tee`, or heredoc) and never run b
 - Generated code, config files, documentation — no tests needed
 - Trivial changes (typos, comments, formatting) — no tests needed
 - Simple re-exports or type definitions — no tests needed
+- Changes `<plugin-root>/lib/protocols/test-scope.md` says need no test (renames, pure refactors, small reversible tweaks) — no tests needed
 
 ## Confidence Filtering
 
@@ -62,8 +63,8 @@ Only report findings with confidence ≥ 0.8. Include confidence score for Criti
 ## Severity
 
 - Changed code with no tests AND high risk of regression → **Critical**
-- Missing edge case tests or weak assertions → **Important**
-- Test naming, organization, or minor coverage gaps → **Suggestion**
+- Missing test for an edge case the change actually puts at risk, or weak assertions → **Important**
+- Other edge cases, redundant or near-duplicate tests, test naming, organization, or minor coverage gaps → **Suggestion**
 
 ## Output Format
 

@@ -9,7 +9,7 @@ description: >
   performance complaints (use cf-optimize), and recurring or hard-to-reproduce
   bugs after a failed fix (use cf-sys-debug).
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-26
 ---
 
 # /cf-fix
@@ -109,7 +109,7 @@ Dispatch `cf-implementer`. Pass the Step 3b context file.
 >
 > Requirements:
 >
-> 1. `--add-tests` and no regression test → write a failing test first. Else fix directly.
+> 1. `--add-tests` and no regression test → first write a test that fails on the pre-fix code for the intended reason (see `${CLAUDE_PLUGIN_ROOT}/lib/protocols/test-scope.md`). Else fix directly.
 > 2. Fix the root cause, not the symptom. No try/catch to suppress errors.
 > 3. One fix at a time
 > 4. Full test suite — no regressions
