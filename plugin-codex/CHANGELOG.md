@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.4 (2026-09-25)
+
+- `$cf-plan` and `$cf-plan-resume` autopilot can now commit each task separately instead of once per phase — `--commit-per-task`/`--no-commit-per-task` or config `planCommitPerTask` (local overrides global); each task commits as `<type>(<scope>): phase N/M task i/K <task-title>`, `$cf-review` runs once per phase over that phase's commit range (disabling external reviewers for that review), and the mode is persisted in the plan's `commitPerTask` frontmatter so resume follows it [#97995f28](https://github.com/dinhanhthi/coding-friend/commit/97995f28)
+- `$cf-review` config gains `review.withClaude`, `review.withGrok`, `review.withCursor`, and `review.withGemini` so any external reviewer can be enabled by default, matching the existing `review.withCodex` [#24a18f62](https://github.com/dinhanhthi/coding-friend/commit/24a18f62)
+
 ## v0.44.3 (2026-09-24)
 
 - `$cf-plan` autopilot commit messages now include a `phase N/M` marker tying each commit to its plan phase, e.g. `feat(cli): phase 2/4 add config loader` [#296f82f7](https://github.com/dinhanhthi/coding-friend/commit/296f82f7)

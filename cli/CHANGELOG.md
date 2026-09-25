@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.41.2 (2026-09-25)
+
+- Add `planCommitPerTask` to `cf config` ("Plan commit per task") so `/cf-plan` autopilot can commit each task separately instead of once per phase (same editor pattern as `planAuto`) [#c560b861](https://github.com/dinhanhthi/coding-friend/commit/c560b861)
+- Add `cf config` menu entries for `review.withClaude`, `review.withGrok`, `review.withCursor`, and `review.withGemini` to enable each external reviewer by default, matching the existing Codex dual-review toggle [#24a18f62](https://github.com/dinhanhthi/coding-friend/commit/24a18f62)
+
 ## v1.41.1 (2026-09-25)
 
 - Fix `cf init` / `cf permission` generating `Write(path)` permission rules — Claude Code only matches `Edit(path)` for file permission checks, so these rules triggered a startup warning and did nothing. Trailing slashes in an external learn dir also produced a double-slash `//**` glob. Both are fixed, and stale `Write(path)` rules from earlier runs are now cleaned up automatically [#723ce049](https://github.com/dinhanhthi/coding-friend/commit/723ce049)
