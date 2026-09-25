@@ -715,6 +715,37 @@ async function editReviewWithCodex(
   writeNestedField("review", scope, "withCodex", value);
 }
 
+const REVIEW_AGENTS = {
+  withClaude: { name: "Claude", cli: "Claude Code" },
+  withGrok: { name: "Grok", cli: "Grok" },
+  withCursor: { name: "Cursor", cli: "Cursor Agent" },
+  withGemini: { name: "Gemini", cli: "Gemini" },
+} as const;
+
+type ReviewAgentKey = keyof typeof REVIEW_AGENTS;
+
+async function editReviewWithAgent(
+  key: ReviewAgentKey,
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const { name, cli } = REVIEW_AGENTS[key];
+  const currentValue = getReviewConfig(globalCfg, localCfg)[key];
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+  log.dim(`Note: requires the ${cli} CLI installed and logged in.`);
+
+  const value = await confirm({
+    message: `Run a ${name} external review alongside the in-session review by default? (every /cf-review, including auto-invoked ones)`,
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeNestedField("review", scope, key, value);
+}
+
 async function editReviewMaxRounds(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
@@ -744,7 +775,7 @@ async function editReviewMaxRounds(
 
 // `review.agentTimeout` / `review.nativeTimeout` are deliberately NOT offered
 // here: they are file-only tuning knobs with safe defaults (300s / 600s), and
-// the menu stays the two settings users actually toggle. Both are still typed
+// the menu stays the settings users actually toggle. Both are still typed
 // and strictly validated in lib/config.ts.
 async function reviewSubMenu(): Promise<void> {
   while (true) {
@@ -760,6 +791,10 @@ async function reviewSubMenu(): Promise<void> {
             name: `Codex dual-review (${review.withCodex ?? false})`,
             value: "withCodex",
           },
+          ...(Object.keys(REVIEW_AGENTS) as ReviewAgentKey[]).map((key) => ({
+            name: `${REVIEW_AGENTS[key].name} external review (${review[key] ?? false})`,
+            value: key,
+          })),
           {
             name: `Max review rounds (${review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS})`,
             value: "maxRounds",
@@ -777,6 +812,12 @@ async function reviewSubMenu(): Promise<void> {
         break;
       case "maxRounds":
         await editReviewMaxRounds(globalCfg, localCfg);
+        break;
+      case "withClaude":
+      case "withGrok":
+      case "withCursor":
+      case "withGemini":
+        await editReviewWithAgent(choice, globalCfg, localCfg);
         break;
     }
   }

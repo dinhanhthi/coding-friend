@@ -191,6 +191,7 @@ function renderAgyReviewSkill(input) {
         "**Antigravity host behavior:**",
         "",
         "- This skill already runs inside Google Antigravity. Ignore `--with-codex`, its `--codex` alias, and `review.withCodex`; do not launch a nested `codex review` subprocess.",
+        "- `review.withClaude`, `review.withGrok`, `review.withCursor` and `review.withGemini` are not yet supported on this host; ignore them.",
         "- Run the Coding Friend multi-agent review below.",
         "",
       ].join("\n"),
@@ -302,8 +303,8 @@ function renderAgyFile(sourcePath, input) {
         "",
       )
       .replace(
-        /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\/cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default; `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.nativeTimeout` \(default 600s\) bounds each in-session reviewer job; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
-        "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.",
+        /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\/cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default \(likewise `review\.withClaude`, `review\.withGrok`, `review\.withCursor`, `review\.withGemini`\); `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.nativeTimeout` \(default 600s\) bounds each in-session reviewer job; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
+        "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Google Antigravity (do not spawn a nested Codex review). `review.withClaude`, `review.withGrok`, `review.withCursor`, `review.withGemini` are not yet supported on Google Antigravity (ignored). `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.",
       )
       .replace(
         /\n- \*\*After editing plugin files\?\*\* Run `cf dev sync` to copy changes to the cached version\./,

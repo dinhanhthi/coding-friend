@@ -10,7 +10,7 @@ description: >
   (use $cf-ask), and formatting-only changes. --fix applies Critical/Important
   findings, --commit also commits.
 created: 2026-02-17
-updated: 2026-09-23
+updated: 2026-09-25
 ---
 
 # $cf-review
@@ -51,6 +51,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 **Codex host behavior:**
 
 - This skill already runs inside Codex. Ignore `--with-codex`, its `--codex` alias, and `review.withCodex`; do not launch a nested `codex review` subprocess.
+- `review.withClaude`, `review.withGrok`, `review.withCursor` and `review.withGemini` are not yet supported on this host; ignore them.
 - Run the Coding Friend multi-agent review below.
 
 ### Step 2: Gather the diff

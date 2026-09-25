@@ -129,6 +129,17 @@ coding-friend uses a layered config system:
     // Default: false
     "withCodex": false,
 
+    // Run a headless Claude / Grok / Cursor / Gemini external review alongside the
+    // in-session review by default — equivalent to always passing `--claude`,
+    // `--grok`, `--cursor`, `--gemini`. Same rules as the flags: default target only, and
+    // an agent matching the current host is skipped. Requires that agent's CLI
+    // installed and logged in; skipped with a warning if unavailable.
+    // Default: false
+    "withClaude": false,
+    "withGrok": false,
+    "withCursor": false,
+    "withGemini": false,
+
     // Maximum /cf-review rounds in the autopilot fix loop
     // (/cf-plan --auto and /cf-tdd --auto) and in the /cf-review --fix /
     // --commit fix loop: initial review + fix re-reviews.

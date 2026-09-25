@@ -71,6 +71,10 @@ export interface MemoryConfig {
 
 export interface ReviewConfig {
   withCodex?: boolean;
+  withClaude?: boolean;
+  withGrok?: boolean;
+  withCursor?: boolean;
+  withGemini?: boolean;
   /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
   maxRounds?: number;
   /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */

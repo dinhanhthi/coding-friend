@@ -80,6 +80,10 @@ const MemoryConfigSchema = z.object({
 
 const ReviewConfigSchema = z.strictObject({
   withCodex: z.boolean().optional(),
+  withClaude: z.boolean().optional(),
+  withGrok: z.boolean().optional(),
+  withCursor: z.boolean().optional(),
+  withGemini: z.boolean().optional(),
   maxRounds: z.number().int().min(1).optional(),
   // Both timeouts are whole positive seconds: zero, negative and fractional
   // values cannot be enforced as a deadline, so they are rejected here rather

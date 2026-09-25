@@ -316,6 +316,28 @@ describe("loadConfig validation", () => {
     expect(config.review?.withCodex).toBeUndefined();
   });
 
+  for (const key of ["withClaude", "withGrok", "withCursor", "withGemini"] as const) {
+    it(`accepts review.${key} as a valid config key (boolean)`, () => {
+      mockReadJson
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce({ review: { [key]: true } });
+
+      const config = loadConfig();
+      expect(log.warn).not.toHaveBeenCalled();
+      expect(config.review?.[key]).toBe(true);
+    });
+
+    it(`warns and strips review.${key} when it is the wrong type`, () => {
+      mockReadJson
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce({ review: { [key]: "yes" } });
+
+      const config = loadConfig();
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining(key));
+      expect(config.review?.[key]).toBeUndefined();
+    });
+  }
+
   it("accepts review.maxRounds as a valid config key (integer ≥ 1)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

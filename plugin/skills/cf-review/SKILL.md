@@ -11,7 +11,7 @@ description: >
   findings, --commit also commits.
 user-invocable: true
 created: 2026-02-17
-updated: 2026-09-23
+updated: 2026-09-25
 model: opus
 ---
 
@@ -53,7 +53,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 **Codex dual-review flag:**
 
 - `--with-codex`/`--codex` → `codex=true`; else `review.withCodex` from config
-- `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`
+- `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`; also add `claude`/`grok`/`cursor`/`gemini` when `review.withClaude`/`review.withGrok`/`review.withCursor`/`review.withGemini` is `true` in config
 - `--out` → `out=true` (exclusive with agent flags)
 - Default target only — file path or commit range disables all external reviewers.
 - Any of the three set → read `references/external-reviewers.md` now; it owns the target/host-match/exclusivity checks, Steps 2.5 and 6.5, and the `--out` pipeline. None set → skip that file entirely.
