@@ -151,16 +151,13 @@ export default function Home() {
             MIT
           </FooterLink>
           {" · "}
-          Made by{" "}
-          <FooterLink href="https://dinhanhthi.com">Thi</FooterLink>
+          Made by <FooterLink href="https://dinhanhthi.com">Thi</FooterLink>
           {" · "}
           <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
             Changelog
           </FooterLink>
           {" · "}
-          <FooterLink href="/llms.txt">
-            llms.txt
-          </FooterLink>
+          <FooterLink href="/llms.txt">llms.txt</FooterLink>
           {PLUGIN_VERSION ? (
             <>
               {" · "}

@@ -25,12 +25,7 @@ function GitHubIcon() {
   );
 }
 
-export default function Navbar({
-  sections,
-}: {
-  sections: Section[];
-}) {
-
+export default function Navbar({ sections }: { sections: Section[] }) {
   // Resolve each label to a real heading slug; labels with no match are skipped.
   const headings = sections;
   const navLinks = NAV_LABELS.flatMap((label) => {

@@ -316,7 +316,12 @@ describe("loadConfig validation", () => {
     expect(config.review?.withCodex).toBeUndefined();
   });
 
-  for (const key of ["withClaude", "withGrok", "withCursor", "withGemini"] as const) {
+  for (const key of [
+    "withClaude",
+    "withGrok",
+    "withCursor",
+    "withGemini",
+  ] as const) {
     it(`accepts review.${key} as a valid config key (boolean)`, () => {
       mockReadJson
         .mockReturnValueOnce(null)
@@ -511,9 +516,7 @@ describe("loadConfig validation", () => {
       .mockReturnValueOnce({ planAuto: "yes" });
 
     const config = loadConfig();
-    expect(log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("planAuto"),
-    );
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("planAuto"));
     expect(config.planAuto).toBeUndefined();
   });
 

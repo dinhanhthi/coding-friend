@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.5 (2026-09-26)
+
+- `cf-tdd`, `$cf-fix`, and test review now follow `lib/protocols/test-scope.md`: write a test only when it protects observable behavior, a contract, or a credible regression; skip renames, copy, config, docs, pure refactors, and small reversible tweaks; never exempt security-sensitive changes (auth, input validation, path/command handling, crypto); one owner test per contract, and a regression test must fail on the pre-fix code for the intended reason [#ef3f61e1](https://github.com/dinhanhthi/coding-friend/commit/ef3f61e1) [#7d2f2e39](https://github.com/dinhanhthi/coding-friend/commit/7d2f2e39)
+
 ## v0.44.4 (2026-09-25)
 
 - `$cf-plan` and `$cf-plan-resume` autopilot can now commit each task separately instead of once per phase — `--commit-per-task`/`--no-commit-per-task` or config `planCommitPerTask` (local overrides global); each task commits as `<type>(<scope>): phase N/M task i/K <task-title>`, `$cf-review` runs once per phase over that phase's commit range (disabling external reviewers for that review), and the mode is persisted in the plan's `commitPerTask` frontmatter so resume follows it [#97995f28](https://github.com/dinhanhthi/coding-friend/commit/97995f28)
