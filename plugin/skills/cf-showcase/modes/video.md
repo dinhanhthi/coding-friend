@@ -19,7 +19,7 @@ Ask one question per turn, recommended option first. Skip any question `$ARGUMEN
 3. **Language(s)** — one or several. Each language becomes its own mp4, rendered from the same source; only captions and narrative copy change.
 4. **Aspect** — 16:9 (1920×1080, recommended) · 1:1 (1080×1080) · 9:16 (1080×1920). Pick 9:16 only for social stories; README and landing pages want 16:9.
 5. **Emphasize / avoid** — features to lead with, things to leave out (unreleased features, a competitor's name, a deprecated command).
-6. **Audio** — upbeat (recommended: bright 120 bpm arpeggio, bouncy bass, light drums) · calm (slow soft pads, no drums) · none (silent). Sound effects (whooshes, pops, clicks) come with either music style. Only ask when `CAPABILITY` reported `audio=yes`; otherwise the video is silent and the user was already told.
+6. **Audio** — upbeat (recommended: bright arpeggio, bass and light drums; every render draws a fresh variation) · calm (slow soft pads, no drums) · none (silent). Sound effects (whooshes, pops, clicks) come with either music style. Only ask when `CAPABILITY` reported `audio=yes`; otherwise the video is silent and the user was already told.
 
 ## 2. Storyboard
 
@@ -125,7 +125,7 @@ ffmpeg -i <name>-intro-<xx>.mp4 -i audio.wav -map 0:v -map 1:a -c:v copy \
 mv <name>-intro-<xx>.muxed.mp4 <name>-intro-<xx>.mp4
 ```
 
-`audio.py` places every cue at the exact event time from the timeline: pops when UI appears, clicks on cursor presses, ticks while text streams, whooshes on transitions, a final chord on the end card. `--mood` picks the music bed under the cues (`upbeat` by default, `calm` for slow pads). It targets −14 to −20 LUFS integrated. One `audio.wav` serves every language as long as `TIMELINE` is shared; if a language changes event times (for example slower typing), export its own timeline.
+`audio.py` places every cue at the exact event time from the timeline: pops when UI appears, clicks on cursor presses, ticks while text streams, whooshes on transitions, a final chord on the end card. `--mood` picks the music bed under the cues (`upbeat` by default, `calm` for slow pads). Each `upbeat` run draws a random variation (key, tempo 112–128 bpm, chord progression, arpeggio, lead sound, drum, hat and bass patterns) and prints its seed; `--seed N` rebuilds that exact track. Write the chosen seed into the regen commands in `source/README.md` so a re-render keeps the same music. If the user dislikes the track, run again without `--seed` for a new one. It targets −14 to −20 LUFS integrated. One `audio.wav` serves every language as long as `TIMELINE` is shared; if a language changes event times (for example slower typing), export its own timeline.
 
 **Size**: aim for under 50 MB (GitHub warns above it; it rejects pushes above 100 MB). For a long film the user accepted past the warning, the size budget is the one agreed at the length question. If a file is over budget, re-encode with a higher CRF (22–26) rather than lowering resolution:
 

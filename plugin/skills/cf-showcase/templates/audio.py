@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Soundtrack for a showcase film, derived from its timeline.
 
-    python3 audio.py --timeline timeline.json --out audio.wav [--mood upbeat|calm] [--lufs -16]
+    python3 audio.py --timeline timeline.json --out audio.wav [--mood upbeat|calm] [--seed N] [--lufs -16]
 
 timeline.json comes from `node capture.mjs --mode timeline` and looks like
 {"duration": 30, "fps": 60, "timeline": [{"scene", "start", "dur", "opts"}]}.
@@ -12,7 +12,9 @@ Cues:
 - opts.events = [{"t": 1.2, "kind": "pop|click|tick|chord"}], t in seconds LOCAL to the scene start
 - a final chord at the last scene start (the end card)
 plus a music bed following a chord progression, chosen with --mood:
-- upbeat (default): 120 bpm, plucked arpeggio, bouncy bass, light kick/clap/hat
+- upbeat (default): plucked arpeggio, bass and light drums. Each run draws a variation
+  (key, tempo 112-128 bpm, progression, arpeggio, lead sound, drum, hat and bass patterns)
+  from --seed; without --seed a random seed is drawn and printed, so any track can be rebuilt
 - calm: slow sustained pads and bass, no drums
 
 Loudness: the gain targets --lufs with an RMS approximation (no K-weighting, no gating).
@@ -21,13 +23,14 @@ Needs python3 + numpy only.
 """
 import argparse
 import json
+import random
 import sys
 import wave
 
 import numpy as np
 
 SR = 48000
-rng = np.random.default_rng(3)  # seeded: same timeline, same file
+rng = np.random.default_rng(3)  # noise for cues; the upbeat variation comes from --seed
 
 
 def parse_args():
@@ -35,6 +38,7 @@ def parse_args():
     p.add_argument("--timeline", required=True, help="timeline.json from capture.mjs --mode timeline")
     p.add_argument("--out", default="audio.wav")
     p.add_argument("--mood", choices=("upbeat", "calm"), default="upbeat", help="music bed style")
+    p.add_argument("--seed", type=int, help="upbeat variation seed (default: random, printed)")
     p.add_argument("--lufs", type=float, default=-16.0, help="target integrated loudness (approx), -14..-20")
     return p.parse_args()
 
@@ -109,11 +113,6 @@ def noise_hit(dur, dec, a, g):
     return (x - lowpass(x, a)) * env(n, 0.001, dec) * g
 
 
-def pluck(f, g=0.1):
-    """Short bright mallet-like note."""
-    return tone(f, 0.3, 0.1, g, (1, 0.5, 0.25, 0.1), a=0.002)
-
-
 def pad(freqs, dur, g):
     n = int(SR * dur)
     t = np.arange(n) / SR
@@ -180,8 +179,69 @@ CHORDS = [(261.6, 329.6, 392.0), (196.0, 246.9, 293.7), (220.0, 261.6, 329.6), (
 BASS = [65.4, 49.0, 55.0, 43.65]
 FINAL = (130.8, 196.0, 261.6, 329.6, 392.0, 523.3)
 BAR = 2.4  # calm: seconds per chord (100 bpm, 4 beats)
-UP_BEAT = 0.5  # upbeat: 120 bpm
-ARP = (0, 1, 2, 1, 0, 1, 2, 3)  # chord-tone index per 8th note; 3 = root an octave up
+
+# upbeat variations; patterns are per 8th note over one bar of 4 beats
+TRIADS = {  # C major, same register as CHORDS: (chord tones, bass root)
+    "I": ((261.6, 329.6, 392.0), 65.4),
+    "ii": ((293.7, 349.2, 440.0), 73.4),
+    "IV": ((174.6, 220.0, 261.6), 43.65),
+    "V": ((196.0, 246.9, 293.7), 49.0),
+    "vi": ((220.0, 261.6, 329.6), 55.0),
+}
+KEYS = {"Bb": -2, "B": -1, "C": 0, "D": 2, "Eb": 3, "F": 5}  # semitones from C
+PROGRESSIONS = (
+    ("I", "V", "vi", "IV"),
+    ("I", "IV", "V", "IV"),
+    ("I", "vi", "IV", "V"),
+    ("vi", "IV", "I", "V"),
+    ("I", "IV", "vi", "V"),
+    ("I", "ii", "IV", "V"),
+)
+ARPS = (  # chord-tone index; 3 = root an octave up
+    (0, 1, 2, 1, 0, 1, 2, 3),
+    (0, 2, 1, 2, 3, 2, 1, 2),
+    (0, 1, 2, 3, 2, 1, 0, 1),
+    (2, 1, 0, 1, 2, 3, 2, 1),
+    (0, 0, 2, 1, 3, 1, 2, 1),
+)
+LEADS = {  # harmonics, decay (s)
+    "mallet": ((1, 0.5, 0.25, 0.1), 0.1),
+    "glass": ((1, 0.2, 0, 0.35), 0.16),
+    "chip": ((1, 0, 0.33, 0, 0.2), 0.08),
+}
+DRUMS = {  # kick gains; claps always on beats 2 and 4
+    "backbeat": (1, 0, 0.6, 0, 1, 0, 0.6, 0),
+    "four-on-floor": (1, 0, 1, 0, 1, 0, 1, 0),
+    "bouncy": (1, 0, 0, 0.7, 1, 0, 0, 0),
+}
+HATS = {"offbeat": (0, 1, 0, 1, 0, 1, 0, 1), "eighths": (0.5, 1, 0.5, 1, 0.5, 1, 0.5, 1)}
+BASSLINES = {  # multiple of the root per 8th
+    "octave": (1, 2, 1, 2, 1, 2, 1, 2),
+    "root-fifth": (1, 1, 1.5, 1, 1, 1, 1.5, 2),
+    "driving": (1, 1, 1, 1, 1, 1, 1, 1),
+}
+
+
+def pick_upbeat(seed):
+    r = random.Random(seed)
+    key = r.choice(list(KEYS))
+    return {
+        "seed": seed,
+        "key": key,
+        "k": 2 ** (KEYS[key] / 12),
+        "bpm": r.randrange(112, 129, 2),
+        "prog": r.choice(PROGRESSIONS),
+        "arp": r.randrange(len(ARPS)),
+        "lead": r.choice(list(LEADS)),
+        "drums": r.choice(list(DRUMS)),
+        "hats": r.choice(list(HATS)),
+        "bass": r.choice(list(BASSLINES)),
+    }
+
+
+def describe(v):
+    return (f"key {v['key']}, {v['bpm']} bpm, {'-'.join(v['prog'])}, arp {v['arp'] + 1}, lead {v['lead']}, "
+            f"drums {v['drums']}, hats {v['hats']}, bass {v['bass']}")
 
 
 def bed_calm(mix, bed_end):
@@ -194,33 +254,32 @@ def bed_calm(mix, bed_end):
         bar += 1
 
 
-def bed_upbeat(mix, bed_end):
+def bed_upbeat(mix, bed_end, v):
     k, h, c = kick(0.5), noise_hit(0.05, 0.012, 0.6, 0.06), noise_hit(0.12, 0.035, 0.25, 0.12)
-    beat = 0
-    while beat * UP_BEAT < bed_end - 0.05:
-        t = beat * UP_BEAT
-        ch = CHORDS[(beat // 4) % 4]
-        if beat % 4 == 0:
-            mix.add(pad([f * 2 for f in ch], min(4 * UP_BEAT, bed_end - t) + 0.2, 0.05), t)
-        mix.add(k, t, 1.0 if beat % 2 == 0 else 0.6)
-        if beat % 2 == 1:
-            mix.add(c, t, pan=-0.1)
-        for half in (0, 1):
-            at = t + half * UP_BEAT / 2
-            if at >= bed_end:
-                break
-            if half:
-                mix.add(h, at, pan=0.3)
-            step = (beat % 4) * 2 + half
-            idx = ARP[step]
-            f = ch[0] * 4 if idx == 3 else ch[idx] * 2
-            mix.add(pluck(f, 0.09), at, pan=0.25 if step % 2 else -0.25)
-            root = BASS[(beat // 4) % 4] * 2
-            mix.add(tone(root * (2 if half else 1), 0.22, 0.09, 0.14, (1, 0.6, 0.3), a=0.003), at)
-        beat += 1
+    eighth = 30 / v["bpm"]
+    arp, (harm, dec) = ARPS[v["arp"]], LEADS[v["lead"]]
+    kicks, hats, bassline = DRUMS[v["drums"]], HATS[v["hats"]], BASSLINES[v["bass"]]
+    n = 0
+    while n * eighth < bed_end - 0.05:
+        at, step = n * eighth, n % 8
+        ch, root = TRIADS[v["prog"][(n // 8) % 4]]
+        ch, root = [f * v["k"] for f in ch], root * v["k"]
+        if step == 0:
+            mix.add(pad([f * 2 for f in ch], min(8 * eighth, bed_end - at) + 0.2, 0.05), at)
+        if kicks[step]:
+            mix.add(k, at, kicks[step])
+        if step in (2, 6):
+            mix.add(c, at, pan=-0.1)
+        if hats[step]:
+            mix.add(h, at, hats[step], pan=0.3)
+        idx = arp[step]
+        f = ch[0] * 4 if idx == 3 else ch[idx] * 2
+        mix.add(tone(f, 0.3, dec, 0.09, harm, a=0.002), at, pan=0.25 if step % 2 else -0.25)
+        mix.add(tone(root * 2 * bassline[step], 0.22, 0.09, 0.14, (1, 0.6, 0.3), a=0.003), at)
+        n += 1
 
 
-def score(data, mood="upbeat"):
+def score(data, mood="upbeat", v=None):
     timeline = sorted(data.get("timeline", []), key=lambda e: e["start"])
     if not timeline:
         sys.exit("audio.py: timeline is empty")
@@ -230,7 +289,11 @@ def score(data, mood="upbeat"):
 
     # music bed until the end card, then the final chord rings out
     bed_end = last + 0.2 if len(timeline) > 1 else duration
-    (bed_upbeat if mood == "upbeat" else bed_calm)(mix, bed_end)
+    k = v["k"] if mood == "upbeat" else 1.0
+    if mood == "upbeat":
+        bed_upbeat(mix, bed_end, v)
+    else:
+        bed_calm(mix, bed_end)
 
     for i, e in enumerate(timeline):
         start = e["start"]
@@ -244,10 +307,10 @@ def score(data, mood="upbeat"):
             elif kind == "tick":
                 mix.add(tick(), at, pan=0.2)
             elif kind == "chord":
-                mix.add(chord(CHORDS[0], 1.2, 0.08), at)
+                mix.add(chord([f * k for f in CHORDS[0]], 1.2, 0.08), at)
             else:
                 mix.add(pop(0.35), at)
-    mix.add(chord(FINAL, max(1.0, duration - last), 0.12), last)
+    mix.add(chord([f * k for f in FINAL], max(1.0, duration - last), 0.12), last)
     return mix
 
 
@@ -264,7 +327,11 @@ def main():
     args = parse_args()
     with open(args.timeline, encoding="utf-8") as f:
         data = json.load(f)
-    mix = score(data, args.mood)
+    v = None
+    if args.mood == "upbeat":
+        v = pick_upbeat(args.seed if args.seed is not None else random.randrange(1_000_000))
+        print(f"upbeat seed {v['seed']}: {describe(v)} (rerun with --seed {v['seed']} for this track)")
+    mix = score(data, args.mood, v)
     L, R = master(reverb(mix.L), reverb(mix.R), args.lufs)
     write_wav(args.out, L, R)
     print(f"audio ({args.mood}): {len(L) / SR:.2f}s, approx {approx_lufs(L, R):.1f} LUFS (check with ebur128) -> {args.out}")
