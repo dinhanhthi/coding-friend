@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.45.0 (2026-09-27)
+
+- Add `/cf-showcase`: an intro video (mp4) and/or poster (png/pdf/html) for the current project, built from the repo's real features, names and brand, and saved to `docs/showcase/` with a re-renderable `source/` folder. Interview covers style, length (30s default, auto, or custom — warns rather than hard-caps above 90s/180s), languages, aspect (16:9/1:1/9:16), and what to emphasize or avoid. Video uses a scene library (hook, brand reveal, hero demo, feature grid, differentiator, scale, end card) with a check-deps step reporting what's actually renderable (`video`/`poster_png_pdf`/`audio`) before any question is asked [#0abe373a](https://github.com/dinhanhthi/coding-friend/commit/0abe373a) [#7f18160e](https://github.com/dinhanhthi/coding-friend/commit/7f18160e) [#022f097b](https://github.com/dinhanhthi/coding-friend/commit/022f097b) [#b5a8f93a](https://github.com/dinhanhthi/coding-friend/commit/b5a8f93a)
+- `/cf-showcase` audio defaults to an upbeat music bed (arpeggio, bass, light drums) instead of the earlier slow/sombre pads; each render draws a random variation (key, tempo, chord progression, arpeggio, lead sound, drum/hat/bass pattern) and prints its seed so a re-render can reproduce the same track with `--seed`. `calm` (slow pads, no drums) stays available as an alternative [#3e17238c](https://github.com/dinhanhthi/coding-friend/commit/3e17238c) [#39ecd19c](https://github.com/dinhanhthi/coding-friend/commit/39ecd19c)
+
 ## v0.44.7 (2026-09-27)
 
 - `/cf-plan` phase budget relaxed: the cap is now a ceiling (≤15 distinct files per phase, ~10 tasks as a soft limit), not a target — planners use the fewest phases that fit under it, and merge phases under 3 tasks into a neighbour unless the phase is the whole plan or a hard commit/review gate forces the split [#940a0206](https://github.com/dinhanhthi/coding-friend/commit/940a020615ffe4b50e2e598b45d824e7bed62f84)

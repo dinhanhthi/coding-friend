@@ -116,6 +116,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   - `scan [path]` — read existing UI files, extract colors / type / spacing / components, write `docs/DESIGN.md`
   - `[description]` — implement new UI from that description, using `docs/DESIGN.md` (or a fresh scan) as the base
   - `modify [what] -- [how]` — change one element and keep it consistent with the rest of the project
+- `/cf-showcase` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-showcase/SKILL.md)) — Builds an intro video (mp4) or poster (png / pdf / html) from the project's real content into `docs/showcase/`. Asks about style, length, and language first; `--video` / `--poster` skip the format question. Video is 30s by default; above 90s it warns about file size and render time, then lets you decide.
 - `/cf-optimize` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-optimize/SKILL.md)) — Detects available profilers, measures a baseline, changes one thing, re-measures, compares.
 
 ### 🐛 Fix & debug
