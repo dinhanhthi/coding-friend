@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use /cf-advise), or resuming
   an existing plan (use /cf-plan-resume).
 created: 2026-02-17
-updated: 2026-09-25
+updated: 2026-09-27
 ---
 
 # /cf-plan
@@ -42,14 +42,16 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 ### Step 0.5: Determine Mode
 
+**Config lookup** (used by 1a, 1c, 1e): merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins).
+
 0. **Resume** — bare `--resume` → print `> ℹ️ Resuming a plan is now \`/cf-plan-resume <plan>\` (not \`/cf-plan --resume\`).` and stop.
 1. **Explicit flag** — `--quick` → `--fast`; honor `--fast` or `--hard`.
-   1a. **Autopilot** — if `$ARGUMENTS` contains both `--auto` and `--no-auto` → print `> ⚠️ --auto cannot be combined with --no-auto. Pick one.` and stop. `--no-auto` → false; strip. `--auto` → true; strip. Else merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins); true only when `planAuto` is explicitly `true`. When true, announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.` If it came from config (not `--auto`), use: `> 🤖 Autopilot enabled (planAuto: true) — phases will run end-to-end without confirmation prompts.` `/cf-plan-resume` does **not** read `planAuto` — only the saved plan's `auto: true` + `## AUTOPILOT` section.
+   1a. **Autopilot** — if `$ARGUMENTS` contains both `--auto` and `--no-auto` → print `> ⚠️ --auto cannot be combined with --no-auto. Pick one.` and stop. `--no-auto` → false; strip. `--auto` → true; strip. Else config lookup: true only when `planAuto` is explicitly `true`. When true, announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.` If it came from config (not `--auto`), use: `> 🤖 Autopilot enabled (planAuto: true) — phases will run end-to-end without confirmation prompts.` `/cf-plan-resume` does **not** read `planAuto` — only the saved plan's `auto: true` + `## AUTOPILOT` section.
    1b. **Inline** — `--no-file` → `--inline`; if autopilot is on (from `--auto` or `planAuto`) refuse: `> ⚠️ --inline cannot be combined with autopilot (--auto or planAuto; autopilot relies on the on-disk plan file for state). Pick one.` Else announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Track progress.`
-   1c. **Overview** — `--human`/`-gui`/`-human` → `--gui`. `--gui` → humanDoc=true (overrides fast + config). Else if fast → false. Else merge global+local config (local wins); true only when `disableGUIPlan` is explicitly `false`. Format: `guiPlanFormat` (default `html`). None for `--inline`.
+   1c. **Overview** — `--human`/`-gui`/`-human` → `--gui`. `--gui` → humanDoc=true (overrides fast + config). Else if fast → false. Else config lookup: true only when `disableGUIPlan` is explicitly `false`. Format: `guiPlanFormat` (default `html`). None for `--inline`.
    1d. **`--model` flag** <!-- cf-plan-model-flag -->
    Accept `--model <alias>` (two tokens, e.g. `--model pro`) AND `--model=<alias>` (one token, e.g. `--model=flash`). **Strip both the flag and the value**. Example: `/cf-plan --model pro Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. Valid aliases: `inherit`, `flash`, `pro`. Do not accept Claude aliases or full model IDs. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a valid Antigravity model alias (inherit|flash|pro). Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid alias is parsed, it is used at Step 3 unless skipped as fast.
-   1e. **Commit per task** — if `$ARGUMENTS` contains both `--commit-per-task` and `--no-commit-per-task` → print `> ⚠️ --commit-per-task cannot be combined with --no-commit-per-task. Pick one.` and stop. `--no-commit-per-task` → false; strip. `--commit-per-task` → true; strip. Else merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins); true only when `planCommitPerTask` is explicitly `true`. If true but autopilot is off → print `> ⚠️ --commit-per-task only applies under autopilot (only autopilot commits). Ignored.` and treat as false. If true with autopilot, announce: `> 🧩 Commit per task — each task commits as "phase N/M task i/K"; review runs once per phase over its commits.`
+   1e. **Commit per task** — if `$ARGUMENTS` contains both `--commit-per-task` and `--no-commit-per-task` → print `> ⚠️ --commit-per-task cannot be combined with --no-commit-per-task. Pick one.` and stop. `--no-commit-per-task` → false; strip. `--commit-per-task` → true; strip. Else config lookup: true only when `planCommitPerTask` is explicitly `true`. If true but autopilot is off → print `> ⚠️ --commit-per-task only applies under autopilot (only autopilot commits). Ignored.` and treat as false. If true with autopilot, announce: `> 🧩 Commit per task — each task commits as "phase N/M task i/K"; review runs once per phase over its commits.`
 2. **Auto-detect** — 2+ signals. Fast: existing pattern, single module, additive, "just/simple/quick". Hard: multi-module, breaking/schema, security, "refactor/migrate/rewrite", public API.
 3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless autopilot (always writes).
 4. **`--model` vs resolved fast mode** — after explicit `--fast`/`--quick` or auto-detect: if `--model` was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (skip if 1d already warned); do not pass the model at Step 3.
@@ -91,13 +93,13 @@ Present: key findings, approaches with pros/cons, recommended approach and why, 
 
 ### Step 5: Write the Plan
 
-Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` from `modes/autopilot.md`. Hard: **Rollback** per task + `## Migration & Rollback`.
+Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): ≤ 8 distinct files (tests included) and ≤ 6 tasks per phase. Before writing, count every phase — also in fast mode (no planner). Over budget → split into more integer-numbered phases along dependency boundaries, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` from `modes/autopilot.md`. Hard: **Rollback** per task + `## Migration & Rollback`.
 
 ### Step 6: Save the Plan
 
 > **No-file modes** (`--inline`, or `--fast` without autopilot): skip the write; present the plan in chat; Track progress with one item per task; still create the context file. `--fast` with 2+ phases → announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.` and write the folder (no `brief.md`). `--fast` + autopilot always writes (no `brief.md`).
 
-**Layout & human overview:** `{docsDir}/plans/YYYY-MM-DD-<slug>/`, entry `README.md` (small plan = README only; big plan = README + `phase-N-<name>.md`); `brief.md` normal/hard only. Icons `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED`. Details and the overview doc rules: `templates/plan-templates.md`.
+**Layout & human overview:** `{docsDir}/plans/YYYY-MM-DD-<slug>/` — layout, progress icons, and overview rules in `templates/plan-templates.md` (Layout, Human overview doc).
 
 1. Track progress: one item per task.
 2. Set `slug:` in `README.md` to the folder name (= task-id).

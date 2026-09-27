@@ -74,7 +74,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 ### 🗺️ Plan & build
 
-- `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Available modes:
+- `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Each phase stays small (at most 8 files and 6 tasks) so its review is fast and cheap; larger work is split into more phases. Available modes:
   - (none) — normal: full workflow, writes the plan file
   - `--fast` / `--quick` — skip discovery and the planner; plan stays in chat, no file. If the plan turns multi-phase it switches to normal and writes the file. Combined with autopilot (`--auto` or `planAuto`), the file is always written
   - `--hard` — extra discovery plus rollback planning

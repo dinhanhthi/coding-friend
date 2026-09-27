@@ -12,7 +12,7 @@ slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-
 auto: false # set true when created with --auto or when planAuto defaulted the run
 commitPerTask: false # true when --commit-per-task or planCommitPerTask resolved on under autopilot
 # phaseBase: <sha> — written by autopilot in commit-per-task mode
-status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Set at creation; flipped to done/failed at terminal completion (see modes/execute.md "Plan done").
+status: in-progress # in-progress | done | failed — `cf clean` sweeps only `done` (see modes/execute.md "Plan done")
 ---
 
 # Plan: <title>
@@ -37,7 +37,7 @@ status: in-progress # machine-readable plan status: in-progress | done | failed.
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- autopilot only: paste the AUTOPILOT CONTRACT block from modes/autopilot.md; else omit this section -->
 
 ## Progress
 
@@ -85,7 +85,7 @@ slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `$cf-plan-
 auto: false # set true when created with --auto or when planAuto defaulted the run
 commitPerTask: false # true when --commit-per-task or planCommitPerTask resolved on under autopilot
 # phaseBase: <sha> — written by autopilot in commit-per-task mode
-status: in-progress # machine-readable plan status: in-progress | done | failed. `cf clean` only sweeps `done`. Frontmatter is the authority; the body **Status:** line mirrors it for humans (see modes/execute.md "Plan done").
+status: in-progress # in-progress | done | failed — authority; body **Status:** mirrors it (see modes/execute.md "Plan done")
 ---
 
 # Plan: <title>
@@ -104,7 +104,7 @@ status: in-progress # machine-readable plan status: in-progress | done | failed.
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- autopilot only: paste the AUTOPILOT CONTRACT block from modes/autopilot.md; else omit this section -->
 
 ## Progress
 
@@ -142,7 +142,7 @@ After implementation: `$cf-review` → `$cf-commit`
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- only when autopilot (--auto or planAuto): copy the canonical "AUTOPILOT CONTRACT block" from modes/autopilot.md here verbatim; omit this whole section when auto: false -->
+<!-- autopilot only: paste the AUTOPILOT CONTRACT block from modes/autopilot.md; else omit this section -->
 
 ## Progress
 
@@ -214,8 +214,9 @@ Flags: <flags that were stripped, or none>
 
 Written plans live in `{docsDir}/plans/YYYY-MM-DD-<slug>/`; entry point is always `README.md`.
 
-- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
-- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase. Also `brief.md` (normal/hard only — never `--fast`, `--inline`, or fast promoted to normal).
+- **Small plan** (exactly 1 phase) → `README.md` holds the full plan (Small plan template). No separate phase files.
+- **Big plan** (2+ phases) → `README.md` (overview + Progress) + one `phase-N-<name>.md` per phase.
+- Both: also `brief.md` in normal/hard only — never `--fast`, `--inline`, or fast promoted to normal.
 
 Progress icons: `⬜ TODO` → `🔄 IN PROGRESS` → `✅ DONE` | `❌ FAILED` (permanent after max retries)
 
@@ -250,5 +251,6 @@ Use when dispatching `cf-planner` (after the spawn/`model` line in SKILL.md):
 > Confirmed assumptions: [from Step 1] | User preferences: [from Step 1]
 > Codebase context: [full cf-explorer report]
 > Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
+> Respect the phase size budget: ≤ 8 distinct files and ≤ 6 tasks per phase; split larger phases (integer-numbered, each green on its own).
 
 > **Hard mode**: 3–4 approaches; each needs migration path, rollback, incremental deploy. Include blast-radius findings.
