@@ -38,15 +38,34 @@ Show the user the scene list: scene, start, duration, one-line copy per language
 
 ## Scene catalog
 
-Reusable scene templates live in `templates/scenes/` (copied to `source/scenes/`). The catalog table of scene names and their `opts` is added in Phase 2.
+Reusable scenes live in `templates/scenes/` (copied to `source/scenes/`). `video.html` loads them after the engine, and its demo `TIMELINE` already plays the 30 s arc above.
+
+| Scene           | Purpose                                              | Key `opts`                                                                                                          | Natural length                        | When to use                                                         |
+| --------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
+| `hook`          | Numbered pain steps struck through, then a question  | `steps[]`, `question`                                                                                               | ~4 s                                  | Opening: the old workflow                                           |
+| `reveal`        | Logo springs in, or wordmark with a particle burst   | `logo` (an `HTMLImageElement` loaded before `ready`), `wordmark`, `tagline`                                         | ~4 s                                  | Brand reveal. No logo → leave `logo` out and the wordmark path runs |
+| `demo-window`   | OS window: select → action → streamed result → apply | `window`, `body`, `select`, `action`, `result`, `apply`, `caption`, `cursor` keyframes `[{t, at, down, up, click}]` | ~9 s                                  | Hero demo for an app with a UI                                      |
+| `demo-terminal` | Terminal types real commands, prints real output     | `lines: [{cmd} \| {out}]`, `prompt`, `window`, `caption` (fixed dark palette)                                       | ~4.5 s for the sample, set by `lines` | Hero demo for a CLI or library                                      |
+| `feature-grid`  | Up to 6 tiles, each with its own micro-animation     | `heading`, `features` (≤ 6) `[{title, desc, icon?}]`                                                                | ~4 s                                  | Feature overview. 3×2 in landscape/square, 2×3 in portrait          |
+| `orbit`         | Integrations orbiting the app badge, one trust line  | `items[]`, `trust`, `center`, `logo`                                                                                | ~3 s                                  | Differentiator. One ring up to 6 items, two rings above             |
+| `counter-wall`  | Counter over a scrolling wall of real names          | `count`, `label`, `names[]`, `sep`, `suffix`                                                                        | ~3 s                                  | Scale / social proof, only with real numbers                        |
+| `end-card`      | Logo or wordmark, tagline, CTA, URL, platform line   | `cta`, `url`, `meta`, `logo`, `tagline`                                                                             | settles at 1.5 s                      | Always last; a 3 s slot holds still for the final ~1.5 s            |
+
+- **Scene key = kebab filename**: `scenes/demo-window.js` registers `SCENES["demo-window"]`, and a TIMELINE entry uses `{ scene: "demo-window" }`.
+- **Size the TIMELINE from natural lengths.** A slot longer than a scene's natural length holds its last state; a shorter one cuts the animation mid-way. The engine passes the slot length to scenes as `env.dur`.
+- **`demo-window` cursor**: `at` is `[fx, fy]` (fractions of the window) or an anchor: `selStart`, `selEnd`, `action`, `apply`.
+- **`demo-window` sound**: `opts.events` must track the `cursor` keyframes: a `click` at every `down` and `click` time (defaults 1.1, 2.7, 6.4 s), `tick`s while the result streams (from the action click + 0.4 s for `min(2.4, result chars × 0.035)` s). Retime the cursor, retime the events.
+- **Strings**: each scene reads its group from `strings.example.js` (`hook`, `reveal`, `demo`, `terminal`, `grid`, `orbit`, `wall`, `end`); `opts.x` in a TIMELINE entry overrides `env.str.<group>.x`. `chapters` holds one label per TIMELINE row, in order.
+- **Adapt every scene to the fact sheet.** Replace all sample text and names in `strings.example.js` with real project facts: real product name, real UI labels, real commands and output, real integrations and users. Every sample string of the film starts with `SAMPLE: `. Never ship sample copy: before capture, run `grep -c 'SAMPLE:' dist/video.html` (must print `0`), also check `BRAND.name`, `title` and `chapters` (preview chrome, not marked), and fix every hit.
+- **New scene**: copy an existing file and rename it. Keep the same shape: an IIFE with its own helpers, registering `SCENES["<name>"]`, drawing as a pure function of `lt`. Add its `<script src="scenes/<name>.js">` tag after the engine script.
 
 ## 3. Build
 
 Edit `source/video.html`:
 
 - **`TIMELINE`** — an array of `{scene, start, dur, opts}`, one entry per storyboard row. Timing lives here as data, not as magic numbers inside scene code, so a retime is one edit.
-- **`STR[lang]`** — all visible copy, keyed by language and selected with `?lang=xx`. Real app UI labels stay in the app's own language in every table.
-- **Brand tokens and fonts** — palette, font families and weights from the fact sheet's brand sources.
+- **`strings.example.js`** — all visible copy (`window.STR_PRESET`, read into `STR`), one table per language, selected with `?lang=xx`. Real app UI labels stay in the app's own language in every table.
+- **Brand tokens and fonts** — palette, font families and weights from the fact sheet's brand sources. `BRAND.colors` are hex only (`#RGB`, `#RRGGBB` or `#RRGGBBAA`); scenes throw on `rgb()`, `hsl()`, `oklch()` or color names, so convert those to hex first.
 
 Deterministic rules, because capture calls `render(t)` out of order and must get the same frame every time:
 

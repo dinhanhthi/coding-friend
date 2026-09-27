@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Poster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@700&display=swap"
+    />
+    <style>
+      /* ============================================================
+         Brand tokens: EDIT PER PROJECT. Take them from the project's real
+         brand sources (design tokens, website CSS, logo colors).
+         Keep --fg and --muted at WCAG AA (4.5:1) against --bg, and
+         --on-brand at 4.5:1 against --brand (it is the CTA text color).
+         When a font changes, update FONT_LIST in the script below too.
+         ============================================================ */
+      :root {
+        --brand: #4f7cff;
+        --on-brand: #0b1020;
+        --accent: #7fe3d4;
+        --bg: #0e1016;
+        --panel: #171a24;
+        --fg: #f3f5fa;
+        --muted: #8a90a8;
+        --line: #2a2f40;
+        --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+        --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+        /* Set by the script from ?size=: frame size and one type unit
+           (1u ~ 1% of the frame's side, shrunk when copy overflows). */
+        --w: 1200px;
+        --h: 630px;
+        --page-w: 1200px;
+        --page-h: 630px;
+        --u: 6.3px;
+        --pad: calc(var(--u) * 7);
+        --gap: calc(var(--u) * 3);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      h1,
+      h2,
+      h3,
+      p,
+      blockquote,
+      ul {
+        margin: 0;
+        padding: 0;
+      }
+      li {
+        list-style: none;
+      }
+
+      /* ---------- preview: frame centered and scaled to the window ---------- */
+      body {
+        background: #3a3d46;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .stage {
+        overflow: hidden;
+      }
+      .poster {
+        transform-origin: 0 0;
+      }
+      /* capture and print: frame at 0,0 at its real size, nothing else */
+      body.capture {
+        background: none;
+        display: block;
+        min-height: 0;
+        padding: 0;
+      }
+      body.capture .stage {
+        width: auto !important;
+        height: auto !important;
+      }
+      body.capture .poster {
+        transform: none !important;
+      }
+      @media print {
+        body {
+          background: none;
+          display: block;
+          min-height: 0;
+          padding: 0;
+        }
+        .stage {
+          width: auto !important;
+          height: auto !important;
+        }
+        .poster {
+          transform: none !important;
+          width: var(--page-w);
+          height: var(--page-h);
+        }
+      }
+
+      /* ---------- the poster frame ---------- */
+      .poster {
+        position: relative;
+        width: var(--w);
+        height: var(--h);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background:
+          radial-gradient(
+            120% 80% at 100% 0%,
+            color-mix(in srgb, var(--brand) 22%, transparent),
+            transparent 60%
+          ),
+          var(--bg);
+        color: var(--fg);
+        font-family: var(--font-body);
+        font-size: calc(var(--u) * 2.3);
+        line-height: 1.45;
+        overflow-wrap: break-word;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .layout {
+        display: none;
+        flex: 1 0 auto;
+        flex-direction: column;
+        gap: var(--gap);
+        padding: var(--pad);
+      }
+      body[data-layout="hero"] [data-for="hero"],
+      body[data-layout="grid"] [data-for="grid"],
+      body[data-layout="editorial"] [data-for="editorial"] {
+        display: flex;
+      }
+      .display {
+        font-family: var(--font-display);
+        font-weight: 700;
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+      }
+      .kicker {
+        color: var(--accent);
+        font-weight: 600;
+        font-size: calc(var(--u) * 1.9);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--u) * 2);
+      }
+      .logo {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        height: calc(var(--u) * 6);
+        object-fit: contain;
+      }
+      /* Logo replaces the wordmark. Delete this rule when the logo is an icon without the name. */
+      body.has-logo .mark .wordmark {
+        display: none;
+      }
+      .wordmark {
+        font-size: calc(var(--u) * 4);
+      }
+      .cta {
+        display: inline-block;
+        align-self: flex-start;
+        background: var(--brand);
+        color: var(--on-brand);
+        font-weight: 600;
+        font-size: calc(var(--u) * 2.4);
+        line-height: 1.2;
+        padding: calc(var(--u) * 1.4) calc(var(--u) * 3);
+        border-radius: 999px;
+      }
+      .url {
+        font-weight: 600;
+        font-size: calc(var(--u) * 2.4);
+      }
+      .foot {
+        margin-top: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: calc(var(--u) * 1.5) var(--gap);
+        padding-top: calc(var(--u) * 2.5);
+        border-top: 1px solid var(--line);
+      }
+      .foot .meta {
+        font-size: calc(var(--u) * 1.9);
+      }
+
+      /* ---------- hero: big mark, tagline, 3 key points, CTA + URL ---------- */
+      .hero {
+        justify-content: space-between;
+      }
+      .hero .mark .logo {
+        height: calc(var(--u) * 16);
+      }
+      .hero .wordmark {
+        font-size: calc(var(--u) * 15);
+      }
+      .hero .tagline {
+        font-size: calc(var(--u) * 4.2);
+        line-height: 1.25;
+        max-width: 22em;
+      }
+      .hero .intro {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--u) * 3);
+      }
+      .hero .points {
+        display: grid;
+        gap: calc(var(--u) * 2.5);
+      }
+      .hero .point {
+        border-left: calc(var(--u) * 0.5) solid var(--brand);
+        padding-left: calc(var(--u) * 2);
+      }
+      .hero .point h3 {
+        font-size: calc(var(--u) * 2.8);
+        line-height: 1.2;
+      }
+      .hero .act {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: calc(var(--u) * 1.5) calc(var(--u) * 3);
+      }
+      body[data-orient="square"] .hero .points {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      body[data-layout="hero"][data-orient="landscape"] .hero {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        grid-template-rows: 1fr auto;
+        column-gap: calc(var(--u) * 7);
+        align-items: center;
+      }
+      body[data-orient="landscape"] .hero .act {
+        grid-column: 1 / -1;
+      }
+
+      /* ---------- grid: headline, up to 6 feature cards, footer ---------- */
+      .grid .head {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--u) * 2);
+      }
+      .grid .headline {
+        font-size: calc(var(--u) * 7.5);
+      }
+      .grid .sub {
+        font-size: calc(var(--u) * 2.8);
+        max-width: 34em;
+      }
+      .grid .cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: calc(var(--u) * 2);
+      }
+      body[data-orient="landscape"] .grid .cards,
+      body[data-orient="square"] .grid .cards {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .grid .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: calc(var(--u) * 1.6);
+        padding: calc(var(--u) * 2.4);
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--u) * 0.8);
+      }
+      .grid .card .num {
+        font-family: var(--font-display);
+        font-weight: 700;
+        color: var(--accent);
+        font-size: calc(var(--u) * 2.2);
+      }
+      .grid .card h3 {
+        font-size: calc(var(--u) * 2.7);
+        line-height: 1.2;
+      }
+      .grid .card p {
+        font-size: calc(var(--u) * 2.1);
+      }
+      body[data-orient="landscape"] .grid .headline {
+        font-size: calc(var(--u) * 6.5);
+      }
+      body[data-orient="landscape"] .grid .cards {
+        gap: calc(var(--u) * 1.6);
+      }
+      body[data-orient="landscape"] .grid .card {
+        padding: calc(var(--u) * 1.8);
+      }
+
+      /* ---------- editorial: headline, lead, 2-3 columns, pull-quote, footer ---------- */
+      .editorial .masthead {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--gap);
+        padding-bottom: calc(var(--u) * 2);
+        border-bottom: calc(var(--u) * 0.4) solid var(--fg);
+      }
+      .editorial .headline {
+        font-size: calc(var(--u) * 9);
+      }
+      .editorial .lead {
+        font-size: calc(var(--u) * 3.1);
+        line-height: 1.4;
+      }
+      .editorial .sections {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--gap);
+      }
+      .editorial .section {
+        border-top: 1px solid var(--line);
+        padding-top: calc(var(--u) * 1.5);
+      }
+      .editorial .section h3 {
+        font-size: calc(var(--u) * 2.5);
+        line-height: 1.2;
+        margin-bottom: calc(var(--u) * 0.8);
+      }
+      .editorial .section p {
+        font-size: calc(var(--u) * 2);
+      }
+      .editorial blockquote {
+        border-left: calc(var(--u) * 0.6) solid var(--brand);
+        padding-left: calc(var(--u) * 3);
+      }
+      .editorial blockquote p {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: calc(var(--u) * 4.4);
+        line-height: 1.15;
+        color: var(--fg);
+      }
+      .editorial blockquote footer {
+        margin-top: calc(var(--u) * 1.2);
+        font-size: calc(var(--u) * 1.9);
+      }
+      body[data-orient="landscape"] .editorial .body {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        column-gap: calc(var(--u) * 6);
+        align-items: start;
+      }
+      body[data-orient="landscape"] .editorial .story {
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap);
+      }
+      body[data-orient="landscape"] .editorial .sections {
+        grid-template-columns: 1fr;
+        gap: calc(var(--u) * 2);
+      }
+      body[data-orient="landscape"] .editorial .headline {
+        font-size: calc(var(--u) * 7.5);
+      }
+      body:not([data-orient="landscape"]) .editorial .body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap);
+      }
+      body:not([data-orient="landscape"]) .editorial .story {
+        display: contents;
+      }
+    </style>
+  </head>
+  <!-- Layout: hero (few features) · grid (many features) · editorial (a story).
+       Capture uses this attribute; ?layout= overrides it for browser preview only. -->
+  <body data-layout="hero" data-size="1200x630">
+    <div class="stage">
+      <main id="poster" class="poster">
+        <!-- Optional logo: add src="../path/to/logo.png" (a local file, inlined by
+             inline-assets.mjs). Without a src the wordmark is used instead. -->
+        <img id="logo" class="logo" alt="" hidden />
+
+        <section class="layout hero" data-for="hero">
+          <div class="intro">
+            <p class="kicker" data-str="hero.kicker"></p>
+            <div class="mark" data-mark>
+              <h1 class="wordmark display" data-str="name"></h1>
+            </div>
+            <p class="tagline" data-str="tagline"></p>
+          </div>
+          <ul class="points">
+            <li class="point" data-card>
+              <h3 data-str="hero.p1.title"></h3>
+              <p class="muted" data-str="hero.p1.desc"></p>
+            </li>
+            <li class="point" data-card>
+              <h3 data-str="hero.p2.title"></h3>
+              <p class="muted" data-str="hero.p2.desc"></p>
+            </li>
+            <li class="point" data-card>
+              <h3 data-str="hero.p3.title"></h3>
+              <p class="muted" data-str="hero.p3.desc"></p>
+            </li>
+          </ul>
+          <div class="act">
+            <span class="cta" data-str="cta"></span>
+            <span class="url" data-str="url"></span>
+            <span class="muted" data-str="meta"></span>
+          </div>
+        </section>
+
+        <section class="layout grid" data-for="grid">
+          <div class="head">
+            <div class="mark" data-mark>
+              <span class="wordmark display" data-str="name"></span>
+            </div>
+            <h1 class="headline display" data-str="grid.headline"></h1>
+            <p class="sub muted" data-str="grid.sub"></p>
+          </div>
+          <!-- Up to 6 cards: a card whose strings are all empty is hidden. -->
+          <ul class="cards">
+            <li class="card" data-card>
+              <span class="num">01</span>
+              <h3 data-str="grid.f1.title"></h3>
+              <p class="muted" data-str="grid.f1.desc"></p>
+            </li>
+            <li class="card" data-card>
+              <span class="num">02</span>
+              <h3 data-str="grid.f2.title"></h3>
+              <p class="muted" data-str="grid.f2.desc"></p>
+            </li>
+            <li class="card" data-card>
+              <span class="num">03</span>
+              <h3 data-str="grid.f3.title"></h3>
+              <p class="muted" data-str="grid.f3.desc"></p>
+            </li>
+            <li class="card" data-card>
+              <span class="num">04</span>
+              <h3 data-str="grid.f4.title"></h3>
+              <p class="muted" data-str="grid.f4.desc"></p>
+            </li>
+            <li class="card" data-card>
+              <span class="num">05</span>
+              <h3 data-str="grid.f5.title"></h3>
+              <p class="muted" data-str="grid.f5.desc"></p>
+            </li>
+            <li class="card" data-card>
+              <span class="num">06</span>
+              <h3 data-str="grid.f6.title"></h3>
+              <p class="muted" data-str="grid.f6.desc"></p>
+            </li>
+          </ul>
+          <div class="foot">
+            <span class="url" data-str="url"></span>
+            <span class="meta muted" data-str="meta"></span>
+            <span class="cta" data-str="cta"></span>
+          </div>
+        </section>
+
+        <section class="layout editorial" data-for="editorial">
+          <div class="masthead">
+            <div class="mark" data-mark>
+              <span class="wordmark display" data-str="name"></span>
+            </div>
+            <span class="kicker" data-str="editorial.kicker"></span>
+          </div>
+          <div class="body">
+            <div class="story">
+              <h1 class="headline display" data-str="editorial.headline"></h1>
+              <p class="lead" data-str="editorial.lead"></p>
+              <blockquote data-card>
+                <p data-str="editorial.quote"></p>
+                <footer class="muted" data-str="editorial.quoteBy"></footer>
+              </blockquote>
+            </div>
+            <div class="sections">
+              <article class="section" data-card>
+                <h3 data-str="editorial.s1.title"></h3>
+                <p class="muted" data-str="editorial.s1.body"></p>
+              </article>
+              <article class="section" data-card>
+                <h3 data-str="editorial.s2.title"></h3>
+                <p class="muted" data-str="editorial.s2.body"></p>
+              </article>
+              <article class="section" data-card>
+                <h3 data-str="editorial.s3.title"></h3>
+                <p class="muted" data-str="editorial.s3.body"></p>
+              </article>
+            </div>
+          </div>
+          <div class="foot">
+            <span class="url" data-str="url"></span>
+            <span class="meta muted" data-str="meta"></span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      /* ============================================================
+         Poster: pure DOM/CSS so a PDF keeps vector text. Edit STR (copy)
+         and FONT_LIST here, brand tokens in :root above, the layout and the
+         default size (data-size, used when there is no ?size=) on <body>.
+         Query: ?size=A4|A3|letter|WxH  ?lang=xx  ?layout=hero|grid|editorial
+         ============================================================ */
+      const Q = new URLSearchParams(location.search);
+      const CAPTURE = Q.get("capture") === "1";
+
+      /* ---------- copy: one table per language, same keys everywhere ----------
+         ALL OF THIS IS SAMPLE TEXT, and every string starts with the sample marker
+         (the word SAMPLE, a colon, a space). Replace every string with facts from the
+         fact sheet, then grep the bundle for the marker (must be 0 hits). An empty string hides its element (and a card with no text). */
+      const STR = {
+        en: {
+          name: "SAMPLE: Project",
+          tagline:
+            "SAMPLE: One sentence that says what Project does, in its own words.",
+          url: "SAMPLE: example.com/project",
+          cta: "SAMPLE: Get started",
+          meta: "SAMPLE: License · Platforms",
+          hero: {
+            kicker: "SAMPLE: Open source",
+            p1: {
+              title: "SAMPLE: First real feature",
+              desc: "SAMPLE: What it does for the user, taken from the README.",
+            },
+            p2: {
+              title: "SAMPLE: Second real feature",
+              desc: "SAMPLE: A concrete detail: a real command, provider or format.",
+            },
+            p3: {
+              title: "SAMPLE: Third real feature",
+              desc: "SAMPLE: Why it matters, in the product's own words.",
+            },
+          },
+          grid: {
+            headline: "SAMPLE: Everything Project does, on one page",
+            sub: "SAMPLE: Six real features from the fact sheet, each with a short, specific description.",
+            f1: {
+              title: "SAMPLE: Feature one",
+              desc: "SAMPLE: One line on what it does.",
+            },
+            f2: {
+              title: "SAMPLE: Feature two",
+              desc: "SAMPLE: One line on what it does.",
+            },
+            f3: {
+              title: "SAMPLE: Feature three",
+              desc: "SAMPLE: One line on what it does.",
+            },
+            f4: {
+              title: "SAMPLE: Feature four",
+              desc: "SAMPLE: One line on what it does.",
+            },
+            f5: {
+              title: "SAMPLE: Feature five",
+              desc: "SAMPLE: One line on what it does.",
+            },
+            f6: {
+              title: "SAMPLE: Feature six",
+              desc: "SAMPLE: One line on what it does.",
+            },
+          },
+          editorial: {
+            kicker: "SAMPLE: Field notes",
+            headline: "SAMPLE: The problem Project solves, as one headline",
+            lead: "SAMPLE: A lead paragraph that tells the story: the old way, what changed, and what Project does now. Two or three sentences.",
+            s1: {
+              title: "SAMPLE: Before",
+              body: "SAMPLE: The old workflow, described with the real steps it took.",
+            },
+            s2: {
+              title: "SAMPLE: How it works",
+              body: "SAMPLE: The core flow, using real names of commands or screens.",
+            },
+            s3: {
+              title: "SAMPLE: Get it",
+              body: "SAMPLE: Install command or download, platforms and license.",
+            },
+            quote:
+              "SAMPLE: A short line from the README or docs that sums it up.",
+            quoteBy: "SAMPLE: README.md",
+          },
+        },
+        vi: {
+          name: "SAMPLE: Project",
+          tagline:
+            "SAMPLE: Một câu nói rõ Project làm gì, bằng chính lời của dự án.",
+          url: "SAMPLE: example.com/project",
+          cta: "SAMPLE: Bắt đầu ngay",
+          meta: "SAMPLE: Giấy phép · Nền tảng",
+          hero: {
+            kicker: "SAMPLE: Mã nguồn mở",
+            p1: {
+              title: "SAMPLE: Tính năng thật thứ nhất",
+              desc: "SAMPLE: Nó giúp người dùng điều gì, lấy từ README.",
+            },
+            p2: {
+              title: "SAMPLE: Tính năng thật thứ hai",
+              desc: "SAMPLE: Một chi tiết cụ thể: lệnh, nhà cung cấp hay định dạng thật.",
+            },
+            p3: {
+              title: "SAMPLE: Tính năng thật thứ ba",
+              desc: "SAMPLE: Vì sao nó quan trọng, theo đúng lời của sản phẩm.",
+            },
+          },
+          grid: {
+            headline: "SAMPLE: Mọi thứ Project làm được, trên một trang",
+            sub: "SAMPLE: Sáu tính năng thật từ fact sheet, mỗi cái kèm một mô tả ngắn và cụ thể.",
+            f1: {
+              title: "SAMPLE: Tính năng một",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+            f2: {
+              title: "SAMPLE: Tính năng hai",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+            f3: {
+              title: "SAMPLE: Tính năng ba",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+            f4: {
+              title: "SAMPLE: Tính năng bốn",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+            f5: {
+              title: "SAMPLE: Tính năng năm",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+            f6: {
+              title: "SAMPLE: Tính năng sáu",
+              desc: "SAMPLE: Một dòng về việc nó làm.",
+            },
+          },
+          editorial: {
+            kicker: "SAMPLE: Ghi chép",
+            headline:
+              "SAMPLE: Vấn đề Project giải quyết, gói trong một tiêu đề",
+            lead: "SAMPLE: Đoạn mở đầu kể câu chuyện: cách làm cũ, điều gì đã thay đổi, và Project làm gì bây giờ. Hai hoặc ba câu.",
+            s1: {
+              title: "SAMPLE: Trước đây",
+              body: "SAMPLE: Quy trình cũ, mô tả bằng đúng các bước thật.",
+            },
+            s2: {
+              title: "SAMPLE: Cách hoạt động",
+              body: "SAMPLE: Luồng chính, dùng tên thật của lệnh hoặc màn hình.",
+            },
+            s3: {
+              title: "SAMPLE: Tải về",
+              body: "SAMPLE: Lệnh cài đặt hoặc bản tải, nền tảng và giấy phép.",
+            },
+            quote:
+              "SAMPLE: Một câu ngắn trong README hoặc docs tóm gọn tất cả.",
+            quoteBy: "SAMPLE: README.md",
+          },
+        },
+      };
+      const LANGS = Object.keys(STR);
+      const LANG = STR[Q.get("lang")] ? Q.get("lang") : LANGS[0];
+
+      /* ---------- fonts: every family and weight used above ---------- */
+      const FONT_LIST = [
+        { family: "Space Grotesk", weight: 700 },
+        { family: "Inter", weight: 400 },
+        { family: "Inter", weight: 600 },
+      ];
+      /* Must contain the special characters of every language in STR. */
+      const FONT_SAMPLE = "Aa Tiếng Việt ạ ố ữ ăâđêôơư ẤỆỮ";
+
+      /* ---------- size: same table as capture.mjs (CSS px at 96 dpi) ---------- */
+      const SIZES = {
+        A4: { w: 794, h: 1123, page: ["210mm", "297mm"] },
+        A3: { w: 1123, h: 1587, page: ["297mm", "420mm"] },
+        letter: { w: 816, h: 1056, page: ["8.5in", "11in"] },
+      };
+      const SIZE = (() => {
+        const q = Q.get("size") || document.body.dataset.size || "1200x630";
+        if (SIZES[q]) return SIZES[q];
+        const m = /^(\d+)x(\d+)$/.exec(q);
+        if (!m) console.warn(`poster: unknown size "${q}", using 1200x630`);
+        const [w, h] = m ? [+m[1], +m[2]] : [1200, 630];
+        return { w, h, page: [`${w}px`, `${h}px`] };
+      })();
+      const W = SIZE.w,
+        H = SIZE.h;
+
+      const root = document.documentElement;
+      const body = document.body;
+      const frame = document.getElementById("poster");
+      const LAYOUTS = ["hero", "grid", "editorial"];
+      if (LAYOUTS.includes(Q.get("layout")))
+        body.dataset.layout = Q.get("layout");
+      body.dataset.orient =
+        W / H > 1.25 ? "landscape" : W / H < 0.8 ? "portrait" : "square";
+      if (CAPTURE) body.classList.add("capture");
+      root.lang = LANG;
+      root.style.setProperty("--w", `${W}px`);
+      root.style.setProperty("--h", `${H}px`);
+      root.style.setProperty("--page-w", SIZE.page[0]);
+      root.style.setProperty("--page-h", SIZE.page[1]);
+      const pageRule = document.createElement("style");
+      pageRule.textContent = `@page { size: ${SIZE.page[0]} ${SIZE.page[1]}; margin: 0 }`;
+      document.head.append(pageRule);
+
+      /* ---------- copy: textContent only, never parsed as markup ---------- */
+      const lookup = (key) =>
+        key.split(".").reduce((o, k) => (o == null ? o : o[k]), STR[LANG]);
+      for (const el of document.querySelectorAll("[data-str]")) {
+        const value = lookup(el.dataset.str);
+        if (value === undefined)
+          console.warn(`poster: missing string "${el.dataset.str}" (${LANG})`);
+        el.textContent = value || "";
+        el.hidden = !value;
+      }
+      for (const card of document.querySelectorAll("[data-card]"))
+        card.hidden = !card.querySelector("[data-str]:not([hidden])");
+      document.title = `${lookup("name") || "Poster"} poster`;
+
+      /* ---------- fit: 1u = 1% of the frame's mean side (at most 1.25% of the short
+         side, so tall frames get bigger type), shrunk until nothing overflows ---------- */
+      const BASE = Math.min(Math.sqrt(W * H), Math.min(W, H) * 1.25) / 100;
+      const setUnit = (scale) =>
+        root.style.setProperty("--u", `${BASE * scale}px`);
+      function overflows() {
+        if (
+          frame.scrollHeight > frame.clientHeight + 1 ||
+          frame.scrollWidth > frame.clientWidth + 1
+        )
+          return true;
+        return [...frame.querySelectorAll("[data-str]:not([hidden])")].some(
+          (el) => el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1,
+        );
+      }
+      function fit() {
+        let scale = 1;
+        setUnit(scale);
+        while (overflows() && scale > 0.6) {
+          scale = Math.round((scale - 0.04) * 100) / 100;
+          setUnit(scale);
+        }
+        if (scale < 0.8)
+          console.warn(
+            `poster: type shrunk to ${Math.round(scale * 100)}% to fit`,
+          );
+        if (overflows())
+          console.warn(
+            "poster: content still overflows the frame; cut the copy",
+          );
+      }
+
+      /* ---------- preview only: scale the frame to fit the window ---------- */
+      function preview() {
+        const s = Math.min(1, (innerWidth - 48) / W, (innerHeight - 48) / H);
+        frame.style.transform = `scale(${s})`;
+        frame.parentElement.style.width = `${W * s}px`;
+        frame.parentElement.style.height = `${H * s}px`;
+      }
+
+      const ready = (async () => {
+        const logo = document.getElementById("logo");
+        logo.alt = lookup("name") || "";
+        if (logo.getAttribute("src")) {
+          try {
+            await logo.decode();
+            const slot = document.querySelector(
+              `[data-for="${body.dataset.layout}"] [data-mark]`,
+            );
+            if (slot) slot.prepend(logo);
+            logo.hidden = false;
+            body.classList.add("has-logo");
+          } catch (e) {
+            console.warn("poster: logo failed to load, using the wordmark");
+          }
+        }
+        try {
+          await Promise.all(
+            FONT_LIST.map(({ family, weight }) =>
+              document.fonts.load(`${weight} 64px "${family}"`, FONT_SAMPLE),
+            ),
+          );
+          await document.fonts.ready;
+        } catch (e) {
+          console.warn("font load failed:", e && e.message);
+        }
+        fit();
+        if (!CAPTURE) {
+          preview();
+          addEventListener("resize", preview);
+        }
+      })();
+
+      window.__showcase = {
+        ready,
+        width: W,
+        height: H,
+        fonts: FONT_LIST,
+        fontSample: FONT_SAMPLE,
+        lang: LANG,
+      };
+    </script>
+  </body>
+</html>

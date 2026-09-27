@@ -192,10 +192,13 @@
       <div class="chapters ui" id="chapters"></div>
     </div>
 
+    <!-- copy: copy strings.example.js, edit it per project, keep this tag first -->
+    <script src="strings.example.js"></script>
     <script>
       /* ============================================================
    Engine. Everything drawn on the canvas is a pure function of t.
-   Edit BRAND, STR and TIMELINE; add scenes to SCENES.
+   Edit BRAND and TIMELINE here, copy in strings.example.js;
+   scenes live in scenes/<name>.js and load after this script.
    ============================================================ */
       const Q = new URLSearchParams(location.search);
       const CAPTURE = Q.get("capture") === "1";
@@ -212,7 +215,9 @@
         return ASPECTS[Q.get("aspect")] || ASPECTS["16x9"];
       })();
 
-      /* ---------- brand tokens: take these from the project's real brand sources ---------- */
+      /* ---------- brand tokens: take these from the project's real brand sources ----------
+         colors: hex only, #RGB, #RRGGBB or #RRGGBBAA. Scenes derive alpha tints from them
+         and throw on rgb(), hsl(), oklch() or names; convert those to hex first. */
       const BRAND = {
         name: "Project",
         colors: {
@@ -246,34 +251,45 @@
       );
 
       /* ---------- copy: one table per language, selected with ?lang= ---------- */
-      const STR = {
-        en: {
-          title: "Project, in 3 seconds",
-          toggle: "Tiếng Việt",
-          chapters: ["Meet Project", "Tagline"],
-          wordmark: "Project",
-          tagline: "One honest line about what it does.",
-        },
-        vi: {
-          title: "Project trong 3 giây",
-          toggle: "English",
-          chapters: ["Gặp Project", "Khẩu hiệu"],
-          wordmark: "Project",
-          tagline: "Một câu thật về việc nó làm được.",
-        },
-      };
+      /* Copy strings.example.js next to this file and edit it per project (all of it is sample text).
+   One table per language, same keys everywhere; scenes read their group, opts override it. */
+      const STR = window.STR_PRESET;
       const LANGS = Object.keys(STR);
       let LANG = STR[Q.get("lang")] ? Q.get("lang") : LANGS[0];
 
       /* ---------- timeline: data, not magic numbers in scene code ---------- */
+      /* Starts are cumulative and the last entry ends at the target length. A slot longer than a
+   scene's natural length holds its last state; a shorter one cuts the animation. */
       const TIMELINE = [
-        { scene: "title", start: 0, dur: 1.6, opts: { line: "wordmark" } },
+        { scene: "hook", start: 0, dur: 4 },
+        { scene: "reveal", start: 4, dur: 4 },
         {
-          scene: "title",
-          start: 1.6,
-          dur: 1.4,
-          opts: { line: "tagline", bg: "panel" },
+          scene: "demo-window",
+          start: 8,
+          dur: 9,
+          /* audio cues, local seconds: mirror the default cursor keyframes (press 1.1,
+             clicks 2.7 and 6.4); ticks while the result streams, from 2.7 + 0.4 for
+             min(2.4, result chars x 0.035) s. Retime these with the cursor. */
+          opts: {
+            events: [
+              { t: 1.1, kind: "click" },
+              { t: 2.7, kind: "click" },
+              { t: 3.2, kind: "tick" },
+              { t: 3.4, kind: "tick" },
+              { t: 3.6, kind: "tick" },
+              { t: 3.8, kind: "tick" },
+              { t: 4.0, kind: "tick" },
+              { t: 4.2, kind: "tick" },
+              { t: 6.4, kind: "click" },
+            ],
+          },
         },
+        // CLI or library: use the terminal demo instead (length is set by its lines).
+        // { scene: "demo-terminal", start: 8, dur: 9 },
+        { scene: "feature-grid", start: 17, dur: 4 },
+        { scene: "orbit", start: 21, dur: 3 },
+        { scene: "counter-wall", start: 24, dur: 3 },
+        { scene: "end-card", start: 27, dur: 3 },
       ];
       const DURATION = TIMELINE.reduce(
         (m, e) => Math.max(m, e.start + e.dur),
@@ -376,63 +392,9 @@
         return w <= maxW ? max : Math.floor((max * maxW) / w);
       }
 
-      /* ---------- scenes: SCENES.<name> = { draw(ctx, lt, opts, env) }, lt = local time 0..dur ---------- */
+      /* ---------- scenes: SCENES["<name>"] = { draw(ctx, lt, opts, env) }, lt = local time 0..dur.
+   Filled by the scenes/<name>.js tags after this script. ---------- */
       const SCENES = {};
-
-      /* Placeholder scene: wordmark or tagline. Replace with real scenes. */
-      SCENES.title = {
-        draw(ctx, lt, opts, env) {
-          const { W, H, brand, str } = env;
-          fillAll(brand.colors[opts.bg] || brand.colors.bg);
-          const glow = ctx.createRadialGradient(
-            W / 2,
-            H / 2,
-            0,
-            W / 2,
-            H / 2,
-            Math.max(W, H) * 0.6,
-          );
-          glow.addColorStop(0, brand.colors.accent + "40");
-          glow.addColorStop(1, brand.colors.accent + "00");
-          ctx.fillStyle = glow;
-          ctx.fillRect(0, 0, W, H);
-          const s = str[opts.line] || "";
-          const big = opts.line === "wordmark";
-          const size = fitSize(
-            s,
-            big ? 800 : 600,
-            env.fonts.sans,
-            big ? Math.round(W * 0.1) : Math.round(W * 0.04),
-            W * 0.84,
-          );
-          const p = big
-            ? env.spring(lt - 0.1, { stiffness: 1.8, damping: 0.45 })
-            : env.ease.expoOut(seg(lt, 0.1, 0.9));
-          ctx.save();
-          ctx.globalAlpha = clamp(p * 1.5);
-          ctx.translate(W / 2, H / 2 + (1 - p) * size * 0.6);
-          text(
-            s,
-            0,
-            size * 0.35,
-            `${big ? 800 : 600} ${size}px ${env.fonts.sans}`,
-            brand.colors.fg,
-            "center",
-            big ? -size * 0.03 : 0,
-          );
-          ctx.restore();
-          if (big) {
-            const lw = W * 0.18 * env.ease.cubicInOut(seg(lt, 0.5, 1.2));
-            ctx.fillStyle = brand.colors.accent;
-            ctx.fillRect(
-              W / 2 - lw / 2,
-              H / 2 + size * 0.6,
-              lw,
-              Math.max(4, size * 0.05),
-            );
-          }
-        },
-      };
 
       /* ---------- film grain: seeded patterns, chosen by frame index ---------- */
       let GRAIN = [];
@@ -469,6 +431,7 @@
         return {
           W,
           H,
+          dur: entry.dur,
           ease,
           spring,
           rand: mulberry32(entry.start * 1000 + 7),
@@ -533,6 +496,11 @@
         f.weights.map((weight) => ({ family: f.family, weight })),
       );
       const ready = (async () => {
+        /* scenes/*.js load after this script: wait until they have all run */
+        if (document.readyState === "loading")
+          await new Promise((r) =>
+            document.addEventListener("DOMContentLoaded", r, { once: true }),
+          );
         try {
           await Promise.all(
             FONT_LIST.map(({ family, weight }) =>
@@ -650,5 +618,14 @@
         });
       }
     </script>
+    <!-- scenes register into the engine's SCENES, so they load after it -->
+    <script src="scenes/hook.js"></script>
+    <script src="scenes/reveal.js"></script>
+    <script src="scenes/demo-window.js"></script>
+    <script src="scenes/demo-terminal.js"></script>
+    <script src="scenes/feature-grid.js"></script>
+    <script src="scenes/orbit.js"></script>
+    <script src="scenes/counter-wall.js"></script>
+    <script src="scenes/end-card.js"></script>
   </body>
 </html>
