@@ -7,7 +7,12 @@ Follow this after SKILL.md has checked dependencies, built the fact sheet, and c
 Ask one question per turn, recommended option first. Skip any question `$ARGUMENTS` or earlier answers already settled.
 
 1. **Style / tone** — polished (recommended) · playful · cinematic · minimal · custom (let the user describe it). The tone drives easing curves, transition speed and how much overshoot entries get.
-2. **Length** — default 30 s, valid 15–90 s. Above 90 s, refuse politely and offer to cut or merge scenes instead. Why: render time and temp disk grow linearly with length, attention drops fast after the first minute, and the file quickly passes the 50 MB mark where GitHub starts warning.
+2. **Length** — default 30 s (20–60 s suits a landing page or README). There is no hard limit: the user owns the choice. Warn once, then proceed with the length they confirm:
+   - **Above 90 s:** the file passes ~50 MB at CRF 19 (about 17 MB per 30 s), where GitHub starts warning; render time grows linearly; the scene library is built for 20–60 s arcs, so a long film needs more real content (more demo flows, features) rather than stretched scenes; attention drops after the first minute.
+   - **Above ~180 s:** the file will likely pass 100 MB, which GitHub rejects on push. Offer a higher CRF, Git LFS, or hosting the mp4 outside the repo.
+
+   One warning covers whichever tiers apply. Ask the user to confirm the length after it; never cut it on their behalf.
+
 3. **Language(s)** — one or several. Each language becomes its own mp4, rendered from the same source; only captions and narrative copy change.
 4. **Aspect** — 16:9 (1920×1080, recommended) · 1:1 (1080×1080) · 9:16 (1080×1920). Pick 9:16 only for social stories; README and landing pages want 16:9.
 5. **Emphasize / avoid** — features to lead with, things to leave out (unreleased features, a competitor's name, a deprecated command).
@@ -118,7 +123,7 @@ mv <name>-intro-<xx>.muxed.mp4 <name>-intro-<xx>.mp4
 
 `audio.py` places every cue at the exact event time from the timeline: pops when UI appears, clicks on cursor presses, ticks while text streams, whooshes on transitions, a final chord on the end card. It targets −14 to −20 LUFS integrated. One `audio.wav` serves every language as long as `TIMELINE` is shared; if a language changes event times (for example slower typing), export its own timeline.
 
-**Size**: keep each file under 50 MB. If it's bigger, re-encode with a higher CRF (22–26) rather than lowering resolution:
+**Size**: aim for under 50 MB (GitHub warns above it; it rejects pushes above 100 MB). For a long film the user accepted past the warning, the size budget is the one agreed at the length question. If a file is over budget, re-encode with a higher CRF (22–26) rather than lowering resolution:
 
 ```bash
 ffmpeg -i <file> -c:v libx264 -crf 23 -preset slow -pix_fmt yuv420p -c:a copy -movflags +faststart <file>.tmp.mp4 && mv <file>.tmp.mp4 <file>
@@ -143,10 +148,10 @@ Do this before declaring done. A render that "finished" is not a video that look
 4. **Probe every output**:
 
    ```bash
-   bash "<plugin-root>/skills/cf-showcase/scripts/verify-video.sh" <file> --duration <s> --fps 60 --size <WxH> --max-mb 50
+   bash "<plugin-root>/skills/cf-showcase/scripts/verify-video.sh" <file> --duration <s> --fps 60 --size <WxH> --max-mb <budget>
    ```
 
-   It checks ffprobe duration, resolution, fps and audio stream, runs `blackdetect` (no black frames outside intended fades), `ebur128` loudness when audio exists, and file size. Non-zero exit means fix before delivering.
+   `<budget>` is 50 by default; use the size agreed at the length question for a longer film (100 if it must still be pushed to GitHub). It checks ffprobe duration, resolution, fps and audio stream, runs `blackdetect` (no black frames outside intended fades), `ebur128` loudness when audio exists, and file size. Non-zero exit means fix before delivering.
 
 5. **Report honestly** what was verified and what wasn't (for example "audio not listened to by ear", "9:16 version not viewed on a phone").
 

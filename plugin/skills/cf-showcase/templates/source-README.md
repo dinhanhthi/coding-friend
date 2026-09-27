@@ -58,7 +58,7 @@ mv <name>-intro-<xx>.muxed.mp4 <name>-intro-<xx>.mp4
 
 `audio.py` adds a whoosh at every scene change, a pop at every scene start, cues from `opts.events` in `TIMELINE` (`[{t, kind: pop|click|tick|chord}]`, `t` local to the scene start) and a final chord on the last scene. `--lufs` sets the target (default −16, keep it within −14..−20); the value is an RMS approximation, so measure the real loudness with verify-video.sh. One `audio.wav` serves every language while `TIMELINE` is shared.
 
-If a file ends up over 50 MB, re-encode with a higher CRF (22–26):
+If a file ends up over its size budget (50 MB by default; GitHub rejects pushes above 100 MB), re-encode with a higher CRF (22–26):
 
 ```bash
 ffmpeg -i <file> -c:v libx264 -crf 23 -preset slow -pix_fmt yuv420p -c:a copy -movflags +faststart <file>.tmp.mp4 && mv <file>.tmp.mp4 <file>
@@ -69,7 +69,7 @@ ffmpeg -i <file> -c:v libx264 -crf 23 -preset slow -pix_fmt yuv420p -c:a copy -m
 `verify-video.sh` lives in the cf-showcase skill folder of your Coding Friend install (`scripts/verify-video.sh`):
 
 ```bash
-bash "<skill folder>/scripts/verify-video.sh" <file> --duration <s> --fps 60 --size <WxH> --max-mb 50
+bash "<skill folder>/scripts/verify-video.sh" <file> --duration <s> --fps 60 --size <WxH> --max-mb 50   # raise for a longer film the user accepted
 ```
 
 It checks duration, resolution, fps, the audio stream, black frames (`blackdetect`), loudness (`ebur128`) and file size. Non-zero exit means something needs fixing.

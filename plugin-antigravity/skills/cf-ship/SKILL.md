@@ -4,7 +4,7 @@ description: >
   Verify, commit, push, and create a PR. Triggers: "ship it", "push and create PR", "let's
   ship", "create a PR", "open a pull request", "ready to merge". Supports --dry-run.
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-09-27
 ---
 
 # /cf-ship
@@ -105,6 +105,8 @@ Show the user:
 - Commit SHA
 - Push result
 - PR URL (if created)
+
+After a minor/major release, suggest `/cf-showcase` to refresh the project's intro video or poster (suggestion only, never auto-invoke).
 
 ## Rules
 

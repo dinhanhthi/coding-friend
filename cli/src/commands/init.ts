@@ -1686,7 +1686,7 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
   console.log();
   log.congrats("Setup complete!");
   log.dim(
-    "Available commands: /cf-ask, /cf-plan, /cf-plan-review, /cf-later-do, /cf-design, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-checkpoint, /cf-checkpoint-from, /cf-help",
+    "Available commands: /cf-ask, /cf-plan, /cf-plan-review, /cf-later-do, /cf-design, /cf-showcase, /cf-fix, /cf-commit, /cf-review, /cf-review-out, /cf-review-in, /cf-ship, /cf-optimize, /cf-scan, /cf-remember, /cf-learn, /cf-teach, /cf-research, /cf-session, /cf-warm, /cf-checkpoint, /cf-checkpoint-from, /cf-help",
   );
 }
 
@@ -2021,6 +2021,7 @@ const AGENTS_MD_SKILLS = [
   "cf-review-in",
   "cf-commit",
   "cf-design",
+  "cf-showcase",
   "cf-ship",
   "cf-fix",
   "cf-optimize",
