@@ -86,7 +86,7 @@ Measure the Step 2 snapshot — never a fresh `git diff`, or the depth could be 
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/assess-changes.sh" --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
 
-Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, `SCOPE_COMPLETE`, `MODE_AUTO`, `MODE_FORCED`, `MODE`. Use `MODE` as-is and pass it on — the reviewer agents own what each mode means. Exit `2` / exit `3`: same rule as Step 2.
+Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANGED_FILES`, `SCOPE_COMPLETE`, `MODE_AUTO`, `MODE_FORCED`, `MODE`. Use `MODE` as-is and pass it on (the TRIVIAL tier below is the one exception) — the reviewer agents own what each mode means. Exit `2` / exit `3`: same rule as Step 2.
 
 Auto-detection: **QUICK** ≤3 files AND ≤50 lines AND no sensitive paths · **STANDARD** 4–10 files OR 51–300 lines · **DEEP** >10 files OR >300 lines OR sensitive paths touched. `SENSITIVE > 0` → always DEEP. `--quick` on a sensitive change warns on stderr — repeat that limitation in the Summary and still apply the secrets/injection baseline.
 
