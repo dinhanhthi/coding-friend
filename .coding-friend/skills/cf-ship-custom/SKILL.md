@@ -97,9 +97,21 @@ npm run lint:agy
 
 **IMPORTANT:** If already on the `main` branch, do NOT create a new branch. Commit and push directly to `main` — no PR needed.
 
+**On a feature branch:** commit, push, and open the PR (standard cf-ship Steps 3–4), then **STOP — skip Step B6 (no tags)**. The website, `plugin/CHANGELOG.md` on `main` and the marketplace all read from `main`; a tag pushed from an unmerged branch publishes a GitHub Release whose version and changelog are missing on `main`. Print the PR URL and tell the user: merge the PR, then run `/cf-ship` again from an up-to-date `main`. That rerun sees `already-bumped` in Step B1, finds the changelog entry already present in Step B4 (dedupe), has nothing to commit, and goes straight to Step B6. This works for merge, rebase and squash merges alike, because the tag is only ever created on `main`'s own commit.
+
 ### Step B6: Create tags and push
 
 After the commit is pushed, create git tags and push them to trigger CI/CD.
+
+**Guard — tag only a commit on `origin/main`.** Run first and stop (report, do not tag) if any check fails:
+
+```bash
+git branch --show-current                   # must be: main
+git fetch origin main --quiet
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" && echo OK   # HEAD pushed and equal to origin/main
+```
+
+On a feature branch, or with local commits not yet on `origin/main`, do not tag — see "On a feature branch" in Step B5.
 
 **You only push these by hand** (never invent extra host tags):
 
@@ -158,6 +170,7 @@ Always list Codex and AGY in this summary when a plugin `v*` was pushed — they
 - Changelog sections use today's date directly — NEVER use `(unpublished)`.
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
+- NEVER create or push a `v*` / `cli-v*` tag on a commit other than `origin/main`'s HEAD. From a feature branch, stop after the PR; tags come from a `/cf-ship` rerun on `main` after merge.
 - NEVER hand-edit generated artifacts: `plugin-codex/**` and `plugin-antigravity/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
 - Only `v*` and `cli-v*` are pushed by hand. Do not invent extra host tags.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
