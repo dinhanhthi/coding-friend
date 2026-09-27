@@ -57,6 +57,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 - `$cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
 - `$cf-commit [hint]` — ⚡ — Conventional commit
 - `$cf-design [mode]` — ⚡⚡ — Scan / design / modify UI
+- `$cf-showcase [--video|--poster]` — ⚡⚡ — Intro video (mp4) / poster (png/pdf/html) from the project's real content → docs/showcase/
 - `$cf-ship [hint]` — ⚡ — Verify, commit, push, PR (`--dry-run`)
 - `$cf-fix [bug]` — ⚡⚡ — Quick bug-fix
 - `$cf-optimize [target]` — ⚡⚡ — Baseline → optimize → measure
