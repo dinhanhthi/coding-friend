@@ -25,9 +25,19 @@ Read more in [website/src/content/index.md](website/src/content/index.md).
 
 % = Claude is a baseline with all skills, agents, hooks. Some are **Claude only**: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
 
-## Quick start
+## Install
 
-Requires Node.js 20+ and a host.
+### 🤖 Automatic Installation (Recommended)
+
+Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
+
+> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+
+### 📋 Manual Installation
+
+Requires Node.js 20+ and a supported host.
+
+#### Via CLI (Recommended)
 
 ```bash
 npm i -g coding-friend-cli
@@ -46,8 +56,7 @@ cf help
 cf init
 ```
 
-<details>
-<summary>Or install manually (no CLI)</summary>
+#### Via Plugin Manager
 
 ```bash
 claude plugin marketplace add dinhanhthi/coding-friend
@@ -57,8 +66,6 @@ claude plugin install coding-friend@coding-friend-marketplace
 /plugin marketplace add dinhanhthi/coding-friend
 /plugin install coding-friend@coding-friend-marketplace
 ```
-
-</details>
 
 Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the terminal, but plugin install still requires one manual step inside Codex: open `codex`, run `/plugins`, then install `coding-friend`.
 

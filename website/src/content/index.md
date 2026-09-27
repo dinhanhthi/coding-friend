@@ -30,7 +30,17 @@ Coding Friend installs on the host you already use.
 
 ## 📦 Install
 
+### 🤖 Automatic Installation (Recommended)
+
+Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
+
+> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+
+### 📋 Manual Installation
+
 You need Node 20+ and a supported host.
+
+#### Via CLI (Recommended)
 
 ```bash
 npm i -g coding-friend-cli
@@ -51,16 +61,14 @@ cf init
 
 Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy`. Then use `/cf-help` inside your agent to ask anything about CF.
 
-After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
-
-### Manual install
+#### Via Plugin Manager
 
 ```bash
 plugin marketplace add dinhanhthi/coding-friend
 plugin install coding-friend@coding-friend-marketplace
 ```
 
-Or ask your agent to install it.
+After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
 ## ✨ Features
 
