@@ -8,7 +8,7 @@ description: >
   or config key. SKIP — general coding questions unrelated to Coding Friend, and
   requests to run a skill (invoke that skill instead).
 created: 2026-02-17
-updated: 2026-09-25
+updated: 2026-09-27
 ---
 
 # /cf-help — Coding Friend Help
@@ -80,7 +80,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### Agents (run in forked sessions — separate context window)
 
-- **cf-reviewer** — ⚡ — Reviews the diff itself, 5 layers. `/cf-review` dispatches it directly: 1 in QUICK, 1 in STANDARD, 2 in DEEP — the second is **cf-reviewer-security** (pro). Flat graph — no sub-dispatch, no merge agent.
+- **cf-reviewer** — ⚡ — Reviews the diff itself, 5 layers. `/cf-review` dispatches it directly: 0 in TRIVIAL, 1 in QUICK, 1 in STANDARD, 2 in DEEP — the second is **cf-reviewer-security** (pro). Flat graph — no sub-dispatch, no merge agent.
 - **cf-reviewer-plan** (pro), **cf-reviewer-quality** (flash), **cf-reviewer-tests** (flash), **cf-reviewer-rules** (flash), **cf-reviewer-reducer** (flash) — ⚡ — retained, directly callable; off `/cf-review`'s default path
 - **cf-implementer** — ⚡ — Writes code; TDD with `--add-tests`. `[CF-RESULT: success|failure]`. No autopilot.
 - **cf-explorer** — ⚡ — Repo map + context files

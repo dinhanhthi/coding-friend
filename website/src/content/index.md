@@ -134,6 +134,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 - `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Snapshots the diff and hands it to `cf-reviewer`, which checks all five layers: project rules, plan alignment, correctness, security, tests.
   - **Depth** — auto from change size, or force with `--quick` / `--deep`:
+    - TRIVIAL — no reviewer: ≤2 files and ≤20 lines, no sensitive paths, only a secrets check (skipped when you pass `--quick` / `--deep`)
     - QUICK / STANDARD — 1 reviewer
     - DEEP — 2 reviewers (`cf-reviewer-security` joins in parallel)
   - **External reviewers** (opt-in, run in parallel, merged into the same report):

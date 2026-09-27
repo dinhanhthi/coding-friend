@@ -10,7 +10,7 @@ description: >
   (use $cf-ask), and formatting-only changes. --fix applies Critical/Important
   findings, --commit also commits.
 created: 2026-02-17
-updated: 2026-09-25
+updated: 2026-09-27
 ---
 
 # $cf-review
@@ -82,6 +82,14 @@ Script prints `KEY=value`: `FILES_CHANGED`, `LINES_CHANGED`, `SENSITIVE`, `CHANG
 
 Auto-detection: **QUICK** ≤3 files AND ≤50 lines AND no sensitive paths · **STANDARD** 4–10 files OR 51–300 lines · **DEEP** >10 files OR >300 lines OR sensitive paths touched. `SENSITIVE > 0` → always DEEP. `--quick` on a sensitive change warns on stderr — repeat that limitation in the Summary and still apply the secrets/injection baseline.
 
+**TRIVIAL tier** (skip the reviewer): `MODE=QUICK` AND `FILES_CHANGED` ≤ 2 AND `LINES_CHANGED` ≤ 20 AND `SENSITIVE=0` AND `SCOPE_COMPLETE=true` (exit `0`) AND `MODE_FORCED` empty AND no external reviewer or `--out` requested → run one secrets check on the snapshot's added lines:
+
+```bash
+grep -E '^\+' /tmp/coding-friend/review/<run-id>/diff.txt | grep -ciE '(api[_-]?key|token|password|secret|private[_-]?key|credential)'
+```
+
+Count `0` → mode is **TRIVIAL**: skip Steps 4–6 (no dispatch) and write the report yourself under `## Report contract` — `None.` in the three finding sections, **Native coverage**: `inline trivial review — no reviewer dispatched (<files> files, <lines> lines, no sensitive paths, secrets check clean)`, then `Review status: COMPLETE`. Count > 0 → keep `QUICK` and dispatch as usual. `--quick` / `--deep` always dispatch.
+
 ### Step 4: Gather context (conditional — based on review mode)
 
 - **QUICK mode**: Skip.
@@ -99,6 +107,7 @@ You dispatch every reviewer yourself, from this conversation. The graph is flat 
 
 | Mode         | Dispatches | Agents                                 |
 | ------------ | ---------- | -------------------------------------- |
+| **TRIVIAL**  | 0          | none — inline secrets check (Step 3)   |
 | **QUICK**    | 1          | `cf-reviewer`                          |
 | **STANDARD** | 1          | `cf-reviewer`                          |
 | **DEEP**     | 2          | `cf-reviewer` + `cf-reviewer-security` |
@@ -179,7 +188,7 @@ Skip when `out=true`. Show `✅ Code Review Complete` only when the Summary says
 
 > [✅ Code Review Complete | ⚠️ Review Complete — Action Needed]
 >
-> Mode: **[QUICK|STANDARD|DEEP]** · [No blocking issues found. `$cf-commit` when ready. | **[N] critical issue(s)** — resolve before commit. Fix now? | **Review status: [PARTIAL|FAILED]** — [missing coverage]. Re-run `$cf-review` on that scope before you commit.]
+> Mode: **[TRIVIAL|QUICK|STANDARD|DEEP]** · [No blocking issues found. `$cf-commit` when ready. | **[N] critical issue(s)** — resolve before commit. Fix now? | **Review status: [PARTIAL|FAILED]** — [missing coverage]. Re-run `$cf-review` on that scope before you commit.]
 
 `fix=true` → always go to Step 11 after the banner, whatever the status (Step 11 holds the gate); replace `Fix now?` with `Applying fixes (--fix)…` instead of waiting, and when `commit=true` and clean replace `` `$cf-commit` when ready. `` with `Committing (--commit)…`.
 

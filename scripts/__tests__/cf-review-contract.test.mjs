@@ -279,6 +279,33 @@ test("cf-review dispatches exactly 1 / 1 / 2 reviewers for QUICK / STANDARD / DE
   );
 });
 
+test("TRIVIAL dispatches no reviewer but still emits a COMPLETE contract", () => {
+  const dispatch = section(skill, DISPATCH_HEADING);
+  assert.match(
+    dispatch,
+    /^\|\s*\*\*TRIVIAL\*\*\s*\|\s*0\s*\|/m,
+    "Step 6 must declare TRIVIAL as 0 dispatches",
+  );
+  const assess = section(skill, "### Step 3: Assess change size");
+  assert.match(assess, /SENSITIVE=0/, "TRIVIAL requires no sensitive paths");
+  assert.match(
+    assess,
+    /SCOPE_COMPLETE=true/,
+    "TRIVIAL requires a complete scope",
+  );
+  assert.match(
+    assess,
+    /MODE_FORCED` empty/,
+    "a forced depth always dispatches",
+  );
+  assert.match(assess, /secrets check/i, "TRIVIAL still runs a secrets check");
+  assert.match(
+    assess,
+    /Review status: COMPLETE/,
+    "TRIVIAL still writes the status line consumers gate on",
+  );
+});
+
 test("cf-review default path uses neither cf-explorer nor a reducer", () => {
   assert.ok(
     !skill.includes("cf-explorer"),
