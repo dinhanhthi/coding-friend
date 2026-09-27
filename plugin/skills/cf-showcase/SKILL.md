@@ -97,7 +97,7 @@ Ask one question at a time, recommended option first, and skip anything `$ARGUME
 - Video: style, length, languages, aspect, what to emphasize or avoid, audio. Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-showcase/modes/video.md` now for the list.
 - Poster: style, main color, size, language, output formats. Read `${CLAUDE_PLUGIN_ROOT}/skills/cf-showcase/modes/poster.md` now for the list.
 
-Video length defaults to 30 s and has no hard limit: the user decides. Above 90 s, warn once before the storyboard and state the real costs (file size, render time, content needed), then proceed with whatever length they confirm. The details are in the mode file.
+Video length defaults to 30 s and has no hard limit: the user decides. An "auto" option lets the storyboard size the video to cover every key feature with each scene long enough to understand. Above 90 s, warn once before the storyboard and state the real costs (file size, render time, content needed), then proceed with whatever length they confirm. The details are in the mode file.
 
 ### Step 5: Storyboard gate
 
@@ -163,7 +163,7 @@ Projects differ; adapt the scenes to what the project actually is:
 
 - Research before designing, and storyboard before rendering.
 - One question per turn in the interview.
-- Video length default 30 s, no hard limit; warn once above 90 s (adding the >100 MB push risk above ~180 s), then respect the user's choice.
+- Video length default 30 s, or auto (sized to cover every key feature readably), no hard limit; warn once above 90 s (adding the >100 MB push risk above ~180 s), then respect the user's choice.
 - Respect dependency fallbacks from Step 2; tell the user what is degraded and why.
 - Write only inside `$OUT/`. Don't commit unless asked.
 - Report honestly what was and wasn't verified.
