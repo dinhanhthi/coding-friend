@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.7 (2026-09-27)
+
+- `/cf-plan` phase budget relaxed: the cap is now a ceiling (≤15 distinct files per phase, ~10 tasks as a soft limit), not a target — planners use the fewest phases that fit under it, and merge phases under 3 tasks into a neighbour unless the phase is the whole plan or a hard commit/review gate forces the split [#940a0206](https://github.com/dinhanhthi/coding-friend/commit/940a020615ffe4b50e2e598b45d824e7bed62f84)
+- The `## AUTOPILOT` contract is now written once, in `README.md`; big-plan `phase-N-*.md` files get a short pointer back to it instead of a full copy, and `/cf-plan-resume` checks only `README.md` for the section before autopiloting [#940a0206](https://github.com/dinhanhthi/coding-friend/commit/940a020615ffe4b50e2e598b45d824e7bed62f84)
+
 ## v0.44.6 (2026-09-27)
 
 - `/cf-plan` caps every phase at 8 distinct files and 6 tasks (tests count, plan files do not). Over budget, the plan splits into more integer-numbered phases — letter suffixes like `1a` are gone, because commits use `phase N/M` — and each phase must leave the build and tests green on its own. A phase that is only one mechanical sweep (for example a rename across many files) may still exceed the file cap [#657a9b9e](https://github.com/dinhanhthi/coding-friend/commit/657a9b9e)
