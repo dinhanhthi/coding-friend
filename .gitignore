@@ -62,19 +62,9 @@ graphify-out/
 .windsurfrules
 CLAUDE.md
 GEMINI.md
-docs/learn
-docs/memory
-docs/plans
-docs/research
-docs/reviews
-docs/sessions
-docs/warm
-docs/later
-docs/context
+docs/*
 # End AI Sync managed
 
 .codex/
 AGENTS.md
 !plugin-antigravity/rules/AGENTS.md
-
-docs/skills-agents-tom-tat.md
