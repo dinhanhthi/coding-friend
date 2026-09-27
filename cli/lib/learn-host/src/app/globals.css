@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm slate scale (dark palette — from website) */
+  --color-navy-800: #31353f;
+  --color-navy-900: #2a2d38;
+  --color-navy-950: #23262e;
+
+  /* Amber accent (matching logo gradient) */
+  --color-accent: #f59e0b;
+  --color-accent-light: #fbbf24;
+  --color-accent-dark: #d97706;
+
+  --color-surface: #2a2d38;
+  --color-surface-secondary: #31353f;
+  --color-border: rgba(160, 160, 160, 0.11);
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-link: #58adfb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db4c;
+  border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #d1d5dbce;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Syntax highlighting */
+pre code {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+
+  &.hljs {
+    padding: 0 !important;
+  }
+}
+
+pre {
+  padding: 1rem;
+  background: #0d1117;
+}
+
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  color: #94a3b8;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+:where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-weight: 500;
+}
+
+:not(pre) > code {
+  background: none !important;
+  border: 1px solid #a0a0a06b;
+  font-size: 85%;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Tighter prose list spacing */
+.prose
+  :where(ul, ol):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose :where(li):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.prose
+  :where(li > p, li > ul, li > ol, li > pre, li > blockquote, li > div):not(
+    :where([class~="not-prose"], [class~="not-prose"] *)
+  ) {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
