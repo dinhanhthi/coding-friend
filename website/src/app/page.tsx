@@ -115,6 +115,16 @@ export default function Home() {
                     options={mdxOptions}
                   />
                 ) : null}
+                <div className="intro-video">
+                  <iframe
+                    src="https://www.youtube-nocookie.com/embed/VZEeMELigAs"
+                    title="Coding Friend intro video"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
                 <LatestChanges entries={recentChanges} />
                 <MDXRemote
                   source={rest}

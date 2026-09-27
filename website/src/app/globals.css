@@ -709,6 +709,21 @@ li img {
   }
 }
 
+/* Intro video — 16:9 YouTube embed above the latest-changes box */
+.intro-video {
+  margin: var(--space-lg) 0 0;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-2);
+}
+
+.intro-video iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 /* Latest changes — success-tinted plate under the help tip */
 .latest-changes {
   margin: var(--space-lg) 0 var(--space-xl);
