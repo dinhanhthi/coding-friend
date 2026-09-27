@@ -2,7 +2,7 @@
 
 Copy these when writing the plan at Step 5–6. Do not invent a different layout.
 
-When autopilot is on (`--auto` or config `planAuto: true`), copy the AUTOPILOT CONTRACT fenced block from `modes/autopilot.md` into every `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section. Omit that whole section when `auto: false`.
+When autopilot is on (`--auto` or config `planAuto: true`), copy the AUTOPILOT CONTRACT fenced block from `modes/autopilot.md` into the `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` section of `README.md` only — once per plan. Phase files get the short pointer shown in their template. Omit every AUTOPILOT section when `auto: false`.
 
 ## Small plan (1 phase — written as `README.md` inside the plan folder)
 
@@ -142,7 +142,9 @@ After implementation: `$cf-review` → `$cf-commit`
 
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)
 
-<!-- autopilot only: paste the AUTOPILOT CONTRACT block from modes/autopilot.md; else omit this section -->
+<!-- autopilot only: keep this pointer as-is (do NOT paste the contract here); else omit this section -->
+
+Autopilot plan — follow the `## AUTOPILOT` contract in [README.md](./README.md) exactly. Per phase: tasks → `$cf-review` → fix → commit. Never ask between phases.
 
 ## Progress
 
@@ -251,6 +253,6 @@ Use when dispatching `cf-planner` (after the spawn/`model` line in SKILL.md):
 > Confirmed assumptions: [from Step 1] | User preferences: [from Step 1]
 > Codebase context: [full cf-explorer report]
 > Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
-> Respect the phase size budget: ≤ 8 distinct files and ≤ 6 tasks per phase; split larger phases (integer-numbered, each green on its own).
+> Respect the phase size budget: fewest phases that fit ≤ 15 distinct files per phase; no phase under 3 tasks unless it is the whole plan or a hard gate (merge small neighbours); split only over the cap (integer-numbered, each green on its own).
 
 > **Hard mode**: 3–4 approaches; each needs migration path, rollback, incremental deploy. Include blast-radius findings.

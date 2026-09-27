@@ -62,10 +62,10 @@ After decomposing tasks, analyze dependencies and group tasks into **phases**:
 3. **Constraints**:
    - Tasks in the same parallel phase **must not touch the same files**
    - When in doubt, keep tasks sequential — correctness over speed
-4. **Phase size budget** (every phase, `[parallel]` or `[sequential]`) — each phase is reviewed as one diff, so keep it small:
-   - At most **8 distinct files** (tests included, plan files excluded) and **6 tasks** per phase
-   - Over budget → split into more phases, renumbered as integers (`Phase 1`, `Phase 2`, …) — never letter suffixes like `1a` (commits use `phase <N>/<M>`)
-   - Split along dependency/module boundaries so every phase leaves build and tests green on its own (each phase is reviewed and committed alone)
+4. **Phase size budget** (every phase, `[parallel]` or `[sequential]`) — each phase is reviewed as one diff. The cap is a ceiling, not a target: use the **fewest phases** that fit under it.
+   - Cap: at most **15 distinct files** per phase (tests included, plan files excluded); ~10 tasks is a soft limit
+   - Floor: no phase with fewer than **3 tasks** unless it is the whole plan or a hard gate (the next phase cannot start until this one is committed and green). Merge adjacent small phases — a `[sequential]` phase can hold dependent tasks in order
+   - Over the cap → split into more phases, renumbered as integers (`Phase 1`, `Phase 2`, …) — never letter suffixes like `1a` (commits use `phase <N>/<M>`). Split at a dependency/module boundary so every phase leaves build and tests green on its own
    - Only exception: a phase whose tasks are all the same mechanical change (e.g. a rename across many files) may exceed the file cap — and must contain nothing else
 5. **Default**: If all tasks are interdependent, use a single `[sequential]` phase (this is the existing behavior)
 
@@ -145,7 +145,7 @@ Your plan MUST include:
 3. **Verify step for every task** — each task needs a way to confirm it's done (test command, manual check, expected output).
 4. **Risk section** — at least 1 risk with mitigation. If you see no risks, you haven't thought hard enough.
 5. **Phase markers on every task group** — every group of tasks MUST have a `[parallel]` or `[sequential]` marker. Tasks in a `[parallel]` phase must not share files.
-6. **Phase size budget** — every phase within the budget in step 4 (split before reporting).
+6. **Phase size budget** — every phase within the cap and above the floor in step 4 (split or merge before reporting).
 
 ## Rules
 

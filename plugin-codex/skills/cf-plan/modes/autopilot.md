@@ -64,7 +64,7 @@ EOF
 
 ### AUTOPILOT CONTRACT block
 
-Only when `--auto`. Copy this entire block **verbatim** into each plan file that needs it (small plan: `README.md`; big plan: `README.md` AND every `phase-N-*.md`), replacing the template placeholder. Omit the whole section when `auto: false`.
+Only when `--auto`. Copy this entire block **verbatim** into `README.md` only (small and big plans), replacing the template placeholder. Big-plan `phase-N-*.md` files get the short pointer from the phase template instead — never a second copy of this block. Omit the whole section when `auto: false`.
 
 ```markdown
 ## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)

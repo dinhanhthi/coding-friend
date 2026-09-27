@@ -93,7 +93,7 @@ Present: key findings, approaches with pros/cons, recommended approach and why, 
 
 ### Step 5: Write the Plan
 
-Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): ≤ 8 distinct files (tests included) and ≤ 6 tasks per phase. Before writing, count every phase — also in fast mode (no planner). Over budget → split into more integer-numbered phases along dependency boundaries, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` from `modes/autopilot.md`. Hard: **Rollback** per task + `## Migration & Rollback`.
+Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): fewest phases that fit ≤ 15 distinct files (tests included) per phase; no phase under 3 tasks unless it is the whole plan or a hard gate — merge small neighbours. Before writing, count every phase — also in fast mode (no planner). Over the cap → split into more integer-numbered phases at a dependency boundary, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy the `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` contract from `modes/autopilot.md` into `README.md` only. Hard: **Rollback** per task + `## Migration & Rollback`.
 
 ### Step 6: Save the Plan
 
@@ -106,7 +106,7 @@ Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/App
 3. Native normal/hard only: write `brief.md` from the Brief skeleton.
 4. Human overview unless humanDoc=false (`templates/plan-templates.md`).
 5. Present path, phase/task counts, `README.md`, overview/`brief.md` if written. Suggest `$cf-plan-review <slug>`.
-6. Autopilot: `auto: true` in README (plus `commitPerTask: true` when commit-per-task resolved true); copy `## AUTOPILOT` into every `phase-N-*.md`.
+6. Autopilot: `auto: true` in README (plus `commitPerTask: true` when commit-per-task resolved true); every `phase-N-*.md` gets the short AUTOPILOT pointer (not the full contract).
 
 ### Step 7: Offer Implementation
 
