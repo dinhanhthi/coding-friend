@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.44.6 (2026-09-27)
+
+- `/cf-plan` caps every phase at 8 distinct files and 6 tasks (tests count, plan files do not). Over budget, the plan splits into more integer-numbered phases — letter suffixes like `1a` are gone, because commits use `phase N/M` — and each phase must leave the build and tests green on its own. A phase that is only one mechanical sweep (for example a rename across many files) may still exceed the file cap [#657a9b9e](https://github.com/dinhanhthi/coding-friend/commit/657a9b9e)
+- `/cf-review` skips dispatching a reviewer for a trivial complete-scope change (auto mode would be QUICK, ≤2 files and ≤20 lines, no sensitive paths, no `--quick`/`--deep`, no external reviewer, no `--out`). It greps added lines for secrets and writes a COMPLETE report itself; a secrets hit falls back to QUICK and dispatches as before [#d869d697](https://github.com/dinhanhthi/coding-friend/commit/d869d697) [#90b9bd57](https://github.com/dinhanhthi/coding-friend/commit/90b9bd57)
+
 ## v0.44.5 (2026-09-26)
 
 - `cf-tdd`, `/cf-fix`, and test review now follow `lib/protocols/test-scope.md`: write a test only when it protects observable behavior, a contract, or a credible regression; skip renames, copy, config, docs, pure refactors, and small reversible tweaks; never exempt security-sensitive changes (auth, input validation, path/command handling, crypto); one owner test per contract, and a regression test must fail on the pre-fix code for the intended reason [#ef3f61e1](https://github.com/dinhanhthi/coding-friend/commit/ef3f61e1) [#7d2f2e39](https://github.com/dinhanhthi/coding-friend/commit/7d2f2e39)
