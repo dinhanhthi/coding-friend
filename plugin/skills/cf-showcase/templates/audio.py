@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Soundtrack for a showcase film, derived from its timeline.
 
-    python3 audio.py --timeline timeline.json --out audio.wav [--lufs -16]
+    python3 audio.py --timeline timeline.json --out audio.wav [--mood upbeat|calm] [--lufs -16]
 
 timeline.json comes from `node capture.mjs --mode timeline` and looks like
 {"duration": 30, "fps": 60, "timeline": [{"scene", "start", "dur", "opts"}]}.
@@ -11,7 +11,9 @@ Cues:
 - pop at every scene start
 - opts.events = [{"t": 1.2, "kind": "pop|click|tick|chord"}], t in seconds LOCAL to the scene start
 - a final chord at the last scene start (the end card)
-plus a soft pad bed following a chord progression.
+plus a music bed following a chord progression, chosen with --mood:
+- upbeat (default): 120 bpm, plucked arpeggio, bouncy bass, light kick/clap/hat
+- calm: slow sustained pads and bass, no drums
 
 Loudness: the gain targets --lufs with an RMS approximation (no K-weighting, no gating).
 The real check is ffmpeg's ebur128 filter (scripts/verify-video.sh in the skill folder).
@@ -32,6 +34,7 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--timeline", required=True, help="timeline.json from capture.mjs --mode timeline")
     p.add_argument("--out", default="audio.wav")
+    p.add_argument("--mood", choices=("upbeat", "calm"), default="upbeat", help="music bed style")
     p.add_argument("--lufs", type=float, default=-16.0, help="target integrated loudness (approx), -14..-20")
     return p.parse_args()
 
@@ -90,6 +93,25 @@ def whoosh(dur=0.6, g=0.5):
 
 def chord(freqs, dur=3.0, g=0.12):
     return sum(tone(f, dur, dur * 0.4, g, (1, 0.35, 0.1), a=0.02) for f in freqs)
+
+
+def kick(g=0.5):
+    n = int(SR * 0.22)
+    t = np.arange(n) / SR
+    f = 50 + 100 * np.exp(-t / 0.03)
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * env(n, 0.001, 0.08) * g
+
+
+def noise_hit(dur, dec, a, g):
+    """High-passed noise burst (hat when a is small, clap-ish when larger)."""
+    n = int(SR * dur)
+    x = rng.standard_normal(n)
+    return (x - lowpass(x, a)) * env(n, 0.001, dec) * g
+
+
+def pluck(f, g=0.1):
+    """Short bright mallet-like note."""
+    return tone(f, 0.3, 0.1, g, (1, 0.5, 0.25, 0.1), a=0.002)
 
 
 def pad(freqs, dur, g):
@@ -157,10 +179,48 @@ def master(L, R, target, ceiling=0.95):
 CHORDS = [(261.6, 329.6, 392.0), (196.0, 246.9, 293.7), (220.0, 261.6, 329.6), (174.6, 220.0, 261.6)]
 BASS = [65.4, 49.0, 55.0, 43.65]
 FINAL = (130.8, 196.0, 261.6, 329.6, 392.0, 523.3)
-BAR = 2.4  # seconds per chord (100 bpm, 4 beats)
+BAR = 2.4  # calm: seconds per chord (100 bpm, 4 beats)
+UP_BEAT = 0.5  # upbeat: 120 bpm
+ARP = (0, 1, 2, 1, 0, 1, 2, 3)  # chord-tone index per 8th note; 3 = root an octave up
 
 
-def score(data):
+def bed_calm(mix, bed_end):
+    t, bar = 0.0, 0
+    while t < bed_end - 0.05:
+        dur = min(BAR, bed_end - t) + 0.3
+        mix.add(pad(CHORDS[bar % 4], dur, 0.16), t)
+        mix.add(tone(BASS[bar % 4] * 2, dur, dur * 0.5, 0.12, (1, 0.5, 0.2), a=0.05), t)
+        t += BAR
+        bar += 1
+
+
+def bed_upbeat(mix, bed_end):
+    k, h, c = kick(0.5), noise_hit(0.05, 0.012, 0.6, 0.06), noise_hit(0.12, 0.035, 0.25, 0.12)
+    beat = 0
+    while beat * UP_BEAT < bed_end - 0.05:
+        t = beat * UP_BEAT
+        ch = CHORDS[(beat // 4) % 4]
+        if beat % 4 == 0:
+            mix.add(pad([f * 2 for f in ch], min(4 * UP_BEAT, bed_end - t) + 0.2, 0.05), t)
+        mix.add(k, t, 1.0 if beat % 2 == 0 else 0.6)
+        if beat % 2 == 1:
+            mix.add(c, t, pan=-0.1)
+        for half in (0, 1):
+            at = t + half * UP_BEAT / 2
+            if at >= bed_end:
+                break
+            if half:
+                mix.add(h, at, pan=0.3)
+            step = (beat % 4) * 2 + half
+            idx = ARP[step]
+            f = ch[0] * 4 if idx == 3 else ch[idx] * 2
+            mix.add(pluck(f, 0.09), at, pan=0.25 if step % 2 else -0.25)
+            root = BASS[(beat // 4) % 4] * 2
+            mix.add(tone(root * (2 if half else 1), 0.22, 0.09, 0.14, (1, 0.6, 0.3), a=0.003), at)
+        beat += 1
+
+
+def score(data, mood="upbeat"):
     timeline = sorted(data.get("timeline", []), key=lambda e: e["start"])
     if not timeline:
         sys.exit("audio.py: timeline is empty")
@@ -169,14 +229,8 @@ def score(data):
     last = timeline[-1]["start"]
 
     # music bed until the end card, then the final chord rings out
-    t, bar = 0.0, 0
     bed_end = last + 0.2 if len(timeline) > 1 else duration
-    while t < bed_end - 0.05:
-        dur = min(BAR, bed_end - t) + 0.3
-        mix.add(pad(CHORDS[bar % 4], dur, 0.16), t)
-        mix.add(tone(BASS[bar % 4] * 2, dur, dur * 0.5, 0.12, (1, 0.5, 0.2), a=0.05), t)
-        t += BAR
-        bar += 1
+    (bed_upbeat if mood == "upbeat" else bed_calm)(mix, bed_end)
 
     for i, e in enumerate(timeline):
         start = e["start"]
@@ -210,10 +264,10 @@ def main():
     args = parse_args()
     with open(args.timeline, encoding="utf-8") as f:
         data = json.load(f)
-    mix = score(data)
+    mix = score(data, args.mood)
     L, R = master(reverb(mix.L), reverb(mix.R), args.lufs)
     write_wav(args.out, L, R)
-    print(f"audio: {len(L) / SR:.2f}s, approx {approx_lufs(L, R):.1f} LUFS (check with ebur128) -> {args.out}")
+    print(f"audio ({args.mood}): {len(L) / SR:.2f}s, approx {approx_lufs(L, R):.1f} LUFS (check with ebur128) -> {args.out}")
 
 
 if __name__ == "__main__":

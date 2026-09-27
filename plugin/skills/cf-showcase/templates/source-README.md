@@ -50,13 +50,13 @@ Add `--aspect 16x9|1x1|9x16` (or `--size WxH`) for a non-default aspect. `--dura
 
 ```bash
 node capture.mjs --mode timeline --src dist/video.html --out timeline.json
-python3 audio.py --timeline timeline.json --out audio.wav
+python3 audio.py --timeline timeline.json --out audio.wav --mood upbeat   # or calm
 ffmpeg -i <name>-intro-<xx>.mp4 -i audio.wav -map 0:v -map 1:a -c:v copy \
   -c:a aac -b:a 192k -shortest -movflags +faststart <name>-intro-<xx>.muxed.mp4
 mv <name>-intro-<xx>.muxed.mp4 <name>-intro-<xx>.mp4
 ```
 
-`audio.py` adds a whoosh at every scene change, a pop at every scene start, cues from `opts.events` in `TIMELINE` (`[{t, kind: pop|click|tick|chord}]`, `t` local to the scene start) and a final chord on the last scene. `--lufs` sets the target (default −16, keep it within −14..−20); the value is an RMS approximation, so measure the real loudness with verify-video.sh. One `audio.wav` serves every language while `TIMELINE` is shared.
+`audio.py` adds a whoosh at every scene change, a pop at every scene start, cues from `opts.events` in `TIMELINE` (`[{t, kind: pop|click|tick|chord}]`, `t` local to the scene start) and a final chord on the last scene, over a music bed picked with `--mood` (`upbeat` by default: 120 bpm arpeggio, bass and light drums; `calm`: slow pads). `--lufs` sets the target (default −16, keep it within −14..−20); the value is an RMS approximation, so measure the real loudness with verify-video.sh. One `audio.wav` serves every language while `TIMELINE` is shared.
 
 If a file ends up over its size budget (50 MB by default; GitHub rejects pushes above 100 MB), re-encode with a higher CRF (22–26):
 
