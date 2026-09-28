@@ -7,6 +7,7 @@
 //
 // Other flags: --aspect 16x9|1x1|9x16, --size WxH (video/sheet) or a poster size name,
 // --duration S (override, for smoke tests). Set CHROME_PATH to pick a browser.
+// The page exposes window.__showcase (see modes/video.md); canvas or DOM films both work.
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
@@ -151,12 +152,46 @@ function ffmpeg(args, { stdin = false } = {}) {
   return { proc, done };
 }
 
-async function frameJpeg(page, t) {
-  const url = await page.evaluate((t) => {
-    window.__showcase.render(t);
-    return document.querySelector("canvas").toDataURL("image/jpeg", 0.95);
-  }, t);
-  return Buffer.from(url.slice(url.indexOf(",") + 1), "base64");
+// A canvas film is read from its <canvas>; a DOM film is screenshotted at the film
+// size, with the stage laid out at the page's top-left corner. See filmMode().
+async function frameJpeg(page, t, info) {
+  const url = await page.evaluate(
+    async (t, mode) => {
+      await window.__showcase.render(t);
+      if (mode !== "canvas") return null;
+      return document.querySelector("canvas").toDataURL("image/jpeg", 0.95);
+    },
+    t,
+    info.mode,
+  );
+  if (url) return Buffer.from(url.slice(url.indexOf(",") + 1), "base64");
+  return Buffer.from(
+    await page.screenshot({
+      type: "jpeg",
+      quality: 95,
+      clip: { x: 0, y: 0, width: info.width, height: info.height },
+    }),
+  );
+}
+
+// `__showcase.mode` ("canvas" | "dom") picks how frames are read. Unset, a page whose
+// first <canvas> is exactly the film size is a canvas film; anything else (no canvas,
+// or DOM with small canvas layers) is screenshotted, so no part of the frame is lost.
+async function filmMode(page, info) {
+  const mode = await page.evaluate(
+    ({ width, height }) => {
+      const { mode } = window.__showcase;
+      if (mode !== undefined) return mode;
+      const c = document.querySelector("canvas");
+      return c && c.width === width && c.height === height ? "canvas" : "dom";
+    },
+    { width: info.width, height: info.height },
+  );
+  if (mode !== "canvas" && mode !== "dom")
+    throw new Error(`__showcase.mode must be "canvas" or "dom", got "${mode}"`);
+  if (mode === "canvas" && !(await page.$("canvas")))
+    throw new Error(`__showcase.mode is "canvas" but the page has no <canvas>`);
+  return mode;
 }
 
 async function captureVideo(page, info, opts) {
@@ -201,7 +236,7 @@ async function captureVideo(page, info, opts) {
   );
   for (let i = 0; i < total; i++) {
     if (failed) throw failed;
-    const buf = await frameJpeg(page, i / fps);
+    const buf = await frameJpeg(page, i / fps, info);
     if (!proc.stdin.write(buf))
       await Promise.race([once(proc.stdin, "drain"), done]);
     if ((i + 1) % 300 === 0) console.log(`  ${i + 1}/${total}`);
@@ -220,7 +255,7 @@ async function captureSheet(page, info, opts) {
       const t = ((i + 0.5) * opts.duration) / n;
       fs.writeFileSync(
         path.join(tmp, `f_${String(i).padStart(4, "0")}.jpg`),
-        await frameJpeg(page, t),
+        await frameJpeg(page, t, info),
       );
       console.log(`  frame ${i + 1}: t=${t.toFixed(2)}s`);
     }
@@ -351,6 +386,14 @@ async function main() {
       const { duration, fps, width, height, timeline } = window.__showcase;
       return { duration, fps, width, height, timeline };
     });
+    info.mode = await filmMode(page, info);
+    // DOM films render at the viewport, so size it to the film.
+    if (info.mode === "dom")
+      await page.setViewport({
+        width: info.width,
+        height: info.height,
+        deviceScaleFactor: 1,
+      });
     opts.duration = opts.duration
       ? positiveNumber(opts.duration, "duration")
       : info.duration;

@@ -1,10 +1,14 @@
 # Showcase source
 
-Everything in this folder re-renders the showcase assets. The film is one deterministic canvas function, `render(t)`, in `video.html`. All copy lives in the `STR` table (one entry per language, selected with `?lang=xx`); timing lives in `TIMELINE`; colors and fonts in `BRAND`.
+Everything in this folder re-renders the showcase assets. `<Describe the film: its page (for example video.html, or film.html + film.js + scenes/*.js), canvas or DOM, and where copy, timing, colors and fonts live.>` Every frame is a deterministic `render(t)` exposed on `window.__showcase`.
 
 Settings used for this showcase (update when they change):
 
-- Length: `<s>` s · fps: `<180|60>` · aspect: `<16x9|1x1|9x16>` · languages: `<en, vi>`
+- Length: `<s>` s · fps: `<180|60>` · aspect: `<16x9|1x1|9x16>` · languages: `<en, vi>` · audio seed: `<N | none>`
+
+## Scenes
+
+`<One row per scene: name, file, what it shows.>`
 
 `<name>` is the project slug, `<xx>` a language code. Run every command from this folder.
 
@@ -14,7 +18,7 @@ Settings used for this showcase (update when they change):
 npm install
 ```
 
-`capture.mjs` drives the Chrome already installed on this machine (Chrome, Chromium, Chrome Canary or Edge). If it is somewhere unusual, set `CHROME_PATH=/path/to/chrome`. ffmpeg must be on `PATH`; audio needs python3 with numpy. Fonts come from Google Fonts, so rendering needs network access; capture aborts when a font fails to load instead of rendering in a fallback font.
+`capture.mjs` drives the Chrome already installed on this machine (Chrome, Chromium, Chrome Canary or Edge). If it is somewhere unusual, set `CHROME_PATH=/path/to/chrome`. ffmpeg must be on `PATH`; audio needs python3 with numpy. `<Say where fonts come from: local files in fonts/, or Google Fonts (needs network).>` Capture aborts when a font fails to load instead of rendering in a fallback font.
 
 ## Build and preview
 
@@ -25,7 +29,7 @@ open dist/video.html   # Linux: xdg-open
 
 Local asset refs must resolve inside `--root` (default: the git toplevel, or this folder outside git). Pass `--root <dir>` to allow assets from a wider folder.
 
-The preview page has play/pause, replay, a scrubber, chapter buttons and a language toggle.
+`<Describe the live preview: how to play, scrub or jump to a scene.>`
 
 ## Contact sheet (per language)
 
@@ -56,7 +60,7 @@ ffmpeg -i <name>-intro-<xx>.mp4 -i audio.wav -map 0:v -map 1:a -c:v copy \
 mv <name>-intro-<xx>.muxed.mp4 <name>-intro-<xx>.mp4
 ```
 
-`audio.py` adds a whoosh at every scene change, a pop at every scene start, cues from `opts.events` in `TIMELINE` (`[{t, kind: pop|click|tick|chord}]`, `t` local to the scene start) and a final chord on the last scene, over a music bed picked with `--mood` (`upbeat` by default: arpeggio, bass and light drums; `calm`: slow pads). Every `upbeat` run without `--seed` draws a new variation (key, tempo, progression, patterns, lead sound) and prints its seed; pass `--seed <N>` to keep the same track, or drop it for a new one. `--lufs` sets the target (default −16, keep it within −14..−20); the value is an RMS approximation, so measure the real loudness with verify-video.sh. One `audio.wav` serves every language while `TIMELINE` is shared.
+`<Replace the audio.py line above with your own score command if the film has a bespoke soundtrack.>` `audio.py` adds a whoosh at every scene change, a pop at every scene start, cues from `opts.events` in the timeline (`[{t, kind: pop|click|tick|chord}]`, `t` local to the scene start) and a final chord on the last scene, over a music bed picked with `--mood` (`upbeat` or `calm`). Every `upbeat` run without `--seed` draws a new variation and prints its seed; pass `--seed <N>` to keep the same track. `--lufs` sets the target (default −16, keep it within −14..−20); the value is an RMS approximation, so measure the real loudness with verify-video.sh. One audio file serves every language while the timing is shared.
 
 If a file ends up over its size budget (50 MB by default; GitHub rejects pushes above 100 MB), re-encode with a higher CRF (22–26):
 
