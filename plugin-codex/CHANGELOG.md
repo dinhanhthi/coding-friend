@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.45.1 (2026-09-28)
+
+- `$cf-showcase` no longer fixes a scene arc, a style/color/layout menu or a single transition device: the agent researches the repo, pitches its own concept (idea, assets, beats with sources) for the user to approve, then builds the film or poster however that concept needs — canvas, DOM/CSS, SVG, or a mix. The scene library and reference `video.html`/`poster.html` are now optional reference material, not a template to fill in. `capture.mjs` can now capture a DOM/CSS film (screenshotting the page) in addition to a canvas film, selected via `__showcase.mode` [#00d74fee](https://github.com/dinhanhthi/coding-friend/commit/00d74fee)
+
 ## v0.45.0 (2026-09-27)
 
 - Add `$cf-showcase`: an intro video (mp4) and/or poster (png/pdf/html) for the current project, built from the repo's real features, names and brand, and saved to `docs/showcase/` with a re-renderable `source/` folder. Interview covers style, length (30s default, auto, or custom — warns rather than hard-caps above 90s/180s), languages, aspect (16:9/1:1/9:16), and what to emphasize or avoid. Video uses a scene library (hook, brand reveal, hero demo, feature grid, differentiator, scale, end card) with a check-deps step reporting what's actually renderable (`video`/`poster_png_pdf`/`audio`) before any question is asked [#0abe373a](https://github.com/dinhanhthi/coding-friend/commit/0abe373a) [#7f18160e](https://github.com/dinhanhthi/coding-friend/commit/7f18160e) [#022f097b](https://github.com/dinhanhthi/coding-friend/commit/022f097b) [#b5a8f93a](https://github.com/dinhanhthi/coding-friend/commit/b5a8f93a)
