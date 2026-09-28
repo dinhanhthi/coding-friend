@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import TableOfContents from "@/components/TableOfContents";
 import CodeBlock from "@/components/CodeBlock";
+import CopyableBlockquote from "@/components/CopyableBlockquote";
 import MdxLink from "@/components/MdxLink";
 import ZoomableImage from "@/components/ZoomableImage";
 import CompareSplit from "@/components/CompareSplit";
@@ -109,6 +110,7 @@ export default function Home() {
                     source={tip}
                     components={{
                       pre: CodeBlock,
+                      blockquote: CopyableBlockquote,
                       a: MdxLink,
                       img: ZoomableImage,
                     }}
@@ -130,6 +132,7 @@ export default function Home() {
                   source={rest}
                   components={{
                     pre: CodeBlock,
+                    blockquote: CopyableBlockquote,
                     a: MdxLink,
                     img: ZoomableImage,
                   }}
@@ -146,6 +149,7 @@ export default function Home() {
                     source={after}
                     components={{
                       pre: CodeBlock,
+                      blockquote: CopyableBlockquote,
                       a: MdxLink,
                       img: ZoomableImage,
                     }}

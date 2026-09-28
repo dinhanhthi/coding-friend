@@ -598,6 +598,11 @@ a > code {
   content: none;
 }
 
+/* Room for the hover copy button so it does not cover the first line. */
+.prose blockquote.has-copy {
+  padding-right: 2.75rem;
+}
+
 .prose pre {
   background: var(--color-paper-3);
   border: var(--rule);
