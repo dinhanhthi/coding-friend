@@ -11,7 +11,7 @@ description: >
 user-invocable: true
 argument-hint: "[--video] [--poster] [--out <dir>]"
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-30
 state: beta
 ---
 
@@ -122,7 +122,23 @@ cd "$OUT/source"
 mv source-package.json package.json
 mv source-gitignore .gitignore
 mv source-README.md README.md
-npm install
+```
+
+Every rendered version shares one `node_modules` install instead of each one downloading and unpacking its own copy of `puppeteer-core`. `capture.mjs` imports it as a bare specifier, so Node walks up from `source/` through its ancestor directories looking for `node_modules/puppeteer-core` — an install one level up (in `{docsDir}/showcase/`, the fixed home for every version) already serves any nested `source/` folder:
+
+```bash
+KIT="$MAIN_REPO_ROOT/{docsDir}/showcase"
+case "$OUT/" in
+  "$KIT"/*)
+    mkdir -p "$KIT"
+    [ -f "$KIT/.gitignore" ] || printf 'node_modules/\n' > "$KIT/.gitignore"
+    [ -f "$KIT/package.json" ] || cp package.json "$KIT/package.json"
+    [ -d "$KIT/node_modules" ] || ( cd "$KIT" && npm install )
+    ;;
+  *)
+    npm install   # $OUT sits outside {docsDir}/showcase — no shared kit to reuse
+    ;;
+esac
 ```
 
 Existing `$OUT/source/` → ask before overwriting. It may hold a previous showcase the user edited by hand.

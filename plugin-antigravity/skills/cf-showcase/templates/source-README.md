@@ -18,6 +18,8 @@ Settings used for this showcase (update when they change):
 npm install
 ```
 
+Skip this if `node_modules/` isn't in this folder: it's one level up, in the shared showcase kit every rendered version reuses (`capture.mjs`'s `puppeteer-core` import resolves there through Node's normal ancestor lookup). Only run `npm install` here if this folder no longer lives under that kit — for example after copying it out on its own.
+
 `capture.mjs` drives the Chrome already installed on this machine (Chrome, Chromium, Chrome Canary or Edge). If it is somewhere unusual, set `CHROME_PATH=/path/to/chrome`. ffmpeg must be on `PATH`; audio needs python3 with numpy. `<Say where fonts come from: local files in fonts/, or Google Fonts (needs network).>` Capture aborts when a font fails to load instead of rendering in a fallback font.
 
 ## Build and preview

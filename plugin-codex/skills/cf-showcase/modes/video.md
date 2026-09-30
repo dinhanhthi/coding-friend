@@ -183,4 +183,4 @@ Use it as the `<video poster>` on a landing page or as the README thumbnail.
 - `$OUT/<name>-intro-poster.jpg`.
 - `$OUT/source/` with the film you built, its assets, scripts, and `README.md`. Rewrite `source/README.md` to describe your film (its scenes, files and where copy, timing and colors live) with the exact regen commands per language (build, sheet, capture, audio, mux, verify) and the chosen length, fps, aspect and audio seed, so anyone can re-render after a feature rename.
 
-Don't commit `source/node_modules/`, `dist/` or `*.wav`; the copied `.gitignore` already excludes them.
+Don't commit `dist/` or `*.wav`; the copied `.gitignore` already excludes them. `node_modules/` usually isn't even in `source/` — it lives one level up, in the shared `{docsDir}/showcase/` kit every rendered version reuses (SKILL.md Step 6); that folder's own `.gitignore` excludes it. Never commit it either way.
