@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.45.2 (2026-09-30)
+
+- `$cf-showcase` installs dependencies once in `{docsDir}/showcase/` and reuses that `node_modules` for every rendered version, instead of running `npm install` inside each `source/` folder [#88e9f0cd](https://github.com/dinhanhthi/coding-friend/commit/88e9f0cd)
+
 ## v0.45.1 (2026-09-28)
 
 - `$cf-showcase` no longer fixes a scene arc, a style/color/layout menu or a single transition device: the agent researches the repo, pitches its own concept (idea, assets, beats with sources) for the user to approve, then builds the film or poster however that concept needs — canvas, DOM/CSS, SVG, or a mix. The scene library and reference `video.html`/`poster.html` are now optional reference material, not a template to fill in. `capture.mjs` can now capture a DOM/CSS film (screenshotting the page) in addition to a canvas film, selected via `__showcase.mode` [#00d74fee](https://github.com/dinhanhthi/coding-friend/commit/00d74fee)

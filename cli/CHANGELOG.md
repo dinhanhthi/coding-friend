@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.41.3 (2026-09-30)
+
+- `cf init` onboarding message and the generated Codex `AGENTS.md` skill list now include `/cf-showcase` [#022f097b](https://github.com/dinhanhthi/coding-friend/commit/022f097b)
+
 ## v1.41.2 (2026-09-25)
 
 - Add `planCommitPerTask` to `cf config` ("Plan commit per task") so `/cf-plan` autopilot can commit each task separately instead of once per phase (same editor pattern as `planAuto`) [#c560b861](https://github.com/dinhanhthi/coding-friend/commit/c560b861)
