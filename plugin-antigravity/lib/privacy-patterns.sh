@@ -26,4 +26,7 @@ SAFE_PATTERNS=(
   '\.template$'
   '\.env\.example'
   '\.env\.sample'
+  # cf-commit's own scanner script: its name matches 'secret' (#28). Kept
+  # narrow on purpose: a safe match skips the whole path/command string.
+  'cf-commit/scripts/scan-secrets\.sh'
 )

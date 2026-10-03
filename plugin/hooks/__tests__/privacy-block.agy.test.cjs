@@ -153,6 +153,34 @@ describe("privacy-block.agy.sh", () => {
     expect(result.json.reason).toContain("cat .env");
   });
 
+  it("allows run_command of cf-commit's scan-secrets.sh (#28)", () => {
+    const result = runHook({
+      toolCall: {
+        name: "run_command",
+        args: {
+          CommandLine:
+            'bash "/x/plugins/coding-friend/skills/cf-commit/scripts/scan-secrets.sh"',
+        },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.json).toEqual({ decision: "allow" });
+  });
+
+  it("allows view_file of cf-commit's scan-secrets.sh (#28)", () => {
+    const result = runHook({
+      toolCall: {
+        name: "view_file",
+        args: {
+          AbsolutePath:
+            "/x/plugins/coding-friend/skills/cf-commit/scripts/scan-secrets.sh",
+        },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.json).toEqual({ decision: "allow" });
+  });
+
   it("allows malformed JSON (fail-open, exit 0)", () => {
     const result = runHook("not-json");
     expect(result.status).toBe(0);

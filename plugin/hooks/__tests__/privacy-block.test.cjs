@@ -77,6 +77,18 @@ describe("privacy-block.sh", () => {
     expect(result.stdout.trim()).toBe("{}");
   });
 
+  it("allows cf-commit's scan-secrets.sh script (#28)", () => {
+    const result = runHook({
+      tool_name: "Read",
+      tool_input: {
+        file_path:
+          "/x/plugins/coding-friend/skills/cf-commit/scripts/scan-secrets.sh",
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe("{}");
+  });
+
   it("allows a normal file_path", () => {
     const result = runHook({
       tool_name: "Read",
