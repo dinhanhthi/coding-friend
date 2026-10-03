@@ -662,6 +662,11 @@ li img {
   border-color: var(--color-ink);
 }
 
+/* Light mode only — the "Harness only" frame was fading into the page. */
+:root:not([data-theme="dark"]) .compare-pane--without {
+  border-color: oklch(72% 0.012 264);
+}
+
 .compare-title {
   margin: 0 0 var(--space-xs);
   color: var(--color-ink);
