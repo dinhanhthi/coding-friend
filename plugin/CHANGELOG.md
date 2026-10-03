@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.45.3 (2026-10-03)
+
+- Fix the privacy-block hook (Claude Code, Codex and Antigravity) denying access to the plugin's own `skills/cf-commit/scripts/scan-secrets.sh` because its name matches the `secret` pattern [#dbb9ef94](https://github.com/dinhanhthi/coding-friend/commit/dbb9ef94)
+
 ## v0.45.2 (2026-09-30)
 
 - `/cf-showcase` installs dependencies once in `{docsDir}/showcase/` and reuses that `node_modules` for every rendered version, instead of running `npm install` inside each `source/` folder [#88e9f0cd](https://github.com/dinhanhthi/coding-friend/commit/88e9f0cd)
