@@ -8,7 +8,7 @@ description: >
   or config key. SKIP — general coding questions unrelated to Coding Friend, and
   requests to run a skill (invoke that skill instead).
 created: 2026-02-17
-updated: 2026-09-27
+updated: 2026-10-04
 ---
 
 # $cf-help — Coding Friend Help
@@ -42,7 +42,7 @@ Never invent a flag, config key, hook name, CLI command, or host difference.
 
 Coding Friend is a lean toolkit for disciplined engineering workflows in Codex CLI. Check skills first; TDD optional (`--add-tests` or `tdd: true`); `$cf-plan` autopilot optional (`--auto` or `planAuto: true`, `--no-auto` forces off); verify before claiming done.
 
-Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent agy` / `--agy`). Plugin works alone; `coding-friend-cli` is optional. Skills never call `cf`. Flags / config / native prompt-reduction: `topics.md`.
+Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent agy` / `--agy`), **Devin CLI** (beta; `--agent devin` / `--devin`). Plugin works alone; `coding-friend-cli` is optional. Skills never call `cf`. Flags / config / native prompt-reduction: `topics.md`.
 
 ### Slash Commands (user triggers with /)
 
@@ -91,13 +91,13 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### Hooks (automatic — not slash commands)
 
-`hooks/hooks.json` (+ `*.agy.*`; Codex transformed). Keys + native modes: `topics.md`.
+`hooks/hooks.json` (+ `*.agy.*` / `*.devin.*`; Codex transformed). Keys + native modes: `topics.md`.
 
 **session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Claude `autoApproveLLM` default false → unknown defers to native) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
 
 ### CLI (`coding-friend-cli`, binary `cf`) — optional
 
-Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `clean` `session` `guide` `dev`. No skill requires the CLI. Full flags: `topics.md`.
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `clean` `session` `guide` `dev`. No skill requires the CLI. Full flags: `topics.md`.
 
 Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/docs/reference/context-usage/.
 
@@ -113,7 +113,7 @@ Present the workflows in `topics.md`. Distinction: `$cf-remember` = project know
 
 - **Skill not triggering?** Invoke `/cf-<skill-name>` manually.
 - **Config / custom guides?** `topics.md`.
-- **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`. CF hook: `autoApprove`. Details: `topics.md`.
+- **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`; Devin `--permission-mode dangerous` (CF `PermissionRequest` hook approve/block). CF hook: `autoApprove`. Details: `topics.md`.
 - **More?** [Troubleshooting](https://cf.dinhanhthi.com/docs/reference/troubleshooting/).
 
 ### Step 6: Answer concisely

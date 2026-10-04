@@ -2,12 +2,12 @@
 
 ## Layout
 
-| Path                                   | What it is                                      |
-| -------------------------------------- | ----------------------------------------------- |
-| `plugin/`                              | The only plugin source tree. Edit here.         |
-| `plugin-codex/`, `plugin-antigravity/` | **Generated** artifacts. Never edit by hand.    |
-| `cli/`                                 | The `cf` CLI (published as `coding-friend-cli`) |
-| `website/`                             | Docs site                                       |
+| Path                                                    | What it is                                      |
+| ------------------------------------------------------- | ----------------------------------------------- |
+| `plugin/`                                               | The only plugin source tree. Edit here.         |
+| `plugin-codex/`, `plugin-antigravity/`, `plugin-devin/` | **Generated** artifacts. Never edit by hand.    |
+| `cli/`                                                  | The `cf` CLI (published as `coding-friend-cli`) |
+| `website/`                                              | Docs site                                       |
 
 ## How local dev works
 
@@ -63,7 +63,20 @@ cf init --agent omp
 npm run build:agy
 cf install --agent agy
 cf init --agent agy
+
+# Devin CLI (beta) — generated artifact: scripts/build-devin-plugin.js
+npm run build:devin
+cf install --agent devin
+cf init --agent devin
+#   verify: devin plugins info coding-friend
 ```
+
+Devin detail: `cf dev on .` makes `cf install|update --agent devin` and
+`npm run ud-plugin-local` use `devin plugins install --local <repo>/plugin-devin`
+(a symlink, so edits are live for NEW sessions); without dev mode they use the
+GitHub `#plugin-devin` subdir and `devin plugins update`. Lint/drift:
+`npm run lint:devin` and `npm run verify:devin-drift` (regenerates and fails on
+unstaged changes — stage `plugin-devin/` first).
 
 ## After each change
 
@@ -75,12 +88,13 @@ cf init --agent agy
 | `plugin/hooks/statusline.sh`                           | `cf dev sync`, then restart                  |
 | `cli/**`                                               | `npm run dev` (or `cd cli && npm run build`) |
 | `cli/**` — **new command**                             | `cf init` to refresh completion              |
-| Anything, and you test on Codex/omp/Antigravity        | `npm run ud-plugin-local`, restart that host |
+| Anything, and you test on Codex/omp/Antigravity/Devin  | `npm run ud-plugin-local`, restart that host |
 
 `npm run ud-plugin-local` covers every host in one go: regenerates
-`plugin-codex/` and `plugin-antigravity/`, refreshes the Claude snapshot,
-redeploys omp agents and the Antigravity plugin, and clears the Codex cache so
-it re-copies on next launch.
+`plugin-codex/`, `plugin-antigravity/` and `plugin-devin/`, refreshes the Claude
+snapshot, redeploys omp agents and the Antigravity plugin, refreshes the Devin
+install (the `--local` link is live for new sessions; prod runs `devin plugins
+update`), and clears the Codex cache so it re-copies on next launch.
 
 Restart is always required — hosts read the plugin at session start.
 
@@ -125,5 +139,6 @@ After adding, removing, or editing a `SKILL.md` or agent file, run
 - [plugin/README.md](plugin/README.md) — `--plugin-dir` and `cf dev` details
 - [plugin/omp/README.md](plugin/omp/README.md) — omp bridge runtime
 - Build scripts: `scripts/build-codex-plugin.js`,
-  `scripts/build-antigravity-plugin.js`, `scripts/update-plugin-local.js`
+  `scripts/build-antigravity-plugin.js`, `scripts/build-devin-plugin.js`,
+  `scripts/update-plugin-local.js`
 - Host resolution: `cli/src/lib/host.ts`, `cli/src/lib/paths.ts`

@@ -16,15 +16,16 @@ Coding Friend adds skills, agents, and hooks to the tools you already use. You g
 
 Coding Friend installs on the host you already use.
 
-| Host                                                  | Support | Command                    | Notes                                                    |
-| ----------------------------------------------------- | ------- | -------------------------- | -------------------------------------------------------- |
-| [Claude Code](https://claude.com/product/claude-code) | 100%    | `cf install`               | Default.                                                 |
-| [oh-my-pi](https://github.com/can1357/oh-my-pi)       | 95%     | `cf install --agent omp`   | Beta. Skills come from the Claude plugin cache.          |
-| [Codex](https://openai.com/codex/)                    | 77%     | `cf install --agent codex` | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve. |
-| [Antigravity](https://antigravity.google/)            | 73%     | `cf install --agent agy`   | Beta. Requires agy >= 1.1.0. No memory auto-capture.     |
-| [Cursor](https://cursor.com/)                         | 100%    | comes with Claude          | Runs Claude Code / Codex underneath.                     |
-| [Grok Build](https://x.ai/build)                      | 100%    | comes with Claude          | Same as Cursor.                                          |
-| [ZCode](https://zcode.z.ai/en)                        | 100%    | via github marketplace     | not tested 100%                                          |
+| Host                                                  | Support | Command                    | Notes                                                            |
+| ----------------------------------------------------- | ------- | -------------------------- | ---------------------------------------------------------------- |
+| [Claude Code](https://claude.com/product/claude-code) | 100%    | `cf install`               | Default.                                                         |
+| [oh-my-pi](https://github.com/can1357/oh-my-pi)       | 95%     | `cf install --agent omp`   | Beta. Skills come from the Claude plugin cache.                  |
+| [Devin CLI](https://devin.ai/)                        | 86%     | `cf install --agent devin` | Beta. Requires devin >= 3000.11.3. Deferred memory auto-capture. |
+| [Codex](https://openai.com/codex/)                    | 77%     | `cf install --agent codex` | Beta. Invoke as `$cf-*`. Partial hooks and auto-approve.         |
+| [Antigravity](https://antigravity.google/)            | 73%     | `cf install --agent agy`   | Beta. Requires agy >= 1.1.0. No memory auto-capture.             |
+| [Cursor](https://cursor.com/)                         | 100%    | comes with Claude          | Runs Claude Code / Codex underneath.                             |
+| [Grok Build](https://x.ai/build)                      | 100%    | comes with Claude          | Same as Cursor.                                                  |
+| [ZCode](https://zcode.z.ai/en)                        | 100%    | via github marketplace     | not tested 100%                                                  |
 
 % = Claude is a baseline with all skills, agents, hooks. Some are **Claude only**: statusline, session save/restore (`/cf-session`), and task tracking. Other hosts ship their own equivalents, so they are not counted.
 
@@ -34,7 +35,7 @@ Coding Friend installs on the host you already use.
 
 Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
 
-> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
 
 ### 📋 Manual Installation
 
@@ -47,7 +48,7 @@ npm i -g coding-friend-cli
 # If `cf` is taken, use `cdf`
 
 cf install               # Claude Code (default)
-cf install --agent codex # or 'omp', 'agy'
+cf install --agent codex # or 'omp', 'agy', 'devin'
 
 cf init                  # per project: docs/, .coding-friend/config.json
 cf update                # later: pull the newest plugin
@@ -59,7 +60,7 @@ cf help
 cf init
 ```
 
-Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy`. Then use `/cf-help` inside your agent to ask anything about CF.
+Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `--agy` / `--devin`. Then use `/cf-help` inside your agent to ask anything about CF.
 
 #### Via Plugin Manager
 
@@ -67,6 +68,8 @@ Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `
 plugin marketplace add dinhanhthi/coding-friend
 plugin install coding-friend@coding-friend-marketplace
 ```
+
+Devin CLI (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated [`plugin-devin/`](https://github.com/dinhanhthi/coding-friend/tree/main/plugin-devin) directly. Inside Devin, invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
 After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
