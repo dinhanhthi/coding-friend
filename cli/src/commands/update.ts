@@ -19,6 +19,11 @@ import {
   isCodexMarketplaceRegistered,
   isCodexMarketplaceLocal,
 } from "../lib/codex-config.js";
+import {
+  isDevinPluginInstalled,
+  readDevinPluginVersion,
+  reconcileDevinPlugin,
+} from "../lib/devin-config.js";
 import { detectHostsAvailable, type Host } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
 import {
@@ -168,22 +173,35 @@ function argvHasAgentFlag(): boolean {
 
 /** True when the user (or a direct API caller) named a host, not Commander's default. */
 function hasExplicitHost(opts: UpdateOptions): boolean {
-  if (opts.codex === true || opts.omp === true || opts.agy === true)
+  if (
+    opts.codex === true ||
+    opts.omp === true ||
+    opts.agy === true ||
+    opts.devin === true
+  )
     return true;
   if (argvHasAgentFlag()) return true;
   const agent = opts.agent?.trim().toLowerCase();
-  return agent === "codex" || agent === "omp" || agent === "agy";
+  return (
+    agent === "codex" ||
+    agent === "omp" ||
+    agent === "agy" ||
+    agent === "devin"
+  );
 }
 
 /**
- * Strip a leftover `--agent claude` when the caller used `--codex` / `--omp` / `--agy`
+ * Strip a leftover `--agent claude` when the caller used `--codex` / `--omp` / `--agy` / `--devin`
  * without an explicit `--agent` on argv. resolveHost() treats that pair as a conflict.
  */
 function flagsForHostResolve(opts: UpdateOptions): UpdateOptions {
   if (
     !argvHasAgentFlag() &&
     opts.agent === "claude" &&
-    (opts.codex === true || opts.omp === true || opts.agy === true)
+    (opts.codex === true ||
+      opts.omp === true ||
+      opts.agy === true ||
+      opts.devin === true)
   ) {
     return { ...opts, agent: undefined };
   }
@@ -200,6 +218,8 @@ function isHostInstalled(host: Host): boolean {
       return isOmpAgentInstalled("user") || isOmpAgentInstalled("project");
     case "agy":
       return isAgyPluginInstalled();
+    case "devin":
+      return isDevinPluginInstalled();
   }
 }
 
@@ -213,6 +233,8 @@ function hostSectionTitle(host: Host): string {
       return "omp";
     case "agy":
       return "Antigravity";
+    case "devin":
+      return "Devin";
   }
 }
 
@@ -224,6 +246,7 @@ async function updateHost(
   if (host === "codex") return updateCodexCommand(opts, mode);
   if (host === "omp") return updateOmpCommand(opts, mode);
   if (host === "agy") return updateAgyCommand(opts, mode);
+  if (host === "devin") return updateDevinCommand(opts, mode);
   return updateClaudeCommand(opts, mode);
 }
 
@@ -776,4 +799,78 @@ async function updateAgyCommand(
 
   console.log();
   log.dim("Restart Antigravity (or start a new `agy` session) to see changes.");
+}
+
+async function updateDevinCommand(
+  opts: UpdateOptions,
+  mode?: UpdateRunMode,
+): Promise<void> {
+  const updateAll = !opts.cli && !opts.plugin && !opts.statusline;
+  const doPlugin = updateAll || !!opts.plugin;
+
+  if (!mode?.skipBanner) {
+    printBanner("✨ Coding Friend Devin Update (beta) ✨");
+    console.log();
+  }
+
+  const doCli = shouldUpdateCli((updateAll || !!opts.cli) && !mode?.skipCli);
+
+  if (doPlugin) {
+    try {
+      const beforeVersion = readDevinPluginVersion();
+      console.log(
+        `  Plugin      ${beforeVersion ? beforeVersion : chalk.dim("not installed")}`,
+      );
+
+      // reconcileDevinPlugin() runs without allowReplace here: a mismatched
+      // install reports the fix (`cf install --devin`) instead of replacing
+      // silently during a multi-host update sweep.
+      const action = await reconcileDevinPlugin();
+      if (action === "unchanged") {
+        log.success("Devin plugin is a live --local link — already current.");
+      } else {
+        const afterVersion = readDevinPluginVersion();
+        const versionPart = afterVersion ? `, v${afterVersion}` : "";
+        log.success(`Devin plugin ${action}${versionPart}.`);
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      log.error(detail);
+      process.exitCode = 1;
+    }
+  }
+
+  if (doCli) {
+    const cliVersion = getCliVersion();
+    const latestCliVersion = getLatestCliVersion();
+    if (!latestCliVersion) {
+      log.warn("Cannot check latest CLI version from npm.");
+    } else {
+      const cmp = semverCompare(cliVersion, latestCliVersion);
+      if (cmp < 0) {
+        log.step(
+          `CLI update available: ${chalk.yellow(`v${cliVersion}`)} → ${chalk.green(`v${latestCliVersion}`)}`,
+        );
+        const result = run("npm", [
+          "install",
+          "-g",
+          "coding-friend-cli@latest",
+        ]);
+        if (result === null) {
+          log.error(
+            "CLI update failed. Try manually: npm install -g coding-friend-cli@latest",
+          );
+        } else {
+          log.success(`CLI updated to ${chalk.green(`v${latestCliVersion}`)}`);
+        }
+      }
+    }
+  }
+
+  if (opts.statusline) {
+    log.warn("Devin does not use the Claude statusline. Skipping.");
+  }
+
+  console.log();
+  log.dim("Start a new Devin session to see changes.");
 }

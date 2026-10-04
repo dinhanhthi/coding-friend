@@ -62,11 +62,12 @@ program
   .option("--local", "Install at local scope (this machine only)")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
     await installCommand(opts);
@@ -81,11 +82,12 @@ program
   .option("--local", "Uninstall from local scope")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .option(
     "--remove-marketplace",
     "Also remove the host marketplace registration",
@@ -104,11 +106,12 @@ program
   .option("--local", "Disable at local scope")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .action(async (opts) => {
     const { disableCommand } = await import("./commands/disable.js");
     await disableCommand(opts);
@@ -123,11 +126,12 @@ program
   .option("--local", "Enable at local scope")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .action(async (opts) => {
     const { enableCommand } = await import("./commands/enable.js");
     await enableCommand(opts);
@@ -138,11 +142,12 @@ program
   .description("Initialize coding-friend in current project")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .option(
     "--trust-project",
     "For Codex, mark the current project trusted in ~/.codex/config.toml",
@@ -241,11 +246,12 @@ program
   )
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .option(
     "--enable-auto-approve",
     "For Codex, enable deterministic Coding Friend auto-approve",
@@ -279,11 +285,12 @@ program
   .option("--local", "Update plugin at local scope")
   .option(
     "--agent <agent>",
-    "Operate on host agent: claude, codex, omp, or agy",
+    "Operate on host agent: claude, codex, omp, agy, or devin",
   )
   .option("--codex", "Alias for --agent codex")
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
+  .option("--devin", "Shortcut for --agent devin (beta)")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);

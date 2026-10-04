@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 
 // Refresh local plugin installs after editing anything under plugin/.
-// Covers four hosts (Claude Code, Codex, omp, Antigravity):
+// Covers five hosts (Claude Code, Codex, omp, Antigravity, Devin):
 //   1.  build:codex → regenerate plugin-codex/ from plugin/
 //   1b. build:agy   → regenerate plugin-antigravity/ from plugin/
+//   1c. build:devin → regenerate plugin-devin/ from plugin/
 //   2.  cf dev sync → copy plugin/ into the Claude Code dev cache, or
 //       cf dev update (full reinstall) when the plugin version changed
 //   2b. cf update --agent omp --plugin → re-deploy converted agents into ~/.omp
 //       (omp reads skills from the Claude cache and hooks/extension live from the repo)
 //   2c. cf update --agent agy --plugin → re-deploy plugin-antigravity/ into
 //       ~/.gemini/config/plugins/coding-friend
+//   2d. cf update --agent devin --plugin → refresh the Devin install
+//       (dev --local link is live; prod runs `devin plugins update`)
 //   3.  clear Codex cache → Codex re-copies plugin-codex/ on next launch
 // Wired as: npm run ud-plugin-local
 
@@ -72,6 +75,10 @@ run("node", [path.join(REPO_ROOT, "scripts", "build-codex-plugin.js")]);
 console.log("\n  → build:agy");
 run("node", [path.join(REPO_ROOT, "scripts", "build-antigravity-plugin.js")]);
 
+// 1c. Regenerate plugin-devin/ from plugin/ source (same as `npm run build:devin`)
+console.log("\n  → build:devin");
+run("node", [path.join(REPO_ROOT, "scripts", "build-devin-plugin.js")]);
+
 // 2. Refresh the Claude Code dev install.
 //    `cf dev sync` only copies files into the already-installed version dir — it
 //    never touches installed_plugins.json. So after a version bump it would
@@ -125,6 +132,20 @@ try {
   console.log("  ⚠ agy update skipped — is agy installed and is `cf` on PATH?");
 }
 
+// 2d. Refresh the Devin install — a dev --local link is already live (new
+//     sessions pick up edits); prod runs `devin plugins update`.
+//     Skips gracefully if devin is not installed/signed in or `cf` is not on PATH.
+let devinSynced = false;
+console.log("\n  → cf update --agent devin --plugin");
+try {
+  run("cf", ["update", "--agent", "devin", "--plugin"]);
+  devinSynced = true;
+} catch {
+  console.log(
+    "  ⚠ devin update skipped — is devin installed/signed in and is `cf` on PATH?",
+  );
+}
+
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
 console.log("\n  → clearing Codex cache");
 if (existsSync(CODEX_CACHE)) {
@@ -159,6 +180,15 @@ if (agySynced) {
 } else {
   console.log(
     "    • Antigravity — not updated; install agy and ensure `cf` is on PATH, then run this script again",
+  );
+}
+if (devinSynced) {
+  console.log(
+    "    • Devin — start a new session (dev link is live; prod updated via `devin plugins update`)",
+  );
+} else {
+  console.log(
+    "    • Devin — not updated; install/sign in to devin and ensure `cf` is on PATH, then run this script again",
   );
 }
 console.log("");

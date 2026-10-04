@@ -49,6 +49,15 @@ export function claudeSettingsPath(): string {
   return join(claudeConfigDir(), "settings.json");
 }
 
+/**
+ * Path to the HOME-level ~/.claude.json file. Intentionally NOT relocated by
+ * CLAUDE_CONFIG_DIR (per Claude Code docs it always lives at the home root) —
+ * Devin imports mcpServers from exactly this file.
+ */
+export function claudeJsonPath(): string {
+  return join(homedir(), ".claude.json");
+}
+
 /** Path to Claude project settings (<project>/.claude/settings.json) */
 export function claudeProjectSettingsPath(): string {
   return resolve(process.cwd(), ".claude", "settings.json");
@@ -315,4 +324,29 @@ export function agyConfigJsonPath(): string {
 /** Shallow-clone cache for Antigravity plugin source (~/.coding-friend/agy-src) */
 export function agySourceCloneDir(): string {
   return join(homedir(), ".coding-friend", "agy-src");
+}
+
+/**
+ * Resolve Devin's config directory (~/.config/devin).
+ * Devin documents this as an XDG path, so XDG_CONFIG_HOME is honored when set.
+ */
+export function devinConfigDir(): string {
+  const env = process.env.XDG_CONFIG_HOME?.trim();
+  if (env) return join(env, "devin");
+  return join(homedir(), ".config", "devin");
+}
+
+/** Path to Devin's user-scope MCP config (~/.config/devin/mcp_config.json) */
+export function devinMcpConfigPath(): string {
+  return join(devinConfigDir(), "mcp_config.json");
+}
+
+/**
+ * Path to Devin's plugin lock file (~/.local/share/devin/cli/plugins/lock.json).
+ * ~/.local/share is the XDG_DATA_HOME default — honored when set.
+ */
+export function devinPluginsLockPath(): string {
+  const env = process.env.XDG_DATA_HOME?.trim();
+  const dataHome = env ? env : join(homedir(), ".local", "share");
+  return join(dataHome, "devin", "cli", "plugins", "lock.json");
 }

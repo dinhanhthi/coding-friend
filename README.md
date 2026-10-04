@@ -8,7 +8,7 @@
 
 ## What it does
 
-Coding Friend adds skills, agents, and hooks to the agent you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learn notes in `~/.coding-friend/learn/`. One install covers [Claude Code](https://claude.com/product/claude-code) (principal); pass `--agent` for [Codex](https://openai.com/codex/), oh-my-pi, Cursor, Grok CLI, or Antigravity.
+Coding Friend adds skills, agents, and hooks to the agent you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learn notes in `~/.coding-friend/learn/`. One install covers [Claude Code](https://claude.com/product/claude-code) (principal); pass `--agent` for [Codex](https://openai.com/codex/), oh-my-pi, Cursor, Grok CLI, Antigravity, or Devin CLI (beta).
 
 Read more in [website/src/content/index.md](website/src/content/index.md).
 
@@ -18,6 +18,7 @@ Read more in [website/src/content/index.md](website/src/content/index.md).
 | ----------------- | -------- | ------------------------------ |
 | Claude Code       | **100%** | `cf install`                   |
 | omp               | **95%**  | `cf install --agent omp`       |
+| Devin CLI (beta)  | **86%**  | `cf install --agent devin`     |
 | Codex CLI         | **77%**  | `cf install --agent codex`     |
 | Antigravity       | **73%**  | `cf install --agent agy`       |
 | Cursor / Grok CLI |          | comes with Claude Code         |
@@ -31,7 +32,7 @@ Read more in [website/src/content/index.md](website/src/content/index.md).
 
 Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
 
-> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
 
 ### 📋 Manual Installation
 
@@ -44,7 +45,7 @@ npm i -g coding-friend-cli
 # If `cf` is taken, use `cdf`
 
 cf install               # Claude Code (default)
-cf install --agent codex # or 'omp', 'agy'
+cf install --agent codex # or 'omp', 'agy', 'devin'
 
 cf init                  # per project: docs/, .coding-friend/config.json
 cf update                # later: pull the newest plugin
@@ -68,6 +69,8 @@ claude plugin install coding-friend@coding-friend-marketplace
 ```
 
 Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the terminal, but plugin install still requires one manual step inside Codex: open `codex`, run `/plugins`, then install `coding-friend`.
+
+Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated plugin directly; inside Devin invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
 ## Features
 
@@ -110,7 +113,7 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 ## CLI
 
-`cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy` (aliases `--codex`/`--omp`/`--agy`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
+`cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy|devin` (aliases `--codex`/`--omp`/`--agy`/`--devin`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
 
 ## Development
 

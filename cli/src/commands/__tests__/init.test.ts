@@ -35,6 +35,10 @@ vi.mock("../../lib/agy-config.js", () => ({
   isAgyPluginInstalled: vi.fn(() => false),
 }));
 
+vi.mock("../../lib/devin-config.js", () => ({
+  isDevinPluginInstalled: vi.fn(() => false),
+}));
+
 vi.mock("../../lib/exec.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/exec.js")>();
   return {
@@ -83,6 +87,7 @@ vi.mock("../../lib/paths.js", async (importOriginal) => {
 
 import { confirm, input, select } from "@inquirer/prompts";
 import { isAgyPluginInstalled } from "../../lib/agy-config.js";
+import { isDevinPluginInstalled } from "../../lib/devin-config.js";
 import {
   deployCodexAgents,
   findCodexAgentSourceDir,
@@ -448,5 +453,130 @@ describe("initCommand — codex", () => {
     expect(existsSync(join(testDir, ".omp"))).toBe(false);
     const output = logs.join("\n");
     expect(output).not.toContain("Antigravity setup");
+  });
+});
+
+describe("initCommand — devin", () => {
+  let testDir: string;
+  let origCwd: string;
+  let logs: string[];
+
+  beforeEach(() => {
+    origCwd = process.cwd();
+    testDir = mkdtempSync(join(tmpdir(), "cf-init-devin-"));
+    process.chdir(testDir);
+    logs = [];
+    vi.clearAllMocks();
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    });
+    vi.mocked(isDevinPluginInstalled).mockReturnValue(true);
+    vi.mocked(confirm).mockImplementation((async (opts: {
+      message?: string;
+      default?: boolean;
+    }) => {
+      const message = String(opts.message ?? "");
+      if (message.includes("wizard")) return true;
+      if (message.includes("auto-approve")) return true;
+      if (message.includes("privacy")) return true;
+      return Boolean(opts.default);
+    }) as unknown as typeof confirm);
+    vi.mocked(input).mockImplementation((async (opts: { default?: string }) =>
+      String(opts.default ?? "docs")) as unknown as typeof input);
+    vi.mocked(select).mockImplementation((async (opts: {
+      message?: string;
+      choices?: ReadonlyArray<{ value?: unknown } | string>;
+    }) => {
+      const message = String(opts.message ?? "");
+      if (message.includes("Save to")) return "local";
+      if (message.includes("gitignore")) return "none";
+      if (message.includes("language") || message.includes("written in")) {
+        return "en";
+      }
+      if (message.includes("learn folder")) return "default";
+      if (message.includes("Categories")) return "defaults";
+      if (message.includes("indexed")) return "none";
+      if (message.includes("How to configure")) return "configure";
+      const first = opts.choices?.find(
+        (choice) =>
+          choice &&
+          typeof choice === "object" &&
+          "value" in choice &&
+          choice.value !== "__back__",
+      );
+      return first && typeof first === "object" && "value" in first
+        ? first.value
+        : "local";
+    }) as unknown as typeof select);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("runs the wizard, writes config keys, and registers devin MCPs", async () => {
+    await initCommand({ agent: "devin" });
+
+    const localCfg = readJsonFile(
+      join(testDir, ".coding-friend", "config.json"),
+    ) as Record<string, unknown>;
+    expect(localCfg.docsDir).toBe("docs");
+    expect(localCfg.language).toBe("en");
+    expect(localCfg.autoApprove).toBe(true);
+    expect(localCfg.privacyBlock).toBe(true);
+
+    expect(registerLearnMcp).toHaveBeenCalledWith(expect.any(String), "devin");
+    expect(registerMemoryMcp).toHaveBeenCalledWith("devin");
+  });
+
+  it("does not write a project AGENTS.md (double bootstrap with SessionStart)", async () => {
+    await initCommand({ agent: "devin" });
+
+    expect(existsSync(join(testDir, "AGENTS.md"))).toBe(false);
+  });
+
+  it("warns and skips MCP registration when the devin plugin is not installed", async () => {
+    vi.mocked(isDevinPluginInstalled).mockReturnValue(false);
+
+    await initCommand({ agent: "devin" });
+
+    const output = logs.join("\n");
+    expect(output).toContain("cf install --agent devin");
+    expect(registerLearnMcp).not.toHaveBeenCalled();
+    expect(registerMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("does not run the Claude, Codex, or Antigravity wizards", async () => {
+    await initCommand({ agent: "devin" });
+
+    expect(deployCodexAgents).not.toHaveBeenCalled();
+    expect(writeCodexMemoryMcpConfig).not.toHaveBeenCalled();
+    expect(existsSync(join(testDir, ".codex"))).toBe(false);
+    const output = logs.join("\n");
+    expect(output).toContain("Devin setup complete");
+    expect(output).not.toContain("Antigravity setup complete");
+  });
+
+  it("creates docs subfolders when global docsDir already matches the default", async () => {
+    const globalDir = join(testDir, ".coding-friend-global");
+    mkdirSync(globalDir, { recursive: true });
+    writeFileSync(
+      join(globalDir, "config.json"),
+      JSON.stringify({ docsDir: "docs" }, null, 2) + "\n",
+    );
+
+    await initCommand({ agent: "devin" });
+
+    expect(existsSync(join(testDir, "docs", "plans"))).toBe(true);
+    expect(existsSync(join(testDir, "docs", "memory"))).toBe(true);
+  });
+
+  it("audits Claude dangerous rules when auto-approve is enabled", async () => {
+    await initCommand({ agent: "devin" });
+
+    expect(afterAutoApproveEnabled).toHaveBeenCalled();
   });
 });

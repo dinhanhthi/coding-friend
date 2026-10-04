@@ -42,6 +42,11 @@ vi.mock("../../lib/agy-config.js", () => ({
   readAgyPluginVersion: vi.fn(() => null),
 }));
 
+vi.mock("../../lib/devin-config.js", () => ({
+  readDevinInstallState: vi.fn(() => ({ kind: "none" })),
+  readDevinPluginVersion: vi.fn(() => null),
+}));
+
 vi.mock("../../lib/config.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/config.js")>();
   return {
@@ -97,6 +102,10 @@ vi.mock("../update.js", () => ({
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { readJson } from "../../lib/json.js";
 import { getExistingRules } from "../../lib/permissions.js";
+import {
+  readDevinInstallState,
+  readDevinPluginVersion,
+} from "../../lib/devin-config.js";
 import { isPluginDisabled, detectPluginScope } from "../../lib/plugin-state.js";
 import {
   getLatestVersion,
@@ -113,6 +122,8 @@ const mockGetCliVersion = vi.mocked(getCliVersion);
 const mockGetLatestCliVersion = vi.mocked(getLatestCliVersion);
 const mockDetectPluginScope = vi.mocked(detectPluginScope);
 const mockIsPluginDisabled = vi.mocked(isPluginDisabled);
+const mockReadDevinInstallState = vi.mocked(readDevinInstallState);
+const mockReadDevinPluginVersion = vi.mocked(readDevinPluginVersion);
 
 function captureOutput(): string[] {
   const calls: string[] = [];
@@ -133,6 +144,8 @@ beforeEach(() => {
   mockGetExistingRules.mockReturnValue([]);
   mockDetectPluginScope.mockReturnValue("user");
   mockIsPluginDisabled.mockReturnValue(false);
+  mockReadDevinInstallState.mockReturnValue({ kind: "none" });
+  mockReadDevinPluginVersion.mockReturnValue(null);
 });
 
 afterEach(() => {
@@ -259,6 +272,73 @@ describe("statusCommand — plugin section", () => {
     const line = output.find((l) => l.includes("Antigravity"));
     expect(line).toBeDefined();
     expect(line).toContain("not installed");
+  });
+
+  it("shows Devin as not installed when lock.json has no entry", async () => {
+    const output = captureOutput();
+    mockReadDevinInstallState.mockReturnValue({ kind: "none" });
+
+    await statusCommand();
+
+    const line = output.find((l) => l.includes("Devin"));
+    expect(line).toBeDefined();
+    expect(line).toContain("not installed");
+  });
+
+  it("shows Devin github install with version and repo subdir", async () => {
+    const output = captureOutput();
+    mockReadDevinInstallState.mockReturnValue({
+      kind: "github",
+      path: "https://github.com/dinhanhthi/coding-friend",
+      subdir: "plugin-devin",
+      version: "0.45.3",
+    });
+    mockReadDevinPluginVersion.mockReturnValue("0.45.3");
+
+    await statusCommand();
+
+    const line = output.find((l) => l.includes("Devin"));
+    expect(line).toBeDefined();
+    expect(line).toContain("v0.45.3");
+    expect(line).toContain("github");
+    expect(line).toContain(
+      "https://github.com/dinhanhthi/coding-friend#plugin-devin",
+    );
+    expect(line).not.toContain("not installed");
+  });
+
+  it("shows Devin local install with its link path", async () => {
+    const output = captureOutput();
+    mockReadDevinInstallState.mockReturnValue({
+      kind: "local",
+      path: "/private/tmp/dev/plugin-devin",
+      version: "0.45.3",
+    });
+    mockReadDevinPluginVersion.mockReturnValue("0.45.3");
+
+    await statusCommand();
+
+    const line = output.find((l) => l.includes("Devin"));
+    expect(line).toBeDefined();
+    expect(line).toContain("v0.45.3");
+    expect(line).toContain("local");
+    expect(line).toContain("/private/tmp/dev/plugin-devin");
+  });
+
+  it("shows Devin unknown install without crashing", async () => {
+    const output = captureOutput();
+    mockReadDevinInstallState.mockReturnValue({
+      kind: "unknown",
+      version: "0.40.0",
+    });
+    mockReadDevinPluginVersion.mockReturnValue("0.40.0");
+
+    await statusCommand();
+
+    const line = output.find((l) => l.includes("Devin"));
+    expect(line).toBeDefined();
+    expect(line).toContain("unknown");
+    expect(line).not.toContain("not installed");
   });
 
   it("shows permission rule count", async () => {

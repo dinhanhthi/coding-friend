@@ -10,6 +10,7 @@ import {
   isAgyPluginInstalled,
   readAgyPluginVersion,
 } from "../lib/agy-config.js";
+import { readDevinInstallState } from "../lib/devin-config.js";
 import {
   agyPluginDir,
   claudeSettingsPath,
@@ -276,6 +277,24 @@ export async function statusCommand(): Promise<void> {
       : chalk.yellow("disabled");
     console.log(
       `${pad("Antigravity", VERSION_COL)}${versionPart}${enabledPart}  ${chalk.dim(agyPluginDir())}`,
+    );
+  }
+
+  const devinState = readDevinInstallState();
+  if (devinState.kind === "none") {
+    console.log(`${pad("Devin", VERSION_COL)}${chalk.dim("not installed")}`);
+  } else {
+    const versionPart = devinState.version ? `v${devinState.version} ` : "";
+    const kindColor =
+      devinState.kind === "unknown" ? chalk.yellow : chalk.green;
+    let detail = "";
+    if (devinState.kind === "local" && devinState.path) {
+      detail = devinState.path;
+    } else if (devinState.kind === "github" && devinState.path) {
+      detail = `${devinState.path}#${devinState.subdir ?? "?"}`;
+    }
+    console.log(
+      `${pad("Devin", VERSION_COL)}${versionPart}${kindColor(`${devinState.kind} install`)}${detail ? `  ${chalk.dim(detail)}` : ""}`,
     );
   }
 

@@ -774,6 +774,7 @@ test("generated hosts are not told to skip the report contract", () => {
   for (const generated of [
     "plugin-codex/skills/cf-review/SKILL.md",
     "plugin-antigravity/skills/cf-review/SKILL.md",
+    "plugin-devin/skills/cf-review/SKILL.md",
   ]) {
     const text = read(generated);
     assert.ok(
@@ -1042,6 +1043,7 @@ test("cf-review no longer gates on the dead review marker", () => {
   for (const generated of [
     "plugin-codex/skills/cf-review/SKILL.md",
     "plugin-antigravity/skills/cf-review/SKILL.md",
+    "plugin-devin/skills/cf-review/SKILL.md",
   ]) {
     assert.ok(
       !read(generated).includes("mark-reviewed"),
@@ -1250,6 +1252,7 @@ test("the documented nativeTimeout default matches the one Step 6 falls back to"
 const GENERATED_REVIEW_SKILLS = [
   "plugin-codex/skills/cf-review/SKILL.md",
   "plugin-antigravity/skills/cf-review/SKILL.md",
+  "plugin-devin/skills/cf-review/SKILL.md",
 ];
 
 test("generated hosts keep the 1 / 1 / 2 dispatch table intact", () => {
@@ -1298,7 +1301,7 @@ test("generated hosts keep the deadline and partial-status instructions", () => 
   }
 });
 
-test("generated hosts carry no multi-level orchestration or nested Codex path", () => {
+test("generated hosts carry no multi-level orchestration", () => {
   for (const generated of GENERATED_REVIEW_SKILLS) {
     const text = read(generated);
     for (const forbidden of [
@@ -1308,9 +1311,6 @@ test("generated hosts carry no multi-level orchestration or nested Codex path", 
       /cf-reviewer-tests/,
       /cf-reviewer-rules/,
       /cf-explorer/,
-      /Step 2\.5: Spawn Codex review/,
-      /Step 6\.5: Collect & normalize the Codex review/,
-      /codex=true/,
       /mark-reviewed\.sh/,
     ]) {
       assert.doesNotMatch(
@@ -1324,6 +1324,28 @@ test("generated hosts carry no multi-level orchestration or nested Codex path", 
       /### Step 6\.7: Emit `--out` prompt file/,
       `${generated} lost the --out export step`,
     );
+  }
+});
+
+// Devin keeps the external-reviewer scripts (`--with-codex` & friends still
+// work there); only the Codex and Antigravity artifacts strip the nested path.
+test("nested-Codex-stripped hosts carry no nested Codex path", () => {
+  for (const generated of [
+    "plugin-codex/skills/cf-review/SKILL.md",
+    "plugin-antigravity/skills/cf-review/SKILL.md",
+  ]) {
+    const text = read(generated);
+    for (const forbidden of [
+      /Step 2\.5: Spawn Codex review/,
+      /Step 6\.5: Collect & normalize the Codex review/,
+      /codex=true/,
+    ]) {
+      assert.doesNotMatch(
+        text,
+        forbidden,
+        `${generated} still carries the nested Codex path: ${forbidden}`,
+      );
+    }
     assert.match(
       text,
       /Ignore `--with-codex`/,
@@ -1467,6 +1489,7 @@ const FIX_SKILLS = [
   "plugin/skills/cf-review/SKILL.md",
   "plugin-codex/skills/cf-review/SKILL.md",
   "plugin-antigravity/skills/cf-review/SKILL.md",
+  "plugin-devin/skills/cf-review/SKILL.md",
 ].map((relPath) => [relPath, read(relPath)]);
 
 test("cf-review advertises --fix in its frontmatter description", () => {

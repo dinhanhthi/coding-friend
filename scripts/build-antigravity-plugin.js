@@ -16,12 +16,13 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const PLUGIN_SOURCE_DIR = path.join(REPO_ROOT, "plugin");
 const AGY_PLUGIN_DIR = path.join(REPO_ROOT, "plugin-antigravity");
 
-// Claude-only and Codex-only files (relative to plugin/) that would ship as
+// Claude-only and other-host files (relative to plugin/) that would ship as
 // dead or self-contradictory weight in the Antigravity artifact. `.agy.*`
 // adapters and the shared helpers they require (`auto-approve.cjs`,
 // `scout-block.cjs`, `lib/agy-hook-io.sh`) stay. session-init.agy.sh injects
 // only the dynamic header, so `context/` is excluded (bootstrap lands in
-// rules/AGENTS.md instead).
+// rules/AGENTS.md instead). `*.devin.*` hooks plus `lib/devin-tool-map.cjs`
+// belong to Devin.
 const AGY_EXCLUDED_SOURCE_PATHS = new Set([
   "context",
   "omp",
@@ -29,6 +30,11 @@ const AGY_EXCLUDED_SOURCE_PATHS = new Set([
   "hooks/auto-approve.codex.cjs",
   "hooks/memory-capture.sh",
   "hooks/memory-capture.codex.sh",
+  "hooks/auto-approve.devin.cjs",
+  "hooks/block-adapter.devin.sh",
+  "hooks/memory-capture.devin.sh",
+  "hooks/rules-reminder.devin.sh",
+  "lib/devin-tool-map.cjs",
   "hooks/task-tracker.sh",
   "hooks/agent-tracker.sh",
   "hooks/session-log.sh",

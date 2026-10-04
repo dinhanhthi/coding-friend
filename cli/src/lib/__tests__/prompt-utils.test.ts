@@ -459,11 +459,19 @@ describe("resolveHostFlags", () => {
     expect(resolveHostFlags({ agy: true })).toEqual({ host: "agy" });
   });
 
+  it("resolves --agent devin", () => {
+    expect(resolveHostFlags({ agent: "devin" })).toEqual({ host: "devin" });
+  });
+
+  it("resolves --devin alias", () => {
+    expect(resolveHostFlags({ devin: true })).toEqual({ host: "devin" });
+  });
+
   it("logs and exits on invalid host flags", () => {
     resolveHostFlags({ agent: "bad" });
 
     expect(log.error).toHaveBeenCalledWith(
-      'Unsupported agent "bad". Use "claude", "codex", "omp", or "agy".',
+      'Unsupported agent "bad". Use "claude", "codex", "omp", "agy", or "devin".',
     );
     expect(mockExit).toHaveBeenCalledWith(1);
   });

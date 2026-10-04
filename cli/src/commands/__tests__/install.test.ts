@@ -33,6 +33,7 @@ vi.mock("../../lib/host.js", () => ({
   checkCodexVersion: vi.fn(),
   checkOmpVersion: vi.fn(),
   checkAgyVersion: vi.fn(),
+  checkDevinVersion: vi.fn(),
 }));
 
 vi.mock("../../lib/agy-config.js", () => ({
@@ -52,6 +53,10 @@ vi.mock("../../lib/codex-config.js", () => ({
 vi.mock("../../lib/omp-config.js", () => ({
   deployOmpAgents: vi.fn(),
   writeOmpExtensionEntry: vi.fn(),
+}));
+
+vi.mock("../../lib/devin-config.js", () => ({
+  reconcileDevinPlugin: vi.fn(),
 }));
 
 vi.mock("../../lib/memory-mcp-register.js", () => ({
@@ -75,6 +80,7 @@ import { ensureShellCompletion } from "../../lib/shell-completion.js";
 import {
   checkAgyVersion,
   checkCodexVersion,
+  checkDevinVersion,
   checkOmpVersion,
 } from "../../lib/host.js";
 import {
@@ -94,6 +100,7 @@ import {
   deployOmpAgents,
   writeOmpExtensionEntry,
 } from "../../lib/omp-config.js";
+import { reconcileDevinPlugin } from "../../lib/devin-config.js";
 import { registerMemoryMcp } from "../../lib/memory-mcp-register.js";
 import { installCommand } from "../install.js";
 
@@ -123,6 +130,8 @@ const mockResolveAgyPluginSource = vi.mocked(resolveAgyPluginSource);
 const mockDeployAgyPlugin = vi.mocked(deployAgyPlugin);
 const mockSetAgyPluginEnabled = vi.mocked(setAgyPluginEnabled);
 const mockValidateAgyPlugin = vi.mocked(validateAgyPlugin);
+const mockCheckDevinVersion = vi.mocked(checkDevinVersion);
+const mockReconcileDevinPlugin = vi.mocked(reconcileDevinPlugin);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -160,6 +169,12 @@ beforeEach(() => {
   });
   mockDeployAgyPlugin.mockReturnValue({ files: 12 });
   mockValidateAgyPlugin.mockReturnValue({ stdout: "ok", status: 0 });
+  mockCheckDevinVersion.mockReturnValue({
+    ok: true,
+    actual: "3000.11.3",
+    min: "3000.11.3",
+  });
+  mockReconcileDevinPlugin.mockResolvedValue("installed");
 });
 
 describe("installCommand", () => {
@@ -571,5 +586,117 @@ describe("installCommand", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
     expect(mockDeployAgyPlugin).not.toHaveBeenCalled();
     expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("reconciles the Devin plugin for --agent devin", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockCommandExists).toHaveBeenCalledWith("devin");
+    expect(mockCheckDevinVersion).toHaveBeenCalled();
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledWith({
+      allowReplace: true,
+    });
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockDeployAgyPlugin).not.toHaveBeenCalled();
+    expect(mockDeployCodexAgents).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalledWith("claude", expect.anything());
+  });
+
+  it("reconciles the Devin plugin for the --devin alias", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ devin: true });
+
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledWith({
+      allowReplace: true,
+    });
+  });
+
+  it("registers the devin memory MCP after a successful reconcile", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockReconcileDevinPlugin).toHaveBeenCalled();
+    expect(mockRegisterMemoryMcp).toHaveBeenCalledWith("devin");
+  });
+
+  it("does not register the devin memory MCP when reconcile fails", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    mockReconcileDevinPlugin.mockRejectedValue(
+      new Error("Devin CLI is not signed in."),
+    );
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockRegisterMemoryMcp).not.toHaveBeenCalled();
+  });
+
+  it("prints the cf-plan hint after a successful Devin install", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "devin" });
+
+    const output = logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("/coding-friend:cf-plan");
+  });
+
+  it("exits when devin CLI is missing without reconciling", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(false);
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockCheckDevinVersion).not.toHaveBeenCalled();
+    expect(mockReconcileDevinPlugin).not.toHaveBeenCalled();
+  });
+
+  it("exits when devin version is unsupported without reconciling", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    mockCheckDevinVersion.mockReturnValue({
+      ok: false,
+      actual: "3000.5.20",
+      min: "3000.11.3",
+    });
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockReconcileDevinPlugin).not.toHaveBeenCalled();
+  });
+
+  it("exits with the reconcile error (auth, target, install failures)", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    mockReconcileDevinPlugin.mockRejectedValue(
+      new Error("Devin CLI is not signed in. Run `devin auth login` first."),
+    );
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ agent: "devin" });
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    const output = logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("devin auth login");
   });
 });

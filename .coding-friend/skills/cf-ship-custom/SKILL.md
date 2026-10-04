@@ -74,7 +74,7 @@ git show <hash> --stat
 
 **Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
-**Only edit `plugin/CHANGELOG.md` and `cli/CHANGELOG.md`.** `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json` and `plugin-antigravity/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
+**Only edit `plugin/CHANGELOG.md` and `cli/CHANGELOG.md`.** `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
 
 These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
 
@@ -89,8 +89,10 @@ npm run test:scripts        # root: generator/catalog tests (~29)
 (cd cli && npm test)        # CLI + hooks: what tests.yml actually runs (~67 + ~15 files)
 npm run verify:codex-drift  # plugin-codex artifact in sync
 npm run verify:agy-drift    # plugin-antigravity artifact in sync
+npm run verify:devin-drift  # plugin-devin artifact in sync
 npm run lint:codex
 npm run lint:agy
+npm run lint:devin
 ```
 
 `npm run test:scripts` alone is NOT enough — `.github/workflows/tests.yml` has a separate `cli` job running `npm test` inside `cli/`, and a release shipped on a red CLI suite before because only the root suite was run. Never report "verification passed" without the `cli` line above.
@@ -117,10 +119,10 @@ On a feature branch, or with local commits not yet on `origin/main`, do not tag 
 
 | What you push           | Tag                                 | What it triggers                                                                             |
 | ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
-| Plugin                  | `v{version}` e.g. `v0.15.0`         | One GitHub Release covering Claude + Codex + AGY (generated trees in the same tagged commit) |
+| Plugin                  | `v{version}` e.g. `v0.15.0`         | One GitHub Release covering Claude + Codex + AGY + Devin (generated trees in the same tagged commit) |
 | CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release                                                                 |
 
-How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`) plus Codex/AGY drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`) and Antigravity (`plugin-antigravity/`) ship as generated artifacts in the tagged commit — not as extra tags.
+How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`, `plugin-devin/.claude-plugin/plugin.json`) plus Codex/AGY/Devin drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`), Antigravity (`plugin-antigravity/`) and Devin (`plugin-devin/`) ship as generated artifacts in the tagged commit — not as extra tags.
 
 **The repo may have more than one remote** (e.g. a contributor fork). Always name `origin` explicitly in tag pushes and confirm it points at the canonical repo first: `git remote get-url origin`.
 
@@ -148,16 +150,17 @@ If the hand-pushed tag is missing or no `release.yml` run appeared, report it �
 
 ```
 Released:
-  Plugin v0.15.0   → tag v0.15.0 pushed (you) → one GitHub Release (Claude + Codex + AGY)
+  Plugin v0.15.0   → tag v0.15.0 pushed (you) → one GitHub Release (Claude + Codex + AGY + Devin)
   Codex            → ships on the same v0.15.0 tag (`plugin-codex/` in the tagged commit)
   Antigravity      → ships on the same v0.15.0 tag (`plugin-antigravity/` in the tagged commit)
+  Devin            → ships on the same v0.15.0 tag (`plugin-devin/` in the tagged commit)
   CLI v1.24.0      → tag cli-v1.24.0 pushed (you) → npm publish + GitHub Release
 
 Check CI/CD status:
   https://github.com/dinhanhthi/coding-friend/actions
 ```
 
-Always list Codex and AGY in this summary when a plugin `v*` was pushed — they ship on that same tag, not as extra tags. If `release.yml` has not finished, point at the run; do not treat that as a missed step.
+Always list Codex, AGY and Devin in this summary when a plugin `v*` was pushed — they ship on that same tag, not as extra tags. If `release.yml` has not finished, point at the run; do not treat that as a missed step.
 
 **NO CONFIRMATIONS:** Do NOT ask for confirmation at any step — not for bump level, not for pushing, not for creating PRs, not for tagging. Analyze, decide, and execute autonomously.
 
@@ -171,7 +174,7 @@ Always list Codex and AGY in this summary when a plugin `v*` was pushed — they
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
 - NEVER create or push a `v*` / `cli-v*` tag on a commit other than `origin/main`'s HEAD. From a feature branch, stop after the PR; tags come from a `/cf-ship` rerun on `main` after merge.
-- NEVER hand-edit generated artifacts: `plugin-codex/**` and `plugin-antigravity/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
+- NEVER hand-edit generated artifacts: `plugin-codex/**`, `plugin-antigravity/**` and `plugin-devin/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
 - Only `v*` and `cli-v*` are pushed by hand. Do not invent extra host tags.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 

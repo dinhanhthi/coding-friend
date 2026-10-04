@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intro film</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e1016;
+        --panel: #1a1d27;
+        --fg: #f3f5fa;
+        --mute: #8a90a8;
+        --accent: #4f7cff;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      body {
+        font:
+          14px/1.5 Inter,
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+        padding: 28px 16px;
+        display: flex;
+        justify-content: center;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 1280px;
+        display: grid;
+        gap: 14px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font:
+          700 clamp(20px, 3vw, 28px)/1.1 Inter,
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+        letter-spacing: -0.02em;
+      }
+      .meta {
+        color: var(--mute);
+        font:
+          500 11px/1 "JetBrains Mono",
+          ui-monospace,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .stage {
+        display: flex;
+        justify-content: center;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+        max-height: 78vh;
+        height: auto;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      button {
+        font:
+          600 13px/1 Inter,
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+        color: #fff;
+        background: var(--accent);
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 18px;
+        cursor: pointer;
+        min-width: 84px;
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--fg);
+        box-shadow: inset 0 0 0 1px #33384d;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #9db6ff;
+        outline-offset: 2px;
+      }
+      input[type="range"] {
+        flex: 1;
+        min-width: 0;
+        accent-color: var(--accent);
+      }
+      .tc {
+        font:
+          500 12px/1 "JetBrains Mono",
+          ui-monospace,
+          monospace;
+        font-variant-numeric: tabular-nums;
+        min-width: 9ch;
+        text-align: right;
+      }
+      .chapters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chapters button {
+        background: var(--panel);
+        color: var(--fg);
+        font-weight: 500;
+        padding: 8px 14px;
+        min-width: 0;
+      }
+      @media (max-width: 520px) {
+        .bar {
+          flex-wrap: wrap;
+        }
+        input[type="range"] {
+          flex-basis: 100%;
+          order: 3;
+        }
+      }
+      /* capture mode: canvas only, at its real size */
+      body.capture {
+        padding: 0;
+        display: block;
+      }
+      body.capture .ui {
+        display: none;
+      }
+      body.capture .wrap {
+        max-width: none;
+        display: block;
+      }
+      body.capture .stage {
+        border-radius: 0;
+        display: block;
+      }
+      body.capture canvas {
+        max-width: none;
+        max-height: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="ui">
+        <h1 id="title">Intro film</h1>
+        <div class="meta" id="meta"></div>
+      </header>
+      <div class="stage">
+        <canvas id="film" aria-label="Product introduction film"></canvas>
+      </div>
+      <div class="bar ui">
+        <button id="play" type="button">Play</button>
+        <button id="restart" class="ghost" type="button">Replay</button>
+        <input
+          id="scrub"
+          type="range"
+          min="0"
+          max="1000"
+          value="0"
+          step="1"
+          aria-label="Scrub timeline"
+        />
+        <span id="tc" class="tc">0:00.0</span>
+        <button id="lang" class="ghost" type="button">Language</button>
+      </div>
+      <div class="chapters ui" id="chapters"></div>
+    </div>
+
+    <!-- copy: copy strings.example.js, edit it per project, keep this tag first -->
+    <script src="strings.example.js"></script>
+    <script>
+      /* ============================================================
+   Engine. Everything drawn on the canvas is a pure function of t.
+   Edit BRAND and TIMELINE here, copy in strings.example.js;
+   scenes live in scenes/<name>.js and load after this script.
+   ============================================================ */
+      const Q = new URLSearchParams(location.search);
+      const CAPTURE = Q.get("capture") === "1";
+
+      /* ---------- canvas size: ?aspect=16x9|1x1|9x16, or ?size=WxH ---------- */
+      const ASPECTS = {
+        "16x9": [1920, 1080],
+        "1x1": [1080, 1080],
+        "9x16": [1080, 1920],
+      };
+      const [W, H] = (() => {
+        const m = /^(\d+)x(\d+)$/.exec(Q.get("size") || "");
+        if (m) return [+m[1], +m[2]];
+        return ASPECTS[Q.get("aspect")] || ASPECTS["16x9"];
+      })();
+
+      /* ---------- brand tokens: take these from the project's real brand sources ----------
+         colors: hex only, #RGB, #RRGGBB or #RRGGBBAA. Scenes derive alpha tints from them
+         and throw on rgb(), hsl(), oklch() or names; convert those to hex first. */
+      const BRAND = {
+        name: "Project",
+        colors: {
+          bg: "#0E1016",
+          panel: "#1A1D27",
+          fg: "#F3F5FA",
+          mute: "#8A90A8",
+          accent: "#4F7CFF",
+          accent2: "#7FE3D4",
+        },
+        fonts: {
+          sans: {
+            family: "Inter",
+            weights: [400, 600, 800],
+            fallback: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+          },
+          mono: {
+            family: "JetBrains Mono",
+            weights: [400, 500],
+            fallback: "ui-monospace, Menlo, monospace",
+          },
+        },
+      };
+      /* Sample text for font loading: must contain the special characters of every language in STR. */
+      const FONT_SAMPLE = "Aa Tiếng Việt ạ ố ữ ăâđêôơư ẤỆỮ";
+      const FONT = Object.fromEntries(
+        Object.entries(BRAND.fonts).map(([k, f]) => [
+          k,
+          `"${f.family}", ${f.fallback}`,
+        ]),
+      );
+
+      /* ---------- copy: one table per language, selected with ?lang= ---------- */
+      /* Copy strings.example.js next to this file and edit it per project (all of it is sample text).
+   One table per language, same keys everywhere; scenes read their group, opts override it. */
+      const STR = window.STR_PRESET;
+      const LANGS = Object.keys(STR);
+      let LANG = STR[Q.get("lang")] ? Q.get("lang") : LANGS[0];
+
+      /* ---------- timeline: data, not magic numbers in scene code ---------- */
+      /* Starts are cumulative and the last entry ends at the target length. A slot longer than a
+   scene's natural length holds its last state; a shorter one cuts the animation. */
+      const TIMELINE = [
+        { scene: "hook", start: 0, dur: 4 },
+        { scene: "reveal", start: 4, dur: 4 },
+        {
+          scene: "demo-window",
+          start: 8,
+          dur: 9,
+          /* audio cues, local seconds: mirror the default cursor keyframes (press 1.1,
+             clicks 2.7 and 6.4); ticks while the result streams, from 2.7 + 0.4 for
+             min(2.4, result chars x 0.035) s. Retime these with the cursor. */
+          opts: {
+            events: [
+              { t: 1.1, kind: "click" },
+              { t: 2.7, kind: "click" },
+              { t: 3.2, kind: "tick" },
+              { t: 3.4, kind: "tick" },
+              { t: 3.6, kind: "tick" },
+              { t: 3.8, kind: "tick" },
+              { t: 4.0, kind: "tick" },
+              { t: 4.2, kind: "tick" },
+              { t: 6.4, kind: "click" },
+            ],
+          },
+        },
+        // CLI or library: use the terminal demo instead (length is set by its lines).
+        // { scene: "demo-terminal", start: 8, dur: 9 },
+        { scene: "feature-grid", start: 17, dur: 4 },
+        { scene: "orbit", start: 21, dur: 3 },
+        { scene: "counter-wall", start: 24, dur: 3 },
+        { scene: "end-card", start: 27, dur: 3 },
+      ];
+      const DURATION = TIMELINE.reduce(
+        (m, e) => Math.max(m, e.start + e.dur),
+        0,
+      );
+      const TRANSITION = 0.6; // seconds of iris wipe at the start of every entry after the first
+
+      /* ---------- math + easing ---------- */
+      const TAU = Math.PI * 2;
+      const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+      const lerp = (a, b, t) => a + (b - a) * t;
+      const seg = (t, a, b) => clamp((t - a) / (b - a));
+      const ease = {
+        linear: (t) => t,
+        expoOut: (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+        expoIn: (t) => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+        expoInOut: (t) =>
+          t <= 0
+            ? 0
+            : t >= 1
+              ? 1
+              : t < 0.5
+                ? Math.pow(2, 20 * t - 10) / 2
+                : (2 - Math.pow(2, -20 * t + 10)) / 2,
+        backOut: (t, s = 1.70158) =>
+          1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2),
+        cubicOut: (t) => 1 - Math.pow(1 - t, 3),
+        cubicInOut: (t) =>
+          t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+      };
+      /* Damped spring from 0 to 1 (settles near 1). stiffness ~ oscillation speed, damping in (0,1). */
+      function spring(t, { stiffness = 2.2, damping = 0.4 } = {}) {
+        if (t <= 0) return 0;
+        const w = TAU * stiffness,
+          z = clamp(damping, 0.01, 0.99),
+          wd = w * Math.sqrt(1 - z * z);
+        return (
+          1 -
+          Math.exp(-z * w * t) *
+            (Math.cos(wd * t) + ((z * w) / wd) * Math.sin(wd * t))
+        );
+      }
+      /* Seeded PRNG: same seed, same sequence, every frame. */
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return () => {
+          a = (a + 0x6d2b79f5) >>> 0;
+          let r = Math.imul(a ^ (a >>> 15), 1 | a);
+          r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+          return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      /* Stateless hash noise in [0,1) for (x, y, seed): use for per-item jitter without keeping state. */
+      function hash(x, y = 0, seed = 0) {
+        let h = Math.imul(
+          (x | 0) * 374761393 + (y | 0) * 668265263 + (seed | 0) * 2246822519,
+          1274126177,
+        );
+        h ^= h >>> 13;
+        return ((Math.imul(h, 1274126177) ^ (h >>> 16)) >>> 0) / 4294967296;
+      }
+
+      /* ---------- canvas + drawing helpers ---------- */
+      const cv = document.getElementById("film");
+      cv.width = W;
+      cv.height = H;
+      const ctx = cv.getContext("2d");
+      function resetCtx() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.filter = "none";
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.letterSpacing = "0px";
+      }
+      function fillAll(color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, W, H);
+      }
+      function rr(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, Math.max(0, Math.min(r, w / 2, h / 2)));
+      }
+      function text(s, x, y, font, color, align = "left", spacing = 0) {
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.textAlign = align;
+        ctx.textBaseline = "alphabetic";
+        ctx.letterSpacing = spacing + "px";
+        ctx.fillText(s, x, y);
+        ctx.letterSpacing = "0px";
+      }
+      /* Largest font size (<= max) that fits s into maxW: layout is measured, never hard-coded per language. */
+      function fitSize(s, weight, family, max, maxW) {
+        ctx.font = `${weight} ${max}px ${family}`;
+        const w = ctx.measureText(s).width;
+        return w <= maxW ? max : Math.floor((max * maxW) / w);
+      }
+
+      /* ---------- scenes: SCENES["<name>"] = { draw(ctx, lt, opts, env) }, lt = local time 0..dur.
+   Filled by the scenes/<name>.js tags after this script. ---------- */
+      const SCENES = {};
+
+      /* ---------- film grain: seeded patterns, chosen by frame index ---------- */
+      let GRAIN = [];
+      function buildGrain() {
+        const rand = mulberry32(11);
+        GRAIN = [0, 1, 2].map(() => {
+          const g = document.createElement("canvas");
+          g.width = g.height = 256;
+          const gx = g.getContext("2d"),
+            im = gx.createImageData(256, 256);
+          for (let k = 0; k < im.data.length; k += 4) {
+            const v = rand() * 255;
+            im.data[k] = im.data[k + 1] = im.data[k + 2] = v;
+            im.data[k + 3] = 255;
+          }
+          gx.putImageData(im, 0, 0);
+          return ctx.createPattern(g, "repeat");
+        });
+      }
+      function drawGrain(t) {
+        if (!GRAIN.length) return;
+        const f = Math.floor(t * 24);
+        ctx.save();
+        ctx.globalCompositeOperation = "overlay";
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = GRAIN[f % 3];
+        ctx.translate((f * 73) % 256, (f * 131) % 256);
+        ctx.fillRect(-256, -256, W + 512, H + 512);
+        ctx.restore();
+      }
+
+      /* ---------- render(t): pure function of t ---------- */
+      function env(entry) {
+        return {
+          W,
+          H,
+          dur: entry.dur,
+          ease,
+          spring,
+          rand: mulberry32(entry.start * 1000 + 7),
+          hash,
+          str: STR[LANG],
+          brand: BRAND,
+          fonts: FONT,
+        };
+      }
+      function drawEntry(entry, lt) {
+        const scene = SCENES[entry.scene];
+        resetCtx();
+        if (!scene) {
+          fillAll("#f0f");
+          text(
+            `missing scene: ${entry.scene}`,
+            W / 2,
+            H / 2,
+            `600 48px ${FONT.mono}`,
+            "#000",
+            "center",
+          );
+          return;
+        }
+        ctx.save();
+        scene.draw(ctx, clamp(lt, 0, entry.dur), entry.opts || {}, env(entry));
+        ctx.restore();
+      }
+      /* Shared transition device: a brand-colored iris opens the next entry over the previous one. */
+      function drawTransition(prev, next, t) {
+        const p = ease.expoInOut(seg(t - next.start, 0, TRANSITION));
+        drawEntry(prev, t - prev.start);
+        const r = (Math.hypot(W, H) / 2) * p;
+        resetCtx();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, r, 0, TAU);
+        ctx.clip();
+        drawEntry(next, t - next.start);
+        ctx.restore();
+        resetCtx();
+        ctx.strokeStyle = BRAND.colors.accent;
+        ctx.lineWidth = Math.max(0, 28 * (1 - p));
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, r, 0, TAU);
+        ctx.stroke();
+      }
+      function render(t) {
+        t = clamp(t, 0, DURATION - 1e-6);
+        let i = 0;
+        while (i < TIMELINE.length - 1 && t >= TIMELINE[i + 1].start) i++;
+        const entry = TIMELINE[i];
+        if (i > 0 && t - entry.start < TRANSITION)
+          drawTransition(TIMELINE[i - 1], entry, t);
+        else drawEntry(entry, t - entry.start);
+        resetCtx();
+        drawGrain(t);
+      }
+
+      /* ---------- fonts: load every family/weight with the language sample ---------- */
+      const FONT_LIST = Object.values(BRAND.fonts).flatMap((f) =>
+        f.weights.map((weight) => ({ family: f.family, weight })),
+      );
+      const ready = (async () => {
+        /* scenes/*.js load after this script: wait until they have all run */
+        if (document.readyState === "loading")
+          await new Promise((r) =>
+            document.addEventListener("DOMContentLoaded", r, { once: true }),
+          );
+        try {
+          await Promise.all(
+            FONT_LIST.map(({ family, weight }) =>
+              document.fonts.load(`${weight} 64px "${family}"`, FONT_SAMPLE),
+            ),
+          );
+          await document.fonts.ready;
+        } catch (e) {
+          console.warn("font load failed:", e && e.message);
+        }
+        buildGrain();
+      })();
+
+      window.__showcase = {
+        mode: "canvas",
+        duration: DURATION,
+        fps: 60,
+        width: W,
+        height: H,
+        timeline: TIMELINE,
+        render,
+        ready,
+        fonts: FONT_LIST,
+        fontSample: FONT_SAMPLE,
+        lang: LANG,
+      };
+
+      /* ---------- preview player (not used by capture) ---------- */
+      if (CAPTURE) {
+        document.body.classList.add("capture");
+      } else {
+        const $ = (id) => document.getElementById(id);
+        const btn = $("play"),
+          scrub = $("scrub"),
+          tc = $("tc"),
+          chap = $("chapters");
+        const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const settled = (e) => e.start + e.dur - 0.05; // last frame of an entry, once everything has landed
+        let playing = false,
+          cur = 0,
+          t0 = null,
+          raf = 0;
+        scrub.max = Math.round(DURATION * 1000);
+        $("meta").textContent = `${W}×${H} · 60p · ${DURATION.toFixed(1)} s`;
+        function show(t) {
+          cur = t;
+          render(t);
+          scrub.value = Math.round(t * 1000);
+          tc.textContent = `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, "0")}`;
+        }
+        /* rAF timestamp drives playback; the time base is set on the first tick after play(). */
+        function tick(now) {
+          if (t0 === null) t0 = now - cur * 1000;
+          let t = (now - t0) / 1000;
+          if (t >= DURATION + 1.5) {
+            t0 = now;
+            t = 0;
+          }
+          show(Math.min(t, DURATION - 1e-6));
+          raf = requestAnimationFrame(tick);
+        }
+        function play() {
+          playing = true;
+          btn.textContent = "Pause";
+          t0 = null;
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(tick);
+        }
+        function pause() {
+          playing = false;
+          btn.textContent = "Play";
+          cancelAnimationFrame(raf);
+        }
+        function chrome() {
+          const T = STR[LANG];
+          document.documentElement.lang = LANG;
+          $("title").textContent = T.title || document.title;
+          $("lang").textContent = T.toggle || LANG;
+          chap.replaceChildren(
+            ...TIMELINE.map((e, i) => {
+              const b = document.createElement("button");
+              b.type = "button";
+              b.textContent = (T.chapters && T.chapters[i]) || e.scene;
+              b.addEventListener("click", () => {
+                if (REDUCED) {
+                  pause();
+                  show(settled(e));
+                } else {
+                  cur = e.start + 0.01;
+                  play();
+                }
+              });
+              return b;
+            }),
+          );
+        }
+        btn.addEventListener("click", () => (playing ? pause() : play()));
+        $("restart").addEventListener("click", () => {
+          cur = 0;
+          play();
+        });
+        scrub.addEventListener("input", () => {
+          pause();
+          show(scrub.value / 1000);
+        });
+        $("lang").addEventListener("click", () => {
+          LANG = LANGS[(LANGS.indexOf(LANG) + 1) % LANGS.length];
+          window.__showcase.lang = LANG;
+          chrome();
+          if (!playing) show(cur);
+        });
+        chrome();
+        ready.then(() => {
+          if (REDUCED) show(settled(TIMELINE[TIMELINE.length - 1]));
+          else play();
+        });
+      }
+    </script>
+    <!-- scenes register into the engine's SCENES, so they load after it -->
+    <script src="scenes/hook.js"></script>
+    <script src="scenes/reveal.js"></script>
+    <script src="scenes/demo-window.js"></script>
+    <script src="scenes/demo-terminal.js"></script>
+    <script src="scenes/feature-grid.js"></script>
+    <script src="scenes/orbit.js"></script>
+    <script src="scenes/counter-wall.js"></script>
+    <script src="scenes/end-card.js"></script>
+  </body>
+</html>

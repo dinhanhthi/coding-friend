@@ -28,8 +28,9 @@ PLUGIN_ROOT="${PLUGIN_ROOT:-${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}"
 
 # Host probe (highest wins): explicit CF_HOST > CODEX_SESSION_ID >
 # OMP_SESSION_ID > $PWD/.omp directory > claude.
-# Explicit CF_HOST accepts claude|codex|omp|agy. agy is explicit-only
-# (AGY hooks.json commands are prefixed CF_HOST=agy; no filesystem probe).
+# Explicit CF_HOST accepts claude|codex|omp|agy|devin. agy and devin are
+# explicit-only (their hooks.json commands are prefixed CF_HOST=<host>;
+# no filesystem probe — DEVIN_PROJECT_DIR must not auto-detect).
 # CODEX_HOME is profile-scoped and must not flip Claude sessions to codex.
 CF_HOST="${CF_HOST:-}"
 if [ -z "$CF_HOST" ]; then
@@ -44,8 +45,8 @@ if [ -z "$CF_HOST" ]; then
   fi
 fi
 export CF_HOST
-if [ "$CF_HOST" = "omp" ]; then
-  echo "detected CF_HOST=omp" >&2
+if [ "$CF_HOST" = "omp" ] || [ "$CF_HOST" = "devin" ]; then
+  echo "detected CF_HOST=$CF_HOST" >&2
 fi
 
 # Source the shared path resolver
@@ -84,10 +85,17 @@ if [ -d "$CONTEXT_DIR" ]; then
       done || true
 fi
 
-# Build context
+# Build context. Devin skill bodies cannot read ${PLUGIN_ROOT}, so
+# the bootstrap carries the resolved plugin root as a PLUGIN_ROOT: line —
+# only for CF_HOST=devin; other hosts' context stays unchanged.
+PLUGIN_ROOT_LINE=""
+if [ "$CF_HOST" = "devin" ]; then
+  PLUGIN_ROOT_LINE="PLUGIN_ROOT: $PLUGIN_ROOT
+"
+fi
 CONTEXT="<IMPORTANT>
 HOST: $CF_HOST
-PROJECT_TYPE: $PROJECT_TYPE
+${PLUGIN_ROOT_LINE}PROJECT_TYPE: $PROJECT_TYPE
 PKG_MANAGER: $PKG_MANAGER
 DOCS_DIR: $DOCS_DIR
 MAIN_REPO_ROOT: $MAIN_REPO_ROOT

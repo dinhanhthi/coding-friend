@@ -37,6 +37,9 @@ import {
   ompProjectAgentsDir,
   ompProjectCodingFriendAgentsDir,
   ompProjectExtensionsDir,
+  devinConfigDir,
+  devinMcpConfigPath,
+  devinPluginsLockPath,
 } from "../paths.js";
 
 // Ensure tests are not affected by CLAUDE_CONFIG_DIR set in the caller's shell
@@ -44,6 +47,8 @@ beforeEach(() => {
   vi.stubEnv("CLAUDE_CONFIG_DIR", undefined as unknown as string);
   vi.stubEnv("CODEX_HOME", undefined as unknown as string);
   vi.stubEnv("OMP_HOME", undefined as unknown as string);
+  vi.stubEnv("XDG_CONFIG_HOME", undefined as unknown as string);
+  vi.stubEnv("XDG_DATA_HOME", undefined as unknown as string);
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -393,6 +398,65 @@ describe("omp paths", () => {
     );
     expect(ompProjectExtensionsDir()).toBe(
       resolve(process.cwd(), ".omp", "extensions"),
+    );
+  });
+});
+
+describe("Devin paths", () => {
+  it("returns ~/.config/devin by default", () => {
+    expect(devinConfigDir()).toBe(join(homedir(), ".config", "devin"));
+  });
+
+  it("honors XDG_CONFIG_HOME", () => {
+    vi.stubEnv("XDG_CONFIG_HOME", "/tmp/xdg-config");
+
+    expect(devinConfigDir()).toBe("/tmp/xdg-config/devin");
+    expect(devinMcpConfigPath()).toBe("/tmp/xdg-config/devin/mcp_config.json");
+  });
+
+  it("returns ~/.config/devin/mcp_config.json by default", () => {
+    expect(devinMcpConfigPath()).toBe(
+      join(homedir(), ".config", "devin", "mcp_config.json"),
+    );
+  });
+
+  it("returns ~/.local/share/devin/cli/plugins/lock.json by default", () => {
+    expect(devinPluginsLockPath()).toBe(
+      join(
+        homedir(),
+        ".local",
+        "share",
+        "devin",
+        "cli",
+        "plugins",
+        "lock.json",
+      ),
+    );
+  });
+
+  it("honors XDG_DATA_HOME for the plugins lock path", () => {
+    vi.stubEnv("XDG_DATA_HOME", "/tmp/xdg-data");
+
+    expect(devinPluginsLockPath()).toBe(
+      "/tmp/xdg-data/devin/cli/plugins/lock.json",
+    );
+  });
+
+  it("ignores blank XDG values", () => {
+    vi.stubEnv("XDG_CONFIG_HOME", "   ");
+    vi.stubEnv("XDG_DATA_HOME", "  ");
+
+    expect(devinConfigDir()).toBe(join(homedir(), ".config", "devin"));
+    expect(devinPluginsLockPath()).toBe(
+      join(
+        homedir(),
+        ".local",
+        "share",
+        "devin",
+        "cli",
+        "plugins",
+        "lock.json",
+      ),
     );
   });
 });

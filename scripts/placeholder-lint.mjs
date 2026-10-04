@@ -121,6 +121,37 @@ const AGY_MUST_CONTAIN = [
   },
 ];
 
+// Devin loads the Claude plugin layout natively, so the lint surface is
+// smaller: leftover placeholders, Claude-only hook events in the generated
+// hooks.json (an unknown event rejects the whole file), Claude dispatch
+// vocabulary in generated markdown, foreign-host file names, and hook
+// commands that miss the CF_HOST=devin prefix.
+const DEVIN_HOOK_EVENTS = new Set([
+  "SessionStart",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PostToolUse",
+  "PermissionRequest",
+  "Stop",
+  "PostCompaction",
+  "SessionEnd",
+]);
+
+const DEVIN_MUST_CONTAIN = [
+  { file: "plugin-devin/context/bootstrap.md", regex: /run_subagent/ },
+  { file: "plugin-devin/hooks/hooks.json", regex: /CF_HOST=devin / },
+  {
+    file: "plugin-devin/.claude-plugin/plugin.json",
+    regex: /Devin CLI \(beta\)/,
+  },
+];
+
+const DEVIN_PATTERNS = [
+  { name: "unresolved host placeholder", regex: /\{\{cf:[^}]+\}\}/g },
+  { name: "Claude subagent type", regex: /\bsubagent_type\b/g },
+  { name: "Claude agent tool", regex: /\bAgent tool\b/g },
+];
+
 const AGY_PATTERNS = [
   { name: "unresolved host placeholder", regex: /\{\{cf:[^}]+\}\}/g },
   { name: "Claude plugin root", regex: /\$\{CLAUDE_PLUGIN_ROOT\}/g },
@@ -376,14 +407,130 @@ export async function findAntigravityArtifactLintIssues(
   ];
 }
 
+export async function findDevinArtifactLintIssues(
+  root = repoRoot,
+  options = {},
+) {
+  const files = await collectInstructionFiles(
+    path.join(root, "plugin-devin"),
+    "plugin-devin",
+  );
+
+  const contextPath = "plugin-devin/context/bootstrap.md";
+  try {
+    await access(path.join(root, contextPath));
+    files.push(contextPath);
+  } catch {
+    // Fixture repos may omit the bootstrap context file.
+  }
+
+  const readmePath = "plugin-devin/README.md";
+  try {
+    await access(path.join(root, readmePath));
+    files.push(readmePath);
+  } catch {
+    // Fixture repos may omit the README.
+  }
+
+  const hooksJsonPath = "plugin-devin/hooks/hooks.json";
+  let hooksRaw = null;
+  try {
+    hooksRaw = await readFile(path.join(root, hooksJsonPath), "utf8");
+    files.push(hooksJsonPath);
+  } catch {
+    // Fixture repos may omit hooks.json.
+  }
+
+  const issues = await findIssues(files.sort(), DEVIN_PATTERNS, root);
+
+  // Any *.codex.* / *.agy.* / agy- path under plugin-devin/ means the builder's
+  // exclusion list fell out of sync with plugin/ sources.
+  const allFiles = await collectFilesRecursive(
+    path.join(root, "plugin-devin"),
+    "plugin-devin",
+    () => true,
+  );
+  for (const relativePath of allFiles) {
+    if (
+      relativePath.includes(".codex.") ||
+      relativePath.includes(".agy.") ||
+      relativePath.includes("agy-")
+    ) {
+      issues.push({
+        file: relativePath,
+        line: 1,
+        type: "foreign host artifact path",
+        value: relativePath,
+      });
+    }
+  }
+
+  if (hooksRaw !== null) {
+    let hooksJson = null;
+    try {
+      hooksJson = JSON.parse(hooksRaw);
+    } catch {
+      issues.push({
+        file: hooksJsonPath,
+        line: 0,
+        type: "unparseable hooks.json",
+        value: "JSON.parse failure",
+      });
+    }
+    if (hooksJson) {
+      for (const [event, entries] of Object.entries(hooksJson.hooks ?? {})) {
+        if (!DEVIN_HOOK_EVENTS.has(event)) {
+          issues.push({
+            file: hooksJsonPath,
+            line: lineNumberForIndex(
+              hooksRaw,
+              Math.max(hooksRaw.indexOf(`"${event}"`), 0),
+            ),
+            type: "Claude-only hook event",
+            value: event,
+          });
+          continue;
+        }
+        for (const entry of entries ?? []) {
+          for (const hook of entry?.hooks ?? []) {
+            const command = hook?.command;
+            if (
+              typeof command === "string" &&
+              !command.startsWith("CF_HOST=devin ")
+            ) {
+              issues.push({
+                file: hooksJsonPath,
+                line: lineNumberForIndex(
+                  hooksRaw,
+                  Math.max(hooksRaw.indexOf(command), 0),
+                ),
+                type: "hook command missing CF_HOST=devin",
+                value: command,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return [
+    ...issues,
+    ...(await findMissingRequired(root, DEVIN_MUST_CONTAIN, options)),
+  ];
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
   const agyOnly = process.argv.includes("--agy");
+  const devinOnly = process.argv.includes("--devin");
   const issues = agyOnly
     ? await findAntigravityArtifactLintIssues()
-    : [
-        ...(await findPlaceholderLintIssues()),
-        ...(await findCodexArtifactLintIssues()),
-      ];
+    : devinOnly
+      ? await findDevinArtifactLintIssues()
+      : [
+          ...(await findPlaceholderLintIssues()),
+          ...(await findCodexArtifactLintIssues()),
+        ];
   if (issues.length > 0) {
     console.error("Found unresolved or host-incompatible references:");
     for (const issue of issues) {

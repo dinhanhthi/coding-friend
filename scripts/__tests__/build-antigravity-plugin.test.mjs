@@ -544,6 +544,35 @@ test("excludes cf-review external-reviewers from Antigravity artifact", () => {
   }
 });
 
+test("excludes Devin-only sources from the Antigravity artifact", async () => {
+  for (const rel of [
+    "hooks/auto-approve.devin.cjs",
+    "hooks/block-adapter.devin.sh",
+    "hooks/memory-capture.devin.sh",
+    "hooks/rules-reminder.devin.sh",
+    "lib/devin-tool-map.cjs",
+  ]) {
+    assert.ok(
+      AGY_EXCLUDED_SOURCE_PATHS.has(rel),
+      `expected Antigravity builder to exclude ${rel}`,
+    );
+  }
+
+  // The regenerated artifact ships no file with `devin` in its path — this
+  // also catches future *.devin.* sources added without an exclusion entry
+  // (the __tests__/ dir is already skipped for every host by name).
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../..",
+  );
+  const devinPaths = (
+    await snapshotTree(path.join(repoRoot, "plugin-antigravity"))
+  )
+    .map((entry) => entry.path)
+    .filter((entryPath) => entryPath.includes("devin"));
+  assert.deepEqual(devinPaths, []);
+});
+
 test("copies plan/ask/scan templates into Antigravity dest and keeps external-reviewers excluded", async () => {
   const repoRoot = await createFixtureRepo();
   const kept = [

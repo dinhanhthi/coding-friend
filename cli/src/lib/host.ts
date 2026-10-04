@@ -1,17 +1,19 @@
 import { commandExists, run } from "./exec.js";
 
-export type Host = "claude" | "codex" | "omp" | "agy";
+export type Host = "claude" | "codex" | "omp" | "agy" | "devin";
 
 export interface HostFlags {
   agent?: string;
   codex?: boolean;
   omp?: boolean;
   agy?: boolean;
+  devin?: boolean;
 }
 
 const CODEX_MIN_VERSION = "0.130.0";
 const OMP_MIN_VERSION = "0.1.0";
 const AGY_MIN_VERSION = "1.1.0";
+const DEVIN_MIN_VERSION = "3000.11.3";
 
 export function detectHostsAvailable(): Host[] {
   const hosts: Host[] = [];
@@ -19,6 +21,7 @@ export function detectHostsAvailable(): Host[] {
   if (commandExists("codex")) hosts.push("codex");
   if (commandExists("omp")) hosts.push("omp");
   if (commandExists("agy")) hosts.push("agy");
+  if (commandExists("devin")) hosts.push("devin");
   return hosts;
 }
 
@@ -27,16 +30,18 @@ export function resolveHost(opts: HostFlags = {}): Host {
   const codexAlias = opts.codex === true;
   const ompAlias = opts.omp === true;
   const agyAlias = opts.agy === true;
+  const devinAlias = opts.devin === true;
 
   if (
     agent &&
     agent !== "claude" &&
     agent !== "codex" &&
     agent !== "omp" &&
-    agent !== "agy"
+    agent !== "agy" &&
+    agent !== "devin"
   ) {
     throw new Error(
-      `Unsupported agent "${opts.agent}". Use "claude", "codex", "omp", or "agy".`,
+      `Unsupported agent "${opts.agent}". Use "claude", "codex", "omp", "agy", or "devin".`,
     );
   }
 
@@ -52,6 +57,18 @@ export function resolveHost(opts: HostFlags = {}): Host {
     throw new Error("Use either --agy or --omp, not both.");
   }
 
+  if (devinAlias && codexAlias) {
+    throw new Error("Use either --devin or --codex, not both.");
+  }
+
+  if (devinAlias && ompAlias) {
+    throw new Error("Use either --devin or --omp, not both.");
+  }
+
+  if (devinAlias && agyAlias) {
+    throw new Error("Use either --devin or --agy, not both.");
+  }
+
   if (codexAlias && agent === "claude") {
     throw new Error("Use either --agent claude or --codex, not both.");
   }
@@ -64,12 +81,20 @@ export function resolveHost(opts: HostFlags = {}): Host {
     throw new Error("Use either --agent claude or --agy, not both.");
   }
 
+  if (devinAlias && agent === "claude") {
+    throw new Error("Use either --agent claude or --devin, not both.");
+  }
+
   if (ompAlias && agent === "codex") {
     throw new Error("Use either --agent codex or --omp, not both.");
   }
 
   if (agyAlias && agent === "codex") {
     throw new Error("Use either --agent codex or --agy, not both.");
+  }
+
+  if (devinAlias && agent === "codex") {
+    throw new Error("Use either --agent codex or --devin, not both.");
   }
 
   if (codexAlias && agent === "omp") {
@@ -80,6 +105,10 @@ export function resolveHost(opts: HostFlags = {}): Host {
     throw new Error("Use either --agent omp or --agy, not both.");
   }
 
+  if (devinAlias && agent === "omp") {
+    throw new Error("Use either --agent omp or --devin, not both.");
+  }
+
   if (codexAlias && agent === "agy") {
     throw new Error("Use either --agent agy or --codex, not both.");
   }
@@ -88,6 +117,24 @@ export function resolveHost(opts: HostFlags = {}): Host {
     throw new Error("Use either --agent agy or --omp, not both.");
   }
 
+  if (devinAlias && agent === "agy") {
+    throw new Error("Use either --agent agy or --devin, not both.");
+  }
+
+  if (codexAlias && agent === "devin") {
+    throw new Error("Use either --agent devin or --codex, not both.");
+  }
+
+  if (ompAlias && agent === "devin") {
+    throw new Error("Use either --agent devin or --omp, not both.");
+  }
+
+  if (agyAlias && agent === "devin") {
+    throw new Error("Use either --agent devin or --agy, not both.");
+  }
+
+  if (devinAlias) return "devin";
+  if (agent === "devin") return "devin";
   if (agyAlias) return "agy";
   if (agent === "agy") return "agy";
   if (ompAlias) return "omp";
@@ -107,6 +154,10 @@ export function getOmpMinVersion(): string {
 
 export function getAgyMinVersion(): string {
   return AGY_MIN_VERSION;
+}
+
+export function getDevinMinVersion(): string {
+  return DEVIN_MIN_VERSION;
 }
 
 export interface CodexVersionCheck {
@@ -142,6 +193,18 @@ export function checkOmpVersion(): CodexVersionCheck {
 export function checkAgyVersion(): CodexVersionCheck {
   const min = getAgyMinVersion();
   const output = run("agy", ["--version"]);
+  const actual = output ? extractVersion(output) : undefined;
+
+  return {
+    ok: actual ? compareVersions(actual, min) >= 0 : false,
+    actual,
+    min,
+  };
+}
+
+export function checkDevinVersion(): CodexVersionCheck {
+  const min = getDevinMinVersion();
+  const output = run("devin", ["--version"]);
   const actual = output ? extractVersion(output) : undefined;
 
   return {

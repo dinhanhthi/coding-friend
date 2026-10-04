@@ -9,6 +9,7 @@ vi.mock("../log.js", () => ({
     warn: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
+    dim: vi.fn(),
   },
 }));
 
@@ -22,6 +23,12 @@ vi.mock("../agy-config.js", () => ({
   writeAgyMcpEntry: vi.fn(),
   readAgyMcpConfig: vi.fn(),
   removeAgyMcpEntry: vi.fn(),
+}));
+
+vi.mock("../devin-config.js", () => ({
+  isDevinPluginInstalled: vi.fn(),
+  readDevinMcpConfig: vi.fn(),
+  removeDevinMcpEntry: vi.fn(),
 }));
 
 import { runWithStderr } from "../exec.js";
@@ -41,6 +48,11 @@ import {
   removeOmpMcpEntry,
   writeOmpMcpEntry,
 } from "../omp-config.js";
+import {
+  isDevinPluginInstalled,
+  readDevinMcpConfig,
+  removeDevinMcpEntry,
+} from "../devin-config.js";
 
 const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockLog = vi.mocked(log);
@@ -50,6 +62,9 @@ const mockRemoveOmpMcpEntry = vi.mocked(removeOmpMcpEntry);
 const mockWriteAgyMcpEntry = vi.mocked(writeAgyMcpEntry);
 const mockReadAgyMcpConfig = vi.mocked(readAgyMcpConfig);
 const mockRemoveAgyMcpEntry = vi.mocked(removeAgyMcpEntry);
+const mockIsDevinPluginInstalled = vi.mocked(isDevinPluginInstalled);
+const mockReadDevinMcpConfig = vi.mocked(readDevinMcpConfig);
+const mockRemoveDevinMcpEntry = vi.mocked(removeDevinMcpEntry);
 
 const OMP_MEMORY_SERVER = {
   command: "npx",
@@ -199,6 +214,33 @@ describe("registerMemoryMcp", () => {
     );
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
+
+  it('writes nothing when host is "devin" and the plugin is installed', () => {
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    const result = registerMemoryMcp("devin");
+
+    // The memory MCP ships inside plugin-devin/.mcp.json — no file write.
+    expect(result).toBe(true);
+    expect(mockLog.dim).toHaveBeenCalledWith(
+      expect.stringContaining("ships with the Devin plugin"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
+    expect(mockWriteAgyMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it('returns false and warns when host is "devin" but the plugin is missing', () => {
+    mockIsDevinPluginInstalled.mockReturnValue(false);
+
+    const result = registerMemoryMcp("devin");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("cf install --agent devin"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
 });
 
 describe("isMemoryMcpRegistered", () => {
@@ -275,6 +317,22 @@ describe("isMemoryMcpRegistered", () => {
     expect(isMemoryMcpRegistered("agy")).toBe(false);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
+
+  it('returns true when host is "devin" and the plugin is installed', () => {
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    expect(isMemoryMcpRegistered("devin")).toBe(true);
+    expect(mockIsDevinPluginInstalled).toHaveBeenCalled();
+    expect(mockReadDevinMcpConfig).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it('returns false when host is "devin" and the plugin is missing', () => {
+    mockIsDevinPluginInstalled.mockReturnValue(false);
+
+    expect(isMemoryMcpRegistered("devin")).toBe(false);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
 });
 
 describe("unregisterMemoryMcp", () => {
@@ -344,6 +402,64 @@ describe("unregisterMemoryMcp", () => {
     });
 
     const result = unregisterMemoryMcp("agy");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Could not unregister MCP: EACCES"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it('removes a stray devin mcp_config entry when host is "devin"', () => {
+    // First read sees our-shaped entry; after removal the file is clean.
+    mockReadDevinMcpConfig
+      .mockReturnValueOnce({
+        mcpServers: {
+          "coding-friend-memory": {
+            command: "npx",
+            args: ["-y", "coding-friend-cli", "mcp-serve"],
+          },
+        },
+      })
+      .mockReturnValue({ mcpServers: {} });
+
+    const result = unregisterMemoryMcp("devin");
+
+    expect(mockRemoveDevinMcpEntry).toHaveBeenCalledWith(
+      "coding-friend-memory",
+    );
+    expect(result).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockRemoveOmpMcpEntry).not.toHaveBeenCalled();
+    expect(mockRemoveAgyMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("leaves a same-named devin entry that does not point at our CLI", () => {
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: {
+        "coding-friend-memory": { command: "node", args: ["server.js"] },
+      },
+    });
+
+    expect(unregisterMemoryMcp("devin")).toBe(false);
+    expect(mockRemoveDevinMcpEntry).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("returns false and warns when devin remove throws", () => {
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: {
+        "coding-friend-memory": {
+          command: "npx",
+          args: ["-y", "coding-friend-cli", "mcp-serve"],
+        },
+      },
+    });
+    mockRemoveDevinMcpEntry.mockImplementation(() => {
+      throw new Error("EACCES");
+    });
+
+    const result = unregisterMemoryMcp("devin");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(

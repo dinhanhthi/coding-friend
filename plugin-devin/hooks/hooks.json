@@ -1,0 +1,74 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/session-init.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.devin.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(read|write|edit|glob|grep)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/block-adapter.devin.sh privacy-block.sh"
+          },
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/block-adapter.devin.sh scout-block.cjs"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.devin.cjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/session-log.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompaction": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/memory-capture.devin.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

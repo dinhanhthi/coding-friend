@@ -8,6 +8,10 @@ import {
   removeAgyPlugin,
   removeAgyPluginConfigEntry,
 } from "../lib/agy-config.js";
+import {
+  isDevinPluginInstalled,
+  removeDevinPlugin,
+} from "../lib/devin-config.js";
 import { unregisterLearnMcp } from "../lib/learn-prompts.js";
 import { unregisterMemoryMcp } from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
@@ -195,6 +199,10 @@ export async function uninstallCommand(
   }
   if (host === "agy") {
     uninstallAgyCommand();
+    return;
+  }
+  if (host === "devin") {
+    uninstallDevinCommand();
     return;
   }
 
@@ -455,6 +463,32 @@ function uninstallAgyCommand(): void {
   log.dim(
     "Restart Antigravity (or start a new `agy` session) for the change to take effect.",
   );
+}
+
+function uninstallDevinCommand(): void {
+  console.log();
+  printBanner("👋 Coding Friend Devin Uninstall 👋", {
+    color: chalk.red,
+  });
+
+  // Clear user-scope MCP entries first and unconditionally — they live in
+  // ~/.config/devin/mcp_config.json and survive an out-of-band
+  // `devin plugins remove` (the shipped .mcp.json entry leaves with the plugin).
+  const removedMemory = unregisterMemoryMcp("devin");
+  const removedLearn = unregisterLearnMcp("devin");
+
+  const installed = isDevinPluginInstalled();
+  if (!installed && !removedMemory && !removedLearn) {
+    log.info("Nothing to uninstall");
+    return;
+  }
+
+  // removeDevinPlugin picks the remove flag matching the detected kind
+  // (plain for git-subdir, --local for local installs, both for unknown).
+  if (installed) removeDevinPlugin();
+
+  log.success("Coding Friend uninstalled from Devin.");
+  log.dim("Start a new Devin session for the change to take effect.");
 }
 
 function uninstallOmpCommand(opts: UninstallOptions): void {

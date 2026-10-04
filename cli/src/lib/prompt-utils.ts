@@ -114,6 +114,7 @@ export interface ScopeFlags {
   codex?: boolean;
   omp?: boolean;
   agy?: boolean;
+  devin?: boolean;
 }
 
 /**

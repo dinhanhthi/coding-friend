@@ -1,6 +1,6 @@
 # Coding Friend
 
-> A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer, adding skills, agents, and hooks to Claude Code, Codex, oh-my-pi, and other AI coding tools.
+> A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer, adding skills, agents, and hooks to Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI (beta), and other AI coding tools.
 
 Coding Friend provides a systematic workflow of plan → implement → review → commit, with project knowledge stored in `docs/` and learning notes in `~/.coding-friend/learn/`. It includes a memory system, security hooks, and mechanisms to protect privacy while enhancing AI agent capabilities.
 

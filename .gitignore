@@ -68,3 +68,4 @@ docs/*
 .codex/
 AGENTS.md
 !plugin-antigravity/rules/AGENTS.md
+!plugin-devin/.mcp.json
