@@ -32,11 +32,15 @@ export const metadata: Metadata = {
     siteName: SITE_TITLE,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: [
+      { url: "/poster.jpg", width: 1920, height: 1080, alt: SITE_TITLE },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: ["/poster.jpg"],
   },
   alternates: {
     canonical: "https://cf.dinhanhthi.com",
