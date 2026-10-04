@@ -1,0 +1,74 @@
+---
+name: cf-verification
+description: >
+  Completion gate — demands fresh verification evidence (test run, command output,
+  manual check) before any claim that work is done. TRIGGER — about to say "done",
+  "complete", "fixed", "passing", "ready to commit" or "ready to ship", or to
+  summarize finished work; the end of any cf-tdd, cf-fix, cf-plan, or cf-optimize
+  run; the user asks "is it done?" or "does it work?". SKIP — mid-task progress
+  notes, exploratory or read-only answers, and plans that have not been
+  implemented yet.
+user-invocable: false
+created: 2026-02-17
+updated: 2026-09-09
+---
+
+# Verification Before Completion
+
+## Custom Guide
+
+```!
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-verification
+```
+
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
+
+## The Gate
+
+**No completion claims without fresh verification evidence.**
+
+Claiming work is complete without verification is dishonesty, not efficiency.
+
+## When to Auto-Invoke
+
+Auto-invoke this skill after tasks that **produce or modify code** (implementation, bug fixes, refactoring).
+
+Do NOT auto-invoke after **analysis-only skills** that don't change code:
+
+- `/cf-review` — code review is analysis, not implementation
+- `/cf-plan` — planning doesn't produce code
+- `/cf-ask` — Q&A doesn't produce code
+- `/cf-research` — research doesn't produce code
+
+## Checklist
+
+Before claiming ANY task is done:
+
+1. **Run tests** — Execute the test suite. Read the output. All tests must pass.
+2. **Run the build** — If applicable, build the project. No errors.
+3. **Lint/format** — If configured, run linter. No new warnings.
+4. **Manual check** — For UI changes, verify visually. For API changes, test the endpoint.
+5. **Show evidence** — Include test output, build output, or screenshots in your response.
+6. **Slop check** — Scan changed code for AI transmarks, excessive comments, unnecessary verbosity.
+
+## What Counts as Evidence
+
+| Good Evidence                 | Bad Evidence                       |
+| ----------------------------- | ---------------------------------- |
+| Test output showing all pass  | "I believe the tests pass"         |
+| Build output with exit code 0 | "The build should work"            |
+| Actual command output         | "I ran the tests" (without output) |
+| Screenshot of UI change       | "The UI looks correct"             |
+| `git diff` showing the change | "I made the change"                |
+
+## Common Failures
+
+- [ ] Tests pass
+- [ ] No type errors (TypeScript/typed languages)
+- [ ] Linter clean
+- [ ] Build succeeds
+- [ ] No console errors/warnings
+- [ ] Feature works as described
+- [ ] No regressions in existing functionality
+
+> Plugin root: the `PLUGIN_ROOT:` path in the session bootstrap context (HOST: devin), or the parent of the `skills/` folder that contains this SKILL.md. Replace `<plugin-root>` with it when running bundled scripts.

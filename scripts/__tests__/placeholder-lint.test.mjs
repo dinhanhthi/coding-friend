@@ -8,6 +8,7 @@ import {
   findAgentFrontmatterIssues,
   findAntigravityArtifactLintIssues,
   findCodexArtifactLintIssues,
+  findDevinArtifactLintIssues,
   findPlaceholderLintIssues,
 } from "../placeholder-lint.mjs";
 
@@ -24,6 +25,157 @@ test("generated Codex instructions do not contain Claude-only runtime APIs", asy
 test("generated AGY instructions do not contain Claude-only runtime APIs", async () => {
   const issues = await findAntigravityArtifactLintIssues();
   assert.deepEqual(issues, []);
+});
+
+test("generated Devin instructions do not contain Claude-only runtime APIs", async () => {
+  const issues = await findDevinArtifactLintIssues();
+  assert.deepEqual(issues, []);
+});
+
+test("Devin lint reports leftover placeholders and Claude dispatch vocabulary", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-refs-"));
+  await fs.mkdir(path.join(root, "plugin-devin", "skills", "cf-x"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-devin", "agents"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "skills", "cf-x", "SKILL.md"),
+    [
+      "Use {{cf:slash cf-review}}.",
+      'Dispatch with `subagent_type: "coding-friend:cf-writer"`.',
+      "Ask the Agent tool for help.",
+      "",
+    ].join("\n"),
+  );
+
+  const issues = await findDevinArtifactLintIssues(root, { strict: false });
+  const types = issues
+    .filter((issue) => issue.file === "plugin-devin/skills/cf-x/SKILL.md")
+    .map((issue) => issue.type);
+  for (const expected of [
+    "unresolved host placeholder",
+    "Claude subagent type",
+    "Claude agent tool",
+  ]) {
+    assert.ok(
+      types.includes(expected),
+      `expected Devin lint to report ${expected}, got ${JSON.stringify(types)}`,
+    );
+  }
+});
+
+test("Devin lint reports Claude-only hook events and missing CF_HOST prefix", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-hooks-"));
+  await fs.mkdir(path.join(root, "plugin-devin", "hooks"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "hooks", "hooks.json"),
+    JSON.stringify({
+      hooks: {
+        TaskCreated: [
+          {
+            matcher: "",
+            hooks: [{ type: "command", command: "CF_HOST=devin ./x.sh" }],
+          },
+        ],
+        PreCompact: [
+          {
+            matcher: "",
+            hooks: [{ type: "command", command: "CF_HOST=devin ./y.sh" }],
+          },
+        ],
+        Stop: [
+          {
+            matcher: "",
+            hooks: [{ type: "command", command: "./hooks/session-log.sh" }],
+          },
+        ],
+      },
+    }),
+  );
+
+  const issues = await findDevinArtifactLintIssues(root, { strict: false });
+  const claudeEvents = issues
+    .filter((issue) => issue.type === "Claude-only hook event")
+    .map((issue) => issue.value)
+    .sort();
+  assert.deepEqual(claudeEvents, ["PreCompact", "TaskCreated"]);
+
+  const missingPrefix = issues.find(
+    (issue) => issue.type === "hook command missing CF_HOST=devin",
+  );
+  assert.ok(missingPrefix, "expected a missing CF_HOST=devin issue");
+  assert.equal(missingPrefix.value, "./hooks/session-log.sh");
+});
+
+test("Devin lint reports foreign-host artifact paths", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-paths-"));
+  await fs.mkdir(path.join(root, "plugin-devin", "hooks"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-devin", "lib"), { recursive: true });
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "hooks", "privacy-block.agy.sh"),
+    "# agy\n",
+  );
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "hooks", "auto-approve.codex.cjs"),
+    "// codex\n",
+  );
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "lib", "agy-hook-io.sh"),
+    "# agy\n",
+  );
+
+  const issues = await findDevinArtifactLintIssues(root, { strict: false });
+  const paths = issues
+    .filter((issue) => issue.type === "foreign host artifact path")
+    .map((issue) => issue.file)
+    .sort();
+  assert.deepEqual(paths, [
+    "plugin-devin/hooks/auto-approve.codex.cjs",
+    "plugin-devin/hooks/privacy-block.agy.sh",
+    "plugin-devin/lib/agy-hook-io.sh",
+  ]);
+});
+
+test("Devin must-contain reports missing required host phrasing", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-must-"));
+  await fs.mkdir(path.join(root, "plugin-devin", "context"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-devin", "hooks"), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(root, "plugin-devin", ".claude-plugin"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "context", "bootstrap.md"),
+    "# coding-friend\nNo dispatch verb.\n",
+  );
+  await fs.writeFile(
+    path.join(root, "plugin-devin", "hooks", "hooks.json"),
+    JSON.stringify({ hooks: { Stop: [] } }),
+  );
+  await fs.writeFile(
+    path.join(root, "plugin-devin", ".claude-plugin", "plugin.json"),
+    JSON.stringify({ name: "coding-friend" }),
+  );
+
+  const issues = await findDevinArtifactLintIssues(root);
+  const phrasing = issues.filter(
+    (issue) => issue.type === "missing required host phrasing",
+  );
+  assert.equal(phrasing.length, 3);
+  assert.deepEqual(phrasing.map((issue) => issue.file).sort(), [
+    "plugin-devin/.claude-plugin/plugin.json",
+    "plugin-devin/context/bootstrap.md",
+    "plugin-devin/hooks/hooks.json",
+  ]);
 });
 
 test("Codex lint reports Claude host name in skill sub-files", async () => {

@@ -67,6 +67,15 @@ jobs:
                 fs.readFileSync("plugin-antigravity/plugin.json", "utf8"),
               ).version,
             ],
+            [
+              "plugin-devin/.claude-plugin/plugin.json",
+              JSON.parse(
+                fs.readFileSync(
+                  "plugin-devin/.claude-plugin/plugin.json",
+                  "utf8",
+                ),
+              ).version,
+            ],
           ];
 
           const mismatches = files.filter(([, version]) => version !== expected);
@@ -84,11 +93,17 @@ jobs:
       - name: Verify generated Antigravity plugin
         run: npm run verify:agy-drift
 
+      - name: Verify generated Devin plugin
+        run: npm run verify:devin-drift
+
       - name: Lint placeholders and Codex artifact
         run: npm run lint:codex
 
       - name: Lint placeholders and Antigravity artifact
         run: npm run lint:agy
+
+      - name: Lint placeholders and Devin artifact
+        run: npm run lint:devin
 
       - name: Extract changelog for this version
         id: changelog

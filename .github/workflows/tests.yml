@@ -32,8 +32,14 @@ jobs:
       - name: Lint placeholders and Antigravity artifact
         run: npm run lint:agy
 
+      - name: Lint placeholders and Devin artifact
+        run: npm run lint:devin
+
       - name: Verify generated Antigravity plugin
         run: npm run verify:agy-drift
+
+      - name: Verify generated Devin plugin
+        run: npm run verify:devin-drift
 
       - name: Run build and conversion tests
         run: npm run test:scripts

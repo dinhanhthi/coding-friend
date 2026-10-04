@@ -1,0 +1,94 @@
+---
+name: cf-review-out
+description: >
+  Generate a review prompt for an external AI (Gemini, Codex, ChatGPT, or a human).
+  Triggers: "get a second opinion", "external review", "review out", "send for review",
+  "cf-review-out", "prepare review for gemini".
+user-invocable: true
+argument-hint: "[optional: label, e.g. fix-auth-bypass]"
+model: sonnet
+created: 2026-03-23
+updated: 2026-09-16
+---
+
+# /cf-review-out
+
+Generate a review prompt for an external agent: **$ARGUMENTS**
+
+## Purpose
+
+Creates a complete, self-contained review document in `docs/reviews/` that any external AI agent or human reviewer can read and act on. The prompt includes the full diff, review criteria, output format instructions, and where to save results. Pair with [`/cf-review-in`](/docs/skills/cf-review-in/) to collect results.
+
+> **Built-in headless reviewers?** If you have the relevant CLIs installed, you don't need this manual round-trip — run [`/cf-review`](/docs/skills/cf-review/) with `--claude`, `--gemini`, `--cursor`, `--grok`, or `--codex` instead. Each flag invokes that agent automatically, runs the in-session review in parallel, and merges all surviving sources into one report with no copy-paste. For a manual round-trip **with the in-session findings embedded**, use [`/cf-review --out`](/docs/skills/cf-review/) — it runs the in-session review first, then writes a prompt file here for [`/cf-review-in`](/docs/skills/cf-review-in/). This `/cf-review-out` + `/cf-review-in` flow remains the path for any other external AI (ChatGPT, Copilot) or a human reviewer.
+
+## Workflow
+
+### Step 0: Custom Guide
+
+```!
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-review-out
+```
+
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
+
+### Step 1: Determine the label
+
+If `$ARGUMENTS` contains a label, use it directly. Otherwise:
+
+- Analyze the current changes (branch name, changed files, nature of changes)
+- **Auto-generate a label** in snake-case with a prefix: `fix-`, `improve-`, `feature-`, `refactor-`, `security-`
+- **No confirmation needed. Proceed immediately.**
+
+The label must be snake-case with a descriptive prefix.
+
+### Step 2: Check for existing review
+
+Check if `<docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md` already exists (new format) OR `<docsDir>/reviews/<label>-prompt.md` (legacy format). If either exists, warn the user and ask whether to overwrite or pick a different label.
+
+### Step 3: Gather diff and build prompt
+
+Read the docsDir from `.coding-friend/config.json` (default: `docs`).
+
+Construct the **full label** by prepending today's date: `YYYY-MM-DD-<label>` (e.g., `2026-05-03-fix-auth-bypass`). Use this full label everywhere from this point on — as the script argument, the output filename, and in the reviewer instructions.
+
+```bash
+mkdir -p <docsDir>/reviews && \
+  bash "<plugin-root>/skills/cf-review/scripts/gather-diff.sh" | \
+  bash "<plugin-root>/skills/cf-review-out/scripts/build-review-prompt.sh" \
+    "YYYY-MM-DD-<label>" "<docsDir>" \
+  > <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md
+```
+
+If the script exits with an error (empty diff), tell the user there are no changes to review and **STOP**.
+
+### Step 4: Confirm and guide the user
+
+Show the user:
+
+```
+╔══════════════════════════════════════════════════╗
+║  📝  Review Prompt Ready                         ║
+╚══════════════════════════════════════════════════╝
+```
+
+> **Label:** `YYYY-MM-DD-<label>`
+> **Prompt file:** `<docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md`
+> **Results expected at:** `<docsDir>/reviews/YYYY-MM-DD-<label>-result-<service>.md`
+
+If Step 3 printed `CF_PROMPT_SCOPE=subset` on stderr, the build stage hit its 5000-line cap: the prompt frontmatter carries `diff_truncated: true` with `diff_lines_included` of `diff_lines_total`. Add that to the panel — whoever reviews this file sees a **subset** of the change set, and `/cf-review-in` will report it as partial coverage, not as the whole target.
+
+Then show a **copy-paste ready prompt** that the user can paste directly into any external AI agent:
+
+> **Copy and paste this to your external agent:**
+>
+> ```
+> Read the file <docsDir>/reviews/YYYY-MM-DD-<label>-prompt.md in this project. It contains a complete code review request with the diff, review criteria, and output format. Follow the instructions exactly: review the code changes, then write your findings to <docsDir>/reviews/YYYY-MM-DD-<label>-result-<service>.md in the format specified in the prompt. Replace <service> with your name (e.g., gemini, chatgpt, codex, cursor, copilot).
+> ```
+
+Replace `<docsDir>` and `<label>` with the actual values. The prompt must be a single, complete instruction that works when pasted into any AI agent (Gemini, Codex, ChatGPT, Cursor, etc.) that has access to the project files.
+
+Finally, remind the user:
+
+> When all external agents finish, run `/cf-review-in YYYY-MM-DD-<label>` to collect all results.
+
+> Plugin root: the `PLUGIN_ROOT:` path in the session bootstrap context (HOST: devin), or the parent of the `skills/` folder that contains this SKILL.md. Replace `<plugin-root>` with it when running bundled scripts.

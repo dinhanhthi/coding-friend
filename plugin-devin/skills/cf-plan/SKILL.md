@@ -1,0 +1,132 @@
+---
+name: cf-plan
+description: >
+  Brainstorm and write an implementation plan before coding. TRIGGER — the user
+  wants to plan, build, create, or implement something: "let's build", "let's
+  create", "add feature", "implement", "set up", "design a solution", "architect",
+  "scaffold", "plan out", "what's the best way to build"; any multi-step or
+  multi-file work that needs sequencing. SKIP — a single obvious edit, a reported
+  bug (use cf-fix), deciding whether to build at all (use /cf-advise), or resuming
+  an existing plan (use /cf-plan-resume).
+created: 2026-02-17
+updated: 2026-09-27
+model: inherit
+---
+
+# /cf-plan
+
+Create an implementation plan for: **$ARGUMENTS**
+
+## Modes
+
+- `--fast` (`--quick`) — skip discovery + planner; plan stays in chat (Track progress), never writes a file unless autopilot (`--auto` / `planAuto`) or 2+ phases (then normal).
+- `--hard` — extra discovery, deeper exploration, rollback planning.
+- `--auto` — after approval, run all phases (review + fix + commit, no prompts). Combines with any mode. Also on when config `planAuto: true` (local overrides global) unless `--no-auto`.
+- `--no-auto` — force autopilot off for this run, even if `planAuto: true`. Incompatible with `--auto`.
+- `--commit-per-task` / `--no-commit-per-task` — autopilot only: each task commits as `phase N/M task i/K`; review runs once per phase over its commits (no `review.with*` external reviewers). Also on when config `planCommitPerTask: true` (local overrides global) unless `--no-commit-per-task`.
+- `--inline` (`--no-file`) — no plan file; chat only; Track progress. Incompatible with autopilot (`--auto` or `planAuto`).
+- `--gui` (`--human`; or config `disableGUIPlan: false`; `guiPlanFormat` html|md) — overview at Step 6 when a file is written. Fast: none unless `--gui`.
+- `--model <alias>` — pin cf-planner at Step 3 (`--model <alias>` or `--model=<alias>`).
+- `--add-tests` (`--tdd`) — TDD for implementation.
+
+Strip flags (and `--model`'s value) before using the rest as the task. `brief.md` is written in native normal/hard only.
+
+## Workflow
+
+### Step 0: Custom Guide
+
+```!
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-plan
+```
+
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
+
+### Step 0.5: Determine Mode
+
+**Config lookup** (used by 1a, 1c, 1e): merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins).
+
+0. **Resume** — bare `--resume` → print `> ℹ️ Resuming a plan is now \`/cf-plan-resume <plan>\` (not \`/cf-plan --resume\`).` and stop.
+1. **Explicit flag** — `--quick` → `--fast`; honor `--fast` or `--hard`.
+   1a. **Autopilot** — if `$ARGUMENTS` contains both `--auto` and `--no-auto` → print `> ⚠️ --auto cannot be combined with --no-auto. Pick one.` and stop. `--no-auto` → false; strip. `--auto` → true; strip. Else config lookup: true only when `planAuto` is explicitly `true`. When true, announce: `> 🤖 Autopilot enabled — phases will run end-to-end without confirmation prompts.` If it came from config (not `--auto`), use: `> 🤖 Autopilot enabled (planAuto: true) — phases will run end-to-end without confirmation prompts.` `/cf-plan-resume` does **not** read `planAuto` — only the saved plan's `auto: true` + `## AUTOPILOT` section.
+   1b. **Inline** — `--no-file` → `--inline`; if autopilot is on (from `--auto` or `planAuto`) refuse: `> ⚠️ --inline cannot be combined with autopilot (--auto or planAuto; autopilot relies on the on-disk plan file for state). Pick one.` Else announce: `> 📝 Inline mode — plan will be shown in chat only; no file will be written. Track progress.`
+   1c. **Overview** — `--human`/`-gui`/`-human` → `--gui`. `--gui` → humanDoc=true (overrides fast + config). Else if fast → false. Else config lookup: true only when `disableGUIPlan` is explicitly `false`. Format: `guiPlanFormat` (default `html`). None for `--inline`.
+   1d. **`--model` flag** <!-- cf-plan-model-flag -->
+   Accept `--model <alias>` and `--model=<alias>`; strip flag and value. Valid: `opus`, `sonnet`, `haiku`, `fable` (no IDs, no `inherit`). Invalid → print `> ⚠️ --model <value> không hợp lệ (chỉ opus/sonnet/haiku/fable). Bỏ qua, cf-planner chạy theo model đang active.` and continue. If `--fast`/`--quick` is present → print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` and continue; item 4 re-checks auto-detected fast. `--hard` still dispatches cf-planner. A valid alias is passed as the dispatch `model` at Step 3.
+   1e. **Commit per task** — if `$ARGUMENTS` contains both `--commit-per-task` and `--no-commit-per-task` → print `> ⚠️ --commit-per-task cannot be combined with --no-commit-per-task. Pick one.` and stop. `--no-commit-per-task` → false; strip. `--commit-per-task` → true; strip. Else config lookup: true only when `planCommitPerTask` is explicitly `true`. If true but autopilot is off → print `> ⚠️ --commit-per-task only applies under autopilot (only autopilot commits). Ignored.` and treat as false. If true with autopilot, announce: `> 🧩 Commit per task — each task commits as "phase N/M task i/K"; review runs once per phase over its commits.`
+2. **Auto-detect** — 2+ signals. Fast: existing pattern, single module, additive, "just/simple/quick". Hard: multi-module, breaking/schema, security, "refactor/migrate/rewrite", public API.
+3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless autopilot (always writes).
+4. **`--model` vs resolved fast mode** — after explicit `--fast`/`--quick` or auto-detect: if `--model` was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (skip if 1d already warned); do not pass the model at Step 3.
+
+### Step 0.7: Check Memory
+
+Recall memory with task keywords, or skip.
+
+### Step 1: Discovery & Brainstorm
+
+Keep Q&A for `brief.md`. Fast: skip to Step 2. If the user hasn't decided _whether_ to build, suggest `/cf-advise`. Ask the user each round; never batch. Read now: `modes/brainstorm.md` at Step 1 rounds. Skip if "just plan it".
+
+### Step 1.5: Generate Task ID
+
+**task-id** `YYYY-MM-DD-<short-descriptor>`; docsDir from `CF_CONFIG_FILE` (fallback `docs`); context `{docsDir}/context/{task-id}.json`.
+
+### Step 2: Explore Codebase
+
+> **Fast mode**: Inline Glob/Grep only — no agents.
+> **Normal**: Launch cf-explorer once.
+> **Hard**: Launch cf-explorer twice — standard, then blast-radius.
+
+Dispatch `cf-explorer`. Read now: `templates/plan-templates.md` for Step 2/3 prompts AND when writing the plan file.
+
+### Step 3: Brainstorm Approaches
+
+> **Fast mode**: Skip — pick the most straightforward approach from Step 2, proceed to Step 4.
+
+Dispatch `cf-planner`. <!-- cf-plan-model-spawn --> When a valid alias was parsed in 1d, pass it as the dispatch `model`; otherwise omit it so cf-planner inherits. Dispatch by agent name, not a forked context (`model` is ignored on a fork).
+
+> Plan: prompt in `templates/plan-templates.md` (Step 3).
+
+### Step 4: Validate with User
+
+> **Fast mode**: Skip — go to Step 5.
+
+Present: key findings, approaches with pros/cons, recommended approach and why, open questions. Wait for approval or corrections.
+
+### Step 5: Write the Plan
+
+Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): fewest phases that fit ≤ 15 distinct files (tests included) per phase; no phase under 3 tasks unless it is the whole plan or a hard gate — merge small neighbours. Before writing, count every phase — also in fast mode (no planner). Over the cap → split into more integer-numbered phases at a dependency boundary, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy the `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` contract from `modes/autopilot.md` into `README.md` only. Hard: **Rollback** per task + `## Migration & Rollback`.
+
+### Step 6: Save the Plan
+
+> **No-file modes** (`--inline`, or `--fast` without autopilot): skip the write; present the plan in chat; Track progress with one item per task; still create the context file. `--fast` with 2+ phases → announce `> ℹ️ Plan came out multi-phase — exceeded fast scope, switching to normal mode and writing it to disk.` and write the folder (no `brief.md`). `--fast` + autopilot always writes (no `brief.md`).
+
+**Layout & human overview:** `{docsDir}/plans/YYYY-MM-DD-<slug>/` — layout, progress icons, and overview rules in `templates/plan-templates.md` (Layout, Human overview doc).
+
+1. Track progress: one item per task.
+2. Set `slug:` in `README.md` to the folder name (= task-id).
+3. Native normal/hard only: write `brief.md` from the Brief skeleton.
+4. Human overview unless humanDoc=false (`templates/plan-templates.md`).
+5. Present path, phase/task counts, `README.md`, overview/`brief.md` if written. Suggest `/cf-plan-review <slug>`.
+6. Autopilot: `auto: true` in README (plus `commitPerTask: true` when commit-per-task resolved true); every `phase-N-*.md` gets the short AUTOPILOT pointer (not the full contract).
+
+### Step 7: Offer Implementation
+
+Ask **"Ready to start implementing?"** Yes + autopilot → `modes/autopilot.md` (checkpoints still apply). Else `modes/execute.md` (shared with `/cf-plan-resume`).
+
+## Templates
+
+Read `<plugin-root>/skills/cf-plan/templates/plan-templates.md` when writing the plan file (Small plan, Big plan, Brief, Layout, Human overview, Step 2/3 prompts; overview templates `overview-template.{html,md}` with `<!-- FILL: … -->` markers). Autopilot block: `modes/autopilot.md` (only when autopilot is on — `--auto` or `planAuto`).
+
+## Completion Protocol
+
+**DONE** — saved; show counts/risks/next. **DONE_WITH_CONCERNS** — saved with open questions. **BLOCKED** — missing info.
+
+## Rules
+
+- **Plan first** — never code before the plan is saved (or presented, if inline) and approved.
+- **Brainstorm first** — challenge assumptions; Ask the user (relaxed in fast).
+- **Delegate** — Dispatch `cf-explorer` / `cf-planner` / `cf-implementer`. After retry failure, load cf-tdd inline.
+- **Respect the mode** — do not escalate without consent; pause and ask if it seems wrong.
+- **Honor autopilot** — if `auto: true` in frontmatter, never prompt between phases.
+- **Concrete, no placeholders** — exact paths, functions, test commands. Forbidden: `TBD`, `TODO`, "implement later", "similar to step N".
+
+> Plugin root: the `PLUGIN_ROOT:` path in the session bootstrap context (HOST: devin), or the parent of the `skills/` folder that contains this SKILL.md. Replace `<plugin-root>` with it when running bundled scripts.

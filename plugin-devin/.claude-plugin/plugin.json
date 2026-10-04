@@ -1,0 +1,19 @@
+{
+  "name": "coding-friend",
+  "version": "0.45.3",
+  "description": "Lean toolkit for disciplined engineering workflows with Claude Code — for Devin CLI (beta)",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
+  "keywords": [
+    "skills",
+    "tdd",
+    "debugging",
+    "code-review",
+    "workflows",
+    "knowledge",
+    "agents"
+  ]
+}

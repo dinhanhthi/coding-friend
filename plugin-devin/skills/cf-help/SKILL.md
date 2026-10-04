@@ -1,0 +1,131 @@
+---
+name: cf-help
+description: >
+  Answer questions about Coding Friend itself — skills, agents, hooks, CLI, config,
+  memory, hosts, parameters. TRIGGER — "what skills are available?", "how does
+  coding friend work?", "list all skills", "how do I use cf-plan?", "what is
+  cf-tdd?", "is the CLI required?", or any question about a cf-* name, flag, hook,
+  or config key. SKIP — general coding questions unrelated to Coding Friend, and
+  requests to run a skill (invoke that skill instead).
+user-invocable: true
+model: haiku
+allowed-tools: [Read, Glob, Grep]
+created: 2026-02-17
+updated: 2026-09-27
+---
+
+# /cf-help — Coding Friend Help
+
+Catalog = what exists. Flags / config / hooks → lookup rule. Never guess.
+
+## Workflow
+
+### Step 0: Custom Guide
+
+```!
+bash "<plugin-root>/lib/load-custom-guide.sh" cf-help
+```
+
+If the block above printed anything, apply only the `## Before`, `## Rules`, and `## After` sections; if it shows the raw command instead of output, re-run that exact `load-custom-guide.sh` fence now.
+
+### Step 1: Understand the question
+
+Classify (more than one is fine): general overview · specific skill · specific agent · hooks / fewer prompts · CLI · setup / config · memory / MCP · workflow · troubleshooting.
+
+### Lookup rule (do not skip)
+
+Never invent a flag, config key, hook name, CLI command, or host difference.
+
+1. "What exists / which skill?" → catalog below.
+2. Anything more specific → Read `<plugin-root>/skills/cf-help/topics.md` (or `plugin/skills/cf-help/topics.md` in this repo) — topic → source map, flags, hooks, CLI, config, native prompt reduction.
+3. Then Read the source that index points to (`skills/<name>/SKILL.md`, `agents/<name>.md`, `hooks/<file>`).
+4. If still unclear: Glob / Grep under `<plugin-root>/skills/`, `agents/`, `hooks/`.
+
+### Step 2: Provide overview (if general question)
+
+Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Check skills first; TDD optional (`--add-tests` or `tdd: true`); `/cf-plan` autopilot optional (`--auto` or `planAuto: true`, `--no-auto` forces off); verify before claiming done.
+
+Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent agy` / `--agy`). Plugin works alone; `coding-friend-cli` is optional. Skills never call `cf`. Flags / config / native prompt-reduction: `topics.md`.
+
+### Slash Commands (user triggers with /)
+
+- `/cf-advise [decision]` — ⚡⚡ — Advisory interview. `--quick`, `--save`
+- `/cf-ask [question]` — ⚡⚡ — Codebase Q&A → docs/memory/
+- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--no-auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot also from config `planAuto: true` (local overrides global) unless `--no-auto`. Autopilot review-fix cap: `review.maxRounds` (default 5). `--commit-per-task` / `--no-commit-per-task` (or config `planCommitPerTask: true`, autopilot only): commit each task as `phase N/M task i/K <title>`, review once per phase over its commits, `[parallel]` phases run sequentially. Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
+- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors that plan's `auto: true` + `## AUTOPILOT` section. Does **not** read config `planAuto` / `planCommitPerTask`; honors frontmatter `commitPerTask: true` (`--commit-per-task` / `--no-commit-per-task` rewrite it).
+- `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped). `--fix` (`--inline`) applies 🚨/⚠️ immediately; otherwise offers to apply. Writes `review.md`.
+- `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
+- `/cf-review [target]` — ⚡⚡ — Dispatch review. Flags: `--with-codex`/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `/cf-review-out` prompt with Claude's findings embedded. Set `review.withCodex: true` in config to enable Codex by default (likewise `review.withClaude`, `review.withGrok`, `review.withCursor`, `review.withGemini`); `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning. `--fix` applies 🚨/⚠️ findings and re-reviews (capped by `review.maxRounds`); `--commit` implies `--fix` and commits once the final review is COMPLETE with no 🚨/⚠️ — only the reviewed uncommitted paths, after a secret scan; a hook failure stops it. Both are refused with a commit-range target or `--out`. The two timeouts are different mechanisms: `nativeTimeout` is a cooperative budget carried in the in-session reviewer's prompt and bounding the skill's wait — at the deadline the skill cancels the job only if the host offers a cancel, otherwise it marks it timed out and merges what arrived — while `agentTimeout` is really enforced on the external subprocess (TERM, 2s grace, then KILL). External reviewers are opt-in extras — they never count toward the native 1 / 1 / 2. Every report ends with `Review status: COMPLETE | PARTIAL | FAILED`: COMPLETE means the required coverage finished, **not** that there were no findings, and PARTIAL / FAILED blocks the autopilot commit. Scope, depth table, and the trade-off: `topics.md`.
+- `/cf-review-out [label]` — ⚡⚡ — Prompt + diff → `docs/reviews/`
+- `/cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
+- `/cf-commit [hint]` — ⚡ — Conventional commit
+- `/cf-design [mode]` — ⚡⚡ — Scan / design / modify UI
+- `/cf-showcase [--video|--poster]` — ⚡⚡ — Intro video (mp4) / poster (png/pdf/html) from the project's real content → docs/showcase/
+- `/cf-ship [hint]` — ⚡ — Verify, commit, push, PR (`--dry-run`)
+- `/cf-fix [bug]` — ⚡⚡ — Quick bug-fix
+- `/cf-optimize [target]` — ⚡⚡ — Baseline → optimize → measure
+- `/cf-scan [description]` — ⚡⚡⚡ — Bootstrap memory
+- `/cf-remember [topic]` — ⚡⚡ — Project knowledge → docs/memory/. Also auto-invoked.
+- `/cf-learn [topic]` — ⚡⚡ — Educational notes. Also auto-invoked.
+- `/cf-teach [topic]` — ⚡⚡ — Story of what happened
+- `/cf-research [topic]` — ⚡⚡ — Web research → docs/research/
+- `/cf-session [label]` — ⚡⚡ — Cross-machine session save
+- `/cf-warm [user]` — ⚡⚡ — Git history catch-up
+- `/cf-checkpoint [additional-prompt]` — ⚡⚡ — Checkpoint → docs/context/checkpoints/
+- `/cf-checkpoint-from <slug> [message]` — ⚡⚡ — Restore checkpoint, then act. `--recap`
+- `/cf-help [question]` — ⚡⚡⚡ — This skill. Also auto-invoked.
+
+### Auto-Invoked Skills (activate automatically when relevant)
+
+- **cf-tdd** — ⚡⚡ — Code-writing gate. Default direct; TDD with `--add-tests` or `tdd: true`. `--auto` = review + fix + commit (`review.maxRounds`, default 5).
+- **cf-sys-debug** — ⚡⚡ — 4-phase debug
+- **cf-verification** — ⚡ — Evidence gate before claiming done
+- **cf-learn** / **cf-remember** / **cf-help** — also auto-invoked (see above)
+
+### Agents (run in forked sessions — separate context window)
+
+- **cf-reviewer** — ⚡ — Reviews the diff itself, 5 layers. `/cf-review` dispatches it directly: 0 in TRIVIAL, 1 in QUICK, 1 in STANDARD, 2 in DEEP — the second is **cf-reviewer-security** (sonnet). Flat graph — no sub-dispatch, no merge agent.
+- **cf-reviewer-plan** (sonnet), **cf-reviewer-quality** (haiku), **cf-reviewer-tests** (haiku), **cf-reviewer-rules** (haiku), **cf-reviewer-reducer** (haiku) — ⚡ — retained, directly callable; off `/cf-review`'s default path
+- **cf-implementer** — ⚡ — Writes code; TDD with `--add-tests`. `[CF-RESULT: success|failure]`. No autopilot.
+- **cf-explorer** — ⚡ — Repo map + context files
+- **cf-planner** — ⚡ — Approaches + phased tasks
+- **cf-writer** — ⚡ — Straightforward markdown
+- **cf-writer-deep** — ⚡ — Nuanced technical docs
+
+### Hooks (automatic — not slash commands)
+
+`hooks/hooks.json` (+ `*.agy.*`; Codex transformed). Keys + native modes: `topics.md`.
+
+**session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Claude `autoApproveLLM` default false → unknown defers to native) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
+
+### CLI (`coding-friend-cli`, binary `cf`) — optional
+
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `clean` `session` `guide` `dev`. No skill requires the CLI. Full flags: `topics.md`.
+
+Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/docs/reference/context-usage/.
+
+### Step 3: Read specific files (if detailed question)
+
+Follow the lookup rule. Start at `skills/cf-help/topics.md`, then `skills/<name>/SKILL.md`, `agents/<name>.md`, `hooks/`. Config keys and custom guides: `topics.md`. Repo-only schema: `docs/config-schema.md`.
+
+### Step 4: Common Workflows (if workflow question)
+
+Present the workflows in `topics.md`. Distinction: `/cf-remember` = project knowledge for AI; `/cf-learn` = notes for the human.
+
+### Step 5: Troubleshooting (if troubleshooting question)
+
+- **Skill not triggering?** Invoke `/cf-<skill-name>` manually.
+- **Config / custom guides?** `topics.md`.
+- **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`. CF hook: `autoApprove`. Details: `topics.md`.
+- **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
+- **More?** [Troubleshooting](https://cf.dinhanhthi.com/docs/reference/troubleshooting/).
+
+### Step 6: Answer concisely
+
+Answer from sources you read. Link files for deeper dives. If you skipped the lookup rule on a flag / hook / CLI / config question, go back.
+
+## CLI Requirements (quick reference)
+
+Plugin works without CLI. **NONE** / **OPTIONAL** (MCP or grep) / **REQUIRED** (none today). Matrix: [docs/cli-requirements.md](../../../docs/cli-requirements.md).
+
+> Plugin root: the `PLUGIN_ROOT:` path in the session bootstrap context (HOST: devin), or the parent of the `skills/` folder that contains this SKILL.md. Replace `<plugin-root>` with it when running bundled scripts.
