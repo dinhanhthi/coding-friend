@@ -18,11 +18,12 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const PLUGIN_SOURCE_DIR = path.join(REPO_ROOT, "plugin");
 const CODEX_PLUGIN_DIR = path.join(REPO_ROOT, "plugin-codex");
 
-// Claude-only and AGY-only files (relative to plugin/) that would ship as
+// Claude-only and other-host files (relative to plugin/) that would ship as
 // dead or self-contradictory weight in the Codex artifact: the generated
 // cf-review forbids the nested-Codex flow, the generated cf-session routes
 // to native session controls, task/memory hooks have Codex replacements,
-// and `.agy.*` adapters plus `lib/agy-hook-io.sh` belong to Antigravity.
+// `.agy.*` adapters plus `lib/agy-hook-io.sh` belong to Antigravity, and
+// `*.devin.*` hooks plus `lib/devin-tool-map.cjs` belong to Devin.
 const CODEX_EXCLUDED_SOURCE_PATHS = new Set([
   "hooks/memory-capture.sh",
   "hooks/task-tracker.sh",
@@ -33,6 +34,11 @@ const CODEX_EXCLUDED_SOURCE_PATHS = new Set([
   "hooks/rules-reminder.agy.sh",
   "hooks/session-log.agy.sh",
   "lib/agy-hook-io.sh",
+  "hooks/auto-approve.devin.cjs",
+  "hooks/block-adapter.devin.sh",
+  "hooks/memory-capture.devin.sh",
+  "hooks/rules-reminder.devin.sh",
+  "lib/devin-tool-map.cjs",
   "skills/cf-review/scripts/normalize-codex-review.sh",
   "skills/cf-review/scripts/run-codex-review.sh",
   "skills/cf-review/references/external-reviewers.md",
