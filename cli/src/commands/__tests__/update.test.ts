@@ -38,9 +38,13 @@ vi.mock("../../lib/codex-config.js", () => ({
   isCodexMarketplaceLocal: vi.fn(),
 }));
 
-vi.mock("../../lib/host.js", () => ({
-  detectHostsAvailable: vi.fn(() => []),
-}));
+vi.mock("../../lib/host.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../lib/host.js")>();
+  return {
+    ...actual,
+    detectHostsAvailable: vi.fn(() => []),
+  };
+});
 
 vi.mock("../../lib/plugin-state.js", () => ({
   isPluginInstalled: vi.fn(() => false),
@@ -62,6 +66,12 @@ vi.mock("../../lib/agy-config.js", () => ({
   readAgyPluginVersion: vi.fn(() => "0.41.0"),
   readAgyMcpConfig: vi.fn(() => null),
   writeAgyMcpEntry: vi.fn(),
+}));
+
+vi.mock("../../lib/devin-config.js", () => ({
+  isDevinPluginInstalled: vi.fn(() => false),
+  reconcileDevinPlugin: vi.fn(() => Promise.resolve("updated")),
+  readDevinPluginVersion: vi.fn(() => "0.45.3"),
 }));
 
 vi.mock("../../lib/memory-mcp-register.js", () => ({
@@ -94,6 +104,11 @@ import {
   isOmpAgentInstalled,
   writeOmpExtensionEntry,
 } from "../../lib/omp-config.js";
+import {
+  isDevinPluginInstalled,
+  readDevinPluginVersion,
+  reconcileDevinPlugin,
+} from "../../lib/devin-config.js";
 import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
 import { readJson } from "../../lib/json.js";
 import {
@@ -131,6 +146,9 @@ const mockReadJson = vi.mocked(readJson);
 const mockIsMemoryMcpRegistered = vi.mocked(isMemoryMcpRegistered);
 const mockRegisterMemoryMcp = vi.mocked(registerMemoryMcp);
 const mockRemoveMemoryMcpEntry = vi.mocked(removeMemoryMcpEntry);
+const mockIsDevinPluginInstalled = vi.mocked(isDevinPluginInstalled);
+const mockReconcileDevinPlugin = vi.mocked(reconcileDevinPlugin);
+const mockReadDevinPluginVersion = vi.mocked(readDevinPluginVersion);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -152,6 +170,9 @@ beforeEach(() => {
   mockDeployAgyPlugin.mockReturnValue({ files: 10 });
   mockReadAgyPluginVersion.mockReturnValue("0.41.0");
   mockReadAgyMcpConfig.mockReturnValue(null);
+  mockIsDevinPluginInstalled.mockReturnValue(false);
+  mockReconcileDevinPlugin.mockResolvedValue("updated");
+  mockReadDevinPluginVersion.mockReturnValue("0.45.3");
 
   // Default: return a package.json with version
   mockReadFileSync.mockReturnValue(JSON.stringify({ version: "1.0.0" }));
@@ -832,6 +853,163 @@ describe("updateCommand — agy host", () => {
       "claude",
       expect.anything(),
     );
+  });
+});
+
+describe("updateCommand — devin host", () => {
+  function capturedOutput(): string {
+    return vi
+      .mocked(console.log)
+      .mock.calls.map((call) => call.join(" "))
+      .join("\n");
+  }
+
+  it("runs updateDevinCommand (not Claude) for --agent devin", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await updateCommand({ agent: "devin" });
+
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+    expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
+    expect(mockGetInstalledVersion).not.toHaveBeenCalled();
+    expect(mockDeployOmpAgents).not.toHaveBeenCalled();
+    expect(mockDeployAgyPlugin).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalledWith(
+      "claude",
+      expect.anything(),
+    );
+  });
+
+  it("runs a single-host Devin update for --devin (no multi-host loop)", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await updateCommand({ devin: true });
+
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+    expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
+    // single-host path prints its own banner, no section headers
+    expect(capturedOutput()).not.toContain("── Devin ──");
+  });
+
+  it("rejects --devin --agent claude as a host conflict", async () => {
+    const actual = await vi.importActual<
+      typeof import("../../lib/prompt-utils.js")
+    >("../../lib/prompt-utils.js");
+    mockResolveHostFlags.mockImplementation(actual.resolveHostFlags);
+    // Real resolveHostFlags logs the error then exits; make exit throw so the
+    // command can't continue past it (production exit kills the process).
+    const mockExit = vi.spyOn(process, "exit").mockImplementation((() => {
+      throw new Error("process.exit");
+    }) as never);
+    const oldArgv = process.argv;
+    process.argv = [...oldArgv, "--agent", "claude"];
+    try {
+      await expect(
+        updateCommand({ devin: true, agent: "claude" }),
+      ).rejects.toThrow("process.exit");
+    } finally {
+      process.argv = oldArgv;
+    }
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(capturedOutput()).toContain(
+      "Use either --agent claude or --devin, not both.",
+    );
+    expect(mockReconcileDevinPlugin).not.toHaveBeenCalled();
+  });
+
+  it("includes Devin in bare cf update only when the plugin is installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["devin"]);
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    await updateCommand({});
+
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+    expect(mockGetInstalledVersion).not.toHaveBeenCalled();
+  });
+
+  it("skips Devin in bare cf update when the plugin is not installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["devin"]);
+    mockIsDevinPluginInstalled.mockReturnValue(false);
+
+    await updateCommand({});
+
+    expect(mockReconcileDevinPlugin).not.toHaveBeenCalled();
+    // falls through to the Claude update path
+    expect(mockGetInstalledVersion).toHaveBeenCalled();
+  });
+
+  it("prints a Devin section header when several hosts are installed", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["claude", "devin"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    await updateCommand({});
+
+    expect(capturedOutput()).toContain("── Devin ──");
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+    expect(mockGetInstalledVersion).toHaveBeenCalled();
+  });
+
+  it("updates only the CLI for --agent devin --cli", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "npm" && args?.[0] === "view") return "2.0.0";
+      if (cmd === "npm" && args?.[0] === "prefix") return "/usr/local";
+      return null;
+    });
+    mockLstatSync.mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+
+    await updateCommand({ agent: "devin", cli: true });
+
+    expect(mockReconcileDevinPlugin).not.toHaveBeenCalled();
+    expect(mockRun).toHaveBeenCalledWith("npm", [
+      "install",
+      "-g",
+      "coding-friend-cli@latest",
+    ]);
+  });
+
+  it("does not re-run the CLI self-update under mode.skipCli (multi-host second host)", async () => {
+    mockDetectHostsAvailable.mockReturnValue(["claude", "devin"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "npm" && args?.[0] === "view") return "2.0.0";
+      if (cmd === "npm" && args?.[0] === "prefix") return "/usr/local";
+      return null;
+    });
+    mockLstatSync.mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+
+    await updateCommand({});
+
+    // CLI self-update runs once (Claude section) — Devin's section has skipCli
+    expect(
+      mockRun.mock.calls.filter(
+        ([cmd, args]) =>
+          cmd === "npm" && (args as string[])[0] === "install",
+      ),
+    ).toHaveLength(1);
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+  });
+
+  it("sets process.exitCode = 1 without throwing when reconcile fails", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockReconcileDevinPlugin.mockRejectedValue(
+      new Error("Devin CLI is not signed in. Run `devin auth login` first."),
+    );
+    const prevExitCode = process.exitCode;
+    try {
+      await updateCommand({ agent: "devin" });
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = prevExitCode;
+    }
+    expect(capturedOutput()).toContain("devin auth login");
   });
 });
 

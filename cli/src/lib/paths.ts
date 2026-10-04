@@ -316,3 +316,28 @@ export function agyConfigJsonPath(): string {
 export function agySourceCloneDir(): string {
   return join(homedir(), ".coding-friend", "agy-src");
 }
+
+/**
+ * Resolve Devin's config directory (~/.config/devin).
+ * Devin documents this as an XDG path, so XDG_CONFIG_HOME is honored when set.
+ */
+export function devinConfigDir(): string {
+  const env = process.env.XDG_CONFIG_HOME?.trim();
+  if (env) return join(env, "devin");
+  return join(homedir(), ".config", "devin");
+}
+
+/** Path to Devin's user-scope MCP config (~/.config/devin/mcp_config.json) */
+export function devinMcpConfigPath(): string {
+  return join(devinConfigDir(), "mcp_config.json");
+}
+
+/**
+ * Path to Devin's plugin lock file (~/.local/share/devin/cli/plugins/lock.json).
+ * ~/.local/share is the XDG_DATA_HOME default — honored when set.
+ */
+export function devinPluginsLockPath(): string {
+  const env = process.env.XDG_DATA_HOME?.trim();
+  const dataHome = env ? env : join(homedir(), ".local", "share");
+  return join(dataHome, "devin", "cli", "plugins", "lock.json");
+}

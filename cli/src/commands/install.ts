@@ -3,6 +3,7 @@ import { run, commandExists } from "../lib/exec.js";
 import {
   checkAgyVersion,
   checkCodexVersion,
+  checkDevinVersion,
   checkOmpVersion,
 } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
@@ -13,6 +14,7 @@ import {
   setAgyPluginEnabled,
   validateAgyPlugin,
 } from "../lib/agy-config.js";
+import { reconcileDevinPlugin } from "../lib/devin-config.js";
 import {
   deployCodexAgents,
   findCodexAgentSourceDir,
@@ -46,6 +48,9 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     return;
   } else if (host === "agy") {
     await installAgyCommand();
+    return;
+  } else if (host === "devin") {
+    await installDevinCommand();
     return;
   }
 
@@ -328,5 +333,53 @@ async function installAgyCommand(): Promise<void> {
   );
   log.dim(
     "Note: autoApprove in config enables Claude Code (LLM classifier), Antigravity, and Codex (deterministic rules).",
+  );
+}
+
+const DEVIN_INSTALL_URL = "https://devin.ai/";
+
+async function installDevinCommand(): Promise<void> {
+  printBanner("✨ Coding Friend Devin Install (beta) ✨");
+  console.log();
+
+  if (!commandExists("devin")) {
+    log.error(`Devin CLI not found. Install it first: ${DEVIN_INSTALL_URL}`);
+    process.exit(1);
+    return;
+  }
+
+  const version = checkDevinVersion();
+  if (!version.ok) {
+    log.error(
+      `Devin CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires Devin CLI >= ${version.min}. Upgrade Devin, then rerun: cf install --devin`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  try {
+    // reconcileDevinPlugin checks `devin auth status` and that the target is
+    // resolvable BEFORE touching any existing install.
+    const action = await reconcileDevinPlugin({ allowReplace: true });
+    if (action === "unchanged") {
+      log.success("Devin plugin already installed (live --local link).");
+    } else {
+      log.success("Devin plugin installed.");
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    log.error(detail);
+    process.exit(1);
+    return;
+  }
+
+  // Phase 5 wires the Devin MCP step here: registerMemoryMcp("devin") +
+  // learn MCP into ~/.config/devin/mcp_config.json (plugin-devin/.mcp.json
+  // already ships coding-friend-memory).
+
+  console.log();
+  log.success("Installed for Devin (beta).");
+  log.dim(
+    "Start a new Devin session to pick up the plugin, then try /coding-friend:cf-plan.",
   );
 }

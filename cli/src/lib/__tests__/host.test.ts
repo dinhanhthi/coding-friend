@@ -8,12 +8,14 @@ vi.mock("../exec.js", () => ({
 import {
   checkAgyVersion,
   checkCodexVersion,
+  checkDevinVersion,
   checkOmpVersion,
   compareVersions,
   detectHostsAvailable,
   extractVersion,
   getAgyMinVersion,
   getCodexMinVersion,
+  getDevinMinVersion,
   getOmpMinVersion,
   resolveHost,
 } from "../host.js";
@@ -38,7 +40,13 @@ describe("detectHostsAvailable", () => {
   it("includes codex when installed", () => {
     mockCommandExists.mockReturnValue(true);
 
-    expect(detectHostsAvailable()).toEqual(["claude", "codex", "omp", "agy"]);
+    expect(detectHostsAvailable()).toEqual([
+      "claude",
+      "codex",
+      "omp",
+      "agy",
+      "devin",
+    ]);
   });
 
   it("returns omp when only omp is installed", () => {
@@ -76,6 +84,21 @@ describe("detectHostsAvailable", () => {
     );
 
     expect(detectHostsAvailable()).toEqual(["claude", "agy"]);
+  });
+
+  it("includes devin when the devin binary is on PATH", () => {
+    mockCommandExists.mockImplementation((cmd) => cmd === "devin");
+
+    expect(detectHostsAvailable()).toEqual(["devin"]);
+    expect(mockCommandExists).toHaveBeenCalledWith("devin");
+  });
+
+  it("returns agy and devin in canonical order", () => {
+    mockCommandExists.mockImplementation(
+      (cmd) => cmd === "agy" || cmd === "devin",
+    );
+
+    expect(detectHostsAvailable()).toEqual(["agy", "devin"]);
   });
 });
 
@@ -122,7 +145,7 @@ describe("resolveHost", () => {
 
   it("rejects unknown agents listing all valid hosts", () => {
     expect(() => resolveHost({ agent: "unknown" })).toThrow(
-      'Unsupported agent "unknown". Use "claude", "codex", "omp", or "agy".',
+      'Unsupported agent "unknown". Use "claude", "codex", "omp", "agy", or "devin".',
     );
   });
 
@@ -189,6 +212,78 @@ describe("resolveHost", () => {
   it("rejects conflicting --agent agy and --omp", () => {
     expect(() => resolveHost({ agent: "agy", omp: true })).toThrow(
       "Use either --agent agy or --omp, not both.",
+    );
+  });
+
+  it("resolves --agent devin", () => {
+    expect(resolveHost({ agent: "devin" })).toBe("devin");
+  });
+
+  it("resolves --devin alias", () => {
+    expect(resolveHost({ devin: true })).toBe("devin");
+  });
+
+  it("allows --agent devin with --devin alias", () => {
+    expect(resolveHost({ agent: "devin", devin: true })).toBe("devin");
+  });
+
+  it("rejects conflicting --devin and --codex aliases", () => {
+    expect(() => resolveHost({ devin: true, codex: true })).toThrow(
+      "Use either --devin or --codex, not both.",
+    );
+  });
+
+  it("rejects conflicting --devin and --omp aliases", () => {
+    expect(() => resolveHost({ devin: true, omp: true })).toThrow(
+      "Use either --devin or --omp, not both.",
+    );
+  });
+
+  it("rejects conflicting --devin and --agy aliases", () => {
+    expect(() => resolveHost({ devin: true, agy: true })).toThrow(
+      "Use either --devin or --agy, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent claude and --devin", () => {
+    expect(() => resolveHost({ agent: "claude", devin: true })).toThrow(
+      "Use either --agent claude or --devin, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent codex and --devin", () => {
+    expect(() => resolveHost({ agent: "codex", devin: true })).toThrow(
+      "Use either --agent codex or --devin, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent omp and --devin", () => {
+    expect(() => resolveHost({ agent: "omp", devin: true })).toThrow(
+      "Use either --agent omp or --devin, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent agy and --devin", () => {
+    expect(() => resolveHost({ agent: "agy", devin: true })).toThrow(
+      "Use either --agent agy or --devin, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent devin and --codex", () => {
+    expect(() => resolveHost({ agent: "devin", codex: true })).toThrow(
+      "Use either --agent devin or --codex, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent devin and --omp", () => {
+    expect(() => resolveHost({ agent: "devin", omp: true })).toThrow(
+      "Use either --agent devin or --omp, not both.",
+    );
+  });
+
+  it("rejects conflicting --agent devin and --agy", () => {
+    expect(() => resolveHost({ agent: "devin", agy: true })).toThrow(
+      "Use either --agent devin or --agy, not both.",
     );
   });
 });
@@ -315,6 +410,51 @@ describe("version helpers", () => {
       ok: false,
       actual: undefined,
       min: "1.1.0",
+    });
+  });
+
+  it("returns the locked devin minimum", () => {
+    expect(getDevinMinVersion()).toBe("3000.11.3");
+  });
+
+  it("passes when devin is at the minimum", () => {
+    mockRun.mockReturnValue("devin 3000.11.3 (9c803229faa4)");
+
+    expect(checkDevinVersion()).toEqual({
+      ok: true,
+      actual: "3000.11.3",
+      min: "3000.11.3",
+    });
+    expect(mockRun).toHaveBeenCalledWith("devin", ["--version"]);
+  });
+
+  it("parses the sha suffix out of devin --version output", () => {
+    mockRun.mockReturnValue("devin 3000.12.0 (deadbee)");
+
+    expect(checkDevinVersion()).toEqual({
+      ok: true,
+      actual: "3000.12.0",
+      min: "3000.11.3",
+    });
+  });
+
+  it("fails when devin is too old", () => {
+    mockRun.mockReturnValue("devin 3000.5.20 (abc123)");
+
+    expect(checkDevinVersion()).toEqual({
+      ok: false,
+      actual: "3000.5.20",
+      min: "3000.11.3",
+    });
+  });
+
+  it("fails when devin is missing", () => {
+    mockRun.mockReturnValue(null);
+
+    expect(checkDevinVersion()).toEqual({
+      ok: false,
+      actual: undefined,
+      min: "3000.11.3",
     });
   });
 });
