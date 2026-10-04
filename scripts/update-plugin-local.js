@@ -134,7 +134,7 @@ try {
 
 // 2d. Refresh the Devin install — a dev --local link is already live (new
 //     sessions pick up edits); prod runs `devin plugins update`.
-//     Skips gracefully if devin is not installed/signed in or `cf` is not on PATH.
+//     A failure (cf prints its own error above) is reported but does not abort.
 let devinSynced = false;
 console.log("\n  → cf update --agent devin --plugin");
 try {
@@ -142,7 +142,7 @@ try {
   devinSynced = true;
 } catch {
   console.log(
-    "  ⚠ devin update skipped — is devin installed/signed in and is `cf` on PATH?",
+    "  ⚠ devin update failed — see the error above (if there is none: is `cf` on PATH?)",
   );
 }
 

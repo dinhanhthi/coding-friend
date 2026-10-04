@@ -870,6 +870,10 @@ describe("updateCommand — devin host", () => {
     await updateCommand({ agent: "devin" });
 
     expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
+    // dev <-> prod switching happens via update: our own sources may be replaced
+    expect(mockReconcileDevinPlugin).toHaveBeenCalledWith({
+      allowReplaceOwn: true,
+    });
     expect(mockDetectHostsAvailable).not.toHaveBeenCalled();
     expect(mockGetInstalledVersion).not.toHaveBeenCalled();
     expect(mockDeployOmpAgents).not.toHaveBeenCalled();

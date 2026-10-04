@@ -19,6 +19,21 @@ const isolated = vi.hoisted(() => ({
   home: "",
 }));
 
+// Lets a test observe a file right after writeFileSync creates it (ESM
+// namespaces cannot be spied on directly).
+const fsHooks = vi.hoisted(() => ({
+  afterWrite: null as null | ((path: string) => void),
+}));
+
+vi.mock("fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("fs")>();
+  const writeFileSync = ((...args: Parameters<typeof actual.writeFileSync>) => {
+    actual.writeFileSync(...args);
+    fsHooks.afterWrite?.(String(args[0]));
+  }) as typeof actual.writeFileSync;
+  return { ...actual, default: { ...actual, writeFileSync }, writeFileSync };
+});
+
 vi.mock("../paths.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../paths.js")>();
   return {
@@ -435,6 +450,101 @@ describe("reconcileDevinPlugin", () => {
     writeLock(lockJson([githubEntry("plugin")]));
 
     await expect(reconcileDevinPlugin()).rejects.toThrow(/cf install --devin/);
+    expect(devinCalls("plugins")).toEqual([]);
+  });
+
+  it("allowReplaceOwn: switches our local plugin-devin link to github (dev off)", async () => {
+    const repo = makeDevRepo();
+    writeLock(lockJson([localEntry(join(repo, "plugin-devin"))]));
+
+    const action = await reconcileDevinPlugin({ allowReplaceOwn: true });
+
+    expect(action).toBe("replaced");
+    expect(mockRun).toHaveBeenCalledWith("devin", [
+      "plugins",
+      "install",
+      GITHUB_SPEC,
+      "-y",
+    ]);
+  });
+
+  it("allowReplaceOwn: switches our github #plugin-devin install to --local (dev on)", async () => {
+    const repo = makeDevRepo();
+    seedDevState(repo);
+    writeLock(lockJson([githubEntry("plugin-devin")]));
+
+    const action = await reconcileDevinPlugin({ allowReplaceOwn: true });
+
+    expect(action).toBe("replaced");
+    expect(mockRun).toHaveBeenCalledWith("devin", [
+      "plugins",
+      "install",
+      "--local",
+      join(repo, "plugin-devin"),
+      "-y",
+    ]);
+  });
+
+  it("allowReplaceOwn: replaces a plugin-devin link from another checkout", async () => {
+    const repo = makeDevRepo();
+    seedDevState(repo);
+    const other = makeTemp("cf-devin-other-");
+    writeLock(lockJson([localEntry(join(other, "plugin-devin"))]));
+
+    const action = await reconcileDevinPlugin({ allowReplaceOwn: true });
+
+    expect(action).toBe("replaced");
+  });
+
+  it("allowReplaceOwn: still refuses a foreign #plugin install", async () => {
+    writeLock(lockJson([githubEntry("plugin")]));
+
+    await expect(
+      reconcileDevinPlugin({ allowReplaceOwn: true }),
+    ).rejects.toThrow(/cf install --devin/);
+    expect(devinCalls("plugins")).toEqual([]);
+  });
+
+  it("allowReplaceOwn: still refuses a plugin-devin install from a lookalike repo", async () => {
+    const foreign = githubEntry("plugin-devin");
+    foreign.spec.url = "https://github.com/evil-dinhanhthi/coding-friend";
+    writeLock(lockJson([foreign]));
+
+    await expect(
+      reconcileDevinPlugin({ allowReplaceOwn: true }),
+    ).rejects.toThrow(/cf install --devin/);
+    expect(devinCalls("plugins")).toEqual([]);
+  });
+
+  it("allowReplaceOwn: still refuses a local install outside a plugin-devin dir", async () => {
+    const other = makeTemp("cf-devin-other-");
+    writeLock(lockJson([localEntry(join(other, "my-plugin"))]));
+
+    await expect(
+      reconcileDevinPlugin({ allowReplaceOwn: true }),
+    ).rejects.toThrow(/cf install --devin/);
+    expect(devinCalls("plugins")).toEqual([]);
+  });
+
+  it("allowReplaceOwn: still refuses an unknown lock entry", async () => {
+    writeLock("{ not json");
+
+    await expect(
+      reconcileDevinPlugin({ allowReplaceOwn: true }),
+    ).rejects.toThrow(/cf install --devin/);
+    expect(devinCalls("plugins")).toEqual([]);
+  });
+
+  it("allowReplaceOwn: checks auth before replacing our own install", async () => {
+    writeLock(lockJson([githubEntry("plugin-devin")]));
+    seedDevState(makeDevRepo());
+    mockRun.mockImplementation((cmd, args = []) =>
+      cmd === "devin" && args?.[0] === "auth" ? null : "ok",
+    );
+
+    await expect(
+      reconcileDevinPlugin({ allowReplaceOwn: true }),
+    ).rejects.toThrow(/devin auth login/);
     expect(devinCalls("plugins")).toEqual([]);
   });
 
@@ -872,14 +982,51 @@ describe("writeDevinMcpEntry", () => {
     });
   });
 
-  it("replaces a corrupt file instead of throwing", () => {
-    writeMcpConfig("{ not json");
+  it("refuses to overwrite a file with a JSON syntax error (file unchanged)", () => {
+    const broken = '{ "mcpServers": { "keep": { "env": { "API_KEY": "s" } } }, }';
+    writeMcpConfig(broken);
+
+    expect(() => writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER)).toThrow(
+      /is not valid JSON/,
+    );
+    expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(broken);
+  });
+
+  it("treats a whitespace-only file as absent", () => {
+    writeMcpConfig("  \n");
 
     writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
 
     expect(readMcpConfigFile()).toEqual({
       mcpServers: { "coding-friend-learn": LEARN_SERVER },
     });
+  });
+
+  it("creates the temp file as 0600 from the start (no world-readable window)", () => {
+    const tmpModes: number[] = [];
+    fsHooks.afterWrite = (path) => {
+      if (path.endsWith(".tmp")) tmpModes.push(statSync(path).mode & 0o777);
+    };
+    try {
+      writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+    } finally {
+      fsHooks.afterWrite = null;
+    }
+
+    expect(tmpModes).toEqual([0o600]);
+  });
+
+  it("succeeds when a stale .tmp file is left over from a crash", () => {
+    mkdirSync(dirname(devinMcpConfigPath()), { recursive: true });
+    writeFileSync(`${devinMcpConfigPath()}.tmp`, "stale", { mode: 0o644 });
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(readMcpConfigFile()).toEqual({
+      mcpServers: { "coding-friend-learn": LEARN_SERVER },
+    });
+    expect(statSync(devinMcpConfigPath()).mode & 0o777).toBe(0o600);
+    expect(existsSync(`${devinMcpConfigPath()}.tmp`)).toBe(false);
   });
 
   it("writes atomically — no .tmp file is left behind", () => {
@@ -956,6 +1103,16 @@ describe("removeDevinMcpEntry", () => {
         "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
       },
     });
+  });
+
+  it("refuses to rewrite a file with a JSON syntax error (file unchanged)", () => {
+    const broken = '{ "mcpServers": { "coding-friend-learn": {} }, }';
+    writeMcpConfig(broken);
+
+    expect(() => removeDevinMcpEntry("coding-friend-learn")).toThrow(
+      /is not valid JSON/,
+    );
+    expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(broken);
   });
 
   it("no-ops when the file is missing", () => {

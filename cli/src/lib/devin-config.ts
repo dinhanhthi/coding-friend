@@ -12,7 +12,7 @@ import {
   statSync,
   writeFileSync,
 } from "fs";
-import { dirname, join, resolve } from "path";
+import { basename, dirname, join, resolve } from "path";
 
 import { run } from "./exec.js";
 import { readJson } from "./json.js";
@@ -57,6 +57,12 @@ export type DevinReconcileAction =
 export interface ReconcileDevinOptions {
   /** Allow removing a differently-sourced install before installing. */
   allowReplace?: boolean;
+  /**
+   * Allow the replace only when the installed entry is one of OUR sources
+   * (see isOwnDevinSource) — used by `cf update` so dev <-> prod switching
+   * works, while a foreign or unknown install still needs `cf install --devin`.
+   */
+  allowReplaceOwn?: boolean;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -241,12 +247,29 @@ function sameInstall(
       samePath(state.path, desired.path)
     );
   }
-  return (
-    state.kind === "github" &&
-    state.subdir === PLUGIN_SUBDIR &&
-    typeof state.path === "string" &&
-    sameGithubRepo(state.path)
-  );
+  return state.kind === "github" && isOwnDevinSource(state);
+}
+
+/**
+ * True when the installed entry is a coding-friend Devin source we produce:
+ * a local link to a `plugin-devin` dir (any checkout), or the GitHub
+ * dinhanhthi/coding-friend repo with subdir `plugin-devin`.
+ */
+export function isOwnDevinSource(state: DevinInstallState): boolean {
+  if (state.kind === "local") {
+    return (
+      typeof state.path === "string" &&
+      basename(resolve(state.path)) === PLUGIN_SUBDIR
+    );
+  }
+  if (state.kind === "github") {
+    return (
+      state.subdir === PLUGIN_SUBDIR &&
+      typeof state.path === "string" &&
+      sameGithubRepo(state.path)
+    );
+  }
+  return false;
 }
 
 function describeState(state: DevinInstallState): string {
@@ -332,7 +355,9 @@ export async function reconcileDevinPlugin(
   }
 
   const replaceNeeded = state.kind !== "none";
-  if (replaceNeeded && !opts.allowReplace) {
+  const replaceAllowed =
+    !!opts.allowReplace || (!!opts.allowReplaceOwn && isOwnDevinSource(state));
+  if (replaceNeeded && !replaceAllowed) {
     throw new Error(
       `Devin currently has coding-friend installed from ${describeState(state)}, but ${describeDesired(desired)} is wanted. Run \`cf install --devin\` to replace it.`,
     );
@@ -425,9 +450,17 @@ function writeMcpConfigAtomic(
   }
   const target = existsSync(filePath) ? realpathSync(filePath) : filePath;
   const tmp = `${target}.tmp`;
+  // Final mode is decided BEFORE the tmp file exists so it is never created
+  // world-readable; "wx" + removing a stale tmp guarantees our own fresh file.
+  const mode = existsSync(target) ? statSync(target).mode & 0o777 : 0o600;
+  rmSync(tmp, { force: true });
   try {
-    writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, "utf-8");
-    chmodSync(tmp, existsSync(target) ? statSync(target).mode & 0o777 : 0o600);
+    writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, {
+      encoding: "utf-8",
+      mode,
+      flag: "wx",
+    });
+    chmodSync(tmp, mode); // umask may have stripped bits from `mode`
     renameSync(tmp, target);
   } catch (err) {
     rmSync(tmp, { force: true });
@@ -446,26 +479,31 @@ export function readDevinMcpConfig(): DevinMcpJson | null {
 }
 
 /**
- * Read the raw mcp_config.json, distinguishing three file states that
- * readJson() conflates: absent → null (fine to create); corrupt → null (safe
- * to replace, we hold no secrets of ours there); exists-but-unreadable →
- * throw, because silently replacing would destroy valid entries we could
- * not see.
+ * Read the raw mcp_config.json, distinguishing the file states that
+ * readJson() conflates: absent or empty/whitespace-only → null (fine to
+ * create); exists-but-unreadable or invalid JSON → throw, because rewriting
+ * it would destroy the user's other servers and env API keys.
  */
 function readMcpConfigForUpdate(
   filePath: string,
 ): Record<string, unknown> | null {
-  const data = readJson<Record<string, unknown>>(filePath);
-  if (data === null && existsSync(filePath)) {
-    try {
-      readFileSync(filePath, "utf-8");
-    } catch {
-      throw new Error(
-        `${filePath} exists but cannot be read — fix its permissions or remove it manually; refusing to replace a config we cannot see.`,
-      );
-    }
+  if (!existsSync(filePath)) return null;
+  let raw: string;
+  try {
+    raw = readFileSync(filePath, "utf-8");
+  } catch {
+    throw new Error(
+      `${filePath} exists but cannot be read — fix its permissions or remove it manually; refusing to replace a config we cannot see.`,
+    );
   }
-  return data;
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new Error(
+      `${filePath} is not valid JSON — fix or remove it manually; refusing to overwrite it.`,
+    );
+  }
 }
 
 /** Upsert one mcpServers entry, preserving all other entries and top keys. */

@@ -822,10 +822,11 @@ async function updateDevinCommand(
         `  Plugin      ${beforeVersion ? beforeVersion : chalk.dim("not installed")}`,
       );
 
-      // reconcileDevinPlugin() runs without allowReplace here: a mismatched
-      // install reports the fix (`cf install --devin`) instead of replacing
-      // silently during a multi-host update sweep.
-      const action = await reconcileDevinPlugin();
+      // allowReplaceOwn: dev <-> prod switching (`cf dev on/off`) happens here,
+      // so our own sources (a plugin-devin link or the GitHub #plugin-devin
+      // install) may be replaced. A foreign/unknown install still reports the
+      // fix (`cf install --devin`) instead of being replaced during a sweep.
+      const action = await reconcileDevinPlugin({ allowReplaceOwn: true });
       if (action === "unchanged") {
         log.success("Devin plugin is a live --local link — already current.");
       } else {
