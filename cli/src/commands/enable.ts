@@ -58,6 +58,13 @@ export async function enableCommand(opts: ScopeFlags = {}): Promise<void> {
     return;
   }
 
+  if (host === "devin") {
+    log.info(
+      "Devin has no per-plugin enable/disable — use `cf uninstall --agent devin` to remove the plugin or `cf install --agent devin` to (re)install it.",
+    );
+    return;
+  }
+
   // Step 1: Resolve scope
   const scope = await resolveScope(
     opts,

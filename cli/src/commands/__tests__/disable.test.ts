@@ -162,4 +162,31 @@ describe("disableCommand", () => {
     const output = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(output).toContain("already disabled");
   });
+
+  it("prints Devin guidance via --agent devin and changes nothing", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await disableCommand({ agent: "devin" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("no per-plugin enable/disable");
+    expect(output).toContain("cf uninstall --agent devin");
+    expect(output).toContain("cf install --agent devin");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockSetPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetCodexPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetOmpAgentDisabled).not.toHaveBeenCalled();
+    expect(mockSetAgyPluginEnabled).not.toHaveBeenCalled();
+  });
+
+  it("prints the same Devin guidance via --devin", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await disableCommand({ devin: true });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("no per-plugin enable/disable");
+    expect(mockSetPluginEnabled).not.toHaveBeenCalled();
+    expect(mockSetAgyPluginEnabled).not.toHaveBeenCalled();
+  });
 });

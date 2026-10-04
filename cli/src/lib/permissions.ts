@@ -713,7 +713,7 @@ export async function runDangerousRulesAudit(
 }
 
 export const AUTO_APPROVE_CROSS_HOST_NOTE =
-  "autoApprove enables Claude Code (LLM classifier), Antigravity, and Codex (deterministic rules).";
+  "autoApprove enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules).";
 
 /**
  * Side effects after the user opts into `autoApprove`: audit Claude settings

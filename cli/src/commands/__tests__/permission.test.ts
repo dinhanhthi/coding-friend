@@ -31,7 +31,7 @@ vi.mock("../../lib/permissions.js", () => ({
   runDangerousRulesAudit: vi.fn(),
   afterAutoApproveEnabled: vi.fn(),
   AUTO_APPROVE_CROSS_HOST_NOTE:
-    "autoApprove enables Claude Code (LLM classifier), Antigravity, and Codex (deterministic rules).",
+    "autoApprove enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules).",
 }));
 
 import { select } from "@inquirer/prompts";
@@ -145,6 +145,33 @@ describe("permissionCommand — agy", () => {
     mockResolveHostFlags.mockReturnValue({ host: "agy" });
 
     await permissionCommand({ agy: true });
+
+    expect(mockGetExistingRules).not.toHaveBeenCalled();
+    expect(mockGetAllRules).not.toHaveBeenCalled();
+    expect(mockApplyPermissions).not.toHaveBeenCalled();
+    expect(mockMergeJson).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+});
+
+describe("permissionCommand — devin", () => {
+  it("prints Devin native-permissions guidance mentioning the PermissionRequest hook and autoApprove", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await permissionCommand({ agent: "devin" });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("Devin");
+    expect(output).toContain("native");
+    expect(output).toContain("PermissionRequest");
+    expect(output).toContain("autoApprove");
+    expect(output).toContain(".coding-friend/config.json");
+  });
+
+  it("does not call Claude permission writers or write config for --devin", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await permissionCommand({ devin: true });
 
     expect(mockGetExistingRules).not.toHaveBeenCalled();
     expect(mockGetAllRules).not.toHaveBeenCalled();

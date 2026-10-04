@@ -1,12 +1,37 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
 vi.mock("../../lib/agy-config.js", () => ({
   isAgyPluginInstalled: vi.fn(() => false),
   readAgyMcpConfig: vi.fn(() => null),
 }));
 
-import { detectMemoryMcpState, printHealthSection } from "../mcp.js";
+vi.mock("../../lib/devin-config.js", () => ({
+  isDevinPluginInstalled: vi.fn(() => false),
+  readDevinMcpConfig: vi.fn(() => null),
+  claudeJsonHasMcpServer: vi.fn(() => false),
+}));
+
+import {
+  claudeJsonHasMcpServer,
+  isDevinPluginInstalled,
+  readDevinMcpConfig,
+} from "../../lib/devin-config.js";
+import {
+  detectMemoryMcpState,
+  printDevinMcpStatus,
+  printHealthSection,
+} from "../mcp.js";
 import type { McpHealthResult } from "../../lib/mcp-health.js";
+
+const mockIsDevinPluginInstalled = vi.mocked(isDevinPluginInstalled);
+const mockReadDevinMcpConfig = vi.mocked(readDevinMcpConfig);
+const mockClaudeJsonHasMcpServer = vi.mocked(claudeJsonHasMcpServer);
+
+beforeEach(() => {
+  mockIsDevinPluginInstalled.mockReturnValue(false);
+  mockReadDevinMcpConfig.mockReturnValue(null);
+  mockClaudeJsonHasMcpServer.mockReturnValue(false);
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -228,5 +253,102 @@ describe("detectMemoryMcpState", () => {
     };
     const result = detectMemoryMcpState(mcp, () => false);
     expect(result.kind).toBe("none");
+  });
+});
+
+// ─── Devin MCP status ────────────────────────────────────────────────────────
+
+describe("printDevinMcpStatus", () => {
+  function captureOutput(): string[] {
+    const calls: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      calls.push(args.map(String).join(" "));
+    });
+    return calls;
+  }
+
+  it("prints nothing when the Devin plugin is not installed", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(false);
+
+    printDevinMcpStatus();
+
+    expect(output.join("\n")).not.toContain("Devin");
+    expect(mockReadDevinMcpConfig).not.toHaveBeenCalled();
+  });
+
+  it("notes that coding-friend-memory ships inside the plugin", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    printDevinMcpStatus();
+
+    const joined = output.join("\n");
+    expect(joined).toContain("Devin");
+    expect(joined).toContain("coding-friend-memory");
+    expect(joined).toContain("plugin");
+  });
+
+  it("reports a coding-friend-learn entry from mcp_config.json", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: {
+        "coding-friend-learn": {
+          command: "npx",
+          args: ["-y", "coding-friend-cli", "mcp-serve-learn", "/docs"],
+        },
+      },
+    });
+
+    printDevinMcpStatus();
+
+    const joined = output.join("\n");
+    expect(joined).toContain("coding-friend-learn");
+    expect(joined).toContain("mcp_config.json");
+    expect(joined).not.toContain("not registered");
+  });
+
+  it("reports a coding-friend-learn entry imported via ~/.claude.json", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+    mockClaudeJsonHasMcpServer.mockReturnValue(true);
+
+    printDevinMcpStatus();
+
+    const joined = output.join("\n");
+    expect(joined).toContain("coding-friend-learn");
+    expect(joined).toContain(".claude.json");
+    expect(joined).not.toContain("not registered");
+  });
+
+  it("notes a stray coding-friend-memory entry without claiming precedence", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: {
+        "coding-friend-memory": {
+          command: "npx",
+          args: ["-y", "coding-friend-cli", "mcp-serve"],
+        },
+      },
+    });
+
+    printDevinMcpStatus();
+
+    const joined = output.join("\n");
+    expect(joined).toContain("also present in mcp_config.json");
+    expect(joined).not.toContain("wins");
+  });
+
+  it("reports coding-friend-learn as not registered when absent everywhere", () => {
+    const output = captureOutput();
+    mockIsDevinPluginInstalled.mockReturnValue(true);
+
+    printDevinMcpStatus();
+
+    const joined = output.join("\n");
+    expect(joined).toContain("coding-friend-learn");
+    expect(joined).toContain("not registered");
   });
 });

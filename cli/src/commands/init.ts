@@ -942,12 +942,12 @@ async function stepAutoApprove(
 
   printStepHeader(
     `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
-    "Same `autoApprove` key for Claude (LLM classifier), Antigravity, and Codex (deterministic).",
+    "Same `autoApprove` key for Claude (LLM classifier), Antigravity, Codex, and Devin (deterministic).",
   );
 
   const autoApproveChoice = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
+      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
     default: currentValue ?? false,
   });
 
@@ -1355,7 +1355,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         case "autoApprove": {
           const autoApproveChoice = await confirm({
             message:
-              "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex: deterministic rules, no LLM)",
+              "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
             default: autoApproveVal ?? false,
           });
           const autoApproveTargetScope = await askScope();

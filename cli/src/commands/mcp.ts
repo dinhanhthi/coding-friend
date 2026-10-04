@@ -16,6 +16,11 @@ import {
   printHealthSection,
 } from "../lib/mcp-health.js";
 import { isAgyPluginInstalled, readAgyMcpConfig } from "../lib/agy-config.js";
+import {
+  claudeJsonHasMcpServer,
+  isDevinPluginInstalled,
+  readDevinMcpConfig,
+} from "../lib/devin-config.js";
 import { readJson } from "../lib/json.js";
 import { listMdFilesRecursive } from "../lib/fs-utils.js";
 import {
@@ -144,6 +149,7 @@ export async function mcpCommand(): Promise<void> {
   await printMemoryMcp();
 
   printAgyMcpStatus();
+  printDevinMcpStatus();
 }
 
 function printAgyMcpStatus(): void {
@@ -156,6 +162,27 @@ function printAgyMcpStatus(): void {
   const status =
     "coding-friend-memory" in servers ? "registered" : "not registered";
   log.info(`coding-friend-memory: ${status} in plugin mcp_config.json`);
+}
+
+export function printDevinMcpStatus(): void {
+  if (!isDevinPluginInstalled()) return;
+
+  console.log();
+  printBanner("Devin MCP");
+  log.dim("coding-friend-memory ships inside the Devin plugin (.mcp.json).");
+  const servers = readDevinMcpConfig()?.mcpServers ?? {};
+  if ("coding-friend-memory" in servers) {
+    log.info(
+      "coding-friend-memory: also present in mcp_config.json (Devin de-dups by name).",
+    );
+  }
+  const status =
+    "coding-friend-learn" in servers
+      ? "registered in mcp_config.json"
+      : claudeJsonHasMcpServer("coding-friend-learn")
+        ? "registered via ~/.claude.json (Devin imports it)"
+        : "not registered — run `cf init --agent devin` to add it";
+  log.info(`coding-friend-learn: ${status}`);
 }
 
 async function printMemoryMcp(): Promise<void> {
