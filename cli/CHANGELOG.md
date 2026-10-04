@@ -5,6 +5,13 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.0 (2026-10-05)
+
+- Add `--agent devin` / `--devin` (Devin CLI, beta) to install/uninstall/enable/disable/init/update/permission/status; `cf` drives the `devin plugins` commands: GitHub `#plugin-devin` subdir in production, a live `--local` link of `plugin-devin/` in dev mode (`cf dev on`) [#76e4d5fd](https://github.com/dinhanhthi/coding-friend/commit/76e4d5fd)
+- `cf update --agent devin` switches between the dev link and the GitHub install, and replaces only installs from our own sources; a foreign install (e.g. `#plugin`) still needs `cf install --devin`, which replaces it and prints a cloud-sync notice [#76e4d5fd](https://github.com/dinhanhthi/coding-friend/commit/76e4d5fd) [#f89e3c6a](https://github.com/dinhanhthi/coding-friend/commit/f89e3c6a)
+- `cf init --agent devin` runs a Devin wizard and registers the learn MCP in `~/.config/devin/mcp_config.json` (memory MCP ships inside the plugin); the file is written atomically with mode 0600 and an invalid-JSON config is never overwritten [#6dd82f16](https://github.com/dinhanhthi/coding-friend/commit/6dd82f16) [#f89e3c6a](https://github.com/dinhanhthi/coding-friend/commit/f89e3c6a)
+- `cf enable` / `cf disable --agent devin` print guidance (Devin has no per-plugin toggle), `cf status` shows a Devin row, `cf mcp` reports the plugin MCP, `cf permission --agent devin` is supported [#3ffd4ea5](https://github.com/dinhanhthi/coding-friend/commit/3ffd4ea5)
+
 ## v1.41.3 (2026-09-30)
 
 - `cf init` onboarding message and the generated Codex `AGENTS.md` skill list now include `/cf-showcase` [#022f097b](https://github.com/dinhanhthi/coding-friend/commit/022f097b)

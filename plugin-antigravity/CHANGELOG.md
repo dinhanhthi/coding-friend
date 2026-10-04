@@ -2,6 +2,13 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.0 (2026-10-05)
+
+- Add Devin CLI (beta) as a new host: generated `plugin-devin/` artifact (Claude layout with a Devin-shaped `hooks/hooks.json`, a root `.mcp.json` for the memory MCP, skills and agents adapted to Devin), installable with `devin plugins install dinhanhthi/coding-friend#plugin-devin` [#13b0bb1a](https://github.com/dinhanhthi/coding-friend/commit/13b0bb1a) [#d5c8ac52](https://github.com/dinhanhthi/coding-friend/commit/d5c8ac52)
+- Add `*.devin.*` hook adapters: `auto-approve.devin.cjs` (`PermissionRequest`, deterministic rules only; unknown calls defer to Devin's native prompt), `block-adapter.devin.sh` (turns `privacy-block` / `scout-block` denials into Devin's exit-2 block contract), `rules-reminder.devin.sh` and `memory-capture.devin.sh` (JSON `additionalContext`; memory capture runs on the first prompt after compaction because Devin does not deliver `PostCompaction` context) [#d5c8ac52](https://github.com/dinhanhthi/coding-friend/commit/d5c8ac52)
+- `session-init.sh` accepts `CF_HOST=devin` and adds a `PLUGIN_ROOT:` line to the bootstrap context for Devin, whose skill bodies cannot read `${CLAUDE_PLUGIN_ROOT}` [#d5c8ac52](https://github.com/dinhanhthi/coding-friend/commit/d5c8ac52)
+- `/cf-help` and the bootstrap context list Devin and its known differences [#d5c8ac52](https://github.com/dinhanhthi/coding-friend/commit/d5c8ac52) [#b9c4de4f](https://github.com/dinhanhthi/coding-friend/commit/b9c4de4f)
+
 ## v0.45.3 (2026-10-03)
 
 - Fix the privacy-block hook (Claude Code, Codex and Antigravity) denying access to the plugin's own `skills/cf-commit/scripts/scan-secrets.sh` because its name matches the `secret` pattern [#dbb9ef94](https://github.com/dinhanhthi/coding-friend/commit/dbb9ef94)
