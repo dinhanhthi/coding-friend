@@ -471,17 +471,21 @@ function uninstallDevinCommand(): void {
     color: chalk.red,
   });
 
-  if (!isDevinPluginInstalled()) {
+  // Clear user-scope MCP entries first and unconditionally — they live in
+  // ~/.config/devin/mcp_config.json and survive an out-of-band
+  // `devin plugins remove` (the shipped .mcp.json entry leaves with the plugin).
+  const removedMemory = unregisterMemoryMcp("devin");
+  const removedLearn = unregisterLearnMcp("devin");
+
+  const installed = isDevinPluginInstalled();
+  if (!installed && !removedMemory && !removedLearn) {
     log.info("Nothing to uninstall");
     return;
   }
 
   // removeDevinPlugin picks the remove flag matching the detected kind
   // (plain for git-subdir, --local for local installs, both for unknown).
-  removeDevinPlugin();
-
-  // Phase 5.2 wires unregisterMemoryMcp("devin") + unregisterLearnMcp("devin")
-  // here (~/.config/devin/mcp_config.json).
+  if (installed) removeDevinPlugin();
 
   log.success("Coding Friend uninstalled from Devin.");
   log.dim("Start a new Devin session for the change to take effect.");

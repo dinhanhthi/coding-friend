@@ -821,6 +821,8 @@ describe("uninstallCommand", () => {
 
     // removeDevinPlugin internally picks the flag matching the detected kind
     expect(mockRemoveDevinPlugin).toHaveBeenCalled();
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("devin");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("devin");
     expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
     expect(mockResolveScope).not.toHaveBeenCalled();
     expect(mockConfirm).not.toHaveBeenCalled();
@@ -840,18 +842,41 @@ describe("uninstallCommand", () => {
     await uninstallCommand({ devin: true });
 
     expect(mockRemoveDevinPlugin).toHaveBeenCalled();
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("devin");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("devin");
   });
 
   it("logs nothing to uninstall when no Devin plugin is installed", async () => {
     mockResolveHostFlags.mockReturnValue({ host: "devin" });
     mockIsDevinPluginInstalled.mockReturnValue(false);
+    mockUnregisterMemoryMcp.mockReturnValue(false);
+    mockUnregisterLearnMcp.mockReturnValue(false);
 
     await uninstallCommand({ agent: "devin" });
 
+    // Unregisters run unconditionally — mcp_config.json survives plugin removal
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("devin");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("devin");
     expect(mockRemoveDevinPlugin).not.toHaveBeenCalled();
     const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
     expect(consoleCalls).toContain("Nothing to uninstall");
     expect(mockCommandExists).not.toHaveBeenCalledWith("claude");
     expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("cleans stray Devin MCP entries when the plugin is already gone", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockIsDevinPluginInstalled.mockReturnValue(false);
+    mockUnregisterMemoryMcp.mockReturnValue(false);
+    mockUnregisterLearnMcp.mockReturnValue(true);
+
+    await uninstallCommand({ agent: "devin" });
+
+    expect(mockUnregisterMemoryMcp).toHaveBeenCalledWith("devin");
+    expect(mockUnregisterLearnMcp).toHaveBeenCalledWith("devin");
+    expect(mockRemoveDevinPlugin).not.toHaveBeenCalled();
+    const consoleCalls = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(consoleCalls).toContain("uninstalled from Devin");
+    expect(consoleCalls).not.toContain("Nothing to uninstall");
   });
 });

@@ -1,13 +1,28 @@
 // Devin CLI plugin helpers. Install state is read from Devin's own lock file at
 // ~/.local/share/devin/cli/plugins/lock.json (XDG_DATA_HOME honored); installs go
 // through `devin plugins install/remove` — never by writing lock.json directly.
-import { existsSync, realpathSync } from "fs";
-import { join, resolve } from "path";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "fs";
+import { dirname, join, resolve } from "path";
 
 import { run } from "./exec.js";
 import { readJson } from "./json.js";
 import { log } from "./log.js";
-import { devinPluginsLockPath, devStatePath } from "./paths.js";
+import {
+  claudeJsonPath,
+  devinMcpConfigPath,
+  devinPluginsLockPath,
+  devStatePath,
+} from "./paths.js";
 
 const PLUGIN_NAME = "coding-friend";
 const PLUGIN_SUBDIR = "plugin-devin";
@@ -373,4 +388,126 @@ export function isDevinPluginInstalled(): boolean {
 /** Installed plugin version from lock.json's version_dir, or null. */
 export function readDevinPluginVersion(): string | null {
   return readDevinInstallState().version ?? null;
+}
+
+// ─── User-scope MCP config (~/.config/devin/mcp_config.json) ─────────
+//
+// Spec S6: the file is {"mcpServers":{…}}; existing entries may use the
+// HTTP `serverUrl` form — stdio entries write `command`/`args`/`env`.
+// Entries we do not own are preserved verbatim on every write.
+
+export interface DevinMcpServer {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+  /** HTTP/SSE form used by Devin's own entries. */
+  serverUrl?: string;
+}
+
+export interface DevinMcpJson {
+  mcpServers: Record<string, DevinMcpServer>;
+}
+
+/**
+ * Write JSON via temp+rename so a crash never leaves a torn config file.
+ * Follows symlinks (rename would otherwise replace the link itself), keeps
+ * the existing file's mode, and defaults to 0600 — mcp_config.json routinely
+ * holds API keys in env blocks.
+ */
+function writeMcpConfigAtomic(
+  filePath: string,
+  data: Record<string, unknown>,
+): void {
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  const target = existsSync(filePath) ? realpathSync(filePath) : filePath;
+  const tmp = `${target}.tmp`;
+  try {
+    writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, "utf-8");
+    chmodSync(tmp, existsSync(target) ? statSync(target).mode & 0o777 : 0o600);
+    renameSync(tmp, target);
+  } catch (err) {
+    rmSync(tmp, { force: true });
+    throw err;
+  }
+}
+
+/**
+ * Tolerant read of ~/.config/devin/mcp_config.json. Missing, unparseable, or
+ * a file without an mcpServers object → null (never throws).
+ */
+export function readDevinMcpConfig(): DevinMcpJson | null {
+  const data = readJson<Record<string, unknown>>(devinMcpConfigPath());
+  if (!data || !isPlainObject(data.mcpServers)) return null;
+  return data as unknown as DevinMcpJson;
+}
+
+/**
+ * Read the raw mcp_config.json, distinguishing three file states that
+ * readJson() conflates: absent → null (fine to create); corrupt → null (safe
+ * to replace, we hold no secrets of ours there); exists-but-unreadable →
+ * throw, because silently replacing would destroy valid entries we could
+ * not see.
+ */
+function readMcpConfigForUpdate(
+  filePath: string,
+): Record<string, unknown> | null {
+  const data = readJson<Record<string, unknown>>(filePath);
+  if (data === null && existsSync(filePath)) {
+    try {
+      readFileSync(filePath, "utf-8");
+    } catch {
+      throw new Error(
+        `${filePath} exists but cannot be read — fix its permissions or remove it manually; refusing to replace a config we cannot see.`,
+      );
+    }
+  }
+  return data;
+}
+
+/** Upsert one mcpServers entry, preserving all other entries and top keys. */
+export function writeDevinMcpEntry(
+  name: string,
+  server: DevinMcpServer,
+): void {
+  const filePath = devinMcpConfigPath();
+  const existing = readMcpConfigForUpdate(filePath);
+  const data: Record<string, unknown> = isPlainObject(existing)
+    ? { ...existing }
+    : {};
+  const mcpServers: Record<string, DevinMcpServer> = isPlainObject(
+    data.mcpServers,
+  )
+    ? { ...(data.mcpServers as Record<string, DevinMcpServer>) }
+    : {};
+  mcpServers[name] = server;
+  data.mcpServers = mcpServers;
+  writeMcpConfigAtomic(filePath, data);
+}
+
+/** Remove one mcpServers entry; no-op when the file or entry is absent. */
+export function removeDevinMcpEntry(name: string): void {
+  const filePath = devinMcpConfigPath();
+  const existing = readMcpConfigForUpdate(filePath);
+  if (!existing || !isPlainObject(existing.mcpServers)) return;
+  const mcpServers = {
+    ...(existing.mcpServers as Record<string, DevinMcpServer>),
+  };
+  if (!(name in mcpServers)) return;
+  delete mcpServers[name];
+  writeMcpConfigAtomic(filePath, { ...existing, mcpServers });
+}
+
+/**
+ * True when ~/.claude.json registers `name` under mcpServers. Devin imports
+ * Claude's user MCPs by default — a server already defined there reaches
+ * Devin, and writing the same name into mcp_config.json would create a
+ * duplicate-name entry (S6: dedup by name, first source wins).
+ */
+export function claudeJsonHasMcpServer(name: string): boolean {
+  const data = readJson<Record<string, unknown>>(claudeJsonPath());
+  return isPlainObject(data?.mcpServers) && name in data.mcpServers;
 }

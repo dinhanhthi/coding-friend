@@ -1,8 +1,14 @@
 import {
+  chmodSync,
+  existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
@@ -29,6 +35,9 @@ vi.mock("../paths.js", async (importOriginal) => {
         "plugins",
         "lock.json",
       ),
+    devinMcpConfigPath: () =>
+      join(isolated.home, ".config", "devin", "mcp_config.json"),
+    claudeJsonPath: () => join(isolated.home, ".claude.json"),
   };
 });
 
@@ -44,15 +53,24 @@ vi.stubGlobal("fetch", mockFetch);
 import { run } from "../exec.js";
 import {
   checkDevinTargetResolvable,
+  claudeJsonHasMcpServer,
   desiredDevinSource,
   ensureDevinAuth,
   isDevinPluginInstalled,
   readDevinInstallState,
+  readDevinMcpConfig,
   readDevinPluginVersion,
   reconcileDevinPlugin,
+  removeDevinMcpEntry,
   removeDevinPlugin,
+  writeDevinMcpEntry,
 } from "../devin-config.js";
-import { devinPluginsLockPath, devStatePath } from "../paths.js";
+import {
+  claudeJsonPath,
+  devinMcpConfigPath,
+  devinPluginsLockPath,
+  devStatePath,
+} from "../paths.js";
 
 const mockRun = vi.mocked(run);
 
@@ -733,5 +751,259 @@ describe("isDevinPluginInstalled / readDevinPluginVersion", () => {
     writeLock(lockJson([entry]));
 
     expect(readDevinPluginVersion()).toBeNull();
+  });
+});
+
+// ─── ~/.config/devin/mcp_config.json helpers ─────────────────────────
+
+const LEARN_SERVER = {
+  command: "npx",
+  args: ["-y", "coding-friend-cli", "mcp-serve-learn", "/tmp/learn"],
+};
+
+function writeMcpConfig(content: string): void {
+  const file = devinMcpConfigPath();
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, content);
+}
+
+function readMcpConfigFile(): Record<string, unknown> {
+  return JSON.parse(readFileSync(devinMcpConfigPath(), "utf-8")) as Record<
+    string,
+    unknown
+  >;
+}
+
+function writeClaudeJson(data: unknown): void {
+  writeFileSync(claudeJsonPath(), `${JSON.stringify(data, null, 2)}\n`);
+}
+
+describe("readDevinMcpConfig", () => {
+  it("returns null when mcp_config.json is missing", () => {
+    expect(readDevinMcpConfig()).toBeNull();
+  });
+
+  it("returns null for a corrupt file (never throws)", () => {
+    writeMcpConfig("{ not json");
+
+    expect(readDevinMcpConfig()).toBeNull();
+  });
+
+  it("returns null when mcpServers is missing or not an object", () => {
+    writeMcpConfig("{}\n");
+    expect(readDevinMcpConfig()).toBeNull();
+
+    writeMcpConfig(`${JSON.stringify({ mcpServers: [] })}\n`);
+    expect(readDevinMcpConfig()).toBeNull();
+  });
+
+  it("parses existing entries including the serverUrl form", () => {
+    writeMcpConfig(
+      `${JSON.stringify(
+        {
+          mcpServers: {
+            "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    expect(readDevinMcpConfig()).toEqual({
+      mcpServers: {
+        "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+      },
+    });
+  });
+});
+
+describe("writeDevinMcpEntry", () => {
+  it("creates the file (and parent dirs) when missing", () => {
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(readMcpConfigFile()).toEqual({
+      mcpServers: { "coding-friend-learn": LEARN_SERVER },
+    });
+  });
+
+  it("preserves other entries and unrelated top-level keys", () => {
+    writeMcpConfig(
+      `${JSON.stringify(
+        {
+          someTopKey: true,
+          mcpServers: {
+            "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(readMcpConfigFile()).toEqual({
+      someTopKey: true,
+      mcpServers: {
+        "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+        "coding-friend-learn": LEARN_SERVER,
+      },
+    });
+  });
+
+  it("overwrites an existing entry with the same name", () => {
+    writeMcpConfig(
+      `${JSON.stringify(
+        {
+          mcpServers: {
+            "coding-friend-learn": { command: "old", args: ["stale"] },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(readMcpConfigFile()).toEqual({
+      mcpServers: { "coding-friend-learn": LEARN_SERVER },
+    });
+  });
+
+  it("replaces a corrupt file instead of throwing", () => {
+    writeMcpConfig("{ not json");
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(readMcpConfigFile()).toEqual({
+      mcpServers: { "coding-friend-learn": LEARN_SERVER },
+    });
+  });
+
+  it("writes atomically — no .tmp file is left behind", () => {
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(existsSync(`${devinMcpConfigPath()}.tmp`)).toBe(false);
+    expect(existsSync(devinMcpConfigPath())).toBe(true);
+  });
+
+  it("creates a new file as 0600 (the file can hold API keys)", () => {
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(statSync(devinMcpConfigPath()).mode & 0o777).toBe(0o600);
+  });
+
+  it("preserves an existing file's mode on rewrite", () => {
+    writeMcpConfig(`${JSON.stringify({ mcpServers: {} })}\n`);
+    chmodSync(devinMcpConfigPath(), 0o600);
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(statSync(devinMcpConfigPath()).mode & 0o777).toBe(0o600);
+  });
+
+  it("refuses to replace a file that exists but cannot be read", () => {
+    writeMcpConfig("{ not json");
+    chmodSync(devinMcpConfigPath(), 0o000);
+
+    expect(() => writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER)).toThrow(
+      /cannot be read/,
+    );
+  });
+
+  it("writes through a symlinked config file instead of replacing the link", () => {
+    const real = join(dirname(devinMcpConfigPath()), "real-mcp.json");
+    mkdirSync(dirname(real), { recursive: true });
+    writeFileSync(
+      real,
+      `${JSON.stringify({ mcpServers: { keep: { serverUrl: "https://x" } } }, null, 2)}\n`,
+    );
+    symlinkSync(real, devinMcpConfigPath());
+
+    writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER);
+
+    expect(lstatSync(devinMcpConfigPath()).isSymbolicLink()).toBe(true);
+    expect(JSON.parse(readFileSync(real, "utf-8"))).toEqual({
+      mcpServers: {
+        keep: { serverUrl: "https://x" },
+        "coding-friend-learn": LEARN_SERVER,
+      },
+    });
+  });
+});
+
+describe("removeDevinMcpEntry", () => {
+  it("removes only the named entry and preserves the rest", () => {
+    writeMcpConfig(
+      `${JSON.stringify(
+        {
+          mcpServers: {
+            "coding-friend-learn": LEARN_SERVER,
+            "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    removeDevinMcpEntry("coding-friend-learn");
+
+    expect(readMcpConfigFile()).toEqual({
+      mcpServers: {
+        "devin-remote": { serverUrl: "https://mcp.devin.ai/sse" },
+      },
+    });
+  });
+
+  it("no-ops when the file is missing", () => {
+    expect(() => removeDevinMcpEntry("coding-friend-learn")).not.toThrow();
+    expect(existsSync(devinMcpConfigPath())).toBe(false);
+  });
+
+  it("leaves the file untouched when the entry is absent", () => {
+    const original = `${JSON.stringify(
+      { mcpServers: { "devin-remote": { serverUrl: "https://x" } } },
+      null,
+      2,
+    )}\n`;
+    writeMcpConfig(original);
+
+    removeDevinMcpEntry("coding-friend-learn");
+
+    expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(original);
+  });
+});
+
+describe("claudeJsonHasMcpServer", () => {
+  it("returns false when ~/.claude.json is missing", () => {
+    expect(claudeJsonHasMcpServer("coding-friend-learn")).toBe(false);
+  });
+
+  it("returns false for a corrupt file (never throws)", () => {
+    writeFileSync(claudeJsonPath(), "{ not json");
+
+    expect(claudeJsonHasMcpServer("coding-friend-learn")).toBe(false);
+  });
+
+  it("returns false when mcpServers lacks the name", () => {
+    writeClaudeJson({ mcpServers: { "other-server": { command: "x" } } });
+
+    expect(claudeJsonHasMcpServer("coding-friend-learn")).toBe(false);
+  });
+
+  it("returns true when mcpServers has the name", () => {
+    writeClaudeJson({
+      mcpServers: {
+        "coding-friend-learn": {
+          command: "npx",
+          args: ["-y", "coding-friend-cli", "mcp-serve-learn", "/tmp/learn"],
+        },
+      },
+    });
+
+    expect(claudeJsonHasMcpServer("coding-friend-learn")).toBe(true);
   });
 });

@@ -373,9 +373,10 @@ async function installDevinCommand(): Promise<void> {
     return;
   }
 
-  // Phase 5 wires the Devin MCP step here: registerMemoryMcp("devin") +
-  // learn MCP into ~/.config/devin/mcp_config.json (plugin-devin/.mcp.json
-  // already ships coding-friend-memory).
+  // The memory MCP ships inside plugin-devin/.mcp.json — this only confirms
+  // the registered state. Learn MCP needs a chosen dir, so it is registered
+  // by `cf init --agent devin` instead.
+  registerMemoryMcp("devin");
 
   console.log();
   log.success("Installed for Devin (beta).");

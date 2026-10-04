@@ -9,6 +9,7 @@ vi.mock("../log.js", () => ({
     warn: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
+    dim: vi.fn(),
   },
 }));
 
@@ -24,6 +25,13 @@ vi.mock("../agy-config.js", () => ({
   removeAgyMcpEntry: vi.fn(),
 }));
 
+vi.mock("../devin-config.js", () => ({
+  claudeJsonHasMcpServer: vi.fn(),
+  readDevinMcpConfig: vi.fn(),
+  writeDevinMcpEntry: vi.fn(),
+  removeDevinMcpEntry: vi.fn(),
+}));
+
 import { runWithStderr } from "../exec.js";
 import { log } from "../log.js";
 import {
@@ -36,6 +44,12 @@ import {
   removeOmpMcpEntry,
   writeOmpMcpEntry,
 } from "../omp-config.js";
+import {
+  claudeJsonHasMcpServer,
+  readDevinMcpConfig,
+  removeDevinMcpEntry,
+  writeDevinMcpEntry,
+} from "../devin-config.js";
 import { resolvePath } from "../paths.js";
 
 const mockRunWithStderr = vi.mocked(runWithStderr);
@@ -43,6 +57,10 @@ const mockLog = vi.mocked(log);
 const mockWriteOmpMcpEntry = vi.mocked(writeOmpMcpEntry);
 const mockReadOmpMcpJson = vi.mocked(readOmpMcpJson);
 const mockRemoveOmpMcpEntry = vi.mocked(removeOmpMcpEntry);
+const mockClaudeJsonHasMcpServer = vi.mocked(claudeJsonHasMcpServer);
+const mockReadDevinMcpConfig = vi.mocked(readDevinMcpConfig);
+const mockWriteDevinMcpEntry = vi.mocked(writeDevinMcpEntry);
+const mockRemoveDevinMcpEntry = vi.mocked(removeDevinMcpEntry);
 
 const LEARN_DIR = "/tmp/learn";
 const RESOLVED_LEARN_DIR = resolvePath(LEARN_DIR);
@@ -161,6 +179,49 @@ describe("registerLearnMcp", () => {
     );
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
+
+  it('writes to ~/.config/devin/mcp_config.json when host is "devin"', () => {
+    mockClaudeJsonHasMcpServer.mockReturnValue(false);
+
+    const result = registerLearnMcp(LEARN_DIR, "devin");
+
+    expect(mockWriteDevinMcpEntry).toHaveBeenCalledWith(
+      "coding-friend-learn",
+      OMP_LEARN_SERVER,
+    );
+    expect(result).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it('skips the devin write when ~/.claude.json already has the entry', () => {
+    mockClaudeJsonHasMcpServer.mockReturnValue(true);
+
+    const result = registerLearnMcp(LEARN_DIR, "devin");
+
+    // Devin imports ~/.claude.json mcpServers — a second entry would duplicate.
+    expect(result).toBe(true);
+    expect(mockWriteDevinMcpEntry).not.toHaveBeenCalled();
+    expect(mockLog.dim).toHaveBeenCalledWith(
+      expect.stringContaining("~/.claude.json"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("returns false and warns when devin write throws", () => {
+    mockClaudeJsonHasMcpServer.mockReturnValue(false);
+    mockWriteDevinMcpEntry.mockImplementation(() => {
+      throw new Error("EACCES");
+    });
+
+    const result = registerLearnMcp(LEARN_DIR, "devin");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Could not register MCP: EACCES"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
 });
 
 describe("isLearnMcpRegistered", () => {
@@ -221,6 +282,32 @@ describe("isLearnMcpRegistered", () => {
     expect(isLearnMcpRegistered("omp")).toBe(false);
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
+
+  it("returns true for devin when mcp_config.json has the entry", () => {
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: { "coding-friend-learn": OMP_LEARN_SERVER },
+    });
+    mockClaudeJsonHasMcpServer.mockReturnValue(false);
+
+    expect(isLearnMcpRegistered("devin")).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("returns true for devin when only ~/.claude.json has the entry", () => {
+    mockReadDevinMcpConfig.mockReturnValue(null);
+    mockClaudeJsonHasMcpServer.mockReturnValue(true);
+
+    expect(isLearnMcpRegistered("devin")).toBe(true);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("returns false for devin when neither file has the entry", () => {
+    mockReadDevinMcpConfig.mockReturnValue(null);
+    mockClaudeJsonHasMcpServer.mockReturnValue(false);
+
+    expect(isLearnMcpRegistered("devin")).toBe(false);
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
 });
 
 describe("unregisterLearnMcp", () => {
@@ -265,6 +352,42 @@ describe("unregisterLearnMcp", () => {
     });
 
     const result = unregisterLearnMcp("omp");
+
+    expect(result).toBe(false);
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Could not unregister MCP: EACCES"),
+    );
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it('removes only the devin mcp_config entry when host is "devin"', () => {
+    mockReadDevinMcpConfig.mockReturnValue({ mcpServers: {} });
+
+    const result = unregisterLearnMcp("devin");
+
+    expect(mockRemoveDevinMcpEntry).toHaveBeenCalledWith(
+      "coding-friend-learn",
+    );
+    expect(result).toBe(true);
+    // ~/.claude.json is never touched — that entry belongs to the Claude host.
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockRemoveOmpMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("returns false when the devin entry survives removal", () => {
+    mockReadDevinMcpConfig.mockReturnValue({
+      mcpServers: { "coding-friend-learn": OMP_LEARN_SERVER },
+    });
+
+    expect(unregisterLearnMcp("devin")).toBe(false);
+  });
+
+  it("returns false and warns when devin remove throws", () => {
+    mockRemoveDevinMcpEntry.mockImplementation(() => {
+      throw new Error("EACCES");
+    });
+
+    const result = unregisterLearnMcp("devin");
 
     expect(result).toBe(false);
     expect(mockLog.warn).toHaveBeenCalledWith(

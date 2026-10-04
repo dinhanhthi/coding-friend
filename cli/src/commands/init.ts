@@ -34,6 +34,7 @@ import {
   writeCodexMemoryMcpConfig,
 } from "../lib/codex-config.js";
 import { isAgyPluginInstalled } from "../lib/agy-config.js";
+import { isDevinPluginInstalled } from "../lib/devin-config.js";
 import { isOmpAgentInstalled } from "../lib/omp-config.js";
 import {
   hasShellCompletion,
@@ -1457,6 +1458,10 @@ export async function initCommand(opts: InitOptions = {}): Promise<void> {
     await initAgyCommand();
     return;
   }
+  if (host === "devin") {
+    await initDevinCommand();
+    return;
+  }
 
   _stepIndex = 0;
   console.log();
@@ -1950,6 +1955,120 @@ async function initAgyCommand(): Promise<void> {
   log.dim(
     "Restart Antigravity or start a new `agy` session to use Coding Friend.",
   );
+}
+
+async function initDevinCommand(): Promise<void> {
+  _stepIndex = 0;
+  console.log();
+  printBanner("✨ Coding Friend Devin Setup (beta) ✨");
+  console.log();
+  showConfigHint();
+
+  if (!isDevinPluginInstalled()) {
+    log.warn("Devin plugin is not installed. Run: cf install --agent devin");
+    log.dim(
+      "Learn/memory MCP registration runs once the plugin is installed.",
+    );
+    console.log();
+  }
+
+  const gitAvailable = isGitRepo();
+  if (!gitAvailable) {
+    log.warn("Not inside a git repo -- git-related steps will be skipped.");
+    console.log();
+  }
+
+  const proceed = await confirm({
+    message: "Run Devin setup wizard?",
+    default: true,
+  });
+  if (!proceed) {
+    log.dim("Init cancelled. Run `cf init --agent devin` anytime to resume.");
+    return;
+  }
+
+  await runSteps([
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsDir(globalCfg, localCfg);
+      const cfgs = readCfgs();
+      ensureDocsFolders(getDocsDir(cfgs.globalCfg, cfgs.localCfg), [
+        "plans",
+        "memory",
+        "research",
+        "sessions",
+        "reviews",
+        "warm",
+      ]);
+    },
+
+    async () => {
+      if (!gitAvailable) {
+        printStepHeader(
+          `Configure .gitignore ${chalk.dim("[skipped]")}`,
+          "Keeps AI-generated docs and config out of your git history.",
+        );
+        log.dim("Skipped — not inside a git repo.");
+        return;
+      }
+      const { globalCfg, localCfg } = readCfgs();
+      await stepGitignore(getDocsDir(globalCfg, localCfg));
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepDocsLanguage(globalCfg, localCfg);
+    },
+
+    async () => {
+      const { outputDir } = await stepLearnConfig(readCfgs().globalCfg);
+      if (isDevinPluginInstalled()) {
+        if (isLearnMcpRegistered("devin")) {
+          log.dim("coding-friend-learn: already registered for Devin");
+        } else {
+          const registered = registerLearnMcp(outputDir, "devin");
+          if (registered) {
+            log.success("Registered coding-friend-learn for Devin.");
+          }
+        }
+        if (isMemoryMcpRegistered("devin")) {
+          log.dim(
+            "coding-friend-memory: ships with the Devin plugin (.mcp.json)",
+          );
+        } else {
+          const registered = registerMemoryMcp("devin");
+          if (registered) {
+            log.success("Registered coding-friend-memory for Devin.");
+          }
+        }
+      }
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepAutoApprove(globalCfg, localCfg);
+    },
+
+    async () => {
+      const { globalCfg, localCfg } = readCfgs();
+      await stepPrivacyBlock(globalCfg, localCfg);
+    },
+  ]);
+
+  if (!existsSync(localConfigPath())) {
+    writeJson(localConfigPath(), {});
+  }
+
+  // No project AGENTS.md — Devin injects it always-on, duplicating the
+  // SessionStart bootstrap (plan: rejected as "double bootstrap").
+
+  if (!isDevinPluginInstalled()) {
+    log.warn("Devin plugin is not installed. Run: cf install --agent devin");
+  }
+
+  console.log();
+  log.congrats("Devin setup complete!");
+  log.dim("Start a new Devin session to use Coding Friend.");
 }
 
 async function stepPrivacyBlock(

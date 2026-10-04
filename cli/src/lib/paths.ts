@@ -49,6 +49,15 @@ export function claudeSettingsPath(): string {
   return join(claudeConfigDir(), "settings.json");
 }
 
+/**
+ * Path to the HOME-level ~/.claude.json file. Intentionally NOT relocated by
+ * CLAUDE_CONFIG_DIR (per Claude Code docs it always lives at the home root) —
+ * Devin imports mcpServers from exactly this file.
+ */
+export function claudeJsonPath(): string {
+  return join(homedir(), ".claude.json");
+}
+
 /** Path to Claude project settings (<project>/.claude/settings.json) */
 export function claudeProjectSettingsPath(): string {
   return resolve(process.cwd(), ".claude", "settings.json");

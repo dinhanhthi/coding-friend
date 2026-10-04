@@ -3,6 +3,12 @@ import {
   removeAgyMcpEntry,
   writeAgyMcpEntry,
 } from "./agy-config.js";
+import {
+  claudeJsonHasMcpServer,
+  readDevinMcpConfig,
+  removeDevinMcpEntry,
+  writeDevinMcpEntry,
+} from "./devin-config.js";
 import { runWithStderr } from "./exec.js";
 import type { Host } from "./host.js";
 import { log } from "./log.js";
@@ -35,6 +41,11 @@ function hasAgyLearnEntry(): boolean {
   return data !== null && MCP_NAME in data.mcpServers;
 }
 
+function hasDevinLearnEntry(): boolean {
+  const data = readDevinMcpConfig();
+  return data !== null && MCP_NAME in data.mcpServers;
+}
+
 export function registerLearnMcp(
   learnDir: string,
   host: Host = "claude",
@@ -55,6 +66,25 @@ export function registerLearnMcp(
   if (host === "agy") {
     try {
       writeAgyMcpEntry(MCP_NAME, learnServer(resolved));
+      return true;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not register MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  if (host === "devin") {
+    try {
+      // Devin imports ~/.claude.json mcpServers by default — an entry there
+      // already reaches Devin, so only write the user-scope file when absent.
+      if (claudeJsonHasMcpServer(MCP_NAME)) {
+        log.dim(
+          "coding-friend-learn already registered in ~/.claude.json — Devin imports it; skipping mcp_config.json.",
+        );
+        return true;
+      }
+      writeDevinMcpEntry(MCP_NAME, learnServer(resolved));
       return true;
     } catch (error) {
       const detail = error instanceof Error ? error.message : "unknown error";
@@ -94,6 +124,10 @@ export function registerLearnMcp(
 export function isLearnMcpRegistered(host: Host = "claude"): boolean {
   if (host === "omp") return hasOmpLearnEntry();
   if (host === "agy") return hasAgyLearnEntry();
+  // Registered for Devin = written to its user file or imported via ~/.claude.json.
+  if (host === "devin") {
+    return hasDevinLearnEntry() || claudeJsonHasMcpServer(MCP_NAME);
+  }
 
   const result = runWithStderr("claude", ["mcp", "get", MCP_NAME]);
   return result.exitCode === 0;
@@ -115,6 +149,19 @@ export function unregisterLearnMcp(host: Host = "claude"): boolean {
     try {
       removeAgyMcpEntry(MCP_NAME);
       return !hasAgyLearnEntry();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "unknown error";
+      log.warn(`Could not unregister MCP: ${detail}`);
+      return false;
+    }
+  }
+
+  if (host === "devin") {
+    // Removes only the entry we wrote into ~/.config/devin/mcp_config.json —
+    // an imported ~/.claude.json entry belongs to the Claude host.
+    try {
+      removeDevinMcpEntry(MCP_NAME);
+      return !hasDevinLearnEntry();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "unknown error";
       log.warn(`Could not unregister MCP: ${detail}`);
