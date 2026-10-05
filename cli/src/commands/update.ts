@@ -2,7 +2,7 @@ import { lstatSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
-import { claudeSettingsPath } from "../lib/paths.js";
+import { claudeSettingsPath, devStatePath } from "../lib/paths.js";
 import { run, runWithStderr, commandExists, sleepSync } from "../lib/exec.js";
 import {
   deployAgyPlugin,
@@ -344,6 +344,12 @@ async function updateClaudeCommand(
 
   console.log(versionLine("Plugin", currentVersion, latestVersion));
   console.log(versionLine("CLI", cliVersion, latestCliVersion));
+  const devLocalPath = readJson<{ localPath?: string }>(
+    devStatePath(),
+  )?.localPath;
+  if (doPlugin && devLocalPath) {
+    log.dim(`Plugin is a live --local link (dev mode) → ${devLocalPath}`);
+  }
   if (statuslineVersion) {
     console.log(
       versionLine("Statusline", statuslineVersion, currentVersion ?? null),
@@ -752,6 +758,11 @@ async function updateAgyCommand(
       );
 
       const source = resolveAgyPluginSource();
+      if (source.kind === "dev") {
+        log.dim(
+          `Antigravity plugin is deployed from a local dev link → ${source.path}`,
+        );
+      }
       log.step(`Updating Antigravity plugin (${source.kind} source)...`);
       const { files } = deployAgyPlugin(source.path);
       registerMemoryMcp("agy");
