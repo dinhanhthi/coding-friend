@@ -76,6 +76,8 @@ program
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
+  .option("--yes", "Skip prompts (default scope: user)")
+  .option("--json", "Output a JSON envelope (requires --yes or a scope flag)")
   .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
     await installCommand(opts);
@@ -459,18 +461,20 @@ Memory subcommands:
 memory
   .command("status")
   .description("Show memory system status")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts: { json?: boolean }) => {
     const { memoryStatusCommand } = await import("./commands/memory.js");
-    await memoryStatusCommand();
+    await memoryStatusCommand(opts);
   });
 
 memory
   .command("search")
   .description("Search memories by query")
   .argument("<query>", "search query")
-  .action(async (query: string) => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (query: string, opts: { json?: boolean }) => {
     const { memorySearchCommand } = await import("./commands/memory.js");
-    await memorySearchCommand(query);
+    await memorySearchCommand(query, opts);
   });
 
 memory
@@ -479,7 +483,8 @@ memory
     "List memories in current project, or all projects with --projects",
   )
   .option("--projects", "List all project databases with size and metadata")
-  .action(async (opts: { projects?: boolean }) => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts: { projects?: boolean; json?: boolean }) => {
     const { memoryListCommand } = await import("./commands/memory.js");
     await memoryListCommand(opts);
   });

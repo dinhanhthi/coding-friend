@@ -916,12 +916,23 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "session",
   "memory",
   "dev",
+  "version",
+  "project",
 ]);
+
+/**
+ * `cf config` subcommands safe to auto-approve. `set` is excluded on purpose:
+ * auto-approving it would let the agent relax its own guards
+ * (e.g. `cf config set --global privacyBlock false`). Bare `cf config` opens
+ * the interactive menu, which needs the user at the terminal.
+ */
+const CF_CONFIG_SAFE_SUBCOMMANDS = new Set(["get", "schema"]);
 
 /**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
+ *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -929,7 +940,9 @@ function isCodingFriendBash(trimmed) {
   // cf CLI commands — only known safe subcommands
   if (trimmed.startsWith("cf ") || trimmed.startsWith("cf\t")) {
     const afterCf = trimmed.slice(trimmed.indexOf("f") + 1).trim();
-    const subcommand = afterCf.split(/\s/)[0];
+    const [subcommand, configSub] = afterCf.split(/\s+/);
+    if (subcommand === "config" && configSub !== undefined)
+      return CF_CONFIG_SAFE_SUBCOMMANDS.has(configSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 

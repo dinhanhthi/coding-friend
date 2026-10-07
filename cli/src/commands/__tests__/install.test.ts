@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../../lib/exec.js", () => ({
   commandExists: vi.fn(),
@@ -102,6 +102,7 @@ import {
 } from "../../lib/omp-config.js";
 import { reconcileDevinPlugin } from "../../lib/devin-config.js";
 import { registerMemoryMcp } from "../../lib/memory-mcp-register.js";
+import { getLatestVersion, semverCompare } from "../update.js";
 import { installCommand } from "../install.js";
 
 const mockExistsSync = vi.mocked(existsSync);
@@ -698,5 +699,445 @@ describe("installCommand", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
     const output = logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("devin auth login");
+  });
+});
+
+describe("installCommand human output (characterization)", () => {
+  function captureLog() {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    return () => logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+  }
+
+  it("claude: fresh install", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(false);
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockRun.mockReturnValue("ok");
+    const output = captureLog();
+
+    await installCommand();
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌─────────────────────────────────┐
+      │   ✨ Coding Friend Install ✨   │
+      └─────────────────────────────────┘
+
+      → Adding coding-friend marketplace...
+      ✔ Marketplace added.
+      ✔ Auto-update enabled for coding-friend plugin.
+      → Installing plugin (user scope)...
+      ✔ Plugin installed!
+
+      ℹ Next steps:
+        cf init           Initialize workspace (docs folders, config)
+        cf memory init    Setup AI memory for the project (also available in cf init)
+        cf statusline     Setup statusline in Claude Code to show more real-time info
+
+      Restart Claude Code (or start a new session) to use the plugin."
+    `);
+  });
+
+  it("claude: already installed, disabled, update available", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+    mockIsPluginDisabled.mockReturnValue(true);
+    vi.mocked(getLatestVersion).mockReturnValue("0.8.0");
+    vi.mocked(semverCompare).mockReturnValue(-1);
+    const output = captureLog();
+
+    await installCommand();
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌─────────────────────────────────┐
+      │   ✨ Coding Friend Install ✨   │
+      └─────────────────────────────────┘
+
+      ✔ Marketplace already registered.
+      ✔ Auto-update enabled for coding-friend plugin.
+      ✔ Plugin already installed (v0.7.2).
+      ⚠ Plugin is installed but disabled at user scope. Run cf enable --user to re-enable.
+      ⚠ Update available: v0.7.2 → v0.8.0. Run cf update to update.
+
+      ℹ Next steps:
+        cf init           Initialize workspace (docs folders, config)
+        cf memory init    Setup AI memory for the project (also available in cf init)
+        cf statusline     Setup statusline in Claude Code to show more real-time info
+
+      Restart Claude Code (or start a new session) to use the plugin."
+    `);
+  });
+
+  it("claude: already installed, no network", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+    mockEnableMarketplaceAutoUpdate.mockReturnValue(false);
+    const output = captureLog();
+
+    await installCommand();
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌─────────────────────────────────┐
+      │   ✨ Coding Friend Install ✨   │
+      └─────────────────────────────────┘
+
+      ✔ Marketplace already registered.
+      ⚠ Cannot make plugin auto-update. Please enable it manually: https://cf.dinhanhthi.com/#install
+      ✔ Plugin already installed (v0.7.2).
+      Could not check for updates (no network or GitHub rate limit).
+
+      ℹ Next steps:
+        cf init           Initialize workspace (docs folders, config)
+        cf memory init    Setup AI memory for the project (also available in cf init)
+        cf statusline     Setup statusline in Claude Code to show more real-time info
+
+      Restart Claude Code (or start a new session) to use the plugin."
+    `);
+  });
+
+  it("claude: dev mode active", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockExistsSync.mockReturnValue(true);
+    const output = captureLog();
+
+    await installCommand();
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌─────────────────────────────────┐
+      │   ✨ Coding Friend Install ✨   │
+      └─────────────────────────────────┘
+
+      ⚠ Dev mode is currently active.
+      Run cf dev off first, then install. Or use cf dev sync to update the dev plugin."
+    `);
+  });
+
+  it("claude: CLI missing", async () => {
+    mockCommandExists.mockReturnValue(false);
+    const output = captureLog();
+
+    await installCommand();
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌─────────────────────────────────┐
+      │   ✨ Coding Friend Install ✨   │
+      └─────────────────────────────────┘
+
+      ✖ Claude CLI not found. Install it first: https://docs.anthropic.com/en/docs/claude-code/getting-started"
+    `);
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("codex: success", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockIsCodexMarketplaceRegistered.mockReturnValue(false);
+    mockRun.mockReturnValue("ok");
+    const output = captureLog();
+
+    await installCommand({ agent: "codex" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌───────────────────────────────────────┐
+      │   ✨ Coding Friend Codex Install ✨   │
+      └───────────────────────────────────────┘
+
+      → Adding coding-friend Codex marketplace...
+      ✔ Codex marketplace registered.
+      ✔ Codex plugin enablement recorded in ~/.codex/config.toml.
+      ✔ Deployed 12 Codex agent definition(s).
+
+      ℹ One manual Codex step remains:
+        codex → /plugins → install coding-friend
+      Codex CLI v0.130.0 exposes marketplace registration but not scriptable plugin install.
+      Run cf update --agent codex for on-demand plugin updates."
+    `);
+  });
+
+  it("codex: unsupported version", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockCommandExists.mockReturnValue(true);
+    mockCheckCodexVersion.mockReturnValue({
+      ok: false,
+      actual: "0.129.0",
+      min: "0.130.0",
+    });
+    const output = captureLog();
+
+    await installCommand({ agent: "codex" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌───────────────────────────────────────┐
+      │   ✨ Coding Friend Codex Install ✨   │
+      └───────────────────────────────────────┘
+
+      ✖ Codex CLI v0.129.0 is unsupported. Coding Friend requires Codex CLI >= 0.130.0.
+      Upgrade Codex, then rerun: cf install --agent codex"
+    `);
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("omp: success", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockCommandExists.mockReturnValue(true);
+    const output = captureLog();
+
+    await installCommand({ agent: "omp" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌────────────────────────────────────────────┐
+      │   ✨ Coding Friend omp Install (beta) ✨   │
+      └────────────────────────────────────────────┘
+
+      ✔ Deployed 1 omp agent definition(s).
+      ✔ Wrote omp extension entry.
+
+      ✔ Installed for omp (beta).
+      Skills inherit from ~/.claude — no extra skill install needed.
+      Restart omp (or start a new session) to pick up agents and MCP."
+    `);
+  });
+
+  it("agy: success", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockCommandExists.mockReturnValue(true);
+    const output = captureLog();
+
+    await installCommand({ agent: "agy" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌────────────────────────────────────────────────────┐
+      │   ✨ Coding Friend Antigravity Install (beta) ✨   │
+      └────────────────────────────────────────────────────┘
+
+      → Installing Antigravity plugin (dev source)...
+      ✔ Deployed 12 Antigravity plugin file(s).
+      ok
+
+      ✔ Installed for Antigravity (beta).
+      Restart Antigravity (or start a new \`agy\` session) to pick up the plugin.
+      Note: autoApprove in config enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules)."
+    `);
+  });
+
+  it("agy: deploy failure", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockCommandExists.mockReturnValue(true);
+    mockDeployAgyPlugin.mockImplementation(() => {
+      throw new Error("plugin source missing");
+    });
+    const output = captureLog();
+
+    await installCommand({ agent: "agy" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌────────────────────────────────────────────────────┐
+      │   ✨ Coding Friend Antigravity Install (beta) ✨   │
+      └────────────────────────────────────────────────────┘
+
+      → Installing Antigravity plugin (dev source)...
+      ✖ plugin source missing"
+    `);
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("devin: success", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    const output = captureLog();
+
+    await installCommand({ agent: "devin" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌──────────────────────────────────────────────┐
+      │   ✨ Coding Friend Devin Install (beta) ✨   │
+      └──────────────────────────────────────────────┘
+
+      ✔ Devin plugin installed.
+
+      ✔ Installed for Devin (beta).
+      Start a new Devin session to pick up the plugin, then try /coding-friend:cf-plan."
+    `);
+  });
+
+  it("devin: already linked", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockCommandExists.mockReturnValue(true);
+    mockReconcileDevinPlugin.mockResolvedValue("unchanged");
+    const output = captureLog();
+
+    await installCommand({ agent: "devin" });
+
+    expect(output()).toMatchInlineSnapshot(`
+      "┌──────────────────────────────────────────────┐
+      │   ✨ Coding Friend Devin Install (beta) ✨   │
+      └──────────────────────────────────────────────┘
+
+      ✔ Devin plugin already installed (live --local link).
+
+      ✔ Installed for Devin (beta).
+      Start a new Devin session to pick up the plugin, then try /coding-friend:cf-plan."
+    `);
+  });
+});
+
+describe("installCommand --yes / --json", () => {
+  let stdout: string[];
+  let prevExitCode: typeof process.exitCode;
+
+  beforeEach(() => {
+    stdout = [];
+    prevExitCode = process.exitCode;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(process.stdout, "write").mockImplementation(((chunk: unknown) => {
+      stdout.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write);
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    process.exitCode = prevExitCode;
+  });
+
+  function envelope() {
+    expect(stdout).toHaveLength(1);
+    return JSON.parse(stdout[0]);
+  }
+
+  it("--yes without a scope flag installs at user scope without prompting", async () => {
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockRun.mockReturnValue("ok");
+
+    await installCommand({ yes: true });
+
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockRun).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "install",
+      "coding-friend@coding-friend-marketplace",
+      "--scope",
+      "user",
+    ]);
+  });
+
+  it("--json --yes writes exactly one success envelope even when run prints text", async () => {
+    mockIsMarketplaceRegistered.mockReturnValue(false);
+    mockGetInstalledVersion
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce("0.46.0");
+    mockRun.mockReturnValue("Installing plugin...\nDone.\n");
+
+    await installCommand({ json: true, yes: true });
+
+    expect(envelope()).toEqual({
+      contractVersion: 1,
+      ok: true,
+      data: {
+        host: "claude",
+        scope: "user",
+        pluginVersion: "0.46.0",
+        alreadyInstalled: false,
+        disabled: false,
+      },
+      error: null,
+    });
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(process.exit).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(prevExitCode);
+  });
+
+  it("--json reports an existing disabled install", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.46.0");
+    mockIsPluginDisabled.mockReturnValue(true);
+
+    await installCommand({ json: true, user: true });
+
+    expect(envelope().data).toEqual({
+      host: "claude",
+      scope: "user",
+      pluginVersion: "0.46.0",
+      alreadyInstalled: true,
+      disabled: true,
+    });
+  });
+
+  it("--json alone returns INTERACTIVE_REQUIRED without prompting", async () => {
+    await installCommand({ json: true });
+
+    expect(envelope()).toMatchObject({
+      ok: false,
+      data: null,
+      error: { code: "INTERACTIVE_REQUIRED" },
+    });
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("--json with conflicting scope flags returns INVALID_ARGS without resolveScope", async () => {
+    await installCommand({ json: true, yes: true, project: true, local: true });
+
+    expect(envelope().error.code).toBe("INVALID_ARGS");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("--json with a scope flag uses it without resolveScope", async () => {
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockRun.mockReturnValue("ok");
+
+    await installCommand({ json: true, project: true });
+
+    expect(envelope().data.scope).toBe("project");
+    expect(mockResolveScope).not.toHaveBeenCalled();
+  });
+
+  it("--json in dev mode returns DEV_MODE_ACTIVE", async () => {
+    mockExistsSync.mockReturnValue(true);
+
+    await installCommand({ json: true, yes: true });
+
+    expect(envelope().error.code).toBe("DEV_MODE_ACTIVE");
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
+  it("--json maps a host resolution error to INVALID_ARGS", async () => {
+    mockResolveHostFlags.mockImplementation(() => {
+      throw new Error('Unknown agent "foo"');
+    });
+
+    await installCommand({ json: true, yes: true, agent: "foo" });
+
+    expect(envelope().error).toEqual({
+      code: "INVALID_ARGS",
+      message: 'Unknown agent "foo"',
+    });
+  });
+
+  it("--json turns a missing host CLI into an error envelope, not process.exit", async () => {
+    mockCommandExists.mockReturnValue(false);
+
+    await installCommand({ json: true, yes: true });
+
+    expect(envelope().error.code).toBe("NOT_FOUND");
+    expect(process.exit).not.toHaveBeenCalled();
+  });
+
+  it("--json reports devin result", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockReconcileDevinPlugin.mockResolvedValue("unchanged");
+
+    await installCommand({ json: true, agent: "devin" });
+
+    expect(envelope().data).toEqual({
+      host: "devin",
+      scope: null,
+      pluginVersion: null,
+      alreadyInstalled: true,
+      disabled: false,
+    });
   });
 });

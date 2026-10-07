@@ -1026,6 +1026,58 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     expect(classifyByRules("Bash", { command: "cf mcp" })).toBe("allow");
   });
 
+  it("allows cf version --json", () => {
+    expect(classifyByRules("Bash", { command: "cf version --json" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows cf project list --json", () => {
+    expect(classifyByRules("Bash", { command: "cf project list --json" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows bare cf config (interactive menu)", () => {
+    expect(classifyByRules("Bash", { command: "cf config" })).toBe("allow");
+  });
+
+  it("allows cf config get", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf config get language --json" }),
+    ).toBe("allow");
+  });
+
+  it("allows cf config schema", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf config schema --json" }),
+    ).toBe("allow");
+  });
+
+  it("does NOT allow cf config set (agent could relax its own guards)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "cf config set --global privacyBlock false",
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow cf config set on the auto-approve allowlist", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: `cf config set --local autoApproveAllowExtra '["curl"]'`,
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow cf config set with an option before set", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "cf config --global set language en",
+      }),
+    ).not.toBe("allow");
+  });
+
   it("does NOT allow unknown cf subcommands (e.g. Cloud Foundry push)", () => {
     expect(classifyByRules("Bash", { command: "cf push myapp" })).not.toBe(
       "allow",

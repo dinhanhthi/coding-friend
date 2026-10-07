@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync, rmSync } from "fs";
+import { existsSync, readdirSync, rmSync } from "fs";
 import { join, resolve, sep } from "path";
 import { homedir } from "os";
 
@@ -7,7 +7,7 @@ import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
-import { memoryConfigMenu, getMemoryMcpStatus } from "../lib/memory-prompts.js";
+import { memoryConfigMenu } from "../lib/memory-prompts.js";
 import {
   registerMemoryMcp,
   isMemoryMcpRegistered,
@@ -17,21 +17,20 @@ import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { checkMemoryMcpHealth, printHealthSection } from "../lib/mcp-health.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
+import { CliError, runJson } from "../lib/output.js";
+import {
+  collectMemoryCore,
+  collectMemoryDetails,
+  countMdFiles,
+  dirSize,
+  getProjectInfo,
+  getProjectsBaseDir,
+  listMemories,
+  searchMemories,
+  type ProjectInfo,
+} from "../lib/memory-data.js";
 import type { CodingFriendConfig } from "../types.js";
 import chalk from "chalk";
-
-function countMdFiles(dir: string): number {
-  if (!existsSync(dir)) return 0;
-  let count = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      count += countMdFiles(join(dir, entry.name));
-    } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-      count++;
-    }
-  }
-  return count;
-}
 
 function getMemoryDir(path?: string): string {
   return resolveMemoryDir(path);
@@ -153,28 +152,41 @@ function formatUptime(seconds: number): string {
   return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
 }
 
-export async function memoryStatusCommand(): Promise<void> {
+/** JSON mode never exits: a failed build becomes MEMORY_BUILD_FAILED. */
+function requireMemoryBuilt(mcpDir: string): void {
+  if (!ensureMemoryBuilt(mcpDir, { exitOnError: false })) {
+    throw new CliError("MEMORY_BUILD_FAILED", "Failed to build memory server");
+  }
+}
+
+interface JsonFlag {
+  json?: boolean;
+}
+
+export async function memoryStatusCommand(opts: JsonFlag = {}): Promise<void> {
+  if (opts.json) {
+    await runJson(async () => {
+      const memoryDir = getMemoryDir();
+      const mcpDir = getLibPath("cf-memory");
+      requireMemoryBuilt(mcpDir);
+      const core = await collectMemoryCore(memoryDir, mcpDir);
+      return { ...core, ...collectMemoryDetails(memoryDir) };
+    });
+    return;
+  }
+
   const memoryDir = getMemoryDir();
-  const docCount = countMdFiles(memoryDir);
   const mcpDir = getLibPath("cf-memory");
   ensureMemoryBuilt(mcpDir);
 
-  // Dynamically import modules to check status
-  const { isDaemonRunning, getDaemonInfo } = await import(
-    join(mcpDir, "dist/daemon/process.js")
-  );
-  const { areSqliteDepsAvailable } = await import(
-    join(mcpDir, "dist/lib/lazy-install.js")
-  );
-
-  const sqliteAvailable = areSqliteDepsAvailable();
-  const running = await isDaemonRunning();
-  const daemonInfo = getDaemonInfo();
+  const core = await collectMemoryCore(memoryDir, mcpDir);
+  const sqliteAvailable = core.sqliteDeps;
+  const { daemon } = core;
 
   let tierLabel: string;
-  if (sqliteAvailable) {
+  if (core.tier === 1) {
     tierLabel = chalk.cyan("Tier 1 (SQLite + Hybrid)");
-  } else if (running) {
+  } else if (core.tier === 2) {
     tierLabel = chalk.cyan("Tier 2 (MiniSearch + Daemon)");
   } else {
     tierLabel = chalk.cyan("Tier 3 (Markdown)");
@@ -184,12 +196,12 @@ export async function memoryStatusCommand(): Promise<void> {
   console.log();
   log.info(`Tier: ${tierLabel}`);
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
-  log.info(`Memories in this dir: ${chalk.green(String(docCount))}`);
+  log.info(`Memories in this dir: ${chalk.green(String(core.documents))}`);
 
-  if (running && daemonInfo) {
-    const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
+  if (daemon.running && daemon.startedAt !== null) {
+    const uptime = (Date.now() - daemon.startedAt) / 1000;
     log.info(
-      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop-daemon"')}`,
+      `Daemon: ${chalk.green("running")} (PID ${daemon.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop-daemon"')}`,
     );
   } else if (sqliteAvailable) {
     log.info(
@@ -209,18 +221,14 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   }
 
-  const config = loadConfig();
-  const embeddingConfig = config.memory?.embedding;
-  if (embeddingConfig?.provider || embeddingConfig?.model) {
-    const provider = embeddingConfig.provider ?? "transformers";
-    const model =
-      embeddingConfig.model ??
-      (provider === "ollama" ? "all-minilm:l6-v2" : "Xenova/all-MiniLM-L6-v2");
+  const details = collectMemoryDetails(memoryDir);
+  if (details.embedding) {
+    const { provider, model } = details.embedding;
     log.info(`Embedding: ${chalk.cyan(model)} ${chalk.dim(`(${provider})`)}`);
   }
 
   // MCP status
-  const mcpStatus = getMemoryMcpStatus();
+  const mcpStatus = details.mcp;
   if (mcpStatus.userScope && mcpStatus.scope === "local") {
     log.info(
       `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow('⚠ project .mcp.json shadows user-scope server — run "cf update" to clean up')}`,
@@ -241,30 +249,36 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   }
 
-  const autoCapture = config.memory?.autoCapture ?? false;
   log.info(
-    `Auto-capture: ${autoCapture ? chalk.green("on") : chalk.dim("off")}`,
+    `Auto-capture: ${details.autoCapture ? chalk.green("on") : chalk.dim("off")}`,
   );
 
-  if (existsSync(memoryDir)) {
-    const categories = readdirSync(memoryDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && !d.name.startsWith("."))
-      .map((d) => {
-        const catCount = countMdFiles(join(memoryDir, d.name));
-        return `${d.name} (${catCount})`;
-      })
-      .filter((s) => !s.endsWith("(0)"));
-
-    if (categories.length > 0) {
-      log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
-    }
+  if (details.categories.length > 0) {
+    const categories = details.categories.map((c) => `${c.name} (${c.count})`);
+    log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
   }
   console.log();
   log.dim(`Docs: https://cf.dinhanhthi.com/#memory`);
   console.log();
 }
 
-export async function memorySearchCommand(query: string): Promise<void> {
+export async function memorySearchCommand(
+  query: string,
+  opts: JsonFlag = {},
+): Promise<void> {
+  if (opts.json) {
+    await runJson(() => {
+      const memoryDir = getMemoryDir();
+      if (!existsSync(memoryDir)) {
+        throw new CliError("NOT_FOUND", `Memory dir not found: ${memoryDir}`);
+      }
+      const mcpDir = getLibPath("cf-memory");
+      requireMemoryBuilt(mcpDir);
+      return { query, results: searchMemories(memoryDir, mcpDir, query) };
+    });
+    return;
+  }
+
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
@@ -305,7 +319,15 @@ export async function memorySearchCommand(query: string): Promise<void> {
 
 export async function memoryListCommand(opts: {
   projects?: boolean;
+  json?: boolean;
 }): Promise<void> {
+  if (opts.json) {
+    await runJson<unknown[]>(() =>
+      opts.projects ? listMemoryProjects() : listMemoriesJson(),
+    );
+    return;
+  }
+
   if (opts.projects) {
     return memoryListProjectsCommand();
   }
@@ -363,6 +385,14 @@ export async function memoryListCommand(opts: {
   if (result !== null) {
     console.log(result);
   }
+}
+
+function listMemoriesJson() {
+  const memoryDir = getMemoryDir();
+  if (!existsSync(memoryDir)) return [];
+  const mcpDir = getLibPath("cf-memory");
+  requireMemoryBuilt(mcpDir);
+  return listMemories(memoryDir, mcpDir);
 }
 
 export async function memoryStartDaemonCommand(): Promise<void> {
@@ -790,11 +820,6 @@ export async function memoryConfigCommand(): Promise<void> {
 
 // ─── Helpers for list --projects / rm ──────────────────────────────────────────
 
-function getProjectsBaseDir(): string {
-  const home = homedir();
-  return join(home, ".coding-friend", "memory", "projects");
-}
-
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -814,87 +839,34 @@ function formatDate(raw: string): string {
   return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
-function dirSize(dir: string): number {
-  let total = 0;
-  if (!existsSync(dir)) return 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, entry.name);
-    if (entry.isFile()) {
-      total += statSync(p).size;
-    } else if (entry.isDirectory()) {
-      total += dirSize(p);
-    }
-  }
-  return total;
-}
+/** JSON twin of memoryListProjectsCommand — same source_dir backfill, sorted by size. */
+async function listMemoryProjects(): Promise<ProjectInfo[]> {
+  const baseDir = getProjectsBaseDir();
+  const mcpDir = getLibPath("cf-memory");
+  requireMemoryBuilt(mcpDir);
+  if (!existsSync(baseDir)) return [];
 
-interface ProjectInfo {
-  id: string;
-  sourceDir: string | null;
-  memories: number;
-  size: number;
-  lastUpdated: string | null;
-}
+  const dirs = readdirSync(baseDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+    .map((d) => d.name);
+  if (dirs.length === 0) return [];
 
-function getProjectInfo(
-  projectDir: string,
-  projectId: string,
-  mcpDir: string,
-  knownSourceDir?: string,
-): ProjectInfo {
-  const dbPath = join(projectDir, "db.sqlite");
-  const size = dirSize(projectDir);
-  const info: ProjectInfo = {
-    id: projectId,
-    sourceDir: null,
-    memories: 0,
-    size,
-    lastUpdated: null,
-  };
+  const currentMemoryDir = resolve(getMemoryDir());
+  const { projectId } = await import(
+    join(mcpDir, "dist/backends/sqlite/index.js")
+  );
+  const currentProjectId = projectId(currentMemoryDir);
 
-  if (!existsSync(dbPath)) return info;
-
-  // Try to read metadata from SQLite
-  // If knownSourceDir is provided and source_dir is missing, backfill it
-  try {
-    const backfillDir = knownSourceDir
-      ? JSON.stringify(knownSourceDir)
-      : "null";
-    const result = run(
-      "node",
-      [
-        "-e",
-        `
-        const path = require("path");
-        const mod = require(path.join(${JSON.stringify(mcpDir)}, "dist/lib/lazy-install.js"));
-        if (!mod.areSqliteDepsAvailable()) { console.log(JSON.stringify({})); process.exit(0); }
-        const Database = require(mod.getDepsDir() + "/node_modules/better-sqlite3");
-        const backfill = ${backfillDir};
-        const db = new Database(${JSON.stringify(dbPath)}, { readonly: !backfill });
-        const getMeta = (key) => { try { const r = db.prepare("SELECT value FROM metadata WHERE key = ?").get(key); return r?.value ?? null; } catch { return null; } };
-        let sourceDir = getMeta("source_dir");
-        if (!sourceDir && backfill) {
-          try { db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run("source_dir", backfill); sourceDir = backfill; } catch {}
-        }
-        const count = (() => { try { const r = db.prepare("SELECT COUNT(*) as c FROM memories").get(); return r?.c ?? 0; } catch { return 0; } })();
-        const lastUpdated = (() => { try { const r = db.prepare("SELECT updated FROM memories ORDER BY updated DESC LIMIT 1").get(); return r?.updated ?? null; } catch { return null; } })();
-        console.log(JSON.stringify({ sourceDir, memories: count, lastUpdated }));
-        db.close();
-        `,
-      ],
-      { cwd: projectDir },
-    );
-    if (result) {
-      const parsed = JSON.parse(result.trim());
-      info.sourceDir = parsed.sourceDir ?? null;
-      info.memories = parsed.memories ?? 0;
-      info.lastUpdated = parsed.lastUpdated ?? null;
-    }
-  } catch {
-    // Ignore — will show defaults
-  }
-
-  return info;
+  return dirs
+    .map((id) =>
+      getProjectInfo(
+        join(baseDir, id),
+        id,
+        mcpDir,
+        id === currentProjectId ? currentMemoryDir : undefined,
+      ),
+    )
+    .sort((a, b) => b.size - a.size);
 }
 
 async function memoryListProjectsCommand(): Promise<void> {
