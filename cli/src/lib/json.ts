@@ -1,5 +1,12 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  renameSync,
+  rmSync,
+} from "fs";
+import { basename, dirname, join } from "path";
 
 /**
  * Safely read and parse a JSON file. Returns null if file doesn't exist or is invalid.
@@ -27,6 +34,31 @@ export function writeJson(
     mkdirSync(dir, { recursive: true });
   }
   writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n", "utf-8");
+}
+
+/**
+ * Write JSON atomically: write a temp file in the same directory, then rename
+ * it over the target. On failure the temp file is removed and the old file
+ * stays intact.
+ */
+export function writeJsonAtomic(filePath: string, data: unknown): void {
+  const dir = dirname(filePath);
+  mkdirSync(dir, { recursive: true });
+  const tmp = join(
+    dir,
+    `.${basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
+  );
+  try {
+    writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", "utf-8");
+    renameSync(tmp, filePath);
+  } catch (err) {
+    try {
+      rmSync(tmp, { force: true });
+    } catch {
+      // best effort
+    }
+    throw err;
+  }
 }
 
 /**

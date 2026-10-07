@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-import { Command } from "commander";
+import { Command, CommanderError } from "commander";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { installedPluginsPath } from "./lib/paths.js";
+import { isJsonArgv } from "./lib/output.js";
+import { shouldSkipPostAction, toUsageEnvelope } from "./lib/json-guard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -45,6 +47,12 @@ const wantsVersion =
   process.argv.includes("-v") || process.argv.includes("--version");
 
 const program = new Command();
+
+// JSON mode: turn commander usage errors into an envelope instead of exiting.
+// Must run before any .command(): commander copies exitOverride to
+// subcommands only when they are created.
+const jsonMode = isJsonArgv(process.argv);
+if (jsonMode) program.exitOverride();
 
 program
   .name("cf")
@@ -556,8 +564,9 @@ dev
   });
 
 // Post-command: check for CLI updates (cached, 24h TTL)
-// Skips for 'update' command (handles its own) and version/help flags
-program.hook("postAction", async () => {
+// Skips for 'update' command (handles its own), --json runs, and version/help flags
+program.hook("postAction", async (_this, actionCommand) => {
+  if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
   if (topCmd === "update") return;
 
@@ -565,4 +574,15 @@ program.hook("postAction", async () => {
   checkAndNotifyCliUpdate(pkg.version);
 });
 
-await program.parseAsync();
+try {
+  await program.parseAsync();
+} catch (err) {
+  if (!jsonMode || !(err instanceof CommanderError)) throw err;
+  const envelope = toUsageEnvelope(err);
+  if (envelope) {
+    process.stdout.write(JSON.stringify(envelope) + "\n");
+    process.exitCode = 1;
+  } else {
+    process.exitCode = err.exitCode;
+  }
+}

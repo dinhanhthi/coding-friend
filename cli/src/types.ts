@@ -1,32 +1,35 @@
-export interface LearnCategory {
-  name: string;
-  description: string;
-}
+// Config types are inferred from the zod schemas in lib/config.ts (the single
+// source). Type-only imports: config.ts imports values from this file.
+import type { z } from "zod";
+import type {
+  ConfigSchema,
+  LearnCategorySchema,
+  LearnConfigSchema,
+  MemoryConfigSchema,
+  ReviewConfigSchema,
+  ShowcaseConfigSchema,
+  StatuslineComponentSchema,
+  StatuslineConfigSchema,
+} from "./lib/config.js";
 
-export interface LearnConfig {
-  language?: string;
-  outputDir?: string;
-  categories?: LearnCategory[];
-  autoCommit?: boolean;
-  readmeIndex?: boolean | "per-category";
-  disabled?: boolean;
-}
+export type LearnCategory = z.infer<typeof LearnCategorySchema>;
+export type LearnConfig = z.infer<typeof LearnConfigSchema>;
 
-export type StatuslineComponent =
-  | "version"
-  | "folder"
-  | "model"
-  | "branch"
-  | "account"
-  | "context"
-  | "rate_limit"
-  | "session"
-  | "task_agent";
+/** Single source for statusline component ids (zod enum in lib/config.ts). */
+export const STATUSLINE_COMPONENT_IDS = [
+  "version",
+  "folder",
+  "model",
+  "branch",
+  "account",
+  "context",
+  "rate_limit",
+  "session",
+  "task_agent",
+] as const;
 
-export interface StatuslineConfig {
-  components?: StatuslineComponent[];
-  accountAliases?: Record<string, string>;
-}
+export type StatuslineComponent = z.infer<typeof StatuslineComponentSchema>;
+export type StatuslineConfig = z.infer<typeof StatuslineConfigSchema>;
 
 export const STATUSLINE_COMPONENTS: {
   id: StatuslineComponent;
@@ -58,80 +61,16 @@ export const STATUSLINE_COMPONENTS: {
 export const ALL_COMPONENT_IDS: StatuslineComponent[] =
   STATUSLINE_COMPONENTS.map((c) => c.id);
 
-export interface MemoryConfig {
-  tier?: "auto" | "full" | "lite" | "markdown";
-  embedding?: {
-    provider?: "transformers" | "ollama";
-    model?: string;
-    ollamaUrl?: string;
-  };
-  autoCapture?: boolean;
-  autoStart?: boolean;
-}
-
-export interface ReviewConfig {
-  withCodex?: boolean;
-  withClaude?: boolean;
-  withGrok?: boolean;
-  withCursor?: boolean;
-  withGemini?: boolean;
-  /** Default `/cf-review` to `--fix` (apply Critical/Important until clean). Autopilot passes `--no-fix`. */
-  fix?: boolean;
-  /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
-  commit?: boolean;
-  /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
-  maxRounds?: number;
-  /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */
-  agentTimeout?: number;
-  /** Seconds an in-session reviewer job may run before the main agent stops waiting. Default 600. */
-  nativeTimeout?: number;
-}
-
-/** Saved `/cf-showcase --default` answers for video mode. */
-export interface ShowcaseVideoConfig {
-  /** Target length in whole seconds, or "auto" to let the agent decide. */
-  length?: "auto" | number;
-  aspect?: "16:9" | "1:1" | "9:16";
-  audio?: boolean;
-  languages?: string[];
-}
-
-/** Saved `/cf-showcase --default` answers for poster mode. */
-export interface ShowcasePosterConfig {
-  /** "A4", "A3", "letter", or "<width>x<height>" in pixels. */
-  size?: string;
-  formats?: ("png" | "pdf" | "html")[];
-  languages?: string[];
-}
-
-export interface ShowcaseConfig {
-  video?: ShowcaseVideoConfig;
-  poster?: ShowcasePosterConfig;
-}
+export type MemoryConfig = z.infer<typeof MemoryConfigSchema>;
+export type ReviewConfig = z.infer<typeof ReviewConfigSchema>;
+export type ShowcaseConfig = z.infer<typeof ShowcaseConfigSchema>;
+export type ShowcaseVideoConfig = NonNullable<ShowcaseConfig["video"]>;
+export type ShowcasePosterConfig = NonNullable<ShowcaseConfig["poster"]>;
 
 /** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */
 export const DEFAULT_REVIEW_MAX_ROUNDS = 5;
 
-export interface CodingFriendConfig {
-  language?: string;
-  docsDir?: string;
-  tdd?: boolean;
-  learn?: LearnConfig;
-  statusline?: StatuslineConfig;
-  memory?: MemoryConfig;
-  review?: ReviewConfig;
-  autoApprove?: boolean;
-  autoApproveIgnore?: string[];
-  autoApproveAllowExtra?: string[];
-  privacyBlock?: boolean;
-  scoutBlock?: boolean;
-  disableGUIPlan?: boolean;
-  guiPlanFormat?: "html" | "md";
-  planAuto?: boolean;
-  planCommitPerTask?: boolean;
-  /** Defaults read by `/cf-showcase --default`. */
-  showcase?: ShowcaseConfig;
-}
+export type CodingFriendConfig = z.infer<typeof ConfigSchema>;
 
 export const DEFAULT_CONFIG: Required<
   Pick<CodingFriendConfig, "language" | "docsDir">

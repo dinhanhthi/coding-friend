@@ -25,6 +25,7 @@ vi.mock("../project-root.js", () => ({
 
 import { readJson } from "../json.js";
 import {
+  getConfigJsonSchema,
   loadConfig,
   resolveMemoryDir,
   resolveProjectMemoryDir,
@@ -32,12 +33,142 @@ import {
 } from "../config.js";
 import { resolveMainRepoRoot } from "../project-root.js";
 import { log } from "../log.js";
+import { DEFAULT_CONFIG } from "../../types.js";
 
 const mockReadJson = vi.mocked(readJson);
 const mockResolveMainRepoRoot = vi.mocked(resolveMainRepoRoot);
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+// Characterization: locks the warning order/text and return values of
+// loadConfig and sanitizeRawConfig as they were with z.strictObject.
+// Do NOT edit these expectations.
+describe("config validation characterization", () => {
+  const mixed = () => ({
+    autoApprove: "yes",
+    langauge: "vi",
+    review: { withCodex: true, bogusKey: 1, maxRounds: 0 },
+    autoApproveCodex: true,
+    zzzUnknown: 42,
+    planAuto: "x",
+    tdd: "no",
+    docsDir: "documentation",
+  });
+  const unknownOnly = () => ({
+    autoApproveCodex: true,
+    review: { extra: 1, withGrok: true },
+    memory: { daemon: { idleTimeout: 30 }, autoCapture: true },
+    tdd: true,
+  });
+
+  it("loadConfig: mixed invalid values + unknown top-level/review keys + renamed key", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce(mixed());
+
+    const config = loadConfig();
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "Config: tdd — Invalid input: expected boolean, received string. Using default.",
+      ],
+      [
+        "Config: review.maxRounds — Too small: expected number to be >=1. Using default.",
+      ],
+      ["Unknown config key 'review.bogusKey'."],
+      [
+        "Config: autoApprove — Invalid input: expected boolean, received string. Using default.",
+      ],
+      [
+        "Config: planAuto — Invalid input: expected boolean, received string. Using default.",
+      ],
+      ["Unknown config key 'langauge'. Did you mean 'language'?"],
+      [
+        "Unknown config key 'autoApproveCodex'. It was replaced by 'autoApprove' — set that instead.",
+      ],
+      ["Unknown config key 'zzzUnknown'."],
+    ]);
+    expect(config).toEqual({
+      language: "en",
+      docsDir: "documentation",
+      learn: DEFAULT_CONFIG.learn,
+      review: { withCodex: true },
+    });
+  });
+
+  it("sanitizeRawConfig: mixed config warns with review then top-level unknown keys and returns raw", () => {
+    const raw = mixed();
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(result).toEqual(mixed());
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "sanitizeRawConfig: unrecognized config keys: bogusKey, langauge, autoApproveCodex, zzzUnknown — returning raw config",
+      ],
+    ]);
+  });
+
+  it("loadConfig: unknown keys only (otherwise valid) keeps nested extras via the strip path", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce(unknownOnly());
+
+    const config = loadConfig();
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      ["Unknown config key 'review.extra'."],
+      [
+        "Unknown config key 'autoApproveCodex'. It was replaced by 'autoApprove' — set that instead.",
+      ],
+    ]);
+    expect(config).toEqual({
+      language: "en",
+      docsDir: "docs",
+      learn: DEFAULT_CONFIG.learn,
+      review: { withGrok: true },
+      memory: { daemon: { idleTimeout: 30 }, autoCapture: true },
+      tdd: true,
+    });
+  });
+
+  it("sanitizeRawConfig: unknown keys only warns and returns raw", () => {
+    const raw = unknownOnly();
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(result).toEqual(unknownOnly());
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "sanitizeRawConfig: unrecognized config keys: extra, autoApproveCodex — returning raw config",
+      ],
+    ]);
+  });
+
+  it("sanitizeRawConfig: invalid value only warns without a key list and returns raw", () => {
+    const raw = { planAuto: "x", language: "vi" };
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      ["sanitizeRawConfig: unrecognized config keys — returning raw config"],
+    ]);
+  });
+});
+
+describe("getConfigJsonSchema", () => {
+  function hasAdditionalPropertiesFalse(node: unknown): boolean {
+    if (!node || typeof node !== "object") return false;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "additionalProperties" && value === false) return true;
+      if (hasAdditionalPropertiesFalse(value)) return true;
+    }
+    return false;
+  }
+
+  it("never forbids additional properties anywhere", () => {
+    expect(hasAdditionalPropertiesFalse(getConfigJsonSchema())).toBe(false);
+  });
+
+  it("includes projectRegistry", () => {
+    const schema = getConfigJsonSchema() as {
+      properties: Record<string, unknown>;
+    };
+    expect(schema.properties.projectRegistry).toEqual({ type: "boolean" });
+  });
 });
 
 describe("sanitizeRawConfig", () => {
@@ -253,6 +384,16 @@ describe("loadConfig validation", () => {
     expect(
       (config as Record<string, unknown>)["autoApproveCodex"],
     ).toBeUndefined();
+  });
+
+  it("accepts autoApproveLLM as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ autoApproveLLM: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.autoApproveLLM).toBe(true);
   });
 
   it("accepts privacyBlock as a valid config key (boolean)", () => {

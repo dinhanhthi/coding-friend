@@ -1,8 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "fs";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+vi.mock("fs", async () => {
+  const actual = await vi.importActual<typeof import("fs")>("fs");
+  return { ...actual, renameSync: vi.fn(actual.renameSync) };
+});
+
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  existsSync,
+} from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { readJson, writeJson, mergeJson } from "../json.js";
+import { readJson, writeJson, mergeJson, writeJsonAtomic } from "../json.js";
 
 let testDir: string;
 
@@ -115,5 +129,32 @@ describe("mergeJson", () => {
     mergeJson(file, { recovered: true });
 
     expect(readJson(file)).toEqual({ recovered: true });
+  });
+});
+
+describe("writeJsonAtomic", () => {
+  it("writes formatted JSON into a new nested dir and leaves no temp file", () => {
+    const dir = join(testDir, "nested");
+    const file = join(dir, "atomic.json");
+    writeJsonAtomic(file, { a: 1, list: [1, 2] });
+
+    expect(readFileSync(file, "utf-8")).toBe(
+      JSON.stringify({ a: 1, list: [1, 2] }, null, 2) + "\n",
+    );
+    expect(readdirSync(dir)).toEqual(["atomic.json"]);
+  });
+
+  it("keeps the old file intact and removes the temp file when rename fails", () => {
+    const file = join(testDir, "keep.json");
+    writeFileSync(file, '{"old":true}\n', "utf-8");
+    vi.mocked(renameSync).mockImplementationOnce(() => {
+      throw new Error("rename failed");
+    });
+
+    expect(() => writeJsonAtomic(file, { old: false })).toThrow(
+      "rename failed",
+    );
+    expect(readFileSync(file, "utf-8")).toBe('{"old":true}\n');
+    expect(readdirSync(testDir)).toEqual(["keep.json"]);
   });
 });

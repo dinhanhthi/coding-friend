@@ -3,7 +3,11 @@ import { z } from "zod";
 import { readJson } from "./json.js";
 import { localConfigPath, globalConfigPath, resolvePath } from "./paths.js";
 import { resolveMainRepoRoot } from "./project-root.js";
-import { CodingFriendConfig, DEFAULT_CONFIG } from "../types.js";
+import {
+  CodingFriendConfig,
+  DEFAULT_CONFIG,
+  STATUSLINE_COMPONENT_IDS,
+} from "../types.js";
 import { log } from "./log.js";
 
 /**
@@ -34,12 +38,12 @@ function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
   return result as T;
 }
 
-const LearnCategorySchema = z.object({
+export const LearnCategorySchema = z.object({
   name: z.string(),
   description: z.string(),
 });
 
-const LearnConfigSchema = z.object({
+export const LearnConfigSchema = z.object({
   language: z.string().optional(),
   outputDir: z.string().optional(),
   categories: z.array(LearnCategorySchema).optional(),
@@ -48,24 +52,14 @@ const LearnConfigSchema = z.object({
   disabled: z.boolean().optional(),
 });
 
-const StatuslineComponentSchema = z.enum([
-  "version",
-  "folder",
-  "model",
-  "branch",
-  "account",
-  "context",
-  "rate_limit",
-  "session",
-  "task_agent",
-]);
+export const StatuslineComponentSchema = z.enum(STATUSLINE_COMPONENT_IDS);
 
-const StatuslineConfigSchema = z.object({
+export const StatuslineConfigSchema = z.object({
   components: z.array(StatuslineComponentSchema).optional(),
   accountAliases: z.record(z.string(), z.string()).optional(),
 });
 
-const MemoryConfigSchema = z.object({
+export const MemoryConfigSchema = z.object({
   tier: z.enum(["auto", "full", "lite", "markdown"]).optional(),
   embedding: z
     .object({
@@ -78,47 +72,54 @@ const MemoryConfigSchema = z.object({
   autoStart: z.boolean().optional(),
 });
 
-const ReviewConfigSchema = z.strictObject({
+// Plain z.object (not strict): unknown keys are found by findUnknownKeys, so
+// the JSON Schema never emits additionalProperties:false.
+export const ReviewConfigSchema = z.object({
   withCodex: z.boolean().optional(),
   withClaude: z.boolean().optional(),
   withGrok: z.boolean().optional(),
   withCursor: z.boolean().optional(),
   withGemini: z.boolean().optional(),
+  /** Default `/cf-review` to `--fix` (apply Critical/Important until clean). Autopilot passes `--no-fix`. */
   fix: z.boolean().optional(),
+  /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
   commit: z.boolean().optional(),
+  /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
   maxRounds: z.number().int().min(1).optional(),
   // Both timeouts are whole positive seconds: zero, negative and fractional
   // values cannot be enforced as a deadline, so they are rejected here rather
   // than coerced somewhere downstream. Deliberately NOT offered in the
   // interactive `cf config` review menu — they are file-only settings.
+  /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */
   agentTimeout: z.number().int().min(1).optional(),
+  /** Seconds an in-session reviewer job may run before the main agent stops waiting. Default 600. */
   nativeTimeout: z.number().int().min(1).optional(),
 });
 
 export const SHOWCASE_POSTER_SIZE_RE = /^(A4|A3|letter|\d+x\d+)$/;
 
-const ShowcaseConfigSchema = z.strictObject({
-  video: z
-    .strictObject({
-      length: z.union([z.literal("auto"), z.number().int().min(1)]).optional(),
-      aspect: z.enum(["16:9", "1:1", "9:16"]).optional(),
-      audio: z.boolean().optional(),
-      languages: z.array(z.string().min(1)).min(1).optional(),
-    })
-    .optional(),
-  poster: z
-    .strictObject({
-      size: z.string().regex(SHOWCASE_POSTER_SIZE_RE).optional(),
-      formats: z
-        .array(z.enum(["png", "pdf", "html"]))
-        .min(1)
-        .optional(),
-      languages: z.array(z.string().min(1)).min(1).optional(),
-    })
-    .optional(),
+const ShowcaseVideoConfigSchema = z.object({
+  length: z.union([z.literal("auto"), z.number().int().min(1)]).optional(),
+  aspect: z.enum(["16:9", "1:1", "9:16"]).optional(),
+  audio: z.boolean().optional(),
+  languages: z.array(z.string().min(1)).min(1).optional(),
 });
 
-const ConfigSchema = z.strictObject({
+const ShowcasePosterConfigSchema = z.object({
+  size: z.string().regex(SHOWCASE_POSTER_SIZE_RE).optional(),
+  formats: z
+    .array(z.enum(["png", "pdf", "html"]))
+    .min(1)
+    .optional(),
+  languages: z.array(z.string().min(1)).min(1).optional(),
+});
+
+export const ShowcaseConfigSchema = z.object({
+  video: ShowcaseVideoConfigSchema.optional(),
+  poster: ShowcasePosterConfigSchema.optional(),
+});
+
+export const ConfigSchema = z.object({
   language: z.string().optional(),
   docsDir: z.string().optional(),
   tdd: z.boolean().optional(),
@@ -136,27 +137,24 @@ const ConfigSchema = z.strictObject({
   planAuto: z.boolean().optional(),
   planCommitPerTask: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
+  projectRegistry: z.boolean().optional(),
+  autoApproveLLM: z.boolean().optional(),
 });
 
+/** JSON Schema (input side) for the config file. */
+export function getConfigJsonSchema() {
+  return z.toJSONSchema(ConfigSchema, { io: "input" });
+}
+
 /** Known config keys for typo suggestions */
-const KNOWN_KEYS = [
-  "language",
-  "docsDir",
-  "tdd",
-  "learn",
-  "statusline",
-  "memory",
-  "review",
-  "autoApprove",
-  "autoApproveIgnore",
-  "autoApproveAllowExtra",
-  "privacyBlock",
-  "scoutBlock",
-  "disableGUIPlan",
-  "guiPlanFormat",
-  "planAuto",
-  "planCommitPerTask",
-  "showcase",
+const KNOWN_KEYS = Object.keys(ConfigSchema.shape);
+
+/** Nested objects whose unknown keys are reported, in warning order. */
+const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
+  [["review"], Object.keys(ReviewConfigSchema.shape)],
+  [["showcase"], Object.keys(ShowcaseConfigSchema.shape)],
+  [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
+  [["showcase", "poster"], Object.keys(ShowcasePosterConfigSchema.shape)],
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
@@ -196,41 +194,94 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+interface UnknownKey {
+  /** Parent path: [] for top level, ["review"] for review.*, etc. */
+  path: string[];
+  key: string;
+}
+
+/**
+ * Find keys not declared in the schema, at top level and inside `review` and
+ * `showcase`. Order matches what z.strictObject reported: nested keys, then
+ * top-level keys.
+ */
+export function findUnknownKeys(raw: Record<string, unknown>): UnknownKey[] {
+  const found: UnknownKey[] = [];
+  for (const [path, known] of NESTED_KNOWN_KEYS) {
+    let obj: unknown = raw;
+    for (const key of path) obj = isPlainObject(obj) ? obj[key] : undefined;
+    if (!isPlainObject(obj)) continue;
+    for (const key of Object.keys(obj)) {
+      if (!known.includes(key)) found.push({ path, key });
+    }
+  }
+  for (const key of Object.keys(raw)) {
+    if (!KNOWN_KEYS.includes(key)) found.push({ path: [], key });
+  }
+  return found;
+}
+
+function warnUnknownKey({ path, key }: UnknownKey): void {
+  const isNested = path.length > 0;
+  const fullKey = isNested ? `${path.join(".")}.${key}` : key;
+  const renamedTo = isNested ? undefined : RENAMED_KEYS[key];
+  const suggestion = isNested ? null : suggestKey(key);
+  const hint = renamedTo
+    ? ` It was replaced by '${renamedTo}' — set that instead.`
+    : suggestion
+      ? ` Did you mean '${suggestion}'?`
+      : "";
+  log.warn(`Unknown config key '${fullKey}'.${hint}`);
+}
+
 /**
  * Validate merged config with Zod. Warns on invalid values and unknown keys.
  * Returns sanitized config with invalid fields stripped.
  */
 function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
+  // z.object strips unknown keys silently, so find them before parsing.
+  const unknownKeys = findUnknownKeys(merged);
   const result = ConfigSchema.safeParse(merged);
-  if (result.success) return result.data as CodingFriendConfig;
+  if (result.success && unknownKeys.length === 0) {
+    return result.data as CodingFriendConfig;
+  }
 
-  // Process errors: warn and strip invalid fields
+  // Warn in the order z.strictObject used: value issues in schema order,
+  // nested unknown keys right after their section's value issues, then
+  // top-level unknown keys last.
+  type Entry = { path: PropertyKey[]; unknown?: UnknownKey; message?: string };
+  const entries: Entry[] = [
+    ...(result.success ? [] : result.error.issues),
+    ...unknownKeys.map((u) => ({ path: u.path, unknown: u })),
+  ];
+  const rank = (e: Entry): [number, number] =>
+    e.path.length === 0
+      ? [Infinity, 0]
+      : [KNOWN_KEYS.indexOf(String(e.path[0])), e.unknown ? 1 : 0];
+  entries.sort((a, b) => {
+    const [a0, a1] = rank(a);
+    const [b0, b1] = rank(b);
+    return a0 === b0 ? a1 - b1 : a0 < b0 ? -1 : 1;
+  });
+
+  // Warn and strip unknown keys and invalid fields
   const sanitized = { ...merged };
 
-  for (const issue of result.error.issues) {
-    const pathStr = issue.path.join(".");
-
-    if (issue.code === "unrecognized_keys") {
-      // Unknown keys — may be at top level or nested inside sub-objects
-      const keys = (issue as { keys: string[] }).keys ?? [];
-      for (const key of keys) {
-        const isNested = issue.path.length > 0;
-        const fullKey = isNested ? `${issue.path.join(".")}.${key}` : key;
-        const renamedTo = isNested ? undefined : RENAMED_KEYS[key];
-        const suggestion = isNested ? null : suggestKey(key);
-        const hint = renamedTo
-          ? ` It was replaced by '${renamedTo}' — set that instead.`
-          : suggestion
-            ? ` Did you mean '${suggestion}'?`
-            : "";
-        log.warn(`Unknown config key '${fullKey}'.${hint}`);
-        stripPath(sanitized, [...issue.path, key]);
-      }
+  for (const entry of entries) {
+    if (entry.unknown) {
+      warnUnknownKey(entry.unknown);
+      stripPath(sanitized, [...entry.unknown.path, entry.unknown.key]);
     } else {
       // Type/value errors
-      log.warn(`Config: ${pathStr} — ${issue.message}. Using default.`);
+      log.warn(
+        `Config: ${entry.path.join(".")} — ${entry.message}. Using default.`,
+      );
       // Strip the invalid field by walking the path
-      stripPath(sanitized, issue.path);
+      stripPath(sanitized, entry.path);
     }
   }
 
@@ -258,22 +309,18 @@ function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
 
 /**
  * Strip unsupported fields from a raw config object using the schema.
- * Falls back to the original if parsing fails (e.g. unknown top-level key),
- * and warns so callers can see the issue.
+ * Falls back to the original if there is an unknown key (top level or
+ * review.* / showcase.*) or parsing fails, and warns so callers can see the issue.
  */
 export function sanitizeRawConfig(
   raw: Record<string, unknown>,
 ): Record<string, unknown> {
-  const result = ConfigSchema.safeParse(raw);
-  if (result.success) {
-    return result.data as Record<string, unknown>;
-  }
-  // Extract key names from unrecognized_keys issues for a helpful warning
-  const unknownKeys: string[] = [];
-  for (const issue of result.error.issues) {
-    if (issue.code === "unrecognized_keys") {
-      const keys = (issue as { keys: string[] }).keys ?? [];
-      unknownKeys.push(...keys);
+  // z.object strips unknown keys silently, so find them before parsing.
+  const unknownKeys = findUnknownKeys(raw).map((u) => u.key);
+  if (unknownKeys.length === 0) {
+    const result = ConfigSchema.safeParse(raw);
+    if (result.success) {
+      return result.data as Record<string, unknown>;
     }
   }
   const keyList = unknownKeys.length > 0 ? `: ${unknownKeys.join(", ")}` : "";
