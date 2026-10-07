@@ -53,6 +53,7 @@ fi
 # shellcheck source=../lib/cf-paths.sh
 source "$PLUGIN_ROOT/lib/cf-paths.sh"
 cf_resolve_paths
+node "$PLUGIN_ROOT/lib/project-registry.cjs" record "$MAIN_REPO_ROOT" "$CF_HOST" >/dev/null 2>>"$LOG_FILE" || true
 
 BOOTSTRAP_FILE="$PLUGIN_ROOT/context/bootstrap.md"
 

@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from "fs";
+import { createRequire } from "module";
 import { join } from "path";
 import { tmpdir } from "os";
 import { projectsRegistryPath } from "../paths.js";
@@ -145,5 +146,25 @@ describe("listProjects", () => {
     for (const p of readFile().projects as Record<string, unknown>[]) {
       expect(p).not.toHaveProperty("exists");
     }
+  });
+});
+
+describe("compat with plugin/lib/project-registry.cjs", () => {
+  it("reads a registry written by the hook script without a warning", () => {
+    const home = join(root, "home");
+    mkdirSync(home);
+    vi.stubEnv("HOME", home);
+    const proj = join(root, "proj");
+    mkdirSync(proj);
+    const { record } = createRequire(import.meta.url)(
+      "../../../../plugin/lib/project-registry.cjs",
+    );
+    record(proj, "claude");
+
+    const res = readRegistry();
+    expect(res.warning).toBeUndefined();
+    expect(res.registry.projects).toEqual([
+      expect.objectContaining({ path: realpathSync(proj), hosts: ["claude"] }),
+    ]);
   });
 });

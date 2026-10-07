@@ -11,8 +11,8 @@ const LOG = path.resolve(__dirname, "../session-log.agy.sh");
 const PLUGIN_ROOT = path.resolve(__dirname, "../..");
 const SESSION_ID = `agy-lifecycle-${process.pid}`;
 
-function runHook(script, payload, { cwd } = {}) {
-  const env = { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT };
+function runHook(script, payload, { cwd, env: extraEnv } = {}) {
+  const env = { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT, ...extraEnv };
   delete env.CF_HOST;
   delete env.CODEX_SESSION_ID;
   delete env.OMP_SESSION_ID;
@@ -89,6 +89,53 @@ describe("session-init.agy.sh", () => {
       workspacePaths: ["/tmp"],
     });
     expect(JSON.parse(stdout)).toEqual({});
+  });
+});
+
+describe("session-init.agy.sh project registry", () => {
+  function runInit(projectRegistry) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cf-agy-reg-"));
+    const workspace = path.join(tmp, "project");
+    fs.mkdirSync(path.join(workspace, ".coding-friend"), { recursive: true });
+    fs.writeFileSync(
+      path.join(workspace, ".coding-friend", "config.json"),
+      JSON.stringify({ projectRegistry }),
+    );
+    const projectsFile = path.join(tmp, "projects.json");
+    const stdout = runHook(
+      INIT,
+      { invocationNum: 0, workspacePaths: [workspace] },
+      { env: { CF_PROJECTS_FILE: projectsFile } },
+    );
+    return { tmp, workspace, projectsFile, stdout };
+  }
+
+  it("records the workspace with host agy and keeps the inject output", () => {
+    const { tmp, workspace, projectsFile, stdout } = runInit(true);
+    try {
+      const parsed = JSON.parse(stdout);
+      expect(parsed.injectSteps[0].ephemeralMessage).toContain("HOST: agy");
+      const registry = JSON.parse(fs.readFileSync(projectsFile, "utf8"));
+      const entry = registry.projects.find(
+        (p) => p.path === fs.realpathSync(workspace),
+      );
+      expect(entry).toBeDefined();
+      expect(entry.hosts).toContain("agy");
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not create the registry when projectRegistry is false", () => {
+    const { tmp, projectsFile, stdout } = runInit(false);
+    try {
+      expect(JSON.parse(stdout).injectSteps[0].ephemeralMessage).toContain(
+        "HOST: agy",
+      );
+      expect(fs.existsSync(projectsFile)).toBe(false);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 

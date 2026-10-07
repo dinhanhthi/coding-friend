@@ -136,3 +136,53 @@ describe("session-init.sh", () => {
     }
   });
 });
+
+describe("session-init.sh project registry", () => {
+  function runInit(projectRegistry) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cf-session-reg-"));
+    const cwd = path.join(tmp, "project");
+    fs.mkdirSync(path.join(cwd, ".coding-friend"), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, ".coding-friend", "config.json"),
+      JSON.stringify({ projectRegistry }),
+    );
+    const projectsFile = path.join(tmp, "projects.json");
+    const env = { ...process.env, PLUGIN_ROOT, CF_PROJECTS_FILE: projectsFile };
+    delete env.CF_HOST;
+    delete env.CODEX_SESSION_ID;
+    delete env.OMP_SESSION_ID;
+    const stdout = execFileSync("bash", [SCRIPT], {
+      cwd,
+      input: JSON.stringify({ hookEventName: "SessionStart" }),
+      encoding: "utf8",
+      env,
+    });
+    return { tmp, cwd, projectsFile, stdout };
+  }
+
+  it("records the project with host claude and keeps stdout valid JSON", () => {
+    const { tmp, cwd, projectsFile, stdout } = runInit(true);
+    try {
+      const parsed = JSON.parse(stdout);
+      expect(parsed.hookSpecificOutput.hookEventName).toBe("SessionStart");
+      const registry = JSON.parse(fs.readFileSync(projectsFile, "utf8"));
+      const entry = registry.projects.find(
+        (p) => p.path === fs.realpathSync(cwd),
+      );
+      expect(entry).toBeDefined();
+      expect(entry.hosts).toContain("claude");
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("does not create the registry when projectRegistry is false", () => {
+    const { tmp, projectsFile, stdout } = runInit(false);
+    try {
+      expect(() => JSON.parse(stdout)).not.toThrow();
+      expect(fs.existsSync(projectsFile)).toBe(false);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
