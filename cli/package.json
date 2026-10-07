@@ -17,7 +17,8 @@
     "test": "vitest run && vitest run --config vitest.hooks.config.ts",
     "test:watch": "vitest",
     "test:hooks": "vitest run --config vitest.hooks.config.ts",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist",

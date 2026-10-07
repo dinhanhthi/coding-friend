@@ -115,6 +115,8 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 `cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy|devin` (aliases `--codex`/`--omp`/`--agy`/`--devin`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
 
+Scripts and agents can pass `--json` (status, version, config, memory, project, …) for one machine-readable envelope on stdout; `cf project` lists the projects Coding Friend has seen.
+
 ## Development
 
 [CONTRIBUTING.md](CONTRIBUTING.md) — how local dev works and what to do after each change.
