@@ -4,7 +4,9 @@
 
 PATTERN="(api[_-]?key|token|password|secret|private[_-]?key|credential)"
 
-SECRETS=$(git diff --cached 2>/dev/null | grep -c -iE "$PATTERN" || echo 0)
+# grep -c already prints 0 on no match (but exits 1) — don't append a second 0
+SECRETS=$(git diff --cached 2>/dev/null | grep -c -iE "$PATTERN")
+SECRETS=${SECRETS:-0}
 echo "SECRETS=${SECRETS}"
 
 if [ "${SECRETS}" -gt 0 ]; then
