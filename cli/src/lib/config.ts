@@ -14,7 +14,10 @@ import { log } from "./log.js";
  * Deep merge two plain objects. Local values override global at every nesting
  * level, but sibling keys from global are preserved (not dropped).
  */
-function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
+export function deepMerge<T extends Record<string, unknown>>(
+  base: T,
+  override: T,
+): T {
   const result = { ...base } as Record<string, unknown>;
   for (const key of Object.keys(override)) {
     const baseVal = result[key];

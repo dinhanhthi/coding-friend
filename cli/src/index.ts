@@ -165,12 +165,51 @@ program
     await initCommand(opts);
   });
 
-program
+const config = program
   .command("config")
-  .description("Manage Coding Friend configuration")
+  .description("Manage Coding Friend configuration");
+
+// Hidden default: bare `cf config` still opens the interactive menu.
+config
+  .command("menu", { isDefault: true, hidden: true })
+  .description("Interactive configuration menu")
   .action(async () => {
     const { configCommand } = await import("./commands/config.js");
     await configCommand();
+  });
+
+config
+  .command("get [key]")
+  .description("Show config (all, or one dotted key) and where it comes from")
+  .option("--global", "Read only the global config")
+  .option("--local", "Read only the local project config")
+  .option("--json", "Output a JSON envelope")
+  .action(async (key: string | undefined, opts) => {
+    const { configGetCommand } =
+      await import("./commands/config-subcommands.js");
+    await configGetCommand(key, opts);
+  });
+
+config
+  .command("set <key> <value>")
+  .description("Set a dotted config key (JSON value or string; null deletes)")
+  .option("--global", "Write the global config")
+  .option("--local", "Write the local project config")
+  .option("--json", "Output a JSON envelope")
+  .action(async (key: string, value: string, opts) => {
+    const { configSetCommand } =
+      await import("./commands/config-subcommands.js");
+    await configSetCommand(key, value, opts);
+  });
+
+config
+  .command("schema")
+  .description("Print the JSON Schema of the config file")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { configSchemaCommand } =
+      await import("./commands/config-subcommands.js");
+    await configSchemaCommand(opts);
   });
 
 const learn = program
@@ -310,6 +349,46 @@ program
   .action(async () => {
     const { statusCommand } = await import("./commands/status.js");
     await statusCommand();
+  });
+
+program
+  .command("version")
+  .description("Show CLI and per-host plugin versions")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { versionCommand } = await import("./commands/version.js");
+    await versionCommand(pkg.version, opts);
+  });
+
+const project = program
+  .command("project")
+  .description("Manage the registry of known projects");
+
+project
+  .command("list")
+  .description("List registered projects")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { projectListCommand } = await import("./commands/project.js");
+    await projectListCommand(opts);
+  });
+
+project
+  .command("add [path]")
+  .description("Register a project (default: current directory's repo root)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (path: string | undefined, opts) => {
+    const { projectAddCommand } = await import("./commands/project.js");
+    await projectAddCommand(path, opts);
+  });
+
+project
+  .command("remove <path>")
+  .description("Remove a project from the registry")
+  .option("--json", "Output a JSON envelope")
+  .action(async (path: string, opts) => {
+    const { projectRemoveCommand } = await import("./commands/project.js");
+    await projectRemoveCommand(path, opts);
   });
 
 program

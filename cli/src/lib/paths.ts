@@ -119,6 +119,13 @@ export function globalConfigDir(): string {
   return join(homedir(), ".coding-friend");
 }
 
+/** Project registry file (CF_PROJECTS_FILE overrides ~/.coding-friend/projects.json) */
+export function projectsRegistryPath(): string {
+  return (
+    process.env.CF_PROJECTS_FILE || join(globalConfigDir(), "projects.json")
+  );
+}
+
 /** Memory dependencies directory (~/.coding-friend/memory) */
 export function memoryDepsDir(): string {
   return join(homedir(), ".coding-friend", "memory");
