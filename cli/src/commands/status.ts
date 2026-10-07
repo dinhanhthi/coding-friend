@@ -1,61 +1,26 @@
-import { existsSync, readdirSync } from "fs";
-import { join } from "path";
 import chalk from "chalk";
-import { listMdFilesRecursive } from "../lib/fs-utils.js";
-
-import { getInstalledVersion } from "../lib/statusline.js";
-import { readJson } from "../lib/json.js";
+import { semverCompare } from "./update.js";
+import type { McpHealthResult } from "../lib/mcp-health.js";
 import {
-  isAgyPluginEnabled,
-  isAgyPluginInstalled,
-  readAgyPluginVersion,
-} from "../lib/agy-config.js";
-import { readDevinInstallState } from "../lib/devin-config.js";
+  collectLearnMcpHealth,
+  collectMemoryMcpHealth,
+} from "../lib/mcp-report.js";
+import { runJson } from "../lib/output.js";
 import {
-  agyPluginDir,
-  claudeSettingsPath,
-  devStatePath,
-  globalConfigPath,
-  localConfigPath,
-} from "../lib/paths.js";
-import { getExistingRules } from "../lib/permissions.js";
-import { isPluginDisabled, detectPluginScope } from "../lib/plugin-state.js";
-import {
-  resolveMemoryDir,
-  resolveLearnDir,
-  sanitizeRawConfig,
-} from "../lib/config.js";
-import { isLearnMcpRegistered } from "../lib/learn-prompts.js";
-import { isMemoryMcpRegistered } from "../lib/memory-mcp-register.js";
-import { type CodingFriendConfig } from "../types.js";
-import { getLibPath } from "../lib/lib-path.js";
-import {
-  semverCompare,
-  getLatestVersion,
-  getCliVersion,
-  getLatestCliVersion,
-} from "./update.js";
-import {
-  checkMemoryMcpHealth,
-  checkLearnMcpHealth,
-} from "../lib/mcp-health.js";
+  collectConfig,
+  collectMemory,
+  collectPlugin,
+  collectStatus,
+  collectVersions,
+  type ConfigStatus,
+  type MemoryStatus,
+  type PluginStatus,
+  type VersionsStatus,
+} from "../lib/status-data.js";
 
 const VERSION_COL = 11;
 const CONFIG_KEY_COL = 16;
 const CONFIG_SUB_COL = 16;
-
-function countMdFiles(dir: string): number {
-  if (!existsSync(dir)) return 0;
-  let count = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      count += countMdFiles(join(dir, entry.name));
-    } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-      count++;
-    }
-  }
-  return count;
-}
 
 function formatUptime(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;
@@ -202,85 +167,59 @@ function versionLine(
   return `${padded}${current} → ${latest} ${indicator}`;
 }
 
-export async function statusCommand(): Promise<void> {
-  console.log(chalk.dim("Loading status information…"));
-
-  // ─── Versions ────────────────────────────────────────────────────
-  const pluginVersion = getInstalledVersion();
-  const latestPlugin = getLatestVersion();
-  const cliVersion = getCliVersion();
-  const latestCli = getLatestCliVersion();
-
+function printVersions(v: VersionsStatus): void {
   console.log();
   console.log(chalk.bold("📦 Versions"));
 
-  if (pluginVersion) {
-    console.log(versionLine("Plugin", pluginVersion, latestPlugin));
+  if (v.plugin.current) {
+    console.log(versionLine("Plugin", v.plugin.current, v.plugin.latest));
   } else {
     console.log(`${pad("Plugin", VERSION_COL)}${chalk.dim("not installed")}`);
   }
 
-  console.log(versionLine("CLI", cliVersion, latestCli));
+  console.log(versionLine("CLI", v.cli.current, v.cli.latest));
+}
 
-  // ─── Plugin ──────────────────────────────────────────────────────
+function printPlugin(p: PluginStatus): void {
   console.log();
   console.log(chalk.bold("🔧 Plugin"));
-
-  // Scope detection: check highest-priority scope with plugin config
-  const detectedScope = detectPluginScope();
-  console.log(`${pad("Scope", VERSION_COL)}${detectedScope}`);
-
-  // Enabled/disabled
-  const disabled = isPluginDisabled(detectedScope);
+  console.log(`${pad("Scope", VERSION_COL)}${p.scope}`);
   console.log(
-    `${pad("Status", VERSION_COL)}${disabled ? chalk.yellow("disabled") : chalk.green("enabled")}`,
+    `${pad("Status", VERSION_COL)}${p.enabled ? chalk.green("enabled") : chalk.yellow("disabled")}`,
   );
 
-  // Auto-update
-  try {
-    const claudeSettings =
-      readJson<Record<string, unknown>>(claudeSettingsPath());
-    const marketplaces = claudeSettings?.extraKnownMarketplaces as
-      | Record<string, Record<string, unknown>>
-      | undefined;
-    const autoUpdate =
-      marketplaces?.["coding-friend-marketplace"]?.autoUpdate === true;
-    console.log(
-      `${pad("Auto-update", VERSION_COL)}${autoUpdate ? chalk.green("on") : chalk.dim("off")}`,
-    );
-  } catch {
-    console.log(`${pad("Auto-update", VERSION_COL)}${chalk.dim("unknown")}`);
-  }
+  const autoUpdate =
+    p.autoUpdate === "unknown"
+      ? chalk.dim("unknown")
+      : p.autoUpdate
+        ? chalk.green("on")
+        : chalk.dim("off");
+  console.log(`${pad("Auto-update", VERSION_COL)}${autoUpdate}`);
 
-  // Dev mode
-  const devState = readJson<{ localPath: string }>(devStatePath());
   console.log(
-    `${pad("Dev mode", VERSION_COL)}${devState ? chalk.cyan("on") : chalk.dim("off")}`,
+    `${pad("Dev mode", VERSION_COL)}${p.devMode ? chalk.cyan("on") : chalk.dim("off")}`,
+  );
+  console.log(
+    `${pad("Permissions", VERSION_COL)}${p.permissionRules} rules ${chalk.dim('→ Run "cf permission" for details')}`,
   );
 
-  // Permissions
-  const rules = getExistingRules(claudeSettingsPath());
-  console.log(
-    `${pad("Permissions", VERSION_COL)}${rules.length} rules ${chalk.dim('→ Run "cf permission" for details')}`,
-  );
-
-  if (!isAgyPluginInstalled()) {
+  if (!p.antigravity) {
     console.log(
       `${pad("Antigravity", VERSION_COL)}${chalk.dim("not installed")}`,
     );
   } else {
-    const agyVersion = readAgyPluginVersion();
-    const agyEnabled = isAgyPluginEnabled();
-    const versionPart = agyVersion ? `v${agyVersion} ` : "";
-    const enabledPart = agyEnabled
+    const versionPart = p.antigravity.version
+      ? `v${p.antigravity.version} `
+      : "";
+    const enabledPart = p.antigravity.enabled
       ? chalk.green("enabled")
       : chalk.yellow("disabled");
     console.log(
-      `${pad("Antigravity", VERSION_COL)}${versionPart}${enabledPart}  ${chalk.dim(agyPluginDir())}`,
+      `${pad("Antigravity", VERSION_COL)}${versionPart}${enabledPart}  ${chalk.dim(p.antigravity.dir)}`,
     );
   }
 
-  const devinState = readDevinInstallState();
+  const devinState = p.devin;
   if (devinState.kind === "none") {
     console.log(`${pad("Devin", VERSION_COL)}${chalk.dim("not installed")}`);
   } else {
@@ -297,172 +236,103 @@ export async function statusCommand(): Promise<void> {
       `${pad("Devin", VERSION_COL)}${versionPart}${kindColor(`${devinState.kind} install`)}${detail ? `  ${chalk.dim(detail)}` : ""}`,
     );
   }
+}
 
-  // ─── Memory ──────────────────────────────────────────────────────
+const TIER_LABELS = {
+  1: "Tier 1 (SQLite + Hybrid)",
+  2: "Tier 2 (MiniSearch + Daemon)",
+  3: "Tier 3 (Markdown)",
+} as const;
+
+function daemonLabel(daemon: MemoryStatus["daemon"]): string {
+  if (!daemon) return chalk.dim("unavailable");
+  if (!daemon.running) {
+    return `${chalk.dim("stopped")} ${chalk.dim('→ "cf memory start-daemon" to start')}`;
+  }
+  if (daemon.pid !== null && daemon.startedAt !== null) {
+    const uptime = (Date.now() - daemon.startedAt) / 1000;
+    return `${chalk.green("running")} (PID ${daemon.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('→ "cf memory stop-daemon" to stop')}`;
+  }
+  return `${chalk.green("running")} ${chalk.dim('→ "cf memory stop-daemon" to stop')}`;
+}
+
+function printMemory(m: MemoryStatus): void {
   console.log();
   console.log(chalk.bold("🧠 Memory"));
-
-  const memoryDir = resolveMemoryDir();
-  const docCount = countMdFiles(memoryDir);
-
-  let tierLabel = chalk.dim("unavailable");
-  let daemonLabel = chalk.dim("unavailable");
-
-  try {
-    const mcpDir = getLibPath("cf-memory");
-    if (existsSync(join(mcpDir, "dist"))) {
-      const { areSqliteDepsAvailable } = await import(
-        join(mcpDir, "dist/lib/lazy-install.js")
-      );
-      const { isDaemonRunning, getDaemonInfo } = await import(
-        join(mcpDir, "dist/daemon/process.js")
-      );
-
-      const sqliteAvailable = areSqliteDepsAvailable();
-      const running = await isDaemonRunning();
-
-      if (sqliteAvailable) {
-        tierLabel = chalk.cyan("Tier 1 (SQLite + Hybrid)");
-      } else if (running) {
-        tierLabel = chalk.cyan("Tier 2 (MiniSearch + Daemon)");
-      } else {
-        tierLabel = chalk.cyan("Tier 3 (Markdown)");
-      }
-
-      if (running) {
-        const info = getDaemonInfo();
-        if (info) {
-          const uptime = (Date.now() - info.startedAt) / 1000;
-          daemonLabel = `${chalk.green("running")} (PID ${info.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('→ "cf memory stop-daemon" to stop')}`;
-        } else {
-          daemonLabel = `${chalk.green("running")} ${chalk.dim('→ "cf memory stop-daemon" to stop')}`;
-        }
-      } else {
-        daemonLabel = `${chalk.dim("stopped")} ${chalk.dim('→ "cf memory start-daemon" to start')}`;
-      }
-    }
-  } catch {
-    // cf-memory not built or not available — keep defaults
-  }
-
+  const tierLabel = m.tier
+    ? chalk.cyan(TIER_LABELS[m.tier])
+    : chalk.dim("unavailable");
   console.log(`${pad("Tier", VERSION_COL)}${tierLabel}`);
-  console.log(`${pad("Daemon", VERSION_COL)}${daemonLabel}`);
-  console.log(`${pad("Documents", VERSION_COL)}${docCount} files`);
+  console.log(`${pad("Daemon", VERSION_COL)}${daemonLabel(m.daemon)}`);
+  console.log(`${pad("Documents", VERSION_COL)}${m.documents} files`);
   console.log(chalk.dim(`  → Run "cf memory status" for details`));
+}
 
-  // ─── MCP ─────────────────────────────────────────────────────────
+function printHealthChecks(health: McpHealthResult): void {
+  let hasIssues = false;
+  for (const check of health.checks) {
+    const indicator = check.ok
+      ? chalk.green("✓")
+      : check.warn
+        ? chalk.yellow("⚠")
+        : chalk.red("✗");
+    const detail = !check.ok && check.detail ? `: ${check.detail}` : "";
+    console.log(`    ${indicator} ${pad(check.label, 20)}${detail}`);
+    if (!check.ok && !check.warn) hasIssues = true;
+  }
+  if (hasIssues) {
+    console.log(chalk.dim(`    → Run "cf mcp" to fix`));
+  }
+}
+
+/** Prints each MCP sub-section as soon as it is collected (keeps partial output on error). */
+async function printMcp(): Promise<void> {
   console.log();
   console.log(chalk.bold("🔌 MCP"));
 
   try {
-    const localMcpPath = join(process.cwd(), ".mcp.json");
-
-    // Memory MCP sub-section
     console.log(chalk.dim("  Memory MCP (coding-friend-memory)"));
-    let memIsDaemonRunning: () => Promise<boolean> = async () => false;
-    const memMcpDir = (() => {
-      try {
-        return getLibPath("cf-memory");
-      } catch {
-        return null;
-      }
-    })();
-    const memoryDistPath = memMcpDir
-      ? join(memMcpDir, "dist", "index.js")
-      : "/unavailable";
-    if (memMcpDir) {
-      try {
-        const proc = await import(join(memMcpDir, "dist/daemon/process.js"));
-        memIsDaemonRunning = proc.isDaemonRunning;
-      } catch {
-        // not built yet — daemon reports stopped (warn)
-      }
-    }
-
-    const memHealth = await checkMemoryMcpHealth({
-      readMcpJson: () => readJson<Record<string, unknown>>(localMcpPath),
-      pathExists: existsSync,
-      isDaemonRunning: memIsDaemonRunning,
-      memoryDistPath,
-      isRegistered: isMemoryMcpRegistered,
-    });
-
-    let memHasIssues = false;
-    for (const check of memHealth.checks) {
-      const indicator = check.ok
-        ? chalk.green("✓")
-        : check.warn
-          ? chalk.yellow("⚠")
-          : chalk.red("✗");
-      const detail = !check.ok && check.detail ? `: ${check.detail}` : "";
-      console.log(`    ${indicator} ${pad(check.label, 20)}${detail}`);
-      if (!check.ok && !check.warn) memHasIssues = true;
-    }
-    if (memHasIssues) {
-      console.log(chalk.dim(`    → Run "cf mcp" to fix`));
-    }
+    printHealthChecks(await collectMemoryMcpHealth());
 
     console.log();
 
-    // Learn MCP sub-section
     console.log(chalk.dim("  Learn MCP (coding-friend-learn)"));
-    let learnMcpDir: string | null = null;
-    try {
-      learnMcpDir = getLibPath("learn-mcp");
-    } catch {
-      // not available
-    }
-    const learnMcpDistPath = learnMcpDir
-      ? join(learnMcpDir, "dist", "index.js")
-      : "/unavailable";
-    const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
-    const docsDir = resolveLearnDir(globalCfg);
-
-    const learnHealth = await checkLearnMcpHealth({
-      checkRegistered: isLearnMcpRegistered,
-      pathExists: existsSync,
-      listMdFiles: listMdFilesRecursive,
-      docsDir,
-      learnMcpDistPath,
-    });
-
-    let learnHasIssues = false;
-    for (const check of learnHealth.checks) {
-      const indicator = check.ok
-        ? chalk.green("✓")
-        : check.warn
-          ? chalk.yellow("⚠")
-          : chalk.red("✗");
-      const detail = !check.ok && check.detail ? `: ${check.detail}` : "";
-      console.log(`    ${indicator} ${pad(check.label, 20)}${detail}`);
-      if (!check.ok && !check.warn) learnHasIssues = true;
-    }
-    if (learnHasIssues) {
-      console.log(chalk.dim(`    → Run "cf mcp" to fix`));
-    }
+    printHealthChecks(await collectLearnMcpHealth());
   } catch {
     console.log(`${pad("MCP", VERSION_COL)}${chalk.dim("unavailable")}`);
   }
+}
 
-  // ─── Config ──────────────────────────────────────────────────────
-  const rawGlobalConfig = readJson<Record<string, unknown>>(globalConfigPath());
-  const rawLocalConfig = readJson<Record<string, unknown>>(localConfigPath());
-  const globalConfig = rawGlobalConfig
-    ? sanitizeRawConfig(rawGlobalConfig)
-    : null;
-  const localConfig = rawLocalConfig ? sanitizeRawConfig(rawLocalConfig) : null;
+function printConfigSection(c: ConfigStatus): void {
+  const globalConfig = c.global?.config ?? null;
 
-  if (globalConfig && Object.keys(globalConfig).length > 0) {
+  if (c.global && Object.keys(c.global.config).length > 0) {
     console.log();
-    console.log(chalk.bold(`⚙️ Config (global: ${globalConfigPath()})`));
-    printConfig(globalConfig, null);
+    console.log(chalk.bold(`⚙️ Config (global: ${c.global.path})`));
+    printConfig(c.global.config, null);
   }
 
-  if (localConfig && Object.keys(localConfig).length > 0) {
+  if (c.local && Object.keys(c.local.config).length > 0) {
     console.log();
-    console.log(chalk.bold(`⚙️ Config (local: ${localConfigPath()})`));
-    printConfig(localConfig, globalConfig);
+    console.log(chalk.bold(`⚙️ Config (local: ${c.local.path})`));
+    printConfig(c.local.config, globalConfig);
   }
 
   console.log();
+}
+
+export async function statusCommand(
+  opts: { json?: boolean } = {},
+): Promise<void> {
+  if (opts.json) {
+    await runJson(collectStatus);
+    return;
+  }
+
+  console.log(chalk.dim("Loading status information…"));
+  printVersions(collectVersions());
+  printPlugin(collectPlugin());
+  printMemory(await collectMemory());
+  await printMcp();
+  printConfigSection(collectConfig());
 }

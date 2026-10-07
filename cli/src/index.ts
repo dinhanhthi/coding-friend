@@ -256,9 +256,10 @@ program
 program
   .command("mcp")
   .description("Setup MCP server for learning docs")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
     const { mcpCommand } = await import("./commands/mcp.js");
-    await mcpCommand();
+    await mcpCommand(opts);
   });
 
 program
@@ -338,6 +339,8 @@ program
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
+  .option("--check", "Only report installed vs latest versions (read-only)")
+  .option("--json", "Output a JSON envelope (requires --check)")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);
@@ -346,9 +349,10 @@ program
 program
   .command("status")
   .description("Show comprehensive Coding Friend status")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
     const { statusCommand } = await import("./commands/status.js");
-    await statusCommand();
+    await statusCommand(opts);
   });
 
 program

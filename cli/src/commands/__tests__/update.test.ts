@@ -994,8 +994,7 @@ describe("updateCommand — devin host", () => {
     // CLI self-update runs once (Claude section) — Devin's section has skipCli
     expect(
       mockRun.mock.calls.filter(
-        ([cmd, args]) =>
-          cmd === "npm" && (args as string[])[0] === "install",
+        ([cmd, args]) => cmd === "npm" && (args as string[])[0] === "install",
       ),
     ).toHaveLength(1);
     expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
@@ -1047,5 +1046,92 @@ describe("updateCommand — local dev link guard", () => {
     await updateCommand({ cli: true });
 
     expect(mockRun).toHaveBeenCalledWith("npm", CLI_INSTALL_ARGS);
+  });
+});
+
+describe("updateCommand — --check", () => {
+  beforeEach(() => {
+    mockDetectHostsAvailable.mockReturnValue(["claude"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.0");
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm" && args?.[0] === "view") return "2.0.0";
+      return null;
+    });
+  });
+
+  function captureStdout(): () => string {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    return () => spy.mock.calls.map((c) => String(c[0])).join("");
+  }
+
+  it("is read-only: no install, no claude plugin call, no scope or host resolution", async () => {
+    await updateCommand({ check: true, project: true });
+
+    expect(mockRun).not.toHaveBeenCalledWith(
+      "npm",
+      expect.arrayContaining(["install"]),
+    );
+    expect(mockRun).not.toHaveBeenCalledWith("claude", expect.anything());
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockResolveHostFlags).not.toHaveBeenCalled();
+    expect(mockRemoveMemoryMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("prints CLI and host versions in human mode", async () => {
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ check: true });
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toMatch(/CLI\s+1\.0\.0 → 2\.0\.0/);
+    expect(output).toMatch(/Plugin\s+latest 0\.7\.2/);
+    expect(output).toMatch(/Claude\s+0\.7\.0 → 0\.7\.2/);
+  });
+
+  it("writes one ok envelope with the update-check shape for --check --json", async () => {
+    const stdout = captureStdout();
+
+    await updateCommand({ check: true, json: true });
+
+    const env = JSON.parse(stdout());
+    expect(env.ok).toBe(true);
+    expect(env.data.cli).toMatchObject({
+      current: "1.0.0",
+      latest: "2.0.0",
+      updateAvailable: true,
+    });
+    expect(env.data.plugin).toEqual({ latest: "0.7.2" });
+    expect(env.data.hosts[0]).toEqual({
+      host: "claude",
+      installed: true,
+      current: "0.7.0",
+      updateAvailable: true,
+    });
+    expect(env.data).toHaveProperty("statusline");
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("rejects --json without --check with an INVALID_ARGS envelope", async () => {
+    const stdout = captureStdout();
+    const prevExitCode = process.exitCode;
+
+    try {
+      await updateCommand({ json: true });
+
+      const env = JSON.parse(stdout());
+      expect(env.ok).toBe(false);
+      expect(env.error.code).toBe("INVALID_ARGS");
+      expect(process.exitCode).toBe(1);
+      expect(mockRunWithStderr).not.toHaveBeenCalled();
+      expect(mockRun).not.toHaveBeenCalled();
+    } finally {
+      process.exitCode = prevExitCode;
+    }
   });
 });

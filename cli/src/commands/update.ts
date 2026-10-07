@@ -45,6 +45,8 @@ import {
   registerMemoryMcp,
 } from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
+import { CliError, runJson } from "../lib/output.js";
+import { collectUpdateCheck, type UpdateCheck } from "../lib/update-info.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -143,7 +145,7 @@ export function getLatestVersion(): string | null {
   return tag.replace(/^v/, "");
 }
 
-function getStatuslineVersion(): string | null {
+export function getStatuslineVersion(): string | null {
   const settings = readJson<Record<string, unknown>>(claudeSettingsPath());
   if (!settings?.statusLine) return null;
 
@@ -160,6 +162,8 @@ export interface UpdateOptions extends ScopeFlags {
   cli?: boolean;
   plugin?: boolean;
   statusline?: boolean;
+  check?: boolean;
+  json?: boolean;
 }
 
 interface UpdateRunMode {
@@ -183,10 +187,7 @@ function hasExplicitHost(opts: UpdateOptions): boolean {
   if (argvHasAgentFlag()) return true;
   const agent = opts.agent?.trim().toLowerCase();
   return (
-    agent === "codex" ||
-    agent === "omp" ||
-    agent === "agy" ||
-    agent === "devin"
+    agent === "codex" || agent === "omp" || agent === "agy" || agent === "devin"
   );
 }
 
@@ -250,7 +251,57 @@ async function updateHost(
   return updateClaudeCommand(opts, mode);
 }
 
+function printUpdateCheck(info: UpdateCheck): void {
+  const pad = (label: string) =>
+    `  ${label}${" ".repeat(Math.max(1, 13 - label.length))}`;
+  const line = (
+    label: string,
+    current: string | null,
+    latest: string | null,
+    behind: boolean | null,
+  ): string => {
+    if (!current) return `${pad(label)}${chalk.dim("not installed")}`;
+    if (behind === null)
+      return `${pad(label)}${current} ${chalk.dim("(latest unavailable)")}`;
+    const indicator = behind
+      ? chalk.yellow("⚠ update available")
+      : chalk.green("✔ up to date");
+    return `${pad(label)}${current} → ${latest} ${indicator}`;
+  };
+
+  console.log(
+    line("CLI", info.cli.current, info.cli.latest, info.cli.updateAvailable),
+  );
+  console.log(
+    `${pad("Plugin")}${info.plugin.latest ? `latest ${info.plugin.latest}` : chalk.dim("latest unavailable")}`,
+  );
+  for (const h of info.hosts.filter((h) => h.installed)) {
+    console.log(
+      h.current
+        ? line(
+            hostSectionTitle(h.host),
+            h.current,
+            info.plugin.latest,
+            h.updateAvailable,
+          )
+        : `${pad(hostSectionTitle(h.host))}${chalk.dim("installed (version unknown)")}`,
+    );
+  }
+}
+
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
+  if (opts.check) {
+    if (opts.json) await runJson(() => collectUpdateCheck());
+    else printUpdateCheck(collectUpdateCheck());
+    return;
+  }
+  if (opts.json) {
+    await runJson(() => {
+      throw new CliError("INVALID_ARGS", "--json requires --check");
+    });
+    return;
+  }
+
   if (hasExplicitHost(opts)) {
     const { host } = resolveHostFlags(flagsForHostResolve(opts));
     await updateHost(host, opts);
