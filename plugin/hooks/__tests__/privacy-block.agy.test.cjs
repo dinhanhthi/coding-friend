@@ -118,6 +118,75 @@ describe("privacy-block.agy.sh", () => {
     expect(result.json).toEqual({ decision: "allow" });
   });
 
+  // Regression: unanchored 'credentials' / '\.env\.' denied source files.
+  for (const filePath of [
+    "/x/src/brain-sso-credentials-form.ts",
+    "/x/src/config.env.ts",
+    "/x/src/secret-manager.ts",
+  ]) {
+    it(`allows view_file of source file ${filePath}`, () => {
+      const result = runHook({
+        toolCall: {
+          name: "view_file",
+          args: { AbsolutePath: filePath },
+        },
+      });
+      expect(result.status).toBe(0);
+      expect(result.json).toEqual({ decision: "allow" });
+    });
+  }
+
+  for (const filePath of [
+    "/x/config/credentials.json",
+    "/home/u/.aws/credentials",
+    "/x/config/.env.local",
+  ]) {
+    it(`denies view_file of ${filePath}`, () => {
+      const result = runHook({
+        toolCall: {
+          name: "view_file",
+          args: { AbsolutePath: filePath },
+        },
+      });
+      expect(result.status).toBe(0);
+      expect(result.json.decision).toBe("deny");
+      expect(result.json.reason).toContain(filePath);
+    });
+  }
+
+  it('denies run_command "cat .env.local" (exit 0)', () => {
+    const result = runHook({
+      toolCall: {
+        name: "run_command",
+        args: { CommandLine: "cat .env.local" },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.json.decision).toBe("deny");
+  });
+
+  it('denies run_command "cat config/credentials.json src/a.ts" (exit 0)', () => {
+    const result = runHook({
+      toolCall: {
+        name: "run_command",
+        args: { CommandLine: "cat config/credentials.json src/a.ts" },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.json.decision).toBe("deny");
+  });
+
+  it('denies run_command "cat<config/credentials.json;:>a.ts" (no whitespace)', () => {
+    const result = runHook({
+      toolCall: {
+        name: "run_command",
+        args: { CommandLine: "cat<config/credentials.json;:>a.ts" },
+      },
+    });
+    expect(result.status).toBe(0);
+    expect(result.json.decision).toBe("deny");
+  });
+
   it("denies find_by_name Pattern *.env", () => {
     const result = runHook({
       toolCall: {

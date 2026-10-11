@@ -98,6 +98,75 @@ describe("privacy-block.sh", () => {
     expect(result.stdout.trim()).toBe("{}");
   });
 
+  // Regression: unanchored 'credentials' / 'secret' / '\.env\.' blocked
+  // ordinary source and doc files.
+  for (const filePath of [
+    "src/brain-sso-credentials-form.ts",
+    "src/config.env.ts",
+    "src/types/process.env.d.ts",
+    "src/secret-manager.ts",
+    "src/features/credentials/form.tsx",
+    "docs/secrets.md",
+  ]) {
+    it(`allows source/doc file_path ${filePath}`, () => {
+      const result = runHook({
+        tool_name: "Read",
+        tool_input: { file_path: filePath },
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe("{}");
+    });
+  }
+
+  for (const filePath of [
+    "/home/u/.aws/credentials",
+    "/home/u/.git-credentials",
+    "config/credentials.json",
+    "config/credentials/prod.json",
+    "config/secrets.yaml",
+    "config/client_secret.json",
+    "config/.env.production",
+    "config/prod.env",
+    ".env.local",
+    "prod.env.local",
+    "web.env.production",
+    "secrets.py",
+    "config/credentials.js",
+    "/home/u/.ssh/helper.py",
+  ]) {
+    it(`blocks sensitive file_path ${filePath}`, () => {
+      const result = runHook({
+        tool_name: "Read",
+        tool_input: { file_path: filePath },
+      });
+      expect(result.status).toBe(2);
+      expect(result.stdout).toContain('"permissionDecision": "deny"');
+      expect(result.stdout).toContain(filePath);
+    });
+  }
+
+  it("allows a Grep whose content pattern mentions credentials", () => {
+    // Grep's pattern is a content regex, not a path.
+    for (const toolName of ["Grep", "grep"]) {
+      const result = runHook({
+        tool_name: toolName,
+        tool_input: { pattern: "getCredentials", path: "src" },
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe("{}");
+    }
+  });
+
+  it("blocks a Glob pattern for .env.* files", () => {
+    const result = runHook({
+      tool_name: "Glob",
+      tool_input: { pattern: "**/.env.*" },
+    });
+    expect(result.status).toBe(2);
+    expect(result.stdout).toContain('"permissionDecision": "deny"');
+    expect(result.stdout).toContain("**/.env.*");
+  });
+
   it("blocks an apply_patch whose sensitive header follows a quoted hunk", () => {
     // Regression: the old `"[^"]*"` capture truncated the command at the first
     // escaped quote in the body, hiding any header after the first quoted hunk.

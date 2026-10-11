@@ -2,14 +2,16 @@
 # PreToolUse hook: Block access to sensitive files.
 #
 # Prevents the agent from reading files that match sensitive patterns
-# such as .env, .pem, .key, SSH keys, AWS/GPG credentials, and anything
-# containing "secret" or "credentials" in the path.
+# such as .env, .pem, .key, SSH keys, AWS/GPG credentials, and paths
+# containing "secret" or "credentials" (except source/doc files such as
+# secret-manager.ts). See lib/privacy-patterns.sh.
 #
 # Safe patterns (.example, .sample, .template) are allowlisted and
 # bypass the block. Runs before Read, Write, Edit, Glob, Grep tools.
+# Grep's pattern is a content regex, not a path, so it is not checked.
 #
 # Integration contract:
-#   stdin  – JSON with tool_input (file_path, command, pattern)
+#   stdin  – JSON with tool_name, tool_input (file_path, command, pattern)
 #   stdout – JSON with hookSpecificOutput on block, {} on allow
 #   Exit 0 = allow, Exit 2 = block
 #
@@ -44,6 +46,7 @@ INPUT=$(cat)
 # with node to recover the full command and extract the patch target paths.
 FILE_PATH=$(printf '%s' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 PATTERN=$(printf '%s' "$INPUT" | grep -o '"pattern"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"pattern"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+TOOL_NAME=$(printf '%s' "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tool_name"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 
 PATCH_PATHS=""
 if printf '%s' "$INPUT" | grep -q '"command"'; then
@@ -68,7 +71,10 @@ fi
 # Collect all paths to check as an array
 PATHS_ARRAY=()
 [ -n "$FILE_PATH" ] && PATHS_ARRAY+=("$FILE_PATH")
-[ -n "$PATTERN" ] && PATHS_ARRAY+=("$PATTERN")
+# Grep's pattern is a content regex, not a path (Devin sends lowercase "grep").
+if [ -n "$PATTERN" ] && ! printf '%s' "$TOOL_NAME" | grep -qi '^grep$'; then
+  PATHS_ARRAY+=("$PATTERN")
+fi
 if [ -n "$PATCH_PATHS" ]; then
   while IFS= read -r patch_path; do
     [ -n "$patch_path" ] && PATHS_ARRAY+=("$patch_path")
@@ -79,20 +85,9 @@ fi
 for path in "${PATHS_ARRAY[@]:-}"; do
   [ -z "$path" ] && continue
 
-  # Check safe patterns first
-  is_safe=false
-  for safe in "${SAFE_PATTERNS[@]}"; do
-    if echo "$path" | grep -qiE "$safe"; then
-      is_safe=true
-      break
-    fi
-  done
-  $is_safe && continue
-
-  # Check sensitive patterns
-  for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-    if echo "$path" | grep -qiE "$pattern"; then
-      cat <<EOF
+  pattern="$(privacy_sensitive_pattern "$path" || true)"
+  if [ -n "$pattern" ]; then
+    cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
@@ -101,9 +96,8 @@ for path in "${PATHS_ARRAY[@]:-}"; do
   }
 }
 EOF
-      exit 2
-    fi
-  done
+    exit 2
+  fi
 done
 
 # Allow
