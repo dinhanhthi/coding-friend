@@ -69,20 +69,20 @@ Shared: `/cf-plan` autopilot = `--auto` **or** config `planAuto: true`; `--no-au
 
 ## Agents
 
-| Agent                  | Model   | Dispatched by                                                              |
-| ---------------------- | ------- | -------------------------------------------------------------------------- |
-| `cf-explorer`          | haiku   | `/cf-plan`, `/cf-fix`, `/cf-ask`                                           |
-| `cf-planner`           | inherit | `/cf-plan` (`--model` pins this one)                                       |
-| `cf-implementer`       | inherit | `/cf-plan`, `/cf-fix`, `cf-tdd` — writes code; `[CF-RESULT]`; no autopilot |
-| `cf-reviewer`          | inherit | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP), `/cf-ship`                     |
-| `cf-reviewer-plan`     | sonnet  | direct call only — off `/cf-review`'s default path                         |
-| `cf-reviewer-security` | sonnet  | `/cf-review` in DEEP (2nd reviewer, in parallel)                           |
-| `cf-reviewer-quality`  | haiku   | direct call only — off `/cf-review`'s default path                         |
-| `cf-reviewer-tests`    | haiku   | direct call only — off `/cf-review`'s default path                         |
-| `cf-reviewer-rules`    | haiku   | direct call only (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER)                      |
-| `cf-reviewer-reducer`  | haiku   | direct call only — `/cf-review` merges inline                              |
-| `cf-writer`            | haiku   | learn / remember / scan / fix / ask                                        |
-| `cf-writer-deep`       | sonnet  | `/cf-learn`                                                                |
+| Agent                  | Model   | Dispatched by                                                                                                                     |
+| ---------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `cf-explorer`          | haiku   | `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-advise`, `/cf-optimize`, `/cf-research`, `/cf-scan`, `/cf-showcase`                        |
+| `cf-planner`           | inherit | `/cf-plan` (`--model` pins this one)                                                                                              |
+| `cf-implementer`       | inherit | `/cf-plan`, `/cf-plan-resume`, `/cf-fix`, `/cf-optimize`, `/cf-review --fix`, `cf-tdd` — writes code; `[CF-RESULT]`; no autopilot |
+| `cf-reviewer`          | inherit | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP)                                                                                        |
+| `cf-reviewer-plan`     | sonnet  | direct call only — off `/cf-review`'s default path                                                                                |
+| `cf-reviewer-security` | sonnet  | `/cf-review` in DEEP (2nd reviewer, in parallel)                                                                                  |
+| `cf-reviewer-quality`  | haiku   | direct call only — off `/cf-review`'s default path                                                                                |
+| `cf-reviewer-tests`    | haiku   | direct call only — off `/cf-review`'s default path                                                                                |
+| `cf-reviewer-rules`    | haiku   | direct call only (CLAUDE.md MUST/SHOULD/ALWAYS/NEVER)                                                                             |
+| `cf-reviewer-reducer`  | haiku   | `/cf-plan-review` (merges external reviews) — `/cf-review` merges inline                                                          |
+| `cf-writer`            | haiku   | learn / remember / scan / fix / ask / advise / sys-debug / warm                                                                   |
+| `cf-writer-deep`       | sonnet  | `/cf-learn`, `/cf-teach`, `/cf-plan` (overview), `/cf-remember`, `/cf-scan`                                                       |
 
 ### Review pipeline (`/cf-review`)
 

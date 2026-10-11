@@ -3,8 +3,7 @@ name: cf-reviewer
 description: >
   Code reviewer. Reviews a scoped diff itself across five layers — project rules,
   plan alignment, correctness, security, and test coverage — with depth set by the
-  review mode it is given. Dispatched by cf-review and cf-ship for thorough review
-  before merge. Trigger this agent when the user asks to review code changes — e.g.
+  review mode it is given. Dispatched by cf-review for thorough review before merge. Trigger this agent when the user asks to review code changes — e.g.
   "review this", "review my changes", "check the code", "look over this", "code review",
   "any issues with this?", "is this code ok?", "review before merge", "review the diff",
   "what do you think of these changes?". This agent runs in an isolated context, reads the
@@ -16,7 +15,7 @@ description: >
 model: inherit
 tools: Read, Glob, Grep, Bash
 created: 2026-02-17
-updated: 2026-09-26
+updated: 2026-10-11
 ---
 
 # Code Reviewer
