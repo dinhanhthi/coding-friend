@@ -31,10 +31,6 @@ next-env.d.ts
 # Pagefind (generated at build time)
 _pagefind/
 
-# NOTE: website/src/generated/ contains token-counts.json produced by
-# `npm run generate:tokens`. It is committed (not ignored) because the
-# website's static build imports it at compile time.
-
 # Website
 website/public/llms-full.txt
 
