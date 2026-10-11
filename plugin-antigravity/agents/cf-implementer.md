@@ -50,7 +50,7 @@ Check if the prompt or context contains `--add-tests`. Also check if the context
 
 > Only in TDD mode (`--add-tests` or `"tdd": true`).
 
-- Read `<plugin-root>/lib/protocols/test-scope.md` first — skip the test when it adds no protection, and say why in the Report
+- Read `<plugin-root>/lib/protocols/test-scope.md` first — skip any test it does not allow (including tests listed in the task or plan), and say why in the Report
 - Write the smallest test that describes the desired behavior
 - Run it — it MUST fail
 - If it doesn't fail, you don't need this code

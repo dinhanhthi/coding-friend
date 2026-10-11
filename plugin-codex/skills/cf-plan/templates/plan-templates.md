@@ -254,5 +254,6 @@ Use when dispatching `cf-planner` (after the spawn/`model` line in SKILL.md):
 > Codebase context: [full cf-explorer report]
 > Generate 2-3 approaches with pros, cons, effort, risk, confidence. Recommend one with rationale.
 > Respect the phase size budget: fewest phases that fit ≤ 15 distinct files per phase; no phase under 3 tasks unless it is the whole plan or a hard gate (merge small neighbours); split only over the cap (integer-numbered, each green on its own).
+> Tests: follow `${PLUGIN_ROOT}/lib/protocols/test-scope.md` — new tests only for key feature core, security, breaking change/contract, or bug regression; name the behavior guarded, no exhaustive case lists.
 
 > **Hard mode**: 3–4 approaches; each needs migration path, rollback, incremental deploy. Include blast-radius findings.
