@@ -3,7 +3,8 @@ name: cf-reviewer-reducer
 description: >
   Review reducer agent. Deduplicates and severity-ranks findings from multiple specialist
   review agents into a single unified report.
-  Directly callable; cf-review merges inline and does not dispatch it by default.
+  Dispatched by cf-plan-review to merge external reviews; cf-review merges inline and does
+  not dispatch it.
 tools: Read
 ---
 # Review Reducer

@@ -11,7 +11,7 @@ Execute the plan phase by phase. Read by `$cf-plan` (after approval at Step 7) a
 Dispatch `cf-implementer` per task:
 
 > Task: [description] | Context file: [path] | Context: [overall plan] | Files: [list] | Verify: [criteria] | Test patterns: [framework, locations — only if --add-tests] | Constraints: [risks/edge cases]
-> If `--add-tests` was passed to `$cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests.
+> If `--add-tests` was passed to `$cf-plan`, include `--add-tests` in this prompt. Otherwise implement directly without writing new tests. With `--add-tests`, tests named in the plan are candidates, not requirements: write only those `${PLUGIN_ROOT}/lib/protocols/test-scope.md` allows.
 
 **Checkpoint before dispatch**: flip the task to `🔄 IN PROGRESS`.
 

@@ -22,11 +22,12 @@ Read-only. Never write files (no redirection, `tee`, or heredoc) and never run b
 
 ## Process
 
+Read `<plugin-root>/lib/protocols/test-scope.md` first. Ask for a test only where it allows one (key feature core, security, breaking change/contract, bug regression) — never for every function, branch, or edge case.
+
 ### Coverage
 
-- Are new code paths tested?
-- Are new functions/methods covered by tests?
-- Are modified branches (if/else, switch) tested for both paths?
+- Is the core behavior of a new or changed key feature tested?
+- Are security-sensitive paths and changed public contracts (CLI, config, file formats, exported API) tested?
 
 ### Quality
 
@@ -34,12 +35,12 @@ Read-only. Never write files (no redirection, `tee`, or heredoc) and never run b
 - Are assertions meaningful (not just `toBeTruthy()` on complex objects)?
 - Do test names describe the expected behavior?
 - Are tests independent (no shared mutable state)?
+- Are any new tests trivial, redundant, or near-duplicates (see test-scope)?
 
 ### Edge Cases
 
-- Are error paths tested (what happens when things fail)?
-- Are boundary conditions tested (empty arrays, null values, max values)?
-- Are concurrent/async edge cases considered?
+- Is the one failure path that matters for a guarded behavior tested (e.g. rejected input, denied permission)?
+- Are concurrent/async edge cases considered where the change introduces them?
 
 ### Regression
 
@@ -62,9 +63,9 @@ Only report findings with confidence ≥ 0.8. Include confidence score for Criti
 
 ## Severity
 
-- Changed code with no tests AND high risk of regression → **Critical**
-- Missing test for an edge case the change actually puts at risk, or weak assertions → **Important**
-- Other edge cases, redundant or near-duplicate tests, test naming, organization, or minor coverage gaps → **Suggestion**
+- Security-sensitive or breaking change with no tests AND high risk of regression → **Critical**
+- Missing test for a key feature's core behavior, a security-sensitive path, a changed public contract, or a bug regression, or weak assertions on a guarded behavior → **Important**
+- Trivial, redundant, or near-duplicate tests (suggest removing), test naming, organization, or any other coverage gap → **Suggestion**
 
 ## Output Format
 

@@ -56,6 +56,7 @@ Review this plan before implementing. Check all of the following:
 6. Missing risks / rollback.
 7. A \`## AUTOPILOT\` block must exist when frontmatter has \`auto: true\`.
 8. No task violates Not Building.
+9. Planned new tests stay few: only for a key feature's core behavior, a security-sensitive path, a breaking change / public contract, or a bug regression. Flag trivial tests (constants, types, getters, one per branch, every edge case) and exhaustive test-case lists.
 
 ## Output Format
 

@@ -2,7 +2,8 @@
 name: cf-writer
 description: >
   Lightweight document writer for skills that generate markdown files. Dispatched by cf-learn,
-  cf-remember, cf-scan, cf-fix, and cf-ask for writing docs, memory files, and notes. Trigger
+  cf-remember, cf-scan, cf-fix, cf-ask, cf-advise, cf-sys-debug, and cf-warm for writing docs,
+  memory files, and notes. Trigger
   this agent when a skill needs to write or update markdown documents — e.g. "write the doc",
   "save to memory", "create a note", "write the summary", "generate the markdown", "update
   the doc file". Handles straightforward content — simple concepts, factual notes, conventions,
@@ -12,7 +13,7 @@ description: >
 model: haiku
 tools: Read, Write, Edit, Glob, Bash
 created: 2026-02-20
-updated: 2026-09-09
+updated: 2026-10-11
 ---
 
 You are a focused document writer. Skills delegate file writing to you with a structured write spec. Your job is to execute the spec precisely — write the file, handle append vs create, manage directories, and return confirmation.

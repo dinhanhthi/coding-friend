@@ -130,9 +130,6 @@ Version files, bump levels, and the changelog rules live in
 [CLAUDE.md](CLAUDE.md#versioning). The flow is `/cf-commit` → `/cf-review` →
 `/cf-ship` → merge the PR → `/release` on `main`.
 
-After adding, removing, or editing a `SKILL.md` or agent file, run
-`npm run generate:tokens` so the website's context-footprint data stays in sync.
-
 ## Reference
 
 - [docs/architecture.md](docs/architecture.md) — plugin vs CLI overview

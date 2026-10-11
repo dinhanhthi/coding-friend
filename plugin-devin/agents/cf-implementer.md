@@ -3,8 +3,9 @@ name: cf-implementer
 description: >
   Implementation agent — direct coding by default, TDD opt-in. Use this agent when you need
   to implement code changes. Dispatched by cf-tdd for substantial implementations (3+ files,
-  complex algorithms, multi-step features), by cf-plan for executing plan tasks, and by cf-fix
-  for bug fixes. Trigger this agent when the user asks to implement, build, create, or write
+  complex algorithms, multi-step features), by cf-plan and cf-plan-resume for executing plan
+  tasks, by cf-fix for bug fixes, by cf-optimize for optimizations, and by cf-review --fix for
+  applying review findings. Trigger this agent when the user asks to implement, build, create, or write
   production code that spans multiple files or involves complex logic — e.g. "implement this
   feature", "build the API endpoint", "create the service layer", "write the authentication
   flow", "add the data pipeline", "implement the webhook handler", "build the migration",
@@ -59,7 +60,7 @@ Check if the prompt or context contains `--add-tests`. Also check if the context
 
 > Only in TDD mode (`--add-tests` or `"tdd": true`).
 
-- Read `<plugin-root>/lib/protocols/test-scope.md` first — skip the test when it adds no protection, and say why in the Report
+- Read `<plugin-root>/lib/protocols/test-scope.md` first — skip any test it does not allow (including tests listed in the task or plan), and say why in the Report
 - Write the smallest test that describes the desired behavior
 - Run it — it MUST fail
 - If it doesn't fail, you don't need this code

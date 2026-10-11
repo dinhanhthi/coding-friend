@@ -48,27 +48,14 @@ fi
 # Directory SearchPath values like ~/.ssh have no trailing slash; also check
 # the slash-terminated form so '\.ssh/' (and similar) still match.
 # Glob Pattern values (*.env, .env*) are de-globbed (* and ? stripped) so
-# they still match \.env$ / \.env\.
+# they still match the .env patterns in privacy-patterns.sh.
 privacy_agy_denied_pattern() {
   local path="$1"
-  local check_path is_safe safe pattern deglobbed
+  local check_path deglobbed
   deglobbed="${path//[*?]/}"
   for check_path in "$path" "${path%/}/" "$deglobbed" "${deglobbed%/}/"; do
     [ -z "$check_path" ] && continue
-    is_safe=false
-    for safe in "${SAFE_PATTERNS[@]}"; do
-      if echo "$check_path" | grep -qiE "$safe"; then
-        is_safe=true
-        break
-      fi
-    done
-    $is_safe && continue
-    for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-      if echo "$check_path" | grep -qiE "$pattern"; then
-        printf '%s\n' "$pattern"
-        return 0
-      fi
-    done
+    privacy_sensitive_pattern "$check_path" && return 0
   done
   return 1
 }

@@ -2,8 +2,8 @@
 name: cf-writer-deep
 description: >
   Deep reasoning document writer for nuanced technical content, complex multi-concept
-  synthesis, or very long context. Dispatched by cf-learn when deep reasoning is enabled, and
-  by skills needing thorough technical explanations. Trigger this agent instead of cf-writer
+  synthesis, or very long context. Dispatched by cf-teach (always), by cf-plan for the human
+  overview doc, and by cf-learn, cf-remember, and cf-scan for complex content. Trigger this agent instead of cf-writer
   when the content involves advanced architecture explanations, subtle debugging insights,
   complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write
   a detailed explanation", "document this architecture", "explain this complex concept",
@@ -13,7 +13,7 @@ description: >
 model: sonnet
 tools: Read, Write, Edit, Glob, Bash
 created: 2026-02-20
-updated: 2026-09-09
+updated: 2026-10-11
 ---
 
 You are a focused document writer. Skills delegate file writing to you with a structured write spec. Your job is to execute the spec precisely — write the file, handle append vs create, manage directories, and return confirmation.

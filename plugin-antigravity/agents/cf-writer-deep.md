@@ -1,7 +1,7 @@
 ---
 name: cf-writer-deep
 description: >
-  Deep reasoning document writer for nuanced technical content, complex multi-concept synthesis, or very long context. Dispatched by cf-learn when deep reasoning is enabled, and by skills needing thorough technical explanations. Trigger this agent instead of cf-writer when the content involves advanced architecture explanations, subtle debugging insights, complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write a detailed explanation", "document this architecture", "explain this complex concept", "write deep analysis", "create technical documentation". Uses pro for deeper analysis. Do NOT use this agent for simple notes, factual memory entries, or quick summaries — use cf-writer instead.
+  Deep reasoning document writer for nuanced technical content, complex multi-concept synthesis, or very long context. Dispatched by cf-teach (always), by cf-plan for the human overview doc, and by cf-learn, cf-remember, and cf-scan for complex content. Trigger this agent instead of cf-writer when the content involves advanced architecture explanations, subtle debugging insights, complex trade-off analysis, or topics that need careful technical reasoning — e.g. "write a detailed explanation", "document this architecture", "explain this complex concept", "write deep analysis", "create technical documentation". Uses pro for deeper analysis. Do NOT use this agent for simple notes, factual memory entries, or quick summaries — use cf-writer instead.
 model: pro
 ---
 

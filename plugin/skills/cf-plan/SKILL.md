@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use /cf-advise), or resuming
   an existing plan (use /cf-plan-resume).
 created: 2026-02-17
-updated: 2026-09-27
+updated: 2026-10-11
 model: inherit
 ---
 
@@ -93,7 +93,7 @@ Present: key findings, approaches with pros/cons, recommended approach and why, 
 
 ### Step 5: Write the Plan
 
-Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): fewest phases that fit ≤ 15 distinct files (tests included) per phase; no phase under 3 tasks unless it is the whole plan or a hard gate — merge small neighbours. Before writing, count every phase — also in fast mode (no planner). Over the cap → split into more integer-numbered phases at a dependency boundary, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy the `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` contract from `modes/autopilot.md` into `README.md` only. Hard: **Rollback** per task + `## Migration & Rollback`.
+Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/Approach. Narrative → human overview (Step 6). Group into **phases** (one session each). **Phase size budget** (same as `cf-planner`): fewest phases that fit ≤ 15 distinct files (tests included) per phase; no phase under 3 tasks unless it is the whole plan or a hard gate — merge small neighbours. Before writing, count every phase — also in fast mode (no planner). Over the cap → split into more integer-numbered phases at a dependency boundary, each leaving build + tests green; only an all-mechanical sweep phase (e.g. rename) with nothing else may exceed the file cap. Per task: files, outcome, verify. **Tests:** verify with the existing suite, build, or a manual check; plan a new test only where `${CLAUDE_PLUGIN_ROOT}/lib/protocols/test-scope.md` allows (key feature core, security, breaking change/contract, bug regression) — name the behavior it guards, never an exhaustive case list. Markers: `#### Phase N [parallel]` or `[sequential]`; no planner → one `[sequential]`. Autopilot: copy the `## AUTOPILOT (IMPORTANT — DO NOT DEVIATE EVEN IN LONG CONVERSATIONS)` contract from `modes/autopilot.md` into `README.md` only. Hard: **Rollback** per task + `## Migration & Rollback`.
 
 ### Step 6: Save the Plan
 

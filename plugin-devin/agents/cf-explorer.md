@@ -3,7 +3,8 @@ name: cf-explorer
 description: >
   Codebase explorer for understanding project structure, finding relevant files, tracing
   dependencies, and answering specific questions about code. Dispatched by cf-plan before
-  planning, by cf-fix before diagnosing bugs, and by cf-ask for gathering code context.
+  planning, by cf-fix before diagnosing bugs, and by cf-ask, cf-advise, cf-optimize,
+  cf-research, cf-scan, and cf-showcase for gathering code context.
   Trigger this agent when you need codebase context before making decisions — e.g. "explore
   the codebase", "find where this is used", "trace the data flow", "what calls this function",
   "map the dependencies", "find related files", "how does this module work", "where is this
