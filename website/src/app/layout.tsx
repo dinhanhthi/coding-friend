@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_HEADLINE, SITE_TITLE } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 
 const geist = Geist({
@@ -22,7 +22,7 @@ const POSTER_ALT =
 export const metadata: Metadata = {
   metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
-    default: SITE_TITLE,
+    default: SITE_HEADLINE,
     template: `%s | ${SITE_TITLE}`,
   },
   description: SITE_DESCRIPTION,
@@ -34,23 +34,23 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: SITE_TITLE,
-    title: SITE_TITLE,
+    title: SITE_HEADLINE,
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/poster.jpg",
+        url: "/og.jpg",
         type: "image/jpeg",
-        width: 1920,
-        height: 1080,
+        width: 1200,
+        height: 630,
         alt: POSTER_ALT,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_TITLE,
+    title: SITE_HEADLINE,
     description: SITE_DESCRIPTION,
-    images: [{ url: "/poster.jpg", alt: POSTER_ALT }],
+    images: [{ url: "/og.jpg", alt: POSTER_ALT }],
   },
   alternates: {
     canonical: "https://cf.dinhanhthi.com",
