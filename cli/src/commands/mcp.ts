@@ -96,7 +96,7 @@ export async function mcpCommand(): Promise<void> {
   }
 }`);
   console.log();
-  log.dim("See full docs: https://cf.dinhanhthi.com/docs/cli/cf-mcp/");
+  log.dim("See full docs: https://cf.dinhanhthi.com/#memory");
   console.log();
 
   // ─── Auto-activate CF Learn MCP (user scope) ─────────────────────────────

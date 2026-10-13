@@ -138,7 +138,7 @@ export function printMemoryMcpConfig(memoryDir: string): void {
   console.log();
 
   log.dim(
-    "Available tools & resources: https://cf.dinhanhthi.com/docs/cli/cf-mcp/",
+    "Available tools & resources: https://cf.dinhanhthi.com/#memory",
   );
   console.log();
   log.dim(
@@ -260,7 +260,7 @@ export async function memoryStatusCommand(): Promise<void> {
     }
   }
   console.log();
-  log.dim(`Docs: https://cf.dinhanhthi.com/docs/reference/memory-system/`);
+  log.dim(`Docs: https://cf.dinhanhthi.com/#memory`);
   console.log();
 }
 
@@ -725,14 +725,14 @@ export async function memoryInitWizard(
   );
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
   log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/docs/cli/cf-memory/")}`,
+    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/#memory")}`,
   );
 }
 
 function printInitDone(): void {
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
   log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/docs/cli/cf-memory/")}`,
+    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/#memory")}`,
   );
 }
 

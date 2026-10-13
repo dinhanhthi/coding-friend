@@ -103,7 +103,7 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     log.success("Auto-update enabled for coding-friend plugin.");
   } else {
     log.warn(
-      `Cannot make plugin auto-update. Please enable it manually: ${chalk.cyan("https://cf.dinhanhthi.com/docs/getting-started/installation/")}`,
+      `Cannot make plugin auto-update. Please enable it manually: ${chalk.cyan("https://cf.dinhanhthi.com/#install")}`,
     );
   }
 

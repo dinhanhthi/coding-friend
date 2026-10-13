@@ -123,7 +123,7 @@ async function interactiveFlow(
 
   console.log(
     chalk.dim(
-      "Full reference: https://cf.dinhanhthi.com/docs/reference/permissions/",
+      "Full reference: https://cf.dinhanhthi.com/#auto-approve",
     ),
   );
   console.log();

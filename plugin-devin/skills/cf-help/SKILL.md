@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-10-04
+updated: 2026-10-14
 ---
 
 # /cf-help — Coding Friend Help
@@ -102,7 +102,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `clean` `session` `guide` `dev`. No skill requires the CLI. Full flags: `topics.md`.
 
-Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/docs/reference/context-usage/.
+Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/.
 
 ### Step 3: Read specific files (if detailed question)
 
@@ -118,7 +118,7 @@ Present the workflows in `topics.md`. Distinction: `/cf-remember` = project know
 - **Config / custom guides?** `topics.md`.
 - **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`; Devin `--permission-mode dangerous` (CF `PermissionRequest` hook approve/block). CF hook: `autoApprove`. Details: `topics.md`.
 - **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
-- **More?** [Troubleshooting](https://cf.dinhanhthi.com/docs/reference/troubleshooting/).
+- **More?** [Troubleshooting](https://cf.dinhanhthi.com/#help).
 
 ### Step 6: Answer concisely
 

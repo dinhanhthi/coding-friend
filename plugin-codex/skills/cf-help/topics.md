@@ -21,7 +21,7 @@ Paths are relative to `${PLUGIN_ROOT}` (git checkout: `plugin/`). Repo-only `doc
 | CLI required?                | `docs/cli-requirements.md` (repo) or CLI tiers below | —                                                             |
 | Architecture                 | `docs/architecture.md` (repo)                        | —                                                             |
 | Local plugin / host dev      | `CONTRIBUTING.md` (repo)                             | —                                                             |
-| Tokens / troubleshooting     | https://cf.dinhanhthi.com/docs/reference/            | —                                                             |
+| Tokens / troubleshooting     | https://cf.dinhanhthi.com/                           | —                                                             |
 
 Resolve plugin files as `${PLUGIN_ROOT}/<path>`. If that misses (developing this repo), try `plugin/<path>` from the workspace root.
 

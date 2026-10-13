@@ -658,7 +658,7 @@ async function stepLearnConfig(
       'Enter categories (format: "name: description"). Empty line to finish.',
     );
     log.dim(
-      "Tip: you can also edit config.json later -- see https://cf.dinhanhthi.com/docs/configuration/config-json/#learning-extraction",
+      "Tip: you can also edit config.json later -- see https://cf.dinhanhthi.com/#config",
     );
     console.log();
     const customCats: LearnCategory[] = [];

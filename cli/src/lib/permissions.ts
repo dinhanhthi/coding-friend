@@ -740,7 +740,7 @@ export async function afterAutoApproveEnabled(
   log.dim(
     "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
   );
-  log.dim("Docs: https://cf.dinhanhthi.com/docs/reference/auto-approve/");
+  log.dim("Docs: https://cf.dinhanhthi.com/#auto-approve");
 }
 
 // ─── Shared UI helpers ──────────────────────────────────────────────
