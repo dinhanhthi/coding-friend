@@ -13,9 +13,11 @@ const cliMeta = JSON.parse(
   readFileSync(resolve(__dirname, "../cli/package.json"), "utf-8"),
 );
 
+// Static export for GitHub Pages: legacy /docs and /changelog redirects live in Cloudflare Redirect Rules.
 const nextConfig: NextConfig = {
+  output: "export",
+  images: { unoptimized: true },
   trailingSlash: true,
-  cacheComponents: true,
   reactCompiler: true,
   turbopack: {
     root: __dirname,
@@ -36,17 +38,6 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_PLUGIN_VERSION: pluginMeta.version,
     NEXT_PUBLIC_CLI_VERSION: cliMeta.version,
-  },
-  async redirects() {
-    return [
-      { source: "/docs/:path*", destination: "/", permanent: true },
-      { source: "/docs", destination: "/", permanent: true },
-      {
-        source: "/changelog",
-        destination: "https://github.com/dinhanhthi/coding-friend/releases",
-        permanent: true,
-      },
-    ];
   },
 };
 

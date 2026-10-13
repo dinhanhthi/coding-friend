@@ -35,7 +35,7 @@ Coding Friend installs on the host you already use.
 
 Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
 
-> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+> **Install Coding Friend from https://cf.dinh.work on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
 
 ### 📋 Manual Installation
 

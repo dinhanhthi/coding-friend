@@ -6,10 +6,10 @@ Coding Friend provides a systematic workflow of plan → implement → review �
 
 ## Documentation
 
-- [Main Documentation](https://cf.dinhanhthi.com): Complete guide to Coding Friend features, installation, and usage
-- [Getting Started Guide](https://cf.dinhanhthi.com#-install): Installation instructions for all supported AI coding tools
-- [Skills Reference](https://cf.dinhanhthi.com#-skills): Complete list of available `/cf-*` skills like plan, review, commit, fix
-- [Agents Reference](https://cf.dinhanhthi.com#-agents): Subagents for exploration, implementation, planning, and code review
+- [Main Documentation](https://cf.dinh.work): Complete guide to Coding Friend features, installation, and usage
+- [Getting Started Guide](https://cf.dinh.work#-install): Installation instructions for all supported AI coding tools
+- [Skills Reference](https://cf.dinh.work#-skills): Complete list of available `/cf-*` skills like plan, review, commit, fix
+- [Agents Reference](https://cf.dinh.work#-agents): Subagents for exploration, implementation, planning, and code review
 - [CLI Documentation](https://github.com/dinhanhthi/coding-friend/blob/main/cli/README.md): Command-line interface for memory, installation, and configuration
 
 ## Repository
@@ -22,17 +22,17 @@ Coding Friend provides a systematic workflow of plan → implement → review �
 
 ## Features
 
-- [Architecture Overview](https://cf.dinhanhthi.com#how-coding-friend-works): System design and workflow diagrams
-- [Memory System](https://cf.dinhanhthi.com#-memory): Three-tier search and knowledge management
-- [Auto-approve](https://cf.dinhanhthi.com#-auto-approve): Smart automation with security controls
-- [Security Pipeline](https://cf.dinhanhthi.com#-security): Prompt injection defense and content isolation
-- [Cross-agent Review](https://cf.dinhanhthi.com#-review): Multi-AI code review capabilities
+- [Architecture Overview](https://cf.dinh.work#how-coding-friend-works): System design and workflow diagrams
+- [Memory System](https://cf.dinh.work#-memory): Three-tier search and knowledge management
+- [Auto-approve](https://cf.dinh.work#-auto-approve): Smart automation with security controls
+- [Security Pipeline](https://cf.dinh.work#-security): Prompt injection defense and content isolation
+- [Cross-agent Review](https://cf.dinh.work#-review): Multi-AI code review capabilities
 
 ## Installation
 
 - [NPM Package](https://www.npmjs.com/package/coding-friend-cli): Command-line interface installation
 - [Claude Code Plugin](https://claude.com/marketplace): Direct installation in Claude Code
-- [Supported Hosts](https://cf.dinhanhthi.com#-supported-tools): Compatibility matrix for AI coding tools
+- [Supported Hosts](https://cf.dinh.work#-supported-tools): Compatibility matrix for AI coding tools
 
 ## Optional
 
