@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const POSTER_ALT =
+  "Coding Friend — a lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
@@ -29,18 +32,25 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
+    url: "/",
     siteName: SITE_TITLE,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [
-      { url: "/poster.jpg", width: 1920, height: 1080, alt: SITE_TITLE },
+      {
+        url: "/poster.jpg",
+        type: "image/jpeg",
+        width: 1920,
+        height: 1080,
+        alt: POSTER_ALT,
+      },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/poster.jpg"],
+    images: [{ url: "/poster.jpg", alt: POSTER_ALT }],
   },
   alternates: {
     canonical: "https://cf.dinhanhthi.com",
