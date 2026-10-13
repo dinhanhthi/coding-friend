@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cf.dinh.work"),
+  metadataBase: new URL("https://cf.dinhanhthi.com"),
   title: {
     default: SITE_TITLE,
     template: `%s | ${SITE_TITLE}`,
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     images: ["/poster.jpg"],
   },
   alternates: {
-    canonical: "https://cf.dinh.work",
+    canonical: "https://cf.dinhanhthi.com",
   },
 };
 

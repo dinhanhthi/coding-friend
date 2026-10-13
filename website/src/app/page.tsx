@@ -65,7 +65,7 @@ export default function Home() {
     "@type": "SoftwareApplication",
     name: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: "https://cf.dinh.work",
+    url: "https://cf.dinhanhthi.com",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",
     offers: {

@@ -13,7 +13,7 @@ const cliMeta = JSON.parse(
   readFileSync(resolve(__dirname, "../cli/package.json"), "utf-8"),
 );
 
-// Static export for GitHub Pages: legacy /docs and /changelog redirects live in Cloudflare Redirect Rules.
+// Static export for GitHub Pages: legacy /docs and /changelog redirects live in src/app/not-found.tsx.
 const nextConfig: NextConfig = {
   output: "export",
   images: { unoptimized: true },
