@@ -8,11 +8,13 @@
  *   vendor, target, .git, coverage, .nyc_output,
  *   .turbo, .cache, .parcel-cache, .webpack
  *
- * Merge strategy:
+ * Merge strategy (layers applied in order):
  *   1. Defaults are always loaded first
- *   2. User patterns from .coding-friend/ignore are added on top
- *   3. Negation patterns (!pattern) remove matching defaults
- *   4. Empty or missing ignore file = only defaults apply
+ *   2. Global ~/.coding-friend/ignore
+ *   3. Local .coding-friend/ignore (else the plugin-root fallback)
+ *   Each layer's negations (!pattern) remove matching patterns from the
+ *   accumulated set, then its block patterns are added on top — so local
+ *   overrides global. Empty or missing ignore files = only defaults apply.
  *
  * Integration contract:
  *   stdin  – JSON with tool_input, tool_name
@@ -20,13 +22,15 @@
  *   Exit 0 = allow, Exit 2 = block
  *
  * Configuration:
- *   "scoutBlock": false in .coding-friend/config.json disables the hook entirely.
+ *   "scoutBlock": false in ~/.coding-friend/config.json (global) or
+ *   .coding-friend/config.json (local, overrides global) disables the hook.
  *   Fails open on any parse or unexpected error.
  */
 
 "use strict";
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 // ---------------------------------------------------------------------------
@@ -104,12 +108,16 @@ function parseIgnoreFile(content) {
 }
 
 /**
- * Build effective pattern list: defaults + user blocks − negations.
+ * Build effective pattern list: base (defaults) − negations + user blocks.
  */
-function buildEffectivePatterns(userBlocks, userNegations) {
-  // Start with defaults, remove any that are negated
+function buildEffectivePatterns(
+  userBlocks,
+  userNegations,
+  base = DEFAULT_PATTERNS,
+) {
+  // Start with base, remove any that are negated
   const negSet = new Set(userNegations);
-  const effective = DEFAULT_PATTERNS.filter((p) => !negSet.has(p));
+  const effective = base.filter((p) => !negSet.has(p));
   // Append user block patterns
   for (const p of userBlocks) {
     if (!effective.includes(p)) effective.push(p);
@@ -151,6 +159,75 @@ function isBlocked(filePath, patterns) {
   return null;
 }
 
+/**
+ * Read `scoutBlock` from a config.json. Missing or malformed file → undefined.
+ */
+function readScoutBlockSetting(configPath) {
+  if (!fs.existsSync(configPath)) return undefined;
+  try {
+    return JSON.parse(fs.readFileSync(configPath, "utf8")).scoutBlock;
+  } catch {
+    // Malformed config — ignore, continue with defaults
+    return undefined;
+  }
+}
+
+/**
+ * Hook is disabled when the effective scoutBlock is false (local overrides
+ * global when defined).
+ */
+function isScoutBlockDisabled(globalConfigPath, localConfigPath) {
+  const local = readScoutBlockSetting(localConfigPath);
+  const effective =
+    local !== undefined ? local : readScoutBlockSetting(globalConfigPath);
+  return effective === false;
+}
+
+// Missing or unreadable (directory, no permission) → "" so defaults and the
+// other layer still apply instead of the whole hook failing open.
+function readIfExists(filePath) {
+  try {
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Layer ignore files: defaults → global → local (else plugin-root fallback).
+ */
+function loadLayeredPatterns(globalIgnore, localIgnore, pluginIgnore) {
+  let patterns = DEFAULT_PATTERNS;
+  const localContent = fs.existsSync(localIgnore)
+    ? readIfExists(localIgnore)
+    : readIfExists(pluginIgnore);
+  for (const content of [readIfExists(globalIgnore), localContent]) {
+    const { blocks, negations } = parseIgnoreFile(content);
+    patterns = buildEffectivePatterns(blocks, negations, patterns);
+  }
+  return patterns;
+}
+
+// Path and pattern may come from untrusted input; keep the reason one line.
+function sanitizeForReason(s) {
+  return String(s).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ");
+}
+
+/**
+ * Block reason addressed to the human. Within one ignore layer, `!pattern`
+ * only removes patterns from earlier layers, so a custom pattern is unblocked
+ * by deleting its line, a default by adding `!pattern` (and deleting any
+ * `pattern` line in that same file, since blocks are applied after negations).
+ */
+function blockReason(p, pattern) {
+  const safeP = sanitizeForReason(p);
+  const safePattern = sanitizeForReason(pattern);
+  const how = DEFAULT_PATTERNS.includes(pattern)
+    ? `adding "!${safePattern}" to .coding-friend/ignore (project) or ~/.coding-friend/ignore (global), and removing any "${safePattern}" line from that file`
+    : `removing "${safePattern}" from the ignore file that lists it (.coding-friend/ignore or ~/.coding-friend/ignore)`;
+  return `Access to '${safeP}' blocked by ignore pattern: ${safePattern}. Do not edit ignore files yourself; ask the user, who can allow it by ${how}.`;
+}
+
 // Codex edits files through `apply_patch`; its targets live inside the patch
 // envelope carried in tool_input.command. Tolerate leading whitespace and
 // casing so blocking catches every header Codex would honor.
@@ -190,6 +267,9 @@ module.exports = {
   buildEffectivePatterns,
   pathMatchesPattern,
   isBlocked,
+  isScoutBlockDisabled,
+  loadLayeredPatterns,
+  blockReason,
   extractApplyPatchPaths,
   extractPaths,
 };
@@ -203,36 +283,28 @@ if (require.main === module) {
 
 function main() {
   try {
-    // Check if disabled via config
-    const configPath = ".coding-friend/config.json";
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-        if (config.scoutBlock === false) {
-          process.stdout.write("{}");
-          process.exit(0);
-        }
-      } catch {
-        // Malformed config — ignore, continue with defaults
-      }
+    const globalDir = path.join(os.homedir(), ".coding-friend");
+
+    // Check if disabled via config (local overrides global)
+    if (
+      isScoutBlockDisabled(
+        path.join(globalDir, "config.json"),
+        ".coding-friend/config.json",
+      )
+    ) {
+      process.stdout.write("{}");
+      process.exit(0);
     }
 
-    // Load user ignore file
-    let userContent = "";
+    // Load ignore layers: defaults → global → local (else plugin root)
     const pluginRoot =
       process.env.PLUGIN_ROOT ||
       path.resolve(path.dirname(__filename), "..");
-    const localIgnore = ".coding-friend/ignore";
-    const pluginIgnore = path.join(pluginRoot, ".coding-friend/ignore");
-
-    if (fs.existsSync(localIgnore)) {
-      userContent = fs.readFileSync(localIgnore, "utf8");
-    } else if (fs.existsSync(pluginIgnore)) {
-      userContent = fs.readFileSync(pluginIgnore, "utf8");
-    }
-
-    const { blocks, negations } = parseIgnoreFile(userContent);
-    const patterns = buildEffectivePatterns(blocks, negations);
+    const patterns = loadLayeredPatterns(
+      path.join(globalDir, "ignore"),
+      ".coding-friend/ignore",
+      path.join(pluginRoot, ".coding-friend/ignore"),
+    );
 
     // Read stdin
     let input = "";
@@ -271,7 +343,7 @@ function main() {
         const result = {
           hookSpecificOutput: {
             decision: "block",
-            reason: `Access to '${p}' blocked by ignore pattern: ${matchedPattern}`,
+            reason: blockReason(p, matchedPattern),
           },
         };
         process.stdout.write(JSON.stringify(result, null, 2));

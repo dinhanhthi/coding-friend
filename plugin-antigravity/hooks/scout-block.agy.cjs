@@ -2,16 +2,18 @@
 /**
  * PreToolUse hook (Antigravity): block directories matching ignore patterns.
  *
- * Same rule set as scout-block.cjs (defaults + .coding-friend/ignore merge).
+ * Same rule set as scout-block.cjs (defaults → ~/.coding-friend/ignore →
+ * .coding-friend/ignore layers; local overrides global).
  * Speaks AGY's hook contract:
  *   stdin  – JSON with camelCase toolCall.args
  *   stdout – {"decision":"allow"} or {"decision":"deny","reason":"..."}
  *   Exit 0 always (including deny). Malformed JSON fails open.
  *
  * Configuration:
- *   "scoutBlock": false in .coding-friend/config.json disables the hook.
- *   Config and ignore are resolved from workspacePaths[0] (AGY hook cwd
- *   is the plugin dir).
+ *   "scoutBlock": false in ~/.coding-friend/config.json (global) or
+ *   .coding-friend/config.json (local, overrides global) disables the hook.
+ *   Local config and ignore are resolved from workspacePaths[0] (AGY hook
+ *   cwd is the plugin dir).
  */
 
 "use strict";
@@ -21,9 +23,10 @@ const os = require("os");
 const path = require("path");
 
 const {
-  parseIgnoreFile,
-  buildEffectivePatterns,
   isBlocked,
+  isScoutBlockDisabled,
+  loadLayeredPatterns,
+  blockReason,
 } = require("./scout-block.cjs");
 
 // Documented AGY path keys — keep in sync with agy_path_args in
@@ -121,20 +124,13 @@ function resolveWorkspaceRoot(parsed) {
 }
 
 function loadEffectivePatterns(workspaceRoot) {
-  let userContent = "";
   const pluginRoot =
     process.env.CLAUDE_PLUGIN_ROOT || path.resolve(__dirname, "..");
-  const localIgnore = path.join(workspaceRoot, ".coding-friend", "ignore");
-  const pluginIgnore = path.join(pluginRoot, ".coding-friend", "ignore");
-
-  if (fs.existsSync(localIgnore)) {
-    userContent = fs.readFileSync(localIgnore, "utf8");
-  } else if (fs.existsSync(pluginIgnore)) {
-    userContent = fs.readFileSync(pluginIgnore, "utf8");
-  }
-
-  const { blocks, negations } = parseIgnoreFile(userContent);
-  return buildEffectivePatterns(blocks, negations);
+  return loadLayeredPatterns(
+    path.join(os.homedir(), ".coding-friend", "ignore"),
+    path.join(workspaceRoot, ".coding-friend", "ignore"),
+    path.join(pluginRoot, ".coding-friend", "ignore"),
+  );
 }
 
 function main() {
@@ -158,20 +154,13 @@ function main() {
     }
 
     const workspaceRoot = resolveWorkspaceRoot(parsed);
-    const configPath = path.join(
-      workspaceRoot,
-      ".coding-friend",
-      "config.json",
-    );
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-        if (config.scoutBlock === false) {
-          emitAllow();
-        }
-      } catch {
-        // Malformed config — ignore, continue with defaults
-      }
+    if (
+      isScoutBlockDisabled(
+        path.join(os.homedir(), ".coding-friend", "config.json"),
+        path.join(workspaceRoot, ".coding-friend", "config.json"),
+      )
+    ) {
+      emitAllow();
     }
 
     const patterns = loadEffectivePatterns(workspaceRoot);
@@ -181,9 +170,7 @@ function main() {
       for (const candidate of pathCheckVariants(p)) {
         const matchedPattern = isBlocked(candidate, patterns);
         if (matchedPattern) {
-          emitDeny(
-            `Access to '${p}' blocked by ignore pattern: ${matchedPattern}`,
-          );
+          emitDeny(blockReason(p, matchedPattern));
         }
       }
     }

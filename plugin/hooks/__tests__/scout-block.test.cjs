@@ -1,4 +1,6 @@
 const { execFileSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 const {
@@ -9,24 +11,44 @@ const {
   pathMatchesPattern,
   isBlocked,
   extractPaths,
+  blockReason,
 } = require("../scout-block.cjs");
 
 const SCRIPT = path.resolve(__dirname, "../scout-block.cjs");
 
-// Helper: run the script with given JSON stdin, return { stdout, exitCode }
-function run(jsonInput, env = {}) {
+// Helper: run the script with given JSON stdin, return { stdout, exitCode }.
+// HOME is pinned to a fresh empty temp dir (hermetic) unless env.HOME is set.
+function run(jsonInput, { env = {}, cwd } = {}) {
   const input =
     typeof jsonInput === "string" ? jsonInput : JSON.stringify(jsonInput);
+  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "cf-scout-home-"));
   try {
     const stdout = execFileSync("node", [SCRIPT], {
       input,
+      cwd,
       encoding: "utf8",
-      env: { ...process.env, ...env },
+      env: { ...process.env, HOME: tempHome, ...env },
       timeout: 5000,
     });
     return { stdout, exitCode: 0 };
   } catch (err) {
     return { stdout: err.stdout || "", exitCode: err.status };
+  } finally {
+    fs.rmSync(tempHome, { recursive: true, force: true });
+  }
+}
+
+// Helper: write .coding-friend/{config.json,ignore} under dir
+function writeCf(dir, { config, ignore } = {}) {
+  fs.mkdirSync(path.join(dir, ".coding-friend"), { recursive: true });
+  if (config) {
+    fs.writeFileSync(
+      path.join(dir, ".coding-friend", "config.json"),
+      JSON.stringify(config),
+    );
+  }
+  if (ignore != null) {
+    fs.writeFileSync(path.join(dir, ".coding-friend", "ignore"), ignore);
   }
 }
 
@@ -108,6 +130,11 @@ describe("buildEffectivePatterns", () => {
     const patterns = buildEffectivePatterns(["node_modules"], []);
     const count = patterns.filter((p) => p === "node_modules").length;
     expect(count).toBe(1);
+  });
+
+  it("layers on a given base: negations remove from base, blocks append", () => {
+    const patterns = buildEffectivePatterns(["bar"], ["foo"], ["foo", "dist"]);
+    expect(patterns).toEqual(["dist", "bar"]);
   });
 });
 
@@ -253,6 +280,39 @@ describe("extractPaths", () => {
   });
 });
 
+describe("blockReason", () => {
+  it("suggests !pattern for a default pattern and asks the user", () => {
+    const reason = blockReason("vendor/x", "vendor");
+    expect(reason).toContain(
+      'ask the user, who can allow it by adding "!vendor" to .coding-friend/ignore (project) or ~/.coding-friend/ignore (global), and removing any "vendor" line from that file.',
+    );
+    expect(reason).toContain("Do not edit ignore files yourself");
+  });
+
+  it("tells the user to drop a same-file block line for a default pattern", () => {
+    expect(blockReason("dist/x", "dist")).toContain(
+      'and removing any "dist" line from that file',
+    );
+    expect(blockReason("foo/x", "foo")).not.toContain("removing any");
+  });
+
+  it("suggests removing a custom pattern, not !pattern, and asks the user", () => {
+    const reason = blockReason("foo/x", "foo");
+    expect(reason).not.toContain("!foo");
+    expect(reason).toContain(
+      'ask the user, who can allow it by removing "foo" from the ignore file that lists it',
+    );
+    expect(reason).toContain("Do not edit ignore files yourself");
+  });
+
+  it("replaces control characters in path and pattern with spaces", () => {
+    const reason = blockReason("a\nb\r\u0007c/x", "fo\no");
+    expect(reason).not.toMatch(/[\u0000-\u001f\u007f]/);
+    expect(reason).toContain("'a b  c/x'");
+    expect(reason).toContain("ignore pattern: fo o.");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Integration tests — run the actual script
 // ---------------------------------------------------------------------------
@@ -380,5 +440,97 @@ describe("integration: path extraction from different tools", () => {
       tool_input: { pattern: "node_modules/**/*.js" },
     });
     expect(exitCode).toBe(2);
+  });
+});
+
+describe("integration: global (~/.coding-friend) and local layering", () => {
+  const VENDOR_EDIT = {
+    tool_name: "Edit",
+    tool_input: { file_path: "src-tauri/vendor/swift-rs/src-rs/build.rs" },
+  };
+  let home;
+  let project;
+
+  beforeEach(() => {
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "cf-scout-home-"));
+    project = fs.mkdtempSync(path.join(os.tmpdir(), "cf-scout-proj-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(project, { recursive: true, force: true });
+  });
+
+  const runIn = (payload) =>
+    run(payload, { env: { HOME: home }, cwd: project });
+
+  it("allows when global config has scoutBlock: false", () => {
+    writeCf(home, { config: { scoutBlock: false } });
+    expect(runIn(VENDOR_EDIT).exitCode).toBe(0);
+  });
+
+  it("allows when global ignore negates a default (!vendor)", () => {
+    writeCf(home, { ignore: "!vendor\n" });
+    expect(runIn(VENDOR_EDIT).exitCode).toBe(0);
+  });
+
+  it("blocks when local scoutBlock: true overrides global false", () => {
+    writeCf(home, { config: { scoutBlock: false } });
+    writeCf(project, { config: { scoutBlock: true } });
+    expect(runIn(VENDOR_EDIT).exitCode).toBe(2);
+  });
+
+  it("blocks when local ignore re-blocks a globally negated default", () => {
+    writeCf(home, { ignore: "!vendor\n" });
+    writeCf(project, { ignore: "vendor\n" });
+    expect(runIn(VENDOR_EDIT).exitCode).toBe(2);
+  });
+
+  it("allows when local !foo undoes a global foo block", () => {
+    writeCf(home, { ignore: "foo\n" });
+    const payload = { tool_name: "Read", tool_input: { file_path: "foo/x" } };
+    expect(runIn(payload).exitCode).toBe(2);
+    writeCf(project, { ignore: "!foo\n" });
+    expect(runIn(payload).exitCode).toBe(0);
+  });
+
+  it("block reason tells the user how to unblock a default", () => {
+    const { exitCode, stdout } = runIn(VENDOR_EDIT);
+    expect(exitCode).toBe(2);
+    expect(JSON.parse(stdout).hookSpecificOutput.reason).toContain(
+      'ask the user, who can allow it by adding "!vendor" to .coding-friend/ignore (project) or ~/.coding-friend/ignore (global), and removing any "vendor" line from that file.',
+    );
+  });
+
+  it("still blocks defaults and applies local ignore when global ignore is unreadable", () => {
+    // A directory at ~/.coding-friend/ignore makes readFileSync throw (EISDIR).
+    fs.mkdirSync(path.join(home, ".coding-friend", "ignore"), {
+      recursive: true,
+    });
+    const vendor = { tool_name: "Read", tool_input: { file_path: "vendor/x" } };
+    const foo = { tool_name: "Read", tool_input: { file_path: "foo/x" } };
+    expect(runIn(vendor).exitCode).toBe(2);
+    expect(runIn(foo).exitCode).toBe(0);
+    writeCf(project, { ignore: "foo\n" });
+    expect(runIn(vendor).exitCode).toBe(2);
+    expect(runIn(foo).exitCode).toBe(2);
+  });
+
+  it("still blocks when global ignore has both foo and !foo (same layer)", () => {
+    writeCf(home, { ignore: "foo\n!foo\n" });
+    const payload = { tool_name: "Read", tool_input: { file_path: "foo/x" } };
+    expect(runIn(payload).exitCode).toBe(2);
+  });
+
+  it("block reason for a custom local pattern suggests removing it", () => {
+    writeCf(project, { ignore: "foo\n" });
+    const payload = { tool_name: "Read", tool_input: { file_path: "foo/x" } };
+    const { exitCode, stdout } = runIn(payload);
+    expect(exitCode).toBe(2);
+    const { reason } = JSON.parse(stdout).hookSpecificOutput;
+    expect(reason).toContain(
+      'removing "foo" from the ignore file that lists it (.coding-friend/ignore or ~/.coding-friend/ignore)',
+    );
+    expect(reason).not.toContain("!foo");
   });
 });

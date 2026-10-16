@@ -8,11 +8,28 @@ const path = require("path");
 const SCRIPT = path.resolve(__dirname, "../scout-block.agy.cjs");
 const PLUGIN_ROOT = path.resolve(__dirname, "../..");
 
-function runHook(payload, { config, ignore } = {}) {
+function runHook(payload, { config, ignore, homeConfig, homeIgnore } = {}) {
   const tempProject = fs.mkdtempSync(
     path.join(os.tmpdir(), "cf-scout-block-agy-"),
   );
+  // Hermetic HOME so the real ~/.coding-friend never leaks into tests
+  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "cf-scout-home-"));
   try {
+    if (homeConfig || homeIgnore != null) {
+      fs.mkdirSync(path.join(tempHome, ".coding-friend"), { recursive: true });
+      if (homeConfig) {
+        fs.writeFileSync(
+          path.join(tempHome, ".coding-friend", "config.json"),
+          JSON.stringify(homeConfig),
+        );
+      }
+      if (homeIgnore != null) {
+        fs.writeFileSync(
+          path.join(tempHome, ".coding-friend", "ignore"),
+          homeIgnore,
+        );
+      }
+    }
     if (config || ignore != null) {
       fs.mkdirSync(path.join(tempProject, ".coding-friend"), {
         recursive: true,
@@ -42,13 +59,14 @@ function runHook(payload, { config, ignore } = {}) {
       input,
       encoding: "utf8",
       timeout: 5000,
-      env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+      env: { ...process.env, HOME: tempHome, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
     });
     return { status: 0, stdout, json: JSON.parse(stdout.trim()) };
   } catch (err) {
     return { status: err.status, stdout: err.stdout || "" };
   } finally {
     fs.rmSync(tempProject, { recursive: true, force: true });
+    fs.rmSync(tempHome, { recursive: true, force: true });
   }
 }
 
@@ -160,5 +178,30 @@ describe("scout-block.agy.cjs", () => {
     expect(result.status).toBe(0);
     expect(result.json.decision).toBe("deny");
     expect(result.json.reason).toContain("my-secret-dir");
+  });
+
+  const VENDOR_VIEW = {
+    toolCall: {
+      name: "view_file",
+      args: { AbsolutePath: "src-tauri/vendor/swift-rs/src-rs/build.rs" },
+    },
+  };
+
+  it("denies vendor by default with an unblock hint", () => {
+    const result = runHook(VENDOR_VIEW);
+    expect(result.json.decision).toBe("deny");
+    expect(result.json.reason).toContain(
+      'ask the user, who can allow it by adding "!vendor" to .coding-friend/ignore (project) or ~/.coding-friend/ignore (global)',
+    );
+  });
+
+  it("allows when global ~/.coding-friend/config.json has scoutBlock: false", () => {
+    const result = runHook(VENDOR_VIEW, { homeConfig: { scoutBlock: false } });
+    expect(result.json).toEqual({ decision: "allow" });
+  });
+
+  it("allows when global ~/.coding-friend/ignore has !vendor", () => {
+    const result = runHook(VENDOR_VIEW, { homeIgnore: "!vendor\n" });
+    expect(result.json).toEqual({ decision: "allow" });
   });
 });
