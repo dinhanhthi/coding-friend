@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-10-14
+updated: 2026-10-16
 ---
 
 # /cf-help — Coding Friend Help
@@ -60,7 +60,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 - `/cf-review-in <label> [service]` — ⚡⚡ — Read external review, offer to fix
 - `/cf-commit [hint]` — ⚡ — Conventional commit
 - `/cf-design [mode]` — ⚡⚡ — Scan / design / modify UI
-- `/cf-showcase [--video|--poster]` — ⚡⚡ — Intro video (mp4) / poster (png/pdf/html) from the project's real content → docs/showcase/
+- `/cf-showcase [--video|--poster] [--default]` — ⚡⚡ — Intro video (mp4) / poster (png/pdf/html) from the project's real content → docs/showcase/; `--default` skips the interview and uses saved `showcase.*` defaults
 - `/cf-ship [hint]` — ⚡ — Verify, commit, push, PR (`--dry-run`)
 - `/cf-fix [bug]` — ⚡⚡ — Quick bug-fix
 - `/cf-optimize [target]` — ⚡⚡ — Baseline → optimize → measure

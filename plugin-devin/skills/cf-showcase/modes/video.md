@@ -4,6 +4,8 @@ Follow this after SKILL.md has checked dependencies, built the fact sheet, and c
 
 ## 1. Interview
 
+`--default` → use the resolved defaults from SKILL.md (Defaults) and ask none of these; without it, SKILL.md Step 4 offers to save the answers afterwards.
+
 Ask one question per turn, recommended option first. Skip any question `$ARGUMENTS` or earlier answers already settled. These are the only questions: style, tone, pacing, scene order and scene types are yours to decide, and the user sees them in the concept pitch.
 
 1. **Length** — 30 s (recommended; 20–60 s suits a landing page or README) · auto · custom (the user gives a number). There is no hard limit: the user owns the choice.

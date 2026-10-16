@@ -4,6 +4,8 @@ Follow this after SKILL.md has checked dependencies, built the fact sheet, and c
 
 ## 1. Interview
 
+`--default` → use the resolved defaults from SKILL.md (Defaults) and ask none of these; without it, SKILL.md Step 4 offers to save the answers afterwards.
+
 Ask one question per turn, recommended option first. Skip any question `$ARGUMENTS` or earlier answers already settled. These are the only questions: style, color, layout and composition are yours to decide from the brand material, and the user sees them in the concept pitch.
 
 1. **Size** — A4 print (recommended when it will be printed) · social 1200×630 (recommended for a README banner or link preview) · square 1080×1080 · story 1080×1920 · custom `WxH` px (also A3, letter, 1920×1080).
