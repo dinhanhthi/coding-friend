@@ -62,6 +62,7 @@ import {
   getExistingRules,
 } from "../lib/permissions.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
+import { showcaseConfigMenu } from "../lib/showcase-prompts.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -1291,6 +1292,12 @@ export async function configCommand(): Promise<void> {
               "  Autopilot review-fix rounds + Codex second-opinion on every /cf-review",
           },
           {
+            name: `Showcase defaults ${formatScopeLabel(getScopeLabel("showcase", globalCfg, localCfg))}`,
+            value: "showcase",
+            description:
+              "  /cf-showcase --default values — video length/aspect/audio, poster size/formats, languages",
+          },
+          {
             name: `Plan docs ${formatScopeLabel(planDocsScope)}`,
             value: "planDocs",
             description:
@@ -1359,6 +1366,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "review":
         await reviewSubMenu();
+        break;
+      case "showcase":
+        await showcaseConfigMenu();
         break;
       case "planDocs":
         await planDocsSubMenu();

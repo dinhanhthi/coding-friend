@@ -78,6 +78,7 @@ import {
   cfGitignoreEntries,
 } from "../lib/prompt-utils.js";
 import { memoryConfigMenu } from "../lib/memory-prompts.js";
+import { showcaseConfigMenu } from "../lib/showcase-prompts.js";
 import {
   registerLearnMcp,
   isLearnMcpRegistered,
@@ -1274,6 +1275,12 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           "  /cf-plan human overview doc — enable/disable + format (html/md)",
       },
       {
+        name: `Showcase defaults ${formatScopeLabel(getScopeLabel("showcase", globalCfg, localCfg))}`,
+        value: "showcase",
+        description:
+          "  /cf-showcase --default values — video length/aspect/audio, poster size/formats, languages",
+      },
+      {
         name: `Permissions (${permissionStatus} rules)`,
         value: "permissions",
         description:
@@ -1317,6 +1324,9 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           break;
         case "memory":
           await stepMemory(docsDir, { menuMode: true });
+          break;
+        case "showcase":
+          await showcaseConfigMenu({ exitLabel: "Back" });
           break;
         case "tdd": {
           const tddChoice = await confirm({

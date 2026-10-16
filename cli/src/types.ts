@@ -83,6 +83,28 @@ export interface ReviewConfig {
   nativeTimeout?: number;
 }
 
+/** Saved `/cf-showcase --default` answers for video mode. */
+export interface ShowcaseVideoConfig {
+  /** Target length in whole seconds, or "auto" to let the agent decide. */
+  length?: "auto" | number;
+  aspect?: "16:9" | "1:1" | "9:16";
+  audio?: boolean;
+  languages?: string[];
+}
+
+/** Saved `/cf-showcase --default` answers for poster mode. */
+export interface ShowcasePosterConfig {
+  /** "A4", "A3", "letter", or "<width>x<height>" in pixels. */
+  size?: string;
+  formats?: ("png" | "pdf" | "html")[];
+  languages?: string[];
+}
+
+export interface ShowcaseConfig {
+  video?: ShowcaseVideoConfig;
+  poster?: ShowcasePosterConfig;
+}
+
 /** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */
 export const DEFAULT_REVIEW_MAX_ROUNDS = 5;
 
@@ -103,6 +125,8 @@ export interface CodingFriendConfig {
   guiPlanFormat?: "html" | "md";
   planAuto?: boolean;
   planCommitPerTask?: boolean;
+  /** Defaults read by `/cf-showcase --default`. */
+  showcase?: ShowcaseConfig;
 }
 
 export const DEFAULT_CONFIG: Required<

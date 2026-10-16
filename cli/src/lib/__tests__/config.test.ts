@@ -541,6 +541,93 @@ describe("loadConfig validation", () => {
     );
     expect(config.planCommitPerTask).toBeUndefined();
   });
+
+  it("accepts a full showcase config (video + poster)", () => {
+    const showcase = {
+      video: {
+        length: "auto",
+        aspect: "9:16",
+        audio: false,
+        languages: ["en", "vi"],
+      },
+      poster: { size: "1200x630", formats: ["png", "pdf"], languages: ["en"] },
+    };
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({ showcase });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.showcase).toEqual(showcase);
+  });
+
+  it("accepts showcase.video.length as a positive integer of seconds", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ showcase: { video: { length: 45 } } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.showcase?.video?.length).toBe(45);
+  });
+
+  // Each bad value must be reported and dropped, never silently kept.
+  const badShowcase: Array<{
+    name: string;
+    showcase: Record<string, unknown>;
+    key: string;
+    get: (c: ReturnType<typeof loadConfig>) => unknown;
+  }> = [
+    {
+      name: "video.length is 0",
+      showcase: { video: { length: 0 } },
+      key: "length",
+      get: (c) => c.showcase?.video?.length,
+    },
+    {
+      name: 'video.length is "long"',
+      showcase: { video: { length: "long" } },
+      key: "length",
+      get: (c) => c.showcase?.video?.length,
+    },
+    {
+      name: 'video.aspect is "4:3"',
+      showcase: { video: { aspect: "4:3" } },
+      key: "aspect",
+      get: (c) => c.showcase?.video?.aspect,
+    },
+    {
+      name: "poster.formats is empty",
+      showcase: { poster: { formats: [] } },
+      key: "formats",
+      get: (c) => c.showcase?.poster?.formats,
+    },
+    {
+      name: 'poster.formats contains "gif"',
+      showcase: { poster: { formats: ["gif"] } },
+      key: "formats",
+      get: (c) => c.showcase?.poster?.formats?.[0],
+    },
+    {
+      name: 'poster.size is "huge"',
+      showcase: { poster: { size: "huge" } },
+      key: "size",
+      get: (c) => c.showcase?.poster?.size,
+    },
+    {
+      name: "video has unknown sub-key fps",
+      showcase: { video: { fps: 30 } },
+      key: "fps",
+      get: (c) => (c.showcase?.video as Record<string, unknown>)?.fps,
+    },
+  ];
+  for (const { name, showcase, key, get } of badShowcase) {
+    it(`warns and strips showcase when ${name}`, () => {
+      mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({ showcase });
+
+      const config = loadConfig();
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining(key));
+      expect(get(config)).toBeUndefined();
+    });
+  }
 });
 
 describe("resolveProjectMemoryDir", () => {

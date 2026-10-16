@@ -93,6 +93,29 @@ const ReviewConfigSchema = z.strictObject({
   nativeTimeout: z.number().int().min(1).optional(),
 });
 
+export const SHOWCASE_POSTER_SIZE_RE = /^(A4|A3|letter|\d+x\d+)$/;
+
+const ShowcaseConfigSchema = z.strictObject({
+  video: z
+    .strictObject({
+      length: z.union([z.literal("auto"), z.number().int().min(1)]).optional(),
+      aspect: z.enum(["16:9", "1:1", "9:16"]).optional(),
+      audio: z.boolean().optional(),
+      languages: z.array(z.string().min(1)).min(1).optional(),
+    })
+    .optional(),
+  poster: z
+    .strictObject({
+      size: z.string().regex(SHOWCASE_POSTER_SIZE_RE).optional(),
+      formats: z
+        .array(z.enum(["png", "pdf", "html"]))
+        .min(1)
+        .optional(),
+      languages: z.array(z.string().min(1)).min(1).optional(),
+    })
+    .optional(),
+});
+
 const ConfigSchema = z.strictObject({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -110,6 +133,7 @@ const ConfigSchema = z.strictObject({
   guiPlanFormat: z.enum(["html", "md"]).optional(),
   planAuto: z.boolean().optional(),
   planCommitPerTask: z.boolean().optional(),
+  showcase: ShowcaseConfigSchema.optional(),
 });
 
 /** Known config keys for typo suggestions */
@@ -130,6 +154,7 @@ const KNOWN_KEYS = [
   "guiPlanFormat",
   "planAuto",
   "planCommitPerTask",
+  "showcase",
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
