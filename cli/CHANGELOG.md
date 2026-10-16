@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.1 (2026-10-16)
+
+- `cf update` shows local link info for Claude and Antigravity when the plugin is a dev link [#47d7c2a3](https://github.com/dinhanhthi/coding-friend/commit/47d7c2a3)
+- Help and docs links printed by `cf init`, `cf install`, `cf mcp`, `cf memory` and `cf permission` now point at the matching page anchors instead of legacy `/docs` URLs [#3c7e482e](https://github.com/dinhanhthi/coding-friend/commit/3c7e482e)
+
 ## v1.42.0 (2026-10-05)
 
 - Add `--agent devin` / `--devin` (Devin CLI, beta) to install/uninstall/enable/disable/init/update/permission/status; `cf` drives the `devin plugins` commands: GitHub `#plugin-devin` subdir in production, a live `--local` link of `plugin-devin/` in dev mode (`cf dev on`) [#76e4d5fd](https://github.com/dinhanhthi/coding-friend/commit/76e4d5fd)

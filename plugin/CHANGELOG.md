@@ -2,6 +2,14 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.1 (2026-10-16)
+
+- `scout-block` also honors a global `~/.coding-friend/ignore` and a global `scoutBlock` setting (local overrides global); `!pattern` unblocks a default (e.g. `!vendor`) or, in the local file, a global pattern, and the block message now hints how to unblock [#85075adb](https://github.com/dinhanhthi/coding-friend/commit/85075adb)
+- Fix the `privacy-block` hook denying ordinary source and doc files whose path merely mentions "secret" or "credentials" (e.g. `secret-manager.ts`), and stop checking Grep's content pattern as if it were a path [#bc8374f1](https://github.com/dinhanhthi/coding-friend/commit/bc8374f1)
+- `/cf-plan`, `cf-planner`, `cf-implementer` and the test-coverage reviewer now limit new tests to high-value cases (core behavior, security-sensitive paths, public contracts, bug regressions); a test listed in a plan is a candidate, not a requirement [#fbabaeab](https://github.com/dinhanhthi/coding-friend/commit/fbabaeab)
+- Agent "dispatched by" lists now match which skills actually dispatch them [#73a7bb7f](https://github.com/dinhanhthi/coding-friend/commit/73a7bb7f)
+- `/cf-help` links to the website now point at the matching page anchors instead of legacy `/docs` URLs [#3c7e482e](https://github.com/dinhanhthi/coding-friend/commit/3c7e482e)
+
 ## v0.46.0 (2026-10-05)
 
 - Add Devin CLI (beta) as a new host: generated `plugin-devin/` artifact (Claude layout with a Devin-shaped `hooks/hooks.json`, a root `.mcp.json` for the memory MCP, skills and agents adapted to Devin), installable with `devin plugins install dinhanhthi/coding-friend#plugin-devin` [#13b0bb1a](https://github.com/dinhanhthi/coding-friend/commit/13b0bb1a) [#d5c8ac52](https://github.com/dinhanhthi/coding-friend/commit/d5c8ac52)
