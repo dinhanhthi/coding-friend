@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.2 (2026-10-17)
+
+- `/cf-review` runs with `--fix` / `--commit` by default when config `review.fix` / `review.commit` is set (local overrides global); `--no-fix` / `--no-commit` force it off. `/cf-plan` and `/cf-tdd` autopilot and `/cf-commit` pass `--no-fix`, and a config-driven commit is skipped unless you typed `/cf-review` yourself and the tree holds paths this session did not touch [#3cb2b9a3](https://github.com/dinhanhthi/coding-friend/commit/3cb2b9a3) [#2156e1db](https://github.com/dinhanhthi/coding-friend/commit/2156e1db)
+- `/cf-showcase --default` skips the interview using saved `showcase.*` config defaults, otherwise offers to save the answers locally or globally [#91aeece9](https://github.com/dinhanhthi/coding-friend/commit/91aeece9)
+
 ## v0.46.1 (2026-10-16)
 
 - `scout-block` also honors a global `~/.coding-friend/ignore` and a global `scoutBlock` setting (local overrides global); `!pattern` unblocks a default (e.g. `!vendor`) or, in the local file, a global pattern, and the block message now hints how to unblock [#85075adb](https://github.com/dinhanhthi/coding-friend/commit/85075adb)

@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.2 (2026-10-17)
+
+- `cf config` review settings gain `review.fix` and `review.commit` defaults for `/cf-review` [#3cb2b9a3](https://github.com/dinhanhthi/coding-friend/commit/3cb2b9a3)
+- Add `showcase.*` config defaults for `/cf-showcase --default`, with prompts in `cf config` and `cf init` [#cc1abada](https://github.com/dinhanhthi/coding-friend/commit/cc1abada)
+
 ## v1.42.1 (2026-10-16)
 
 - `cf update` shows local link info for Claude and Antigravity when the plugin is a dev link [#47d7c2a3](https://github.com/dinhanhthi/coding-friend/commit/47d7c2a3)
