@@ -771,6 +771,44 @@ async function editReviewWithAgent(
   writeNestedField("review", scope, key, value);
 }
 
+const REVIEW_FIX_FLAGS = {
+  fix: {
+    label: "Fix by default (--fix)",
+    message:
+      "Run /cf-review with --fix by default? (apply Critical/Important and re-review until clean, capped by max rounds)",
+  },
+  commit: {
+    label: "Commit by default (--commit)",
+    message:
+      "Run /cf-review with --commit by default? (implies --fix; commits only when the last review is clean; after /cf-fix or /cf-optimize, skipped when the tree has paths this session did not touch)",
+  },
+} as const;
+
+type ReviewFixFlagKey = keyof typeof REVIEW_FIX_FLAGS;
+
+async function editReviewFixFlag(
+  key: ReviewFixFlagKey,
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getReviewConfig(globalCfg, localCfg)[key];
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+  log.dim(
+    "Applies to /cf-review run by you, /cf-fix and /cf-optimize. /cf-plan, /cf-tdd autopilot and /cf-commit pass --no-fix and keep their own loop.",
+  );
+
+  const value = await confirm({
+    message: REVIEW_FIX_FLAGS[key].message,
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeNestedField("review", scope, key, value);
+}
+
 async function editReviewMaxRounds(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
@@ -820,6 +858,12 @@ async function reviewSubMenu(): Promise<void> {
             name: `${REVIEW_AGENTS[key].name} external review (${review[key] ?? false})`,
             value: key,
           })),
+          ...(Object.keys(REVIEW_FIX_FLAGS) as ReviewFixFlagKey[]).map(
+            (key) => ({
+              name: `${REVIEW_FIX_FLAGS[key].label} (${review[key] ?? false})`,
+              value: key,
+            }),
+          ),
           {
             name: `Max review rounds (${review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS})`,
             value: "maxRounds",
@@ -843,6 +887,10 @@ async function reviewSubMenu(): Promise<void> {
       case "withCursor":
       case "withGemini":
         await editReviewWithAgent(choice, globalCfg, localCfg);
+        break;
+      case "fix":
+      case "commit":
+        await editReviewFixFlag(choice, globalCfg, localCfg);
         break;
     }
   }

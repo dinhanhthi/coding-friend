@@ -8,7 +8,7 @@ That single check is sufficient — you do NOT need to introspect whether cf-tdd
 
 When active, after implementation completes its own verification (existing tests pass + typecheck/lint clean), run this loop instead of the standard Review Reminder:
 
-1. **Run review** — Load `/cf-review` (no extra args). cf-review will analyze uncommitted changes. Count this as review round 1.
+1. **Run review** — Load `/cf-review --no-fix` (no other args — `--no-fix` keeps `review.fix`/`review.commit` config out of this loop). cf-review will analyze uncommitted changes. Count this as review round 1.
 
 2. **Read the review status, then parse findings** — cf-review returns bullets under 4 emoji headers plus one status line in 📋 Summary.
 
@@ -30,7 +30,7 @@ When active, after implementation completes its own verification (existing tests
    - Repeat while Critical/Important remain **and** review rounds used `< maxRounds`:
      - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets from the latest review>". Files: union of files referenced.
      - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume another review round. Surface the failure to user.
-     - Otherwise, re-run `/cf-review` (next round).
+     - Otherwise, re-run `/cf-review --no-fix` (next round).
      - Apply the status gate to that review too, before counting: `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot (no commit), same as the first review.
      - If it passed the gate with `Review status: COMPLETE` and no Critical/Important left (Suggestions may remain) → exit the fix loop and continue to commit.
    - If Critical or Important still remain after `maxRounds` reviews → STOP autopilot, surface all review outputs and fix attempts, ask user.

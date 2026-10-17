@@ -4,7 +4,7 @@ description: >
   Smart conventional commit with diff analysis. Triggers: "commit this", "commit my
   changes", "save my work", "create a commit", "git commit", "stage and commit".
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-10-17
 ---
 
 # $cf-commit
@@ -63,7 +63,7 @@ If no `$cf-review` was run in the current conversation, show a soft suggestion:
 
 > No review found in this session — run `$cf-review` first? (press Enter to skip and commit anyway)
 
-If the user skips (presses Enter or says to proceed), continue. If they want a review, load `$cf-review` and resume `$cf-commit` after.
+If the user skips (presses Enter or says to proceed), continue. If they want a review, load `$cf-review --no-fix` (this skill owns the change set and the commit) and resume `$cf-commit` after.
 
 ### Step 5: Write Commit Message
 

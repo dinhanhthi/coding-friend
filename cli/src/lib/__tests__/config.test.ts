@@ -321,6 +321,8 @@ describe("loadConfig validation", () => {
     "withGrok",
     "withCursor",
     "withGemini",
+    "fix",
+    "commit",
   ] as const) {
     it(`accepts review.${key} as a valid config key (boolean)`, () => {
       mockReadJson

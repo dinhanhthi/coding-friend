@@ -1509,6 +1509,17 @@ test("Step 1 parses --fix and --commit, with --commit implying --fix", () => {
       /--commit[^\n]*implies[^\n]*--fix/i,
       `${relPath}: Step 1 must state that --commit implies --fix`,
     );
+    for (const token of [
+      "`--no-fix`",
+      "`--no-commit`",
+      "`review.fix`",
+      "`review.commit`",
+    ]) {
+      assert.ok(
+        step1.includes(token),
+        `${relPath}: Step 1 must handle ${token}`,
+      );
+    }
   }
 });
 
@@ -1533,6 +1544,32 @@ test("Step 1 refuses --fix/--commit with a commit range or --out", () => {
           /refuse|reject|stop|not allowed|exclusive/i.test(line),
       ),
       `${relPath}: Step 1 must refuse --fix/--commit together with --out`,
+    );
+    const refuseLines = refusals.filter((line) => /→ refuse/.test(line));
+    assert.equal(
+      refuseLines.length,
+      2,
+      `${relPath}: expected two refuse bullets`,
+    );
+    for (const line of refuseLines) {
+      assert.match(
+        line,
+        /^- Explicit `--fix`\/`--commit`/,
+        `${relPath}: only an explicit --fix/--commit is refused, not a config default`,
+      );
+    }
+    assert.ok(
+      step1
+        .split("\n")
+        .some(
+          (line) =>
+            /set only by config/i.test(line) &&
+            /do not refuse/i.test(line) &&
+            /review\.fix\/review\.commit ignored \(commit range or --out\)/.test(
+              line,
+            ),
+        ),
+      `${relPath}: a config-only fix/commit with a range or --out is ignored, not refused`,
     );
   }
 });
@@ -1730,6 +1767,41 @@ test("Step 11 keeps the round counter and names the clean no-commit outcome", ()
   }
 });
 
+test("Step 11 skips a config-only commit only when another skill loaded the review", () => {
+  const outcome =
+    /⚠️ Stopped — review\.commit skipped: N uncommitted path\(s\) not touched in this session/;
+  for (const [relPath, text] of FIX_SKILLS) {
+    const step11 = section(text, FIX_HEADING);
+    const commit = step11
+      .split("\n")
+      .find((line) => /^3\. \*\*Commit\*\*/.test(line));
+    const result = step11
+      .split("\n")
+      .find((line) => /^4\. \*\*Outcome\.\*\*/.test(line));
+    assert.ok(commit && result, `${relPath}: Step 11 items 3 and 4 missing`);
+    assert.match(
+      commit,
+      outcome,
+      `${relPath}: item 3 must name the review.commit skip outcome`,
+    );
+    assert.match(
+      result,
+      outcome,
+      `${relPath}: item 4 must list the review.commit skip outcome`,
+    );
+    assert.match(
+      commit,
+      /loaded by another skill[^\n]*[/$]cf-fix[^\n]*[/$]cf-optimize[^\n]*rather than typed by the user/,
+      `${relPath}: the skip applies only to a review loaded by another skill`,
+    );
+    assert.match(
+      commit,
+      /typed[^\n]*by the user[^\n]*`review\.commit` behaves exactly like `--commit`/,
+      `${relPath}: a user-typed review with config review.commit must commit like --commit`,
+    );
+  }
+});
+
 test("Step 10 banner announces the --fix and --commit hand-off", () => {
   for (const [relPath, text] of FIX_SKILLS) {
     const step10 = section(text, "### Step 10: Final output");
@@ -1745,8 +1817,62 @@ test("Step 10 banner announces the --fix and --commit hand-off", () => {
     );
     assert.match(
       step10,
+      /Committing \(review\.commit\)/,
+      `${relPath}: Step 10 must name the config-driven commit banner`,
+    );
+    assert.match(
+      step10,
+      /Step 11\.3[^\n]*skip check/,
+      `${relPath}: Step 10 must run the review.commit skip check before announcing a commit`,
+    );
+    assert.match(
+      step10,
       /`fix=true` → always go to Step 11/,
       `${relPath}: Step 10 must hand every fix=true run to Step 11`,
+    );
+  }
+});
+
+// Skills that own their fix loop or change set must call /cf-review with
+// --no-fix on an uncommitted target; a commit range carries no --fix/--commit.
+const NO_FIX_CALLERS = [
+  "skills/cf-plan/modes/autopilot.md",
+  "skills/cf-plan/modes/execute.md",
+  "skills/cf-tdd/modes/autopilot-loop.md",
+  "skills/cf-commit/SKILL.md",
+].flatMap((rel) =>
+  ["plugin", "plugin-codex", "plugin-antigravity", "plugin-devin"].map(
+    (root) => {
+      const relPath = `${root}/${rel}`;
+      return [relPath, read(relPath)];
+    },
+  ),
+);
+
+test("autopilot consumers and cf-commit call /cf-review --no-fix, never bare", () => {
+  for (const [relPath, text] of NO_FIX_CALLERS) {
+    const calls = text
+      .split("\n")
+      .filter((line) => !/^\s*>/.test(line))
+      .flatMap((line) => [
+        ...line.matchAll(
+          /\b(?:[Ll]oad|run|re-run|re-review)\b[^`]{0,20}`[/$]cf-review([^`]*)`/g,
+        ),
+      ])
+      .map((match) => match[1].trim());
+    assert.ok(
+      calls.length > 0,
+      `${relPath}: expected at least one /cf-review call`,
+    );
+    for (const args of calls) {
+      assert.ok(
+        /^--no-fix\b/.test(args) || /^\S+\.\.\S+$/.test(args),
+        `${relPath}: /cf-review call "${args}" must pass --no-fix or a commit range`,
+      );
+    }
+    assert.ok(
+      calls.some((args) => args.startsWith("--no-fix")),
+      `${relPath}: must call /cf-review --no-fix on the uncommitted target`,
     );
   }
 });

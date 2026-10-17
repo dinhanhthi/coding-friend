@@ -75,6 +75,10 @@ export interface ReviewConfig {
   withGrok?: boolean;
   withCursor?: boolean;
   withGemini?: boolean;
+  /** Default `/cf-review` to `--fix` (apply Critical/Important until clean). Autopilot passes `--no-fix`. */
+  fix?: boolean;
+  /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
+  commit?: boolean;
   /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
   maxRounds?: number;
   /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */

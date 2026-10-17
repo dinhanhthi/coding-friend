@@ -144,7 +144,7 @@ After implementation: `/cf-review` → `/cf-commit`
 
 <!-- autopilot only: keep this pointer as-is (do NOT paste the contract here); else omit this section -->
 
-Autopilot plan — follow the `## AUTOPILOT` contract in [README.md](./README.md) exactly. Per phase: tasks → `/cf-review` → fix → commit. Never ask between phases.
+Autopilot plan — follow the `## AUTOPILOT` contract in [README.md](./README.md) exactly. Per phase: tasks → `/cf-review --no-fix` → fix → commit. Never ask between phases.
 
 ## Progress
 
