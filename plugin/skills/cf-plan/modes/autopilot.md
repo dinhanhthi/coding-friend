@@ -60,6 +60,8 @@ EOF
 - User explicitly interrupts.
 - All phases reach ✅ DONE in plan file.
 
+**Review call**: always pass `--no-fix` to `/cf-review` on the uncommitted target, even when an older plan's embedded contract says "no extra args" — config `review.fix`/`review.commit` must never run inside this loop.
+
 **Drift guard**: about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan → that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
 
 ### AUTOPILOT CONTRACT block

@@ -780,7 +780,7 @@ const REVIEW_FIX_FLAGS = {
   commit: {
     label: "Commit by default (--commit)",
     message:
-      "Run /cf-review with --commit by default? (implies --fix; commits only when the last review is clean; after /cf-fix or /cf-optimize, skipped when the tree has paths this session did not touch)",
+      "Run /cf-review with --commit by default? (implies --fix; commits only when the last review is clean; unless you typed /cf-review, skipped when the tree has paths this session did not touch)",
   },
 } as const;
 

@@ -1767,7 +1767,7 @@ test("Step 11 keeps the round counter and names the clean no-commit outcome", ()
   }
 });
 
-test("Step 11 skips a config-only commit only when another skill loaded the review", () => {
+test("Step 11 skips a config-only commit unless the user typed /cf-review this turn", () => {
   const outcome =
     /⚠️ Stopped — review\.commit skipped: N uncommitted path\(s\) not touched in this session/;
   for (const [relPath, text] of FIX_SKILLS) {
@@ -1791,8 +1791,8 @@ test("Step 11 skips a config-only commit only when another skill loaded the revi
     );
     assert.match(
       commit,
-      /loaded by another skill[^\n]*[/$]cf-fix[^\n]*[/$]cf-optimize[^\n]*rather than typed by the user/,
-      `${relPath}: the skip applies only to a review loaded by another skill`,
+      /not typed by the user in this turn[^\n]*[/$]cf-fix[^\n]*[/$]cf-optimize[^\n]*trigger phrase/,
+      `${relPath}: the skip applies to every review the user did not type this turn (skill-loaded or trigger-phrase)`,
     );
     assert.match(
       commit,
@@ -1874,6 +1874,27 @@ test("autopilot consumers and cf-commit call /cf-review --no-fix, never bare", (
       calls.some((args) => args.startsWith("--no-fix")),
       `${relPath}: must call /cf-review --no-fix on the uncommitted target`,
     );
+  }
+});
+
+test("autopilot and resume pass --no-fix even when an older embedded contract says no args", () => {
+  for (const rel of [
+    "skills/cf-plan/modes/autopilot.md",
+    "skills/cf-plan-resume/SKILL.md",
+  ]) {
+    for (const root of [
+      "plugin",
+      "plugin-codex",
+      "plugin-antigravity",
+      "plugin-devin",
+    ]) {
+      const relPath = `${root}/${rel}`;
+      assert.match(
+        read(relPath),
+        /[Aa]lways pass `--no-fix`[^\n]*older[^\n]*no (extra )?arg/,
+        `${relPath}: must override an older plan's "no extra args" review call with --no-fix`,
+      );
+    }
   }
 });
 
