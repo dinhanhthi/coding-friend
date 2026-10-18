@@ -126,6 +126,13 @@ export function projectsRegistryPath(): string {
   );
 }
 
+/** Orchestrator task store (CF_ORCHESTRATOR_DIR overrides ~/.coding-friend/orchestrator) */
+export function orchestratorDir(): string {
+  return (
+    process.env.CF_ORCHESTRATOR_DIR || join(globalConfigDir(), "orchestrator")
+  );
+}
+
 /** Memory dependencies directory (~/.coding-friend/memory) */
 export function memoryDepsDir(): string {
   return join(homedir(), ".coding-friend", "memory");

@@ -918,6 +918,9 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "dev",
   "version",
   "project",
+  "ask",
+  "done",
+  "task",
 ]);
 
 /**
@@ -929,10 +932,18 @@ const CF_SAFE_SUBCOMMANDS = new Set([
 const CF_CONFIG_SAFE_SUBCOMMANDS = new Set(["get", "schema"]);
 
 /**
+ * `cf task` subcommands safe to auto-approve (read-only). `run`, `cancel` and
+ * the internal `_run` start or stop agent processes, so they are excluded.
+ * Bare `cf task` is not approved either.
+ */
+const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
+
+/**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
- *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand)
+ *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand,
+ *     `cf task` only with a CF_TASK_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -940,9 +951,10 @@ function isCodingFriendBash(trimmed) {
   // cf CLI commands — only known safe subcommands
   if (trimmed.startsWith("cf ") || trimmed.startsWith("cf\t")) {
     const afterCf = trimmed.slice(trimmed.indexOf("f") + 1).trim();
-    const [subcommand, configSub] = afterCf.split(/\s+/);
-    if (subcommand === "config" && configSub !== undefined)
-      return CF_CONFIG_SAFE_SUBCOMMANDS.has(configSub);
+    const [subcommand, nestedSub] = afterCf.split(/\s+/);
+    if (subcommand === "config" && nestedSub !== undefined)
+      return CF_CONFIG_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "task") return CF_TASK_SAFE_SUBCOMMANDS.has(nestedSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 

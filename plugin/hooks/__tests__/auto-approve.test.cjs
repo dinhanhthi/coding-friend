@@ -1038,6 +1038,62 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
+  it("allows cf ask", () => {
+    expect(
+      classifyByRules("Bash", { command: 'cf ask "q?" --task abcdefgh' }),
+    ).toBe("allow");
+  });
+
+  it("allows cf done", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: "cf done --task abcdefgh --outcome succeeded --summary s",
+      }),
+    ).toBe("allow");
+  });
+
+  it("allows cf task list --json", () => {
+    expect(classifyByRules("Bash", { command: "cf task list --json" })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows cf task show", () => {
+    expect(classifyByRules("Bash", { command: "cf task show abcdefgh" })).toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow cf task run (starts an agent process)", () => {
+    expect(
+      classifyByRules("Bash", {
+        command: 'cf task run --provider claude "x"',
+      }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow cf task cancel", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf task cancel abcdefgh" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow internal cf task _run", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf task _run abcdefgh" }),
+    ).not.toBe("allow");
+  });
+
+  it("does NOT allow bare cf task", () => {
+    expect(classifyByRules("Bash", { command: "cf task" })).not.toBe("allow");
+  });
+
+  it("does NOT allow cf reply (answers on the user's behalf)", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf reply abcdefgh yes" }),
+    ).not.toBe("allow");
+  });
+
   it("allows bare cf config (interactive menu)", () => {
     expect(classifyByRules("Bash", { command: "cf config" })).toBe("allow");
   });

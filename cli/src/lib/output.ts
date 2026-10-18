@@ -13,6 +13,10 @@ export type ErrorCode =
   | "COMMAND_FAILED"
   | "MEMORY_BUILD_FAILED"
   | "UNEXPECTED_EXIT"
+  | "LEASE_HELD"
+  | "ASK_TIMEOUT"
+  | "ALREADY_FINISHED"
+  | "PROVIDER_UNAVAILABLE"
   | "INTERNAL";
 
 export type Envelope<T> =
