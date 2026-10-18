@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "child_process";
 import { closeSync, openSync, realpathSync, rmSync } from "fs";
-import { isAbsolute, join, relative, sep } from "path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "path";
 import { commandExists, run as exec } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
@@ -50,13 +50,17 @@ async function run<T>(
   });
 }
 
-/** Strip ANSI escapes and C0/C1 control chars (keeps \n and \t). */
+/**
+ * Strip ANSI escapes, C0/C1 control chars (keeps \n and \t), and Unicode
+ * zero-width / bidi override and isolate chars.
+ */
 export function sanitize(text: string): string {
   return String(text)
     .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
     .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
     .replace(/\x1b[@-_]/g, "")
-    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, "");
+    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, "")
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, "");
 }
 
 function oneLine(text: string, max: number): string {
@@ -89,16 +93,31 @@ function resolveCheckout(provider: Provider, readOnly: boolean): string {
 }
 
 /**
+ * realpath of `path`, or — when it does not exist yet — of its nearest
+ * existing ancestor with the missing segments re-appended, so a symlink on
+ * the way is resolved before the store dir is created.
+ */
+function realpathOfNearestAncestor(path: string): string {
+  const missing: string[] = [];
+  let cur = path;
+  for (;;) {
+    try {
+      return join(realpathSync(cur), ...missing);
+    } catch {
+      const parent = dirname(cur);
+      if (parent === cur) return path;
+      missing.unshift(basename(cur));
+      cur = parent;
+    }
+  }
+}
+
+/**
  * A store inside the checkout is either unwritable (Claude read-only sandbox)
  * or writable by the worker beyond its own task dir (writers' cwd).
  */
 function assertStoreOutsideCheckout(checkout: string): void {
-  let store = orchestratorDir();
-  try {
-    store = realpathSync(store); // checkout is a realpath too
-  } catch {
-    // not created yet: compare the resolved path
-  }
+  const store = realpathOfNearestAncestor(orchestratorDir()); // checkout is a realpath too
   const rel = relative(checkout, store);
   if (
     rel === "" ||
@@ -316,13 +335,27 @@ export async function taskCancelCommand(
     opts.json,
     () => {
       // cancel.json first: the runner reads it to record outcome "cancelled".
-      recordCancel(id);
+      let cancelled = false;
+      try {
+        recordCancel(id);
+        cancelled = true;
+      } catch (err) {
+        if (!(err instanceof CliError && err.code === "ALREADY_FINISHED")) {
+          throw err;
+        }
+      }
+      // Even when finished: a worker can write done.json and keep running.
       const signalled = signalRunner(id, readTask(id).runner?.pid);
-      return { taskId: id, cancelled: true, signalled };
+      if (!cancelled && !signalled) {
+        throw new CliError("ALREADY_FINISHED", `Task ${id} already finished`);
+      }
+      return { taskId: id, cancelled, signalled };
     },
-    ({ taskId, signalled }) =>
+    ({ taskId, cancelled, signalled }) =>
       log.success(
-        `Cancelled task ${taskId}${signalled ? "" : " (no running runner to stop)"}`,
+        !cancelled
+          ? `Stopped the runner of finished task ${taskId}`
+          : `Cancelled task ${taskId}${signalled ? "" : " (no running runner to stop)"}`,
       ),
   );
 }

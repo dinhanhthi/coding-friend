@@ -3,10 +3,12 @@ import { spawn, spawnSync } from "child_process";
 import {
   existsSync,
   mkdtempSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -123,6 +125,19 @@ describe("cf task run writer lease", () => {
     expect(existsSync(join(fake.checkout, "orch", "tasks"))).toBe(false);
   });
 
+  it("refuses a not-yet-created orchestrator dir behind a symlink into the checkout", async () => {
+    fake.checkout = join(realpathSync(root), "checkout");
+    mkdirSync(fake.checkout);
+    symlinkSync(fake.checkout, join(root, "link"));
+    vi.stubEnv("CF_ORCHESTRATOR_DIR", join(root, "link", "orch"));
+
+    expect(await runTask()).toMatchObject({
+      ok: false,
+      error: { code: "USAGE" },
+    });
+    expect(readdirSync(fake.checkout)).toEqual([]);
+  });
+
   it("steals the lease from a holder whose runner pid is dead", async () => {
     fake.pid = spawnSync(process.execPath, ["-e", ""]).pid!;
     expect(await runTask()).toMatchObject({ ok: true });
@@ -187,6 +202,65 @@ describe("cf task cancel", () => {
       expect(kill.mock.calls.filter(([, sig]) => sig !== 0)).toEqual([]);
     },
   );
+
+  function doneTask(): string {
+    const { id } = createTask({
+      provider: "claude",
+      prompt: "done but running",
+      readOnly: true,
+      checkout: fake.checkout,
+    });
+    recordDone(id, { outcome: "succeeded", summary: "x" });
+    return id;
+  }
+
+  it("still stops the runner of a task whose worker wrote done.json", async () => {
+    const id = doneTask();
+    const { spawn: realSpawn } =
+      await vi.importActual<typeof import("child_process")>("child_process");
+    // Its command line contains `task _run <id>`, like a real runner.
+    const runner = realSpawn(
+      process.execPath,
+      ["-e", "setTimeout(() => {}, 60000)", "task", "_run", id],
+      { stdio: "ignore" },
+    );
+    const exited = new Promise((r) => runner.once("exit", (_, sig) => r(sig)));
+    try {
+      recordRunner(id, { pid: runner.pid!, startedAt: "x" });
+
+      stdout = [];
+      await taskCancelCommand(id, { json: true });
+
+      expect(JSON.parse(stdout.join(""))).toMatchObject({
+        ok: true,
+        data: { taskId: id, cancelled: false, signalled: true },
+      });
+      expect(await exited).toBe("SIGTERM");
+      expect(existsSync(join(root, "orch", "tasks", id, "cancel.json"))).toBe(
+        false,
+      );
+    } finally {
+      runner.kill("SIGKILL");
+    }
+  });
+
+  it("refuses a finished task whose runner pid is forged", async () => {
+    const id = doneTask();
+    recordRunner(id, { pid: process.pid, startedAt: "x" });
+    const realKill = process.kill.bind(process);
+    const kill = vi
+      .spyOn(process, "kill")
+      .mockImplementation((p, sig) => (sig === 0 ? realKill(p, 0) : true));
+
+    stdout = [];
+    await taskCancelCommand(id, { json: true });
+
+    expect(JSON.parse(stdout.join(""))).toMatchObject({
+      ok: false,
+      error: { code: "ALREADY_FINISHED" },
+    });
+    expect(kill.mock.calls.filter(([, sig]) => sig !== 0)).toEqual([]);
+  });
 });
 
 describe("sanitize", () => {
@@ -194,5 +268,6 @@ describe("sanitize", () => {
     expect(sanitize("\x1b[31mred\x1b[0m|\u009b|ok\n\tend")).toBe(
       "red||ok\n\tend",
     );
+    expect(sanitize("a\u202eb\u200bc\u2066d")).toBe("abcd");
   });
 });

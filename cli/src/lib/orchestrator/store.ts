@@ -141,6 +141,15 @@ function taskDir(id: string): string {
   return join(tasksDir(), id);
 }
 
+/**
+ * `<store>/runner/<id>`: scratch dir of the task's runner, outside every
+ * worker's write scope (workers write only their task dir and checkout).
+ */
+export function runnerPrivateDir(id: string): string {
+  assertId(id, "task id");
+  return join(orchestratorDir(), "runner", id);
+}
+
 /** Task dir of an existing task, else NOT_FOUND. */
 function existingTaskDir(id: string): string {
   const dir = taskDir(id);
@@ -161,7 +170,7 @@ function isRealDir(dir: string): boolean {
 }
 
 /** Workers can swap their own store subdirs for symlinks: never write through one. */
-function assertRealDir(dir: string): void {
+export function assertRealDir(dir: string): void {
   if (!isRealDir(dir)) {
     throw new CliError("INTERNAL", `refusing symlinked store dir ${dir}`);
   }

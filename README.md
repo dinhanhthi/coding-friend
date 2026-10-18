@@ -115,7 +115,9 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 `cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy|devin` (aliases `--codex`/`--omp`/`--agy`/`--devin`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
 
-Scripts and agents can pass `--json` (status, version, config, memory, project, …) for one machine-readable envelope on stdout; `cf project` lists the projects Coding Friend has seen.
+Scripts and agents can pass `--json` (status, version, config, memory, project, task, ask, reply, done, …) for one machine-readable envelope on stdout; `cf project` lists the projects Coding Friend has seen.
+
+`cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`.
 
 ## Development
 

@@ -160,6 +160,9 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 | `cf status`                                                  | Install / config / memory                                                                                  |
 | `cf version`                                                 | CLI + per-host plugin versions                                                                             |
 | `cf project list` / `add [path]` / `remove <path>`           | Project registry (`~/.coding-friend/projects.json`)                                                        |
+| `cf task run <prompt>` / `list` / `show\|cancel <id>`        | Detached worker in its native OS sandbox (`--provider claude\|codex`, `--read-only`); one writer/checkout  |
+| `cf ask <question>` / `reply <qid> <answer>`                 | Worker asks the user and waits (`--task`, `--timeout` 100s); `reply` answers (`--task`)                    |
+| `cf done --outcome succeeded\|failed --summary <s>`          | Worker ends its task (`--task`, `--handoff <path>`)                                                        |
 | `cf clean`                                                   | Sweep generated `docs/` files                                                                              |
 | `cf session save` / `load`                                   | Cross-machine Claude sessions (`-l/--label`)                                                               |
 | `cf guide create <skill>` / `list`                           | Custom skill guides                                                                                        |
@@ -167,7 +170,9 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 `cf host` is a hidden alias for `cf learn host`.
 
-`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list`, `config get|set|schema`, `project`, `install`, `update --check`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
+`cf task`: workers are `claude -p` / `codex exec`, no daemon; store `~/.coding-friend/orchestrator/` (`CF_ORCHESTRATOR_DIR`). Only `cf task list|show` are auto-approved.
+
+`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list`, `config get|set|schema`, `project`, `task`, `ask`, `reply`, `done`, `install`, `update --check`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
 
 ---
 

@@ -6,6 +6,8 @@ import { codex } from "./codex.js";
 export interface SpawnContext {
   orchDir: string;
   taskDir: string;
+  /** Runner-only dir (`<store>/runner/<id>`), never writable by the worker. */
+  privateDir: string;
   checkout: string;
   /** [process.execPath, ...process.execArgv, process.argv[1]] */
   cfInvocation: string[];

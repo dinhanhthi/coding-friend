@@ -8,7 +8,7 @@ description: >
   or config key. SKIP — general coding questions unrelated to Coding Friend, and
   requests to run a skill (invoke that skill instead).
 created: 2026-02-17
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # $cf-help — Coding Friend Help
@@ -97,7 +97,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### CLI (`coding-friend-cli`, binary `cf`) — optional
 
-Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `project` `clean` `session` `guide` `dev`; `--json` on read commands. No skill requires the CLI. Full flags: `topics.md`.
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `project` `task` `ask` `reply` `done` `clean` `session` `guide` `dev`; `--json` on read commands. No skill requires the CLI. Full flags: `topics.md`.
 
 Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/.
 

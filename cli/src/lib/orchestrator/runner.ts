@@ -1,6 +1,12 @@
 import { spawn } from "child_process";
 import { createHash, randomUUID } from "crypto";
-import { existsSync, readFileSync, realpathSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+} from "fs";
 import { join } from "path";
 import { createInterface } from "readline";
 import { orchestratorDir } from "../paths.js";
@@ -10,7 +16,13 @@ import {
   type SpawnContext,
   type StreamAcc,
 } from "./providers/index.js";
-import { recordResult, recordSession, type TaskRecord } from "./store.js";
+import {
+  assertRealDir,
+  recordResult,
+  recordSession,
+  runnerPrivateDir,
+  type TaskRecord,
+} from "./store.js";
 
 /**
  * Per-task runner (`cf task _run <id>`). Spawns the worker in its own
@@ -83,9 +95,11 @@ export async function runTask(id: string): Promise<void> {
   const adapter = PROVIDERS[task.provider];
   const taskDir = join(orchestratorDir(), "tasks", task.id);
   const cancelled = () => existsSync(join(taskDir, "cancel.json"));
+  const privateDir = runnerPrivateDir(task.id);
   const ctx: SpawnContext = {
     orchDir: orchestratorDir(),
     taskDir,
+    privateDir,
     checkout: task.checkout,
     cfInvocation: [process.execPath, ...process.execArgv, process.argv[1]],
     sessionUuid: randomUUID(),
@@ -97,6 +111,14 @@ export async function runTask(id: string): Promise<void> {
   try {
     if (cancelled()) {
       recordResult(id, { exitCode: null, outcome: "cancelled" });
+      return;
+    }
+    try {
+      mkdirSync(privateDir, { recursive: true, mode: 0o700 });
+      assertRealDir(privateDir);
+    } catch (err) {
+      const error = `could not create runner dir: ${(err as Error).message}`;
+      recordResult(id, { exitCode: null, outcome: "failed", error });
       return;
     }
     const spec = adapter.buildSpawn(task, ctx);
@@ -192,5 +214,6 @@ export async function runTask(id: string): Promise<void> {
       process.off("SIGINT", onSignal);
     }
     if (!task.readOnly) releaseLease(task.checkout, id);
+    rmSync(privateDir, { recursive: true, force: true });
   }
 }

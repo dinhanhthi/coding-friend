@@ -1,17 +1,23 @@
-import { readFileSync } from "fs";
+import { lstatSync, readFileSync } from "fs";
 import { join } from "path";
 import { buildPreamble } from "../preamble.js";
 import type { ProviderAdapter, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
 
+/**
+ * In the runner's private dir, not the worker-writable task dir: codex writes
+ * `-o` outside its sandbox, so a worker-planted symlink there would redirect it.
+ */
 function lastMessageFile(ctx: SpawnContext): string {
-  return join(ctx.taskDir, "last-message.txt");
+  return join(ctx.privateDir, "last-message.txt");
 }
 
 function readLastMessage(ctx: SpawnContext): string | undefined {
   try {
-    const text = readFileSync(lastMessageFile(ctx), "utf-8");
+    const file = lastMessageFile(ctx);
+    if (!lstatSync(file).isFile()) return undefined; // never read through a symlink
+    const text = readFileSync(file, "utf-8");
     return text ? text.slice(0, MAX_TEXT) : undefined;
   } catch {
     return undefined;
