@@ -8,7 +8,9 @@ vi.mock("fs", async () => {
     ...actual,
     readdirSync: vi.fn(),
     statSync: vi.fn(),
+    lstatSync: vi.fn(),
     copyFileSync: vi.fn(),
+    cpSync: vi.fn(),
     mkdirSync: vi.fn(),
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
@@ -23,7 +25,9 @@ vi.mock("../json.js", () => ({
 import {
   readdirSync,
   statSync,
+  lstatSync,
   copyFileSync,
+  cpSync,
   mkdirSync,
   existsSync,
   readFileSync,
@@ -41,7 +45,9 @@ import {
 
 const mockReaddirSync = vi.mocked(readdirSync);
 const mockStatSync = vi.mocked(statSync);
+const mockLstatSync = vi.mocked(lstatSync);
 const mockCopyFileSync = vi.mocked(copyFileSync);
+const mockCpSync = vi.mocked(cpSync);
 const mockMkdirSync = vi.mocked(mkdirSync);
 const mockExistsSync = vi.mocked(existsSync);
 const mockReadFileSync = vi.mocked(readFileSync);
@@ -320,9 +326,49 @@ describe("saveSession", () => {
 
     expect(folderName).toBe("my-label-2");
   });
+
+  it("copies the sibling session folder (subagents, tool results) when present", () => {
+    const sessionFolder =
+      "/Users/alice/.claude/projects/-Users-alice-git-foo/abc";
+    mockExistsSync.mockImplementation((p) => p === sessionFolder);
+
+    saveSession({
+      jsonlPath: "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
+      sessionId: "abc",
+      label: "My label",
+      projectPath: "/Users/alice/git/foo",
+      syncDir: "/tmp/sync",
+      previewText: "hello world",
+    });
+
+    expect(mockCpSync).toHaveBeenCalledWith(
+      sessionFolder,
+      join("/tmp/sync", "sessions", "my-label", "session"),
+      { recursive: true, filter: expect.any(Function) },
+    );
+  });
+
+  it("skips the session folder copy when it does not exist", () => {
+    mockExistsSync.mockReturnValue(false);
+
+    saveSession({
+      jsonlPath: "/Users/alice/.claude/projects/-Users-alice-git-foo/abc.jsonl",
+      sessionId: "abc",
+      label: "My label",
+      projectPath: "/Users/alice/git/foo",
+      syncDir: "/tmp/sync",
+      previewText: "hello world",
+    });
+
+    expect(mockCpSync).not.toHaveBeenCalled();
+  });
 });
 
 describe("loadSession", () => {
+  beforeEach(() => {
+    mockLstatSync.mockReturnValue({ isSymbolicLink: () => false } as never);
+  });
+
   it("uses folderName to locate session in sync folder", () => {
     mockExistsSync.mockReturnValue(true);
 
@@ -371,5 +417,117 @@ describe("loadSession", () => {
       join("/tmp/sync", "sessions", "abc", "session.jsonl"),
       expect.any(String),
     );
+  });
+
+  it("restores the saved session folder next to the JSONL when present", () => {
+    mockExistsSync.mockReturnValue(true);
+
+    const meta = {
+      sessionId: "abc",
+      folderName: "my-test-session",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    loadSession(meta, "/Users/bob/git/foo", "/tmp/sync");
+
+    expect(mockCpSync).toHaveBeenCalledWith(
+      join("/tmp/sync", "sessions", "my-test-session", "session"),
+      join(homedir(), ".claude", "projects", "-Users-bob-git-foo", "abc"),
+      { recursive: true, filter: expect.any(Function) },
+    );
+  });
+
+  it("skips the session folder restore for saves without it", () => {
+    mockExistsSync.mockReturnValue(false);
+
+    const meta = {
+      sessionId: "abc",
+      folderName: "my-test-session",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    loadSession(meta, "/Users/bob/git/foo", "/tmp/sync");
+
+    expect(mockCopyFileSync).toHaveBeenCalled();
+    expect(mockCpSync).not.toHaveBeenCalled();
+  });
+
+  it("throws and copies nothing when sessionId escapes the projects dir", () => {
+    mockExistsSync.mockReturnValue(true);
+
+    const meta = {
+      sessionId: "../../..",
+      folderName: "my-test-session",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    expect(() => loadSession(meta, "/Users/bob/git/foo", "/tmp/sync")).toThrow(
+      /sessionId/,
+    );
+    expect(mockCopyFileSync).not.toHaveBeenCalled();
+    expect(mockCpSync).not.toHaveBeenCalled();
+  });
+
+  it("throws when folderName escapes the sessions dir", () => {
+    mockExistsSync.mockReturnValue(true);
+
+    const meta = {
+      sessionId: "abc",
+      folderName: "..",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    expect(() => loadSession(meta, "/Users/bob/git/foo", "/tmp/sync")).toThrow(
+      /folderName/,
+    );
+  });
+
+  it("throws and copies nothing when session.jsonl is a symlink", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockLstatSync.mockReturnValueOnce({
+      isSymbolicLink: () => true,
+    } as never);
+
+    const meta = {
+      sessionId: "abc",
+      folderName: "my-test-session",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    expect(() => loadSession(meta, "/Users/bob/git/foo", "/tmp/sync")).toThrow(
+      /symlinked/,
+    );
+    expect(mockCopyFileSync).not.toHaveBeenCalled();
+    expect(mockCpSync).not.toHaveBeenCalled();
+  });
+
+  it("restores the session folder with a filter that skips symlinks", () => {
+    mockExistsSync.mockReturnValue(true);
+
+    const meta = {
+      sessionId: "abc",
+      folderName: "my-test-session",
+      label: "test",
+      savedAt: "2026-01-01T00:00:00Z",
+    };
+
+    loadSession(meta, "/Users/bob/git/foo", "/tmp/sync");
+
+    const opts = mockCpSync.mock.calls[0][2] as {
+      filter: (src: string) => boolean;
+    };
+    mockLstatSync.mockReturnValueOnce({
+      isSymbolicLink: () => true,
+    } as never);
+    expect(opts.filter("/tmp/sync/link")).toBe(false);
+    mockLstatSync.mockReturnValueOnce({
+      isSymbolicLink: () => false,
+    } as never);
+    expect(opts.filter("/tmp/sync/file")).toBe(true);
   });
 });

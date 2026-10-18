@@ -3,7 +3,8 @@
 #
 # Usage: save-session.sh <sessions_dir> <session_id> <label> <jsonl_path> <preview>
 #
-# Creates <sessions_dir>/<label-slug>/ with session.jsonl and meta.json.
+# Creates <sessions_dir>/<label-slug>/ with session.jsonl and meta.json, plus
+# session/ when the sibling <session_id>/ folder (subagents, tool results) exists.
 
 set -euo pipefail
 
@@ -14,6 +15,13 @@ SESSION_ID="$2"
 LABEL="$3"
 JSONL_PATH="$4"
 PREVIEW="$5"
+
+# Reject session ids that could escape the session dir (keep in sync with:
+# cli/src/lib/session.ts isSafePathSegment())
+if ! [[ "$SESSION_ID" =~ ^[A-Za-z0-9._-]+$ ]] || [ "$SESSION_ID" = "." ] || [ "$SESSION_ID" = ".." ]; then
+  echo "Invalid session id: $SESSION_ID" >&2
+  exit 1
+fi
 
 PROJECT_PATH=$(pwd)
 MACHINE=$(hostname)
@@ -38,6 +46,12 @@ mkdir -p "$DEST_DIR"
 
 # Copy session JSONL
 cp "$JSONL_PATH" "$DEST_DIR/session.jsonl"
+
+# Copy the sibling session folder (subagents/, tool-results/) when present
+SESSION_FOLDER="$(dirname "$JSONL_PATH")/$SESSION_ID"
+if [ -d "$SESSION_FOLDER" ]; then
+  cp -RP "$SESSION_FOLDER" "$DEST_DIR/session"
+fi
 
 # Write metadata via Python (safe argument passing, no interpolation)
 python3 "$SCRIPT_DIR/write-meta.py" \

@@ -8,7 +8,7 @@ disable-model-invocation: true
 model: haiku
 allowed-tools: [Bash, Read]
 created: 2026-03-05
-updated: 2026-09-09
+updated: 2026-10-18
 state: beta
 ---
 
@@ -89,7 +89,7 @@ FOLDER_NAME=$(bash "$CF_SESSION_SCRIPTS/save-session.sh" \
 echo "Saved to folder: $FOLDER_NAME"
 ```
 
-This copies the JSONL and writes `meta.json` with session metadata (including `sessionId` for `claude --resume`). All values are passed as command-line arguments to avoid injection.
+This copies the JSONL, the session folder (subagents, tool results) when present, and writes `meta.json` with session metadata (including `sessionId` for `claude --resume`). All values are passed as command-line arguments to avoid injection.
 
 ### Step 6: Confirm Success
 

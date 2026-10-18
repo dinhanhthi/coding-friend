@@ -1,12 +1,14 @@
 import {
   readdirSync,
   statSync,
+  lstatSync,
   copyFileSync,
+  cpSync,
   existsSync,
   readFileSync,
   mkdirSync,
 } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
 import { homedir, hostname as osHostname } from "os";
 import { readJson, writeJson } from "./json.js";
 import { encodeProjectPath, claudeSessionDir } from "./paths.js";
@@ -158,8 +160,9 @@ export function remapProjectPath(
 
 /**
  * Save a session to the sync folder.
- * Creates <syncDir>/sessions/<label-slug>/session.jsonl and meta.json.
- * Returns the folder name used.
+ * Creates <syncDir>/sessions/<label-slug>/session.jsonl and meta.json, plus
+ * session/ when Claude Code keeps a sibling <sessionId>/ folder (subagents/,
+ * tool-results/). Returns the folder name used.
  */
 export function saveSession(opts: SaveSessionOpts): string {
   const { jsonlPath, sessionId, label, projectPath, syncDir, previewText } =
@@ -174,6 +177,14 @@ export function saveSession(opts: SaveSessionOpts): string {
   mkdirSync(destDir, { recursive: true });
   copyFileSync(jsonlPath, destJsonl);
 
+  const sessionFolder = join(dirname(jsonlPath), sessionId);
+  if (existsSync(sessionFolder)) {
+    cpSync(sessionFolder, join(destDir, "session"), {
+      recursive: true,
+      filter: skipSymlinks,
+    });
+  }
+
   const meta: SessionMeta = {
     sessionId,
     folderName,
@@ -187,6 +198,21 @@ export function saveSession(opts: SaveSessionOpts): string {
   return folderName;
 }
 
+/** cpSync filter: never copy symlinks (a tampered sync folder could point at secrets). */
+function skipSymlinks(src: string): boolean {
+  return !lstatSync(src).isSymbolicLink();
+}
+
+/** True for a single path segment that cannot escape its parent directory. */
+function isSafePathSegment(s: string): boolean {
+  return (
+    typeof s === "string" &&
+    /^[A-Za-z0-9._-]+$/.test(s) &&
+    s !== "." &&
+    s !== ".."
+  );
+}
+
 function uniqueFolderName(sessionsDir: string, base: string): string {
   if (!existsSync(join(sessionsDir, base))) return base;
   let i = 2;
@@ -197,20 +223,39 @@ function uniqueFolderName(sessionsDir: string, base: string): string {
 /**
  * Load a session from the sync folder onto the current machine.
  * Copies the JSONL to ~/.claude/projects/<encodedLocalPath>/<sessionId>.jsonl
+ * and, when saved, the session/ folder to <sessionId>/ next to it.
  */
 export function loadSession(
   meta: SessionMeta,
   localProjectPath: string,
   syncDir: string,
 ): void {
+  const folder = meta.folderName ?? meta.sessionId;
+  if (!isSafePathSegment(meta.sessionId)) {
+    throw new Error(`Invalid sessionId in meta.json: "${meta.sessionId}"`);
+  }
+  if (!isSafePathSegment(folder)) {
+    throw new Error(`Invalid folderName in meta.json: "${folder}"`);
+  }
+
   const encodedPath = encodeProjectPath(localProjectPath);
   const destDir = claudeSessionDir(encodedPath);
   const destPath = join(destDir, `${meta.sessionId}.jsonl`);
-  const folder = meta.folderName ?? meta.sessionId;
   const srcPath = join(syncDir, "sessions", folder, "session.jsonl");
+  if (!skipSymlinks(srcPath)) {
+    throw new Error(`Refusing to load a symlinked session file: ${srcPath}`);
+  }
 
   mkdirSync(destDir, { recursive: true });
   copyFileSync(srcPath, destPath);
+
+  const srcFolder = join(syncDir, "sessions", folder, "session");
+  if (existsSync(srcFolder)) {
+    cpSync(srcFolder, join(destDir, meta.sessionId), {
+      recursive: true,
+      filter: skipSymlinks,
+    });
+  }
 }
 
 function hostname(): string {

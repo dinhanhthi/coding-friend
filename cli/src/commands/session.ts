@@ -158,7 +158,12 @@ export async function sessionLoadCommand(): Promise<void> {
   }
 
   localProjectPath = resolvePath(localProjectPath);
-  loadSession(chosen, localProjectPath, docsDir);
+  try {
+    loadSession(chosen, localProjectPath, docsDir);
+  } catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
 
   log.success(`Session "${chosen.label}" loaded.`);
   log.info(`To resume, run:`);
