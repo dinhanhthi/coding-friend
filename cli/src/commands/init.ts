@@ -777,12 +777,9 @@ async function stepStatusline(): Promise<void> {
   const components = await selectStatuslineComponents();
 
   if (components.includes("rate_limit")) {
-    const missing: string[] = [];
-    if (!commandExists("curl")) missing.push("curl");
-    if (!commandExists("jq")) missing.push("jq");
-    if (missing.length > 0) {
+    if (!commandExists("jq")) {
       log.warn(
-        `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
+        "Rate limit requires jq. Install it first, or the statusline will show a warning instead.",
       );
     }
   }
@@ -1976,9 +1973,7 @@ async function initDevinCommand(): Promise<void> {
 
   if (!isDevinPluginInstalled()) {
     log.warn("Devin plugin is not installed. Run: cf install --agent devin");
-    log.dim(
-      "Learn/memory MCP registration runs once the plugin is installed.",
-    );
+    log.dim("Learn/memory MCP registration runs once the plugin is installed.");
     console.log();
   }
 

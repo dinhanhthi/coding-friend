@@ -43,7 +43,7 @@ export const STATUSLINE_COMPONENTS: {
   { id: "context", label: "Context window usage (ctx 42%)" },
   {
     id: "rate_limit",
-    label: "Rate limit — current & weekly usage (requires curl & jq)",
+    label: "Rate limit — current & weekly usage (requires jq)",
   },
   {
     id: "session",

@@ -49,12 +49,9 @@ export async function statuslineCommand(): Promise<void> {
 
   // Warn about missing dependencies
   if (components.includes("rate_limit")) {
-    const missing: string[] = [];
-    if (!commandExists("curl")) missing.push("curl");
-    if (!commandExists("jq")) missing.push("jq");
-    if (missing.length > 0) {
+    if (!commandExists("jq")) {
       log.warn(
-        `Rate limit requires ${missing.join(" & ")}. Install them first, or the statusline will show a warning instead.`,
+        "Rate limit requires jq. Install it first, or the statusline will show a warning instead.",
       );
     }
   }

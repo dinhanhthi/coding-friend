@@ -9,8 +9,8 @@
 # Context window usage is read from the stdin JSON (context_window.used_percentage)
 # provided by Claude Code. Account info is read from ~/.claude.json (oauthAccount),
 # with fallback to `claude auth status --json`.
-# API usage is fetched from Anthropic's OAuth API using the access token that
-# Claude Code stores in the macOS Keychain.
+# Rate limits (5-hour and 7-day usage) are read from the stdin JSON (rate_limits.*)
+# provided by Claude Code for Claude.ai subscribers; absent windows are skipped.
 # Time format respects macOS 24h preference (AppleICUForce24HourTime).
 #
 # Setup:
@@ -18,7 +18,7 @@
 #   "statusLine": { "type": "command", "command": "bash <plugin-path>/hooks/statusline.sh" }
 #
 # Integration contract:
-#   stdin  – JSON with current_dir (or workspace.current_dir), session.model (or model.display_name), context_window.*
+#   stdin  – JSON with current_dir (or workspace.current_dir), session.model (or model.display_name), context_window.*, rate_limits.*
 #   stdout – ANSI-colored status line string
 #
 # Configuration:
@@ -111,13 +111,17 @@ iso_to_epoch() {
   return 0
 }
 
-# Format a reset time from ISO string
+# Format a reset time from Unix epoch seconds or an ISO string
 # style: "time" → "2:30pm", "datetime" → "mar 10, 2:30pm"
 format_reset_time() {
   local iso_str="$1" style="$2"
   [ -z "$iso_str" ] || [ "$iso_str" = "null" ] && return
   local epoch
-  epoch=$(iso_to_epoch "$iso_str")
+  if [[ "$iso_str" =~ ^[0-9]+$ ]]; then
+    epoch="$iso_str"
+  else
+    epoch=$(iso_to_epoch "$iso_str")
+  fi
   [ -z "$epoch" ] && return
   local result=""
   case "$style" in
@@ -146,50 +150,6 @@ format_reset_time() {
       ;;
   esac
   printf "%s" "$result"
-}
-
-# Resolve OAuth token from various sources (macOS Keychain, credentials file, Linux secret-tool)
-get_oauth_token() {
-  # 1. Environment variable
-  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    echo "$CLAUDE_CODE_OAUTH_TOKEN"; return 0
-  fi
-  # 1b. When CLAUDE_CONFIG_DIR is set, its credentials file is authoritative for this
-  #     session — prefer it over the global Keychain so multi-account setups read the
-  #     right token. Falls through to the chain below if the file is absent.
-  if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f "${CF_CLAUDE_DIR}/.credentials.json" ]; then
-    local token
-    token=$(jq -r '.claudeAiOauth.accessToken // empty' "${CF_CLAUDE_DIR}/.credentials.json" 2>/dev/null)
-    if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
-  fi
-  # 2. macOS Keychain
-  if command -v security >/dev/null 2>&1; then
-    local blob
-    blob=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
-    if [ -n "$blob" ]; then
-      local token
-      token=$(echo "$blob" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
-      if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
-    fi
-  fi
-  # 3. Credentials file
-  local creds_file="${CF_CLAUDE_DIR}/.credentials.json"
-  if [ -f "$creds_file" ]; then
-    local token
-    token=$(jq -r '.claudeAiOauth.accessToken // empty' "$creds_file" 2>/dev/null)
-    if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
-  fi
-  # 4. Linux secret-tool
-  if command -v secret-tool >/dev/null 2>&1; then
-    local blob
-    blob=$(timeout 2 secret-tool lookup service "Claude Code-credentials" 2>/dev/null)
-    if [ -n "$blob" ]; then
-      local token
-      token=$(echo "$blob" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
-      if [ -n "$token" ] && [ "$token" != "null" ]; then echo "$token"; return 0; fi
-    fi
-  fi
-  echo ""
 }
 
 separator="${GRAY} | ${RESET}"
@@ -300,71 +260,35 @@ if component_enabled "account"; then
   fi
 fi
 
-# ── Fetch usage data (for "rate_limit" component) ──
-USAGE_DATA=""
-if component_enabled "rate_limit"; then
-  if command -v curl &>/dev/null && command -v jq &>/dev/null; then
-    cache_dir="/tmp/claude-${UID:-$(id -u)}"
-    cache_file="${cache_dir}/statusline-usage-cache.json"
-    cache_max_age=60
-    mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null
-
-    needs_refresh=true
-    if [ -f "$cache_file" ]; then
-      cache_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || stat -f %m "$cache_file" 2>/dev/null)
-      now=$(date +%s)
-      cache_age=$(( now - cache_mtime ))
-      if [ "$cache_age" -lt "$cache_max_age" ]; then
-        needs_refresh=false
-        USAGE_DATA=$(cat "$cache_file" 2>/dev/null)
-      fi
-    fi
-
-    if $needs_refresh; then
-      token=$(get_oauth_token)
-      if [ -n "$token" ] && [ "$token" != "null" ]; then
-        response=$(curl -s --max-time 5 \
-          -H "Accept: application/json" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $token" \
-          -H "anthropic-beta: oauth-2025-04-20" \
-          "https://api.anthropic.com/api/oauth/usage" 2>/dev/null) || true
-        if [ -n "$response" ] && echo "$response" | jq -e '.five_hour' >/dev/null 2>&1; then
-          USAGE_DATA="$response"
-          echo "$response" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
-        fi
-      fi
-      # Fall back to stale cache if API failed
-      if [ -z "$USAGE_DATA" ] && [ -f "$cache_file" ]; then
-        USAGE_DATA=$(cat "$cache_file" 2>/dev/null)
-      fi
-    fi
-  fi
-fi
-
-# Rate limit — single line: 5h 30% ⟳ 2:30pm │ 7d 10% ⟳ mar 15, 2:30pm
+# Rate limit — single line: [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
+# Read from stdin JSON (rate_limits.*); each window may be independently absent.
 rate_limit_line=""
 if component_enabled "rate_limit"; then
-  if ! command -v curl &>/dev/null || ! command -v jq &>/dev/null; then
-    rate_limit_line="${YELLOW}⚠ curl & jq required for rate limits${RESET}"
-  elif [ -n "$USAGE_DATA" ] && echo "$USAGE_DATA" | jq -e . >/dev/null 2>&1; then
+  if ! command -v jq &>/dev/null; then
+    rate_limit_line="${YELLOW}⚠ jq required for rate limits${RESET}"
+  else
     rl_parts=""
 
     # Current (5-hour window)
-    five_hour_pct=$(echo "$USAGE_DATA" | jq -r '.five_hour.utilization // 0' | awk '{printf "%.0f", $1}')
-    five_hour_reset_iso=$(echo "$USAGE_DATA" | jq -r '.five_hour.resets_at // empty')
-    five_hour_reset=$(format_reset_time "$five_hour_reset_iso" "time")
-    five_hour_color=$(color_for_percentage "$five_hour_pct")
-    rl_parts="${GRAY}[5h]${RESET} ${five_hour_color}${five_hour_pct}%${RESET}"
-    [ -n "$five_hour_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${five_hour_reset}"
+    five_hour_pct=$(echo "$INPUT" | jq -r '.rate_limits.five_hour.used_percentage // empty' 2>/dev/null | awk 'NF {printf "%.0f", $1}' || true)
+    if [ -n "$five_hour_pct" ]; then
+      five_hour_reset_raw=$(echo "$INPUT" | jq -r '.rate_limits.five_hour.resets_at // empty' 2>/dev/null || true)
+      five_hour_reset=$(format_reset_time "$five_hour_reset_raw" "time")
+      five_hour_color=$(color_for_percentage "$five_hour_pct")
+      rl_parts="${GRAY}[5h]${RESET} ${five_hour_color}${five_hour_pct}%${RESET}"
+      [ -n "$five_hour_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${five_hour_reset}"
+    fi
 
     # Weekly (7-day window)
-    seven_day_pct=$(echo "$USAGE_DATA" | jq -r '.seven_day.utilization // 0' | awk '{printf "%.0f", $1}')
-    seven_day_reset_iso=$(echo "$USAGE_DATA" | jq -r '.seven_day.resets_at // empty')
-    seven_day_reset=$(format_reset_time "$seven_day_reset_iso" "datetime")
-    seven_day_color=$(color_for_percentage "$seven_day_pct")
-    rl_parts+="${separator}${GRAY}[7d]${RESET} ${seven_day_color}${seven_day_pct}%${RESET}"
-    [ -n "$seven_day_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${seven_day_reset}"
+    seven_day_pct=$(echo "$INPUT" | jq -r '.rate_limits.seven_day.used_percentage // empty' 2>/dev/null | awk 'NF {printf "%.0f", $1}' || true)
+    if [ -n "$seven_day_pct" ]; then
+      seven_day_reset_raw=$(echo "$INPUT" | jq -r '.rate_limits.seven_day.resets_at // empty' 2>/dev/null || true)
+      seven_day_reset=$(format_reset_time "$seven_day_reset_raw" "datetime")
+      seven_day_color=$(color_for_percentage "$seven_day_pct")
+      [ -n "$rl_parts" ] && rl_parts+="${separator}"
+      rl_parts+="${GRAY}[7d]${RESET} ${seven_day_color}${seven_day_pct}%${RESET}"
+      [ -n "$seven_day_reset" ] && rl_parts+=" ${GRAY}→${RESET} ${seven_day_reset}"
+    fi
 
     rate_limit_line="$rl_parts"
   fi
