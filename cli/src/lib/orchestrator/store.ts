@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import {
   existsSync,
   linkSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   unlinkSync,
@@ -21,6 +22,9 @@ const ID_RE = /^[a-z0-9]{8}$/;
 const JSON_ID_RE = /^[a-z0-9]{8}\.json$/;
 const ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 const MAX_TEXT = 4096;
+
+/** How long a task (or lease) without runner.json counts as still spawning. */
+export const SPAWN_GRACE_MS = 30_000;
 
 export type Provider = "claude" | "codex";
 export type DoneOutcome = "succeeded" | "failed";
@@ -127,7 +131,8 @@ function now(): string {
 
 function tasksDir(): string {
   const root = orchestratorDir();
-  mkdirSync(root, { recursive: true, mode: 0o700 });
+  // Skip mkdir when present: sandboxed workers may write only their task dir.
+  if (!existsSync(root)) mkdirSync(root, { recursive: true, mode: 0o700 });
   return join(root, "tasks");
 }
 
@@ -142,11 +147,33 @@ function existingTaskDir(id: string): string {
   if (!existsSync(join(dir, "task.json"))) {
     throw new CliError("NOT_FOUND", `Task ${id} not found`);
   }
+  assertRealDir(dir);
   return dir;
+}
+
+/** True when `dir` is a real directory (lstat: a symlink is not). */
+function isRealDir(dir: string): boolean {
+  try {
+    return lstatSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** Workers can swap their own store subdirs for symlinks: never write through one. */
+function assertRealDir(dir: string): void {
+  if (!isRealDir(dir)) {
+    throw new CliError("INTERNAL", `refusing symlinked store dir ${dir}`);
+  }
 }
 
 function read<T>(file: string): T | undefined {
   return readJson<T>(file) ?? undefined;
+}
+
+/** The exact bytes createOnce writes for `data`. */
+export function serialize(data: unknown): string {
+  return JSON.stringify(data, null, 2) + "\n";
 }
 
 /**
@@ -154,15 +181,23 @@ function read<T>(file: string): T | undefined {
  * tmp file in the same dir, then hard-link it into place (atomic, never a
  * partial read). Returns false when the file already existed.
  */
-function createOnce(file: string, data: unknown): boolean {
+export function createOnce(file: string, data: unknown): boolean {
   const dir = dirname(file);
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // lstat, not existsSync: a dangling symlink must not count as missing.
+  if (!isRealDir(dir)) {
+    try {
+      lstatSync(dir);
+    } catch {
+      mkdirSync(dir, { recursive: true, mode: 0o700 });
+    }
+    assertRealDir(dir);
+  }
   const tmp = join(
     dir,
     `.${basename(file)}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`,
   );
   try {
-    writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", {
+    writeFileSync(tmp, serialize(data), {
       encoding: "utf-8",
       mode: 0o600,
     });
@@ -190,8 +225,14 @@ function listIds(dir: string, re: RegExp): string[] {
   }
 }
 
+/** True when `iso` is older than `ms`, or is not a valid timestamp. */
+export function isOlderThan(iso: string, ms: number): boolean {
+  const t = Date.parse(iso);
+  return !Number.isFinite(t) || Date.now() - t > ms;
+}
+
 export function isPidAlive(pid: number): boolean {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
+  if (!Number.isInteger(pid) || pid <= 1) return false;
   try {
     process.kill(pid, 0);
     return true;
@@ -236,16 +277,19 @@ function deriveState(v: Omit<TaskView, "state">): TaskState {
   if (v.runner && isPidAlive(v.runner.pid)) {
     return v.pendingAsks.length > 0 ? "waiting" : "running";
   }
-  if (!v.runner) return "queued";
+  if (!v.runner && !isOlderThan(v.createdAt, SPAWN_GRACE_MS)) return "queued";
   return "interrupted";
 }
 
 function buildView(dir: string): TaskView | undefined {
   const task = read<TaskRecord>(join(dir, "task.json"));
   if (!task || typeof task.id !== "string") return undefined;
-  const pendingAsks = listIds(join(dir, "asks"), JSON_ID_RE)
-    .filter((qid) => !existsSync(join(dir, "answers", `${qid}.json`)))
-    .map((qid) => read<AskRecord>(join(dir, "asks", `${qid}.json`)))
+  const answers = join(dir, "answers");
+  const answered = (qid: string) =>
+    isRealDir(answers) && existsSync(join(answers, `${qid}.json`));
+  const pendingAsks = listIds(askDir(dir), JSON_ID_RE)
+    .filter((qid) => !answered(qid))
+    .map((qid) => readAskAt(dir, qid))
     .filter((a): a is AskRecord => !!a && typeof a.question === "string")
     .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   const view: Omit<TaskView, "state"> = {
@@ -363,20 +407,51 @@ export function recordCancel(id: string): CancelRecord {
 
 // ─── asks / answers ─────────────────────────────────────────────────────
 
-/** Find an ask by qid alone (scans every task; volume is tiny). */
-export function findAsk(qid: string): AskRecord | undefined {
-  assertId(qid, "question id");
-  const dir = tasksDir();
-  for (const id of listIds(dir, ID_RE)) {
-    const ask = read<AskRecord>(join(dir, id, "asks", `${qid}.json`));
-    // Trust the location, not the file's own ids.
-    if (ask && typeof ask === "object") return { ...ask, qid, taskId: id };
-  }
-  return undefined;
+/** A task's asks/ dir, or "" (lists nothing) when it is a symlink. */
+function askDir(dir: string): string {
+  const asks = join(dir, "asks");
+  return isRealDir(asks) ? asks : "";
 }
 
-function answerFile(ask: AskRecord): string {
-  return join(taskDir(ask.taskId), "answers", `${ask.qid}.json`);
+/** The ask `qid` of task dir `dir`, unless its own ids disagree with its location. */
+function readAskAt(dir: string, qid: string): AskRecord | undefined {
+  const asks = askDir(dir);
+  if (!asks) return undefined;
+  const ask = read<AskRecord>(join(asks, `${qid}.json`));
+  if (!ask || typeof ask !== "object") return undefined;
+  return ask.qid === qid && ask.taskId === basename(dir) ? ask : undefined;
+}
+
+/** Every ask with this qid (scans every task, or just `taskId`; volume is tiny). */
+function findAsks(qid: string, taskId?: string): AskRecord[] {
+  assertId(qid, "question id");
+  const dir = tasksDir();
+  const ids = taskId === undefined ? listIds(dir, ID_RE) : [taskId];
+  return ids
+    .map((id) => readAskAt(taskDir(id), qid))
+    .filter((a): a is AskRecord => !!a);
+}
+
+/**
+ * Find an ask by qid, within `taskId` when given. A qid in several tasks is
+ * ambiguous: a worker can plant another task's (readable) qid in its own dir.
+ */
+export function findAsk(qid: string, taskId?: string): AskRecord | undefined {
+  const asks = findAsks(qid, taskId);
+  if (asks.length > 1) {
+    const ids = asks.map((a) => a.taskId).sort();
+    throw new CliError(
+      "USAGE",
+      `qid ${qid} is ambiguous (tasks ${ids.join(", ")}); pass --task <id>`,
+    );
+  }
+  return asks[0];
+}
+
+/** answers/ of the ask's task, or "" (nothing to read) when it is a symlink. */
+function answerDir(ask: AskRecord): string {
+  const answers = join(taskDir(ask.taskId), "answers");
+  return isRealDir(answers) ? answers : "";
 }
 
 /** Create an ask, or reuse the most recent ask of this task with the same text. */
@@ -386,17 +461,17 @@ export function createAsk(
 ): { qid: string; answer?: string } {
   const dir = existingTaskDir(taskId);
   const text = cap(question);
-  const same = listIds(join(dir, "asks"), JSON_ID_RE)
-    .map((qid) => read<AskRecord>(join(dir, "asks", `${qid}.json`)))
+  const same = listIds(askDir(dir), JSON_ID_RE)
+    .map((qid) => readAskAt(dir, qid))
     .filter((a): a is AskRecord => !!a && a.question === text)
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
   if (same) {
-    const answer = readAnswer(same.qid);
+    const answer = readAnswer(same.qid, taskId);
     return answer === undefined ? { qid: same.qid } : { qid: same.qid, answer };
   }
   for (let attempt = 0; attempt < 5; attempt++) {
     const qid = newId();
-    if (findAsk(qid)) continue;
+    if (findAsks(qid).length > 0) continue;
     const ask: AskRecord = {
       schemaVersion: 1,
       qid,
@@ -409,23 +484,29 @@ export function createAsk(
   throw new CliError("INTERNAL", "Could not allocate a unique question id");
 }
 
-export function readAnswer(qid: string): string | undefined {
-  const ask = findAsk(qid);
-  if (!ask) return undefined;
-  const answer = read<AnswerRecord>(answerFile(ask));
+export function readAnswer(qid: string, taskId?: string): string | undefined {
+  const ask = findAsk(qid, taskId);
+  const dir = ask && answerDir(ask);
+  if (!dir) return undefined;
+  const answer = read<AnswerRecord>(join(dir, `${qid}.json`));
   return typeof answer?.answer === "string" ? answer.answer : undefined;
 }
 
-export function reply(qid: string, answer: string): AnswerRecord {
-  const ask = findAsk(qid);
+export function reply(
+  qid: string,
+  answer: string,
+  taskId?: string,
+): AnswerRecord {
+  const ask = findAsk(qid, taskId);
   if (!ask) throw new CliError("NOT_FOUND", `Question ${qid} not found`);
+  const file = join(existingTaskDir(ask.taskId), "answers", `${qid}.json`);
   const record: AnswerRecord = {
     schemaVersion: 1,
     qid,
     answer,
     answeredAt: now(),
   };
-  if (!createOnce(answerFile(ask), record)) {
+  if (!createOnce(file, record)) {
     throw new CliError("ALREADY_FINISHED", `Question ${qid} already answered`);
   }
   return record;

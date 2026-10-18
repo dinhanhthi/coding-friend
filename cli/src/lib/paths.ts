@@ -128,8 +128,9 @@ export function projectsRegistryPath(): string {
 
 /** Orchestrator task store (CF_ORCHESTRATOR_DIR overrides ~/.coding-friend/orchestrator) */
 export function orchestratorDir(): string {
-  return (
-    process.env.CF_ORCHESTRATOR_DIR || join(globalConfigDir(), "orchestrator")
+  // resolve(): the runner runs with cwd = checkout, so pin a relative override.
+  return resolve(
+    process.env.CF_ORCHESTRATOR_DIR || join(globalConfigDir(), "orchestrator"),
   );
 }
 

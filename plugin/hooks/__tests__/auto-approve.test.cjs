@@ -1038,18 +1038,30 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
-  it("allows cf ask", () => {
-    expect(
-      classifyByRules("Bash", { command: 'cf ask "q?" --task abcdefgh' }),
-    ).toBe("allow");
-  });
+  describe("cf ask / cf done (never auto-approved)", () => {
+    let origTaskId;
+    beforeEach(() => {
+      origTaskId = process.env.CF_TASK_ID;
+      process.env.CF_TASK_ID = "abcdefgh";
+    });
+    afterEach(() => {
+      if (origTaskId === undefined) delete process.env.CF_TASK_ID;
+      else process.env.CF_TASK_ID = origTaskId;
+    });
 
-  it("allows cf done", () => {
-    expect(
-      classifyByRules("Bash", {
-        command: "cf done --task abcdefgh --outcome succeeded --summary s",
-      }),
-    ).toBe("allow");
+    it("does NOT allow cf ask even with CF_TASK_ID set", () => {
+      expect(
+        classifyByRules("Bash", { command: 'cf ask --task abcdefgh "q?"' }),
+      ).not.toBe("allow");
+    });
+
+    it("does NOT allow cf done even with CF_TASK_ID set", () => {
+      expect(
+        classifyByRules("Bash", {
+          command: "cf done --outcome succeeded --summary s",
+        }),
+      ).not.toBe("allow");
+    });
   });
 
   it("allows cf task list --json", () => {

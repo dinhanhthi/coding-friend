@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { spawnSync } from "child_process";
@@ -68,6 +75,55 @@ describe("orchestrator store", () => {
     const orphan = newTask();
     recordRunner(orphan, { pid: deadPid, startedAt: new Date().toISOString() });
     expect(readTask(orphan).state).toBe("interrupted");
+  });
+
+  it("a qid planted in another task is ambiguous; --task picks the asking task", () => {
+    const asker = newTask();
+    const { qid } = createAsk(asker, "Which DB?");
+    const planter = newTask();
+    const plant = (id: string, taskId: string) => {
+      const ask = {
+        schemaVersion: 1,
+        qid,
+        taskId,
+        question: "x",
+        createdAt: "x",
+      };
+      writeFileSync(
+        join(root, "tasks", id, "asks", `${qid}.json`),
+        JSON.stringify(ask),
+      );
+    };
+    createAsk(planter, "own question"); // creates its asks/ dir
+    plant(planter, planter);
+    // A copy whose ids disagree with its location is ignored, not ambiguous.
+    const liar = newTask();
+    createAsk(liar, "own question");
+    plant(liar, asker);
+
+    expect(() => reply(qid, "sqlite")).toThrow(
+      expect.objectContaining({ code: "USAGE" }),
+    );
+    expect(() => reply(qid, "sqlite", liar)).toThrow(
+      expect.objectContaining({ code: "NOT_FOUND" }),
+    );
+    reply(qid, "sqlite", asker);
+    expect(readAnswer(qid, asker)).toBe("sqlite");
+    expect(
+      existsSync(join(root, "tasks", planter, "answers", `${qid}.json`)),
+    ).toBe(false);
+  });
+
+  it("refuses to write an answer through a symlinked answers/ dir", () => {
+    const id = newTask();
+    const { qid } = createAsk(id, "Which DB?");
+    const elsewhere = mkdtempSync(join(root, "elsewhere-"));
+    symlinkSync(elsewhere, join(root, "tasks", id, "answers"));
+
+    expect(() => reply(qid, "sqlite")).toThrow(
+      expect.objectContaining({ code: "INTERNAL" }),
+    );
+    expect(readdirSync(elsewhere)).toEqual([]);
   });
 
   it("rejects path-traversal ids with USAGE", () => {

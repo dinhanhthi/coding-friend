@@ -918,9 +918,6 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "dev",
   "version",
   "project",
-  "ask",
-  "done",
-  "task",
 ]);
 
 /**

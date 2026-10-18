@@ -53,7 +53,7 @@ async function waitForAnswer(
   while (Date.now() < deadline) {
     const wait = Math.min(1000, deadline - Date.now());
     await new Promise((r) => setTimeout(r, wait));
-    const a = readAnswer(qid);
+    const a = readAnswer(qid, taskId);
     if (a !== undefined) return { qid, answer: a };
   }
   throw new CliError(

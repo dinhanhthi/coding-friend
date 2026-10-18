@@ -1,3 +1,4 @@
+import { realpathSync } from "fs";
 import { resolve } from "path";
 import { run } from "./exec.js";
 
@@ -50,4 +51,19 @@ export function resolveMainRepoRoot(baseDir: string): string {
   }
 
   return resolve(baseDir);
+}
+
+/**
+ * Resolve the checkout (worktree) root containing `dir`: realpath of
+ * `git rev-parse --show-toplevel`. Unlike resolveMainRepoRoot, linked
+ * worktrees stay distinct. Returns null when `dir` is not in a git checkout.
+ */
+export function resolveCheckoutRoot(dir: string): string | null {
+  const topLevel = run("git", ["-C", dir, "rev-parse", "--show-toplevel"]);
+  if (!topLevel) return null;
+  try {
+    return realpathSync(topLevel);
+  } catch {
+    return null;
+  }
 }

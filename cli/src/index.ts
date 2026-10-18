@@ -411,6 +411,7 @@ program
 program
   .command("reply <qid> <answer>")
   .description("Answer a question asked by a task")
+  .option("--task <id>", "Task that asked the question")
   .option("--json", "Output a JSON envelope")
   .action(async (qid: string, answer: string, opts) => {
     const { replyCommand } = await import("./commands/reply.js");
@@ -428,6 +429,56 @@ program
   .action(async (opts) => {
     const { doneCommand } = await import("./commands/done.js");
     await doneCommand(opts);
+  });
+
+const taskCmd = program
+  .command("task")
+  .description("Run and manage sandboxed worker tasks (Claude, Codex)");
+
+taskCmd
+  .command("run <prompt>")
+  .description("Start a detached worker task in the current checkout")
+  .option("--provider <name>", "Worker CLI: claude or codex")
+  .option("--read-only", "Worker may not edit the checkout (no writer lease)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (prompt: string, opts) => {
+    const { taskRunCommand } = await import("./commands/task.js");
+    await taskRunCommand(prompt, opts);
+  });
+
+taskCmd
+  .command("_run <id>", { hidden: true })
+  .description("Internal: per-task runner")
+  .action(async (id: string) => {
+    const { taskRunnerCommand } = await import("./commands/task.js");
+    await taskRunnerCommand(id);
+  });
+
+taskCmd
+  .command("list")
+  .description("List tasks, newest first")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { taskListCommand } = await import("./commands/task.js");
+    await taskListCommand(opts);
+  });
+
+taskCmd
+  .command("show <id>")
+  .description("Show a task's state, questions and result")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskShowCommand } = await import("./commands/task.js");
+    await taskShowCommand(id, opts);
+  });
+
+taskCmd
+  .command("cancel <id>")
+  .description("Cancel a running task")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskCancelCommand } = await import("./commands/task.js");
+    await taskCancelCommand(id, opts);
   });
 
 program
@@ -686,11 +737,13 @@ dev
 
 // Post-command: check for CLI updates (cached, 24h TTL)
 // Skips for 'update' command (handles its own), worker commands (stdout is
-// captured by the worker's shell), --json runs, and version/help flags
+// captured by the worker's shell), the hidden task runner, --json runs, and
+// version/help flags
 program.hook("postAction", async (_this, actionCommand) => {
   if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
   if (["update", "ask", "reply", "done"].includes(topCmd)) return;
+  if (topCmd === "task" && process.argv[3] === "_run") return;
 
   const { checkAndNotifyCliUpdate } = await import("./lib/update-check.js");
   checkAndNotifyCliUpdate(pkg.version);

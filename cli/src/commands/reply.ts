@@ -3,6 +3,7 @@ import { CliError, runHuman, runJson } from "../lib/output.js";
 import { reply } from "../lib/orchestrator/store.js";
 
 interface Flags {
+  task?: string;
   json?: boolean;
 }
 
@@ -34,7 +35,7 @@ export async function replyCommand(
   await run(
     opts.json,
     () => {
-      reply(qid, answer);
+      reply(qid, answer, opts.task);
       return { qid };
     },
     (res) => log.success(`Replied to ${res.qid}`),
