@@ -6,7 +6,7 @@ vi.mock("fs", async () => {
 });
 
 import { writeSync } from "fs";
-import { CliError, runHuman, runJson } from "../output.js";
+import { CliError, isJsonArgv, runHuman, runJson } from "../output.js";
 import { getLogMode, log } from "../log.js";
 
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
@@ -31,6 +31,15 @@ function stdoutEnvelope(): unknown {
   expect(stdoutSpy).toHaveBeenCalledTimes(1);
   return JSON.parse(String(stdoutSpy.mock.calls[0][0]));
 }
+
+describe("isJsonArgv", () => {
+  it("ignores --json after --, where it is argument text", () => {
+    expect(isJsonArgv(["node", "cf", "status", "--json"])).toBe(true);
+    expect(isJsonArgv(["node", "cf", "reply", "q1", "--", "--json"])).toBe(
+      false,
+    );
+  });
+});
 
 describe("runJson", () => {
   it("writes an ok envelope exactly once to stdout", async () => {

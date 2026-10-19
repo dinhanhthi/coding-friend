@@ -43,7 +43,9 @@ export class CliError extends Error {
 }
 
 export function isJsonArgv(argv: string[]): boolean {
-  return argv.includes("--json");
+  // After "--" every word is an argument (a prompt, an answer), not an option.
+  const end = argv.indexOf("--");
+  return (end === -1 ? argv : argv.slice(0, end)).includes("--json");
 }
 
 export function errorEnvelope(
