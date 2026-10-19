@@ -1,6 +1,6 @@
 import { join } from "path";
 import { claudeSessionDir, encodeProjectPath } from "../../paths.js";
-import { buildPreamble } from "../preamble.js";
+import { buildPreamble, shellQuote } from "../preamble.js";
 import type { ProviderAdapter, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
@@ -40,8 +40,12 @@ export const claude: ProviderAdapter = {
       cfInvocation: ctx.cfInvocation,
       orchDir: ctx.orchDir,
     });
-    // Variadic options (--add-dir, --disallowedTools) are always followed by
-    // another option, and the args never end on a variadic: no positional.
+    // dontAsk denies every Bash call that would prompt, sandbox or not, so the
+    // worker's own cf ask/done (exactly as the preamble prints them) need an
+    // allow rule. Allowed commands still run inside the sandbox.
+    const cf = ctx.cfInvocation.map(shellQuote).join(" ");
+    // Variadic options (--add-dir, --allowedTools, --disallowedTools) are
+    // always followed by another option: no positional.
     const args = [
       "-p",
       "--output-format",
@@ -53,6 +57,9 @@ export const claude: ProviderAdapter = {
       task.readOnly ? "dontAsk" : "acceptEdits",
       "--add-dir",
       ctx.taskDir,
+      "--allowedTools",
+      `Bash(${cf} ask *)`,
+      `Bash(${cf} done *)`,
       ...(task.readOnly
         ? ["--disallowedTools", "Edit", "Write", "NotebookEdit"]
         : []),

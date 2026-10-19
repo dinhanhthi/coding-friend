@@ -68,6 +68,11 @@ describe("buildSpawn", () => {
       "NotebookEdit",
     ]);
     expect(after(args, "--permission-mode")).toEqual(["dontAsk"]);
+    // dontAsk denies unlisted Bash: the worker's own cf ask/done must be allowed.
+    expect(after(args, "--allowedTools", 2)).toEqual([
+      "Bash(/usr/bin/node /cli/index.js ask *)",
+      "Bash(/usr/bin/node /cli/index.js done *)",
+    ]);
     expect(claudeSettings(args).sandbox.filesystem).toEqual({
       allowWrite: [ctx.taskDir],
       denyWrite: [ctx.checkout],
