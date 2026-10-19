@@ -2,6 +2,12 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.3 (2026-10-19)
+
+- Fix the statusline hook reading rate limits from the OAuth usage API: it now reads them from the stdin JSON Claude Code provides, so no token lookup or network call is needed [#62332fb4](https://github.com/dinhanhthi/coding-friend/commit/62332fb4)
+- Fix `/cf-session` save dropping subagents and tool results, and reject unsafe session paths [#1bc7c6da](https://github.com/dinhanhthi/coding-friend/commit/1bc7c6da)
+- Fix the `/cf-commit` secrets scan script printing a double zero count when nothing is found [#1bc9cd42](https://github.com/dinhanhthi/coding-friend/commit/1bc9cd42)
+
 ## v0.46.2 (2026-10-17)
 
 - `/cf-review` runs with `--fix` / `--commit` by default when config `review.fix` / `review.commit` is set (local overrides global); `--no-fix` / `--no-commit` force it off. `/cf-plan` and `/cf-tdd` autopilot and `/cf-commit` pass `--no-fix`, and a config-driven commit is skipped unless you typed `/cf-review` yourself and the tree holds paths this session did not touch [#3cb2b9a3](https://github.com/dinhanhthi/coding-friend/commit/3cb2b9a3) [#2156e1db](https://github.com/dinhanhthi/coding-friend/commit/2156e1db)

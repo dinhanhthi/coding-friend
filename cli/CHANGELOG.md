@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.3 (2026-10-19)
+
+- `cf statusline` and `cf init` no longer depend on the OAuth usage API: rate limits come from the stdin JSON Claude Code provides [#62332fb4](https://github.com/dinhanhthi/coding-friend/commit/62332fb4)
+- Fix `cf session` save/load dropping subagents and tool results, and reject unsafe paths [#1bc7c6da](https://github.com/dinhanhthi/coding-friend/commit/1bc7c6da)
+
 ## v1.42.2 (2026-10-17)
 
 - `cf config` review settings gain `review.fix` and `review.commit` defaults for `/cf-review` [#3cb2b9a3](https://github.com/dinhanhthi/coding-friend/commit/3cb2b9a3)
