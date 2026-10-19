@@ -2,9 +2,11 @@ import { spawn, type ChildProcess } from "child_process";
 import { closeSync, openSync, realpathSync, rmSync } from "fs";
 import { basename, dirname, isAbsolute, join, relative, sep } from "path";
 import { commandExists, run as exec } from "../lib/exec.js";
+import { compareVersions, extractVersion } from "../lib/host.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { acquireLease, releaseLease } from "../lib/orchestrator/lease.js";
+import { MIN_CODEX_VERSION } from "../lib/orchestrator/providers/codex.js";
 import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
 import { digest, runTask } from "../lib/orchestrator/runner.js";
 import {
@@ -130,6 +132,18 @@ function assertStoreOutsideCheckout(checkout: string): void {
   }
 }
 
+/** An older codex may ignore the worker's permission profile: refuse it. */
+function assertCodexVersion(): void {
+  const output = exec("codex", ["--version"]);
+  const actual = output ? extractVersion(output) : undefined;
+  if (!actual || compareVersions(actual, MIN_CODEX_VERSION) < 0) {
+    throw new CliError(
+      "PROVIDER_UNAVAILABLE",
+      `codex ${MIN_CODEX_VERSION} or newer is required for sandboxed workers (found ${actual ?? "unknown"})`,
+    );
+  }
+}
+
 /**
  * Spawn the detached runner (`cf task _run <id>`); its stdio goes to
  * runner.log. `taskDigest` (sha256 of task.json) lets the runner refuse a
@@ -192,6 +206,7 @@ export async function taskRunCommand(
           `${PROVIDERS[provider].bin} not found on PATH`,
         );
       }
+      if (provider === "codex") assertCodexVersion();
       const readOnly = Boolean(opts.readOnly);
       const checkout = resolveCheckout(provider, readOnly);
       // Every task: the runner writes its private dir (codex -o) into the store.

@@ -216,15 +216,15 @@ The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes
 
 - **Store.** `~/.coding-friend/orchestrator/` (mode `0700`); set `CF_ORCHESTRATOR_DIR` to move it. It must be outside the checkout, or `cf task run` refuses.
 - **One writer per checkout.** The checkout is the git top-level, so each worktree is its own checkout. A second writer fails with `LEASE_HELD`; `--read-only` tasks take no lease.
-- **Sandbox.** Claude runs as `claude -p` with its native sandbox passed per call: enabled, fail if unavailable, no unsandboxed retries. A writer may write the checkout and its own `tasks/<id>/`. A read-only Claude task has Edit/Write disabled and writes to the checkout denied. Codex runs `codex exec --sandbox workspace-write` (writer) or `--sandbox read-only`; read-only Codex tasks cannot use `cf ask`/`cf done`, so their outcome comes from the turn result in the event stream (else the exit code). Your Claude/Codex settings and hooks are never changed.
-- **Requirements.** macOS or Linux. Writer tasks and every Codex task must run inside a git repo. The provider CLI (`claude` or `codex`) must be logged in and on `PATH` (missing → `PROVIDER_UNAVAILABLE`).
+- **Sandbox.** Claude runs as `claude -p` with its native sandbox passed per call: enabled, fail if unavailable, no unsandboxed retries. A writer may write the checkout and its own `tasks/<id>/`. A read-only Claude task has Edit/Write disabled and writes to the checkout denied. Codex runs `codex exec` with a permission profile passed per call (`default_permissions`), based on `:workspace` (writer) or `:read-only`: the store is read-only and only the task's own `tasks/<id>/` is writable, even when the store is under `/tmp`. Your Claude/Codex settings and hooks are never changed.
+- **Requirements.** macOS or Linux. Writer tasks and every Codex task must run inside a git repo. The provider CLI (`claude`, or `codex` 0.161.0 or newer) must be logged in and on `PATH` (missing or too old → `PROVIDER_UNAVAILABLE`).
 - **What is stored.** No transcripts and no event logs: the prompt, the worker's questions and your answers, the `cf done` summary and handoff, the session/thread id (plus the Claude transcript path), the result (exit code, outcome, error) and the worker's last message (cut at 4 KB). Worker text is shown as untrusted output, control characters stripped.
 - **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show`. `cf ask`, `cf done`, `cf reply`, `cf task run` and `cf task cancel` are not.
 
 ### Known limitations
 
 - The worker inherits your environment, including API keys and tokens.
-- The sandbox restricts writes, not reads: a worker can read your home directory (other repos, `~/.ssh`, provider credentials) and other tasks' files. A Codex writer can also write `$TMPDIR` and `/tmp`.
+- The sandbox restricts writes, not reads: a worker can read your home directory (other repos, `~/.ssh`, provider credentials) and other tasks' files. A Codex writer can also write `$TMPDIR` and `/tmp` (outside the store).
 - A writer can modify anything in its checkout, including `.git/hooks` and scripts you run later. Review its changes before running them.
 - A reused pid can keep a dead task looking "running". `cf task cancel` still marks it cancelled, and only signals a pid whose command line is that task's runner.
 - No quota handling, provider fallback or scheduling yet (no daemon).

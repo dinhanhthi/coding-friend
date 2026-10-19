@@ -4,6 +4,13 @@ import { buildPreamble } from "../preamble.js";
 import type { ProviderAdapter, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
+const PROFILE = "cf_task";
+/**
+ * Permission profiles (beta) changed through 0.142–0.156; this is the oldest
+ * version verified to enforce them. Older versions may silently ignore the
+ * `-c` keys and fall back to the user's sandbox_mode.
+ */
+export const MIN_CODEX_VERSION = "0.161.0";
 
 /**
  * In the runner's private dir, not the worker-writable task dir: codex writes
@@ -38,17 +45,24 @@ export const codex: ProviderAdapter = {
   bin: "codex",
 
   buildSpawn(task, ctx) {
+    // A permission profile, not --sandbox (which would override it): the store
+    // is read-only even under the writable /tmp, and only this task's dir is
+    // writable, so read-only workers can run cf ask/done too. Paths are TOML
+    // basic strings: JSON escaping is valid TOML there.
+    const filesystem = `{${JSON.stringify(ctx.orchDir)}="read",${JSON.stringify(ctx.taskDir)}="write"}`;
     const args = [
       "exec",
       "--json",
       "--color",
       "never",
-      "--sandbox",
-      task.readOnly ? "read-only" : "workspace-write",
+      "-c",
+      `default_permissions="${PROFILE}"`,
+      "-c",
+      `permissions.${PROFILE}.extends="${task.readOnly ? ":read-only" : ":workspace"}"`,
+      "-c",
+      `permissions.${PROFILE}.filesystem=${filesystem}`,
       "-C",
       ctx.checkout,
-      // Read-only: no writable task dir, so the preamble omits cf ask/done.
-      ...(task.readOnly ? [] : ["--add-dir", ctx.taskDir]),
       "-o",
       lastMessageFile(ctx),
       "-",

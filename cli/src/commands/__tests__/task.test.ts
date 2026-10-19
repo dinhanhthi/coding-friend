@@ -13,7 +13,11 @@ import {
 import { join } from "path";
 import { tmpdir } from "os";
 
-const fake = vi.hoisted(() => ({ pid: 0, checkout: "" }));
+const fake = vi.hoisted(() => ({
+  pid: 0,
+  checkout: "",
+  codexVersion: "codex-cli 0.161.0" as string | null,
+}));
 
 vi.mock("child_process", async (importActual) => ({
   ...(await importActual<typeof import("child_process")>()),
@@ -24,10 +28,15 @@ vi.mock("child_process", async (importActual) => ({
     unref: () => {},
   })),
 }));
-vi.mock("../../lib/exec.js", async (importActual) => ({
-  ...(await importActual<typeof import("../../lib/exec.js")>()),
-  commandExists: () => true,
-}));
+vi.mock("../../lib/exec.js", async (importActual) => {
+  const actual = await importActual<typeof import("../../lib/exec.js")>();
+  return {
+    ...actual,
+    commandExists: () => true,
+    run: (cmd: string, ...rest: [string[]]) =>
+      cmd === "codex" ? fake.codexVersion : actual.run(cmd, ...rest),
+  };
+});
 vi.mock("../../lib/project-root.js", () => ({
   resolveCheckoutRoot: () => fake.checkout,
 }));
@@ -46,7 +55,9 @@ import {
 let root: string;
 let stdout: string[];
 
-async function runTask(opts: { readOnly?: boolean } = {}) {
+async function runTask(
+  opts: { readOnly?: boolean; provider?: string } = {},
+) {
   stdout = [];
   await taskRunCommand("do it", { provider: "claude", json: true, ...opts });
   return JSON.parse(stdout.join(""));
@@ -57,6 +68,7 @@ beforeEach(() => {
   vi.stubEnv("CF_ORCHESTRATOR_DIR", join(root, "orch"));
   fake.checkout = join(root, "checkout");
   fake.pid = process.pid; // a live runner pid
+  fake.codexVersion = "codex-cli 0.161.0";
   stdout = [];
   vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
     stdout.push(String(chunk));
@@ -71,6 +83,25 @@ afterEach(() => {
   vi.unstubAllEnvs();
   process.exitCode = undefined;
   rmSync(root, { recursive: true, force: true });
+});
+
+describe("cf task run codex version gate", () => {
+  it.each([["codex-cli 0.160.9"], [null]])(
+    "refuses %s: an older codex may ignore the permission profile",
+    async (version) => {
+      fake.codexVersion = version;
+      expect(await runTask({ provider: "codex" })).toMatchObject({
+        ok: false,
+        error: { code: "PROVIDER_UNAVAILABLE" },
+      });
+      expect(existsSync(join(root, "orch", "tasks"))).toBe(false);
+    },
+  );
+
+  it("accepts the minimum version", async () => {
+    fake.codexVersion = "codex-cli 0.161.0";
+    expect(await runTask({ provider: "codex" })).toMatchObject({ ok: true });
+  });
 });
 
 describe("cf task run writer lease", () => {

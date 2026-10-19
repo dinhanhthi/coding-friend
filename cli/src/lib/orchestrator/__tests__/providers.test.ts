@@ -80,14 +80,31 @@ describe("buildSpawn", () => {
     expect(after(args, "--add-dir")).toEqual([ctx.taskDir]);
   });
 
-  it("codex read-only uses the read-only sandbox without extra writable dirs", () => {
-    const ro = PROVIDERS.codex.buildSpawn(task("codex", true), ctx).args;
-    expect(after(ro, "--sandbox")).toEqual(["read-only"]);
-    expect(ro).not.toContain("--add-dir");
+  it.each([
+    [false, ":workspace"],
+    [true, ":read-only"],
+  ])(
+    "codex (readOnly=%s) uses a permission profile: store read-only, task dir writable",
+    (readOnly, base) => {
+      const { args } = PROVIDERS.codex.buildSpawn(task("codex", readOnly), ctx);
+      const config = args.filter((_, i) => args[i - 1] === "-c");
+      expect(config).toEqual([
+        'default_permissions="cf_task"',
+        `permissions.cf_task.extends="${base}"`,
+        'permissions.cf_task.filesystem={"/orch"="read","/orch/tasks/abcd1234"="write"}',
+      ]);
+      // --sandbox would override the profile.
+      expect(args).not.toContain("--sandbox");
+      expect(args).not.toContain("--add-dir");
+    },
+  );
 
-    const rw = PROVIDERS.codex.buildSpawn(task("codex", false), ctx).args;
-    expect(after(rw, "--sandbox")).toEqual(["workspace-write"]);
-    expect(after(rw, "--add-dir")).toEqual([ctx.taskDir]);
+  it("codex escapes store paths as TOML basic strings", () => {
+    const odd = { ...ctx, orchDir: '/o "x"\\y', taskDir: '/o "x"\\y/tasks/t' };
+    const { args } = PROVIDERS.codex.buildSpawn(task("codex", false), odd);
+    expect(args).toContain(
+      'permissions.cf_task.filesystem={"/o \\"x\\"\\\\y"="read","/o \\"x\\"\\\\y/tasks/t"="write"}',
+    );
   });
 
   it.each([false, true])(

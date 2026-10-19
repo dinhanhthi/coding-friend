@@ -22,15 +22,6 @@ export function buildPreamble(opts: {
   const { taskId, readOnly, provider } = opts;
   const head = `You are a non-interactive worker for Coding Friend task ${taskId}. Nobody watches this session: never ask the user anything interactively and never wait for input.`;
 
-  // Codex read-only sandbox blocks every write, so cf ask/done cannot work.
-  if (provider === "codex" && readOnly) {
-    return [
-      head,
-      "This is a read-only task: do not modify any files.",
-      "You cannot ask questions or report status with commands here. Make reasonable assumptions, state them, and end with your final answer as your last message.",
-    ].join("\n\n");
-  }
-
   const cf = opts.cfInvocation.map(shellQuote).join(" ");
   const handoff = join(opts.orchDir, "tasks", taskId, "handoff.md");
   // Codex's shell tool returns a running command after at most ~30 s, so
