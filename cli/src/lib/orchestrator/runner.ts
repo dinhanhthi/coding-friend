@@ -1,13 +1,7 @@
 import { spawn } from "child_process";
 import { createHash, randomUUID } from "crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-} from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync } from "fs";
+import { dirname, join } from "path";
 import { createInterface } from "readline";
 import { orchestratorDir } from "../paths.js";
 import { releaseLease } from "./lease.js";
@@ -114,7 +108,16 @@ export async function runTask(id: string): Promise<void> {
       return;
     }
     try {
-      mkdirSync(privateDir, { recursive: true, mode: 0o700 });
+      // No recursive mkdir: check each level so a symlinked runner/ or a
+      // pre-planted runner/<id> fails closed instead of being written through.
+      const parent = dirname(privateDir);
+      try {
+        mkdirSync(parent, { mode: 0o700 });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      }
+      assertRealDir(parent);
+      mkdirSync(privateDir, { mode: 0o700 }); // EEXIST → refuse
       assertRealDir(privateDir);
     } catch (err) {
       const error = `could not create runner dir: ${(err as Error).message}`;

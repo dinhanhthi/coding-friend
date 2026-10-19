@@ -214,7 +214,7 @@ cf task cancel <id>
 
 The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes with `cf done --outcome succeeded|failed --summary "..."`. Both are already wired into the worker's instructions, with an explicit `--task <id>`.
 
-- **Store.** `~/.coding-friend/orchestrator/` (mode `0700`); set `CF_ORCHESTRATOR_DIR` to move it. For writer and Claude tasks it must be outside the checkout, or `cf task run` refuses.
+- **Store.** `~/.coding-friend/orchestrator/` (mode `0700`); set `CF_ORCHESTRATOR_DIR` to move it. It must be outside the checkout, or `cf task run` refuses.
 - **One writer per checkout.** The checkout is the git top-level, so each worktree is its own checkout. A second writer fails with `LEASE_HELD`; `--read-only` tasks take no lease.
 - **Sandbox.** Claude runs as `claude -p` with its native sandbox passed per call: enabled, fail if unavailable, no unsandboxed retries. A writer may write the checkout and its own `tasks/<id>/`. A read-only Claude task has Edit/Write disabled and writes to the checkout denied. Codex runs `codex exec --sandbox workspace-write` (writer) or `--sandbox read-only`; read-only Codex tasks cannot use `cf ask`/`cf done`, so their outcome comes from the turn result in the event stream (else the exit code). Your Claude/Codex settings and hooks are never changed.
 - **Requirements.** macOS or Linux. Writer tasks and every Codex task must run inside a git repo. The provider CLI (`claude` or `codex`) must be logged in and on `PATH` (missing → `PROVIDER_UNAVAILABLE`).

@@ -173,6 +173,29 @@ describe("task runner tamper gate", () => {
     expect(spawn).not.toHaveBeenCalled();
     expect(readdirSync(join(root, "orch", "leases"))).toEqual([]);
   });
+
+  it("refuses to spawn when the runner dir is a symlink", async () => {
+    const checkout = realpathSync(process.cwd());
+    const { id } = createTask({
+      provider: "claude",
+      prompt: "symlinked runner dir",
+      readOnly: true,
+      checkout,
+    });
+    const elsewhere = join(root, "elsewhere");
+    mkdirSync(elsewhere);
+    symlinkSync(elsewhere, join(root, "orch", "runner"));
+    const file = join(root, "orch", "tasks", id, "task.json");
+    vi.stubEnv("CF_TASK_DIGEST", rightDigest(file));
+    vi.stubEnv("CF_TASK_CHECKOUT", checkout);
+    vi.mocked(spawn).mockClear();
+
+    await runRunner(id);
+
+    expect(readTask(id).result?.outcome).toBe("failed");
+    expect(spawn).not.toHaveBeenCalled();
+    expect(readdirSync(elsewhere)).toEqual([]);
+  });
 });
 
 describe("cf task cancel", () => {

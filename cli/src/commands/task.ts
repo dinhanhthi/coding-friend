@@ -194,10 +194,8 @@ export async function taskRunCommand(
       }
       const readOnly = Boolean(opts.readOnly);
       const checkout = resolveCheckout(provider, readOnly);
-      // Codex read-only writes nowhere, so a store in its checkout is harmless.
-      if (!(provider === "codex" && readOnly)) {
-        assertStoreOutsideCheckout(checkout);
-      }
+      // Every task: the runner writes its private dir (codex -o) into the store.
+      assertStoreOutsideCheckout(checkout);
 
       const task = createTask({ provider, prompt, readOnly, checkout });
       const id = task.id;
