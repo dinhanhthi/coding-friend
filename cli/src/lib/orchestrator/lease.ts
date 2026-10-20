@@ -38,6 +38,7 @@ function removeFile(file: string): void {
 /**
  * A lease is stale when its holder task finished, died, or never started.
  * A live runner always holds it: its worker may keep running after cf done.
+ * A paused task holds it even with a dead runner: it resumes later.
  */
 function isStale(lease: LeaseRecord | null): boolean {
   if (!lease || typeof lease.taskId !== "string") return true;
@@ -47,8 +48,13 @@ function isStale(lease: LeaseRecord | null): boolean {
   } catch {
     // Missing (or not yet created) holder task: same grace as no runner.
   }
-  if (task?.runner && isPidAlive(task.runner.pid)) return false;
-  if (task && (task.done || task.result)) return true;
+  // C2a: only the latest attempt's runner counts (root runner.json ignored).
+  const attempts = task?.attempts;
+  const pid = attempts ? attempts[attempts.length - 1]?.pid : task?.runner?.pid;
+  if (pid !== undefined && isPidAlive(pid)) return false;
+  if (task && (task.done || task.result || task.cancel)) return true;
+  // The view's state carries the attempt's own spawn grace and pause rules.
+  if (attempts) return task?.state !== "paused" && task?.state !== "queued";
   if (task?.runner) return true; // dead runner
   return isOlderThan(lease.createdAt, SPAWN_GRACE_MS);
 }

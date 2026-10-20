@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   rmSync,
@@ -10,19 +11,42 @@ import {
 import { join } from "path";
 import { tmpdir } from "os";
 import { spawnSync } from "child_process";
+import { acquireLease } from "../lease.js";
 import {
+  claimAttempt,
   createAsk,
   createTask,
+  listAttempts,
   readAnswer,
   readTask,
   recordCancel,
+  recordAttemptRunner,
   recordDone,
+  recordPause,
   recordResult,
   recordRunner,
   reply,
+  SPAWN_GRACE_MS,
 } from "../store.js";
 
 let root: string;
+
+/** A child that has already exited and been reaped: its pid is dead. */
+function deadPid(): number {
+  return spawnSync(process.execPath, ["-e", ""]).pid;
+}
+
+/** Attempt 1 on claude, its runner dead, paused on a quota. */
+function pausedTask(): string {
+  const id = newTask();
+  claimAttempt(id, { n: 1, provider: "claude", kind: "fresh" });
+  recordAttemptRunner(id, 1, {
+    pid: deadPid(),
+    startedAt: new Date().toISOString(),
+  });
+  recordPause(id, 1, { provider: "claude", resetsAt: null, source: "test" });
+  return id;
+}
 
 function newTask(): string {
   return createTask({
@@ -39,6 +63,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   rmSync(root, { recursive: true, force: true });
 });
@@ -70,10 +95,11 @@ describe("orchestrator store", () => {
     ).toThrow(expect.objectContaining({ code: "ALREADY_FINISHED" }));
     expect(readTask(cancelled).state).toBe("cancelled");
 
-    // A child that has already exited and been reaped: its pid is dead.
-    const deadPid = spawnSync(process.execPath, ["-e", ""]).pid;
     const orphan = newTask();
-    recordRunner(orphan, { pid: deadPid, startedAt: new Date().toISOString() });
+    recordRunner(orphan, {
+      pid: deadPid(),
+      startedAt: new Date().toISOString(),
+    });
     expect(readTask(orphan).state).toBe("interrupted");
   });
 
@@ -124,6 +150,65 @@ describe("orchestrator store", () => {
       expect.objectContaining({ code: "INTERNAL" }),
     );
     expect(readdirSync(elsewhere)).toEqual([]);
+  });
+
+  it("a dead runner with a pause on the latest attempt is paused, not interrupted", () => {
+    expect(readTask(pausedTask()).state).toBe("paused");
+  });
+
+  it("claiming attempt n+1 after a pause ends paused", () => {
+    const id = pausedTask();
+    claimAttempt(id, { n: 2, provider: "codex", kind: "switch" });
+    expect(readTask(id).state).toBe("queued");
+  });
+
+  it("cancel wins over paused and is accepted on a paused task", () => {
+    const id = pausedTask();
+    recordCancel(id);
+    expect(readTask(id).state).toBe("cancelled");
+  });
+
+  it("a paused holder keeps the writer lease until it is cancelled", () => {
+    const holder = pausedTask();
+    acquireLease(root, holder);
+    // Past the spawn grace: only the pause keeps the lease held.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + SPAWN_GRACE_MS + 1000);
+    const other = newTask();
+    expect(() => acquireLease(root, other)).toThrow(
+      expect.objectContaining({ code: "LEASE_HELD" }),
+    );
+    recordCancel(holder);
+    expect(() => acquireLease(root, other)).not.toThrow();
+  });
+
+  it("claims an attempt once; a symlinked runs/<id> is never written or read", () => {
+    const id = newTask();
+    const claim = { n: 1, provider: "claude" as const, kind: "fresh" as const };
+    expect(claimAttempt(id, claim)).toBe(true);
+    expect(claimAttempt(id, claim)).toBe(false);
+
+    const linked = newTask();
+    const elsewhere = mkdtempSync(join(root, "elsewhere-"));
+    mkdirSync(join(elsewhere, "1"));
+    writeFileSync(
+      join(elsewhere, "1", "attempt.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        n: 1,
+        provider: "claude",
+        kind: "fresh",
+        createdAt: "x",
+      }),
+    );
+    symlinkSync(elsewhere, join(root, "runs", linked));
+
+    expect(() => claimAttempt(linked, { ...claim, n: 2 })).toThrow(
+      expect.objectContaining({ code: "INTERNAL" }),
+    );
+    expect(readdirSync(elsewhere)).toEqual(["1"]);
+    expect(listAttempts(linked)).toEqual([]);
+    expect(readTask(linked).attempts).toBeUndefined();
   });
 
   it("rejects path-traversal ids with USAGE", () => {

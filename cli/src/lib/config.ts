@@ -122,6 +122,19 @@ export const ShowcaseConfigSchema = z.object({
   poster: ShowcasePosterConfigSchema.optional(),
 });
 
+// No .default(): `cf task` applies the defaults in code.
+export const TaskConfigSchema = z.object({
+  /** What `cf task` does when a worker hits its quota. Default "wait-then-switch". */
+  onQuota: z.enum(["wait-then-switch", "wait", "switch"]).optional(),
+  /** Minutes to wait when the quota reset time is unknown or near. Default 30. */
+  waitMinutes: z.number().int().min(1).optional(),
+  /** Providers to switch through, in order, on quota. Default ["claude", "codex"]. */
+  fallback: z
+    .array(z.enum(["claude", "codex"]))
+    .min(1)
+    .optional(),
+});
+
 export const ConfigSchema = z.object({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -142,6 +155,7 @@ export const ConfigSchema = z.object({
   showcase: ShowcaseConfigSchema.optional(),
   projectRegistry: z.boolean().optional(),
   autoApproveLLM: z.boolean().optional(),
+  task: TaskConfigSchema.optional(),
 });
 
 /** JSON Schema (input side) for the config file. */
@@ -158,6 +172,7 @@ const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
   [["showcase"], Object.keys(ShowcaseConfigSchema.shape)],
   [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
   [["showcase", "poster"], Object.keys(ShowcasePosterConfigSchema.shape)],
+  [["task"], Object.keys(TaskConfigSchema.shape)],
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */

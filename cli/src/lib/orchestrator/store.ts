@@ -5,6 +5,7 @@ import {
   lstatSync,
   mkdirSync,
   readdirSync,
+  readFileSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
@@ -22,6 +23,8 @@ const ID_RE = /^[a-z0-9]{8}$/;
 const JSON_ID_RE = /^[a-z0-9]{8}\.json$/;
 const ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 const MAX_TEXT = 4096;
+/** Attempt numbers: 1..999, no leading zero (also a safe dir name). */
+const ATTEMPT_RE = /^[1-9]\d{0,2}$/;
 
 /** How long a task (or lease) without runner.json counts as still spawning. */
 export const SPAWN_GRACE_MS = 30_000;
@@ -36,7 +39,8 @@ export type TaskState =
   | "succeeded"
   | "failed"
   | "cancelled"
-  | "interrupted";
+  | "interrupted"
+  | "paused";
 
 export interface TaskRecord {
   schemaVersion: 1;
@@ -97,6 +101,65 @@ export interface AnswerRecord {
   answeredAt: string;
 }
 
+export type QuotaPolicy = "wait-then-switch" | "wait" | "switch";
+export type AttemptKind = "fresh" | "resume" | "switch";
+
+/** runs/<id>/dispatch.json: what `cf task run` dispatched (trusted). */
+export interface DispatchRecord {
+  schemaVersion: 1;
+  /** sha256 of the task.json bytes at dispatch. */
+  taskDigest: string;
+  policy: {
+    onQuota: QuotaPolicy;
+    waitMinutes: number;
+    fallback: Provider[];
+    noFallback: boolean;
+  };
+  createdAt: string;
+}
+
+/** runs/<id>/<n>/attempt.json: create-once claim of attempt n. */
+export interface AttemptRecord {
+  schemaVersion: 1;
+  n: number;
+  provider: Provider;
+  kind: AttemptKind;
+  resumeSessionId?: string;
+  /** The attempt's stdin is runs/<id>/<n>/context-bundle.md. */
+  bundle?: boolean;
+  createdAt: string;
+}
+
+/** runs/<id>/<n>/pause.json: attempt n stopped on a provider quota. */
+export interface PauseRecord {
+  schemaVersion: 1;
+  provider: Provider;
+  /** Epoch seconds of the announced reset, null when unknown. */
+  resetsAt: number | null;
+  /** Where the quota signal came from. */
+  source: string;
+  lastMessage?: string;
+  error?: string;
+  createdAt: string;
+}
+
+export interface AttemptEntry {
+  attempt: AttemptRecord;
+  runner?: RunnerRecord;
+  session?: SessionRecord;
+  pause?: PauseRecord;
+}
+
+/** One attempt in TaskView (no worker text: see `pause` for that). */
+export interface AttemptSummary {
+  n: number;
+  provider: Provider;
+  kind: AttemptKind;
+  pid?: number;
+  sessionId?: string;
+  pause?: { resetsAt: number | null; source: string };
+}
+
 export interface TaskView extends TaskRecord {
   state: TaskState;
   pendingAsks: AskRecord[];
@@ -105,6 +168,10 @@ export interface TaskView extends TaskRecord {
   result?: ResultRecord;
   done?: DoneRecord;
   cancel?: CancelRecord;
+  /** Only for tasks with runs/<id>/ (C2a); absent for C1 tasks. */
+  attempts?: AttemptSummary[];
+  /** Pause of the latest attempt, when it has one. */
+  pause?: PauseRecord & { n: number };
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────
@@ -141,13 +208,97 @@ function taskDir(id: string): string {
   return join(tasksDir(), id);
 }
 
+function assertAttempt(n: number): void {
+  if (!Number.isInteger(n) || !ATTEMPT_RE.test(String(n))) {
+    throw new CliError("USAGE", `Invalid attempt number: ${JSON.stringify(n)}`);
+  }
+}
+
 /**
- * `<store>/runner/<id>`: scratch dir of the task's runner, outside every
- * worker's write scope (workers write only their task dir and checkout).
+ * `<store>/runner/<id>` (C1), or `<store>/runner/<id>/<n>` for attempt n:
+ * scratch dir of the task's runner, outside every worker's write scope
+ * (workers write only their task dir and checkout).
  */
-export function runnerPrivateDir(id: string): string {
+export function runnerPrivateDir(id: string, n?: number): string {
   assertId(id, "task id");
-  return join(orchestratorDir(), "runner", id);
+  const dir = join(orchestratorDir(), "runner", id);
+  if (n === undefined) return dir;
+  assertAttempt(n);
+  return join(dir, String(n));
+}
+
+/**
+ * Create `runnerPrivateDir(id, n)` 0700, one level at a time (no recursive
+ * mkdir, no symlink followed). Only the leaf must be new: a leftover
+ * `runner/<id>` parent (e.g. after a reboot) is fine for attempt dirs.
+ */
+export function makeRunnerPrivateDir(id: string, n?: number): string {
+  const dir = runnerPrivateDir(id, n);
+  const parents =
+    n === undefined ? [dirname(dir)] : [dirname(dirname(dir)), dirname(dir)];
+  for (const p of parents) mkdirReal(p);
+  mkdirSync(dir, { mode: 0o700 }); // EEXIST → refuse
+  assertRealDir(dir);
+  return dir;
+}
+
+/** `<store>/runs/<id>`: trusted per-task records (path only, never created). */
+export function runsDir(id: string): string {
+  assertId(id, "task id");
+  return join(orchestratorDir(), "runs", id);
+}
+
+function attemptDir(id: string, n: number): string {
+  assertAttempt(n);
+  return join(runsDir(id), String(n));
+}
+
+/**
+ * Create `dir` 0700 if missing (parent must exist) and fail closed unless
+ * it is a real directory: a symlink is never written through.
+ */
+function mkdirReal(dir: string): void {
+  try {
+    mkdirSync(dir, { mode: 0o700 });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+  }
+  assertRealDir(dir);
+}
+
+/** runs/ and runs/<id>/ (and runs/<id>/<n>/ for n), each level checked. */
+function makeRunsDir(id: string, n?: number): string {
+  existingTaskDir(id); // also creates the store root when missing
+  const dir = runsDir(id);
+  mkdirReal(dirname(dir));
+  mkdirReal(dir);
+  if (n === undefined) return dir;
+  const sub = attemptDir(id, n);
+  mkdirReal(sub);
+  return sub;
+}
+
+/** Attempt dir of a claimed attempt (real dirs all the way), else NOT_FOUND. */
+function claimedAttemptDir(id: string, n: number): string {
+  const dir = attemptDir(id, n);
+  for (const d of [dirname(dirname(dir)), dirname(dir), dir]) {
+    try {
+      lstatSync(d);
+    } catch {
+      throw new CliError("NOT_FOUND", `Attempt ${n} of task ${id} not claimed`);
+    }
+    assertRealDir(d);
+  }
+  if (!existsSync(join(dir, "attempt.json"))) {
+    throw new CliError("NOT_FOUND", `Attempt ${n} of task ${id} not claimed`);
+  }
+  return dir;
+}
+
+/** runs/<id> when runs/ and runs/<id> are real dirs, else "" (read nothing). */
+function readableRunsDir(id: string): string {
+  const dir = runsDir(id);
+  return isRealDir(dirname(dir)) && isRealDir(dir) ? dir : "";
 }
 
 /** Task dir of an existing task, else NOT_FOUND. */
@@ -191,6 +342,11 @@ export function serialize(data: unknown): string {
  * partial read). Returns false when the file already existed.
  */
 export function createOnce(file: string, data: unknown): boolean {
+  return createOnceText(file, serialize(data));
+}
+
+/** createOnce for raw text (same tmp + hard-link, mode 0600). */
+function createOnceText(file: string, text: string): boolean {
   const dir = dirname(file);
   // lstat, not existsSync: a dangling symlink must not count as missing.
   if (!isRealDir(dir)) {
@@ -206,7 +362,7 @@ export function createOnce(file: string, data: unknown): boolean {
     `.${basename(file)}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`,
   );
   try {
-    writeFileSync(tmp, serialize(data), {
+    writeFileSync(tmp, text, {
       encoding: "utf-8",
       mode: 0o600,
     });
@@ -278,15 +434,42 @@ function isDoneOutcome(v: unknown): v is DoneOutcome {
   return v === "succeeded" || v === "failed";
 }
 
-function deriveState(v: Omit<TaskView, "state">): TaskState {
+/**
+ * `latest` is the task's highest claimed attempt (C2a); without one the task
+ * is a C1 task and derives from its root runner.json.
+ */
+function deriveState(
+  v: Omit<TaskView, "state">,
+  latest?: AttemptEntry,
+): TaskState {
   if (v.done && isDoneOutcome(v.done.outcome)) return v.done.outcome;
   if (v.cancel) return "cancelled";
   const r = v.result?.outcome;
   if (isDoneOutcome(r) || r === "cancelled") return r;
+  if (latest) return deriveAttemptState(v, latest);
   if (v.runner && isPidAlive(v.runner.pid)) {
     return v.pendingAsks.length > 0 ? "waiting" : "running";
   }
   if (!v.runner && !isOlderThan(v.createdAt, SPAWN_GRACE_MS)) return "queued";
+  return "interrupted";
+}
+
+/** State of a C2a task from its latest attempt (after done/cancel/result). */
+function deriveAttemptState(
+  v: Omit<TaskView, "state">,
+  latest: AttemptEntry,
+): TaskState {
+  // No claim n+1 after a pause (latest is the highest n): paused, live or not.
+  if (latest.pause) return "paused";
+  const runner = latest.runner;
+  if (runner && isPidAlive(runner.pid)) {
+    return v.pendingAsks.length > 0 ? "waiting" : "running";
+  }
+  if (!runner) {
+    if (!isOlderThan(latest.attempt.createdAt, SPAWN_GRACE_MS)) return "queued";
+    // A switch/resume claim whose runner never started: still paused.
+    if (latest.attempt.n >= 2) return "paused";
+  }
   return "interrupted";
 }
 
@@ -311,10 +494,38 @@ function buildView(dir: string): TaskView | undefined {
     done: read<DoneRecord>(join(dir, "done.json")),
     cancel: read<CancelRecord>(join(dir, "cancel.json")),
   };
-  for (const k of ["runner", "session", "result", "done", "cancel"] as const) {
+  const entries = listAttempts(view.id);
+  const last = entries[entries.length - 1];
+  if (last) {
+    view.attempts = entries.map(summarizeAttempt);
+    if (last.pause) view.pause = { ...last.pause, n: last.attempt.n };
+  }
+  for (const k of [
+    "runner",
+    "session",
+    "result",
+    "done",
+    "cancel",
+    "attempts",
+    "pause",
+  ] as const) {
     if (view[k] === undefined) delete view[k];
   }
-  return { ...view, state: deriveState(view) };
+  return { ...view, state: deriveState(view, last) };
+}
+
+function summarizeAttempt(e: AttemptEntry): AttemptSummary {
+  const s: AttemptSummary = {
+    n: e.attempt.n,
+    provider: e.attempt.provider,
+    kind: e.attempt.kind,
+  };
+  if (e.runner) s.pid = e.runner.pid;
+  if (e.session) s.sessionId = e.session.sessionId;
+  if (e.pause) {
+    s.pause = { resetsAt: e.pause.resetsAt, source: e.pause.source };
+  }
+  return s;
 }
 
 export function readTask(id: string): TaskView {
@@ -412,6 +623,150 @@ export function recordCancel(id: string): CancelRecord {
     throw new CliError("ALREADY_FINISHED", `Task ${id} already finished`);
   }
   return record;
+}
+
+// ─── runs/<id>/: dispatch and attempts (trusted, create-once) ────────────
+
+/** Returns false when dispatch.json already existed. */
+export function recordDispatch(
+  id: string,
+  data: Pick<DispatchRecord, "taskDigest" | "policy">,
+): boolean {
+  const record: DispatchRecord = {
+    schemaVersion: 1,
+    taskDigest: data.taskDigest,
+    policy: { ...data.policy, fallback: [...data.policy.fallback] },
+    createdAt: now(),
+  };
+  return createOnce(join(makeRunsDir(id), "dispatch.json"), record);
+}
+
+export function readDispatch(id: string): DispatchRecord | undefined {
+  const dir = readableRunsDir(id);
+  return dir ? read<DispatchRecord>(join(dir, "dispatch.json")) : undefined;
+}
+
+/**
+ * Claim attempt n (create-once attempt.json). Returns false when attempt n
+ * was already claimed: the claim is what keeps two starters apart.
+ */
+export function claimAttempt(
+  id: string,
+  data: Omit<AttemptRecord, "schemaVersion" | "createdAt">,
+): boolean {
+  const record: AttemptRecord = {
+    schemaVersion: 1,
+    n: data.n,
+    provider: data.provider,
+    kind: data.kind,
+    createdAt: now(),
+  };
+  if (data.resumeSessionId !== undefined) {
+    record.resumeSessionId = data.resumeSessionId;
+  }
+  if (data.bundle !== undefined) record.bundle = data.bundle;
+  return createOnce(join(makeRunsDir(id, data.n), "attempt.json"), record);
+}
+
+/** Returns false when the attempt's runner.json already existed. */
+export function recordAttemptRunner(
+  id: string,
+  n: number,
+  data: { pid: number; startedAt: string },
+): boolean {
+  return createOnce(join(claimedAttemptDir(id, n), "runner.json"), {
+    schemaVersion: 1,
+    pid: data.pid,
+    startedAt: data.startedAt,
+  });
+}
+
+/** Returns false when the attempt's session.json already existed. */
+export function recordAttemptSession(
+  id: string,
+  n: number,
+  data: { sessionId: string; transcriptPath?: string },
+): boolean {
+  return createOnce(join(claimedAttemptDir(id, n), "session.json"), {
+    schemaVersion: 1,
+    ...data,
+  });
+}
+
+/** Returns false when the attempt's pause.json already existed. */
+export function recordPause(
+  id: string,
+  n: number,
+  data: Omit<PauseRecord, "schemaVersion" | "createdAt">,
+): boolean {
+  const record: PauseRecord = {
+    schemaVersion: 1,
+    provider: data.provider,
+    resetsAt: data.resetsAt,
+    source: data.source,
+    createdAt: now(),
+  };
+  if (data.lastMessage !== undefined) {
+    record.lastMessage = cap(data.lastMessage);
+  }
+  if (data.error !== undefined) record.error = cap(data.error);
+  return createOnce(join(claimedAttemptDir(id, n), "pause.json"), record);
+}
+
+/** Returns false when the attempt's context-bundle.md already existed. */
+export function writeBundle(id: string, n: number, text: string): boolean {
+  return createOnceText(
+    join(claimedAttemptDir(id, n), "context-bundle.md"),
+    text,
+  );
+}
+
+/** The context bundle of attempt n, if written. */
+export function readBundle(id: string, n: number): string | undefined {
+  assertAttempt(n);
+  const runs = readableRunsDir(id);
+  const dir = runs && join(runs, String(n));
+  if (!dir || !isRealDir(dir)) return undefined;
+  const file = join(dir, "context-bundle.md");
+  try {
+    if (!lstatSync(file).isFile()) return undefined; // no symlink
+    return readFileSync(file, "utf-8");
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Claimed attempts of a task, sorted by n, with each attempt's runner,
+ * session and pause. Empty for C1 tasks (no runs/<id>/) and symlinked dirs.
+ */
+export function listAttempts(id: string): AttemptEntry[] {
+  const runs = readableRunsDir(id);
+  if (!runs) return [];
+  let names: string[];
+  try {
+    names = readdirSync(runs);
+  } catch {
+    return [];
+  }
+  const entries: AttemptEntry[] = [];
+  for (const name of names) {
+    if (!ATTEMPT_RE.test(name)) continue;
+    const dir = join(runs, name);
+    if (!isRealDir(dir)) continue;
+    const attempt = read<AttemptRecord>(join(dir, "attempt.json"));
+    // Content must agree with its location.
+    if (!attempt || attempt.n !== Number(name)) continue;
+    const entry: AttemptEntry = { attempt };
+    const runner = read<RunnerRecord>(join(dir, "runner.json"));
+    const session = read<SessionRecord>(join(dir, "session.json"));
+    const pause = read<PauseRecord>(join(dir, "pause.json"));
+    if (runner) entry.runner = runner;
+    if (session) entry.session = session;
+    if (pause) entry.pause = pause;
+    entries.push(entry);
+  }
+  return entries.sort((a, b) => a.attempt.n - b.attempt.n);
 }
 
 // ─── asks / answers ─────────────────────────────────────────────────────
