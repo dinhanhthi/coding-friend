@@ -1,6 +1,6 @@
+import { tmpdir } from "os";
 import { commandExists, run } from "../../exec.js";
 import { compareVersions, extractVersion } from "../../host.js";
-import { resolveCheckoutRoot } from "../../project-root.js";
 import type { Provider } from "../store.js";
 import { MIN_CODEX_VERSION } from "./codex.js";
 import { PROVIDERS } from "./index.js";
@@ -10,7 +10,8 @@ import { PROVIDERS } from "./index.js";
  * undefined when it can. An older codex may ignore the permission profile.
  */
 export function codexVersionError(): string | undefined {
-  const output = run("codex", ["--version"]);
+  // Neutral cwd: the runner's cwd is the worker-writable checkout.
+  const output = run("codex", ["--version"], { cwd: tmpdir() });
   const actual = output ? extractVersion(output) : undefined;
   if (!actual || compareVersions(actual, MIN_CODEX_VERSION) < 0) {
     return `codex ${MIN_CODEX_VERSION} or newer is required for sandboxed workers (found ${actual ?? "unknown"})`;
@@ -19,16 +20,14 @@ export function codexVersionError(): string | undefined {
 }
 
 /**
- * Providers that can run on `checkout` now: binary on PATH, codex new
- * enough, and codex only in a git checkout.
+ * Providers that can run the task now: binary on PATH, codex new enough,
+ * and codex only in a git checkout. `isGitRepo` comes from dispatch: git
+ * never runs in a checkout a worker has written to.
  */
-export function eligibleProviders(checkout: string): Provider[] {
+export function eligibleProviders(isGitRepo: boolean): Provider[] {
   return (Object.keys(PROVIDERS) as Provider[]).filter((p) => {
     if (!commandExists(PROVIDERS[p].bin)) return false;
     if (p !== "codex") return true;
-    return (
-      codexVersionError() === undefined &&
-      resolveCheckoutRoot(checkout) !== null
-    );
+    return isGitRepo && codexVersionError() === undefined;
   });
 }

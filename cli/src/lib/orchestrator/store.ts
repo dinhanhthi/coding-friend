@@ -1,16 +1,19 @@
 import { randomBytes } from "crypto";
 import {
+  closeSync,
+  constants,
   existsSync,
+  fstatSync,
   linkSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readdirSync,
   readFileSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
 import { basename, dirname, join } from "path";
-import { readJson } from "../json.js";
 import { CliError } from "../output.js";
 import { orchestratorDir } from "../paths.js";
 
@@ -23,6 +26,8 @@ const ID_RE = /^[a-z0-9]{8}$/;
 const JSON_ID_RE = /^[a-z0-9]{8}\.json$/;
 const ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 const MAX_TEXT = 4096;
+/** Larger store files read as invalid (prompts arrive via argv: far smaller). */
+const MAX_FILE_BYTES = 16 * 1024 * 1024;
 /** Attempt numbers: 1..999, no leading zero (also a safe dir name). */
 const ATTEMPT_RE = /^[1-9]\d{0,2}$/;
 
@@ -120,6 +125,11 @@ export interface DispatchRecord {
   schemaVersion: 1;
   /** sha256 of the task.json bytes at dispatch. */
   taskDigest: string;
+  /**
+   * Whether the checkout was a git repo at dispatch, before any worker ran
+   * (codex eligibility).
+   */
+  isGitRepo: boolean;
   policy: {
     onQuota: QuotaPolicy;
     waitMinutes: number;
@@ -269,7 +279,7 @@ function attemptDir(id: string, n: number): string {
  * Create `dir` 0700 if missing (parent must exist) and fail closed unless
  * it is a real directory: a symlink is never written through.
  */
-function mkdirReal(dir: string): void {
+export function mkdirReal(dir: string): void {
   try {
     mkdirSync(dir, { mode: 0o700 });
   } catch (err) {
@@ -339,8 +349,42 @@ export function assertRealDir(dir: string): void {
   }
 }
 
+/**
+ * Bytes of a regular file of at most `max` bytes, else undefined. Workers
+ * write their task dir: O_NOFOLLOW refuses a symlink and O_NONBLOCK keeps a
+ * planted FIFO from blocking the read (fstat then rejects it).
+ */
+export function readRegularFile(
+  file: string,
+  max = MAX_FILE_BYTES,
+): Buffer | undefined {
+  let fd: number;
+  try {
+    fd = openSync(
+      file,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
+  } catch {
+    return undefined;
+  }
+  try {
+    const st = fstatSync(fd);
+    return st.isFile() && st.size <= max ? readFileSync(fd) : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    closeSync(fd);
+  }
+}
+
 function read<T>(file: string): T | undefined {
-  return readJson<T>(file) ?? undefined;
+  const bytes = readRegularFile(file);
+  if (!bytes) return undefined;
+  try {
+    return (JSON.parse(bytes.toString("utf-8")) as T) ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The exact bytes createOnce writes for `data`. */
@@ -643,11 +687,12 @@ export function recordCancel(id: string): CancelRecord {
 /** Returns false when dispatch.json already existed. */
 export function recordDispatch(
   id: string,
-  data: Pick<DispatchRecord, "taskDigest" | "policy">,
+  data: Pick<DispatchRecord, "taskDigest" | "isGitRepo" | "policy">,
 ): boolean {
   const record: DispatchRecord = {
     schemaVersion: 1,
     taskDigest: data.taskDigest,
+    isGitRepo: data.isGitRepo,
     policy: { ...data.policy, fallback: [...data.policy.fallback] },
     createdAt: now(),
   };
@@ -749,13 +794,7 @@ export function readBundle(id: string, n: number): string | undefined {
   const runs = readableRunsDir(id);
   const dir = runs && join(runs, String(n));
   if (!dir || !isRealDir(dir)) return undefined;
-  const file = join(dir, "context-bundle.md");
-  try {
-    if (!lstatSync(file).isFile()) return undefined; // no symlink
-    return readFileSync(file, "utf-8");
-  } catch {
-    return undefined;
-  }
+  return readRegularFile(join(dir, "context-bundle.md"))?.toString("utf-8");
 }
 
 /**

@@ -112,7 +112,7 @@ export interface DecideInput {
   attempts: AttemptEntry[];
   /** Epoch seconds. */
   now: number;
-  /** eligibleProviders(checkout). */
+  /** eligibleProviders(isGitRepo). */
   eligible: Provider[];
 }
 
@@ -192,8 +192,7 @@ function switchProvider(
   const retryAt = new Map<Provider, number>();
   for (const p of pauses) {
     const r = p.pause.resetsAt;
-    const until =
-      r !== null ? r : Date.parse(p.pause.createdAt) / 1000 + waitS;
+    const until = r !== null ? r : Date.parse(p.pause.createdAt) / 1000 + waitS;
     if (until > now) {
       retryAt.set(p.pause.provider, r !== null ? r + RESET_SLACK_S : until);
     } else {

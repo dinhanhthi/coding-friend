@@ -147,6 +147,7 @@ function dispatch(onQuota: QuotaPolicy): string {
   const taskDigest = digest(Buffer.from(serialize(task), "utf-8"));
   recordDispatch(task.id, {
     taskDigest,
+    isGitRepo: true,
     policy: {
       onQuota,
       waitMinutes: 30,

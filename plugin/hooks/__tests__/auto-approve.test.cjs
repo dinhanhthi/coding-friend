@@ -1100,6 +1100,18 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     expect(classifyByRules("Bash", { command: "cf task" })).not.toBe("allow");
   });
 
+  it("does NOT allow cf supervisor tick (starts agent processes)", () => {
+    expect(classifyByRules("Bash", { command: "cf supervisor tick" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow cf supervisor install (loads a launchd agent)", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf supervisor install" }),
+    ).not.toBe("allow");
+  });
+
   it("does NOT allow cf reply (answers on the user's behalf)", () => {
     expect(
       classifyByRules("Bash", { command: "cf reply abcdefgh yes" }),

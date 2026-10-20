@@ -1,5 +1,4 @@
-import { spawn, type ChildProcess } from "child_process";
-import { closeSync, openSync, realpathSync, rmSync } from "fs";
+import { realpathSync, rmSync } from "fs";
 import { basename, dirname, isAbsolute, join, relative, sep } from "path";
 import { loadConfig } from "../lib/config.js";
 import { commandExists, run as exec } from "../lib/exec.js";
@@ -11,8 +10,15 @@ import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import { digest, runTask } from "../lib/orchestrator/runner.js";
 import {
+  hasLiveRunner,
+  isRunnerCommand,
+  readHeartbeat,
+  spawnRunner,
+} from "../lib/orchestrator/supervisor.js";
+import {
   claimAttempt,
   createTask,
+  isOlderThan,
   listTasks,
   readTask,
   recordCancel,
@@ -88,10 +94,16 @@ function isProvider(v: unknown): v is Provider {
   return typeof v === "string" && Object.hasOwn(PROVIDERS, v);
 }
 
-function resolveCheckout(provider: Provider, readOnly: boolean): string {
+/** The task's checkout, and whether it is a git repo (before any worker ran). */
+function resolveCheckout(
+  provider: Provider,
+  readOnly: boolean,
+): { checkout: string; isGitRepo: boolean } {
   const checkout = resolveCheckoutRoot(process.cwd());
-  if (checkout) return checkout;
-  if (provider === "claude" && readOnly) return realpathSync(process.cwd());
+  if (checkout) return { checkout, isGitRepo: true };
+  if (provider === "claude" && readOnly) {
+    return { checkout: realpathSync(process.cwd()), isGitRepo: false };
+  }
   throw new CliError(
     "USAGE",
     readOnly
@@ -144,44 +156,6 @@ function assertCodexVersion(): void {
   if (error) throw new CliError("PROVIDER_UNAVAILABLE", error);
 }
 
-/**
- * Spawn the detached runner (`cf task _run <id>`); its stdio goes to
- * runner.log. `taskDigest` (sha256 of task.json) lets the runner refuse a
- * task.json rewritten after dispatch; `cwd` is the checkout.
- */
-function spawnRunner(
-  id: string,
-  taskDir: string,
-  cwd: string,
-  taskDigest: string,
-): number {
-  const fd = openSync(join(taskDir, "runner.log"), "a", 0o600);
-  try {
-    const child: ChildProcess = spawn(
-      process.execPath,
-      [...process.execArgv, process.argv[1], "task", "_run", id],
-      {
-        detached: true,
-        stdio: ["ignore", fd, fd],
-        cwd,
-        // cwd changes: pass the store dir absolute, not a relative override.
-        env: {
-          ...process.env,
-          CF_ORCHESTRATOR_DIR: orchestratorDir(),
-          CF_TASK_DIGEST: taskDigest,
-          CF_TASK_CHECKOUT: cwd,
-        },
-      },
-    );
-    child.once("error", () => {}); // reported via the missing pid below
-    if (!child.pid) throw new Error("runner process did not start");
-    child.unref();
-    return child.pid;
-  } finally {
-    closeSync(fd);
-  }
-}
-
 export async function taskRunCommand(
   prompt: string,
   opts: RunFlags,
@@ -208,7 +182,7 @@ export async function taskRunCommand(
       }
       if (provider === "codex") assertCodexVersion();
       const readOnly = Boolean(opts.readOnly);
-      const checkout = resolveCheckout(provider, readOnly);
+      const { checkout, isGitRepo } = resolveCheckout(provider, readOnly);
       // Every task: the runner writes its private dir (codex -o) into the store.
       assertStoreOutsideCheckout(checkout);
       // Before createTask: a config error leaves no task behind.
@@ -232,14 +206,14 @@ export async function taskRunCommand(
       try {
         // The bytes createTask wrote, not a re-read the worker could race.
         const taskDigest = digest(Buffer.from(serialize(task), "utf-8"));
-        if (!recordDispatch(id, { taskDigest, policy })) {
+        if (!recordDispatch(id, { taskDigest, isGitRepo, policy })) {
           throw new Error("dispatch record already exists");
         }
         if (!claimAttempt(id, { n: 1, provider, kind: "fresh" })) {
           throw new Error("attempt 1 already claimed");
         }
         // The runner writes <1>/runner.json itself (its own pid).
-        pid = spawnRunner(id, taskDir, checkout, taskDigest);
+        pid = spawnRunner(id, checkout, taskDigest);
       } catch (err) {
         const error = err instanceof Error ? err.message : String(err);
         recordResult(id, { exitCode: null, outcome: "failed", error });
@@ -285,19 +259,54 @@ function stateLabel(t: TaskView): string {
   return `${sanitize(t.state)} (${sanitize(resetLabel(pause?.resetsAt))})`;
 }
 
+/** A task plus, when nobody will resume it, what to do about it. */
+type HintedView = TaskView & { hint?: string };
+
+/** No supervisor tick within 3 minutes (it runs every 60 s), or none ever. */
+function supervisorIsStale(): boolean {
+  const at = readHeartbeat();
+  return at === undefined || isOlderThan(at, 3 * 60 * 1000);
+}
+
+/**
+ * Add a `hint` to a paused C2a task whose latest runner is gone while no
+ * supervisor ticks: nothing would resume it. `stale` is read once per command.
+ */
+function withHint(t: TaskView, stale: boolean): HintedView {
+  if (!stale || !t.attempts || t.state !== "paused") return t;
+  if (hasLiveRunner(t.id)) return t; // same liveness check as the tick
+  const id = sanitize(t.id);
+  return {
+    ...t,
+    hint: `Task ${id} is paused and no runner is waiting: run \`cf supervisor tick\`, install the supervisor with \`cf supervisor install\`, or free the checkout with \`cf task cancel ${id}\``,
+  };
+}
+
+function printHints(tasks: HintedView[]): void {
+  for (const t of tasks) if (t.hint) console.error(t.hint);
+}
+
 export async function taskListCommand(opts: Flags): Promise<void> {
-  await run(opts.json, listTasks, (tasks) => {
-    if (tasks.length === 0) {
-      console.log("No tasks.");
-      return;
-    }
-    for (const t of tasks) {
-      const ro = t.readOnly ? "  [ro]" : "";
-      console.log(
-        `${sanitize(t.id)}  ${stateLabel(t)}  ${currentProvider(t)}${ro}  ${age(t.createdAt)}  ${oneLine(t.prompt, 60)}`,
-      );
-    }
-  });
+  await run(
+    opts.json,
+    () => {
+      const stale = supervisorIsStale();
+      return listTasks().map((t) => withHint(t, stale));
+    },
+    (tasks) => {
+      if (tasks.length === 0) {
+        console.log("No tasks.");
+        return;
+      }
+      for (const t of tasks) {
+        const ro = t.readOnly ? "  [ro]" : "";
+        console.log(
+          `${sanitize(t.id)}  ${stateLabel(t)}  ${currentProvider(t)}${ro}  ${age(t.createdAt)}  ${oneLine(t.prompt, 60)}`,
+        );
+      }
+      printHints(tasks);
+    },
+  );
 }
 
 /** One `cf task show` line per attempt (session ids are worker-reported). */
@@ -377,7 +386,14 @@ function printShow(t: TaskView): void {
 }
 
 export async function taskShowCommand(id: string, opts: Flags): Promise<void> {
-  await run(opts.json, () => readTask(id), printShow);
+  await run(
+    opts.json,
+    () => withHint(readTask(id), supervisorIsStale()),
+    (t) => {
+      printShow(t);
+      printHints([t]);
+    },
+  );
 }
 
 /**
@@ -390,7 +406,7 @@ function signalRunner(id: string, pid: unknown): boolean {
     return false;
   }
   const command = exec("ps", ["-ww", "-o", "command=", "-p", String(pid)]);
-  if (!command?.includes(`task _run ${id}`)) return false;
+  if (!isRunnerCommand(command, id)) return false;
   try {
     process.kill(pid, "SIGTERM");
     return true;

@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { createHash, randomUUID } from "crypto";
-import { existsSync, readFileSync, realpathSync, rmdirSync, rmSync } from "fs";
+import { existsSync, realpathSync, rmdirSync, rmSync } from "fs";
 import { join } from "path";
 import { createInterface } from "readline";
 import { setTimeout as sleepTimer } from "timers/promises";
@@ -22,6 +22,7 @@ import {
   makeRunnerPrivateDir,
   readBundle,
   readDispatch,
+  readRegularFile,
   recordAttemptRunner,
   recordAttemptSession,
   recordPause,
@@ -91,6 +92,14 @@ export function digest(bytes: Buffer): string {
 }
 
 /**
+ * Whether the checkout is a git repo, as recorded at dispatch (never probed
+ * later: a worker can create `.git`). A record without the flag → false.
+ */
+export function checkoutIsGitRepo(dispatch: DispatchRecord): boolean {
+  return dispatch.isGitRepo === true;
+}
+
+/**
  * task.json as the parent dispatched it: its bytes still hash to
  * CF_TASK_DIGEST and the cwd the parent set is the task's checkout.
  * Parses the same bytes it hashed (no re-read). Undefined otherwise.
@@ -98,10 +107,10 @@ export function digest(bytes: Buffer): string {
 function readDispatchedTask(id: string): TaskRecord | undefined {
   try {
     const expected = process.env.CF_TASK_DIGEST;
-    const bytes = readFileSync(
+    const bytes = readRegularFile(
       join(orchestratorDir(), "tasks", id, "task.json"),
     );
-    if (!expected || digest(bytes) !== expected) return undefined;
+    if (!bytes || !expected || digest(bytes) !== expected) return undefined;
     const task = JSON.parse(bytes.toString("utf-8")) as TaskRecord;
     if (task.id !== id || realpathSync(process.cwd()) !== task.checkout) {
       return undefined;
@@ -340,6 +349,41 @@ async function runOnce(task: TaskRecord, deps: Deps): Promise<void> {
 
 type Claim = Omit<AttemptRecord, "schemaVersion" | "createdAt">;
 
+/**
+ * Claim attempt n + 1 for `next` (create-once), writing its context bundle
+ * first thing after the claim when it runs fresh. Shared by the runner and
+ * the supervisor tick. Undefined when another starter claimed n + 1.
+ */
+export function claimNextAttempt(
+  task: TaskRecord,
+  n: number,
+  next: Exclude<Decision, { kind: "fail" }>,
+): Claim | undefined {
+  const id = task.id;
+  const bundle =
+    next.kind === "resume"
+      ? undefined
+      : buildContextBundle({
+          task, // the original prompt, never a previous bundle
+          taskDir: join(orchestratorDir(), "tasks", id),
+          lastMessage: listAttempts(id)
+            .filter((e) => e.pause)
+            .at(-1)?.pause?.lastMessage,
+        });
+  const claim: Claim =
+    next.kind === "resume"
+      ? {
+          n: n + 1,
+          provider: next.provider,
+          kind: "resume",
+          resumeSessionId: next.sessionId,
+        }
+      : { n: n + 1, provider: next.provider, kind: next.kind, bundle: true };
+  if (!claimAttempt(id, claim)) return undefined;
+  if (bundle !== undefined) writeBundle(id, claim.n, bundle);
+  return claim;
+}
+
 /** Create-once <n>/runner.json for this process; false when another runner owns n. */
 function ownAttempt(id: string, n: number): boolean {
   try {
@@ -475,7 +519,7 @@ async function runAttempts(
           policy: dispatch.policy,
           attempts: listAttempts(id),
           now: deps.now(),
-          eligible: eligibleProviders(task.checkout),
+          eligible: eligibleProviders(checkoutIsGitRepo(dispatch)),
         });
         if (decision.kind === "fail") {
           return end({ ...resultOf(run, "failed"), error: decision.reason });
@@ -500,30 +544,14 @@ async function runAttempts(
       if (waited === "cancelled") {
         return end({ exitCode: null, outcome: "cancelled" });
       }
-      if (waited === "stopped") return; // pause and lease stay for the tick
+      // Stopped (no cancel) once due, before claiming n + 1: the pause and
+      // lease stay for the tick. From here to the worker spawn is synchronous,
+      // so no signal handler runs in between.
+      if (waited === "stopped" || trap.signal.aborted) return;
 
-      const bundle =
-        next.kind === "resume"
-          ? undefined
-          : buildContextBundle({
-              task, // the original prompt, never a previous bundle
-              taskDir,
-              lastMessage: listAttempts(id)
-                .filter((e) => e.pause)
-                .at(-1)?.pause?.lastMessage,
-            });
-      const claim: Claim =
-        next.kind === "resume"
-          ? {
-              n: n + 1,
-              provider: next.provider,
-              kind: "resume",
-              resumeSessionId: next.sessionId,
-            }
-          : { n: n + 1, provider: next.provider, kind: next.kind, bundle: true };
+      const claim = claimNextAttempt(task, n, next);
       // Lost to the tick (or another runner): it owns the task now.
-      if (!claimAttempt(id, claim) || !ownAttempt(id, claim.n)) return;
-      if (bundle !== undefined) writeBundle(id, claim.n, bundle);
+      if (!claim || !ownAttempt(id, claim.n)) return;
       attempt = claim;
     }
   } catch (err) {
