@@ -440,6 +440,10 @@ taskCmd
   .description("Start a detached worker task in the current checkout")
   .option("--provider <name>", "Worker CLI: claude or codex")
   .option("--read-only", "Worker may not edit the checkout (no writer lease)")
+  .option(
+    "--no-fallback",
+    "On a quota limit, wait for the reset instead of switching provider",
+  )
   .option("--json", "Output a JSON envelope")
   .action(async (prompt: string, opts) => {
     const { taskRunCommand } = await import("./commands/task.js");

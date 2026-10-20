@@ -1,22 +1,26 @@
 import { spawn, type ChildProcess } from "child_process";
 import { closeSync, openSync, realpathSync, rmSync } from "fs";
 import { basename, dirname, isAbsolute, join, relative, sep } from "path";
+import { loadConfig } from "../lib/config.js";
 import { commandExists, run as exec } from "../lib/exec.js";
-import { compareVersions, extractVersion } from "../lib/host.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { acquireLease, releaseLease } from "../lib/orchestrator/lease.js";
-import { MIN_CODEX_VERSION } from "../lib/orchestrator/providers/codex.js";
+import { codexVersionError } from "../lib/orchestrator/providers/eligible.js";
 import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
+import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import { digest, runTask } from "../lib/orchestrator/runner.js";
 import {
+  claimAttempt,
   createTask,
   listTasks,
   readTask,
   recordCancel,
+  recordDispatch,
   recordResult,
   recordRunner,
   serialize,
+  type AttemptSummary,
   type Provider,
   type TaskView,
 } from "../lib/orchestrator/store.js";
@@ -30,6 +34,8 @@ interface Flags {
 interface RunFlags extends Flags {
   provider?: string;
   readOnly?: boolean;
+  /** false with --no-fallback (commander's negatable option). */
+  fallback?: boolean;
 }
 
 /** JSON mode → envelope; human mode → log CliError then exit 1 via runHuman. */
@@ -134,14 +140,8 @@ function assertStoreOutsideCheckout(checkout: string): void {
 
 /** An older codex may ignore the worker's permission profile: refuse it. */
 function assertCodexVersion(): void {
-  const output = exec("codex", ["--version"]);
-  const actual = output ? extractVersion(output) : undefined;
-  if (!actual || compareVersions(actual, MIN_CODEX_VERSION) < 0) {
-    throw new CliError(
-      "PROVIDER_UNAVAILABLE",
-      `codex ${MIN_CODEX_VERSION} or newer is required for sandboxed workers (found ${actual ?? "unknown"})`,
-    );
-  }
+  const error = codexVersionError();
+  if (error) throw new CliError("PROVIDER_UNAVAILABLE", error);
 }
 
 /**
@@ -211,6 +211,10 @@ export async function taskRunCommand(
       const checkout = resolveCheckout(provider, readOnly);
       // Every task: the runner writes its private dir (codex -o) into the store.
       assertStoreOutsideCheckout(checkout);
+      // Before createTask: a config error leaves no task behind.
+      const policy = resolveTaskPolicy(loadConfig(), {
+        noFallback: opts.fallback === false,
+      });
 
       const task = createTask({ provider, prompt, readOnly, checkout });
       const id = task.id;
@@ -228,6 +232,13 @@ export async function taskRunCommand(
       try {
         // The bytes createTask wrote, not a re-read the worker could race.
         const taskDigest = digest(Buffer.from(serialize(task), "utf-8"));
+        if (!recordDispatch(id, { taskDigest, policy })) {
+          throw new Error("dispatch record already exists");
+        }
+        if (!claimAttempt(id, { n: 1, provider, kind: "fresh" })) {
+          throw new Error("attempt 1 already claimed");
+        }
+        // The runner writes <1>/runner.json itself (its own pid).
         pid = spawnRunner(id, taskDir, checkout, taskDigest);
       } catch (err) {
         const error = err instanceof Error ? err.message : String(err);
@@ -235,6 +246,7 @@ export async function taskRunCommand(
         if (!readOnly) releaseLease(checkout, id);
         throw new CliError("INTERNAL", `Could not start task runner: ${error}`);
       }
+      // C1 compat only: C2a readers take the latest attempt's runner pid.
       recordRunner(id, { pid, startedAt: new Date().toISOString() });
       return { taskId: id };
     },
@@ -250,6 +262,29 @@ export async function taskRunnerCommand(id: string): Promise<void> {
   await runTask(id);
 }
 
+/** "resets <local time>", or "reset unknown" (resetsAt is epoch seconds). */
+function resetLabel(resetsAt: unknown): string {
+  if (typeof resetsAt !== "number" || !Number.isFinite(resetsAt)) {
+    return "reset unknown";
+  }
+  return `resets ${new Date(resetsAt * 1000).toLocaleString()}`;
+}
+
+/** Provider of the latest attempt (C2a), else the task's. */
+function currentProvider(t: TaskView): string {
+  return sanitize(t.attempts?.at(-1)?.provider ?? t.provider);
+}
+
+/**
+ * State, plus the reset of the latest pause when paused. A paused task's
+ * latest attempt may be an abandoned claim: its pause sits on an earlier one.
+ */
+function stateLabel(t: TaskView): string {
+  if (t.state !== "paused" || !t.attempts) return sanitize(t.state);
+  const pause = t.attempts.filter((a) => a.pause).at(-1)?.pause;
+  return `${sanitize(t.state)} (${sanitize(resetLabel(pause?.resetsAt))})`;
+}
+
 export async function taskListCommand(opts: Flags): Promise<void> {
   await run(opts.json, listTasks, (tasks) => {
     if (tasks.length === 0) {
@@ -259,27 +294,53 @@ export async function taskListCommand(opts: Flags): Promise<void> {
     for (const t of tasks) {
       const ro = t.readOnly ? "  [ro]" : "";
       console.log(
-        `${sanitize(t.id)}  ${sanitize(t.state)}  ${sanitize(t.provider)}${ro}  ${age(t.createdAt)}  ${oneLine(t.prompt, 60)}`,
+        `${sanitize(t.id)}  ${stateLabel(t)}  ${currentProvider(t)}${ro}  ${age(t.createdAt)}  ${oneLine(t.prompt, 60)}`,
       );
     }
   });
 }
 
+/** One `cf task show` line per attempt (session ids are worker-reported). */
+function attemptLine(a: AttemptSummary): string {
+  const parts = [
+    `${sanitize(String(a.n))}  ${sanitize(a.provider)}  ${sanitize(a.kind)}`,
+  ];
+  if (a.pid !== undefined) parts.push(`pid ${sanitize(String(a.pid))}`);
+  if (a.sessionId) parts.push(`session ${sanitize(a.sessionId)}`);
+  if (a.pause) {
+    parts.push(
+      `paused on ${sanitize(a.pause.source)}, ${sanitize(resetLabel(a.pause.resetsAt))}`,
+    );
+  }
+  return `    ${parts.join("  ")}`;
+}
+
 function printShow(t: TaskView): void {
-  console.log(`Task ${sanitize(t.id)}  ${sanitize(t.state)}`);
+  const attempts = t.attempts;
+  console.log(`Task ${sanitize(t.id)}  ${stateLabel(t)}`);
   console.log(
-    `  provider:   ${sanitize(t.provider)}${t.readOnly ? " (read-only)" : ""}`,
+    `  provider:   ${currentProvider(t)}${t.readOnly ? " (read-only)" : ""}`,
   );
   console.log(`  checkout:   ${sanitize(t.checkout)}`);
   console.log(
     `  created:    ${sanitize(String(t.createdAt))} (${age(t.createdAt)} ago)`,
   );
-  if (t.runner) console.log(`  runner pid: ${sanitize(String(t.runner.pid))}`);
-  if (t.session) {
+  // C2a: the root runner.json/session.json are attempt 1's; use the attempts.
+  const pid = attempts ? attempts.at(-1)?.pid : t.runner?.pid;
+  if (attempts ? pid !== undefined : t.runner) {
+    console.log(`  runner pid: ${sanitize(String(pid))}`);
+  }
+  if (!attempts && t.session) {
     console.log(`  session:    ${sanitize(t.session.sessionId)}`);
-    if (t.session.transcriptPath) {
-      console.log(`  transcript: ${sanitize(t.session.transcriptPath)}`);
-    }
+  }
+  // C2a: the latest attempt's transcript, when its provider has one.
+  const transcript = attempts
+    ? attempts.at(-1)?.transcriptPath
+    : t.session?.transcriptPath;
+  if (transcript) console.log(`  transcript: ${sanitize(transcript)}`);
+  if (attempts) {
+    console.log("  attempts:");
+    for (const a of attempts) console.log(attemptLine(a));
   }
   if (t.result) {
     console.log(`  exit code:  ${sanitize(String(t.result.exitCode ?? "-"))}`);
@@ -300,6 +361,8 @@ function printShow(t: TaskView): void {
   }
   add("last message", t.result?.lastMessage);
   add("error", t.result?.error);
+  add("pause message", t.pause?.lastMessage);
+  add("pause error", t.pause?.error);
   for (const a of t.pendingAsks) {
     const qid = sanitize(a.qid);
     lines.push(`  question ${qid}: ${indent(a.question)}`);
@@ -358,7 +421,11 @@ export async function taskCancelCommand(
         }
       }
       // Even when finished: a worker can write done.json and keep running.
-      const signalled = signalRunner(id, readTask(id).runner?.pid);
+      // C2a: only the latest attempt's runner is current (a paused task may
+      // have none: cancel.json alone ends it).
+      const t = readTask(id);
+      const pid = t.attempts ? t.attempts.at(-1)?.pid : t.runner?.pid;
+      const signalled = signalRunner(id, pid);
       if (!cancelled && !signalled) {
         throw new CliError("ALREADY_FINISHED", `Task ${id} already finished`);
       }

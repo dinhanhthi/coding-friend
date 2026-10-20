@@ -26,6 +26,17 @@ const MAX_TEXT = 4096;
 /** Attempt numbers: 1..999, no leading zero (also a safe dir name). */
 const ATTEMPT_RE = /^[1-9]\d{0,2}$/;
 
+/**
+ * Worker-reported session ids (Claude UUIDs, Codex thread ids) go into argv
+ * (`--resume <id>`, `resume <id>`) and file names: no leading "-", no path
+ * characters.
+ */
+const SESSION_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$/;
+
+export function isSessionId(value: unknown): value is string {
+  return typeof value === "string" && SESSION_ID_RE.test(value);
+}
+
 /** How long a task (or lease) without runner.json counts as still spawning. */
 export const SPAWN_GRACE_MS = 30_000;
 
@@ -157,6 +168,7 @@ export interface AttemptSummary {
   kind: AttemptKind;
   pid?: number;
   sessionId?: string;
+  transcriptPath?: string;
   pause?: { resetsAt: number | null; source: string };
 }
 
@@ -522,6 +534,7 @@ function summarizeAttempt(e: AttemptEntry): AttemptSummary {
   };
   if (e.runner) s.pid = e.runner.pid;
   if (e.session) s.sessionId = e.session.sessionId;
+  if (e.session?.transcriptPath) s.transcriptPath = e.session.transcriptPath;
   if (e.pause) {
     s.pause = { resetsAt: e.pause.resetsAt, source: e.pause.source };
   }
@@ -681,12 +694,21 @@ export function recordAttemptRunner(
   });
 }
 
-/** Returns false when the attempt's session.json already existed. */
+/**
+ * Returns false when the attempt's session.json already existed. Throws on a
+ * session id that is not safe to resume with (see isSessionId).
+ */
 export function recordAttemptSession(
   id: string,
   n: number,
   data: { sessionId: string; transcriptPath?: string },
 ): boolean {
+  if (!isSessionId(data.sessionId)) {
+    throw new CliError(
+      "USAGE",
+      `Invalid session id: ${JSON.stringify(String(data.sessionId).slice(0, 200))}`,
+    );
+  }
   return createOnce(join(claimedAttemptDir(id, n), "session.json"), {
     schemaVersion: 1,
     ...data,

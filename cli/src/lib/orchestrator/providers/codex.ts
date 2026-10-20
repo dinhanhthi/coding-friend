@@ -1,7 +1,9 @@
 import { lstatSync, readFileSync } from "fs";
 import { join } from "path";
 import { buildPreamble } from "../preamble.js";
-import type { ProviderAdapter, SpawnContext } from "./index.js";
+import { parseCodexRetryAt } from "../quota.js";
+import { isSessionId } from "../store.js";
+import type { ProviderAdapter, SpawnContext, StreamAcc } from "./index.js";
 
 const MAX_TEXT = 4096;
 const PROFILE = "cf_task";
@@ -37,6 +39,21 @@ function errorMessage(v: unknown): string | undefined {
   return typeof m === "string" ? m.slice(0, MAX_TEXT) : undefined;
 }
 
+const USAGE_LIMIT_RE = /^You[’']ve hit your usage limit/;
+
+/** Records a usage-limit hit; termination is still left to turn.failed/exit. */
+function noteQuota(message: string | undefined, acc: StreamAcc): void {
+  if (message === undefined || !USAGE_LIMIT_RE.test(message)) return;
+  acc.quota = {
+    // A later "Try again later." keeps a reset time already parsed.
+    resetsAt:
+      parseCodexRetryAt(message, Math.floor(Date.now() / 1000)) ??
+      acc.quota?.resetsAt ??
+      null,
+    source: "codex.usage_limit",
+  };
+}
+
 /**
  * Codex worker (`codex exec --json`). Preamble + prompt go through stdin
  * (`-`). The last agent message is written by codex itself to `-o`.
@@ -45,6 +62,9 @@ export const codex: ProviderAdapter = {
   bin: "codex",
 
   buildSpawn(task, ctx) {
+    if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
+      throw new Error("refusing to resume an invalid session id");
+    }
     // A permission profile, not --sandbox (which would override it): the store
     // is read-only even under the writable /tmp, and only this task's dir is
     // writable, so read-only workers can run cf ask/done too. Paths are TOML
@@ -65,6 +85,8 @@ export const codex: ProviderAdapter = {
       ctx.checkout,
       "-o",
       lastMessageFile(ctx),
+      // `resume` rejects -C/--color, so every sandbox flag stays before it.
+      ...(ctx.resume ? ["resume", ctx.resume.sessionId] : []),
       "-",
     ];
     const preamble = buildPreamble({
@@ -104,14 +126,20 @@ export const codex: ProviderAdapter = {
         acc.outcome = "succeeded";
         acc.error = undefined;
         break;
-      case "turn.failed":
+      case "turn.failed": {
+        const message = errorMessage(ev.error);
         acc.outcome = "failed";
-        acc.error = errorMessage(ev.error) ?? acc.error ?? "turn failed";
+        acc.error = message ?? acc.error ?? "turn failed";
+        noteQuota(message, acc);
         break;
+      }
       // Not terminal on its own: a turn.failed (or turn.completed) may follow.
-      case "error":
-        acc.error = errorMessage(ev) ?? acc.error;
+      case "error": {
+        const message = errorMessage(ev);
+        acc.error = message ?? acc.error;
+        noteQuota(message, acc);
         break;
+      }
       case "item.completed": {
         const item = ev.item as { type?: unknown; text?: unknown } | undefined;
         if (item?.type === "agent_message" && typeof item.text === "string") {
@@ -141,6 +169,8 @@ export const codex: ProviderAdapter = {
       ...(acc.sessionId !== undefined && { sessionId: acc.sessionId }),
       ...(lastMessage !== undefined && { lastMessage }),
       ...(error !== undefined && { error }),
+      ...(outcome === "failed" &&
+        acc.quota !== undefined && { quota: acc.quota }),
     };
   },
 };

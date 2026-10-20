@@ -45,8 +45,11 @@ import { sanitize, taskCancelCommand, taskRunCommand } from "../task.js";
 import { acquireLease } from "../../lib/orchestrator/lease.js";
 import { digest, runTask as runRunner } from "../../lib/orchestrator/runner.js";
 import {
+  claimAttempt,
   createTask,
+  isPidAlive,
   readTask,
+  recordAttemptRunner,
   recordCancel,
   recordDone,
   recordRunner,
@@ -56,11 +59,19 @@ let root: string;
 let stdout: string[];
 
 async function runTask(
-  opts: { readOnly?: boolean; provider?: string } = {},
+  opts: { readOnly?: boolean; provider?: string; fallback?: boolean } = {},
 ) {
   stdout = [];
   await taskRunCommand("do it", { provider: "claude", json: true, ...opts });
-  return JSON.parse(stdout.join(""));
+  const out = JSON.parse(stdout.join(""));
+  // Play the (mocked) runner: it records attempt 1's runner pid itself.
+  if (out.ok) {
+    recordAttemptRunner(out.data.taskId, 1, {
+      pid: fake.pid,
+      startedAt: new Date().toISOString(),
+    });
+  }
+  return out;
 }
 
 beforeEach(() => {
@@ -101,6 +112,20 @@ describe("cf task run codex version gate", () => {
   it("accepts the minimum version", async () => {
     fake.codexVersion = "codex-cli 0.161.0";
     expect(await runTask({ provider: "codex" })).toMatchObject({ ok: true });
+  });
+});
+
+describe("cf task run --no-fallback", () => {
+  const policyOf = (id: string) =>
+    JSON.parse(
+      readFileSync(join(root, "orch", "runs", id, "dispatch.json"), "utf-8"),
+    ).policy;
+
+  it("records policy.noFallback in dispatch.json", async () => {
+    const pinned = await runTask({ readOnly: true, fallback: false });
+    expect(policyOf(pinned.data.taskId).noFallback).toBe(true);
+    const free = await runTask({ readOnly: true });
+    expect(policyOf(free.data.taskId).noFallback).toBe(false);
   });
 });
 
@@ -295,6 +320,46 @@ describe("cf task cancel", () => {
       );
     } finally {
       runner.kill("SIGKILL");
+    }
+  });
+
+  it("signals the latest attempt's runner, not the root runner.json pid", async () => {
+    const { id } = createTask({
+      provider: "claude",
+      prompt: "switched",
+      readOnly: true,
+      checkout: fake.checkout,
+    });
+    const { spawn: realSpawn } =
+      await vi.importActual<typeof import("child_process")>("child_process");
+    // Both look like a real runner of this task (`task _run <id>`).
+    const sleeper = () =>
+      realSpawn(
+        process.execPath,
+        ["-e", "setTimeout(() => {}, 60000)", "task", "_run", id],
+        { stdio: "ignore" },
+      );
+    const rootRunner = sleeper();
+    const latest = sleeper();
+    const exited = new Promise((r) => latest.once("exit", (_, sig) => r(sig)));
+    try {
+      recordRunner(id, { pid: rootRunner.pid!, startedAt: "x" });
+      claimAttempt(id, { n: 1, provider: "claude", kind: "fresh" });
+      claimAttempt(id, { n: 2, provider: "codex", kind: "switch" });
+      recordAttemptRunner(id, 2, { pid: latest.pid!, startedAt: "x" });
+
+      stdout = [];
+      await taskCancelCommand(id, { json: true });
+
+      expect(JSON.parse(stdout.join(""))).toMatchObject({
+        ok: true,
+        data: { taskId: id, cancelled: true, signalled: true },
+      });
+      expect(await exited).toBe("SIGTERM");
+      expect(isPidAlive(rootRunner.pid!)).toBe(true);
+    } finally {
+      rootRunner.kill("SIGKILL");
+      latest.kill("SIGKILL");
     }
   });
 

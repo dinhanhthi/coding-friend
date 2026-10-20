@@ -162,6 +162,19 @@ describe("orchestrator store", () => {
     expect(readTask(id).state).toBe("queued");
   });
 
+  it("an abandoned claim past the spawn grace stays paused and keeps the lease", () => {
+    const holder = pausedTask();
+    claimAttempt(holder, { n: 2, provider: "codex", kind: "switch" });
+    acquireLease(root, holder);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + SPAWN_GRACE_MS + 1000);
+
+    expect(readTask(holder).state).toBe("paused");
+    expect(() => acquireLease(root, newTask())).toThrow(
+      expect.objectContaining({ code: "LEASE_HELD" }),
+    );
+  });
+
   it("cancel wins over paused and is accepted on a paused task", () => {
     const id = pausedTask();
     recordCancel(id);

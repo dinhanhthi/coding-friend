@@ -1,6 +1,8 @@
 import { join } from "path";
 import { claudeSessionDir, encodeProjectPath } from "../../paths.js";
 import { buildPreamble, shellQuote } from "../preamble.js";
+import { normalizeResetsAt } from "../quota.js";
+import { isSessionId } from "../store.js";
 import type { ProviderAdapter, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
@@ -21,6 +23,9 @@ export const claude: ProviderAdapter = {
   bin: "claude",
 
   buildSpawn(task, ctx) {
+    if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
+      throw new Error("refusing to resume an invalid session id");
+    }
     // Only this task's dir: other tasks' files (task.json) stay out of reach.
     const filesystem: Record<string, string[]> = { allowWrite: [ctx.taskDir] };
     // denyWrite blocks paths even inside the otherwise writable cwd.
@@ -51,8 +56,9 @@ export const claude: ProviderAdapter = {
       "--output-format",
       "stream-json",
       "--verbose",
-      "--session-id",
-      ctx.sessionUuid,
+      ...(ctx.resume
+        ? ["--resume", ctx.resume.sessionId]
+        : ["--session-id", ctx.sessionUuid]),
       "--permission-mode",
       task.readOnly ? "dontAsk" : "acceptEdits",
       "--add-dir",
@@ -68,16 +74,14 @@ export const claude: ProviderAdapter = {
       "--append-system-prompt",
       preamble,
     ];
-    return {
-      cmd: "claude",
-      args,
-      stdin: task.prompt,
-      env: {
-        ...process.env,
-        CF_TASK_ID: task.id,
-        CF_ORCHESTRATOR_DIR: ctx.orchDir,
-      },
-    };
+    // No CLAUDE_CODE_RETRY_WATCHDOG*: CF, not Claude, decides wait or switch.
+    const env: NodeJS.ProcessEnv = {};
+    for (const [k, v] of Object.entries(process.env)) {
+      if (!k.startsWith("CLAUDE_CODE_RETRY_WATCHDOG")) env[k] = v;
+    }
+    env.CF_TASK_ID = task.id;
+    env.CF_ORCHESTRATOR_DIR = ctx.orchDir;
+    return { cmd: "claude", args, stdin: task.prompt, env };
   },
 
   parseLine(line, acc) {
@@ -91,7 +95,26 @@ export const claude: ProviderAdapter = {
     if (!acc.sessionId && typeof ev.session_id === "string") {
       acc.sessionId = ev.session_id;
     }
+    if (ev.type === "rate_limit_event") {
+      const info = ev.rate_limit_info as Record<string, unknown> | undefined;
+      // "allowed" / "allowed_warning" are not a stop.
+      if (info && typeof info === "object" && info.status === "rejected") {
+        acc.quota = {
+          resetsAt: normalizeResetsAt(info.resetsAt),
+          source: "claude.rate_limit_event",
+        };
+      }
+      return;
+    }
+    // Fallbacks without a reset time; never replace an event-derived quota.
+    if (ev.type === "assistant" && ev.error === "rate_limit") {
+      acc.quota ??= { resetsAt: null, source: "claude.assistant.rate_limit" };
+      return;
+    }
     if (ev.type !== "result") return;
+    if (ev.is_error === true && ev.api_error_status === 429) {
+      acc.quota ??= { resetsAt: null, source: "claude.result.429" };
+    }
     // The last result event wins (a run can emit more than one).
     const ok = ev.subtype === "success" && ev.is_error !== true;
     acc.outcome = ok ? "succeeded" : "failed";
@@ -131,6 +154,7 @@ export const claude: ProviderAdapter = {
       ...claude.session(acc, ctx),
       ...(acc.lastMessage !== undefined && { lastMessage: acc.lastMessage }),
       ...(error !== undefined && { error }),
+      ...(acc.quota && outcome === "failed" && { quota: acc.quota }),
     };
   },
 };
