@@ -267,6 +267,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /--check/,
         /--yes/,
         /--json/,
+        /local commands="[^"]*\bsupervisor\b/,
+        /compgen -W "install uninstall status tick"/,
+        /compgen -W "--label --json"/,
+        /compgen -W "--provider --read-only --no-fallback --json"/,
       ],
     },
     {
@@ -282,6 +286,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /--check\[/,
         /--yes\[/,
         /--json\[/,
+        /'supervisor:/,
+        /'tick:/,
+        /--label\[/,
+        /--no-fallback\[/,
       ],
     },
     {
@@ -297,6 +305,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /-l check /,
         /-l yes /,
         /-l json /,
+        /__fish_use_subcommand" -a supervisor /,
+        /__fish_seen_subcommand_from supervisor" -a tick /,
+        /__fish_seen_subcommand_from install uninstall status" -l label /,
+        /__fish_seen_subcommand_from run" -l no-fallback /,
       ],
     },
     {
@@ -312,6 +324,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /'--check'/,
         /'--yes'/,
         /'--json'/,
+        /\$commands = @\([^)]*'supervisor'/,
+        /\$supervisorSubcommands = @\('install','uninstall','status','tick'\)/,
+        /@\('--label','--json'\)/,
+        /'--no-fallback'/,
       ],
     },
   ];

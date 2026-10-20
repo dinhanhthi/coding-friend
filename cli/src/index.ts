@@ -478,7 +478,7 @@ taskCmd
 
 taskCmd
   .command("cancel <id>")
-  .description("Cancel a running task")
+  .description("Cancel a running or paused task")
   .option("--json", "Output a JSON envelope")
   .action(async (id: string, opts) => {
     const { taskCancelCommand } = await import("./commands/task.js");
