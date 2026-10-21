@@ -37,6 +37,7 @@ export function buildPreamble(opts: {
     ...(readOnly
       ? ["This is a read-only task: do not modify files in the repository."]
       : []),
+    "Run each cf command below (ask and done) as a single standalone command, exactly as shown: never chain it with ;, &&, || or |, never wrap it in a subshell, and never add echo after it. The tool reports the exit code anyway.",
     [
       "To ask the user a question, run:",
       `  ${cf} ask --task ${taskId}${timeout} '<question>'`,

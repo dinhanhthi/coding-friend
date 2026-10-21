@@ -38,6 +38,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+const TRUSTED = [
+  "/orch/runs",
+  "/orch/leases",
+  "/orch/runner",
+  "/orch/supervisor",
+];
+
 function claudeSettings(args: string[]): any {
   return JSON.parse(args[args.indexOf("--settings") + 1]);
 }
@@ -65,6 +72,20 @@ describe("buildSpawn", () => {
     });
   });
 
+  it.each([false, true])(
+    "claude (readOnly=%s) denies writes to the store's trusted dirs",
+    (readOnly) => {
+      const { args } = PROVIDERS.claude.buildSpawn(
+        task("claude", readOnly),
+        ctx,
+      );
+      const { denyWrite } = claudeSettings(args).sandbox.filesystem;
+      // The sandbox can write the per-user temp dir, where a store may live.
+      expect(denyWrite).toEqual(expect.arrayContaining(TRUSTED));
+      expect(denyWrite).not.toContain(ctx.orchDir);
+    },
+  );
+
   it("claude read-only blocks edit tools and denies writes to the checkout", () => {
     const { args } = PROVIDERS.claude.buildSpawn(task("claude", true), ctx);
     expect(after(args, "--disallowedTools", 3)).toEqual([
@@ -80,7 +101,7 @@ describe("buildSpawn", () => {
     ]);
     expect(claudeSettings(args).sandbox.filesystem).toEqual({
       allowWrite: [ctx.taskDir],
-      denyWrite: [ctx.checkout],
+      denyWrite: [ctx.checkout, ...TRUSTED],
     });
     expect(after(args, "--add-dir")).toEqual([ctx.taskDir]);
   });
@@ -138,6 +159,20 @@ describe("buildSpawn", () => {
       expect(spec.args.some((a) => a.includes("SECRET-PROMPT"))).toBe(false);
       expect(spec.stdin).toContain(PROMPT);
       expect(spec.env.CF_TASK_ID).toBe("abcd1234");
+    },
+  );
+
+  it.each(["claude", "codex"] as const)(
+    "%s preamble says to run cf ask/done standalone (dontAsk denies chains)",
+    (provider) => {
+      const spec = PROVIDERS[provider].buildSpawn(task(provider, true), ctx);
+      const preamble =
+        provider === "claude"
+          ? after(spec.args, "--append-system-prompt")[0]
+          : spec.stdin;
+      expect(preamble).toContain(
+        "as a single standalone command, exactly as shown: never chain it with ;, &&, || or |",
+      );
     },
   );
 });
@@ -302,7 +337,10 @@ describe("resume keeps the sandbox", () => {
       enabled: true,
       failIfUnavailable: true,
       allowUnsandboxedCommands: false,
-      filesystem: { allowWrite: [ctx.taskDir], denyWrite: [ctx.checkout] },
+      filesystem: {
+        allowWrite: [ctx.taskDir],
+        denyWrite: [ctx.checkout, ...TRUSTED],
+      },
     });
   });
 

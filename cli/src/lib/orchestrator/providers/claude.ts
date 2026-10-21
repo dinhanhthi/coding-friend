@@ -28,8 +28,16 @@ export const claude: ProviderAdapter = {
     }
     // Only this task's dir: other tasks' files (task.json) stay out of reach.
     const filesystem: Record<string, string[]> = { allowWrite: [ctx.taskDir] };
-    // denyWrite blocks paths even inside the otherwise writable cwd.
-    if (task.readOnly) filesystem.denyWrite = [ctx.checkout];
+    // denyWrite blocks paths even inside the otherwise writable cwd, and wins
+    // over the sandbox's default per-user temp dir write access: the store's
+    // trusted dirs stay out of reach even if the store lives there. (Denying
+    // the whole store would also block the nested task dir.)
+    filesystem.denyWrite = [
+      ...(task.readOnly ? [ctx.checkout] : []),
+      ...["runs", "leases", "runner", "supervisor"].map((d) =>
+        join(ctx.orchDir, d),
+      ),
+    ];
     const settings = {
       sandbox: {
         enabled: true,

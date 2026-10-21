@@ -305,6 +305,7 @@ What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), 
 
 - The worker inherits your environment, including API keys and tokens (a runner started by a launchd-run tick gets only the minimal launchd environment; a tick run by hand passes your full environment).
 - The sandbox restricts writes, not reads: a worker can read your home directory (other repos, `~/.ssh`, provider credentials) and other tasks' files. A Codex writer can also write `$TMPDIR` and `/tmp` (outside the store).
+- If the store is placed in a directory the worker can write (for example Claude's per-user temp dir `/tmp/claude-<uid>`), the trusted `runs/`, `leases/`, `runner/` and `supervisor/` dirs are still protected, but a Claude worker could write other tasks' directories there (Codex workers get the whole store read-only). Keep the default store location.
 - A writer can modify anything in its checkout, including `.git/hooks` and scripts you run later. Review its changes before running them.
 - A reused pid can keep a dead task looking "running". `cf task cancel` still marks it cancelled, and only signals a pid whose command line is that task's runner.
 - Quota signal shapes are partly unverified against real runs: Claude's `rate_limit_event` `resetsAt` was seen in seconds (a value above 1e12 is still read as milliseconds), but a real `rejected` event and the exact text and time format of Codex's usage-limit message were only tested with recorded or injected samples. If a provider changes them, a quota hit shows up as a normal failure instead of a pause.
