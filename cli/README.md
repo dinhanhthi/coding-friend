@@ -299,7 +299,7 @@ What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), 
 - **Minimal environment.** launchd gives the tick only the variables above. Credentials that exist only in your shell environment (for example an API key you export) are not available to runners started by a tick, after a reboot or otherwise. Log in to the provider in a way that persists (its own login or keychain).
 - **Reinstall after changes.** After upgrading Node (for example with nvm) or `cf`, or installing a provider CLI that changes your `PATH`, run `cf supervisor install` again. `status` warns when a path in the plist no longer exists.
 - **Sessions.** `install` needs a logged-in GUI session; over SSH into a machine with nobody logged in, launchctl may refuse it.
-- **Login Items.** macOS lists the agent under System Settings > General > Login Items as "node" and may notify you when it is added. If it is switched off there, launchd stops running the tick without any error; `cf supervisor status` then shows `loaded: no` and an old heartbeat. Switch it back on, or run `cf supervisor install` again.
+- **Login Items.** macOS lists the agent under System Settings > General > Login Items under the name of whoever signed your `node` binary (for example "Node.js Foundation" for the official installer, or just "node") and may notify you when it is added. If it is switched off there, launchd stops running the tick without any error; `cf supervisor status` then shows `loaded: no` and an old heartbeat. Switch it back on, or run `cf supervisor install` again.
 
 ### Known limitations
 
