@@ -49,6 +49,8 @@ async function createFixtureRepo() {
       "description: Example",
       "model: haiku",
       "allowed-tools: [Read]",
+      "context: fork",
+      "agent: x:y",
       "---",
       "",
       "Use {{cf:slash cf-review}}.",
@@ -761,6 +763,8 @@ test("strips Claude skill frontmatter when closing fence has no trailing newline
     "description: Example",
     "model: haiku",
     "allowed-tools: [Read]",
+    "context: fork",
+    "agent: x:y",
     "---",
   ].join("\n");
 
@@ -951,7 +955,10 @@ test("builds Antigravity plugin fixture idempotently", async () => {
   assert.doesNotMatch(skill, /\$\{CLAUDE_PLUGIN_ROOT\}|\bAGY_PLUGIN_ROOT\b/);
   const skillFrontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
   assert.ok(skillFrontmatter);
-  assert.doesNotMatch(skillFrontmatter[1], /^model:|^allowed-tools:/m);
+  assert.doesNotMatch(
+    skillFrontmatter[1],
+    /^model:|^allowed-tools:|^context:|^agent:/m,
+  );
   assert.match(skill, /The model: keep this body example/);
 
   const agent = await fs.readFile(

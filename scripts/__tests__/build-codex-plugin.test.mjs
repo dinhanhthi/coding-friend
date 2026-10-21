@@ -40,6 +40,8 @@ async function createFixtureRepo() {
       "description: Example",
       "model: haiku",
       "allowed-tools: [Read]",
+      "context: fork",
+      "agent: x:y",
       "---",
       "",
       'Use /cf-review and the Agent tool with `subagent_type: "coding-friend:cf-writer"`.',
@@ -750,7 +752,10 @@ test("builds Codex plugin fixture idempotently", async () => {
   );
   const skillFrontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
   assert.ok(skillFrontmatter);
-  assert.doesNotMatch(skillFrontmatter[1], /^model:|^allowed-tools:/m);
+  assert.doesNotMatch(
+    skillFrontmatter[1],
+    /^model:|^allowed-tools:|^context:|^agent:/m,
+  );
   assert.match(skill, /The model: keep this body example/);
 
   const shellMode = (
