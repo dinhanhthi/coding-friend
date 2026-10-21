@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.4 (2026-10-22)
+
+- Add `$cf-later <text>` — defer a side-task to `docs/later/` without loading it into the main conversation: on Claude Code it runs in a forked subagent and returns a single line, and `$cf-later-do` picks the items up later [#085b3fb9](https://github.com/dinhanhthi/coding-friend/commit/085b3fb9)
+
 ## v0.46.3 (2026-10-19)
 
 - Fix the statusline hook reading rate limits from the OAuth usage API: it now reads them from the stdin JSON Claude Code provides, so no token lookup or network call is needed [#62332fb4](https://github.com/dinhanhthi/coding-friend/commit/62332fb4)

@@ -207,6 +207,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 - `/cf-checkpoint` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-checkpoint/SKILL.md)) — Writes a resume snapshot (goal, decisions, next steps) to `docs/context/checkpoints/`.
 - `/cf-checkpoint-from` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-checkpoint-from/SKILL.md)) — Loads that snapshot into a fresh chat, then does the rest of the message. `--recap` also prints a short summary of the restored context.
 - `/cf-warm` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-warm/SKILL.md)) — Reads git history since you were away, groups it by topic, writes `docs/warm/`. `--user <name>` (else `git config user.name`), `--n-commits <N>` (default 10).
+- `/cf-later` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-later/SKILL.md)) — Saves a task you want to defer to `docs/later/`; on Claude Code it runs in a separate subagent, so your current chat stays clean. Pick it up later with `/cf-later-do`.
 - `/cf-later-do` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-later-do/SKILL.md)) — Lists `docs/later/` items, you pick one, routes to `/cf-fix` or `/cf-plan`, deletes the file only after the fix is verified.
 
 ### ❓ Help

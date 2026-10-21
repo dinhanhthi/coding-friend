@@ -184,7 +184,11 @@ function renderDevinFile(sourcePath, input) {
   // Verified: Devin accepts Claude skill frontmatter natively
   // (`disable-model-invocation`, `user-invocable`, `model:`, `triggers`), so
   // SKILL.md frontmatter ships unchanged — only the plugin-root note is added.
+  // Exception: Claude's `context: fork` / `agent:` name a Claude subagent, so drop them.
   if (isSkill) {
+    rendered = rendered.replace(/^---\n[\s\S]*?\n---\n?/, (fm) =>
+      fm.replace(/^(?:context|agent):.*\n/gm, ""),
+    );
     rendered = `${rendered.trimEnd()}\n\n${DEVIN_PLUGIN_ROOT_NOTE}\n`;
   }
 

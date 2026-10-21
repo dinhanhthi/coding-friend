@@ -42,7 +42,7 @@ function stripClaudeSkillFrontmatter(input) {
     .split("\n")
     .filter(
       (line) =>
-        !/^(?:model|allowed-tools|user-invocable|disable-model-invocation|argument-hint):/.test(
+        !/^(?:model|allowed-tools|user-invocable|disable-model-invocation|argument-hint|context|agent):/.test(
           line,
         ),
     )
