@@ -25,7 +25,7 @@ import { orchestratorDir } from "../paths.js";
 const ID_RE = /^[a-z0-9]{8}$/;
 const JSON_ID_RE = /^[a-z0-9]{8}\.json$/;
 const ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-const MAX_TEXT = 4096;
+export const MAX_TEXT = 4096;
 /** Larger store files read as invalid (prompts arrive via argv: far smaller). */
 const MAX_FILE_BYTES = 16 * 1024 * 1024;
 /** Attempt numbers: 1..999, no leading zero (also a safe dir name). */
@@ -204,7 +204,10 @@ export function newId(): string {
   );
 }
 
-function assertId(id: string, kind: "task id" | "question id"): void {
+export function assertId(
+  id: string,
+  kind: "task id" | "question id" | "chef id",
+): void {
   if (typeof id !== "string" || !ID_RE.test(id)) {
     throw new CliError("USAGE", `Invalid ${kind}: ${JSON.stringify(id)}`);
   }

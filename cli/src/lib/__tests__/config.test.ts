@@ -27,6 +27,7 @@ import { readJson } from "../json.js";
 import {
   getConfigJsonSchema,
   loadConfig,
+  readGlobalChefEnabled,
   resolveMemoryDir,
   resolveProjectMemoryDir,
   sanitizeRawConfig,
@@ -817,5 +818,60 @@ describe("resolveProjectMemoryDir", () => {
 
     resolveProjectMemoryDir("/some/base/dir");
     expect(mockResolveMainRepoRoot).toHaveBeenCalledWith("/some/base/dir");
+  });
+});
+
+describe("chef config", () => {
+  it('drops a chef.schedule entry that is not "HH:MM"', () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ chef: { schedule: ["9am"] } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("schedule"));
+    expect(config.chef?.schedule?.[0]).toBeUndefined();
+  });
+
+  it("only warns on an unknown chef key and keeps the known ones", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ chef: { enabled: false, wakes: 3 } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("'chef.wakes'"),
+    );
+    expect(config.chef).toEqual({ enabled: false });
+  });
+});
+
+describe("readGlobalChefEnabled", () => {
+  const GLOBAL = "/home/user/.coding-friend/config.json";
+
+  function configs(global: unknown, local: unknown): void {
+    mockReadJson.mockImplementation((path: string) =>
+      path === GLOBAL ? global : local,
+    );
+  }
+
+  it.each([
+    [
+      "global false, local true",
+      { chef: { enabled: false } },
+      { chef: { enabled: true } },
+      false,
+    ],
+    [
+      "global true, local false",
+      { chef: { enabled: true } },
+      { chef: { enabled: false } },
+      true,
+    ],
+    ["no global file", null, { chef: { enabled: false } }, true],
+    ["no chef.enabled key", { chef: {} }, { chef: { enabled: false } }, true],
+  ])("%s → %s", (_name, global, local, expected) => {
+    configs(global, local);
+    expect(readGlobalChefEnabled()).toBe(expected);
+    expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
   });
 });

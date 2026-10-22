@@ -38,10 +38,18 @@ vi.mock("../../lib/exec.js", async (importActual) => {
   };
 });
 vi.mock("../../lib/project-root.js", () => ({
-  resolveCheckoutRoot: () => fake.checkout,
+  resolveCheckoutRoot: vi.fn(() => fake.checkout),
 }));
+vi.mock("../../lib/config.js", async (importActual) => {
+  const actual = await importActual<typeof import("../../lib/config.js")>();
+  return { ...actual, loadConfig: vi.fn(actual.loadConfig) };
+});
 
 import { sanitize, taskCancelCommand, taskRunCommand } from "../task.js";
+import { loadConfig } from "../../lib/config.js";
+import { resolveCheckoutRoot } from "../../lib/project-root.js";
+import { dispatchTask } from "../../lib/orchestrator/dispatch.js";
+import { resolveTaskPolicy } from "../../lib/orchestrator/quota.js";
 import { acquireLease } from "../../lib/orchestrator/lease.js";
 import { digest, runTask as runRunner } from "../../lib/orchestrator/runner.js";
 import {
@@ -200,6 +208,36 @@ describe("cf task run writer lease", () => {
 
     fake.pid = process.pid;
     expect(await runTask()).toMatchObject({ ok: true });
+  });
+});
+
+describe("dispatchTask", () => {
+  it("uses the given checkout and policy without reading the cwd or the config", () => {
+    vi.mocked(loadConfig).mockClear();
+    vi.mocked(resolveCheckoutRoot).mockClear();
+    const policy = resolveTaskPolicy({});
+    const cwd = vi.spyOn(process, "cwd");
+
+    const { taskId } = dispatchTask({
+      prompt: "do it",
+      provider: "claude",
+      readOnly: false,
+      checkout: fake.checkout,
+      isGitRepo: true,
+      policy,
+    });
+
+    expect(cwd).not.toHaveBeenCalled();
+    expect(loadConfig).not.toHaveBeenCalled();
+    expect(resolveCheckoutRoot).not.toHaveBeenCalled();
+    expect(readTask(taskId).checkout).toBe(fake.checkout);
+    const dispatch = JSON.parse(
+      readFileSync(
+        join(root, "orch", "runs", taskId, "dispatch.json"),
+        "utf-8",
+      ),
+    );
+    expect(dispatch).toMatchObject({ isGitRepo: true, policy });
   });
 });
 

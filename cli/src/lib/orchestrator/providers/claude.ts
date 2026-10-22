@@ -34,7 +34,7 @@ export const claude: ProviderAdapter = {
     // the whole store would also block the nested task dir.)
     filesystem.denyWrite = [
       ...(task.readOnly ? [ctx.checkout] : []),
-      ...["runs", "leases", "runner", "supervisor"].map((d) =>
+      ...["runs", "leases", "runner", "supervisor", "chefs"].map((d) =>
         join(ctx.orchDir, d),
       ),
     ];

@@ -135,6 +135,21 @@ export const TaskConfigSchema = z.object({
     .optional(),
 });
 
+/** Wall-clock "HH:MM", 24-hour. */
+const CHEF_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// No .default(): the chef applies the defaults in code.
+export const ChefConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  commit: z.boolean().optional(),
+  notify: z.boolean().optional(),
+  schedule: z.array(z.string().regex(CHEF_TIME_RE)).optional(),
+  minWakeMinutes: z.number().int().min(1).optional(),
+  maxWakesPerDay: z.number().int().min(1).optional(),
+  maxTasksPerWake: z.number().int().min(1).optional(),
+  maxConcurrentTasks: z.number().int().min(1).optional(),
+});
+
 export const ConfigSchema = z.object({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -156,6 +171,7 @@ export const ConfigSchema = z.object({
   projectRegistry: z.boolean().optional(),
   autoApproveLLM: z.boolean().optional(),
   task: TaskConfigSchema.optional(),
+  chef: ChefConfigSchema.optional(),
 });
 
 /** JSON Schema (input side) for the config file. */
@@ -173,6 +189,7 @@ const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
   [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
   [["showcase", "poster"], Object.keys(ShowcasePosterConfigSchema.shape)],
   [["task"], Object.keys(TaskConfigSchema.shape)],
+  [["chef"], Object.keys(ChefConfigSchema.shape)],
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
@@ -361,6 +378,15 @@ export function loadConfig(): CodingFriendConfig {
   );
   const merged = deepMerge(base, (local ?? {}) as Record<string, unknown>);
   return validateConfig(merged);
+}
+
+/**
+ * `chef.enabled` from the global config only, never the cwd's local config.
+ * A missing file or key means enabled.
+ */
+export function readGlobalChefEnabled(): boolean {
+  const global = readJson<CodingFriendConfig>(globalConfigPath());
+  return global?.chef?.enabled !== false;
 }
 
 /**

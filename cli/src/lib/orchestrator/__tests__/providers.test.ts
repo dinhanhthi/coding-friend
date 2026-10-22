@@ -43,6 +43,7 @@ const TRUSTED = [
   "/orch/leases",
   "/orch/runner",
   "/orch/supervisor",
+  "/orch/chefs",
 ];
 
 function claudeSettings(args: string[]): any {

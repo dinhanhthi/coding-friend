@@ -1,36 +1,26 @@
-import { realpathSync, rmSync } from "fs";
-import { basename, dirname, isAbsolute, join, relative, sep } from "path";
+import { realpathSync } from "fs";
 import { loadConfig } from "../lib/config.js";
-import { commandExists, run as exec } from "../lib/exec.js";
+import { run as exec } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
-import { acquireLease, releaseLease } from "../lib/orchestrator/lease.js";
-import { codexVersionError } from "../lib/orchestrator/providers/eligible.js";
+import { dispatchTask } from "../lib/orchestrator/dispatch.js";
 import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
-import { digest, runTask } from "../lib/orchestrator/runner.js";
+import { runTask } from "../lib/orchestrator/runner.js";
 import {
   hasLiveRunner,
   isRunnerCommand,
   readHeartbeat,
-  spawnRunner,
 } from "../lib/orchestrator/supervisor.js";
 import {
-  claimAttempt,
-  createTask,
   isOlderThan,
   listTasks,
   readTask,
   recordCancel,
-  recordDispatch,
-  recordResult,
-  recordRunner,
-  serialize,
   type AttemptSummary,
   type Provider,
   type TaskView,
 } from "../lib/orchestrator/store.js";
-import { orchestratorDir } from "../lib/paths.js";
 import { resolveCheckoutRoot } from "../lib/project-root.js";
 
 interface Flags {
@@ -96,13 +86,14 @@ function isProvider(v: unknown): v is Provider {
 
 /** The task's checkout, and whether it is a git repo (before any worker ran). */
 function resolveCheckout(
+  cwd: string,
   provider: Provider,
   readOnly: boolean,
 ): { checkout: string; isGitRepo: boolean } {
-  const checkout = resolveCheckoutRoot(process.cwd());
+  const checkout = resolveCheckoutRoot(cwd);
   if (checkout) return { checkout, isGitRepo: true };
   if (provider === "claude" && readOnly) {
-    return { checkout: realpathSync(process.cwd()), isGitRepo: false };
+    return { checkout: realpathSync(cwd), isGitRepo: false };
   }
   throw new CliError(
     "USAGE",
@@ -110,50 +101,6 @@ function resolveCheckout(
       ? "Read-only codex tasks must run inside a git repository"
       : "Writer tasks must run inside a git repository",
   );
-}
-
-/**
- * realpath of `path`, or — when it does not exist yet — of its nearest
- * existing ancestor with the missing segments re-appended, so a symlink on
- * the way is resolved before the store dir is created.
- */
-function realpathOfNearestAncestor(path: string): string {
-  const missing: string[] = [];
-  let cur = path;
-  for (;;) {
-    try {
-      return join(realpathSync(cur), ...missing);
-    } catch {
-      const parent = dirname(cur);
-      if (parent === cur) return path;
-      missing.unshift(basename(cur));
-      cur = parent;
-    }
-  }
-}
-
-/**
- * A store inside the checkout is either unwritable (Claude read-only sandbox)
- * or writable by the worker beyond its own task dir (writers' cwd).
- */
-function assertStoreOutsideCheckout(checkout: string): void {
-  const store = realpathOfNearestAncestor(orchestratorDir()); // checkout is a realpath too
-  const rel = relative(checkout, store);
-  if (
-    rel === "" ||
-    (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
-  ) {
-    throw new CliError(
-      "USAGE",
-      `The orchestrator dir ${store} is inside the checkout ${checkout}; set CF_ORCHESTRATOR_DIR outside it`,
-    );
-  }
-}
-
-/** An older codex may ignore the worker's permission profile: refuse it. */
-function assertCodexVersion(): void {
-  const error = codexVersionError();
-  if (error) throw new CliError("PROVIDER_UNAVAILABLE", error);
 }
 
 export async function taskRunCommand(
@@ -168,61 +115,25 @@ export async function taskRunCommand(
         throw new CliError("USAGE", "--provider must be claude or codex");
       }
       if (!prompt.trim()) throw new CliError("USAGE", "Prompt is empty");
-      if (process.platform === "win32") {
-        throw new CliError(
-          "PROVIDER_UNAVAILABLE",
-          "Worker sandboxing is not available on native Windows",
-        );
-      }
-      if (!commandExists(PROVIDERS[provider].bin)) {
-        throw new CliError(
-          "PROVIDER_UNAVAILABLE",
-          `${PROVIDERS[provider].bin} not found on PATH`,
-        );
-      }
-      if (provider === "codex") assertCodexVersion();
       const readOnly = Boolean(opts.readOnly);
-      const { checkout, isGitRepo } = resolveCheckout(provider, readOnly);
-      // Every task: the runner writes its private dir (codex -o) into the store.
-      assertStoreOutsideCheckout(checkout);
+      const { checkout, isGitRepo } = resolveCheckout(
+        process.cwd(),
+        provider,
+        readOnly,
+      );
       // Before createTask: a config error leaves no task behind.
       const policy = resolveTaskPolicy(loadConfig(), {
         noFallback: opts.fallback === false,
       });
-
-      const task = createTask({ provider, prompt, readOnly, checkout });
-      const id = task.id;
-      const taskDir = join(orchestratorDir(), "tasks", id);
-      if (!readOnly) {
-        try {
-          acquireLease(checkout, id);
-        } catch (err) {
-          rmSync(taskDir, { recursive: true, force: true });
-          throw err;
-        }
-      }
-
-      let pid: number;
-      try {
-        // The bytes createTask wrote, not a re-read the worker could race.
-        const taskDigest = digest(Buffer.from(serialize(task), "utf-8"));
-        if (!recordDispatch(id, { taskDigest, isGitRepo, policy })) {
-          throw new Error("dispatch record already exists");
-        }
-        if (!claimAttempt(id, { n: 1, provider, kind: "fresh" })) {
-          throw new Error("attempt 1 already claimed");
-        }
-        // The runner writes <1>/runner.json itself (its own pid).
-        pid = spawnRunner(id, checkout, taskDigest);
-      } catch (err) {
-        const error = err instanceof Error ? err.message : String(err);
-        recordResult(id, { exitCode: null, outcome: "failed", error });
-        if (!readOnly) releaseLease(checkout, id);
-        throw new CliError("INTERNAL", `Could not start task runner: ${error}`);
-      }
-      // C1 compat only: C2a readers take the latest attempt's runner pid.
-      recordRunner(id, { pid, startedAt: new Date().toISOString() });
-      return { taskId: id };
+      const { taskId } = dispatchTask({
+        prompt,
+        provider,
+        readOnly,
+        checkout,
+        isGitRepo,
+        policy,
+      });
+      return { taskId };
     },
     ({ taskId }) => {
       log.success(`Started task ${taskId}`);
