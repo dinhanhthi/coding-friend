@@ -64,6 +64,7 @@ import {
   readKnownHead,
   readLatestBaseline,
   readLatestReference,
+  recordEvent,
   recordFingerprint,
   recordWakeResult,
   recordWakeRunner,
@@ -102,7 +103,9 @@ import {
  *   steering + repo guard vs the latest baseline → working tree vs the
  *   latest reference mark (skipped while a writer/check task is not
  *   terminal) → digest → chef process (own group, 15 min timeout) →
- *   validateActions → result.json (ok + consumed, once) → executors.
+ *   validateActions → result.json (ok + consumed, once) → executors →
+ *   streak pause, or a fire-once `rejected-<n>` event when actions were
+ *   rejected and the chef is still active (so it wakes again to see why).
  *
  * Every exit after runner.json writes result.json exactly once: `ok` right
  * after the actions parse (then they run), `quota`/`failed` at the end.
@@ -950,6 +953,18 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
       n,
       `${streak} wakes in a row had rejected actions`,
       exec,
+    );
+  } else if (
+    validation.rejected.length > 0 &&
+    chefStatus(id).state === "active"
+  ) {
+    // A rejected-only wake leaves nothing that would wake the chef again: a
+    // fire-once event brings it back after minWakeMinutes to see why (also
+    // when other actions ran; the streak pause and the daily cap bound it).
+    recordEvent(
+      id,
+      `rejected-${n}`,
+      `wake ${n} had ${validation.rejected.length} rejected action${validation.rejected.length === 1 ? "" : "s"} (reasons under Rejected actions of the previous wake)`,
     );
   }
   return { outcome: "ok", actions };

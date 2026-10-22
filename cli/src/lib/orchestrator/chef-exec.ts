@@ -23,6 +23,7 @@ import {
   recordAsk,
   recordCommit,
   recordDecision,
+  recordEvent,
   recordFingerprint,
   recordPause,
   recordTaskRole,
@@ -344,6 +345,18 @@ async function execCommit(
         const reason = `commit ${r.commit} created, index sync failed: ${r.error}`;
         await pauseChef(chef, ec.wake, reason, deps);
         return { status: "executed", reason };
+      }
+      // Nothing else wakes the chef after its last commit: this event lets
+      // it plan the next step or report that the plan is done. The commit
+      // landed: a failure here must not turn it into "Commit not made".
+      try {
+        recordEvent(
+          chef.id,
+          `committed-${rec.seq}`,
+          `CF committed ${r.commit} (${r.paths.length} paths)`,
+        );
+      } catch (err) {
+        deps.log(`committed event failed: ${errMsg(err)}`);
       }
       return { status: "executed" };
     }

@@ -28,7 +28,9 @@ import {
   recordPause,
   type ChefRecord,
 } from "./chef-store.js";
+import { boundNotify } from "./chef-exec.js";
 import { collectTriggers, pendingEvents, shouldWake } from "./chef-triggers.js";
+import { updateChefSummary } from "./chef-wake.js";
 import { releaseLease } from "./lease.js";
 import { eligibleProviders } from "./providers/eligible.js";
 import { decideNext } from "./quota.js";
@@ -456,10 +458,12 @@ function tickChef(
   const decision = shouldWake({ chef, events: pendingEvents(id), now });
   if (!decision.wake) {
     if (!decision.pause) return "skipped";
-    recordPause(id, {
-      reason: `daily wake cap reached (${chef.limits.maxWakesPerDay} wakes in 24 h)`,
-    });
+    const reason = `daily wake cap reached (${chef.limits.maxWakesPerDay} wakes in 24 h)`;
+    recordPause(id, { reason });
     console.error(`supervisor: chef ${id}: paused, daily wake cap reached`);
+    void boundNotify(chef, (line) =>
+      console.error(`supervisor: chef ${id}: ${line}`),
+    )(`Coding Friend chef ${id} paused`, reason);
     return "paused";
   }
 
@@ -505,6 +509,14 @@ export function tickChefs(options: TickOptions = {}): ChefTickSummary {
       outcome = "skipped";
     }
     summary[outcome].push(chef.id);
+  }
+  // A tick pause changes the statusline counter (a wake refreshes it itself).
+  if (summary.paused.length > 0) {
+    try {
+      updateChefSummary();
+    } catch (err) {
+      console.error(`supervisor: chefs: summary: ${String(err)}`);
+    }
   }
   return summary;
 }

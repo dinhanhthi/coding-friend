@@ -406,11 +406,25 @@ export function commitGateProblem(facts: ChefFacts): string | null {
  * plan ("implement task 3.1 from docs/plans/x/phase-3.md") passes: a read
  * cue (from, per, see, described in, ...) between verb and path clears it,
  * except after a removal verb ("remove the rule from CLAUDE.md").
+ *
+ * Clause-aware: the prompt is cut into clauses at sentence ends, newlines
+ * and `;` (list items sit on their own lines), and an edit verb right after
+ * a negation ("Do not edit plan/, any CLAUDE.md", "không sửa plan") never
+ * counts. Commas do not cut a clause, so one negation covers a list of verbs
+ * ("do not edit, remove or rename CLAUDE.md"); an unrelated negation earlier
+ * in the clause does not ("make sure no test fails, then tick plan/x.md").
  */
 const EDIT_VERB =
   /(?:^|[^\p{L}\p{N}_])(edit|modify|update|change|rewrite|overwrite|write|append|delete|remove|rename|move|create|add|fix|patch|tick|mark|replace|truncate|sửa|cập nhật|ghi|xoá|xóa|thêm|đổi)(?![\p{L}\p{N}_])/giu;
 const READ_CUE =
   /(?:^|[^\p{L}\p{N}_])(read|see|from|per|described|according|following|listed|defined|specified|outlined|documented|in the plan|đọc|theo|xem)(?![\p{L}\p{N}_])/iu;
+/** Negation cues: an edit verb right after one of them is skipped. */
+const NEGATION =
+  /(?:^|[^\p{L}\p{N}_])(not|never|no|without|avoid|\p{L}*n['’]t|không|đừng|chớ|cấm)(?![\p{L}\p{N}_])/giu;
+/** Words that may sit between a negation and the verb it covers. */
+const LIST_JOIN = /^(or|and|nor|hoặc|và|hay)$/u;
+/** Clause ends: sentence punctuation before a space, newlines, `;`. */
+const CLAUSE_END = /[.!?](?=\s)|[\n;]/u;
 /** Verbs where "from <path>" means editing the path, not reading it. */
 const REMOVAL_VERB = /^(delete|remove|move|xoá|xóa)$/iu;
 /** Chars of text between an edit verb and a steering path. */
@@ -450,7 +464,10 @@ function steeringTokens(checkout: string, steering: SteeringSpec): Token[] {
     const rel = relInside(checkout, abs);
     if (rel) tokens.push({ text: rel, rootOnly: true });
   }
-  return tokens.map((t) => ({ ...t, text: t.text.toLowerCase() }));
+  return tokens.map((t) => ({
+    ...t,
+    text: t.text.normalize("NFC").toLowerCase(),
+  }));
 }
 
 /** Start offsets of `token` in `low` with path boundaries on both sides. */
@@ -480,30 +497,63 @@ function mentions(low: string, token: Token, checkoutLow: string): number[] {
   return out;
 }
 
+/**
+ * True when the edit verb at `verbAt` is covered by a negation: the closest
+ * negation before it is followed by at most one other word, then only edit
+ * verbs, commas and list joins ("do not edit, remove or rename", "must never
+ * update", "do not even touch"). A comma before the first verb, or an object
+ * after it, ends the negation's reach ("if not, tick plan/x.md", "don't edit
+ * tests, update AGENTS.md", "make sure no test fails, then tick ...").
+ * A colon counts as a comma. Deliberate gap: a comma-less conditional fits
+ * the one-word slot ("if it doesn't build fix plan/x.md").
+ */
+function negated(clause: string, verbAt: number): boolean {
+  let last: RegExpExecArray | undefined;
+  for (const m of clause.slice(0, verbAt).matchAll(NEGATION)) last = m;
+  if (!last) return false;
+  const words = clause
+    .slice((last.index ?? 0) + last[0].length, verbAt)
+    .replace(EDIT_VERB, " \u0001 ")
+    .replace(/[,:]/g, " , ")
+    .split(/\s+/)
+    .filter(Boolean);
+  let others = 0;
+  let afterVerb = false;
+  for (const w of words) {
+    if (w === "\u0001") afterVerb = true;
+    else if (w === ",") {
+      if (!afterVerb) return false;
+    } else if (afterVerb ? !LIST_JOIN.test(w) : ++others > 1) return false;
+  }
+  return true;
+}
+
 /** Steering path a writer/check prompt asks to edit, or null. */
 export function promptEditsSteering(
   prompt: string,
   checkout: string,
   steering: SteeringSpec,
 ): string | null {
-  const low = prompt.toLowerCase();
   const checkoutLow = checkout.replace(/\/+$/, "").toLowerCase();
-  for (const token of steeringTokens(checkout, steering)) {
-    for (const at of mentions(low, token, checkoutLow)) {
-      const window = low.slice(Math.max(0, at - VERB_WINDOW), at);
-      // Same sentence only: cut at the last newline or sentence end.
-      const cut = Math.max(
-        window.lastIndexOf("\n"),
-        ...[...window.matchAll(/[.!?;](?=\s)/g)].map((m) => m.index ?? -1),
-      );
-      const clause = window.slice(cut + 1);
-      for (const m of clause.matchAll(EDIT_VERB)) {
-        const between = clause.slice((m.index ?? 0) + m[0].length);
-        if (between.trim().split(/\s+/).filter(Boolean).length > 6) continue;
-        if (!REMOVAL_VERB.test(m[1] ?? "") && READ_CUE.test(between)) {
-          continue;
+  const tokens = steeringTokens(checkout, steering);
+  for (const clause of prompt
+    .normalize("NFC")
+    .toLowerCase()
+    .split(CLAUSE_END)) {
+    for (const token of tokens) {
+      for (const at of mentions(clause, token, checkoutLow)) {
+        const start = Math.max(0, at - VERB_WINDOW);
+        const window = clause.slice(start, at);
+        for (const m of window.matchAll(EDIT_VERB)) {
+          const between = window.slice((m.index ?? 0) + m[0].length);
+          if (between.trim().split(/\s+/).filter(Boolean).length > 6) continue;
+          if (!REMOVAL_VERB.test(m[1] ?? "") && READ_CUE.test(between)) {
+            continue;
+          }
+          const verbAt = start + (m.index ?? 0) + m[0].length - m[1].length;
+          if (negated(clause, verbAt)) continue;
+          return token.text;
         }
-        return token.text;
       }
     }
   }

@@ -26,6 +26,9 @@
 #   { "statusline": { "components": ["version", "folder", "model", "branch", "account", "context", "rate_limit", "session", "task_agent"] } }
 #   Run `cf statusline` to configure interactively.
 #   If no config exists, all components are shown by default.
+#   A "chef N!" counter (not a component) joins line 2 only when
+#   <CF_ORCHESTRATOR_DIR or ~/.coding-friend/orchestrator>/chefs/summary.json
+#   reports chef questions or paused chefs.
 
 set -euo pipefail
 
@@ -159,10 +162,10 @@ VERSION=""
 if component_enabled "version"; then
   PLUGIN_ROOT="${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
   if [ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
-    VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+    VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null || true)
   fi
   if [ -z "$VERSION" ]; then
-    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$CF_CLAUDE_DIR/plugins/installed_plugins.json" 2>/dev/null)
+    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$CF_CLAUDE_DIR/plugins/installed_plugins.json" 2>/dev/null || true)
   fi
 fi
 
@@ -176,9 +179,9 @@ fi
 # Active model
 MODEL=""
 if component_enabled "model"; then
-  MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null)
+  MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null || true)
   if [ -z "$MODEL" ]; then
-    MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null)
+    MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null || true)
   fi
   # Shorten model names: "Opus 4.6 (1M context)" → "Opus (1M)"
   if [ -n "$MODEL" ]; then
@@ -198,7 +201,7 @@ fi
 # Context window usage — read from stdin JSON
 ctx_text=""
 if component_enabled "context"; then
-  ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1)
+  ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1 || true)
   if [ -n "$ctx_pct" ] && [[ "$ctx_pct" =~ ^[0-9]+$ ]]; then
     ctx_color=$(color_for_percentage "$ctx_pct")
     ctx_text="${ctx_color}ctx ${ctx_pct}%${RESET}"
@@ -332,6 +335,25 @@ if component_enabled "task_agent"; then
   fi
 fi
 
+# ── Chef counter (no component id: shown only when a chef needs the user) ──
+# <store>/chefs/summary.json is written by the CF CLI (`inbox` = unseen chef
+# questions, `paused` = paused chefs). Read with grep only (no jq). Only a
+# regular file that is not a symlink is read, capped in size, so a FIFO or a
+# link planted there cannot hang or redirect the statusline.
+chef_text=""
+CHEF_SUMMARY="${CF_ORCHESTRATOR_DIR:-$HOME/.coding-friend/orchestrator}/chefs/summary.json"
+if [ -f "$CHEF_SUMMARY" ] && [ ! -L "$CHEF_SUMMARY" ]; then
+  chef_json=$(head -c 4096 "$CHEF_SUMMARY" 2>/dev/null || true)
+  chef_inbox=$(printf '%s' "$chef_json" | grep -o '"inbox"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$' || true)
+  chef_paused=$(printf '%s' "$chef_json" | grep -o '"paused"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$' || true)
+  [[ "$chef_inbox" =~ ^[0-9]{1,6}$ ]] || chef_inbox=0
+  [[ "$chef_paused" =~ ^[0-9]{1,6}$ ]] || chef_paused=0
+  chef_total=$((10#$chef_inbox + 10#$chef_paused))
+  if [ "$chef_total" -gt 0 ]; then
+    chef_text="${YELLOW}chef ${chef_total}!${RESET}"
+  fi
+fi
+
 # Line 1: model only (leaves room for Claude Code's built-in right-side indicators
 # like effort, clipboard, MCP errors — which float on the first line by design)
 if [ -n "$MODEL" ]; then
@@ -361,6 +383,7 @@ if [ -n "$current_dir" ]; then
 fi
 
 [ -n "$account_line" ] && line2_parts+=("$account_line")
+[ -n "$chef_text" ] && line2_parts+=("$chef_text")
 
 if [ ${#line2_parts[@]} -gt 0 ]; then
   line2=""

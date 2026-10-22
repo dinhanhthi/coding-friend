@@ -1100,6 +1100,33 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     expect(classifyByRules("Bash", { command: "cf task" })).not.toBe("allow");
   });
 
+  it.each([
+    "status",
+    "status --json",
+    "inbox abcdefgh",
+    "show abcdefgh --json",
+  ])("allows read-only cf chef %s", (rest) => {
+    expect(classifyByRules("Bash", { command: `cf chef ${rest}` })).toBe(
+      "allow",
+    );
+  });
+
+  it.each([
+    "start ./plan --provider claude",
+    'say abcdefgh "go on"',
+    "stop abcdefgh",
+    "resume abcdefgh",
+    "_wake abcdefgh 3",
+  ])("does NOT allow cf chef %s (starts, steers or stops a chef)", (rest) => {
+    expect(classifyByRules("Bash", { command: `cf chef ${rest}` })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow bare cf chef", () => {
+    expect(classifyByRules("Bash", { command: "cf chef" })).not.toBe("allow");
+  });
+
   it("does NOT allow cf supervisor tick (starts agent processes)", () => {
     expect(classifyByRules("Bash", { command: "cf supervisor tick" })).not.toBe(
       "allow",

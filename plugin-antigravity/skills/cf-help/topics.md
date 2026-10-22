@@ -162,6 +162,7 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 | `cf project list` / `add [path]` / `remove <path>`           | Project registry (`~/.coding-friend/projects.json`)                                                                                                                                                         |
 | `cf task run <prompt>` / `list` / `show\|cancel <id>`        | Detached worker in its native OS sandbox (`--provider claude\|codex`, `--read-only`, `--no-fallback`); one writer/checkout                                                                                  |
 | `cf supervisor install\|uninstall\|status\|tick`             | Resume paused tasks whose runner is gone: `tick` adopts them; `install` = macOS launchd agent running `tick` every minute (`--label`); off macOS `install`/`uninstall` fail with a cron line to use instead |
+| `cf chef start\|say\|status\|inbox\|show\|stop\|resume`      | Read-only chef drives one plan (`--provider claude\|codex`, `--no-commit`): the tick wakes it, it dispatches tasks and commits checked changes without hooks; `inbox` = its questions and pauses            |
 | `cf ask <question>` / `reply <qid> <answer>`                 | Worker asks the user and waits (`--task`, `--timeout` 100s); `reply` answers (`--task`)                                                                                                                     |
 | `cf done --outcome succeeded\|failed --summary <s>`          | Worker ends its task (`--task`, `--handoff <path>`)                                                                                                                                                         |
 | `cf clean`                                                   | Sweep generated `docs/` files                                                                                                                                                                               |
@@ -171,9 +172,9 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 `cf host` is a hidden alias for `cf learn host`.
 
-`cf task`: workers are `claude -p` / `codex exec`, no daemon; store `~/.coding-friend/orchestrator/` (`CF_ORCHESTRATOR_DIR`). Only `cf task list|show` are auto-approved. On a provider quota the task goes `paused` (keeps its writer lease; `cf task cancel` frees it), then resumes at the reset or switches provider per `task.*` config; `--no-fallback` always waits for the same provider. A paused task whose runner died is adopted by `cf supervisor tick`.
+`cf task`: workers are `claude -p` / `codex exec`, no daemon; store `~/.coding-friend/orchestrator/` (`CF_ORCHESTRATOR_DIR`). Only `cf task list|show` and `cf chef status|inbox|show` are auto-approved. On a provider quota the task goes `paused` (keeps its writer lease; `cf task cancel` frees it), then resumes at the reset or switches provider per `task.*` config; `--no-fallback` always waits for the same provider. A paused task whose runner died is adopted by `cf supervisor tick`.
 
-`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list`, `config get|set|schema`, `project`, `task`, `supervisor`, `ask`, `reply`, `done`, `install`, `update --check`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
+`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list`, `config get|set|schema`, `project`, `task`, `supervisor`, `chef`, `ask`, `reply`, `done`, `install`, `update --check`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
 
 ---
 

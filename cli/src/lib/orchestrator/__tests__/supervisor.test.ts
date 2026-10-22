@@ -38,11 +38,13 @@ import {
 } from "../supervisor.js";
 import {
   chefDir,
+  chefStatus,
   claimWake,
   createChef,
   listWakes,
   recordEvent,
   recordMessage,
+  recordWakeResult,
   recordWakeRunner,
 } from "../chef-store.js";
 import { pendingEvents } from "../chef-triggers.js";
@@ -264,7 +266,7 @@ describe("tickChefs", () => {
       JSON.stringify({ chef: { enabled } }),
     );
 
-  function newChef(minWakeMinutes = 0): string {
+  function newChef(minWakeMinutes = 0, maxWakesPerDay = 48): string {
     const id = newId();
     createChef({
       id,
@@ -278,7 +280,7 @@ describe("tickChefs", () => {
       sessionUuid: "123e4567-e89b-12d3-a456-426614174000",
       limits: {
         minWakeMinutes,
-        maxWakesPerDay: 48,
+        maxWakesPerDay,
         maxTasksPerWake: 3,
         maxConcurrentTasks: 2,
         schedule: [],
@@ -372,6 +374,26 @@ describe("tickChefs", () => {
     setLocal(false);
     tick();
     expect(wakesSpawned(id)).toEqual(["1"]);
+  });
+
+  it("daily wake cap: the tick pauses the chef and refreshes summary.json for the statusline", () => {
+    const id = newChef(0, 1);
+    claimWake(id, 1);
+    recordWakeResult(id, 1, { outcome: "ok", consumed: [], rejected: 0 });
+
+    expect(
+      tickChefs({
+        now: Math.floor(Date.now() / 1000) + 60, // after wake 1 finished (real clock)
+        spawn: fakeSpawn as unknown as typeof spawn,
+        ps: () => null,
+      }).paused,
+    ).toEqual([id]);
+    expect(fakeSpawn).not.toHaveBeenCalled();
+    expect(chefStatus(id).state).toBe("paused");
+    const summary = JSON.parse(
+      readFileSync(join(orch, "chefs", "summary.json"), "utf-8"),
+    );
+    expect(summary).toMatchObject({ paused: 1, inbox: 0 });
   });
 
   it.each([

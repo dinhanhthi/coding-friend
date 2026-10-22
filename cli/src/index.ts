@@ -485,6 +485,87 @@ taskCmd
     await taskCancelCommand(id, opts);
   });
 
+const chefCmd = program
+  .command("chef")
+  .description(
+    "Let a chef (Claude or Codex) drive a plan through worker tasks",
+  );
+
+chefCmd
+  .command("start <plan-dir>")
+  .description("Start a chef for a plan in the current (clean) checkout")
+  .option("--provider <name>", "Chef CLI: claude or codex")
+  .option("--no-commit", "Never commit: the chef only dispatches tasks")
+  .option("--json", "Output a JSON envelope")
+  .action(async (planDir: string, opts) => {
+    const { chefStartCommand } = await import("./commands/chef.js");
+    await chefStartCommand(planDir, opts);
+  });
+
+chefCmd
+  .command("say <id> <message>")
+  .description("Send the chef a message (it wakes at a coming tick)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, message: string, opts) => {
+    const { chefSayCommand } = await import("./commands/chef.js");
+    await chefSayCommand(id, message, opts);
+  });
+
+chefCmd
+  .command("status [id]")
+  .description("Show the state of one chef or of every chef")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string | undefined, opts) => {
+    const { chefStatusCommand } = await import("./commands/chef.js");
+    await chefStatusCommand(id, opts);
+  });
+
+chefCmd
+  .command("inbox [id]")
+  .description("List chef questions and pauses that need you")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string | undefined, opts) => {
+    const { chefInboxCommand } = await import("./commands/chef.js");
+    await chefInboxCommand(id, opts);
+  });
+
+chefCmd
+  .command("show <id>")
+  .description("Show a chef's decisions, tasks, commits and progress")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefShowCommand } = await import("./commands/chef.js");
+    await chefShowCommand(id, opts);
+  });
+
+chefCmd
+  .command("stop <id>")
+  .description("Stop a chef and free its checkout (its tasks keep running)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefStopCommand } = await import("./commands/chef.js");
+    await chefStopCommand(id, opts);
+  });
+
+chefCmd
+  .command("resume <id>")
+  .description(
+    "Resume a paused chef with a new baseline (no clean checkout needed)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefResumeCommand } = await import("./commands/chef.js");
+    await chefResumeCommand(id, opts);
+  });
+
+chefCmd
+  .command("_wake <id> <n>", { hidden: true })
+  .description("Internal: one chef wake")
+  .action(async (id: string, n: string) => {
+    const { chefWakeCommand } = await import("./commands/chef.js");
+    await chefWakeCommand(id, n);
+  });
+
 const supervisorCmd = program
   .command("supervisor")
   .description("Resume paused tasks in the background (launchd on macOS)");
@@ -798,14 +879,15 @@ dev
 
 // Post-command: check for CLI updates (cached, 24h TTL)
 // Skips for 'update' command (handles its own), worker commands (stdout is
-// captured by the worker's shell), the hidden task runner, the supervisor
-// tick (run by launchd), --json runs, and
+// captured by the worker's shell), the hidden task runner and chef wake,
+// the supervisor tick (run by launchd), --json runs, and
 // version/help flags
 program.hook("postAction", async (_this, actionCommand) => {
   if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
   if (["update", "ask", "reply", "done"].includes(topCmd)) return;
   if (topCmd === "task" && process.argv[3] === "_run") return;
+  if (topCmd === "chef" && process.argv[3] === "_wake") return;
   if (topCmd === "supervisor" && process.argv[3] === "tick") return;
 
   const { checkAndNotifyCliUpdate } = await import("./lib/update-check.js");

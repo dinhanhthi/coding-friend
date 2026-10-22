@@ -936,11 +936,19 @@ const CF_CONFIG_SAFE_SUBCOMMANDS = new Set(["get", "schema"]);
 const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
 
 /**
+ * `cf chef` subcommands safe to auto-approve (read-only). `start`, `say`,
+ * `stop`, `resume` and the internal `_wake` start, steer or stop a chef, so
+ * they are excluded. Bare `cf chef` is not approved either.
+ */
+const CF_CHEF_SAFE_SUBCOMMANDS = new Set(["status", "inbox", "show"]);
+
+/**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
  *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand,
- *     `cf task` only with a CF_TASK_SAFE_SUBCOMMANDS subcommand)
+ *     `cf task` only with a CF_TASK_SAFE_SUBCOMMANDS subcommand,
+ *     `cf chef` only with a CF_CHEF_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -952,6 +960,7 @@ function isCodingFriendBash(trimmed) {
     if (subcommand === "config" && nestedSub !== undefined)
       return CF_CONFIG_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "task") return CF_TASK_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "chef") return CF_CHEF_SAFE_SUBCOMMANDS.has(nestedSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 

@@ -271,6 +271,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /compgen -W "install uninstall status tick"/,
         /compgen -W "--label --json"/,
         /compgen -W "--provider --read-only --no-fallback --json"/,
+        /local commands="[^"]*\bchef\b/,
+        /compgen -W "start say status inbox show stop resume"/,
+        /compgen -W "--provider --no-commit --json"/,
+        /"\$\{COMP_WORDS\[1\]\}" == "chef" \|\|/,
       ],
     },
     {
@@ -290,6 +294,11 @@ describe("completion blocks list the machine-callable commands", () => {
         /'tick:/,
         /--label\[/,
         /--no-fallback\[/,
+        /'chef:/,
+        /'inbox:/,
+        /'resume:/,
+        /--no-commit\[/,
+        /"\$\{words\[2\]\}" == "chef" \|\|/,
       ],
     },
     {
@@ -309,6 +318,12 @@ describe("completion blocks list the machine-callable commands", () => {
         /__fish_seen_subcommand_from supervisor" -a tick /,
         /__fish_seen_subcommand_from install uninstall status" -l label /,
         /__fish_seen_subcommand_from run" -l no-fallback /,
+        /__fish_use_subcommand" -a chef /,
+        /__fish_seen_subcommand_from chef" -a inbox /,
+        /__fish_seen_subcommand_from chef" -a resume /,
+        /__fish_seen_subcommand_from start" -l provider /,
+        /__fish_seen_subcommand_from start" -l no-commit /,
+        /task supervisor chef" -l json /,
       ],
     },
     {
@@ -328,6 +343,10 @@ describe("completion blocks list the machine-callable commands", () => {
         /\$supervisorSubcommands = @\('install','uninstall','status','tick'\)/,
         /@\('--label','--json'\)/,
         /'--no-fallback'/,
+        /\$commands = @\([^)]*'chef'/,
+        /\$chefSubcommands = @\('start','say','status','inbox','show','stop','resume'\)/,
+        /@\('--provider','--no-commit','--json'\)/,
+        /'supervisor','chef'\) -contains/,
       ],
     },
   ];
@@ -340,6 +359,8 @@ describe("completion blocks list the machine-callable commands", () => {
       ensureShellCompletion({ silent: true });
       const content = readFileSync(join(testDir, ...c.file), "utf-8");
       for (const p of c.patterns) expect(content).toMatch(p);
+      // `cf chef _wake` is internal: never offered by completion.
+      expect(content).not.toMatch(/_wake/);
     });
   }
 });

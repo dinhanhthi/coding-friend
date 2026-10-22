@@ -169,10 +169,18 @@ cf supervisor install    # Install the launchd agent that adopts paused tasks (m
 cf supervisor uninstall  # Remove the launchd agent
 cf supervisor status     # Agent, last tick and paused tasks
 cf supervisor tick       # One supervisor pass (what launchd runs every minute)
+cf chef start <plan-dir> --provider claude|codex [--no-commit]
+                     # Start a chef for a plan in this clean checkout (see Chef)
+cf chef say <id> "<message>"  # Send the chef a message (also answers its questions)
+cf chef status [id]  # State of one chef or of every chef
+cf chef inbox [id]   # Chef questions, pauses and quota waits that need you
+cf chef show <id>    # Decisions, tasks, commits and plan notes of a chef
+cf chef stop <id>    # Stop a chef and free its checkout (its tasks keep running)
+cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list`, `cf config get|set|schema`, `cf project list|add|remove`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf install` and `cf update --check`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list`, `cf config get|set|schema`, `cf project list|add|remove`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install` and `cf update --check`. See [Machine interface](#machine-interface).
 
 ## Machine interface
 
@@ -187,7 +195,7 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 
 | Code                   | Meaning                                                                                                         |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `USAGE`                | Unknown command/option or missing argument (commander usage error)                                              |
+| `USAGE`                | Unknown command/option or missing argument; also `cf chef start` and `resume` refusals                          |
 | `INVALID_ARGS`         | Bad flag combination or argument (e.g. invalid config key)                                                      |
 | `INVALID_VALUE`        | Value fails validation, or a config/registry file is unreadable                                                 |
 | `NOT_FOUND`            | Path, registry entry or required tool (e.g. `claude`) not found                                                 |
@@ -196,9 +204,9 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 | `COMMAND_FAILED`       | An underlying command or process failed                                                                         |
 | `MEMORY_BUILD_FAILED`  | The memory MCP server could not be built                                                                        |
 | `UNEXPECTED_EXIT`      | Process exited before producing a result                                                                        |
-| `LEASE_HELD`           | Another writer task is running in this checkout                                                                 |
+| `LEASE_HELD`           | Another writer task is running in this checkout, it already has a chef, or a chef wake is running               |
 | `ASK_TIMEOUT`          | `cf ask` got no answer in time; run the same command again                                                      |
-| `ALREADY_FINISHED`     | Task is already done or cancelled, or the question already answered                                             |
+| `ALREADY_FINISHED`     | Task is already done or cancelled, the question already answered, or the chef already stopped                   |
 | `PROVIDER_UNAVAILABLE` | Provider CLI not on PATH, no worker sandbox (native Windows), or no launchd (`cf supervisor install` off macOS) |
 | `INTERNAL`             | Any other unexpected error                                                                                      |
 
@@ -223,7 +231,7 @@ The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes
 - **Sandbox.** Claude runs as `claude -p` with its native sandbox passed per call: enabled, fail if unavailable, no unsandboxed retries. A writer may write the checkout and its own `tasks/<id>/`. A read-only Claude task has Edit/Write disabled and writes to the checkout denied. Codex runs `codex exec` with a permission profile passed per call (`default_permissions`), based on `:workspace` (writer) or `:read-only`: the store is read-only and only the task's own `tasks/<id>/` is writable, even when the store is under `/tmp`. Your Claude/Codex settings and hooks are never changed.
 - **Requirements.** macOS or Linux. Writer tasks and every Codex task must run inside a git repo. The provider CLI (`claude`, or `codex` 0.161.0 or newer) must be logged in and on `PATH` (missing or too old → `PROVIDER_UNAVAILABLE`).
 - **What is stored.** No transcripts and no event logs: the prompt, the worker's questions and your answers, the `cf done` summary and handoff, the session/thread id (plus the Claude transcript path), the result (exit code, outcome, error) and the worker's last message (cut at 4 KB). Worker text is shown as untrusted output, control characters stripped.
-- **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show`. `cf ask`, `cf done`, `cf reply`, `cf task run` and `cf task cancel` are not.
+- **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
 
 ### Quota handling
 
@@ -291,7 +299,7 @@ cf supervisor tick [--json]                         # one pass; works on any pla
 - `StandardOutPath` and `StandardErrorPath`: `<store>/supervisor/tick.log`.
 - `EnvironmentVariables`: only `PATH` (your shell's, captured at install) and `CF_ORCHESTRATOR_DIR` (the store, captured at install).
 
-What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), then looks only at paused tasks whose latest runner is dead. It re-checks the task file against its recorded digest, decides the next step with the same rules as the runner, and, once the wait is over, claims the next attempt and starts a new detached runner for it. Tasks with a live runner and tasks started before this feature are never touched. Overlapping ticks cannot start two runners for the same attempt. A tick is stopped by a watchdog after 45 seconds.
+What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), then looks only at paused tasks whose latest runner is dead. It re-checks the task file against its recorded digest, decides the next step with the same rules as the runner, and, once the wait is over, claims the next attempt and starts a new detached runner for it. Tasks with a live runner and tasks started before this feature are never touched. Overlapping ticks cannot start two runners for the same attempt. Then, unless `chef.enabled` is `false` in the global config, it runs the chef pass: it records trigger events and starts a detached wake for each chef that has one pending (see [Chef](#chef)). A tick is stopped by a watchdog after 45 seconds.
 
 `cf supervisor status` prints the agent state (plist, loaded or not), the heartbeat age and `paused: N (M orphaned)`, where orphaned means no live runner.
 
@@ -300,6 +308,110 @@ What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), 
 - **Reinstall after changes.** After upgrading Node (for example with nvm) or `cf`, or installing a provider CLI that changes your `PATH`, run `cf supervisor install` again. `status` warns when a path in the plist no longer exists.
 - **Sessions.** `install` needs a logged-in GUI session; over SSH into a machine with nobody logged in, launchctl may refuse it.
 - **Login Items.** macOS lists the agent under System Settings > General > Login Items under the name of whoever signed your `node` binary (for example "Node.js Foundation" for the official installer, or just "node") and may notify you when it is added. If it is switched off there, launchd stops running the tick without any error; `cf supervisor status` then shows `loaded: no` and an old heartbeat. Switch it back on, or run `cf supervisor install` again.
+
+### Chef
+
+A chef is a read-only Claude Code or Codex session that drives one plan in one checkout. It never edits files: each time the [supervisor](#supervisor) tick wakes it, it reads a digest written by Coding Friend (and the checkout, by absolute path) and answers with structured actions: dispatch a worker task, answer a worker's question, ask you, commit, pause or note. Coding Friend checks every action against fixed rules, then runs it.
+
+```bash
+cd ~/code/my-app                      # run from inside the checkout
+cf chef start docs/plans/my-feature --provider claude   # prints the chef id
+cf chef status                        # state, wakes, running tasks, inbox count
+cf chef inbox                         # questions, pauses and quota waits that need you
+cf chef say <id> "Skip task 3, it is done"   # talk to the chef or answer its question
+cf chef show <id>                     # decisions, tasks, commits, plan notes
+cf chef resume <id>                   # after a pause
+cf chef stop <id>
+```
+
+**Start.** The checkout is the git top-level of the current directory, so run `cf chef start` from inside it. `<plan-dir>` (relative to the current directory, or absolute) must resolve to a directory strictly inside the checkout. Start refuses, and creates nothing, when:
+
+- the directory is not a git checkout, HEAD is detached, or the store is inside the checkout (`USAGE`);
+- the plan dir does not exist (`NOT_FOUND`) or is outside the checkout;
+- the checkout already has a chef, even for another plan (`LEASE_HELD`; of two concurrent starts only one wins);
+- the checkout is not clean: any change against HEAD (staged or not), untracked files that are not ignored, or anything Coding Friend cannot hash (a FIFO or socket, a nested git repo, an unsafe path name). Commit or stash first. A checkout too big to fingerprint (over 50,000 paths or 512 MiB) is refused too (`COMMAND_FAILED`);
+- `PATH` has an empty or relative entry, `git` or the chosen provider is not on `PATH`, or `git`, `claude` or `codex` resolves inside the checkout, where a task could replace it;
+- the provider cannot run a chef (`PROVIDER_UNAVAILABLE`): Claude Code older than 2.1.248 or whose `claude --help` lacks `--safe-mode` or `--add-dir`, Codex older than 0.161.0, or native Windows;
+- there is no git identity: `user.name` and `user.email` (or `author.*` and `committer.*`) must be set in `~/.gitconfig` or the repo config. Chef git calls ignore `XDG_CONFIG_HOME` (so `~/.config/git/config` is not read) and every `GIT_*` variable.
+
+Start pins what every wake uses: the git dir (read from `.git` in Node), the branch and its sha, the absolute paths of `git`, `claude` and `codex` found on `PATH`, the `chef.*` limits and `task.*` policy, the active hooks, and a baseline (a fingerprint of the clean tree plus snapshots of the repo guard and steering files, see below). It warns when `commit.gpgSign` is true or filter drivers are configured, since those commits will be refused (consider `--no-commit`), and suggests `cf supervisor install` when no tick ran in the last 3 minutes.
+
+**Wakes.** There is no daemon. The tick (every minute under launchd, or `cf supervisor tick` by hand) records trigger events, each fired once, and starts a detached wake (`cf chef _wake <id> <n>`) for a chef with one pending:
+
+- the start itself (the first wake);
+- a chef task ended (succeeded, failed, cancelled or interrupted), asked a question with `cf ask`, or was resumed or switched provider after a quota;
+- a `cf chef say` message;
+- a `chef.schedule` slot (`HH:MM`, local time; only the latest due slot of the day);
+- the chef's own quota reset (see below);
+- a wake that had rejected actions, so the chef sees why in the next digest;
+- a commit CF made for the chef, so it plans the next step or reports the plan done.
+
+A wake never runs in the checkout: its working directory is an empty directory in the store. Claude runs as `claude -p --restricted --safe-mode --add-dir <checkout> --tools Read Grep Glob` (no CLAUDE.md, skills, plugins, hooks or MCP), Codex as `codex exec` with a read-only permission profile; each wake resumes the previous session. Before the chef runs, the wake compares the working tree with the last known state and checks the guards, then writes the digest: goal, events, tasks, pending questions, limits, what the commit gate still needs, hooks, and then worker and user text as untrusted, fenced data. A wake is killed after 15 minutes. Its result is written once, before its actions run, so a wake that dies is never replayed; a failed or quota wake consumes no event, so they wait for the next wake.
+
+A Claude chef keeps the system prompt of its first wake for its whole session: after upgrading `cf`, a running chef keeps the old contract until you stop it and start a new one.
+
+**Limits.** Read once at `cf chef start` from the merged config (global, then the local config of the current directory) and stored with the chef; later changes do not affect it. `chef.enabled` is the exception (see below).
+
+| Key                       | Values                               | Default |
+| ------------------------- | ------------------------------------ | ------- |
+| `chef.enabled`            | boolean, global config only, live    | `true`  |
+| `chef.commit`             | boolean                              | `true`  |
+| `chef.notify`             | boolean (macOS notifications)        | `true`  |
+| `chef.schedule`           | list of `"HH:MM"` (24 h, local time) | `[]`    |
+| `chef.minWakeMinutes`     | integer >= 1                         | `5`     |
+| `chef.maxWakesPerDay`     | integer >= 1                         | `48`    |
+| `chef.maxTasksPerWake`    | integer >= 1                         | `3`     |
+| `chef.maxConcurrentTasks` | integer >= 1                         | `2`     |
+
+```bash
+cf config set chef.schedule '["09:00","18:00"]' --global
+cf config set chef.enabled false --global    # kill switch for every chef
+```
+
+- `minWakeMinutes` is the gap after the end of the last wake; events wait, they are not dropped.
+- `maxWakesPerDay` counts wakes in a sliding 24-hour window (wakes that ended on the chef's quota are not counted); reaching it pauses the chef.
+- Dispatches over `maxTasksPerWake` or `maxConcurrentTasks` (running tasks included) are rejected, and only one writer or check task runs at a time. A wake has at most 20 actions and one commit. Rejected actions are reported in the next digest; 3 wakes in a row with rejected actions pause the chef.
+- `chef.enabled` is read only from the global config (`~/.coding-friend/config.json`), never from a project, and on every use: when it is `false`, ticks wake no chef and a running wake skips its remaining dispatches and commits.
+
+**Tasks.** The chef's tasks are ordinary `cf task` workers in its checkout (`cf task list|show|cancel` work on them), with the `task.*` quota policy captured at start. Role `writer` and `check` tasks take the writer lease, `other` tasks are read-only. Each prompt starts with a Coding Friend line telling the worker not to run `git commit`, `git add` or any git command that changes the repository, and not to edit the plan folder. A worker's `cf ask` wakes the chef, which may answer it.
+
+**Commits.** Coding Friend makes the commit, never the chef or a worker, and only when the commit gate passes:
+
+- commits are on (`chef.commit` and no `--no-commit`);
+- no writer or check task is running;
+- the latest writer succeeded and was dispatched after the latest baseline (start or resume);
+- a check task dispatched after that writer passed. A check passes by outcome, not by its role: it succeeded and left tracked files and non-ignored untracked files exactly as they were (ignored build output and caches may change);
+- the working tree is still what the writer left;
+- every path is one of the changed paths, inside the checkout, not under `.git` and not a steering path; the message is one line of at most 100 characters.
+
+The commit is built with git plumbing from bytes Coding Friend read and hashed itself: `hash-object --no-filters`, `update-index` in a temporary index, `commit-tree --no-gpg-sign`, then a compare-and-swap `update-ref` of the branch; the real index is then updated for those paths. Coding Friend never runs `git add`, `git commit`, `git status` or any other git command that reads the working tree, because a writer can plant filters, fsmonitor settings or hooks there. It never pushes or creates a branch.
+
+**Hooks do not run.** Chef commits skip every repository hook. The hooks found at start (the files in `core.hooksPath`, or in `.git/hooks` without it) are listed in the digest, and the chef is told to dispatch a writer task that does what they would do (for example `npm run build:*` to regenerate generated files) and to include the generated paths in the commit. A hook that only checks (lint, tests) can be run as a check task.
+
+**Refused commits.** A commit that would differ from what `git add` and `git commit` make is refused: `commit.gpgSign` is true, a path has a `filter` (Git LFS included), `ident` or `working-tree-encoding` attribute, content has CRLF that git would convert (`text`, `eol` or `crlf` attributes, or `core.autocrlf`), a path is a gitlink (submodule), or a change is only in the index. A refused or failed commit goes to `cf chef inbox` and pauses the chef. For such repos, start with `--no-commit`: the chef still dispatches and checks, and you commit.
+
+**Steering guard.** Files that steer agents or git can never be committed by a chef, and a change to them pauses it: the plan dir, the root `CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` and `.gitmodules`, `.githooks/`, the repo hooks dir when inside the checkout, every `.gitattributes`, and `.git/info/attributes`. A repo guard does the same for the git config (every scope, so editing `~/.gitconfig` pauses the chef too), the `.git` entry and git dir, hook files and `info/exclude`. Not watched: `.claude/**`, and `CLAUDE.md` or `AGENTS.md` in subdirectories (the chef never loads them: `--safe-mode`, or Codex from an empty directory); tasks may change and commit those. The walk skips `node_modules/` and nested git repositories, and more than 2,000 steering files, 32 MiB or 500,000 directory entries pauses the chef. Dispatch prompts asking to edit a steering path are also rejected, by a text heuristic (a sentence that forbids it, such as "do not edit CLAUDE.md", passes).
+
+**Pause and resume.** A chef pauses itself (a `pause` action), or Coding Friend pauses it when: the working tree changed while no chef writer or check task was running (your own edits included), a guard changed, a commit was refused or failed, the daily cap was reached, or 3 wakes in a row had rejected actions. A paused chef is not woken. `cf chef resume <id>`:
+
+- does not need a clean checkout, unlike `start`. It takes the current state as the new baseline: the current sha of the chef's branch (`refs/heads/<branch>`, so commits you made yourself are accepted) as the known HEAD, a new fingerprint (uncommitted changes included) and new guard snapshots. It also resets the rejected-wake count;
+- refuses when HEAD is not on the branch recorded at start (`USAGE`), or while a wake is running (`LEASE_HELD`: wait for it to end);
+- does not relax the commit gate: only a writer dispatched after the resume, then a passing check, can lead to a commit, so changes you left uncommitted are never committed without them;
+- only applies to a paused chef (`USAGE` otherwise). If you change the checkout under an active chef, its next wake pauses it; then resume it to accept your changes.
+
+**Chef quota.** When the chef's own provider hits its usage limit, the wake ends with outcome `quota` and the chef shows `quota-wait`; it never switches provider. The next wake comes 60 seconds after the reset (30 minutes after the hit when the reset time is unknown), resumes the same session and carries every event that waited. The chef's worker tasks follow [Quota handling](#quota-handling).
+
+**Plan progress.** The plan belongs to you: the chef never edits it and tasks are told not to. Progress lives in the store, as the chef's decisions: `cf chef show` lists its notes with their wake number, then its dispatches, commits and questions. Update the plan files yourself; this is a steering change, so the chef pauses, and `cf chef resume` makes the new plan its baseline.
+
+**Inbox, notifications, statusline.** `cf chef inbox` lists the chef's questions since your last `say` or `resume`, the reason of a pause, and quota waits; stopped chefs are left out. A finished plan has no special item: the chef's contract tells it to report it with a question and a pause. Answer with `cf chef say <id> "<answer>"`. On macOS, with `chef.notify` on, a question or pause from a wake also shows a notification. The statusline shows `chef N!` (N = unseen questions plus paused chefs), read from `<store>/chefs/summary.json`; nothing is shown when N is 0.
+
+**Stop.** `cf chef stop <id>` stops the wakes and frees the checkout, so another chef can start there. It does not cancel the chef's running tasks: it lists them with the `cf task cancel <id>` to run. A stopped chef cannot be messaged or resumed (`ALREADY_FINISHED`, also on a second `stop`).
+
+**launchd PATH.** Wakes run in the tick's minimal environment. The chef itself uses the `git` and provider paths pinned at start, but its worker tasks find `claude` and `codex` on the tick's `PATH`, captured at `cf supervisor install`. Install the supervisor from a shell whose `PATH` has the providers, and run it again when that changes.
+
+**Store.** Each chef has `<store>/chefs/<id>/` (`chef.json`, wakes, events, decisions, tasks, commits, questions, messages, pauses, resumes) and holds `<store>/chefs/by-checkout/<sha256>.json` for its checkout. Workers cannot write there: Claude workers are denied `chefs/` and Codex workers get the store read-only.
+
+**`--json`.** Every `cf chef` command takes `--json`. `status` returns one view (`id`, `state` `active|paused|stopped|quota-wait`, `reason`, `wakes`, `lastWake`, `runningTasks`, `inbox`, ...) with an id and an array of views without; `inbox` returns items with `kind` `ask`, `paused` or `quota`; `start` returns `chefId`, `branch`, `headAtStart`, `commit` and `warnings`.
 
 ### Known limitations
 
@@ -311,7 +423,8 @@ What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), 
 - Quota signal shapes are partly unverified against real runs: Claude's `rate_limit_event` `resetsAt` was seen in seconds (a value above 1e12 is still read as milliseconds), but a real `rejected` event and the exact text and time format of Codex's usage-limit message were only tested with recorded or injected samples. If a provider changes them, a quota hit shows up as a normal failure instead of a pause.
 - There is no check before a run: a task starts even if the provider is already out of quota, and only reacts once the worker hits the limit.
 - `cf supervisor install` supports macOS (launchd) only; elsewhere use the cron line it prints.
-- There is no general scheduler: the only background work is adopting paused tasks.
+- Chefs: Coding Friend cannot tell your edits from a worker's, so editing the checkout while a chef has no writer or check running pauses it (`cf chef resume` accepts the changes). Hooks never run on chef commits, and repos with filters (Git LFS), CRLF conversion, `commit.gpgSign` or changed submodules need `--no-commit`. The steering prompt check is a text heuristic; the guards and the commit path rules are what enforce it. A Codex chef also receives your own `~/.codex/AGENTS.md` (Codex has no switch to skip it): keep it free of rules that conflict with the chef contract, or use a Claude chef.
+- There is no general scheduler: the only background work is adopting paused tasks and waking chefs (`chef.schedule` slots are chef triggers, not jobs).
 
 ## 🐳 CLI Development
 

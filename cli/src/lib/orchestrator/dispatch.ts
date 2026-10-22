@@ -53,7 +53,7 @@ function realpathOfNearestAncestor(path: string): string {
  * A store inside the checkout is either unwritable (Claude read-only sandbox)
  * or writable by the worker beyond its own task dir (writers' cwd).
  */
-function assertStoreOutsideCheckout(checkout: string): void {
+export function assertStoreOutsideCheckout(checkout: string): void {
   const store = realpathOfNearestAncestor(orchestratorDir()); // checkout is a realpath too
   const rel = relative(checkout, store);
   if (

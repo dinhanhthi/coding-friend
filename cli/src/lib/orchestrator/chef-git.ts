@@ -1,6 +1,7 @@
 import { spawnSync } from "child_process";
 import { createHash, randomBytes } from "crypto";
 import {
+  accessSync,
   closeSync,
   constants,
   type Dirent,
@@ -11,6 +12,7 @@ import {
   readlinkSync,
   readSync,
   realpathSync,
+  statSync,
   type Stats,
   unlinkSync,
 } from "fs";
@@ -848,6 +850,84 @@ function commonDir(gitDir: string): string {
   if (bytes.kind !== "file") return gitDir;
   const rel = bytes.bytes.toString("utf-8").trim();
   return rel ? resolve(gitDir, rel) : gitDir;
+}
+
+/** What `cf chef start` reads from the repo config (hardened env). */
+export interface StartConfigFacts {
+  /** Repo core.hooksPath as an absolute realpath (best effort), or null. */
+  hooksPath: string | null;
+  /**
+   * Hooks that would run: non-`.sample` executable regular files of the
+   * active hooks dir, or symlinks to one (names only).
+   */
+  hookFiles: string[];
+  /** Identity keys `commit-tree` cannot resolve (author/committer name/email). */
+  missingIdentity: string[];
+  /** Effective commit.gpgSign. */
+  gpgSign: boolean;
+  /** Filter drivers set in config (`filter.<name>.clean|smudge|process`). */
+  filterDrivers: string[];
+}
+
+/**
+ * Config facts for `cf chef start`, from the same hardened `config --list`
+ * every chef git call sees (no XDG_CONFIG_HOME, no GIT_* identity env), so
+ * an identity found here is the one `commit-tree` uses.
+ */
+export function readStartConfig(ctx: GitCtx): StartConfigFacts {
+  const { entries } = readConfig(ctx);
+  const value = (key: string) => configValue(entries, key)?.trim() || "";
+  const missingIdentity: string[] = [];
+  for (const who of ["author", "committer"]) {
+    for (const what of ["name", "email"]) {
+      if (!value(`${who}.${what}`) && !value(`user.${what}`)) {
+        missingIdentity.push(`${who}.${what} (user.${what})`);
+      }
+    }
+  }
+  const raw = repoHooksPath(ctx, entries);
+  let hooksPath: string | null = null;
+  if (raw) {
+    try {
+      hooksPath = realpathSync.native(raw);
+    } catch {
+      hooksPath = resolve(raw);
+    }
+  }
+  const dir = hooksPath ?? join(commonDir(ctx.gitDir), "hooks");
+  let hookFiles: string[] = [];
+  try {
+    hookFiles = readdirSync(dir)
+      .filter((name) => !name.endsWith(".sample"))
+      .filter((name) => {
+        const p = join(dir, name);
+        try {
+          const st = lstatSync(p);
+          const file =
+            st.isFile() || (st.isSymbolicLink() && statSync(p).isFile());
+          if (!file) return false;
+          accessSync(p, constants.X_OK);
+          return true;
+        } catch {
+          return false;
+        }
+      })
+      .sort();
+  } catch {
+    // no hooks dir: no hooks
+  }
+  const drivers = new Set<string>();
+  for (const e of entries) {
+    const m = /^filter\.(.+)\.(clean|smudge|process)$/.exec(e.key);
+    if (m) drivers.add(clip(m[1]));
+  }
+  return {
+    hooksPath,
+    hookFiles,
+    missingIdentity,
+    gpgSign: configBool(configValue(entries, "commit.gpgsign"), false),
+    filterDrivers: [...drivers].sort(),
+  };
 }
 
 // ─── reading the working tree ───────────────────────────────────────────

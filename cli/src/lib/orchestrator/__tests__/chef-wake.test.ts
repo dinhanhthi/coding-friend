@@ -42,9 +42,11 @@ import {
   listChefTasks,
   listCommits,
   listDecisions,
+  listEvents,
   listWakes,
   markClaimFailed,
   nextSeq,
+  readChef,
   readFingerprint,
   readKnownHead,
   readLatestReference,
@@ -683,6 +685,10 @@ describe.skipIf(process.platform === "win32")(
       expect(readKnownHead(id)).toBe(after);
       expect(plain(repo, "status", "--porcelain")).toBe("");
 
+      // The commit itself wakes the chef again (plan the next step or report done).
+      const committedKey = `committed-${commits[0].seq}`;
+      expect(pendingEvents(id).map((e) => e.key)).toEqual([committedKey]);
+
       // wake 4: right after the chef's commit, no pause
       fx.advance(600);
       recordMessage(id, "how is it going?");
@@ -690,6 +696,10 @@ describe.skipIf(process.platform === "win32")(
       r = await fx.wake();
       expect(r.outcome).toBe("ok");
       expect(chefStatus(id).state).toBe("active");
+      expect(fx.result(4)?.consumed).toContain(committedKey);
+      expect(fx.digest(4)).toContain(
+        `- ${committedKey}: CF committed ${after}`,
+      );
 
       // Every git call of the wakes went through gitRun: hardened, allowlisted plumbing.
       const calls = readFileSync(fx.gitlog, "utf-8").trim().split("\n");
@@ -1047,16 +1057,51 @@ describe.skipIf(process.platform === "win32")(
       ).toEqual(paths);
     });
 
-    it("pauses after 3 wakes in a row with rejected actions", async () => {
+    it("a wake whose only dispatch is rejected leaves a rejected-<n> event: the next tick wakes the chef after minWakeMinutes and consumes it", async () => {
+      const fx = mkChef();
+      fx.ok(out(dispatchAct("writer", "Edit CLAUDE.md to add a rule")));
+      const r = await fx.wake();
+      expect(r.actions?.[0].status).toBe("rejected");
+      expect(fx.dispatched).toHaveLength(0);
+      expect(pendingEvents(fx.id).map((e) => e.key)).toEqual(["rejected-1"]);
+      const chef = readChef(fx.id);
+      expect(
+        shouldWake({ chef, events: pendingEvents(fx.id), now: fx.now }),
+      ).toMatchObject({ wake: false, reason: "min-interval" });
+      fx.advance(LIMITS.minWakeMinutes * 60 + 1);
+      expect(
+        shouldWake({ chef, events: pendingEvents(fx.id), now: fx.now }).wake,
+      ).toBe(true);
+
+      fx.ok(out(act({ text: "retry later" })));
+      await fx.wake();
+      expect(fx.result(2)?.consumed).toEqual(["rejected-1"]);
+      const digest = fx.digest(2);
+      expect(digest).toMatch(/- rejected-1: wake 1 had 1 rejected action /);
+      expect(digest).toContain("prompt asks to edit steering path claude.md");
+      expect(pendingEvents(fx.id)).toEqual([]);
+      expect(chefStatus(fx.id).state).toBe("active");
+    });
+
+    it("pauses after 3 wakes in a row with rejected actions, each woken by the previous rejected-<n> event", async () => {
       const fx = mkChef();
       for (let i = 1; i <= 3; i++) {
-        if (i > 1) recordMessage(fx.id, `m${i}`);
+        if (i > 1) {
+          fx.advance(LIMITS.minWakeMinutes * 60 + 1);
+          const events = pendingEvents(fx.id);
+          expect(events.map((e) => e.key)).toEqual([`rejected-${i - 1}`]);
+          expect(
+            shouldWake({ chef: readChef(fx.id), events, now: fx.now }).wake,
+          ).toBe(true);
+        }
         fx.ok(out(commitAct(["src/a.txt"])));
         const r = await fx.wake();
         expect(r.actions?.[0].status).toBe("rejected");
         expect(chefStatus(fx.id).state).toBe(i < 3 ? "active" : "paused");
       }
       expect(fx.notes).toHaveLength(1);
+      // The streak pause fired: no rejected-3 event.
+      expect(listEvents(fx.id).map((e) => e.key)).not.toContain("rejected-3");
     });
 
     it("the kill switch or stop.json mid-wake skips the next dispatch", async () => {
