@@ -25,7 +25,7 @@ function truncate(text: string, max: number): string {
 }
 
 /** A fence longer than any backtick run in `text`, so content cannot close it. */
-function fence(text: string, info = ""): string {
+export function fence(text: string, info = ""): string {
   const longest = Math.max(
     0,
     ...(text.match(/`+/g) ?? []).map((run) => run.length),

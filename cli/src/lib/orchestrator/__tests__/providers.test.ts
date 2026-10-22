@@ -1,13 +1,43 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+} from "vitest";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { notifyUser, type NotifyExecFile } from "../../notify.js";
+import { CHEF_OUTPUT_SCHEMA } from "../chef-actions.js";
+import { makeChefHooksDir } from "../chef-git.js";
+import {
+  buildChefSpawn,
+  chefEnv,
+  claudeVersionError,
+  finishChefRun,
+  parseChefLine,
+  type ChefSpawnInput,
+  type ChefStreamAcc,
+} from "../providers/chef.js";
 import {
   PROVIDERS,
   type SpawnContext,
   type StreamAcc,
 } from "../providers/index.js";
-import type { Provider, TaskRecord } from "../store.js";
+import { newId, type Provider, type TaskRecord } from "../store.js";
 
 const PROMPT = "SECRET-PROMPT refactor the parser";
 
@@ -376,5 +406,312 @@ describe("resume keeps the sandbox", () => {
         k.startsWith("CLAUDE_CODE_RETRY_WATCHDOG"),
       ),
     ).toEqual([]);
+  });
+});
+
+// ─── chef (C2b) ─────────────────────────────────────────────────────────
+
+describe("chef spawn", () => {
+  const SID = "0199a213-81c0-7800-8aa1-bbab2a035a53";
+  let chefRoot: string;
+  let orch: string;
+  let chef: ChefSpawnInput["chef"];
+
+  beforeAll(() => {
+    chefRoot = realpathSync(mkdtempSync(join(tmpdir(), "cf-chef-spawn-")));
+    orch = join(chefRoot, "orch");
+    const id = newId();
+    const dir = join(orch, "chefs", id);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    writeFileSync(join(dir, "chef.json"), "{}");
+    chef = {
+      id,
+      provider: "claude",
+      checkout: join(chefRoot, "repo"),
+      binaries: {
+        git: "/usr/bin/git",
+        claude: "/abs/bin/claude",
+        codex: "/abs/bin/codex",
+      },
+      sessionUuid: "123e4567-e89b-12d3-a456-426614174000",
+    };
+  });
+
+  beforeEach(() => {
+    vi.stubEnv("CF_ORCHESTRATOR_DIR", orch);
+  });
+
+  afterAll(() => {
+    rmSync(chefRoot, { recursive: true, force: true });
+  });
+
+  const privateCwd = () => join(orch, "chefs", chef.id, "private", "cwd");
+
+  it("claude chef: restricted read-only flags, cwd = private/cwd, checkout only via --add-dir", () => {
+    const first = buildChefSpawn({ chef, wake: 1, digest: "DIGEST-TEXT" });
+    expect(first.cmd).toBe("/abs/bin/claude");
+    expect(first.cwd).toBe(privateCwd());
+    expect(first.cwd).not.toBe(chef.checkout);
+    const { args } = first;
+    expect(args).toEqual(
+      expect.arrayContaining(["--restricted", "--safe-mode"]),
+    );
+    expect(after(args, "--add-dir")).toEqual([chef.checkout]);
+    expect(after(args, "--tools", 3)).toEqual(["Read", "Grep", "Glob"]);
+    expect(after(args, "--permission-mode")).toEqual(["dontAsk"]);
+    expect(args).toContain("--strict-mcp-config");
+    expect(JSON.parse(after(args, "--json-schema")[0])).toEqual(
+      CHEF_OUTPUT_SCHEMA,
+    );
+    expect(after(args, "--session-id")).toEqual([chef.sessionUuid]);
+    expect(args).not.toContain("--bare");
+    // The digest goes through stdin only.
+    expect(first.stdin).toBe("DIGEST-TEXT");
+    expect(args.some((a) => a.includes("DIGEST-TEXT"))).toBe(false);
+
+    const next = buildChefSpawn({
+      chef,
+      wake: 2,
+      digest: "D",
+      resume: { sessionId: SID },
+    });
+    expect(after(next.args, "--resume")).toEqual([SID]);
+    expect(next.args).not.toContain("--session-id");
+    expect(next.args).toEqual(
+      expect.arrayContaining(["--restricted", "--safe-mode", "--add-dir"]),
+    );
+  });
+
+  it("codex chef: -C private/cwd, ignored user config, :read-only profile, exec flags before resume, no --sandbox", () => {
+    const codexChef = { ...chef, provider: "codex" as const };
+    const first = buildChefSpawn({ chef: codexChef, wake: 3, digest: "D" });
+    expect(first.cmd).toBe("/abs/bin/codex");
+    expect(first.cwd).toBe(privateCwd());
+    const { args } = first;
+    expect(after(args, "-C")).toEqual([privateCwd()]);
+    expect(args).not.toContain(chef.checkout);
+    expect(args).toContain("--ignore-user-config");
+    expect(args.filter((_, i) => args[i - 1] === "-c")).toEqual([
+      'default_permissions="cf_chef"',
+      'permissions.cf_chef.extends=":read-only"',
+    ]);
+    expect(args).toContain("--skip-git-repo-check");
+    expect(args).not.toContain("--sandbox");
+    const schemaFile = after(args, "--output-schema")[0];
+    expect(JSON.parse(readFileSync(schemaFile, "utf-8"))).toEqual(
+      CHEF_OUTPUT_SCHEMA,
+    );
+    expect(after(args, "-o")).toEqual([first.outputFile]);
+    expect(args.at(-1)).toBe("-");
+
+    const next = buildChefSpawn({
+      chef: codexChef,
+      wake: 4,
+      digest: "D",
+      resume: { sessionId: SID },
+    });
+    const resume = next.args.indexOf("resume");
+    expect(next.args.slice(resume)).toEqual(["resume", SID, "-"]);
+    for (const flag of [
+      "--skip-git-repo-check",
+      "--ignore-user-config",
+      "-C",
+      "--output-schema",
+      "-o",
+    ]) {
+      expect(next.args.indexOf(flag)).toBeGreaterThan(-1);
+      expect(next.args.indexOf(flag)).toBeLessThan(resume);
+    }
+  });
+
+  it("refuses a binary that is not absolute (never resolved through PATH)", () => {
+    expect(() =>
+      buildChefSpawn({
+        chef: { ...chef, binaries: { git: "/usr/bin/git", claude: "claude" } },
+        wake: 5,
+        digest: "D",
+      }),
+    ).toThrow(/no absolute claude binary/);
+  });
+
+  it("chef env drops inherited GIT_* and session-linking CLAUDE_CODE_*, and sets the hardened git config", () => {
+    const env = chefEnv("/orch/chefs/x/hooks", {
+      PATH: "/bin",
+      GIT_DIR: "/evil",
+      GIT_EXTERNAL_DIFF: "/evil/diff",
+      GIT_SSH_COMMAND: "/evil/ssh",
+      GIT_CONFIG_PARAMETERS: "'core.fsmonitor'='/evil'",
+      CLAUDECODE: "1",
+      CLAUDE_CODE_RETRY_WATCHDOG: "1",
+      CLAUDE_CODE_SESSION_ID: "parent",
+      CLAUDE_CODE_MESSAGING_SOCKET: "/tmp/sock",
+      CLAUDE_CODE_USE_BEDROCK: "1",
+    });
+    expect(env).toEqual({
+      PATH: "/bin",
+      CLAUDE_CODE_USE_BEDROCK: "1",
+      GIT_OPTIONAL_LOCKS: "0",
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_COUNT: "2",
+      GIT_CONFIG_KEY_0: "core.hooksPath",
+      GIT_CONFIG_VALUE_0: "/orch/chefs/x/hooks",
+      GIT_CONFIG_KEY_1: "core.fsmonitor",
+      GIT_CONFIG_VALUE_1: "false",
+    });
+  });
+
+  it.each(["claude", "codex"] as const)(
+    "%s chef process gets that env with CF's empty hooks dir under chefs/<id>/",
+    (provider) => {
+      vi.stubEnv("GIT_DIR", "/evil");
+      vi.stubEnv("GIT_SSH_COMMAND", "/evil/ssh");
+      const { env } = buildChefSpawn({
+        chef: { ...chef, provider },
+        wake: 6,
+        digest: "D",
+      });
+      expect(env.GIT_DIR).toBeUndefined();
+      expect(env.GIT_SSH_COMMAND).toBeUndefined();
+      expect(env.GIT_CONFIG_KEY_0).toBe("core.hooksPath");
+      expect(env.GIT_CONFIG_VALUE_0).toBe(makeChefHooksDir(chef.id));
+      expect(
+        env.GIT_CONFIG_VALUE_0?.startsWith(join(orch, "chefs", chef.id) + "/"),
+      ).toBe(true);
+    },
+  );
+
+  it("claude result: structured_output → ok; schema retries exhausted or missing output → failed; usage limit → quota", () => {
+    const spec = buildChefSpawn({ chef, wake: 7, digest: "D" });
+    const run = (lines: object[], code: number) => {
+      const acc: ChefStreamAcc = {};
+      for (const l of lines) parseChefLine("claude", JSON.stringify(l), acc);
+      return finishChefRun(spec, acc, code);
+    };
+    const out = { summary: "s", actions: [] };
+    expect(
+      run(
+        [
+          { type: "system", subtype: "init", session_id: SID },
+          {
+            type: "result",
+            subtype: "success",
+            is_error: false,
+            session_id: SID,
+            structured_output: out,
+          },
+        ],
+        0,
+      ),
+    ).toEqual({ outcome: "ok", output: out, sessionId: SID });
+    expect(
+      run(
+        [
+          {
+            type: "result",
+            subtype: "error_max_structured_output_retries",
+            is_error: true,
+          },
+        ],
+        1,
+      ),
+    ).toMatchObject({ outcome: "failed" });
+    expect(
+      run(
+        [{ type: "result", subtype: "success", is_error: false, result: "x" }],
+        0,
+      ),
+    ).toMatchObject({
+      outcome: "failed",
+      error: expect.stringMatching(/structured_output/),
+    });
+    expect(
+      run(
+        [
+          {
+            type: "rate_limit_event",
+            rate_limit_info: { status: "rejected", resetsAt: 1800000000 },
+          },
+          {
+            type: "result",
+            subtype: "success",
+            is_error: true,
+            result: "limit",
+          },
+        ],
+        1,
+      ),
+    ).toMatchObject({ outcome: "quota", resetsAt: 1800000000 });
+  });
+
+  it.skipIf(process.platform === "win32")(
+    `claudeVersionError runs the binary and refuses one older than 2.1.248`,
+    () => {
+      const fake = (name: string, version: string) => {
+        const file = join(chefRoot, name);
+        writeFileSync(file, `#!/bin/sh\necho "${version} (Claude Code)"\n`, {
+          mode: 0o755,
+        });
+        return file;
+      };
+      const cwd = join(orch, "chefs", chef.id, "private");
+      expect(claudeVersionError(fake("old", "2.1.247"), cwd)).toMatch(
+        /2\.1\.248 or newer.*found 2\.1\.247/,
+      );
+      expect(claudeVersionError(fake("ok", "2.1.248"), cwd)).toBeUndefined();
+      expect(claudeVersionError(join(chefRoot, "missing"), cwd)).toMatch(
+        /found unknown/,
+      );
+      expect(existsSync(cwd)).toBe(true);
+    },
+  );
+});
+
+describe("notifyUser", () => {
+  function recorder(err: Error | null = null) {
+    const calls: { file: string; args: string[] }[] = [];
+    const execFile: NotifyExecFile = (file, args, _opts, cb) => {
+      calls.push({ file, args });
+      cb(err);
+    };
+    return { calls, execFile };
+  }
+
+  it("passes message and title as argv after --, never inside the script", async () => {
+    const { calls, execFile } = recorder();
+    const message = '-e do shell script "touch /tmp/x"\u0007\nline2';
+    const r = await notifyUser({
+      title: "Chef\tpaused",
+      message,
+      enabled: true,
+      execFile,
+      platform: "darwin",
+    });
+    expect(r).toEqual({ sent: true });
+    expect(calls).toHaveLength(1);
+    const [{ file, args }] = calls;
+    expect(file).toBe("/usr/bin/osascript");
+    expect(args[0]).toBe("-e");
+    expect(args[2]).toBe("--");
+    expect(args.slice(3)).toEqual([
+      '-e do shell script "touch /tmp/x" line2',
+      "Chef paused",
+    ]);
+    expect(args[1]).not.toContain("touch");
+    expect(args[1]).toContain("item 1 of argv");
+  });
+
+  it("does nothing when disabled or off darwin, and returns (never throws) an exec error", async () => {
+    const { calls, execFile } = recorder(new Error("boom"));
+    const base = { title: "t", message: "m", execFile };
+    expect(
+      await notifyUser({ ...base, enabled: false, platform: "darwin" }),
+    ).toEqual({ sent: false });
+    expect(
+      await notifyUser({ ...base, enabled: true, platform: "linux" }),
+    ).toEqual({ sent: false });
+    expect(calls).toHaveLength(0);
+    expect(
+      await notifyUser({ ...base, enabled: true, platform: "darwin" }),
+    ).toEqual({ sent: false, error: "boom" });
   });
 });

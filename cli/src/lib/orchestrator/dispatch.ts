@@ -82,6 +82,13 @@ export function dispatchTask(input: DispatchInput): {
   pid: number;
 } {
   const { prompt, provider, readOnly, checkout, isGitRepo, policy } = input;
+  // Callers check these too; the chef passes model-built input.
+  if (provider !== "claude" && provider !== "codex") {
+    throw new CliError("USAGE", "provider must be claude or codex");
+  }
+  if (typeof prompt !== "string" || !prompt.trim()) {
+    throw new CliError("USAGE", "Prompt is empty");
+  }
   if (process.platform === "win32") {
     throw new CliError(
       "PROVIDER_UNAVAILABLE",

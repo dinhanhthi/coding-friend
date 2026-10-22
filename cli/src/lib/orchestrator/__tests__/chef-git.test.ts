@@ -1142,6 +1142,18 @@ describe.skipIf(process.platform === "win32")("chef-git security", () => {
     return diffSnapshots(before, snapshotSteering(r.ctx, r.plan));
   }
 
+  it("two repo-guard snapshots with different ctx.hooksDir diff to []", () => {
+    const r = mkRepo();
+    const otherHooks = join(root, "otherhooks");
+    mkdirSync(otherHooks, { recursive: true, mode: 0o700 });
+    expect(
+      diffSnapshots(
+        snapshotRepoGuard(r.ctx),
+        snapshotRepoGuard({ ...r.ctx, hooksDir: otherHooks }),
+      ),
+    ).toEqual([]);
+  });
+
   it("repo guard reports a .git/config change", () => {
     const r = mkRepo();
     expect(

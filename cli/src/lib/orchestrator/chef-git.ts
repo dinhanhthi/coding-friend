@@ -1472,11 +1472,38 @@ function hooksEntries(dir: string, out: SnapshotEntries): void {
 }
 
 /**
+ * sha256 of the `config --list --show-origin --show-scope -z` records
+ * without scope `command`: those are CF's own `-c` hardening (its hooks dir
+ * path differs between `cf chef start` and the wakes), never repo config.
+ * Split on raw NUL bytes so no byte is lost to decoding.
+ */
+function repoConfigDigest(bytes: Buffer): string {
+  const fields: Buffer[] = [];
+  let start = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    if (bytes[i] === 0) {
+      fields.push(bytes.subarray(start, i));
+      start = i + 1;
+    }
+  }
+  if (start < bytes.length) fields.push(bytes.subarray(start));
+  const h = createHash("sha256");
+  for (let i = 0; i < fields.length; i += 3) {
+    if (i + 2 < fields.length && fields[i].toString("latin1") === "command") {
+      continue;
+    }
+    for (const f of fields.slice(i, i + 3)) h.update(f).update("\0");
+  }
+  return h.digest("hex");
+}
+
+/**
  * Repo guard: sha256 of the `config --list --show-origin --show-scope -z`
- * bytes, the hooks dirs (`<git common dir>/hooks` and the repo's own
- * core.hooksPath, inside the checkout or not), the bytes of
- * `<git common dir>/info/exclude` (a worker could otherwise hide new
- * untracked files from the fingerprint's `ls-files -o --exclude-standard`),
+ * records (CF's own command-line `-c` excluded), the hooks dirs
+ * (`<git common dir>/hooks` and the repo's own core.hooksPath, inside the
+ * checkout or not), the bytes of `<git common dir>/info/exclude` (a
+ * worker could otherwise hide new untracked files from the fingerprint's
+ * `ls-files -o --exclude-standard`),
  * the type/identity of the `.git` entry and of the pinned git dir, and the
  * bytes of `<git dir>/commondir` and `<git dir>/HEAD` plus the realpath of
  * the common dir (a linked worktree's objects, refs and hooks live there;
@@ -1485,7 +1512,7 @@ function hooksEntries(dir: string, out: SnapshotEntries): void {
 export function snapshotRepoGuard(ctx: GitCtx): SnapshotEntries {
   const { bytes, entries } = readConfig(ctx);
   const out: SnapshotEntries = {};
-  out.config = sha256(bytes);
+  out.config = repoConfigDigest(bytes);
   const dotGit = join(ctx.checkout, ".git");
   const id = identity(dotGit);
   out[".git"] = id.startsWith("file:")

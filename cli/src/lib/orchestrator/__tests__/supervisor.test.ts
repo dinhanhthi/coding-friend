@@ -23,12 +23,29 @@ import {
   createTask,
   listAttempts,
   listTasks,
+  newId,
   readTask,
   recordAttemptRunner,
   recordDispatch,
   recordPause,
+  SPAWN_GRACE_MS,
 } from "../store.js";
-import { isRunnerCommand, spawnRunner, tickOnce } from "../supervisor.js";
+import {
+  isRunnerCommand,
+  spawnRunner,
+  tickChefs,
+  tickOnce,
+} from "../supervisor.js";
+import {
+  chefDir,
+  claimWake,
+  createChef,
+  listWakes,
+  recordEvent,
+  recordMessage,
+  recordWakeRunner,
+} from "../chef-store.js";
+import { pendingEvents } from "../chef-triggers.js";
 
 const NOW = Math.floor(Date.now() / 1000);
 
@@ -236,4 +253,162 @@ describe("isRunnerCommand", () => {
     );
     expect(isRunnerCommand(null, "abcd1234")).toBe(false);
   });
+});
+
+describe("tickChefs", () => {
+  let home: string;
+
+  const setGlobalEnabled = (enabled: boolean) =>
+    writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ chef: { enabled } }),
+    );
+
+  function newChef(minWakeMinutes = 0): string {
+    const id = newId();
+    createChef({
+      id,
+      provider: "claude",
+      planDir: join(checkout, "docs/plans/x"),
+      checkout,
+      isGitRepo: true,
+      gitDir: join(checkout, ".git"),
+      branch: "main",
+      headAtStart: "a".repeat(40),
+      sessionUuid: "123e4567-e89b-12d3-a456-426614174000",
+      limits: {
+        minWakeMinutes,
+        maxWakesPerDay: 48,
+        maxTasksPerWake: 3,
+        maxConcurrentTasks: 2,
+        schedule: [],
+        notify: false,
+      },
+      taskPolicy: {
+        onQuota: "wait-then-switch",
+        waitMinutes: 30,
+        fallback: [],
+        noFallback: false,
+      },
+      binaries: { git: "/usr/bin/git", claude: "/x/claude" },
+      commit: true,
+      hooks: { hooksPath: null, files: [] },
+      configDigest: "d",
+      baseline: { fingerprint: { head: "a".repeat(40) }, snapshot: {} },
+    });
+    recordEvent(id, "start");
+    return id;
+  }
+
+  /** Spawn calls that started a wake of chef `id`, as [n]. */
+  const wakesSpawned = (id: string) =>
+    fakeSpawn.mock.calls
+      .map(([, args]) => args as string[])
+      .filter((args) => args.includes("_wake") && args.includes(id))
+      .map((args) => args.at(-1));
+
+  beforeEach(() => {
+    home = join(root, "home");
+    mkdirSync(join(home, ".coding-friend"), { recursive: true });
+    vi.stubEnv("HOME", home);
+    setGlobalEnabled(true);
+  });
+
+  it("spawns exactly one wake for a chef with an event; none while that wake is alive; TickSummary keeps its shape", () => {
+    const id = newChef();
+    expect(tick()).toEqual({ adopted: [], failed: [], skipped: [] });
+    expect(fakeSpawn).toHaveBeenCalledTimes(1);
+    const [cmd, args, opts] = fakeSpawn.mock.calls[0];
+    // Only the CF wake runner: never git, never a provider.
+    expect(cmd).toBe(process.execPath);
+    expect(args.slice(-4)).toEqual(["chef", "_wake", id, "1"]);
+    expect(opts).toMatchObject({
+      detached: true,
+      cwd: join(chefDir(id), "private"),
+      env: { CF_CHEF_CLAIMED: "1", CF_ORCHESTRATOR_DIR: orch },
+    });
+    expect(listWakes(id).map((w) => w.n)).toEqual([1]);
+
+    // Wake 1 runs; a new event arrives: no second wake.
+    recordWakeRunner(id, 1, {
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+    });
+    recordMessage(id, "hello");
+    tick((pid) => (pid === process.pid ? `node cf chef _wake ${id} 1` : null));
+    tick((pid) => (pid === process.pid ? `node cf chef _wake ${id} 1` : null));
+    expect(wakesSpawned(id)).toEqual(["1"]);
+  });
+
+  it("global chef.enabled=false: no wake, whatever the local config says (and the reverse)", () => {
+    const local = join(root, "local");
+    mkdirSync(join(local, ".coding-friend"), { recursive: true });
+    const setLocal = (enabled: boolean) =>
+      writeFileSync(
+        join(local, ".coding-friend", "config.json"),
+        JSON.stringify({ chef: { enabled } }),
+      );
+    vi.spyOn(process, "cwd").mockReturnValue(local);
+    const id = newChef();
+
+    setGlobalEnabled(false);
+    setLocal(true);
+    expect(
+      tickChefs({
+        now: NOW,
+        spawn: fakeSpawn as unknown as typeof spawn,
+        ps: () => null,
+      }),
+    ).toEqual({
+      woken: [],
+      paused: [],
+      skipped: [],
+    });
+    tick();
+    expect(fakeSpawn).not.toHaveBeenCalled();
+    expect(listWakes(id)).toEqual([]);
+
+    setGlobalEnabled(true);
+    setLocal(false);
+    tick();
+    expect(wakesSpawned(id)).toEqual(["1"]);
+  });
+
+  it.each([
+    ["a claim whose runner never started", "never"],
+    ["a runner that died without result.json", "died"],
+  ] as const)(
+    "%s: the tick marks it failed (events stay pending, min interval counts from it), then wakes n+1",
+    (_name, kind) => {
+      const id = newChef(5);
+      claimWake(id, 1);
+      if (kind === "died") {
+        recordWakeRunner(id, 1, {
+          pid: deadPid(),
+          startedAt: new Date().toISOString(),
+        });
+      } else {
+        const file = join(chefDir(id), "wakes", "1", "claim.json");
+        const claim = JSON.parse(readFileSync(file, "utf-8"));
+        claim.createdAt = new Date(
+          Date.now() - SPAWN_GRACE_MS - 1000,
+        ).toISOString();
+        writeFileSync(file, JSON.stringify(claim));
+      }
+
+      tick();
+      const [w1] = listWakes(id);
+      expect(w1.result?.outcome).toBe("failed");
+      expect(w1.result?.consumed).toBeUndefined();
+      expect(pendingEvents(id).map((e) => e.key)).toEqual(["start"]);
+      expect(fakeSpawn).not.toHaveBeenCalled(); // within minWakeMinutes of the failure
+
+      tickOnce({
+        now: NOW + 6 * 60,
+        spawn: fakeSpawn as unknown as typeof spawn,
+        ps: () => null,
+      });
+      expect(wakesSpawned(id)).toEqual(["2"]);
+    },
+  );
 });

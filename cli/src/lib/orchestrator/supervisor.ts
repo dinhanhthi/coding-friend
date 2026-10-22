@@ -6,14 +6,29 @@ import {
   fstatSync,
   mkdirSync,
   openSync,
+  realpathSync,
   renameSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
 import { randomBytes } from "crypto";
 import { dirname, join } from "path";
+import { readGlobalChefEnabled } from "../config.js";
 import { run as exec } from "../exec.js";
 import { orchestratorDir } from "../paths.js";
+import {
+  chefStatus,
+  claimedWakeDir,
+  claimWake,
+  isOrphanedClaim,
+  listChefs,
+  listWakes,
+  makeChefPrivateDir,
+  markClaimFailed,
+  recordPause,
+  type ChefRecord,
+} from "./chef-store.js";
+import { collectTriggers, pendingEvents, shouldWake } from "./chef-triggers.js";
 import { releaseLease } from "./lease.js";
 import { eligibleProviders } from "./providers/eligible.js";
 import { decideNext } from "./quota.js";
@@ -166,6 +181,15 @@ export interface TickSummary {
 const defaultPs = (pid: number) =>
   exec("ps", ["-ww", "-o", "command=", "-p", String(pid)]);
 
+/** Whether the words of `command` hold `seq` in a row (whole words, not prefixes). */
+function hasWordSequence(
+  command: string | null | undefined,
+  seq: string[],
+): boolean {
+  const words = command?.trim().split(/\s+/) ?? [];
+  return words.some((_, i) => seq.every((s, j) => words[i + j] === s));
+}
+
 /**
  * Whether `command` (a `ps -o command=` line) is the runner of task `id`:
  * its words hold `task _run <id>`, the id a whole word (not a prefix).
@@ -174,10 +198,16 @@ export function isRunnerCommand(
   command: string | null | undefined,
   id: string,
 ): boolean {
-  const words = command?.trim().split(/\s+/) ?? [];
-  return words.some(
-    (w, i) => w === "task" && words[i + 1] === "_run" && words[i + 2] === id,
-  );
+  return hasWordSequence(command, ["task", "_run", id]);
+}
+
+/** Whether `command` is wake `n` of chef `id`: its words hold `chef _wake <id> <n>`. */
+export function isWakeCommand(
+  command: string | null | undefined,
+  id: string,
+  n: number,
+): boolean {
+  return hasWordSequence(command, ["chef", "_wake", id, String(n)]);
 }
 
 /**
@@ -311,6 +341,170 @@ export function tickOnce(options: TickOptions = {}): TickSummary {
       outcome = "skipped";
     }
     summary[outcome].push(view.id);
+  }
+  // The chef pass reports on stderr only: TickSummary stays the C2a shape.
+  try {
+    tickChefs({ now, spawn: deps.spawn, ps: deps.ps });
+  } catch (err) {
+    console.error(`supervisor: chefs: ${String(err)}`);
+  }
+  return summary;
+}
+
+// ─── chef pass ──────────────────────────────────────────────────────────
+
+/**
+ * Open chefs/<id>/wakes/<n>/wake.log for append (0600). The wake dir is in
+ * the trusted chef store; still, never follow a symlink or open anything
+ * but a regular file there.
+ */
+function openWakeLog(id: string, n: number): number {
+  const fd = openSync(
+    join(claimedWakeDir(id, n), "wake.log"),
+    constants.O_WRONLY |
+      constants.O_APPEND |
+      constants.O_CREAT |
+      constants.O_NOFOLLOW |
+      constants.O_NONBLOCK,
+    0o600,
+  );
+  try {
+    if (!fstatSync(fd).isFile()) throw new Error("wake.log is not a file");
+  } catch (err) {
+    closeSync(fd);
+    throw err;
+  }
+  return fd;
+}
+
+/**
+ * Spawn the detached wake runner (`cf chef _wake <id> <n>`) for wake `n`,
+ * already claimed by this tick (`CF_CHEF_CLAIMED=1`). Its cwd is the chef's
+ * neutral private dir, never the checkout; stdio goes to wakes/<n>/wake.log.
+ */
+function spawnWake(
+  id: string,
+  n: number,
+  spawnFn: typeof spawn = spawn,
+): number {
+  const cwd = makeChefPrivateDir(id);
+  const script = realpathSync(process.argv[1]);
+  const fd = openWakeLog(id, n);
+  try {
+    const child: ChildProcess = spawnFn(
+      process.execPath,
+      [...process.execArgv, script, "chef", "_wake", id, String(n)],
+      {
+        detached: true,
+        stdio: ["ignore", fd, fd],
+        cwd,
+        // cwd changes: pass the store dir absolute, not a relative override.
+        env: {
+          ...process.env,
+          CF_ORCHESTRATOR_DIR: orchestratorDir(),
+          CF_CHEF_CLAIMED: "1",
+        },
+      },
+    );
+    child.once("error", () => {}); // reported via the missing pid below
+    if (!child.pid) throw new Error("wake process did not start");
+    child.unref();
+    return child.pid;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** Chef ids per outcome of one chef pass (stderr only, not in TickSummary). */
+export interface ChefTickSummary {
+  woken: string[];
+  paused: string[];
+  skipped: string[];
+}
+
+type ChefOutcome = keyof ChefTickSummary;
+
+/** One chef: resolve orphaned claims, record triggers, maybe claim and spawn a wake. */
+function tickChef(
+  chef: ChefRecord,
+  now: number,
+  deps: Required<Omit<TickOptions, "now">>,
+): ChefOutcome {
+  const id = chef.id;
+  const state = chefStatus(id).state;
+  if (state === "stopped" || state === "paused") return "skipped";
+
+  // A wake writes result.json (ok) before it executes its actions, so a
+  // live runner counts whether or not its result exists.
+  const isAlive = (n: number, pid: number) =>
+    isPidAlive(pid) && isWakeCommand(deps.ps(pid), id, n);
+  const wakes = listWakes(id);
+  if (wakes.some((w) => w.runner && isAlive(w.n, w.runner.pid))) {
+    return "skipped";
+  }
+  for (const w of wakes) {
+    if (isOrphanedClaim(w, (r) => isAlive(w.n, r.pid))) {
+      markClaimFailed(
+        id,
+        w.n,
+        w.runner ? "wake runner died without a result" : "wake never started",
+      );
+    }
+  }
+
+  collectTriggers({ chefId: id, now });
+  const decision = shouldWake({ chef, events: pendingEvents(id), now });
+  if (!decision.wake) {
+    if (!decision.pause) return "skipped";
+    recordPause(id, {
+      reason: `daily wake cap reached (${chef.limits.maxWakesPerDay} wakes in 24 h)`,
+    });
+    console.error(`supervisor: chef ${id}: paused, daily wake cap reached`);
+    return "paused";
+  }
+
+  // Create-once: of two racing ticks (or a manual run), only one gets wake n.
+  const n = Math.max(0, ...listWakes(id).map((w) => w.n)) + 1;
+  if (!claimWake(id, n)) return "skipped";
+  let pid: number;
+  try {
+    pid = spawnWake(id, n, deps.spawn);
+  } catch (err) {
+    markClaimFailed(
+      id,
+      n,
+      `Could not start chef wake: ${(err as Error).message}`,
+    );
+    throw err;
+  }
+  console.error(`supervisor: chef ${id}: wake ${n} started (pid ${pid})`);
+  return "woken";
+}
+
+/**
+ * Chef pass of the tick: when `chef.enabled` (global config) is on, for each
+ * chef neither stopped nor paused and without a live wake, mark orphaned
+ * claims failed, record fire-once triggers and, when `shouldWake` allows,
+ * claim the next wake and spawn its runner for that same n. Store reads and
+ * the spawn only: never git, never a provider. Errors are caught per chef.
+ */
+export function tickChefs(options: TickOptions = {}): ChefTickSummary {
+  const summary: ChefTickSummary = { woken: [], paused: [], skipped: [] };
+  if (!readGlobalChefEnabled()) return summary;
+  const now = options.now ?? Math.floor(Date.now() / 1000);
+  const deps = {
+    spawn: options.spawn ?? spawn,
+    ps: options.ps ?? defaultPs,
+  };
+  for (const chef of listChefs()) {
+    let outcome: ChefOutcome;
+    try {
+      outcome = tickChef(chef, now, deps);
+    } catch (err) {
+      console.error(`supervisor: chef ${chef.id}: ${String(err)}`);
+      outcome = "skipped";
+    }
+    summary[outcome].push(chef.id);
   }
   return summary;
 }
