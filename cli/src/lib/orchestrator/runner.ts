@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import { existsSync, realpathSync, rmdirSync, rmSync } from "fs";
+import { tmpdir } from "os";
 import { join } from "path";
 import { createInterface } from "readline";
 import { setTimeout as sleepTimer } from "timers/promises";
@@ -10,9 +11,12 @@ import { releaseLease } from "./lease.js";
 import { eligibleProviders } from "./providers/eligible.js";
 import {
   PROVIDERS,
+  type ExecFn,
   type FinishResult,
   type ProviderAdapter,
+  type ProviderRequest,
   type SpawnContext,
+  type SpawnSpec,
   type StreamAcc,
 } from "./providers/index.js";
 import { decideNext, type Decision } from "./quota.js";
@@ -51,6 +55,10 @@ import {
 /** result.json error = cause (head) + stderr tail; recordResult caps at 4 KB. */
 const ERROR_HEAD = 2000;
 const STDERR_TAIL = 2048;
+/** Output kept from one `prepare()` exec call, per stream. */
+const EXEC_MAX_OUTPUT = 1024 * 1024;
+/** Upper bound for an adapter-supplied `prepare()` exec timeout. */
+const EXEC_MAX_TIMEOUT_MS = 10 * 60_000;
 const KILL_GRACE_MS = 5000;
 /** Wait for buffered stdout after exit, in case a grandchild holds the pipe. */
 const DRAIN_MS = 2000;
@@ -159,42 +167,166 @@ function trapSignals(): Trap {
 interface WorkerRun {
   exitCode: number | null;
   fin: FinishResult;
+  /** Terminal: the attempt fails, no resume-gone fallback. */
   spawnError?: string;
+  /** The adapter set `acc.abort`: the worker was killed (terminal too). */
+  aborted?: boolean;
   stderrTail: string;
 }
 
-/** Spawn one worker, parse its stream until it exits and drains. */
+/** Runner env rules shared by the worker and `prepare()` exec calls. */
+function filterEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const out = { ...env };
+  delete out.CLAUDECODE; // avoid Claude's nested-session refusal
+  delete out.CF_TASK_DIGEST;
+  delete out.CF_TASK_CHECKOUT;
+  return out;
+}
+
+/**
+ * `prepare()`'s exec: no shell, own process group killed on timeout, cwd
+ * default a neutral temp dir. Env: the runner's env with `opts.env` added or
+ * overriding; filterEnv applies after the merge. Settles on `"exit"`
+ * plus a short drain, never waits for `"close"` (a grandchild that left the
+ * group can hold the pipes open): at most timeout + DRAIN_MS.
+ */
+function makeExec(trap: Trap): ExecFn {
+  return (cmd, args, opts) =>
+    new Promise((resolve, reject) => {
+      if (trap.signal.aborted) {
+        reject(new Error(`${cmd}: runner was stopped`));
+        return;
+      }
+      const timeoutMs = Math.min(
+        Math.max(1, Math.floor(opts.timeoutMs) || 1),
+        EXEC_MAX_TIMEOUT_MS,
+      );
+      const child = spawn(cmd, args, {
+        cwd: opts.cwd ?? tmpdir(),
+        env: filterEnv({ ...process.env, ...opts.env }),
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: true,
+      });
+      const pid = child.pid ?? 0;
+      trap.workerPid = pid; // a stop signal reaches it too
+      const out = { stdout: "", stderr: "" };
+      for (const key of ["stdout", "stderr"] as const) {
+        child[key].setEncoding("utf-8");
+        child[key].on("data", (chunk: string) => {
+          if (out[key].length < EXEC_MAX_OUTPUT) out[key] += chunk;
+        });
+      }
+      const closed = new Promise<void>((r) => child.once("close", () => r()));
+      let timedOut = false;
+      let graceTimer: NodeJS.Timeout | undefined;
+      let settled = false;
+      const finish = (result: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        clearTimeout(graceTimer);
+        if (trap.workerPid === pid) trap.workerPid = 0;
+        child.stdout.destroy();
+        child.stderr.destroy();
+        result();
+      };
+      const timeoutError = () =>
+        new Error(`${cmd} timed out after ${timeoutMs} ms`);
+      const timer = setTimeout(() => {
+        timedOut = true;
+        if (pid > 1) killGroup(pid, "SIGKILL");
+        // Settle even if "exit" never comes.
+        graceTimer = setTimeout(
+          () => finish(() => reject(timeoutError())),
+          DRAIN_MS,
+        );
+      }, timeoutMs);
+      child.once("error", (err) => finish(() => reject(err)));
+      child.once("exit", (code) => {
+        // The deadline covers the run until exit; the drain is bounded anyway.
+        if (!timedOut) clearTimeout(timer);
+        void Promise.race([closed, delay(DRAIN_MS)]).then(() =>
+          finish(() =>
+            timedOut
+              ? reject(timeoutError())
+              : resolve({ code: code ?? -1, ...out }),
+          ),
+        );
+      });
+    });
+}
+
+/** The runner was signalled before a worker started. */
+function stoppedRun(adapter: ProviderAdapter, ctx: SpawnContext): WorkerRun {
+  return {
+    exitCode: null,
+    fin: adapter.finish({}, null, ctx),
+    spawnError: "runner was stopped before the worker started",
+    stderrTail: "",
+  };
+}
+
+/**
+ * Spawn one worker, parse its stream until it exits and drains. Per attempt:
+ * `preflight` → (`workspaceFiles`, Phase 3) → `prepare` → `buildSpawn`.
+ * A preflight refusal is terminal (`spawnError`). A throwing `prepare` or
+ * `buildSpawn` fails the attempt without a spawn and without a session id,
+ * so a resume attempt falls back to fresh (resume-gone).
+ */
 async function runWorker(
   adapter: ProviderAdapter,
   task: TaskRecord,
   ctx: SpawnContext,
+  req: ProviderRequest,
   deps: Deps,
   trap: Trap,
   onSession: (session: { sessionId: string; transcriptPath?: string }) => void,
 ): Promise<WorkerRun> {
-  if (trap.signal.aborted) {
-    const acc: StreamAcc = {};
-    return {
-      exitCode: null,
-      fin: adapter.finish(acc, null, ctx),
-      spawnError: "runner was stopped before the worker started",
-      stderrTail: "",
-    };
-  }
-  const spec = adapter.buildSpawn(task, ctx);
-  const env = { ...spec.env };
-  delete env.CLAUDECODE; // avoid Claude's nested-session refusal
-  delete env.CF_TASK_DIGEST;
-  delete env.CF_TASK_CHECKOUT;
-  const child = deps.spawn(spec.cmd, spec.args, {
-    cwd: task.checkout,
-    env,
-    stdio: ["pipe", "pipe", "pipe"],
-    detached: true, // own process group: cancel signals -pid
-  });
-  trap.workerPid = child.pid ?? 0;
-
+  if (trap.signal.aborted) return stoppedRun(adapter, ctx);
   try {
+    const refused = adapter.preflight?.(req);
+    if (refused) {
+      return {
+        exitCode: null,
+        fin: { outcome: "failed", error: refused.message },
+        spawnError: refused.message,
+        stderrTail: "",
+      };
+    }
+    let c = ctx;
+    let spec: SpawnSpec | undefined;
+    let error = "";
+    try {
+      if (adapter.prepare) {
+        const prepared = await adapter.prepare(task, ctx, makeExec(trap));
+        if (prepared.sessionId !== undefined) {
+          c = { ...ctx, preparedSessionId: prepared.sessionId };
+        }
+      }
+      spec = adapter.buildSpawn(task, c);
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+    }
+    // prepare() awaited: a stop signal may have come in meanwhile.
+    if (trap.signal.aborted) return stoppedRun(adapter, c);
+    if (!spec) {
+      return {
+        exitCode: null,
+        fin: { outcome: "failed", error: error.slice(0, ERROR_HEAD) },
+        stderrTail: "",
+      };
+    }
+    // Recorded only once the stream confirms the prompt was received.
+    const pendingId = spec.sessionId ?? c.preparedSessionId;
+    const child = deps.spawn(spec.cmd, spec.args, {
+      cwd: spec.cwd ?? task.checkout,
+      env: filterEnv(spec.env),
+      stdio: ["pipe", "pipe", "pipe"],
+      detached: true, // own process group: cancel signals -pid
+    });
+    const workerPid = child.pid ?? 0;
+    trap.workerPid = workerPid;
+
     let spawnError: string | undefined;
     const exited = new Promise<number | null>((resolve) => {
       child.once("error", (err) => {
@@ -209,15 +341,23 @@ async function runWorker(
 
     const acc: StreamAcc = {};
     let sessionRecorded = false;
+    let killed = false;
     const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
     rl.on("line", (line) => {
-      adapter.parseLine(line, acc);
-      if (sessionRecorded || !acc.sessionId) return;
-      const session = adapter.session(acc, ctx);
+      adapter.parseLine(line, acc, c, task);
+      if (acc.abort && !killed) {
+        killed = true;
+        if (workerPid > 1) killGroup(workerPid, "SIGKILL");
+      }
+      if (sessionRecorded) return;
+      const session =
+        (acc.sessionId ? adapter.session(acc, c) : undefined) ??
+        (acc.accepted && pendingId ? { sessionId: pendingId } : undefined);
       if (!session) return;
-      sessionRecorded = true;
       try {
         onSession(session);
+        // Only once recorded: a rejected id leaves room for a later valid one.
+        sessionRecorded = true;
       } catch (err) {
         console.error(`runner: could not record session: ${String(err)}`);
       }
@@ -236,14 +376,29 @@ async function runWorker(
     child.stdout.destroy();
     child.stderr.destroy();
 
-    const fin = adapter.finish(acc, exitCode, ctx);
-    return { exitCode, fin, spawnError, stderrTail };
+    let fin = adapter.finish(acc, exitCode, c, stderrTail);
+    if (acc.abort) {
+      // A safety violation, never a quota pause.
+      fin = {
+        ...fin,
+        outcome: "failed",
+        error: acc.abort.slice(0, ERROR_HEAD),
+      };
+      delete fin.quota;
+    }
+    return {
+      exitCode,
+      fin,
+      spawnError,
+      ...(acc.abort !== undefined && { aborted: true }),
+      stderrTail,
+    };
   } finally {
     if (trap.killTimer) {
       // Signalled: kill what is left of the group before anything else.
       clearTimeout(trap.killTimer);
       trap.killTimer = undefined;
-      killGroup(trap.workerPid, "SIGKILL");
+      if (trap.workerPid > 1) killGroup(trap.workerPid, "SIGKILL");
     }
     trap.workerPid = 0;
   }
@@ -314,7 +469,9 @@ function baseContext(task: TaskRecord, privateDir: string): SpawnContext {
 /** C1: one worker, root runner.json/session.json/result.json only. */
 async function runOnce(task: TaskRecord, deps: Deps): Promise<void> {
   const id = task.id;
-  const adapter = PROVIDERS[task.provider];
+  const adapter = Object.hasOwn(PROVIDERS, task.provider)
+    ? PROVIDERS[task.provider]
+    : undefined;
   const privateDir = runnerPrivateDir(id);
   const ctx = baseContext(task, privateDir);
   const cancelled = () => existsSync(join(ctx.taskDir, "cancel.json"));
@@ -324,6 +481,11 @@ async function runOnce(task: TaskRecord, deps: Deps): Promise<void> {
       recordResult(id, { exitCode: null, outcome: "cancelled" });
       return;
     }
+    if (!adapter) {
+      const error = "unknown provider";
+      recordResult(id, { exitCode: null, outcome: "failed", error });
+      return;
+    }
     try {
       makeRunnerPrivateDir(id);
     } catch (err) {
@@ -331,8 +493,14 @@ async function runOnce(task: TaskRecord, deps: Deps): Promise<void> {
       recordResult(id, { exitCode: null, outcome: "failed", error });
       return;
     }
-    const run = await runWorker(adapter, task, ctx, deps, trap, (session) =>
-      recordSession(id, session),
+    // C1 records no git flag (git never runs after dispatch): assume none.
+    const req = {
+      checkout: task.checkout,
+      isGitRepo: false,
+      readOnly: task.readOnly,
+    };
+    const run = await runWorker(adapter, task, ctx, req, deps, trap, (s) =>
+      recordSession(id, s),
     );
     const outcome = cancelled()
       ? "cancelled"
@@ -453,6 +621,12 @@ async function runAttempts(
 
   let attempt: Claim = latest;
   let resumeFallbackUsed = false;
+  const req: ProviderRequest = {
+    checkout: task.checkout,
+    isGitRepo: checkoutIsGitRepo(dispatch),
+    readOnly: task.readOnly,
+    ...(dispatch.policy.models && { models: dispatch.policy.models }),
+  };
   const trap = trapSignals();
   try {
     for (;;) {
@@ -483,26 +657,37 @@ async function runAttempts(
         const error = `could not create runner dir: ${(err as Error).message}`;
         return end({ exitCode: null, outcome: "failed", error });
       }
+      // Per attempt: after a switch, the new provider's model.
+      const model = dispatch.policy.models?.[attempt.provider];
       const ctx: SpawnContext = {
         ...baseContext(task, privateDir),
         ...(attempt.kind === "resume" &&
           resumeId && { resume: { sessionId: resumeId } }),
+        ...(model !== undefined && { model }),
       };
       // In-memory copy only: task.json (and its digest) never change.
       const attemptTask = { ...task, provider: attempt.provider, prompt };
       let run: WorkerRun;
       try {
-        run = await runWorker(adapter, attemptTask, ctx, deps, trap, (s) => {
-          recordAttemptSession(id, n, s);
-          if (n === 1) recordSession(id, s); // root session.json: C1 compat
-        });
+        run = await runWorker(
+          adapter,
+          attemptTask,
+          ctx,
+          req,
+          deps,
+          trap,
+          (s) => {
+            recordAttemptSession(id, n, s);
+            if (n === 1) recordSession(id, s); // root session.json: C1 compat
+          },
+        );
       } finally {
         // After finish(): codex reads its last message from privateDir.
         rmSync(privateDir, { recursive: true, force: true });
       }
 
       if (cancelled()) return end(resultOf(run, "cancelled"));
-      if (run.spawnError) return end(resultOf(run, "failed"));
+      if (run.spawnError || run.aborted) return end(resultOf(run, "failed"));
       const done = existsSync(join(taskDir, "done.json"));
       let next: Exclude<Decision, { kind: "fail" }>;
       if (run.fin.quota && !done) {
@@ -519,7 +704,12 @@ async function runAttempts(
           policy: dispatch.policy,
           attempts: listAttempts(id),
           now: deps.now(),
-          eligible: eligibleProviders(checkoutIsGitRepo(dispatch)),
+          eligible: eligibleProviders(
+            req,
+            dispatch.policy.noFallback
+              ? [attempt.provider]
+              : [...new Set([attempt.provider, ...dispatch.policy.fallback])],
+          ),
         });
         if (decision.kind === "fail") {
           return end({ ...resultOf(run, "failed"), error: decision.reason });
@@ -545,8 +735,10 @@ async function runAttempts(
         return end({ exitCode: null, outcome: "cancelled" });
       }
       // Stopped (no cancel) once due, before claiming n + 1: the pause and
-      // lease stay for the tick. From here to the worker spawn is synchronous,
-      // so no signal handler runs in between.
+      // lease stay for the tick. A stop after the claim is seen by runWorker:
+      // before the spawn (also during an awaited prepare(), whose exec child
+      // is killed) it ends the attempt as stoppedRun and the task fails;
+      // after the spawn it kills the worker group.
       if (waited === "stopped" || trap.signal.aborted) return;
 
       const claim = claimNextAttempt(task, n, next);

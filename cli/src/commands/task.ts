@@ -4,7 +4,6 @@ import { run as exec } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { dispatchTask } from "../lib/orchestrator/dispatch.js";
-import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import { runTask } from "../lib/orchestrator/runner.js";
 import {
@@ -13,12 +12,14 @@ import {
   readHeartbeat,
 } from "../lib/orchestrator/supervisor.js";
 import {
+  isModelName,
   isOlderThan,
+  isProviderName,
   listTasks,
+  PROVIDER_NAMES,
   readTask,
   recordCancel,
   type AttemptSummary,
-  type Provider,
   type TaskView,
 } from "../lib/orchestrator/store.js";
 import { resolveCheckoutRoot } from "../lib/project-root.js";
@@ -29,6 +30,8 @@ interface Flags {
 
 interface RunFlags extends Flags {
   provider?: string;
+  /** Model for --provider only (overrides config task.models.<provider>). */
+  model?: string;
   readOnly?: boolean;
   /** false with --no-fallback (commander's negatable option). */
   fallback?: boolean;
@@ -80,27 +83,18 @@ function age(iso: string): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-function isProvider(v: unknown): v is Provider {
-  return typeof v === "string" && Object.hasOwn(PROVIDERS, v);
-}
-
-/** The task's checkout, and whether it is a git repo (before any worker ran). */
-function resolveCheckout(
-  cwd: string,
-  provider: Provider,
-  readOnly: boolean,
-): { checkout: string; isGitRepo: boolean } {
+/**
+ * The task's checkout, and whether it is a git repo (before any worker ran).
+ * Outside a repo the checkout is the cwd; whether the provider may run there
+ * (`caps.nonGitReadOnly`) is dispatchTask's providerIneligibility check.
+ */
+function resolveCheckout(cwd: string): {
+  checkout: string;
+  isGitRepo: boolean;
+} {
   const checkout = resolveCheckoutRoot(cwd);
   if (checkout) return { checkout, isGitRepo: true };
-  if (provider === "claude" && readOnly) {
-    return { checkout: realpathSync(cwd), isGitRepo: false };
-  }
-  throw new CliError(
-    "USAGE",
-    readOnly
-      ? "Read-only codex tasks must run inside a git repository"
-      : "Writer tasks must run inside a git repository",
-  );
+  return { checkout: realpathSync(cwd), isGitRepo: false };
 }
 
 export async function taskRunCommand(
@@ -110,17 +104,25 @@ export async function taskRunCommand(
   await run(
     opts.json,
     () => {
-      const provider = opts.provider;
-      if (!isProvider(provider)) {
-        throw new CliError("USAGE", "--provider must be claude or codex");
+      const { provider, model } = opts;
+      if (model !== undefined && provider === undefined) {
+        throw new CliError("USAGE", "--model needs --provider");
+      }
+      if (!isProviderName(provider)) {
+        throw new CliError(
+          "USAGE",
+          `--provider must be one of ${PROVIDER_NAMES.join(", ")}`,
+        );
+      }
+      if (model !== undefined && !isModelName(model)) {
+        throw new CliError(
+          "USAGE",
+          '--model must be a model name (no leading "-", no spaces or shell characters)',
+        );
       }
       if (!prompt.trim()) throw new CliError("USAGE", "Prompt is empty");
       const readOnly = Boolean(opts.readOnly);
-      const { checkout, isGitRepo } = resolveCheckout(
-        process.cwd(),
-        provider,
-        readOnly,
-      );
+      const { checkout, isGitRepo } = resolveCheckout(process.cwd());
       // Before createTask: a config error leaves no task behind.
       const policy = resolveTaskPolicy(loadConfig(), {
         noFallback: opts.fallback === false,
@@ -132,6 +134,7 @@ export async function taskRunCommand(
         checkout,
         isGitRepo,
         policy,
+        ...(model !== undefined && { model }),
       });
       return { taskId };
     },

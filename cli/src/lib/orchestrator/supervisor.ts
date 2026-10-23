@@ -300,7 +300,17 @@ function adopt(
     policy: dispatch.policy,
     attempts,
     now,
-    eligible: eligibleProviders(checkoutIsGitRepo(dispatch)),
+    eligible: eligibleProviders(
+      {
+        checkout: task.checkout,
+        isGitRepo: checkoutIsGitRepo(dispatch),
+        readOnly: task.readOnly,
+        models: dispatch.policy.models,
+      },
+      dispatch.policy.noFallback
+        ? [latest.provider]
+        : [...new Set([latest.provider, ...dispatch.policy.fallback])],
+    ),
   });
   if (decision.kind === "fail") return fail(id, task.checkout, decision.reason);
   if (decision.at > now) return "skipped";

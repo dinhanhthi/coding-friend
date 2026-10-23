@@ -1,5 +1,11 @@
 import type { CodingFriendConfig } from "../../types.js";
-import type { AttemptEntry, DispatchRecord, Provider } from "./store.js";
+import {
+  isModelName,
+  PROVIDER_NAMES,
+  type AttemptEntry,
+  type DispatchRecord,
+  type Provider,
+} from "./store.js";
 
 /**
  * What a task does when its worker hits a provider quota: the policy, the
@@ -27,11 +33,17 @@ export function resolveTaskPolicy(
   opts: { noFallback?: boolean } = {},
 ): TaskPolicy {
   const task = config.task ?? {};
+  const models: Partial<Record<Provider, string>> = {};
+  for (const p of PROVIDER_NAMES) {
+    const m = task.models?.[p];
+    if (isModelName(m)) models[p] = m;
+  }
   return {
     onQuota: task.onQuota ?? DEFAULT_POLICY.onQuota,
     waitMinutes: task.waitMinutes ?? DEFAULT_POLICY.waitMinutes,
     fallback: [...(task.fallback ?? DEFAULT_POLICY.fallback)],
     noFallback: Boolean(opts.noFallback),
+    ...(Object.keys(models).length > 0 && { models }),
   };
 }
 
@@ -112,7 +124,7 @@ export interface DecideInput {
   attempts: AttemptEntry[];
   /** Epoch seconds. */
   now: number;
-  /** eligibleProviders(isGitRepo). */
+  /** eligibleProviders(req, candidates). */
   eligible: Provider[];
 }
 

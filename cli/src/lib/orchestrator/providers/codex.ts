@@ -2,7 +2,7 @@ import { lstatSync, readFileSync } from "fs";
 import { join } from "path";
 import { buildPreamble } from "../preamble.js";
 import { parseCodexRetryAt } from "../quota.js";
-import { isSessionId } from "../store.js";
+import { isModelName, isSessionId } from "../store.js";
 import type { ProviderAdapter, SpawnContext, StreamAcc } from "./index.js";
 
 const MAX_TEXT = 4096;
@@ -60,10 +60,22 @@ function noteQuota(message: string | undefined, acc: StreamAcc): void {
  */
 export const codex: ProviderAdapter = {
   bin: "codex",
+  caps: {
+    writer: true,
+    readOnly: true,
+    nonGitReadOnly: false,
+    needsModel: false,
+    chef: true,
+    cfShell: true,
+  },
+  askTimeoutS: 25,
 
   buildSpawn(task, ctx) {
     if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
       throw new Error("refusing to resume an invalid session id");
+    }
+    if (ctx.model !== undefined && !isModelName(ctx.model)) {
+      throw new Error("refusing an invalid model name");
     }
     // A permission profile, not --sandbox (which would override it): the store
     // is read-only even under the writable /tmp, and only this task's dir is
@@ -85,6 +97,7 @@ export const codex: ProviderAdapter = {
       ctx.checkout,
       "-o",
       lastMessageFile(ctx),
+      ...(ctx.model !== undefined ? ["-m", ctx.model] : []),
       // `resume` rejects -C/--color, so every sandbox flag stays before it.
       ...(ctx.resume ? ["resume", ctx.resume.sessionId] : []),
       "-",

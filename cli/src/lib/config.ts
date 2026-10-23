@@ -9,6 +9,11 @@ import {
   STATUSLINE_COMPONENT_IDS,
 } from "../types.js";
 import { log } from "./log.js";
+import {
+  isModelName,
+  PROVIDER_NAMES,
+  type Provider,
+} from "./orchestrator/store.js";
 
 /**
  * Deep merge two plain objects. Local values override global at every nesting
@@ -122,6 +127,18 @@ export const ShowcaseConfigSchema = z.object({
   poster: ShowcasePosterConfigSchema.optional(),
 });
 
+const ModelNameSchema = z.string().refine(isModelName, {
+  message:
+    'Expected a model name (no leading "-", no spaces or shell characters, at most 200 chars)',
+});
+
+/** `task.models.<provider>`: one optional model name per provider. */
+const TaskModelsSchema = z.object(
+  Object.fromEntries(
+    PROVIDER_NAMES.map((p) => [p, ModelNameSchema.optional()]),
+  ) as Record<Provider, z.ZodOptional<typeof ModelNameSchema>>,
+);
+
 // No .default(): `cf task` applies the defaults in code.
 export const TaskConfigSchema = z.object({
   /** What `cf task` does when a worker hits its quota. Default "wait-then-switch". */
@@ -129,10 +146,9 @@ export const TaskConfigSchema = z.object({
   /** Minutes to wait when the quota reset time is unknown or near. Default 30. */
   waitMinutes: z.number().int().min(1).optional(),
   /** Providers to switch through, in order, on quota. Default ["claude", "codex"]. */
-  fallback: z
-    .array(z.enum(["claude", "codex"]))
-    .min(1)
-    .optional(),
+  fallback: z.array(z.enum(PROVIDER_NAMES)).min(1).optional(),
+  /** Model per provider, e.g. { "codex": "gpt-5" }. Default: the provider's own. */
+  models: TaskModelsSchema.optional(),
 });
 
 /** Wall-clock "HH:MM", 24-hour. */
@@ -189,6 +205,7 @@ const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
   [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
   [["showcase", "poster"], Object.keys(ShowcasePosterConfigSchema.shape)],
   [["task"], Object.keys(TaskConfigSchema.shape)],
+  [["task", "models"], [...PROVIDER_NAMES]],
   [["chef"], Object.keys(ChefConfigSchema.shape)],
 ];
 

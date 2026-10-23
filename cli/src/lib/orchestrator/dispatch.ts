@@ -1,16 +1,17 @@
 import { realpathSync, rmSync } from "fs";
 import { basename, dirname, isAbsolute, join, relative, sep } from "path";
-import { commandExists } from "../exec.js";
 import { CliError } from "../output.js";
 import { orchestratorDir } from "../paths.js";
 import { acquireLease, releaseLease } from "./lease.js";
-import { codexVersionError } from "./providers/eligible.js";
-import { PROVIDERS } from "./providers/index.js";
+import { providerIneligibility } from "./providers/eligible.js";
 import type { TaskPolicy } from "./quota.js";
 import { digest } from "./runner.js";
 import {
   claimAttempt,
   createTask,
+  isModelName,
+  isProviderName,
+  PROVIDER_NAMES,
   recordDispatch,
   recordResult,
   recordRunner,
@@ -27,6 +28,8 @@ export interface DispatchInput {
   checkout: string;
   isGitRepo: boolean;
   policy: TaskPolicy;
+  /** Model for `provider` only; overrides `policy.models[provider]`. */
+  model?: string;
 }
 
 /**
@@ -67,12 +70,6 @@ export function assertStoreOutsideCheckout(checkout: string): void {
   }
 }
 
-/** An older codex may ignore the worker's permission profile: refuse it. */
-function assertCodexVersion(): void {
-  const error = codexVersionError();
-  if (error) throw new CliError("PROVIDER_UNAVAILABLE", error);
-}
-
 /**
  * Create a task and start its detached runner. `checkout`, `isGitRepo` and
  * `policy` come from the caller: this never reads the cwd, the config or git.
@@ -81,27 +78,39 @@ export function dispatchTask(input: DispatchInput): {
   taskId: string;
   pid: number;
 } {
-  const { prompt, provider, readOnly, checkout, isGitRepo, policy } = input;
+  const { prompt, provider, readOnly, checkout, isGitRepo, model } = input;
   // Callers check these too; the chef passes model-built input.
-  if (provider !== "claude" && provider !== "codex") {
-    throw new CliError("USAGE", "provider must be claude or codex");
+  if (!isProviderName(provider)) {
+    throw new CliError(
+      "USAGE",
+      `provider must be one of ${PROVIDER_NAMES.join(", ")}`,
+    );
   }
   if (typeof prompt !== "string" || !prompt.trim()) {
     throw new CliError("USAGE", "Prompt is empty");
   }
+  if (model !== undefined && !isModelName(model)) {
+    throw new CliError("USAGE", `Invalid model name for ${provider}`);
+  }
+  const models = { ...input.policy.models };
+  if (model !== undefined) models[provider] = model;
+  const policy: TaskPolicy = { ...input.policy };
+  delete policy.models;
+  if (Object.keys(models).length > 0) policy.models = models;
   if (process.platform === "win32") {
     throw new CliError(
       "PROVIDER_UNAVAILABLE",
       "Worker sandboxing is not available on native Windows",
     );
   }
-  if (!commandExists(PROVIDERS[provider].bin)) {
-    throw new CliError(
-      "PROVIDER_UNAVAILABLE",
-      `${PROVIDERS[provider].bin} not found on PATH`,
-    );
-  }
-  if (provider === "codex") assertCodexVersion();
+  // Binary, capability (writer / read-only / non-git), model, version.
+  const refused = providerIneligibility(provider, {
+    isGitRepo,
+    readOnly,
+    checkout,
+    ...(policy.models && { models: policy.models }),
+  });
+  if (refused) throw new CliError(refused.code, refused.message);
   // Every task: the runner writes its private dir (codex -o) into the store.
   assertStoreOutsideCheckout(checkout);
 

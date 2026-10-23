@@ -409,6 +409,54 @@ describe("resume keeps the sandbox", () => {
   });
 });
 
+describe("model and caps (C3a)", () => {
+  it.each([
+    ["claude", "--model"],
+    ["codex", "-m"],
+  ] as const)("%s adds %s <m> only when the attempt has a model", (p, flag) => {
+    const plain = PROVIDERS[p].buildSpawn(task(p, false), ctx).args;
+    expect(plain).not.toContain(flag);
+    const withModel = PROVIDERS[p].buildSpawn(task(p, false), {
+      ...ctx,
+      model: "gpt-5",
+    }).args;
+    expect(after(withModel, flag)).toEqual(["gpt-5"]);
+    // Same args otherwise (regression: no model → args unchanged).
+    const i = withModel.indexOf(flag);
+    expect([...withModel.slice(0, i), ...withModel.slice(i + 2)]).toEqual(
+      plain,
+    );
+  });
+
+  it.each(["claude", "codex"] as const)(
+    "%s buildSpawn refuses a model that looks like a flag",
+    (p) => {
+      expect(() =>
+        PROVIDERS[p].buildSpawn(task(p, false), { ...ctx, model: "-x" }),
+      ).toThrow(/invalid model name/);
+    },
+  );
+
+  it("claude and codex caps", () => {
+    expect(PROVIDERS.claude.caps).toEqual({
+      writer: true,
+      readOnly: true,
+      nonGitReadOnly: true,
+      needsModel: false,
+      chef: true,
+      cfShell: true,
+    });
+    expect(PROVIDERS.codex.caps).toEqual({
+      writer: true,
+      readOnly: true,
+      nonGitReadOnly: false,
+      needsModel: false,
+      chef: true,
+      cfShell: true,
+    });
+  });
+});
+
 // ─── chef (C2b) ─────────────────────────────────────────────────────────
 
 describe("chef spawn", () => {

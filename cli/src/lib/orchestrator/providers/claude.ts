@@ -2,7 +2,7 @@ import { join } from "path";
 import { claudeSessionDir, encodeProjectPath } from "../../paths.js";
 import { buildPreamble, shellQuote } from "../preamble.js";
 import { normalizeResetsAt } from "../quota.js";
-import { isSessionId } from "../store.js";
+import { isModelName, isSessionId } from "../store.js";
 import type { ProviderAdapter, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
@@ -21,10 +21,22 @@ function transcriptPath(ctx: SpawnContext, sessionId: string): string {
  */
 export const claude: ProviderAdapter = {
   bin: "claude",
+  caps: {
+    writer: true,
+    readOnly: true,
+    nonGitReadOnly: true,
+    needsModel: false,
+    chef: true,
+    cfShell: true,
+  },
+  askTimeoutS: 100,
 
   buildSpawn(task, ctx) {
     if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
       throw new Error("refusing to resume an invalid session id");
+    }
+    if (ctx.model !== undefined && !isModelName(ctx.model)) {
+      throw new Error("refusing an invalid model name");
     }
     // Only this task's dir: other tasks' files (task.json) stay out of reach.
     const filesystem: Record<string, string[]> = { allowWrite: [ctx.taskDir] };
@@ -67,6 +79,7 @@ export const claude: ProviderAdapter = {
       ...(ctx.resume
         ? ["--resume", ctx.resume.sessionId]
         : ["--session-id", ctx.sessionUuid]),
+      ...(ctx.model !== undefined ? ["--model", ctx.model] : []),
       "--permission-mode",
       task.readOnly ? "dontAsk" : "acceptEdits",
       "--add-dir",

@@ -45,7 +45,26 @@ export function isSessionId(value: unknown): value is string {
 /** How long a task (or lease) without runner.json counts as still spawning. */
 export const SPAWN_GRACE_MS = 30_000;
 
-export type Provider = "claude" | "codex";
+/** Every worker provider name; the single source for config, CLI and dispatch. */
+export const PROVIDER_NAMES = ["claude", "codex"] as const;
+export type Provider = (typeof PROVIDER_NAMES)[number];
+
+export function isProviderName(x: unknown): x is Provider {
+  return (
+    typeof x === "string" && (PROVIDER_NAMES as readonly string[]).includes(x)
+  );
+}
+
+/**
+ * Model names go into worker argv (`--model <m>`, `-m <m>`): no leading "-",
+ * no whitespace, control or shell characters, at most 200 chars. `/ : . _ -
+ * @ [ ] = ,` are allowed (provider/model ids, parameterized models).
+ */
+const MODEL_NAME_RE = /^(?!-)[A-Za-z0-9/:._\-@[\]=,]{1,200}$/;
+
+export function isModelName(x: unknown): x is string {
+  return typeof x === "string" && MODEL_NAME_RE.test(x);
+}
 export type DoneOutcome = "succeeded" | "failed";
 export type ResultOutcome = DoneOutcome | "cancelled";
 export type TaskState =
@@ -135,6 +154,8 @@ export interface DispatchRecord {
     waitMinutes: number;
     fallback: Provider[];
     noFallback: boolean;
+    /** Per-provider model (config `task.models`, `--model`); absent = provider default. */
+    models?: Partial<Record<Provider, string>>;
   };
   createdAt: string;
 }
@@ -262,6 +283,27 @@ export function makeRunnerPrivateDir(id: string, n?: number): string {
   const parents =
     n === undefined ? [dirname(dir)] : [dirname(dirname(dir)), dirname(dir)];
   for (const p of parents) mkdirReal(p);
+  mkdirSync(dir, { mode: 0o700 }); // EEXIST → refuse
+  assertRealDir(dir);
+  return dir;
+}
+
+/**
+ * `<orchDir>/workspaces/<id>`: a CF-owned worker workspace (path only, never
+ * created). Used to compute and remove the path.
+ */
+export function workspaceDir(orchDir: string, id: string): string {
+  assertId(id, "task id");
+  return join(orchDir, "workspaces", id);
+}
+
+/**
+ * Create `workspaceDir(orchDir, id)` 0700 (create-once: an existing leaf is
+ * refused) under a real `workspaces/` dir; never follows a symlink.
+ */
+export function makeWorkspaceDir(orchDir: string, id: string): string {
+  const dir = workspaceDir(orchDir, id);
+  mkdirReal(dirname(dir));
   mkdirSync(dir, { mode: 0o700 }); // EEXIST → refuse
   assertRealDir(dir);
   return dir;
@@ -696,7 +738,11 @@ export function recordDispatch(
     schemaVersion: 1,
     taskDigest: data.taskDigest,
     isGitRepo: data.isGitRepo,
-    policy: { ...data.policy, fallback: [...data.policy.fallback] },
+    policy: {
+      ...data.policy,
+      fallback: [...data.policy.fallback],
+      ...(data.policy.models && { models: { ...data.policy.models } }),
+    },
     createdAt: now(),
   };
   return createOnce(join(makeRunsDir(id), "dispatch.json"), record);

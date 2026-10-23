@@ -3,7 +3,11 @@ import { commandExists, run } from "../../exec.js";
 import { compareVersions, extractVersion } from "../../host.js";
 import type { Provider } from "../store.js";
 import { MIN_CODEX_VERSION } from "./codex.js";
-import { PROVIDERS } from "./index.js";
+import {
+  PROVIDERS,
+  type Ineligibility,
+  type ProviderRequest,
+} from "./index.js";
 
 /**
  * Why codex cannot run sandboxed workers (too old or unknown version), or
@@ -20,14 +24,61 @@ export function codexVersionError(): string | undefined {
 }
 
 /**
- * Providers that can run the task now: binary on PATH, codex new enough,
- * and codex only in a git checkout. `isGitRepo` comes from dispatch: git
- * never runs in a checkout a worker has written to.
+ * Why provider `p` cannot run this task, or undefined when it can. Checks,
+ * in order: binary on PATH, writer/read-only capability, git checkout
+ * (only read-only providers with `nonGitReadOnly` run outside one), a model
+ * when the provider needs one, then the provider's own probes. `isGitRepo`
+ * comes from dispatch: git never runs in a checkout a worker has written to.
  */
-export function eligibleProviders(isGitRepo: boolean): Provider[] {
-  return (Object.keys(PROVIDERS) as Provider[]).filter((p) => {
-    if (!commandExists(PROVIDERS[p].bin)) return false;
-    if (p !== "codex") return true;
-    return isGitRepo && codexVersionError() === undefined;
-  });
+export function providerIneligibility(
+  p: Provider,
+  req: ProviderRequest,
+): Ineligibility | undefined {
+  if (!Object.hasOwn(PROVIDERS, p)) {
+    return { code: "USAGE", message: `unknown provider ${JSON.stringify(p)}` };
+  }
+  const adapter = PROVIDERS[p];
+  if (!commandExists(adapter.bin)) {
+    return {
+      code: "PROVIDER_UNAVAILABLE",
+      message: `${adapter.bin} not found on PATH`,
+    };
+  }
+  if (req.readOnly ? !adapter.caps.readOnly : !adapter.caps.writer) {
+    return {
+      code: "USAGE",
+      message: `${p} cannot run ${req.readOnly ? "read-only" : "writer"} tasks`,
+    };
+  }
+  if (!req.isGitRepo && !(req.readOnly && adapter.caps.nonGitReadOnly)) {
+    return {
+      code: "USAGE",
+      message: req.readOnly
+        ? `Read-only ${p} tasks must run inside a git repository`
+        : "Writer tasks must run inside a git repository",
+    };
+  }
+  if (adapter.caps.needsModel && !req.models?.[p]) {
+    return {
+      code: "USAGE",
+      message: `${p} needs a model: set task.models.${p} or pass --model`,
+    };
+  }
+  if (p === "codex") {
+    const error = codexVersionError();
+    if (error) return { code: "PROVIDER_UNAVAILABLE", message: error };
+  }
+  return adapter.preflight?.(req);
+}
+
+/**
+ * The `candidates` that can run the task now. Callers pass the task's
+ * `policy.fallback` plus the current provider, never every provider: a
+ * provider's probes run only when the task opted into it.
+ */
+export function eligibleProviders(
+  req: ProviderRequest,
+  candidates: readonly Provider[],
+): Provider[] {
+  return candidates.filter((p) => !providerIneligibility(p, req));
 }

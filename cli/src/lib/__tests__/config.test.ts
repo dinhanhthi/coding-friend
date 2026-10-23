@@ -845,6 +845,46 @@ describe("chef config", () => {
   });
 });
 
+describe("task config", () => {
+  function load(task: unknown) {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({ task });
+    return loadConfig();
+  }
+
+  it("accepts a valid task.models and task.fallback without warnings", () => {
+    const config = load({
+      models: { codex: "gpt-5", claude: "claude-opus-4.1" },
+      fallback: ["codex", "claude"],
+    });
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.task).toEqual({
+      models: { codex: "gpt-5", claude: "claude-opus-4.1" },
+      fallback: ["codex", "claude"],
+    });
+  });
+
+  it.each(["bad model", "-x"])("rejects task.models.codex %j", (model) => {
+    const config = load({ models: { codex: model } });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("models"));
+    expect(config.task?.models?.codex).toBeUndefined();
+  });
+
+  it("rejects a task.fallback provider outside PROVIDER_NAMES", () => {
+    const config = load({ fallback: ["claude", "gpt"] });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("fallback"));
+    // Like chef.schedule: only the bad entry is dropped.
+    expect(config.task?.fallback?.[0]).toBe("claude");
+    expect(config.task?.fallback?.[1]).toBeUndefined();
+  });
+
+  it("warns on an unknown task.models provider", () => {
+    load({ models: { codex: "gpt-5", grok: "grok-4" } });
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("'task.models.grok'"),
+    );
+  });
+});
+
 describe("readGlobalChefEnabled", () => {
   const GLOBAL = "/home/user/.coding-friend/config.json";
 

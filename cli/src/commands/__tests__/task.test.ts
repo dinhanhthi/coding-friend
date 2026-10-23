@@ -56,6 +56,7 @@ import {
   claimAttempt,
   createTask,
   isPidAlive,
+  PROVIDER_NAMES,
   readTask,
   recordAttemptRunner,
   recordCancel,
@@ -67,7 +68,12 @@ let root: string;
 let stdout: string[];
 
 async function runTask(
-  opts: { readOnly?: boolean; provider?: string; fallback?: boolean } = {},
+  opts: {
+    readOnly?: boolean;
+    provider?: string;
+    model?: string;
+    fallback?: boolean;
+  } = {},
 ) {
   stdout = [];
   await taskRunCommand("do it", { provider: "claude", json: true, ...opts });
@@ -134,6 +140,49 @@ describe("cf task run --no-fallback", () => {
     expect(policyOf(pinned.data.taskId).noFallback).toBe(true);
     const free = await runTask({ readOnly: true });
     expect(policyOf(free.data.taskId).noFallback).toBe(false);
+  });
+});
+
+describe("cf task run --model", () => {
+  const policyOf = (id: string) =>
+    JSON.parse(
+      readFileSync(join(root, "orch", "runs", id, "dispatch.json"), "utf-8"),
+    ).policy;
+
+  it("--model without --provider → USAGE", async () => {
+    const out = await runTask({ provider: undefined, model: "gpt-5" });
+    expect(out).toMatchObject({ ok: false, error: { code: "USAGE" } });
+    expect(out.error.message).toContain("--model needs --provider");
+  });
+
+  it("--model goes only into policy.models of the named provider", async () => {
+    const out = await runTask({ provider: "codex", model: "gpt-5" });
+    expect(policyOf(out.data.taskId).models).toEqual({ codex: "gpt-5" });
+  });
+
+  it("a model with a leading - → USAGE, no task", async () => {
+    expect(await runTask({ model: "-oops" })).toMatchObject({
+      ok: false,
+      error: { code: "USAGE" },
+    });
+    expect(existsSync(join(root, "orch", "tasks"))).toBe(false);
+  });
+
+  it("config task.models goes into the policy; --model overrides its provider", async () => {
+    vi.mocked(loadConfig).mockReturnValueOnce({
+      task: { models: { claude: "cfg-claude", codex: "cfg-codex" } },
+    });
+    const out = await runTask({ readOnly: true, model: "flag-claude" });
+    expect(policyOf(out.data.taskId).models).toEqual({
+      claude: "flag-claude",
+      codex: "cfg-codex",
+    });
+  });
+
+  it("an unknown --provider lists every provider name", async () => {
+    const out = await runTask({ provider: "nope" });
+    expect(out).toMatchObject({ ok: false, error: { code: "USAGE" } });
+    for (const p of PROVIDER_NAMES) expect(out.error.message).toContain(p);
   });
 });
 

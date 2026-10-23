@@ -14,12 +14,20 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { PassThrough, Writable } from "stream";
 
+// Never a real provider binary or version probe.
 vi.mock("../providers/eligible.js", () => ({
+  providerIneligibility: () => undefined,
   eligibleProviders: () => ["claude", "codex"],
 }));
 
 import { acquireLease } from "../lease.js";
 import { buildResumePrompt } from "../bundle.js";
+import {
+  PROVIDERS,
+  type ProviderAdapter,
+  type ProviderRequest,
+  type SpawnContext,
+} from "../providers/index.js";
 import { digest, runTask } from "../runner.js";
 import {
   claimAttempt,
@@ -28,14 +36,17 @@ import {
   recordCancel,
   recordDispatch,
   serialize,
+  type Provider,
   type QuotaPolicy,
+  type TaskRecord,
 } from "../store.js";
 
-type Script = { lines: unknown[]; code: number };
+type Script = { lines: unknown[]; code: number; stderr?: string; pid?: number };
 interface Call {
   cmd: string;
   args: string[];
   stdin: string;
+  cwd: string;
   leaseHeld: boolean;
 }
 
@@ -53,10 +64,10 @@ const leases = () =>
   existsSync(join(orch, "leases")) ? readdirSync(join(orch, "leases")) : [];
 
 /** A worker that writes `script` to stdout once its stdin closes, then exits. */
-function fakeSpawn(cmd: string, args: string[]) {
+function fakeSpawn(cmd: string, args: string[], opts: { cwd: string }) {
   const script = queue.shift()!;
   const child = new EventEmitter() as EventEmitter & Record<string, unknown>;
-  child.pid = 0; // never signalled
+  child.pid = script.pid ?? 0; // 0: never signalled
   const stdout = new PassThrough();
   const stderr = new PassThrough();
   child.stdout = stdout;
@@ -70,8 +81,15 @@ function fakeSpawn(cmd: string, args: string[]) {
   });
   child.stdin = sink;
   sink.on("finish", () => {
-    calls.push({ cmd, args, stdin, leaseHeld: leases().length === 1 });
+    calls.push({
+      cmd,
+      args,
+      stdin,
+      cwd: opts.cwd,
+      leaseHeld: leases().length === 1,
+    });
     for (const l of script.lines) stdout.write(JSON.stringify(l) + "\n");
+    if (script.stderr) stderr.write(script.stderr);
     stdout.end();
     stderr.end();
     setImmediate(() => child.emit("exit", script.code));
@@ -136,7 +154,13 @@ const codexOk: Script = {
 };
 
 /** A dispatched writer task (lease held, attempt 1 claimed on claude). */
-function dispatch(onQuota: QuotaPolicy): string {
+function dispatch(
+  onQuota: QuotaPolicy,
+  opts: {
+    models?: Partial<Record<Provider, string>>;
+    firstProvider?: string;
+  } = {},
+): string {
   const task = createTask({
     provider: "claude",
     prompt: PROMPT,
@@ -153,9 +177,14 @@ function dispatch(onQuota: QuotaPolicy): string {
       waitMinutes: 30,
       fallback: ["claude", "codex"],
       noFallback: false,
+      ...(opts.models && { models: opts.models }),
     },
   });
-  claimAttempt(task.id, { n: 1, provider: "claude", kind: "fresh" });
+  claimAttempt(task.id, {
+    n: 1,
+    provider: (opts.firstProvider ?? "claude") as Provider,
+    kind: "fresh",
+  });
   vi.stubEnv("CF_TASK_DIGEST", taskDigest);
   vi.stubEnv("CF_TASK_CHECKOUT", checkout);
   return task.id;
@@ -187,11 +216,22 @@ beforeEach(() => {
   calls = [];
 });
 
+const realClaude = PROVIDERS.claude;
+
+/** Run claude attempts through a fake adapter: the real claude plus `over`. */
+function fakeClaude(over: Partial<ProviderAdapter>): void {
+  PROVIDERS.claude = { ...realClaude, ...over };
+}
+
 afterEach(() => {
+  PROVIDERS.claude = realClaude;
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   rmSync(root, { recursive: true, force: true });
 });
+
+const readJson = (...parts: string[]) =>
+  JSON.parse(readFileSync(join(orch, "runs", ...parts), "utf-8"));
 
 describe("runner attempt loop", () => {
   it("switch policy: pauses attempt 1, runs attempt 2 on codex with a context bundle", async () => {
@@ -316,5 +356,434 @@ describe("runner attempt loop", () => {
     expect(readTask(id).state).toBe("cancelled");
     expect(existsSync(join(orch, "runs", id, "2"))).toBe(false);
     expect(leases()).toEqual([]);
+  });
+});
+
+describe("runner worker contract (C3a)", () => {
+  const PRESET = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+  /** A claude stream line the fake adapters read as "prompt received". */
+  const ACCEPTED = { type: "system", subtype: "status", accepted: true };
+  const quotaLine = {
+    type: "rate_limit_event",
+    rate_limit_info: { status: "rejected", resetsAt: 1_800_000_600 },
+  };
+  const okResult = {
+    type: "result",
+    subtype: "success",
+    is_error: false,
+    result: "fake finished",
+  };
+  /** Parses like claude, plus `accepted`; never reports a session id itself. */
+  const presetParse: ProviderAdapter["parseLine"] = (line, acc) => {
+    const ev = JSON.parse(line);
+    if (ev.accepted) acc.accepted = true;
+    realClaude.parseLine(JSON.stringify({ ...ev, session_id: undefined }), acc);
+  };
+
+  describe("pre-spawn failures", () => {
+    it("buildSpawn throws on a fresh attempt → no spawn, the task fails", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        buildSpawn: () => {
+          throw new Error("prompt exceeds ARG_MAX");
+        },
+      });
+
+      await run(id);
+
+      expect(calls).toEqual([]);
+      expect(readTask(id).result).toMatchObject({
+        outcome: "failed",
+        error: "prompt exceeds ARG_MAX",
+      });
+      expect(existsSync(join(orch, "runs", id, "1", "session.json"))).toBe(
+        false,
+      );
+      expect(existsSync(join(orch, "runs", id, "2"))).toBe(false);
+    });
+
+    it("buildSpawn throws on a resume attempt → resume-gone: one fresh attempt with a bundle", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        buildSpawn: (t, c) => {
+          if (c.resume) throw new Error("cannot resume");
+          return realClaude.buildSpawn(t, c);
+        },
+      });
+      queue = [claudeQuota(clock + 600), claudeOk(SID2)];
+
+      await run(id);
+
+      expect(calls).toHaveLength(2);
+      expect(readJson(id, "2", "attempt.json")).toMatchObject({
+        kind: "resume",
+      });
+      expect(readJson(id, "3", "attempt.json")).toMatchObject({
+        kind: "fresh",
+        bundle: true,
+      });
+      expect(calls[1].stdin).toContain(PROMPT);
+      expect(readTask(id).state).toBe("succeeded");
+    });
+
+    it("prepare throws on a fresh attempt → same shape: no spawn, the task fails", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        prepare: async () => {
+          throw new Error("create-chat failed");
+        },
+      });
+
+      await run(id);
+
+      expect(calls).toEqual([]);
+      expect(readTask(id).result).toMatchObject({
+        outcome: "failed",
+        error: "create-chat failed",
+      });
+      expect(existsSync(join(orch, "runs", id, "2"))).toBe(false);
+    });
+
+    it("preflight refusal → the attempt fails with its message, no spawn", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        preflight: () => ({
+          code: "PROVIDER_UNAVAILABLE",
+          message: "checkout is under a temp dir",
+        }),
+      });
+
+      await run(id);
+
+      expect(calls).toEqual([]);
+      expect(readTask(id).result?.error).toContain(
+        "checkout is under a temp dir",
+      );
+      expect(existsSync(join(orch, "runs", id, "2"))).toBe(false);
+    });
+  });
+
+  it("order preflight → prepare → buildSpawn; exec env; ctx/task to parseLine; spec.cwd; stderrTail", async () => {
+    const id = dispatch("wait");
+    const order: string[] = [];
+    let req: ProviderRequest | undefined;
+    let execOut: { code: number; stdout: string } | undefined;
+    let buildCtx: SpawnContext | undefined;
+    const parsed: [SpawnContext | undefined, TaskRecord | undefined][] = [];
+    let tail: string | undefined;
+    const wsCwd = join(root, "workspace");
+    fakeClaude({
+      preflight: (r) => {
+        order.push("preflight");
+        req = r;
+        return undefined;
+      },
+      prepare: async (_t, _c, exec) => {
+        order.push("prepare");
+        execOut = await exec(
+          process.execPath,
+          ["-e", "process.stdout.write(process.env.CF_TEST_PREPARE ?? '')"],
+          { env: { CF_TEST_PREPARE: "from-adapter" }, timeoutMs: 20_000 },
+        );
+        return { sessionId: PRESET };
+      },
+      buildSpawn: (t, c) => {
+        order.push("buildSpawn");
+        buildCtx = c;
+        return { ...realClaude.buildSpawn(t, c), cwd: wsCwd };
+      },
+      parseLine: (line, acc, c, t) => {
+        parsed.push([c, t]);
+        realClaude.parseLine(line, acc);
+      },
+      finish: (acc, code, c, stderrTail) => {
+        tail = stderrTail;
+        return realClaude.finish(acc, code, c);
+      },
+    });
+    queue = [{ ...claudeOk(SID), stderr: "worker-stderr-tail" }];
+
+    await run(id);
+
+    expect(order).toEqual(["preflight", "prepare", "buildSpawn"]);
+    expect(req).toEqual({ checkout, isGitRepo: true, readOnly: false });
+    expect(execOut).toMatchObject({ code: 0, stdout: "from-adapter" });
+    expect(buildCtx?.preparedSessionId).toBe(PRESET);
+    expect(parsed).toHaveLength(2);
+    for (const [c, t] of parsed) {
+      expect(c).toMatchObject({
+        preparedSessionId: PRESET,
+        checkout,
+        orchDir: orch,
+      });
+      expect(t).toMatchObject({ id, provider: "claude", prompt: PROMPT });
+    }
+    expect(calls[0].cwd).toBe(wsCwd);
+    expect(tail).toBe("worker-stderr-tail");
+    expect(readTask(id).state).toBe("succeeded");
+  });
+
+  it("each attempt uses the model of its own provider (switch → the new provider's model)", async () => {
+    const id = dispatch("switch", {
+      models: { claude: "claude-m1", codex: "codex-m1" },
+    });
+    queue = [claudeQuota((clock + 7200) * 1000), codexOk];
+
+    await run(id);
+
+    expect(calls.map((c) => c.cmd)).toEqual(["claude", "codex"]);
+    const flag = (c: Call, f: string) => c.args[c.args.indexOf(f) + 1];
+    expect(flag(calls[0], "--model")).toBe("claude-m1");
+    expect(calls[1].args).not.toContain("--model");
+    expect(flag(calls[1], "-m")).toBe("codex-m1");
+  });
+
+  describe("preset session ids", () => {
+    it("are recorded only once the stream sets acc.accepted", async () => {
+      const id = dispatch("wait");
+      const sessionFile = join(orch, "runs", id, "1", "session.json");
+      const seen: boolean[] = [];
+      fakeClaude({
+        prepare: async () => ({ sessionId: PRESET }),
+        session: () => undefined,
+        parseLine: (line, acc, c, t) => {
+          seen.push(existsSync(sessionFile));
+          presetParse(line, acc, c, t);
+        },
+      });
+      queue = [
+        {
+          code: 0,
+          lines: [{ type: "system", subtype: "init" }, ACCEPTED, okResult],
+        },
+      ];
+
+      await run(id);
+
+      // Lines 1 and 2 parse before any record; line 2 sets accepted.
+      expect(seen).toEqual([false, false, true]);
+      expect(readJson(id, "1", "session.json").sessionId).toBe(PRESET);
+    });
+
+    it("a quota before acc.accepted records no session: the next attempt is fresh with a bundle", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        prepare: async () => ({ sessionId: PRESET }),
+        session: () => undefined,
+        parseLine: presetParse,
+      });
+      queue = [
+        { code: 1, lines: [quotaLine] },
+        { code: 0, lines: [ACCEPTED, okResult] },
+      ];
+
+      await run(id);
+
+      expect(existsSync(join(orch, "runs", id, "1", "session.json"))).toBe(
+        false,
+      );
+      expect(readJson(id, "2", "attempt.json")).toMatchObject({
+        kind: "fresh",
+        bundle: true,
+      });
+      expect(existsSync(join(orch, "runs", id, "2", "context-bundle.md"))).toBe(
+        true,
+      );
+      expect(calls[1].stdin).toContain(PROMPT);
+    });
+
+    it("a resume whose preset id the stream never confirms → finish has no sessionId → fresh with a bundle", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        prepare: async (_t, c) =>
+          c.resume ? { sessionId: c.resume.sessionId } : {},
+        parseLine: (line, acc, c, t) =>
+          c?.resume
+            ? presetParse(line, acc, c, t)
+            : realClaude.parseLine(line, acc),
+      });
+      queue = [claudeQuota(clock + 600), claudeSessionGone, claudeOk(SID2)];
+
+      await run(id);
+
+      expect(existsSync(join(orch, "runs", id, "2", "session.json"))).toBe(
+        false,
+      );
+      expect(readJson(id, "3", "attempt.json")).toMatchObject({
+        kind: "fresh",
+        bundle: true,
+      });
+      expect(readTask(id).state).toBe("succeeded");
+    });
+
+    it("an adapter that exposes no session id → the next attempt is fresh with a bundle (with one: resume, see above)", async () => {
+      const id = dispatch("wait");
+      fakeClaude({
+        session: () => undefined,
+        finish: (acc, code, c) => {
+          const fin = realClaude.finish(acc, code, c);
+          delete fin.sessionId;
+          return fin;
+        },
+      });
+      queue = [claudeQuota(clock + 600), claudeOk(SID2)];
+
+      await run(id);
+
+      expect(readJson(id, "2", "attempt.json")).toMatchObject({
+        kind: "fresh",
+        bundle: true,
+      });
+      expect(calls[1].args).not.toContain("--resume");
+      expect(calls[1].stdin).not.toBe(buildResumePrompt({ taskId: id }));
+      expect(calls[1].stdin).toContain(PROMPT);
+    });
+  });
+
+  it("acc.abort kills the worker group once and fails the attempt with the reason (no pause)", async () => {
+    const id = dispatch("wait");
+    const kill = vi.spyOn(process, "kill").mockImplementation(() => true);
+    fakeClaude({
+      parseLine: (line, acc) => {
+        realClaude.parseLine(line, acc);
+        if (JSON.parse(line).type === "rate_limit_event") {
+          acc.abort = "sandbox root drift";
+        }
+      },
+    });
+    queue = [{ ...claudeQuota(clock + 600), pid: 424242 }];
+
+    await run(id);
+
+    expect(kill.mock.calls).toEqual([[-424242, "SIGKILL"]]);
+    expect(readTask(id).result).toMatchObject({ outcome: "failed" });
+    expect(readTask(id).result?.error).toContain("sandbox root drift");
+    expect(existsSync(join(orch, "runs", id, "1", "pause.json"))).toBe(false);
+    expect(existsSync(join(orch, "runs", id, "2"))).toBe(false);
+  });
+
+  it("a preset id the record rejects → a later valid stream id is still recorded", async () => {
+    const id = dispatch("wait");
+    fakeClaude({
+      prepare: async () => ({ sessionId: "-not a session id" }),
+      parseLine: (line, acc) => {
+        if (JSON.parse(line).accepted) acc.accepted = true;
+        realClaude.parseLine(line, acc);
+      },
+    });
+    queue = [
+      {
+        code: 0,
+        lines: [
+          ACCEPTED,
+          { type: "system", subtype: "init", session_id: SID },
+          { ...okResult, session_id: SID },
+        ],
+      },
+    ];
+
+    await run(id);
+
+    expect(readJson(id, "1", "session.json").sessionId).toBe(SID);
+  });
+
+  describe("prepare exec", () => {
+    const printEnvKeys = [
+      "-e",
+      "process.stdout.write(JSON.stringify(Object.keys(process.env).sort()))",
+    ];
+
+    it("opts.env adds to the runner's env; filtered vars never reach the child", async () => {
+      const id = dispatch("wait"); // stubs CF_TASK_DIGEST / CF_TASK_CHECKOUT
+      vi.stubEnv("CF_TEST_RUNNER_ONLY", "1");
+      vi.stubEnv("CLAUDECODE", "1");
+      let given: string[] = [];
+      let inherited: string[] = [];
+      fakeClaude({
+        prepare: async (_t, _c, exec) => {
+          const a = await exec(process.execPath, printEnvKeys, {
+            env: {
+              CF_TEST_PREPARE: "x",
+              CF_TASK_DIGEST: "injected",
+              CLAUDECODE: "1",
+            },
+            timeoutMs: 20_000,
+          });
+          given = JSON.parse(a.stdout);
+          const b = await exec(process.execPath, printEnvKeys, {
+            timeoutMs: 20_000,
+          });
+          inherited = JSON.parse(b.stdout);
+          return {};
+        },
+      });
+      queue = [claudeOk(SID)];
+
+      await run(id);
+
+      // macOS adds __CF_USER_TEXT_ENCODING to every process.
+      expect(given).toContain("CF_TEST_PREPARE");
+      expect(given).toContain("CF_TEST_RUNNER_ONLY");
+      expect(inherited).toContain("CF_TEST_RUNNER_ONLY");
+      for (const k of ["CF_TASK_DIGEST", "CF_TASK_CHECKOUT", "CLAUDECODE"]) {
+        expect(given).not.toContain(k);
+        expect(inherited).not.toContain(k);
+      }
+      expect(readTask(id).state).toBe("succeeded");
+    });
+
+    it("times out within timeout + drain even when a grandchild holds the pipes", async () => {
+      const id = dispatch("wait");
+      const pidFile = join(root, "grandchild.pid");
+      // The grandchild leaves the group (detached) but inherits stdout/stderr.
+      const script = [
+        "const { spawn } = require('child_process');",
+        "const g = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 20000)'],",
+        "  { detached: true, stdio: ['ignore', 'inherit', 'inherit'] });",
+        "require('fs').writeFileSync(process.argv[1], String(g.pid));",
+        "g.unref();",
+        "setInterval(() => {}, 1000);",
+      ].join("\n");
+      let elapsed = 0;
+      fakeClaude({
+        prepare: async (_t, _c, exec) => {
+          const t0 = Date.now();
+          try {
+            await exec(process.execPath, ["-e", script, pidFile], {
+              timeoutMs: 1000,
+            });
+          } finally {
+            elapsed = Date.now() - t0;
+          }
+          return {};
+        },
+      });
+
+      try {
+        await run(id);
+      } finally {
+        if (existsSync(pidFile)) {
+          try {
+            process.kill(Number(readFileSync(pidFile, "utf-8")), "SIGKILL");
+          } catch {
+            // already gone
+          }
+        }
+      }
+
+      expect(existsSync(pidFile)).toBe(true);
+      expect(elapsed).toBeLessThan(1000 + 2000 + 2500);
+      expect(calls).toEqual([]);
+      expect(readTask(id).result?.error).toContain("timed out after 1000 ms");
+    }, 15_000);
+  });
+
+  it("an unknown provider in the attempt fails it as before", async () => {
+    const id = dispatch("wait", { firstProvider: "nope" });
+
+    await run(id);
+
+    expect(calls).toEqual([]);
+    expect(readTask(id).result?.error).toBe("attempt 1: unknown provider");
   });
 });
