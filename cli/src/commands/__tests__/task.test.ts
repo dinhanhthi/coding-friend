@@ -37,6 +37,18 @@ vi.mock("../../lib/exec.js", async (importActual) => {
       cmd === "codex" ? fake.codexVersion : actual.run(cmd, ...rest),
   };
 });
+// Never run a real opencode.
+vi.mock("../../lib/orchestrator/providers/version.js", async (importActual) => {
+  const actual =
+    await importActual<
+      typeof import("../../lib/orchestrator/providers/version.js")
+    >();
+  return {
+    ...actual,
+    binaryVersion: (bin: string, opts?: { env?: NodeJS.ProcessEnv }) =>
+      bin === "opencode" ? "2.0.13" : actual.binaryVersion(bin, opts),
+  };
+});
 vi.mock("../../lib/project-root.js", () => ({
   resolveCheckoutRoot: vi.fn(() => fake.checkout),
 }));
@@ -183,6 +195,35 @@ describe("cf task run --model", () => {
     const out = await runTask({ provider: "nope" });
     expect(out).toMatchObject({ ok: false, error: { code: "USAGE" } });
     for (const p of PROVIDER_NAMES) expect(out.error.message).toContain(p);
+  });
+});
+
+describe("cf task run --provider opencode (read-only worker)", () => {
+  it("refuses a writer task (no --read-only) and leaves no task", async () => {
+    const out = await runTask({ provider: "opencode", model: "m-1" });
+    expect(out).toMatchObject({
+      ok: false,
+      error: { code: "USAGE", message: "opencode cannot run writer tasks" },
+    });
+    expect(existsSync(join(root, "orch", "tasks"))).toBe(false);
+  });
+
+  it("accepts --read-only --model <m> and records the model", async () => {
+    const out = await runTask({
+      provider: "opencode",
+      readOnly: true,
+      model: "opencode/deepseek-v4.1-flash-free",
+    });
+    expect(out.ok).toBe(true);
+    const dispatch = JSON.parse(
+      readFileSync(
+        join(root, "orch", "runs", out.data.taskId, "dispatch.json"),
+        "utf-8",
+      ),
+    );
+    expect(dispatch.policy.models).toEqual({
+      opencode: "opencode/deepseek-v4.1-flash-free",
+    });
   });
 });
 

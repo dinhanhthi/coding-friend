@@ -1,6 +1,7 @@
 import type { DoneOutcome, Provider, TaskRecord } from "../store.js";
 import { claude } from "./claude.js";
 import { codex } from "./codex.js";
+import { opencode } from "./opencode.js";
 
 /** Everything a provider needs to spawn one worker for a task. */
 export interface SpawnContext {
@@ -165,4 +166,8 @@ export interface ProviderAdapter {
   ): FinishResult;
 }
 
-export const PROVIDERS: Record<Provider, ProviderAdapter> = { claude, codex };
+export const PROVIDERS: Record<Provider, ProviderAdapter> = {
+  claude,
+  codex,
+  opencode,
+};

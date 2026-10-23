@@ -296,13 +296,13 @@ describe("validateActions: dispatch provider (C3a)", () => {
     expect(r.accepted).toEqual([]);
     for (const x of r.rejected) {
       expect(x.reason).toBe(
-        'dispatch: provider must be one of "claude", "codex"',
+        'dispatch: provider must be one of "claude", "codex", "opencode"',
       );
     }
     expect(
       CHEF_OUTPUT_SCHEMA.properties.actions.items.properties.provider
         .description,
-    ).toContain('"claude", "codex"');
+    ).toContain('"claude", "codex", "opencode"');
   });
 
   it("rejects writer and check to a provider without caps.writer, other to one without caps.readOnly", () => {

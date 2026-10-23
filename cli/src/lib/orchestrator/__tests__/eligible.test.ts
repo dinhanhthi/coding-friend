@@ -45,7 +45,11 @@ const git = (readOnly: boolean): ProviderRequest => ({
   checkout,
 });
 
-const saved = { claude: PROVIDERS.claude, codex: PROVIDERS.codex };
+const saved = {
+  claude: PROVIDERS.claude,
+  codex: PROVIDERS.codex,
+  opencode: PROVIDERS.opencode,
+};
 
 /** Swap in a fake claude adapter with these caps / preflight. */
 function fakeClaude(over: Partial<ProviderAdapter>): ProviderAdapter {
@@ -62,6 +66,7 @@ function fakeClaude(over: Partial<ProviderAdapter>): ProviderAdapter {
 afterEach(() => {
   PROVIDERS.claude = saved.claude;
   PROVIDERS.codex = saved.codex;
+  PROVIDERS.opencode = saved.opencode;
   fake.missing.clear();
 });
 
@@ -139,6 +144,43 @@ describe("providerIneligibility", () => {
       code: "PROVIDER_UNAVAILABLE",
       message: "too new",
     });
+  });
+});
+
+describe("opencode eligibility (C3a)", () => {
+  // The real caps; preflight replaced so no opencode binary ever runs.
+  const preflight = vi.fn(() => undefined);
+  const useOpencode = () => {
+    PROVIDERS.opencode = { ...saved.opencode, preflight };
+    preflight.mockClear();
+  };
+
+  it("a writer task → USAGE (read-only worker), before any probe", () => {
+    useOpencode();
+    const refused = providerIneligibility("opencode", {
+      ...git(false),
+      models: { opencode: "m-1" },
+    });
+    expect(refused).toEqual({
+      code: "USAGE",
+      message: "opencode cannot run writer tasks",
+    });
+    expect(preflight).not.toHaveBeenCalled();
+  });
+
+  it("a read-only task without a model → USAGE naming task.models.opencode, before any probe", () => {
+    useOpencode();
+    const refused = providerIneligibility("opencode", git(true));
+    expect(refused?.code).toBe("USAGE");
+    expect(refused?.message).toContain("task.models.opencode");
+    expect(preflight).not.toHaveBeenCalled();
+    expect(
+      providerIneligibility("opencode", {
+        ...git(true),
+        models: { opencode: "m-1" },
+      }),
+    ).toBeUndefined();
+    expect(preflight).toHaveBeenCalledTimes(1);
   });
 });
 

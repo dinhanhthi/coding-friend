@@ -46,7 +46,7 @@ export function isSessionId(value: unknown): value is string {
 export const SPAWN_GRACE_MS = 30_000;
 
 /** Every worker provider name; the single source for config, CLI and dispatch. */
-export const PROVIDER_NAMES = ["claude", "codex"] as const;
+export const PROVIDER_NAMES = ["claude", "codex", "opencode"] as const;
 export type Provider = (typeof PROVIDER_NAMES)[number];
 
 export function isProviderName(x: unknown): x is Provider {
