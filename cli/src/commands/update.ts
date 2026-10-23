@@ -183,10 +183,7 @@ function hasExplicitHost(opts: UpdateOptions): boolean {
   if (argvHasAgentFlag()) return true;
   const agent = opts.agent?.trim().toLowerCase();
   return (
-    agent === "codex" ||
-    agent === "omp" ||
-    agent === "agy" ||
-    agent === "devin"
+    agent === "codex" || agent === "omp" || agent === "agy" || agent === "devin"
   );
 }
 

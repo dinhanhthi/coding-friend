@@ -137,9 +137,7 @@ export function printMemoryMcpConfig(memoryDir: string): void {
 }`);
   console.log();
 
-  log.dim(
-    "Available tools & resources: https://cf.dinhanhthi.com/#memory",
-  );
+  log.dim("Available tools & resources: https://cf.dinhanhthi.com/#memory");
   console.log();
   log.dim(
     "Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.",

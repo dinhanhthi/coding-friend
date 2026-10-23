@@ -117,10 +117,10 @@ On a feature branch, or with local commits not yet on `origin/main`, do not tag 
 
 **You only push these by hand** (never invent extra host tags):
 
-| What you push           | Tag                                 | What it triggers                                                                             |
-| ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| What you push           | Tag                                 | What it triggers                                                                                     |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Plugin                  | `v{version}` e.g. `v0.15.0`         | One GitHub Release covering Claude + Codex + AGY + Devin (generated trees in the same tagged commit) |
-| CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release                                                                 |
+| CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release                                                                         |
 
 How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`, `plugin-devin/.claude-plugin/plugin.json`) plus Codex/AGY/Devin drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`), Antigravity (`plugin-antigravity/`) and Devin (`plugin-devin/`) ship as generated artifacts in the tagged commit — not as extra tags.
 

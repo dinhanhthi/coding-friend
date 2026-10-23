@@ -994,8 +994,7 @@ describe("updateCommand — devin host", () => {
     // CLI self-update runs once (Claude section) — Devin's section has skipCli
     expect(
       mockRun.mock.calls.filter(
-        ([cmd, args]) =>
-          cmd === "npm" && (args as string[])[0] === "install",
+        ([cmd, args]) => cmd === "npm" && (args as string[])[0] === "install",
       ),
     ).toHaveLength(1);
     expect(mockReconcileDevinPlugin).toHaveBeenCalledOnce();
