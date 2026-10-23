@@ -9,6 +9,8 @@ import {
   type ProviderRequest,
 } from "./index.js";
 
+export { binaryVersion } from "./version.js";
+
 /**
  * Why codex cannot run sandboxed workers (too old or unknown version), or
  * undefined when it can. An older codex may ignore the permission profile.

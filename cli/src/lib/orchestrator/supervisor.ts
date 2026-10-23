@@ -4,6 +4,7 @@ import {
   constants,
   existsSync,
   fstatSync,
+  lstatSync,
   mkdirSync,
   openSync,
   realpathSync,
@@ -29,12 +30,23 @@ import {
   type ChefRecord,
 } from "./chef-store.js";
 import { boundNotify } from "./chef-exec.js";
-import { collectTriggers, pendingEvents, shouldWake } from "./chef-triggers.js";
+import {
+  collectTriggers,
+  pendingEvents,
+  shouldWake,
+  TASK_ENDED_STATES,
+} from "./chef-triggers.js";
 import { updateChefSummary } from "./chef-wake.js";
 import { releaseLease } from "./lease.js";
 import { eligibleProviders } from "./providers/eligible.js";
 import { decideNext } from "./quota.js";
-import { checkoutIsGitRepo, claimNextAttempt, digest } from "./runner.js";
+import {
+  checkoutIsGitRepo,
+  claimNextAttempt,
+  digest,
+  removeStorePaths,
+  taskCleanupPaths,
+} from "./runner.js";
 import {
   assertRealDir,
   isPidAlive,
@@ -330,10 +342,38 @@ function adopt(
   return "adopted";
 }
 
+function exists(path: string): boolean {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * One supervisor pass: write the heartbeat, then adopt every paused C2a task
- * whose runner is gone and whose next attempt is due. C1 tasks (no runs/)
- * are never touched.
+ * Remove the workspace and `cleanupPaths` an ended task left behind (its
+ * runner died before `end()`). A live runner keeps them: the state alone is
+ * not enough, done.json (worker-written) ends it while the worker still runs.
+ */
+function cleanupEnded(
+  view: TaskView,
+  ps: NonNullable<TickOptions["ps"]>,
+): void {
+  if (!TASK_ENDED_STATES.includes(view.state)) return;
+  const orchDir = orchestratorDir();
+  const paths = taskCleanupPaths(view, orchDir).filter(exists);
+  if (paths.length === 0) return;
+  const alive = view.attempts
+    ? latestRunnerAlive(view.id, listAttempts(view.id), ps)
+    : !!view.runner && isRunnerAlive(view.id, view.runner.pid, ps);
+  if (!alive) removeStorePaths(orchDir, paths, "supervisor");
+}
+
+/**
+ * One supervisor pass: write the heartbeat, adopt every paused C2a task
+ * whose runner is gone and whose next attempt is due (C1 tasks, without
+ * runs/, are never adopted), then remove the leftovers of ended tasks.
  */
 export function tickOnce(options: TickOptions = {}): TickSummary {
   const now = options.now ?? Math.floor(Date.now() / 1000);
@@ -353,6 +393,14 @@ export function tickOnce(options: TickOptions = {}): TickSummary {
       outcome = "skipped";
     }
     summary[outcome].push(view.id);
+  }
+  // After adoption: a task failed just now is cleaned in this same tick.
+  for (const view of listTasks()) {
+    try {
+      cleanupEnded(view, deps.ps);
+    } catch (err) {
+      console.error(`supervisor: task ${view.id}: cleanup: ${String(err)}`);
+    }
   }
   // The chef pass reports on stderr only: TickSummary stays the C2a shape.
   try {

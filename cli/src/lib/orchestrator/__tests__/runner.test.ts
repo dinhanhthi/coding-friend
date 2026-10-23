@@ -3,15 +3,21 @@ import { execFileSync, type spawn } from "child_process";
 import { EventEmitter } from "events";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { fileURLToPath } from "url";
 import { PassThrough, Writable } from "stream";
 
 // Never a real provider binary or version probe.
@@ -478,6 +484,10 @@ describe("runner worker contract (C3a)", () => {
         req = r;
         return undefined;
       },
+      workspaceFiles: () => {
+        order.push("workspaceFiles");
+        return undefined;
+      },
       prepare: async (_t, _c, exec) => {
         order.push("prepare");
         execOut = await exec(
@@ -505,7 +515,12 @@ describe("runner worker contract (C3a)", () => {
 
     await run(id);
 
-    expect(order).toEqual(["preflight", "prepare", "buildSpawn"]);
+    expect(order).toEqual([
+      "preflight",
+      "workspaceFiles",
+      "prepare",
+      "buildSpawn",
+    ]);
     expect(req).toEqual({ checkout, isGitRepo: true, readOnly: false });
     expect(execOut).toMatchObject({ code: 0, stdout: "from-adapter" });
     expect(buildCtx?.preparedSessionId).toBe(PRESET);
@@ -785,5 +800,223 @@ describe("runner worker contract (C3a)", () => {
 
     expect(calls).toEqual([]);
     expect(readTask(id).result?.error).toBe("attempt 1: unknown provider");
+  });
+});
+
+describe("runner workspace lifecycle (C3a)", () => {
+  /** A fake adapter's task-level config dir, a sibling of runner/<id>/<n>. */
+  const configDir = (id: string, name = "fake-config") =>
+    join(orch, "runner", id, name);
+  const wsDir = (id: string) => join(orch, "workspaces", id);
+
+  /** claude plus a workspace (two files) and a task-level config dir. */
+  function fakeWithWorkspace(seen: string[][] = []): void {
+    fakeClaude({
+      workspaceFiles: (t, _c, prompt) => ({
+        files: {
+          ".fake/sandbox.json": `{"task":"${t.id}"}`,
+          "prompt.txt": prompt,
+        },
+      }),
+      prepare: async (t) => {
+        mkdirSync(join(configDir(t.id), "chats"), { recursive: true });
+        return {};
+      },
+      cleanupPaths: (t) => [configDir(t.id)],
+      buildSpawn: (t, c) => {
+        seen.push(readdirSync(wsDir(t.id)).sort());
+        return realClaude.buildSpawn(t, c);
+      },
+    });
+  }
+
+  it("rebuilds the workspace clean before each attempt; cleanupPaths survive between attempts; both go at the end", async () => {
+    const id = dispatch("wait");
+    const seen: string[][] = [];
+    fakeWithWorkspace(seen);
+    queue = [claudeQuota(clock + 600), claudeOk(SID)];
+    let between = false;
+
+    await run(id, () => {
+      // Between attempts: junk in the workspace, a rewritten file, chat state.
+      writeFileSync(join(wsDir(id), "junk"), "x");
+      writeFileSync(join(wsDir(id), ".fake", "sandbox.json"), "{}");
+      writeFileSync(join(configDir(id), "chats", "chat-1"), "keep");
+      between = existsSync(configDir(id));
+    });
+
+    expect(calls).toHaveLength(2);
+    expect(seen).toEqual([
+      [".fake", "prompt.txt"],
+      [".fake", "prompt.txt"],
+    ]);
+    expect(between).toBe(true);
+    expect(readTask(id).state).toBe("succeeded");
+    expect(existsSync(wsDir(id))).toBe(false);
+    expect(existsSync(configDir(id))).toBe(false);
+    // Removed before the non-recursive rmdir of runner/<id>: no ENOTEMPTY.
+    expect(existsSync(join(orch, "runner", id))).toBe(false);
+  });
+
+  it("writes workspace files 0600 with the adapter's content", async () => {
+    const id = dispatch("wait");
+    let mode = 0;
+    let content = "";
+    fakeWithWorkspace();
+    const withCheck = PROVIDERS.claude;
+    PROVIDERS.claude = {
+      ...withCheck,
+      buildSpawn: (t, c) => {
+        const file = join(wsDir(t.id), ".fake", "sandbox.json");
+        mode = statSync(file).mode & 0o777;
+        content = readFileSync(file, "utf-8");
+        return realClaude.buildSpawn(t, c);
+      },
+    };
+    queue = [claudeOk(SID)];
+
+    await run(id);
+
+    expect(mode).toBe(0o600);
+    expect(content).toBe(`{"task":"${id}"}`);
+  });
+
+  it.each(["failed", "cancelled"] as const)(
+    "%s task: end() removes the workspace and cleanupPaths",
+    async (outcome) => {
+      const id = dispatch("wait");
+      fakeWithWorkspace();
+      const withWs = PROVIDERS.claude;
+      PROVIDERS.claude = {
+        ...withWs,
+        buildSpawn: (t, c) => {
+          if (outcome === "cancelled") recordCancel(t.id);
+          return withWs.buildSpawn(t, c);
+        },
+      };
+      queue = [outcome === "failed" ? claudeSessionGone : claudeOk(SID)];
+
+      await run(id);
+
+      expect(calls).toHaveLength(1);
+      expect(readTask(id).result?.outcome).toBe(outcome);
+      expect(existsSync(wsDir(id))).toBe(false);
+      expect(existsSync(configDir(id))).toBe(false);
+      expect(existsSync(join(orch, "runner", id))).toBe(false);
+    },
+  );
+
+  it("after a provider switch, end() removes the cleanupPaths of both providers", async () => {
+    const id = dispatch("switch");
+    const realCodex = PROVIDERS.codex;
+    fakeWithWorkspace();
+    PROVIDERS.codex = {
+      ...realCodex,
+      prepare: async (t) => {
+        mkdirSync(configDir(t.id, "codex-config"));
+        return {};
+      },
+      cleanupPaths: (t) => [configDir(t.id, "codex-config")],
+    };
+    try {
+      queue = [claudeQuota((clock + 7200) * 1000), codexOk];
+
+      await run(id);
+    } finally {
+      PROVIDERS.codex = realCodex;
+    }
+
+    expect(calls.map((c) => c.cmd)).toEqual(["claude", "codex"]);
+    expect(readTask(id).state).toBe("succeeded");
+    expect(existsSync(configDir(id))).toBe(false);
+    expect(existsSync(configDir(id, "codex-config"))).toBe(false);
+    expect(existsSync(join(orch, "runner", id))).toBe(false);
+  });
+
+  it("a workspace that cannot be built fails the attempt without a spawn", async () => {
+    const id = dispatch("wait");
+    fakeClaude({
+      workspaceFiles: () => ({ files: { "../escape.json": "{}" } }),
+    });
+
+    await run(id);
+
+    expect(calls).toEqual([]);
+    expect(readTask(id).result).toMatchObject({ outcome: "failed" });
+    expect(readTask(id).result?.error).toContain("invalid workspace file path");
+    expect(existsSync(join(orch, "workspaces", "escape.json"))).toBe(false);
+    expect(existsSync(wsDir(id))).toBe(false);
+  });
+
+  it("never removes a cleanupPaths entry outside the store; the task still ends", async () => {
+    const id = dispatch("wait");
+    // Same prefix as the store, but a sibling: only `<orch>/` is inside.
+    const victimDir = `${orch}-victim`;
+    const victimFile = join(root, "victim.txt");
+    mkdirSync(join(victimDir, "sub"), { recursive: true });
+    writeFileSync(join(victimDir, "sub", "keep"), "x");
+    writeFileSync(victimFile, "x");
+    fakeClaude({ cleanupPaths: () => [victimDir, victimFile] });
+    queue = [claudeOk(SID)];
+
+    await run(id);
+
+    expect(readTask(id).state).toBe("succeeded");
+    expect(readFileSync(join(victimDir, "sub", "keep"), "utf-8")).toBe("x");
+    expect(readFileSync(victimFile, "utf-8")).toBe("x");
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("outside the store"),
+    );
+  });
+
+  it("a symlinked workspaces/ fails the attempt and nothing is deleted through it", async () => {
+    const id = dispatch("wait");
+    const elsewhere = join(root, "elsewhere");
+    mkdirSync(join(elsewhere, id), { recursive: true });
+    writeFileSync(join(elsewhere, id, "keep"), "x");
+    symlinkSync(elsewhere, join(orch, "workspaces"));
+    fakeWithWorkspace();
+    queue = [claudeOk(SID)];
+
+    await run(id);
+
+    expect(calls).toEqual([]);
+    expect(readTask(id).result).toMatchObject({ outcome: "failed" });
+    expect(readTask(id).result?.error).toContain("refusing");
+    expect(lstatSync(join(orch, "workspaces")).isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(elsewhere, id, "keep"), "utf-8")).toBe("x");
+  });
+
+  it("never deletes a cleanup path through a symlinked ancestor (runner/ swapped mid-run)", async () => {
+    const id = dispatch("wait");
+    const moved = join(root, "moved-runner");
+    fakeWithWorkspace();
+    const withWs = PROVIDERS.claude;
+    PROVIDERS.claude = {
+      ...withWs,
+      buildSpawn: (t, c) => {
+        // runner/<id>/fake-config exists now (prepare): swap runner/ for a link.
+        renameSync(join(orch, "runner"), moved);
+        symlinkSync(moved, join(orch, "runner"));
+        writeFileSync(join(moved, t.id, "fake-config", "chats", "keep"), "x");
+        return withWs.buildSpawn(t, c);
+      },
+    };
+    queue = [claudeOk(SID)];
+
+    await run(id);
+
+    expect(readTask(id).result).toBeDefined();
+    expect(
+      readFileSync(join(moved, id, "fake-config", "chats", "keep"), "utf-8"),
+    ).toBe("x");
+  });
+
+  it("the runner names no provider-specific path (no Cursor)", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("../runner.ts", import.meta.url)),
+      "utf-8",
+    );
+    expect(src).not.toMatch(/cursor/i);
   });
 });

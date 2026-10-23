@@ -3,7 +3,12 @@ import { join } from "path";
 import { buildPreamble } from "../preamble.js";
 import { parseCodexRetryAt } from "../quota.js";
 import { isModelName, isSessionId } from "../store.js";
-import type { ProviderAdapter, SpawnContext, StreamAcc } from "./index.js";
+import type {
+  ProviderAdapter,
+  ProviderCaps,
+  SpawnContext,
+  StreamAcc,
+} from "./index.js";
 
 const MAX_TEXT = 4096;
 const PROFILE = "cf_task";
@@ -54,21 +59,25 @@ function noteQuota(message: string | undefined, acc: StreamAcc): void {
   };
 }
 
+// Module consts so buildPreamble gets the same values, with literal types.
+const CAPS = {
+  writer: true,
+  readOnly: true,
+  nonGitReadOnly: false,
+  needsModel: false,
+  chef: true,
+  cfShell: true,
+} as const satisfies ProviderCaps;
+const ASK_TIMEOUT_S = 25;
+
 /**
  * Codex worker (`codex exec --json`). Preamble + prompt go through stdin
  * (`-`). The last agent message is written by codex itself to `-o`.
  */
 export const codex: ProviderAdapter = {
   bin: "codex",
-  caps: {
-    writer: true,
-    readOnly: true,
-    nonGitReadOnly: false,
-    needsModel: false,
-    chef: true,
-    cfShell: true,
-  },
-  askTimeoutS: 25,
+  caps: CAPS,
+  askTimeoutS: ASK_TIMEOUT_S,
 
   buildSpawn(task, ctx) {
     if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
@@ -105,9 +114,10 @@ export const codex: ProviderAdapter = {
     const preamble = buildPreamble({
       taskId: task.id,
       readOnly: task.readOnly,
-      provider: "codex",
       cfInvocation: ctx.cfInvocation,
       orchDir: ctx.orchDir,
+      askTimeoutS: ASK_TIMEOUT_S,
+      cfShell: CAPS.cfShell,
     });
     return {
       cmd: "codex",

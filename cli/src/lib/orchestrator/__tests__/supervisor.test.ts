@@ -8,6 +8,7 @@ import {
   readdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -17,6 +18,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 
 import { acquireLease } from "../lease.js";
+import { PROVIDERS } from "../providers/index.js";
 import { digest } from "../runner.js";
 import {
   claimAttempt,
@@ -27,8 +29,11 @@ import {
   readTask,
   recordAttemptRunner,
   recordDispatch,
+  recordDone,
   recordPause,
+  recordResult,
   SPAWN_GRACE_MS,
+  type Provider,
 } from "../store.js";
 import {
   isRunnerCommand,
@@ -173,6 +178,147 @@ describe("tickOnce", () => {
     expect(view.result?.error).toBe("task.json changed after dispatch");
     expect(leases()).toHaveLength(0);
     expect(listAttempts(id)).toHaveLength(1);
+  });
+});
+
+describe("tickOnce cleanup of ended tasks (C3a)", () => {
+  const saved = { claude: PROVIDERS.claude, codex: PROVIDERS.codex };
+  const configDir = (id: string, p: string) =>
+    join(orch, "runner", id, `${p}-config`);
+  const wsDir = (id: string) => join(orch, "workspaces", id);
+
+  beforeEach(() => {
+    // Fake adapters with a task-level cleanup path each.
+    for (const p of ["claude", "codex"] as const) {
+      PROVIDERS[p] = { ...saved[p], cleanupPaths: (t) => [configDir(t.id, p)] };
+    }
+  });
+  afterEach(() => {
+    PROVIDERS.claude = saved.claude;
+    PROVIDERS.codex = saved.codex;
+  });
+
+  /** A C2a task whose attempts ran on `providers`, with leftovers on disk. */
+  function taskWithLeftovers(providers: Provider[], runnerPid: number): string {
+    const { id } = createTask({
+      provider: "claude",
+      prompt: "ORIGINAL-PROMPT",
+      readOnly: true,
+      checkout,
+    });
+    recordDispatch(id, {
+      taskDigest: digest(readFileSync(taskJson(id))),
+      isGitRepo: false,
+      policy: {
+        onQuota: "switch",
+        waitMinutes: 30,
+        fallback: ["claude", "codex"],
+        noFallback: false,
+      },
+    });
+    providers.forEach((provider, i) => {
+      claimAttempt(id, { n: i + 1, provider, kind: "fresh" });
+      recordAttemptRunner(id, i + 1, {
+        pid: runnerPid,
+        startedAt: new Date().toISOString(),
+      });
+    });
+    mkdirSync(join(wsDir(id), ".fake"), { recursive: true });
+    for (const p of providers) {
+      mkdirSync(join(configDir(id, p), "chats"), { recursive: true });
+    }
+    return id;
+  }
+
+  it("removes the workspace and the cleanupPaths of every provider that ran (runner died before end())", () => {
+    const id = taskWithLeftovers(["claude", "codex"], deadPid());
+    recordResult(id, { exitCode: null, outcome: "failed", error: "x" });
+
+    expect(tick()).toEqual({ adopted: [], failed: [], skipped: [] });
+
+    expect(existsSync(wsDir(id))).toBe(false);
+    expect(existsSync(configDir(id, "claude"))).toBe(false);
+    expect(existsSync(configDir(id, "codex"))).toBe(false);
+  });
+
+  it("an interrupted task (no result, runner gone) is cleaned too", () => {
+    const id = taskWithLeftovers(["claude"], deadPid());
+    expect(readTask(id).state).toBe("interrupted");
+
+    tick();
+
+    expect(existsSync(wsDir(id))).toBe(false);
+    expect(existsSync(configDir(id, "claude"))).toBe(false);
+  });
+
+  it("keeps the leftovers while the runner lives, even after the worker's cf done", () => {
+    const id = taskWithLeftovers(["claude"], process.pid);
+    recordDone(id, { outcome: "succeeded", summary: "done" });
+    expect(readTask(id).state).toBe("succeeded");
+
+    tick(() => `node cf task _run ${id}`);
+
+    expect(existsSync(wsDir(id))).toBe(true);
+    expect(existsSync(configDir(id, "claude"))).toBe(true);
+  });
+
+  it("never removes a cleanupPaths entry outside the store (logged as supervisor)", () => {
+    // Same prefix as the store, but a sibling: only `<orch>/` is inside.
+    const victim = `${orch}-victim`;
+    mkdirSync(join(victim, "sub"), { recursive: true });
+    writeFileSync(join(victim, "sub", "keep"), "x");
+    PROVIDERS.claude = { ...saved.claude, cleanupPaths: () => [victim] };
+    const id = taskWithLeftovers(["claude"], deadPid());
+    recordResult(id, { exitCode: null, outcome: "failed", error: "x" });
+
+    tick();
+
+    expect(readFileSync(join(victim, "sub", "keep"), "utf-8")).toBe("x");
+    expect(existsSync(wsDir(id))).toBe(false);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^supervisor: could not remove .*outside the store/,
+      ),
+    );
+  });
+
+  it("never deletes through a symlinked workspaces/", () => {
+    const id = taskWithLeftovers(["claude"], deadPid());
+    recordResult(id, { exitCode: null, outcome: "failed", error: "x" });
+    const moved = join(root, "moved-workspaces");
+    renameSync(join(orch, "workspaces"), moved);
+    symlinkSync(moved, join(orch, "workspaces"));
+
+    tick();
+
+    expect(lstatSync(join(orch, "workspaces")).isSymbolicLink()).toBe(true);
+    expect(existsSync(join(moved, id, ".fake"))).toBe(true);
+  });
+
+  it("never deletes a depth-2 cleanup path through a symlinked runner/", () => {
+    const id = taskWithLeftovers(["claude"], deadPid());
+    recordResult(id, { exitCode: null, outcome: "failed", error: "x" });
+    const moved = join(root, "moved-runner");
+    renameSync(join(orch, "runner"), moved);
+    symlinkSync(moved, join(orch, "runner"));
+
+    tick();
+
+    expect(existsSync(join(moved, id, "claude-config", "chats"))).toBe(true);
+    // The workspace (no symlinked ancestor) still goes.
+    expect(existsSync(wsDir(id))).toBe(false);
+  });
+
+  it("keeps the leftovers of a paused task it adopts (the new runner rebuilds them)", () => {
+    const { id } = pausedTask(deadPid());
+    mkdirSync(wsDir(id), { recursive: true });
+    mkdirSync(configDir(id, "claude"), { recursive: true });
+
+    // Adopted: attempt 2 is claimed, its runner not started yet.
+    expect(tick().adopted).toEqual([id]);
+
+    expect(existsSync(wsDir(id))).toBe(true);
+    expect(existsSync(configDir(id, "claude"))).toBe(true);
   });
 });
 

@@ -1,8 +1,15 @@
 import { spawn } from "child_process";
 import { createHash, randomUUID } from "crypto";
-import { existsSync, realpathSync, rmdirSync, rmSync } from "fs";
+import {
+  existsSync,
+  lstatSync,
+  realpathSync,
+  rmdirSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { isAbsolute, join, relative, resolve, sep } from "path";
 import { createInterface } from "readline";
 import { setTimeout as sleepTimer } from "timers/promises";
 import { orchestratorDir } from "../paths.js";
@@ -21,9 +28,12 @@ import {
 } from "./providers/index.js";
 import { decideNext, type Decision } from "./quota.js";
 import {
+  assertRealDir,
   claimAttempt,
   listAttempts,
   makeRunnerPrivateDir,
+  makeWorkspaceDir,
+  mkdirReal,
   readBundle,
   readDispatch,
   readRegularFile,
@@ -33,6 +43,7 @@ import {
   recordResult,
   recordSession,
   runnerPrivateDir,
+  workspaceDir,
   writeBundle,
   type AttemptRecord,
   type DispatchRecord,
@@ -256,6 +267,113 @@ function makeExec(trap: Trap): ExecFn {
     });
 }
 
+/**
+ * Remove `path` (recursive) when it lies inside the store. Every dir between
+ * the store and `path` must be a real dir, checked top-down (lstat follows a
+ * symlinked ancestor): never delete through a symlinked store subdir. A
+ * missing one means nothing to remove.
+ */
+function removeStorePath(orchDir: string, path: string): void {
+  const root = resolve(orchDir);
+  const target = resolve(path);
+  if (!target.startsWith(root + sep)) {
+    throw new Error(`refusing to remove ${path}: outside the store`);
+  }
+  let dir = root;
+  for (const part of relative(root, target).split(sep).slice(0, -1)) {
+    dir = join(dir, part);
+    try {
+      lstatSync(dir);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw err;
+    }
+    assertRealDir(dir);
+  }
+  rmSync(target, { recursive: true, force: true });
+}
+
+/**
+ * Task-level paths to remove once the task ends: its workspace plus the
+ * `cleanupPaths` of every provider that ran an attempt (from attempt.json:
+ * after a switch the first provider's paths are left too) or, for a C1
+ * task, of its provider.
+ */
+export function taskCleanupPaths(task: TaskRecord, orchDir: string): string[] {
+  const providers = new Set<string>([
+    task.provider,
+    ...listAttempts(task.id).map((e) => e.attempt.provider),
+  ]);
+  const paths = [workspaceDir(orchDir, task.id)];
+  for (const p of providers) {
+    if (!Object.hasOwn(PROVIDERS, p)) continue;
+    paths.push(
+      ...(PROVIDERS[p as keyof typeof PROVIDERS].cleanupPaths?.(task) ?? []),
+    );
+  }
+  return paths;
+}
+
+/**
+ * Remove `paths` (see removeStorePath); errors are logged under `label`
+ * (the caller: runner or supervisor), never thrown.
+ */
+export function removeStorePaths(
+  orchDir: string,
+  paths: string[],
+  label: string,
+): void {
+  for (const path of paths) {
+    try {
+      removeStorePath(orchDir, path);
+    } catch (err) {
+      console.error(`${label}: could not remove ${path}: ${String(err)}`);
+    }
+  }
+}
+
+/** Remove the task's workspace and cleanupPaths (never throws). */
+function removeTaskPaths(task: TaskRecord): void {
+  const orchDir = orchestratorDir();
+  let paths: string[];
+  try {
+    paths = taskCleanupPaths(task, orchDir);
+  } catch (err) {
+    console.error(`runner: could not list task paths: ${String(err)}`);
+    return;
+  }
+  removeStorePaths(orchDir, paths, "runner");
+}
+
+/**
+ * Wipe `workspaces/<id>` and, when the adapter returns files, rebuild it
+ * from them (dirs 0700, files 0600 created exclusively). Never read back.
+ * Throws on any failure: the attempt then fails without a spawn.
+ */
+function buildWorkspace(
+  adapter: ProviderAdapter,
+  task: TaskRecord,
+  ctx: SpawnContext,
+): void {
+  if (!adapter.workspaceFiles) return;
+  removeStorePath(ctx.orchDir, workspaceDir(ctx.orchDir, task.id));
+  const files = adapter.workspaceFiles(task, ctx, task.prompt)?.files;
+  if (!files) return;
+  const ws = makeWorkspaceDir(ctx.orchDir, task.id);
+  for (const [rel, content] of Object.entries(files)) {
+    const parts = rel.split("/");
+    if (isAbsolute(rel) || parts.some((p) => ["", ".", ".."].includes(p))) {
+      throw new Error(`invalid workspace file path ${JSON.stringify(rel)}`);
+    }
+    let dir = ws;
+    for (const part of parts.slice(0, -1)) {
+      dir = join(dir, part);
+      mkdirReal(dir);
+    }
+    writeFileSync(join(ws, ...parts), content, { mode: 0o600, flag: "wx" });
+  }
+}
+
 /** The runner was signalled before a worker started. */
 function stoppedRun(adapter: ProviderAdapter, ctx: SpawnContext): WorkerRun {
   return {
@@ -268,9 +386,10 @@ function stoppedRun(adapter: ProviderAdapter, ctx: SpawnContext): WorkerRun {
 
 /**
  * Spawn one worker, parse its stream until it exits and drains. Per attempt:
- * `preflight` → (`workspaceFiles`, Phase 3) → `prepare` → `buildSpawn`.
- * A preflight refusal is terminal (`spawnError`). A throwing `prepare` or
- * `buildSpawn` fails the attempt without a spawn and without a session id,
+ * `preflight` → `workspaceFiles` (the runner rebuilds the workspace) →
+ * `prepare` → `buildSpawn`. A preflight refusal is terminal (`spawnError`).
+ * A failing workspace build, or a throwing `prepare` or `buildSpawn`, fails
+ * the attempt without a spawn and without a session id,
  * so a resume attempt falls back to fresh (resume-gone).
  */
 async function runWorker(
@@ -297,6 +416,7 @@ async function runWorker(
     let spec: SpawnSpec | undefined;
     let error = "";
     try {
+      buildWorkspace(adapter, task, ctx);
       if (adapter.prepare) {
         const prepared = await adapter.prepare(task, ctx, makeExec(trap));
         if (prepared.sessionId !== undefined) {
@@ -511,6 +631,7 @@ async function runOnce(task: TaskRecord, deps: Deps): Promise<void> {
   } finally {
     trap.dispose();
     if (!task.readOnly) releaseLease(task.checkout, id);
+    removeTaskPaths(task);
     rmSync(privateDir, { recursive: true, force: true });
   }
 }
@@ -603,6 +724,8 @@ async function runAttempts(
       recordResult(id, data);
     } finally {
       if (!task.readOnly) releaseLease(task.checkout, id);
+      // First: a cleanup path under runner/<id> would keep it non-empty.
+      removeTaskPaths(task);
       try {
         rmdirSync(runnerPrivateDir(id)); // empty by now; never follows a symlink
       } catch {

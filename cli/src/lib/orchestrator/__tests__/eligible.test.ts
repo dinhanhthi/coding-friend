@@ -1,4 +1,23 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from "vitest";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { fileURLToPath } from "url";
 
 const fake = vi.hoisted(() => ({ missing: new Set<string>() }));
 
@@ -8,9 +27,11 @@ vi.mock("../../exec.js", () => ({
 }));
 
 import {
+  binaryVersion as reexported,
   eligibleProviders,
   providerIneligibility,
 } from "../providers/eligible.js";
+import { binaryVersion, tempDirRoots } from "../providers/version.js";
 import {
   PROVIDERS,
   type ProviderAdapter,
@@ -118,5 +139,100 @@ describe("providerIneligibility", () => {
       code: "PROVIDER_UNAVAILABLE",
       message: "too new",
     });
+  });
+});
+
+describe("binaryVersion (providers/version.ts)", () => {
+  let dir: string;
+  /** A fake binary: a POSIX sh script. */
+  const fakeBin = (name: string, body: string): string => {
+    const file = join(dir, name);
+    writeFileSync(file, `#!/bin/sh\n${body}\n`);
+    chmodSync(file, 0o755);
+    return file;
+  };
+
+  beforeAll(() => {
+    dir = realpathSync(mkdtempSync(join(tmpdir(), "cf-version-")));
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  it.each([
+    ["opencode v2.0.13", "2.0.13"],
+    ["2026.10.22-27dcf5f", "2026.10.22"],
+    ["grok 1.0.46 (2765805b9442) [stable]", "1.0.46"],
+    ["1.0.46", "1.0.46"],
+  ])("%s → %s", (output, version) => {
+    const bin = fakeBin("echo-out", 'printf "%s\\n" "$FAKE_OUT"');
+    expect(binaryVersion(bin, { env: { FAKE_OUT: output } })).toBe(version);
+  });
+
+  it("opts.env reaches the --version child", () => {
+    const bin = fakeBin("echo-env", 'printf "%s\\n" "$CURSOR_CONFIG_DIR"');
+    expect(binaryVersion(bin, { env: { CURSOR_CONFIG_DIR: "9.8.7" } })).toBe(
+      "9.8.7",
+    );
+  });
+
+  it("opts.args follow --version; without them only --version", () => {
+    const bin = fakeBin(
+      "echo-args",
+      'case "$*" in "--version") echo 1.0.0 ;; "--version --no-auto-update") echo 2.0.0 ;; esac',
+    );
+    expect(binaryVersion(bin)).toBe("1.0.0");
+    expect(binaryVersion(bin, { args: ["--no-auto-update"] })).toBe("2.0.0");
+  });
+
+  it("runs in tmpdir(), never the caller's cwd", () => {
+    const want = realpathSync(tmpdir());
+    const bin = fakeBin(
+      "echo-cwd",
+      `[ "$(pwd -P)" = "${want}" ] && echo 3.3.3`,
+    );
+    expect(binaryVersion(bin)).toBe("3.3.3");
+  });
+
+  it("a missing binary or no version → undefined", () => {
+    expect(binaryVersion(join(dir, "missing"))).toBeUndefined();
+    expect(binaryVersion(fakeBin("no-version", "echo none"))).toBeUndefined();
+  });
+
+  it("eligible.ts re-exports the same function", () => {
+    expect(reexported).toBe(binaryVersion);
+  });
+
+  it("version.ts is a leaf: no providers/index, eligible or adapter import", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("../providers/version.ts", import.meta.url)),
+      "utf-8",
+    );
+    const local = [...src.matchAll(/from\s+["'](\.[^"']*)["']/g)].map(
+      (m) => m[1],
+    );
+    for (const spec of local) {
+      expect(["../../exec.js", "../../host.js"]).toContain(spec);
+    }
+  });
+});
+
+describe("tempDirRoots", () => {
+  it("realpaths, no duplicates, missing entries dropped, $TMPDIR included", () => {
+    const extra = realpathSync(mkdtempSync(join(tmpdir(), "cf-tmproot-")));
+    try {
+      const roots = tempDirRoots({ TMPDIR: `${extra}/` });
+      expect(roots).toContain(extra);
+      expect(roots).toContain(realpathSync("/tmp"));
+      expect(new Set(roots).size).toBe(roots.length);
+      for (const r of roots) expect(realpathSync(r)).toBe(r);
+      if (process.platform === "darwin") {
+        expect(roots).toContain("/private/tmp");
+        expect(roots).not.toContain("/tmp");
+      }
+      expect(tempDirRoots({ TMPDIR: join(extra, "missing") })).not.toContain(
+        join(extra, "missing"),
+      );
+    } finally {
+      rmSync(extra, { recursive: true, force: true });
+    }
   });
 });

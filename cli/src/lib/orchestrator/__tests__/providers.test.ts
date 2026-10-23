@@ -20,9 +20,11 @@ import {
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { fileURLToPath } from "url";
 import { notifyUser, type NotifyExecFile } from "../../notify.js";
 import { CHEF_OUTPUT_SCHEMA } from "../chef-actions.js";
 import { makeChefHooksDir } from "../chef-git.js";
+import { buildPreamble } from "../preamble.js";
 import {
   buildChefSpawn,
   CHEF_PROVIDERS,
@@ -82,6 +84,7 @@ const TRUSTED = [
   "/orch/runner",
   "/orch/supervisor",
   "/orch/chefs",
+  "/orch/workspaces",
 ];
 
 function claudeSettings(args: string[]): any {
@@ -214,6 +217,59 @@ describe("buildSpawn", () => {
       );
     },
   );
+});
+
+describe("preamble (C3a)", () => {
+  // Captured from `git show 94b3e7eb:cli/src/lib/orchestrator/preamble.ts`
+  // (before askTimeoutS/cfShell) with this file's ctx: never regenerate.
+  const CLAUDE_WRITER_PREAMBLE =
+    "You are a non-interactive worker for Coding Friend task abcd1234. Nobody watches this session: never ask the user anything interactively and never wait for input.\n\nRun each cf command below (ask and done) as a single standalone command, exactly as shown: never chain it with ;, &&, || or |, never wrap it in a subshell, and never add echo after it. The tool reports the exit code anyway.\n\nTo ask the user a question, run:\n  /usr/bin/node /cli/index.js ask --task abcd1234 '<question>'\nEach call can wait up to 100 seconds for an answer; let it finish and do not run it in the background. Always check the exit code: exit code 0 means stdout is the answer. Exit code 1 means there is no answer yet (ASK_TIMEOUT) or an error, and stdout then holds an error message, not an answer: run the exact same command again to keep waiting.\n\nIf you have notes for whoever continues this work, write them to /orch/tasks/abcd1234/handoff.md\n\nWhen you are finished, run exactly once:\n  /usr/bin/node /cli/index.js done --task abcd1234 --outcome succeeded --summary '<one line>'\nUse --outcome failed instead if you could not complete the task. Add --handoff /orch/tasks/abcd1234/handoff.md if you wrote handoff notes.";
+  const CODEX_READ_ONLY_PREAMBLE =
+    "You are a non-interactive worker for Coding Friend task abcd1234. Nobody watches this session: never ask the user anything interactively and never wait for input.\n\nThis is a read-only task: do not modify files in the repository.\n\nRun each cf command below (ask and done) as a single standalone command, exactly as shown: never chain it with ;, &&, || or |, never wrap it in a subshell, and never add echo after it. The tool reports the exit code anyway.\n\nTo ask the user a question, run:\n  /usr/bin/node /cli/index.js ask --task abcd1234 --timeout 25 '<question>'\nEach call waits up to 25 seconds for an answer. Always check the exit code: exit code 0 means stdout is the answer. Exit code 1 means there is no answer yet (ASK_TIMEOUT) or an error, and stdout then holds an error message, not an answer: run the exact same command again to keep waiting.\n\nIf you have notes for whoever continues this work, write them to /orch/tasks/abcd1234/handoff.md\n\nWhen you are finished, run exactly once:\n  /usr/bin/node /cli/index.js done --task abcd1234 --outcome succeeded --summary '<one line>'\nUse --outcome failed instead if you could not complete the task. Add --handoff /orch/tasks/abcd1234/handoff.md if you wrote handoff notes.";
+
+  it("claude (100 s, no --timeout) and codex (25 s) keep their preambles byte for byte", () => {
+    const claudeArgs = PROVIDERS.claude.buildSpawn(
+      task("claude", false),
+      ctx,
+    ).args;
+    expect(after(claudeArgs, "--append-system-prompt")[0]).toBe(
+      CLAUDE_WRITER_PREAMBLE,
+    );
+    const codexStdin = PROVIDERS.codex.buildSpawn(
+      task("codex", true),
+      ctx,
+    ).stdin;
+    expect(codexStdin).toBe(`${CODEX_READ_ONLY_PREAMBLE}\n\n---\n\n${PROMPT}`);
+  });
+
+  const base = {
+    taskId: "abcd1234",
+    readOnly: false,
+    cfInvocation: ctx.cfInvocation,
+    orchDir: ctx.orchDir,
+  };
+
+  it("another askTimeoutS gets --timeout N and the generic wait note", () => {
+    const text = buildPreamble({ ...base, cfShell: true, askTimeoutS: 40 });
+    expect(text).toContain("ask --task abcd1234 --timeout 40 '<question>'");
+    expect(text).toContain("Each call waits up to 40 seconds for an answer.");
+  });
+
+  it("cfShell=false gives the variant without cf ask/done", () => {
+    const text = buildPreamble({ ...base, readOnly: true, cfShell: false });
+    expect(text).not.toContain("/cli/index.js");
+    expect(text).not.toMatch(/\b(ask|done) --task\b/);
+    expect(text).toContain("This is a read-only task");
+    expect(text).toContain("from your final message");
+  });
+
+  it("preamble.ts never imports providers/index (import cycle)", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("../preamble.ts", import.meta.url)),
+      "utf-8",
+    );
+    expect(src).not.toMatch(/from\s+["'][^"']*providers/);
+  });
 });
 
 describe("stream parsing", () => {

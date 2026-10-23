@@ -3,7 +3,7 @@ import { claudeSessionDir, encodeProjectPath } from "../../paths.js";
 import { buildPreamble, shellQuote } from "../preamble.js";
 import { normalizeResetsAt } from "../quota.js";
 import { isModelName, isSessionId } from "../store.js";
-import type { ProviderAdapter, SpawnContext } from "./index.js";
+import type { ProviderAdapter, ProviderCaps, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
 
@@ -14,6 +14,17 @@ function transcriptPath(ctx: SpawnContext, sessionId: string): string {
   );
 }
 
+// Module consts so buildPreamble gets the same values, with literal types.
+const CAPS = {
+  writer: true,
+  readOnly: true,
+  nonGitReadOnly: true,
+  needsModel: false,
+  chef: true,
+  cfShell: true,
+} as const satisfies ProviderCaps;
+const ASK_TIMEOUT_S = 100;
+
 /**
  * Claude Code headless worker (`claude -p --output-format stream-json`).
  * The prompt goes only through stdin; the worker contract goes through
@@ -21,15 +32,8 @@ function transcriptPath(ctx: SpawnContext, sessionId: string): string {
  */
 export const claude: ProviderAdapter = {
   bin: "claude",
-  caps: {
-    writer: true,
-    readOnly: true,
-    nonGitReadOnly: true,
-    needsModel: false,
-    chef: true,
-    cfShell: true,
-  },
-  askTimeoutS: 100,
+  caps: CAPS,
+  askTimeoutS: ASK_TIMEOUT_S,
 
   buildSpawn(task, ctx) {
     if (ctx.resume && !isSessionId(ctx.resume.sessionId)) {
@@ -46,8 +50,8 @@ export const claude: ProviderAdapter = {
     // the whole store would also block the nested task dir.)
     filesystem.denyWrite = [
       ...(task.readOnly ? [ctx.checkout] : []),
-      ...["runs", "leases", "runner", "supervisor", "chefs"].map((d) =>
-        join(ctx.orchDir, d),
+      ...["runs", "leases", "runner", "supervisor", "chefs", "workspaces"].map(
+        (d) => join(ctx.orchDir, d),
       ),
     ];
     const settings = {
@@ -61,9 +65,10 @@ export const claude: ProviderAdapter = {
     const preamble = buildPreamble({
       taskId: task.id,
       readOnly: task.readOnly,
-      provider: "claude",
       cfInvocation: ctx.cfInvocation,
       orchDir: ctx.orchDir,
+      askTimeoutS: ASK_TIMEOUT_S,
+      cfShell: CAPS.cfShell,
     });
     // dontAsk denies every Bash call that would prompt, sandbox or not, so the
     // worker's own cf ask/done (exactly as the preamble prints them) need an
