@@ -24,7 +24,7 @@ Coding Friend provides a systematic workflow of plan → implement → review �
 
 - [Architecture Overview](https://cf.dinhanhthi.com#how-coding-friend-works): System design and workflow diagrams
 - [Memory System](https://cf.dinhanhthi.com#-memory): Three-tier search and knowledge management
-- [Auto-approve](https://cf.dinhanhthi.com#-auto-approve): Smart automation with security controls
+- [Auto-approve](https://cf.dinhanhthi.com#-auto-approve): Deterministic approvals for Codex, Antigravity and Devin
 - [Security Pipeline](https://cf.dinhanhthi.com#-security): Prompt injection defense and content isolation
 - [Cross-agent Review](https://cf.dinhanhthi.com#-review): Multi-AI code review capabilities
 

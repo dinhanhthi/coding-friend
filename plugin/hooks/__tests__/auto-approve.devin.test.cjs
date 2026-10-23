@@ -243,11 +243,9 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(
-          cwd,
-          "mcp__coding-friend-memory__memory_search",
-          { query: "hooks" },
-        ),
+        permissionRequest(cwd, "mcp__coding-friend-memory__memory_search", {
+          query: "hooks",
+        }),
       );
       expect(result.status).toBe(0);
       expect(result.json).toEqual({ decision: "approve" });

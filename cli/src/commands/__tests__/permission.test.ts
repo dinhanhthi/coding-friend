@@ -28,10 +28,9 @@ vi.mock("../../lib/permissions.js", () => ({
   cleanupStalePluginRules: vi.fn(() => 0),
   logPluginScriptWarning: vi.fn(),
   extractTag: vi.fn(),
-  runDangerousRulesAudit: vi.fn(),
   afterAutoApproveEnabled: vi.fn(),
   AUTO_APPROVE_CROSS_HOST_NOTE:
-    "autoApprove enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules).",
+    "autoApprove applies to Codex, Antigravity and Devin only (deterministic rules). Claude Code and omp use their native auto / yolo mode.",
 }));
 
 import { select } from "@inquirer/prompts";

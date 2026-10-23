@@ -304,7 +304,6 @@ async function writeCodexAgents(sourceAgentDir, targetAgentDir) {
 function transformCodexHooks(hooksJson) {
   const output = { hooks: {} };
   const hooks = hooksJson.hooks ?? {};
-  let needsPermissionHook = false;
 
   const renderHookCommand = (command) => {
     const rendered = renderCodexText(command).replace(
@@ -335,13 +334,7 @@ function transformCodexHooks(hooksJson) {
 
     const entries = hooks[eventName]
       .map((entry) => {
-        const renderedHooks = (entry.hooks ?? []).flatMap((hook) => {
-          const command = typeof hook.command === "string" ? hook.command : "";
-          if (/\/hooks\/auto-approve\.cjs\b/.test(command)) {
-            needsPermissionHook = true;
-            return [];
-          }
-
+        const renderedHooks = (entry.hooks ?? []).map((hook) => {
           const nextHook = {
             ...hook,
             command:
@@ -350,7 +343,7 @@ function transformCodexHooks(hooksJson) {
                 : hook.command,
           };
           delete nextHook.async;
-          return [nextHook];
+          return nextHook;
         });
 
         if (renderedHooks.length === 0) return null;
@@ -369,21 +362,20 @@ function transformCodexHooks(hooksJson) {
     }
   }
 
-  if (needsPermissionHook) {
-    output.hooks.PermissionRequest = [
-      ...(output.hooks.PermissionRequest ?? []),
-      {
-        matcher: "",
-        hooks: [
-          {
-            type: "command",
-            command:
-              "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs",
-          },
-        ],
-      },
-    ];
-  }
+  // Codex auto-approve is a PermissionRequest adapter with no Claude
+  // counterpart, so it is always appended (it reads `autoApprove` at runtime).
+  output.hooks.PermissionRequest = [
+    ...(output.hooks.PermissionRequest ?? []),
+    {
+      matcher: "",
+      hooks: [
+        {
+          type: "command",
+          command: "CF_HOST=codex ${PLUGIN_ROOT}/hooks/auto-approve.codex.cjs",
+        },
+      ],
+    },
+  ];
 
   return output;
 }

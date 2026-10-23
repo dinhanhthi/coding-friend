@@ -94,7 +94,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 `hooks/hooks.json` (+ `*.agy.*` / `*.devin.*`; Codex transformed). Keys + native modes: `topics.md`.
 
-**session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Claude `autoApproveLLM` default false → unknown defers to native) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
+**session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Codex / agy / Devin only, deterministic; Claude / omp use native modes) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
 
 ### CLI (`coding-friend-cli`, binary `cf`) — optional
 
@@ -114,7 +114,7 @@ Present the workflows in `topics.md`. Distinction: `/cf-remember` = project know
 
 - **Skill not triggering?** Invoke `/cf-<skill-name>` manually.
 - **Config / custom guides?** `topics.md`.
-- **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`; Devin `--permission-mode dangerous` (CF `PermissionRequest` hook approve/block). CF hook: `autoApprove`. Details: `topics.md`.
+- **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`; Devin `--permission-mode dangerous` (CF `PermissionRequest` hook approve/block). CF hook `autoApprove`: Codex / AGY / Devin only. Details: `topics.md`.
 - **More?** [Troubleshooting](https://cf.dinhanhthi.com/#help).
 
 ### Step 6: Answer concisely

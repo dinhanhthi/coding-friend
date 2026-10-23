@@ -121,13 +121,6 @@ async function interactiveFlow(
   // Track current state: start with what's already configured
   const enabled = new Set(managedExisting);
 
-  console.log(
-    chalk.dim(
-      "Full reference: https://cf.dinhanhthi.com/#auto-approve",
-    ),
-  );
-  console.log();
-
   let browsing = true;
   while (browsing) {
     // Build category menu
@@ -162,7 +155,7 @@ async function interactiveFlow(
       getScopeLabel("autoApprove", globalCfg, localCfg),
     );
     categoryChoices.push({
-      name: `Auto-approve ${autoApproveScopeLabel}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
+      name: `Auto-approve (Codex / Antigravity / Devin only) ${autoApproveScopeLabel}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
       value: "__auto_approve__",
     });
 
@@ -236,11 +229,13 @@ async function autoApproveFlow(): Promise<void> {
     chalk.bold("Auto-approve") +
       ` ${scopeLabel}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
   );
-  log.dim("Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules.");
+  log.dim(
+    "Codex / Antigravity / Devin only (deterministic rules). Claude Code and omp use their native auto / yolo mode.",
+  );
   console.log();
 
   const value = await confirm({
-    message: "Enable auto-approve?",
+    message: "Enable auto-approve for Codex, Antigravity and Devin?",
     default: currentValue ?? false,
   });
 
@@ -253,9 +248,7 @@ async function autoApproveFlow(): Promise<void> {
   log.success(`Saved to ${targetPath}`);
 
   if (value) {
-    await afterAutoApproveEnabled(log, (message) =>
-      confirm({ message, default: true }),
-    );
+    afterAutoApproveEnabled(log);
   }
 }
 
@@ -285,7 +278,7 @@ export async function permissionCommand(opts: {
   }
   if (host === "agy") {
     log.info(
-      "Antigravity permissions are managed natively (`/permissions` in agy); Coding Friend auto-approve is `autoApprove` in config (same key as Claude Code)",
+      "Antigravity permissions are managed natively (`/permissions` in agy); Coding Friend auto-approve is `autoApprove` in config (same key as Codex and Devin)",
     );
     log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
     return;
@@ -295,7 +288,7 @@ export async function permissionCommand(opts: {
       "Devin permissions are managed natively — Coding Friend only answers through its PermissionRequest hook (deterministic approve/block; everything else defers to Devin's native approval prompt).",
     );
     log.dim(
-      "Set `autoApprove` in .coding-friend/config.json to enable the hook's approvals (same key as Claude Code); `autoApproveIgnore` lists command prefixes that defer to the native prompt.",
+      "Set `autoApprove` in .coding-friend/config.json to enable the hook's approvals (same key as Codex and Antigravity); `autoApproveIgnore` lists command prefixes that defer to the native prompt.",
     );
     log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
     return;

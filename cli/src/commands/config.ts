@@ -911,7 +911,7 @@ async function editAutoApprove(
 
   const value = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
+      "Enable auto-approve for Codex, Antigravity and Devin? (Claude Code / omp: use native auto / yolo mode)",
     default: currentValue ?? false,
   });
 
@@ -920,9 +920,7 @@ async function editAutoApprove(
   writeToScope(scope, { autoApprove: value });
 
   if (value) {
-    await afterAutoApproveEnabled(log, (message) =>
-      confirm({ message, default: true }),
-    );
+    afterAutoApproveEnabled(log);
   }
 }
 
@@ -1325,7 +1323,7 @@ export async function configCommand(): Promise<void> {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
-              "  Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules",
+              "  Codex / Antigravity / Devin only (deterministic rules); Claude Code / omp use native modes",
           },
           {
             name: `Privacy-block ${formatScopeLabel(privacyBlockScope)}${privacyBlockVal !== undefined ? ` (${privacyBlockVal})` : ""}`,

@@ -82,7 +82,7 @@ Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-de
 - Persistent memory, 3-tier search (`cf memory`)
 - Learn & teach (`/cf-learn`, `/cf-teach`, `cf learn host`, `cf mcp`)
 - Research (`/cf-research`)
-- Smart auto-approve
+- Auto-approve (Codex, Antigravity, Devin)
 - Prompt-injection defense
 - Custom skill guides
 - Sessions & checkpoints

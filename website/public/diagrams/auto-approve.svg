@@ -18,7 +18,7 @@
   <rect width="960" height="200" fill="oklch(99% 0.003 264)" data-graph-role="background"/>
 
   <path id="step-1" data-graph-role="edge" data-edge-id="step-1" data-source="rule-based" data-target="working-dir" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 298 96 H 358" fill="none" stroke="oklch(20% 0.012 264)" stroke-width="2" marker-end="url(#arr-brass)"/>
-  <path id="step-2" data-graph-role="edge" data-edge-id="step-2" data-source="working-dir" data-target="classifier" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 608 96 H 668" fill="none" stroke="oklch(20% 0.012 264)" stroke-width="2" marker-end="url(#arr-brass)"/>
+  <path id="step-2" data-graph-role="edge" data-edge-id="step-2" data-source="working-dir" data-target="native" data-edge-kind="flow" data-flow="primary" data-bends="0" data-route-stretch="1" d="M 608 96 H 668" fill="none" stroke="oklch(20% 0.012 264)" stroke-width="2" marker-end="url(#arr-brass)"/>
 
   <rect id="rule-based" data-node-id="rule-based" x="48" y="60" width="250" height="72" rx="6" fill="oklch(97% 0.004 264)" stroke="oklch(84% 0.01 264)" stroke-width="1" data-graph-role="node" data-graph-bounds="48,60,298,132"/>
   <text x="62" y="88" class="nm">1 · rule-based</text>
@@ -28,7 +28,7 @@
   <text x="372" y="88" class="nm">2 · working-dir</text>
   <text x="372" y="106" class="dt">edits inside the project</text>
 
-  <rect id="classifier" data-node-id="classifier" x="668" y="60" width="250" height="72" rx="6" fill="oklch(97% 0.004 264)" stroke="oklch(20% 0.012 264)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="668,60,918,132"/>
-  <text x="682" y="88" class="nm">3 · llm classifier</text>
-  <text x="682" y="106" class="dt">opt-in · claude only</text>
+  <rect id="native" data-node-id="native" x="668" y="60" width="250" height="72" rx="6" fill="oklch(97% 0.004 264)" stroke="oklch(20% 0.012 264)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="668,60,918,132"/>
+  <text x="682" y="88" class="nm">3 · native prompt</text>
+  <text x="682" y="106" class="dt">everything else · host decides</text>
 </svg>

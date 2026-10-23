@@ -940,12 +940,12 @@ async function stepAutoApprove(
 
   printStepHeader(
     `Auto-approve ${formatScopeLabel(scopeLabel)}${currentValue !== undefined ? ` (${currentValue})` : ""}`,
-    "Same `autoApprove` key for Claude (LLM classifier), Antigravity, Codex, and Devin (deterministic).",
+    "Codex, Antigravity and Devin only (deterministic rules). Claude Code and omp use their native auto / yolo mode.",
   );
 
   const autoApproveChoice = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
+      "Enable auto-approve for Codex, Antigravity and Devin? (Claude Code / omp: use native auto / yolo mode)",
     default: currentValue ?? false,
   });
 
@@ -961,9 +961,7 @@ async function stepAutoApprove(
   log.success(`Saved to ${targetPath}`);
 
   if (autoApproveChoice) {
-    await afterAutoApproveEnabled(log, (message) =>
-      confirm({ message, default: true }),
-    );
+    afterAutoApproveEnabled(log);
   }
 }
 
@@ -1263,7 +1261,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
         value: "autoApprove",
         description:
-          "  Auto-approve safe tool calls, block destructive ones, prompt for ambiguous",
+          "  Codex / Antigravity / Devin only: approve safe tool calls, block destructive ones",
       },
       {
         name: `Plan docs ${formatScopeLabel(planDocsScope)}`,
@@ -1362,7 +1360,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
         case "autoApprove": {
           const autoApproveChoice = await confirm({
             message:
-              "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
+              "Enable auto-approve for Codex, Antigravity and Devin? (Claude Code / omp: use native auto / yolo mode)",
             default: autoApproveVal ?? false,
           });
           const autoApproveTargetScope = await askScope();
@@ -1376,9 +1374,7 @@ async function initMenu(gitAvailable: boolean): Promise<void> {
           }
 
           if (autoApproveChoice) {
-            await afterAutoApproveEnabled(log, (message) =>
-              confirm({ message, default: true }),
-            );
+            afterAutoApproveEnabled(log);
           }
           break;
         }

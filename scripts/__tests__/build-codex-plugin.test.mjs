@@ -62,15 +62,6 @@ async function createFixtureRepo() {
         ],
         PreToolUse: [
           {
-            matcher: "",
-            hooks: [
-              {
-                type: "command",
-                command: "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs",
-              },
-            ],
-          },
-          {
             matcher: "Read|Write",
             hooks: [
               {
@@ -626,7 +617,7 @@ Use {{cf:slash cf-review}} and {{cf:agent_ref cf-writer}}.
   );
 });
 
-test("filters and renders Codex hooks", () => {
+test("renders Codex hooks and appends PermissionRequest", () => {
   const hooks = transformCodexHooks({
     hooks: {
       TaskCreated: [
@@ -654,15 +645,6 @@ test("filters and renders Codex hooks", () => {
             {
               type: "command",
               command: "${CLAUDE_PLUGIN_ROOT}/hooks/privacy-block.sh",
-            },
-          ],
-        },
-        {
-          matcher: "",
-          hooks: [
-            {
-              type: "command",
-              command: "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs",
             },
           ],
         },
