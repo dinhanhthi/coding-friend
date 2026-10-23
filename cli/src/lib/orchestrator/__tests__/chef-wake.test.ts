@@ -468,6 +468,8 @@ function mkChef(opts: { gitConfig?: [string, string][] } = {}) {
     return { taskId: t.id, pid: 0 };
   };
 
+  const providerProblem = () => null;
+
   let now = nowS();
   let n = 0;
   const options = (extra: Partial<WakeOptions> = {}): WakeOptions => ({
@@ -476,11 +478,14 @@ function mkChef(opts: { gitConfig?: [string, string][] } = {}) {
     notify,
     readEnabled: () => true,
     killGroup,
-    exec: { dispatchTask },
+    // The real providerProblem runs `which` and version probes on PATH.
+    exec: { dispatchTask, providerProblem },
     env: {},
     signal: new AbortController().signal,
     ...extra,
-    ...(extra.exec && { exec: { dispatchTask, ...extra.exec } }),
+    ...(extra.exec && {
+      exec: { dispatchTask, providerProblem, ...extra.exec },
+    }),
   });
 
   const fx = {
@@ -1081,6 +1086,51 @@ describe.skipIf(process.platform === "win32")(
       expect(digest).toContain("prompt asks to edit steering path claude.md");
       expect(pendingEvents(fx.id)).toEqual([]);
       expect(chefStatus(fx.id).state).toBe("active");
+    });
+
+    it("a provider without a chef registry entry: result.json failed, no spawn, no crash, events stay pending", async () => {
+      const fx = mkChef();
+      const file = join(chefDir(fx.id), "chef.json");
+      const record = JSON.parse(readFileSync(file, "utf-8"));
+      writeFileSync(
+        file,
+        JSON.stringify({
+          ...record,
+          provider: "nope",
+          binaries: { ...record.binaries, nope: "/fake/bin/nope" },
+        }),
+      );
+      fx.ok(out());
+      const r = await fx.wake();
+      expect(r.outcome).toBe("failed");
+      expect(r.reason).toMatch(/chef spawn not built: .*cannot be a chef/);
+      expect(fx.spawns).toEqual([]);
+      expect(fx.result(1)).toMatchObject({ outcome: "failed" });
+      expect(fx.result(1)?.error).toMatch(/cannot be a chef/);
+      expect(fx.result(1)?.consumed).toBeUndefined();
+      expect(pendingEvents(fx.id).map((e) => e.key)).toEqual(["start"]);
+    });
+
+    it("a dispatch the provider check refuses is a rejected action (streak), never dispatched", async () => {
+      const fx = mkChef();
+      const seen: string[] = [];
+      fx.ok(out(dispatchAct("other", "Read src/a.txt.", "codex")));
+      const r = await fx.wake({
+        exec: {
+          providerProblem: (p, role) => {
+            seen.push(`${p}:${role}`);
+            return "codex not found on PATH";
+          },
+        },
+      });
+      expect(seen).toEqual(["codex:other"]);
+      expect(r.actions?.[0]).toMatchObject({
+        status: "rejected",
+        reason: "codex not found on PATH",
+      });
+      expect(fx.dispatched).toEqual([]);
+      expect(fx.result(1)).toMatchObject({ outcome: "ok", rejected: 1 });
+      expect(consecutiveRejectedWakes(fx.id)).toBe(1);
     });
 
     it("pauses after 3 wakes in a row with rejected actions, each woken by the previous rejected-<n> event", async () => {

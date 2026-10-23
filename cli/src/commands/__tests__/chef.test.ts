@@ -65,11 +65,17 @@ import {
   recordWakeRunner,
 } from "../../lib/orchestrator/chef-store.js";
 import { collectTriggers } from "../../lib/orchestrator/chef-triggers.js";
+import { CHEF_PROVIDERS } from "../../lib/orchestrator/providers/chef.js";
+import {
+  PROVIDERS,
+  type ProviderAdapter,
+} from "../../lib/orchestrator/providers/index.js";
 import { runWake, type WakeOptions } from "../../lib/orchestrator/chef-wake.js";
 import type { DispatchInput } from "../../lib/orchestrator/dispatch.js";
 import {
   createTask,
   MAX_TEXT,
+  PROVIDER_NAMES,
   recordDone,
   recordResult,
   recordRunner,
@@ -523,6 +529,130 @@ describe.skipIf(process.platform === "win32")("cf chef start", () => {
     expect(again.data.chefId).not.toBe(first.data.chefId);
   });
 });
+
+// ─── provider registry (C3a) ────────────────────────────────────────────
+
+describe.skipIf(process.platform === "win32")(
+  "cf chef start: binaries and probes through the provider registry",
+  () => {
+    it("refuses a worker binary of another provider (codex) inside the checkout, even for --provider claude", async () => {
+      const inside = join(repo, "ignored", "bin");
+      mkdirSync(inside, { recursive: true });
+      fakeCodex(join(inside, "codex"));
+      vi.stubEnv("PATH", `${inside}:${bin}:/usr/bin:/bin`);
+      const r = await start({ provider: "claude" });
+      expect(r.error.code).toBe("USAGE");
+      expect(r.error.message).toMatch(/codex resolves inside the checkout/);
+      expectNothingCreated();
+    });
+
+    it("a missing binary of a provider that is not the chef's is fine; the chef's own is required", async () => {
+      rmSync(join(bin, "codex"));
+      const r = await start({ provider: "claude" });
+      expect(r.ok).toBe(true);
+      expect(readChef(r.data.chefId).binaries).toEqual({
+        git: join(bin, "git"),
+        claude: join(bin, "claude"),
+      });
+
+      const other = newRepo("repo2");
+      vi.mocked(process.cwd).mockReturnValue(other);
+      rmSync(join(bin, "claude"));
+      fakeCodex(join(bin, "codex"));
+      const missing = await start({ provider: "claude" });
+      expect(missing.error).toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
+      expect(missing.error.message).toMatch(/claude not found on PATH/);
+    });
+
+    it("refuses a provider that cannot be a chef, listing the chef providers", async () => {
+      for (const provider of ["grok", "constructor", undefined]) {
+        const r = await start({ provider });
+        expect(r.error.code).toBe("USAGE");
+        expect(r.error.message).toBe("--provider must be one of claude, codex");
+      }
+      expectNothingCreated();
+    });
+
+    it("passes the chef's realpath checkout (not the temp cwd) to the registry probe", async () => {
+      const probe = vi.spyOn(CHEF_PROVIDERS.claude!, "probe");
+      const r = await start();
+      expect(r.ok).toBe(true);
+      expect(probe).toHaveBeenCalledTimes(1);
+      const [binArg, cwd, checkout] = probe.mock.calls[0];
+      expect(binArg).toBe(join(bin, "claude"));
+      expect(checkout).toBe(realpathSync(repo));
+      expect(checkout).toBe(readChef(r.data.chefId).checkout);
+      expect(cwd).not.toBe(checkout);
+      expect(cwd).toMatch(/cf-chef-start-/);
+
+      const other = newRepo("repo2");
+      vi.mocked(process.cwd).mockReturnValue(other);
+      probe.mockReturnValueOnce("probe says no");
+      const refused = await start();
+      expect(refused.error).toMatchObject({
+        code: "PROVIDER_UNAVAILABLE",
+        message: "probe says no",
+      });
+      expect(probe.mock.calls[1][2]).toBe(realpathSync(other));
+    });
+
+    describe("a worker adapter whose bin differs from its name (fake → fake-agent)", () => {
+      const names = PROVIDER_NAMES as unknown as string[];
+      const adapters = PROVIDERS as unknown as Record<string, ProviderAdapter>;
+      beforeEach(() => {
+        names.push("fake");
+        adapters.fake = {
+          ...PROVIDERS.claude,
+          bin: "fake-agent",
+          caps: { ...PROVIDERS.claude.caps, chef: false },
+        };
+      });
+      afterEach(() => {
+        names.splice(names.indexOf("fake"), 1);
+        delete adapters.fake;
+      });
+
+      it("finds PROVIDERS.fake.bin on PATH and records it under binaries.fake; a binary named after the provider is ignored", async () => {
+        script(join(bin, "fake"), "exit 0");
+        script(join(bin, "fake-agent"), "exit 0");
+        const r = await start({ provider: "claude" });
+        expect(r.ok).toBe(true);
+        expect(readChef(r.data.chefId).binaries).toMatchObject({
+          fake: join(bin, "fake-agent"),
+        });
+      });
+
+      it("refuses fake-agent inside the checkout; a `fake` there is not looked at", async () => {
+        const inside = join(repo, "ignored", "bin");
+        mkdirSync(inside, { recursive: true });
+        script(join(inside, "fake"), "exit 0");
+        vi.stubEnv("PATH", `${inside}:${bin}:/usr/bin:/bin`);
+        const ok = await start({ provider: "claude" });
+        expect(ok.ok).toBe(true);
+        expect(readChef(ok.data.chefId).binaries).not.toHaveProperty("fake");
+
+        const other = newRepo("repo2");
+        vi.mocked(process.cwd).mockReturnValue(other);
+        const otherInside = join(other, "ignored", "bin");
+        mkdirSync(otherInside, { recursive: true });
+        script(join(otherInside, "fake-agent"), "exit 0");
+        vi.stubEnv("PATH", `${otherInside}:${bin}:/usr/bin:/bin`);
+        const r = await start({ provider: "claude" });
+        expect(r.error.code).toBe("USAGE");
+        expect(r.error.message).toMatch(
+          /fake-agent resolves inside the checkout/,
+        );
+        expect(listChefs().filter((c) => c.checkout === other)).toEqual([]);
+      });
+
+      it("refuses --provider fake: caps.chef is false", async () => {
+        const r = await start({ provider: "fake" });
+        expect(r.error.code).toBe("USAGE");
+        expect(r.error.message).toBe("--provider must be one of claude, codex");
+      });
+    });
+  },
+);
 
 // ─── say / status / inbox / show ────────────────────────────────────────
 

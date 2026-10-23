@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  CHEF_OUTPUT_SCHEMA,
   commitGateProblem,
   promptEditsSteering,
   shouldPauseForRejections,
@@ -15,7 +16,8 @@ import {
 } from "../chef-digest.js";
 import type { ChefFingerprint } from "../chef-git.js";
 import type { ChefTaskRole } from "../chef-store.js";
-import type { TaskState } from "../store.js";
+import { PROVIDERS } from "../providers/index.js";
+import type { Provider, TaskState } from "../store.js";
 
 const H = "a".repeat(40);
 const fp = (changed: ChefFingerprint["changed"]): ChefFingerprint => ({
@@ -281,6 +283,88 @@ describe("validateActions: dispatch limits and steering", () => {
     expect(edits("Do not even edit or rename CLAUDE.md")).toBeNull();
     // Decomposed (NFD) Vietnamese still matches.
     expect(edits("không sửa plan".normalize("NFD"))).toBeNull();
+  });
+});
+
+describe("validateActions: dispatch provider (C3a)", () => {
+  const to = (provider: string, role: ChefTaskRole) =>
+    act({ type: "dispatch", provider, role, prompt: "do it" });
+  const noTasks = () => facts({ tasks: [] });
+
+  it("rejects a provider outside PROVIDER_NAMES, listing the valid names", () => {
+    const r = run(noTasks(), [to("grok", "other"), to("constructor", "other")]);
+    expect(r.accepted).toEqual([]);
+    for (const x of r.rejected) {
+      expect(x.reason).toBe(
+        'dispatch: provider must be one of "claude", "codex"',
+      );
+    }
+    expect(
+      CHEF_OUTPUT_SCHEMA.properties.actions.items.properties.provider
+        .description,
+    ).toContain('"claude", "codex"');
+  });
+
+  it("rejects writer and check to a provider without caps.writer, other to one without caps.readOnly", () => {
+    const caps = PROVIDERS.codex.caps;
+    try {
+      PROVIDERS.codex.caps = { ...caps, writer: false };
+      let r = run(noTasks(), [to("codex", "writer"), to("codex", "check")]);
+      expect(r.accepted).toEqual([]);
+      expect(r.rejected.map((x) => x.reason)).toEqual([
+        "codex cannot run writer tasks (not a writer)",
+        "codex cannot run check tasks (not a writer)",
+      ]);
+      // A rejected writer takes no slot: claude may still write.
+      r = run(noTasks(), [
+        to("codex", "writer"),
+        to("codex", "other"),
+        to("claude", "writer"),
+      ]);
+      expect(r.accepted.map((a) => a.index)).toEqual([1, 2]);
+
+      PROVIDERS.codex.caps = { ...caps, readOnly: false };
+      r = run(noTasks(), [to("codex", "other"), to("codex", "writer")]);
+      expect(r.rejected.map((x) => x.reason)).toEqual([
+        "codex cannot run other tasks (no read-only mode)",
+      ]);
+      expect(r.accepted.map((a) => a.index)).toEqual([1]);
+    } finally {
+      PROVIDERS.codex.caps = caps;
+    }
+  });
+
+  it("rejects what providerProblem refuses (eligibility), after the caps check", () => {
+    const calls: [Provider, ChefTaskRole][] = [];
+    const r = validateActions({
+      output: {
+        summary: "s",
+        actions: [to("codex", "other"), to("claude", "writer")],
+      },
+      facts: noTasks(),
+      limits,
+      providerProblem: (p, role) => {
+        calls.push([p, role]);
+        return p === "codex" ? "codex not found on PATH" : null;
+      },
+    });
+    expect(calls).toEqual([
+      ["codex", "other"],
+      ["claude", "writer"],
+    ]);
+    expect(r.rejected).toMatchObject([
+      { index: 0, reason: "codex not found on PATH" },
+    ]);
+    expect(r.accepted.map((a) => a.index)).toEqual([1]);
+    const thrown = validateActions({
+      output: { summary: "s", actions: [to("claude", "other")] },
+      facts: noTasks(),
+      limits,
+      providerProblem: () => {
+        throw new Error("boom");
+      },
+    });
+    expect(thrown.rejected[0]?.reason).toBe("cannot check claude: boom");
   });
 });
 

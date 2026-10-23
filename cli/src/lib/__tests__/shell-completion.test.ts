@@ -270,7 +270,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /local commands="[^"]*\bsupervisor\b/,
         /compgen -W "install uninstall status tick"/,
         /compgen -W "--label --json"/,
-        /compgen -W "--provider --read-only --no-fallback --json"/,
+        /compgen -W "--provider --model --read-only --no-fallback --json"/,
         /local commands="[^"]*\bchef\b/,
         /compgen -W "start say status inbox show stop resume"/,
         /compgen -W "--provider --no-commit --json"/,
@@ -294,6 +294,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /'tick:/,
         /--label\[/,
         /--no-fallback\[/,
+        /'--provider\[Worker CLI \(claude, codex\)\]' '--model\[/,
+        /'--provider\[Chef CLI \(claude, codex\)\]'/,
         /'chef:/,
         /'inbox:/,
         /'resume:/,
@@ -318,6 +320,9 @@ describe("completion blocks list the machine-callable commands", () => {
         /__fish_seen_subcommand_from supervisor" -a tick /,
         /__fish_seen_subcommand_from install uninstall status" -l label /,
         /__fish_seen_subcommand_from run" -l no-fallback /,
+        /__fish_seen_subcommand_from run" -l model /,
+        /run" -l provider -d "Worker CLI: claude, codex"/,
+        /start" -l provider -d "Chef CLI: claude, codex"/,
         /__fish_use_subcommand" -a chef /,
         /__fish_seen_subcommand_from chef" -a inbox /,
         /__fish_seen_subcommand_from chef" -a resume /,
@@ -342,7 +347,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /\$commands = @\([^)]*'supervisor'/,
         /\$supervisorSubcommands = @\('install','uninstall','status','tick'\)/,
         /@\('--label','--json'\)/,
-        /'--no-fallback'/,
+        /@\('--provider','--model','--read-only','--no-fallback','--json'\)/,
         /\$commands = @\([^)]*'chef'/,
         /\$chefSubcommands = @\('start','say','status','inbox','show','stop','resume'\)/,
         /@\('--provider','--no-commit','--json'\)/,
@@ -361,6 +366,9 @@ describe("completion blocks list the machine-callable commands", () => {
       for (const p of c.patterns) expect(content).toMatch(p);
       // `cf chef _wake` is internal: never offered by completion.
       expect(content).not.toMatch(/_wake/);
+      // Provider lists come from PROVIDER_NAMES, never a fixed pair.
+      expect(content).not.toMatch(/claude or codex/i);
+      expect(content).not.toContain("(Claude, Codex)");
     });
   }
 });

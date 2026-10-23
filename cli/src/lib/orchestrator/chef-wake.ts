@@ -835,14 +835,23 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
   const previous = [...listWakes(id)]
     .reverse()
     .find((w) => w.n !== n && w.session && isSessionId(w.session.sessionId));
-  const spec = buildChefSpawn({
-    chef,
-    wake: n,
-    digest,
-    ...(previous?.session && {
-      resume: { sessionId: previous.session.sessionId },
-    }),
-  });
+  let spec: ChefSpawnSpec;
+  try {
+    // Throws for a provider without a chef registry entry or a missing binary.
+    spec = buildChefSpawn({
+      chef,
+      wake: n,
+      digest,
+      ...(previous?.session && {
+        resume: { sessionId: previous.session.sessionId },
+      }),
+    });
+  } catch (err) {
+    const error = `chef spawn not built: ${errMsg(err)}`;
+    log(error);
+    finish(c, { outcome: "failed", error });
+    return { outcome: "failed", reason: error };
+  }
   log(`spawning ${spec.provider} chef${previous ? " (resume)" : ""}`);
   let sessionRecorded = false;
   const recordSession = (sessionId: string) => {
@@ -902,6 +911,7 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
   const validation = validateActions({
     output: run.output,
     facts: fx,
+    providerProblem: exec.providerProblem,
     limits: {
       maxTasksPerWake: chef.limits.maxTasksPerWake,
       maxConcurrentTasks: chef.limits.maxConcurrentTasks,

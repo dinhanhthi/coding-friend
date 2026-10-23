@@ -7,8 +7,15 @@ import {
   validateCommitMessage,
   validateCommitPath,
 } from "./chef-git.js";
-import type { ChefTaskRole } from "./chef-store.js";
-import { MAX_TEXT, type Provider, type TaskState } from "./store.js";
+import type { ChefRecord, ChefTaskRole } from "./chef-store.js";
+import { providerIneligibility } from "./providers/eligible.js";
+import { PROVIDERS } from "./providers/index.js";
+import {
+  MAX_TEXT,
+  PROVIDER_NAMES,
+  type Provider,
+  type TaskState,
+} from "./store.js";
 
 /**
  * The chef's output contract and its validator.
@@ -51,6 +58,11 @@ const ACTION_FIELDS = [
   "message",
 ] as const;
 
+/** `"claude", "codex"`: the worker provider names, for the chef and its errors. */
+function quotedProviders(): string {
+  return PROVIDER_NAMES.map((p) => JSON.stringify(p)).join(", ");
+}
+
 /**
  * Strict JSON Schema of the chef's output: every property required, nullable
  * fields typed `["string","null"]`, `additionalProperties: false`, so both
@@ -83,7 +95,7 @@ export const CHEF_OUTPUT_SCHEMA = {
           },
           provider: {
             type: ["string", "null"],
-            description: 'dispatch only: "claude" or "codex". Otherwise null.',
+            description: `dispatch only: one of ${quotedProviders()}. Otherwise null.`,
           },
           role: {
             type: ["string", "null"],
@@ -187,7 +199,7 @@ export const MAX_PROMPT_CHARS = 32_000;
 export const MAX_COMMIT_PATHS = 500;
 export const MAX_SUMMARY_CHARS = 8_000;
 
-const PROVIDER_VALUES: readonly Provider[] = ["claude", "codex"];
+const PROVIDER_VALUES: readonly Provider[] = PROVIDER_NAMES;
 const ROLE_VALUES: readonly ChefTaskRole[] = ["writer", "check", "other"];
 
 function nonEmpty(s: string | null): s is string {
@@ -204,7 +216,9 @@ function normalize(raw: RawChefAction): ChefAction | string {
   switch (raw.type) {
     case "dispatch": {
       const provider = PROVIDER_VALUES.find((p) => p === raw.provider);
-      if (!provider) return 'dispatch: provider must be "claude" or "codex"';
+      if (!provider) {
+        return `dispatch: provider must be one of ${quotedProviders()}`;
+      }
       const role = ROLE_VALUES.find((r) => r === raw.role);
       if (!role) return 'dispatch: role must be "writer", "check" or "other"';
       if (!nonEmpty(raw.prompt)) return "dispatch: empty prompt";
@@ -234,6 +248,43 @@ function normalize(raw: RawChefAction): ChefAction | string {
       return { type: "commit", paths: raw.paths, message: raw.message };
     }
   }
+}
+
+/**
+ * Why `provider` cannot take a `role` task by its capabilities (writer and
+ * check need `caps.writer`, other needs `caps.readOnly`), else null. Pure.
+ */
+export function roleCapsProblem(
+  provider: Provider,
+  role: ChefTaskRole,
+): string | null {
+  const caps = PROVIDERS[provider]?.caps;
+  if (!caps) return `unknown provider ${JSON.stringify(provider)}`;
+  if (isWriterMode(role) ? !caps.writer : !caps.readOnly) {
+    return `${provider} cannot run ${role} tasks (${isWriterMode(role) ? "not a writer" : "no read-only mode"})`;
+  }
+  return null;
+}
+
+/**
+ * Why `provider` cannot run a `role` task for this chef now, else null:
+ * `providerIneligibility` (binary on PATH, capabilities, model, version
+ * probes) with the models of the policy snapshot in chef.json. Not pure
+ * (runs `which` and version probes): the wake injects it into
+ * `validateActions` through `ChefExecDeps.providerProblem`.
+ */
+export function chefDispatchProblem(
+  chef: Pick<ChefRecord, "checkout" | "isGitRepo" | "taskPolicy">,
+  provider: Provider,
+  role: ChefTaskRole,
+): string | null {
+  const problem = providerIneligibility(provider, {
+    checkout: chef.checkout,
+    isGitRepo: chef.isGitRepo,
+    readOnly: !isWriterMode(role),
+    ...(chef.taskPolicy?.models && { models: chef.taskPolicy.models }),
+  });
+  return problem ? problem.message : null;
 }
 
 // ─── facts ──────────────────────────────────────────────────────────────
@@ -573,6 +624,12 @@ export interface ValidateInput {
    * the checkout, which becomes a rejection reason).
    */
   checkPath?: (path: string) => string | null;
+  /**
+   * Eligibility of a dispatch's provider for its role (null = fine), after
+   * the pure `roleCapsProblem`. The wake passes `chefDispatchProblem`;
+   * default: none.
+   */
+  providerProblem?: (provider: Provider, role: ChefTaskRole) => string | null;
 }
 
 function defaultCheckPath(facts: ChefFacts) {
@@ -649,6 +706,16 @@ export function validateActions(input: ValidateInput): ValidationResult {
     switch (action.type) {
       case "dispatch": {
         if (paused) return "chef paused earlier in this wake";
+        const caps = roleCapsProblem(action.provider, action.role);
+        if (caps) return caps;
+        let ineligible: string | null;
+        try {
+          ineligible =
+            input.providerProblem?.(action.provider, action.role) ?? null;
+        } catch (err) {
+          ineligible = `cannot check ${action.provider}: ${err instanceof Error ? err.message : String(err)}`;
+        }
+        if (ineligible) return ineligible;
         if (dispatched >= limits.maxTasksPerWake) {
           return `over maxTasksPerWake (${limits.maxTasksPerWake})`;
         }

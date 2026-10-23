@@ -68,16 +68,17 @@ import {
 } from "../lib/orchestrator/chef-wake.js";
 import { assertStoreOutsideCheckout } from "../lib/orchestrator/dispatch.js";
 import {
-  claudeFlagsError,
-  claudeVersionError,
-  codexChefVersionError,
+  chefProvider,
+  chefProviderNames,
 } from "../lib/orchestrator/providers/chef.js";
+import { PROVIDERS } from "../lib/orchestrator/providers/index.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import {
   isOlderThan,
   isPidAlive,
   MAX_TEXT,
   newId,
+  PROVIDER_NAMES,
   readRegularFile,
   readTask,
   SPAWN_GRACE_MS,
@@ -252,9 +253,10 @@ function findBinary(name: string, entries: string[]): string | undefined {
 }
 
 /**
- * Absolute git/claude/codex from PATH: git and the chef's provider are
- * required; none may live inside the checkout (by path or realpath), where
- * a writer task could replace it.
+ * Absolute git and worker binaries (`PROVIDERS[p].bin`, recorded under the
+ * provider name) from PATH: git and the chef's provider are required, other
+ * providers are optional; none may live inside the checkout (by path or
+ * realpath), where a writer task could replace it.
  */
 function resolveBinaries(
   checkout: string,
@@ -262,8 +264,11 @@ function resolveBinaries(
 ): ChefRecord["binaries"] {
   const entries = pathEntries();
   const found: Partial<Record<"git" | Provider, string>> = {};
-  for (const name of ["git", "claude", "codex"] as const) {
-    const p = findBinary(name, entries);
+  const binOf = (name: "git" | Provider) =>
+    name === "git" ? "git" : PROVIDERS[name].bin;
+  for (const name of ["git", ...PROVIDER_NAMES] as const) {
+    const bin = binOf(name);
+    const p = findBinary(bin, entries);
     if (!p) continue;
     let real = p;
     try {
@@ -274,14 +279,17 @@ function resolveBinaries(
     if (isInside(checkout, p) || isInside(checkout, real)) {
       throw new CliError(
         "USAGE",
-        `${name} resolves inside the checkout (${real}): a task could replace it`,
+        `${bin} resolves inside the checkout (${real}): a task could replace it`,
       );
     }
     found[name] = p;
   }
   for (const name of ["git", provider] as const) {
     if (!found[name]) {
-      throw new CliError("PROVIDER_UNAVAILABLE", `${name} not found on PATH`);
+      throw new CliError(
+        "PROVIDER_UNAVAILABLE",
+        `${binOf(name)} not found on PATH`,
+      );
     }
   }
   return { ...found, git: found.git! };
@@ -292,11 +300,9 @@ function assertProviderReady(
   provider: Provider,
   bin: string,
   cwd: string,
+  checkout: string,
 ): void {
-  const error =
-    provider === "claude"
-      ? (claudeVersionError(bin, cwd) ?? claudeFlagsError(bin, cwd))
-      : codexChefVersionError(bin, cwd);
+  const error = chefProvider(provider).probe(bin, cwd, checkout);
   if (error) throw new CliError("PROVIDER_UNAVAILABLE", error);
 }
 
@@ -376,9 +382,13 @@ export interface ChefStartResult {
 }
 
 function startChef(planArg: string, opts: StartFlags): ChefStartResult {
-  const provider = opts.provider;
-  if (provider !== "claude" && provider !== "codex") {
-    throw new CliError("USAGE", "--provider must be claude or codex");
+  const chefNames = chefProviderNames();
+  const provider = chefNames.find((p) => p === opts.provider);
+  if (!provider) {
+    throw new CliError(
+      "USAGE",
+      `--provider must be one of ${chefNames.join(", ")}`,
+    );
   }
   if (process.platform === "win32") {
     throw new CliError(
@@ -406,7 +416,7 @@ function startChef(planArg: string, opts: StartFlags): ChefStartResult {
     }
     const hooksDir = join(tmp, "hooks");
     mkdirSync(hooksDir, { mode: 0o700 });
-    assertProviderReady(provider, binaries[provider]!, tmp);
+    assertProviderReady(provider, binaries[provider]!, tmp, checkout);
     const ctx: GitCtx = {
       gitBin: binaries.git,
       gitDir,

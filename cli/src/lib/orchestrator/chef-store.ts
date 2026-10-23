@@ -19,6 +19,7 @@ import {
   type DispatchRecord,
   isOlderThan,
   isPidAlive,
+  isProviderName,
   isSessionId,
   MAX_TEXT,
   mkdirReal,
@@ -27,6 +28,7 @@ import {
   serialize,
   SPAWN_GRACE_MS,
 } from "./store.js";
+import { PROVIDERS } from "./providers/index.js";
 
 /**
  * Trusted chef store `<store>/chefs/<id>/`, outside every worker's write
@@ -89,8 +91,12 @@ export interface ChefRecord {
   sessionUuid: string;
   limits: ChefLimits;
   taskPolicy: DispatchRecord["policy"];
-  /** Absolute paths resolved at start. */
-  binaries: { git: string; claude?: string; codex?: string };
+  /**
+   * Absolute paths resolved at start, keyed by provider name (the value is
+   * the path of `PROVIDERS[p].bin`); only git and the chef's provider are
+   * always present.
+   */
+  binaries: { git: string } & Partial<Record<Provider, string>>;
   commit: boolean;
   /** Hooks active at start (they never run in a chef commit). */
   hooks: { hooksPath: string | null; files: string[] };
@@ -429,8 +435,16 @@ export function createChef(
   input: Omit<ChefRecord, "schemaVersion" | "startSeq" | "createdAt">,
 ): ChefRecord {
   assertId(input.id, "chef id");
-  if (input.provider !== "claude" && input.provider !== "codex") {
+  if (
+    !isProviderName(input.provider) ||
+    PROVIDERS[input.provider]?.caps.chef !== true
+  ) {
     throw new CliError("USAGE", `Invalid provider: ${String(input.provider)}`);
+  }
+  for (const name of ["git", input.provider] as const) {
+    if (typeof input.binaries?.[name] !== "string") {
+      throw new CliError("USAGE", `Chef has no ${name} binary`);
+    }
   }
   if (!isSessionId(input.sessionUuid)) {
     throw new CliError("USAGE", "Invalid chef session id");

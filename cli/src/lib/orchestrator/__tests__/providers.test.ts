@@ -25,11 +25,14 @@ import { CHEF_OUTPUT_SCHEMA } from "../chef-actions.js";
 import { makeChefHooksDir } from "../chef-git.js";
 import {
   buildChefSpawn,
+  CHEF_PROVIDERS,
   chefEnv,
+  chefProviderNames,
   claudeVersionError,
   finishChefRun,
   parseChefLine,
   type ChefSpawnInput,
+  type ChefSpawnSpec,
   type ChefStreamAcc,
 } from "../providers/chef.js";
 import {
@@ -37,7 +40,12 @@ import {
   type SpawnContext,
   type StreamAcc,
 } from "../providers/index.js";
-import { newId, type Provider, type TaskRecord } from "../store.js";
+import {
+  newId,
+  PROVIDER_NAMES,
+  type Provider,
+  type TaskRecord,
+} from "../store.js";
 
 const PROMPT = "SECRET-PROMPT refactor the parser";
 
@@ -580,6 +588,86 @@ describe("chef spawn", () => {
         digest: "D",
       }),
     ).toThrow(/no absolute claude binary/);
+  });
+
+  describe("chef registry (C3a)", () => {
+    const resultLine = JSON.stringify({
+      type: "result",
+      subtype: "success",
+      is_error: false,
+      result: "done",
+      structured_output: { summary: "s", actions: [] },
+    });
+    const wakeDir = (wake: number) =>
+      join(orch, "chefs", chef.id, "private", String(wake));
+
+    it("has an entry exactly for the providers with caps.chef (claude, codex)", () => {
+      expect(Object.keys(CHEF_PROVIDERS).sort()).toEqual(
+        PROVIDER_NAMES.filter((p) => PROVIDERS[p].caps.chef).sort(),
+      );
+      expect(chefProviderNames()).toEqual(["claude", "codex"]);
+    });
+
+    it.each(["grok", "cursor", "constructor", "toString", "", "CLAUDE"])(
+      "build, parse and finish throw USAGE for %j, never falling into the codex builder",
+      (name) => {
+        const bad = { ...chef, provider: name as Provider };
+        expect(() =>
+          buildChefSpawn({ chef: bad, wake: 41, digest: "D" }),
+        ).toThrow(
+          expect.objectContaining({
+            code: "USAGE",
+            message: expect.stringMatching(/cannot be a chef.*claude, codex/),
+          }),
+        );
+        // The codex builder creates private/<wake>/ (schema, -o file).
+        expect(existsSync(wakeDir(41))).toBe(false);
+        expect(() => parseChefLine(name as Provider, resultLine, {})).toThrow(
+          /cannot be a chef/,
+        );
+        const spec: ChefSpawnSpec = {
+          provider: name as Provider,
+          cmd: "/abs/bin/x",
+          args: [],
+          cwd: chefRoot,
+          stdin: "",
+          env: {},
+        };
+        expect(() => finishChefRun(spec, {}, 0)).toThrow(/cannot be a chef/);
+      },
+    );
+
+    it("a provider whose caps.chef is false is refused even with a registry entry", () => {
+      const caps = PROVIDERS.codex.caps;
+      PROVIDERS.codex.caps = { ...caps, chef: false };
+      try {
+        const codexChef = { ...chef, provider: "codex" as const };
+        expect(() =>
+          buildChefSpawn({ chef: codexChef, wake: 42, digest: "D" }),
+        ).toThrow(expect.objectContaining({ code: "USAGE" }));
+        expect(existsSync(wakeDir(42))).toBe(false);
+        expect(() => parseChefLine("codex", resultLine, {})).toThrow(
+          /"codex" cannot be a chef/,
+        );
+        expect(chefProviderNames()).toEqual(["claude"]);
+      } finally {
+        PROVIDERS.codex.caps = caps;
+      }
+    });
+
+    it("a missing binary for the chef's provider is a clear error", () => {
+      expect(() =>
+        buildChefSpawn({
+          chef: {
+            ...chef,
+            provider: "codex",
+            binaries: { git: "/usr/bin/git" },
+          },
+          wake: 43,
+          digest: "D",
+        }),
+      ).toThrow(/no absolute codex binary in chef\.json/);
+    });
   });
 
   it("chef env drops inherited GIT_* and session-linking CLAUDE_CODE_*, and sets the hardened git config", () => {

@@ -1,10 +1,12 @@
 import { readGlobalChefEnabled } from "../config.js";
 import { notifyUser, type NotifyResult } from "../notify.js";
 import { CliError } from "../output.js";
-import type {
-  ChefAction,
-  RejectedAction,
-  ValidationResult,
+import {
+  chefDispatchProblem,
+  roleCapsProblem,
+  type ChefAction,
+  type RejectedAction,
+  type ValidationResult,
 } from "./chef-actions.js";
 import {
   ChefGitError,
@@ -29,10 +31,11 @@ import {
   recordTaskRole,
   recordWakePause,
   type ChefRecord,
+  type ChefTaskRole,
 } from "./chef-store.js";
 import { dispatchTask, type DispatchInput } from "./dispatch.js";
 import { acquireLease, releaseLease } from "./lease.js";
-import { MAX_TEXT, reply } from "./store.js";
+import { isProviderName, MAX_TEXT, type Provider, reply } from "./store.js";
 
 /**
  * Executors of the chef's accepted actions (C2b task 3.6). The wake (3.7)
@@ -76,11 +79,16 @@ export interface ChefExecDeps {
   notify: (title: string, message: string) => Promise<void>;
   /** One line into wakes/<n>/wake.log. */
   log: (line: string) => void;
+  /**
+   * Why a dispatch's provider cannot run its role now (null = fine), passed
+   * to `validateActions` (a rejection). Default: `chefDispatchProblem`.
+   */
+  providerProblem: (provider: Provider, role: ChefTaskRole) => string | null;
 }
 
 /** Real defaults for every dep except notify/log (bound per wake). */
 export function defaultExecDeps(
-  chef: Pick<ChefRecord, "limits">,
+  chef: Pick<ChefRecord, "limits" | "checkout" | "isGitRepo" | "taskPolicy">,
   log: (line: string) => void,
   notify: typeof notifyUser = notifyUser,
 ): ChefExecDeps {
@@ -96,6 +104,8 @@ export function defaultExecDeps(
     },
     notify: boundNotify(chef, log, notify),
     log,
+    providerProblem: (provider, role) =>
+      chefDispatchProblem(chef, provider, role),
   };
 }
 
@@ -228,9 +238,12 @@ async function execDispatch(
   const { chef, deps } = ec;
   if (!action.prompt.trim())
     return { status: "failed", reason: "empty prompt" };
-  if (action.provider !== "claude" && action.provider !== "codex") {
+  // Defense in depth: validateActions already rejected these.
+  if (!isProviderName(action.provider)) {
     return { status: "failed", reason: "invalid provider" };
   }
+  const caps = roleCapsProblem(action.provider, action.role);
+  if (caps) return { status: "failed", reason: caps };
   // The worker starts changing files at once: fingerprint first.
   let before: ChefFingerprint;
   try {

@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 import { installedPluginsPath } from "./lib/paths.js";
 import { isJsonArgv } from "./lib/output.js";
 import { shouldSkipPostAction, toUsageEnvelope } from "./lib/json-guard.js";
+import { PROVIDERS } from "./lib/orchestrator/providers/index.js";
+import { PROVIDER_NAMES } from "./lib/orchestrator/store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -433,12 +435,16 @@ program
 
 const taskCmd = program
   .command("task")
-  .description("Run and manage sandboxed worker tasks (Claude, Codex)");
+  .description("Run and manage sandboxed worker tasks");
 
 taskCmd
   .command("run <prompt>")
   .description("Start a detached worker task in the current checkout")
-  .option("--provider <name>", "Worker CLI: claude or codex")
+  .option("--provider <name>", `Worker CLI: ${PROVIDER_NAMES.join(", ")}`)
+  .option(
+    "--model <name>",
+    "Model of the provider given by --provider (needs --provider)",
+  )
   .option("--read-only", "Worker may not edit the checkout (no writer lease)")
   .option(
     "--no-fallback",
@@ -487,14 +493,15 @@ taskCmd
 
 const chefCmd = program
   .command("chef")
-  .description(
-    "Let a chef (Claude or Codex) drive a plan through worker tasks",
-  );
+  .description("Let a chef drive a plan through worker tasks");
 
 chefCmd
   .command("start <plan-dir>")
   .description("Start a chef for a plan in the current (clean) checkout")
-  .option("--provider <name>", "Chef CLI: claude or codex")
+  .option(
+    "--provider <name>",
+    `Chef CLI: ${PROVIDER_NAMES.filter((p) => PROVIDERS[p].caps.chef).join(", ")}`,
+  )
   .option("--no-commit", "Never commit: the chef only dispatches tasks")
   .option("--json", "Output a JSON envelope")
   .action(async (planDir: string, opts) => {

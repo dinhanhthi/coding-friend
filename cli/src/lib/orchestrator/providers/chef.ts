@@ -2,20 +2,28 @@ import { readdirSync, unlinkSync } from "fs";
 import { isAbsolute, join } from "path";
 import { run } from "../../exec.js";
 import { compareVersions, extractVersion } from "../../host.js";
+import { CliError } from "../../output.js";
 import { CHEF_OUTPUT_SCHEMA } from "../chef-actions.js";
 import { CHEF_CONTRACT } from "../chef-digest.js";
 import { makeChefHooksDir } from "../chef-git.js";
 import { type ChefRecord, makeChefPrivateDir } from "../chef-store.js";
 import {
   createOnce,
+  isProviderName,
   isSessionId,
+  PROVIDER_NAMES,
   type Provider,
   readRegularFile,
   serialize,
 } from "../store.js";
 import { claude } from "./claude.js";
 import { codex, MIN_CODEX_VERSION } from "./codex.js";
-import type { SpawnContext, StreamAcc } from "./index.js";
+import {
+  PROVIDERS,
+  type ProviderAdapter,
+  type SpawnContext,
+  type StreamAcc,
+} from "./index.js";
 
 /**
  * Chef process spawn (C2b task 3.4), separate from the worker `buildSpawn`.
@@ -135,7 +143,9 @@ export function chefEnv(
 function chefBinary(input: ChefSpawnInput, provider: Provider): string {
   const bin = input.chef.binaries[provider];
   if (!bin || !isAbsolute(bin)) {
-    throw new Error(`chef ${input.chef.id} has no absolute ${provider} binary`);
+    throw new Error(
+      `chef ${input.chef.id} has no absolute ${provider} binary in chef.json`,
+    );
   }
   return bin;
 }
@@ -264,9 +274,7 @@ export function buildCodexChefSpawn(input: ChefSpawnInput): ChefSpawnSpec {
 }
 
 export function buildChefSpawn(input: ChefSpawnInput): ChefSpawnSpec {
-  return input.chef.provider === "claude"
-    ? buildClaudeChefSpawn(input)
-    : buildCodexChefSpawn(input);
+  return chefProvider(input.chef.provider).build(input);
 }
 
 // ─── output ─────────────────────────────────────────────────────────────
@@ -280,10 +288,10 @@ export function parseChefLine(
   line: string,
   acc: ChefStreamAcc,
 ): void {
-  if (provider === "codex") {
-    codex.parseLine(line, acc);
-    return;
-  }
+  chefProvider(provider).parseLine(line, acc);
+}
+
+function parseClaudeChefLine(line: string, acc: ChefStreamAcc): void {
   claude.parseLine(line, acc);
   let ev: Record<string, unknown>;
   try {
@@ -303,6 +311,7 @@ export function parseChefLine(
  * is used here.
  */
 function workerFinish(
+  worker: ProviderAdapter,
   spec: ChefSpawnSpec,
   acc: ChefStreamAcc,
   exitCode: number | null,
@@ -317,11 +326,7 @@ function workerFinish(
     cfInvocation: [],
     sessionUuid: "",
   };
-  return (spec.provider === "claude" ? claude : codex).finish(
-    acc,
-    exitCode,
-    ctx,
-  );
+  return worker.finish(acc, exitCode, ctx);
 }
 
 function readCodexOutput(
@@ -341,16 +346,21 @@ function readCodexOutput(
 }
 
 /**
- * Outcome of a finished chef run. A usage limit wins (the chef waits for the
- * reset, never switches provider); otherwise the raw structured output, which
- * the wake passes to `validateActions` (schema errors fail the wake there).
+ * Shared outcome rules: a usage limit wins (the chef waits for the reset,
+ * never switches provider), then `failure` (provider-specific, checked
+ * before the generic one), then the worker outcome, then `output`.
  */
-export function finishChefRun(
+function settleChefRun(
+  worker: ProviderAdapter,
   spec: ChefSpawnSpec,
   acc: ChefStreamAcc,
   exitCode: number | null,
+  rules: {
+    failure?: () => string | undefined;
+    output: () => { output: unknown } | { error: string };
+  },
 ): ChefRunResult {
-  const fin = workerFinish(spec, acc, exitCode);
+  const fin = workerFinish(worker, spec, acc, exitCode);
   const session =
     acc.sessionId !== undefined ? { sessionId: acc.sessionId } : {};
   if (fin.quota) {
@@ -361,16 +371,9 @@ export function finishChefRun(
       ...(fin.error !== undefined && { error: fin.error }),
     };
   }
-  // Before the generic failure: the worker parser marks this subtype failed.
-  if (
-    spec.provider === "claude" &&
-    acc.resultSubtype === "error_max_structured_output_retries"
-  ) {
-    return {
-      outcome: "failed",
-      error: "claude could not produce output matching the chef schema",
-      ...session,
-    };
+  const failure = rules.failure?.();
+  if (failure !== undefined) {
+    return { outcome: "failed", error: failure, ...session };
   }
   if (fin.outcome !== "succeeded") {
     return {
@@ -379,19 +382,50 @@ export function finishChefRun(
       ...session,
     };
   }
-  if (spec.provider === "codex") {
-    const r = readCodexOutput(spec);
-    if ("error" in r) return { outcome: "failed", error: r.error, ...session };
-    return { outcome: "ok", output: r.output, ...session };
-  }
-  if (acc.structuredOutput === undefined || acc.structuredOutput === null) {
-    return {
-      outcome: "failed",
-      error: "claude result has no structured_output",
-      ...session,
-    };
-  }
-  return { outcome: "ok", output: acc.structuredOutput, ...session };
+  const r = rules.output();
+  if ("error" in r) return { outcome: "failed", error: r.error, ...session };
+  return { outcome: "ok", output: r.output, ...session };
+}
+
+function finishClaudeChefRun(
+  spec: ChefSpawnSpec,
+  acc: ChefStreamAcc,
+  exitCode: number | null,
+): ChefRunResult {
+  return settleChefRun(claude, spec, acc, exitCode, {
+    // The worker parser marks this subtype failed.
+    failure: () =>
+      acc.resultSubtype === "error_max_structured_output_retries"
+        ? "claude could not produce output matching the chef schema"
+        : undefined,
+    output: () =>
+      acc.structuredOutput === undefined || acc.structuredOutput === null
+        ? { error: "claude result has no structured_output" }
+        : { output: acc.structuredOutput },
+  });
+}
+
+function finishCodexChefRun(
+  spec: ChefSpawnSpec,
+  acc: ChefStreamAcc,
+  exitCode: number | null,
+): ChefRunResult {
+  return settleChefRun(codex, spec, acc, exitCode, {
+    output: () => readCodexOutput(spec),
+  });
+}
+
+/**
+ * Outcome of a finished chef run (see `settleChefRun`); the wake passes the
+ * raw structured output to `validateActions` (schema errors fail the wake
+ * there).
+ */
+export function finishChefRun(
+  spec: ChefSpawnSpec,
+  acc: ChefStreamAcc,
+  exitCode: number | null,
+): ChefRunResult {
+  return chefProvider(spec.provider).finish(spec, acc, exitCode);
 }
 
 // ─── version and flag checks ────────────────────────────────────────────
@@ -436,4 +470,73 @@ export function claudeFlagsError(bin: string, cwd: string): string | undefined {
   return missing.length
     ? `claude does not support ${missing.join(", ")} (required for a chef)`
     : undefined;
+}
+
+// ─── registry ───────────────────────────────────────────────────────────
+
+/** Everything a provider needs to run as a chef. */
+export interface ChefProviderEntry {
+  /** Prepare dirs/files under `chefs/<id>/private/` and return the spawn. */
+  build(input: ChefSpawnInput): ChefSpawnSpec;
+  parseLine(line: string, acc: ChefStreamAcc): void;
+  finish(
+    spec: ChefSpawnSpec,
+    acc: ChefStreamAcc,
+    exitCode: number | null,
+  ): ChefRunResult;
+  /**
+   * Why `bin` cannot run a chef (version, flags), else undefined. `cwd` is
+   * the neutral temp dir of `cf chef start`; `checkout` is the chef's
+   * realpath checkout (unused by claude/codex).
+   */
+  probe(bin: string, cwd: string, checkout: string): string | undefined;
+}
+
+/**
+ * Chef providers. Partial on purpose: a worker provider has no entry until
+ * it can be a chef, and every lookup goes through `chefProvider`, which
+ * throws for a name without one (never another provider's builder).
+ * Keep in sync with `caps.chef` (a test checks it).
+ */
+export const CHEF_PROVIDERS: Partial<Record<Provider, ChefProviderEntry>> = {
+  claude: {
+    build: buildClaudeChefSpawn,
+    parseLine: parseClaudeChefLine,
+    finish: finishClaudeChefRun,
+    probe: (bin, cwd) =>
+      claudeVersionError(bin, cwd) ?? claudeFlagsError(bin, cwd),
+  },
+  codex: {
+    build: buildCodexChefSpawn,
+    parseLine: (line, acc) => codex.parseLine(line, acc),
+    finish: finishCodexChefRun,
+    probe: (bin, cwd) => codexChefVersionError(bin, cwd),
+  },
+};
+
+/** Providers that can run a chef (`caps.chef` and a registry entry). */
+export function chefProviderNames(): Provider[] {
+  return PROVIDER_NAMES.filter(
+    (p) => PROVIDERS[p]?.caps.chef === true && Object.hasOwn(CHEF_PROVIDERS, p),
+  );
+}
+
+/**
+ * The registry entry of `name`; a USAGE error for an unknown name, a
+ * provider with `caps.chef = false` or one without an entry.
+ */
+export function chefProvider(name: unknown): ChefProviderEntry {
+  const entry =
+    isProviderName(name) &&
+    PROVIDERS[name]?.caps.chef === true &&
+    Object.hasOwn(CHEF_PROVIDERS, name)
+      ? CHEF_PROVIDERS[name]
+      : undefined;
+  if (!entry) {
+    throw new CliError(
+      "USAGE",
+      `provider ${JSON.stringify(name)} cannot be a chef (chef providers: ${chefProviderNames().join(", ")})`,
+    );
+  }
+  return entry;
 }
