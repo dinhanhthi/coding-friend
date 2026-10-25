@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.6 (2026-10-25)
+
+- `/cf-plan-review` applies Critical/Important findings without asking when config `planReviewFix: true` (local overrides global); `--no-fix` forces it off for one run [#c6c77aa7](https://github.com/dinhanhthi/coding-friend/commit/c6c77aa7)
+
 ## v0.46.5 (2026-10-23)
 
 - Remove `autoApprove` for Claude Code and omp: the hook forced a prompt on anything it was unsure about, even with Claude Code auto mode on. Use the native auto / `yolo` modes there. `autoApprove` stays for Codex, Antigravity and Devin; `autoApproveLLM` and the session-start warning about dangerous `.claude/settings*` allow rules are gone [#b30bc3a7](https://github.com/dinhanhthi/coding-friend/commit/b30bc3a7)

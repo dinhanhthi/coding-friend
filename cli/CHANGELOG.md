@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.5 (2026-10-25)
+
+- `cf config`: new "Plan review fix" entry sets `planReviewFix`, and the config schema accepts the key (no more "Unknown config key" warning) [#c6c77aa7](https://github.com/dinhanhthi/coding-friend/commit/c6c77aa7)
+
 ## v1.42.4 (2026-10-23)
 
 - `cf init`, `cf config` and `cf permission`: `autoApprove` is now described as Codex / Antigravity / Devin only, and the audit of dangerous Claude allow rules is removed, since Claude Code uses its native auto mode [#b30bc3a7](https://github.com/dinhanhthi/coding-friend/commit/b30bc3a7)
