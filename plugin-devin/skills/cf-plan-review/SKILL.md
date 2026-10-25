@@ -1,12 +1,12 @@
 ---
 name: cf-plan-review
 description: >
-  Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; --fix/--inline applies Critical/Important findings without asking; does NOT review code (use /cf-review).
+  Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; --fix/--inline (or config planReviewFix) applies Critical/Important findings without asking, --no-fix forces off; does NOT review code (use /cf-review).
 user-invocable: true
-argument-hint: "[plan] [--fix|--inline] [--codex|--gemini|--claude|--cursor|--grok]"
+argument-hint: "[plan] [--fix|--inline|--no-fix] [--codex|--gemini|--claude|--cursor|--grok]"
 model: opus
 created: 2026-09-05
-updated: 2026-09-22
+updated: 2026-10-25
 ---
 
 # /cf-plan-review
@@ -15,7 +15,7 @@ Review the plan: **$ARGUMENTS**
 
 ## Purpose
 
-Review a saved `/cf-plan` folder (not application code) with a fresh, clean-context subagent of the host that is running this skill. Optionally add external reviewers in parallel. Write `review.md` into the plan folder, then offer to apply Critical/Important findings — or apply them immediately with `--fix` (`--inline`).
+Review a saved `/cf-plan` folder (not application code) with a fresh, clean-context subagent of the host that is running this skill. Optionally add external reviewers in parallel. Write `review.md` into the plan folder, then offer to apply Critical/Important findings — or apply them immediately with `--fix` (`--inline`) or config `planReviewFix: true`.
 
 - Unlike `/cf-review`: that skill reviews a code diff. This skill reviews the plan document before implementation.
 - Unlike `cf-reviewer-plan`: that agent compares implemented code against the plan. This skill checks the plan itself before any code is written.
@@ -45,10 +45,14 @@ Read `docsDir` from `.coding-friend/config.json` (default: `docs`). Prefer `CF_D
 
 **Apply flags:**
 
-- Parse `--fix` (alias `--inline`); strip them from `$ARGUMENTS`. `--inline` here means apply findings — it is **not** `/cf-plan`'s no-file mode.
-- If present, set apply=true and print:
+- Parse `--fix` (alias `--inline`) and `--no-fix`; strip them from `$ARGUMENTS`. `--inline` here means apply findings — it is **not** `/cf-plan`'s no-file mode. `--fix` together with `--no-fix` → report the conflict and stop.
+- `--fix` → apply=true. `--no-fix` → apply=false.
+- No flag → read `planReviewFix` from merged config (`~/.coding-friend/config.json` + `CF_CONFIG_FILE`, default `.coding-friend/config.json`; **local field overrides global**). `true` → apply=true; absent or non-boolean → apply=false.
+- apply=true → print:
 
   > 🔧 `--fix` — will apply Critical/Important findings after review (no confirmation).
+
+  (When set by config, say `` `planReviewFix` `` instead of `` `--fix` ``.)
 
 What remains is `<plan>`.
 
@@ -146,8 +150,8 @@ Delete `${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md`. Keep `*-plan-result-*.md
 
 If any 🚨 or ⚠️ findings exist:
 
-- **`--fix`:** do not Ask. Print `> 🔧 Applying Critical/Important findings to the plan.` and apply immediately.
-- **Default:** Ask the user: "Apply Critical/Important findings to the plan?" Apply only if they agree.
+- **apply=true** (`--fix` or `planReviewFix`): do not Ask. Print `> 🔧 Applying Critical/Important findings to the plan.` and apply immediately.
+- **Default** (apply=false): Ask the user: "Apply Critical/Important findings to the plan?" Apply only if they agree.
 
 When applying, edit `README.md` / `phase-N-*.md` yourself (do **not** dispatch cf-implementer). For a legacy single-file plan, edit `<slug>.md`.
 

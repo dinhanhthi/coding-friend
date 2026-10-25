@@ -135,6 +135,7 @@ const ConfigSchema = z.strictObject({
   guiPlanFormat: z.enum(["html", "md"]).optional(),
   planAuto: z.boolean().optional(),
   planCommitPerTask: z.boolean().optional(),
+  planReviewFix: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
 });
 
@@ -156,6 +157,7 @@ const KNOWN_KEYS = [
   "guiPlanFormat",
   "planAuto",
   "planCommitPerTask",
+  "planReviewFix",
   "showcase",
 ];
 

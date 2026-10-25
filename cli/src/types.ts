@@ -129,6 +129,8 @@ export interface CodingFriendConfig {
   guiPlanFormat?: "html" | "md";
   planAuto?: boolean;
   planCommitPerTask?: boolean;
+  /** Default `/cf-plan-review` to `--fix` (apply Critical/Important without asking). `--no-fix` forces off. */
+  planReviewFix?: boolean;
   /** Defaults read by `/cf-showcase --default`. */
   showcase?: ShowcaseConfig;
 }

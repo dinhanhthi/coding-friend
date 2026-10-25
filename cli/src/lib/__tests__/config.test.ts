@@ -544,6 +544,28 @@ describe("loadConfig validation", () => {
     expect(config.planCommitPerTask).toBeUndefined();
   });
 
+  it("accepts planReviewFix as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planReviewFix: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.planReviewFix).toBe(true);
+  });
+
+  it("warns and strips planReviewFix when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planReviewFix: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("planReviewFix"),
+    );
+    expect(config.planReviewFix).toBeUndefined();
+  });
+
   it("accepts a full showcase config (video + poster)", () => {
     const showcase = {
       video: {

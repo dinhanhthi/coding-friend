@@ -707,6 +707,28 @@ async function editPlanCommitPerTask(
   writeToScope(scope, { planCommitPerTask: value });
 }
 
+async function editPlanReviewFix(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("planReviewFix", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Run /cf-plan-review with --fix by default? (apply Critical/Important findings to the plan without asking)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { planReviewFix: value });
+}
+
 // ─── Review ──────────────────────────────────────────────────────────
 
 function getReviewConfig(
@@ -1230,6 +1252,17 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const planReviewFixScope = getScopeLabel(
+      "planReviewFix",
+      globalCfg,
+      localCfg,
+    );
+    const planReviewFixVal = getMergedValue(
+      "planReviewFix",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -1320,6 +1353,12 @@ export async function configCommand(): Promise<void> {
               "  Commit each task separately under /cf-plan autopilot (same as passing --commit-per-task)",
           },
           {
+            name: `Plan review fix ${formatScopeLabel(planReviewFixScope)}${planReviewFixVal !== undefined ? ` (${planReviewFixVal})` : ""}`,
+            value: "planReviewFix",
+            description:
+              "  Apply Critical/Important findings in /cf-plan-review by default (same as passing --fix)",
+          },
+          {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
@@ -1403,6 +1442,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "planCommitPerTask":
         await editPlanCommitPerTask(globalCfg, localCfg);
+        break;
+      case "planReviewFix":
+        await editPlanReviewFix(globalCfg, localCfg);
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);
