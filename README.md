@@ -117,7 +117,7 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 Scripts and agents can pass `--json` (status, version, config, memory, project, task, supervisor, chef, ask, reply, done, …) for one machine-readable envelope on stdout; `cf project` lists the projects Coding Friend has seen.
 
-`cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`. On a usage limit the task pauses, then resumes after the reset or switches provider (`task.onQuota`, `--no-fallback`); `cf supervisor install|uninstall|status|tick` adds a macOS launchd tick that picks up paused tasks whose runner died. `cf chef start|say|status|inbox|show|stop|resume` gives one plan to a read-only chef that the tick wakes to dispatch tasks and commit checked changes.
+`cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox (or OpenCode as a read-only worker) without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`. On a usage limit the task pauses, then resumes after the reset or switches provider (`task.onQuota`, `--no-fallback`); `cf supervisor install|uninstall|status|tick` adds a macOS launchd tick that picks up paused tasks whose runner died. `cf chef start|say|status|inbox|show|stop|resume` gives one plan to a read-only chef that the tick wakes to dispatch tasks and commit checked changes.
 
 ## Development
 
