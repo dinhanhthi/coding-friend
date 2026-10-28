@@ -1585,6 +1585,16 @@ test("Step 11 loops cf-implementer fixes within review.maxRounds", () => {
     );
     assert.match(
       step11,
+      /`0` → unlimited/,
+      `${relPath}: review.maxRounds 0 must mean an unlimited loop`,
+    );
+    assert.match(
+      step11,
+      /any earlier review in this loop[\s\S]*no progress/,
+      `${relPath}: an unlimited loop must stop when a re-review repeats any earlier review's findings`,
+    );
+    assert.match(
+      step11,
       /\[CF-RESULT: failure\]/,
       `${relPath}: an implementer failure must be a stop condition`,
     );

@@ -26,15 +26,16 @@ When active, after implementation completes its own verification (existing tests
      If output is unparseable, STOP autopilot and surface to user.
 
 3. **Fix loop** — If Critical or Important findings exist:
-   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + local `.coding-friend/config.json`; **local field overrides global**. Absent, non-integer, or `< 1` → **5**. This is the maximum number of `/cf-review` runs (the initial review in step 1 counts as round 1).
-   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds`:
+   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + local `.coding-friend/config.json`; **local field overrides global**. Absent, non-integer, or negative → **5**; `0` → unlimited (loop until no Critical/Important remain). A positive value is the maximum number of `/cf-review` runs (the initial review in step 1 counts as round 1).
+   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds` (or `maxRounds` is `0`):
      - Dispatch ONE cf-implementer with task "Fix these review findings: <verbatim Critical + Important bullets from the latest review>". Files: union of files referenced.
      - **Fix-task failure path** — If the fix cf-implementer returns `[CF-RESULT: failure]`, STOP autopilot immediately. Do NOT consume another review round. Surface the failure to user.
      - Otherwise, re-run `/cf-review --no-fix` (next round).
      - Apply the status gate to that review too, before counting: `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot (no commit), same as the first review.
+     - **Stall guard (only when `maxRounds` is `0`)** — Reduce each Critical/Important finding to a key = file + first sentence of the issue. If this review's key set equals the key set of any earlier review in this loop → STOP autopilot (`⚠️ Stopped — no progress`), surface all review outputs and fix attempts, ask user (same as the max-rounds path). New findings keep the loop going.
      - If it passed the gate with `Review status: COMPLETE` and no Critical/Important left (Suggestions may remain) → exit the fix loop and continue to commit.
-   - If Critical or Important still remain after `maxRounds` reviews → STOP autopilot, surface all review outputs and fix attempts, ask user.
-   - Hard cap: never more than `maxRounds` reviews. Do not start a fix after the last allowed review.
+   - Finite cap only (`maxRounds` ≥ 1): if Critical or Important still remain after `maxRounds` reviews → STOP autopilot, surface all review outputs and fix attempts, ask user.
+   - Hard cap (finite `maxRounds` only): never more than `maxRounds` reviews. Do not start a fix after the last allowed review.
 
 4. **Commit** — Only after a review passed the status gate (`Review status: COMPLETE`) with no Critical/Important remaining (Suggestions may remain):
    - `git add -A`
@@ -53,7 +54,7 @@ EOF
 
 - Implementation fails its own verification (typecheck/test failure that cannot be auto-fixed).
 - The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume another review round).
-- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5), or — when it is `0` — a re-review repeats the Critical/Important set of any earlier review (no progress).
 - `Review status:` is `PARTIAL` or `FAILED`, or that line is missing or unparseable — incomplete coverage never commits.
 - Review output cannot be parsed.
 - `git commit` fails repeatedly.
