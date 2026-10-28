@@ -33,11 +33,19 @@ The Rust side treats the webview as untrusted. Actions that change your setup (`
 ```bash
 cd app
 npm run tauri dev                                   # app window + Vite dev server
-npm run tauri:build                                 # release .app/.dmg into src-tauri/target
+npm run bundle                                      # release .app/.dmg into src-tauri/target
 cargo test --manifest-path src-tauri/Cargo.toml     # Rust tests
 ```
 
 Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do not.
+
+## Building a bundle
+
+`npm run bundle` runs `scripts/build.sh`, which wraps `tauri build`; extra arguments pass through (`npm run bundle -- --debug --bundles app`), except `--target`, which the script picks itself. The script prints where the `.app` and `.dmg` landed.
+
+- **Universal** (`universal-apple-darwin`, under `src-tauri/target/universal-apple-darwin/`) when both `aarch64-apple-darwin` and `x86_64-apple-darwin` rustup targets are installed; otherwise the host architecture only (under `src-tauri/target/release/`), with a warning.
+- **Ad-hoc signed** by default (`signingIdentity: "-"` in `tauri.conf.json`). Set `APPLE_SIGNING_IDENTITY` to sign with a real identity; the script passes it as a `--config` override.
+- **Updater artifacts** (`.app.tar.gz` and `.sig`) only when `TAURI_SIGNING_PRIVATE_KEY` (or `TAURI_SIGNING_PRIVATE_KEY_PATH`) is set. Without it the script turns `createUpdaterArtifacts` off, so local and VM builds need no key.
 
 ## Cargo build cache
 
@@ -54,5 +62,5 @@ debug = "line-tables-only"
 incremental = false
 ```
 
-- `npm run tauri:build` pins `CARGO_TARGET_DIR=<repo>/app/src-tauri/target`, so bundles stay in the repo (gitignored).
+- `npm run bundle` pins `CARGO_TARGET_DIR=<repo>/app/src-tauri/target`, so bundles stay in the repo (gitignored).
 - Build one project at a time. Never run `cargo clean` (it wipes every project's cache); clean with `cargo sweep`.

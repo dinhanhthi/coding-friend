@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "format:check": "prettier --check src",
     "tauri": "tauri",
-    "tauri:build": "CARGO_TARGET_DIR=$PWD/src-tauri/target tauri build"
+    "bundle": "bash scripts/build.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

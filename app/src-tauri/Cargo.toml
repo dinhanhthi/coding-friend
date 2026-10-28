@@ -18,8 +18,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-dialog = "2"
+# Used from Rust only (updater.rs); no capability grants the page any updater command.
+tauri-plugin-updater = "2"
 # Initialized only in debug builds (see lib.rs); a plain dependency so tauri-build knows its permissions.
 tauri-plugin-mcp-bridge = "0.13"
 serde = { version = "1", features = ["derive"] }

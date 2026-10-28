@@ -40,7 +40,7 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -52,6 +52,14 @@
     "macOS": {
       "minimumSystemVersion": "13.0",
       "signingIdentity": "-"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/dinhanhthi/coding-friend/releases/download/app-latest/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM5NzQ4RDEyRkU0MzlGOTAKUldTUW4wUCtFbzEweWZKNzF0ME1rVTljbVFwdE9JQ0tDRyszWkJZVzBQc01vR1BwY3Z1M1RzQ2wK"
     }
   }
 }
