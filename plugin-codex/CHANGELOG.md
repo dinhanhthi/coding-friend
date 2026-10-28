@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.7 (2026-10-28)
+
+- The review-fix loop can run unlimited rounds with `review.maxRounds: 0`: `$cf-review --fix`, `$cf-plan` autopilot and `$cf-tdd` autopilot keep fixing and re-reviewing until no Critical or Important issue remains, with a stall guard that stops when a round makes no progress [#c8e89d8c](https://github.com/dinhanhthi/coding-friend/commit/c8e89d8c)
+- `$cf-plan-review` re-reviews the plan after applying fixes and loops until it is clean; `$cf-help` documents unlimited rounds [#1ab2f3ba](https://github.com/dinhanhthi/coding-friend/commit/1ab2f3ba)
+
 ## v0.46.6 (2026-10-25)
 
 - `$cf-plan-review` applies Critical/Important findings without asking when config `planReviewFix: true` (local overrides global); `--no-fix` forces it off for one run [#c6c77aa7](https://github.com/dinhanhthi/coding-friend/commit/c6c77aa7)

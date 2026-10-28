@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.42.6 (2026-10-28)
+
+- `cf config` and the config schema accept `review.maxRounds: 0` as "unlimited rounds" [#ac4c63c5](https://github.com/dinhanhthi/coding-friend/commit/ac4c63c5)
+
 ## v1.42.5 (2026-10-25)
 
 - `cf config`: new "Plan review fix" entry sets `planReviewFix`, and the config schema accepts the key (no more "Unknown config key" warning) [#c6c77aa7](https://github.com/dinhanhthi/coding-friend/commit/c6c77aa7)
