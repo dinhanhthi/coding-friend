@@ -1032,6 +1032,16 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
+  it("allows cf doctor", () => {
+    expect(classifyByRules("Bash", { command: "cf doctor" })).toBe("allow");
+  });
+
+  it("allows cf doctor --json", () => {
+    expect(classifyByRules("Bash", { command: "cf doctor --json" })).toBe(
+      "allow",
+    );
+  });
+
   it("allows cf project list --json", () => {
     expect(classifyByRules("Bash", { command: "cf project list --json" })).toBe(
       "allow",

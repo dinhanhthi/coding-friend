@@ -911,6 +911,9 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "mcp",
   "permission",
   "statusline",
+  // `update` (incl. `--yes`) stays approved: a human `cf update` is already
+  // approved here (it has no prompts), and `--yes` adds no capability: it only
+  // allows `--json`.
   "update",
   "status",
   "session",
@@ -918,6 +921,8 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "dev",
   "version",
   "project",
+  // Matched by name only: `cf doctor` must stay read-only (no fix flag).
+  "doctor",
 ]);
 
 /**

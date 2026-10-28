@@ -127,7 +127,8 @@ cf update --agent devin # Devin CLI (beta); alias --devin
 cf update --project     # Update plugin at project scope
 cf update --local       # Update plugin at local scope
 cf update --check       # Only report installed vs latest versions (read-only)
-cf update --check --json  # Same, as a JSON envelope (--json requires --check)
+cf update --check --json  # Same, as a JSON envelope (--json requires --check or --yes)
+cf update --yes --json    # Run the update without prompts, JSON envelope (see Non-interactive update)
 cf dev on [path]     # Switch to local plugin source for development
 cf dev off           # Switch back to remote marketplace
 cf dev status        # Show current dev mode (local or remote)
@@ -150,6 +151,7 @@ cf memory mcp        # Show MCP server config for clients
 cf status            # Show comprehensive Coding Friend status
                      # (versions, per-host plugin state incl. Devin, memory, config)
 cf version           # Show CLI and per-host plugin versions
+cf doctor            # Check the Coding Friend setup (read-only, see Doctor)
 cf project list      # List registered projects
 cf project add [path]    # Register a project (default: current repo root)
 cf project remove <path> # Remove a project from the registry
@@ -180,7 +182,41 @@ cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list`, `cf config get|set|schema`, `cf project list|add|remove`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install` and `cf update --check`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list`, `cf config get|set|schema`, `cf project list|add|remove`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+
+## Doctor
+
+`cf doctor` is a read-only health report of the Coding Friend setup. It makes no network calls and writes no files (a host binary it probes, such as `claude`, may still create its own files). Each `claude mcp get` and `<host> --version` probe has a 10-second timeout.
+
+| Group        | Checks                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `cli`        | Node.js >= 20                                                                                                    |
+| `plugin`     | Claude Code plugin installed, marketplace registered, plugin enabled at its scope                                |
+| `memory`     | Memory MCP registered at user scope, not shadowed by `.mcp.json` in the current directory, built, daemon running |
+| `learn`      | Learn MCP registered, built, learn docs directory                                                                |
+| `hosts`      | Version of each host binary found (`claude` shown; codex, omp, agy, devin compared to their minimum version)     |
+| `supervisor` | launchd agent installed and loaded, last tick within 3 minutes (macOS only)                                      |
+| `registry`   | Project registry readable                                                                                        |
+
+Each check is `ok`, `warn` or `fail`. An optional feature that is not set up yet is `warn`, not `fail`: memory registration and build before `cf memory init`, learn registration and build before learn is registered (`cf mcp` or `cf init` registers it), and the learn docs directory. A registration check is also `warn` when the `claude` CLI is missing or `claude mcp get` times out, and host versions are only ever `warn`. Only these can be `fail`: Node.js too old, plugin not installed, memory MCP not registered or not built once `cf memory init` ran, learn MCP not built once registered, and a launchd plist with missing program paths. The memory daemon, `.mcp.json` shadowing, marketplace, plugin enabled, launchd loaded, heartbeat and registry checks are always `warn`.
+
+A check that is not `ok` can carry a fix or a hint. A fix is one of exactly three commands that are safe to run without a prompt: `cf supervisor install` (launchd agent not ok), `cf supervisor tick` (stale heartbeat while the agent is loaded) and `cf install --user --yes` (plugin not installed). Anything else is a hint, a command shown to you and never run: `cf mcp`, `cf memory init`, `cf memory start-daemon`, `cf update`, `cf enable --<scope>`, `cf install`, `cf install --user`, `/cf-learn` or a host upgrade.
+
+Human output groups the checks, prints the fix or hint under each check that is not `ok`, and exits `1` if any check is `fail`. With `--json`, `data = { cli: { version, node, path }, checks: [{ id, group, label, status, detail?, fix?, hint? }] }`. `id` is stable and dotted (e.g. `memory.mcp.registered`); `fix` is `{ argv, label }`, where `argv` is the arguments after `cf` and always ends with `--json`. The envelope is `ok: true` whenever doctor ran, so read each check's `status`.
+
+## Non-interactive update
+
+`cf update --yes --json` runs the same flow as `cf update`, without prompts, and returns `data = { performed, after }`: `performed` lists the hosts it updated (with no host flag, every installed host in turn, or Claude Code when none is installed) and `after` is the same data as `cf update --check --json`. `--json` alone is rejected with `INVALID_ARGS`; `--check` wins, so `--check --yes --json` stays read-only; `--yes` without `--json` has no effect (a plain `cf update` runs).
+
+Unlike `cf doctor`, a real run uses the network and changes the machine:
+
+- **Claude Code:** updates the plugin (`claude plugin update`, reinstalling if the version did not change); updates the CLI with `npm install -g coding-friend-cli@latest` when npm has a newer version (skipped when the CLI is `npm link`ed); rebuilds the bundled memory server; registers the memory MCP at user scope if it is missing; removes a legacy project-scope `coding-friend-memory` entry from `./.mcp.json` (deleting the file if it ends up empty); refreshes the statusline; writes or refreshes the tab completion block in your shell rc file (a standalone file for fish).
+- **Codex:** `codex plugin marketplace upgrade`, plus the CLI update.
+- **omp:** redeploys the agents and the extension entry for each installed scope, refreshes the memory MCP entry, plus the CLI update.
+- **Antigravity:** redeploys the plugin, re-registers the memory MCP and keeps your other MCP servers, plus the CLI update.
+- **Devin:** reconciles the Devin plugin, plus the CLI update.
+
+**Known limit.** A failed step is only logged (to stderr), so the process can exit `1` while the envelope still says `ok: true`. Treat `data.after` (or a fresh `cf version --json` / `cf update --check --json`) as the source of truth, not `ok` alone.
 
 ## Machine interface
 
@@ -209,6 +245,10 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 | `ALREADY_FINISHED`     | Task is already done or cancelled, the question already answered, or the chef already stopped                   |
 | `PROVIDER_UNAVAILABLE` | Provider CLI not on PATH, no worker sandbox (native Windows), or no launchd (`cf supervisor install` off macOS) |
 | `INTERNAL`             | Any other unexpected error                                                                                      |
+
+**`cf doctor --json`.** `data = { cli, checks }`, `ok: true` whenever doctor ran; per-check `status` is in `data` (see [Doctor](#doctor)).
+
+**`cf update --yes --json`.** `data = { performed, after }`; `ok: true` does not prove every step worked, read `after` (see [Non-interactive update](#non-interactive-update)).
 
 **Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory).
 

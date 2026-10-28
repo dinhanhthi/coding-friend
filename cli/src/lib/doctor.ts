@@ -122,7 +122,7 @@ const MEMORY_IDS: HealthMap = {
   Daemon: { id: "memory.daemon", hint: "cf memory start-daemon" },
 };
 
-// Learn MCP is registered only by `cf init`, so a plain install has none of it.
+// Learn MCP is registered by `cf mcp` or `cf init`, not by `cf install`.
 const LEARN_IDS: HealthMap = {
   "Registered (claude mcp)": {
     id: "learn.mcp.registered",
