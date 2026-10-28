@@ -13,7 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 use serde_json::{Map, Value};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_dialog::{DialogExt, FilePath, MessageDialogButtons, MessageDialogKind};
 use tokio::sync::oneshot;
 
@@ -27,6 +27,8 @@ const RUNNABLE_FIXES: [&[&str]; 3] = [
     &["install", "--user", "--yes", "--json"],
 ];
 const CF_BIN_KEY: &str = "cfBinPath";
+/// Emitted once the user pressed OK in a native confirm, just before `cf` starts.
+const RUN_STARTED: &str = "cf-run-started";
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -115,8 +117,9 @@ async fn run_project(command: &str, path: &str) -> Result<Value, CfError> {
     .await
 }
 
-/// Native OK/Cancel warning shown from Rust; `Cancelled` unless the user presses OK.
-async fn confirm(app: &AppHandle, command_line: &str) -> Result<(), CfError> {
+/// Native OK/Cancel warning shown from Rust; `Cancelled` unless the user presses OK. On OK
+/// it emits `RUN_STARTED` (`{ command, op }`), so the page shows the run only from then on.
+async fn confirm(app: &AppHandle, op: &str, command_line: &str) -> Result<(), CfError> {
     let (tx, rx) = oneshot::channel();
     app.dialog()
         .message(format!("Coding Friend will run:\n\n{command_line}"))
@@ -127,10 +130,15 @@ async fn confirm(app: &AppHandle, command_line: &str) -> Result<(), CfError> {
             let _ = tx.send(ok);
         });
     // A dialog that never showed drops `tx`: treat it as Cancel.
-    match rx.await {
-        Ok(true) => Ok(()),
-        _ => Err(CfError::Cancelled),
+    if rx.await != Ok(true) {
+        return Err(CfError::Cancelled);
     }
+    // A lost event only leaves the page saying "Waiting for confirmation": never block the run.
+    let _ = app.emit(
+        RUN_STARTED,
+        serde_json::json!({ "command": command_line, "op": op }),
+    );
+    Ok(())
 }
 
 /// Waits for a native picker's callback; `Cancelled` when the user closed it.
@@ -150,12 +158,13 @@ async fn picked(
 async fn confirm_and_run(
     app: &AppHandle,
     lock: &MutationLock,
+    op: &str,
     command_line: &str,
     argv: &[String],
     timeout: Duration,
 ) -> Result<Value, CfError> {
     let _guard = lock.0.lock().await;
-    confirm(app, command_line).await?;
+    confirm(app, op, command_line).await?;
     cf::run_cf(argv, timeout).await
 }
 
@@ -268,7 +277,12 @@ pub async fn project_remove(
     let path = utf8(project_path(&path, false)?)?;
     let _guard = lock.0.lock().await;
     // Debug-quoted, so a newline in the path cannot fake dialog text.
-    confirm(&app, &format!("cf project remove -- {path:?}")).await?;
+    confirm(
+        &app,
+        "projectRemove",
+        &format!("cf project remove -- {path:?}"),
+    )
+    .await?;
     run_project("remove", &path).await
 }
 
@@ -298,6 +312,7 @@ pub async fn update_yes(app: AppHandle, lock: State<'_, MutationLock>) -> Result
     confirm_and_run(
         &app,
         &lock,
+        "update",
         &command_line(&argv),
         &argv,
         cf::UPDATE_YES_TIMEOUT,
@@ -312,7 +327,15 @@ pub async fn run_fix(
     argv: Vec<String>,
 ) -> Result<Value, CfError> {
     let argv = fix_argv(argv)?;
-    confirm_and_run(&app, &lock, &command_line(&argv), &argv, cf::FIX_TIMEOUT).await
+    confirm_and_run(
+        &app,
+        &lock,
+        "fix",
+        &command_line(&argv),
+        &argv,
+        cf::FIX_TIMEOUT,
+    )
+    .await
 }
 
 #[tauri::command]
