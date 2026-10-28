@@ -21,3 +21,38 @@ npm run ui:build      # typecheck + production frontend build
 ```
 
 `app/` is its own npm project with its own `package-lock.json`; the repository root is not a workspace.
+
+## Tauri shell
+
+The Rust side lives in `src-tauri/`. It never takes command lines from the frontend: each Tauri command builds a fixed `cf … --json` argv, runs it without a shell (stdin closed, cwd `$HOME`, PATH taken from your login shell so a Finder launch still finds `node` and `cf`), kills the whole process group on timeout, and decides the result from the JSON envelope, not the exit code. A doctor fix runs only when its argv exactly matches one of the three fixes `cf doctor` may offer.
+
+The Rust side treats the webview as untrusted. Actions that change your setup (`cf update --yes`, a doctor fix, removing a project) first show a native confirm dialog from Rust with the exact command line, and run one at a time; Cancel runs nothing (the command returns the `cancelled` error kind). Paths never come from the page: adding a project and choosing the `cf` binary open native pickers from Rust, so the window has no dialog permission at all.
+
+`cf` is looked up in this order: the `CF_APP_CF_BIN` environment variable (must name a file `cf`), then `cfBinPath` in `~/Library/Application Support/dev.dinhanhthi.coding-friend/settings.json` (chosen in the app's folder picker: pick the folder that contains `cf`), then `cf` on the login-shell PATH. A chosen `cf` is saved only when it is named `cf`, is executable, belongs to you, is not group- or world-writable, and answers `cf version --json`; the same checks run on every launch, so an edited settings.json cannot point the app at another program.
+
+```bash
+cd app
+npm run tauri dev                                   # app window + Vite dev server
+npm run tauri:build                                 # release .app/.dmg into src-tauri/target
+cargo test --manifest-path src-tauri/Cargo.toml     # Rust tests
+```
+
+Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do not.
+
+## Cargo build cache
+
+This machine shares one Cargo target directory across Rust projects (`~/.cargo/config.toml` sets `build.target-dir`), so `cargo build` / `cargo test` leave no `src-tauri/target/` here. `src-tauri/Cargo.toml` repeats the same dev profile, which keeps the cache small; keep it identical to `~/.cargo/config.toml`:
+
+```toml
+[profile.dev]
+opt-level = 1
+split-debuginfo = "off"
+incremental = false
+
+[profile.dev.package."*"]
+debug = "line-tables-only"
+incremental = false
+```
+
+- `npm run tauri:build` pins `CARGO_TARGET_DIR=<repo>/app/src-tauri/target`, so bundles stay in the repo (gitignored).
+- Build one project at a time. Never run `cargo clean` (it wipes every project's cache); clean with `cargo sweep`.

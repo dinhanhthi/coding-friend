@@ -1,0 +1,39 @@
+[package]
+name = "coding-friend-app"
+# Fixed: the app's real version comes from app/package.json (tauri.conf.json > version).
+version = "0.1.0"
+description = "Coding Friend desktop app"
+edition = "2021"
+rust-version = "1.90"
+publish = false
+
+# Standalone: keeps the [profile.*] blocks below in effect (Cargo reads them from the workspace root only).
+[workspace]
+
+[lib]
+name = "coding_friend_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+# Initialized only in debug builds (see lib.rs); a plain dependency so tauri-build knows its permissions.
+tauri-plugin-mcp-bridge = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["process", "time", "io-util", "sync", "macros"] }
+# killpg: the PATH probe kills the login shell with its whole process group.
+libc = "0.2"
+
+# keep identical to ~/.cargo/config.toml (shared Cargo build cache).
+[profile.dev]
+opt-level = 1
+split-debuginfo = "off"
+incremental = false
+
+[profile.dev.package."*"]
+debug = "line-tables-only"
+incremental = false
