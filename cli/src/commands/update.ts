@@ -164,6 +164,7 @@ export interface UpdateOptions extends ScopeFlags {
   statusline?: boolean;
   check?: boolean;
   json?: boolean;
+  yes?: boolean;
 }
 
 interface UpdateRunMode {
@@ -296,26 +297,38 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     return;
   }
   if (opts.json) {
-    await runJson(() => {
-      throw new CliError("INVALID_ARGS", "--json requires --check");
+    // --yes is the explicit consent a non-interactive JSON caller gives. Step
+    // failures inside the flow only log (to stderr), so the envelope stays
+    // ok:true; `after` is the source of truth for what actually changed.
+    await runJson(async () => {
+      if (!opts.yes) {
+        throw new CliError("INVALID_ARGS", "--json requires --check or --yes");
+      }
+      const performed = await runUpdate(opts);
+      return { performed, after: collectUpdateCheck() };
     });
     return;
   }
 
+  await runUpdate(opts);
+}
+
+/** Run the update flow; returns the hosts it ran an update for. */
+async function runUpdate(opts: UpdateOptions): Promise<Host[]> {
   if (hasExplicitHost(opts)) {
     const { host } = resolveHostFlags(flagsForHostResolve(opts));
     await updateHost(host, opts);
-    return;
+    return [host];
   }
 
   const installed = detectHostsAvailable().filter(isHostInstalled);
   if (installed.length === 0) {
     await updateClaudeCommand(opts);
-    return;
+    return ["claude"];
   }
   if (installed.length === 1) {
     await updateHost(installed[0], opts);
-    return;
+    return installed;
   }
 
   printBanner("✨ Coding Friend Update ✨");
@@ -328,6 +341,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
       skipCli: index > 0,
     });
   }
+  return installed;
 }
 
 async function updateClaudeCommand(

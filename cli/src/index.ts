@@ -344,7 +344,8 @@ program
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
   .option("--check", "Only report installed vs latest versions (read-only)")
-  .option("--json", "Output a JSON envelope (requires --check)")
+  .option("--yes", "Run without confirmation (needed with --json)")
+  .option("--json", "Output a JSON envelope (requires --check or --yes)")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);
@@ -366,6 +367,15 @@ program
   .action(async (opts) => {
     const { versionCommand } = await import("./commands/version.js");
     await versionCommand(pkg.version, opts);
+  });
+
+program
+  .command("doctor")
+  .description("Check the Coding Friend setup (read-only)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { doctorCommand } = await import("./commands/doctor.js");
+    await doctorCommand(pkg.version, opts);
   });
 
 const project = program
@@ -887,12 +897,12 @@ dev
 // Post-command: check for CLI updates (cached, 24h TTL)
 // Skips for 'update' command (handles its own), worker commands (stdout is
 // captured by the worker's shell), the hidden task runner and chef wake,
-// the supervisor tick (run by launchd), --json runs, and
-// version/help flags
+// the supervisor tick (run by launchd), doctor (read-only, no network),
+// --json runs, and version/help flags
 program.hook("postAction", async (_this, actionCommand) => {
   if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
-  if (["update", "ask", "reply", "done"].includes(topCmd)) return;
+  if (["update", "ask", "reply", "done", "doctor"].includes(topCmd)) return;
   if (topCmd === "task" && process.argv[3] === "_run") return;
   if (topCmd === "chef" && process.argv[3] === "_wake") return;
   if (topCmd === "supervisor" && process.argv[3] === "tick") return;

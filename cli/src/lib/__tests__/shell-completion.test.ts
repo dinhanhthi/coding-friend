@@ -275,6 +275,9 @@ describe("completion blocks list the machine-callable commands", () => {
         /compgen -W "start say status inbox show stop resume"/,
         /compgen -W "--provider --no-commit --json"/,
         /"\$\{COMP_WORDS\[1\]\}" == "chef" \|\|/,
+        /local commands="[^"]*\bdoctor\b/,
+        /local update_flags="[^"]*--yes/,
+        /"\$\{COMP_WORDS\[1\]\}" == "doctor" \|\|/,
       ],
     },
     {
@@ -301,6 +304,9 @@ describe("completion blocks list the machine-callable commands", () => {
         /'resume:/,
         /--no-commit\[/,
         /"\$\{words\[2\]\}" == "chef" \|\|/,
+        /'doctor:/,
+        /'--yes\[Run without confirmation/,
+        /"\$\{words\[2\]\}" == "doctor" \]\]/,
       ],
     },
     {
@@ -329,6 +335,9 @@ describe("completion blocks list the machine-callable commands", () => {
         /__fish_seen_subcommand_from start" -l provider /,
         /__fish_seen_subcommand_from start" -l no-commit /,
         /task supervisor chef" -l json /,
+        /__fish_use_subcommand" -a doctor /,
+        /__fish_seen_subcommand_from update" -l yes /,
+        /status mcp version doctor [^"]*" -l json /,
       ],
     },
     {
@@ -352,6 +361,9 @@ describe("completion blocks list the machine-callable commands", () => {
         /\$chefSubcommands = @\('start','say','status','inbox','show','stop','resume'\)/,
         /@\('--provider','--no-commit','--json'\)/,
         /'supervisor','chef'\) -contains/,
+        /\$commands = @\([^)]*'doctor'/,
+        /\$updateFlags = @\([^)]*'--yes'/,
+        /@\('status','mcp','version','doctor'[^)]*\) -contains/,
       ],
     },
   ];

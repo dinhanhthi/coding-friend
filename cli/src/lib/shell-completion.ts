@@ -27,9 +27,9 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall disable enable init config learn mcp memory permission statusline update status version project ask reply done task supervisor chef clean dev session guide"
+  local commands="install uninstall disable enable init config learn mcp memory permission statusline update status version doctor project ask reply done task supervisor chef clean dev session guide"
   local scope_flags="--user --global --project --local"
-  local update_flags="--cli --plugin --statusline --user --global --project --local --check --json"
+  local update_flags="--cli --plugin --statusline --user --global --project --local --check --yes --json"
 
   # Subcommands for 'dev'
   if [[ "\${COMP_WORDS[1]}" == "dev" && \${COMP_CWORD} -eq 2 ]]; then
@@ -145,8 +145,8 @@ _cf_completions() {
     return
   fi
 
-  # --json for status, mcp, version, memory status/search/list, config schema, project *, task *, supervisor *, chef *
-  if [[ "$cur" == -* ]] && [[ "\${COMP_WORDS[1]}" == "status" || "\${COMP_WORDS[1]}" == "mcp" || "\${COMP_WORDS[1]}" == "version" || "\${COMP_WORDS[1]}" == "project" || "\${COMP_WORDS[1]}" == "task" || "\${COMP_WORDS[1]}" == "supervisor" || "\${COMP_WORDS[1]}" == "chef" || ("\${COMP_WORDS[1]}" == "config" && "\${COMP_WORDS[2]}" == "schema") || ("\${COMP_WORDS[1]}" == "memory" && ("\${COMP_WORDS[2]}" == "status" || "\${COMP_WORDS[2]}" == "search" || "\${COMP_WORDS[2]}" == "list")) ]]; then
+  # --json for status, mcp, version, doctor, memory status/search/list, config schema, project *, task *, supervisor *, chef *
+  if [[ "$cur" == -* ]] && [[ "\${COMP_WORDS[1]}" == "status" || "\${COMP_WORDS[1]}" == "mcp" || "\${COMP_WORDS[1]}" == "version" || "\${COMP_WORDS[1]}" == "doctor" || "\${COMP_WORDS[1]}" == "project" || "\${COMP_WORDS[1]}" == "task" || "\${COMP_WORDS[1]}" == "supervisor" || "\${COMP_WORDS[1]}" == "chef" || ("\${COMP_WORDS[1]}" == "config" && "\${COMP_WORDS[2]}" == "schema") || ("\${COMP_WORDS[1]}" == "memory" && ("\${COMP_WORDS[2]}" == "status" || "\${COMP_WORDS[2]}" == "search" || "\${COMP_WORDS[2]}" == "list")) ]]; then
     COMPREPLY=($(compgen -W "--json" -- "$cur"))
     return
   fi
@@ -193,6 +193,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'dev:Switch between local and remote plugin for development'
     'status:Show comprehensive Coding Friend status'
     'version:Show CLI and plugin versions'
+    'doctor:Check the Coding Friend setup (read-only)'
     'project:Manage the registry of Coding Friend projects'
     'ask:Ask the user a question from a task and wait for the answer'
     'reply:Answer a question asked by a task'
@@ -223,7 +224,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
     '--project[Update plugin at project scope]'
     '--local[Update plugin at local scope]'
     '--check[Only report installed vs latest versions]'
-    '--json[Output a JSON envelope (requires --check)]'
+    '--yes[Run without confirmation (needed with --json)]'
+    '--json[Output a JSON envelope (requires --check or --yes)]'
   )
 
   if (( CURRENT == 2 )); then
@@ -316,7 +318,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _describe 'subcommand' subcommands
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "config" && ("\${words[3]}" == "get" || "\${words[3]}" == "set") ]]; then
     _values 'flags' '--global[Use the global config]' '--local[Use the local project config]' '--json[Output a JSON envelope]'
-  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "status" || "\${words[2]}" == "mcp" || "\${words[2]}" == "version" ]]; then
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "status" || "\${words[2]}" == "mcp" || "\${words[2]}" == "version" || "\${words[2]}" == "doctor" ]]; then
     _values 'flags' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "ask" ]]; then
     _values 'flags' '--task[Task id (default: $CF_TASK_ID)]' '--timeout[Seconds to wait for an answer (default: 100)]' '--json[Output a JSON envelope]'
@@ -381,6 +383,7 @@ complete -c cf -n "__fish_use_subcommand" -a update -d "Update coding-friend plu
 complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and remote plugin for development"
 complete -c cf -n "__fish_use_subcommand" -a status -d "Show comprehensive Coding Friend status"
 complete -c cf -n "__fish_use_subcommand" -a version -d "Show CLI and plugin versions"
+complete -c cf -n "__fish_use_subcommand" -a doctor -d "Check the Coding Friend setup (read-only)"
 complete -c cf -n "__fish_use_subcommand" -a project -d "Manage the registry of Coding Friend projects"
 complete -c cf -n "__fish_use_subcommand" -a ask -d "Ask the user a question from a task and wait for the answer"
 complete -c cf -n "__fish_use_subcommand" -a reply -d "Answer a question asked by a task"
@@ -405,10 +408,11 @@ complete -c cf -n "__fish_seen_subcommand_from update" -l global -d "User scope 
 complete -c cf -n "__fish_seen_subcommand_from update" -l project -d "Project scope"
 complete -c cf -n "__fish_seen_subcommand_from update" -l local -d "Local scope"
 complete -c cf -n "__fish_seen_subcommand_from update" -l check -d "Only report installed vs latest versions"
+complete -c cf -n "__fish_seen_subcommand_from update" -l yes -d "Run without confirmation (needed with --json)"
 # Flags for install
 complete -c cf -n "__fish_seen_subcommand_from install; and not __fish_seen_subcommand_from supervisor" -l yes -d "Skip prompts (default scope: user)"
 # --json for machine-callable commands
-complete -c cf -n "__fish_seen_subcommand_from status mcp version project config install update ask reply done task supervisor chef" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from status mcp version doctor project config install update ask reply done task supervisor chef" -l json -d "Output a JSON envelope"
 complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from search list" -l json -d "Output a JSON envelope"
 # Project subcommands
 complete -c cf -n "__fish_seen_subcommand_from project" -a list -d "List registered projects"
@@ -489,7 +493,7 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
+  $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','doctor','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
@@ -501,7 +505,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $guideSubcommands = @('create','list')
   $learnSubcommands = @('host','push')
   $scopeFlags = @('--user','--global','--project','--local')
-  $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local','--check','--json')
+  $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local','--check','--yes','--json')
   $words = $commandAst.CommandElements
   if ($wordToComplete -like '-*' -and $words.Count -ge 2 -and $words[1].ToString() -eq 'config' -and $words.Count -ge 3 -and ($words[2].ToString() -eq 'get' -or $words[2].ToString() -eq 'set')) {
     @('--global','--local','--json') | Where-Object { $_ -like "$wordToComplete*" } |
@@ -515,7 +519,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'supervisor' -and @('install','uninstall','status') -contains $words[2].ToString()) {
     @('--label','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
-  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 2 -and @('status','mcp','version','project','config','memory','task','supervisor','chef') -contains $words[1].ToString()) {
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 2 -and @('status','mcp','version','doctor','project','config','memory','task','supervisor','chef') -contains $words[1].ToString()) {
     @('--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'dev') {

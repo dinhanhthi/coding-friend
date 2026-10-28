@@ -1117,7 +1117,7 @@ describe("updateCommand — --check", () => {
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
 
-  it("rejects --json without --check with an INVALID_ARGS envelope", async () => {
+  it("rejects --json without --check or --yes with an INVALID_ARGS envelope", async () => {
     const stdout = captureStdout();
     const prevExitCode = process.exitCode;
 
@@ -1133,5 +1133,27 @@ describe("updateCommand — --check", () => {
     } finally {
       process.exitCode = prevExitCode;
     }
+  });
+
+  it("runs the update for --yes --json and writes one envelope with performed hosts and the after check", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+    const stdout = captureStdout();
+
+    await updateCommand({ yes: true, json: true });
+
+    const lines = stdout().split("\n").filter(Boolean);
+    expect(lines).toHaveLength(1);
+    const env = JSON.parse(lines[0]);
+    expect(env.ok).toBe(true);
+    expect(env.data.performed).toEqual(["claude"]);
+    expect(env.data.after.hosts[0]).toMatchObject({
+      host: "claude",
+      installed: true,
+    });
+    expect(mockRunWithStderr).toHaveBeenCalledWith(
+      "claude",
+      expect.arrayContaining(["plugin", "update"]),
+    );
   });
 });
