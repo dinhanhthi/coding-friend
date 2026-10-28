@@ -79,7 +79,7 @@ export interface ReviewConfig {
   fix?: boolean;
   /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
   commit?: boolean;
-  /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
+  /** Max reviews in a review-fix loop (incl. the first). `0` = unlimited (stops when a re-review makes no progress). Default 5. */
   maxRounds?: number;
   /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */
   agentTimeout?: number;
@@ -109,7 +109,7 @@ export interface ShowcaseConfig {
   poster?: ShowcasePosterConfig;
 }
 
-/** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */
+/** Default cap for review-fix loop rounds (/cf-review --fix, /cf-plan-review --fix, autopilot) when `review.maxRounds` is unset or invalid. */
 export const DEFAULT_REVIEW_MAX_ROUNDS = 5;
 
 export interface CodingFriendConfig {

@@ -86,7 +86,7 @@ const ReviewConfigSchema = z.strictObject({
   withGemini: z.boolean().optional(),
   fix: z.boolean().optional(),
   commit: z.boolean().optional(),
-  maxRounds: z.number().int().min(1).optional(),
+  maxRounds: z.number().int().min(0).optional(),
   // Both timeouts are whole positive seconds: zero, negative and fractional
   // values cannot be enforced as a deadline, so they are rejected here rather
   // than coerced somewhere downstream. Deliberately NOT offered in the

@@ -345,7 +345,7 @@ describe("loadConfig validation", () => {
     });
   }
 
-  it("accepts review.maxRounds as a valid config key (integer ≥ 1)", () => {
+  it("accepts review.maxRounds as a valid config key (integer ≥ 0)", () => {
     mockReadJson
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ review: { maxRounds: 5 } });
@@ -376,10 +376,20 @@ describe("loadConfig validation", () => {
     expect(config.review?.maxRounds).toBeUndefined();
   });
 
-  it("warns and strips review.maxRounds when it is not a positive integer", () => {
+  it("accepts review.maxRounds 0 (unlimited) without a warning", () => {
     mockReadJson
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ review: { maxRounds: 0 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.maxRounds).toBe(0);
+  });
+
+  it("warns and strips review.maxRounds when it is negative", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { maxRounds: -1 } });
 
     const config = loadConfig();
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("maxRounds"));

@@ -840,15 +840,16 @@ async function editReviewMaxRounds(
     log.dim(`Current: ${currentValue}`);
   }
   log.dim(
-    "Caps how many /cf-review rounds /cf-plan --auto, /cf-tdd --auto and /cf-review --fix run before waiting for you (initial review + fix re-reviews).",
+    "Caps how many review rounds /cf-review --fix, /cf-plan-review --fix, /cf-plan --auto and /cf-tdd --auto run before waiting for you (initial review + fix re-reviews). 0 = unlimited (stops when a re-review makes no progress).",
   );
 
   const raw = await input({
-    message: "Maximum review rounds:",
+    message: "Maximum review rounds (0 = unlimited):",
     default: String(currentValue ?? DEFAULT_REVIEW_MAX_ROUNDS),
     validate: (val) => {
-      const n = Number(val);
-      if (!Number.isInteger(n) || n < 1) return "Must be an integer ≥ 1";
+      const n = val.trim() === "" ? NaN : Number(val);
+      if (!Number.isInteger(n) || n < 0)
+        return "Must be an integer ≥ 0 (0 = unlimited)";
       return true;
     },
   });
@@ -887,7 +888,7 @@ async function reviewSubMenu(): Promise<void> {
             }),
           ),
           {
-            name: `Max review rounds (${review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS})`,
+            name: `Max review rounds (${review.maxRounds === 0 ? "unlimited" : (review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS)})`,
             value: "maxRounds",
           },
         ],
@@ -1371,7 +1372,7 @@ export async function configCommand(): Promise<void> {
               "  Block reads of .env, keys, and similar secrets (all hosts)",
           },
           {
-            name: `Review settings ${formatScopeLabel(reviewScope)} (${maxRoundsVal} rounds)`,
+            name: `Review settings ${formatScopeLabel(reviewScope)} (${maxRoundsVal === 0 ? "unlimited" : maxRoundsVal} rounds)`,
             value: "review",
             description:
               "  Autopilot review-fix rounds + Codex second-opinion on every /cf-review",
