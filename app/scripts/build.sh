@@ -68,11 +68,12 @@ fi
 # APPLE_SIGNING_IDENTITY env var ranks against the config value.
 #
 # tauri.conf.json sets bundle.createUpdaterArtifacts: true, which makes
-# `tauri build` fail without a private key. tauri-cli v2 reads the key from
-# TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PATH. Only their
-# presence is tested; the values are never read.
+# `tauri build` fail without a private key. Tauri v2 documents one variable for
+# it, TAURI_SIGNING_PRIVATE_KEY (the key itself or a path to the key file), plus
+# TAURI_SIGNING_PRIVATE_KEY_PASSWORD. Only its presence is tested; the value is
+# never read.
 has_key=0
-if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ] || [ -n "${TAURI_SIGNING_PRIVATE_KEY_PATH:-}" ]; then
+if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
 	has_key=1
 else
 	echo "note: no TAURI_SIGNING_PRIVATE_KEY — building without updater artifacts (.app.tar.gz/.sig)" >&2

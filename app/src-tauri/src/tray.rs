@@ -38,6 +38,8 @@ const CLI_NOT_FOUND: &str = "Coding Friend CLI not found";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TrayView {
     cli_missing: bool,
+    /// The last status refresh reached the CLI (no doctor yet then means "pending").
+    cli_answered: bool,
     tasks: String,
     daemon: String,
     supervisor: String,
@@ -47,8 +49,9 @@ impl Default for TrayView {
     fn default() -> Self {
         Self {
             cli_missing: false,
+            cli_answered: true,
             tasks: "Running tasks: …".to_string(),
-            daemon: daemon_label(None),
+            daemon: daemon_label(None, true),
             supervisor: "Supervisor: …".to_string(),
         }
     }
@@ -96,6 +99,7 @@ async fn refresh_status(app: &AppHandle) {
         view.cli_missing = [&tasks, &supervisor]
             .iter()
             .any(|result| matches!(result, Err(CfError::CliNotFound { .. })));
+        view.cli_answered = tasks.is_ok() || supervisor.is_ok();
         view.tasks = tasks_label(&tasks);
         view.supervisor = supervisor_label(&supervisor);
     }
@@ -109,7 +113,10 @@ fn rebuild(app: &AppHandle) {
         let view = {
             let state = handle.state::<Mutex<TrayView>>();
             let mut view = state.lock().unwrap_or_else(PoisonError::into_inner);
-            view.daemon = daemon_label(handle.state::<LastDoctor>().get().as_ref());
+            view.daemon = daemon_label(
+                handle.state::<LastDoctor>().get().as_ref(),
+                view.cli_answered,
+            );
             view.clone()
         };
         let Some(tray) = handle.tray_by_id(TRAY_ID) else {
@@ -196,9 +203,14 @@ fn tasks_label(tasks: &Result<Value, CfError>) -> String {
 }
 
 /// The `memory.daemon` check of the last doctor run: its detail ("running"), else its status.
-fn daemon_label(doctor: Option<&Value>) -> String {
+/// No doctor yet reads as pending while the CLI answers, else as unavailable like the other rows.
+fn daemon_label(doctor: Option<&Value>, cli_answered: bool) -> String {
     let Some(doctor) = doctor else {
-        return "Memory daemon: …".to_string();
+        return if cli_answered {
+            "Memory daemon: …".to_string()
+        } else {
+            "Memory daemon: unavailable".to_string()
+        };
     };
     let check = doctor["checks"]
         .as_array()
@@ -309,7 +321,12 @@ mod tests {
         let doctor = json!({"checks": [
             {"id": "memory.daemon", "status": "warn", "detail": "not\nrunning\u{202e}"}
         ]});
-        assert_eq!(daemon_label(Some(&doctor)), "Memory daemon: not running");
+        assert_eq!(
+            daemon_label(Some(&doctor), true),
+            "Memory daemon: not running"
+        );
+        assert_eq!(daemon_label(None, true), "Memory daemon: …");
+        assert_eq!(daemon_label(None, false), "Memory daemon: unavailable");
         let supervisor = json!({
             "supported": true,
             "launchd": {"loaded": true, "needsReinstall": false},

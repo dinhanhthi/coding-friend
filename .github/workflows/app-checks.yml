@@ -1,0 +1,50 @@
+name: App checks
+
+# Desktop app (app/): typecheck, frontend tests and Rust formatting.
+# No Rust compile here (slow, needs macOS for the bundle); `cargo test` runs locally.
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - ".github/workflows/app-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/app-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Check Rust formatting
+        run: |
+          rustup component add rustfmt
+          cargo fmt --manifest-path src-tauri/Cargo.toml --check

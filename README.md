@@ -119,6 +119,10 @@ Scripts and agents can pass `--json` (status, version, doctor, config, memory, p
 
 `cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox (or OpenCode as a read-only worker) without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`. On a usage limit the task pauses, then resumes after the reset or switches provider (`task.onQuota`, `--no-fallback`); `cf supervisor install|uninstall|status|tick` adds a macOS launchd tick that picks up paused tasks whose runner died. `cf chef start|say|status|inbox|show|stop|resume` gives one plan to a read-only chef that the tick wakes to dispatch tasks and commit checked changes.
 
+## Desktop app
+
+An optional macOS app ([app/](app/README.md)) is a window onto the CLI: it calls `cf … --json` and keeps no logic or data of its own, so the plugin and the CLI remain the full product. It needs the plugin and `cf` (with `cf doctor`). Doctor and Version/Update are views of `cf doctor --json` and `cf update --check|--yes --json`; only in the app: the project dashboard, the menu bar item and the app's own signed self-update. Releases are tagged `app-vX.Y.Z` and published from a Mac with `.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh`.
+
 ## Development
 
 [CONTRIBUTING.md](CONTRIBUTING.md) — how local dev works and what to do after each change.

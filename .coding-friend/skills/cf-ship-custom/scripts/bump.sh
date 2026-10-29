@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bump.sh — Update version across all files for a given package
 # Usage: bash bump.sh <package> <new_version>
-#   package: plugin | cli
+#   package: plugin | cli | app
 #   new_version: semver string (e.g. 1.2.3)
 
 set -euo pipefail
@@ -13,7 +13,7 @@ NEW_VERSION="${2:-}"
 
 if [[ -z "$PACKAGE" || -z "$NEW_VERSION" ]]; then
   echo "Usage: bash bump.sh <package> <new_version>"
-  echo "  package: plugin | cli"
+  echo "  package: plugin | cli | app"
   exit 1
 fi
 
@@ -47,9 +47,15 @@ case "$PACKAGE" in
     bump_json_version "$REPO_ROOT/cli/package.json" "$NEW_VERSION"
     echo "Done. Files updated: cli/package.json"
     ;;
+  app)
+    echo "Bumping App to $NEW_VERSION..."
+    # tauri.conf.json reads ../package.json; src-tauri/Cargo.toml version stays static
+    (cd "$REPO_ROOT/app" && npm version "$NEW_VERSION" --no-git-tag-version)
+    echo "Done. Files updated: app/package.json, app/package-lock.json"
+    ;;
   *)
     echo "Error: unknown package '$PACKAGE'"
-    echo "Valid packages: plugin | cli"
+    echo "Valid packages: plugin | cli | app"
     exit 1
     ;;
 esac

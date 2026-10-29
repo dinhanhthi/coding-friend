@@ -45,7 +45,7 @@ Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do no
 
 - **Universal** (`universal-apple-darwin`, under `src-tauri/target/universal-apple-darwin/`) when both `aarch64-apple-darwin` and `x86_64-apple-darwin` rustup targets are installed; otherwise the host architecture only (under `src-tauri/target/release/`), with a warning.
 - **Ad-hoc signed** by default (`signingIdentity: "-"` in `tauri.conf.json`). Set `APPLE_SIGNING_IDENTITY` to sign with a real identity; the script passes it as a `--config` override.
-- **Updater artifacts** (`.app.tar.gz` and `.sig`) only when `TAURI_SIGNING_PRIVATE_KEY` (or `TAURI_SIGNING_PRIVATE_KEY_PATH`) is set. Without it the script turns `createUpdaterArtifacts` off, so local and VM builds need no key.
+- **Updater artifacts** (`.app.tar.gz` and `.sig`) only when `TAURI_SIGNING_PRIVATE_KEY` is set, to the key itself or a path to the key file (the documented Tauri v2 variable; its password goes in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). Without it the script turns `createUpdaterArtifacts` off, so local and VM builds need no key.
 
 ## Cargo build cache
 
@@ -64,3 +64,18 @@ incremental = false
 
 - `npm run bundle` pins `CARGO_TARGET_DIR=<repo>/app/src-tauri/target`, so bundles stay in the repo (gitignored).
 - Build one project at a time. Never run `cargo clean` (it wipes every project's cache); clean with `cargo sweep`.
+
+## Release
+
+Releases are built and published from a Mac, never from CI, and only from a tag on `main`:
+
+```bash
+.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh app-vX.Y.Z --dry-run   # build, notarize, verify, no GitHub writes
+.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh app-vX.Y.Z             # publish
+```
+
+- **Version:** `app/package.json` (bumped with `bump.sh app <version>`); `tauri.conf.json` reads it, the Cargo version stays fixed. The tag must equal it.
+- **Materials** (never committed, all in the gitignored `docs/release-secrets/`): `release.secrets`, read by `_release-materials.sh` (`APPLE_API_ISSUER`, `APPLE_API_KEY`, optional `APPLE_SIGNING_TEAM`), and the App Store Connect API key as `AuthKey.p8` (Apple's download is named `AuthKey_<id>.p8`; copy or rename it). Also one "Developer ID Application" identity in the keychain; the updater key `~/.tauri/coding-friend.key` (passed to Tauri by path in `TAURI_SIGNING_PRIVATE_KEY`) with its password in `~/.tauri/coding-friend.key.password` (both mode 600); and `minisign` (`brew install minisign`), which a real run requires to verify the updater signature. The script compares `coding-friend.key.pub` with the `pubkey` in `tauri.conf.json` and never prints a secret.
+- **Release model:** each version is a GitHub release `app-vX.Y.Z` created with `--latest=false`, so the CLI and plugin releases stay "Latest". A fixed pre-release `app-latest` holds `latest.json`, which the app's updater reads; the script uploads it last with `--clobber`, then checks the endpoint.
+- **Checking a release:** the downloaded DMG's app passes `spctl -a -t exec -vv` ("Notarized Developer ID") and `xcrun stapler validate`; `lipo -info` shows `x86_64 arm64`; `curl -fsSL https://github.com/dinhanhthi/coding-friend/releases/download/app-latest/latest.json` shows the new version.
+- **Notes:** the `## vX.Y.Z` section of `app/CHANGELOG.md`, or a placeholder.

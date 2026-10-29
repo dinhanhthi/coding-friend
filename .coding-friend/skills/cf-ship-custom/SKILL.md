@@ -2,7 +2,7 @@
 
 This is a **version bump + ship + release** operation. Run these steps BEFORE the standard cf-ship workflow.
 
-**Args** (optional): `[patch|minor|major] [plugin|cli]`
+**Args** (optional): `[patch|minor|major] [plugin|cli|app]`
 
 ### Step B1: Get bump context
 
@@ -13,6 +13,12 @@ bash .coding-friend/skills/cf-ship-custom/scripts/bump-info.sh [package-arg] [le
 ```
 
 Read the output. It tells you: which packages changed, current vs tag version, whether to bump or just update changelog, and path→package mapping.
+
+`State` is one of:
+
+- `bump` — the file version equals the latest tag: bump it (Step B3).
+- `already-bumped` — the file version is ahead of the tag: no bump, only the changelog.
+- `first-release` — the package has no tag yet (e.g. the first `app-v*`): ship the file version as is (changelog + tag, no bump). Any committed history under its paths counts as changes.
 
 ### Step B2: Determine bump level and filter packages
 
@@ -44,7 +50,7 @@ After filtering, if a package flagged by bump-info.sh has NO commits that are pr
 
 ### Step B3: Bump version files
 
-For each package that needs bumping (state = "bump", not "already-bumped"):
+For each package that needs bumping (state = "bump", not "already-bumped" or "first-release"):
 
 ```bash
 bash .coding-friend/skills/cf-ship-custom/scripts/bump.sh <package> <new_version>
@@ -67,6 +73,8 @@ git remote get-url origin | sed 's|git@github.com:|https://github.com/|' | sed '
 
 # Commits per package (use tag from bump-info output)
 git log <TAG>..HEAD --oneline --no-merges -- <paths>
+# first-release (no tag yet): all history under the paths
+git log --oneline --no-merges -- <paths>
 
 # For cross-cutting commits, check the full stat to determine primary package
 git show <hash> --stat
@@ -74,9 +82,9 @@ git show <hash> --stat
 
 **Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
-**Only edit `plugin/CHANGELOG.md` and `cli/CHANGELOG.md`.** `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
+**Only edit `plugin/CHANGELOG.md`, `cli/CHANGELOG.md` and `app/CHANGELOG.md`.** `app/CHANGELOG.md` is created at the first app `/cf-ship`; keep the same `## v{version} (date)` headings — `release-app-local.sh` reads that section for the release notes. `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
 
-These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
+These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`, `app/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
 
 ### Step B5: Ship (commit + push)
 
@@ -93,6 +101,12 @@ npm run verify:devin-drift  # plugin-devin artifact in sync
 npm run lint:codex
 npm run lint:agy
 npm run lint:devin
+```
+
+**If `app` is released** (bumped, already-bumped or first-release), also run the app gate:
+
+```bash
+(cd app && npm ci && npm run typecheck && npm test && cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo test --manifest-path src-tauri/Cargo.toml)
 ```
 
 `npm run test:scripts` alone is NOT enough — `.github/workflows/tests.yml` has a separate `cli` job running `npm test` inside `cli/`, and a release shipped on a red CLI suite before because only the root suite was run. Never report "verification passed" without the `cli` line above.
@@ -121,8 +135,20 @@ On a feature branch, or with local commits not yet on `origin/main`, do not tag 
 | ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
 | Plugin                  | `v{version}` e.g. `v0.15.0`         | One GitHub Release covering Claude + Codex + AGY + Devin (generated trees in the same tagged commit) |
 | CLI (if CLI was bumped) | `cli-v{version}` e.g. `cli-v1.24.0` | npm publish + GitHub Release                                                                 |
+| App (if app released)   | `app-v{version}` e.g. `app-v0.1.0`  | Nothing — no workflow. You then run `release-app-local.sh` (below)                           |
 
 How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked versions (`package.json`, `plugin/.claude-plugin/plugin.json`, `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json`, `plugin-devin/.claude-plugin/plugin.json`) plus Codex/AGY/Devin drift and lint, then publishes **one** GitHub Release for that `v*` tag. Codex (`plugin-codex/`), Antigravity (`plugin-antigravity/`) and Devin (`plugin-devin/`) ship as generated artifacts in the tagged commit — not as extra tags.
+
+**App release (local, no CI):** after `app-v{version}` is on `origin` and you are on `main` (same guard as above), run:
+
+```bash
+.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh app-v{version} --dry-run   # preflight first
+.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh app-v{version}
+```
+
+It needs these local materials (never committed): `docs/release-secrets/release.secrets` (`APPLE_API_ISSUER`, `APPLE_API_KEY`, optional `APPLE_SIGNING_TEAM`); the App Store Connect API key at `docs/release-secrets/AuthKey.p8` (Apple's download is `AuthKey_<id>.p8`; copy or rename it); one "Developer ID Application" identity in the login keychain; `~/.tauri/coding-friend.key` with `.password` and `.pub`; and `minisign` on PATH (`brew install minisign`), which a real run requires.
+
+It builds, signs, notarizes and publishes the GitHub Release with `--latest=false` (the repo's "Latest" stays on the plugin `v*`). The moving `app-latest` pre-release (updater feed) is managed only by that script — never create, move or push it by hand.
 
 **The repo may have more than one remote** (e.g. a contributor fork). Always name `origin` explicitly in tag pushes and confirm it points at the canonical repo first: `git remote get-url origin`.
 
@@ -131,7 +157,7 @@ How it works: `.github/workflows/release.yml` (trigger `v*`) verifies locked ver
 git tag <tag>
 
 # Push each tag individually — plugin tag MUST be pushed last.
-# Order: 1. cli-v* (first)  2. v* (plugin — always last)
+# Order: 1. cli-v* (first)  2. app-v*  3. v* (plugin — always last)
 git push origin <tag>
 ```
 
@@ -141,6 +167,8 @@ git push origin <tag>
 git ls-remote --tags origin | grep -F "<tag>"        # hand-pushed tag present on origin?
 gh run list --workflow=release.yml --limit 3         # release workflow triggered?
 ```
+
+`app-v*` triggers no workflow — for it the `ls-remote` line is the check, then `release-app-local.sh`.
 
 If the hand-pushed tag is missing or no `release.yml` run appeared, report it — do NOT silently re-push or assume success.
 
@@ -155,6 +183,7 @@ Released:
   Antigravity      → ships on the same v0.15.0 tag (`plugin-antigravity/` in the tagged commit)
   Devin            → ships on the same v0.15.0 tag (`plugin-devin/` in the tagged commit)
   CLI v1.24.0      → tag cli-v1.24.0 pushed (you) → npm publish + GitHub Release
+  App v0.1.0       → tag app-v0.1.0 pushed (you) → release-app-local.sh (local, no CI)
 
 Check CI/CD status:
   https://github.com/dinhanhthi/coding-friend/actions
@@ -168,14 +197,15 @@ Always list Codex, AGY and Devin in this summary when a plugin `v*` was pushed �
 
 - Published tags on `origin` = single source of truth. Run `git fetch --tags` first (bump-info.sh does this).
 - NEVER bump if file version > tag version — only update changelog.
+- NEVER bump a package with no tag yet (`first-release`) — ship its file version as is.
 - ALWAYS keep `plugin/.claude-plugin/plugin.json` + root `package.json` in sync.
 - NEVER add duplicate changelog entries. One feature = one bullet. Entries must reflect net changes vs the previous released version — do NOT list intermediate additions/removals that cancel each other out within the same version.
 - Changelog sections use today's date directly — NEVER use `(unpublished)`.
 - Do NOT update website markdown (`website/src/content/index.md` or any `website/` content). The site is a single page; `/changelog` redirects to GitHub Releases.
 - If a tag already exists, do NOT force-create tags — error and stop.
-- NEVER create or push a `v*` / `cli-v*` tag on a commit other than `origin/main`'s HEAD. From a feature branch, stop after the PR; tags come from a `/cf-ship` rerun on `main` after merge.
+- NEVER create or push a `v*` / `cli-v*` / `app-v*` tag on a commit other than `origin/main`'s HEAD. From a feature branch, stop after the PR; tags come from a `/cf-ship` rerun on `main` after merge.
 - NEVER hand-edit generated artifacts: `plugin-codex/**`, `plugin-antigravity/**` and `plugin-devin/**` are rebuilt from `plugin/` + root `package.json` by `.githooks/pre-commit`. Edit the source, not the mirror.
-- Only `v*` and `cli-v*` are pushed by hand. Do not invent extra host tags.
+- Only `v*`, `cli-v*` and `app-v*` are pushed by hand. Do not invent extra host tags. `app-latest` is managed only by `release-app-local.sh`.
 - Push tags without asking for confirmation — the `## After` NO CONFIRMATIONS rule applies here too.
 
 ## After
