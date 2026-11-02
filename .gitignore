@@ -23,6 +23,8 @@ node_modules/
 
 # Build artifacts
 .next/
+# Machine-specific Cargo target (external SSD); .cargo/config.toml.example is committed
+.cargo/config.toml
 out/
 dist/
 *.tsbuildinfo

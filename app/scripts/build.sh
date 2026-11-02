@@ -94,10 +94,14 @@ if [ -n "$config" ]; then
 fi
 
 # --- build -------------------------------------------------------------------
-# Pin the target dir to an absolute path so the shared Cargo cache
-# (~/.cargo/config.toml build.target-dir) or an inherited CARGO_TARGET_DIR
-# cannot move the bundle out of src-tauri/target/.
-export CARGO_TARGET_DIR="$root/src-tauri/target"
+# Cargo config picks the target dir: the repo-root .cargo/config.toml (the
+# external SSD on Thi's Mac), else ~/.cargo/config.toml, else
+# src-tauri/target/. An inherited
+# CARGO_TARGET_DIR would beat that config, so drop it, then ask cargo where the
+# bundle lands.
+unset CARGO_TARGET_DIR
+target_dir="$(cargo metadata --no-deps --format-version 1 --manifest-path "$root/src-tauri/Cargo.toml" |
+	python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])')"
 
 profile=release
 for arg in "$@"; do
@@ -112,9 +116,9 @@ for arg in "$@"; do
 	esac
 done
 if [ "$universal" -eq 1 ]; then
-	bundle_dir="$CARGO_TARGET_DIR/universal-apple-darwin/$profile/bundle"
+	bundle_dir="$target_dir/universal-apple-darwin/$profile/bundle"
 else
-	bundle_dir="$CARGO_TARGET_DIR/$profile/bundle"
+	bundle_dir="$target_dir/$profile/bundle"
 fi
 
 # The bundle dir is pure output. Clearing it keeps a .dmg of an older version

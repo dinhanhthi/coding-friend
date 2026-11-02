@@ -33,7 +33,7 @@ The Rust side treats the webview as untrusted. Actions that change your setup (`
 ```bash
 cd app
 npm run tauri dev                                   # app window + Vite dev server
-npm run bundle                                      # release .app/.dmg into src-tauri/target
+npm run bundle                                      # release .app/.dmg into the Cargo target dir (external SSD)
 cargo test --manifest-path src-tauri/Cargo.toml     # Rust tests
 ```
 
@@ -43,13 +43,13 @@ Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do no
 
 `npm run bundle` runs `scripts/build.sh`, which wraps `tauri build`; extra arguments pass through (`npm run bundle -- --debug --bundles app`), except `--target`, which the script picks itself. The script prints where the `.app` and `.dmg` landed.
 
-- **Universal** (`universal-apple-darwin`, under `src-tauri/target/universal-apple-darwin/`) when both `aarch64-apple-darwin` and `x86_64-apple-darwin` rustup targets are installed; otherwise the host architecture only (under `src-tauri/target/release/`), with a warning.
+- **Universal** (`universal-apple-darwin`, under `<target>/universal-apple-darwin/`) when both `aarch64-apple-darwin` and `x86_64-apple-darwin` rustup targets are installed; otherwise the host architecture only (under `<target>/release/`), with a warning. `<target>` is Cargo's target dir (see [Target on the external SSD](#target-on-the-external-ssd)): `/Volumes/Thi2TB/cargo-target/coding-friend` on Thi's Mac.
 - **Ad-hoc signed** by default (`signingIdentity: "-"` in `tauri.conf.json`). Set `APPLE_SIGNING_IDENTITY` to sign with a real identity; the script passes it as a `--config` override.
 - **Updater artifacts** (`.app.tar.gz` and `.sig`) only when `TAURI_SIGNING_PRIVATE_KEY` is set, to the key itself or a path to the key file (the documented Tauri v2 variable; its password goes in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). Without it the script turns `createUpdaterArtifacts` off, so local and VM builds need no key.
 
 ## Cargo build cache
 
-This machine shares one Cargo target directory across Rust projects (`~/.cargo/config.toml` sets `build.target-dir`), so `cargo build` / `cargo test` leave no `src-tauri/target/` here. `src-tauri/Cargo.toml` repeats the same dev profile, which keeps the cache small; keep it identical to `~/.cargo/config.toml`:
+`~/.cargo/config.toml` (outside git) shares one Cargo target directory across the machine's Rust projects; this repo overrides it with a target on an external SSD (next section), so `cargo build` / `cargo test` leave no `src-tauri/target/` here. `src-tauri/Cargo.toml` repeats the same dev profile, which keeps the cache small; keep it identical to `~/.cargo/config.toml`:
 
 ```toml
 [profile.dev]
@@ -62,8 +62,34 @@ debug = "line-tables-only"
 incremental = false
 ```
 
-- `npm run bundle` pins `CARGO_TARGET_DIR=<repo>/app/src-tauri/target`, so bundles stay in the repo (gitignored).
-- Build one project at a time. Never run `cargo clean` (it wipes every project's cache); clean with `cargo sweep`.
+- Build one project at a time. Never run a bare `cargo clean` in another project (it wipes the whole shared cache); clean with `cargo sweep`.
+
+## Target on the external SSD
+
+This repo does not build into `~/.cargo/shared-target`: its build output lives on an external SSD to free space on the internal disk. A repo-root `.cargo/config.toml` (gitignored, one per machine) sends every build there. That covers `npm run tauri dev`, `cargo test`, `cargo clippy`, rust-analyzer and `npm run bundle`:
+
+```sh
+cp .cargo/config.toml.example .cargo/config.toml   # in the repo root; set the volume path if it differs
+mkdir -p /Volumes/Thi2TB/cargo-target/coding-friend
+```
+
+Cargo reads config files from the current directory upward, and `$HOME` has the lowest priority. This `target-dir` therefore wins over `~/.cargo/config.toml`, whether you run from the repo root, `app/` or `app/src-tauri/`. Check it in `src-tauri/`:
+
+```sh
+cargo metadata --no-deps --format-version 1 | jq -r .target_directory
+```
+
+An environment `CARGO_TARGET_DIR` still overrides both. `scripts/build.sh` unsets it, asks `cargo metadata` for the target dir, then runs `tauri build`; `release-app-local.sh` reads the bundle from the same place. The universal release bundle lands at `/Volumes/Thi2TB/cargo-target/coding-friend/universal-apple-darwin/release/bundle/macos/Coding Friend.app`, with the `.dmg` under `bundle/dmg/`. Without the repo config (CI, another machine) the target falls back to `~/.cargo/config.toml` or `src-tauri/target/`.
+
+Unplug and replug: macOS mounts the volume at `/Volumes/Thi2TB` again. The path and Cargo's fingerprints stay valid, so the next build reuses the cache. While the SSD is out, builds fail (`failed to create directory /Volumes/Thi2TB/…`): `/Volumes` is root-owned, so Cargo cannot create the path. Nothing falls back to the internal disk. Plug the SSD in and rerun.
+
+- **The SSD mounts as `Thi2TB 1`:** another volume with the same name is mounted. Eject that one (`diskutil list`, `diskutil unmount`), then remount the SSD so it gets `/Volumes/Thi2TB` back.
+- **The volume was renamed:** update `target-dir` in `.cargo/config.toml`.
+- **Builds still go to the shared target:** `CARGO_TARGET_DIR` is set in the environment (`echo $CARGO_TARGET_DIR`).
+- **Free space:** run `cargo sweep` in `src-tauri/`. It follows the same config. You can also delete `/Volumes/Thi2TB/cargo-target/coding-friend`. `cargo clean` here only clears the SSD directory, but in another project it wipes the whole shared target.
+- **Spotlight** indexes the SSD. If the SSD holds only caches, `sudo mdutil -i off /Volumes/Thi2TB` stops that (optional).
+
+`node_modules` stays on the internal disk: a copy on another volume would not save space. `~/.tauri` holds updater signing keys, not a cache.
 
 ## Release
 

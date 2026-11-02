@@ -321,8 +321,9 @@ main() {
   local conf="$app_dir/src-tauri/tauri.conf.json"
   [[ -f "$conf" ]] || die "app/src-tauri/tauri.conf.json not found under REPO_ROOT=$REPO_ROOT"
   [[ -f "$app_dir/scripts/build.sh" ]] || die "app/scripts/build.sh not found"
-  # build.sh pins CARGO_TARGET_DIR to app/src-tauri/target itself.
-  local bundle_dir="$app_dir/src-tauri/target/universal-apple-darwin/release/bundle"
+  # Set after check_tools: cargo's target dir (the external SSD via the
+  # repo-root .cargo/config.toml), the same one build.sh resolves.
+  local bundle_dir
   local version="${TAG#app-v}"
 
   # shellcheck source=_release-materials.sh
@@ -339,6 +340,12 @@ main() {
     || die "tag must be app-vX.Y.Z (got '$TAG'); prereleases are not supported"
 
   check_tools "$dry_run"
+
+  local target_dir
+  target_dir="$(unset CARGO_TARGET_DIR; cargo metadata --no-deps --format-version 1 --manifest-path "$app_dir/src-tauri/Cargo.toml" |
+    python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])')" \
+    || die "cargo metadata failed for app/src-tauri"
+  bundle_dir="$target_dir/universal-apple-darwin/release/bundle"
 
   TAG_COMMIT="$(git -C "$REPO_ROOT" rev-parse -q --verify "refs/tags/$TAG^{commit}")" \
     || die "tag $TAG does not exist locally"

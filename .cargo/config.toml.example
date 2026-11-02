@@ -1,0 +1,4 @@
+# Overrides target-dir from ~/.cargo/config.toml for this repo: every
+# build (dev, test, clippy, rust-analyzer, release) goes to the external SSD.
+[build]
+target-dir = "/Volumes/Thi2TB/cargo-target/coding-friend"
