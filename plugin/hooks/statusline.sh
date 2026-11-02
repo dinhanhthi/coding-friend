@@ -18,7 +18,7 @@
 #   "statusLine": { "type": "command", "command": "bash <plugin-path>/hooks/statusline.sh" }
 #
 # Integration contract:
-#   stdin  – JSON with current_dir (or workspace.current_dir), session.model (or model.display_name), context_window.*, rate_limits.*
+#   stdin  – JSON with current_dir (or workspace.current_dir), session.model (or model.display_name), effort.level, context_window.*, rate_limits.*
 #   stdout – ANSI-colored status line string
 #
 # Configuration:
@@ -183,6 +183,9 @@ if component_enabled "model"; then
   # Shorten model names: "Opus 4.6 (1M context)" → "Opus (1M)"
   if [ -n "$MODEL" ]; then
     MODEL=$(echo "$MODEL" | sed -E 's/([A-Za-z]+) [0-9]+(\.[0-9]+)? \(([0-9]+[KMG]?) context\)/\1 (\3)/')
+    # Append reasoning effort (absent when the model doesn't support it): "Opus 5.5 (high)"
+    EFFORT=$(echo "$INPUT" | jq -r '.effort.level // empty' 2>/dev/null | tr -cd '[:alnum:]' || true)
+    [ -n "$EFFORT" ] && MODEL+=" (${EFFORT})"
   fi
 fi
 
