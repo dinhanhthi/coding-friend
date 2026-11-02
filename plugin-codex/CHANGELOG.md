@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.8 (2026-11-02)
+
+- The statusline shows the session's reasoning effort next to the model, e.g. `Opus 5.5 (high)`; nothing is added when the model does not support effort [#73b70012](https://github.com/dinhanhthi/coding-friend/commit/73b70012)
+
 ## v0.46.7 (2026-10-28)
 
 - The review-fix loop can run unlimited rounds with `review.maxRounds: 0`: `$cf-review --fix`, `$cf-plan` autopilot and `$cf-tdd` autopilot keep fixing and re-reviewing until no Critical or Important issue remains, with a stall guard that stops when a round makes no progress [#c8e89d8c](https://github.com/dinhanhthi/coding-friend/commit/c8e89d8c)
