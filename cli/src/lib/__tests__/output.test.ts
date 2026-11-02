@@ -15,9 +15,7 @@ let savedExitCode: typeof process.exitCode;
 
 beforeEach(() => {
   savedExitCode = process.exitCode;
-  stdoutSpy = vi
-    .spyOn(process.stdout, "write")
-    .mockImplementation(() => true);
+  stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 

@@ -57,6 +57,9 @@ describe("versionCommand", () => {
     expect(env.ok).toBe(true);
     expect(env.error).toBeNull();
     expect(env.data.cli).toBe("1.42.0");
-    expect(env.data.hosts.devin).toEqual({ installed: true, version: "0.43.0" });
+    expect(env.data.hosts.devin).toEqual({
+      installed: true,
+      version: "0.43.0",
+    });
   });
 });
