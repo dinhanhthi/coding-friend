@@ -344,7 +344,7 @@ test("rewrites skill script plugin-root to a dirname-relative path", () => {
   assert.doesNotMatch(nestedCjs, /CLAUDE_PLUGIN_ROOT/);
 });
 
-test("keeps Claude skill frontmatter and appends the plugin-root note", () => {
+test("keeps Claude skill frontmatter except context/agent and appends the plugin-root note", () => {
   const skill = renderDevinFile(
     "/repo/plugin/skills/cf-hidden/SKILL.md",
     [
@@ -355,6 +355,8 @@ test("keeps Claude skill frontmatter and appends the plugin-root note", () => {
       "disable-model-invocation: true",
       "model: haiku",
       "argument-hint: <task>",
+      "context: fork",
+      "agent: x:y",
       "---",
       "",
       "Body stays.",
@@ -367,6 +369,7 @@ test("keeps Claude skill frontmatter and appends the plugin-root note", () => {
   assert.match(frontmatter[1], /^disable-model-invocation: true$/m);
   assert.match(frontmatter[1], /^model: haiku$/m);
   assert.match(frontmatter[1], /^argument-hint: <task>$/m);
+  assert.doesNotMatch(frontmatter[1], /^context:|^agent:/m);
   assert.match(skill, /Body stays\./);
   assert.match(
     skill,
@@ -840,7 +843,7 @@ const liveRepoRoot = path.resolve(
   "../..",
 );
 
-test("live Devin tree keeps 28 skills, 12 agents and no foreign-host paths", async () => {
+test("live Devin tree keeps 29 skills, 12 agents and no foreign-host paths", async () => {
   const devinPluginDir = path.join(liveRepoRoot, "plugin-devin");
   const snapshot = await snapshotTree(devinPluginDir);
   const paths = snapshot.map((entry) => entry.path);
@@ -850,7 +853,7 @@ test("live Devin tree keeps 28 skills, 12 agents and no foreign-host paths", asy
       .filter((entryPath) => /^skills\/cf-[^/]+\/SKILL\.md$/.test(entryPath))
       .map((entryPath) => entryPath.split("/")[1]),
   );
-  assert.equal(skillDirs.size, 28);
+  assert.equal(skillDirs.size, 29);
 
   const agents = paths.filter((entryPath) =>
     /^agents\/cf-.*\.md$/.test(entryPath),

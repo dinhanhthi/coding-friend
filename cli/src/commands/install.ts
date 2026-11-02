@@ -24,6 +24,7 @@ import {
   setCodexPluginEnabled,
 } from "../lib/codex-config.js";
 import { registerMemoryMcp } from "../lib/memory-mcp-register.js";
+import { AUTO_APPROVE_CROSS_HOST_NOTE } from "../lib/permissions.js";
 import { deployOmpAgents, writeOmpExtensionEntry } from "../lib/omp-config.js";
 import {
   isMarketplaceRegistered,
@@ -419,9 +420,7 @@ async function installAgyCommand(): Promise<InstallResult> {
   log.dim(
     "Restart Antigravity (or start a new `agy` session) to pick up the plugin.",
   );
-  log.dim(
-    "Note: autoApprove in config enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules).",
-  );
+  log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
   return hostResult("agy");
 }
 

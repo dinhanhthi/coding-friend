@@ -38,8 +38,7 @@ vi.mock("../paths.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../paths.js")>();
   return {
     ...actual,
-    devStatePath: () =>
-      join(isolated.home, ".coding-friend", "dev-state.json"),
+    devStatePath: () => join(isolated.home, ".coding-friend", "dev-state.json"),
     devinPluginsLockPath: () =>
       join(
         isolated.home,
@@ -565,9 +564,7 @@ describe("reconcileDevinPlugin", () => {
     const repo = makeDevRepo();
     seedDevState(repo);
     const other = makeTemp("cf-devin-other-");
-    writeLock(
-      lockJson([localEntry(join(other, "plugin-devin"), "0.44.0")]),
-    );
+    writeLock(lockJson([localEntry(join(other, "plugin-devin"), "0.44.0")]));
 
     const action = await reconcileDevinPlugin({ allowReplace: true });
 
@@ -668,7 +665,9 @@ describe("reconcileDevinPlugin", () => {
       const action = await reconcileDevinPlugin({ allowReplace: true });
 
       expect(action).toBe("replaced");
-      expect(devinCalls("plugins").filter((a) => a[1] === "update")).toEqual([]);
+      expect(devinCalls("plugins").filter((a) => a[1] === "update")).toEqual(
+        [],
+      );
       expect(mockRun).toHaveBeenCalledWith("devin", [
         "plugins",
         "remove",
@@ -704,9 +703,9 @@ describe("reconcileDevinPlugin", () => {
       ]),
     );
 
-    await expect(
-      reconcileDevinPlugin({ allowReplace: true }),
-    ).rejects.toThrow(/lists coding-friend 2 times/);
+    await expect(reconcileDevinPlugin({ allowReplace: true })).rejects.toThrow(
+      /lists coding-friend 2 times/,
+    );
     expect(devinCalls("plugins")).toEqual([]);
   });
 
@@ -716,9 +715,9 @@ describe("reconcileDevinPlugin", () => {
       cmd === "devin" && args?.[0] === "auth" ? null : "ok",
     );
 
-    await expect(
-      reconcileDevinPlugin({ allowReplace: true }),
-    ).rejects.toThrow(/devin auth login/);
+    await expect(reconcileDevinPlugin({ allowReplace: true })).rejects.toThrow(
+      /devin auth login/,
+    );
     expect(devinCalls("plugins")).toEqual([]);
   });
 
@@ -726,9 +725,9 @@ describe("reconcileDevinPlugin", () => {
     writeLock(lockJson([githubEntry("plugin")]));
     mockFetch.mockResolvedValue({ ok: false, status: 404 });
 
-    await expect(
-      reconcileDevinPlugin({ allowReplace: true }),
-    ).rejects.toThrow(/not on the default branch yet/);
+    await expect(reconcileDevinPlugin({ allowReplace: true })).rejects.toThrow(
+      /not on the default branch yet/,
+    );
     expect(devinCalls("plugins")).toEqual([]);
   });
 
@@ -736,9 +735,9 @@ describe("reconcileDevinPlugin", () => {
     writeLock(lockJson([githubEntry("plugin-devin")]));
     seedDevState(makeTemp("cf-devin-empty-")); // dev mode on, artifact missing
 
-    await expect(
-      reconcileDevinPlugin({ allowReplace: true }),
-    ).rejects.toThrow(/npm run build:devin/);
+    await expect(reconcileDevinPlugin({ allowReplace: true })).rejects.toThrow(
+      /npm run build:devin/,
+    );
     expect(devinCalls("plugins")).toEqual([]);
   });
 
@@ -752,9 +751,9 @@ describe("reconcileDevinPlugin", () => {
       return "ok";
     });
 
-    await expect(
-      reconcileDevinPlugin({ allowReplace: true }),
-    ).rejects.toThrow(`devin plugins install ${GITHUB_SPEC} -y`);
+    await expect(reconcileDevinPlugin({ allowReplace: true })).rejects.toThrow(
+      `devin plugins install ${GITHUB_SPEC} -y`,
+    );
   });
 });
 
@@ -842,7 +841,9 @@ describe("isDevinPluginInstalled / readDevinPluginVersion", () => {
   });
 
   it("reports installed for a local entry", () => {
-    writeLock(lockJson([localEntry("/private/tmp/dev/plugin-devin", "0.46.0")]));
+    writeLock(
+      lockJson([localEntry("/private/tmp/dev/plugin-devin", "0.46.0")]),
+    );
 
     expect(isDevinPluginInstalled()).toBe(true);
     expect(readDevinPluginVersion()).toBe("0.46.0");
@@ -983,12 +984,13 @@ describe("writeDevinMcpEntry", () => {
   });
 
   it("refuses to overwrite a file with a JSON syntax error (file unchanged)", () => {
-    const broken = '{ "mcpServers": { "keep": { "env": { "API_KEY": "s" } } }, }';
+    const broken =
+      '{ "mcpServers": { "keep": { "env": { "API_KEY": "s" } } }, }';
     writeMcpConfig(broken);
 
-    expect(() => writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER)).toThrow(
-      /is not valid JSON/,
-    );
+    expect(() =>
+      writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER),
+    ).toThrow(/is not valid JSON/);
     expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(broken);
   });
 
@@ -1055,9 +1057,9 @@ describe("writeDevinMcpEntry", () => {
     writeMcpConfig("{ not json");
     chmodSync(devinMcpConfigPath(), 0o000);
 
-    expect(() => writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER)).toThrow(
-      /cannot be read/,
-    );
+    expect(() =>
+      writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER),
+    ).toThrow(/cannot be read/);
   });
 
   it("writes through a symlinked config file instead of replacing the link", () => {

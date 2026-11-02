@@ -1,11 +1,5 @@
 import { readJson, writeJson } from "./json.js";
-import {
-  claudeLocalSettingsPath,
-  claudeProjectSettingsPath,
-  claudeSettingsPath,
-  knownMarketplacesPath,
-  pluginCachePath,
-} from "./paths.js";
+import { knownMarketplacesPath, pluginCachePath } from "./paths.js";
 import { join } from "path";
 
 const MARKETPLACE_NAME = "coding-friend-marketplace";
@@ -268,8 +262,8 @@ export const STATIC_RULES: PermissionRule[] = [
     recommended: true,
   },
   // Narrow npx rules only — the broad "Bash(npx *)" used to live here but
-  // grants execution of any package from any registry, which conflicts with
-  // the auto-approve hook's threat model (see plugin/hooks/auto-approve.cjs).
+  // grants execution of any package from any registry, which is too broad for
+  // a recommended rule.
   // tsc and prettier are safe because they typecheck/format and do not
   // execute arbitrary code from input files. Tools that execute arbitrary
   // code (eslint plugins, jest test files, vitest, tsx) are intentionally
@@ -440,84 +434,6 @@ export function getAllRules(marketplaceRoot?: string | null): PermissionRule[] {
 /** Backward-compatible alias. */
 export const PERMISSION_RULES: PermissionRule[] = getAllRules();
 
-// ─── Dangerous rules audit ─────────────────────────────────────────
-
-/**
- * Patterns that grant arbitrary code execution — dangerous when auto-approve is active.
- * These allow rules would let commands bypass the LLM classifier entirely.
- */
-export const DANGEROUS_RULE_PATTERNS: { pattern: RegExp; reason: string }[] = [
-  { pattern: /^Bash\(\*\)$/, reason: "Grants execution of any shell command" },
-  {
-    pattern: /^Bash\(python\*?\)$/,
-    reason: "Grants arbitrary Python execution",
-  },
-  {
-    pattern: /^Bash\(python3\*?\)$/,
-    reason: "Grants arbitrary Python3 execution",
-  },
-  {
-    pattern: /^Bash\(node\*?\)$/,
-    reason: "Grants arbitrary Node.js execution",
-  },
-  { pattern: /^Bash\(ruby\*?\)$/, reason: "Grants arbitrary Ruby execution" },
-  { pattern: /^Bash\(perl\*?\)$/, reason: "Grants arbitrary Perl execution" },
-  { pattern: /^Bash\(sh\*?\)$/, reason: "Grants arbitrary shell execution" },
-  { pattern: /^Bash\(bash\*?\)$/, reason: "Grants arbitrary bash execution" },
-  // Note: Bash(bash /specific/path/*) is fine — only bare Bash(bash*) is dangerous
-  {
-    pattern: /^Bash\(npm run\*?\)$/,
-    reason: "Grants execution of any npm script",
-  },
-  {
-    // Matches Bash(npx), Bash(npx*), and Bash(npx *) — any bare npx wildcard
-    pattern: /^Bash\(npx\s*\*?\)$/,
-    reason: "Grants execution of any npx package",
-  },
-  {
-    pattern: /^Agent\(\*\)$/,
-    reason: "Grants unrestricted subagent delegation",
-  },
-];
-
-export interface DangerousRuleMatch {
-  rule: string;
-  reason: string;
-}
-
-/**
- * Audit settings for dangerous allow rules that would bypass auto-approve classifier.
- */
-export function auditDangerousRules(
-  settingsPath: string,
-): DangerousRuleMatch[] {
-  const existing = getExistingRules(settingsPath);
-  const matches: DangerousRuleMatch[] = [];
-  for (const rule of existing) {
-    for (const { pattern, reason } of DANGEROUS_RULE_PATTERNS) {
-      if (pattern.test(rule)) {
-        matches.push({ rule, reason });
-        break;
-      }
-    }
-  }
-  return matches;
-}
-
-/**
- * Strip dangerous rules from settings. Returns count of removed rules.
- */
-export function stripDangerousRules(settingsPath: string): number {
-  const dangerous = auditDangerousRules(settingsPath);
-  if (dangerous.length === 0) return 0;
-  applyPermissions(
-    settingsPath,
-    [],
-    dangerous.map((d) => d.rule),
-  );
-  return dangerous.length;
-}
-
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /**
@@ -673,72 +589,21 @@ export function cleanupStalePluginRules(settingsPath: string): number {
   return stale.length;
 }
 
-// ─── Auto-approve audit helpers ─────────────────────────────────────
-
-/**
- * Run the dangerous-rules audit on all Claude settings files (project, local, user).
- * Shared between config.ts and init.ts to avoid duplication.
- *
- * @param settingsPaths - Array of settings.json paths to check
- * @param log - Logger with warn/dim/success methods
- * @param promptConfirm - Async function to prompt user for yes/no
- */
-export async function runDangerousRulesAudit(
-  settingsPaths: string[],
-  log: {
-    warn: (msg: string) => void;
-    dim: (msg: string) => void;
-    success: (msg: string) => void;
-  },
-  promptConfirm: (message: string) => Promise<boolean>,
-): Promise<void> {
-  for (const sp of settingsPaths) {
-    const dangerous = auditDangerousRules(sp);
-    if (dangerous.length > 0) {
-      log.warn(`Found ${dangerous.length} dangerous rule(s) in ${sp}:`);
-      for (const d of dangerous) {
-        log.dim(`  ${d.rule} — ${d.reason}`);
-      }
-      const shouldStrip = await promptConfirm(
-        "Remove these rules? They would bypass the auto-approve classifier.",
-      );
-      if (shouldStrip) {
-        const count = stripDangerousRules(sp);
-        log.success(
-          `Removed ${count} dangerous rule(s). Restart Claude Code for changes to take effect.`,
-        );
-      }
-    }
-  }
-}
+// ─── Auto-approve helpers ───────────────────────────────────────────
 
 export const AUTO_APPROVE_CROSS_HOST_NOTE =
-  "autoApprove enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules).";
+  "autoApprove applies to Codex, Antigravity and Devin only (deterministic rules). Claude Code and omp use their native auto / yolo mode.";
 
 /**
- * Side effects after the user opts into `autoApprove`: audit Claude settings
- * (the same key enables the Sonnet classifier) and print the cross-host note.
+ * Print the cross-host note and tuning tips after the user opts into
+ * `autoApprove`.
  */
-export async function afterAutoApproveEnabled(
-  log: {
-    warn: (msg: string) => void;
-    dim: (msg: string) => void;
-    success: (msg: string) => void;
-  },
-  promptConfirm: (message: string) => Promise<boolean>,
-): Promise<void> {
-  await runDangerousRulesAudit(
-    [
-      claudeProjectSettingsPath(),
-      claudeLocalSettingsPath(),
-      claudeSettingsPath(),
-    ],
-    log,
-    promptConfirm,
-  );
+export function afterAutoApproveEnabled(log: {
+  dim: (msg: string) => void;
+}): void {
   log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
   log.dim(
-    "Tip: Fine-tune with autoApproveAllowExtra / autoApproveIgnore in config.json",
+    "Tip: Fine-tune with autoApproveAllowExtra (and autoApproveIgnore on Devin) in config.json",
   );
   log.dim("Docs: https://cf.dinhanhthi.com/#auto-approve");
 }

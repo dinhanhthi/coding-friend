@@ -25,16 +25,17 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
    - 📋 **Summary** → coverage, uncovered scope, and the status line you just read
 
 4. **Fix loop** — If Critical or Important findings exist:
-   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + `CF_CONFIG_FILE` (default `.coding-friend/config.json`); **local field overrides global**. Absent, non-integer, or `< 1` → **5**. This is the maximum number of `$cf-review` runs per phase (the initial review in step 2 counts as round 1).
-   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds`:
+   - Read `review.maxRounds` from merged config: `~/.coding-friend/config.json` + `CF_CONFIG_FILE` (default `.coding-friend/config.json`); **local field overrides global**. Absent, non-integer, or negative → **5**; `0` → unlimited (loop until no Critical/Important remain). A positive value is the maximum number of `$cf-review` runs per phase (the initial review in step 2 counts as round 1).
+   - Repeat while Critical/Important remain **and** review rounds used `< maxRounds` (or `maxRounds` is `0`):
      - Dispatch ONE cf-implementer call with task: "Fix these review findings: <verbatim Critical + Important bullets from the latest review>". Files: union of files referenced by those findings.
      - **Fix-task failure path** — fix cf-implementer returns `[CF-RESULT: failure]` → STOP autopilot immediately, without consuming another review round. Mark phase ❌ FAILED (big plans: revert README phase row ✅ DONE → ❌ FAILED if already flipped). Surface the failure to user.
      - Otherwise, re-run `$cf-review --no-fix` (next round).
        - **Commit-per-task mode** — first, if `git status --porcelain` is non-empty, `git add -A` and commit `<type>(<scope>): phase <N>/<M> review fixes` (commit rules: step 5). Then re-review the same range: `$cf-review <phaseBase>..HEAD`.
      - Apply the status gate to that review too, before counting: `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot (no commit).
      - Passed the gate with `Review status: COMPLETE` and no Critical/Important left (Suggestions may remain) → exit the fix loop and continue to commit.
-   - Critical or Important still remain after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface ALL review outputs and fix attempts, ask user.
-   - Hard cap: never more than `maxRounds` reviews per phase. Do not start a fix after the last allowed review — that review is the gate.
+     - **Stall guard** (only when `maxRounds` is `0`) — reduce each Critical/Important finding to a key = file + first sentence of the issue. A re-review's key set equals the key set of any earlier review in this loop → no progress: STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface ALL review outputs and fix attempts, ask user (same as the max-rounds path). Message: `⚠️ Stopped — no progress`. New findings keep the loop going.
+   - Finite cap: Critical or Important still remain after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface ALL review outputs and fix attempts, ask user.
+   - Hard cap (finite cap only): never more than `maxRounds` reviews per phase. Do not start a fix after the last allowed review — that review is the gate.
 
 5. **Commit the phase** — Only after a review passed the status gate (`Review status: COMPLETE`) with no Critical/Important remaining (Suggestions may remain):
    - `git add -A`
@@ -53,7 +54,7 @@ EOF
 
 - Task fails after its 1 retry.
 - The fix cf-implementer returns `[CF-RESULT: failure]`.
-- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5), or — when it is `0` — a re-review repeats the Critical/Important set of any earlier review (no progress).
 - `Review status:` is `PARTIAL` or `FAILED`, or that line is missing or unparseable — incomplete coverage never commits.
 - Review output cannot be parsed.
 - `git commit` (task, review-fix, bookkeeping, or phase commit) fails repeatedly after fix attempts.
@@ -61,6 +62,8 @@ EOF
 - All phases reach ✅ DONE in plan file.
 
 **Review call**: always pass `--no-fix` to `$cf-review` on the uncommitted target, even when an older plan's embedded contract says "no extra args" — config `review.fix`/`review.commit` must never run inside this loop.
+
+**Unlimited rounds**: `review.maxRounds: 0` = unlimited with the no-progress stall guard, even when an older plan's embedded contract does not say so.
 
 **Drift guard**: about to ask the user "should I commit?" or "should I continue to the next phase?" while running an autopilot plan → that is a drift bug. Re-read the `## AUTOPILOT` section in the plan file and proceed per the contract.
 
@@ -85,16 +88,17 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
      - 🚨 **Critical** and ⚠️ **Important** → must be fixed.
      - 💡 **Suggestions** → log them in the upcoming commit body, do NOT block.
 4. If Critical/Important findings exist:
-   - Read `review.maxRounds` from config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json` at the field; default **5**) — the maximum `$cf-review` runs per phase (initial + fix re-reviews).
-   - Repeat while Critical/Important remain and review rounds used < `maxRounds`:
+   - Read `review.maxRounds` from config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json` at the field; default **5**; `0` = unlimited, stop when a re-review repeats the Critical/Important set of any earlier review (no progress)) — the maximum `$cf-review` runs per phase (initial + fix re-reviews).
+   - Repeat while Critical/Important remain and review rounds used < `maxRounds` (or `maxRounds` is `0`):
      - Dispatch one cf-implementer call with a fix task that lists the latest findings verbatim. Files: union of files referenced by the findings.
      - Fix cf-implementer returns `[CF-RESULT: failure]` → STOP autopilot immediately (do NOT consume another review round), mark the phase ❌ FAILED (and revert the README phase row if applicable), surface the failure to user.
      - Otherwise, re-run `$cf-review --no-fix`.
        - **Commit-per-task mode:** first, if `git status --porcelain` is non-empty, `git add -A` and commit `<type>(<scope>): phase <N>/<M> review fixes`; then re-review `$cf-review <phaseBase>..HEAD`.
      - Apply the same status gate to that review; `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot without committing.
      - `Review status: COMPLETE` with no Critical/Important → continue to commit.
-   - Critical/Important still present after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report all review outputs to user.
-   - Never exceed `review.maxRounds` reviews per phase. Do not start a fix after the last allowed review.
+     - `maxRounds` is `0` and a re-review reports the same Critical/Important set (file + first sentence of each issue) as any earlier review in this phase → no progress: STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report all review outputs to user.
+   - Finite cap: Critical/Important still present after `maxRounds` reviews → STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report all review outputs to user.
+   - Finite cap: never exceed `review.maxRounds` reviews per phase. Do not start a fix after the last allowed review.
 5. Once a review passed the status gate (`Review status: COMPLETE`) and has no Critical/Important:
    - `git add -A`
    - `git commit -m "<type>(<scope>): phase <N>/<M> <phase-name>"` (conventional commit; `<N>` = this phase's number, `<M>` = total phases, e.g. `feat(cli): phase 2/4 add config loader`). Body lists tasks completed + any Suggestion-level findings intentionally left as follow-ups.
@@ -106,7 +110,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
 
 - Task fails after its 1 retry.
 - The fix cf-implementer returns `[CF-RESULT: failure]` (do not consume another review round).
-- Review still has Critical or Important after `review.maxRounds` reviews (default 5).
+- Review still has Critical or Important after `review.maxRounds` reviews (default 5), or — when it is `0` — a re-review repeats the Critical/Important set of any earlier review (no progress).
 - `$cf-review` reports `Review status:` `PARTIAL` or `FAILED`, or that line is missing, duplicated, or unparseable.
 - Review output from `$cf-review` cannot be reliably parsed.
 - `git commit` (task, review-fix, bookkeeping, or phase commit) fails repeatedly after attempted hook fixes.

@@ -235,7 +235,7 @@ describe("auto-approve.agy.cjs", () => {
     }
   });
 
-  it("does not honor autoApproveIgnore (Claude-only)", () => {
+  it("does not honor autoApproveIgnore (Devin-only)", () => {
     const withIgnore = makeProject({
       autoApprove: true,
       autoApproveIgnore: ["npm test"],

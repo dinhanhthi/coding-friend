@@ -10,7 +10,7 @@
  * Configuration:
  *   "autoApprove": true in CF_CONFIG_FILE or
  *   {workspacePaths[0]|cwd}/.coding-friend/config.json (opt-in).
- *   Same key as Claude Code; this adapter stays deterministic (no LLM).
+ *   Same key as Codex/Devin; this adapter stays deterministic (no LLM).
  *   Default (false or missing) → {"decision":"ask"}.
  */
 

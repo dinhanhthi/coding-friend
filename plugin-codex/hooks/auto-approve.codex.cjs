@@ -2,11 +2,11 @@
 /**
  * PermissionRequest hook for Codex CLI.
  *
- * This intentionally reuses the deterministic classifier from Claude's
- * auto-approve hook but does not use the LLM fallback. Unknown or ask-level
- * actions emit no decision so Codex's native approval flow remains in charge.
+ * Reuses the shared deterministic classifier in auto-approve.cjs (no LLM).
+ * Unknown or ask-level actions emit no decision so Codex's native approval
+ * flow remains in charge.
  *
- * Enable with `autoApprove: true` (same key as Claude/Antigravity).
+ * Enable with `autoApprove: true` (same key as Antigravity/Devin).
  */
 
 "use strict";

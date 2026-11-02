@@ -5,9 +5,9 @@ description: >
   "process docs/later", "work through the backlog", "what did we defer", "resolve deferred
   items", "cf-later-do". Routes to /cf-fix or /cf-plan; removes the file only after
   verified-done. Slash-only — NOT auto-invoked. Does NOT capture new items (that is
-  capture-later.sh).
+  /cf-later or capture-later.sh).
 created: 2026-07-24
-updated: 2026-09-09
+updated: 2026-10-21
 ---
 
 # /cf-later-do
@@ -16,7 +16,7 @@ Process the deferred side-tasks in `docs/later/`: pick one, fix it (via `/cf-fix
 
 ## Background
 
-`plugin/lib/capture-later.sh` is the **write side** — execution skills call it to record an out-of-scope problem as `docs/later/YYYY-MM-DD-<name>.md` with frontmatter (`date`, `source`, optional `slug`/`problem`, `conversation_id`). This skill is the **read/resolve side** that closes the loop.
+`plugin/lib/capture-later.sh` is the **write side** — execution skills call it to record an out-of-scope problem as `docs/later/YYYY-MM-DD-<name>.md` with frontmatter (`date`, `source`, optional `slug`/`problem`, `conversation_id`). `/cf-later <text>` is the manual write side (same file format, `source: manual`). This skill is the **read/resolve side** that closes the loop.
 
 ## Workflow
 

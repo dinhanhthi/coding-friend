@@ -73,9 +73,8 @@ Skills use these host-neutral verbs. Map each to your host's tools:
 
 ## Auto-Approve
 
-Opt-in via `autoApprove` in config.
+Opt-in via `autoApprove` in config. Codex, Antigravity and Devin only — Claude Code and omp rely on their native auto / yolo modes (no CF hook).
 
-- **Claude**: PreToolUse, 3-step — auto-approves read-only tools and working-dir edits; LLM classifier (Sonnet) for unknown; blocks destructive.
 - **Codex**: PermissionRequest, deterministic only. Unknown/ask defer to native approval.
 - **Antigravity**: PreToolUse, deterministic; unknown → `ask`. No LLM.
 - **Devin**: PermissionRequest event, deterministic only; unhandled → native prompt

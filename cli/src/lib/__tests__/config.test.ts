@@ -50,7 +50,7 @@ describe("config validation characterization", () => {
   const mixed = () => ({
     autoApprove: "yes",
     langauge: "vi",
-    review: { withCodex: true, bogusKey: 1, maxRounds: 0 },
+    review: { withCodex: true, bogusKey: 1, maxRounds: -1 },
     autoApproveCodex: true,
     zzzUnknown: 42,
     planAuto: "x",
@@ -73,7 +73,7 @@ describe("config validation characterization", () => {
         "Config: tdd — Invalid input: expected boolean, received string. Using default.",
       ],
       [
-        "Config: review.maxRounds — Too small: expected number to be >=1. Using default.",
+        "Config: review.maxRounds — Too small: expected number to be >=0. Using default.",
       ],
       ["Unknown config key 'review.bogusKey'."],
       [
@@ -487,7 +487,7 @@ describe("loadConfig validation", () => {
     });
   }
 
-  it("accepts review.maxRounds as a valid config key (integer ≥ 1)", () => {
+  it("accepts review.maxRounds as a valid config key (integer ≥ 0)", () => {
     mockReadJson
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ review: { maxRounds: 5 } });
@@ -518,10 +518,20 @@ describe("loadConfig validation", () => {
     expect(config.review?.maxRounds).toBeUndefined();
   });
 
-  it("warns and strips review.maxRounds when it is not a positive integer", () => {
+  it("accepts review.maxRounds 0 (unlimited) without a warning", () => {
     mockReadJson
       .mockReturnValueOnce(null)
       .mockReturnValueOnce({ review: { maxRounds: 0 } });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.review?.maxRounds).toBe(0);
+  });
+
+  it("warns and strips review.maxRounds when it is negative", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ review: { maxRounds: -1 } });
 
     const config = loadConfig();
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("maxRounds"));
@@ -684,6 +694,28 @@ describe("loadConfig validation", () => {
       expect.stringContaining("planCommitPerTask"),
     );
     expect(config.planCommitPerTask).toBeUndefined();
+  });
+
+  it("accepts planReviewFix as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planReviewFix: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.planReviewFix).toBe(true);
+  });
+
+  it("warns and strips planReviewFix when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planReviewFix: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("planReviewFix"),
+    );
+    expect(config.planReviewFix).toBeUndefined();
   });
 
   it("accepts a full showcase config (video + poster)", () => {

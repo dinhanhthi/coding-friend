@@ -272,13 +272,6 @@ function onToolCall(
       reason: hookReason(scout, "blocked by scout-block"),
     };
   }
-  const approve = runHook("auto-approve.cjs", {}, stdin);
-  if (approve.status !== 0) {
-    return {
-      block: true,
-      reason: hookReason(approve, "denied by auto-approve"),
-    };
-  }
   return undefined;
 }
 

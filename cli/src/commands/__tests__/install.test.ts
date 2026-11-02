@@ -917,7 +917,7 @@ describe("installCommand human output (characterization)", () => {
 
       ✔ Installed for Antigravity (beta).
       Restart Antigravity (or start a new \`agy\` session) to pick up the plugin.
-      Note: autoApprove in config enables Claude Code (LLM classifier), Antigravity, Codex, and Devin (deterministic rules)."
+      Note: autoApprove applies to Codex, Antigravity and Devin only (deterministic rules). Claude Code and omp use their native auto / yolo mode."
     `);
   });
 

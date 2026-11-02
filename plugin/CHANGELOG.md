@@ -2,6 +2,27 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.46.8 (2026-11-02)
+
+- The statusline shows the session's reasoning effort next to the model, e.g. `Opus 5.5 (high)`; nothing is added when the model does not support effort [#73b70012](https://github.com/dinhanhthi/coding-friend/commit/73b70012)
+
+## v0.46.7 (2026-10-28)
+
+- The review-fix loop can run unlimited rounds with `review.maxRounds: 0`: `/cf-review --fix`, `/cf-plan` autopilot and `/cf-tdd` autopilot keep fixing and re-reviewing until no Critical or Important issue remains, with a stall guard that stops when a round makes no progress [#c8e89d8c](https://github.com/dinhanhthi/coding-friend/commit/c8e89d8c)
+- `/cf-plan-review` re-reviews the plan after applying fixes and loops until it is clean; `/cf-help` documents unlimited rounds [#1ab2f3ba](https://github.com/dinhanhthi/coding-friend/commit/1ab2f3ba)
+
+## v0.46.6 (2026-10-25)
+
+- `/cf-plan-review` applies Critical/Important findings without asking when config `planReviewFix: true` (local overrides global); `--no-fix` forces it off for one run [#c6c77aa7](https://github.com/dinhanhthi/coding-friend/commit/c6c77aa7)
+
+## v0.46.5 (2026-10-23)
+
+- Remove `autoApprove` for Claude Code and omp: the hook forced a prompt on anything it was unsure about, even with Claude Code auto mode on. Use the native auto / `yolo` modes there. `autoApprove` stays for Codex, Antigravity and Devin; `autoApproveLLM` and the session-start warning about dangerous `.claude/settings*` allow rules are gone [#b30bc3a7](https://github.com/dinhanhthi/coding-friend/commit/b30bc3a7)
+
+## v0.46.4 (2026-10-22)
+
+- Add `/cf-later <text>` — defer a side-task to `docs/later/` without loading it into the main conversation: on Claude Code it runs in a forked subagent and returns a single line, and `/cf-later-do` picks the items up later [#085b3fb9](https://github.com/dinhanhthi/coding-friend/commit/085b3fb9)
+
 ## v0.46.3 (2026-10-19)
 
 - Fix the statusline hook reading rate limits from the OAuth usage API: it now reads them from the stdin JSON Claude Code provides, so no token lookup or network call is needed [#62332fb4](https://github.com/dinhanhthi/coding-friend/commit/62332fb4)

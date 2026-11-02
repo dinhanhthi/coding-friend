@@ -176,7 +176,12 @@ function main() {
     }
     const claudeName = toClaudeToolName(toolName);
 
-    let decision = classifyByRules(claudeName, toolInput, projectDir, allowExtra);
+    let decision = classifyByRules(
+      claudeName,
+      toolInput,
+      projectDir,
+      allowExtra,
+    );
 
     // exec with a workdir outside the project: never auto-allow — relative
     // paths (rm ".") would otherwise resolve against projectDir and look

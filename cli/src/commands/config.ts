@@ -707,6 +707,28 @@ async function editPlanCommitPerTask(
   writeToScope(scope, { planCommitPerTask: value });
 }
 
+async function editPlanReviewFix(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("planReviewFix", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Run /cf-plan-review with --fix by default? (apply Critical/Important findings to the plan without asking)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { planReviewFix: value });
+}
+
 // ─── Review ──────────────────────────────────────────────────────────
 
 function getReviewConfig(
@@ -818,15 +840,16 @@ async function editReviewMaxRounds(
     log.dim(`Current: ${currentValue}`);
   }
   log.dim(
-    "Caps how many /cf-review rounds /cf-plan --auto, /cf-tdd --auto and /cf-review --fix run before waiting for you (initial review + fix re-reviews).",
+    "Caps how many review rounds /cf-review --fix, /cf-plan-review --fix, /cf-plan --auto and /cf-tdd --auto run before waiting for you (initial review + fix re-reviews). 0 = unlimited (stops when a re-review makes no progress).",
   );
 
   const raw = await input({
-    message: "Maximum review rounds:",
+    message: "Maximum review rounds (0 = unlimited):",
     default: String(currentValue ?? DEFAULT_REVIEW_MAX_ROUNDS),
     validate: (val) => {
-      const n = Number(val);
-      if (!Number.isInteger(n) || n < 1) return "Must be an integer ≥ 1";
+      const n = val.trim() === "" ? NaN : Number(val);
+      if (!Number.isInteger(n) || n < 0)
+        return "Must be an integer ≥ 0 (0 = unlimited)";
       return true;
     },
   });
@@ -865,7 +888,7 @@ async function reviewSubMenu(): Promise<void> {
             }),
           ),
           {
-            name: `Max review rounds (${review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS})`,
+            name: `Max review rounds (${review.maxRounds === 0 ? "unlimited" : (review.maxRounds ?? DEFAULT_REVIEW_MAX_ROUNDS)})`,
             value: "maxRounds",
           },
         ],
@@ -911,7 +934,7 @@ async function editAutoApprove(
 
   const value = await confirm({
     message:
-      "Enable auto-approve? (Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules, no LLM)",
+      "Enable auto-approve for Codex, Antigravity and Devin? (Claude Code / omp: use native auto / yolo mode)",
     default: currentValue ?? false,
   });
 
@@ -920,9 +943,7 @@ async function editAutoApprove(
   writeToScope(scope, { autoApprove: value });
 
   if (value) {
-    await afterAutoApproveEnabled(log, (message) =>
-      confirm({ message, default: true }),
-    );
+    afterAutoApproveEnabled(log);
   }
 }
 
@@ -1232,6 +1253,17 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const planReviewFixScope = getScopeLabel(
+      "planReviewFix",
+      globalCfg,
+      localCfg,
+    );
+    const planReviewFixVal = getMergedValue(
+      "planReviewFix",
+      globalCfg,
+      localCfg,
+    ) as boolean | undefined;
+
     const autoApproveScope = getScopeLabel("autoApprove", globalCfg, localCfg);
     const autoApproveVal = getMergedValue(
       "autoApprove",
@@ -1322,10 +1354,16 @@ export async function configCommand(): Promise<void> {
               "  Commit each task separately under /cf-plan autopilot (same as passing --commit-per-task)",
           },
           {
+            name: `Plan review fix ${formatScopeLabel(planReviewFixScope)}${planReviewFixVal !== undefined ? ` (${planReviewFixVal})` : ""}`,
+            value: "planReviewFix",
+            description:
+              "  Apply Critical/Important findings in /cf-plan-review by default (same as passing --fix)",
+          },
+          {
             name: `Auto-approve ${formatScopeLabel(autoApproveScope)}${autoApproveVal !== undefined ? ` (${autoApproveVal})` : ""}`,
             value: "autoApprove",
             description:
-              "  Claude: LLM classifier; Antigravity/Codex/Devin: deterministic rules",
+              "  Codex / Antigravity / Devin only (deterministic rules); Claude Code / omp use native modes",
           },
           {
             name: `Privacy-block ${formatScopeLabel(privacyBlockScope)}${privacyBlockVal !== undefined ? ` (${privacyBlockVal})` : ""}`,
@@ -1334,7 +1372,7 @@ export async function configCommand(): Promise<void> {
               "  Block reads of .env, keys, and similar secrets (all hosts)",
           },
           {
-            name: `Review settings ${formatScopeLabel(reviewScope)} (${maxRoundsVal} rounds)`,
+            name: `Review settings ${formatScopeLabel(reviewScope)} (${maxRoundsVal === 0 ? "unlimited" : maxRoundsVal} rounds)`,
             value: "review",
             description:
               "  Autopilot review-fix rounds + Codex second-opinion on every /cf-review",
@@ -1405,6 +1443,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "planCommitPerTask":
         await editPlanCommitPerTask(globalCfg, localCfg);
+        break;
+      case "planReviewFix":
+        await editPlanReviewFix(globalCfg, localCfg);
         break;
       case "autoApprove":
         await editAutoApprove(globalCfg, localCfg);

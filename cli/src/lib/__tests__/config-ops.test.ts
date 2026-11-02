@@ -184,9 +184,9 @@ describe("setConfigValue", () => {
   it("rejects an invalid value for a known key and leaves the file untouched", () => {
     write(dirs.local, { tdd: true });
     const before = readFileSync(dirs.local, "utf-8");
-    expect(codeOf(() => setConfigValue("local", "review.maxRounds", "0"))).toBe(
-      "INVALID_VALUE",
-    );
+    expect(
+      codeOf(() => setConfigValue("local", "review.maxRounds", "-1")),
+    ).toBe("INVALID_VALUE");
     expect(codeOf(() => setConfigValue("local", "tdd", "yes"))).toBe(
       "INVALID_VALUE",
     );

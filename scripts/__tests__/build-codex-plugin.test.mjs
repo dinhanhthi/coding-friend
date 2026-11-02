@@ -40,6 +40,8 @@ async function createFixtureRepo() {
       "description: Example",
       "model: haiku",
       "allowed-tools: [Read]",
+      "context: fork",
+      "agent: x:y",
       "---",
       "",
       'Use /cf-review and the Agent tool with `subagent_type: "coding-friend:cf-writer"`.',
@@ -59,15 +61,6 @@ async function createFixtureRepo() {
           },
         ],
         PreToolUse: [
-          {
-            matcher: "",
-            hooks: [
-              {
-                type: "command",
-                command: "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs",
-              },
-            ],
-          },
           {
             matcher: "Read|Write",
             hooks: [
@@ -624,7 +617,7 @@ Use {{cf:slash cf-review}} and {{cf:agent_ref cf-writer}}.
   );
 });
 
-test("filters and renders Codex hooks", () => {
+test("renders Codex hooks and appends PermissionRequest", () => {
   const hooks = transformCodexHooks({
     hooks: {
       TaskCreated: [
@@ -652,15 +645,6 @@ test("filters and renders Codex hooks", () => {
             {
               type: "command",
               command: "${CLAUDE_PLUGIN_ROOT}/hooks/privacy-block.sh",
-            },
-          ],
-        },
-        {
-          matcher: "",
-          hooks: [
-            {
-              type: "command",
-              command: "${CLAUDE_PLUGIN_ROOT}/hooks/auto-approve.cjs",
             },
           ],
         },
@@ -750,7 +734,10 @@ test("builds Codex plugin fixture idempotently", async () => {
   );
   const skillFrontmatter = skill.match(/^---\n([\s\S]*?)\n---/);
   assert.ok(skillFrontmatter);
-  assert.doesNotMatch(skillFrontmatter[1], /^model:|^allowed-tools:/m);
+  assert.doesNotMatch(
+    skillFrontmatter[1],
+    /^model:|^allowed-tools:|^context:|^agent:/m,
+  );
   assert.match(skill, /The model: keep this body example/);
 
   const shellMode = (

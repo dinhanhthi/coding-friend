@@ -194,7 +194,7 @@ describe("registerLearnMcp", () => {
     expect(mockWriteOmpMcpEntry).not.toHaveBeenCalled();
   });
 
-  it('skips the devin write when ~/.claude.json already has the entry', () => {
+  it("skips the devin write when ~/.claude.json already has the entry", () => {
     mockClaudeJsonHasMcpServer.mockReturnValue(true);
 
     const result = registerLearnMcp(LEARN_DIR, "devin");
@@ -365,9 +365,7 @@ describe("unregisterLearnMcp", () => {
 
     const result = unregisterLearnMcp("devin");
 
-    expect(mockRemoveDevinMcpEntry).toHaveBeenCalledWith(
-      "coding-friend-learn",
-    );
+    expect(mockRemoveDevinMcpEntry).toHaveBeenCalledWith("coding-friend-learn");
     expect(result).toBe(true);
     // ~/.claude.json is never touched — that entry belongs to the Claude host.
     expect(mockRunWithStderr).not.toHaveBeenCalled();

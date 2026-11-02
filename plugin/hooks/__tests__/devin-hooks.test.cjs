@@ -246,9 +246,7 @@ describe("rules-reminder.devin.sh", () => {
       expect(ctx).toContain("memory_store");
       expect(ctx).not.toContain("Before context is compacted");
       expect(
-        fs.existsSync(
-          path.join(markerDir, `cf-devin-compacted-${sessionId}`),
-        ),
+        fs.existsSync(path.join(markerDir, `cf-devin-compacted-${sessionId}`)),
       ).toBe(false);
     } finally {
       fs.rmSync(cwd, { recursive: true, force: true });
@@ -283,9 +281,7 @@ describe("rules-reminder.devin.sh", () => {
       expect(res.status).toBe(0);
       expect(res.stdout.trim()).toBe("");
       expect(
-        fs.existsSync(
-          path.join(markerDir, `cf-devin-compacted-${sessionId}`),
-        ),
+        fs.existsSync(path.join(markerDir, `cf-devin-compacted-${sessionId}`)),
       ).toBe(false);
     } finally {
       fs.rmSync(cwd, { recursive: true, force: true });
@@ -314,9 +310,7 @@ describe("memory-capture.devin.sh", () => {
       expect(res.status).toBe(0);
       expect(res.stdout).toBe("");
       expect(
-        fs.existsSync(
-          path.join(markerDir, `cf-devin-compacted-${sessionId}`),
-        ),
+        fs.existsSync(path.join(markerDir, `cf-devin-compacted-${sessionId}`)),
       ).toBe(true);
     } finally {
       fs.rmSync(markerDir, { recursive: true, force: true });

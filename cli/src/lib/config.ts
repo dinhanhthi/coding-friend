@@ -92,8 +92,8 @@ export const ReviewConfigSchema = z.object({
   fix: z.boolean().optional(),
   /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
   commit: z.boolean().optional(),
-  /** Max /cf-review rounds in the autopilot fix loop (initial + re-reviews). Default 5. */
-  maxRounds: z.number().int().min(1).optional(),
+  /** Max reviews in a review-fix loop (incl. the first). `0` = unlimited (stops when a re-review makes no progress). Default 5. */
+  maxRounds: z.number().int().min(0).optional(),
   // Both timeouts are whole positive seconds: zero, negative and fractional
   // values cannot be enforced as a deadline, so they are rejected here rather
   // than coerced somewhere downstream. Deliberately NOT offered in the
@@ -183,6 +183,7 @@ export const ConfigSchema = z.object({
   guiPlanFormat: z.enum(["html", "md"]).optional(),
   planAuto: z.boolean().optional(),
   planCommitPerTask: z.boolean().optional(),
+  planReviewFix: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
   projectRegistry: z.boolean().optional(),
   autoApproveLLM: z.boolean().optional(),

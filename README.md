@@ -82,7 +82,7 @@ Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-de
 - Persistent memory, 3-tier search (`cf memory`)
 - Learn & teach (`/cf-learn`, `/cf-teach`, `cf learn host`, `cf mcp`)
 - Research (`/cf-research`)
-- Smart auto-approve
+- Auto-approve (Codex, Antigravity, Devin)
 - Prompt-injection defense
 - Custom skill guides
 - Sessions & checkpoints
@@ -99,7 +99,7 @@ Details: [website/src/content/index.md#-features](website/src/content/index.md#-
 
 ## Skills
 
-`/cf-advise`, `/cf-ask`, `/cf-checkpoint`, `/cf-checkpoint-from`, `/cf-commit`, `/cf-design`, `/cf-fix`, `/cf-help`, `/cf-later-do`, `/cf-learn`, `/cf-optimize`, `/cf-plan`, `/cf-plan-review`, `/cf-plan-resume`, `/cf-remember`, `/cf-research`, `/cf-review`, `/cf-review-in`, `/cf-review-out`, `/cf-scan`, `/cf-session`, `/cf-ship`, `/cf-showcase`, `/cf-teach`, `/cf-warm`
+`/cf-advise`, `/cf-ask`, `/cf-checkpoint`, `/cf-checkpoint-from`, `/cf-commit`, `/cf-design`, `/cf-fix`, `/cf-help`, `/cf-later`, `/cf-later-do`, `/cf-learn`, `/cf-optimize`, `/cf-plan`, `/cf-plan-review`, `/cf-plan-resume`, `/cf-remember`, `/cf-research`, `/cf-review`, `/cf-review-in`, `/cf-review-out`, `/cf-scan`, `/cf-session`, `/cf-ship`, `/cf-showcase`, `/cf-teach`, `/cf-warm`
 
 Auto-invoked: `cf-tdd`, `cf-sys-debug`, `cf-verification`
 

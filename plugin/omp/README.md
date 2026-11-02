@@ -20,13 +20,13 @@ in `.claude-plugin/marketplace.json`. omp loads it as a config-file extension
 `pi.on(...)` handler `spawnSync`s the matching script under `plugin/hooks/`
 and maps Claude hook I/O onto omp's event results.
 
-| omp event                                                           | Claude hook   | Script                                                              |
-| ------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------- |
-| `session_start`                                                     | SessionStart  | `session-init.sh` (inject via `pi.sendMessage`)                     |
-| `tool_call`                                                         | PreToolUse    | `privacy-block.sh`, then `scout-block.cjs`, then `auto-approve.cjs` |
-| `session_before_compact` / `session.compacting` / `session_compact` | PreCompact    | `memory-capture.sh`                                                 |
-| `session_shutdown`                                                  | Stop          | `session-log.sh`                                                    |
-| `before_agent_start`                                                | SubagentStart | `agent-tracker.sh`                                                  |
+| omp event                                                           | Claude hook   | Script                                          |
+| ------------------------------------------------------------------- | ------------- | ----------------------------------------------- |
+| `session_start`                                                     | SessionStart  | `session-init.sh` (inject via `pi.sendMessage`) |
+| `tool_call`                                                         | PreToolUse    | `privacy-block.sh`, then `scout-block.cjs`      |
+| `session_before_compact` / `session.compacting` / `session_compact` | PreCompact    | `memory-capture.sh`                             |
+| `session_shutdown`                                                  | Stop          | `session-log.sh`                                |
+| `before_agent_start`                                                | SubagentStart | `agent-tracker.sh`                              |
 
 Hook paths resolve from `CODING_FRIEND_PLUGIN_ROOT` when set, else the
 `// CODING_FRIEND_PLUGIN_ROOT=` shim comment, else
@@ -34,6 +34,10 @@ Hook paths resolve from `CODING_FRIEND_PLUGIN_ROOT` when set, else the
 
 Privacy and scout hooks fail closed (missing script / spawn error / null
 status → `{ block: true }`).
+
+There is no Coding Friend auto-approve hook on omp, so its dangerous-command
+deny rules no longer apply there — use omp's native `tools.approvalMode`
+(`yolo` by default).
 
 ## Install
 

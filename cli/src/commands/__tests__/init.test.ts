@@ -59,8 +59,7 @@ vi.mock("../../lib/permissions.js", async (importOriginal) => {
     await importOriginal<typeof import("../../lib/permissions.js")>();
   return {
     ...actual,
-    runDangerousRulesAudit: vi.fn(async () => undefined),
-    afterAutoApproveEnabled: vi.fn(async () => undefined),
+    afterAutoApproveEnabled: vi.fn(),
   };
 });
 
@@ -97,10 +96,7 @@ import {
 } from "../../lib/codex-config.js";
 import { registerLearnMcp } from "../../lib/learn-prompts.js";
 import { registerMemoryMcp } from "../../lib/memory-mcp-register.js";
-import {
-  afterAutoApproveEnabled,
-  runDangerousRulesAudit,
-} from "../../lib/permissions.js";
+import { afterAutoApproveEnabled } from "../../lib/permissions.js";
 import { initCommand } from "../init.js";
 
 function readJsonFile(path: string): unknown {
@@ -314,13 +310,13 @@ describe("initCommand — agy", () => {
     expect(existsSync(join(testDir, "docs", "memory"))).toBe(true);
   });
 
-  it("audits Claude dangerous rules when auto-approve is enabled", async () => {
+  it("prints the auto-approve note when auto-approve is enabled", async () => {
     await initCommand({ agent: "agy" });
 
     expect(afterAutoApproveEnabled).toHaveBeenCalled();
   });
 
-  it("does not audit dangerous rules when auto-approve is declined", async () => {
+  it("does not print the auto-approve note when auto-approve is declined", async () => {
     vi.mocked(confirm).mockImplementation((async (opts: {
       message?: string;
       default?: boolean;
@@ -339,7 +335,6 @@ describe("initCommand — agy", () => {
     ) as Record<string, unknown>;
     expect(localCfg.autoApprove).toBe(false);
     expect(afterAutoApproveEnabled).not.toHaveBeenCalled();
-    expect(runDangerousRulesAudit).not.toHaveBeenCalled();
   });
 });
 
@@ -574,7 +569,7 @@ describe("initCommand — devin", () => {
     expect(existsSync(join(testDir, "docs", "memory"))).toBe(true);
   });
 
-  it("audits Claude dangerous rules when auto-approve is enabled", async () => {
+  it("prints the auto-approve note when auto-approve is enabled", async () => {
     await initCommand({ agent: "devin" });
 
     expect(afterAutoApproveEnabled).toHaveBeenCalled();

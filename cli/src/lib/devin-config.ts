@@ -128,9 +128,8 @@ function devinInstallCount(): number {
   if (!isPlainObject(data) || !Array.isArray(data.resolved)) {
     return 0;
   }
-  return data.resolved.filter(
-    (e) => isPlainObject(e) && e.name === PLUGIN_NAME,
-  ).length;
+  return data.resolved.filter((e) => isPlainObject(e) && e.name === PLUGIN_NAME)
+    .length;
 }
 
 /**
@@ -350,7 +349,9 @@ export async function reconcileDevinPlugin(
       }
       return "updated";
     }
-    log.dim("Devin plugin is a live --local link — edits are picked up by new sessions.");
+    log.dim(
+      "Devin plugin is a live --local link — edits are picked up by new sessions.",
+    );
     return "unchanged";
   }
 
@@ -507,10 +508,7 @@ function readMcpConfigForUpdate(
 }
 
 /** Upsert one mcpServers entry, preserving all other entries and top keys. */
-export function writeDevinMcpEntry(
-  name: string,
-  server: DevinMcpServer,
-): void {
+export function writeDevinMcpEntry(name: string, server: DevinMcpServer): void {
   const filePath = devinMcpConfigPath();
   const existing = readMcpConfigForUpdate(filePath);
   const data: Record<string, unknown> = isPlainObject(existing)

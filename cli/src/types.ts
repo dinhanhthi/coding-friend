@@ -67,7 +67,7 @@ export type ShowcaseConfig = z.infer<typeof ShowcaseConfigSchema>;
 export type ShowcaseVideoConfig = NonNullable<ShowcaseConfig["video"]>;
 export type ShowcasePosterConfig = NonNullable<ShowcaseConfig["poster"]>;
 
-/** Default cap for autopilot /cf-review fix-loop rounds when `review.maxRounds` is unset. */
+/** Default cap for review-fix loop rounds (/cf-review --fix, /cf-plan-review --fix, autopilot) when `review.maxRounds` is unset or invalid. */
 export const DEFAULT_REVIEW_MAX_ROUNDS = 5;
 
 export type CodingFriendConfig = z.infer<typeof ConfigSchema>;

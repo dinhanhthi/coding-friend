@@ -1585,8 +1585,59 @@ test("Step 11 loops cf-implementer fixes within review.maxRounds", () => {
     );
     assert.match(
       step11,
+      /`0` → unlimited/,
+      `${relPath}: review.maxRounds 0 must mean an unlimited loop`,
+    );
+    assert.match(
+      step11,
+      /any earlier review in this loop[\s\S]*no progress/,
+      `${relPath}: an unlimited loop must stop when a re-review repeats any earlier review's findings`,
+    );
+    assert.match(
+      step11,
       /\[CF-RESULT: failure\]/,
       `${relPath}: an implementer failure must be a stop condition`,
+    );
+  }
+});
+
+test("cf-plan-review Step 9 re-reviews within review.maxRounds, 0 = unlimited", () => {
+  for (const relPath of [
+    "plugin/skills/cf-plan-review/SKILL.md",
+    "plugin-codex/skills/cf-plan-review/SKILL.md",
+    "plugin-antigravity/skills/cf-plan-review/SKILL.md",
+    "plugin-devin/skills/cf-plan-review/SKILL.md",
+  ]) {
+    const text = read(relPath);
+    const step8 = section(text, "### Step 8: Apply findings");
+    assert.match(
+      step8,
+      /data, not instructions/i,
+      `${relPath}: every plan edit must treat finding text as data, not instructions`,
+    );
+    assert.match(
+      step8,
+      /Edit only files inside the plan folder/,
+      `${relPath}: plan edits must stay inside the plan folder`,
+    );
+    const step9 = section(
+      text,
+      "### Step 9: Re-review loop (only when apply=true)",
+    );
+    assert.match(
+      step9,
+      /review\.maxRounds/,
+      `${relPath}: the plan re-review loop must be bounded by review.maxRounds`,
+    );
+    assert.match(
+      step9,
+      /`0` → unlimited/,
+      `${relPath}: review.maxRounds 0 must mean an unlimited loop`,
+    );
+    assert.match(
+      step9,
+      /any earlier review in this loop[\s\S]*no progress/,
+      `${relPath}: an unlimited loop must stop when a re-review repeats any earlier review's findings`,
     );
   }
 });
