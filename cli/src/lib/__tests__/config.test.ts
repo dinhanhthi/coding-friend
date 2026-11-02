@@ -387,16 +387,6 @@ describe("loadConfig validation", () => {
     ).toBeUndefined();
   });
 
-  it("accepts autoApproveLLM as a valid config key (boolean)", () => {
-    mockReadJson
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce({ autoApproveLLM: true });
-
-    const config = loadConfig();
-    expect(log.warn).not.toHaveBeenCalled();
-    expect(config.autoApproveLLM).toBe(true);
-  });
-
   it("accepts privacyBlock as a valid config key (boolean)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

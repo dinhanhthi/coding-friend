@@ -186,7 +186,6 @@ export const ConfigSchema = z.object({
   planReviewFix: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
   projectRegistry: z.boolean().optional(),
-  autoApproveLLM: z.boolean().optional(),
   task: TaskConfigSchema.optional(),
   chef: ChefConfigSchema.optional(),
 });
