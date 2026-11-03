@@ -9,6 +9,7 @@ import {
   isCopyableCommand,
   isRunStarted,
   isRunnableFix,
+  memoryRebuildCommand,
   shellQuote,
   splitFrontmatter,
   valueSource,
@@ -46,6 +47,14 @@ describe("shellQuote", () => {
   });
 });
 
+describe("memoryRebuildCommand", () => {
+  it("quotes the project root so a pasted hint runs only cf memory rebuild", () => {
+    expect(memoryRebuildCommand("/p/it's $(rm -rf ~)")).toBe(
+      "cd '/p/it'\\''s $(rm -rf ~)' && cf memory rebuild",
+    );
+  });
+});
+
 describe("isRunnableFix", () => {
   it.each(RUNNABLE_FIXES.map((fix) => [fix]))("accepts %j", (argv) => {
     expect(isRunnableFix(argv)).toBe(true);
@@ -61,10 +70,11 @@ describe("isRunnableFix", () => {
 });
 
 describe("isRunStarted", () => {
-  it("accepts a configSet run", () => {
-    expect(
-      isRunStarted({ op: "configSet", command: "cf config set --global" }),
-    ).toBe(true);
+  it.each([
+    [{ op: "configSet", command: "cf config set --global" }],
+    [{ op: "memoryEdit", command: "cf memory edit --json --stdin" }],
+  ])("accepts %j", (payload) => {
+    expect(isRunStarted(payload)).toBe(true);
   });
 
   it.each([[{ op: "rmRf", command: "cf x" }], [{ op: "configSet" }]])(

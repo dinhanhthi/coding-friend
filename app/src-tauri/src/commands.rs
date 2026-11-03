@@ -2,9 +2,14 @@
 //! never supplies argv, except `run_fix`, which must equal one of `RUNNABLE_FIXES`.
 //!
 //! The webview is not trusted: actions that change the user's setup (`update_yes`, `run_fix`,
-//! `add_project`, `project_remove`, `config_set`) ask in a native dialog shown from Rust and run
-//! one at a time; file and folder paths come from native pickers shown from Rust, never from the
-//! page. `open_url` (an `https:` link from rendered markdown) also asks first, then opens the
+//! `add_project`, `project_remove`, `config_set`, memory and learn `*_edit`/`*_delete`,
+//! `choose_learn_dir`, `set_learn_dir`) ask in a native dialog shown from Rust and run one at a
+//! time; file and folder paths come from native pickers shown from Rust, never from the page.
+//! Two exceptions choose a path from page input: `set_learn_dir` accepts only a path equal to
+//! one of the `suggestions` Rust itself fetched from `learn status`, and memory/learn edit and
+//! delete name their file by a validated id (`data_arg`, after `--`), which the CLI re-checks
+//! with realpath inside its root. Bodies go to `cf` on stdin, never in argv or the dialog.
+//! `open_url` (an `https:` link from rendered markdown) also asks first, then opens the
 //! system browser without running `cf`.
 
 use std::collections::HashSet;
@@ -43,6 +48,13 @@ const MAX_CONFIG_VALUE: usize = 4096;
 const MAX_URL: usize = 2048;
 /// Longest docs relpath the page may ask for (bytes).
 const MAX_DOC_PATH: usize = 1024;
+/// Longest memory or learn id (`<category>/<slug>`) the page may ask for (bytes).
+const MAX_NOTE_ID: usize = 256;
+/// Same limit as the CLI's `memory search` / `learn search` query.
+const MAX_QUERY: usize = 500;
+/// Keep identical to `LEARN_SUBFOLDER` in cli/src/lib/cloud-folders.ts.
+const LEARN_SUBFOLDER: &str = "coding-friend-learn";
+const LEARN_DIR_KEY: &str = "learn.outputDir";
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -181,6 +193,50 @@ fn text_arg(s: &str, max: usize) -> Result<String, CfError> {
     Ok(s.to_string())
 }
 
+/// A sha256 from a `show` answer: exactly 64 lowercase hex chars.
+fn sha_arg(s: &str) -> Result<String, CfError> {
+    let hex = s.len() == 64
+        && s.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+    if !hex {
+        return Err(refused(format!("not a sha256: {s:?}")));
+    }
+    Ok(s.to_string())
+}
+
+/// `path` canonicalized, or (while the learn subfolder does not exist yet) its canonical
+/// parent joined with `LEARN_SUBFOLDER`; `None` for a relative path or a missing parent.
+fn learn_dir_key(path: &str) -> Option<PathBuf> {
+    let path = Path::new(path);
+    if !path.is_absolute() {
+        return None;
+    }
+    if let Ok(canonical) = std::fs::canonicalize(path) {
+        return Some(canonical);
+    }
+    if path.file_name()? != LEARN_SUBFOLDER {
+        return None;
+    }
+    Some(
+        std::fs::canonicalize(path.parent()?)
+            .ok()?
+            .join(LEARN_SUBFOLDER),
+    )
+}
+
+/// The suggestion (as `learn status` gave it) that `path` names, compared after
+/// `learn_dir_key`; only `LEARN_SUBFOLDER` folders count. Anything else is `Refused`.
+fn learn_dir_from_suggestions(path: &str, suggestions: &[String]) -> Result<String, CfError> {
+    let not_suggested = || refused(format!("not a suggested learn folder: {path:?}"));
+    let wanted = learn_dir_key(path).ok_or_else(not_suggested)?;
+    suggestions
+        .iter()
+        .filter(|suggestion| Path::new(suggestion).file_name() == Some(LEARN_SUBFOLDER.as_ref()))
+        .find(|suggestion| learn_dir_key(suggestion).as_ref() == Some(&wanted))
+        .cloned()
+        .ok_or_else(not_suggested)
+}
+
 /// `--project-dir=<abs>` for a folder in `KnownProjects` (compared after canonicalizing).
 fn project_dir_arg(known: &KnownProjects, path: &str) -> Result<String, CfError> {
     let dir = project_path(path, true)?;
@@ -266,13 +322,24 @@ async fn ask(app: &AppHandle, title: &str, message: String) -> Result<(), CfErro
     Ok(())
 }
 
-/// `ask` before a `cf` run. On OK it emits `RUN_STARTED` (`{ command, op }`), so the page
-/// shows the run only from then on.
-async fn confirm(app: &AppHandle, op: &str, command_line: &str) -> Result<(), CfError> {
+/// `ask` before a `cf` run, showing the size of `body` (never the body itself). On OK it
+/// emits `RUN_STARTED` (`{ command, op }`), so the page shows the run only from then on.
+async fn confirm(
+    app: &AppHandle,
+    op: &str,
+    command_line: &str,
+    body: Option<&str>,
+) -> Result<(), CfError> {
+    let size = body.map_or(String::new(), |body| {
+        format!(
+            "\n\nNew body: {} bytes, sent on stdin (not shown here).",
+            body.len()
+        )
+    });
     ask(
         app,
         "Run this command?",
-        format!("Coding Friend will run:\n\n{command_line}"),
+        format!("Coding Friend will run:\n\n{command_line}{size}"),
     )
     .await?;
     // A lost event only leaves the page saying "Waiting for confirmation": never block the run.
@@ -296,28 +363,41 @@ async fn picked(
         .map_err(|err| refused(format!("not a local path: {err}")))
 }
 
-/// Confirms `command_line`, then runs `argv`, one mutating command at a time.
+/// Confirms `command_line`, then runs `argv` (with `body` on stdin), one mutating command
+/// at a time.
 async fn confirm_and_run(
     app: &AppHandle,
     lock: &MutationLock,
     op: &str,
     command_line: &str,
     argv: &[String],
+    body: Option<&str>,
     timeout: Duration,
 ) -> Result<Value, CfError> {
     let _guard = lock.0.lock().await;
-    confirm(app, op, command_line).await?;
-    cf::run_cf(argv, timeout).await
+    confirm(app, op, command_line, body).await?;
+    match body {
+        Some(body) => cf::run_cf_with_input(argv, body, timeout).await,
+        None => cf::run_cf(argv, timeout).await,
+    }
 }
 
-/// `cf <argv>` as the user reads it in the confirm dialog (without `--json`).
+/// `cf <argv>` as the user reads it in the confirm dialog (without `--json`). Words after
+/// `--` and the `--project-dir=` path are Debug-quoted, so a newline cannot fake dialog text.
 fn command_line(argv: &[String]) -> String {
-    let words: Vec<&str> = argv
-        .iter()
-        .map(String::as_str)
-        .filter(|word| *word != "--json")
-        .collect();
-    format!("cf {}", words.join(" "))
+    let mut words = vec!["cf".to_string()];
+    let mut after_dashes = false;
+    for word in argv {
+        if after_dashes {
+            words.push(format!("{word:?}"));
+        } else if let Some(dir) = word.strip_prefix(PROJECT_DIR) {
+            words.push(format!("{PROJECT_DIR}{dir:?}"));
+        } else if word != "--json" {
+            after_dashes = word == "--";
+            words.push(word.clone());
+        }
+    }
+    words.join(" ")
 }
 
 /// Settings as a JSON object: `{}` when the file is missing, an error when it cannot be
@@ -441,6 +521,7 @@ pub async fn project_remove(
         &app,
         "projectRemove",
         &format!("cf project remove -- {path:?}"),
+        None,
     )
     .await?;
     let data = run_project("remove", &path).await?;
@@ -501,7 +582,16 @@ pub async fn config_set(
     }
     line += &format!(" -- {key:?} {value:?}");
     argv.extend(["--json".into(), "--".into(), key, value]);
-    confirm_and_run(&app, &lock, "configSet", &line, &argv, cf::QUERY_TIMEOUT).await
+    confirm_and_run(
+        &app,
+        &lock,
+        "configSet",
+        &line,
+        &argv,
+        None,
+        cf::QUERY_TIMEOUT,
+    )
+    .await
 }
 
 /// `docs list --json --project-dir=P`: the markdown files of a known project's docs folder.
@@ -554,6 +644,252 @@ pub async fn open_url(app: AppHandle, url: String) -> Result<(), CfError> {
         })
 }
 
+fn to_args(words: &[&str]) -> Vec<String> {
+    words.iter().map(|word| word.to_string()).collect()
+}
+
+/// `memory list --json --project-dir=P`.
+#[tauri::command]
+pub async fn memory_list(
+    known: State<'_, KnownProjects>,
+    project: String,
+) -> Result<Value, CfError> {
+    let mut args = to_args(&["memory", "list", "--json"]);
+    args.push(project_dir_arg(&known, &project)?);
+    cf::run_cf(&args, cf::MEMORY_QUERY_TIMEOUT).await
+}
+
+/// `memory search --json --project-dir=P -- <query>`.
+#[tauri::command]
+pub async fn memory_search(
+    known: State<'_, KnownProjects>,
+    project: String,
+    query: String,
+) -> Result<Value, CfError> {
+    let mut args = to_args(&["memory", "search", "--json"]);
+    args.push(project_dir_arg(&known, &project)?);
+    args.extend(["--".into(), text_arg(&query, MAX_QUERY)?]);
+    cf::run_cf(&args, cf::MEMORY_QUERY_TIMEOUT).await
+}
+
+/// `memory show --json --project-dir=P -- <id>`.
+#[tauri::command]
+pub async fn memory_show(
+    known: State<'_, KnownProjects>,
+    project: String,
+    id: String,
+) -> Result<Value, CfError> {
+    let mut args = to_args(&["memory", "show", "--json"]);
+    args.push(project_dir_arg(&known, &project)?);
+    args.extend(["--".into(), data_arg(&id, MAX_NOTE_ID)?]);
+    cf::run_cf(&args, cf::QUERY_TIMEOUT).await
+}
+
+/// `memory edit --json --stdin --if-match <sha> --project-dir=P -- <id>` with `body` on
+/// stdin, after a native confirm.
+#[tauri::command]
+pub async fn memory_edit(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    known: State<'_, KnownProjects>,
+    project: String,
+    id: String,
+    sha: String,
+    body: String,
+) -> Result<Value, CfError> {
+    let mut args = to_args(&["memory", "edit", "--json", "--stdin", "--if-match"]);
+    args.push(sha_arg(&sha)?);
+    args.push(project_dir_arg(&known, &project)?);
+    args.extend(["--".into(), data_arg(&id, MAX_NOTE_ID)?]);
+    let line = command_line(&args);
+    confirm_and_run(
+        &app,
+        &lock,
+        "memoryEdit",
+        &line,
+        &args,
+        Some(&body),
+        cf::MEMORY_WRITE_TIMEOUT,
+    )
+    .await
+}
+
+/// `memory delete --json --yes --if-match <sha> --project-dir=P -- <id>`, after a native
+/// confirm.
+#[tauri::command]
+pub async fn memory_delete(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    known: State<'_, KnownProjects>,
+    project: String,
+    id: String,
+    sha: String,
+) -> Result<Value, CfError> {
+    let mut args = to_args(&["memory", "delete", "--json", "--yes", "--if-match"]);
+    args.push(sha_arg(&sha)?);
+    args.push(project_dir_arg(&known, &project)?);
+    args.extend(["--".into(), data_arg(&id, MAX_NOTE_ID)?]);
+    let line = command_line(&args);
+    confirm_and_run(
+        &app,
+        &lock,
+        "memoryDelete",
+        &line,
+        &args,
+        None,
+        cf::MEMORY_WRITE_TIMEOUT,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn learn_status() -> Result<Value, CfError> {
+    run(&["learn", "status", "--json"], cf::QUERY_TIMEOUT).await
+}
+
+#[tauri::command]
+pub async fn learn_list() -> Result<Value, CfError> {
+    run(&["learn", "list", "--json"], cf::LEARN_QUERY_TIMEOUT).await
+}
+
+/// `learn search --json -- <query>`.
+#[tauri::command]
+pub async fn learn_search(query: String) -> Result<Value, CfError> {
+    let query = text_arg(&query, MAX_QUERY)?;
+    run(
+        &["learn", "search", "--json", "--", &query],
+        cf::LEARN_QUERY_TIMEOUT,
+    )
+    .await
+}
+
+/// `learn show --json -- <id>`.
+#[tauri::command]
+pub async fn learn_show(id: String) -> Result<Value, CfError> {
+    let id = data_arg(&id, MAX_NOTE_ID)?;
+    run(&["learn", "show", "--json", "--", &id], cf::QUERY_TIMEOUT).await
+}
+
+/// `learn edit --json --stdin --if-match <sha> -- <id>` with `body` on stdin, after a native
+/// confirm.
+#[tauri::command]
+pub async fn learn_edit(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    id: String,
+    sha: String,
+    body: String,
+) -> Result<Value, CfError> {
+    let args = to_args(&[
+        "learn",
+        "edit",
+        "--json",
+        "--stdin",
+        "--if-match",
+        &sha_arg(&sha)?,
+        "--",
+        &data_arg(&id, MAX_NOTE_ID)?,
+    ]);
+    let line = command_line(&args);
+    confirm_and_run(
+        &app,
+        &lock,
+        "learnEdit",
+        &line,
+        &args,
+        Some(&body),
+        cf::LEARN_WRITE_TIMEOUT,
+    )
+    .await
+}
+
+/// `learn delete --json --yes --if-match <sha> -- <id>`, after a native confirm.
+#[tauri::command]
+pub async fn learn_delete(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    id: String,
+    sha: String,
+) -> Result<Value, CfError> {
+    let args = to_args(&[
+        "learn",
+        "delete",
+        "--json",
+        "--yes",
+        "--if-match",
+        &sha_arg(&sha)?,
+        "--",
+        &data_arg(&id, MAX_NOTE_ID)?,
+    ]);
+    let line = command_line(&args);
+    confirm_and_run(
+        &app,
+        &lock,
+        "learnDelete",
+        &line,
+        &args,
+        None,
+        cf::LEARN_WRITE_TIMEOUT,
+    )
+    .await
+}
+
+/// Confirms and runs `config set --global --json -- learn.outputDir <dir>`. The caller holds
+/// the `MutationLock` and chose `dir` from a picker or a Rust-fetched suggestion.
+async fn save_learn_dir(app: &AppHandle, dir: String) -> Result<Value, CfError> {
+    let args = to_args(&[
+        "config",
+        "set",
+        "--global",
+        "--json",
+        "--",
+        LEARN_DIR_KEY,
+        &dir,
+    ]);
+    confirm(app, "learnDir", &command_line(&args), None).await?;
+    cf::run_cf(&args, cf::QUERY_TIMEOUT).await
+}
+
+/// Opens a native folder picker; the picked folder (canonicalized) becomes the learn folder
+/// after a native confirm.
+#[tauri::command]
+pub async fn choose_learn_dir(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+) -> Result<Value, CfError> {
+    let _guard = lock.0.lock().await;
+    let folder = picked(|done| {
+        app.dialog()
+            .file()
+            .set_title("Choose the learn folder")
+            .pick_folder(done)
+    })
+    .await?;
+    let dir = utf8(project_path(&utf8(folder)?, true)?)?;
+    save_learn_dir(&app, dir).await
+}
+
+/// Makes one of `learn status`'s suggested cloud folders the learn folder, after a native
+/// confirm. Rust fetches the suggestions itself; any other path is `Refused`.
+#[tauri::command]
+pub async fn set_learn_dir(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    path: String,
+) -> Result<Value, CfError> {
+    let _guard = lock.0.lock().await;
+    let status = run(&["learn", "status", "--json"], cf::QUERY_TIMEOUT).await?;
+    let suggestions: Vec<String> = status["suggestions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|suggestion| suggestion["path"].as_str())
+        .map(str::to_string)
+        .collect();
+    let dir = learn_dir_from_suggestions(&path, &suggestions)?;
+    save_learn_dir(&app, dir).await
+}
+
 #[tauri::command]
 pub async fn task_list() -> Result<Value, CfError> {
     run(&["task", "list", "--json"], cf::QUERY_TIMEOUT).await
@@ -583,6 +919,7 @@ pub async fn update_yes(app: AppHandle, lock: State<'_, MutationLock>) -> Result
         "update",
         &command_line(&argv),
         &argv,
+        None,
         cf::UPDATE_YES_TIMEOUT,
     )
     .await
@@ -601,6 +938,7 @@ pub async fn run_fix(
         "fix",
         &command_line(&argv),
         &argv,
+        None,
         cf::FIX_TIMEOUT,
     )
     .await
@@ -714,7 +1052,9 @@ mod tests {
 
     #[test]
     fn data_arg_refuses_options_traversal_control_chars_and_long_input() {
-        assert_eq!(data_arg("notes/a-b.md", 20), Ok("notes/a-b.md".to_string()));
+        for arg in ["notes/a-b.md", "Algo_Structure/foo (1)"] {
+            assert_eq!(data_arg(arg, 30), Ok(arg.to_string()));
+        }
         for arg in ["", "-x", "a\0b", "a\nb", "../x", "a/../b", "a\\b", "abcdef"] {
             assert!(
                 matches!(data_arg(arg, 5), Err(CfError::Refused { .. })),
@@ -734,6 +1074,62 @@ mod tests {
                 "{arg:?}"
             );
         }
+    }
+
+    #[test]
+    fn sha_arg_needs_64_lowercase_hex_chars() {
+        let sha = "0123456789abcdef".repeat(4);
+        assert_eq!(sha_arg(&sha), Ok(sha.clone()));
+        for arg in [
+            String::new(),
+            sha[1..].to_string(),
+            format!("{sha}0"),
+            sha.to_uppercase(),
+            format!("g{}", &sha[1..]),
+            format!("-{}", &sha[1..]),
+        ] {
+            assert!(
+                matches!(sha_arg(&arg), Err(CfError::Refused { .. })),
+                "{arg:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn learn_dir_must_be_one_of_the_suggestions() {
+        let root = std::env::temp_dir().join(format!("cf-learn-dir-{}", std::process::id()));
+        let existing = root.join("icloud").join(LEARN_SUBFOLDER);
+        let missing_parent = root.join("drive");
+        std::fs::create_dir_all(&existing).unwrap();
+        std::fs::create_dir_all(&missing_parent).unwrap();
+        let shown = |path: &Path| path.to_str().unwrap().to_string();
+        let missing = shown(&missing_parent.join(LEARN_SUBFOLDER));
+        let suggestions = [shown(&existing), missing.clone()];
+
+        // The suggestion string itself is kept, also when given through a `..` detour.
+        let detour = shown(&root.join("drive/../icloud").join(LEARN_SUBFOLDER));
+        assert_eq!(
+            learn_dir_from_suggestions(&detour, &suggestions),
+            Ok(shown(&existing))
+        );
+        assert_eq!(
+            learn_dir_from_suggestions(&missing, &suggestions),
+            Ok(missing.clone())
+        );
+        for path in [
+            shown(&missing_parent),
+            shown(&root.join("other").join(LEARN_SUBFOLDER)),
+            "relative/coding-friend-learn".to_string(),
+        ] {
+            assert!(
+                matches!(
+                    learn_dir_from_suggestions(&path, &suggestions),
+                    Err(CfError::Refused { .. })
+                ),
+                "{path}"
+            );
+        }
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

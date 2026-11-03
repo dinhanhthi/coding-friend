@@ -8,6 +8,7 @@ import {
   type SetConfig,
 } from "@/components/ConfigView";
 import { DoctorView, fixCommand, useDoctor } from "@/components/DoctorView";
+import { LearnView } from "@/components/LearnView";
 import { ProjectDetail, loadProjectActivity } from "@/components/ProjectDetail";
 import { Sidebar, type View } from "@/components/Sidebar";
 import { VersionView, type UpdateOutcome } from "@/components/VersionView";
@@ -29,7 +30,7 @@ import {
   type CliStatus,
   type DoctorCheck,
 } from "@/lib/cf";
-import type { PendingRun } from "@/lib/runs";
+import type { PendingRun, StartRun } from "@/lib/runs";
 import { useCfQuery } from "@/lib/use-cf-query";
 
 /**
@@ -106,12 +107,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
    * Runs one mutating command at a time (Rust shows its confirm or picker first). Cancel
    * rejects with `cancelled`, which shows nothing.
    */
-  const start = <T,>(
-    run: Omit<PendingRun, "started">,
-    action: () => Promise<T>,
-    onDone: (result: T) => void,
-    onError: (message: string) => void,
-  ) => {
+  const start: StartRun = (run, action, onDone, onError) => {
     if (pending) return;
     setPending({ ...run, started: false });
     action().then(
@@ -121,7 +117,9 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
       },
       (e: unknown) => {
         setPending(null);
-        if (!isCancelled(e)) onError(describeCfError(toCfError(e)));
+        if (isCancelled(e)) return;
+        const error = toCfError(e);
+        onError(describeCfError(error), error);
       },
     );
   };
@@ -137,7 +135,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         setChosen(project.path);
         projects.refetch();
       },
-      setActionError,
+      (message) => setActionError(message),
     );
   };
 
@@ -152,7 +150,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
       },
       () => projectRemove(path),
       () => projects.refetch(),
-      setActionError,
+      (message) => setActionError(message),
     );
   };
 
@@ -226,6 +224,8 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
               activity={detail}
               pending={pending}
               onSetConfig={setConfig}
+              run={start}
+              onOpenLearn={() => show("learn")}
             />
           ) : projects.status === "ok" ? (
             <NoProjects onAdd={add} disabled={pending !== null} />
@@ -233,7 +233,13 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         ) : view === "doctor" ? (
           <DoctorView cli={cli} doctor={doctor} pending={pending} onFix={fix} />
         ) : view === "settings" ? (
-          <SettingsView pending={pending} onSet={setConfig} />
+          <SettingsView
+            pending={pending}
+            onSet={setConfig}
+            onOpenLearn={() => show("learn")}
+          />
+        ) : view === "learn" ? (
+          <LearnView pending={pending} run={start} />
         ) : (
           <VersionView
             cli={cli}
@@ -252,9 +258,11 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
 function SettingsView({
   pending,
   onSet,
+  onOpenLearn,
 }: {
   pending: PendingRun | null;
   onSet: SetConfig;
+  onOpenLearn: () => void;
 }) {
   return (
     <article
@@ -273,7 +281,12 @@ function SettingsView({
           project).
         </p>
       </header>
-      <ConfigView scope="global" pending={pending} onSet={onSet} />
+      <ConfigView
+        scope="global"
+        pending={pending}
+        onSet={onSet}
+        onOpenLearn={onOpenLearn}
+      />
     </article>
   );
 }

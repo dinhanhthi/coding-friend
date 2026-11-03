@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::Value;
-use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 
 use crate::path_env::login_path;
@@ -26,6 +26,15 @@ pub const DOCTOR_TIMEOUT: Duration = Duration::from_secs(90);
 pub const UPDATE_CHECK_TIMEOUT: Duration = Duration::from_secs(60);
 pub const FIX_TIMEOUT: Duration = Duration::from_secs(120);
 pub const UPDATE_YES_TIMEOUT: Duration = Duration::from_secs(15 * 60);
+/// `memory list|search` (may load the search index).
+pub const MEMORY_QUERY_TIMEOUT: Duration = Duration::from_secs(120);
+pub const MEMORY_WRITE_TIMEOUT: Duration = Duration::from_secs(30);
+/// `learn list|search`.
+pub const LEARN_QUERY_TIMEOUT: Duration = Duration::from_secs(30);
+/// `learn edit|delete` (may run `git commit`).
+pub const LEARN_WRITE_TIMEOUT: Duration = Duration::from_secs(60);
+/// Largest body sent on stdin (bytes); same limit as the CLI's `--stdin` reader.
+pub const MAX_BODY: usize = 1024 * 1024;
 
 const CONTRACT_VERSION: i64 = 1;
 const STDOUT_CAP: usize = 8 * 1024 * 1024;
@@ -221,6 +230,22 @@ pub async fn run_cf(args: &[String], timeout: Duration) -> Result<Value, CfError
     run_cf_at(&cf.path, args, timeout).await
 }
 
+/// `run_cf` with `body` written to cf's stdin (then closed); a body over `MAX_BODY` is
+/// `Refused` before anything runs.
+pub async fn run_cf_with_input(
+    args: &[String],
+    body: &str,
+    timeout: Duration,
+) -> Result<Value, CfError> {
+    if body.len() > MAX_BODY {
+        return Err(CfError::Refused {
+            message: format!("the body is over {} MiB", MAX_BODY / (1024 * 1024)),
+        });
+    }
+    let cf = resolve_cf().await?;
+    spawn_cf(&cf.path, args, Some(body.as_bytes()), timeout).await
+}
+
 /// `<bin> version --json`: `Ok` only for a contract-1 `ok:true` envelope.
 pub async fn probe_version(bin: &Path) -> Result<Value, CfError> {
     run_cf_at(bin, &json_args("version"), VERSION_TIMEOUT).await
@@ -283,6 +308,16 @@ fn has_json_flag(args: &[String]) -> bool {
 }
 
 async fn run_cf_at(bin: &Path, args: &[String], timeout: Duration) -> Result<Value, CfError> {
+    spawn_cf(bin, args, None, timeout).await
+}
+
+/// Runs `bin` with stdin null, or with `input` on a pipe, and parses its envelope.
+async fn spawn_cf(
+    bin: &Path,
+    args: &[String],
+    input: Option<&[u8]>,
+    timeout: Duration,
+) -> Result<Value, CfError> {
     if !has_json_flag(args) {
         return Err(io_error("refusing to run cf without --json".to_string()));
     }
@@ -292,7 +327,11 @@ async fn run_cf_at(bin: &Path, args: &[String], timeout: Duration) -> Result<Val
         .args(args)
         .current_dir(home)
         .env("PATH", &login.path)
-        .stdin(Stdio::null())
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         // Own process group, so a timeout also kills what cf started.
@@ -309,12 +348,18 @@ async fn run_cf_at(bin: &Path, args: &[String], timeout: Duration) -> Result<Val
     let (Some(mut stdout), Some(mut stderr)) = (child.stdout.take(), child.stderr.take()) else {
         return Err(io_error("cf pipes are missing".to_string()));
     };
+    // Taken before `wait`, which would otherwise close it before the body is written.
+    let stdin = child.stdin.take();
+    if input.is_some() && stdin.is_none() {
+        return Err(io_error("cf pipes are missing".to_string()));
+    }
 
     let mut out = Vec::new();
     let mut err = Vec::new();
     // Read both pipes while waiting: a full stderr pipe would otherwise block cf.
     let outcome = tokio::time::timeout(timeout, async {
         tokio::try_join!(
+            write_input(stdin, input.unwrap_or_default()),
             read_capped(&mut stdout, &mut out),
             read_tail(&mut stderr, &mut err),
             child.wait()
@@ -333,7 +378,7 @@ async fn run_cf_at(bin: &Path, args: &[String], timeout: Duration) -> Result<Val
     }
     let stderr_tail = tail_text(&err);
     match outcome {
-        Ok(Ok((_, _, status))) if node_missing(status, &out) => Err(CfError::NodeNotFound {
+        Ok(Ok((_, _, _, status))) if node_missing(status, &out) => Err(CfError::NodeNotFound {
             stderr_tail,
             login_path_source: login.source.as_str(),
         }),
@@ -359,6 +404,24 @@ fn io_error(message: String) -> CfError {
         message,
         stderr_tail: None,
     }
+}
+
+/// Writes `input` to cf's stdin, then closes it (EOF). A CLI that exits before reading
+/// it all (an old CLI's USAGE, a bad `--project-dir`) closes the pipe: that is not an error,
+/// its envelope says what went wrong.
+async fn write_input(
+    stdin: Option<tokio::process::ChildStdin>,
+    input: &[u8],
+) -> std::io::Result<()> {
+    let Some(mut stdin) = stdin else {
+        return Ok(());
+    };
+    match stdin.write_all(input).await {
+        Ok(()) => drop(stdin),
+        Err(err) if err.kind() == ErrorKind::BrokenPipe => drop(stdin),
+        Err(err) => return Err(err),
+    }
+    Ok(())
 }
 
 async fn read_capped(
@@ -528,6 +591,70 @@ mod tests {
             );
             std::fs::remove_dir_all(dir).unwrap();
         }
+    }
+
+    fn run_with_body(bin: &Path, body: &[u8]) -> Result<Value, CfError> {
+        let args: Vec<String> = ["memory", "edit", "--json", "--stdin"]
+            .map(String::from)
+            .into();
+        let run = spawn_cf(bin, &args, Some(body), Duration::from_secs(10));
+        tauri::async_runtime::block_on(run)
+    }
+
+    #[test]
+    fn body_goes_through_stdin_while_both_pipes_are_read() {
+        let dir = temp_dir();
+        let copy = dir.join("body.bin");
+        // tee pushes the body to stderr as it reads stdin: a writer that ran before the
+        // readers would block on a full stderr pipe.
+        let bin = fake_cf(
+            &dir,
+            &format!(
+                "tee '{}' >&2\necho '{{\"contractVersion\":1,\"ok\":true,\"data\":{{}},\"error\":null}}'",
+                copy.display()
+            ),
+        );
+        let body = vec![b'x'; 200 * 1024];
+        assert_eq!(run_with_body(&bin, &body), Ok(json!({})));
+        assert_eq!(std::fs::read(&copy).unwrap(), body);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_cli_that_exits_without_reading_stdin_still_gives_its_envelope() {
+        let cases = [
+            (
+                r#"{"contractVersion":1,"ok":false,"data":null,"error":{"code":"NOT_FOUND","message":"no such project"}}"#,
+                Err(CfError::CliError {
+                    code: "NOT_FOUND".to_string(),
+                    message: "no such project".to_string(),
+                    stderr_tail: None,
+                }),
+            ),
+            (
+                r#"{"contractVersion":1,"ok":false,"data":null,"error":{"code":"USAGE","message":"error: unknown option '--stdin'"}}"#,
+                Err(CfError::CliTooOld { stderr_tail: None }),
+            ),
+        ];
+        // More than a pipe buffer, so the write meets the closed pipe.
+        let body = vec![b'x'; 200 * 1024];
+        for (envelope, expected) in cases {
+            let dir = temp_dir();
+            let bin = fake_cf(&dir, &format!("echo '{envelope}'\nexit 1"));
+            assert_eq!(run_with_body(&bin, &body), expected, "{envelope}");
+            std::fs::remove_dir_all(dir).unwrap();
+        }
+    }
+
+    #[test]
+    fn a_body_over_one_mib_is_refused_before_spawning() {
+        let args: Vec<String> = ["learn", "edit", "--json", "--stdin"]
+            .map(String::from)
+            .into();
+        let body = "x".repeat(MAX_BODY + 1);
+        let result =
+            tauri::async_runtime::block_on(run_cf_with_input(&args, &body, Duration::from_secs(1)));
+        assert!(matches!(result, Err(CfError::Refused { .. })), "{result:?}");
     }
 
     #[test]

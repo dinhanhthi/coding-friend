@@ -560,6 +560,152 @@ export function splitFrontmatter(text: string): {
   return { frontmatter: match[1] ?? "", body: text.slice(match[0].length) };
 }
 
+// ─── Memory (cf memory list|search|show|edit|delete --json) ──────────────
+
+/**
+ * cli/src/lib/memory-data.ts `MemoryListItem` (list) and `MemorySearchHit` (search): a
+ * search hit has `score` and `matchedOn` but no `updated`.
+ */
+export interface MemoryItem {
+  /** `<category>/<slug>`. */
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  type: string;
+  tags: string[];
+  updated?: string;
+  score?: number;
+  matchedOn?: string[];
+}
+
+export interface MemorySearch {
+  query: string;
+  results: MemoryItem[];
+}
+
+/** cli/src/commands/memory.ts `memoryShowCommand`; `sha256` is the `--if-match` of a save. */
+export interface MemoryNote {
+  id: string;
+  category: string;
+  path: string;
+  /** `{}` when absent or unparseable. */
+  frontmatter: Record<string, unknown>;
+  /** The body after the frontmatter block. */
+  content: string;
+  sha256: string;
+  mtime: string;
+}
+
+/**
+ * Whether the memory daemon picks the change up: `stale` needs `cf memory rebuild` in the
+ * project, `none` is the markdown tier.
+ */
+export type MemoryIndexState = "watched" | "stale" | "none";
+
+export interface MemoryEditResult {
+  id: string;
+  path: string;
+  sha256: string;
+  /** `YYYY-MM-DD`. */
+  updated: string;
+  index: MemoryIndexState;
+}
+
+export interface MemoryDeleteResult {
+  id: string;
+  path: string;
+  deleted: true;
+  index: MemoryIndexState;
+  /** CLAUDE.md / AGENTS.md files whose rule entry for this memory was removed. */
+  instructionFiles: string[];
+  warnings: string[];
+}
+
+// ─── Learn (cf learn status|list|search|show|edit|delete --json) ─────────
+
+export type LearnMode = "git" | "folder";
+
+/** cli/src/lib/cloud-folders.ts */
+export type CloudProvider =
+  "icloud" | "google-drive" | "dropbox" | "onedrive" | "other";
+
+export interface CloudFolder {
+  provider: CloudProvider;
+  label: string;
+  root: string;
+  /** Suggested learn folder: a fixed subfolder of `root`. */
+  path: string;
+  exists: boolean;
+}
+
+/** cli/src/lib/learn-storage.ts */
+export interface LearnStatus {
+  outputDir: string;
+  exists: boolean;
+  mode: LearnMode;
+  git: { root: string; isRoot: boolean; hasOrigin: boolean } | null;
+  autoCommit: boolean;
+  cloud: { provider: CloudProvider; root: string } | null;
+  suggestions: CloudFolder[];
+}
+
+/** cli/src/lib/learn-notes.ts `LearnNote`. */
+export interface LearnNoteEntry {
+  id: string;
+  category: string;
+  slug: string;
+  title: string;
+  tags: string[];
+  created: string;
+  updated: string;
+  size: number;
+  mtime: string;
+  /** This looks like a sync conflict copy of the note with this id. */
+  possibleConflictOf?: string;
+}
+
+/** `learn list` (and `learn search`, plus `query`); the CLI also sends `outputDir` and `mode`. */
+export interface LearnList {
+  notes: LearnNoteEntry[];
+  /** Cloud files not downloaded: listed, never opened. */
+  placeholders: { id: string; file: string }[];
+}
+
+/** `learn show`; `sha256` is the `--if-match` of a save. */
+export interface LearnNote {
+  id: string;
+  path: string;
+  frontmatter: Record<string, unknown>;
+  content: string;
+  sha256: string;
+  mtime: string;
+}
+
+/** Git mode with `learn.autoCommit` commits the one file; `commitError` says why it did not. */
+interface LearnCommit {
+  mode: LearnMode;
+  committed: boolean;
+  commitError?: string;
+}
+
+export interface LearnEditResult extends LearnCommit {
+  id: string;
+  path: string;
+  sha256: string;
+}
+
+export interface LearnDeleteResult extends LearnCommit {
+  id: string;
+  path: string;
+  deleted: true;
+}
+
+/** The note changed since it was opened (`--if-match` mismatch): keep the draft. */
+export function isConflict(e: unknown): boolean {
+  return isCfError(e) && e.kind === "cliError" && e.code === "CONFLICT";
+}
+
 // ─── Manual commands ────────────────────────────────────────────────────
 
 export const INSTALL_COMMAND = "npm i -g coding-friend-cli";
@@ -604,6 +750,11 @@ export function shellQuote(arg: string): string {
   return `'${arg.replaceAll("'", "'\\''")}'`;
 }
 
+/** The hint after a memory change left the search index `stale`, run from the project root. */
+export function memoryRebuildCommand(root: string): string {
+  return `cd ${shellQuote(root)} && cf memory rebuild`;
+}
+
 // ─── Commands ───────────────────────────────────────────────────────────
 
 export const cfVersion = () => invoke<VersionInfo>("cf_version");
@@ -643,6 +794,45 @@ export const docsList = (project: string) =>
 /** `path` is relative to the docs folder. */
 export const docsShow = (project: string, path: string) =>
   invoke<DocContent>("docs_show", { project, relpath: path });
+export const memoryList = (project: string) =>
+  invoke<MemoryItem[]>("memory_list", { project });
+/** An empty query never reaches the CLI (it refuses one): no results. */
+export const memorySearch = (project: string, query: string) =>
+  query.trim() === ""
+    ? Promise.resolve<MemorySearch>({ query, results: [] })
+    : invoke<MemorySearch>("memory_search", { project, query });
+export const memoryShow = (project: string, id: string) =>
+  invoke<MemoryNote>("memory_show", { project, id });
+/** Rust shows the native confirm; `body` goes on stdin. A changed note rejects `CONFLICT`. */
+export const memoryEdit = (
+  project: string,
+  id: string,
+  sha: string,
+  body: string,
+) => invoke<MemoryEditResult>("memory_edit", { project, id, sha, body });
+/** Rust shows the native confirm. A changed note rejects `CONFLICT`. */
+export const memoryDelete = (project: string, id: string, sha: string) =>
+  invoke<MemoryDeleteResult>("memory_delete", { project, id, sha });
+export const learnStatus = () => invoke<LearnStatus>("learn_status");
+export const learnList = () => invoke<LearnList>("learn_list");
+/** An empty query never reaches the CLI: no notes. */
+export const learnSearch = (query: string) =>
+  query.trim() === ""
+    ? Promise.resolve<LearnList>({ notes: [], placeholders: [] })
+    : invoke<LearnList>("learn_search", { query });
+export const learnShow = (id: string) =>
+  invoke<LearnNote>("learn_show", { id });
+/** Rust shows the native confirm; `body` goes on stdin. A changed note rejects `CONFLICT`. */
+export const learnEdit = (id: string, sha: string, body: string) =>
+  invoke<LearnEditResult>("learn_edit", { id, sha, body });
+/** Rust shows the native confirm. A changed note rejects `CONFLICT`. */
+export const learnDelete = (id: string, sha: string) =>
+  invoke<LearnDeleteResult>("learn_delete", { id, sha });
+/** Rust shows the folder picker, then the native confirm. */
+export const chooseLearnDir = () => invoke<ConfigSetResult>("choose_learn_dir");
+/** `path` must be one of `learnStatus().suggestions[].path`; Rust shows the native confirm. */
+export const setLearnDir = (path: string) =>
+  invoke<ConfigSetResult>("set_learn_dir", { path });
 /** Rust checks the `https:` URL and shows the native confirm; Cancel rejects `cancelled`. */
 export const openUrl = (url: string) => invoke<void>("open_url", { url });
 export const checkCli = () => invoke<CliStatus>("check_cli");
@@ -657,7 +847,16 @@ export const clearCfPath = () => invoke<void>("clear_cf_path");
 export interface RunStarted {
   /** The command line the confirm showed. */
   command: string;
-  op: "update" | "fix" | "projectRemove" | "configSet";
+  op:
+    | "update"
+    | "fix"
+    | "projectRemove"
+    | "configSet"
+    | "memoryEdit"
+    | "memoryDelete"
+    | "learnEdit"
+    | "learnDelete"
+    | "learnDir";
 }
 
 const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
@@ -665,6 +864,11 @@ const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
   "fix",
   "projectRemove",
   "configSet",
+  "memoryEdit",
+  "memoryDelete",
+  "learnEdit",
+  "learnDelete",
+  "learnDir",
 ]);
 
 export function isRunStarted(x: unknown): x is RunStarted {

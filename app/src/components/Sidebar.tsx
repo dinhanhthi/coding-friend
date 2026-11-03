@@ -1,5 +1,6 @@
 import {
   FolderKanban,
+  GraduationCap,
   Info,
   Plus,
   Settings,
@@ -22,10 +23,11 @@ import { describePending, type PendingRun } from "@/lib/runs";
 import type { CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
-export type View = "projects" | "doctor" | "version" | "settings";
+export type View = "projects" | "learn" | "doctor" | "version" | "settings";
 
 const VIEWS: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "projects", label: "Projects", icon: FolderKanban },
+  { id: "learn", label: "Learn", icon: GraduationCap },
   { id: "doctor", label: "Doctor", icon: Stethoscope },
   { id: "version", label: "Version", icon: Info },
   { id: "settings", label: "Settings", icon: Settings },
@@ -111,7 +113,7 @@ export function Sidebar({
               aria-current={view === id ? "page" : undefined}
               onClick={() => onView(id)}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
+                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ink-2 outline-none last:odd:col-span-2 hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
                 view === id && "bg-paper-3 font-medium text-ink",
               )}
             >

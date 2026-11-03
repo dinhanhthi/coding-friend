@@ -45,7 +45,7 @@ Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do no
 
 Every change goes through `cf config set --global|--local [--project-dir=<path>] --json -- <key> <value>`, after a native confirm dialog from Rust that shows the exact command line; Cancel writes nothing. Reset deletes the key from that file (value `null`), so the value falls back to the next layer. Rust takes `--project-dir` only for a project in the registry, and the key only when it is a well-formed dotted key.
 
-`learn.outputDir` and `docsDir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs or learn notes. Change `docsDir` with `cf config set` in a terminal; `learn.outputDir` will change through the learn folder picker.
+`learn.outputDir` and `docsDir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs or learn notes. Change `docsDir` with `cf config set` in a terminal, and `learn.outputDir` from the Learn view ("Where learn notes live", below); the row's **Open Learn** button goes there.
 
 ## Docs tab
 
@@ -56,6 +56,29 @@ These files are written by agents and may arrive through cloud sync or a git pul
 - Frontmatter is shown as plain text above the body.
 - Markdown is rendered without raw HTML (it is dropped, not run) and without rehype plugins. Images are shown as `[image: alt]` text and never fetched.
 - No link is a real `<a href>`, so nothing in a file can navigate the window. A relative link to another `.md` or `.markdown` file in the tree opens that file in the tree. An `https:` link opens in the system browser only after a native confirm from Rust that shows the full URL; Cancel opens nothing. Every other link (`http:`, `file:`, `mailto:`, anchors, absolute paths, a `..` that leaves the tree) is shown as plain text.
+
+## Memory tab
+
+A project's **Memory** tab (shown when the project folder exists) lists the project's memories from `cf memory list --json --project-dir=<path>`, grouped by category. Typing in the search box runs `cf memory search --json --project-dir=<path> -- <query>` after a short pause; an empty box shows the list again without calling `cf`. The selected memory comes from `cf memory show`: its frontmatter as plain text, its body rendered like the Docs tab (untrusted markdown, no raw HTML, no images, `https:` links only after a native confirm).
+
+**Edit** opens the body (never the frontmatter: only `updated:` changes, set by the CLI) in a text box. A draft stays per memory while you switch to other memories in the tab. **Save** runs `cf memory edit --stdin --if-match <sha256> --project-dir=<path> -- <id>` with the body on stdin; the `sha256` is the one the memory had when the edit began. If the file changed since then, the CLI answers `CONFLICT` and nothing is written: the draft stays, and you can **Copy draft** to the clipboard, then **Reload latest** (which discards the draft). **Delete** runs `cf memory delete --yes --if-match <sha256> --project-dir=<path> -- <id>`.
+
+When the memory search index is not watched by the memory daemon, a save or delete says the index may be stale and shows the command to rebuild it in a terminal (`cd '<project>' && cf memory rebuild`, copyable, never run by the app).
+
+## Learn view
+
+**Learn** (sidebar) shows the global learn notes, the ones `/cf-learn` writes to `learn.outputDir`: listed by category from `cf learn list --json`, read with `cf learn show`, edited and deleted like memories (`cf learn edit --stdin --if-match <sha256> -- <id>`, `cf learn delete --yes --if-match <sha256> -- <id>`, same draft and `CONFLICT` handling). Files a cloud app has not downloaded yet are counted as "N not downloaded" and never opened, so listing does not trigger a download. A note that looks like a sync conflict copy of another (`note 2.md`, `note (conflicted copy …).md`, …) carries a **conflict** badge.
+
+### Where learn notes live
+
+The card at the top shows the current folder (`cf learn status --json`) and how notes are stored there:
+
+- **git**: the folder is inside a git repo. With `learn.autoCommit` on, each save or delete commits that one note (never `git add -A`); the result says whether it was committed, or why not. The app never pushes: run `cf learn push` in a terminal (the card shows the command).
+- **folder**: any other folder. Saves only write files and nothing is committed (git runs only to detect the mode); a cloud app (iCloud Drive, Google Drive, Dropbox, OneDrive) can sync the folder. A git repo inside a cloud folder gets a warning, since cloud sync and git can damage each other's files.
+
+**Choose folder…** opens a native folder picker from Rust. On macOS the card also suggests a `coding-friend-learn` folder inside each cloud drive it finds (other systems get no suggestions); a suggested folder that does not exist yet is created by the first note. Rust accepts a suggestion only when it equals one that Rust itself read from `cf learn status`. Either way the change is `cf config set --global --json -- learn.outputDir <folder>`. Notes already in the old folder are not moved.
+
+Every save, delete and folder change asks first: a native confirm from Rust shows the exact command line (and, for a save, the size of the body, never the body itself), and Cancel writes nothing. One such command runs at a time.
 
 ## Building a bundle
 

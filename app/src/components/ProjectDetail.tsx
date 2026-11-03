@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { ConfigView, type SetConfig } from "@/components/ConfigView";
 import { DocsView } from "@/components/DocsView";
+import { MemoryView } from "@/components/MemoryView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,7 @@ import {
   type TaskView,
 } from "@/lib/cf";
 import { inProject } from "@/lib/project-filter";
-import type { PendingRun } from "@/lib/runs";
+import type { PendingRun, StartRun } from "@/lib/runs";
 import { useDelayed, type CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
@@ -51,12 +52,13 @@ export function projectName(path: string): string {
   return path.replace(/\/+$/, "").split("/").pop() || path;
 }
 
-type Tab = "overview" | "config" | "docs";
+type Tab = "overview" | "config" | "docs" | "memory";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "config", label: "Config" },
   { id: "docs", label: "Docs" },
+  { id: "memory", label: "Memory" },
 ];
 
 /**
@@ -68,11 +70,16 @@ export function ProjectDetail({
   activity,
   pending,
   onSetConfig,
+  run,
+  onOpenLearn,
 }: {
   project: ProjectEntry;
   activity: CfQuery<ProjectActivity>;
   pending: PendingRun | null;
   onSetConfig: SetConfig;
+  /** The Dashboard's one pending mutation (memory save and delete). */
+  run: StartRun;
+  onOpenLearn: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const overview = tab === "overview";
@@ -159,9 +166,17 @@ export function ProjectDetail({
             project={project.path}
             pending={pending}
             onSet={onSetConfig}
+            onOpenLearn={onOpenLearn}
           />
-        ) : (
+        ) : tab === "docs" ? (
           <DocsView key={project.path} project={project.path} />
+        ) : (
+          <MemoryView
+            key={project.path}
+            project={project.path}
+            pending={pending}
+            run={run}
+          />
         )}
       </div>
     </article>

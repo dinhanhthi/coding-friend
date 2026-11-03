@@ -98,11 +98,14 @@ export function ConfigView({
   project,
   pending,
   onSet,
+  onOpenLearn,
 }: {
   scope: ConfigScope;
   project?: string;
   pending: PendingRun | null;
   onSet: SetConfig;
+  /** Switches to the Learn view, where `learn.outputDir` is changed. */
+  onOpenLearn?: () => void;
 }) {
   const view = useCfQuery(`config:${scope}:${project ?? ""}`, () =>
     configView(project),
@@ -229,6 +232,7 @@ export function ConfigView({
                 key={field.key}
                 fieldKey={field.key}
                 label={label}
+                onOpenLearn={onOpenLearn}
                 {...props}
               />
             ) : (
@@ -322,7 +326,8 @@ function ReadOnlyRow({
   source,
   scope,
   project,
-}: RowProps & { fieldKey: string }) {
+  onOpenLearn,
+}: RowProps & { fieldKey: string; onOpenLearn?: () => void }) {
   return (
     <li className={ROW}>
       <RowHead label={label} source={source}>
@@ -330,9 +335,16 @@ function ReadOnlyRow({
       </RowHead>
       <p className="font-mono text-xs break-all text-ink-2">{show(value)}</p>
       {fieldKey === "learn.outputDir" ? (
-        <p className="text-xs text-muted">
-          Changed from the learn storage card in the Learn view (coming soon).
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted">
+            Changed from "Where learn notes live" in the Learn view.
+          </p>
+          {onOpenLearn && (
+            <Button variant="outline" size="sm" onClick={onOpenLearn}>
+              Open Learn
+            </Button>
+          )}
+        </div>
       ) : fieldKey === "docsDir" ? (
         <>
           <p className="text-xs text-muted">
