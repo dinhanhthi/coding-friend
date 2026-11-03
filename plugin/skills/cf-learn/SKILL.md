@@ -11,7 +11,7 @@ description: >
 user-invocable: true
 argument-hint: "[optional: specific topic or focus area to extract]"
 created: 2026-02-17
-updated: 2026-09-09
+updated: 2026-11-02
 model: sonnet
 ---
 
@@ -75,6 +75,7 @@ git -C "<resolved_outputDir>" rev-parse --is-inside-work-tree 2>/dev/null
 
 - If exit code is 0: the dir is a git repo — `autoCommit` from config applies
 - If exit code is non-zero: the dir is NOT a git repo — skip auto-commit entirely (set `autoCommit = false`), do not mention it to the user
+- `outputDir` may be a cloud-synced folder (folder mode — files only, no commit); `cf learn status --json` shows the mode (`data.mode`)
 
 ### Step 2: Identify Knowledge Points
 

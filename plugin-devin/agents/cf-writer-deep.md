@@ -74,13 +74,28 @@ When `readme_update` is `true` or `per-category`:
 
 ### 6. Auto-Commit (if configured)
 
-When `auto_commit: true`:
+When `auto_commit: true`, commit only the files this write spec touched — never other changes in the repo:
 
-```bash
-cd "<directory>" && git add -A && git commit -m "<commit_message>"
-```
+1. Find the repo root of the written file. If this fails, the directory is not a git repository — skip silently.
 
-Skip silently if the directory is not a git repository.
+   ```bash
+   git -C "$(dirname "<file_path>")" rev-parse --show-toplevel
+   ```
+
+2. Collect the paths: `file_path`, plus each `readme_path` you actually updated in step 5 (only when `readme_update` is not `false`). Use no other paths.
+3. Stage exactly those paths (drop `"<readme_path>"` when no README was updated):
+
+   ```bash
+   git -C "<root>" add -- "<file_path>" "<readme_path>"
+   ```
+
+4. If `git -C "<root>" diff --cached --quiet -- "<file_path>" "<readme_path>"` exits 0, nothing changed — skip silently. Otherwise commit only those paths:
+
+   ```bash
+   git -C "<root>" commit -m "<commit_message>" -- "<file_path>" "<readme_path>"
+   ```
+
+Never use `git add -A` or `git add .`, never push, never run `git init`.
 
 ### 7. Return Confirmation
 

@@ -93,7 +93,7 @@ _cf_completions() {
 
   # Subcommands for 'learn'
   if [[ "\${COMP_WORDS[1]}" == "learn" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "host push" -- "$cur"))
+    COMPREPLY=($(compgen -W "status list search show edit delete host push" -- "$cur"))
     return
   fi
 
@@ -132,6 +132,20 @@ _cf_completions() {
   fi
   if [[ "\${COMP_WORDS[1]}" == "memory" && "\${COMP_WORDS[2]}" == "delete" && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--yes --if-match --project-dir --json" -- "$cur"))
+    return
+  fi
+
+  # Flag completion for learn status/list/search/show/edit/delete
+  if [[ "\${COMP_WORDS[1]}" == "learn" && ("\${COMP_WORDS[2]}" == "status" || "\${COMP_WORDS[2]}" == "list" || "\${COMP_WORDS[2]}" == "search" || "\${COMP_WORDS[2]}" == "show") && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--json" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "learn" && "\${COMP_WORDS[2]}" == "edit" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--stdin --if-match --json" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "learn" && "\${COMP_WORDS[2]}" == "delete" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--yes --if-match --json" -- "$cur"))
     return
   fi
 
@@ -210,7 +224,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'enable:Re-enable the Coding Friend plugin'
     'init:Initialize coding-friend in current project'
     'config:Manage Coding Friend configuration'
-    'learn:Manage learning docs — host as a website or push to git'
+    'learn:Manage learning docs — browse, edit, host as a website or push to git'
     'mcp:Setup MCP server for learning docs'
     'memory:AI memory system — store and search project knowledge'
     'permission:Manage Claude Code permission rules for Coding Friend'
@@ -396,10 +410,22 @@ const ZSH_FUNCTION_BODY = `_cf() {
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "learn" ]]; then
     local -a subcommands
     subcommands=(
+      'status:Show the learn folder, its mode (git or folder) and cloud folders'
+      'list:List learn notes (and cloud files not downloaded yet)'
+      'search:Search learn notes by title, tags and body'
+      'show:Print one learn note (<category/slug>)'
+      'edit:Replace a learn note body from stdin (--stdin --if-match)'
+      'delete:Delete a learn note'
       'host:Build and serve learning docs as a static website'
       'push:Commit and push learning docs to origin'
     )
     _describe 'subcommand' subcommands
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "learn" && ("\${words[3]}" == "status" || "\${words[3]}" == "list" || "\${words[3]}" == "search" || "\${words[3]}" == "show") ]]; then
+    _values 'flags' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "learn" && "\${words[3]}" == "edit" ]]; then
+    _values 'flags' '--stdin[Read the new body from stdin (required)]' '--if-match[sha256 from learn show (required)]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "learn" && "\${words[3]}" == "delete" ]]; then
+    _values 'flags' '--yes[Skip the confirmation prompt (required with --json)]' '--if-match[sha256 from learn show]' '--json[Output a JSON envelope]'
   elif (( CURRENT == 4 )) && [[ "\${words[2]}" == "dev" && ("\${words[3]}" == "on" || "\${words[3]}" == "restart" || "\${words[3]}" == "update") ]]; then
     _path_files -/
   fi
@@ -419,7 +445,7 @@ complete -c cf -n "__fish_use_subcommand" -a disable -d "Disable the Coding Frie
 complete -c cf -n "__fish_use_subcommand" -a enable -d "Re-enable the Coding Friend plugin"
 complete -c cf -n "__fish_use_subcommand" -a init -d "Initialize coding-friend in current project"
 complete -c cf -n "__fish_use_subcommand" -a config -d "Manage Coding Friend configuration"
-complete -c cf -n "__fish_use_subcommand" -a learn -d "Manage learning docs — host as a website or push to git"
+complete -c cf -n "__fish_use_subcommand" -a learn -d "Manage learning docs — browse, edit, host as a website or push to git"
 complete -c cf -n "__fish_use_subcommand" -a mcp -d "Setup MCP server for learning docs"
 complete -c cf -n "__fish_use_subcommand" -a memory -d "AI memory system — store and search project knowledge"
 complete -c cf -n "__fish_use_subcommand" -a permission -d "Manage Claude Code permission rules"
@@ -543,8 +569,18 @@ complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved
 complete -c cf -n "__fish_seen_subcommand_from guide" -a create -d "Create a custom guide for a skill"
 complete -c cf -n "__fish_seen_subcommand_from guide" -a list -d "List existing custom guides"
 # Learn subcommands
+complete -c cf -n "__fish_seen_subcommand_from learn" -a status -d "Show the learn folder, its mode (git or folder) and cloud folders"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a list -d "List learn notes (and cloud files not downloaded yet)"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a search -d "Search learn notes by title, tags and body"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a show -d "Print one learn note (<category/slug>)"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a edit -d "Replace a learn note body from stdin (--stdin --if-match)"
+complete -c cf -n "__fish_seen_subcommand_from learn" -a delete -d "Delete a learn note"
 complete -c cf -n "__fish_seen_subcommand_from learn" -a host -d "Build and serve learning docs as a static website"
 complete -c cf -n "__fish_seen_subcommand_from learn" -a push -d "Commit and push learning docs to origin"
+complete -c cf -n "__fish_seen_subcommand_from learn; and __fish_seen_subcommand_from status list search show edit delete" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from learn; and __fish_seen_subcommand_from edit" -l stdin -d "Read the new body from stdin (required)"
+complete -c cf -n "__fish_seen_subcommand_from learn; and __fish_seen_subcommand_from edit delete" -l if-match -r -d "sha256 from learn show"
+complete -c cf -n "__fish_seen_subcommand_from learn; and __fish_seen_subcommand_from delete" -l yes -d "Skip the confirmation prompt (required with --json)"
 `;
 
 const POWERSHELL_BLOCK = `
@@ -563,7 +599,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $chefSubcommands = @('start','say','status','inbox','show','stop','resume')
   $configSubcommands = @('get','set','schema')
   $guideSubcommands = @('create','list')
-  $learnSubcommands = @('host','push')
+  $learnSubcommands = @('status','list','search','show','edit','delete','host','push')
   $scopeFlags = @('--user','--global','--project','--local')
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local','--check','--yes','--json')
   $words = $commandAst.CommandElements
@@ -581,6 +617,15 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'memory' -and $words[2].ToString() -eq 'delete') {
     @('--yes','--if-match','--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'learn' -and @('status','list','search','show') -contains $words[2].ToString()) {
+    @('--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'learn' -and $words[2].ToString() -eq 'edit') {
+    @('--stdin','--if-match','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'learn' -and $words[2].ToString() -eq 'delete') {
+    @('--yes','--if-match','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'run') {
     @('--provider','--model','--read-only','--no-fallback','--json') | Where-Object { $_ -like "$wordToComplete*" } |

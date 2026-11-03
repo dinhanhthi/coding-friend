@@ -103,10 +103,21 @@ cf config get docsDir --project-dir ~/git/my-app
 cf config set tdd true --local --project-dir ~/git/my-app
                      # Write ~/git/my-app/.coding-friend/config.json from anywhere
 cf config schema     # Print the JSON Schema of the config file
+cf learn status      # Learn folder (`learn.outputDir`), its mode (git or folder),
+                     #    cloud folder and suggested cloud folders (see Learn notes)
+cf learn list        # List learn notes (and cloud files not downloaded yet)
+cf learn search <query>          # Search notes by title, tags and body
+cf learn show -- <category/slug>  # Print one learn note
+cf learn edit --stdin --if-match <sha256> -- <category/slug>
+                     # Replace the body with stdin (frontmatter kept, `updated:` = today)
+cf learn delete -- <category/slug>  # Delete a learn note (asks first; --yes skips)
+                     # 💡 In git mode with `learn.autoCommit`, edit and delete commit
+                     #    only that file (never push)
 cf learn host [path] # Build and serve learning docs at localhost:3333
                      # [path] is optional, default is `~/.coding-friend/learn`
 cf learn push [path] # Commit and push learning docs (only if learn dir is the git root)
                      # [path] is optional, default is `~/.coding-friend/learn`
+                     # In folder mode it prints "not applicable" and exits 0
 cf mcp [path]        # Setup MCP server for LLM integration
                      # [path] is optional, default is `~/.coding-friend/learn`
                      # This prints a JSON config snippet to add to your client's MCP
@@ -196,7 +207,7 @@ cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
 
 ## Doctor
 
@@ -231,6 +242,21 @@ Unlike `cf doctor`, a real run uses the network and changes the machine:
 - **Devin:** reconciles the Devin plugin, plus the CLI update.
 
 **Known limit.** A failed step is only logged (to stderr), so the process can exit `1` while the envelope still says `ok: true`. Treat `data.after` (or a fresh `cf version --json` / `cf update --check --json`) as the source of truth, not `ok` alone.
+
+## Learn notes
+
+`cf learn` works on the folder of `/cf-learn` notes, `learn.outputDir` in the global config (default `~/.coding-friend/learn`), laid out as `<category>/<slug>.md`. `README.md` index files (`learn.readmeIndex`) and `docs.json` are not notes and are skipped.
+
+The storage mode is inferred from that folder, never configured:
+
+- **git mode:** the folder is inside a git repo. With `learn.autoCommit`, `cf learn edit` and `delete` commit only the file they changed (`learn: update <id>` / `learn: delete <id>`), never push. `cf learn push` commits and pushes as before.
+- **folder mode:** anything else. Plain files, which a cloud app such as iCloud Drive, Google Drive, Dropbox or OneDrive may sync. Nothing runs git; `cf learn push` prints "not applicable in folder mode (learn.outputDir is not a git repo)" and exits 0.
+
+`cf learn status` also says whether the folder is in a cloud folder and suggests a `coding-friend-learn` folder in each cloud folder found (Google Drive: `My Drive/coding-friend-learn`), never the cloud root itself. Cloud folders are only detected on macOS. A git repo inside a cloud folder is discouraged.
+
+Cloud files that are not downloaded yet (`.<name>.md.icloud`, or, inside a cloud folder on macOS, a dataless file) are listed as `placeholders` and never opened, since reading one makes the cloud app download it; `show`, `edit` and `delete` refuse them with `NOT_FOUND` "not downloaded". A note that looks like a sync conflict copy of another one (`hooks 2`, `hooks (1)`, Dropbox "conflicted copy", OneDrive `-<host>`) gets `possibleConflictOf`, the id of that note.
+
+`/cf-learn` and `/cf-teach` (through the `cf-writer` agents) also commit only the note they wrote plus the README index files they updated, never `git add -A`.
 
 ## Machine interface
 
@@ -270,6 +296,8 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 **`cf docs list|show [--project-dir <path>] --json`.** Read-only access to the project's docs folder: config `docsDir` (default `docs`), relative to the project root (`--project-dir` resolves like `cf config`). `list` returns `data = { project, docsDir, exists, files: [{ path, size, mtime }], truncated }`: only `.md` and `.markdown` files, paths posix and relative to `docsDir`, sorted; symlinks, entries starting with `.` and `node_modules` are skipped; folders deeper than 10 levels are not read, and the list stops at 5000 files (`truncated: true`). A missing folder is `exists: false`, not an error. `show -- <relpath>` returns `data = { project, path, content, size, mtime, sha256 }`. An absolute path, a `..` segment, a NUL byte or a non-markdown name is `INVALID_ARGS`; a file whose real path is outside `docsDir` (through a symlink) or larger than 1 MiB is `INVALID_VALUE`; a missing file is `NOT_FOUND`. Both are auto-approved by the plugin hook.
 
 **`cf memory show|edit|delete [--project-dir <path>] --json -- <category/slug>`.** One memory file under `{docsDir}/memory/` (`--project-dir` resolves like `cf config`; `search` and `list` take it too). An id that is not `<category>/<slug>` is `INVALID_ARGS`, a missing file `NOT_FOUND`, a file outside the memory folder (through a symlink) or larger than 1 MiB `INVALID_VALUE`. `show` returns `data = { id, category, path, frontmatter, content, sha256, mtime }`. `edit --stdin --if-match <sha256>` (both required, else `INVALID_ARGS`) replaces only the body with stdin (UTF-8, at most 1 MiB; an empty body is refused with `INVALID_VALUE`): the frontmatter stays byte for byte except `updated:`, set to today, and the BOM, line endings and file mode are kept; the file is written atomically. A sha256 that no longer matches the file is `CONFLICT`. It returns `data = { id, path, sha256, updated, index }`. `delete` asks first; with `--json` it needs `--yes` (else `INTERACTIVE_REQUIRED`), and `--if-match <sha256>` makes it refuse with `CONFLICT` too. It also removes the memory's `<!-- cf:<id> -->` line from the `CLAUDE.md` / `AGENTS.md` rules section at the project root (best effort) and returns `data = { id, path, deleted, index, instructionFiles, warnings }`: the files it changed, and why one could not be changed. `index` says whether search sees the change: `watched` (the shared memory daemon is proven to watch this memory folder), `stale` (an indexed tier, but that is not proven: run `cd "<root>" && cf memory rebuild`) or `none` (markdown tier, no index). Only `show` is auto-approved by the plugin hook; `edit` and `delete` never are.
+
+**`cf learn status|list|search|show|edit|delete --json`.** See [Learn notes](#learn-notes). `status` returns `data = { outputDir, exists, mode, git: { root, isRoot, hasOrigin } | null, autoCommit, cloud: { provider, root } | null, suggestions: [{ provider, label, root, path, exists }] }` (`mode` is `git` or `folder`). `list` returns `data = { outputDir, mode, notes: [{ id, category, slug, title, tags, created, updated, size, mtime, possibleConflictOf? }], placeholders: [{ id, file }] }`, newest first; `search <query>` adds `query` and matches title, tags and body case-insensitively (placeholders are listed, not searched; a query longer than 500 characters is `INVALID_VALUE`). `show -- <category/slug>` returns `data = { id, path, frontmatter, content, sha256, mtime }`. `edit` and `delete` follow `cf memory edit|delete`: `edit --stdin --if-match <sha256>` (both required) replaces only the body and returns `data = { id, path, sha256, mode, committed, commitError? }`; `delete` needs `--yes` with `--json`, takes `--if-match` and returns `data = { id, path, deleted, mode, committed, commitError? }`. `committed` is `true` only in git mode with `learn.autoCommit`; a failed commit keeps the change and sets `commitError`. A bad id is `INVALID_ARGS`, a missing or not downloaded note `NOT_FOUND`, a stale sha256 `CONFLICT`. `status`, `list`, `search` and `show` are auto-approved by the plugin hook; `edit`, `delete`, `push` and `host` never are.
 
 **Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory) or pass `--project-dir <path>`, which resolves to it.
 

@@ -256,15 +256,93 @@ docs
 
 const learn = program
   .command("learn")
-  .description("Manage learning docs — host as a website or push to git");
+  .description(
+    "Manage learning docs — browse, edit, host as a website or push to git",
+  );
 
 program.addHelpText(
   "after",
   `
 Learn subcommands:
+  learn status        Show the learn folder, its mode (git or folder) and cloud folders
+  learn list          List learn notes (and cloud files not downloaded yet)
+  learn search        Search learn notes by title, tags and body
+  learn show          Print one learn note (<category/slug>)
+  learn edit          Replace a note's body from stdin (--stdin --if-match)
+  learn delete        Delete a learn note (--yes to skip the prompt)
   learn host [path]   Build and serve learning docs as a static website
   learn push [path]   Commit and push learning docs (only if learn dir is the git root)`,
 );
+
+learn
+  .command("status")
+  .description("Show the learn folder, its storage mode and cloud folders")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { learnStatusCommand } = await import("./commands/learn.js");
+    await learnStatusCommand(opts);
+  });
+
+learn
+  .command("list")
+  .description("List learn notes")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { learnListCommand } = await import("./commands/learn.js");
+    await learnListCommand(opts);
+  });
+
+learn
+  .command("search")
+  .description("Search learn notes (title, tags, body; case-insensitive)")
+  .argument("<query>", "search text (at most 500 characters)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (query: string, opts) => {
+    const { learnSearchCommand } = await import("./commands/learn.js");
+    await learnSearchCommand(query, opts);
+  });
+
+learn
+  .command("show")
+  .description("Print one learn note")
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnShowCommand } = await import("./commands/learn.js");
+    await learnShowCommand(id, opts);
+  });
+
+learn
+  .command("edit")
+  .description(
+    "Replace a learn note's body with stdin (frontmatter kept, updated: set to today)",
+  )
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--stdin", "Read the new body from stdin (required)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `learn show`; refuse with CONFLICT if the file changed (required)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnEditCommand } = await import("./commands/learn.js");
+    await learnEditCommand(id, opts);
+  });
+
+learn
+  .command("delete")
+  .description("Delete a learn note")
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--yes", "Skip the confirmation prompt (required with --json)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `learn show`; refuse with CONFLICT if the file changed",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnDeleteCommand } = await import("./commands/learn.js");
+    await learnDeleteCommand(id, opts);
+  });
 
 learn
   .command("host")
