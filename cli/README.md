@@ -144,6 +144,13 @@ cf memory status     # Show memory system status and stats
 cf memory search     # Search memories by keyword
 cf memory list              # List all memories in current project
 cf memory list --projects   # List all project databases with size and metadata
+cf memory show -- <category/slug>   # Print one memory file
+cf memory edit --stdin --if-match <sha256> -- <category/slug>
+                     # Replace the body with stdin (frontmatter kept, `updated:` = today)
+cf memory delete -- <category/slug>  # Delete a memory (asks first; --yes skips) and
+                     #    its rule line in CLAUDE.md / AGENTS.md
+                     # 💡 search, list, show, edit and delete take --project-dir <path>
+                     #    (act as if run from the main repo root of <path>)
 cf memory rm --project-id <id>  # Remove a specific project database
 cf memory rm --all          # Remove all project databases
 cf memory rm --prune        # Remove orphaned projects (source dir missing or 0 memories)
@@ -189,7 +196,7 @@ cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
 
 ## Doctor
 
@@ -251,6 +258,7 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 | `ASK_TIMEOUT`          | `cf ask` got no answer in time; run the same command again                                                      |
 | `ALREADY_FINISHED`     | Task is already done or cancelled, the question already answered, or the chef already stopped                   |
 | `PROVIDER_UNAVAILABLE` | Provider CLI not on PATH, no worker sandbox (native Windows), or no launchd (`cf supervisor install` off macOS) |
+| `CONFLICT`             | The file changed since it was read (`--if-match` sha256 mismatch); read it again                                |
 | `INTERNAL`             | Any other unexpected error                                                                                      |
 
 **`cf doctor --json`.** `data = { cli, checks }`, `ok: true` whenever doctor ran; per-check `status` is in `data` (see [Doctor](#doctor)).
@@ -260,6 +268,8 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 **`cf config get|set --project-dir <path> --json`.** Runs as if from the main repo root of `<path>` (a worktree or subdirectory resolves to it), so `--local` and the merged view use that project's `.coding-friend/config.json`; `data` gains `project`, the resolved root. A missing path is `NOT_FOUND`, a path that is not a directory is `INVALID_ARGS`.
 
 **`cf docs list|show [--project-dir <path>] --json`.** Read-only access to the project's docs folder: config `docsDir` (default `docs`), relative to the project root (`--project-dir` resolves like `cf config`). `list` returns `data = { project, docsDir, exists, files: [{ path, size, mtime }], truncated }`: only `.md` and `.markdown` files, paths posix and relative to `docsDir`, sorted; symlinks, entries starting with `.` and `node_modules` are skipped; folders deeper than 10 levels are not read, and the list stops at 5000 files (`truncated: true`). A missing folder is `exists: false`, not an error. `show -- <relpath>` returns `data = { project, path, content, size, mtime, sha256 }`. An absolute path, a `..` segment, a NUL byte or a non-markdown name is `INVALID_ARGS`; a file whose real path is outside `docsDir` (through a symlink) or larger than 1 MiB is `INVALID_VALUE`; a missing file is `NOT_FOUND`. Both are auto-approved by the plugin hook.
+
+**`cf memory show|edit|delete [--project-dir <path>] --json -- <category/slug>`.** One memory file under `{docsDir}/memory/` (`--project-dir` resolves like `cf config`; `search` and `list` take it too). An id that is not `<category>/<slug>` is `INVALID_ARGS`, a missing file `NOT_FOUND`, a file outside the memory folder (through a symlink) or larger than 1 MiB `INVALID_VALUE`. `show` returns `data = { id, category, path, frontmatter, content, sha256, mtime }`. `edit --stdin --if-match <sha256>` (both required, else `INVALID_ARGS`) replaces only the body with stdin (UTF-8, at most 1 MiB; an empty body is refused with `INVALID_VALUE`): the frontmatter stays byte for byte except `updated:`, set to today, and the BOM, line endings and file mode are kept; the file is written atomically. A sha256 that no longer matches the file is `CONFLICT`. It returns `data = { id, path, sha256, updated, index }`. `delete` asks first; with `--json` it needs `--yes` (else `INTERACTIVE_REQUIRED`), and `--if-match <sha256>` makes it refuse with `CONFLICT` too. It also removes the memory's `<!-- cf:<id> -->` line from the `CLAUDE.md` / `AGENTS.md` rules section at the project root (best effort) and returns `data = { id, path, deleted, index, instructionFiles, warnings }`: the files it changed, and why one could not be changed. `index` says whether search sees the change: `watched` (the shared memory daemon is proven to watch this memory folder), `stale` (an indexed tier, but that is not proven: run `cd "<root>" && cf memory rebuild`) or `none` (markdown tier, no index). Only `show` is auto-approved by the plugin hook; `edit` and `delete` never are.
 
 **Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory) or pass `--project-dir <path>`, which resolves to it.
 

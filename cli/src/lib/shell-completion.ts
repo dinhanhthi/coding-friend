@@ -39,7 +39,7 @@ _cf_completions() {
 
   # Subcommands for 'memory'
   if [[ "\${COMP_WORDS[1]}" == "memory" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "status search list rm init config start-daemon stop-daemon rebuild mcp" -- "$cur"))
+    COMPREPLY=($(compgen -W "status search list show edit delete rm init config start-daemon stop-daemon rebuild mcp" -- "$cur"))
     return
   fi
 
@@ -121,6 +121,20 @@ _cf_completions() {
     return
   fi
 
+  # Flag completion for memory search/list/show/edit/delete
+  if [[ "\${COMP_WORDS[1]}" == "memory" && ("\${COMP_WORDS[2]}" == "search" || "\${COMP_WORDS[2]}" == "list" || "\${COMP_WORDS[2]}" == "show") && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--project-dir --json" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "memory" && "\${COMP_WORDS[2]}" == "edit" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--stdin --if-match --project-dir --json" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "memory" && "\${COMP_WORDS[2]}" == "delete" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--yes --if-match --project-dir --json" -- "$cur"))
+    return
+  fi
+
   # Flag completion for task run
   if [[ "\${COMP_WORDS[1]}" == "task" && "\${COMP_WORDS[2]}" == "run" && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--provider --model --read-only --no-fallback --json" -- "$cur"))
@@ -157,8 +171,8 @@ _cf_completions() {
     return
   fi
 
-  # --json for status, mcp, version, doctor, memory status/search/list, config schema, project *, task *, supervisor *, chef *
-  if [[ "$cur" == -* ]] && [[ "\${COMP_WORDS[1]}" == "status" || "\${COMP_WORDS[1]}" == "mcp" || "\${COMP_WORDS[1]}" == "version" || "\${COMP_WORDS[1]}" == "doctor" || "\${COMP_WORDS[1]}" == "project" || "\${COMP_WORDS[1]}" == "task" || "\${COMP_WORDS[1]}" == "supervisor" || "\${COMP_WORDS[1]}" == "chef" || ("\${COMP_WORDS[1]}" == "config" && "\${COMP_WORDS[2]}" == "schema") || ("\${COMP_WORDS[1]}" == "memory" && ("\${COMP_WORDS[2]}" == "status" || "\${COMP_WORDS[2]}" == "search" || "\${COMP_WORDS[2]}" == "list")) ]]; then
+  # --json for status, mcp, version, doctor, memory status, config schema, project *, task *, supervisor *, chef *
+  if [[ "$cur" == -* ]] && [[ "\${COMP_WORDS[1]}" == "status" || "\${COMP_WORDS[1]}" == "mcp" || "\${COMP_WORDS[1]}" == "version" || "\${COMP_WORDS[1]}" == "doctor" || "\${COMP_WORDS[1]}" == "project" || "\${COMP_WORDS[1]}" == "task" || "\${COMP_WORDS[1]}" == "supervisor" || "\${COMP_WORDS[1]}" == "chef" || ("\${COMP_WORDS[1]}" == "config" && "\${COMP_WORDS[2]}" == "schema") || ("\${COMP_WORDS[1]}" == "memory" && "\${COMP_WORDS[2]}" == "status") ]]; then
     COMPREPLY=($(compgen -W "--json" -- "$cur"))
     return
   fi
@@ -274,6 +288,9 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'status:Show memory system status'
       'search:Search memories by query'
       'list:List memories (--projects for all DBs)'
+      'show:Print one memory (<category/slug>)'
+      'edit:Replace a memory body from stdin (--stdin --if-match)'
+      'delete:Delete a memory and its CLAUDE.md / AGENTS.md entry'
       'rm:Remove a project database'
       'init:Initialize memory system (interactive wizard)'
       'config:Configure memory system settings'
@@ -300,6 +317,12 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _describe 'subcommand' subcommands
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "docs" && ("\${words[3]}" == "list" || "\${words[3]}" == "show") ]]; then
     _values 'flags' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "memory" && ("\${words[3]}" == "search" || "\${words[3]}" == "list" || "\${words[3]}" == "show") ]]; then
+    _values 'flags' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "memory" && "\${words[3]}" == "edit" ]]; then
+    _values 'flags' '--stdin[Read the new body from stdin (required)]' '--if-match[sha256 from memory show (required)]' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "memory" && "\${words[3]}" == "delete" ]]; then
+    _values 'flags' '--yes[Skip the confirmation prompt (required with --json)]' '--if-match[sha256 from memory show]' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "task" ]]; then
     local -a subcommands
     subcommands=(
@@ -354,7 +377,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _values 'flags' '--provider[Chef CLI (${CHEF_PROVIDER_LIST})]' '--no-commit[Never commit; leave changes in the checkout]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "supervisor" && ("\${words[3]}" == "install" || "\${words[3]}" == "uninstall" || "\${words[3]}" == "status") ]]; then
     _values 'flags' '--label[launchd label (default: com.coding-friend.supervisor)]' '--json[Output a JSON envelope]'
-  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "project" || "\${words[2]}" == "task" || "\${words[2]}" == "supervisor" || "\${words[2]}" == "chef" || ("\${words[2]}" == "config" && "\${words[3]}" == "schema") || ("\${words[2]}" == "memory" && ("\${words[3]}" == "status" || "\${words[3]}" == "search" || "\${words[3]}" == "list")) ]]; then
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "project" || "\${words[2]}" == "task" || "\${words[2]}" == "supervisor" || "\${words[2]}" == "chef" || ("\${words[2]}" == "config" && "\${words[3]}" == "schema") || ("\${words[2]}" == "memory" && "\${words[3]}" == "status") ]]; then
     _values 'flags' '--json[Output a JSON envelope]'
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "session" ]]; then
     local -a subcommands
@@ -436,7 +459,7 @@ complete -c cf -n "__fish_seen_subcommand_from update" -l yes -d "Run without co
 complete -c cf -n "__fish_seen_subcommand_from install; and not __fish_seen_subcommand_from supervisor" -l yes -d "Skip prompts (default scope: user)"
 # --json for machine-callable commands
 complete -c cf -n "__fish_seen_subcommand_from status mcp version doctor project config install update ask reply done task supervisor chef" -l json -d "Output a JSON envelope"
-complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from search list" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from search list show edit delete" -l json -d "Output a JSON envelope"
 # Project subcommands
 complete -c cf -n "__fish_seen_subcommand_from project" -a list -d "List registered projects"
 complete -c cf -n "__fish_seen_subcommand_from project" -a add -d "Register a project (default: current directory)"
@@ -499,6 +522,9 @@ complete -c cf -n "__fish_seen_subcommand_from dev" -a update -d "Update local d
 complete -c cf -n "__fish_seen_subcommand_from memory" -a status -d "Show memory system status"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a search -d "Search memories by query"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a list -d "List memories (--projects for all DBs)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a show -d "Print one memory (<category/slug>)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a edit -d "Replace a memory body from stdin (--stdin --if-match)"
+complete -c cf -n "__fish_seen_subcommand_from memory" -a delete -d "Delete a memory and its CLAUDE.md / AGENTS.md entry"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a rm -d "Remove a project database"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a init -d "Initialize memory system (interactive wizard)"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a config -d "Configure memory system settings"
@@ -506,6 +532,10 @@ complete -c cf -n "__fish_seen_subcommand_from memory" -a start-daemon -d "Start
 complete -c cf -n "__fish_seen_subcommand_from memory" -a stop-daemon -d "Stop the memory daemon"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a rebuild -d "Rebuild the daemon search index"
 complete -c cf -n "__fish_seen_subcommand_from memory" -a mcp -d "Show MCP server setup instructions"
+complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from search list show edit delete" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
+complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from edit" -l stdin -d "Read the new body from stdin (required)"
+complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from edit delete" -l if-match -r -d "sha256 from memory show"
+complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from delete" -l yes -d "Skip the confirmation prompt (required with --json)"
 # Session subcommands
 complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
 complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from docs/sessions/"
@@ -524,7 +554,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
   $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','doctor','docs','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
   $devSubcommands = @('on','off','status','restart','sync','update')
-  $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
+  $memorySubcommands = @('status','search','list','show','edit','delete','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
   $docsSubcommands = @('list','show')
   $projectSubcommands = @('list','add','remove')
@@ -542,6 +572,15 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'docs' -and @('list','show') -contains $words[2].ToString()) {
     @('--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'memory' -and @('search','list','show') -contains $words[2].ToString()) {
+    @('--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'memory' -and $words[2].ToString() -eq 'edit') {
+    @('--stdin','--if-match','--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'memory' -and $words[2].ToString() -eq 'delete') {
+    @('--yes','--if-match','--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'run') {
     @('--provider','--model','--read-only','--no-fallback','--json') | Where-Object { $_ -like "$wordToComplete*" } |

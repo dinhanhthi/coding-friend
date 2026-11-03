@@ -17,6 +17,7 @@ export type ErrorCode =
   | "ASK_TIMEOUT"
   | "ALREADY_FINISHED"
   | "PROVIDER_UNAVAILABLE"
+  | "CONFLICT"
   | "INTERNAL";
 
 export type Envelope<T> =

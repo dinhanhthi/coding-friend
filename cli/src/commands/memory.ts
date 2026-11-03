@@ -1,5 +1,13 @@
-import { existsSync, readdirSync, rmSync } from "fs";
-import { join, resolve, sep } from "path";
+import { execFile } from "child_process";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { isAbsolute, join, resolve, sep } from "path";
 import { homedir } from "os";
 
 import { confirm } from "@inquirer/prompts";
@@ -17,7 +25,15 @@ import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { checkMemoryMcpHealth, printHealthSection } from "../lib/mcp-health.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
-import { CliError, runJson } from "../lib/output.js";
+import { CliError, runHuman, runJson } from "../lib/output.js";
+import { useProjectDir } from "../lib/project-option.js";
+import {
+  deleteNote,
+  readBodyFromStdin,
+  readNote,
+  replaceBody,
+  resolveNotePath,
+} from "../lib/note-io.js";
 import {
   collectMemoryCore,
   collectMemoryDetails,
@@ -161,6 +177,33 @@ interface JsonFlag {
   json?: boolean;
 }
 
+interface ProjectFlags extends JsonFlag {
+  projectDir?: string;
+}
+
+/** Human mode: log a CliError's message, then exit 1 (via runHuman). */
+async function runHumanLogged(fn: () => void | Promise<void>): Promise<void> {
+  await runHuman(async () => {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof CliError) log.error(err.message);
+      throw err;
+    }
+  });
+}
+
+const MAX_QUERY_CHARS = 500;
+
+function checkQuery(query: string): void {
+  if (query.length > MAX_QUERY_CHARS) {
+    throw new CliError(
+      "INVALID_VALUE",
+      `Query is longer than ${MAX_QUERY_CHARS} characters`,
+    );
+  }
+}
+
 export async function memoryStatusCommand(opts: JsonFlag = {}): Promise<void> {
   if (opts.json) {
     await runJson(async () => {
@@ -262,10 +305,12 @@ export async function memoryStatusCommand(opts: JsonFlag = {}): Promise<void> {
 
 export async function memorySearchCommand(
   query: string,
-  opts: JsonFlag = {},
+  opts: ProjectFlags = {},
 ): Promise<void> {
   if (opts.json) {
     await runJson(() => {
+      useProjectDir(opts.projectDir);
+      checkQuery(query);
       const memoryDir = getMemoryDir();
       if (!existsSync(memoryDir)) {
         throw new CliError("NOT_FOUND", `Memory dir not found: ${memoryDir}`);
@@ -277,6 +322,14 @@ export async function memorySearchCommand(
     return;
   }
 
+  await runHumanLogged(() => {
+    useProjectDir(opts.projectDir);
+    checkQuery(query);
+    memorySearchHuman(query);
+  });
+}
+
+function memorySearchHuman(query: string): void {
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
@@ -315,21 +368,24 @@ export async function memorySearchCommand(
   }
 }
 
-export async function memoryListCommand(opts: {
-  projects?: boolean;
-  json?: boolean;
-}): Promise<void> {
+export async function memoryListCommand(
+  opts: ProjectFlags & { projects?: boolean },
+): Promise<void> {
   if (opts.json) {
-    await runJson<unknown[]>(() =>
-      opts.projects ? listMemoryProjects() : listMemoriesJson(),
-    );
+    await runJson<unknown[]>(() => {
+      useProjectDir(opts.projectDir);
+      return opts.projects ? listMemoryProjects() : listMemoriesJson();
+    });
     return;
   }
 
-  if (opts.projects) {
-    return memoryListProjectsCommand();
-  }
+  await runHumanLogged(() => {
+    useProjectDir(opts.projectDir);
+    return opts.projects ? memoryListProjectsCommand() : memoryListHuman();
+  });
+}
 
+function memoryListHuman(): void {
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
@@ -391,6 +447,303 @@ function listMemoriesJson() {
   const mcpDir = getLibPath("cf-memory");
   requireMemoryBuilt(mcpDir);
   return listMemories(memoryDir, mcpDir);
+}
+
+// ─── show / edit / delete one memory ──────────────────────────────────────────
+
+type IndexState = "watched" | "stale" | "none";
+
+/** Same file cf-memory's daemon writes (daemon/process.ts), read without its mkdir. */
+function daemonPidFile(): string {
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  return join(home, ".coding-friend", "memory", "daemon.pid");
+}
+
+function processCommand(pid: number): Promise<string | null> {
+  return new Promise((done) => {
+    try {
+      execFile(
+        "ps",
+        ["-ww", "-o", "command=", "-p", String(pid)],
+        { timeout: 2000 },
+        (err, stdout) => done(err ? null : String(stdout)),
+      );
+    } catch {
+      done(null);
+    }
+  });
+}
+
+/**
+ * The docsDir argument of a daemon command line
+ * (`node …/daemon/entry.js <docsDir> [idleTimeoutMs] [--flag=…]`): the words
+ * after `entry.js` up to the idle timeout or the first flag.
+ */
+function daemonDocsDir(command: string): string | null {
+  const m = /[\\/]entry\.js +(.+)$/.exec(command.split("\n")[0].trim());
+  if (!m) return null;
+  const words = m[1].split(" ");
+  const end = words.findIndex(
+    (w, i) => i > 0 && (/^\d+$/.test(w) || w.startsWith("--")),
+  );
+  return words.slice(0, end === -1 ? undefined : end).join(" ");
+}
+
+/** True only when the shared daemon provably watches exactly `memoryDir`. */
+async function daemonWatches(memoryDir: string): Promise<boolean> {
+  if (process.platform === "win32") return false;
+  try {
+    const first = readFileSync(daemonPidFile(), "utf-8").trim().split("\n")[0];
+    const pid = parseInt(first, 10);
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    try {
+      process.kill(pid, 0);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EPERM") return false;
+    }
+    const command = await processCommand(pid);
+    const dir = command ? daemonDocsDir(command) : null;
+    if (!dir || !isAbsolute(dir)) return false;
+    return realpathSync(dir) === realpathSync(memoryDir);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Search index state after a memory file changed. Never builds cf-memory
+ * (edit/delete must stay fast); anything unknown is "stale".
+ */
+async function memoryIndexState(memoryDir: string): Promise<IndexState> {
+  if (await daemonWatches(memoryDir)) return "watched";
+  try {
+    const mcpDir = getLibPath("cf-memory");
+    if (!existsSync(join(mcpDir, "dist"))) return "stale";
+    const { tier } = await collectMemoryCore(memoryDir, mcpDir);
+    return tier === 3 ? "none" : "stale";
+  } catch {
+    return "stale";
+  }
+}
+
+function printIndexHint(index: IndexState, root: string): void {
+  if (index !== "stale") return;
+  log.dim(
+    `Search index may be stale. Rebuild it: cd "${root}" && cf memory rebuild`,
+  );
+}
+
+// Port of cf-memory src/lib/claude-md.ts (parse/build/remove), so the CLI
+// does not load the cf-memory package to drop a synced convention entry.
+const RULES_HEADER = "## CF Memory: Project Rules";
+const LEGACY_RULES_HEADER = "## CF Memory: Conventions";
+const RULE_ENTRY_RE = /^- .+ <!-- cf:(.+?) -->$/;
+
+interface RulesSection {
+  before: string;
+  entries: string[];
+  after: string;
+  untrackedLines: string[];
+}
+
+function parseRules(content: string): RulesSection {
+  let headerIdx = content.indexOf(RULES_HEADER);
+  let headerLen = RULES_HEADER.length;
+  if (headerIdx === -1) {
+    headerIdx = content.indexOf(LEGACY_RULES_HEADER);
+    headerLen = LEGACY_RULES_HEADER.length;
+  }
+  if (headerIdx === -1) {
+    return { before: content, entries: [], after: "", untrackedLines: [] };
+  }
+
+  const before = content.slice(0, headerIdx);
+  const rest = content.slice(headerIdx + headerLen);
+  const next = rest.match(/\n(## )/);
+  const sectionBody =
+    next?.index !== undefined ? rest.slice(0, next.index) : rest;
+  const after = next?.index !== undefined ? rest.slice(next.index + 1) : "";
+
+  const entries: string[] = [];
+  const untrackedLines: string[] = [];
+  for (const line of sectionBody.split("\n")) {
+    if (RULE_ENTRY_RE.test(line)) entries.push(line);
+    else if (line.trim()) untrackedLines.push(line);
+  }
+  return { before, entries, after, untrackedLines };
+}
+
+/** Rebuild the file; the section is dropped when nothing is left in it. */
+function buildRules({
+  before,
+  entries,
+  after,
+  untrackedLines,
+}: RulesSection): string {
+  if (entries.length === 0 && untrackedLines.length === 0) {
+    return before.trimEnd() + (after ? "\n\n" + after : "\n");
+  }
+  let result = before.trimEnd() + "\n\n" + RULES_HEADER + "\n\n";
+  if (untrackedLines.length > 0) result += untrackedLines.join("\n") + "\n";
+  if (entries.length > 0) result += entries.join("\n") + "\n";
+  if (after) result += "\n" + after;
+  return result;
+}
+
+/**
+ * Best-effort: drop `<!-- cf:<id> -->` from CLAUDE.md / AGENTS.md at the
+ * project root (cf-memory's root: memoryDir minus `/docs/memory` or `/memory`).
+ */
+function removeRuleEntry(
+  memoryDir: string,
+  id: string,
+): { files: string[]; warnings: string[] } {
+  const root = resolve(memoryDir)
+    .replace(/\/docs\/memory$/, "")
+    .replace(/\/memory$/, "");
+  const files: string[] = [];
+  const warnings: string[] = [];
+  for (const name of ["CLAUDE.md", "AGENTS.md"]) {
+    const file = join(root, name);
+    try {
+      if (!existsSync(file)) continue;
+      const section = parseRules(readFileSync(file, "utf-8"));
+      const entries = section.entries.filter(
+        (e) => e.match(RULE_ENTRY_RE)?.[1] !== id,
+      );
+      if (entries.length === section.entries.length) continue;
+      writeFileSync(file, buildRules({ ...section, entries }), "utf-8");
+      files.push(file);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      warnings.push(`Could not update ${file}: ${msg}`);
+    }
+  }
+  return { files, warnings };
+}
+
+export async function memoryShowCommand(
+  id: string,
+  opts: ProjectFlags = {},
+): Promise<void> {
+  const show = () => {
+    useProjectDir(opts.projectDir);
+    const path = resolveNotePath(getMemoryDir(), id);
+    const note = readNote(path);
+    return {
+      raw: note.frontmatterRaw + note.content,
+      data: {
+        id,
+        category: id.split("/")[0],
+        path,
+        frontmatter: note.frontmatter,
+        content: note.content,
+        sha256: note.sha256,
+        mtime: note.mtime,
+      },
+    };
+  };
+  if (opts.json) {
+    await runJson(() => show().data);
+    return;
+  }
+  await runHumanLogged(() => {
+    process.stdout.write(show().raw);
+  });
+}
+
+export async function memoryEditCommand(
+  id: string,
+  opts: ProjectFlags & { stdin?: boolean; ifMatch?: string } = {},
+): Promise<void> {
+  const edit = async () => {
+    const root = useProjectDir(opts.projectDir) ?? process.cwd();
+    if (!opts.stdin) {
+      throw new CliError(
+        "INVALID_ARGS",
+        "--stdin is required: pipe the new body on stdin",
+      );
+    }
+    if (!opts.ifMatch) {
+      throw new CliError(
+        "INVALID_ARGS",
+        "--if-match <sha256> is required (from `cf memory show`)",
+      );
+    }
+    const memoryDir = getMemoryDir();
+    const path = resolveNotePath(memoryDir, id);
+    const body = await readBodyFromStdin();
+    // A broken pipe sends nothing: never let it wipe a note.
+    if (body.trim() === "") throw new CliError("INVALID_VALUE", "empty body");
+    const { sha256, updated } = replaceBody(path, body, opts.ifMatch);
+    const index = await memoryIndexState(memoryDir);
+    return { root, data: { id, path, sha256, updated, index } };
+  };
+  if (opts.json) {
+    await runJson(async () => (await edit()).data);
+    return;
+  }
+  await runHumanLogged(async () => {
+    const { root, data } = await edit();
+    log.success(`Updated ${data.id} (${data.path})`);
+    printIndexHint(data.index, root);
+  });
+}
+
+export async function memoryDeleteCommand(
+  id: string,
+  opts: ProjectFlags & { yes?: boolean; ifMatch?: string } = {},
+): Promise<void> {
+  const del = async () => {
+    const root = useProjectDir(opts.projectDir) ?? process.cwd();
+    const memoryDir = getMemoryDir();
+    const path = resolveNotePath(memoryDir, id);
+    if (!opts.yes) {
+      if (opts.json) {
+        throw new CliError(
+          "INTERACTIVE_REQUIRED",
+          "Deleting a memory in JSON mode needs --yes",
+        );
+      }
+      const ok = await confirm({
+        message: `Delete memory ${id}?`,
+        default: false,
+      });
+      if (!ok) return null;
+    }
+    deleteNote(path, opts.ifMatch);
+    const { files, warnings } = removeRuleEntry(memoryDir, id);
+    const index = await memoryIndexState(memoryDir);
+    return {
+      root,
+      data: {
+        id,
+        path,
+        deleted: true as const,
+        index,
+        instructionFiles: files,
+        warnings,
+      },
+    };
+  };
+  if (opts.json) {
+    await runJson(async () => (await del())?.data);
+    return;
+  }
+  await runHumanLogged(async () => {
+    const res = await del();
+    if (!res) {
+      log.info("Cancelled.");
+      return;
+    }
+    const { root, data } = res;
+    log.success(`Deleted ${data.id} (${data.path})`);
+    for (const f of data.instructionFiles) {
+      log.info(`Removed its entry from ${f}`);
+    }
+    for (const w of data.warnings) log.warn(w);
+    printIndexHint(data.index, root);
+  });
 }
 
 export async function memoryStartDaemonCommand(): Promise<void> {

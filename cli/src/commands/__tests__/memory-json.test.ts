@@ -8,9 +8,18 @@ import {
   beforeEach,
   afterEach,
 } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { Readable } from "stream";
 
 const state = vi.hoisted(() => ({
   memoryDir: "",
@@ -21,6 +30,13 @@ const mockIsDaemonRunning = vi.fn();
 const mockGetDaemonInfo = vi.fn();
 const mockAreSqliteDepsAvailable = vi.fn();
 const mockLoadConfig = vi.fn();
+const mockExecFile = vi.fn();
+
+vi.mock("child_process", async () => {
+  const actual =
+    await vi.importActual<typeof import("child_process")>("child_process");
+  return { ...actual, execFile: (...a: unknown[]) => mockExecFile(...a) };
+});
 
 vi.mock("fs", async () => {
   const actual = await vi.importActual<typeof import("fs")>("fs");
@@ -33,14 +49,21 @@ vi.mock("fs", async () => {
   };
 });
 
-vi.mock("../../lib/config.js", () => ({
-  // Real resolveMemoryDir calls loadConfig once before returning the dir.
-  resolveMemoryDir: vi.fn(() => {
-    mockLoadConfig();
-    return state.memoryDir;
-  }),
-  loadConfig: (...args: unknown[]) => mockLoadConfig(...args),
-}));
+vi.mock("../../lib/config.js", async () => {
+  const actual = await vi.importActual<typeof import("../../lib/config.js")>(
+    "../../lib/config.js",
+  );
+  return {
+    // Real resolveMemoryDir calls loadConfig once before returning the dir.
+    // An empty state.memoryDir falls through to the real, cwd-based lookup.
+    resolveMemoryDir: vi.fn((p?: string) => {
+      if (!state.memoryDir) return actual.resolveMemoryDir(p);
+      mockLoadConfig();
+      return state.memoryDir;
+    }),
+    loadConfig: (...args: unknown[]) => mockLoadConfig(...args),
+  };
+});
 
 vi.mock("../../lib/lib-path.js", () => ({
   getLibPath: vi.fn(() => "/fake/cf-memory"),
@@ -76,6 +99,9 @@ import {
   memoryStatusCommand,
   memorySearchCommand,
   memoryListCommand,
+  memoryShowCommand,
+  memoryEditCommand,
+  memoryDeleteCommand,
 } from "../memory.js";
 
 const NOW = 1_800_000_000_000;
@@ -340,5 +366,171 @@ describe("--json", () => {
     }
 
     expect(singleEnvelope(writes)).toMatchObject({ ok: true, data: [] });
+  });
+});
+
+// ─── show / edit / delete with --project-dir ───────────────────────────────
+
+describe("memory show|edit|delete --json --project-dir", () => {
+  const origCwd = process.cwd();
+  let tmp: string;
+  let other: string;
+  let target: string;
+  let savedMemoryDir: string;
+
+  const note = (root: string) =>
+    join(root, "docs", "memory", "conventions", "x.md");
+
+  function project(name: string, title: string): string {
+    const root = join(tmp, name);
+    mkdirSync(join(root, "docs", "memory", "conventions"), { recursive: true });
+    writeFileSync(
+      note(root),
+      `---\ntitle: ${title}\ntype: preference\n---\n${title} body\n`,
+    );
+    return root;
+  }
+
+  function pipeStdin(body: string): void {
+    vi.spyOn(process, "stdin", "get").mockReturnValue(
+      Readable.from([Buffer.from(body)]) as unknown as typeof process.stdin,
+    );
+  }
+
+  /** The shared daemon (pid file → this live pid) watches `dir`. */
+  function daemonWatching(dir: string): void {
+    const base = join(tmp, "home", ".coding-friend", "memory");
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, "daemon.pid"), `${process.pid}\n${NOW}\n`);
+    mockExecFile.mockImplementation(
+      (_cmd: string, _args: string[], _opts: unknown, cb: Function) =>
+        cb(
+          null,
+          `node /x/dist/daemon/entry.js ${dir} --embedding-provider=t\n`,
+        ),
+    );
+  }
+
+  async function json(fn: () => Promise<void>) {
+    const writes = captureStdout();
+    await fn();
+    vi.mocked(process.stdout.write).mockRestore();
+    return singleEnvelope(writes);
+  }
+
+  beforeEach(() => {
+    process.exitCode = undefined;
+    tmp = realpathSync(mkdtempSync(join(tmpdir(), "cf-memjson-proj-")));
+    mkdirSync(join(tmp, "home"));
+    vi.stubEnv("HOME", join(tmp, "home"));
+    other = project("cwd-project", "cwd");
+    target = project("target", "target");
+    savedMemoryDir = state.memoryDir;
+    state.memoryDir = "";
+    mockExecFile.mockReset();
+    process.chdir(other);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    state.memoryDir = savedMemoryDir;
+    vi.unstubAllEnvs();
+    process.exitCode = undefined;
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("show and edit target the --project-dir memory dir, not cwd's", async () => {
+    const shown = await json(() =>
+      memoryShowCommand("conventions/x", { json: true, projectDir: target }),
+    );
+    expect(shown.data).toMatchObject({
+      id: "conventions/x",
+      category: "conventions",
+      path: note(target),
+      frontmatter: { title: "target" },
+      content: "target body\n",
+    });
+
+    pipeStdin("new body\n");
+    const edited = await json(() =>
+      memoryEditCommand("conventions/x", {
+        json: true,
+        stdin: true,
+        ifMatch: shown.data.sha256,
+        projectDir: target,
+      }),
+    );
+    expect(edited.data).toMatchObject({
+      id: "conventions/x",
+      path: note(target),
+    });
+    expect(readFileSync(note(target), "utf8")).toContain("new body\n");
+    expect(readFileSync(note(other), "utf8")).toContain("cwd body\n");
+  });
+
+  it.each([
+    ["this memory dir", "", "watched"],
+    ["a sibling memory dir", "-old", "stale"],
+  ])(
+    "edit reports index when the daemon watches %s",
+    async (_, suffix, index) => {
+      const memDir = join(target, "docs", "memory");
+      mkdirSync(memDir + suffix, { recursive: true });
+      daemonWatching(memDir + suffix);
+      const sha = (
+        await json(() =>
+          memoryShowCommand("conventions/x", {
+            json: true,
+            projectDir: target,
+          }),
+        )
+      ).data.sha256;
+
+      pipeStdin("edited\n");
+      const env = await json(() =>
+        memoryEditCommand("conventions/x", {
+          json: true,
+          stdin: true,
+          ifMatch: sha,
+          projectDir: target,
+        }),
+      );
+      expect(env.data.index).toBe(index);
+    },
+  );
+
+  it("delete needs --yes in JSON mode, then drops the CLAUDE.md entry", async () => {
+    const claude = join(target, "CLAUDE.md");
+    writeFileSync(
+      claude,
+      "# P\n\n## CF Memory: Project Rules\n\n" +
+        "- Tabs <!-- cf:conventions/x -->\n- Keep <!-- cf:conventions/y -->\n" +
+        "\n## Other\n\ntext\n",
+    );
+
+    const refused = await json(() =>
+      memoryDeleteCommand("conventions/x", { json: true, projectDir: target }),
+    );
+    expect(refused.error.code).toBe("INTERACTIVE_REQUIRED");
+    expect(existsSync(note(target))).toBe(true);
+
+    const env = await json(() =>
+      memoryDeleteCommand("conventions/x", {
+        json: true,
+        yes: true,
+        projectDir: target,
+      }),
+    );
+    expect(env.data).toMatchObject({
+      id: "conventions/x",
+      deleted: true,
+      instructionFiles: [claude],
+      warnings: [],
+    });
+    expect(existsSync(note(target))).toBe(false);
+    const md = readFileSync(claude, "utf8");
+    expect(md).not.toContain("cf:conventions/x");
+    expect(md).toContain("- Keep <!-- cf:conventions/y -->");
+    expect(md).toContain("## Other\n\ntext\n");
   });
 });

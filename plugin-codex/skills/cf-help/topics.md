@@ -153,7 +153,7 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 | `cf config get [key]` / `set <key> <value>` / `schema`       | Show config + source, or set a dotted key (`--global` / `--local`; `null` deletes); `schema` = JSON Schema; `--project-dir <path>` = as if run from its main repo root                                      |
 | `cf permission`                                              | Host approval (`--all`, `--user`, `--agent`)                                                                                                                                                                |
 | `cf statusline`                                              | Claude statusline renderer                                                                                                                                                                                  |
-| `cf memory`                                                  | `status` `search` `list` `rm` `init` `config` `rebuild` `mcp` `start-daemon` `stop-daemon`                                                                                                                  |
+| `cf memory`                                                  | `status` `search` `list` `show` `edit` `delete` `rm` `init` `config` `rebuild` `mcp` `start-daemon` `stop-daemon`                                                                                           |
 | `cf learn host [path]`                                       | Learn-doc site (`-p/--port` 3333)                                                                                                                                                                           |
 | `cf learn push [path]`                                       | Commit + push learn docs                                                                                                                                                                                    |
 | `cf mcp`                                                     | Register Learn + Memory MCP (user scope)                                                                                                                                                                    |
@@ -177,7 +177,7 @@ Optional. Scope flags on lifecycle commands: `--user` / `--global` / `--project`
 
 `cf task`: workers are `claude -p` / `codex exec` / `opencode run` (read-only, no OS sandbox, no `cf ask`/`cf done`: result = last message), no daemon; Cursor and Grok were evaluated and are not enabled; store `~/.coding-friend/orchestrator/` (`CF_ORCHESTRATOR_DIR`). Only `cf task list|show` and `cf chef status|inbox|show` are auto-approved. On a provider quota the task goes `paused` (keeps its writer lease; `cf task cancel` frees it), then resumes at the reset or switches provider per `task.*` config; `--no-fallback` always waits for the same provider. A paused task whose runner died is adopted by `cf supervisor tick`.
 
-`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list`, `config get|set|schema`, `project`, `docs`, `task`, `supervisor`, `chef`, `ask`, `reply`, `done`, `install`, `doctor`, `update --check|--yes`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
+`--json` on most read commands (`status`, `mcp`, `version`, `memory status|search|list|show|edit|delete`, `config get|set|schema`, `project`, `docs`, `task`, `supervisor`, `chef`, `ask`, `reply`, `done`, `install`, `doctor`, `update --check|--yes`): stdout = one envelope `{contractVersion, ok, data, error}`, logs on stderr, non-zero exit on error. Codes: `cli/README.md` "Machine interface".
 
 ---
 
@@ -238,6 +238,8 @@ Markdown in `{docsDir}/memory/` is the source of truth: `fact`→`features/`, `p
 Search: SQLite FTS5 + vectors → MiniSearch daemon → grep.
 
 MCP (when CLI + `cf mcp` / `cf init`): `memory_store` `memory_search` `memory_retrieve` `memory_list` `memory_update` `memory_delete`. Resources: `memory://index`, `memory://stats`. Without CLI: `grep -r '<query>' docs/memory/` and edit files. `cf memory rebuild` re-indexes.
+
+`cf memory show|edit|delete -- <category/slug>` (`--project-dir`, `--json`): `edit --stdin --if-match <sha256>` replaces the body only (stale sha → `CONFLICT`); `delete` (`--yes`) also drops its AGENTS.md / AGENTS.md rule line. Only `show` is auto-approved.
 
 `$cf-remember` = project knowledge for **AI**. `$cf-learn` = notes for the **human** (`~/.coding-friend/learn/`). `$cf-teach` = story of the last task.
 

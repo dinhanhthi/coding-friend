@@ -730,6 +730,9 @@ Memory subcommands:
   memory status       Show memory system status (tier, doc count, daemon)
   memory search       Search memories by query
   memory list         List memories in current project (--projects for all DBs)
+  memory show         Print one memory (<category/slug>)
+  memory edit         Replace a memory's body from stdin (--stdin --if-match)
+  memory delete       Delete a memory (--yes to skip the prompt)
   memory rm           Remove a project database (--project-id <id>, --all, or --prune)
   memory init         Initialize memory system (interactive wizard)
   memory config       Configure memory system settings
@@ -751,9 +754,13 @@ memory
 memory
   .command("search")
   .description("Search memories by query")
-  .argument("<query>", "search query")
+  .argument("<query>", "search query (max 500 characters)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
   .option("--json", "Output a JSON envelope")
-  .action(async (query: string, opts: { json?: boolean }) => {
+  .action(async (query: string, opts) => {
     const { memorySearchCommand } = await import("./commands/memory.js");
     await memorySearchCommand(query, opts);
   });
@@ -764,10 +771,68 @@ memory
     "List memories in current project, or all projects with --projects",
   )
   .option("--projects", "List all project databases with size and metadata")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
   .option("--json", "Output a JSON envelope")
-  .action(async (opts: { projects?: boolean; json?: boolean }) => {
+  .action(async (opts) => {
     const { memoryListCommand } = await import("./commands/memory.js");
     await memoryListCommand(opts);
+  });
+
+memory
+  .command("show")
+  .description("Print one memory file")
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryShowCommand } = await import("./commands/memory.js");
+    await memoryShowCommand(id, opts);
+  });
+
+memory
+  .command("edit")
+  .description(
+    "Replace a memory's body with stdin (frontmatter kept, updated: set to today)",
+  )
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option("--stdin", "Read the new body from stdin (required)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `memory show`; refuse with CONFLICT if the file changed (required)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryEditCommand } = await import("./commands/memory.js");
+    await memoryEditCommand(id, opts);
+  });
+
+memory
+  .command("delete")
+  .description("Delete a memory file and its CLAUDE.md / AGENTS.md rule entry")
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option("--yes", "Skip the confirmation prompt (required with --json)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `memory show`; refuse with CONFLICT if the file changed",
+  )
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryDeleteCommand } = await import("./commands/memory.js");
+    await memoryDeleteCommand(id, opts);
   });
 
 memory
