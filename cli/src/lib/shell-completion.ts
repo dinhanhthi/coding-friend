@@ -105,7 +105,7 @@ _cf_completions() {
 
   # Flag completion for config get/set
   if [[ "\${COMP_WORDS[1]}" == "config" && ("\${COMP_WORDS[2]}" == "get" || "\${COMP_WORDS[2]}" == "set") && "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--global --local --json" -- "$cur"))
+    COMPREPLY=($(compgen -W "--global --local --project-dir --json" -- "$cur"))
     return
   fi
 
@@ -317,7 +317,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     )
     _describe 'subcommand' subcommands
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "config" && ("\${words[3]}" == "get" || "\${words[3]}" == "set") ]]; then
-    _values 'flags' '--global[Use the global config]' '--local[Use the local project config]' '--json[Output a JSON envelope]'
+    _values 'flags' '--global[Use the global config]' '--local[Use the local project config]' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "status" || "\${words[2]}" == "mcp" || "\${words[2]}" == "version" || "\${words[2]}" == "doctor" ]]; then
     _values 'flags' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "ask" ]]; then
@@ -455,6 +455,7 @@ complete -c cf -n "__fish_seen_subcommand_from config" -a set -d "Write a config
 complete -c cf -n "__fish_seen_subcommand_from config" -a schema -d "Print the config JSON schema"
 complete -c cf -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from get set" -l global -d "Use the global config"
 complete -c cf -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from get set" -l local -d "Use the local project config"
+complete -c cf -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from get set" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
 # Flags for permission
 complete -c cf -n "__fish_seen_subcommand_from permission" -l all -d "Apply all recommended permissions"
 complete -c cf -n "__fish_seen_subcommand_from permission" -l user -d "Save to user-level settings"
@@ -508,7 +509,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $updateFlags = @('--cli','--plugin','--statusline','--user','--global','--project','--local','--check','--yes','--json')
   $words = $commandAst.CommandElements
   if ($wordToComplete -like '-*' -and $words.Count -ge 2 -and $words[1].ToString() -eq 'config' -and $words.Count -ge 3 -and ($words[2].ToString() -eq 'get' -or $words[2].ToString() -eq 'set')) {
-    @('--global','--local','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+    @('--global','--local','--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'run') {
     @('--provider','--model','--read-only','--no-fallback','--json') | Where-Object { $_ -like "$wordToComplete*" } |

@@ -2,6 +2,7 @@ import {
   FolderKanban,
   Info,
   Plus,
+  Settings,
   Stethoscope,
   Trash2,
   type LucideIcon,
@@ -21,12 +22,13 @@ import { describePending, type PendingRun } from "@/lib/runs";
 import type { CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
-export type View = "projects" | "doctor" | "version";
+export type View = "projects" | "doctor" | "version" | "settings";
 
 const VIEWS: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "doctor", label: "Doctor", icon: Stethoscope },
   { id: "version", label: "Version", icon: Info },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({
@@ -101,7 +103,7 @@ export function Sidebar({
 
       <footer className="flex flex-col gap-2 border-t border-rule p-2">
         <SupervisorLine supervisor={supervisor} />
-        <nav aria-label="Views" className="flex gap-1">
+        <nav aria-label="Views" className="grid grid-cols-2 gap-1">
           {VIEWS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}

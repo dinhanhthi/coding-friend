@@ -97,6 +97,11 @@ cf config get [key]  # Show merged config (or one dotted key) and its source
 cf config set <key> <value> --global|--local
                      # Set a dotted key (JSON value, else string); `null` deletes it
                      # 💡 --global or --local is required
+cf config get docsDir --project-dir ~/git/my-app
+                     # --project-dir <path> (get and set): act as if run from the
+                     #    main repo root of <path> (worktrees and subdirs collapse)
+cf config set tdd true --local --project-dir ~/git/my-app
+                     # Write ~/git/my-app/.coding-friend/config.json from anywhere
 cf config schema     # Print the JSON Schema of the config file
 cf learn host [path] # Build and serve learning docs at localhost:3333
                      # [path] is optional, default is `~/.coding-friend/learn`
@@ -250,7 +255,9 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 
 **`cf update --yes --json`.** `data = { performed, after }`; `ok: true` does not prove every step worked, read `after` (see [Non-interactive update](#non-interactive-update)).
 
-**Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory).
+**`cf config get|set --project-dir <path> --json`.** Runs as if from the main repo root of `<path>` (a worktree or subdirectory resolves to it), so `--local` and the merged view use that project's `.coding-friend/config.json`; `data` gains `project`, the resolved root. A missing path is `NOT_FOUND`, a path that is not a directory is `INVALID_ARGS`.
+
+**Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory) or pass `--project-dir <path>`, which resolves to it.
 
 ## Task runner
 

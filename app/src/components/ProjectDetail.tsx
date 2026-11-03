@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
+import { ConfigView, type SetConfig } from "@/components/ConfigView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +16,9 @@ import {
   type TaskView,
 } from "@/lib/cf";
 import { inProject } from "@/lib/project-filter";
+import type { PendingRun } from "@/lib/runs";
 import { useDelayed, type CfQuery } from "@/lib/use-cf-query";
+import { cn } from "@/lib/utils";
 
 /** `waiting` is a running task that asked a question, so it counts as live. */
 const LIVE_TASK_STATES: ReadonlySet<TaskState> = new Set<TaskState>([
@@ -47,14 +50,31 @@ export function projectName(path: string): string {
   return path.replace(/\/+$/, "").split("/").pop() || path;
 }
 
+type Tab = "overview" | "config";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "config", label: "Config" },
+];
+
+/**
+ * Rendered only once the project list has loaded, so Rust knows the project and a
+ * project-scoped call is not refused.
+ */
 export function ProjectDetail({
   project,
   activity,
+  pending,
+  onSetConfig,
 }: {
   project: ProjectEntry;
   activity: CfQuery<ProjectActivity>;
+  pending: PendingRun | null;
+  onSetConfig: SetConfig;
 }) {
-  const loading = activity.status === "loading";
+  const [tab, setTab] = useState<Tab>("overview");
+  const overview = tab === "overview";
+  const loading = overview && activity.status === "loading";
   const showRefreshing = useDelayed(activity.refreshing);
 
   return (
@@ -82,7 +102,7 @@ export function ProjectDetail({
         {loading && activity.showSpinner && (
           <Spinner label="Loading tasks and chefs" className="mt-1" />
         )}
-        {activity.status !== "loading" && (
+        {overview && activity.status !== "loading" && (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -98,6 +118,55 @@ export function ProjectDetail({
         )}
       </header>
 
+      <div role="tablist" aria-label="Project" className="-mt-4 flex gap-1">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`project-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls="project-tabpanel"
+            onClick={() => setTab(id)}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-xs text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
+              tab === id && "bg-paper-3 font-medium text-ink",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        role="tabpanel"
+        id="project-tabpanel"
+        aria-labelledby={`project-tab-${tab}`}
+        className="flex flex-col gap-8"
+      >
+        {overview ? (
+          <Overview activity={activity} />
+        ) : project.exists ? (
+          <ConfigView
+            key={project.path}
+            scope="local"
+            project={project.path}
+            pending={pending}
+            onSet={onSetConfig}
+          />
+        ) : (
+          <p className="text-sm text-muted">
+            The folder is missing, so its config cannot be read.
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function Overview({ activity }: { activity: CfQuery<ProjectActivity> }) {
+  return (
+    <>
       {activity.status === "error" && activity.error ? (
         <p role="alert" className="text-sm break-words text-danger">
           Could not load tasks and chefs: {describeCfError(activity.error)}
@@ -133,7 +202,7 @@ export function ProjectDetail({
         Shows tasks and chefs whose checkout is this folder or a folder inside
         it. Worktrees elsewhere on disk are not shown.
       </p>
-    </article>
+    </>
   );
 }
 

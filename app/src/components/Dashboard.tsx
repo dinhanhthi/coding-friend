@@ -1,6 +1,12 @@
 import { FolderPlus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  ConfigView,
+  configCommand,
+  configRunKey,
+  type SetConfig,
+} from "@/components/ConfigView";
 import { DoctorView, fixCommand, useDoctor } from "@/components/DoctorView";
 import { ProjectDetail, loadProjectActivity } from "@/components/ProjectDetail";
 import { Sidebar, type View } from "@/components/Sidebar";
@@ -9,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   addProject,
   cfVersion,
+  configSet,
   describeCfError,
   isCancelled,
   onRunStarted,
@@ -160,6 +167,20 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
     );
   };
 
+  const setConfig: SetConfig = (args, onDone, onError) => {
+    if (pending) return;
+    start(
+      {
+        op: "configSet",
+        key: configRunKey(args),
+        command: configCommand(args),
+      },
+      () => configSet(args),
+      onDone,
+      onError,
+    );
+  };
+
   const update = () => {
     if (pending) return;
     setUpdateOutcome(null);
@@ -200,12 +221,19 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
       <main className="min-w-0 flex-1 overflow-auto">
         {view === "projects" ? (
           selected ? (
-            <ProjectDetail project={selected} activity={detail} />
+            <ProjectDetail
+              project={selected}
+              activity={detail}
+              pending={pending}
+              onSetConfig={setConfig}
+            />
           ) : projects.status === "ok" ? (
             <NoProjects onAdd={add} disabled={pending !== null} />
           ) : null
         ) : view === "doctor" ? (
           <DoctorView cli={cli} doctor={doctor} pending={pending} onFix={fix} />
+        ) : view === "settings" ? (
+          <SettingsView pending={pending} onSet={setConfig} />
         ) : (
           <VersionView
             cli={cli}
@@ -218,6 +246,35 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         )}
       </main>
     </div>
+  );
+}
+
+function SettingsView({
+  pending,
+  onSet,
+}: {
+  pending: PendingRun | null;
+  onSet: SetConfig;
+}) {
+  return (
+    <article
+      aria-labelledby="settings-title"
+      className="mx-auto flex max-w-3xl flex-col gap-6 px-8 py-7"
+    >
+      <header>
+        <h2
+          id="settings-title"
+          className="text-lg font-semibold tracking-tight"
+        >
+          Settings
+        </h2>
+        <p className="text-xs text-muted">
+          Global config. A project's own config overrides it (Config tab of the
+          project).
+        </p>
+      </header>
+      <ConfigView scope="global" pending={pending} onSet={onSet} />
+    </article>
   );
 }
 

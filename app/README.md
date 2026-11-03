@@ -39,6 +39,14 @@ cargo test --manifest-path src-tauri/Cargo.toml     # Rust tests
 
 Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do not.
 
+## Settings and the Config tab
+
+**Settings** (sidebar) edits the global config, `~/.coding-friend/config.json`. A project's **Config** tab edits that project's `.coding-friend/config.json` and shows where each effective value comes from (local or global). The editors are built from `cf config schema --json`; values are read with `cf config get --json`, plus `--project-dir=<path>` for a project, so the CLI resolves it to the main repo root.
+
+Every change goes through `cf config set --global|--local [--project-dir=<path>] --json -- <key> <value>`, after a native confirm dialog from Rust that shows the exact command line; Cancel writes nothing. Reset deletes the key from that file (value `null`), so the value falls back to the next layer. Rust takes `--project-dir` only for a project in the registry, and the key only when it is a well-formed dotted key.
+
+`learn.outputDir` and `docsDir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs or learn notes. Change `docsDir` with `cf config set` in a terminal; `learn.outputDir` will change through the learn folder picker.
+
 ## Building a bundle
 
 `npm run bundle` runs `scripts/build.sh`, which wraps `tauri build`; extra arguments pass through (`npm run bundle -- --debug --bundles app`), except `--target`, which the script picks itself. The script prints where the `.app` and `.dmg` landed.

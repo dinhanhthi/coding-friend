@@ -350,6 +350,172 @@ export interface UpdateResult {
   after: UpdateCheck;
 }
 
+// ─── Config (cf config get|schema|set --json) ───────────────────────────
+
+export type ConfigScope = "global" | "local";
+
+/**
+ * `config get --json`. Settings global calls it bare (cwd = $HOME, so `local` is the global
+ * file again): use only `effective` and `global` there.
+ */
+export interface ConfigFullView {
+  global: Record<string, unknown>;
+  local: Record<string, unknown>;
+  /** Defaults, then global, then local. */
+  effective: Record<string, unknown>;
+  paths: { global: string; local: string };
+  /** The main repo root, set when called with a project. */
+  project?: string;
+}
+
+export interface ConfigSetResult {
+  scope: ConfigScope;
+  path: string;
+  key: string;
+  /** `null` when the key was deleted. */
+  value: unknown;
+  warnings: string[];
+  project?: string;
+}
+
+function hasPath(obj: Record<string, unknown>, key: string): boolean {
+  let cur: unknown = obj;
+  for (const part of key.split(".")) {
+    if (typeof cur !== "object" || cur === null || Array.isArray(cur))
+      return false;
+    if (!Object.hasOwn(cur, part)) return false;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  return true;
+}
+
+/**
+ * Where a dotted key's effective value comes from. The global scope (Settings) never
+ * answers "local".
+ */
+export function valueSource(
+  key: string,
+  view: ConfigFullView,
+  scope: ConfigScope,
+): ConfigScope | "default" {
+  if (scope === "local" && hasPath(view.local, key)) return "local";
+  if (hasPath(view.global, key)) return "global";
+  return "default";
+}
+
+/** One editable config leaf. `select` options and the drafts of boolean/select are JSON. */
+export type ConfigField = { key: string } & (
+  | { kind: "boolean" | "string" | "json" }
+  | { kind: "select"; options: unknown[] }
+  | { kind: "number"; integer: boolean; min?: number }
+);
+
+type SchemaNode = Record<string, unknown>;
+
+const isNode = (x: unknown): x is SchemaNode =>
+  typeof x === "object" && x !== null && !Array.isArray(x);
+
+/** An object with its own properties: walked into, never edited as a whole. */
+const isBranch = (node: SchemaNode) =>
+  node.type === "object" && isNode(node.properties);
+
+/** Every value the node allows when it is a finite set of literals, else `null`. */
+function literals(node: SchemaNode): unknown[] | null {
+  if (Array.isArray(node.enum)) return node.enum;
+  if ("const" in node) return [node.const];
+  if (node.type === "boolean") return [true, false];
+  const union = node.anyOf ?? node.oneOf;
+  if (!Array.isArray(union)) return null;
+  const all: unknown[] = [];
+  for (const member of union) {
+    const values = isNode(member) ? literals(member) : null;
+    if (!values) return null;
+    all.push(...values);
+  }
+  return all;
+}
+
+function leaf(key: string, node: SchemaNode): ConfigField {
+  if (node.type === "boolean") return { key, kind: "boolean" };
+  const options = literals(node);
+  if (options) return { key, kind: "select", options };
+  if (node.type === "integer" || node.type === "number") {
+    const min = typeof node.minimum === "number" ? node.minimum : undefined;
+    return {
+      key,
+      kind: "number",
+      integer: node.type === "integer",
+      ...(min !== undefined && { min }),
+    };
+  }
+  if (node.type === "string") return { key, kind: "string" };
+  // Arrays, records (`additionalProperties`) and mixed unions.
+  return { key, kind: "json" };
+}
+
+/**
+ * The config JSON Schema's leaves as dotted keys (`learn.autoCommit`), in schema order. A
+ * parent object is never a field: `config set learn {...}` would overwrite its siblings.
+ */
+export function configFields(schema: unknown, prefix = ""): ConfigField[] {
+  if (!isNode(schema) || !isNode(schema.properties)) return [];
+  return Object.entries(schema.properties).flatMap(([name, node]) => {
+    const key = prefix + name;
+    if (!isNode(node)) return [];
+    return isBranch(node) ? configFields(node, `${key}.`) : [leaf(key, node)];
+  });
+}
+
+/** Dotted keys of `values` the schema does not know; shown read-only. */
+export function unknownConfigKeys(
+  schema: unknown,
+  values: Record<string, unknown>,
+  prefix = "",
+): string[] {
+  const props =
+    isNode(schema) && isNode(schema.properties) ? schema.properties : {};
+  return Object.entries(values).flatMap(([name, value]) => {
+    const key = prefix + name;
+    const node = props[name];
+    if (!isNode(node)) return [key];
+    return isBranch(node) && isNode(value)
+      ? unknownConfigKeys(node, value, `${key}.`)
+      : [];
+  });
+}
+
+/** Same limit as Rust `MAX_CONFIG_VALUE` (bytes). */
+const MAX_CONFIG_VALUE = 4096;
+
+/**
+ * The `<value>` word for `config set` (the CLI JSON-parses it first, so a string is always
+ * JSON-quoted and JSON is minified: Rust refuses line breaks). Throws a message for the user.
+ */
+export function encodeConfigValue(field: ConfigField, draft: string): string {
+  let value: string;
+  if (field.kind === "string") {
+    value = JSON.stringify(draft);
+  } else if (field.kind === "number") {
+    const text = draft.trim();
+    const n = Number(text);
+    if (text === "" || !Number.isFinite(n)) throw new Error("Enter a number.");
+    if (field.integer && !Number.isInteger(n))
+      throw new Error("Enter a whole number.");
+    if (field.min !== undefined && n < field.min)
+      throw new Error(`Enter ${field.min} or more.`);
+    value = String(n);
+  } else {
+    try {
+      value = JSON.stringify(JSON.parse(draft));
+    } catch {
+      throw new Error("Not valid JSON.");
+    }
+  }
+  if (new TextEncoder().encode(value).length > MAX_CONFIG_VALUE)
+    throw new Error(`Longer than ${MAX_CONFIG_VALUE} bytes.`);
+  return value;
+}
+
 // ─── Manual commands ────────────────────────────────────────────────────
 
 export const INSTALL_COMMAND = "npm i -g coding-friend-cli";
@@ -389,6 +555,11 @@ export function isCopyableCommand(hint: string): boolean {
   );
 }
 
+/** One POSIX shell word that pastes as literal text: `$(...)`, backticks and `'` stay inert. */
+export function shellQuote(arg: string): string {
+  return `'${arg.replaceAll("'", "'\\''")}'`;
+}
+
 // ─── Commands ───────────────────────────────────────────────────────────
 
 export const cfVersion = () => invoke<VersionInfo>("cf_version");
@@ -410,6 +581,19 @@ export const updateCheck = () => invoke<UpdateCheck>("update_check");
 export const updateYes = () => invoke<UpdateResult>("update_yes");
 /** `argv` must be an allow-listed doctor fix; the result differs per fix. */
 export const runFix = (argv: string[]) => invoke<unknown>("run_fix", { argv });
+/** No project: the global view for Settings. */
+export const configView = (project?: string) =>
+  invoke<ConfigFullView>("config_view", { project });
+/** The JSON Schema of the config (`z.toJSONSchema`). */
+export const configSchema = () =>
+  invoke<Record<string, unknown>>("config_schema");
+/** Rust shows the native confirm. `value` is parsed as JSON by the CLI; `"null"` deletes. */
+export const configSet = (args: {
+  scope: ConfigScope;
+  project?: string;
+  key: string;
+  value: string;
+}) => invoke<ConfigSetResult>("config_set", args);
 export const checkCli = () => invoke<CliStatus>("check_cli");
 export const getCfInfo = () => invoke<CfInfo>("get_cf_info");
 /** Rust shows the folder picker. */
@@ -422,13 +606,14 @@ export const clearCfPath = () => invoke<void>("clear_cf_path");
 export interface RunStarted {
   /** The command line the confirm showed. */
   command: string;
-  op: "update" | "fix" | "projectRemove";
+  op: "update" | "fix" | "projectRemove" | "configSet";
 }
 
 const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
   "update",
   "fix",
   "projectRemove",
+  "configSet",
 ]);
 
 export function isRunStarted(x: unknown): x is RunStarted {

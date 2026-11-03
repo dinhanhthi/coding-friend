@@ -9,7 +9,7 @@ export type RunOp = RunStarted["op"] | "projectAdd";
  */
 export interface PendingRun {
   op: RunOp;
-  /** The fix's check id or the project path; `null` for update and add. */
+  /** The fix's check id, the project path or the config row; `null` for update and add. */
   key: string | null;
   /** The command line the confirm shows. */
   command: string;
