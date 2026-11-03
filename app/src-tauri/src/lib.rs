@@ -46,6 +46,8 @@ pub fn run() {
             commands::config_view,
             commands::config_schema,
             commands::config_set,
+            commands::docs_list,
+            commands::docs_show,
             commands::open_url,
             commands::task_list,
             commands::chef_status,

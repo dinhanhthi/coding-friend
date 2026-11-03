@@ -516,6 +516,50 @@ export function encodeConfigValue(field: ConfigField, draft: string): string {
   return value;
 }
 
+// ─── Docs (cf docs list|show --json) ────────────────────────────────────
+
+/** cli/src/lib/docs-tree.ts `DocEntry`: `path` is posix, relative to `docsDir`. */
+export interface DocEntry {
+  path: string;
+  size: number;
+  mtime: string;
+}
+
+export interface DocsList {
+  /** The main repo root. */
+  project: string;
+  docsDir: string;
+  exists: boolean;
+  /** Sorted by path. */
+  files: DocEntry[];
+  /** The CLI stopped at its file cap. */
+  truncated: boolean;
+}
+
+export interface DocContent {
+  project: string;
+  path: string;
+  content: string;
+  size: number;
+  mtime: string;
+  sha256: string;
+}
+
+const FRONTMATTER = /^---\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
+
+/**
+ * A leading YAML frontmatter block (`---` fences on their own lines, at the very start)
+ * split off the markdown body; `frontmatter` is the text between the fences.
+ */
+export function splitFrontmatter(text: string): {
+  frontmatter: string | null;
+  body: string;
+} {
+  const match = FRONTMATTER.exec(text);
+  if (!match) return { frontmatter: null, body: text };
+  return { frontmatter: match[1] ?? "", body: text.slice(match[0].length) };
+}
+
 // ─── Manual commands ────────────────────────────────────────────────────
 
 export const INSTALL_COMMAND = "npm i -g coding-friend-cli";
@@ -594,6 +638,13 @@ export const configSet = (args: {
   key: string;
   value: string;
 }) => invoke<ConfigSetResult>("config_set", args);
+export const docsList = (project: string) =>
+  invoke<DocsList>("docs_list", { project });
+/** `path` is relative to the docs folder. */
+export const docsShow = (project: string, path: string) =>
+  invoke<DocContent>("docs_show", { project, relpath: path });
+/** Rust checks the `https:` URL and shows the native confirm; Cancel rejects `cancelled`. */
+export const openUrl = (url: string) => invoke<void>("open_url", { url });
 export const checkCli = () => invoke<CliStatus>("check_cli");
 export const getCfInfo = () => invoke<CfInfo>("get_cf_info");
 /** Rust shows the folder picker. */

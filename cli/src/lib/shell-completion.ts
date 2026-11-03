@@ -27,7 +27,7 @@ ${MARKER_START}
 _cf_completions() {
   local cur="\${COMP_WORDS[COMP_CWORD]}"
   local prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  local commands="install uninstall disable enable init config learn mcp memory permission statusline update status version doctor project ask reply done task supervisor chef clean dev session guide"
+  local commands="install uninstall disable enable init config learn mcp memory permission statusline update status version doctor docs project ask reply done task supervisor chef clean dev session guide"
   local scope_flags="--user --global --project --local"
   local update_flags="--cli --plugin --statusline --user --global --project --local --check --yes --json"
 
@@ -46,6 +46,12 @@ _cf_completions() {
   # Subcommands for 'project'
   if [[ "\${COMP_WORDS[1]}" == "project" && \${COMP_CWORD} -eq 2 ]]; then
     COMPREPLY=($(compgen -W "list add remove" -- "$cur"))
+    return
+  fi
+
+  # Subcommands for 'docs'
+  if [[ "\${COMP_WORDS[1]}" == "docs" && \${COMP_CWORD} -eq 2 ]]; then
+    COMPREPLY=($(compgen -W "list show" -- "$cur"))
     return
   fi
 
@@ -106,6 +112,12 @@ _cf_completions() {
   # Flag completion for config get/set
   if [[ "\${COMP_WORDS[1]}" == "config" && ("\${COMP_WORDS[2]}" == "get" || "\${COMP_WORDS[2]}" == "set") && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--global --local --project-dir --json" -- "$cur"))
+    return
+  fi
+
+  # Flag completion for docs list/show
+  if [[ "\${COMP_WORDS[1]}" == "docs" && ("\${COMP_WORDS[2]}" == "list" || "\${COMP_WORDS[2]}" == "show") && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--project-dir --json" -- "$cur"))
     return
   fi
 
@@ -194,6 +206,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
     'status:Show comprehensive Coding Friend status'
     'version:Show CLI and plugin versions'
     'doctor:Check the Coding Friend setup (read-only)'
+    "docs:Browse the project's markdown docs"
     'project:Manage the registry of Coding Friend projects'
     'ask:Ask the user a question from a task and wait for the answer'
     'reply:Answer a question asked by a task'
@@ -278,6 +291,15 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'remove:Unregister a project'
     )
     _describe 'subcommand' subcommands
+  elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "docs" ]]; then
+    local -a subcommands
+    subcommands=(
+      'list:List markdown files under the docs dir'
+      'show:Print one markdown file (path relative to the docs dir)'
+    )
+    _describe 'subcommand' subcommands
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "docs" && ("\${words[3]}" == "list" || "\${words[3]}" == "show") ]]; then
+    _values 'flags' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "task" ]]; then
     local -a subcommands
     subcommands=(
@@ -384,6 +406,7 @@ complete -c cf -n "__fish_use_subcommand" -a dev -d "Switch between local and re
 complete -c cf -n "__fish_use_subcommand" -a status -d "Show comprehensive Coding Friend status"
 complete -c cf -n "__fish_use_subcommand" -a version -d "Show CLI and plugin versions"
 complete -c cf -n "__fish_use_subcommand" -a doctor -d "Check the Coding Friend setup (read-only)"
+complete -c cf -n "__fish_use_subcommand" -a docs -d "Browse the project's markdown docs"
 complete -c cf -n "__fish_use_subcommand" -a project -d "Manage the registry of Coding Friend projects"
 complete -c cf -n "__fish_use_subcommand" -a ask -d "Ask the user a question from a task and wait for the answer"
 complete -c cf -n "__fish_use_subcommand" -a reply -d "Answer a question asked by a task"
@@ -418,6 +441,11 @@ complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcomman
 complete -c cf -n "__fish_seen_subcommand_from project" -a list -d "List registered projects"
 complete -c cf -n "__fish_seen_subcommand_from project" -a add -d "Register a project (default: current directory)"
 complete -c cf -n "__fish_seen_subcommand_from project" -a remove -d "Unregister a project"
+# Docs subcommands and flags
+complete -c cf -n "__fish_seen_subcommand_from docs" -a list -d "List markdown files under the docs dir"
+complete -c cf -n "__fish_seen_subcommand_from docs" -a show -d "Print one markdown file (path relative to the docs dir)"
+complete -c cf -n "__fish_seen_subcommand_from docs; and __fish_seen_subcommand_from list show" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
+complete -c cf -n "__fish_seen_subcommand_from docs; and __fish_seen_subcommand_from list show" -l json -d "Output a JSON envelope"
 # Task subcommands and flags
 complete -c cf -n "__fish_seen_subcommand_from task" -a run -d "Start a detached worker task in the current checkout"
 complete -c cf -n "__fish_seen_subcommand_from task" -a list -d "List tasks, newest first"
@@ -494,10 +522,11 @@ const POWERSHELL_BLOCK = `
 ${MARKER_START}
 Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','doctor','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
+  $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','doctor','docs','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $memorySubcommands = @('status','search','list','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
   $sessionSubcommands = @('save','load')
+  $docsSubcommands = @('list','show')
   $projectSubcommands = @('list','add','remove')
   $taskSubcommands = @('run','list','show','cancel')
   $supervisorSubcommands = @('install','uninstall','status','tick')
@@ -510,6 +539,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $words = $commandAst.CommandElements
   if ($wordToComplete -like '-*' -and $words.Count -ge 2 -and $words[1].ToString() -eq 'config' -and $words.Count -ge 3 -and ($words[2].ToString() -eq 'get' -or $words[2].ToString() -eq 'set')) {
     @('--global','--local','--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'docs' -and @('list','show') -contains $words[2].ToString()) {
+    @('--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'run') {
     @('--provider','--model','--read-only','--no-fallback','--json') | Where-Object { $_ -like "$wordToComplete*" } |
@@ -528,6 +560,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'memory') {
     $memorySubcommands | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'docs') {
+    $docsSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'project') {
     $projectSubcommands | Where-Object { $_ -like "$wordToComplete*" } |

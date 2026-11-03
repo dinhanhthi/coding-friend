@@ -41,6 +41,8 @@ const PROTECTED_KEYS: [&str; 2] = ["learn.outputDir", "docsDir"];
 const MAX_CONFIG_VALUE: usize = 4096;
 /// Same limit as `MAX_URL` in app/src/lib/markdown-links.ts.
 const MAX_URL: usize = 2048;
+/// Longest docs relpath the page may ask for (bytes).
+const MAX_DOC_PATH: usize = 1024;
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -500,6 +502,37 @@ pub async fn config_set(
     line += &format!(" -- {key:?} {value:?}");
     argv.extend(["--json".into(), "--".into(), key, value]);
     confirm_and_run(&app, &lock, "configSet", &line, &argv, cf::QUERY_TIMEOUT).await
+}
+
+/// `docs list --json --project-dir=P`: the markdown files of a known project's docs folder.
+#[tauri::command]
+pub async fn docs_list(known: State<'_, KnownProjects>, project: String) -> Result<Value, CfError> {
+    let argv = vec![
+        "docs".into(),
+        "list".into(),
+        "--json".into(),
+        project_dir_arg(&known, &project)?,
+    ];
+    cf::run_cf(&argv, cf::QUERY_TIMEOUT).await
+}
+
+/// `docs show --json --project-dir=P -- <relpath>`; the CLI checks the file stays inside
+/// the docs folder.
+#[tauri::command]
+pub async fn docs_show(
+    known: State<'_, KnownProjects>,
+    project: String,
+    relpath: String,
+) -> Result<Value, CfError> {
+    let argv = vec![
+        "docs".into(),
+        "show".into(),
+        "--json".into(),
+        project_dir_arg(&known, &project)?,
+        "--".into(),
+        data_arg(&relpath, MAX_DOC_PATH)?,
+    ];
+    cf::run_cf(&argv, cf::QUERY_TIMEOUT).await
 }
 
 /// Opens an `https:` link in the system browser after a native confirm showing the full URL.

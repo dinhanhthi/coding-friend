@@ -224,6 +224,36 @@ config
     await configSchemaCommand(opts);
   });
 
+const docs = program
+  .command("docs")
+  .description("Browse the project's markdown docs (docsDir)");
+
+docs
+  .command("list")
+  .description("List markdown files under the project's docs dir")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { docsListCommand } = await import("./commands/docs.js");
+    await docsListCommand(opts);
+  });
+
+docs
+  .command("show <relpath>")
+  .description("Print one markdown file (path relative to the docs dir)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (relpath: string, opts) => {
+    const { docsShowCommand } = await import("./commands/docs.js");
+    await docsShowCommand(relpath, opts);
+  });
+
 const learn = program
   .command("learn")
   .description("Manage learning docs — host as a website or push to git");

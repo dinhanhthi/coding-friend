@@ -2,6 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { ConfigView, type SetConfig } from "@/components/ConfigView";
+import { DocsView } from "@/components/DocsView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,11 +51,12 @@ export function projectName(path: string): string {
   return path.replace(/\/+$/, "").split("/").pop() || path;
 }
 
-type Tab = "overview" | "config";
+type Tab = "overview" | "config" | "docs";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "config", label: "Config" },
+  { id: "docs", label: "Docs" },
 ];
 
 /**
@@ -146,7 +148,11 @@ export function ProjectDetail({
       >
         {overview ? (
           <Overview activity={activity} />
-        ) : project.exists ? (
+        ) : !project.exists ? (
+          <p className="text-sm text-muted">
+            The folder is missing, so its {tab} cannot be read.
+          </p>
+        ) : tab === "config" ? (
           <ConfigView
             key={project.path}
             scope="local"
@@ -155,9 +161,7 @@ export function ProjectDetail({
             onSet={onSetConfig}
           />
         ) : (
-          <p className="text-sm text-muted">
-            The folder is missing, so its config cannot be read.
-          </p>
+          <DocsView key={project.path} project={project.path} />
         )}
       </div>
     </article>

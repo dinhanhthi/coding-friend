@@ -10,6 +10,7 @@ import {
   isRunStarted,
   isRunnableFix,
   shellQuote,
+  splitFrontmatter,
   valueSource,
   type ConfigField,
   type ConfigFullView,
@@ -144,5 +145,21 @@ describe("config editor contract", () => {
     [{ key: "n", kind: "number", integer: true }, "1.5"],
   ] as [ConfigField, string][])("rejects %j %j", (field, draft) => {
     expect(() => encodeConfigValue(field, draft)).toThrow();
+  });
+});
+
+describe("splitFrontmatter", () => {
+  it("splits a leading frontmatter block off and keeps the body", () => {
+    expect(
+      splitFrontmatter("---\ntitle: A\ntags: [x]\n---\n# Body\n---\n"),
+    ).toEqual({
+      frontmatter: "title: A\ntags: [x]",
+      body: "# Body\n---\n",
+    });
+  });
+
+  it("leaves text without a leading block unchanged", () => {
+    const text = "# Title\n\n---\nnot: frontmatter\n---\n";
+    expect(splitFrontmatter(text)).toEqual({ frontmatter: null, body: text });
   });
 });

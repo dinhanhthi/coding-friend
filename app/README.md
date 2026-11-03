@@ -47,6 +47,16 @@ Every change goes through `cf config set --global|--local [--project-dir=<path>]
 
 `learn.outputDir` and `docsDir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs or learn notes. Change `docsDir` with `cf config set` in a terminal; `learn.outputDir` will change through the learn folder picker.
 
+## Docs tab
+
+A project's **Docs** tab shows the markdown files of its docs folder (`docsDir`, default `docs`), read-only. The file tree on the left is grouped by top-level folder (`plans`, `memory`, `research`, `context`, `later`, …); the selected file shows on the right. The list comes from `cf docs list --json --project-dir=<path>` and a file from `cf docs show --json --project-dir=<path> -- <relpath>`; Rust takes the project only from the registry, and the CLI refuses any path that leaves the docs folder (see `cli/README.md`, "Machine interface").
+
+These files are written by agents and may arrive through cloud sync or a git pull, so the app renders them as untrusted content:
+
+- Frontmatter is shown as plain text above the body.
+- Markdown is rendered without raw HTML (it is dropped, not run) and without rehype plugins. Images are shown as `[image: alt]` text and never fetched.
+- No link is a real `<a href>`, so nothing in a file can navigate the window. A relative link to another `.md` or `.markdown` file in the tree opens that file in the tree. An `https:` link opens in the system browser only after a native confirm from Rust that shows the full URL; Cancel opens nothing. Every other link (`http:`, `file:`, `mailto:`, anchors, absolute paths, a `..` that leaves the tree) is shown as plain text.
+
 ## Building a bundle
 
 `npm run bundle` runs `scripts/build.sh`, which wraps `tauri build`; extra arguments pass through (`npm run bundle -- --debug --bundles app`), except `--target`, which the script picks itself. The script prints where the `.app` and `.dmg` landed.
