@@ -4,7 +4,7 @@ import { createConnection } from "net";
 import { homedir } from "os";
 import { join } from "path";
 import { isMemoryInitialized } from "../commands/memory.js";
-import { resolveLearnDir } from "./config.js";
+import { ConfigSchema, findUnknownKeys, resolveLearnDir } from "./config.js";
 import { listMdFilesRecursive } from "./fs-utils.js";
 import {
   detectHostsAvailable,
@@ -16,6 +16,7 @@ import {
   type Host,
 } from "./host.js";
 import { readJson } from "./json.js";
+import { learnStatus } from "./learn-storage.js";
 import {
   DEFAULT_LABEL,
   START_INTERVAL_SECONDS,
@@ -28,16 +29,17 @@ import {
   checkMemoryMcpHealth,
   type McpHealthResult,
 } from "./mcp-health.js";
+import { detectMemoryMcpState } from "./mcp-state.js";
 import { binaryVersion } from "./orchestrator/providers/version.js";
 import { readHeartbeat } from "./orchestrator/supervisor.js";
-import { globalConfigPath, memoryDepsDir } from "./paths.js";
+import { globalConfigPath, memoryDepsDir, resolvePath } from "./paths.js";
 import {
   detectPluginScope,
   isMarketplaceRegistered,
   isPluginDisabled,
   isPluginInstalled,
 } from "./plugin-state.js";
-import { listProjects } from "./project-registry.js";
+import { canonicalProjectPath, listProjects } from "./project-registry.js";
 import type { CodingFriendConfig } from "../types.js";
 
 /**
@@ -69,6 +71,11 @@ export interface DoctorCheck {
 export interface DoctorData {
   cli: { version: string; node: string; path: string };
   checks: DoctorCheck[];
+}
+
+/** `cf doctor --project-dir`: only checks in group `project`. */
+export interface ProjectDoctorData extends DoctorData {
+  project: string;
 }
 
 /** The only fixes a caller may run (no prompt, JSON envelope out). */
@@ -355,6 +362,22 @@ async function learnChecks(claudePresent: boolean): Promise<DoctorCheck[]> {
   return fromHealth(result, "learn", LEARN_IDS, probe, registered);
 }
 
+/** Git (history, push) and a cloud folder (sync) both move the same files: pick one. */
+function learnStorageCheck(): DoctorCheck {
+  const s = learnStatus(readJson<CodingFriendConfig>(globalConfigPath()));
+  const base = { id: "learn.storage", group: "learn", label: "Learn storage" };
+  if (s.mode === "git" && s.cloud) {
+    return {
+      ...base,
+      status: "warn",
+      detail: `git repo inside ${s.cloud.provider} folder ${s.cloud.root}`,
+      hint: "use either git or a cloud folder for learn notes",
+    };
+  }
+  const where = s.cloud ? ` in ${s.cloud.provider}` : "";
+  return { ...base, status: "ok", detail: `${s.mode}${where}: ${s.outputDir}` };
+}
+
 function hostChecks(hosts: Host[]): DoctorCheck[] {
   return hosts.map((host) => {
     const id = `host.${host}.version`;
@@ -453,6 +476,10 @@ function registryChecks(): DoctorCheck[] {
   }
 }
 
+export function cliInfo(cliVersion: string): DoctorData["cli"] {
+  return { version: cliVersion, node: process.versions.node, path: cliPath() };
+}
+
 function cliPath(): string {
   const entry = process.argv[1] ?? "";
   try {
@@ -470,12 +497,150 @@ export async function collectDoctor(cliVersion: string): Promise<DoctorData> {
     ...pluginChecks(claudePresent),
     ...(await memoryChecks(claudePresent)),
     ...(await learnChecks(claudePresent)),
+    learnStorageCheck(),
     ...hostChecks(hosts),
     ...supervisorChecks(),
     ...registryChecks(),
   ];
-  return {
-    cli: { version: cliVersion, node: process.versions.node, path: cliPath() },
-    checks,
-  };
+  return { cli: cliInfo(cliVersion), checks };
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Parsed JSON object, or the reason it is not one. */
+function readJsonObject(
+  file: string,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
+  try {
+    const value: unknown = JSON.parse(readFileSync(file, "utf-8"));
+    return isPlainObject(value)
+      ? { ok: true, value }
+      : { ok: false, error: "not a JSON object" };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+/** POSIX single-quote a path for a copyable hint (`'` → `'\''`). */
+/** POSIX single-quote a path for a copyable hint (`'` → `'\\''`). */
+function quotePath(path: string): string {
+  return `'${path.replaceAll("'", "'\\''")}'`;
+}
+
+/** Registry, local config, docs, memory and `.mcp.json` of one project root. */
+export function collectProjectChecks(root: string): DoctorCheck[] {
+  const group = "project";
+  const checks: DoctorCheck[] = [];
+
+  const { projects, warning } = listProjects();
+  const canonical = canonicalProjectPath(root);
+  const registered = projects.some((p) => p.path === canonical);
+  checks.push({
+    id: "project.registered",
+    group,
+    label: "Registered",
+    status: registered ? "ok" : "warn",
+    ...(registered
+      ? {}
+      : {
+          detail: warning ?? "not in the project registry",
+          hint: `cf project add -- ${quotePath(root)}`,
+        }),
+  });
+
+  // Same checks loadConfig's validation runs, without its log.warn output.
+  const configPath = join(root, ".coding-friend", "config.json");
+  const configBase = { id: "project.config", group, label: "Local config" };
+  let local: Record<string, unknown> = {};
+  const parsed = existsSync(configPath) ? readJsonObject(configPath) : null;
+  if (parsed === null) {
+    checks.push({ ...configBase, status: "ok", detail: "none" });
+  } else if (!parsed.ok) {
+    checks.push({
+      ...configBase,
+      status: "fail",
+      detail: `${configPath}: ${parsed.error}`,
+      hint: `Fix or delete ${configPath}`,
+    });
+  } else {
+    local = parsed.value;
+    const problems = [
+      ...findUnknownKeys(local).map(
+        (u) => `unknown key '${[...u.path, u.key].join(".")}'`,
+      ),
+      ...(ConfigSchema.safeParse(local).error?.issues ?? []).map(
+        (i) => `${i.path.join(".")}: ${i.message}`,
+      ),
+    ];
+    checks.push(
+      problems.length === 0
+        ? { ...configBase, status: "ok", detail: configPath }
+        : {
+            ...configBase,
+            status: "warn",
+            detail: problems.join("; "),
+            hint: `Edit ${configPath}`,
+          },
+    );
+  }
+
+  // loadConfig's precedence for docsDir: local, then global, then "docs".
+  const global = readJson<Record<string, unknown>>(globalConfigPath());
+  const docsSetting = [local.docsDir, global?.docsDir].find(
+    (v): v is string => typeof v === "string",
+  );
+  const docsDir = resolvePath(docsSetting ?? "docs", root);
+  const docsExists = existsSync(docsDir);
+  checks.push({
+    id: "project.docsDir",
+    group,
+    label: "Docs directory",
+    status: docsExists ? "ok" : "warn",
+    detail: docsExists ? docsDir : `missing: ${docsDir}`,
+  });
+
+  const memoryDir = join(docsDir, "memory");
+  const memoryExists = existsSync(memoryDir);
+  checks.push({
+    id: "project.memory",
+    group,
+    label: "Memory",
+    status: memoryExists ? "ok" : "warn",
+    detail: memoryExists
+      ? `${listMdFilesRecursive(memoryDir).length} file(s) in ${memoryDir}`
+      : `missing: ${memoryDir}`,
+  });
+
+  // Same condition as memory.mcp.projectShadow, for this root's .mcp.json.
+  const state = detectMemoryMcpState(
+    readJson<Record<string, unknown>>(join(root, ".mcp.json")),
+    existsSync,
+  );
+  const shadowDetail =
+    state.kind === "stale"
+      ? `Stale entry shadows user-scope server (path missing: ${state.path})`
+      : state.kind === "legacy-valid"
+        ? "Legacy absolute-path entry shadows user-scope server"
+        : state.kind === "npx"
+          ? "Project-scope npx entry shadows user-scope server"
+          : null;
+  checks.push({
+    id: "project.mcpShadow",
+    group,
+    label: "Project .mcp.json",
+    ...(shadowDetail
+      ? {
+          status: "warn",
+          detail: shadowDetail,
+          // cf update only cleans the cwd's .mcp.json, so run it in root.
+          hint: `cd ${quotePath(root)} && cf update`,
+        }
+      : { status: "ok", detail: "no coding-friend-memory entry" }),
+  });
+
+  return checks;
 }

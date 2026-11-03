@@ -59,11 +59,17 @@ These files are written by agents and may arrive through cloud sync or a git pul
 
 ## Memory tab
 
-A project's **Memory** tab (shown when the project folder exists) lists the project's memories from `cf memory list --json --project-dir=<path>`, grouped by category. Typing in the search box runs `cf memory search --json --project-dir=<path> -- <query>` after a short pause; an empty box shows the list again without calling `cf`. The selected memory comes from `cf memory show`: its frontmatter as plain text, its body rendered like the Docs tab (untrusted markdown, no raw HTML, no images, `https:` links only after a native confirm).
+A project's **Memory** tab lists the project's memories from `cf memory list --json --project-dir=<path>`, grouped by category. Typing in the search box runs `cf memory search --json --project-dir=<path> -- <query>` after a short pause; an empty box shows the list again without calling `cf`. The selected memory comes from `cf memory show`: its frontmatter as plain text, its body rendered like the Docs tab (untrusted markdown, no raw HTML, no images, `https:` links only after a native confirm).
 
 **Edit** opens the body (never the frontmatter: only `updated:` changes, set by the CLI) in a text box. A draft stays per memory while you switch to other memories in the tab. **Save** runs `cf memory edit --stdin --if-match <sha256> --project-dir=<path> -- <id>` with the body on stdin; the `sha256` is the one the memory had when the edit began. If the file changed since then, the CLI answers `CONFLICT` and nothing is written: the draft stays, and you can **Copy draft** to the clipboard, then **Reload latest** (which discards the draft). **Delete** runs `cf memory delete --yes --if-match <sha256> --project-dir=<path> -- <id>`.
 
 When the memory search index is not watched by the memory daemon, a save or delete says the index may be stale and shows the command to rebuild it in a terminal (`cd '<project>' && cf memory rebuild`, copyable, never run by the app).
+
+## Health tab
+
+A project's **Health** tab shows `cf doctor --json --project-dir=<path>` (30-second timeout): only the `project` checks (registered, local config, docs folder, memory folder, the project's `.mcp.json`), with the same ok/warn/fail counts and rows as the Doctor view. Rust takes the project only from the registry. These checks never carry a fix, so the tab has no fix buttons: a hint shows as a command you can copy (a plain `cf` or `npm` command) or as text, and the app never runs it. The refresh button runs the check again. A `cf` too old for `--project-dir` gets a message to update it from the Version view. The global **Doctor** view is unchanged (see `cli/README.md`, "Doctor").
+
+Every project tab is always shown. When the project folder is missing, the Config, Docs, Memory and Health tabs say so instead of calling `cf`.
 
 ## Learn view
 

@@ -1,10 +1,15 @@
 import chalk from "chalk";
 import {
+  cliInfo,
   collectDoctor,
+  collectProjectChecks,
   type DoctorCheck,
   type DoctorData,
+  type ProjectDoctorData,
 } from "../lib/doctor.js";
-import { runJson } from "../lib/output.js";
+import { log } from "../lib/log.js";
+import { CliError, runHuman, runJson } from "../lib/output.js";
+import { useProjectDir } from "../lib/project-option.js";
 
 const GROUP_TITLES: Record<string, string> = {
   cli: "CLI",
@@ -14,6 +19,7 @@ const GROUP_TITLES: Record<string, string> = {
   hosts: "Hosts",
   supervisor: "Supervisor",
   registry: "Projects",
+  project: "Project",
 };
 
 function printCheck(c: DoctorCheck): void {
@@ -49,10 +55,48 @@ function printDoctor(data: DoctorData): void {
   );
 }
 
+function collectProjectDoctor(
+  cliVersion: string,
+  projectDir: string,
+): ProjectDoctorData {
+  const project = useProjectDir(projectDir) ?? process.cwd();
+  return {
+    cli: cliInfo(cliVersion),
+    project,
+    checks: collectProjectChecks(project),
+  };
+}
+
+async function projectDoctorCommand(
+  cliVersion: string,
+  projectDir: string,
+  json: boolean | undefined,
+): Promise<void> {
+  if (json) {
+    await runJson(() => collectProjectDoctor(cliVersion, projectDir));
+    return;
+  }
+  const data = await runHuman(() => {
+    try {
+      return collectProjectDoctor(cliVersion, projectDir);
+    } catch (err) {
+      if (err instanceof CliError) log.error(err.message);
+      throw err;
+    }
+  });
+  console.log(`Project ${data.project}`);
+  printDoctor(data);
+  if (data.checks.some((c) => c.status === "fail")) process.exitCode = 1;
+}
+
 export async function doctorCommand(
   cliVersion: string,
-  opts: { json?: boolean },
+  opts: { json?: boolean; projectDir?: string },
 ): Promise<void> {
+  if (opts.projectDir !== undefined) {
+    await projectDoctorCommand(cliVersion, opts.projectDir, opts.json);
+    return;
+  }
   if (opts.json) {
     // ok:true whenever doctor ran; per-check status lives in data.
     await runJson(() => collectDoctor(cliVersion));

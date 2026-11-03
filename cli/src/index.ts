@@ -488,6 +488,10 @@ program
 program
   .command("doctor")
   .description("Check the Coding Friend setup (read-only)")
+  .option(
+    "--project-dir <path>",
+    "Check only this project (resolved to its main repo root)",
+  )
   .option("--json", "Output a JSON envelope")
   .action(async (opts) => {
     const { doctorCommand } = await import("./commands/doctor.js");

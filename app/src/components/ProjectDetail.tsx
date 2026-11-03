@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { ConfigView, type SetConfig } from "@/components/ConfigView";
 import { DocsView } from "@/components/DocsView";
+import { ChecksSkeleton, DoctorChecks } from "@/components/DoctorView";
 import { MemoryView } from "@/components/MemoryView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,9 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   chefStatus,
   describeCfError,
+  projectDoctor,
   taskList,
+  type CfError,
   type ChefStatusView,
   type ProjectEntry,
   type TaskState,
@@ -19,7 +22,7 @@ import {
 } from "@/lib/cf";
 import { inProject } from "@/lib/project-filter";
 import type { PendingRun, StartRun } from "@/lib/runs";
-import { useDelayed, type CfQuery } from "@/lib/use-cf-query";
+import { useCfQuery, useDelayed, type CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
 /** `waiting` is a running task that asked a question, so it counts as live. */
@@ -52,13 +55,14 @@ export function projectName(path: string): string {
   return path.replace(/\/+$/, "").split("/").pop() || path;
 }
 
-type Tab = "overview" | "config" | "docs" | "memory";
+type Tab = "overview" | "config" | "docs" | "memory" | "health";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "config", label: "Config" },
   { id: "docs", label: "Docs" },
   { id: "memory", label: "Memory" },
+  { id: "health", label: "Health" },
 ];
 
 /**
@@ -170,13 +174,15 @@ export function ProjectDetail({
           />
         ) : tab === "docs" ? (
           <DocsView key={project.path} project={project.path} />
-        ) : (
+        ) : tab === "memory" ? (
           <MemoryView
             key={project.path}
             project={project.path}
             pending={pending}
             run={run}
           />
+        ) : (
+          <HealthView key={project.path} project={project.path} />
         )}
       </div>
     </article>
@@ -222,6 +228,67 @@ function Overview({ activity }: { activity: CfQuery<ProjectActivity> }) {
         it. Worktrees elsewhere on disk are not shown.
       </p>
     </>
+  );
+}
+
+function describeHealthError(e: CfError): string {
+  return e.kind === "cliTooOld"
+    ? "This cf is too old for the project health check. Update it from the Version view."
+    : describeCfError(e);
+}
+
+/** `cf doctor --project-dir`: read-only checks, hints only, never a fix button. */
+function HealthView({ project }: { project: string }) {
+  const health = useCfQuery(`doctor:${project}`, () => projectDoctor(project));
+  const showRefreshing = useDelayed(health.refreshing);
+
+  if (health.error) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <p role="alert" className="text-sm break-words text-danger">
+          Could not check the project: {describeHealthError(health.error)}
+        </p>
+        <Button variant="outline" size="sm" onClick={health.refetch}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  const data = health.data;
+  if (!data) {
+    return (
+      <div aria-busy="true" className="flex flex-col gap-8">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-3 w-48" />
+          {health.showSpinner && <Spinner label="Checking the project" />}
+        </div>
+        <ChecksSkeleton />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 truncate font-mono text-xs text-muted">
+          CLI {data.cli.version} · node {data.cli.node}
+        </p>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Check again"
+          onClick={health.refetch}
+          disabled={health.refreshing}
+        >
+          <RefreshCw
+            aria-hidden
+            className={showRefreshing ? "animate-spin" : ""}
+          />
+        </Button>
+      </div>
+      <DoctorChecks checks={data.checks} />
+    </div>
   );
 }
 

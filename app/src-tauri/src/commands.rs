@@ -55,6 +55,8 @@ const MAX_QUERY: usize = 500;
 /// Keep identical to `LEARN_SUBFOLDER` in cli/src/lib/cloud-folders.ts.
 const LEARN_SUBFOLDER: &str = "coding-friend-learn";
 const LEARN_DIR_KEY: &str = "learn.outputDir";
+/// `doctor --project-dir` only reads files (no host probe), so it needs less than `DOCTOR_TIMEOUT`.
+const PROJECT_DOCTOR_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -623,6 +625,21 @@ pub async fn docs_show(
         data_arg(&relpath, MAX_DOC_PATH)?,
     ];
     cf::run_cf(&argv, cf::QUERY_TIMEOUT).await
+}
+
+/// `doctor --json --project-dir=P`: the `project` checks of a known project. Read-only (hints
+/// only, no fixes), so no confirm; it never touches `LastDoctor`.
+#[tauri::command]
+pub async fn project_doctor(
+    known: State<'_, KnownProjects>,
+    project: String,
+) -> Result<Value, CfError> {
+    let argv = vec![
+        "doctor".into(),
+        "--json".into(),
+        project_dir_arg(&known, &project)?,
+    ];
+    cf::run_cf(&argv, PROJECT_DOCTOR_TIMEOUT).await
 }
 
 /// Opens an `https:` link in the system browser after a native confirm showing the full URL.

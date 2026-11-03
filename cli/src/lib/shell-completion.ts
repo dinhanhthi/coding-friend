@@ -185,6 +185,12 @@ _cf_completions() {
     return
   fi
 
+  # Flag completion for doctor
+  if [[ "\${COMP_WORDS[1]}" == "doctor" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--project-dir --json" -- "$cur"))
+    return
+  fi
+
   # --json for status, mcp, version, doctor, memory status, config schema, project *, task *, supervisor *, chef *
   if [[ "$cur" == -* ]] && [[ "\${COMP_WORDS[1]}" == "status" || "\${COMP_WORDS[1]}" == "mcp" || "\${COMP_WORDS[1]}" == "version" || "\${COMP_WORDS[1]}" == "doctor" || "\${COMP_WORDS[1]}" == "project" || "\${COMP_WORDS[1]}" == "task" || "\${COMP_WORDS[1]}" == "supervisor" || "\${COMP_WORDS[1]}" == "chef" || ("\${COMP_WORDS[1]}" == "config" && "\${COMP_WORDS[2]}" == "schema") || ("\${COMP_WORDS[1]}" == "memory" && "\${COMP_WORDS[2]}" == "status") ]]; then
     COMPREPLY=($(compgen -W "--json" -- "$cur"))
@@ -377,6 +383,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _describe 'subcommand' subcommands
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "config" && ("\${words[3]}" == "get" || "\${words[3]}" == "set") ]]; then
     _values 'flags' '--global[Use the global config]' '--local[Use the local project config]' '--project-dir[Run against this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "doctor" ]]; then
+    _values 'flags' '--project-dir[Check only this project (resolved to its main repo root)]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "status" || "\${words[2]}" == "mcp" || "\${words[2]}" == "version" || "\${words[2]}" == "doctor" ]]; then
     _values 'flags' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "ask" ]]; then
@@ -485,6 +493,7 @@ complete -c cf -n "__fish_seen_subcommand_from update" -l yes -d "Run without co
 complete -c cf -n "__fish_seen_subcommand_from install; and not __fish_seen_subcommand_from supervisor" -l yes -d "Skip prompts (default scope: user)"
 # --json for machine-callable commands
 complete -c cf -n "__fish_seen_subcommand_from status mcp version doctor project config install update ask reply done task supervisor chef" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from doctor" -l project-dir -r -d "Check only this project (resolved to its main repo root)"
 complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from search list show edit delete" -l json -d "Output a JSON envelope"
 # Project subcommands
 complete -c cf -n "__fish_seen_subcommand_from project" -a list -d "List registered projects"
@@ -635,6 +644,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'supervisor' -and @('install','uninstall','status') -contains $words[2].ToString()) {
     @('--label','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 2 -and $words[1].ToString() -eq 'doctor') {
+    @('--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 2 -and @('status','mcp','version','doctor','project','config','memory','task','supervisor','chef') -contains $words[1].ToString()) {
     @('--json') | Where-Object { $_ -like "$wordToComplete*" } |

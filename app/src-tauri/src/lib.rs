@@ -48,6 +48,7 @@ pub fn run() {
             commands::config_set,
             commands::docs_list,
             commands::docs_show,
+            commands::project_doctor,
             commands::memory_list,
             commands::memory_search,
             commands::memory_show,

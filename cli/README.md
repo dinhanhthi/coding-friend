@@ -175,6 +175,7 @@ cf status            # Show comprehensive Coding Friend status
                      # (versions, per-host plugin state incl. Devin, memory, config)
 cf version           # Show CLI and per-host plugin versions
 cf doctor            # Check the Coding Friend setup (read-only, see Doctor)
+cf doctor --project-dir ~/git/my-app  # Check only one project (see Doctor)
 cf project list      # List registered projects
 cf project add [path]    # Register a project (default: current repo root)
 cf project remove <path> # Remove a project from the registry
@@ -218,16 +219,32 @@ cf help              # Show all commands
 | `cli`        | Node.js >= 20                                                                                                    |
 | `plugin`     | Claude Code plugin installed, marketplace registered, plugin enabled at its scope                                |
 | `memory`     | Memory MCP registered at user scope, not shadowed by `.mcp.json` in the current directory, built, daemon running |
-| `learn`      | Learn MCP registered, built, learn docs directory                                                                |
+| `learn`      | Learn MCP registered, built, learn docs directory, learn storage not a git repo in a cloud folder                |
 | `hosts`      | Version of each host binary found (`claude` shown; codex, omp, agy, devin compared to their minimum version)     |
 | `supervisor` | launchd agent installed and loaded, last tick within 3 minutes (macOS only)                                      |
 | `registry`   | Project registry readable                                                                                        |
 
-Each check is `ok`, `warn` or `fail`. An optional feature that is not set up yet is `warn`, not `fail`: memory registration and build before `cf memory init`, learn registration and build before learn is registered (`cf mcp` or `cf init` registers it), and the learn docs directory. A registration check is also `warn` when the `claude` CLI is missing or `claude mcp get` times out, and host versions are only ever `warn`. Only these can be `fail`: Node.js too old, plugin not installed, memory MCP not registered or not built once `cf memory init` ran, learn MCP not built once registered, and a launchd plist with missing program paths. The memory daemon, `.mcp.json` shadowing, marketplace, plugin enabled, launchd loaded, heartbeat and registry checks are always `warn`.
+Each check is `ok`, `warn` or `fail`. An optional feature that is not set up yet is `warn`, not `fail`: memory registration and build before `cf memory init`, learn registration and build before learn is registered (`cf mcp` or `cf init` registers it), and the learn docs directory. A registration check is also `warn` when the `claude` CLI is missing or `claude mcp get` times out, and host versions are only ever `warn`. Only these can be `fail`: Node.js too old, plugin not installed, memory MCP not registered or not built once `cf memory init` ran, learn MCP not built once registered, a launchd plist with missing program paths, and, with `--project-dir`, a local config file that is not valid JSON. The memory daemon, `.mcp.json` shadowing, learn storage, marketplace, plugin enabled, launchd loaded, heartbeat and registry checks are always `warn`.
 
-A check that is not `ok` can carry a fix or a hint. A fix is one of exactly three commands that are safe to run without a prompt: `cf supervisor install` (launchd agent not ok), `cf supervisor tick` (stale heartbeat while the agent is loaded) and `cf install --user --yes` (plugin not installed). Anything else is a hint, a command shown to you and never run: `cf mcp`, `cf memory init`, `cf memory start-daemon`, `cf update`, `cf enable --<scope>`, `cf install`, `cf install --user`, `/cf-learn` or a host upgrade.
+`learn.storage` is `warn` when `learn.outputDir` is inside a git repo that is itself inside a cloud folder (iCloud Drive, Google Drive, Dropbox, OneDrive; detected on macOS only): cloud sync and git can damage each other's files, so the hint says to use one of the two. Any other folder is `ok`, and its detail says `git` or `folder` (plus the cloud provider).
+
+A check that is not `ok` can carry a fix or a hint. A fix is one of exactly three commands that are safe to run without a prompt: `cf supervisor install` (launchd agent not ok), `cf supervisor tick` (stale heartbeat while the agent is loaded) and `cf install --user --yes` (plugin not installed). Anything else is a hint, a command shown to you and never run: `cf mcp`, `cf memory init`, `cf memory start-daemon`, `cf update`, `cf enable --<scope>`, `cf install`, `cf install --user`, `/cf-learn`, a host upgrade, or (with `--project-dir`) `cf project add -- '<root>'`, `cd '<root>' && cf update` and editing the project's config file.
 
 Human output groups the checks, prints the fix or hint under each check that is not `ok`, and exits `1` if any check is `fail`. With `--json`, `data = { cli: { version, node, path }, checks: [{ id, group, label, status, detail?, fix?, hint? }] }`. `id` is stable and dotted (e.g. `memory.mcp.registered`); `fix` is `{ argv, label }`, where `argv` is the arguments after `cf` and always ends with `--json`. The envelope is `ok: true` whenever doctor ran, so read each check's `status`.
+
+### One project
+
+`cf doctor --project-dir <path> [--json]` checks one project instead of the setup. `<path>` resolves like `cf config --project-dir` (a worktree or subdirectory resolves to its main repo root; a missing path is `NOT_FOUND`, a path that is not a directory is `INVALID_ARGS`). It runs only the checks of group `project`, reads files only (no `claude` or host probe) and never offers a fix, only hints:
+
+| Id                   | Checks                                                                                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project.registered` | The root is in the project registry; else `warn`, hint `cf project add -- '<root>'`                                                                                                                             |
+| `project.config`     | `<root>/.coding-friend/config.json`: `ok` when absent or valid, `warn` on unknown keys or schema problems, `fail` when it is not valid JSON or not an object                                                    |
+| `project.docsDir`    | The docs folder (`docsDir` from the local config, then the global one, else `docs`) exists; else `warn`                                                                                                         |
+| `project.memory`     | `<docsDir>/memory` exists (the detail counts its `.md` files); else `warn`                                                                                                                                      |
+| `project.mcpShadow`  | `<root>/.mcp.json` (not the current directory's) has no `coding-friend-memory` entry that shadows the user-scope server, same cases as `memory.mcp.projectShadow`; else `warn`, hint `cd '<root>' && cf update` |
+
+Human output prints `Project <root>` before the checks and exits `1` if any check is `fail`. With `--json`, `data = { cli, project, checks }`, where `project` is the resolved root. Like `cf doctor`, it is auto-approved by the plugin hook.
 
 ## Non-interactive update
 
@@ -287,7 +304,7 @@ With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, w
 | `CONFLICT`             | The file changed since it was read (`--if-match` sha256 mismatch); read it again                                |
 | `INTERNAL`             | Any other unexpected error                                                                                      |
 
-**`cf doctor --json`.** `data = { cli, checks }`, `ok: true` whenever doctor ran; per-check `status` is in `data` (see [Doctor](#doctor)).
+**`cf doctor --json`.** `data = { cli, checks }`, `ok: true` whenever doctor ran; per-check `status` is in `data` (see [Doctor](#doctor)). With `--project-dir <path>`, `data = { cli, project, checks }` and only the `project` checks (see [One project](#one-project)).
 
 **`cf update --yes --json`.** `data = { performed, after }`; `ok: true` does not prove every step worked, read `after` (see [Non-interactive update](#non-interactive-update)).
 

@@ -38,15 +38,23 @@ import { doctorCommand } from "../../commands/doctor.js";
 const HOSTS = new Set(["claude", "codex", "omp", "agy", "devin"]);
 const execFileSync = vi.mocked(childProcess.execFileSync);
 
+const origCwd = process.cwd();
+const origPlatform = process.platform;
 let home: string;
-let savedEnv: NodeJS.ProcessEnv;
 let stdout: string[];
 
-/** `which` finds claude and codex; codex hangs on --version; claude mcp get fails. */
+/**
+ * `which` finds claude, codex and git; codex hangs on --version; claude mcp
+ * get fails; git reports any learn dir as its own work tree with no remote.
+ */
 function fakeExec(bin: string, args: readonly string[] = []): string {
-  if (bin === "which" && (args[0] === "claude" || args[0] === "codex")) {
+  if (bin === "which" && ["claude", "codex", "git"].includes(args[0])) {
     return `/usr/local/bin/${args[0]}\n`;
   }
+  if (bin === "git" && args.includes("--is-inside-work-tree")) {
+    return `true\n${args[1]}\n`;
+  }
+  if (bin === "git" && args.includes("remote")) return "";
   if (bin === "codex") {
     throw Object.assign(new Error("spawnSync codex ETIMEDOUT"), {
       code: "ETIMEDOUT",
@@ -64,11 +72,12 @@ async function runDoctorJson() {
 beforeEach(async () => {
   const realFs = await vi.importActual<typeof import("fs")>("fs");
   home = realFs.mkdtempSync(join(tmpdir(), "cf-doctor-"));
-  savedEnv = { ...process.env };
-  process.env.HOME = home;
-  delete process.env.CLAUDE_CONFIG_DIR;
-  delete process.env.CF_PROJECTS_FILE;
-  delete process.env.CF_ORCHESTRATOR_DIR;
+  // stubEnv keeps the real environment: `process.env = {...}` would leave
+  // os.homedir() on the previous test's HOME.
+  vi.stubEnv("HOME", home);
+  vi.stubEnv("CLAUDE_CONFIG_DIR", undefined);
+  vi.stubEnv("CF_PROJECTS_FILE", undefined);
+  vi.stubEnv("CF_ORCHESTRATOR_DIR", undefined);
 
   execFileSync.mockImplementation(((bin: string, args?: readonly string[]) =>
     fakeExec(bin, args)) as unknown as typeof childProcess.execFileSync);
@@ -81,7 +90,9 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  process.env = savedEnv;
+  process.chdir(origCwd);
+  Object.defineProperty(process, "platform", { value: origPlatform });
+  vi.unstubAllEnvs();
   process.exitCode = undefined;
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -186,5 +197,75 @@ describe("cf doctor --json", () => {
       expect(c.opts.timeout).toBeLessThanOrEqual(10_000);
       expect((c.opts.stdio as unknown[] | undefined)?.[0]).toBe("ignore");
     }
+  });
+
+  it("--project-dir reports only project checks from the root's .mcp.json, not cwd's", async () => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const project = join(home, "proj");
+    const other = join(home, "other");
+    realFs.mkdirSync(project);
+    realFs.mkdirSync(other);
+    const memoryEntry = (command: string, args?: string[]) =>
+      JSON.stringify({
+        mcpServers: { "coding-friend-memory": { command, args } },
+      });
+    realFs.writeFileSync(
+      join(project, ".mcp.json"),
+      memoryEntry("node", [join(project, "gone.js")]),
+    );
+    realFs.writeFileSync(join(other, ".mcp.json"), memoryEntry("npx"));
+    process.chdir(other);
+
+    await doctorCommand("9.9.9", { json: true, projectDir: project });
+    const env = JSON.parse(stdout[0]);
+    expect(env.ok).toBe(true);
+    expect(env.data.project).toBe(realFs.realpathSync(project));
+    expect(env.data.checks.length).toBeGreaterThan(0);
+    for (const c of env.data.checks) {
+      expect(c.group).toBe("project");
+      expect(c.fix).toBeUndefined();
+    }
+    const shadow = env.data.checks.find(
+      (c: { id: string }) => c.id === "project.mcpShadow",
+    );
+    expect(shadow.status).toBe("warn");
+    expect(shadow.detail).toContain("gone.js");
+    expect(shadow.hint).toBe(
+      `cd '${realFs.realpathSync(project)}' && cf update`,
+    );
+    const registered = env.data.checks.find(
+      (c: { id: string }) => c.id === "project.registered",
+    );
+    expect(registered.hint).toBe(
+      `cf project add -- '${realFs.realpathSync(project)}'`,
+    );
+    expect(execFileSync.mock.calls.some(([bin]) => bin === "claude")).toBe(
+      false,
+    );
+  });
+
+  it("warns on learn.storage when the learn dir is a git repo inside a cloud root", async () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const learnDir = join(
+      home,
+      "Library",
+      "Mobile Documents",
+      "com~apple~CloudDocs",
+      "learn",
+    );
+    realFs.mkdirSync(learnDir, { recursive: true });
+    realFs.mkdirSync(join(home, ".coding-friend"));
+    realFs.writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ learn: { outputDir: learnDir } }),
+    );
+
+    const env = await runDoctorJson();
+    const storage = env.data.checks.find(
+      (c: { id: string }) => c.id === "learn.storage",
+    );
+    expect(storage).toMatchObject({ group: "learn", status: "warn" });
+    expect(storage.hint).toMatch(/either git or a cloud folder/);
   });
 });

@@ -118,8 +118,6 @@ export function DoctorView({
   }, []);
 
   const busy = running || pending !== null;
-  const counts = { ok: 0, warn: 0, fail: 0 };
-  for (const check of data?.checks ?? []) counts[check.status]++;
 
   return (
     <article
@@ -169,48 +167,84 @@ export function DoctorView({
       )}
 
       {data ? (
-        <>
-          <p className="text-sm text-ink-2">
-            {counts.ok} ok · {counts.warn} warn · {counts.fail} fail
-          </p>
-          {groupChecks(data.checks).map(([group, checks]) => (
-            <Section key={group} title={group} count={checks.length}>
-              {checks.map((check) => (
-                <CheckRow
-                  key={check.id}
-                  check={check}
-                  fixing={
-                    pending?.op === "fix" && pending.key === check.id
-                      ? pending.started
-                        ? "running"
-                        : "confirming"
-                      : null
-                  }
-                  disabled={busy}
-                  error={fixErrors[check.id]}
-                  onFix={onFix}
-                />
-              ))}
-            </Section>
-          ))}
-        </>
+        <DoctorChecks
+          checks={data.checks}
+          pending={pending}
+          disabled={busy}
+          fixErrors={fixErrors}
+          onFix={onFix}
+        />
       ) : (
-        !runError && (
-          <Section title="Checks">
-            {[0, 1, 2].map((i) => (
-              <li
-                key={i}
-                aria-hidden
-                className="flex min-h-14 flex-col justify-center gap-1.5 px-3 py-2"
-              >
-                <Skeleton className="h-3.5 w-48" />
-                <Skeleton className="h-3 w-full max-w-md" />
-              </li>
-            ))}
-          </Section>
-        )
+        !runError && <ChecksSkeleton />
       )}
     </article>
+  );
+}
+
+/**
+ * The ok/warn/fail counts, then the checks by group. Without `onFix` nothing runs from here:
+ * a fix shows as a manual command, like a hint.
+ */
+export function DoctorChecks({
+  checks,
+  pending = null,
+  disabled = false,
+  fixErrors = {},
+  onFix,
+}: {
+  checks: DoctorCheck[];
+  pending?: PendingRun | null;
+  disabled?: boolean;
+  fixErrors?: Record<string, string>;
+  onFix?: (check: DoctorCheck, argv: string[]) => void;
+}) {
+  const counts = { ok: 0, warn: 0, fail: 0 };
+  for (const check of checks) counts[check.status]++;
+
+  return (
+    <>
+      <p className="text-sm text-ink-2">
+        {counts.ok} ok · {counts.warn} warn · {counts.fail} fail
+      </p>
+      {groupChecks(checks).map(([group, list]) => (
+        <Section key={group} title={group} count={list.length}>
+          {list.map((check) => (
+            <CheckRow
+              key={check.id}
+              check={check}
+              fixing={
+                pending?.op === "fix" && pending.key === check.id
+                  ? pending.started
+                    ? "running"
+                    : "confirming"
+                  : null
+              }
+              disabled={disabled}
+              error={fixErrors[check.id]}
+              onFix={onFix}
+            />
+          ))}
+        </Section>
+      ))}
+    </>
+  );
+}
+
+/** Placeholder rows in the shape of a check list. */
+export function ChecksSkeleton() {
+  return (
+    <Section title="Checks">
+      {[0, 1, 2].map((i) => (
+        <li
+          key={i}
+          aria-hidden
+          className="flex min-h-14 flex-col justify-center gap-1.5 px-3 py-2"
+        >
+          <Skeleton className="h-3.5 w-48" />
+          <Skeleton className="h-3 w-full max-w-md" />
+        </li>
+      ))}
+    </Section>
   );
 }
 
@@ -225,7 +259,8 @@ function CheckRow({
   fixing: "confirming" | "running" | null;
   disabled: boolean;
   error?: string;
-  onFix: (check: DoctorCheck, argv: string[]) => void;
+  /** Absent: no fix button, the fix shows as a manual command. */
+  onFix?: (check: DoctorCheck, argv: string[]) => void;
 }) {
   const { fix } = check;
   return (
@@ -241,7 +276,7 @@ function CheckRow({
           )}
         </div>
       </div>
-      {fix && isRunnableFix(fix.argv) ? (
+      {fix && onFix && isRunnableFix(fix.argv) ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Button
             variant="outline"
@@ -267,7 +302,7 @@ function CheckRow({
           )}
         </div>
       ) : fix ? (
-        // Not a fix Rust would run (e.g. from a newer CLI): show the command only.
+        // Not a fix Rust would run (e.g. from a newer CLI), or no fixes here: show the command only.
         <ManualCommand command={fixCommand(fix.argv)} />
       ) : (
         check.hint && <ManualCommand command={check.hint} />

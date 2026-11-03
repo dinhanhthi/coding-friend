@@ -160,6 +160,12 @@ export interface DoctorData {
   checks: DoctorCheck[];
 }
 
+/** `doctor --project-dir`: only group `project` checks, hints only (no fixes). */
+export interface ProjectDoctorData extends DoctorData {
+  /** The project's main repo root. */
+  project: string;
+}
+
 /** cli/src/lib/project-registry.ts `ProjectEntry`. */
 export interface RegisteredProject {
   path: string;
@@ -794,6 +800,8 @@ export const docsList = (project: string) =>
 /** `path` is relative to the docs folder. */
 export const docsShow = (project: string, path: string) =>
   invoke<DocContent>("docs_show", { project, relpath: path });
+export const projectDoctor = (project: string) =>
+  invoke<ProjectDoctorData>("project_doctor", { project });
 export const memoryList = (project: string) =>
   invoke<MemoryItem[]>("memory_list", { project });
 /** An empty query never reaches the CLI (it refuses one): no results. */
