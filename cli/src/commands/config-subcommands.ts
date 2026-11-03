@@ -6,11 +6,13 @@ import {
 } from "../lib/config-ops.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
+import { useProjectDir } from "../lib/project-option.js";
 
 interface Flags {
   global?: boolean;
   local?: boolean;
   json?: boolean;
+  projectDir?: string;
 }
 
 /** JSON mode → envelope; human mode → log CliError then exit 1 via runHuman. */
@@ -39,7 +41,11 @@ export async function configGetCommand(
 ): Promise<void> {
   await run(
     opts.json,
-    () => getConfigView(key, scopeFromFlags(opts)),
+    () => {
+      const project = useProjectDir(opts.projectDir);
+      const view = getConfigView(key, scopeFromFlags(opts));
+      return project ? { ...view, project } : view;
+    },
     (view) => {
       if ("source" in view) {
         console.log(
@@ -62,7 +68,11 @@ export async function configSetCommand(
 ): Promise<void> {
   await run(
     opts.json,
-    () => setConfigValue(scopeFromFlags(opts), key, value),
+    () => {
+      const project = useProjectDir(opts.projectDir);
+      const res = setConfigValue(scopeFromFlags(opts), key, value);
+      return project ? { ...res, project } : res;
+    },
     (res) => {
       for (const w of res.warnings) log.warn(w);
       log.success(

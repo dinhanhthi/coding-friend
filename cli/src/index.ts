@@ -187,6 +187,10 @@ config
   .description("Show config (all, or one dotted key) and where it comes from")
   .option("--global", "Read only the global config")
   .option("--local", "Read only the local project config")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
   .option("--json", "Output a JSON envelope")
   .action(async (key: string | undefined, opts) => {
     const { configGetCommand } =
@@ -199,6 +203,10 @@ config
   .description("Set a dotted config key (JSON value or string; null deletes)")
   .option("--global", "Write the global config")
   .option("--local", "Write the local project config")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
   .option("--json", "Output a JSON envelope")
   .action(async (key: string, value: string, opts) => {
     const { configSetCommand } =

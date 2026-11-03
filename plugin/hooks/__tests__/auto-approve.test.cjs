@@ -985,6 +985,26 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
+  // Characterization: every `cf memory` subcommand approved before the nested
+  // allow-list (B1b 1.2) must stay approved.
+  it.each([
+    "",
+    " status",
+    " search auth",
+    " list --json",
+    " rm --project abc",
+    " start-daemon",
+    " stop-daemon",
+    " rebuild",
+    " init",
+    " config",
+    " mcp",
+  ])("keeps cf memory%s approved", (rest) => {
+    expect(classifyByRules("Bash", { command: `cf memory${rest}` })).toBe(
+      "allow",
+    );
+  });
+
   it("allows cf install subcommand", () => {
     expect(classifyByRules("Bash", { command: "cf install --user" })).toBe(
       "allow",
@@ -1108,6 +1128,29 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
 
   it("does NOT allow bare cf chef", () => {
     expect(classifyByRules("Bash", { command: "cf chef" })).not.toBe("allow");
+  });
+
+  it.each([
+    ["memory show features/auth --json", true],
+    ["learn status", true],
+    ["learn list", true],
+    ["learn search hooks", true],
+    ["learn show react/hooks", true],
+    ["docs list --json", true],
+    ["docs show plans/README.md", true],
+    ["memory edit features/auth", false],
+    ["memory delete features/auth", false],
+    ["learn edit react/hooks", false],
+    ["learn delete react/hooks", false],
+    ["learn push", false],
+    ["learn host", false],
+    ["learn", false],
+    ["docs", false],
+    ["config set --local docsDir x", false],
+  ])("nested memory/learn/docs allow-list: cf %s approved=%s", (rest, ok) => {
+    const approved =
+      classifyByRules("Bash", { command: `cf ${rest}` }) === "allow";
+    expect(approved).toBe(ok);
   });
 
   it("does NOT allow cf supervisor tick (starts agent processes)", () => {

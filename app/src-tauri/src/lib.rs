@@ -16,7 +16,13 @@ pub fn run() {
     // Dialogs are shown from Rust only (confirms, pickers); no capability grants them to the page.
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_updater::Builder::new().build());
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        // URLs open from Rust only (`open_url`); no link-click script is injected into the page.
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        );
 
     // MCP bridge for agent-driven debugging (DOM, IPC, screenshots); never in release builds.
     #[cfg(debug_assertions)]
@@ -29,6 +35,7 @@ pub fn run() {
     builder
         .manage(commands::LastDoctor::default())
         .manage(commands::MutationLock::default())
+        .manage(commands::KnownProjects::default())
         .invoke_handler(tauri::generate_handler![
             commands::cf_version,
             commands::cf_doctor,
@@ -36,6 +43,10 @@ pub fn run() {
             commands::project_list,
             commands::add_project,
             commands::project_remove,
+            commands::config_view,
+            commands::config_schema,
+            commands::config_set,
+            commands::open_url,
             commands::task_list,
             commands::chef_status,
             commands::supervisor_status,

@@ -908,7 +908,6 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   "update",
   "status",
   "session",
-  "memory",
   "dev",
   "version",
   "project",
@@ -939,12 +938,49 @@ const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
 const CF_CHEF_SAFE_SUBCOMMANDS = new Set(["status", "inbox", "show"]);
 
 /**
+ * `cf memory` subcommands safe to auto-approve. `status`, `search`, `list`
+ * and `show` are read-only; the others were approved before this list existed
+ * and are kept so nothing else changes. `edit` and `delete` change memory
+ * files, so they are excluded. Bare `cf memory` only prints help and stays
+ * approved.
+ */
+const CF_MEMORY_SAFE_SUBCOMMANDS = new Set([
+  "status",
+  "search",
+  "list",
+  "show",
+  "rm",
+  "start-daemon",
+  "stop-daemon",
+  "rebuild",
+  "init",
+  "config",
+  "mcp",
+]);
+
+/**
+ * `cf learn` subcommands safe to auto-approve (read-only). `edit`, `delete`,
+ * `push` and `host` change notes, push to a remote or start a server, so they
+ * are excluded. Bare `cf learn` is not approved either.
+ */
+const CF_LEARN_SAFE_SUBCOMMANDS = new Set(["status", "list", "search", "show"]);
+
+/**
+ * `cf docs` subcommands safe to auto-approve (read-only). Bare `cf docs` is
+ * not approved.
+ */
+const CF_DOCS_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
+
+/**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
  *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand,
  *     `cf task` only with a CF_TASK_SAFE_SUBCOMMANDS subcommand,
- *     `cf chef` only with a CF_CHEF_SAFE_SUBCOMMANDS subcommand)
+ *     `cf chef` only with a CF_CHEF_SAFE_SUBCOMMANDS subcommand,
+ *     `cf memory` only bare or with a CF_MEMORY_SAFE_SUBCOMMANDS subcommand,
+ *     `cf learn` only with a CF_LEARN_SAFE_SUBCOMMANDS subcommand,
+ *     `cf docs` only with a CF_DOCS_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -957,6 +993,12 @@ function isCodingFriendBash(trimmed) {
       return CF_CONFIG_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "task") return CF_TASK_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "chef") return CF_CHEF_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "memory")
+      return (
+        nestedSub === undefined || CF_MEMORY_SAFE_SUBCOMMANDS.has(nestedSub)
+      );
+    if (subcommand === "learn") return CF_LEARN_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "docs") return CF_DOCS_SAFE_SUBCOMMANDS.has(nestedSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 
