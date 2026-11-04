@@ -32,7 +32,7 @@ tokio = { version = "1", features = ["process", "time", "io-util", "sync", "macr
 # killpg: the PATH probe kills the login shell with its whole process group.
 libc = "0.2"
 
-# keep identical to ~/.cargo/config.toml (shared Cargo build cache).
+# keep identical to ~/.cargo/config.toml.
 [profile.dev]
 opt-level = 1
 split-debuginfo = "off"
