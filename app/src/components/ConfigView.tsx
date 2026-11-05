@@ -52,8 +52,14 @@ export function configCommand(args: ConfigSetArgs): string {
   return `cf config set --${args.scope}${dir} -- ${JSON.stringify(args.key)} ${JSON.stringify(args.value)}`;
 }
 
-/** Rust refuses writes to these: they decide where Coding Friend writes files. */
-const READ_ONLY_KEYS = new Set(["learn.outputDir", "docsDir", "session.dir"]);
+/** Rust refuses writes to these: they decide where Coding Friend writes files or sends data. */
+const READ_ONLY_KEYS = new Set([
+  "learn.outputDir",
+  "docsDir",
+  "session.dir",
+  "decision.allowRemote",
+  "decision.baseUrl",
+]);
 
 function getPath(obj: Record<string, unknown>, key: string): unknown {
   let cur: unknown = obj;
@@ -172,8 +178,11 @@ export function ConfigView({
     );
   }
 
-  const fields = configFields(schema.data);
-  const unknown = unknownConfigKeys(schema.data, data.effective);
+  // `decision` is global-only: a project's Config tab never shows or edits it.
+  const shown = (key: string) =>
+    scope === "global" || !key.startsWith("decision.");
+  const fields = configFields(schema.data).filter((f) => shown(f.key));
+  const unknown = unknownConfigKeys(schema.data, data.effective).filter(shown);
   const rowProps = (key: string) => {
     const runKey = configRunKey({ scope, project, key, value: "" });
     return {
@@ -349,6 +358,16 @@ function ReadOnlyRow({
         <p className="text-xs text-muted">
           Changed from "Where sessions live" in the Sessions view.
         </p>
+      ) : fieldKey === "decision.allowRemote" ||
+        fieldKey === "decision.baseUrl" ? (
+        <>
+          <p className="text-xs text-muted">
+            Decides where decision calls send data. Change it in a terminal:
+          </p>
+          <CommandLine
+            command={`cf config set --global -- ${fieldKey} <value>`}
+          />
+        </>
       ) : fieldKey === "docsDir" ? (
         <>
           <p className="text-xs text-muted">

@@ -170,6 +170,20 @@ export const ChefConfigSchema = z.object({
   maxConcurrentTasks: z.number().int().min(1).optional(),
 });
 
+// Global-only: read through resolveDecisionConfig(), never loadConfig().
+// No .default(): resolveDecisionConfig applies the defaults in code.
+export const DecisionConfigSchema = z.object({
+  provider: z.enum(["off", "local", "typesafe", "cloudflare"]).optional(),
+  model: z.string().optional(),
+  /** Used by provider "local" only. */
+  baseUrl: z.string().optional(),
+  timeoutMs: z.number().int().min(1).optional(),
+  /** The only gate for data leaving the machine. */
+  allowRemote: z.boolean().optional(),
+  reviewShadow: z.boolean().optional(),
+  redactThreshold: z.number().min(0).max(1).optional(),
+});
+
 export const ConfigSchema = z.object({
   language: z.string().optional(),
   docsDir: z.string().optional(),
@@ -193,6 +207,7 @@ export const ConfigSchema = z.object({
   projectRegistry: z.boolean().optional(),
   task: TaskConfigSchema.optional(),
   chef: ChefConfigSchema.optional(),
+  decision: DecisionConfigSchema.optional(),
 });
 
 /** JSON Schema (input side) for the config file. */
@@ -213,6 +228,7 @@ const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
   [["task"], Object.keys(TaskConfigSchema.shape)],
   [["task", "models"], [...PROVIDER_NAMES]],
   [["chef"], Object.keys(ChefConfigSchema.shape)],
+  [["decision"], Object.keys(DecisionConfigSchema.shape)],
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
@@ -467,6 +483,44 @@ export function resolveSessionDir(
     return resolvePath(globalCfg.session.dir);
   }
   return resolvePath("~/.coding-friend/sessions");
+}
+
+export type DecisionConfig = Required<z.infer<typeof DecisionConfigSchema>>;
+
+const DECISION_DEFAULT_MODELS: Record<DecisionConfig["provider"], string> = {
+  off: "",
+  local: "kev-latest",
+  typesafe: "jev-1.14.0",
+  cloudflare: "clef-flash",
+};
+
+/**
+ * The `decision` block — global config only: a block in the cwd's local
+ * config is ignored, so a repo cannot choose where its data is sent. An
+ * invalid global block falls back to the defaults (provider "off").
+ */
+export function resolveDecisionConfig(): DecisionConfig {
+  const global = readJson<Record<string, unknown>>(globalConfigPath());
+  const parsed = DecisionConfigSchema.safeParse(global?.decision ?? {});
+  const cfg = parsed.success ? parsed.data : {};
+  const provider = cfg.provider ?? "off";
+  return {
+    provider,
+    model: cfg.model ?? DECISION_DEFAULT_MODELS[provider],
+    baseUrl: cfg.baseUrl ?? "http://127.0.0.1:8009",
+    timeoutMs: cfg.timeoutMs ?? 5000,
+    allowRemote: cfg.allowRemote ?? false,
+    reviewShadow: cfg.reviewShadow ?? false,
+    redactThreshold: cfg.redactThreshold ?? 0.5,
+  };
+}
+
+/** Whether `<projectDir>/.coding-friend/config.json` has a (ignored) `decision` block. */
+export function localConfigHasDecision(projectDir: string): boolean {
+  const local = readJson<Record<string, unknown>>(
+    resolve(projectDir, ".coding-friend", "config.json"),
+  );
+  return local?.decision !== undefined;
 }
 
 /**

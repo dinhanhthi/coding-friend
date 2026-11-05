@@ -170,9 +170,23 @@ export function isCharSubsequence(out: string, input: string): boolean {
   return i === out.length;
 }
 
+export type SegmentKind =
+  | "title"
+  | "cwd"
+  | "user"
+  | "assistant"
+  | "toolName"
+  | "toolArgs"
+  | "toolOutput";
+
 export interface ExtraFilter {
   name: string;
-  apply(segments: string[], signal: AbortSignal): Promise<string[]>;
+  /** `meta.kinds[i]` is the kind of `segments[i]`. */
+  apply(
+    segments: string[],
+    signal: AbortSignal,
+    meta?: { kinds: SegmentKind[] },
+  ): Promise<string[]>;
 }
 
 export type FilterStatus =
@@ -194,12 +208,13 @@ async function runFilter(
   filter: ExtraFilter,
   input: string[],
   timeoutMs: number,
+  meta?: { kinds: SegmentKind[] },
 ): Promise<{ segments: string[] | null; status: FilterStatus }> {
   const ac = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   // The filter gets a copy, so mutating it can never touch the fail-safe.
   const pending = Promise.resolve().then(() =>
-    filter.apply([...input], ac.signal),
+    filter.apply([...input], ac.signal, meta),
   );
   pending.catch(() => {});
   const timeout = new Promise<typeof TIMEOUT>((resolve) => {
@@ -235,7 +250,12 @@ async function runFilter(
  */
 export async function runExportPipeline(
   segments: string[],
-  opts: { filter?: ExtraFilter; timeoutMs: number; home?: string },
+  opts: {
+    filter?: ExtraFilter;
+    timeoutMs: number;
+    home?: string;
+    kinds?: SegmentKind[];
+  },
 ): Promise<ExportPipelineResult> {
   const counts: Record<string, number> = {};
   const redacted = segments.map((seg) => {
@@ -256,6 +276,7 @@ export async function runExportPipeline(
     opts.filter,
     redacted,
     opts.timeoutMs,
+    opts.kinds && { kinds: opts.kinds },
   );
   return {
     segments: filtered ?? redacted,

@@ -1360,3 +1360,97 @@ test(
     assert.match(res.stderr, /CF_CODEX=unavailable/);
   },
 );
+
+/* ---------------------------------------------------------------------------
+ * review-fp-shadow.sh — the opt-in /cf-review shadow wrapper is fail-open:
+ * always exit 0, one SHADOW= line, never the cf output, every cf call --json.
+ * ------------------------------------------------------------------------ */
+
+const shadowScript = path.join(scriptsDir, "review-fp-shadow.sh");
+
+test(
+  "review-fp shadow: fail-open, gated by global config and a real envelope",
+  posixOnly,
+  () => {
+    const okEnvelope = (dataOk) =>
+      JSON.stringify({
+        contractVersion: 1,
+        ok: true,
+        data: { ok: dataOk },
+        error: null,
+      });
+    const on = { provider: "local", reviewShadow: true };
+    const snap = "/tmp/coding-friend/review/run-1";
+    const report = "/tmp/coding-friend/review/run-1.report.md";
+    const runArgs = ["--snapshot-dir", snap, "--report", report];
+    const rows = [
+      {
+        name: "no cf on PATH",
+        decision: on,
+        args: ["--check"],
+        cfOut: null,
+        want: "off",
+        skip: realCliOnSafePath("cf"),
+      },
+      {
+        name: "decision off",
+        decision: { provider: "off", reviewShadow: true },
+        args: runArgs,
+        cfOut: okEnvelope(true),
+        want: "skipped",
+      },
+      {
+        name: "logged",
+        decision: on,
+        args: runArgs,
+        cfOut: okEnvelope(true),
+        want: "logged",
+      },
+      {
+        name: "gate closed in cf",
+        decision: on,
+        args: runArgs,
+        cfOut: okEnvelope(false),
+        want: "skipped",
+      },
+      {
+        name: "not a Coding Friend cf",
+        decision: on,
+        args: runArgs,
+        cfOut: "garbage {",
+        want: "skipped",
+      },
+    ];
+    for (const row of rows) {
+      if (row.skip) continue;
+      const home = mkTmp("cf-shadow-home-");
+      fs.mkdirSync(path.join(home, ".coding-friend"));
+      fs.writeFileSync(
+        path.join(home, ".coding-friend/config.json"),
+        JSON.stringify({ decision: row.decision }),
+      );
+      const argvFile = path.join(home, "cf-argv");
+      const bin = row.cfOut === null ? "" : `${makeBin("cf")}:`;
+      const res = spawnSync("bash", [shadowScript, ...row.args], {
+        env: {
+          ...baseEnv,
+          HOME: home,
+          PATH: `${bin}${SAFE_PATH}`,
+          CF_FAKE_OUT: row.cfOut ?? "",
+          CF_FAKE_ARGV_FILE: argvFile,
+        },
+        encoding: "utf8",
+        timeout: 20000,
+      });
+      assert.equal(res.status, 0, `${row.name}: always exit 0`);
+      assert.equal(res.stdout, `SHADOW=${row.want}\n`, row.name);
+      if (row.want === "logged") {
+        assert.deepEqual(
+          fs.readFileSync(argvFile, "utf8").trim().split("\n"),
+          ["decide", "review-fp", "--json", ...runArgs],
+          "every cf call carries --json so the CLI auto-update never runs",
+        );
+      }
+    }
+  },
+);

@@ -119,6 +119,8 @@ Scripts and agents can pass `--json` (status, version, doctor, config, memory, p
 
 `cf session list|show|export|save|load|status` reads Claude Code and Codex sessions and exports them as redacted Markdown (tool output left out by default; redaction is best effort). `save` copies a Claude Code session verbatim (not redacted) into one global store, `session.dir` (default `~/.coding-friend/sessions`), and `load` puts it back into a project for `claude --resume`; `/cf-session` needs the CLI for this. There is no sync engine: point `session.dir` and `learn.outputDir` at a cloud folder, and `cf sync status` shows what that folder holds (the global config and the project list are not synced).
 
+Decision layer (opt-in, off by default): an optional small model behind `cf session export --redact-model/--summary` and an opt-in `/cf-review` shadow log, configured with `cf config set --global decision.*`. See [cli/README.md#decision-layer](cli/README.md#decision-layer).
+
 `cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox (or OpenCode as a read-only worker) without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`. On a usage limit the task pauses, then resumes after the reset or switches provider (`task.onQuota`, `--no-fallback`); `cf supervisor install|uninstall|status|tick` adds a macOS launchd tick that picks up paused tasks whose runner died. `cf chef start|say|status|inbox|show|stop|resume` gives one plan to a read-only chef that the tick wakes to dispatch tasks and commit checked changes.
 
 ## Desktop app

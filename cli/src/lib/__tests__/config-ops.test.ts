@@ -90,6 +90,23 @@ describe("getConfigView", () => {
     });
   });
 
+  it("ignores a local decision block outside an explicit local scope", () => {
+    write(dirs.global, { decision: { allowRemote: true } });
+    write(dirs.local, { decision: { allowRemote: false } });
+    expect(getConfigView("decision.allowRemote")).toEqual({
+      key: "decision.allowRemote",
+      value: true,
+      source: "global",
+    });
+    expect(getConfigView().effective).toMatchObject({
+      decision: { allowRemote: true },
+    });
+    expect(getConfigView("decision.allowRemote", "local")).toMatchObject({
+      value: false,
+      source: "local",
+    });
+  });
+
   it("ignores inherited properties like toString", () => {
     expect(getConfigView("toString")).toEqual({
       key: "toString",

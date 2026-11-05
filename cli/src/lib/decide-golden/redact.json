@@ -1,0 +1,152 @@
+[
+  {
+    "id": "redact-pos-01",
+    "text": "Please send the invoice to Jane Example, her phone is 0900 000 000 and her email is jane.example@example.com.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-02",
+    "text": "The customer John Sample lives at 12 Example Street, Springfield, and can be reached on +1 555 0100 during office hours.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-03",
+    "text": "To log into the staging box use the user admin and the passphrase hoa-sen-42, it has not been rotated yet.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-04",
+    "text": "Mật khẩu wifi của văn phòng là hoa-sen-42, đừng gửi cho ai nhé.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-05",
+    "text": "Anh Nguyễn Văn Mẫu, số điện thoại 0900 000 000, địa chỉ 1 Đường Ví Dụ, Quận Một, cần được liên hệ trước thứ Sáu.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-06",
+    "text": "Wire the refund to account number 0000 1111 2222 3333 at Example Bank, account holder Jane Example.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-07",
+    "text": "Số tài khoản của chị Trần Thị Mẫu là 0000 1111 2222 tại Ngân hàng Ví Dụ, chuyển khoản trước ngày 10.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-08",
+    "text": "The internal host db01.corp.example.internal accepts the login root with the pass phrase blue-otter-17, I tested it this morning.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-09",
+    "text": "My date of birth is 01 January 1990 and my national ID number is 000-00-0000, use that for the form.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-10",
+    "text": "Đăng nhập máy chủ nội bộ bằng tài khoản quantri, mật khẩu là may-xanh-77.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-11",
+    "text": "The door code for the server room is 4 2 4 2 and the alarm PIN is 0 0 0 0, ask Bob Example if it changes.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-12",
+    "text": "Ship the replacement laptop to Maria Placeholder, 99 Sample Avenue, Apt 4, Example City 00000.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-13",
+    "text": "For the vendor portal the username is ops-team and the login phrase is correct horse purple lamp, written exactly like that.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-14",
+    "text": "Card ending in 0000, expiry 01/99, security code zero zero zero, cardholder Alex Example.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-15",
+    "text": "Email của khách là khach.mau@example.com, số căn cước 000000000000, gọi lại sau 5 giờ chiều.",
+    "label": true
+  },
+  {
+    "id": "redact-pos-16",
+    "text": "The SFTP drop at files.internal.example is reachable as user backup with the phrase quiet-river-93 for authentication.",
+    "label": true
+  },
+  {
+    "id": "redact-neg-01",
+    "text": "Refactor the parser so that it returns an array of segments instead of mutating the input list.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-02",
+    "text": "function add(a, b) {\n  return a + b;\n}\n\nconsole.log(add(2, 3));",
+    "label": false
+  },
+  {
+    "id": "redact-neg-03",
+    "text": "The connection string was [REDACTED:url-userinfo] and the header value was [REDACTED:bearer], both are masked already.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-04",
+    "text": "Hôm nay mình sửa lỗi hiển thị danh sách, giờ bấm vào một mục thì chi tiết hiện ngay.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-05",
+    "text": "Tests pass on Node 20 and 22; the flaky one in the watcher suite was a race on file close.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-06",
+    "text": "Set the timeout to 5000 ms and keep the concurrency at 4 so the provider does not rate limit us.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-07",
+    "text": "The README links to https://example.com/docs and the changelog lives in plugin/CHANGELOG.md.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-08",
+    "text": "Phần cấu hình nằm trong tệp config.json ở thư mục gốc, chỉ cần đổi giá trị language thành vi.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-09",
+    "text": "SELECT id, created_at FROM orders WHERE status = 'open' ORDER BY created_at DESC LIMIT 20;",
+    "label": false
+  },
+  {
+    "id": "redact-neg-10",
+    "text": "User asked to rename the sidebar label from Projects to Workspaces and to keep the icon.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-11",
+    "text": "The export now replaces matches with [REDACTED:generic], so the earlier value no longer appears in the transcript.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-12",
+    "text": "git checkout -b feature/sidebar && npm test -- --run sidebar",
+    "label": false
+  },
+  {
+    "id": "redact-neg-13",
+    "text": "Chúng ta nên viết thêm tài liệu cho lệnh export và giải thích cờ summary bằng tiếng Việt.",
+    "label": false
+  },
+  {
+    "id": "redact-neg-14",
+    "text": "The layout breaks below 640 px because the grid uses a fixed column width of 320 px.",
+    "label": false
+  }
+]

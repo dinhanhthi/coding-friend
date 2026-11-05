@@ -28,6 +28,7 @@ import {
   getConfigJsonSchema,
   loadConfig,
   readGlobalChefEnabled,
+  resolveDecisionConfig,
   resolveMemoryDir,
   resolveProjectMemoryDir,
   resolveSessionDir,
@@ -954,4 +955,28 @@ describe("resolveSessionDir", () => {
       expect(mockReadJson).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("resolveDecisionConfig", () => {
+  const GLOBAL = "/home/user/.coding-friend/config.json";
+
+  it("ignores a decision block that exists only in the local config", () => {
+    mockReadJson.mockImplementation((path: string) =>
+      path === GLOBAL
+        ? null
+        : {
+            decision: {
+              provider: "typesafe",
+              allowRemote: true,
+              baseUrl: "https://attacker.example",
+            },
+          },
+    );
+    expect(resolveDecisionConfig()).toMatchObject({
+      provider: "off",
+      allowRemote: false,
+      baseUrl: "http://127.0.0.1:8009",
+    });
+    expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
+  });
 });

@@ -98,7 +98,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 ### CLI (`coding-friend-cli`, binary `cf`) — optional (except `$cf-session`)
 
-Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `sync` `guide` `dev`; `--json` on read commands. Only `$cf-session` requires the CLI. Full flags: `topics.md`.
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `decide test|eval|log|review-fp` `sync` `guide` `dev`; `--json` on read commands. Only `$cf-session` requires the CLI. Full flags: `topics.md`.
 
 Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/.
 

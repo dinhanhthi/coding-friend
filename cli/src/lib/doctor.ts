@@ -14,9 +14,13 @@ import { isMemoryInitialized } from "../commands/memory.js";
 import {
   ConfigSchema,
   findUnknownKeys,
+  localConfigHasDecision,
+  resolveDecisionConfig,
   resolveLearnDir,
   resolveSessionDir,
+  type DecisionConfig,
 } from "./config.js";
+import { checkGate } from "./decide.js";
 import { listMdFilesRecursive } from "./fs-utils.js";
 import {
   detectHostsAvailable,
@@ -650,6 +654,87 @@ function registryChecks(): DoctorCheck[] {
   }
 }
 
+const DECISION_ENV_KEYS: Record<DecisionConfig["provider"], string[]> = {
+  off: [],
+  local: [],
+  typesafe: ["TYPESAFE_API_KEY"],
+  cloudflare: ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"],
+};
+
+/**
+ * The global-only `decision` block. Offline: env keys are reported by name
+ * (set/missing), never by value, and the provider is never called.
+ */
+function decisionChecks(): DoctorCheck[] {
+  const cfg = resolveDecisionConfig();
+  const group = "decision";
+  const checks: DoctorCheck[] = [];
+  const provider = {
+    id: "decision.provider",
+    group,
+    label: "Decision provider",
+  };
+  if (cfg.provider === "off") {
+    checks.push({ ...provider, status: "ok", detail: "off" });
+  } else {
+    const keys = DECISION_ENV_KEYS[cfg.provider];
+    const missing = keys.filter((k) => !process.env[k]?.trim());
+    const env = keys.map(
+      (k) => `${k} ${missing.includes(k) ? "missing" : "set"}`,
+    );
+    const detail = [`${cfg.provider} ${cfg.model}`, ...env].join("; ");
+    checks.push(
+      missing.length === 0
+        ? { ...provider, status: "ok", detail }
+        : {
+            ...provider,
+            status: "warn",
+            detail,
+            hint: `export ${missing.join(" and ")} in your shell (never in config)`,
+          },
+    );
+  }
+
+  // Remote per the gate itself: with allowRemote off, only remote is refused.
+  const probe = checkGate({ ...cfg, allowRemote: false });
+  if (!probe.ok && probe.reason === "gate") {
+    const gate = { id: "decision.gate", group, label: "Decision data gate" };
+    checks.push(
+      cfg.allowRemote
+        ? { ...gate, status: "ok", detail: "allowRemote is true" }
+        : {
+            ...gate,
+            status: "warn",
+            detail:
+              "nothing will be sent until decision.allowRemote is true in the global config",
+          },
+    );
+  }
+
+  if (cfg.provider === "typesafe" && /-(latest|preview)$/.test(cfg.model)) {
+    checks.push({
+      id: "decision.model",
+      group,
+      label: "Decision model",
+      status: "warn",
+      detail: `${cfg.model} is not a pinned version`,
+      hint: "set decision.model to a versioned id, e.g. jev-1.14.0",
+    });
+  }
+
+  if (localConfigHasDecision(process.cwd())) {
+    checks.push({
+      id: "decision.local",
+      group,
+      label: "Local decision block",
+      status: "warn",
+      detail: "ignored: decision is read from the global config only",
+      hint: "remove the decision block from .coding-friend/config.json by hand",
+    });
+  }
+  return checks;
+}
+
 export function cliInfo(cliVersion: string): DoctorData["cli"] {
   return { version: cliVersion, node: process.versions.node, path: cliPath() };
 }
@@ -676,6 +761,7 @@ export async function collectDoctor(cliVersion: string): Promise<DoctorData> {
     ...hostChecks(hosts),
     ...supervisorChecks(),
     ...registryChecks(),
+    ...decisionChecks(),
   ];
   return { cli: cliInfo(cliVersion), checks };
 }

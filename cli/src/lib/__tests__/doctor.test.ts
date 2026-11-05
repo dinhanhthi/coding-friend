@@ -94,6 +94,7 @@ afterEach(async () => {
   process.chdir(origCwd);
   Object.defineProperty(process, "platform", { value: origPlatform });
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   process.exitCode = undefined;
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -268,6 +269,40 @@ describe("cf doctor --json", () => {
     );
     expect(storage).toMatchObject({ group: "learn", status: "warn" });
     expect(storage.hint).toMatch(/either git or a cloud folder/);
+  });
+  it("reports decision env keys by name only, flags an ignored local block, and never calls fetch", async () => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const FAKE_TOKEN = "fake-token-for-doctor-test";
+    realFs.mkdirSync(join(home, ".coding-friend"));
+    realFs.writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ decision: { provider: "cloudflare" } }),
+    );
+    const project = join(home, "proj");
+    realFs.mkdirSync(join(project, ".coding-friend"), { recursive: true });
+    realFs.writeFileSync(
+      join(project, ".coding-friend", "config.json"),
+      JSON.stringify({ decision: { allowRemote: true } }),
+    );
+    process.chdir(project);
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", FAKE_TOKEN);
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", undefined);
+    vi.stubEnv("TYPESAFE_API_KEY", undefined);
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const env = await runDoctorJson();
+    const byId = (id: string) =>
+      env.data.checks.find((c: { id: string }) => c.id === id);
+    const provider = byId("decision.provider");
+    expect(provider).toMatchObject({ group: "decision", status: "warn" });
+    expect(provider.detail).toContain("CLOUDFLARE_API_TOKEN set");
+    expect(provider.detail).toContain("CLOUDFLARE_ACCOUNT_ID missing");
+    expect(stdout[0]).not.toContain(FAKE_TOKEN);
+    // The local allowRemote is ignored: the global gate stays closed.
+    expect(byId("decision.gate")).toMatchObject({ status: "warn" });
+    expect(byId("decision.local")).toMatchObject({ status: "warn" });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 
