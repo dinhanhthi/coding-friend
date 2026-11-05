@@ -1,12 +1,12 @@
 import { atom, read } from "claude-code";
 import type { On } from "claude-code";
 
-import type { ModsQuotaWindow } from "../types";
+import type { ModsMcp, ModsQuotaWindow } from "../types";
 import { isInteractive } from "./register";
 import type { ModsContext } from "./register";
 
 // The one-line band above the prompt. It shows only what needs attention and
-// passes otherwise. Phase 4 adds an MCP segment beside the quota one.
+// passes otherwise: a quota segment and an MCP segment.
 
 const BAND_MIN_PERCENT = 80;
 
@@ -14,6 +14,12 @@ const BAND_MIN_PERCENT = 80;
 // reads it, so the same literal ref is repeated here.
 const quotaState = atom(
   { plugin: "coding-friend-mods", key: "quota" } as const,
+  null,
+);
+
+// Written by mcp.ts; repeated here for the same reason.
+const mcpState = atom(
+  { plugin: "coding-friend-mods", key: "mcp" } as const,
   null,
 );
 
@@ -29,6 +35,8 @@ export function registerBand(on: On, _ctx: ModsContext): void {
         );
         const quota = quotaSegment(live ?? null);
         if (quota !== null) segments.push(quota);
+        const mcp = mcpSegment(await read($, mcpState));
+        if (mcp !== null) segments.push(mcp);
         if (segments.length > 0) {
           const { Box, Text } = $.ui.resolve(e);
           return (
@@ -54,4 +62,14 @@ function quotaSegment(windows: ModsQuotaWindow[] | null): string | null {
     (w) => `${w.kind === "five_hour" ? "5h" : "7d"} ${w.percentUsed}%`,
   );
   return `Claude quota: ${parts.join(" · ")}`;
+}
+
+/** "CF MCP: memory, learn error" for the servers whose last ping failed, else null. */
+function mcpSegment(mcp: ModsMcp | null): string | null {
+  if (!mcp) return null;
+  const failed = (["memory", "learn"] as const).filter(
+    (name) => mcp[name] === "error",
+  );
+  if (failed.length === 0) return null;
+  return `CF MCP: ${failed.join(", ")} error`;
 }

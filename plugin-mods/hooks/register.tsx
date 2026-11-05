@@ -1,8 +1,11 @@
 import { atom, read, update } from "claude-code";
-import type { EngineInterface, On, PluginOptions, Register } from "claude-code";
+import type { EngineInterface, PluginOptions, Register } from "claude-code";
 
 import { registerBand } from "./band";
+import { registerMcp } from "./mcp";
+import { registerPlanCommand, registerPlanPane } from "./plan-pane";
 import { registerQuota } from "./quota";
+import { registerToasts } from "./toasts";
 
 // Every hook here is fail-soft: it catches its own errors and always returns
 // next(e), so a broken mod never breaks the session.
@@ -15,13 +18,6 @@ const interactive = atom(
 export type ModsContext = {
   options: PluginOptions;
 };
-
-// Feature registrars. Each later task fills in its own hooks. The engine reads
-// the module statically: a registrar is a top-level function (or one imported
-// from the plugin's own files) called by name, never through a variable.
-function registerToasts(_on: On, _ctx: ModsContext): void {}
-function registerMcp(_on: On, _ctx: ModsContext): void {}
-function registerPlanPane(_on: On, _ctx: ModsContext): void {}
 
 // True only when a person is at the prompt. Toasts, bands, panes and timers
 // run only then; headless runs (-p, SDK) only write the quota snapshot.
@@ -41,9 +37,18 @@ export const register: Register = (on, options) => {
     } catch {
       // Unknown stays false: no UI.
     }
+    try {
+      // This file owns the plain session.start, so plan-pane's command is
+      // registered here.
+      await registerPlanCommand($);
+    } catch {
+      // No /cf-plan-status this session.
+    }
     return next(e);
   });
 
+  // The engine reads the module statically: each registrar is a top-level
+  // function imported from the plugin's own files and called by name.
   const ctx: ModsContext = { options };
   // Each in its own try: one broken feature must not stop the others.
   try {
