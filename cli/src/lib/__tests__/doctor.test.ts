@@ -304,6 +304,40 @@ describe("cf doctor --json", () => {
     expect(byId("decision.local")).toMatchObject({ status: "warn" });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { name: "absent", ageS: null, status: "ok" },
+    { name: "stale", ageS: 25 * 3600, status: "warn" },
+  ])(
+    "reports quota.snapshot $status when the snapshot is $name",
+    async ({ ageS, status }) => {
+      const realFs = await vi.importActual<typeof import("fs")>("fs");
+      const quotaDir = join(home, "quota");
+      vi.stubEnv("CF_QUOTA_DIR", quotaDir);
+      if (ageS !== null) {
+        realFs.mkdirSync(quotaDir);
+        realFs.writeFileSync(
+          join(quotaDir, "claude.json"),
+          JSON.stringify({
+            schemaVersion: 1,
+            provider: "claude",
+            configDir: join(home, ".claude"),
+            windows: { five_hour: { percentUsed: 10, resetsAt: 1 } },
+            source: "statusline",
+            measuredAt: Math.floor(Date.now() / 1000) - ageS,
+          }),
+        );
+      }
+
+      const env = await runDoctorJson();
+      const snap = env.data.checks.find(
+        (c: { id: string }) => c.id === "quota.snapshot",
+      );
+      expect(snap).toMatchObject({ group: "quota", status });
+      if (ageS === null) expect(snap.detail).toMatch(/not recorded/);
+      else expect(snap.hint).toMatch(/statusline|coding-friend-mods/);
+    },
+  );
 });
 
 describe("cf doctor session retention", () => {

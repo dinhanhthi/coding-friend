@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
@@ -34,6 +37,7 @@ vi.mock("../../lib/paths.js", () => ({
     () => "/mock/project/.claude/settings.local.json",
   ),
   agyPluginDir: vi.fn(() => "/mock/.gemini/config/plugins/coding-friend"),
+  quotaSnapshotPath: vi.fn(() => "/mock/.coding-friend/quota/claude.json"),
   resolvePath: vi.fn((p: string) => p),
 }));
 
@@ -101,7 +105,7 @@ vi.mock("../update.js", () => ({
 // ─── Imports ─────────────────────────────────────────────────────────
 
 import chalk from "chalk";
-import { resolvePath } from "../../lib/paths.js";
+import { quotaSnapshotPath, resolvePath } from "../../lib/paths.js";
 import {
   isAgyPluginInstalled,
   isAgyPluginEnabled,
@@ -747,8 +751,35 @@ describe("statusCommand — human output characterization", () => {
   });
 });
 
-describe("statusCommand — --json", () => {
-  it("writes exactly one ok envelope to stdout and nothing via console.log", async () => {
+describe("statusCommand — quota snapshot", () => {
+  let quotaDir: string;
+  const now = Math.floor(Date.now() / 1000);
+
+  beforeEach(() => {
+    quotaDir = mkdtempSync(join(tmpdir(), "cf-status-quota-"));
+    const path = join(quotaDir, "claude.json");
+    writeFileSync(
+      path,
+      JSON.stringify({
+        schemaVersion: 1,
+        provider: "claude",
+        configDir: "/mock/.claude",
+        windows: {
+          five_hour: { percentUsed: 42, resetsAt: now + 7830 },
+          seven_day: { percentUsed: 18, resetsAt: now + 3 * 86_400 + 5400 },
+        },
+        source: "statusline",
+        measuredAt: now - 180,
+      }),
+    );
+    vi.mocked(quotaSnapshotPath).mockReturnValue(path);
+  });
+
+  afterEach(() => {
+    rmSync(quotaDir, { recursive: true, force: true });
+  });
+
+  it("--json writes one ok envelope with data.quota and nothing via console.log", async () => {
     const logs = captureOutput();
     vi.spyOn(console, "error").mockImplementation(() => {});
     const write = vi
@@ -768,7 +799,29 @@ describe("statusCommand — --json", () => {
       "memory",
       "mcp",
       "config",
+      "quota",
     ]);
     expect(env.data.versions.plugin.current).toBe("0.12.1");
+    expect(env.data.quota).toMatchObject({
+      measuredAt: now - 180,
+      source: "statusline",
+      windows: {
+        five_hour: { percentUsed: 42, resetsAt: now + 7830 },
+        seven_day: { percentUsed: 18 },
+      },
+    });
+    expect(env.data.quota.ageSeconds).toBeGreaterThanOrEqual(180);
+  });
+
+  it("prints one Quota line with percentages, resets and age", async () => {
+    const output = captureOutput();
+
+    await statusCommand();
+
+    const lines = output.filter((l) => l.includes("Quota"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(
+      /Claude 5h 42% \(resets in 2h 1\dm\) · 7d 18% \(resets in 3d 1h\) · 3m ago/,
+    );
   });
 });

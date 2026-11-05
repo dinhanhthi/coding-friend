@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { decideNext, MAX_PAUSES, type TaskPolicy } from "../quota.js";
 import type { AttemptEntry, AttemptKind, Provider } from "../store.js";
+import type { QuotaResetHint } from "../../quota-snapshot.js";
 
 const NOW = 1_800_000_000;
 const WAIT_MIN = 30;
@@ -43,8 +44,25 @@ function paused(
   };
 }
 
-const decide = (attempts: AttemptEntry[], p = policy()) =>
-  decideNext({ policy: p, attempts, now: NOW, eligible: ["claude", "codex"] });
+const decide = (
+  attempts: AttemptEntry[],
+  p = policy(),
+  resetHint?: QuotaResetHint,
+) =>
+  decideNext({
+    policy: p,
+    attempts,
+    now: NOW,
+    eligible: ["claude", "codex"],
+    resetHint,
+  });
+
+const hint = (over: Partial<QuotaResetHint> = {}): QuotaResetHint => ({
+  provider: "claude",
+  resetsAt: NOW + 600,
+  measuredAt: NOW - 60,
+  ...over,
+});
 
 describe("decideNext", () => {
   it("reset inside the wait window → resume the session at reset + 60s", () => {
@@ -91,5 +109,36 @@ describe("decideNext", () => {
     expect(at).toBeGreaterThanOrEqual(
       Date.parse(claudePause.pause!.createdAt) / 1000 + WAIT_MIN * 60,
     );
+  });
+
+  it("unknown reset + fresh snapshot hint → resume at hint reset + 60s", () => {
+    expect(decide([paused(1, "claude", null)], policy(), hint())).toEqual({
+      kind: "resume",
+      provider: "claude",
+      at: NOW + 660,
+      sessionId: "sess-1",
+    });
+  });
+
+  it("a known pause reset wins over the hint", () => {
+    expect(
+      decide(
+        [paused(1, "claude", NOW + 600)],
+        policy(),
+        hint({ resetsAt: NOW + 1200 }),
+      ),
+    ).toMatchObject({ kind: "resume", at: NOW + 660 });
+  });
+
+  it.each<[string, Provider, QuotaResetHint]>([
+    ["stale", "claude", hint({ measuredAt: NOW - 6 * 3600 - 1 })],
+    ["past reset", "claude", hint({ resetsAt: NOW - 1 })],
+    ["other provider", "codex", hint()],
+  ])("%s hint is ignored → wait waitMinutes", (_, provider, h) => {
+    expect(decide([paused(1, provider, null)], policy(), h)).toMatchObject({
+      kind: "resume",
+      provider,
+      at: NOW + WAIT_MIN * 60,
+    });
   });
 });

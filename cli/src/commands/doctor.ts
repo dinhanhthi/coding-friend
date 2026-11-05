@@ -22,6 +22,7 @@ const GROUP_TITLES: Record<string, string> = {
   project: "Project",
   session: "Sessions",
   decision: "Decision layer",
+  quota: "Quota",
 };
 
 function printCheck(c: DoctorCheck): void {

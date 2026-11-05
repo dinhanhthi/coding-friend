@@ -1,6 +1,10 @@
 import { lstatSync, readFileSync } from "fs";
 import { resolve } from "path";
-import { normalizeResetsAt } from "./orchestrator/quota.js";
+import {
+  MEASURED_AT_MAX_SKEW_S,
+  normalizeResetsAt,
+  RESET_HINT_MAX_AGE_S,
+} from "./orchestrator/quota.js";
 import { quotaSnapshotPath } from "./paths.js";
 
 /**
@@ -47,15 +51,8 @@ export interface QuotaResetHint {
   measuredAt: number;
 }
 
-/** A reset hint from a snapshot older than this (seconds) is ignored. */
-export const RESET_HINT_MAX_AGE_S = 6 * 3600;
-
-/**
- * A snapshot whose `measuredAt` is further than this (seconds) ahead of `now`
- * is ignored by the hint (clock-skew slack): a future `measuredAt` would
- * otherwise never age out.
- */
-export const MEASURED_AT_MAX_SKEW_S = 300;
+// Hint age and clock-skew limits, shared with decideNext (defined in quota.ts).
+export { MEASURED_AT_MAX_SKEW_S, RESET_HINT_MAX_AGE_S };
 
 /**
  * A window whose `resetsAt` is further than this (seconds) ahead of `now` is

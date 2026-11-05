@@ -10,11 +10,13 @@ import {
   collectConfig,
   collectMemory,
   collectPlugin,
+  collectQuota,
   collectStatus,
   collectVersions,
   type ConfigStatus,
   type MemoryStatus,
   type PluginStatus,
+  type QuotaStatus,
   type VersionsStatus,
 } from "../lib/status-data.js";
 
@@ -26,6 +28,17 @@ function formatUptime(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;
   if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
   return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
+}
+
+/** Compact span, rounded down: "45s", "3m", "2h 10m", "3d 1h". */
+function formatSpan(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86_400) {
+    return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  }
+  return `${Math.floor(s / 86_400)}d ${Math.floor((s % 86_400) / 3600)}h`;
 }
 
 function formatScalar(value: unknown): string {
@@ -238,6 +251,27 @@ function printPlugin(p: PluginStatus): void {
   }
 }
 
+const QUOTA_WINDOWS = [
+  ["five_hour", "5h"],
+  ["seven_day", "7d"],
+] as const;
+
+/** One line in the Plugin section; nothing when there is no snapshot. */
+function printQuota(q: QuotaStatus | null): void {
+  if (!q) return;
+  const now = Math.floor(Date.now() / 1000);
+  const parts: string[] = [];
+  for (const [name, label] of QUOTA_WINDOWS) {
+    const w = q.windows[name];
+    if (!w) continue;
+    const reset =
+      w.resetsAt > now ? ` (resets in ${formatSpan(w.resetsAt - now)})` : "";
+    parts.push(`${label} ${Math.round(w.percentUsed)}%${reset}`);
+  }
+  parts.push(`${formatSpan(q.ageSeconds)} ago`);
+  console.log(`${pad("Quota", VERSION_COL)}Claude ${parts.join(" · ")}`);
+}
+
 const TIER_LABELS = {
   1: "Tier 1 (SQLite + Hybrid)",
   2: "Tier 2 (MiniSearch + Daemon)",
@@ -332,6 +366,7 @@ export async function statusCommand(
   console.log(chalk.dim("Loading status information…"));
   printVersions(collectVersions());
   printPlugin(collectPlugin());
+  printQuota(collectQuota());
   printMemory(await collectMemory());
   await printMcp();
   printConfigSection(collectConfig());

@@ -12,7 +12,12 @@ import { tmpdir } from "os";
 import { isAbsolute, join, relative, resolve, sep } from "path";
 import { createInterface } from "readline";
 import { setTimeout as sleepTimer } from "timers/promises";
-import { orchestratorDir } from "../paths.js";
+import { claudeConfigDir, orchestratorDir } from "../paths.js";
+import {
+  quotaResetHint,
+  readQuotaSnapshot,
+  type QuotaResetHint,
+} from "../quota-snapshot.js";
 import { buildContextBundle, buildResumePrompt } from "./bundle.js";
 import { releaseLease } from "./lease.js";
 import { eligibleProviders } from "./providers/eligible.js";
@@ -823,10 +828,26 @@ async function runAttempts(
           }),
           ...(run.fin.error !== undefined && { error: run.fin.error }),
         });
+        const now = deps.now();
+        // Reset hint from the quota snapshot: the worker inherits this
+        // process's env, so its Claude config dir is ours. Any error = no hint.
+        let resetHint: QuotaResetHint | undefined;
+        if (attempt.provider === "claude") {
+          try {
+            resetHint =
+              quotaResetHint(readQuotaSnapshot(), {
+                configDir: claudeConfigDir(),
+                now,
+              }) ?? undefined;
+          } catch {
+            resetHint = undefined;
+          }
+        }
         const decision = decideNext({
           policy: dispatch.policy,
           attempts: listAttempts(id),
-          now: deps.now(),
+          now,
+          resetHint,
           eligible: eligibleProviders(
             req,
             dispatch.policy.noFallback

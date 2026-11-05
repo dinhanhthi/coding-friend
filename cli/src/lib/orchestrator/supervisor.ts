@@ -16,7 +16,12 @@ import { randomBytes } from "crypto";
 import { dirname, join } from "path";
 import { readGlobalChefEnabled } from "../config.js";
 import { run as exec } from "../exec.js";
-import { orchestratorDir } from "../paths.js";
+import { claudeConfigDir, orchestratorDir } from "../paths.js";
+import {
+  quotaResetHint,
+  readQuotaSnapshot,
+  type QuotaResetHint,
+} from "../quota-snapshot.js";
 import {
   chefStatus,
   claimedWakeDir,
@@ -308,10 +313,26 @@ function adopt(
     return fail(id, view.checkout, "task.json changed after dispatch");
   }
 
+  // Reset hint from the quota snapshot: workers inherit this process's env,
+  // so its Claude config dir is theirs. Any error = no hint.
+  let resetHint: QuotaResetHint | undefined;
+  if (latest.provider === "claude") {
+    try {
+      resetHint =
+        quotaResetHint(readQuotaSnapshot(), {
+          configDir: claudeConfigDir(),
+          now,
+        }) ?? undefined;
+    } catch {
+      resetHint = undefined;
+    }
+  }
+
   const decision = decideNext({
     policy: dispatch.policy,
     attempts,
     now,
+    resetHint,
     eligible: eligibleProviders(
       {
         checkout: task.checkout,
