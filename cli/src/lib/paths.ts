@@ -136,6 +136,17 @@ export function orchestratorDir(): string {
   );
 }
 
+/** Quota snapshot directory (CF_QUOTA_DIR overrides ~/.coding-friend/quota) */
+export function quotaDir(): string {
+  // resolve(): same reason as orchestratorDir — pin a relative override.
+  return resolve(process.env.CF_QUOTA_DIR || join(globalConfigDir(), "quota"));
+}
+
+/** Claude quota snapshot file (<quotaDir>/claude.json) */
+export function quotaSnapshotPath(): string {
+  return join(quotaDir(), "claude.json");
+}
+
 /** Memory dependencies directory (~/.coding-friend/memory) */
 export function memoryDepsDir(): string {
   return join(homedir(), ".coding-friend", "memory");

@@ -20,6 +20,7 @@ vi.mock("../paths.js", () => ({
 import { readJson, writeJson } from "../json.js";
 import {
   settingsPathForScope,
+  isPluginInstalled,
   isPluginDisabled,
   setPluginEnabled,
   enableMarketplaceAutoUpdate,
@@ -49,6 +50,28 @@ describe("settingsPathForScope", () => {
     expect(settingsPathForScope("local")).toBe(
       "/project/.claude/settings.local.json",
     );
+  });
+});
+
+describe("isPluginInstalled", () => {
+  it("returns true when the main plugin key is present", () => {
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend@coding-friend-marketplace": [{ version: "1.0.0" }],
+      },
+    });
+    expect(isPluginInstalled()).toBe(true);
+  });
+
+  it("returns false when only the mods plugin key is present", () => {
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend-mods@coding-friend-marketplace": [{ version: "0.1.0" }],
+      },
+    });
+    expect(isPluginInstalled()).toBe(false);
   });
 });
 

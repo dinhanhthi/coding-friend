@@ -16,7 +16,7 @@ export function isPluginInstalled(): boolean {
   const data = readJson<Record<string, unknown>>(installedPluginsPath());
   if (!data) return false;
   const plugins = (data.plugins ?? data) as Record<string, unknown>;
-  return Object.keys(plugins).some((k) => k.includes(PLUGIN_NAME));
+  return Object.keys(plugins).some((k) => k.startsWith(`${PLUGIN_NAME}@`));
 }
 
 export function isMarketplaceRegistered(): boolean {

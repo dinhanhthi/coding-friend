@@ -27,7 +27,7 @@ export function getInstalledVersion(): string | null {
   const plugins = (data.plugins ?? data) as Record<string, unknown>;
 
   for (const [key, value] of Object.entries(plugins)) {
-    if (!key.includes("coding-friend")) continue;
+    if (!key.startsWith("coding-friend@")) continue;
 
     // Array format: [{ version: "1.4.0", ... }]
     if (Array.isArray(value) && value.length > 0) {

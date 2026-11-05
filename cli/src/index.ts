@@ -21,7 +21,7 @@ function getInstalledPluginVersion(): string | null {
     const data = JSON.parse(readFileSync(installedPluginsPath(), "utf-8"));
     const plugins = (data.plugins ?? data) as Record<string, unknown>;
     for (const [key, value] of Object.entries(plugins)) {
-      if (!key.includes("coding-friend")) continue;
+      if (!key.startsWith("coding-friend@")) continue;
       if (Array.isArray(value) && value.length > 0) {
         const entry = value[0] as Record<string, unknown>;
         if (typeof entry.version === "string") return entry.version;
