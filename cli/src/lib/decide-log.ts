@@ -5,9 +5,10 @@ import type { DecisionConfig } from "./config.js";
 import { globalConfigDir } from "./paths.js";
 
 /**
- * JSONL log of decision calls: one line per export (aggregated) and one per
- * D3 finding. Only whitelisted enum/id/number fields are written — never state
- * text, finding text, file paths, or auth headers.
+ * JSONL log of decision calls: one line per export (aggregated), one per D3
+ * finding asked (has findingHash) and one per D3 run (counts, no findingHash).
+ * Only whitelisted enum/id/number fields are written — never state text,
+ * finding text, file paths, or auth headers.
  */
 
 export type DecisionPoint = "export" | "review_fp" | "test" | "eval";
@@ -146,4 +147,137 @@ export function readDecisionLog(): DecisionLogEntry[] {
   } catch {
     return [];
   }
+}
+
+const SEVERITY_LIST = ["critical", "important", "suggestion"] as const;
+/** Skip counts of a review_fp run line (under `answers`). */
+const SKIP_LIST = [
+  "skippedSecurity",
+  "skippedSecretPath",
+  "skippedSecretContent",
+  "skippedNoContext",
+  "skippedOverLimit",
+  "skippedBudget",
+] as const;
+
+export interface SeveritySummary {
+  /** review_fp lines with a numeric `noul` answer. */
+  answered: number;
+  /** Answered findings with noul < threshold (model thinks likely false positive). */
+  belowThreshold: number;
+  /** belowThreshold / answered, or null when nothing was answered. */
+  share: number | null;
+}
+
+export interface DecisionLogSummary {
+  since: string | null;
+  threshold: number;
+  lines: Record<DecisionPoint, number>;
+  reviewFp: {
+    /** review_fp run lines (counts, no findingHash), one per executed run. */
+    runs: number;
+    /** review_fp finding lines (one per finding asked). */
+    findings: number;
+    answered: number;
+    fallback: number;
+    fallbackRate: number;
+    p50Ms: number;
+    p95Ms: number;
+    bySeverity: Record<(typeof SEVERITY_LIST)[number], SeveritySummary>;
+  } & Record<(typeof SKIP_LIST)[number], number>;
+}
+
+/** Nearest-rank percentile of `values` (0 when empty). */
+function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)];
+}
+
+/**
+ * Numbers-only summary of log entries for `cf decide log`. Entries come from
+ * readDecisionLog, which checks only `v` and `point`, so every field is
+ * re-checked here. `sinceMs` drops entries before it (and any with a bad ts).
+ */
+export function summarizeDecisionLog(
+  entries: DecisionLogEntry[],
+  opts: { sinceMs?: number; threshold: number },
+): DecisionLogSummary {
+  const lines: Record<DecisionPoint, number> = {
+    export: 0,
+    review_fp: 0,
+    test: 0,
+    eval: 0,
+  };
+  let runs = 0;
+  const skipped = Object.fromEntries(SKIP_LIST.map((k) => [k, 0])) as Record<
+    (typeof SKIP_LIST)[number],
+    number
+  >;
+  const latencies: number[] = [];
+  const bySeverity = Object.fromEntries(
+    SEVERITY_LIST.map((s) => [
+      s,
+      { answered: 0, belowThreshold: 0, share: null },
+    ]),
+  ) as DecisionLogSummary["reviewFp"]["bySeverity"];
+  let findings = 0;
+  let answered = 0;
+
+  for (const e of entries) {
+    if (!POINTS.has(e.point)) continue;
+    if (opts.sinceMs !== undefined) {
+      const ts = typeof e.ts === "string" ? Date.parse(e.ts) : NaN;
+      if (!(ts >= opts.sinceMs)) continue;
+    }
+    lines[e.point]++;
+    if (e.point !== "review_fp") continue;
+    if (typeof e.findingHash !== "string") {
+      // run line: counts only
+      runs++;
+      for (const k of SKIP_LIST) {
+        const n = e.answers?.[k];
+        if (typeof n === "number" && Number.isFinite(n) && n >= 0) {
+          skipped[k] += n;
+        }
+      }
+      continue;
+    }
+    findings++;
+    const noul = e.answers?.noul;
+    if (e.ok !== true || typeof noul !== "number" || !Number.isFinite(noul)) {
+      continue;
+    }
+    answered++;
+    // Latency of answered lines only, as in runEval.
+    if (typeof e.latencyMs === "number" && Number.isFinite(e.latencyMs)) {
+      latencies.push(e.latencyMs);
+    }
+    if (typeof e.severity === "string" && SEVERITIES.has(e.severity)) {
+      const s = bySeverity[e.severity];
+      s.answered++;
+      if (noul < opts.threshold) s.belowThreshold++;
+    }
+  }
+  for (const s of Object.values(bySeverity)) {
+    s.share = s.answered ? s.belowThreshold / s.answered : null;
+  }
+
+  return {
+    since:
+      opts.sinceMs === undefined ? null : new Date(opts.sinceMs).toISOString(),
+    threshold: opts.threshold,
+    lines,
+    reviewFp: {
+      runs,
+      findings,
+      answered,
+      fallback: findings - answered,
+      fallbackRate: findings ? (findings - answered) / findings : 0,
+      p50Ms: percentile(latencies, 0.5),
+      p95Ms: percentile(latencies, 0.95),
+      bySeverity,
+      ...skipped,
+    },
+  };
 }

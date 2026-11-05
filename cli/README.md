@@ -196,6 +196,11 @@ cf session load      # Load a saved session from session.dir, print the resume c
 cf session status    # Show session.dir, its cloud folder and suggested folders
 cf sync status       # Learn and session folders: cloud provider, files, placeholders
                      #    and conflict copies (reads no file, see Sync)
+cf decide test       # (beta) One built-in synthetic request to the decision model
+cf decide eval [--point redact|review-fp]  # Score the model on the built-in golden sets
+cf decide log [--since <date>] [--threshold <n>]  # Summarize the decision log (read-only)
+cf decide review-fp --snapshot-dir <dir> --report <file>
+                     # /cf-review shadow check, logs only (see Decision layer)
 cf task run --provider claude|codex|opencode [--model <name>] [--read-only] [--no-fallback] "<prompt>"
                      # Start a detached, sandboxed worker task (see Task runner)
 cf task list         # List tasks, newest first
@@ -220,7 +225,7 @@ cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf decide test|eval|log|review-fp`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
 
 ## Doctor
 
@@ -329,6 +334,25 @@ Coding Friend has no sync engine. To use your learn notes and saved sessions on 
 - **conflicts:** sync conflict copies whose original exists next to them (`hooks 2`, `hooks (1)`, Dropbox "conflicted copy", OneDrive `-<host>` inside a OneDrive folder). For sessions this counts both copied folders and copied files inside a folder (`session 2.jsonl`, `meta 2.json`).
 
 It reads directory entries and `lstat` only, never a file, does not follow symlinks inside the folder and skips entries starting with `.`. Each kind stops after 20000 entries and is then marked `truncated`. Human output prints one line per kind and a reminder that the global config and the project list are not synced.
+
+## Decision layer
+
+An optional small model that Coding Friend can ask yes/no questions ("does this text still hold a secret?", "does this code show the problem?"). It is off by default (`decision.provider` is `off`) and read from the **global** config only; a `decision` block in a project's `.coding-friend/config.json` is ignored.
+
+- **Provider.** `cf config set --global decision.provider local|typesafe|cloudflare`. `local` talks to the server at `decision.baseUrl`; a loopback URL stays on this machine.
+- **Remote gate.** Anything that leaves the machine (`typesafe`, `cloudflare`, or a non-loopback `baseUrl`) also needs `decision.allowRemote: true` in the global config.
+- **Keys.** From the environment only: `TYPESAFE_API_KEY`, or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
+
+`cf decide` (beta) has four subcommands, all with `--json`:
+
+- **`test`** sends one built-in synthetic request and prints provider, model, answer and latency.
+- **`eval [--point redact|review-fp]`** scores the model on the built-in golden sets (accuracy, fallback rate, p50/p95 latency); default both sets. `test` and `eval` send only this built-in synthetic data, so they reach a remote provider even when `allowRemote` is `false`. Provider `off`, a missing key or an invalid config is `INVALID_ARGS` before any request.
+- **`log [--since <date>] [--threshold <n>]`** reads the decision log and prints a summary (lines per kind, `/cf-review` shadow runs, findings asked, findings skipped per reason (security, secret path, secret content, no context, over limit, budget), fallback, latency, share of findings below the threshold, default 0.2). Read-only.
+- **`review-fp --snapshot-dir <dir> --report <file>`** is the `/cf-review` shadow backend: it asks the model whether each non-security finding shows in the code and only writes the log; the review itself never changes. Both paths must be under `/tmp/coding-friend/review/`. A closed gate is not an error: `data.ok` is `false` with a `reason`.
+
+The session export filters `--redact-model` and `--summary` use the same config (see [Sessions](#sessions)).
+
+Each filtered export, `test` or `eval` run, `review-fp` run (asked and skipped counts) and `review-fp` finding asked appends one line to `~/.coding-friend/decisions/log.jsonl` (provider, model, ok, fallback reason, latency, numeric answers or counts, and for review findings a hash). It never holds text or paths.
 
 ## Machine interface
 

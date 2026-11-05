@@ -278,6 +278,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /local commands="[^"]*\bdoctor\b/,
         /local update_flags="[^"]*--yes/,
         /"\$\{COMP_WORDS\[1\]\}" == "doctor" \|\|/,
+        /local commands="[^"]*\bdecide\b/,
+        /compgen -W "test eval log review-fp"/,
       ],
     },
     {
@@ -307,6 +309,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /'doctor:/,
         /'--yes\[Run without confirmation/,
         /"\$\{words\[2\]\}" == "doctor" \]\]/,
+        /'decide:/,
+        /'review-fp:/,
       ],
     },
     {
@@ -338,6 +342,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /__fish_use_subcommand" -a doctor /,
         /__fish_seen_subcommand_from update" -l yes /,
         /status mcp version doctor [^"]*" -l json /,
+        /__fish_use_subcommand" -a decide /,
+        /__fish_seen_subcommand_from decide" -a review-fp /,
       ],
     },
     {
@@ -364,6 +370,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /\$commands = @\([^)]*'doctor'/,
         /\$updateFlags = @\([^)]*'--yes'/,
         /@\('status','mcp','version','doctor'[^)]*\) -contains/,
+        /\$commands = @\([^)]*'decide'/,
+        /\$decideSubcommands = @\('test','eval','log','review-fp'\)/,
       ],
     },
   ];

@@ -41,7 +41,7 @@ const REDACT_KINDS = new Set<SegmentKind>([
 ]);
 const SUMMARY_KINDS = new Set<SegmentKind>(["user", "assistant", "toolOutput"]);
 
-const REDACT_INSTRUCTIONS =
+export const REDACT_INSTRUCTIONS =
   "The text contains a secret, credential, API key, password, or personal " +
   "data (name with contact details, email, phone, address, ID number) that " +
   "is not already masked as [REDACTED:...]";

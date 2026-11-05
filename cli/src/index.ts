@@ -931,6 +931,80 @@ sync
     await syncStatusCommand(opts);
   });
 
+const decideCmd = program
+  .command("decide")
+  .description(
+    "[beta] Decision model: test the provider, run the eval, read the shadow log",
+  );
+
+program.addHelpText(
+  "after",
+  `
+Decide subcommands (beta):
+  decide test         Send one built-in synthetic request and print the answer
+  decide eval         Score the model on the built-in golden sets (--point)
+  decide log          Summarize the decision log (numbers only, read-only)
+  decide review-fp    Shadow-check a /cf-review report (logs only)`,
+);
+
+decideCmd
+  .command("test")
+  .description(
+    "Send one built-in synthetic request; print provider, model, answer, latency",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideTestCommand } = await import("./commands/decide.js");
+    await decideTestCommand(opts);
+  });
+
+decideCmd
+  .command("eval")
+  .description(
+    "Score the model on the built-in golden sets (accuracy, fallback, latency)",
+  )
+  .option(
+    "--point <point>",
+    "only this set: redact or review-fp (default both)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideEvalCommand } = await import("./commands/decide.js");
+    await decideEvalCommand(opts);
+  });
+
+decideCmd
+  .command("log")
+  .description(
+    "Summarize the decision log: review shadow runs, fallback, latency, share below threshold",
+  )
+  .option("--since <date>", "only lines from this date (YYYY-MM-DD or ISO)")
+  .option(
+    "--threshold <n>",
+    "noul below this counts as a likely false positive (0-1, default 0.2)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideLogCommand } = await import("./commands/decide.js");
+    await decideLogCommand(opts);
+  });
+
+decideCmd
+  .command("review-fp")
+  .description(
+    "Ask the model whether each /cf-review finding shows in the code (shadow, logs only)",
+  )
+  .option(
+    "--snapshot-dir <dir>",
+    "review snapshot under /tmp/coding-friend/review/",
+  )
+  .option("--report <file>", "review report under /tmp/coding-friend/review/")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideReviewFpCommand } = await import("./commands/decide.js");
+    await decideReviewFpCommand(opts);
+  });
+
 const memory = program
   .command("memory")
   .description("AI memory system — store and search project knowledge");
