@@ -20,6 +20,8 @@ import { log, printBanner } from "../lib/log.js";
 import {
   isPluginInstalled,
   isMarketplaceRegistered,
+  isModsInstalled,
+  MODS_PLUGIN_ID,
 } from "../lib/plugin-state.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
@@ -76,6 +78,18 @@ function runClaude(args: string[], label: string): boolean {
   return true;
 }
 
+/** Reinstall coding-friend-mods if it was installed before the swap. Failure only warns. */
+function reinstallMods(hadMods: boolean): void {
+  if (!hadMods) return;
+  log.step("Reinstalling coding-friend-mods...");
+  const result = runWithStderr("claude", ["plugin", "install", MODS_PLUGIN_ID]);
+  if (result.exitCode !== 0) {
+    log.warn(
+      `Could not reinstall coding-friend-mods. Run \`claude plugin install ${MODS_PLUGIN_ID}\` manually.`,
+    );
+  }
+}
+
 export async function devOnCommand(path?: string): Promise<void> {
   const state = getDevState();
   if (state) {
@@ -106,6 +120,8 @@ export async function devOnCommand(path?: string): Promise<void> {
   });
   console.log();
   log.info(`Local path: ${chalk.cyan(localPath)}`);
+
+  const hadMods = isModsInstalled();
 
   // Step 1: Uninstall remote plugin (if installed)
   if (isPluginInstalled()) {
@@ -152,6 +168,7 @@ export async function devOnCommand(path?: string): Promise<void> {
       return;
     }
   }
+  reinstallMods(hadMods);
 
   // Step 5: Save state
   const devState: DevState = {
@@ -185,6 +202,8 @@ export async function devOffCommand(): Promise<void> {
     color: chalk.yellow,
   });
   console.log();
+
+  const hadMods = isModsInstalled();
 
   // Step 1: Uninstall local plugin
   if (isPluginInstalled()) {
@@ -242,6 +261,7 @@ export async function devOffCommand(): Promise<void> {
       return;
     }
   }
+  reinstallMods(hadMods);
 
   console.log();
   log.success(`Dev mode ${chalk.yellow("OFF")} — using remote marketplace.`);
@@ -426,6 +446,8 @@ export async function devUpdateCommand(path?: string): Promise<void> {
   console.log();
   log.info(`Local path: ${chalk.cyan(localPath)}`);
 
+  const hadMods = isModsInstalled();
+
   if (isPluginInstalled()) {
     if (
       !runClaude(
@@ -450,6 +472,7 @@ export async function devUpdateCommand(path?: string): Promise<void> {
       return;
     }
   }
+  reinstallMods(hadMods);
 
   writeJson(devStatePath(), {
     localPath,

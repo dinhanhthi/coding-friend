@@ -1,0 +1,13 @@
+{
+  "name": "coding-friend-mods",
+  "version": "0.1.0",
+  "description": "Optional Claude Code mods for Coding Friend: quota sensor, review and phase toasts, plan progress pane, MCP health band",
+  "author": {
+    "name": "Anh-Thi Dinh",
+    "email": "me@dinhanhthi.com",
+    "url": "https://dinhanhthi.com"
+  },
+  "license": "MIT",
+  "dependencies": ["coding-friend"],
+  "types": "./types/index.d.ts"
+}

@@ -29,6 +29,8 @@ out/
 dist/
 *.tsbuildinfo
 next-env.d.ts
+# Claude Code mods: types the engine lays beside the mod
+plugin-mods/.claude-plugin/types/
 
 # Pagefind (generated at build time)
 _pagefind/

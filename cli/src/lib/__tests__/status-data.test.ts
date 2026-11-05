@@ -18,6 +18,7 @@ vi.mock("../paths.js", () => ({
   localConfigPath: vi.fn(() => "/mock/project/.coding-friend/config.json"),
   devStatePath: vi.fn(() => "/mock/.coding-friend/dev-state.json"),
   agyPluginDir: vi.fn(() => "/mock/agy"),
+  quotaSnapshotPath: vi.fn(() => "/mock/.coding-friend/quota/claude.json"),
   resolvePath: vi.fn((p: string) => p),
 }));
 
@@ -197,6 +198,8 @@ describe("collectStatus", () => {
       "memory",
       "mcp",
       "config",
+      "quota",
     ]);
+    expect(status.quota).toBeNull();
   });
 });

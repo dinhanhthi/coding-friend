@@ -26,6 +26,11 @@ import { getLibPath } from "./lib-path.js";
 import type { McpHealthResult } from "./mcp-health.js";
 import { collectLearnMcpHealth, collectMemoryMcpHealth } from "./mcp-report.js";
 import {
+  readQuotaSnapshot,
+  snapshotAgeSeconds,
+  type QuotaSnapshot,
+} from "./quota-snapshot.js";
+import {
   semverCompare,
   getLatestVersion,
   getCliVersion,
@@ -83,12 +88,24 @@ export interface ConfigStatus {
   local: ConfigFileStatus | null;
 }
 
+/** Claude quota from the snapshot written by the statusline or coding-friend-mods. */
+export interface QuotaStatus {
+  /** Epoch seconds. */
+  measuredAt: number;
+  /** Seconds since measuredAt (negative when the writer's clock is ahead). */
+  ageSeconds: number;
+  source: QuotaSnapshot["source"];
+  windows: QuotaSnapshot["windows"];
+}
+
 export interface StatusData {
   versions: VersionsStatus;
   plugin: PluginStatus;
   memory: MemoryStatus;
   mcp: McpStatus | null;
   config: ConfigStatus;
+  /** null when no usable snapshot exists. */
+  quota?: QuotaStatus | null;
 }
 
 function countMdFiles(dir: string): number {
@@ -233,11 +250,28 @@ export function collectConfig(): ConfigStatus {
   };
 }
 
+/** The Claude quota snapshot; null when it is missing, unusable, or unreadable. */
+export function collectQuota(): QuotaStatus | null {
+  try {
+    const snap = readQuotaSnapshot();
+    if (!snap) return null;
+    return {
+      measuredAt: snap.measuredAt,
+      ageSeconds: snapshotAgeSeconds(snap, Math.floor(Date.now() / 1000)),
+      source: snap.source,
+      windows: snap.windows,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function collectStatus(): Promise<StatusData> {
   const versions = collectVersions();
   const plugin = collectPlugin();
   const memory = await collectMemory();
   const mcp = await collectMcp();
   const config = collectConfig();
-  return { versions, plugin, memory, mcp, config };
+  const quota = collectQuota();
+  return { versions, plugin, memory, mcp, config, quota };
 }

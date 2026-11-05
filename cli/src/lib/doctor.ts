@@ -53,15 +53,23 @@ import {
   claudeSettingsPath,
   globalConfigPath,
   memoryDepsDir,
+  quotaSnapshotPath,
   resolvePath,
 } from "./paths.js";
 import {
   detectPluginScope,
   isMarketplaceRegistered,
+  isModsInstalled,
+  installedModsVersion,
   isPluginDisabled,
   isPluginInstalled,
 } from "./plugin-state.js";
 import { canonicalProjectPath, listProjects } from "./project-registry.js";
+import {
+  MEASURED_AT_MAX_SKEW_S,
+  readQuotaSnapshot,
+  snapshotAgeSeconds,
+} from "./quota-snapshot.js";
 import {
   isSessionUuid,
   listProjectTranscripts,
@@ -352,6 +360,19 @@ function pluginChecks(claudePresent: boolean): DoctorCheck[] {
       ...(disabled ? { hint: `cf enable --${scope}` } : {}),
     });
   }
+  const modsVersion = isModsInstalled() ? (installedModsVersion() ?? "") : null;
+  checks.push({
+    id: "plugin.mods",
+    group,
+    label: "Mods plugin (optional)",
+    status: "ok",
+    detail:
+      modsVersion === null
+        ? "optional: cf install --mods"
+        : modsVersion
+          ? `installed v${modsVersion}`
+          : "installed",
+  });
   return checks;
 }
 
@@ -735,6 +756,67 @@ function decisionChecks(): DoctorCheck[] {
   return checks;
 }
 
+/** A quota snapshot older than this (seconds) is reported as stale. */
+const QUOTA_SNAPSHOT_STALE_S = 24 * 3600;
+
+function formatAge(s: number): string {
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  if (s < 86_400) return `${Math.floor(s / 3600)} h`;
+  return `${Math.floor(s / 86_400)} day(s)`;
+}
+
+/**
+ * The Claude quota snapshot written by the statusline or coding-friend-mods.
+ * Read-only and offline: only the local file is inspected.
+ */
+function quotaSnapshotCheck(): DoctorCheck {
+  const base = {
+    id: "quota.snapshot",
+    group: "quota",
+    label: "Quota snapshot",
+  };
+  const path = quotaSnapshotPath();
+  let isFile: boolean;
+  try {
+    isFile = lstatSync(path).isFile();
+  } catch {
+    return {
+      ...base,
+      status: "ok",
+      detail: "not recorded (needs CF statusline or coding-friend-mods)",
+    };
+  }
+  const snap = readQuotaSnapshot(path);
+  if (!snap) {
+    return {
+      ...base,
+      status: "warn",
+      detail: `${isFile ? "malformed" : "not a regular file"} (${path})`,
+      hint: "remove it; the statusline or coding-friend-mods rewrites it",
+    };
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const age = snapshotAgeSeconds(snap, now);
+  if (-age > MEASURED_AT_MAX_SKEW_S) {
+    return {
+      ...base,
+      status: "warn",
+      detail: `measuredAt is ${formatAge(-age)} in the future`,
+      hint: "check the system clock, or remove the file to let it be rewritten",
+    };
+  }
+  const detail = `measured ${formatAge(Math.max(0, age))} ago by ${snap.source}`;
+  if (age > QUOTA_SNAPSHOT_STALE_S) {
+    return {
+      ...base,
+      status: "warn",
+      detail,
+      hint: "is the CF statusline or coding-friend-mods running for this Claude account?",
+    };
+  }
+  return { ...base, status: "ok", detail };
+}
+
 export function cliInfo(cliVersion: string): DoctorData["cli"] {
   return { version: cliVersion, node: process.versions.node, path: cliPath() };
 }
@@ -762,6 +844,7 @@ export async function collectDoctor(cliVersion: string): Promise<DoctorData> {
     ...supervisorChecks(),
     ...registryChecks(),
     ...decisionChecks(),
+    quotaSnapshotCheck(),
   ];
   return { cli: cliInfo(cliVersion), checks };
 }

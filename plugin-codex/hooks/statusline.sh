@@ -29,6 +29,8 @@
 #   A "chef N!" counter (not a component) joins line 2 only when
 #   <CF_ORCHESTRATOR_DIR or ~/.coding-friend/orchestrator>/chefs/summary.json
 #   reports chef questions or paused chefs.
+#   When stdin has rate_limits and jq is on PATH, a quota snapshot is written to
+#   <CF_QUOTA_DIR or ~/.coding-friend/quota>/claude.json (see write_quota_snapshot).
 
 set -euo pipefail
 
@@ -299,6 +301,98 @@ if component_enabled "rate_limit"; then
     rate_limit_line="$rl_parts"
   fi
 fi
+
+# Quota snapshot — written whatever the rate_limit display setting, read by the
+# CF CLI (cf status, doctor, supervisor hint). Schema v1, fixed key order:
+#   {"schemaVersion":1,"provider":"claude","configDir":"...","windows":{"five_hour":
+#    {"percentUsed":N,"resetsAt":EPOCH},"seven_day":{...}},"source":"statusline","measuredAt":EPOCH}
+# File: ${CF_QUOTA_DIR:-~/.coding-friend/quota}/claude.json (dir 0700, file 0600,
+# mktemp + mv). Skipped when the existing file has a newer measuredAt, or the same
+# windows and is < 300 s old. Never prints and never fails the statusline.
+write_quota_snapshot() {
+  command -v jq >/dev/null 2>&1 || return 0
+  local dir="${CF_QUOTA_DIR:-$HOME/.coding-friend/quota}"
+  local file="$dir/claude.json"
+  local rows="" name="" pct="" reset="" windows="" now="" existing=""
+  local old_measured="" old_windows="" config_json="" json="" w="" p="" r=""
+
+  # One row per present window: name|used_percentage|resets_at as text
+  rows=$(printf '%s' "$INPUT" | jq -r '
+    .rate_limits // {} | select(type == "object") | to_entries[]
+    | select(.key == "five_hour" or .key == "seven_day")
+    | select((.value | type) == "object")
+    | select((.value.used_percentage | type) == "number")
+    | [.key,
+       (.value.used_percentage | tostring),
+       (.value.resets_at
+        | if type == "number" then (floor | tostring)
+          elif type == "string" then .
+          else "" end)]
+    | join("|")' 2>/dev/null) || return 0
+
+  for name in five_hour seven_day; do
+    pct="" reset=""
+    while IFS='|' read -r w p r; do
+      [ "$w" = "$name" ] && { pct="$p"; reset="$r"; }
+    done <<< "$rows"
+    # Keep one decimal at most and clamp to 100, so an exhausted window is kept
+    # (awk, so jq's float printing does not matter). Negatives/non-numbers → ""
+    pct=$(awk -v v="$pct" 'BEGIN { if (v ~ /^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$/) { n = v + 0; if (n > 100) n = 100; s = sprintf("%.1f", n); sub(/\.0$/, "", s); print s } }')
+    [[ "$pct" =~ ^[0-9]{1,3}(\.[0-9])?$ ]] || continue
+    if [[ "$reset" =~ ^[0-9]+$ ]]; then
+      # Over 15 digits would overflow bash's 64-bit arithmetic: drop the window
+      [ "${#reset}" -gt 15 ] && continue
+      # Epoch in milliseconds (> 1e12) → seconds
+      [ "${#reset}" -ge 13 ] && reset=$((10#$reset / 1000))
+    elif [ -n "$reset" ]; then
+      reset=$(iso_to_epoch "$reset")
+    fi
+    [[ "$reset" =~ ^[0-9]+$ ]] || continue
+    [ -n "$windows" ] && windows+=","
+    windows+=$(printf '"%s":{"percentUsed":%s,"resetsAt":%s}' "$name" "$pct" "$((10#$reset))")
+  done
+  [ -n "$windows" ] || return 0
+  windows="{${windows}}"
+  now=$(date +%s)
+
+  # Never follow a symlink, never read a FIFO, never mv into a directory
+  [ -L "$file" ] && return 0
+  if [ -e "$file" ]; then
+    [ -f "$file" ] || return 0
+    existing=$(head -c 65536 "$file" 2>/dev/null) || existing=""
+    old_measured=$(printf '%s' "$existing" | jq -r '.measuredAt // empty | tostring' 2>/dev/null) || old_measured=""
+    # Both writers emit compact JSON in the fixed key order, so the windows part
+    # is the text between "windows": and ,"source": (no jq float reprinting)
+    old_windows="${existing#*\"windows\":}"
+    old_windows="${old_windows%%,\"source\":*}"
+    # A measuredAt beyond the 300 s clock-skew slack is corrupt: ignore it and overwrite
+    if [[ "$old_measured" =~ ^[0-9]{1,12}$ ]] && [ "$old_measured" -le $((now + 300)) ]; then
+      [ "$old_measured" -gt "$now" ] && return 0
+      [ "$old_windows" = "$windows" ] && [ $((now - old_measured)) -lt 300 ] && return 0
+    fi
+  fi
+
+  config_json=$(jq -n --arg d "$CF_CLAUDE_DIR" '$d' 2>/dev/null) || return 0
+  [ -n "$config_json" ] || return 0
+  json=$(printf '{"schemaVersion":1,"provider":"claude","configDir":%s,"windows":%s,"source":"statusline","measuredAt":%s}' \
+    "$config_json" "$windows" "$now")
+
+  (
+    umask 077
+    mkdir -p "$dir" 2>/dev/null && chmod 700 "$dir" 2>/dev/null || exit 0
+    [ -L "$file" ] && exit 0
+    # Temp files left by a run cancelled between mktemp and mv
+    # (exactly mktemp's 6 X's, never e.g. ~/.claude.json if the dir is $HOME)
+    find "$dir" -maxdepth 1 -name '.claude.??????' -type f -mmin +60 -delete 2>/dev/null || true
+    tmp=$(mktemp "$dir/.claude.XXXXXX" 2>/dev/null) || exit 0
+    trap 'rm -f "$tmp"' EXIT
+    if ! { printf '%s\n' "$json" > "$tmp" && mv -f "$tmp" "$file"; } 2>/dev/null; then
+      rm -f "$tmp" 2>/dev/null
+    fi
+    exit 0
+  )
+}
+write_quota_snapshot >/dev/null 2>&1 || true
 
 # ── Session ID (for "session" component) ──
 session_line=""

@@ -280,6 +280,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /"\$\{COMP_WORDS\[1\]\}" == "doctor" \|\|/,
         /local commands="[^"]*\bdecide\b/,
         /compgen -W "test eval log review-fp"/,
+        /compgen -W "\$scope_flags --mods --yes --json"/,
       ],
     },
     {
@@ -311,6 +312,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /"\$\{words\[2\]\}" == "doctor" \]\]/,
         /'decide:/,
         /'review-fp:/,
+        /'--mods\[Also install coding-friend-mods/,
       ],
     },
     {
@@ -344,6 +346,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /status mcp version doctor [^"]*" -l json /,
         /__fish_use_subcommand" -a decide /,
         /__fish_seen_subcommand_from decide" -a review-fp /,
+        /__fish_seen_subcommand_from install; [^"]*" -l mods /,
       ],
     },
     {
@@ -372,6 +375,7 @@ describe("completion blocks list the machine-callable commands", () => {
         /@\('status','mcp','version','doctor'[^)]*\) -contains/,
         /\$commands = @\([^)]*'decide'/,
         /\$decideSubcommands = @\('test','eval','log','review-fp'\)/,
+        /\$scopeFlags \+ @\('--mods','--yes','--json'\)/,
       ],
     },
   ];

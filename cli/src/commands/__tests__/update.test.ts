@@ -47,7 +47,9 @@ vi.mock("../../lib/host.js", async (importOriginal) => {
 });
 
 vi.mock("../../lib/plugin-state.js", () => ({
+  MODS_PLUGIN_ID: "coding-friend-mods@coding-friend-marketplace",
   isPluginInstalled: vi.fn(() => false),
+  isModsInstalled: vi.fn(() => false),
 }));
 
 vi.mock("../../lib/omp-config.js", () => ({
@@ -91,7 +93,7 @@ import {
   isCodexMarketplaceLocal,
 } from "../../lib/codex-config.js";
 import { detectHostsAvailable } from "../../lib/host.js";
-import { isPluginInstalled } from "../../lib/plugin-state.js";
+import { isModsInstalled, isPluginInstalled } from "../../lib/plugin-state.js";
 import {
   deployAgyPlugin,
   isAgyPluginInstalled,
@@ -130,6 +132,7 @@ const mockIsCodexMarketplaceRegistered = vi.mocked(
 const mockIsCodexMarketplaceLocal = vi.mocked(isCodexMarketplaceLocal);
 const mockDetectHostsAvailable = vi.mocked(detectHostsAvailable);
 const mockIsPluginInstalled = vi.mocked(isPluginInstalled);
+const mockIsModsInstalled = vi.mocked(isModsInstalled);
 const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
 const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
 const mockIsOmpAgentInstalled = vi.mocked(isOmpAgentInstalled);
@@ -156,6 +159,7 @@ beforeEach(() => {
   mockResolveHostFlags.mockReturnValue({ host: "claude" });
   mockDetectHostsAvailable.mockReturnValue([]);
   mockIsPluginInstalled.mockReturnValue(false);
+  mockIsModsInstalled.mockReturnValue(false);
   mockIsCodexMarketplaceRegistered.mockReturnValue(false);
   mockIsOmpAgentInstalled.mockReturnValue(false);
   mockIsAgyPluginInstalled.mockReturnValue(false);
@@ -511,6 +515,102 @@ describe("updateCommand — plugin update verification", () => {
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("Plugin updated to");
+    // mods not installed → no second `claude plugin update`
+    expect(mockRunWithStderr).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates coding-friend-mods after the base plugin, same scope, and reports it in JSON", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial check
+      .mockReturnValueOnce("0.7.2"); // verify after update
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const stdoutSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+
+    await updateCommand({ plugin: true, yes: true, json: true });
+
+    const claudeCalls = mockRunWithStderr.mock.calls.map((c) => c[1]);
+    expect(claudeCalls).toEqual([
+      [
+        "plugin",
+        "update",
+        "coding-friend@coding-friend-marketplace",
+        "--scope",
+        "user",
+      ],
+      [
+        "plugin",
+        "update",
+        "coding-friend-mods@coding-friend-marketplace",
+        "--scope",
+        "user",
+      ],
+    ]);
+    const env = JSON.parse(
+      stdoutSpy.mock.calls.map((c) => String(c[0])).join(""),
+    );
+    expect(env.data.mods).toBe("updated");
+  });
+
+  it("updates coding-friend-mods even when the base plugin is already current", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await updateCommand({ plugin: true });
+
+    expect(mockRunWithStderr.mock.calls).toEqual([
+      [
+        "claude",
+        [
+          "plugin",
+          "update",
+          "coding-friend-mods@coding-friend-marketplace",
+          "--scope",
+          "user",
+        ],
+      ],
+    ]);
+  });
+
+  it("only warns when the coding-friend-mods update fails", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial check
+      .mockReturnValueOnce("0.7.2"); // verify after update
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr
+      .mockReturnValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+      .mockReturnValueOnce({ stdout: "", stderr: "boom", exitCode: 1 });
+    const prevExitCode = process.exitCode;
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({ plugin: true });
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("Plugin updated to");
+    expect(output).toContain("coding-friend-mods update failed");
+    expect(process.exitCode).toBe(prevExitCode);
   });
 
   it("falls back to plugin install when update succeeds but version unchanged", async () => {

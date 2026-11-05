@@ -45,7 +45,10 @@ import {
 } from "../lib/shell-completion.js";
 import {
   isPluginInstalled,
+  isModsInstalled,
   isMarketplaceRegistered,
+  MODS_PLUGIN_ID,
+  MODS_PLUGIN_NAME,
 } from "../lib/plugin-state.js";
 import {
   resolveHostFlags,
@@ -78,8 +81,25 @@ function removeStatuslineReference(): boolean {
   return true;
 }
 
+/**
+ * Uninstall coding-friend-mods (id first, then bare name). Must run before the
+ * base plugin is removed. A failure only warns: it never blocks the base uninstall.
+ */
+function uninstallMods(scope?: PluginScope): boolean {
+  const scopeArgs = scope ? ["--scope", scope] : [];
+  log.step("Uninstalling coding-friend-mods...");
+  for (const id of [MODS_PLUGIN_ID, MODS_PLUGIN_NAME]) {
+    if (run("claude", ["plugin", "uninstall", id, ...scopeArgs]) !== null) {
+      return true;
+    }
+  }
+  log.warn("Could not uninstall coding-friend-mods (continuing).");
+  return false;
+}
+
 interface DetectionResult {
   pluginInstalled: boolean;
+  modsInstalled: boolean;
   marketplaceRegistered: boolean;
   cacheExists: boolean;
   cloneExists: boolean;
@@ -93,6 +113,7 @@ interface DetectionResult {
 function detect(): DetectionResult {
   return {
     pluginInstalled: isPluginInstalled(),
+    modsInstalled: isModsInstalled(),
     marketplaceRegistered: isMarketplaceRegistered(),
     cacheExists: existsSync(marketplaceCachePath()),
     cloneExists: existsSync(marketplaceClonePath()),
@@ -110,6 +131,9 @@ function displayDetection(d: DetectionResult): void {
   console.log();
   console.log("  Detected components:");
   console.log(`    ${check(d.pluginInstalled)} Plugin registration`);
+  if (d.modsInstalled) {
+    console.log(`    ${check(d.modsInstalled)} Mods plugin registration`);
+  }
   console.log(`    ${check(d.marketplaceRegistered)} Marketplace registration`);
   console.log(`    ${check(d.cacheExists)} Plugin cache`);
   console.log(`    ${check(d.cloneExists)} Marketplace clone`);
@@ -127,6 +151,7 @@ function displayDetection(d: DetectionResult): void {
 function nothingToRemove(d: DetectionResult): boolean {
   return (
     !d.pluginInstalled &&
+    !d.modsInstalled &&
     !d.marketplaceRegistered &&
     !d.cacheExists &&
     !d.cloneExists &&
@@ -151,6 +176,8 @@ async function uninstallScoped(scope: PluginScope): Promise<void> {
     log.info("Uninstall cancelled.");
     return;
   }
+
+  if (isModsInstalled()) uninstallMods(scope);
 
   log.step(`Uninstalling plugin from ${scope} scope...`);
   const result = run("claude", [
@@ -308,6 +335,11 @@ export async function uninstallCommand(
 
   // Execute removal in order
   let errors = 0;
+
+  // 0. Uninstall mods first (it depends on the base plugin and marketplace)
+  if (detection.modsInstalled && !uninstallMods()) {
+    errors++;
+  }
 
   // 1. Uninstall plugin
   if (detection.pluginInstalled) {

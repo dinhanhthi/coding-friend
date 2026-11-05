@@ -73,6 +73,23 @@ Devin CLI (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` 
 
 After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
+#### Optional: Claude Code mods
+
+`coding-friend-mods` is a second plugin in the same marketplace. It needs the main plugin and works only in Claude Code (tested with 2.1.318; the mods API is early access).
+
+```bash
+cf install --mods
+# or inside a Claude Code session:
+/plugin install coding-friend-mods@coding-friend-marketplace
+```
+
+| Feature        | Plugin + CLI                                                       | Only with Claude Code mods                      |
+| -------------- | ------------------------------------------------------------------ | ----------------------------------------------- |
+| Quota          | statusline writes the snapshot, `cf status` shows it, tasks use it | toast and band at 80/90/95%, also writes it     |
+| Review / phase | report in the chat                                                 | toast when `/cf-review` or a plan phase is done |
+| Plan progress  | `Progress` tables in `docs/plans/<slug>/`                          | `/cf-plan-status` pane                          |
+| MCP health     | `cf doctor`                                                        | band when a CF MCP server fails                 |
+
 ## ✨ Features
 
 Skills are slash commands (`/cf-*`) or auto-invoked when a matching situation appears. Settings that live in `config.json` — run `cf config` and follow the instructions there. To extend a built-in skill, see [Custom Guides](#custom-guides).

@@ -32,7 +32,11 @@ import {
   writeOmpExtensionEntry,
   type OmpScope,
 } from "../lib/omp-config.js";
-import { isPluginInstalled } from "../lib/plugin-state.js";
+import {
+  MODS_PLUGIN_ID,
+  isModsInstalled,
+  isPluginInstalled,
+} from "../lib/plugin-state.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import {
@@ -167,9 +171,15 @@ export interface UpdateOptions extends ScopeFlags {
   yes?: boolean;
 }
 
+interface UpdateOutcome {
+  mods?: "updated" | "failed";
+}
+
 interface UpdateRunMode {
   skipBanner?: boolean;
   skipCli?: boolean;
+  /** Sink for results reported in the `--json` envelope. */
+  outcome?: UpdateOutcome;
 }
 
 function argvHasAgentFlag(): boolean {
@@ -304,8 +314,13 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
       if (!opts.yes) {
         throw new CliError("INVALID_ARGS", "--json requires --check or --yes");
       }
-      const performed = await runUpdate(opts);
-      return { performed, after: collectUpdateCheck() };
+      const outcome: UpdateOutcome = {};
+      const performed = await runUpdate(opts, outcome);
+      return {
+        performed,
+        after: collectUpdateCheck(),
+        ...(outcome.mods ? { mods: outcome.mods } : {}),
+      };
     });
     return;
   }
@@ -314,20 +329,23 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 }
 
 /** Run the update flow; returns the hosts it ran an update for. */
-async function runUpdate(opts: UpdateOptions): Promise<Host[]> {
+async function runUpdate(
+  opts: UpdateOptions,
+  outcome?: UpdateOutcome,
+): Promise<Host[]> {
   if (hasExplicitHost(opts)) {
     const { host } = resolveHostFlags(flagsForHostResolve(opts));
-    await updateHost(host, opts);
+    await updateHost(host, opts, { outcome });
     return [host];
   }
 
   const installed = detectHostsAvailable().filter(isHostInstalled);
   if (installed.length === 0) {
-    await updateClaudeCommand(opts);
+    await updateClaudeCommand(opts, { outcome });
     return ["claude"];
   }
   if (installed.length === 1) {
-    await updateHost(installed[0], opts);
+    await updateHost(installed[0], opts, { outcome });
     return installed;
   }
 
@@ -339,9 +357,27 @@ async function runUpdate(opts: UpdateOptions): Promise<Host[]> {
     await updateHost(host, opts, {
       skipBanner: true,
       skipCli: index > 0,
+      outcome,
     });
   }
   return installed;
+}
+
+/** Update coding-friend-mods after the base plugin; a failure only warns. */
+function updateModsPlugin(scope: string | undefined): "updated" | "failed" {
+  log.step("Updating coding-friend-mods...");
+  const args = ["plugin", "update", MODS_PLUGIN_ID];
+  if (scope) args.push("--scope", scope);
+  const result = runWithStderr("claude", args);
+  if (result.exitCode === 0) {
+    log.success("coding-friend-mods updated");
+    return "updated";
+  }
+  log.warn(
+    `coding-friend-mods update failed. Try manually: claude plugin update ${MODS_PLUGIN_ID}`,
+  );
+  if (result.stderr) log.dim(`stderr: ${result.stderr}`);
+  return "failed";
 }
 
 async function updateClaudeCommand(
@@ -520,6 +556,13 @@ async function updateClaudeCommand(
         }
       }
     }
+  }
+
+  // Step 2b: coding-friend-mods has its own version line, so update it
+  // whatever the base plugin's state was (fail-soft: a failure only warns).
+  if (doPlugin && commandExists("claude") && isModsInstalled()) {
+    const mods = updateModsPlugin(scope);
+    if (mode?.outcome) mode.outcome.mods = mods;
   }
 
   // Step 3: Update CLI if needed

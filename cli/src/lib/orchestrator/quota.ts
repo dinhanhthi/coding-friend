@@ -1,4 +1,5 @@
 import type { CodingFriendConfig } from "../../types.js";
+import type { QuotaResetHint } from "../quota-snapshot.js";
 import {
   isModelName,
   PROVIDER_NAMES,
@@ -20,6 +21,16 @@ export const MAX_PAUSES = 20;
 
 /** Recheck a known reset this long after it, in seconds. */
 const RESET_SLACK_S = 60;
+
+/** A reset hint from a snapshot older than this (seconds) is ignored. */
+export const RESET_HINT_MAX_AGE_S = 6 * 3600;
+
+/**
+ * A snapshot whose `measuredAt` is further than this (seconds) ahead of `now`
+ * is ignored by the hint (clock-skew slack): a future `measuredAt` would
+ * otherwise never age out.
+ */
+export const MEASURED_AT_MAX_SKEW_S = 300;
 
 const DEFAULT_POLICY: Omit<TaskPolicy, "noFallback"> = {
   onQuota: "wait-then-switch",
@@ -126,6 +137,11 @@ export interface DecideInput {
   now: number;
   /** eligibleProviders(req, candidates). */
   eligible: Provider[];
+  /**
+   * Reset read from the quota snapshot (quotaResetHint), used only when the
+   * latest pause's own reset is unknown.
+   */
+  resetHint?: QuotaResetHint;
 }
 
 type Paused = AttemptEntry & { pause: NonNullable<AttemptEntry["pause"]> };
@@ -142,6 +158,8 @@ type Paused = AttemptEntry & { pause: NonNullable<AttemptEntry["pause"]> };
  *   waitMinutes once, then switch if still blocked; reset further → switch.
  * Waiting on the same provider resumes its session, or runs fresh (with a
  * bundle) when the paused attempt has no session id.
+ * An unknown reset takes a valid `resetHint` (same provider, still ahead,
+ * fresh) as the reset for the wait; switch's per-provider retry times don't.
  */
 export function decideNext(input: DecideInput): Decision {
   const { policy, attempts, now, eligible } = input;
@@ -156,7 +174,8 @@ export function decideNext(input: DecideInput): Decision {
   if (!latest) return { kind: "fail", reason: "No quota pause to resume from" };
 
   const current = latest.pause.provider;
-  const reset = latest.pause.resetsAt;
+  const reset =
+    latest.pause.resetsAt ?? hintReset(input.resetHint, current, now);
   const waitS = policy.waitMinutes * 60;
   const onQuota = policy.noFallback ? "wait" : policy.onQuota;
 
@@ -186,6 +205,18 @@ export function decideNext(input: DecideInput): Decision {
   }
 
   return switchProvider(pauses, policy, now, eligible, waitSame);
+}
+
+/** The hint's reset when it is for `provider`, still ahead and fresh. */
+function hintReset(
+  hint: QuotaResetHint | undefined,
+  provider: Provider,
+  now: number,
+): number | null {
+  if (!hint || hint.provider !== provider || hint.resetsAt <= now) return null;
+  if (now - hint.measuredAt > RESET_HINT_MAX_AGE_S) return null;
+  if (hint.measuredAt > now + MEASURED_AT_MAX_SKEW_S) return null;
+  return hint.resetsAt;
 }
 
 /** Round robin through `fallback`, else wait for the earliest reset. */

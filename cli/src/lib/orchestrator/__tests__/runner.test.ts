@@ -214,6 +214,8 @@ beforeEach(() => {
   mkdirSync(checkout);
   execFileSync("git", ["init", "-q"], { cwd: checkout });
   vi.stubEnv("CF_ORCHESTRATOR_DIR", orch);
+  // Never read the real quota snapshot (reset hint).
+  vi.stubEnv("CF_QUOTA_DIR", join(root, "quota"));
   // The runner refuses a task whose checkout is not its cwd.
   vi.spyOn(process, "cwd").mockReturnValue(checkout);
   vi.spyOn(console, "error").mockImplementation(() => {});

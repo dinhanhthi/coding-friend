@@ -114,6 +114,8 @@ beforeEach(() => {
   checkout = join(root, "checkout");
   mkdirSync(checkout);
   vi.stubEnv("CF_ORCHESTRATOR_DIR", orch);
+  // Never read the real quota snapshot (reset hint).
+  vi.stubEnv("CF_QUOTA_DIR", join(root, "quota"));
   vi.spyOn(console, "error").mockImplementation(() => {});
   fakeSpawn = vi.fn(() => ({ pid: 4242, once() {}, unref() {} }));
 });
