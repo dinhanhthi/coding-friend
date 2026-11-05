@@ -1156,8 +1156,15 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     ["session export --out x", false],
     ["session", false],
     ["sync", false],
+    ["decide log", true],
+    ["decide log --json", true],
+    ["decide log --json --since 2026-11-01", true],
+    ["decide review-fp --json --snapshot-dir x --report y", false],
+    ["decide test", false],
+    ["decide eval", false],
+    ["decide", false],
   ])(
-    "nested memory/learn/docs/session/sync allow-list: cf %s approved=%s",
+    "nested memory/learn/docs/session/sync/decide allow-list: cf %s approved=%s",
     (rest, ok) => {
       const approved =
         classifyByRules("Bash", { command: `cf ${rest}` }) === "allow";

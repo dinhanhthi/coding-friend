@@ -984,6 +984,13 @@ const CF_SESSION_SAFE_SUBCOMMANDS = new Set(["list", "show", "status"]);
 const CF_SYNC_SAFE_SUBCOMMANDS = new Set(["status"]);
 
 /**
+ * `cf decide` subcommands safe to auto-approve (read-only). `test`, `eval`
+ * and `review-fp` call the decision model, which may send data out or cost
+ * money, so they are excluded. Bare `cf decide` is not approved either.
+ */
+const CF_DECIDE_SAFE_SUBCOMMANDS = new Set(["log"]);
+
+/**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
@@ -994,7 +1001,8 @@ const CF_SYNC_SAFE_SUBCOMMANDS = new Set(["status"]);
  *     `cf learn` only with a CF_LEARN_SAFE_SUBCOMMANDS subcommand,
  *     `cf docs` only with a CF_DOCS_SAFE_SUBCOMMANDS subcommand,
  *     `cf session` only with a CF_SESSION_SAFE_SUBCOMMANDS subcommand,
- *     `cf sync` only with a CF_SYNC_SAFE_SUBCOMMANDS subcommand)
+ *     `cf sync` only with a CF_SYNC_SAFE_SUBCOMMANDS subcommand,
+ *     `cf decide` only with a CF_DECIDE_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -1016,6 +1024,8 @@ function isCodingFriendBash(trimmed) {
     if (subcommand === "session")
       return CF_SESSION_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "sync") return CF_SYNC_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "decide")
+      return CF_DECIDE_SAFE_SUBCOMMANDS.has(nestedSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 
