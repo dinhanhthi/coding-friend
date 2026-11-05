@@ -1147,11 +1147,23 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     ["learn", false],
     ["docs", false],
     ["config set --local docsDir x", false],
-  ])("nested memory/learn/docs allow-list: cf %s approved=%s", (rest, ok) => {
-    const approved =
-      classifyByRules("Bash", { command: `cf ${rest}` }) === "allow";
-    expect(approved).toBe(ok);
-  });
+    ["session list", true],
+    ["session show -- claude:x", true],
+    ["session status --json", true],
+    ["sync status", true],
+    ["session save", false],
+    ["session load", false],
+    ["session export --out x", false],
+    ["session", false],
+    ["sync", false],
+  ])(
+    "nested memory/learn/docs/session/sync allow-list: cf %s approved=%s",
+    (rest, ok) => {
+      const approved =
+        classifyByRules("Bash", { command: `cf ${rest}` }) === "allow";
+      expect(approved).toBe(ok);
+    },
+  );
 
   it("does NOT allow cf supervisor tick (starts agent processes)", () => {
     expect(classifyByRules("Bash", { command: "cf supervisor tick" })).not.toBe(

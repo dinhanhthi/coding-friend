@@ -838,6 +838,11 @@ session
     "--project-dir <path>",
     "Prefer this project's copy of the session; required for legacy: refs",
   )
+  .option(
+    "--out <file>",
+    "write the full Markdown to this file (mode 0600) instead of printing it",
+  )
+  .option("--force", "with --out: overwrite an existing file")
   .option("--json", "Output a JSON envelope")
   .action(async (ref: string, opts) => {
     const { sessionExportCommand } = await import("./commands/session.js");
@@ -868,13 +873,21 @@ session
 session
   .command("load")
   .description("Load a saved session from session.dir")
+  .argument(
+    "[ref]",
+    "with --json: saved:<folder> or legacy:<folder> (human mode asks instead)",
+  )
   .option(
     "--project-dir <path>",
-    "Also list this project's legacy <docsDir>/sessions",
+    "Also list this project's legacy <docsDir>/sessions; required for legacy: refs",
   )
-  .action(async (opts) => {
+  .option("--target <path>", "with --json: project directory to load into")
+  .option("--yes", "with --json: load without asking (required)")
+  .option("--force", "overwrite a transcript that is already there")
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string | undefined, opts) => {
     const { sessionLoadCommand } = await import("./commands/session.js");
-    await sessionLoadCommand(opts);
+    await sessionLoadCommand(ref, opts);
   });
 
 session

@@ -1,8 +1,17 @@
 import { input, select } from "@inquirer/prompts";
 import { execFileSync } from "child_process";
-import { lstatSync, statSync } from "fs";
+import { randomBytes } from "crypto";
+import {
+  chmodSync,
+  lstatSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+  type Stats,
+} from "fs";
 import { homedir } from "os";
-import { join, basename, sep } from "path";
+import { join, basename, dirname, sep } from "path";
 import { log } from "../lib/log.js";
 import { run } from "../lib/exec.js";
 import { readJson } from "../lib/json.js";
@@ -344,9 +353,80 @@ interface Loadable {
   session: SavedSession;
 }
 
+interface LoadOpts {
+  json?: boolean;
+  yes?: boolean;
+  target?: string;
+  force?: boolean;
+  projectDir?: string;
+}
+
+interface LoadData {
+  ref: string;
+  sessionId: string;
+  target: string;
+  path: string;
+  resumeCommand: string;
+}
+
+/** POSIX single-quote `s` for a shell command line. */
+function shellQuote(s: string): string {
+  return `'${s.replace(/'/g, "'\\''")}'`;
+}
+
+/** JSON mode: load `ref` into `--target` without any prompt. */
+function loadRef(ref: string | undefined, opts: LoadOpts): LoadData {
+  // Relative --target resolves against the cwd the user ran `cf` from.
+  const cwd = process.cwd();
+  const root = useProjectDir(opts.projectDir);
+  if (!opts.yes) {
+    throw new CliError("INTERACTIVE_REQUIRED", "load --json needs --yes");
+  }
+  if (!opts.target) {
+    throw new CliError("INVALID_ARGS", "load --json needs --target <path>");
+  }
+  if (!ref) {
+    throw new CliError(
+      "INVALID_ARGS",
+      "load --json needs a ref: saved:<folder> or legacy:<folder>",
+    );
+  }
+  const parsed = parseRef(ref);
+  if (parsed.kind !== "saved" && parsed.kind !== "legacy") {
+    throw new CliError(
+      "INVALID_ARGS",
+      "Only saved:<folder> and legacy:<folder> sessions can be loaded",
+    );
+  }
+  if (parsed.kind === "legacy" && !root) {
+    throw new CliError("INVALID_ARGS", "legacy: refs need --project-dir");
+  }
+  // Not realpath'd here: claudeLoadTargetDir does it (NOT_FOUND if missing).
+  const target = resolvePath(opts.target, cwd);
+  const loaded = loadSession({
+    storeRoot:
+      parsed.kind === "saved" ? sessionStoreRoot() : legacyStoreRoot(root!),
+    folder: parsed.id,
+    target,
+    force: !!opts.force,
+  });
+  return {
+    ref: `${parsed.kind}:${parsed.id}`,
+    sessionId: loaded.sessionId,
+    target,
+    path: loaded.path,
+    resumeCommand: `cd ${shellQuote(target)} && claude --resume ${loaded.sessionId}`,
+  };
+}
+
 export async function sessionLoadCommand(
-  opts: { projectDir?: string } = {},
+  ref?: string,
+  opts: LoadOpts = {},
 ): Promise<void> {
+  if (opts.json) {
+    await runJson(() => loadRef(ref, opts));
+    return;
+  }
   await runHumanLogged(async () => {
     // Relative answers resolve against the cwd the user ran `cf` from.
     const cwd = process.cwd();
@@ -401,6 +481,7 @@ export async function sessionLoadCommand(
       storeRoot: chosen.storeRoot,
       folder: session.folder,
       target: resolvePath(answer.trim() || cwd, cwd),
+      force: !!opts.force,
     });
 
     const label = str(session.meta?.label) || session.folder;
@@ -794,18 +875,95 @@ interface ExportOpts {
   json?: boolean;
   includeToolOutput?: boolean;
   projectDir?: string;
+  out?: string;
+  force?: boolean;
+}
+
+function lstatOrNull(p: string): Stats | null {
+  try {
+    return lstatSync(p);
+  } catch {
+    return null;
+  }
+}
+
+/** Refuse a `--out` that can't be written without `--force` or at all. */
+function checkExportTarget(out: string, force: boolean): void {
+  let parent: Stats;
+  try {
+    parent = statSync(dirname(out));
+  } catch {
+    throw new CliError("NOT_FOUND", `Folder not found: ${dirname(out)}`);
+  }
+  if (!parent.isDirectory()) {
+    throw new CliError("INVALID_ARGS", `Not a folder: ${dirname(out)}`);
+  }
+  const st = lstatOrNull(out);
+  if (!st) return;
+  if (st.isSymbolicLink()) {
+    throw new CliError(
+      "INVALID_ARGS",
+      `Refusing to write to a symlink: ${out}`,
+    );
+  }
+  if (st.isDirectory()) {
+    throw new CliError("CONFLICT", `A folder exists at ${out}`);
+  }
+  if (!st.isFile()) {
+    throw new CliError("INVALID_ARGS", `Not a regular file: ${out}`);
+  }
+  if (!force) {
+    throw new CliError(
+      "CONFLICT",
+      `File already exists: ${out} (pass --force to overwrite)`,
+    );
+  }
+}
+
+/** Temp file in the same folder, mode 0600, then rename over `out`. */
+function writeExportFile(out: string, text: string): void {
+  const tmp = join(
+    dirname(out),
+    `.${basename(out)}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`,
+  );
+  try {
+    writeFileSync(tmp, text, { flag: "wx", mode: 0o600 });
+    chmodSync(tmp, 0o600);
+    renameSync(tmp, out);
+  } catch (err) {
+    try {
+      unlinkSync(tmp);
+    } catch {
+      // tmp may not exist
+    }
+    throw err;
+  }
 }
 
 async function exportSession(ref: string, opts: ExportOpts) {
+  // Relative --out resolves against the cwd the user ran `cf` from.
+  const cwd = process.cwd();
   const root = useProjectDir(opts.projectDir);
+  if (opts.force && opts.out === undefined) {
+    throw new CliError("INVALID_ARGS", "--force needs --out <file>");
+  }
+  const out = opts.out === undefined ? null : resolvePath(opts.out, cwd);
+  if (out) checkExportTarget(out, !!opts.force);
   const t = await readTranscript(ref, root);
   const r = await renderMarkdown(t, {
     includeToolOutput: !!opts.includeToolOutput,
     home: homedir(),
     timeoutMs: FILTER_TIMEOUT_MS,
   });
-  return { ref: t.ref, ...r };
+  if (out) {
+    checkExportTarget(out, !!opts.force);
+    writeExportFile(out, r.fullMarkdown);
+  }
+  return { ref: t.ref, out, ...r };
 }
+
+const SHARE_NOTE =
+  "Redaction is best effort: read the export before sharing it.";
 
 export async function sessionExportCommand(
   ref: string,
@@ -814,6 +972,15 @@ export async function sessionExportCommand(
   if (opts.json) {
     await runJson(async () => {
       const r = await exportSession(ref, opts);
+      if (r.out) {
+        return {
+          ref: r.ref,
+          out: r.out,
+          bytes: r.bytes,
+          redactions: r.redactions,
+          filter: r.filter,
+        };
+      }
       return {
         ref: r.ref,
         markdown: r.markdown,
@@ -827,10 +994,14 @@ export async function sessionExportCommand(
   }
   await runHumanLogged(async () => {
     const r = await exportSession(ref, opts);
+    if (r.out) {
+      log.success(`Exported ${tty(r.ref)} to ${tty(r.out)}`);
+      log.info(`${r.bytes} bytes, ${r.redactions.total} redaction(s).`);
+      log.warn(SHARE_NOTE);
+      return;
+    }
     // stdout carries only the Markdown, so it can be redirected to a file.
     process.stdout.write(tty(r.fullMarkdown));
-    console.error(
-      `${r.redactions.total} redaction(s). Redaction is best effort: read the export before sharing it.`,
-    );
+    console.error(`${r.redactions.total} redaction(s). ${SHARE_NOTE}`);
   });
 }

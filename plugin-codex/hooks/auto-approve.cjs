@@ -907,7 +907,6 @@ const CF_SAFE_SUBCOMMANDS = new Set([
   // allows `--json`.
   "update",
   "status",
-  "session",
   "dev",
   "version",
   "project",
@@ -972,6 +971,19 @@ const CF_LEARN_SAFE_SUBCOMMANDS = new Set(["status", "list", "search", "show"]);
 const CF_DOCS_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
 
 /**
+ * `cf session` subcommands safe to auto-approve (read-only). `export` writes a
+ * file (`--out`), `save` and `load` change the session store or the agent's
+ * history, so they are excluded. Bare `cf session` is not approved either.
+ */
+const CF_SESSION_SAFE_SUBCOMMANDS = new Set(["list", "show", "status"]);
+
+/**
+ * `cf sync` subcommands safe to auto-approve (read-only). Bare `cf sync` is
+ * not approved.
+ */
+const CF_SYNC_SAFE_SUBCOMMANDS = new Set(["status"]);
+
+/**
  * Check if a Bash command is a coding-friend related command.
  * Only approves:
  *   - `cf <subcommand>` where subcommand is in CF_SAFE_SUBCOMMANDS
@@ -980,7 +992,9 @@ const CF_DOCS_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
  *     `cf chef` only with a CF_CHEF_SAFE_SUBCOMMANDS subcommand,
  *     `cf memory` only bare or with a CF_MEMORY_SAFE_SUBCOMMANDS subcommand,
  *     `cf learn` only with a CF_LEARN_SAFE_SUBCOMMANDS subcommand,
- *     `cf docs` only with a CF_DOCS_SAFE_SUBCOMMANDS subcommand)
+ *     `cf docs` only with a CF_DOCS_SAFE_SUBCOMMANDS subcommand,
+ *     `cf session` only with a CF_SESSION_SAFE_SUBCOMMANDS subcommand,
+ *     `cf sync` only with a CF_SYNC_SAFE_SUBCOMMANDS subcommand)
  *   - `bash` scripts located under PLUGIN_ROOT that exist on disk
  * Must be a simple command (no shell operators) — caller checks this.
  */
@@ -999,6 +1013,9 @@ function isCodingFriendBash(trimmed) {
       );
     if (subcommand === "learn") return CF_LEARN_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "docs") return CF_DOCS_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "session")
+      return CF_SESSION_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "sync") return CF_SYNC_SAFE_SUBCOMMANDS.has(nestedSub);
     return CF_SAFE_SUBCOMMANDS.has(subcommand);
   }
 

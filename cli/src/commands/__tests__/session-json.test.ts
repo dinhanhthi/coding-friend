@@ -6,6 +6,8 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
@@ -15,6 +17,7 @@ import { claudeProjectDirName } from "../../lib/paths.js";
 import {
   sessionExportCommand,
   sessionListCommand,
+  sessionLoadCommand,
   sessionSaveCommand,
   sessionShowCommand,
 } from "../session.js";
@@ -419,6 +422,139 @@ describe("session list|show|export --json", () => {
     expect(env.data.turns[0]).toMatchObject({ kind: "user" });
     expect(env.data.turns[0].text).toContain("[REDACTED:github]");
     expectNoLeak(raw);
+  });
+
+  it("export --out writes the full Markdown with mode 0600", async () => {
+    const file = join(tmp, "export.md");
+    process.chdir(tmp);
+    const { env, raw } = await json(() =>
+      sessionExportCommand(`claude:${UUID}`, {
+        json: true,
+        out: "export.md",
+        projectDir: root,
+      }),
+    );
+    expect(env).toMatchObject({ ok: true, error: null });
+    expect(env.data).toMatchObject({ ref: `claude:${UUID}`, out: file });
+    expect(env.data).not.toHaveProperty("markdown");
+    expect(env.data.redactions.total).toBeGreaterThan(0);
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+    expect(statSync(file).size).toBe(env.data.bytes);
+    const text = readFileSync(file, "utf-8");
+    expect(text).toContain("- tool: Login");
+    expectNoLeak(text);
+    expectNoLeak(raw);
+  });
+
+  it("export --out onto an existing file is CONFLICT, file unchanged", async () => {
+    const file = join(tmp, "export.md");
+    writeFileSync(file, "keep me\n");
+    const before = readFileSync(file);
+    const { env } = await json(() =>
+      sessionExportCommand(`claude:${UUID}`, { json: true, out: file }),
+    );
+    expect(env).toMatchObject({ ok: false, error: { code: "CONFLICT" } });
+    expect(readFileSync(file).equals(before)).toBe(true);
+  });
+
+  describe("load --json", () => {
+    const FOLDER = "old-session";
+    let dest: string;
+
+    function projectsDirOf(p: string): string {
+      return join(tmp, "claude", "projects", claudeProjectDirName(p).name);
+    }
+
+    beforeEach(() => {
+      const dir = join(root, "docs", "sessions", FOLDER);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "session.jsonl"),
+        jsonl([
+          {
+            cwd: root,
+            sessionId: LEGACY_ID,
+            type: "user",
+            timestamp: "2026-10-01T10:00:00.000Z",
+            message: { role: "user", content: "old run" },
+          },
+        ]),
+      );
+      writeFileSync(
+        join(dir, "meta.json"),
+        JSON.stringify({
+          sessionId: LEGACY_ID,
+          label: "old",
+          projectPath: root,
+          savedAt: "2026-10-01T10:05:00.000Z",
+        }),
+      );
+      dest = join(tmp, "dest");
+      mkdirSync(dest);
+    });
+
+    const load = (opts: Record<string, unknown>) =>
+      json(() =>
+        sessionLoadCommand(`legacy:${FOLDER}`, {
+          json: true,
+          projectDir: root,
+          ...opts,
+        }),
+      );
+
+    it("needs --yes and --target", async () => {
+      const noYes = await load({ target: dest });
+      expect(noYes.env).toMatchObject({
+        ok: false,
+        error: { code: "INTERACTIVE_REQUIRED" },
+      });
+      const noTarget = await load({ yes: true });
+      expect(noTarget.env).toMatchObject({
+        ok: false,
+        error: { code: "INVALID_ARGS" },
+      });
+      expect(existsSync(projectsDirOf(dest))).toBe(false);
+    });
+
+    it("loads a legacy: session into the target's Claude dir, then CONFLICT", async () => {
+      const path = join(projectsDirOf(dest), `${LEGACY_ID}.jsonl`);
+      expect(existsSync(path)).toBe(false);
+      // A relative --target resolves against the cwd before --project-dir.
+      process.chdir(tmp);
+      const first = await load({ yes: true, target: "dest" });
+      expect(first.env).toMatchObject({ ok: true, error: null });
+      expect(first.env.data).toMatchObject({
+        ref: `legacy:${FOLDER}`,
+        sessionId: LEGACY_ID,
+        target: dest,
+        path,
+        resumeCommand: `cd '${dest}' && claude --resume ${LEGACY_ID}`,
+      });
+      expect(existsSync(path)).toBe(true);
+
+      const second = await load({ yes: true, target: dest });
+      expect(second.env).toMatchObject({
+        ok: false,
+        error: { code: "CONFLICT" },
+      });
+    });
+
+    it("a symlinked --target loads under the realpath's dir", async () => {
+      const link = join(tmp, "link");
+      symlinkSync(dest, link);
+      const { env } = await load({ yes: true, target: link });
+      expect(env.ok).toBe(true);
+      expect(env.data.path).toBe(
+        join(projectsDirOf(dest), `${LEGACY_ID}.jsonl`),
+      );
+      expect(existsSync(env.data.path)).toBe(true);
+      expect(existsSync(projectsDirOf(link))).toBe(false);
+    });
+
+    it("a missing --target is NOT_FOUND", async () => {
+      const { env } = await load({ yes: true, target: join(tmp, "nope") });
+      expect(env).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
+    });
   });
 
   it("human show strips terminal escapes on a TTY, keeps newlines", async () => {

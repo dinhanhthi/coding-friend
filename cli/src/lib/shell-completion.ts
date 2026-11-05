@@ -207,7 +207,7 @@ _cf_completions() {
     return
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "export" && "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--json --include-tool-output --project-dir" -- "$cur"))
+    COMPREPLY=($(compgen -W "--json --include-tool-output --project-dir --out --force" -- "$cur"))
     return
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "save" && "$cur" == -* ]]; then
@@ -219,7 +219,7 @@ _cf_completions() {
     return
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "load" && "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--project-dir" -- "$cur"))
+    COMPREPLY=($(compgen -W "--json --yes --target --force --project-dir" -- "$cur"))
     return
   fi
 
@@ -456,13 +456,13 @@ const ZSH_FUNCTION_BODY = `_cf() {
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "show" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' '--offset[First turn to print (default 0)]' '--limit[At most this many turns (1-1000, default 200)]' "--project-dir[Prefer this project's copy of the session]"
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "export" ]]; then
-    _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' "--project-dir[Prefer this project's copy of the session]"
+    _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' "--project-dir[Prefer this project's copy of the session]" '--out[Write the full Markdown to this file (mode 0600)]' '--force[With --out: overwrite an existing file]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "save" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--session-id[Session UUID to save (default: newest)]' '--project-dir[Look for the session in this project (resolved to its main repo root)]' '-l[Label for this session]' '--label[Label for this session]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "status" ]]; then
     _values 'flags' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "load" ]]; then
-    _values 'flags' "--project-dir[Also list this project's legacy docs sessions]"
+    _values 'flags' '--json[Output a JSON envelope]' '--yes[With --json: load without asking]' '--target[With --json: project directory to load into]' '--force[Overwrite a transcript that is already there]' "--project-dir[Also list this project's legacy docs sessions]"
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "sync" ]]; then
     local -a subcommands
     subcommands=(
@@ -642,7 +642,7 @@ complete -c cf -n "__fish_seen_subcommand_from session" -a export -d "Print a se
 complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save a Claude Code session verbatim (not redacted) to session.dir"
 complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from session.dir"
 complete -c cf -n "__fish_seen_subcommand_from session" -a status -d "Show session.dir, its cloud folder and suggested folders"
-complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export save status" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export save status load" -l json -d "Output a JSON envelope"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export save load" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list" -l provider -r -d "Only sessions of this provider: claude|codex|saved"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from save" -l session-id -r -d "Session UUID to save (default: newest)"
@@ -650,6 +650,10 @@ complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcomma
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show" -l limit -r -d "At most this many sessions or turns"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show" -l offset -r -d "First turn to print (default 0)"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show export" -l include-tool-output -d "Include tool output (redacted, cut)"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export" -l out -r -d "Write the full Markdown to this file (mode 0600)"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export load" -l force -d "Overwrite an existing file or transcript"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from load" -l yes -d "With --json: load without asking"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from load" -l target -r -d "With --json: project directory to load into"
 # Sync subcommands and flags
 complete -c cf -n "__fish_seen_subcommand_from sync; and not __fish_seen_subcommand_from dev" -a status -d "Show the learn and session folders, their cloud folder, placeholders and conflict copies"
 complete -c cf -n "__fish_seen_subcommand_from sync; and __fish_seen_subcommand_from status" -l json -d "Output a JSON envelope"
@@ -732,7 +736,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
     @('--json','--include-tool-output','--offset','--limit','--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'export') {
-    @('--json','--include-tool-output','--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
+    @('--json','--include-tool-output','--project-dir','--out','--force') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'save') {
     @('--json','--session-id','--project-dir','-l','--label') | Where-Object { $_ -like "$wordToComplete*" } |
@@ -741,7 +745,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
     @('--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'load') {
-    @('--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
+    @('--json','--yes','--target','--force','--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'sync' -and $words[2].ToString() -eq 'status') {
     @('--json') | Where-Object { $_ -like "$wordToComplete*" } |
