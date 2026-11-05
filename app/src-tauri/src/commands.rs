@@ -43,10 +43,17 @@ const RUN_STARTED: &str = "cf-run-started";
 const PROJECT_DIR: &str = "--project-dir=";
 /// Flags whose path value `command_line` Debug-quotes.
 const QUOTED_PATH_FLAGS: [&str; 3] = [PROJECT_DIR, "--out=", "--target="];
-/// Keys that decide where CF writes files: `learn.outputDir` changes only through the learn
-/// folder picker, `docsDir` and `session.dir` only through the CLI. A parent key (`learn`,
-/// `session`) is refused too, since `config set` writes a whole object.
-const PROTECTED_KEYS: [&str; 3] = ["learn.outputDir", "docsDir", "session.dir"];
+/// Keys that decide where CF writes files or sends data: `learn.outputDir` changes only through
+/// the learn folder picker, `docsDir`, `session.dir`, `decision.allowRemote` and
+/// `decision.baseUrl` only through the CLI. A parent key (`learn`, `session`, `decision`) is
+/// refused too, since `config set` writes a whole object.
+const PROTECTED_KEYS: [&str; 5] = [
+    "learn.outputDir",
+    "docsDir",
+    "session.dir",
+    "decision.allowRemote",
+    "decision.baseUrl",
+];
 const MAX_CONFIG_VALUE: usize = 4096;
 /// Same limit as `MAX_URL` in app/src/lib/markdown-links.ts.
 const MAX_URL: usize = 2048;
@@ -460,7 +467,7 @@ fn config_key(key: &str) -> Result<(), CfError> {
     });
     if protected {
         return Err(refused(format!(
-            "{key} decides where Coding Friend writes files; change it with the cf CLI"
+            "{key} decides where Coding Friend writes files or sends data; change it with the cf CLI"
         )));
     }
     Ok(())
@@ -1838,7 +1845,13 @@ mod tests {
 
     #[test]
     fn config_key_follows_the_pattern_and_never_moves_written_files() {
-        for key in ["tdd", "learn.autoCommit", "a1.b2.c3.d4.e5.f6", "learnX"] {
+        for key in [
+            "tdd",
+            "learn.autoCommit",
+            "a1.b2.c3.d4.e5.f6",
+            "learnX",
+            "decision.provider",
+        ] {
             assert_eq!(config_key(key), Ok(()), "{key}");
         }
         for key in [
@@ -1854,6 +1867,9 @@ mod tests {
             "docsDir",
             "session",
             "session.dir",
+            "decision",
+            "decision.allowRemote",
+            "decision.baseUrl",
         ] {
             assert!(
                 matches!(config_key(key), Err(CfError::Refused { .. })),

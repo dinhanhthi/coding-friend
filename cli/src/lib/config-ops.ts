@@ -111,9 +111,11 @@ export function getConfigView(
   const local = readRaw(paths.local);
 
   if (!key) {
+    // `decision` is global-only: a local block never reaches the effective config.
+    const { decision: _ignored, ...localEffective } = local;
     const effective = deepMerge(
       deepMerge(DEFAULT_CONFIG as unknown as Obj, global),
-      local,
+      localEffective,
     );
     return { global, local, effective, paths };
   }
@@ -121,11 +123,13 @@ export function getConfigView(
   const parts = splitKey(key);
   const sources: [ConfigKeyView["source"], Obj][] = scope
     ? [[scope, scope === "global" ? global : local]]
-    : [
-        ["local", local],
-        ["global", global],
-        ["default", DEFAULT_CONFIG as unknown as Obj],
-      ];
+    : (
+        [
+          ["local", local],
+          ["global", global],
+          ["default", DEFAULT_CONFIG as unknown as Obj],
+        ] as [ConfigKeyView["source"], Obj][]
+      ).filter(([source]) => source !== "local" || parts[0] !== "decision");
   for (const [source, obj] of sources) {
     const hit = lookup(obj, parts);
     if (hit.found) return { key, value: hit.value, source };
@@ -210,6 +214,9 @@ export function setConfigValue(
     );
   }
   const parts = splitKey(key);
+  if (scope === "local" && parts[0] === "decision") {
+    throw new CliError("INVALID_ARGS", "decision is global-only");
+  }
   const value = parseValue(raw);
   const path = scopePath(scope);
   const candidate = structuredClone(readRaw(path));
