@@ -25,6 +25,17 @@
       ],
       "license": "MIT",
       "category": "productivity"
+    },
+    {
+      "name": "coding-friend-mods",
+      "source": "./plugin-mods",
+      "description": "Optional Claude Code mods for Coding Friend: quota sensor, review and phase toasts, plan progress pane, MCP health band",
+      "author": {
+        "name": "Anh-Thi Dinh"
+      },
+      "keywords": ["mods", "quota", "statusline", "toasts", "workflows"],
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }

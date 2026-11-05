@@ -14,3 +14,4 @@ docs/plans
 docs/context
 docs/later
 cli/src/lib/__tests__/fixtures
+plugin-mods/.claude-plugin/types
