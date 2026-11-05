@@ -19,7 +19,7 @@ At the prompt of a Claude Code session:
 /plugin install coding-friend-mods@coding-friend-marketplace
 ```
 
-Or with the Coding Friend CLI (coming soon):
+Or with the Coding Friend CLI:
 
 ```
 cf install --mods

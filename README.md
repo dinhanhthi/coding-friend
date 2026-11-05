@@ -72,6 +72,23 @@ Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the termin
 
 Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated plugin directly; inside Devin invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
+#### Optional: Claude Code mods
+
+`coding-friend-mods` is a second plugin in the same marketplace. It needs the main plugin and works only in Claude Code (tested with 2.1.318; the mods API is early access).
+
+```bash
+cf install --mods
+# or inside a Claude Code session:
+/plugin install coding-friend-mods@coding-friend-marketplace
+```
+
+| Feature        | Plugin + CLI                                                       | Only with Claude Code mods                      |
+| -------------- | ------------------------------------------------------------------ | ----------------------------------------------- |
+| Quota          | statusline writes the snapshot, `cf status` shows it, tasks use it | toast and band at 80/90/95%, also writes it     |
+| Review / phase | report in the chat                                                 | toast when `/cf-review` or a plan phase is done |
+| Plan progress  | `Progress` tables in `docs/plans/<slug>/`                          | `/cf-plan-status` pane                          |
+| MCP health     | `cf doctor`                                                        | band when a CF MCP server fails                 |
+
 ## Features
 
 - Plan with autopilot (`/cf-plan --auto`)

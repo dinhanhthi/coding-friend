@@ -96,9 +96,13 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 **session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Codex / agy / Devin only, deterministic; Claude / omp use native modes) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
 
+### Mods plugin (`coding-friend-mods`) — optional, Claude Code only
+
+Second plugin in the same marketplace (needs `coding-friend`): quota toast + band at 80/90/95% (also writes the quota snapshot), toast when `/cf-review` or a plan phase finishes, plan progress pane (mods slash command `cf-plan-status [slug]`), band when a CF MCP server fails. Install: `cf install --mods` or `/plugin install coding-friend-mods@coding-friend-marketplace`. Details: `topics.md` (Mods).
+
 ### CLI (`coding-friend-cli`, binary `cf`) — optional (except `/cf-session`)
 
-Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `decide test|eval|log|review-fp` `sync` `guide` `dev`; `--json` on read commands. Only `/cf-session` requires the CLI. Full flags: `topics.md`.
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`, `install --mods` Claude only); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `decide test|eval|log|review-fp` `sync` `guide` `dev`; `--json` on read commands. Only `/cf-session` requires the CLI. Full flags: `topics.md`.
 
 Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/.
 
