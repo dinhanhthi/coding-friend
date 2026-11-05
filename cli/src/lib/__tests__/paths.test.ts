@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { homedir } from "os";
+import { homedir, tmpdir } from "os";
 import { resolve, join } from "path";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from "fs";
 import {
+  claudeLoadTargetDir,
+  claudeProjectDirCandidates,
+  claudeProjectDirName,
   resolvePath,
   marketplaceCachePath,
   marketplaceClonePath,
@@ -457,6 +461,56 @@ describe("Devin paths", () => {
         "plugins",
         "lock.json",
       ),
+    );
+  });
+});
+
+describe("Claude project dir encoding", () => {
+  let tmp: string;
+  let projects: string;
+
+  beforeEach(() => {
+    // realpath: on macOS os.tmpdir() is a symlink (/var/folders → /private/var/folders)
+    tmp = realpathSync(mkdtempSync(join(tmpdir(), "cf-claude-dir-")));
+    vi.stubEnv("CLAUDE_CONFIG_DIR", join(tmp, "claude"));
+    projects = join(tmp, "claude", "projects");
+    mkdirSync(projects, { recursive: true });
+  });
+  afterEach(() => rmSync(tmp, { recursive: true, force: true }));
+
+  it("replaces every non-alphanumeric character, dots included", () => {
+    expect(claudeProjectDirName("/Users/thi/my.app_v2")).toEqual({
+      name: "-Users-thi-my-app-v2",
+      long: false,
+    });
+  });
+
+  it("candidates fall back to the legacy-encoded dir when only it exists", () => {
+    const project = join(tmp, "proj.v2");
+    mkdirSync(project);
+    const legacy = join(projects, encodeProjectPath(project));
+    mkdirSync(legacy);
+
+    expect(claudeProjectDirCandidates(project)).toEqual([legacy]);
+  });
+
+  it("load target of a long path with no matching dir is INVALID_ARGS", () => {
+    const project = join(tmp, "a".repeat(60), "b".repeat(60), "c".repeat(60));
+    mkdirSync(project, { recursive: true });
+
+    expect(() => claudeLoadTargetDir(project)).toThrow(
+      expect.objectContaining({ code: "INVALID_ARGS" }),
+    );
+  });
+
+  it("load target is named after the realpath of a symlinked path", () => {
+    const real = join(tmp, "real");
+    const link = join(tmp, "link");
+    mkdirSync(real);
+    symlinkSync(real, link);
+
+    expect(claudeLoadTargetDir(link)).toBe(
+      join(projects, claudeProjectDirName(real).name),
     );
   });
 });

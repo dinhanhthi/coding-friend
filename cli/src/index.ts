@@ -770,15 +770,69 @@ program
 
 const session = program
   .command("session")
-  .description("[beta] Save and load Claude Code sessions across machines");
+  .description(
+    "[beta] View Claude Code and Codex sessions, export them redacted, save and load across machines",
+  );
 
 program.addHelpText(
   "after",
   `
 Session subcommands (beta):
+  session list        List Claude Code and Codex sessions (newest first)
+  session show        Print one session's turns, redacted (-- <ref>)
+  session export      Print one session as redacted Markdown (-- <ref>)
   session save        Save current session to sync folder (use /cf-session inside a conversation)
   session load        Load a saved session from sync folder and print resume command`,
 );
+
+session
+  .command("list")
+  .description("List Claude Code and Codex sessions, newest first")
+  .option("--provider <provider>", "only this provider: claude or codex")
+  .option(
+    "--project-dir <path>",
+    "Only sessions of this project (resolved to its main repo root)",
+  )
+  .option("--limit <n>", "at most this many sessions (1-500, default 50)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionListCommand } = await import("./commands/session.js");
+    await sessionListCommand(opts);
+  });
+
+session
+  .command("show")
+  .description("Print a session's turns, always redacted")
+  .argument("<ref>", "session ref: claude:<id> or codex:<id>")
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option("--offset <n>", "first turn to print (default 0)")
+  .option("--limit <n>", "at most this many turns (1-1000, default 200)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionShowCommand } = await import("./commands/session.js");
+    await sessionShowCommand(ref, opts);
+  });
+
+session
+  .command("export")
+  .description(
+    "Print a session as redacted Markdown (no tool output by default)",
+  )
+  .argument("<ref>", "session ref: claude:<id> or codex:<id>")
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionExportCommand } = await import("./commands/session.js");
+    await sessionExportCommand(ref, opts);
+  });
 
 session
   .command("save")
