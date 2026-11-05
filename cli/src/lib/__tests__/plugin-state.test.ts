@@ -21,6 +21,8 @@ import { readJson, writeJson } from "../json.js";
 import {
   settingsPathForScope,
   isPluginInstalled,
+  isModsInstalled,
+  installedModsVersion,
   isPluginDisabled,
   setPluginEnabled,
   enableMarketplaceAutoUpdate,
@@ -72,6 +74,56 @@ describe("isPluginInstalled", () => {
       },
     });
     expect(isPluginInstalled()).toBe(false);
+  });
+});
+
+describe("isModsInstalled", () => {
+  it("matches only the coding-friend-mods@ key", () => {
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend-mods@coding-friend-marketplace": [{ version: "0.1.0" }],
+      },
+    });
+    expect(isModsInstalled()).toBe(true);
+
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend@coding-friend-marketplace": [{ version: "1.0.0" }],
+      },
+    });
+    expect(isModsInstalled()).toBe(false);
+
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend-mods@other-marketplace": [{ version: "0.1.0" }],
+      },
+    });
+    expect(isModsInstalled()).toBe(false);
+  });
+});
+
+describe("installedModsVersion", () => {
+  it("returns the version of the exact mods key", () => {
+    mockReadJson.mockReturnValue({
+      version: 2,
+      plugins: {
+        "coding-friend-mods@other-marketplace": [{ version: "9.9.9" }],
+        "coding-friend-mods@coding-friend-marketplace": [{ version: "0.1.0" }],
+      },
+    });
+    expect(installedModsVersion()).toBe("0.1.0");
+  });
+
+  it("returns null for a version string unsafe to print", () => {
+    mockReadJson.mockReturnValue({
+      "coding-friend-mods@coding-friend-marketplace": {
+        version: "0.1.0\u001b[31m\nfake",
+      },
+    });
+    expect(installedModsVersion()).toBeNull();
   });
 });
 

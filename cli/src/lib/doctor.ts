@@ -59,6 +59,8 @@ import {
 import {
   detectPluginScope,
   isMarketplaceRegistered,
+  isModsInstalled,
+  installedModsVersion,
   isPluginDisabled,
   isPluginInstalled,
 } from "./plugin-state.js";
@@ -358,6 +360,19 @@ function pluginChecks(claudePresent: boolean): DoctorCheck[] {
       ...(disabled ? { hint: `cf enable --${scope}` } : {}),
     });
   }
+  const modsVersion = isModsInstalled() ? (installedModsVersion() ?? "") : null;
+  checks.push({
+    id: "plugin.mods",
+    group,
+    label: "Mods plugin (optional)",
+    status: "ok",
+    detail:
+      modsVersion === null
+        ? "optional: cf install --mods"
+        : modsVersion
+          ? `installed v${modsVersion}`
+          : "installed",
+  });
   return checks;
 }
 

@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import { run, commandExists } from "../lib/exec.js";
+import { run, runWithStderr, commandExists } from "../lib/exec.js";
 import {
   checkAgyVersion,
   checkCodexVersion,
@@ -30,6 +30,7 @@ import {
   isMarketplaceRegistered,
   isPluginDisabled,
   enableMarketplaceAutoUpdate,
+  MODS_PLUGIN_ID,
 } from "../lib/plugin-state.js";
 import {
   resolveHostFlags,
@@ -45,6 +46,7 @@ import chalk from "chalk";
 export interface InstallOptions extends ScopeFlags {
   yes?: boolean;
   json?: boolean;
+  mods?: boolean;
 }
 
 export interface InstallResult {
@@ -53,6 +55,8 @@ export interface InstallResult {
   pluginVersion: string | null;
   alreadyInstalled: boolean;
   disabled: boolean;
+  /** coding-friend-mods install (`--mods`); null when the flag was not passed. */
+  mods: { installed: boolean; scope: PluginScope } | null;
 }
 
 export async function installCommand(opts: InstallOptions = {}): Promise<void> {
@@ -71,6 +75,15 @@ export async function runInstall(
   opts: InstallOptions = {},
 ): Promise<InstallResult | null> {
   const host = resolveInstallHost(opts);
+  if (opts.mods && host !== "claude") {
+    log.error(
+      "coding-friend-mods is Claude Code only. Drop --mods for this host.",
+    );
+    throw new CliError(
+      "INVALID_ARGS",
+      "coding-friend-mods is Claude Code only",
+    );
+  }
   if (host === "codex") return installCodexCommand();
   if (host === "omp") return installOmpCommand(opts);
   if (host === "agy") return installAgyCommand();
@@ -185,6 +198,9 @@ export async function runInstall(
     }
   }
 
+  // Step 6b: Optional coding-friend-mods, always after the base plugin
+  const mods = opts.mods ? installMods(scope) : null;
+
   // Step 7: Shell completion
   ensureShellCompletion({ silent: false });
 
@@ -209,7 +225,31 @@ export async function runInstall(
     pluginVersion: installedVersion ?? getInstalledVersion(),
     alreadyInstalled,
     disabled,
+    mods,
   };
+}
+
+/** Install coding-friend-mods at the base plugin's scope. A failure only warns. */
+function installMods(scope: PluginScope): InstallResult["mods"] {
+  log.step(`Installing coding-friend-mods (${chalk.cyan(scope)} scope)...`);
+  const result = runWithStderr("claude", [
+    "plugin",
+    "install",
+    MODS_PLUGIN_ID,
+    "--scope",
+    scope,
+  ]);
+  if (result.exitCode !== 0) {
+    const detail =
+      (result.stderr || result.stdout).split("\n")[0].trim() ||
+      `exit code ${result.exitCode}`;
+    log.warn(
+      `Failed to install coding-friend-mods (${detail}). Try manually: claude plugin install ${MODS_PLUGIN_ID} --scope ${scope}`,
+    );
+    return { installed: false, scope };
+  }
+  log.success("coding-friend-mods installed!");
+  return { installed: true, scope };
 }
 
 /** Host flags → host. A resolution error (thrown) becomes INVALID_ARGS. */
@@ -263,6 +303,7 @@ function hostResult(
     pluginVersion: null,
     alreadyInstalled: false,
     disabled: false,
+    mods: null,
     ...overrides,
   };
 }

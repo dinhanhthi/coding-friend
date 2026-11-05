@@ -78,6 +78,7 @@ program
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
+  .option("--mods", "Also install coding-friend-mods (Claude Code only)")
   .option("--yes", "Skip prompts (default scope: user)")
   .option("--json", "Output a JSON envelope (requires --yes or a scope flag)")
   .action(async (opts) => {

@@ -11,12 +11,39 @@ import type { PluginScope } from "./prompt-utils.js";
 const MARKETPLACE_NAME = "coding-friend-marketplace";
 const PLUGIN_NAME = "coding-friend";
 const PLUGIN_ID = `${PLUGIN_NAME}@${MARKETPLACE_NAME}`;
+export const MODS_PLUGIN_NAME = "coding-friend-mods";
+export const MODS_PLUGIN_ID = `${MODS_PLUGIN_NAME}@${MARKETPLACE_NAME}`;
 
 export function isPluginInstalled(): boolean {
   const data = readJson<Record<string, unknown>>(installedPluginsPath());
   if (!data) return false;
   const plugins = (data.plugins ?? data) as Record<string, unknown>;
   return Object.keys(plugins).some((k) => k.startsWith(`${PLUGIN_NAME}@`));
+}
+
+/** The coding-friend-mods entry in installed_plugins.json (exact key), if any. */
+function modsEntry(): unknown {
+  const data = readJson<Record<string, unknown>>(installedPluginsPath());
+  if (!data) return undefined;
+  const plugins = (data.plugins ?? data) as Record<string, unknown>;
+  return Object.hasOwn(plugins, MODS_PLUGIN_ID)
+    ? plugins[MODS_PLUGIN_ID]
+    : undefined;
+}
+
+export function isModsInstalled(): boolean {
+  return modsEntry() !== undefined;
+}
+
+/** Installed coding-friend-mods version; null when absent, unknown or unsafe to print. */
+export function installedModsVersion(): string | null {
+  const value = modsEntry();
+  const entry = Array.isArray(value) ? value[0] : value;
+  if (!entry || typeof entry !== "object" || !("version" in entry)) return null;
+  const version = (entry as { version: unknown }).version;
+  return typeof version === "string" && /^[\w.+-]{1,40}$/.test(version)
+    ? version
+    : null;
 }
 
 export function isMarketplaceRegistered(): boolean {

@@ -29,6 +29,8 @@ vi.mock("../../lib/json.js", () => ({
 vi.mock("../../lib/plugin-state.js", () => ({
   isPluginInstalled: vi.fn(() => true),
   isMarketplaceRegistered: vi.fn(() => true),
+  isModsInstalled: vi.fn(() => false),
+  MODS_PLUGIN_ID: "coding-friend-mods@coding-friend-marketplace",
 }));
 
 vi.mock("../../lib/shell-completion.js", () => ({

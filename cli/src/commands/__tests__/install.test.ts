@@ -3,9 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../lib/exec.js", () => ({
   commandExists: vi.fn(),
   run: vi.fn(),
+  runWithStderr: vi.fn(),
 }));
 
 vi.mock("../../lib/plugin-state.js", () => ({
+  MODS_PLUGIN_ID: "coding-friend-mods@coding-friend-marketplace",
   isMarketplaceRegistered: vi.fn(),
   isPluginDisabled: vi.fn(),
   enableMarketplaceAutoUpdate: vi.fn(),
@@ -69,7 +71,7 @@ vi.mock("fs", async () => {
 });
 
 import { existsSync } from "fs";
-import { commandExists, run } from "../../lib/exec.js";
+import { commandExists, run, runWithStderr } from "../../lib/exec.js";
 import {
   isMarketplaceRegistered,
   isPluginDisabled,
@@ -108,6 +110,7 @@ import { installCommand } from "../install.js";
 const mockExistsSync = vi.mocked(existsSync);
 const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
+const mockRunWithStderr = vi.mocked(runWithStderr);
 const mockIsMarketplaceRegistered = vi.mocked(isMarketplaceRegistered);
 const mockIsPluginDisabled = vi.mocked(isPluginDisabled);
 const mockEnableMarketplaceAutoUpdate = vi.mocked(enableMarketplaceAutoUpdate);
@@ -1041,6 +1044,7 @@ describe("installCommand --yes / --json", () => {
         pluginVersion: "0.46.0",
         alreadyInstalled: false,
         disabled: false,
+        mods: null,
       },
       error: null,
     });
@@ -1061,6 +1065,7 @@ describe("installCommand --yes / --json", () => {
       pluginVersion: "0.46.0",
       alreadyInstalled: true,
       disabled: true,
+      mods: null,
     });
   });
 
@@ -1138,6 +1143,90 @@ describe("installCommand --yes / --json", () => {
       pluginVersion: null,
       alreadyInstalled: true,
       disabled: false,
+      mods: null,
     });
+  });
+  it("--mods installs coding-friend-mods after the base plugin, at the same scope", async () => {
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockRun.mockReturnValue("ok");
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await installCommand({ json: true, project: true, mods: true });
+
+    const baseArgs = [
+      "plugin",
+      "install",
+      "coding-friend@coding-friend-marketplace",
+      "--scope",
+      "project",
+    ];
+    const modsArgs = [
+      "plugin",
+      "install",
+      "coding-friend-mods@coding-friend-marketplace",
+      "--scope",
+      "project",
+    ];
+    const baseIdx = mockRun.mock.calls.findIndex(
+      (c) => JSON.stringify(c) === JSON.stringify(["claude", baseArgs]),
+    );
+    expect(baseIdx).toBeGreaterThanOrEqual(0);
+    expect(mockRunWithStderr.mock.calls).toEqual([["claude", modsArgs]]);
+    expect(mockRun.mock.invocationCallOrder[baseIdx]).toBeLessThan(
+      mockRunWithStderr.mock.invocationCallOrder[0],
+    );
+    expect(envelope().data.mods).toEqual({ installed: true, scope: "project" });
+  });
+
+  it("--mods still installs coding-friend-mods when the base plugin is already installed", async () => {
+    mockGetInstalledVersion.mockReturnValue("0.46.0");
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await installCommand({ json: true, user: true, mods: true });
+
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).toHaveBeenCalledWith("claude", [
+      "plugin",
+      "install",
+      "coding-friend-mods@coding-friend-marketplace",
+      "--scope",
+      "user",
+    ]);
+    expect(envelope().data).toMatchObject({
+      alreadyInstalled: true,
+      mods: { installed: true, scope: "user" },
+    });
+  });
+
+  it("--mods only warns when coding-friend-mods fails after the base plugin installed", async () => {
+    mockGetInstalledVersion.mockReturnValue(null);
+    mockRun.mockReturnValue("ok");
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "boom",
+      exitCode: 1,
+    });
+
+    await installCommand({ json: true, yes: true, mods: true });
+
+    expect(envelope().ok).toBe(true);
+    expect(envelope().data).toMatchObject({
+      host: "claude",
+      scope: "user",
+      mods: { installed: false, scope: "user" },
+    });
+  });
+
+  it("--mods with a non-Claude host returns INVALID_ARGS without installing", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+
+    await installCommand({ json: true, agent: "codex", mods: true });
+
+    expect(envelope().error).toEqual({
+      code: "INVALID_ARGS",
+      message: "coding-friend-mods is Claude Code only",
+    });
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
   });
 });

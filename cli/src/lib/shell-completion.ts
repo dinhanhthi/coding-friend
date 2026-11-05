@@ -117,7 +117,7 @@ _cf_completions() {
 
   # Flag completion for install
   if [[ "\${COMP_WORDS[1]}" == "install" && "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "$scope_flags --yes --json" -- "$cur"))
+    COMPREPLY=($(compgen -W "$scope_flags --mods --yes --json" -- "$cur"))
     return
   fi
 
@@ -348,7 +348,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
   if (( CURRENT == 2 )); then
     _describe 'command' commands
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "install" ]]; then
-    _values 'flags' \$scope_flags '--yes[Skip prompts (default scope: user)]' '--json[Output a JSON envelope]'
+    _values 'flags' \$scope_flags '--mods[Also install coding-friend-mods (Claude Code only)]' '--yes[Skip prompts (default scope: user)]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "uninstall" || "\${words[2]}" == "disable" || "\${words[2]}" == "enable" ]]; then
     _values 'flags' \$scope_flags
   elif (( CURRENT >= 3 )) && [[ "\${words[2]}" == "update" ]]; then
@@ -606,6 +606,7 @@ complete -c cf -n "__fish_seen_subcommand_from update" -l check -d "Only report 
 complete -c cf -n "__fish_seen_subcommand_from update" -l yes -d "Run without confirmation (needed with --json)"
 # Flags for install
 complete -c cf -n "__fish_seen_subcommand_from install; and not __fish_seen_subcommand_from supervisor" -l yes -d "Skip prompts (default scope: user)"
+complete -c cf -n "__fish_seen_subcommand_from install; and not __fish_seen_subcommand_from supervisor" -l mods -d "Also install coding-friend-mods (Claude Code only)"
 # --json for machine-callable commands
 complete -c cf -n "__fish_seen_subcommand_from status mcp version doctor project config install update ask reply done task supervisor chef" -l json -d "Output a JSON envelope"
 complete -c cf -n "__fish_seen_subcommand_from doctor" -l project-dir -r -d "Check only this project (resolved to its main repo root)"
@@ -885,7 +886,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
     $learnSubcommands | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and $words[1].ToString() -eq 'install') {
-    ($scopeFlags + @('--yes','--json')) | Where-Object { $_ -like "$wordToComplete*" } |
+    ($scopeFlags + @('--mods','--yes','--json')) | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($words.Count -ge 2 -and ($words[1].ToString() -eq 'uninstall' -or $words[1].ToString() -eq 'disable' -or $words[1].ToString() -eq 'enable')) {
     $scopeFlags | Where-Object { $_ -like "$wordToComplete*" } |
