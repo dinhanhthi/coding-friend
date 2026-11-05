@@ -33,6 +33,7 @@ import * as fs from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { RUNNABLE_FIXES } from "../doctor.js";
+import { claudeProjectDirName } from "../paths.js";
 import { doctorCommand } from "../../commands/doctor.js";
 
 const HOSTS = new Set(["claude", "codex", "omp", "agy", "devin"]);
@@ -71,7 +72,7 @@ async function runDoctorJson() {
 
 beforeEach(async () => {
   const realFs = await vi.importActual<typeof import("fs")>("fs");
-  home = realFs.mkdtempSync(join(tmpdir(), "cf-doctor-"));
+  home = realFs.realpathSync(realFs.mkdtempSync(join(tmpdir(), "cf-doctor-")));
   // stubEnv keeps the real environment: `process.env = {...}` would leave
   // os.homedir() on the previous test's HOME.
   vi.stubEnv("HOME", home);
@@ -267,5 +268,154 @@ describe("cf doctor --json", () => {
     );
     expect(storage).toMatchObject({ group: "learn", status: "warn" });
     expect(storage.hint).toMatch(/either git or a cloud folder/);
+  });
+});
+
+describe("cf doctor session retention", () => {
+  const SECRET = "sk-fake-SECRET-do-not-echo-7f3a";
+  const UNSAVED_OLD = "11111111-1111-4111-8111-111111111111";
+  const SAVED_OLD = "22222222-2222-4222-8222-222222222222";
+  const UNSAVED_NEW = "33333333-3333-4333-8333-333333333333";
+  const DAY_S = 86_400;
+
+  type RealFs = typeof import("fs");
+  const realFs = () => vi.importActual<RealFs>("fs");
+
+  function writeFile(fsx: RealFs, path: string, content: string): void {
+    fsx.mkdirSync(join(path, ".."), { recursive: true });
+    fsx.writeFileSync(path, content);
+  }
+
+  /** A `<uuid>.jsonl` under `<claude>/projects/<dirName>/`, `ageDays` old. */
+  function transcript(
+    fsx: RealFs,
+    dirName: string,
+    id: string,
+    ageDays: number,
+  ): void {
+    const path = join(home, ".claude", "projects", dirName, `${id}.jsonl`);
+    writeFile(fsx, path, "{}\n");
+    const at = Date.now() / 1000 - ageDays * DAY_S;
+    fsx.utimesSync(path, at, at);
+  }
+
+  function check(env: { data: { checks: { id: string }[] } }, id: string) {
+    return env.data.checks.find((c) => c.id === id) as
+      | { status: string; detail?: string; hint?: string }
+      | undefined;
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", join(home, ".claude"));
+  });
+
+  it("warns on session.retention for an old transcript that was never saved", async () => {
+    const fsx = await realFs();
+    writeFile(
+      fsx,
+      join(home, ".claude", "settings.json"),
+      JSON.stringify({ cleanupPeriodDays: 10 }),
+    );
+    transcript(fsx, "-some-project", UNSAVED_OLD, 5);
+    transcript(fsx, "-some-project", SAVED_OLD, 5);
+    transcript(fsx, "-some-project", UNSAVED_NEW, 0);
+    writeFile(
+      fsx,
+      join(home, ".coding-friend", "sessions", "kept", "meta.json"),
+      JSON.stringify({
+        sessionId: SAVED_OLD,
+        label: "kept",
+        savedAt: new Date().toISOString(),
+      }),
+    );
+
+    const env = await runDoctorJson();
+    const retention = check(env, "session.retention");
+    expect(retention?.status).toBe("warn");
+    expect(retention?.detail).toBe(
+      "1 unsaved session(s) within 7 days of the 10-day cleanup",
+    );
+    expect(retention?.hint).toMatch(/cf session save/);
+    // fakeExec reports every dir as a git work tree.
+    expect(check(env, "session.storage")?.status).toBe("warn");
+  });
+
+  it("prints the legacy sessions mv hint in human --project-dir output", async () => {
+    const fsx = await realFs();
+    const project = join(home, "proj");
+    writeFile(
+      fsx,
+      join(project, "docs", "sessions", "old", "meta.json"),
+      JSON.stringify({
+        sessionId: SAVED_OLD,
+        label: "old",
+        savedAt: new Date().toISOString(),
+      }),
+    );
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      stdout.push(args.join(" "));
+    });
+
+    await doctorCommand("9.9.9", { projectDir: project });
+    const out = stdout.join("\n");
+    const sessionDir = join(home, ".coding-friend", "sessions");
+    expect(out).toContain(
+      `mkdir -p '${sessionDir}' && mv '${join(project, "docs", "sessions")}'/* '${sessionDir}'/`,
+    );
+  });
+
+  it("never echoes a settings value other than cleanupPeriodDays", async () => {
+    const fsx = await realFs();
+    const project = join(home, "proj");
+    writeFile(
+      fsx,
+      join(home, ".claude", "settings.json"),
+      JSON.stringify({ cleanupPeriodDays: 10, env: { API_KEY: SECRET } }),
+    );
+    writeFile(
+      fsx,
+      join(project, ".claude", "settings.json"),
+      JSON.stringify({ cleanupPeriodDays: SECRET }),
+    );
+    writeFile(
+      fsx,
+      join(project, ".claude", "settings.local.json"),
+      `{"apiKeyHelper": "${SECRET}", `,
+    );
+    transcript(fsx, claudeProjectDirName(project).name, UNSAVED_OLD, 5);
+
+    const global = await runDoctorJson();
+    expect(check(global, "session.retention")?.status).toBe("warn");
+    await doctorCommand("9.9.9", { json: true, projectDir: project });
+    const projectEnv = JSON.parse(stdout[1]);
+    expect(check(projectEnv, "project.retention")?.status).toBe("warn");
+    expect(stdout.join("")).not.toContain(SECRET);
+  });
+
+  it("skips a broken settings file and falls back to the next scope", async () => {
+    const fsx = await realFs();
+    const project = join(home, "proj");
+    writeFile(
+      fsx,
+      join(home, ".claude", "settings.json"),
+      JSON.stringify({ cleanupPeriodDays: 10 }),
+    );
+    writeFile(
+      fsx,
+      join(project, ".claude", "settings.json"),
+      JSON.stringify({ cleanupPeriodDays: 20 }),
+    );
+    writeFile(
+      fsx,
+      join(project, ".claude", "settings.local.json"),
+      '{"cleanupPeriodDays": 99,',
+    );
+
+    await doctorCommand("9.9.9", { json: true, projectDir: project });
+    const env = JSON.parse(stdout[0]);
+    expect(check(env, "project.retention")).toMatchObject({
+      status: "ok",
+      detail: "0 unsaved session(s) within 7 days of the 20-day cleanup",
+    });
   });
 });

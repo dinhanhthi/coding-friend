@@ -886,6 +886,30 @@ session
     await sessionStatusCommand(opts);
   });
 
+const sync = program
+  .command("sync")
+  .description(
+    "[beta] Show where learn notes and saved sessions sync (cloud folders, placeholders, conflicts)",
+  );
+
+program.addHelpText(
+  "after",
+  `
+Sync subcommands (beta):
+  sync status         Show learn and session folders, cloud provider, placeholders and conflict copies`,
+);
+
+sync
+  .command("status")
+  .description(
+    "Show the learn and session folders, their cloud folder, placeholders and conflict copies (reads no file)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { syncStatusCommand } = await import("./commands/sync.js");
+    await syncStatusCommand(opts);
+  });
+
 const memory = program
   .command("memory")
   .description("AI memory system — store and search project knowledge");

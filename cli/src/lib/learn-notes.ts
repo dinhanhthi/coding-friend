@@ -7,11 +7,15 @@ import {
   readdirSync,
   type Stats,
 } from "fs";
-import { homedir, hostname } from "os";
+import { homedir } from "os";
 import { join } from "path";
 import { parse } from "yaml";
 
-import { cloudRootOf, isCloudPlaceholder } from "./cloud-folders.js";
+import {
+  cloudRootOf,
+  conflictBaseOf,
+  isCloudPlaceholder,
+} from "./cloud-folders.js";
 import { readNote, resolveNotePath } from "./note-io.js";
 import { CliError } from "./output.js";
 
@@ -102,29 +106,6 @@ function str(v: unknown): string {
   return v === undefined || v === null ? "" : String(v);
 }
 
-/**
- * The slug this one is a sync conflict copy of, when that sibling exists:
- * ` 2` (iCloud), ` (1)`, ` (… conflicted copy …)` (Dropbox), and `-<host>`
- * (OneDrive) only inside a OneDrive root with the short hostname.
- */
-function conflictBase(
-  slug: string,
-  siblings: Set<string>,
-  oneDrive: boolean,
-): string | null {
-  const bases = [/ \d+$/, / \(\d+\)$/, / \([^)]*conflicted copy[^)]*\)$/i].map(
-    (re) => (re.test(slug) ? slug.replace(re, "") : null),
-  );
-  if (oneDrive) {
-    const host = hostname().split(".")[0].toLowerCase();
-    const suffix = `-${host}`;
-    if (host && slug.toLowerCase().endsWith(suffix)) {
-      bases.push(slug.slice(0, -suffix.length));
-    }
-  }
-  return bases.find((b) => b && siblings.has(b)) ?? null;
-}
-
 /** List notes and cloud placeholders. Placeholders are never opened. */
 export function listNotes(outputDir: string): LearnNotes {
   const notes: LearnNote[] = [];
@@ -183,7 +164,11 @@ export function listNotes(outputDir: string): LearnNotes {
       } catch {
         continue;
       }
-      const base = conflictBase(slug, siblings, cloud?.provider === "onedrive");
+      const base = conflictBaseOf(
+        slug,
+        siblings,
+        cloud?.provider === "onedrive",
+      );
       notes.push({
         id: `${category}/${slug}`,
         category,

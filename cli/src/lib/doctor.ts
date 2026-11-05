@@ -1,10 +1,22 @@
 import { execFileSync } from "child_process";
-import { existsSync, readFileSync, realpathSync } from "fs";
+import {
+  existsSync,
+  lstatSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  statSync,
+} from "fs";
 import { createConnection } from "net";
 import { homedir } from "os";
-import { join } from "path";
+import { basename, join } from "path";
 import { isMemoryInitialized } from "../commands/memory.js";
-import { ConfigSchema, findUnknownKeys, resolveLearnDir } from "./config.js";
+import {
+  ConfigSchema,
+  findUnknownKeys,
+  resolveLearnDir,
+  resolveSessionDir,
+} from "./config.js";
 import { listMdFilesRecursive } from "./fs-utils.js";
 import {
   detectHostsAvailable,
@@ -16,7 +28,7 @@ import {
   type Host,
 } from "./host.js";
 import { readJson } from "./json.js";
-import { learnStatus } from "./learn-storage.js";
+import { inGitWorkTree, learnStatus } from "./learn-storage.js";
 import {
   DEFAULT_LABEL,
   START_INTERVAL_SECONDS,
@@ -32,7 +44,13 @@ import {
 import { detectMemoryMcpState } from "./mcp-state.js";
 import { binaryVersion } from "./orchestrator/providers/version.js";
 import { readHeartbeat } from "./orchestrator/supervisor.js";
-import { globalConfigPath, memoryDepsDir, resolvePath } from "./paths.js";
+import {
+  claudeProjectsDir,
+  claudeSettingsPath,
+  globalConfigPath,
+  memoryDepsDir,
+  resolvePath,
+} from "./paths.js";
 import {
   detectPluginScope,
   isMarketplaceRegistered,
@@ -40,6 +58,12 @@ import {
   isPluginInstalled,
 } from "./plugin-state.js";
 import { canonicalProjectPath, listProjects } from "./project-registry.js";
+import {
+  isSessionUuid,
+  listProjectTranscripts,
+  listSavedSessions,
+  type SavedSession,
+} from "./session.js";
 import type { CodingFriendConfig } from "../types.js";
 
 /**
@@ -378,6 +402,156 @@ function learnStorageCheck(): DoctorCheck {
   return { ...base, status: "ok", detail: `${s.mode}${where}: ${s.outputDir}` };
 }
 
+/** Claude Code's default when no settings scope sets `cleanupPeriodDays`. */
+const DEFAULT_CLEANUP_DAYS = 30;
+/** Warn this many days before Claude's cleanup deletes a transcript. */
+const RETENTION_MARGIN_DAYS = 7;
+const DAY_MS = 86_400_000;
+/** Settings files at or above this size are skipped. */
+const MAX_SETTINGS_BYTES = 1024 * 1024;
+
+/**
+ * `cleanupPeriodDays` from one Claude settings file, or null when the file is
+ * missing, not a regular file under 1 MiB, broken or the value is not a whole
+ * number >= 1. Only this key is read, and no error text is kept: JSON.parse
+ * messages quote the file.
+ */
+function readCleanupDays(file: string): number | null {
+  try {
+    // A symlink to /dev/zero or a FIFO in an untrusted repo must not hang doctor.
+    const st = lstatSync(file);
+    if (!st.isFile() || st.size >= MAX_SETTINGS_BYTES) return null;
+    const parsed: unknown = JSON.parse(readFileSync(file, "utf-8"));
+    if (!isPlainObject(parsed)) return null;
+    const days = parsed.cleanupPeriodDays;
+    return Number.isInteger(days) && (days as number) >= 1
+      ? (days as number)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** First valid `cleanupPeriodDays` in precedence order, else Claude's default. */
+function cleanupDays(files: string[]): number {
+  for (const file of files) {
+    const days = readCleanupDays(file);
+    if (days !== null) return days;
+  }
+  return DEFAULT_CLEANUP_DAYS;
+}
+
+/** Session ids of saved (not placeholder) sessions with a valid UUID. */
+function savedSessionIds(sessions: SavedSession[]): Set<string> {
+  const ids = new Set<string>();
+  for (const s of sessions) {
+    if (s.status === "ok" && isSessionUuid(s.meta?.sessionId)) {
+      ids.add(s.meta.sessionId);
+    }
+  }
+  return ids;
+}
+
+/** Every live `<claude>/projects/<dir>/<uuid>.jsonl` (lstat only, no symlinks). */
+function allClaudeTranscripts(): { path: string; mtime: number }[] {
+  const base = claudeProjectsDir();
+  let dirs: string[];
+  try {
+    dirs = readdirSync(base);
+  } catch {
+    return [];
+  }
+  const out: { path: string; mtime: number }[] = [];
+  for (const d of dirs) {
+    const dir = join(base, d);
+    let names: string[];
+    try {
+      if (!lstatSync(dir).isDirectory()) continue;
+      names = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const name of names) {
+      if (!name.endsWith(".jsonl")) continue;
+      if (!isSessionUuid(basename(name, ".jsonl"))) continue;
+      const path = join(dir, name);
+      try {
+        const st = lstatSync(path);
+        if (st.isFile()) out.push({ path, mtime: st.mtimeMs });
+      } catch {
+        continue;
+      }
+    }
+  }
+  return out;
+}
+
+/** Unsaved transcripts Claude's cleanup deletes within RETENTION_MARGIN_DAYS. */
+function retentionCheck(
+  base: { id: string; group: string; label: string },
+  days: number,
+  transcripts: { path: string; mtime: number }[],
+  saved: Set<string>,
+): DoctorCheck {
+  const ageDays = Math.max(1, days - RETENTION_MARGIN_DAYS);
+  const cutoff = Date.now() - ageDays * DAY_MS;
+  const atRisk = transcripts.filter(
+    (t) => t.mtime < cutoff && !saved.has(basename(t.path, ".jsonl")),
+  ).length;
+  const detail = `${atRisk} unsaved session(s) within ${RETENTION_MARGIN_DAYS} days of the ${days}-day cleanup`;
+  if (atRisk === 0) return { ...base, status: "ok", detail };
+  return {
+    ...base,
+    status: "warn",
+    detail,
+    hint: "cf session save, or raise cleanupPeriodDays in Claude settings",
+  };
+}
+
+/** Saved transcripts are verbatim (unredacted): a git repo could commit them. */
+function sessionChecks(): DoctorCheck[] {
+  const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
+  const dir = resolveSessionDir(globalCfg);
+  const group = "session";
+  const storageBase = {
+    id: "session.storage",
+    group,
+    label: "Session storage",
+  };
+  let storage: DoctorCheck;
+  if (!isDir(dir)) {
+    storage = {
+      ...storageBase,
+      status: "ok",
+      detail: `not created yet: ${dir}`,
+    };
+  } else if (inGitWorkTree(dir)) {
+    storage = {
+      ...storageBase,
+      status: "warn",
+      detail: `inside a git work tree (unredacted transcripts could be committed): ${dir}`,
+      hint: "use a folder that is not a git repo",
+    };
+  } else {
+    storage = { ...storageBase, status: "ok", detail: dir };
+  }
+  const retention = retentionCheck(
+    { id: "session.retention", group, label: "Session retention" },
+    cleanupDays([claudeSettingsPath()]),
+    allClaudeTranscripts(),
+    savedSessionIds(listSavedSessions(dir, "saved")),
+  );
+  return [storage, retention];
+}
+
+function isDir(p: string): boolean {
+  try {
+    return statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function hostChecks(hosts: Host[]): DoctorCheck[] {
   return hosts.map((host) => {
     const id = `host.${host}.version`;
@@ -498,6 +672,7 @@ export async function collectDoctor(cliVersion: string): Promise<DoctorData> {
     ...(await memoryChecks(claudePresent)),
     ...(await learnChecks(claudePresent)),
     learnStorageCheck(),
+    ...sessionChecks(),
     ...hostChecks(hosts),
     ...supervisorChecks(),
     ...registryChecks(),
@@ -613,6 +788,35 @@ export function collectProjectChecks(root: string): DoctorCheck[] {
     detail: memoryExists
       ? `${listMdFilesRecursive(memoryDir).length} file(s) in ${memoryDir}`
       : `missing: ${memoryDir}`,
+  });
+
+  // Claude's precedence for cleanupPeriodDays: local, then project, then user.
+  const sessionDir = resolveSessionDir(global as CodingFriendConfig | null);
+  const legacyDir = join(docsDir, "sessions");
+  const legacy = listSavedSessions(legacyDir, "legacy");
+  checks.push(
+    retentionCheck(
+      { id: "project.retention", group, label: "Session retention" },
+      cleanupDays([
+        join(root, ".claude", "settings.local.json"),
+        join(root, ".claude", "settings.json"),
+        claudeSettingsPath(),
+      ]),
+      listProjectTranscripts(root),
+      savedSessionIds([...listSavedSessions(sessionDir, "saved"), ...legacy]),
+    ),
+  );
+  checks.push({
+    id: "project.legacySessions",
+    group,
+    label: "Legacy sessions",
+    status: "ok",
+    ...(legacy.length > 0
+      ? {
+          detail: `${legacy.length} session(s) in ${legacyDir}`,
+          hint: `mkdir -p ${quotePath(sessionDir)} && mv ${quotePath(legacyDir)}/* ${quotePath(sessionDir)}/`,
+        }
+      : { detail: "none" }),
   });
 
   // Same condition as memory.mcp.projectShadow, for this root's .mcp.json.

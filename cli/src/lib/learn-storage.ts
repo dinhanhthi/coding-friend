@@ -118,6 +118,11 @@ function gitInfo(dir: string): LearnStatus["git"] {
   };
 }
 
+/** True when `dir` is inside a git work tree; false when git is missing or fails. */
+export function inGitWorkTree(dir: string): boolean {
+  return gitInfo(dir) !== null;
+}
+
 /** Storage mode of the learn folder: git when it is inside a git work tree, else folder. */
 export function learnStatus(globalCfg: CodingFriendConfig | null): LearnStatus {
   const outputDir = resolveLearnDir(globalCfg);

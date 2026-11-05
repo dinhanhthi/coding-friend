@@ -20,6 +20,7 @@ const GROUP_TITLES: Record<string, string> = {
   supervisor: "Supervisor",
   registry: "Projects",
   project: "Project",
+  session: "Sessions",
 };
 
 function printCheck(c: DoctorCheck): void {
@@ -28,7 +29,7 @@ function printCheck(c: DoctorCheck): void {
   if (c.status === "ok") console.log(chalk.green(`  ✓ ${line}`));
   else if (c.status === "warn") console.log(chalk.yellow(`  ⚠ ${line}`));
   else console.log(chalk.red(`  ✗ ${line}`));
-  if (c.status === "ok") return;
+  // Fixes only sit on non-ok checks; an ok check prints its hint if it has one.
   if (c.fix) {
     const cmd = ["cf", ...c.fix.argv.filter((a) => a !== "--json")].join(" ");
     console.log(chalk.dim(`    → ${c.fix.label}: ${cmd}`));
