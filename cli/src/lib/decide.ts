@@ -78,7 +78,7 @@ export type GateResult =
 /** Most questions per request accepted by every provider. */
 export const MAX_QUESTIONS = 64;
 const QUESTION_ID_RE = /^[A-Za-z0-9_.-]{1,100}$/;
-const CLOUDFLARE_MODELS = new Set(["clef", "clef-flash"]);
+export const CLOUDFLARE_MODELS = new Set(["clef", "clef-flash"]);
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "::1", "[::1]", "localhost"]);
 
 function isObject(v: unknown): v is Record<string, unknown> {

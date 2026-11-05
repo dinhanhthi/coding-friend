@@ -6,7 +6,12 @@
 // never split a secret and leave its tail unmatched.
 
 import { CliError } from "./output.js";
-import { redactText, runExportPipeline, type ExtraFilter } from "./redact.js";
+import {
+  redactText,
+  runExportPipeline,
+  type ExtraFilter,
+  type SegmentKind,
+} from "./redact.js";
 import type { FilterStatus } from "./redact.js";
 
 export const TOOL_ARGS_MAX_CHARS = 120;
@@ -331,23 +336,29 @@ export async function renderMarkdown(
 ): Promise<RenderedMarkdown> {
   const counts: Record<string, number> = {};
   const segments: string[] = [];
-  const push = (s: string): number => segments.push(s) - 1;
+  const kinds: SegmentKind[] = [];
+  const push = (s: string, kind: SegmentKind): number => {
+    kinds.push(kind);
+    return segments.push(s) - 1;
+  };
 
-  const titleSeg = push(transcript.summary.title);
-  const cwdSeg = push(transcript.summary.cwd);
+  const titleSeg = push(transcript.summary.title, "title");
+  const cwdSeg = push(transcript.summary.cwd, "cwd");
   const pieces: Piece[] = transcript.turns.map((turn): Piece => {
-    if (turn.kind !== "tool") return { kind: turn.kind, seg: push(turn.text) };
+    if (turn.kind !== "tool") {
+      return { kind: turn.kind, seg: push(turn.text, turn.kind) };
+    }
     // Args are summarized (redacted, then cut) before the pipeline; a second
     // redaction pass over them counts 0, so nothing is counted twice.
     const args = summarizeTool(turn.args, opts.home);
     addCounts(counts, args.counts);
     const piece: Piece = {
       kind: "tool",
-      name: push(turn.name),
-      args: push(args.text),
+      name: push(turn.name, "toolName"),
+      args: push(args.text, "toolArgs"),
     };
     if (opts.includeToolOutput && turn.output !== undefined) {
-      piece.output = push(turn.output);
+      piece.output = push(turn.output, "toolOutput");
     }
     return piece;
   });
@@ -356,9 +367,15 @@ export async function renderMarkdown(
     filter: opts.filter,
     timeoutMs: opts.timeoutMs,
     home: opts.home,
+    kinds,
   });
   addCounts(counts, result.counts);
   const seg = result.segments;
+  // Only an applied filter can empty a segment: regex redaction always leaves
+  // a non-empty marker, so comparing with the raw input is enough.
+  const applied = result.filter.status === "applied";
+  const removed = (i: number): boolean =>
+    applied && seg[i] === "" && segments[i] !== "";
 
   const lines: string[] = [];
   const title = truncateChars(seg[titleSeg].replace(/\s+/g, " ").trim(), 200);
@@ -369,9 +386,14 @@ export async function renderMarkdown(
   if (transcript.summary.startedAt) {
     lines.push(`- started: ${transcript.summary.startedAt}`);
   }
+  if (applied) {
+    const n = segments.filter((_, i) => removed(i)).length;
+    lines.push(`- filtered: ${result.filter.name}, ${n} part(s) removed`);
+  }
   lines.push("");
   for (const piece of pieces) {
     if (piece.kind !== "tool") {
+      if (removed(piece.seg)) continue;
       const heading = piece.kind === "user" ? "## User" : "## Assistant";
       lines.push(heading, "", seg[piece.seg], "");
       continue;
@@ -382,7 +404,7 @@ export async function renderMarkdown(
     );
     const args = seg[piece.args].replace(/\s+/g, " ").trim();
     lines.push(`- tool: ${name} ${args}`.trimEnd());
-    if (piece.output !== undefined) {
+    if (piece.output !== undefined && !removed(piece.output)) {
       const body = truncateChars(seg[piece.output], TOOL_OUTPUT_MAX_CHARS);
       const fence = fenceFor(body);
       lines.push("", fence, body, fence, "");

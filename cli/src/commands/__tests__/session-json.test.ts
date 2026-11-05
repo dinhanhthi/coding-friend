@@ -457,6 +457,20 @@ describe("session list|show|export --json", () => {
     expect(readFileSync(file).equals(before)).toBe(true);
   });
 
+  it("export --redact-model with the decision provider off fails before any write", async () => {
+    const file = join(tmp, "export.md");
+    const { env } = await json(() =>
+      sessionExportCommand(`claude:${UUID}`, {
+        json: true,
+        out: file,
+        redactModel: true,
+      }),
+    );
+    expect(env).toMatchObject({ ok: false, error: { code: "INVALID_ARGS" } });
+    expect(env.error.message).toContain("decision.provider");
+    expect(existsSync(file)).toBe(false);
+  });
+
   describe("load --json", () => {
     const FOLDER = "old-session";
     let dest: string;

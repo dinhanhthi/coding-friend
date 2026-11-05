@@ -207,7 +207,7 @@ _cf_completions() {
     return
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "export" && "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--json --include-tool-output --project-dir --out --force" -- "$cur"))
+    COMPREPLY=($(compgen -W "--json --include-tool-output --project-dir --out --force --redact-model --summary" -- "$cur"))
     return
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "save" && "$cur" == -* ]]; then
@@ -456,7 +456,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "show" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' '--offset[First turn to print (default 0)]' '--limit[At most this many turns (1-1000, default 200)]' "--project-dir[Prefer this project's copy of the session]"
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "export" ]]; then
-    _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' "--project-dir[Prefer this project's copy of the session]" '--out[Write the full Markdown to this file (mode 0600)]' '--force[With --out: overwrite an existing file]'
+    _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' "--project-dir[Prefer this project's copy of the session]" '--out[Write the full Markdown to this file (mode 0600)]' '--force[With --out: overwrite an existing file]' '--redact-model[Also drop parts the decision model flags as secret or personal data]' '--summary[Keep only the parts the decision model rates most important]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "save" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--session-id[Session UUID to save (default: newest)]' '--project-dir[Look for the session in this project (resolved to its main repo root)]' '-l[Label for this session]' '--label[Label for this session]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "status" ]]; then
@@ -651,6 +651,8 @@ complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcomma
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show" -l offset -r -d "First turn to print (default 0)"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show export" -l include-tool-output -d "Include tool output (redacted, cut)"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export" -l out -r -d "Write the full Markdown to this file (mode 0600)"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export" -l redact-model -d "Also drop parts the decision model flags as secret or personal data"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export" -l summary -d "Keep only the parts the decision model rates most important"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from export load" -l force -d "Overwrite an existing file or transcript"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from load" -l yes -d "With --json: load without asking"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from load" -l target -r -d "With --json: project directory to load into"
@@ -736,7 +738,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
     @('--json','--include-tool-output','--offset','--limit','--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'export') {
-    @('--json','--include-tool-output','--project-dir','--out','--force') | Where-Object { $_ -like "$wordToComplete*" } |
+    @('--json','--include-tool-output','--project-dir','--out','--force','--redact-model','--summary') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'save') {
     @('--json','--session-id','--project-dir','-l','--label') | Where-Object { $_ -like "$wordToComplete*" } |

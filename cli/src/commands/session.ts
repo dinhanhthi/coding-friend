@@ -1,4 +1,5 @@
 import { input, select } from "@inquirer/prompts";
+import chalk from "chalk";
 import { execFileSync } from "child_process";
 import { randomBytes } from "crypto";
 import {
@@ -33,10 +34,31 @@ import {
   type SavedSession,
   type SessionMeta,
 } from "../lib/session.js";
-import { loadConfig, resolveSessionDir } from "../lib/config.js";
+import {
+  loadConfig,
+  resolveDecisionConfig,
+  resolveSessionDir,
+  type DecisionConfig,
+} from "../lib/config.js";
+import {
+  CLOUDFLARE_MODELS,
+  checkGate,
+  type GateResult,
+} from "../lib/decide.js";
+import {
+  composeFilters,
+  redactModelFilter,
+  summaryFilter,
+  type FilterStats,
+} from "../lib/decide-filters.js";
+import { appendDecisionLog } from "../lib/decide-log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { useProjectDir } from "../lib/project-option.js";
-import { redactText } from "../lib/redact.js";
+import {
+  redactText,
+  type ExtraFilter,
+  type FilterStatus,
+} from "../lib/redact.js";
 import {
   pageTurns,
   parseRef,
@@ -500,8 +522,10 @@ const LIST_MAX_LIMIT = 500;
 const SHOW_DEFAULT_LIMIT = 200;
 const SHOW_MAX_LIMIT = 1000;
 const TITLE_MAX_CHARS = 200;
-/** No extra filter is registered in B2; the timeout only bounds a future one. */
+/** Without --redact-model/--summary no filter runs; this only bounds the call. */
 const FILTER_TIMEOUT_MS = 10_000;
+/** Whole budget for --redact-model/--summary; past it the export is regex-only. */
+const MODEL_FILTER_TIMEOUT_MS = 60_000;
 
 const PROVIDERS: Record<"claude" | "codex", TranscriptProvider> = {
   claude: claudeProvider,
@@ -877,6 +901,8 @@ interface ExportOpts {
   projectDir?: string;
   out?: string;
   force?: boolean;
+  redactModel?: boolean;
+  summary?: boolean;
 }
 
 function lstatOrNull(p: string): Stats | null {
@@ -940,6 +966,106 @@ function writeExportFile(out: string, text: string): void {
   }
 }
 
+interface ModelFilter {
+  cfg: DecisionConfig;
+  filter: ExtraFilter;
+  stats: FilterStats[];
+}
+
+/** Names the fix only (env var names, never values). */
+function gateMessage(
+  cfg: DecisionConfig,
+  reason: Exclude<GateResult, { ok: true }>["reason"],
+): string {
+  if (reason === "off") {
+    return "--redact-model and --summary need a decision model, but decision.provider is off; set it with cf config set --global decision.provider local";
+  }
+  if (reason === "gate" && cfg.provider === "local") {
+    return "decision.baseUrl is not a loopback address (127.0.0.1, ::1, localhost), so decision.provider local would send data off this machine; point decision.baseUrl at a local server, or only if a remote server is intended set cf config set --global decision.allowRemote true";
+  }
+  if (reason === "gate") {
+    return `decision.provider "${cfg.provider}" sends data off this machine and decision.allowRemote is false in the global config; set it with cf config set --global decision.allowRemote true`;
+  }
+  return cfg.provider === "cloudflare"
+    ? "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set for decision.provider cloudflare"
+    : "TYPESAFE_API_KEY is not set (needed for decision.provider typesafe)";
+}
+
+/** Config the gate does not check but every request would fail on (never values). */
+function configProblem(cfg: DecisionConfig): string | null {
+  if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {
+    return `decision.model must be one of ${[...CLOUDFLARE_MODELS].join(", ")} for decision.provider cloudflare`;
+  }
+  if (cfg.provider === "local") {
+    try {
+      new URL(cfg.baseUrl);
+    } catch {
+      return "decision.baseUrl is not a valid URL (needed for decision.provider local)";
+    }
+  }
+  return null;
+}
+
+/**
+ * The --redact-model/--summary filter, or null. A config problem (provider off,
+ * gate closed, missing key, bad model or baseUrl) throws here, before the
+ * transcript is read.
+ */
+function modelFilter(opts: ExportOpts): ModelFilter | null {
+  if (!opts.redactModel && !opts.summary) return null;
+  const cfg = resolveDecisionConfig();
+  const gate = checkGate(cfg, { allowSynthetic: false });
+  if (!gate.ok) {
+    throw new CliError("INVALID_ARGS", gateMessage(cfg, gate.reason));
+  }
+  const problem = configProblem(cfg);
+  if (problem) throw new CliError("INVALID_ARGS", problem);
+  const stats: FilterStats[] = [];
+  const onStats = (s: FilterStats): void => {
+    stats.push(s);
+  };
+  const redact = opts.redactModel ? redactModelFilter(cfg, { onStats }) : null;
+  const summary = opts.summary ? summaryFilter(cfg, { onStats }) : null;
+  const filter =
+    redact && summary ? composeFilters(redact, summary) : (redact ?? summary)!;
+  return { cfg, filter, stats };
+}
+
+/** Why a filtered export fell back, as a reason token; undefined when applied. */
+function exportFallbackReason(
+  m: ModelFilter,
+  status: FilterStatus,
+): string | undefined {
+  if (status === "applied") return undefined;
+  // runFilter's own verdict wins for rejected/timeout: on timeout the filter's
+  // "aborted" stats may or may not have arrived yet.
+  if (status === "rejected" || status === "timeout") return status;
+  return m.stats.find((s) => s.fallbackReason)?.fallbackReason ?? status;
+}
+
+/** One aggregated log line per filtered export: counts and tokens only. */
+function logExportDecision(
+  m: ModelFilter,
+  status: FilterStatus,
+  fallbackReason: string | undefined,
+  wallMs: number,
+): void {
+  const ok = status === "applied";
+  const sum = (key: "asked" | "dropped" | "latencyMs"): number =>
+    m.stats.reduce((n, s) => n + s[key], 0);
+  appendDecisionLog({
+    v: 1,
+    ts: new Date().toISOString(),
+    point: "export",
+    provider: m.cfg.provider,
+    model: m.cfg.model,
+    ok,
+    fallbackReason,
+    latencyMs: m.stats.length ? sum("latencyMs") : wallMs,
+    answers: { asked: sum("asked"), dropped: ok ? sum("dropped") : 0 },
+  });
+}
+
 async function exportSession(ref: string, opts: ExportOpts) {
   // Relative --out resolves against the cwd the user ran `cf` from.
   const cwd = process.cwd();
@@ -947,19 +1073,33 @@ async function exportSession(ref: string, opts: ExportOpts) {
   if (opts.force && opts.out === undefined) {
     throw new CliError("INVALID_ARGS", "--force needs --out <file>");
   }
+  const model = modelFilter(opts);
   const out = opts.out === undefined ? null : resolvePath(opts.out, cwd);
   if (out) checkExportTarget(out, !!opts.force);
   const t = await readTranscript(ref, root);
+  const started = performance.now();
   const r = await renderMarkdown(t, {
     includeToolOutput: !!opts.includeToolOutput,
     home: homedir(),
-    timeoutMs: FILTER_TIMEOUT_MS,
+    filter: model?.filter,
+    timeoutMs: model ? MODEL_FILTER_TIMEOUT_MS : FILTER_TIMEOUT_MS,
   });
+  const fallbackReason = model
+    ? exportFallbackReason(model, r.filter.status)
+    : undefined;
+  if (model) {
+    logExportDecision(
+      model,
+      r.filter.status,
+      fallbackReason,
+      Math.round(performance.now() - started),
+    );
+  }
   if (out) {
     checkExportTarget(out, !!opts.force);
     writeExportFile(out, r.fullMarkdown);
   }
-  return { ref: t.ref, out, ...r };
+  return { ref: t.ref, out, fallbackReason, ...r };
 }
 
 const SHARE_NOTE =
@@ -994,6 +1134,16 @@ export async function sessionExportCommand(
   }
   await runHumanLogged(async () => {
     const r = await exportSession(ref, opts);
+    // stderr, so a redirected stdout stays pure Markdown.
+    if (r.filter.name) {
+      console.error(`filter: ${r.filter.name} ${r.filter.status}`);
+      if (r.filter.status !== "applied") {
+        console.error(
+          chalk.yellow("⚠"),
+          `model filter failed (${r.fallbackReason ?? r.filter.status}), export uses regex redaction only`,
+        );
+      }
+    }
     if (r.out) {
       log.success(`Exported ${tty(r.ref)} to ${tty(r.out)}`);
       log.info(`${r.bytes} bytes, ${r.redactions.total} redaction(s).`);

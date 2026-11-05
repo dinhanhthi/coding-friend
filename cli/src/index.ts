@@ -843,6 +843,14 @@ session
     "write the full Markdown to this file (mode 0600) instead of printing it",
   )
   .option("--force", "with --out: overwrite an existing file")
+  .option(
+    "--redact-model",
+    "also drop parts the decision model flags as secret or personal data",
+  )
+  .option(
+    "--summary",
+    "keep only the parts the decision model rates most important",
+  )
   .option("--json", "Output a JSON envelope")
   .action(async (ref: string, opts) => {
     const { sessionExportCommand } = await import("./commands/session.js");
