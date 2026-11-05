@@ -923,11 +923,13 @@ const CF_SAFE_SUBCOMMANDS = new Set([
 const CF_CONFIG_SAFE_SUBCOMMANDS = new Set(["get", "schema"]);
 
 /**
- * `cf task` subcommands safe to auto-approve (read-only). `run`, `cancel` and
- * the internal `_run` start or stop agent processes, so they are excluded.
- * Bare `cf task` is not approved either.
+ * `cf task` subcommands safe to auto-approve (read-only). `follow` only reads
+ * the task and its worker's transcript; without `--json` it blocks until the
+ * task ends (approved on purpose). `run`, `cancel` and the internal `_run`
+ * start or stop agent processes, so they are excluded. Bare `cf task` is not
+ * approved either.
  */
-const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show"]);
+const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show", "follow"]);
 
 /**
  * `cf chef` subcommands safe to auto-approve (read-only). `start`, `say`,

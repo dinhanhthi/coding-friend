@@ -9,6 +9,7 @@ import {
   realpathSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -57,7 +58,13 @@ vi.mock("../../lib/config.js", async (importActual) => {
   return { ...actual, loadConfig: vi.fn(actual.loadConfig) };
 });
 
-import { sanitize, taskCancelCommand, taskRunCommand } from "../task.js";
+import {
+  sanitize,
+  taskCancelCommand,
+  taskFollowCommand,
+  taskRunCommand,
+} from "../task.js";
+import { claudeProjectDirName } from "../../lib/paths.js";
 import { loadConfig } from "../../lib/config.js";
 import { resolveCheckoutRoot } from "../../lib/project-root.js";
 import { dispatchTask } from "../../lib/orchestrator/dispatch.js";
@@ -73,7 +80,9 @@ import {
   recordAttemptRunner,
   recordCancel,
   recordDone,
+  recordResult,
   recordRunner,
+  recordSession,
 } from "../../lib/orchestrator/store.js";
 
 let root: string;
@@ -507,6 +516,98 @@ describe("cf task cancel", () => {
       error: { code: "ALREADY_FINISHED" },
     });
     expect(kill.mock.calls.filter(([, sig]) => sig !== 0)).toEqual([]);
+  });
+});
+
+describe("cf task follow", () => {
+  const SID = "11111111-2222-4333-8444-555555555555";
+
+  /** A claude task whose session SID has a transcript of `records`. */
+  function followed(records: unknown[]): string {
+    vi.stubEnv("CLAUDE_CONFIG_DIR", join(root, "claude"));
+    vi.stubEnv("CODEX_HOME", join(root, "codex"));
+    const checkout = realpathSync(root);
+    const id = createTask({
+      provider: "claude",
+      prompt: "do it",
+      readOnly: true,
+      checkout,
+    }).id;
+    recordSession(id, { sessionId: SID });
+    const dir = join(
+      root,
+      "claude",
+      "projects",
+      claudeProjectDirName(checkout).name,
+    );
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, `${SID}.jsonl`),
+      records.map((r) => JSON.stringify(r) + "\n").join(""),
+    );
+    return id;
+  }
+
+  const said = (role: "user" | "assistant", text: string) => ({
+    type: role,
+    message: { role, content: text },
+  });
+
+  it("--json prints one envelope with the turns and cursor; a bad cursor is INVALID_ARGS", async () => {
+    const id = followed([said("user", "hello")]);
+
+    await taskFollowCommand(id, { json: true });
+    const out = JSON.parse(stdout.join(""));
+    expect(out).toMatchObject({
+      contractVersion: 1,
+      ok: true,
+      error: null,
+      data: {
+        task: { id, state: "queued" },
+        terminal: false,
+        turns: [{ kind: "user", text: "hello" }],
+        more: false,
+      },
+    });
+    expect(out.data.cursor).toMatch(new RegExp(`^v1\\.1\\.${SID}\\.\\d+$`));
+
+    stdout = [];
+    await taskFollowCommand(id, { json: true, cursor: "../etc/passwd" });
+    expect(JSON.parse(stdout.join(""))).toMatchObject({
+      ok: false,
+      error: { code: "INVALID_ARGS" },
+    });
+  });
+
+  it("human mode prints a finished task's turns and last message sanitized, then returns", async () => {
+    const id = followed([
+      said("user", "hi"),
+      said("assistant", "\x1b[31mred\x1b[0m answer"),
+    ]);
+    recordResult(id, {
+      exitCode: 0,
+      outcome: "succeeded",
+      lastMessage: "\x1b]0;pwned\x07all done",
+    });
+    const sigint = process.listenerCount("SIGINT");
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const done = taskFollowCommand(id, {});
+      await vi.advanceTimersByTimeAsync(5000);
+      await done;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const printed = vi
+      .mocked(console.log)
+      .mock.calls.map((c) => c.join(" "))
+      .join("\n");
+    expect(printed).toContain("red answer");
+    expect(printed).toContain("all done");
+    expect(printed).not.toMatch(/[\x1b\x07]/);
+    expect(process.listenerCount("SIGINT")).toBe(sigint);
+    expect(process.exitCode).toBeUndefined();
   });
 });
 

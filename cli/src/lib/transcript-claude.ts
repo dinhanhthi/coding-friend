@@ -21,6 +21,7 @@ import { basename, join, sep } from "path";
 import { createInterface } from "readline";
 
 import { cloudRootOf, isCloudPlaceholder } from "./cloud-folders.js";
+import { readCompleteLines } from "./jsonl-slice.js";
 import { CliError } from "./output.js";
 import {
   claudeProjectDirCandidates,
@@ -477,6 +478,43 @@ export async function readTranscriptFile(
     turns: ok ? p.turns : [],
     skipped: p.skipped,
     formatVersion: p.version,
+  };
+}
+
+/** Turns of one byte-offset slice of a transcript; see readCompleteLines. */
+export interface TranscriptSlice {
+  turns: Turn[];
+  nextOffset: number;
+  size: number;
+  /** Lines over LINE_MAX_BYTES passed over (not the non-turn lines). */
+  skipped: number;
+  /** More complete lines may follow `nextOffset`. */
+  truncated: boolean;
+}
+
+/**
+ * Turns from the complete lines of `path` after `offset` (at most `maxBytes`
+ * raw bytes). Parser state does not carry over between slices, so a tool
+ * result whose tool_use was in an earlier slice (an orphan) is dropped.
+ */
+export function readClaudeTranscriptSlice(
+  path: string,
+  offset: number,
+  maxBytes: number,
+): TranscriptSlice {
+  const st = lstatOrNull(path);
+  if (!st || !st.isFile()) {
+    throw new CliError("NOT_FOUND", "Session transcript not found");
+  }
+  const slice = readCompleteLines(path, offset, maxBytes);
+  const p = new Parser();
+  for (const line of slice.lines) p.line(line);
+  return {
+    turns: p.turns.filter((t) => t.kind !== "tool" || t.name !== ""),
+    nextOffset: slice.nextOffset,
+    size: slice.size,
+    skipped: slice.skipped,
+    truncated: slice.truncated,
   };
 }
 

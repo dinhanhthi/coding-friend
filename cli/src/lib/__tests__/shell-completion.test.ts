@@ -281,6 +281,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /local commands="[^"]*\bdecide\b/,
         /compgen -W "test eval log review-fp"/,
         /compgen -W "\$scope_flags --mods --yes --json"/,
+        /compgen -W "run list show follow cancel"/,
+        /compgen -W "--cursor --json"/,
       ],
     },
     {
@@ -313,6 +315,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /'decide:/,
         /'review-fp:/,
         /'--mods\[Also install coding-friend-mods/,
+        /"follow:Follow a task/,
+        /'--cursor\[/,
       ],
     },
     {
@@ -347,6 +351,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /__fish_use_subcommand" -a decide /,
         /__fish_seen_subcommand_from decide" -a review-fp /,
         /__fish_seen_subcommand_from install; [^"]*" -l mods /,
+        /__fish_seen_subcommand_from task" -a follow /,
+        /__fish_seen_subcommand_from follow" -l cursor -r /,
       ],
     },
     {
@@ -376,6 +382,8 @@ describe("completion blocks list the machine-callable commands", () => {
         /\$commands = @\([^)]*'decide'/,
         /\$decideSubcommands = @\('test','eval','log','review-fp'\)/,
         /\$scopeFlags \+ @\('--mods','--yes','--json'\)/,
+        /\$taskSubcommands = @\('run','list','show','follow','cancel'\)/,
+        /@\('--cursor','--json'\)/,
       ],
     },
   ];

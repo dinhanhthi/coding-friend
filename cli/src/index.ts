@@ -614,6 +614,18 @@ taskCmd
   });
 
 taskCmd
+  .command("follow <id>")
+  .description(
+    "Follow a task's worker transcript until it ends (agents should use --json: one poll per call)",
+  )
+  .option("--cursor <c>", "Continue from the cursor of a previous --json call")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskFollowCommand } = await import("./commands/task.js");
+    await taskFollowCommand(id, opts);
+  });
+
+taskCmd
   .command("cancel <id>")
   .description("Cancel a running or paused task")
   .option("--json", "Output a JSON envelope")
