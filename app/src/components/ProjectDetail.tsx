@@ -1,10 +1,11 @@
 import { RefreshCw } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { ConfigView, type SetConfig } from "@/components/ConfigView";
 import { DocsView } from "@/components/DocsView";
 import { ChecksSkeleton, DoctorChecks } from "@/components/DoctorView";
 import { MemoryView } from "@/components/MemoryView";
+import { TaskDetail } from "@/components/TaskDetail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,6 +90,19 @@ export function ProjectDetail({
   const overview = tab === "overview";
   const loading = overview && activity.status === "loading";
   const showRefreshing = useDelayed(activity.refreshing);
+  // The clicked task, tagged with its project so another project never shows it.
+  const [picked, setPicked] = useState<{
+    project: string;
+    task: TaskView;
+  } | null>(null);
+  useEffect(() => setPicked(null), [project.path]);
+  const selectedTask = picked?.project === project.path ? picked.task : null;
+  const selectTask = (task: TaskView) =>
+    setPicked((prev) =>
+      prev?.project === project.path && prev.task.id === task.id
+        ? null
+        : { project: project.path, task },
+    );
 
   return (
     <article
@@ -158,7 +172,14 @@ export function ProjectDetail({
         className="flex flex-col gap-8"
       >
         {overview ? (
-          <Overview activity={activity} />
+          <Overview
+            activity={activity}
+            selectedTask={selectedTask}
+            onSelectTask={selectTask}
+            onCloseTask={() => setPicked(null)}
+            pending={pending}
+            run={run}
+          />
         ) : !project.exists ? (
           <p className="text-sm text-muted">
             The folder is missing, so its {tab} cannot be read.
@@ -189,7 +210,26 @@ export function ProjectDetail({
   );
 }
 
-function Overview({ activity }: { activity: CfQuery<ProjectActivity> }) {
+function Overview({
+  activity,
+  selectedTask,
+  onSelectTask,
+  onCloseTask,
+  pending,
+  run,
+}: {
+  activity: CfQuery<ProjectActivity>;
+  selectedTask: TaskView | null;
+  onSelectTask: (task: TaskView) => void;
+  onCloseTask: () => void;
+  pending: PendingRun | null;
+  run: StartRun;
+}) {
+  // A task that left the live list keeps its clicked snapshot; a listed one shows its row.
+  const shownTask = selectedTask
+    ? (activity.data?.tasks.find((t) => t.id === selectedTask.id) ??
+      selectedTask)
+    : null;
   return (
     <>
       {activity.status === "error" && activity.error ? (
@@ -201,7 +241,14 @@ function Overview({ activity }: { activity: CfQuery<ProjectActivity> }) {
           <Section title="Tasks" count={activity.data?.tasks.length}>
             {activity.data ? (
               activity.data.tasks.length > 0 ? (
-                activity.data.tasks.map((t) => <TaskRow key={t.id} task={t} />)
+                activity.data.tasks.map((t) => (
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    selected={t.id === selectedTask?.id}
+                    onSelect={onSelectTask}
+                  />
+                ))
               ) : (
                 <Empty>No running, waiting, paused or queued tasks.</Empty>
               )
@@ -209,6 +256,16 @@ function Overview({ activity }: { activity: CfQuery<ProjectActivity> }) {
               <RowSkeletons />
             )}
           </Section>
+          {shownTask && (
+            <TaskDetail
+              key={shownTask.id}
+              task={shownTask}
+              pending={pending}
+              run={run}
+              onChanged={activity.refetch}
+              onClose={onCloseTask}
+            />
+          )}
           <Section title="Chefs" count={activity.data?.chefs.length}>
             {activity.data ? (
               activity.data.chefs.length > 0 ? (
@@ -339,29 +396,50 @@ function stateVariant(state: string) {
   return "outline" as const;
 }
 
-function TaskRow({ task }: { task: TaskView }) {
+function TaskRow({
+  task,
+  selected,
+  onSelect,
+}: {
+  task: TaskView;
+  selected: boolean;
+  onSelect: (task: TaskView) => void;
+}) {
   const asks = task.pendingAsks.length;
   return (
-    <li className={ROW}>
-      <div className="flex items-center gap-2 text-xs">
-        <Badge variant={stateVariant(task.state)}>{task.state}</Badge>
-        <span className="text-ink-2">{task.provider}</span>
-        {task.readOnly && <Badge variant="outline">read-only</Badge>}
-        {asks > 0 && (
-          <span className="text-muted">
-            {asks === 1 ? "1 question" : `${asks} questions`} waiting
+    <li className="flex first:*:rounded-t-lg last:*:rounded-b-lg">
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={() => onSelect(task)}
+        className={cn(
+          ROW,
+          "w-full min-w-0 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+          selected && "bg-paper-3 hover:bg-paper-3",
+        )}
+      >
+        <span className="flex items-center gap-2 text-xs">
+          <Badge variant={stateVariant(task.state)}>{task.state}</Badge>
+          <span className="text-ink-2">{task.provider}</span>
+          {task.readOnly && <Badge variant="outline">read-only</Badge>}
+          {asks > 0 && (
+            <span className="text-muted">
+              {asks === 1 ? "1 question" : `${asks} questions`} waiting
+            </span>
+          )}
+          <span className="ml-auto truncate font-mono text-muted">
+            {task.id}
+          </span>
+        </span>
+        <span className="truncate text-sm" title={task.prompt}>
+          {task.prompt}
+        </span>
+        {task.hint && (
+          <span className="truncate text-xs text-muted" title={task.hint}>
+            {task.hint}
           </span>
         )}
-        <span className="ml-auto truncate font-mono text-muted">{task.id}</span>
-      </div>
-      <p className="truncate text-sm" title={task.prompt}>
-        {task.prompt}
-      </p>
-      {task.hint && (
-        <p className="truncate text-xs text-muted" title={task.hint}>
-          {task.hint}
-        </p>
-      )}
+      </button>
     </li>
   );
 }

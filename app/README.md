@@ -39,6 +39,10 @@ cargo test --manifest-path src-tauri/Cargo.toml     # Rust tests
 
 Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do not.
 
+## Task detail
+
+In a project's overview, clicking a row under **Tasks** opens its detail panel at once (header from the row, a placeholder until the first answer). The panel polls `cf task follow --json -- <id>` with the cursor it returned: right away while `more` is set, every 2 s while the task runs, every 10 s while it is paused or queued, and it stops once the task has ended and its runner has exited. Turns come from the worker's own transcript, redacted by the CLI and never with tool output; questions, the done summary and the last message are plain text. **Reply** (`cf reply --json --task <id> -- <qid> <answer>`, one line, up to 4096 bytes) and **Cancel task** (`cf task cancel --json -- <id>`) each show a native confirm from Rust first. There is no terminal or PTY: everything the panel does has the CLI command above.
+
 ## Settings and the Config tab
 
 **Settings** (sidebar) edits the global config, `~/.coding-friend/config.json`. A project's **Config** tab edits that project's `.coding-friend/config.json` and shows where each effective value comes from (local or global). The editors are built from `cf config schema --json`; values are read with `cf config get --json`, plus `--project-dir=<path>` for a project, so the CLI resolves it to the main repo root.

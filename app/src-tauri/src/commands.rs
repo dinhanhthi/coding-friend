@@ -4,7 +4,7 @@
 //! The webview is not trusted: actions that change the user's setup (`update_yes`, `run_fix`,
 //! `add_project`, `project_remove`, `config_set`, memory and learn `*_edit`/`*_delete`,
 //! `choose_learn_dir`, `set_learn_dir`, `session_export`, `session_save`, `session_load`,
-//! `choose_session_dir`, `set_session_dir`) ask in a native dialog shown from Rust and run one
+//! `choose_session_dir`, `set_session_dir`, `task_reply`, `task_cancel`) ask in a native dialog shown from Rust and run one
 //! at a time; file and folder paths come from native pickers or save dialogs shown from Rust,
 //! never from the page. Exceptions choose a path from page input: `set_learn_dir` and
 //! `set_session_dir` accept only a path equal to one of the `suggestions` Rust itself fetched
@@ -82,6 +82,10 @@ const SESSION_READ_TIMEOUT: Duration = Duration::from_secs(30);
 const SESSION_WRITE_TIMEOUT: Duration = Duration::from_secs(60);
 /// Longest `session save` label the page may send (bytes).
 const MAX_SESSION_LABEL: usize = 200;
+/// Longest `task follow --cursor` the page may send (bytes).
+const MAX_FOLLOW_CURSOR: usize = 160;
+/// Longest `reply` answer the page may send (bytes).
+const MAX_ANSWER: usize = 4096;
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -264,6 +268,50 @@ fn session_id_arg(s: &str) -> Result<String, CfError> {
     Ok(s.to_string())
 }
 
+/// A task id or question id (`qid`): exactly 8 lowercase letters or digits, the CLI's
+/// `^[a-z0-9]{8}$`.
+fn task_id_arg(s: &str) -> Result<String, CfError> {
+    let id = s.len() == 8
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit());
+    if !id {
+        return Err(refused(format!("not a task id: {s:?}")));
+    }
+    Ok(s.to_string())
+}
+
+/// An opaque `task follow` cursor from a previous answer, at most `MAX_FOLLOW_CURSOR` bytes
+/// and shaped like the CLI's
+/// `^v1(\.[1-9]\d{0,2}\.[A-Za-z0-9][A-Za-z0-9_-]{7,127}\.\d{1,15})?$`. The CLI checks
+/// that the session id belongs to the task.
+fn follow_cursor_arg(s: &str) -> Result<String, CfError> {
+    let digits = |part: &str, max: usize| {
+        (1..=max).contains(&part.len()) && part.bytes().all(|b| b.is_ascii_digit())
+    };
+    let position = |rest: &str| {
+        let Some(rest) = rest.strip_prefix('.') else {
+            return false;
+        };
+        let parts: Vec<&str> = rest.split('.').collect();
+        let [attempt, session, offset] = parts.as_slice() else {
+            return false;
+        };
+        let session_ok = (8..=128).contains(&session.len())
+            && session.as_bytes()[0].is_ascii_alphanumeric()
+            && session
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
+        digits(attempt, 3) && !attempt.starts_with('0') && session_ok && digits(offset, 15)
+    };
+    let valid = s.len() <= MAX_FOLLOW_CURSOR
+        && s.strip_prefix("v1")
+            .is_some_and(|rest| rest.is_empty() || position(rest));
+    if !valid {
+        return Err(refused(format!("not a follow cursor: {s:?}")));
+    }
+    Ok(s.to_string())
+}
+
 /// The providers `session list --provider` takes from the page; argv is built from the enum.
 #[derive(Clone, Copy)]
 enum SessionProvider {
@@ -398,6 +446,36 @@ fn session_load_argv(
     args.push(format!("--target={}", known_project(known, target)?));
     args.extend(optional_project_dir(known, project)?);
     args.extend(["--".into(), r#ref]);
+    Ok(args)
+}
+
+/// `task follow --json [--cursor <c>] -- <id>`.
+fn task_follow_argv(id: &str, cursor: Option<&str>) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["task", "follow", "--json"]);
+    if let Some(cursor) = cursor {
+        args.extend(["--cursor".into(), follow_cursor_arg(cursor)?]);
+    }
+    args.extend(["--".into(), task_id_arg(id)?]);
+    Ok(args)
+}
+
+/// `reply --json --task <id> -- <qid> <answer>`; the answer is one line of at most
+/// `MAX_ANSWER` bytes.
+fn task_reply_argv(task_id: &str, qid: &str, answer: &str) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["reply", "--json", "--task"]);
+    args.push(task_id_arg(task_id)?);
+    args.extend([
+        "--".into(),
+        task_id_arg(qid)?,
+        text_arg(answer, MAX_ANSWER)?,
+    ]);
+    Ok(args)
+}
+
+/// `task cancel --json -- <id>`.
+fn task_cancel_argv(id: &str) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["task", "cancel", "--json"]);
+    args.extend(["--".into(), task_id_arg(id)?]);
     Ok(args)
 }
 
@@ -1364,6 +1442,62 @@ pub async fn task_list() -> Result<Value, CfError> {
     run(&["task", "list", "--json"], cf::QUERY_TIMEOUT).await
 }
 
+/// `task follow --json [--cursor <c>] -- <id>`: one poll of the task's worker transcript.
+#[tauri::command]
+pub async fn task_follow(id: String, cursor: Option<String>) -> Result<Value, CfError> {
+    let args = task_follow_argv(&id, cursor.as_deref())?;
+    cf::run_cf(&args, cf::QUERY_TIMEOUT).await
+}
+
+/// `reply --json --task <id> -- <qid> <answer>`, after a native confirm that shows the answer.
+#[tauri::command]
+pub async fn task_reply(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    task_id: String,
+    qid: String,
+    answer: String,
+) -> Result<Value, CfError> {
+    let args = task_reply_argv(&task_id, &qid, &answer)?;
+    let details = [
+        format!("Answer question {qid} of task {task_id} with:"),
+        format!("{answer:?}"),
+    ];
+    confirm_and_run(
+        &app,
+        &lock,
+        "taskReply",
+        &command_line(&args),
+        &details,
+        &args,
+        None,
+        cf::QUERY_TIMEOUT,
+    )
+    .await
+}
+
+/// `task cancel --json -- <id>`, after a native confirm.
+#[tauri::command]
+pub async fn task_cancel(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    id: String,
+) -> Result<Value, CfError> {
+    let args = task_cancel_argv(&id)?;
+    let details = [format!("Cancel task {id} and stop its worker.")];
+    confirm_and_run(
+        &app,
+        &lock,
+        "taskCancel",
+        &command_line(&args),
+        &details,
+        &args,
+        None,
+        cf::QUERY_TIMEOUT,
+    )
+    .await
+}
+
 #[tauri::command]
 pub async fn chef_status() -> Result<Value, CfError> {
     run(&["chef", "status", "--json"], cf::QUERY_TIMEOUT).await
@@ -1907,5 +2041,107 @@ mod tests {
         std::os::unix::fs::symlink(&index_js, npm_bin.join("cf")).unwrap();
         assert_eq!(cf::check_cf_bin(&npm_bin.join("cf"), true), Ok(()));
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn task_id_arg_needs_8_lowercase_alphanumeric_chars() {
+        assert_eq!(task_id_arg("abcd1234"), Ok("abcd1234".to_string()));
+        for arg in [
+            "",
+            "-bcd1234",
+            "../bcd12",
+            "abcd123",
+            "abcd12345",
+            "ABCD1234",
+            "abcd12\n4",
+        ] {
+            assert!(
+                matches!(task_id_arg(arg), Err(CfError::Refused { .. })),
+                "{arg:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn follow_cursor_arg_accepts_only_the_cli_cursor_shape() {
+        let longest = format!("v1.999.{}.{}", "a".repeat(128), "9".repeat(15));
+        for arg in [
+            "v1",
+            "v1.1.abcdefgh.0",
+            "v1.2.0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0.12345",
+            "v1.10.019a2b3c_thread.7",
+            &longest,
+        ] {
+            assert_eq!(follow_cursor_arg(arg), Ok(arg.to_string()), "{arg}");
+        }
+        for arg in [
+            "",
+            "v2",
+            "-v1",
+            "v1.",
+            "v1.0.abcdefgh.0",
+            "v1.1000.abcdefgh.0",
+            "v1.1.abcdefg.0",
+            "v1.1._bcdefgh.0",
+            "v1.1.a/../bcdefgh.0",
+            "v1.1.abcdefgh",
+            "v1.1.abcdefgh.",
+            "v1.1.abcdefgh.0.0",
+            "v1.1.abcdefgh.1234567890123456",
+            "v1.1.abcdefgh.0\n",
+            &format!("v1.1.{}.0", "a".repeat(129)),
+            &format!("v1.1.abcdefgh.0{}", "0".repeat(160)),
+        ] {
+            assert!(
+                matches!(follow_cursor_arg(arg), Err(CfError::Refused { .. })),
+                "{arg:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn task_argv_puts_ids_and_the_answer_after_the_separator() {
+        let id = "abcd1234";
+        assert_eq!(
+            task_follow_argv(id, None),
+            Ok(words(&["task", "follow", "--json", "--", id]))
+        );
+        assert_eq!(
+            task_follow_argv(id, Some("v1.1.abcdefgh.0")),
+            Ok(words(&[
+                "task",
+                "follow",
+                "--json",
+                "--cursor",
+                "v1.1.abcdefgh.0",
+                "--",
+                id
+            ]))
+        );
+        assert_eq!(
+            task_reply_argv(id, "efgh5678", "--json"),
+            Ok(words(&[
+                "reply", "--json", "--task", id, "--", "efgh5678", "--json"
+            ]))
+        );
+        assert_eq!(
+            task_reply_argv(id, "efgh5678", &"x".repeat(MAX_ANSWER)).map(|argv| argv.len()),
+            Ok(7)
+        );
+        assert_eq!(
+            task_cancel_argv(id),
+            Ok(words(&["task", "cancel", "--json", "--", id]))
+        );
+        for result in [
+            task_follow_argv("--json", None),
+            task_follow_argv(id, Some("--json")),
+            task_reply_argv("--json", "efgh5678", "yes"),
+            task_reply_argv(id, "-fgh5678", "yes"),
+            task_reply_argv(id, "efgh5678", "yes\nno"),
+            task_reply_argv(id, "efgh5678", &"x".repeat(MAX_ANSWER + 1)),
+            task_cancel_argv("../../x"),
+        ] {
+            assert!(matches!(result, Err(CfError::Refused { .. })), "{result:?}");
+        }
     }
 }
