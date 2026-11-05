@@ -1079,6 +1079,12 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
+  it("allows cf task follow", () => {
+    expect(
+      classifyByRules("Bash", { command: "cf task follow ab12cd34" }),
+    ).toBe("allow");
+  });
+
   it("does NOT allow cf task run (starts an agent process)", () => {
     expect(
       classifyByRules("Bash", {

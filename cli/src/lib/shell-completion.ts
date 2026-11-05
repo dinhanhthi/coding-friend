@@ -57,7 +57,7 @@ _cf_completions() {
 
   # Subcommands for 'task'
   if [[ "\${COMP_WORDS[1]}" == "task" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "run list show cancel" -- "$cur"))
+    COMPREPLY=($(compgen -W "run list show follow cancel" -- "$cur"))
     return
   fi
 
@@ -164,6 +164,12 @@ _cf_completions() {
   # Flag completion for task run
   if [[ "\${COMP_WORDS[1]}" == "task" && "\${COMP_WORDS[2]}" == "run" && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--provider --model --read-only --no-fallback --json" -- "$cur"))
+    return
+  fi
+
+  # Flag completion for task follow
+  if [[ "\${COMP_WORDS[1]}" == "task" && "\${COMP_WORDS[2]}" == "follow" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--cursor --json" -- "$cur"))
     return
   fi
 
@@ -419,6 +425,7 @@ const ZSH_FUNCTION_BODY = `_cf() {
       'run:Start a detached worker task in the current checkout'
       'list:List tasks, newest first'
       "show:Show a task's state, questions and result"
+      "follow:Follow a task's worker transcript until it ends"
       'cancel:Cancel a running or paused task'
     )
     _describe 'subcommand' subcommands
@@ -465,6 +472,8 @@ const ZSH_FUNCTION_BODY = `_cf() {
     _values 'flags' '--task[Task id (default: $CF_TASK_ID)]' '--outcome[succeeded or failed]' '--summary[Short summary of the result]' '--handoff[Path to a handoff file]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "task" && "\${words[3]}" == "run" ]]; then
     _values 'flags' '--provider[Worker CLI (${WORKER_PROVIDERS})]' '--model[Model of the provider given by --provider]' '--read-only[Worker may not edit the checkout (no writer lease)]' '--no-fallback[On a quota limit, wait for the reset instead of switching provider]' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "task" && "\${words[3]}" == "follow" ]]; then
+    _values 'flags' '--cursor[Continue from the cursor of a previous --json call]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "chef" && "\${words[3]}" == "start" ]]; then
     _values 'flags' '--provider[Chef CLI (${CHEF_PROVIDER_LIST})]' '--no-commit[Never commit; leave changes in the checkout]' '--json[Output a JSON envelope]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "supervisor" && ("\${words[3]}" == "install" || "\${words[3]}" == "uninstall" || "\${words[3]}" == "status") ]]; then
@@ -624,11 +633,13 @@ complete -c cf -n "__fish_seen_subcommand_from docs; and __fish_seen_subcommand_
 complete -c cf -n "__fish_seen_subcommand_from task" -a run -d "Start a detached worker task in the current checkout"
 complete -c cf -n "__fish_seen_subcommand_from task" -a list -d "List tasks, newest first"
 complete -c cf -n "__fish_seen_subcommand_from task" -a show -d "Show a task's state, questions and result"
+complete -c cf -n "__fish_seen_subcommand_from task" -a follow -d "Follow a task's worker transcript until it ends"
 complete -c cf -n "__fish_seen_subcommand_from task" -a cancel -d "Cancel a running or paused task"
 complete -c cf -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from run" -l provider -d "Worker CLI: ${WORKER_PROVIDERS}"
 complete -c cf -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from run" -l model -d "Model of the provider given by --provider"
 complete -c cf -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from run" -l read-only -d "Worker may not edit the checkout"
 complete -c cf -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from run" -l no-fallback -d "On a quota limit, wait for the reset instead of switching provider"
+complete -c cf -n "__fish_seen_subcommand_from task; and __fish_seen_subcommand_from follow" -l cursor -r -d "Continue from the cursor of a previous --json call"
 # Supervisor subcommands and flags
 complete -c cf -n "__fish_seen_subcommand_from supervisor" -a install -d "Install the launchd agent that runs supervisor tick every minute"
 complete -c cf -n "__fish_seen_subcommand_from supervisor" -a uninstall -d "Unload the launchd agent and remove its plist"
@@ -753,7 +764,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $decideSubcommands = @('test','eval','log','review-fp')
   $docsSubcommands = @('list','show')
   $projectSubcommands = @('list','add','remove')
-  $taskSubcommands = @('run','list','show','cancel')
+  $taskSubcommands = @('run','list','show','follow','cancel')
   $supervisorSubcommands = @('install','uninstall','status','tick')
   $chefSubcommands = @('start','say','status','inbox','show','stop','resume')
   $configSubcommands = @('get','set','schema')
@@ -788,6 +799,9 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'run') {
     @('--provider','--model','--read-only','--no-fallback','--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'task' -and $words[2].ToString() -eq 'follow') {
+    @('--cursor','--json') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'chef' -and $words[2].ToString() -eq 'start') {
     @('--provider','--no-commit','--json') | Where-Object { $_ -like "$wordToComplete*" } |

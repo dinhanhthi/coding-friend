@@ -24,8 +24,10 @@ import { basename, join, sep } from "path";
 import { createInterface } from "readline";
 
 import { cloudRootOf, isCloudPlaceholder } from "./cloud-folders.js";
+import { readCompleteLines } from "./jsonl-slice.js";
 import { CliError } from "./output.js";
 import { codexConfigDir } from "./paths.js";
+import type { TranscriptSlice } from "./transcript-claude.js";
 import type {
   ListOptions,
   ParsedRef,
@@ -187,6 +189,19 @@ function locate(id: string): Entry | undefined {
     if (e.valid && e.id === id && (!best || better(e, best))) best = e;
   }
   return best;
+}
+
+/**
+ * Best rollout file of thread `id`, as `read` finds it (name-only, nothing
+ * opened). `compressed` (`.jsonl.zst`) and `placeholder` files can't be read.
+ */
+export function locateCodexRollout(
+  id: string,
+): { path: string; compressed: boolean; placeholder: boolean } | null {
+  const e = validId(id) ? locate(id) : undefined;
+  return e
+    ? { path: e.path, compressed: e.compressed, placeholder: e.placeholder }
+    : null;
 }
 
 type Rec = Record<string, unknown>;
@@ -433,6 +448,32 @@ async function list(
   }
   // Only the scan cap truncates: files were left unscanned before `limit`.
   return { sessions, truncated: capped && sessions.length < limit };
+}
+
+/**
+ * Turns from the complete lines of a rollout after `offset` (at most
+ * `maxBytes` raw bytes), as readClaudeTranscriptSlice: an output whose call
+ * was in an earlier slice (an orphan) is dropped.
+ */
+export function readCodexRolloutSlice(
+  path: string,
+  offset: number,
+  maxBytes: number,
+): TranscriptSlice {
+  const st = lstatOrNull(path);
+  if (!st || !st.isFile()) {
+    throw new CliError("NOT_FOUND", "Codex rollout not found");
+  }
+  const slice = readCompleteLines(path, offset, maxBytes);
+  const p = new Parser();
+  for (const line of slice.lines) p.line(line);
+  return {
+    turns: p.turns.filter((t) => t.kind !== "tool" || t.name !== ""),
+    nextOffset: slice.nextOffset,
+    size: slice.size,
+    skipped: slice.skipped,
+    truncated: slice.truncated,
+  };
 }
 
 async function read(ref: ParsedRef, _opts: ReadOptions): Promise<Transcript> {

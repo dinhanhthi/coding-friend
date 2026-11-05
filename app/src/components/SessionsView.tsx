@@ -1274,7 +1274,7 @@ function LoadPanel({
   );
 }
 
-function Turn({
+export function Turn({
   turn,
   onNavigate,
   onOpenExternal,

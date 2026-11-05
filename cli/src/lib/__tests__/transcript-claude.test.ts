@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
+  appendFileSync,
   mkdirSync,
   mkdtempSync,
   realpathSync,
@@ -11,7 +12,10 @@ import { tmpdir } from "os";
 import { join } from "path";
 
 import { claudeProjectDirName, encodeProjectPath } from "../paths.js";
-import { claudeProvider } from "../transcript-claude.js";
+import {
+  claudeProvider,
+  readClaudeTranscriptSlice,
+} from "../transcript-claude.js";
 
 const savedEnv = process.env.CLAUDE_CONFIG_DIR;
 let tmp: string;
@@ -216,5 +220,76 @@ describe("claudeProvider", () => {
 
     const scoped = await claudeProvider.list({ projectDir: root });
     expect(scoped.sessions.map((s) => s.ref)).toEqual([`claude:${UUID}`]);
+  });
+});
+
+describe("readClaudeTranscriptSlice", () => {
+  const MB = 1024 * 1024;
+  const user = (text: string): unknown => ({
+    type: "user",
+    message: { role: "user", content: text },
+  });
+
+  it("returns complete turns only, stops after the last newline, then reads only appended turns", () => {
+    const head = jsonl([
+      { type: "attachment", attachment: { content: "x".repeat(2000) } },
+      user("fix the bug"),
+      {
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [
+            { type: "text", text: "Looking." },
+            { type: "tool_use", id: "toolu_1", name: "Bash", input: {} },
+          ],
+        },
+      },
+    ]);
+    const partial = JSON.stringify(user("not yet")).slice(0, 20);
+    const file = writeTranscript(projectDir, UUID, `${head}\n${partial}`);
+
+    const first = readClaudeTranscriptSlice(file, 0, MB);
+    expect(first.turns).toEqual([
+      { kind: "user", text: "fix the bug" },
+      { kind: "assistant", text: "Looking." },
+      { kind: "tool", name: "Bash", args: "{}" },
+    ]);
+    expect(first.nextOffset).toBe(Buffer.byteLength(`${head}\n`));
+    expect(first.size).toBe(Buffer.byteLength(`${head}\n${partial}`));
+    expect(first.skipped).toBe(0);
+
+    // The cut line completes; its tool_result's tool_use was in the first
+    // slice, so the orphan is dropped.
+    const rest = JSON.stringify(user("not yet")).slice(20);
+    appendFileSync(
+      file,
+      `${rest}\n${jsonl([
+        {
+          type: "user",
+          message: {
+            role: "user",
+            content: [
+              { type: "tool_result", tool_use_id: "toolu_1", content: "ok" },
+            ],
+          },
+        },
+        user("next step"),
+      ])}\n`,
+    );
+    const second = readClaudeTranscriptSlice(file, first.nextOffset, MB);
+    expect(second.turns).toEqual([
+      { kind: "user", text: "not yet" },
+      { kind: "user", text: "next step" },
+    ]);
+    expect(second.nextOffset).toBe(second.size);
+  });
+
+  it("reads a first line longer than maxBytes whole", () => {
+    const line = JSON.stringify(user("y".repeat(500)));
+    const file = writeTranscript(projectDir, UUID, `${line}\n`);
+
+    const s = readClaudeTranscriptSlice(file, 0, 64);
+    expect(s.turns).toEqual([{ kind: "user", text: "y".repeat(500) }]);
+    expect(s.nextOffset).toBe(Buffer.byteLength(line) + 1);
   });
 });

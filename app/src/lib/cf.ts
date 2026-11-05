@@ -281,6 +281,52 @@ export interface TaskView {
   hint?: string;
 }
 
+/** cli/src/lib/orchestrator/follow.ts `FollowAttempt`. */
+export interface TaskAttemptRef {
+  n: number;
+  provider: Provider;
+  kind: AttemptSummary["kind"];
+}
+
+/** cli/src/lib/orchestrator/follow.ts `FollowLive`. */
+export interface FollowLive {
+  supported: boolean;
+  status: "ok" | "pending" | "unsupported";
+  reason?: string;
+}
+
+/** cli/src/lib/orchestrator/follow.ts `FollowData` (`task follow --json`). */
+export interface TaskFollow {
+  task: TaskView;
+  terminal: boolean;
+  /** The attempt `turns` and `live` belong to. */
+  attempt: TaskAttemptRef | null;
+  live: FollowLive;
+  /** Redacted, never with tool output. */
+  turns: SessionTurn[];
+  /** Opaque; pass it back on the next poll. */
+  cursor: string;
+  /** Poll again at once. */
+  more: boolean;
+  /** The cursor was past the end of the file: turns start over. */
+  reset: boolean;
+  truncated: boolean;
+  skipped: number;
+  redactions: Redactions;
+}
+
+/** cli/src/commands/reply.ts */
+export interface TaskReplyResult {
+  qid: string;
+}
+
+/** cli/src/commands/task.ts `taskCancelCommand`. */
+export interface TaskCancelResult {
+  taskId: string;
+  cancelled: boolean;
+  signalled: boolean;
+}
+
 export type ChefState = "active" | "paused" | "stopped" | "quota-wait";
 
 /** cli/src/commands/chef.ts */
@@ -919,6 +965,15 @@ export const addProject = () =>
 export const projectRemove = (path: string) =>
   invoke<{ path: string; removed: true }>("project_remove", { path });
 export const taskList = () => invoke<TaskView[]>("task_list");
+/** One poll; no `cursor` starts at the first attempt. */
+export const taskFollow = (id: string, cursor?: string) =>
+  invoke<TaskFollow>("task_follow", { id, cursor });
+/** Rust shows the native confirm. */
+export const taskReply = (taskId: string, qid: string, answer: string) =>
+  invoke<TaskReplyResult>("task_reply", { taskId, qid, answer });
+/** Rust shows the native confirm. */
+export const taskCancel = (id: string) =>
+  invoke<TaskCancelResult>("task_cancel", { id });
 export const chefStatus = () => invoke<ChefStatusView[]>("chef_status");
 export const supervisorStatus = () =>
   invoke<SupervisorStatus>("supervisor_status");
@@ -1074,7 +1129,9 @@ export interface RunStarted {
     | "sessionExport"
     | "sessionSave"
     | "sessionLoad"
-    | "sessionDir";
+    | "sessionDir"
+    | "taskReply"
+    | "taskCancel";
 }
 
 const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
@@ -1091,6 +1148,8 @@ const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
   "sessionSave",
   "sessionLoad",
   "sessionDir",
+  "taskReply",
+  "taskCancel",
 ]);
 
 export function isRunStarted(x: unknown): x is RunStarted {

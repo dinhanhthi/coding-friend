@@ -73,6 +73,8 @@ describe("isRunStarted", () => {
   it.each([
     [{ op: "configSet", command: "cf config set --global" }],
     [{ op: "memoryEdit", command: "cf memory edit --json --stdin" }],
+    [{ op: "taskReply", command: "cf reply --json --task abcd1234" }],
+    [{ op: "taskCancel", command: "cf task cancel --json -- abcd1234" }],
   ])("accepts %j", (payload) => {
     expect(isRunStarted(payload)).toBe(true);
   });

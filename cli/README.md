@@ -205,6 +205,7 @@ cf task run --provider claude|codex|opencode [--model <name>] [--read-only] [--n
                      # Start a detached, sandboxed worker task (see Task runner)
 cf task list         # List tasks, newest first
 cf task show <id>    # Show a task's state, questions and result
+cf task follow <id>  # Follow a task's worker transcript until it ends (see Following a task)
 cf task cancel <id>  # Cancel a running or paused task
 cf ask "<question>"  # (worker) Ask the user a question and wait for the answer
 cf reply --task <id> <qid> "<answer>"  # Answer a task's question
@@ -225,7 +226,7 @@ cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
 
-`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf decide test|eval|log|review-fp`, `cf task run|list|show|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf decide test|eval|log|review-fp`, `cf task run|list|show|follow|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
 
 ## Doctor
 
@@ -410,6 +411,7 @@ cf task run --provider claude "Fix the flaky date test"
 cf task run --provider opencode --model <model> --read-only "Where is the retry logic?"
 cf task list                             # id, state, provider, age, prompt
 cf task show <id>                        # state, pending questions, result
+cf task follow <id>                      # the worker's turns as it works, until the task ends
 cf reply --task <id> <qid> "Use UTC"     # answer a question the worker asked
 cf task cancel <id>
 ```
@@ -422,7 +424,25 @@ The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes
 - **Requirements.** macOS or Linux. Writer tasks and every Codex and OpenCode task must run inside a git repo. The provider CLI (`claude`, `codex` 0.161.0 or newer, or `opencode` 2.0.13 or newer and below 3) must be logged in and on `PATH` (missing, or outside the supported version → `PROVIDER_UNAVAILABLE`). Login is not checked: a provider that is not logged in fails the task with its own error.
 - **Preflight.** A provider's own check (today OpenCode's version range) runs when the task is dispatched and again before every attempt (for example when `opencode` was upgraded while the task was paused); at dispatch `cf task run` is refused; before an attempt the task fails without starting the worker.
 - **What is stored.** No transcripts and no event logs: the prompt, the worker's questions and your answers, the `cf done` summary and handoff, the session/thread id (plus the Claude transcript path), the result (exit code, outcome, error) and the worker's last message (cut at 4 KB). Worker text is shown as untrusted output, control characters stripped.
-- **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
+- **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show|follow` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
+
+### Following a task
+
+`cf task follow <id>` prints the worker's turns (user and assistant text, tool calls without their output, redacted like `cf session show`) as they are written, plus state changes, new questions with their `cf reply` line and a divider per attempt. It polls every second and exits once the task has ended (`succeeded`, `failed`, `cancelled` or `interrupted`; a `paused` task is still followed) and its runner has exited (the worker calls `cf done` before its last turn), with the `cf done` summary and the last message. Nothing is stored: it reads the provider's own transcript, found by the session id of each attempt.
+
+Agents should use `--json`: without it the command blocks the shell until the task ends. `cf task follow <id> --json [--cursor <c>]` does one poll and returns `data = { task, terminal, attempt: { n, provider, kind } | null, live: { supported, status, reason? }, turns, cursor, more, reset, truncated, skipped, redactions }` (`task` is the `cf task show --json` view, `hint` included). Pass the returned `cursor` to the next call; poll again at once while `more` is `true`, and stop once `terminal` is `true` and `more` is `false` (`terminal` means the task has ended and its runner has exited, so `task.result` is there unless the runner died).
+
+- **Cursor.** Opaque: `v1` (from the start) or `v1.<attempt>.<sessionId>.<byteOffset>`, never a path. A malformed cursor, or one whose session id is not that attempt's of this task, is `INVALID_ARGS`. `reset: true` means the transcript got shorter and was read again from its start.
+- **Reads.** About 1 MiB of transcript per call, and only whole lines. A single longer line is read whole up to 16 MiB; beyond that it is skipped (counted in `skipped`).
+- **Live support (`live`).** `status` is `ok`, `pending` (transcript not found yet) or `unsupported` with a `reason`:
+
+| Provider | Live | Reason when unsupported                                          |
+| -------- | ---- | ---------------------------------------------------------------- |
+| claude   | yes  | `placeholder` (cloud file not downloaded)                        |
+| codex    | yes  | `compressed` (`.jsonl.zst` rollout), `placeholder`               |
+| opencode | no   | `no transcript reader for this provider` (state and result only) |
+
+A task that has ended while its transcript was never found reports `unsupported` with `transcript not found`.
 
 ### Providers
 
@@ -655,6 +675,8 @@ The commit is built with git plumbing from bytes Coding Friend read and hashed i
 - There is no check before a run: a task starts even if the provider is already out of quota, and only reacts once the worker hits the limit.
 - `cf supervisor install` supports macOS (launchd) only; elsewhere use the cron line it prints.
 - Chefs: Coding Friend cannot tell your edits from a worker's, so editing the checkout while a chef has no writer or check running pauses it (`cf chef resume` accepts the changes). Hooks never run on chef commits, and repos with filters (Git LFS), CRLF conversion, `commit.gpgSign` or changed submodules need `--no-commit`. The steering prompt check is a text heuristic; the guards and the commit path rules are what enforce it. A Codex chef also receives your own `~/.codex/AGENTS.md` (Codex has no switch to skip it): keep it free of rules that conflict with the chef contract, or use a Claude chef.
+- `cf task follow` looks for transcripts under its own `CLAUDE_CONFIG_DIR` / `CODEX_HOME` (default `~/.claude`, `~/.codex`). A worker started by a launchd-run tick does not get these variables and writes to the default dir, while a `cf task follow` run from a shell that sets them looks in the custom dir: it shows no turns and, once the task ends, reports `unsupported` with `transcript not found`.
+- `cf task follow` does not show the tool calls of newer Codex versions (`custom_tool_call`) yet; their text turns are shown.
 - There is no general scheduler: the only background work is adopting paused tasks and waking chefs (`chef.schedule` slots are chef triggers, not jobs).
 
 ## 🐳 CLI Development

@@ -4,6 +4,7 @@ import { run as exec } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { dispatchTask } from "../lib/orchestrator/dispatch.js";
+import { followTask, type FollowData } from "../lib/orchestrator/follow.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import { runTask } from "../lib/orchestrator/runner.js";
 import {
@@ -22,10 +23,15 @@ import {
   type AttemptSummary,
   type TaskView,
 } from "../lib/orchestrator/store.js";
+import type { Turn } from "../lib/transcript.js";
 import { resolveCheckoutRoot } from "../lib/project-root.js";
 
 interface Flags {
   json?: boolean;
+}
+
+interface FollowFlags extends Flags {
+  cursor?: string;
 }
 
 interface RunFlags extends Flags {
@@ -367,5 +373,141 @@ export async function taskCancelCommand(
           ? `Stopped the runner of finished task ${taskId}`
           : `Cancelled task ${taskId}${signalled ? "" : " (no running runner to stop)"}`,
       ),
+  );
+}
+
+/** Human `cf task follow`: poll interval, and the wait before the last drain. */
+const FOLLOW_POLL_MS = 1000;
+
+/** Like `cf session show`'s turns; every string is worker text. */
+function printFollowTurn(turn: Turn): void {
+  if (turn.kind !== "tool") {
+    console.log(`## ${turn.kind === "user" ? "User" : "Assistant"}\n`);
+    console.log(`${sanitize(turn.text)}\n`);
+    return;
+  }
+  // Never the tool's output.
+  console.log(sanitize(`- tool: ${turn.name} ${turn.args}`).trimEnd());
+}
+
+/** What one human follow has printed so far. */
+interface FollowSeen {
+  state?: string;
+  attempt?: number;
+  reasons: Set<string>;
+  asks: Set<string>;
+}
+
+function printFollowPoll(d: FollowData, seen: FollowSeen): void {
+  const t = d.task;
+  const state = stateLabel(t);
+  if (state !== seen.state) {
+    seen.state = state;
+    console.log(`Task ${sanitize(t.id)}  ${state}`);
+  }
+  if (d.attempt && d.attempt.n !== seen.attempt) {
+    seen.attempt = d.attempt.n;
+    const a = d.attempt;
+    console.log(
+      `--- attempt ${sanitize(String(a.n))}  ${sanitize(a.provider)}  ${sanitize(a.kind)} ---`,
+    );
+  }
+  if (d.live.status === "unsupported" && d.live.reason) {
+    const key = `${d.attempt?.n}:${d.live.reason}`;
+    if (!seen.reasons.has(key)) {
+      seen.reasons.add(key);
+      log.warn(`No live transcript: ${sanitize(d.live.reason)}`);
+    }
+  }
+  for (const turn of d.turns) printFollowTurn(turn);
+  for (const a of t.pendingAsks) {
+    if (seen.asks.has(a.qid)) continue;
+    seen.asks.add(a.qid);
+    const qid = sanitize(a.qid);
+    console.log(`question ${qid}: ${sanitize(a.question)}`);
+    console.log(
+      `  answer with: cf reply --task ${sanitize(t.id)} ${qid} "<answer>"`,
+    );
+  }
+}
+
+/** The done summary and last message of a finished task (not redacted). */
+function printFollowEnd(t: TaskView): void {
+  const indent = (text: string) => sanitize(text).replace(/\n/g, "\n  ");
+  if (t.done) {
+    console.log(`done: ${sanitize(t.done.outcome)}`);
+    if (t.done.summary) console.log(`summary:\n  ${indent(t.done.summary)}`);
+  }
+  if (t.result?.lastMessage) {
+    console.log(`last message:\n  ${indent(t.result.lastMessage)}`);
+  }
+}
+
+/**
+ * Poll followTask every FOLLOW_POLL_MS (at once while `more`), printing what is
+ * new, until the task is terminal and drained, or SIGINT. Resolves with the
+ * last data, or null when interrupted.
+ */
+async function followLoop(
+  id: string,
+  cursor: string | undefined,
+): Promise<FollowData | null> {
+  const seen: FollowSeen = { reasons: new Set(), asks: new Set() };
+  let timer: NodeJS.Timeout | undefined;
+  let wake: (() => void) | undefined;
+  let stopped = false;
+  const onSigint = () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    wake?.();
+  };
+  process.once("SIGINT", onSigint);
+  try {
+    // The transcript still grows a little after the task ends: once terminal
+    // and drained, wait once more, then drain again.
+    let lastWait = false;
+    for (;;) {
+      const d = followTask(id, cursor);
+      cursor = d.cursor;
+      printFollowPoll(d, seen);
+      if (d.more || (d.terminal && lastWait && d.turns.length > 0)) continue;
+      if (d.terminal) {
+        if (lastWait) return d;
+        lastWait = true;
+      }
+      await new Promise<void>((resolve) => {
+        wake = resolve;
+        timer = setTimeout(resolve, FOLLOW_POLL_MS);
+      });
+      timer = undefined;
+      if (stopped) return null;
+    }
+  } finally {
+    process.off("SIGINT", onSigint);
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export async function taskFollowCommand(
+  id: string,
+  opts: FollowFlags,
+): Promise<void> {
+  if (opts.json) {
+    await run(
+      true,
+      () => {
+        const d = followTask(id, opts.cursor);
+        return { ...d, task: withHint(d.task, supervisorIsStale()) };
+      },
+      () => {},
+    );
+    return;
+  }
+  await run(
+    false,
+    () => followLoop(id, opts.cursor),
+    (d) => {
+      if (d) printFollowEnd(d.task);
+    },
   );
 }
