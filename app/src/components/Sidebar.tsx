@@ -2,6 +2,7 @@ import {
   FolderKanban,
   GraduationCap,
   Info,
+  MessagesSquare,
   Plus,
   Settings,
   Stethoscope,
@@ -23,11 +24,13 @@ import { describePending, type PendingRun } from "@/lib/runs";
 import type { CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
-export type View = "projects" | "learn" | "doctor" | "version" | "settings";
+export type View =
+  "projects" | "learn" | "sessions" | "doctor" | "version" | "settings";
 
 const VIEWS: { id: View; label: string; icon: LucideIcon }[] = [
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "learn", label: "Learn", icon: GraduationCap },
+  { id: "sessions", label: "Sessions", icon: MessagesSquare },
   { id: "doctor", label: "Doctor", icon: Stethoscope },
   { id: "version", label: "Version", icon: Info },
   { id: "settings", label: "Settings", icon: Settings },

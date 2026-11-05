@@ -10,6 +10,7 @@ import {
 import { DoctorView, fixCommand, useDoctor } from "@/components/DoctorView";
 import { LearnView } from "@/components/LearnView";
 import { ProjectDetail, loadProjectActivity } from "@/components/ProjectDetail";
+import { SessionsView } from "@/components/SessionsView";
 import { Sidebar, type View } from "@/components/Sidebar";
 import { VersionView, type UpdateOutcome } from "@/components/VersionView";
 import { Button } from "@/components/ui/button";
@@ -240,6 +241,8 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
           />
         ) : view === "learn" ? (
           <LearnView pending={pending} run={start} />
+        ) : view === "sessions" ? (
+          <SessionsView projects={list} pending={pending} run={start} />
         ) : (
           <VersionView
             cli={cli}

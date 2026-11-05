@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-11-02
+updated: 2026-11-05
 ---
 
 # /cf-help — Coding Friend Help
@@ -70,7 +70,7 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 - `/cf-learn [topic]` — ⚡⚡ — Educational notes. Also auto-invoked.
 - `/cf-teach [topic]` — ⚡⚡ — Story of what happened
 - `/cf-research [topic]` — ⚡⚡ — Web research → docs/research/
-- `/cf-session [label]` — ⚡⚡ — Cross-machine session save
+- `/cf-session [label]` — ⚡⚡ — Save the Claude session verbatim to `session.dir` via `cf session save` (needs the CLI)
 - `/cf-warm [user]` — ⚡⚡ — Git history catch-up
 - `/cf-checkpoint [additional-prompt]` — ⚡⚡ — Checkpoint → docs/context/checkpoints/
 - `/cf-checkpoint-from <slug> [message]` — ⚡⚡ — Restore checkpoint, then act. `--recap`
@@ -99,9 +99,9 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 **session-init.sh** · **rules-reminder.sh** · **privacy-block.sh** · **scout-block.cjs** · **auto-approve.cjs** (`autoApprove`; Codex / agy / Devin only, deterministic; Claude / omp use native modes) · **session-log.sh** · **task-tracker.sh** · **agent-tracker.sh** · **memory-capture.sh** · **statusline.sh** (Claude; `cf statusline`)
 
-### CLI (`coding-friend-cli`, binary `cf`) — optional
+### CLI (`coding-friend-cli`, binary `cf`) — optional (except `/cf-session`)
 
-Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `guide` `dev`; `--json` on read commands. No skill requires the CLI. Full flags: `topics.md`.
+Lifecycle `install|uninstall|enable|disable|update` (`--user|--project|--local`, `--agent claude|codex|omp|agy|devin`); setup `init` `config` `permission` `statusline`; memory / learn / mcp; `status` `version` `doctor` `project` `task` `ask` `reply` `done` `clean` `session` `sync` `guide` `dev`; `--json` on read commands. Only `/cf-session` requires the CLI. Full flags: `topics.md`.
 
 Tiers `⚡` / `⚡⚡` / `⚡⚡⚡`: https://cf.dinhanhthi.com/.
 
@@ -127,4 +127,4 @@ Answer from sources you read. Link files for deeper dives. If you skipped the lo
 
 ## CLI Requirements (quick reference)
 
-Plugin works without CLI. **NONE** / **OPTIONAL** (MCP or grep) / **REQUIRED** (none today). Matrix: [docs/cli-requirements.md](../../../docs/cli-requirements.md).
+Plugin works without CLI, except `/cf-session`. **NONE** / **OPTIONAL** (MCP or grep) / **REQUIRED** (`/cf-session`). Matrix: [docs/cli-requirements.md](../../../docs/cli-requirements.md).

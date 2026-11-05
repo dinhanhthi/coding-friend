@@ -45,7 +45,7 @@ Debug builds include the Tauri MCP bridge (127.0.0.1 only); release builds do no
 
 Every change goes through `cf config set --global|--local [--project-dir=<path>] --json -- <key> <value>`, after a native confirm dialog from Rust that shows the exact command line; Cancel writes nothing. Reset deletes the key from that file (value `null`), so the value falls back to the next layer. Rust takes `--project-dir` only for a project in the registry, and the key only when it is a well-formed dotted key.
 
-`learn.outputDir` and `docsDir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs or learn notes. Change `docsDir` with `cf config set` in a terminal, and `learn.outputDir` from the Learn view ("Where learn notes live", below); the row's **Open Learn** button goes there.
+`learn.outputDir`, `docsDir` and `session.dir` are read-only in the app, and Rust refuses to write them (or a parent key such as `learn` or `session`, since `config set` writes a whole object): they decide where Coding Friend writes files, so a change from the webview could move memory, docs, learn notes or saved sessions. Change `docsDir` with `cf config set` in a terminal, `learn.outputDir` from the Learn view ("Where learn notes live", below; the row's **Open Learn** button goes there), and `session.dir` from the Sessions view ("Where sessions live", below).
 
 ## Docs tab
 
@@ -85,6 +85,18 @@ The card at the top shows the current folder (`cf learn status --json`) and how 
 **Choose folder…** opens a native folder picker from Rust. On macOS the card also suggests a `coding-friend-learn` folder inside each cloud drive it finds (other systems get no suggestions); a suggested folder that does not exist yet is created by the first note. Rust accepts a suggestion only when it equals one that Rust itself read from `cf learn status`. Either way the change is `cf config set --global --json -- learn.outputDir <folder>`. Notes already in the old folder are not moved.
 
 Every save, delete and folder change asks first: a native confirm from Rust shows the exact command line (and, for a save, the size of the body, never the body itself), and Cancel writes nothing. One such command runs at a time.
+
+## Sessions view
+
+**Sessions** (sidebar) lists the Claude Code and Codex sessions on this Mac and the saved ones (`cf session list --json`, filtered by provider and by registered project); the selected session's turns come from `cf session show --json`, always redacted by the CLI, a page at a time (**Load more**). Tool output is shown only with **Include tool output**. A session the CLI cannot read (`unsupported`) or a saved one the cloud app has not downloaded yet is never opened: its reason replaces the turns. Each write below is confirmed by a native dialog from Rust that shows the exact command line; Cancel writes nothing, and one runs at a time.
+
+- **Export** (any readable session): a preview of the redacted Markdown `cf session export` would write. **Save as…** runs the preview again in Rust for the byte and redaction counts (never taken from the page), opens a native save dialog, confirms with the destination, counts and "redaction is best effort", then runs `cf session export --out=<file> --force` (the file is mode `0600`).
+- **Save** (live Claude Code sessions): `cf session save --session-id <uuid> -- <label>` (default label `session-<date>`). The confirm names `session.dir` as Rust read it from `cf session status` and says the transcript is copied verbatim, not redacted.
+- **Load** (saved and legacy Claude Code sessions): `cf session load --yes --target=<project> -- <ref>` into a registered project only; a `legacy:` session also needs the project it came from. A transcript already in that project is `CONFLICT` and nothing is overwritten. The app shows the `cd '<project>' && claude --resume <id>` command to copy and never runs it.
+
+### Where sessions live
+
+A collapsed card shows `session.dir` (`cf session status --json`), its cloud drive and whether it exists yet, and warns when it is inside a git work tree. **Choose folder…** opens a native folder picker from Rust; on macOS the card also suggests a `coding-friend-sessions` folder inside each cloud drive it finds, and Rust accepts a suggestion only when it equals one Rust itself read from `cf session status`. Either way the change is `cf config set --global --json -- session.dir <folder>`; saved sessions are not moved. The card also shows `cf sync status --json` for the learn and session folders (files, not downloaded, conflict copies). Coding Friend has no sync engine: a cloud app syncs the folder, and the global config and the project list stay on each machine.
 
 ## Building a bundle
 

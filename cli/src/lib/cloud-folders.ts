@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, realpathSync, statSync } from "fs";
+import { hostname } from "os";
 import { basename, dirname, join, resolve, sep } from "path";
 
 export type CloudProvider =
@@ -15,16 +16,17 @@ export interface CloudRoot {
 
 export interface CloudFolder extends CloudRoot {
   label: string;
-  /** Suggested learn folder: always a fixed subfolder, never `root` itself. */
+  /** Suggested folder: always a fixed subfolder, never `root` itself. */
   path: string;
   exists: boolean;
 }
 
 export const LEARN_SUBFOLDER = "coding-friend-learn";
+export const SESSION_SUBFOLDER = "coding-friend-sessions";
 
 interface RootEntry extends CloudRoot {
   label: string;
-  /** Parent of the suggested learn folder (Google Drive: `<root>/My Drive`). */
+  /** Parent of the suggested folder (Google Drive: `<root>/My Drive`). */
   base: string | null;
 }
 
@@ -123,15 +125,16 @@ function cloudRoots(home: string, platform: NodeJS.Platform): RootEntry[] {
   return roots;
 }
 
-/** Suggested learn folders, one per cloud root found (macOS only). */
+/** Suggested `<base>/<subfolder>` folders, one per cloud root found (macOS only). */
 export function detectCloudFolders(
   home: string,
   platform: NodeJS.Platform,
+  subfolder: string = LEARN_SUBFOLDER,
 ): CloudFolder[] {
   return cloudRoots(home, platform).flatMap(
     ({ provider, label, root, base }) => {
       if (base === null) return [];
-      const path = join(base, LEARN_SUBFOLDER);
+      const path = join(base, subfolder);
       return [{ provider, label, root, path, exists: isDir(path) }];
     },
   );
@@ -196,4 +199,27 @@ export function isCloudPlaceholder(
   if (/^\..+\.icloud$/.test(name)) return true;
   if (platform !== "darwin" || lstat === null || !lstat.isFile()) return false;
   return lstat.size > 0 && lstat.blocks === 0;
+}
+
+/**
+ * The slug this one is a sync conflict copy of, when that sibling exists:
+ * ` 2` (iCloud), ` (1)`, ` (… conflicted copy …)` (Dropbox), and `-<host>`
+ * (OneDrive) only inside a OneDrive root with the short hostname.
+ */
+export function conflictBaseOf(
+  slug: string,
+  siblings: Set<string>,
+  oneDrive: boolean,
+): string | null {
+  const bases = [/ \d+$/, / \(\d+\)$/, / \([^)]*conflicted copy[^)]*\)$/i].map(
+    (re) => (re.test(slug) ? slug.replace(re, "") : null),
+  );
+  if (oneDrive) {
+    const host = hostname().split(".")[0].toLowerCase();
+    const suffix = `-${host}`;
+    if (host && slug.toLowerCase().endsWith(suffix)) {
+      bases.push(slug.slice(0, -suffix.length));
+    }
+  }
+  return bases.find((b) => b && siblings.has(b)) ?? null;
 }

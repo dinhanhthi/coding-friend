@@ -770,35 +770,157 @@ program
 
 const session = program
   .command("session")
-  .description("[beta] Save and load Claude Code sessions across machines");
+  .description(
+    "[beta] View Claude Code and Codex sessions, export them redacted, save and load across machines",
+  );
 
 program.addHelpText(
   "after",
   `
 Session subcommands (beta):
-  session save        Save current session to sync folder (use /cf-session inside a conversation)
-  session load        Load a saved session from sync folder and print resume command`,
+  session list        List Claude Code, Codex and saved sessions (newest first)
+  session show        Print one session's turns, redacted (-- <ref>)
+  session export      Print one session as redacted Markdown (-- <ref>)
+  session save        Save a Claude Code session verbatim to session.dir (-- <label>)
+  session load        Load a saved session and print the resume command
+  session status      Show session.dir, its cloud folder and suggestions`,
 );
 
 session
+  .command("list")
+  .description("List Claude Code, Codex and saved sessions, newest first")
+  .option(
+    "--provider <provider>",
+    "only this provider: claude, codex or saved (saved and legacy)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Only sessions of this project (resolved to its main repo root; saved ones by their recorded project path); adds its legacy <docsDir>/sessions",
+  )
+  .option("--limit <n>", "at most this many sessions (1-500, default 50)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionListCommand } = await import("./commands/session.js");
+    await sessionListCommand(opts);
+  });
+
+session
+  .command("show")
+  .description("Print a session's turns, always redacted")
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option("--offset <n>", "first turn to print (default 0)")
+  .option("--limit <n>", "at most this many turns (1-1000, default 200)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session; required for legacy: refs",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionShowCommand } = await import("./commands/session.js");
+    await sessionShowCommand(ref, opts);
+  });
+
+session
+  .command("export")
+  .description(
+    "Print a session as redacted Markdown (no tool output by default)",
+  )
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session; required for legacy: refs",
+  )
+  .option(
+    "--out <file>",
+    "write the full Markdown to this file (mode 0600) instead of printing it",
+  )
+  .option("--force", "with --out: overwrite an existing file")
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionExportCommand } = await import("./commands/session.js");
+    await sessionExportCommand(ref, opts);
+  });
+
+session
   .command("save")
-  .description("Save current Claude Code session to sync folder")
+  .description(
+    "Save a Claude Code session verbatim (not redacted) to session.dir",
+  )
+  .argument("[label]", "label for this session (same as -l)")
   .option(
     "-s, --session-id <id>",
     "session UUID to save (default: auto-detect newest)",
   )
   .option("-l, --label <label>", "label for this session")
-  .action(async (opts) => {
+  .option(
+    "--project-dir <path>",
+    "Look for the session in this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (label: string | undefined, opts) => {
     const { sessionSaveCommand } = await import("./commands/session.js");
-    await sessionSaveCommand(opts);
+    await sessionSaveCommand(label, opts);
   });
 
 session
   .command("load")
-  .description("Load a saved session from sync folder")
-  .action(async () => {
+  .description("Load a saved session from session.dir")
+  .argument(
+    "[ref]",
+    "with --json: saved:<folder> or legacy:<folder> (human mode asks instead)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Also list this project's legacy <docsDir>/sessions; required for legacy: refs",
+  )
+  .option("--target <path>", "with --json: project directory to load into")
+  .option("--yes", "with --json: load without asking (required)")
+  .option("--force", "overwrite a transcript that is already there")
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string | undefined, opts) => {
     const { sessionLoadCommand } = await import("./commands/session.js");
-    await sessionLoadCommand();
+    await sessionLoadCommand(ref, opts);
+  });
+
+session
+  .command("status")
+  .description("Show session.dir, its cloud folder and suggested folders")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionStatusCommand } = await import("./commands/session.js");
+    await sessionStatusCommand(opts);
+  });
+
+const sync = program
+  .command("sync")
+  .description(
+    "[beta] Show where learn notes and saved sessions sync (cloud folders, placeholders, conflicts)",
+  );
+
+program.addHelpText(
+  "after",
+  `
+Sync subcommands (beta):
+  sync status         Show learn and session folders, cloud provider, placeholders and conflict copies`,
+);
+
+sync
+  .command("status")
+  .description(
+    "Show the learn and session folders, their cloud folder, placeholders and conflict copies (reads no file)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { syncStatusCommand } = await import("./commands/sync.js");
+    await syncStatusCommand(opts);
   });
 
 const memory = program

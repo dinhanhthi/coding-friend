@@ -42,7 +42,7 @@ import {
 import { describePending, type PendingRun, type StartRun } from "@/lib/runs";
 import { useCfQuery, useDelayed, type CfQuery } from "@/lib/use-cf-query";
 
-const CLOUD_LABELS: Record<CloudProvider, string> = {
+export const CLOUD_LABELS: Record<CloudProvider, string> = {
   icloud: "iCloud Drive",
   "google-drive": "Google Drive",
   dropbox: "Dropbox",

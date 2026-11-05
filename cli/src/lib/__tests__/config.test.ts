@@ -30,6 +30,7 @@ import {
   readGlobalChefEnabled,
   resolveMemoryDir,
   resolveProjectMemoryDir,
+  resolveSessionDir,
   sanitizeRawConfig,
 } from "../config.js";
 import { resolveMainRepoRoot } from "../project-root.js";
@@ -936,4 +937,21 @@ describe("readGlobalChefEnabled", () => {
     expect(readGlobalChefEnabled()).toBe(expected);
     expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
   });
+});
+
+describe("resolveSessionDir", () => {
+  it.each([
+    ["no global key: default", null, "~/.coding-friend/sessions"],
+    [
+      "global key wins",
+      { session: { dir: "~/cloud/sessions" } },
+      "~/cloud/sessions",
+    ],
+  ])(
+    "resolves the given config's session.dir (%s)",
+    (_name, global, expected) => {
+      expect(resolveSessionDir(global)).toBe(`/resolved/${expected}`);
+      expect(mockReadJson).not.toHaveBeenCalled();
+    },
+  );
 });
