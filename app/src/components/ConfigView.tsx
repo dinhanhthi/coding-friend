@@ -53,7 +53,7 @@ export function configCommand(args: ConfigSetArgs): string {
 }
 
 /** Rust refuses writes to these: they decide where Coding Friend writes files. */
-const READ_ONLY_KEYS = new Set(["learn.outputDir", "docsDir"]);
+const READ_ONLY_KEYS = new Set(["learn.outputDir", "docsDir", "session.dir"]);
 
 function getPath(obj: Record<string, unknown>, key: string): unknown {
   let cur: unknown = obj;
@@ -345,6 +345,10 @@ function ReadOnlyRow({
             </Button>
           )}
         </div>
+      ) : fieldKey === "session.dir" ? (
+        <p className="text-xs text-muted">
+          Changed from "Where sessions live" in the Sessions view.
+        </p>
       ) : fieldKey === "docsDir" ? (
         <>
           <p className="text-xs text-muted">

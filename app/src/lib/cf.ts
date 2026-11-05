@@ -712,6 +712,151 @@ export function isConflict(e: unknown): boolean {
   return isCfError(e) && e.kind === "cliError" && e.code === "CONFLICT";
 }
 
+// ─── Sessions (cf session list|show|export|save|load|status, cf sync status --json) ──
+
+/** cli/src/lib/transcript.ts `ProviderId`. */
+export type SessionProvider = "claude" | "codex";
+
+/** `session list --provider`: `saved` lists the session folder (and, with a project, its legacy one). */
+export type SessionListProvider = SessionProvider | "saved";
+
+/** cli/src/lib/transcript.ts `SessionSummary`. */
+export interface SessionSummary {
+  /** `claude:<uuid>`, `codex:<id>`, `saved:<folder>` or `legacy:<folder>`. */
+  ref: string;
+  provider: SessionProvider;
+  source: "live" | "saved" | "legacy";
+  title: string;
+  cwd: string;
+  startedAt: string;
+  updatedAt: string;
+  bytes: number;
+  status: "ok" | "unsupported" | "placeholder";
+  reason?: string;
+  formatVersion?: string;
+  warning?: string;
+  archived?: boolean;
+  saved?: { label: string; savedAt: string; machine: string };
+}
+
+/** cli/src/lib/transcript.ts `Turn`, redacted by the CLI. */
+export type SessionTurn =
+  | { kind: "user" | "assistant"; text: string }
+  | { kind: "tool"; name: string; args: string; output?: string };
+
+/** cli/src/lib/transcript.ts `Redactions`. */
+export interface Redactions {
+  total: number;
+  byKind: Record<string, number>;
+}
+
+/** cli/src/lib/redact.ts `FilterStatus`. */
+export type FilterStatus =
+  "none" | "applied" | "rejected" | "error" | "timeout";
+
+export interface SessionFilter {
+  name: string | null;
+  status: FilterStatus;
+}
+
+/** `session list`: legacy sessions only with a project. */
+export interface SessionList {
+  project: string | null;
+  sessions: SessionSummary[];
+  truncated: boolean;
+}
+
+/** `session show`: one page of turns; `nextOffset` is `null` on the last page. */
+export interface SessionShow {
+  ref: string;
+  provider: string;
+  summary: SessionSummary;
+  turns: SessionTurn[];
+  offset: number;
+  limit: number;
+  nextOffset: number | null;
+  total: number;
+  skipped: number;
+  truncated: boolean;
+  redactions: Redactions;
+}
+
+/** `session export` without `--out`: `bytes` and `redactions` count the full Markdown. */
+export interface SessionExportPreview {
+  ref: string;
+  /** At most 4 MiB of UTF-8, cut after redaction (`truncated`). */
+  markdown: string;
+  bytes: number;
+  truncated: boolean;
+  redactions: Redactions;
+  filter: SessionFilter;
+}
+
+/** `session export --out`: the file is never cut. */
+export interface SessionExportResult {
+  ref: string;
+  out: string;
+  bytes: number;
+  redactions: Redactions;
+  filter: SessionFilter;
+}
+
+/** `session save`: the transcript is copied verbatim (not redacted). */
+export interface SessionSaveResult {
+  /** `saved:<folder>`. */
+  ref: string;
+  folder: string;
+  dir: string;
+  sessionId: string;
+  label: string;
+  bytes: number;
+  verbatim: true;
+  warning: string;
+}
+
+/** `session load`. */
+export interface SessionLoadResult {
+  ref: string;
+  sessionId: string;
+  target: string;
+  path: string;
+  /** `cd '<target>' && claude --resume <id>`. */
+  resumeCommand: string;
+}
+
+/** `session status`: `suggestions` are `coding-friend-sessions` folders in cloud roots. */
+export interface SessionStatus {
+  dir: string;
+  exists: boolean;
+  cloud: { provider: CloudProvider; root: string } | null;
+  suggestions: {
+    provider: CloudProvider;
+    label: string;
+    path: string;
+    exists: boolean;
+  }[];
+  gitRepo: boolean;
+}
+
+/** cli/src/lib/sync-status.ts `SyncKindStatus`. */
+export interface SyncKindStatus {
+  kind: "learn" | "sessions";
+  dir: string;
+  exists: boolean;
+  cloud: { provider: CloudProvider; root: string } | null;
+  /** Learn: `.md` notes; sessions: session folders. Placeholders included. */
+  files: number;
+  placeholders: number;
+  conflicts: number;
+  truncated: boolean;
+}
+
+/** cli/src/lib/sync-status.ts `SyncStatus`. */
+export interface SyncStatus {
+  kinds: SyncKindStatus[];
+  notSynced: ["globalConfig", "projectList"];
+}
+
 // ─── Manual commands ────────────────────────────────────────────────────
 
 export const INSTALL_COMMAND = "npm i -g coding-friend-cli";
@@ -841,6 +986,67 @@ export const chooseLearnDir = () => invoke<ConfigSetResult>("choose_learn_dir");
 /** `path` must be one of `learnStatus().suggestions[].path`; Rust shows the native confirm. */
 export const setLearnDir = (path: string) =>
   invoke<ConfigSetResult>("set_learn_dir", { path });
+export const sessionList = (
+  args: {
+    provider?: SessionListProvider;
+    project?: string;
+    limit?: number;
+  } = {},
+) => invoke<SessionList>("session_list", args);
+export const sessionShow = (
+  ref: string,
+  args: {
+    project?: string;
+    offset?: number;
+    limit?: number;
+    includeToolOutput?: boolean;
+  } = {},
+) =>
+  invoke<SessionShow>("session_show", {
+    ref,
+    project: args.project,
+    offset: args.offset,
+    limit: args.limit,
+    includeToolOutput: args.includeToolOutput ?? false,
+  });
+export const sessionExportPreview = (
+  ref: string,
+  project?: string,
+  includeToolOutput = false,
+) =>
+  invoke<SessionExportPreview>("session_export_preview", {
+    ref,
+    project,
+    includeToolOutput,
+  });
+export const sessionStatus = () => invoke<SessionStatus>("session_status");
+export const syncStatus = () => invoke<SyncStatus>("sync_status");
+/** Rust runs the preview, shows the save dialog, then the native confirm. */
+export const sessionExport = (
+  ref: string,
+  project?: string,
+  includeToolOutput = false,
+) =>
+  invoke<SessionExportResult>("session_export", {
+    ref,
+    project,
+    includeToolOutput,
+  });
+/** Rust shows the native confirm. `sessionId` is the UUID of a live Claude session. */
+export const sessionSave = (
+  sessionId: string,
+  label: string,
+  project?: string,
+) => invoke<SessionSaveResult>("session_save", { sessionId, label, project });
+/** Rust shows the native confirm. `target` is a known project; a `legacy:` ref needs `project`. */
+export const sessionLoad = (ref: string, target: string, project?: string) =>
+  invoke<SessionLoadResult>("session_load", { ref, target, project });
+/** Rust shows the folder picker, then the native confirm. */
+export const chooseSessionDir = () =>
+  invoke<ConfigSetResult>("choose_session_dir");
+/** `path` must be one of `sessionStatus().suggestions[].path`; Rust shows the native confirm. */
+export const setSessionDir = (path: string) =>
+  invoke<ConfigSetResult>("set_session_dir", { path });
 /** Rust checks the `https:` URL and shows the native confirm; Cancel rejects `cancelled`. */
 export const openUrl = (url: string) => invoke<void>("open_url", { url });
 export const checkCli = () => invoke<CliStatus>("check_cli");
@@ -864,7 +1070,11 @@ export interface RunStarted {
     | "memoryDelete"
     | "learnEdit"
     | "learnDelete"
-    | "learnDir";
+    | "learnDir"
+    | "sessionExport"
+    | "sessionSave"
+    | "sessionLoad"
+    | "sessionDir";
 }
 
 const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
@@ -877,6 +1087,10 @@ const RUN_OPS: ReadonlySet<string> = new Set<RunStarted["op"]>([
   "learnEdit",
   "learnDelete",
   "learnDir",
+  "sessionExport",
+  "sessionSave",
+  "sessionLoad",
+  "sessionDir",
 ]);
 
 export function isRunStarted(x: unknown): x is RunStarted {

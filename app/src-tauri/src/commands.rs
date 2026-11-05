@@ -3,12 +3,14 @@
 //!
 //! The webview is not trusted: actions that change the user's setup (`update_yes`, `run_fix`,
 //! `add_project`, `project_remove`, `config_set`, memory and learn `*_edit`/`*_delete`,
-//! `choose_learn_dir`, `set_learn_dir`) ask in a native dialog shown from Rust and run one at a
-//! time; file and folder paths come from native pickers shown from Rust, never from the page.
-//! Two exceptions choose a path from page input: `set_learn_dir` accepts only a path equal to
-//! one of the `suggestions` Rust itself fetched from `learn status`, and memory/learn edit and
-//! delete name their file by a validated id (`data_arg`, after `--`), which the CLI re-checks
-//! with realpath inside its root. Bodies go to `cf` on stdin, never in argv or the dialog.
+//! `choose_learn_dir`, `set_learn_dir`, `session_export`, `session_save`, `session_load`,
+//! `choose_session_dir`, `set_session_dir`) ask in a native dialog shown from Rust and run one
+//! at a time; file and folder paths come from native pickers or save dialogs shown from Rust,
+//! never from the page. Exceptions choose a path from page input: `set_learn_dir` and
+//! `set_session_dir` accept only a path equal to one of the `suggestions` Rust itself fetched
+//! from `learn status` / `session status`, `session_load` only targets known projects, and
+//! memory/learn edit and delete name their file by a validated id (`data_arg`, after `--`),
+//! which the CLI re-checks with realpath inside its root. Bodies go to `cf` on stdin, never in argv or the dialog.
 //! `open_url` (an `https:` link from rendered markdown) also asks first, then opens the
 //! system browser without running `cf`.
 
@@ -39,6 +41,8 @@ const CF_BIN_KEY: &str = "cfBinPath";
 /// Emitted once the user pressed OK in a native confirm, just before `cf` starts.
 const RUN_STARTED: &str = "cf-run-started";
 const PROJECT_DIR: &str = "--project-dir=";
+/// Flags whose path value `command_line` Debug-quotes.
+const QUOTED_PATH_FLAGS: [&str; 3] = [PROJECT_DIR, "--out=", "--target="];
 /// Keys that decide where CF writes files: `learn.outputDir` changes only through the learn
 /// folder picker, `docsDir` and `session.dir` only through the CLI. A parent key (`learn`,
 /// `session`) is refused too, since `config set` writes a whole object.
@@ -55,8 +59,22 @@ const MAX_QUERY: usize = 500;
 /// Keep identical to `LEARN_SUBFOLDER` in cli/src/lib/cloud-folders.ts.
 const LEARN_SUBFOLDER: &str = "coding-friend-learn";
 const LEARN_DIR_KEY: &str = "learn.outputDir";
+/// Keep identical to `SESSION_SUBFOLDER` in cli/src/lib/cloud-folders.ts.
+const SESSION_SUBFOLDER: &str = "coding-friend-sessions";
+const SESSION_DIR_KEY: &str = "session.dir";
 /// `doctor --project-dir` only reads files (no host probe), so it needs less than `DOCTOR_TIMEOUT`.
 const PROJECT_DOCTOR_TIMEOUT: Duration = Duration::from_secs(30);
+/// Longest session ref (`<prefix>:<id>`) the page may ask for (bytes).
+const MAX_SESSION_REF: usize = 256;
+/// Keep identical to `REF_RE` in cli/src/lib/transcript.ts.
+const SESSION_REF_PREFIXES: [&str; 4] = ["claude", "codex", "saved", "legacy"];
+const MAX_SESSION_REF_ID: usize = 200;
+/// `session list|show|export` (preview) and `sync status` read transcripts or walk folders.
+const SESSION_READ_TIMEOUT: Duration = Duration::from_secs(30);
+/// `session export --out`, `session save` and `session load` copy whole transcripts.
+const SESSION_WRITE_TIMEOUT: Duration = Duration::from_secs(60);
+/// Longest `session save` label the page may send (bytes).
+const MAX_SESSION_LABEL: usize = 200;
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -206,9 +224,179 @@ fn sha_arg(s: &str) -> Result<String, CfError> {
     Ok(s.to_string())
 }
 
-/// `path` canonicalized, or (while the learn subfolder does not exist yet) its canonical
-/// parent joined with `LEARN_SUBFOLDER`; `None` for a relative path or a missing parent.
-fn learn_dir_key(path: &str) -> Option<PathBuf> {
+/// A session ref from the page: `data_arg` rules (at most `MAX_SESSION_REF` bytes) and the
+/// CLI's `^(claude|codex|saved|legacy):[A-Za-z0-9._-]{1,200}$`, the id not `.` or `..`.
+fn session_ref(s: &str) -> Result<String, CfError> {
+    let invalid = || refused(format!("not a valid session ref: {s:?}"));
+    let s = data_arg(s, MAX_SESSION_REF).map_err(|_| invalid())?;
+    let (prefix, id) = s.split_once(':').ok_or_else(invalid)?;
+    let id_ok = !id.is_empty()
+        && id.len() <= MAX_SESSION_REF_ID
+        && id != "."
+        && id != ".."
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b));
+    if !SESSION_REF_PREFIXES.contains(&prefix) || !id_ok {
+        return Err(invalid());
+    }
+    Ok(s)
+}
+
+/// A session id for `session save --session-id`: a UUID (`8-4-4-4-12` hex digits, any case),
+/// the same rule as the CLI's `isSessionUuid`.
+fn session_id_arg(s: &str) -> Result<String, CfError> {
+    let uuid = s.len() == 36
+        && s.bytes().enumerate().all(|(i, b)| match i {
+            8 | 13 | 18 | 23 => b == b'-',
+            _ => b.is_ascii_hexdigit(),
+        });
+    if !uuid {
+        return Err(refused(format!("not a session id (UUID): {s:?}")));
+    }
+    Ok(s.to_string())
+}
+
+/// The providers `session list --provider` takes from the page; argv is built from the enum.
+#[derive(Clone, Copy)]
+enum SessionProvider {
+    Claude,
+    Codex,
+    Saved,
+}
+
+impl SessionProvider {
+    fn parse(s: &str) -> Result<Self, CfError> {
+        match s {
+            "claude" => Ok(Self::Claude),
+            "codex" => Ok(Self::Codex),
+            "saved" => Ok(Self::Saved),
+            _ => Err(refused(format!("not a session provider: {s:?}"))),
+        }
+    }
+
+    fn flag(self) -> &'static str {
+        match self {
+            Self::Claude => "--provider=claude",
+            Self::Codex => "--provider=codex",
+            Self::Saved => "--provider=saved",
+        }
+    }
+}
+
+/// `--project-dir=<abs>` when the page named a project (it must be in `KnownProjects`).
+fn optional_project_dir(
+    known: &KnownProjects,
+    project: Option<&str>,
+) -> Result<Option<String>, CfError> {
+    project.map(|path| project_dir_arg(known, path)).transpose()
+}
+
+/// `session list --json [--provider=<p>] [--project-dir=P] [--limit=<n>]`, limit in 1..=500.
+fn session_list_argv(
+    known: &KnownProjects,
+    provider: Option<&str>,
+    project: Option<&str>,
+    limit: Option<u32>,
+) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["session", "list", "--json"]);
+    if let Some(provider) = provider {
+        args.push(SessionProvider::parse(provider)?.flag().into());
+    }
+    args.extend(optional_project_dir(known, project)?);
+    if let Some(limit) = limit {
+        args.push(format!("--limit={}", limit.clamp(1, 500)));
+    }
+    Ok(args)
+}
+
+/// `session show --json [--include-tool-output] [--offset=<n>] [--limit=<n>] [--project-dir=P]
+/// -- <ref>`, limit in 1..=1000.
+fn session_show_argv(
+    known: &KnownProjects,
+    r#ref: &str,
+    project: Option<&str>,
+    offset: Option<u32>,
+    limit: Option<u32>,
+    include_tool_output: bool,
+) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["session", "show", "--json"]);
+    if include_tool_output {
+        args.push("--include-tool-output".into());
+    }
+    if let Some(offset) = offset {
+        args.push(format!("--offset={offset}"));
+    }
+    if let Some(limit) = limit {
+        args.push(format!("--limit={}", limit.clamp(1, 1000)));
+    }
+    args.extend(optional_project_dir(known, project)?);
+    args.extend(["--".into(), session_ref(r#ref)?]);
+    Ok(args)
+}
+
+/// `session export --json [--include-tool-output] [--project-dir=P] [--out=<path> --force]
+/// -- <ref>`: without `out` the redacted Markdown is printed (the preview), with it the CLI
+/// writes the file. Both use the same flags, so the preview's counts match the file.
+fn session_export_argv(
+    known: &KnownProjects,
+    r#ref: &str,
+    project: Option<&str>,
+    include_tool_output: bool,
+    out: Option<&str>,
+) -> Result<Vec<String>, CfError> {
+    let mut args = to_args(&["session", "export", "--json"]);
+    if include_tool_output {
+        args.push("--include-tool-output".into());
+    }
+    args.extend(optional_project_dir(known, project)?);
+    if let Some(out) = out {
+        args.extend([format!("--out={out}"), "--force".into()]);
+    }
+    args.extend(["--".into(), session_ref(r#ref)?]);
+    Ok(args)
+}
+
+/// `session save --json --session-id <uuid> [--project-dir=P] -- <label>`; an empty or
+/// whitespace-only label is refused.
+fn session_save_argv(
+    known: &KnownProjects,
+    session_id: &str,
+    label: &str,
+    project: Option<&str>,
+) -> Result<Vec<String>, CfError> {
+    if label.trim().is_empty() {
+        return Err(refused("the session label is empty".to_string()));
+    }
+    let mut args = to_args(&["session", "save", "--json", "--session-id"]);
+    args.push(session_id_arg(session_id)?);
+    args.extend(optional_project_dir(known, project)?);
+    args.extend(["--".into(), text_arg(label, MAX_SESSION_LABEL)?]);
+    Ok(args)
+}
+
+/// `session load --json --yes --target=<T> [--project-dir=P] -- <ref>`: `target` and
+/// `project` must be known projects; a `legacy:` ref needs `project` (where its folder is).
+fn session_load_argv(
+    known: &KnownProjects,
+    r#ref: &str,
+    target: &str,
+    project: Option<&str>,
+) -> Result<Vec<String>, CfError> {
+    let r#ref = session_ref(r#ref)?;
+    if r#ref.starts_with("legacy:") && project.is_none() {
+        return Err(refused(format!("{ref:?} needs its project")));
+    }
+    let mut args = to_args(&["session", "load", "--json", "--yes"]);
+    args.push(format!("--target={}", known_project(known, target)?));
+    args.extend(optional_project_dir(known, project)?);
+    args.extend(["--".into(), r#ref]);
+    Ok(args)
+}
+
+/// `path` canonicalized, or (while `subfolder` does not exist yet) its canonical parent
+/// joined with `subfolder`; `None` for a relative path or a missing parent.
+fn dir_key(path: &str, subfolder: &str) -> Option<PathBuf> {
     let path = Path::new(path);
     if !path.is_absolute() {
         return None;
@@ -216,36 +404,41 @@ fn learn_dir_key(path: &str) -> Option<PathBuf> {
     if let Ok(canonical) = std::fs::canonicalize(path) {
         return Some(canonical);
     }
-    if path.file_name()? != LEARN_SUBFOLDER {
+    if path.file_name()? != subfolder {
         return None;
     }
-    Some(
-        std::fs::canonicalize(path.parent()?)
-            .ok()?
-            .join(LEARN_SUBFOLDER),
-    )
+    Some(std::fs::canonicalize(path.parent()?).ok()?.join(subfolder))
 }
 
-/// The suggestion (as `learn status` gave it) that `path` names, compared after
-/// `learn_dir_key`; only `LEARN_SUBFOLDER` folders count. Anything else is `Refused`.
-fn learn_dir_from_suggestions(path: &str, suggestions: &[String]) -> Result<String, CfError> {
-    let not_suggested = || refused(format!("not a suggested learn folder: {path:?}"));
-    let wanted = learn_dir_key(path).ok_or_else(not_suggested)?;
+/// The suggestion (as `learn status` or `session status` gave it) that `path` names,
+/// compared after `dir_key`; only `subfolder` folders count. Anything else is `Refused`.
+fn dir_from_suggestions(
+    path: &str,
+    suggestions: &[String],
+    subfolder: &str,
+) -> Result<String, CfError> {
+    let not_suggested = || refused(format!("not a suggested {subfolder} folder: {path:?}"));
+    let wanted = dir_key(path, subfolder).ok_or_else(not_suggested)?;
     suggestions
         .iter()
-        .filter(|suggestion| Path::new(suggestion).file_name() == Some(LEARN_SUBFOLDER.as_ref()))
-        .find(|suggestion| learn_dir_key(suggestion).as_ref() == Some(&wanted))
+        .filter(|suggestion| Path::new(suggestion).file_name() == Some(subfolder.as_ref()))
+        .find(|suggestion| dir_key(suggestion, subfolder).as_ref() == Some(&wanted))
         .cloned()
         .ok_or_else(not_suggested)
 }
 
-/// `--project-dir=<abs>` for a folder in `KnownProjects` (compared after canonicalizing).
-fn project_dir_arg(known: &KnownProjects, path: &str) -> Result<String, CfError> {
+/// The canonical path of a folder in `KnownProjects`.
+fn known_project(known: &KnownProjects, path: &str) -> Result<String, CfError> {
     let dir = project_path(path, true)?;
     if !known.contains(&dir) {
         return Err(refused(format!("not a registered project: {path:?}")));
     }
-    Ok(format!("{PROJECT_DIR}{}", utf8(dir)?))
+    utf8(dir)
+}
+
+/// `--project-dir=<abs>` for a folder in `KnownProjects` (compared after canonicalizing).
+fn project_dir_arg(known: &KnownProjects, path: &str) -> Result<String, CfError> {
+    Ok(format!("{PROJECT_DIR}{}", known_project(known, path)?))
 }
 
 /// A dotted config key (`^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*){0,5}$`) that is not a
@@ -324,14 +517,21 @@ async fn ask(app: &AppHandle, title: &str, message: String) -> Result<(), CfErro
     Ok(())
 }
 
-/// `ask` before a `cf` run, showing the size of `body` (never the body itself). On OK it
-/// emits `RUN_STARTED` (`{ command, op }`), so the page shows the run only from then on.
+/// `ask` before a `cf` run, showing `details` (`label: value` lines built by Rust, under the
+/// command line) and the size of `body` (never the body itself). On OK it emits
+/// `RUN_STARTED` (`{ command, op }`), so the page shows the run only from then on.
 async fn confirm(
     app: &AppHandle,
     op: &str,
     command_line: &str,
+    details: &[String],
     body: Option<&str>,
 ) -> Result<(), CfError> {
+    let details = if details.is_empty() {
+        String::new()
+    } else {
+        format!("\n\n{}", details.join("\n"))
+    };
     let size = body.map_or(String::new(), |body| {
         format!(
             "\n\nNew body: {} bytes, sent on stdin (not shown here).",
@@ -341,7 +541,7 @@ async fn confirm(
     ask(
         app,
         "Run this command?",
-        format!("Coding Friend will run:\n\n{command_line}{size}"),
+        format!("Coding Friend will run:\n\n{command_line}{details}{size}"),
     )
     .await?;
     // A lost event only leaves the page saying "Waiting for confirmation": never block the run.
@@ -365,19 +565,21 @@ async fn picked(
         .map_err(|err| refused(format!("not a local path: {err}")))
 }
 
-/// Confirms `command_line`, then runs `argv` (with `body` on stdin), one mutating command
-/// at a time.
+/// Confirms `command_line` (with `details`), then runs `argv` (with `body` on stdin), one
+/// mutating command at a time.
+#[allow(clippy::too_many_arguments)]
 async fn confirm_and_run(
     app: &AppHandle,
     lock: &MutationLock,
     op: &str,
     command_line: &str,
+    details: &[String],
     argv: &[String],
     body: Option<&str>,
     timeout: Duration,
 ) -> Result<Value, CfError> {
     let _guard = lock.0.lock().await;
-    confirm(app, op, command_line, body).await?;
+    confirm(app, op, command_line, details, body).await?;
     match body {
         Some(body) => cf::run_cf_with_input(argv, body, timeout).await,
         None => cf::run_cf(argv, timeout).await,
@@ -385,15 +587,19 @@ async fn confirm_and_run(
 }
 
 /// `cf <argv>` as the user reads it in the confirm dialog (without `--json`). Words after
-/// `--` and the `--project-dir=` path are Debug-quoted, so a newline cannot fake dialog text.
+/// `--` and the paths of `QUOTED_PATH_FLAGS` are Debug-quoted, so a newline cannot fake
+/// dialog text.
 fn command_line(argv: &[String]) -> String {
     let mut words = vec!["cf".to_string()];
     let mut after_dashes = false;
     for word in argv {
+        let flag_path = QUOTED_PATH_FLAGS
+            .iter()
+            .find_map(|flag| Some((flag, word.strip_prefix(flag)?)));
         if after_dashes {
             words.push(format!("{word:?}"));
-        } else if let Some(dir) = word.strip_prefix(PROJECT_DIR) {
-            words.push(format!("{PROJECT_DIR}{dir:?}"));
+        } else if let Some((flag, path)) = flag_path {
+            words.push(format!("{flag}{path:?}"));
         } else if word != "--json" {
             after_dashes = word == "--";
             words.push(word.clone());
@@ -523,6 +729,7 @@ pub async fn project_remove(
         &app,
         "projectRemove",
         &format!("cf project remove -- {path:?}"),
+        &[],
         None,
     )
     .await?;
@@ -589,6 +796,7 @@ pub async fn config_set(
         &lock,
         "configSet",
         &line,
+        &[],
         &argv,
         None,
         cf::QUERY_TIMEOUT,
@@ -724,6 +932,7 @@ pub async fn memory_edit(
         &lock,
         "memoryEdit",
         &line,
+        &[],
         &args,
         Some(&body),
         cf::MEMORY_WRITE_TIMEOUT,
@@ -752,6 +961,7 @@ pub async fn memory_delete(
         &lock,
         "memoryDelete",
         &line,
+        &[],
         &args,
         None,
         cf::MEMORY_WRITE_TIMEOUT,
@@ -813,6 +1023,7 @@ pub async fn learn_edit(
         &lock,
         "learnEdit",
         &line,
+        &[],
         &args,
         Some(&body),
         cf::LEARN_WRITE_TIMEOUT,
@@ -844,6 +1055,7 @@ pub async fn learn_delete(
         &lock,
         "learnDelete",
         &line,
+        &[],
         &args,
         None,
         cf::LEARN_WRITE_TIMEOUT,
@@ -863,7 +1075,7 @@ async fn save_learn_dir(app: &AppHandle, dir: String) -> Result<Value, CfError> 
         LEARN_DIR_KEY,
         &dir,
     ]);
-    confirm(app, "learnDir", &command_line(&args), None).await?;
+    confirm(app, "learnDir", &command_line(&args), &[], None).await?;
     cf::run_cf(&args, cf::QUERY_TIMEOUT).await
 }
 
@@ -903,8 +1115,241 @@ pub async fn set_learn_dir(
         .filter_map(|suggestion| suggestion["path"].as_str())
         .map(str::to_string)
         .collect();
-    let dir = learn_dir_from_suggestions(&path, &suggestions)?;
+    let dir = dir_from_suggestions(&path, &suggestions, LEARN_SUBFOLDER)?;
     save_learn_dir(&app, dir).await
+}
+
+/// `session list --json [--provider=<p>] [--project-dir=P] [--limit=<n>]`.
+#[tauri::command]
+pub async fn session_list(
+    known: State<'_, KnownProjects>,
+    provider: Option<String>,
+    project: Option<String>,
+    limit: Option<u32>,
+) -> Result<Value, CfError> {
+    let args = session_list_argv(&known, provider.as_deref(), project.as_deref(), limit)?;
+    cf::run_cf(&args, SESSION_READ_TIMEOUT).await
+}
+
+/// `session show --json [--include-tool-output] [--offset=<n>] [--limit=<n>] [--project-dir=P]
+/// -- <ref>`: one page of turns, always redacted by the CLI.
+#[tauri::command]
+pub async fn session_show(
+    known: State<'_, KnownProjects>,
+    r#ref: String,
+    project: Option<String>,
+    offset: Option<u32>,
+    limit: Option<u32>,
+    include_tool_output: bool,
+) -> Result<Value, CfError> {
+    let args = session_show_argv(
+        &known,
+        &r#ref,
+        project.as_deref(),
+        offset,
+        limit,
+        include_tool_output,
+    )?;
+    cf::run_cf(&args, SESSION_READ_TIMEOUT).await
+}
+
+/// `session export --json [--include-tool-output] [--project-dir=P] -- <ref>`.
+#[tauri::command]
+pub async fn session_export_preview(
+    known: State<'_, KnownProjects>,
+    r#ref: String,
+    project: Option<String>,
+    include_tool_output: bool,
+) -> Result<Value, CfError> {
+    let args = session_export_argv(
+        &known,
+        &r#ref,
+        project.as_deref(),
+        include_tool_output,
+        None,
+    )?;
+    cf::run_cf(&args, SESSION_READ_TIMEOUT).await
+}
+
+#[tauri::command]
+pub async fn session_status() -> Result<Value, CfError> {
+    run(&["session", "status", "--json"], cf::QUERY_TIMEOUT).await
+}
+
+#[tauri::command]
+pub async fn sync_status() -> Result<Value, CfError> {
+    run(&["sync", "status", "--json"], SESSION_READ_TIMEOUT).await
+}
+
+/// Exports the redacted Markdown of a session to a file the user picks. Under the
+/// `MutationLock` for the whole flow: Rust runs the preview itself (for the byte and
+/// redaction counts, never taken from the page), shows a native save dialog, confirms, then
+/// runs the same argv with `--out=<path> --force`.
+#[tauri::command]
+pub async fn session_export(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    known: State<'_, KnownProjects>,
+    r#ref: String,
+    project: Option<String>,
+    include_tool_output: bool,
+) -> Result<Value, CfError> {
+    let project = project.as_deref();
+    let preview = session_export_argv(&known, &r#ref, project, include_tool_output, None)?;
+    let _guard = lock.0.lock().await;
+    let data = cf::run_cf(&preview, SESSION_READ_TIMEOUT).await?;
+    let count = |value: &Value| {
+        value
+            .as_u64()
+            .ok_or_else(|| refused("session export gave no byte or redaction count".to_string()))
+    };
+    let bytes = count(&data["bytes"])?;
+    let redactions = count(&data["redactions"]["total"])?;
+    // The ref is `[A-Za-z0-9._-]` after its prefix: a safe file name once `:` is replaced.
+    let file_name = format!("{}.md", r#ref.replace(':', "-"));
+    let out = picked(|done| {
+        app.dialog()
+            .file()
+            .set_title("Export the session")
+            .set_file_name(file_name)
+            .add_filter("Markdown", &["md"])
+            .save_file(done)
+    })
+    .await?;
+    if !out.is_absolute() {
+        return Err(refused(format!("not an absolute path: {out:?}")));
+    }
+    let out = utf8(out)?;
+    let args = session_export_argv(&known, &r#ref, project, include_tool_output, Some(&out))?;
+    let tool_output = if include_tool_output {
+        "included (redacted, cut)"
+    } else {
+        "not included"
+    };
+    let details = [
+        format!("Destination: {out:?}"),
+        format!("Size: {bytes} bytes"),
+        format!("Redactions: {redactions}"),
+        format!("Tool output: {tool_output}"),
+        "Redaction is best effort; read the file before sharing.".to_string(),
+    ];
+    confirm(&app, "sessionExport", &command_line(&args), &details, None).await?;
+    cf::run_cf(&args, SESSION_WRITE_TIMEOUT).await
+}
+
+/// `session save --json --session-id <uuid> [--project-dir=P] -- <label>` after a native
+/// confirm that names the destination (`dir` from Rust's own `session status`). Under the
+/// `MutationLock` for the whole flow, status included.
+#[tauri::command]
+pub async fn session_save(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    known: State<'_, KnownProjects>,
+    session_id: String,
+    label: String,
+    project: Option<String>,
+) -> Result<Value, CfError> {
+    let args = session_save_argv(&known, &session_id, &label, project.as_deref())?;
+    // Locked before the status, so the folder the confirm names is the one the save uses.
+    let _guard = lock.0.lock().await;
+    let status = run(&["session", "status", "--json"], cf::QUERY_TIMEOUT).await?;
+    let dir = status["dir"]
+        .as_str()
+        .ok_or_else(|| refused("session status gave no session folder".to_string()))?;
+    let details = [
+        format!("Destination: {dir:?}"),
+        "Transcript is copied verbatim (not redacted). Use Export to share.".to_string(),
+    ];
+    confirm(&app, "sessionSave", &command_line(&args), &details, None).await?;
+    cf::run_cf(&args, SESSION_WRITE_TIMEOUT).await
+}
+
+/// `session load --json --yes --target=<T> [--project-dir=P] -- <ref>` after a native
+/// confirm; `target` (and `project`, required for a `legacy:` ref) must be known projects.
+#[tauri::command]
+pub async fn session_load(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    known: State<'_, KnownProjects>,
+    r#ref: String,
+    target: String,
+    project: Option<String>,
+) -> Result<Value, CfError> {
+    let args = session_load_argv(&known, &r#ref, &target, project.as_deref())?;
+    let target = known_project(&known, &target)?;
+    let details = [
+        format!("Session: {ref:?}"),
+        format!("Target project: {target:?}"),
+        "Only load sessions you saved yourself: a synced transcript becomes model context on resume."
+            .to_string(),
+    ];
+    confirm_and_run(
+        &app,
+        &lock,
+        "sessionLoad",
+        &command_line(&args),
+        &details,
+        &args,
+        None,
+        SESSION_WRITE_TIMEOUT,
+    )
+    .await
+}
+
+/// Confirms and runs `config set --global --json -- session.dir <dir>`. The caller holds
+/// the `MutationLock` and chose `dir` from a picker or a Rust-fetched suggestion.
+async fn save_session_dir(app: &AppHandle, dir: String) -> Result<Value, CfError> {
+    let args = to_args(&[
+        "config",
+        "set",
+        "--global",
+        "--json",
+        "--",
+        SESSION_DIR_KEY,
+        &dir,
+    ]);
+    confirm(app, "sessionDir", &command_line(&args), &[], None).await?;
+    cf::run_cf(&args, cf::QUERY_TIMEOUT).await
+}
+
+/// Opens a native folder picker; the picked folder (canonicalized) becomes the session
+/// folder after a native confirm.
+#[tauri::command]
+pub async fn choose_session_dir(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+) -> Result<Value, CfError> {
+    let _guard = lock.0.lock().await;
+    let folder = picked(|done| {
+        app.dialog()
+            .file()
+            .set_title("Choose the session folder")
+            .pick_folder(done)
+    })
+    .await?;
+    let dir = utf8(project_path(&utf8(folder)?, true)?)?;
+    save_session_dir(&app, dir).await
+}
+
+/// Makes one of `session status`'s suggested cloud folders the session folder, after a
+/// native confirm. Rust fetches the suggestions itself; any other path is `Refused`.
+#[tauri::command]
+pub async fn set_session_dir(
+    app: AppHandle,
+    lock: State<'_, MutationLock>,
+    path: String,
+) -> Result<Value, CfError> {
+    let _guard = lock.0.lock().await;
+    let status = run(&["session", "status", "--json"], cf::QUERY_TIMEOUT).await?;
+    let suggestions: Vec<String> = status["suggestions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|suggestion| suggestion["path"].as_str())
+        .map(str::to_string)
+        .collect();
+    let dir = dir_from_suggestions(&path, &suggestions, SESSION_SUBFOLDER)?;
+    save_session_dir(&app, dir).await
 }
 
 #[tauri::command]
@@ -935,6 +1380,7 @@ pub async fn update_yes(app: AppHandle, lock: State<'_, MutationLock>) -> Result
         &lock,
         "update",
         &command_line(&argv),
+        &[],
         &argv,
         None,
         cf::UPDATE_YES_TIMEOUT,
@@ -954,6 +1400,7 @@ pub async fn run_fix(
         &lock,
         "fix",
         &command_line(&argv),
+        &[],
         &argv,
         None,
         cf::FIX_TIMEOUT,
@@ -1113,40 +1560,241 @@ mod tests {
     }
 
     #[test]
-    fn learn_dir_must_be_one_of_the_suggestions() {
-        let root = std::env::temp_dir().join(format!("cf-learn-dir-{}", std::process::id()));
-        let existing = root.join("icloud").join(LEARN_SUBFOLDER);
-        let missing_parent = root.join("drive");
-        std::fs::create_dir_all(&existing).unwrap();
-        std::fs::create_dir_all(&missing_parent).unwrap();
-        let shown = |path: &Path| path.to_str().unwrap().to_string();
-        let missing = shown(&missing_parent.join(LEARN_SUBFOLDER));
-        let suggestions = [shown(&existing), missing.clone()];
-
-        // The suggestion string itself is kept, also when given through a `..` detour.
-        let detour = shown(&root.join("drive/../icloud").join(LEARN_SUBFOLDER));
-        assert_eq!(
-            learn_dir_from_suggestions(&detour, &suggestions),
-            Ok(shown(&existing))
-        );
-        assert_eq!(
-            learn_dir_from_suggestions(&missing, &suggestions),
-            Ok(missing.clone())
-        );
-        for path in [
-            shown(&missing_parent),
-            shown(&root.join("other").join(LEARN_SUBFOLDER)),
-            "relative/coding-friend-learn".to_string(),
+    fn session_ref_needs_a_known_prefix_and_a_safe_id() {
+        for arg in [
+            "claude:0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+            "codex:019a2b3c-thread.1",
+            "saved:2026-11-04_fix-login",
+            "legacy:a.b",
+        ] {
+            assert_eq!(session_ref(arg), Ok(arg.to_string()), "{arg}");
+        }
+        for arg in [
+            "github:abc",
+            "claude:",
+            "claude:.",
+            "claude:..",
+            "saved:a/../b",
+            "-claude:abc",
+            "claude:a\nb",
+            &format!("claude:{}", "a".repeat(250)),
         ] {
             assert!(
-                matches!(
-                    learn_dir_from_suggestions(&path, &suggestions),
-                    Err(CfError::Refused { .. })
-                ),
-                "{path}"
+                matches!(session_ref(arg), Err(CfError::Refused { .. })),
+                "{arg:?}"
             );
         }
-        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn session_show_argv_puts_the_ref_after_the_separator() {
+        let known = KnownProjects::default();
+        let argv = session_show_argv(&known, "saved:--json", None, Some(10), Some(5000), true);
+        assert_eq!(
+            argv,
+            Ok(words(&[
+                "session",
+                "show",
+                "--json",
+                "--include-tool-output",
+                "--offset=10",
+                "--limit=1000",
+                "--",
+                "saved:--json",
+            ]))
+        );
+        assert!(matches!(
+            session_show_argv(&known, "--json", None, None, None, false),
+            Err(CfError::Refused { .. })
+        ));
+    }
+
+    #[test]
+    fn session_list_argv_takes_only_the_three_providers() {
+        let known = KnownProjects::default();
+        assert_eq!(
+            session_list_argv(&known, Some("codex"), None, Some(0)),
+            Ok(words(&[
+                "session",
+                "list",
+                "--json",
+                "--provider=codex",
+                "--limit=1"
+            ]))
+        );
+        for provider in ["legacy", "Claude", "--all", "claude --json", ""] {
+            assert!(
+                matches!(
+                    session_list_argv(&known, Some(provider), None, None),
+                    Err(CfError::Refused { .. })
+                ),
+                "{provider:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn suggested_dir_must_be_one_of_the_suggestions() {
+        for (subfolder, other) in [
+            (LEARN_SUBFOLDER, SESSION_SUBFOLDER),
+            (SESSION_SUBFOLDER, LEARN_SUBFOLDER),
+        ] {
+            let root = std::env::temp_dir().join(format!(
+                "cf-suggested-dir-{subfolder}-{}",
+                std::process::id()
+            ));
+            let existing = root.join("icloud").join(subfolder);
+            let missing_parent = root.join("drive");
+            std::fs::create_dir_all(&existing).unwrap();
+            std::fs::create_dir_all(&missing_parent).unwrap();
+            let shown = |path: &Path| path.to_str().unwrap().to_string();
+            // `exists: false`: the subfolder is not created yet.
+            let missing = shown(&missing_parent.join(subfolder));
+            let wrong_kind = shown(&missing_parent.join(other));
+            let suggestions = [shown(&existing), missing.clone(), wrong_kind.clone()];
+
+            // The suggestion string itself is kept, also when given through a `..` detour.
+            let detour = shown(&root.join("drive/../icloud").join(subfolder));
+            assert_eq!(
+                dir_from_suggestions(&detour, &suggestions, subfolder),
+                Ok(shown(&existing))
+            );
+            assert_eq!(
+                dir_from_suggestions(&missing, &suggestions, subfolder),
+                Ok(missing.clone())
+            );
+            for path in [
+                shown(&missing_parent),
+                shown(&root.join("other").join(subfolder)),
+                wrong_kind,
+                format!("relative/{subfolder}"),
+            ] {
+                assert!(
+                    matches!(
+                        dir_from_suggestions(&path, &suggestions, subfolder),
+                        Err(CfError::Refused { .. })
+                    ),
+                    "{path}"
+                );
+            }
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn session_export_writes_with_the_flags_of_its_preview() {
+        let known = KnownProjects::default();
+        let dir = std::fs::canonicalize(std::env::temp_dir()).unwrap();
+        known.insert(&dir);
+        let project = dir.to_str().unwrap();
+        let project_dir = format!("--project-dir={project}");
+        let preview = session_export_argv(&known, "saved:--json", Some(project), true, None);
+        let write = session_export_argv(
+            &known,
+            "saved:--json",
+            Some(project),
+            true,
+            Some("/tmp/x.md"),
+        );
+        let head = ["session", "export", "--json", "--include-tool-output"];
+        let mut expected = words(&head);
+        expected.extend([project_dir.clone(), "--".into(), "saved:--json".into()]);
+        assert_eq!(preview, Ok(expected));
+        let mut expected = words(&head);
+        expected.extend([
+            project_dir,
+            "--out=/tmp/x.md".into(),
+            "--force".into(),
+            "--".into(),
+            "saved:--json".into(),
+        ]);
+        assert_eq!(write, Ok(expected));
+    }
+
+    #[test]
+    fn command_line_quotes_out_and_target_paths() {
+        let argv = words(&[
+            "session",
+            "export",
+            "--json",
+            "--out=/tmp/a\nOK",
+            "--target=/p\nq",
+            "--force",
+            "--",
+            "saved:x",
+        ]);
+        // A real newline in the argv shows as the two characters `\n`.
+        assert_eq!(
+            command_line(&argv),
+            r#"cf session export --out="/tmp/a\nOK" --target="/p\nq" --force -- "saved:x""#
+        );
+    }
+
+    #[test]
+    fn session_save_argv_puts_the_label_after_the_separator() {
+        let known = KnownProjects::default();
+        let id = "0f1e2d3c-4b5a-6978-8796-A5B4C3D2E1F0";
+        assert_eq!(
+            session_save_argv(&known, id, "--json", None),
+            Ok(words(&[
+                "session",
+                "save",
+                "--json",
+                "--session-id",
+                id,
+                "--",
+                "--json"
+            ]))
+        );
+        assert!(matches!(
+            session_save_argv(&known, "--json", "x", None),
+            Err(CfError::Refused { .. })
+        ));
+        assert!(matches!(
+            session_save_argv(&known, id, "   ", None),
+            Err(CfError::Refused { .. })
+        ));
+    }
+
+    #[test]
+    fn session_load_needs_a_known_project_for_a_legacy_ref() {
+        let known = KnownProjects::default();
+        let dir = std::fs::canonicalize(std::env::temp_dir()).unwrap();
+        known.insert(&dir);
+        let path = dir.to_str().unwrap();
+        assert!(matches!(
+            session_load_argv(&known, "legacy:a", path, None),
+            Err(CfError::Refused { .. })
+        ));
+        assert_eq!(
+            session_load_argv(&known, "legacy:a", path, Some(path)),
+            Ok(words(&[
+                "session",
+                "load",
+                "--json",
+                "--yes",
+                &format!("--target={path}"),
+                &format!("--project-dir={path}"),
+                "--",
+                "legacy:a",
+            ]))
+        );
+        assert_eq!(
+            session_load_argv(&known, "saved:a", path, None),
+            Ok(words(&[
+                "session",
+                "load",
+                "--json",
+                "--yes",
+                &format!("--target={path}"),
+                "--",
+                "saved:a",
+            ]))
+        );
+        assert!(matches!(
+            session_load_argv(&KnownProjects::default(), "saved:a", path, None),
+            Err(CfError::Refused { .. })
+        ));
     }
 
     #[test]

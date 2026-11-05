@@ -22,6 +22,8 @@ export interface PendingRun {
 export function describePending(run: PendingRun): string {
   if (run.op === "projectAdd")
     return "Disabled while the folder picker is open.";
+  if (run.op === "sessionExport" && !run.started)
+    return "Disabled while the save dialog or its confirmation is open.";
   if (run.picker && !run.started)
     return "Disabled while the folder picker or its confirmation is open.";
   return run.started
