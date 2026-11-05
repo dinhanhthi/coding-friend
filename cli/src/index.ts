@@ -778,20 +778,24 @@ program.addHelpText(
   "after",
   `
 Session subcommands (beta):
-  session list        List Claude Code and Codex sessions (newest first)
+  session list        List Claude Code, Codex and saved sessions (newest first)
   session show        Print one session's turns, redacted (-- <ref>)
   session export      Print one session as redacted Markdown (-- <ref>)
-  session save        Save current session to sync folder (use /cf-session inside a conversation)
-  session load        Load a saved session from sync folder and print resume command`,
+  session save        Save a Claude Code session verbatim to session.dir (-- <label>)
+  session load        Load a saved session and print the resume command
+  session status      Show session.dir, its cloud folder and suggestions`,
 );
 
 session
   .command("list")
-  .description("List Claude Code and Codex sessions, newest first")
-  .option("--provider <provider>", "only this provider: claude or codex")
+  .description("List Claude Code, Codex and saved sessions, newest first")
+  .option(
+    "--provider <provider>",
+    "only this provider: claude, codex or saved (saved and legacy)",
+  )
   .option(
     "--project-dir <path>",
-    "Only sessions of this project (resolved to its main repo root)",
+    "Only sessions of this project (resolved to its main repo root; saved ones by their recorded project path); adds its legacy <docsDir>/sessions",
   )
   .option("--limit <n>", "at most this many sessions (1-500, default 50)")
   .option("--json", "Output a JSON envelope")
@@ -803,13 +807,16 @@ session
 session
   .command("show")
   .description("Print a session's turns, always redacted")
-  .argument("<ref>", "session ref: claude:<id> or codex:<id>")
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
   .option("--include-tool-output", "include tool output (redacted, cut)")
   .option("--offset <n>", "first turn to print (default 0)")
   .option("--limit <n>", "at most this many turns (1-1000, default 200)")
   .option(
     "--project-dir <path>",
-    "Prefer this project's copy of the session (resolved to its main repo root)",
+    "Prefer this project's copy of the session; required for legacy: refs",
   )
   .option("--json", "Output a JSON envelope")
   .action(async (ref: string, opts) => {
@@ -822,11 +829,14 @@ session
   .description(
     "Print a session as redacted Markdown (no tool output by default)",
   )
-  .argument("<ref>", "session ref: claude:<id> or codex:<id>")
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
   .option("--include-tool-output", "include tool output (redacted, cut)")
   .option(
     "--project-dir <path>",
-    "Prefer this project's copy of the session (resolved to its main repo root)",
+    "Prefer this project's copy of the session; required for legacy: refs",
   )
   .option("--json", "Output a JSON envelope")
   .action(async (ref: string, opts) => {
@@ -836,23 +846,44 @@ session
 
 session
   .command("save")
-  .description("Save current Claude Code session to sync folder")
+  .description(
+    "Save a Claude Code session verbatim (not redacted) to session.dir",
+  )
+  .argument("[label]", "label for this session (same as -l)")
   .option(
     "-s, --session-id <id>",
     "session UUID to save (default: auto-detect newest)",
   )
   .option("-l, --label <label>", "label for this session")
-  .action(async (opts) => {
+  .option(
+    "--project-dir <path>",
+    "Look for the session in this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (label: string | undefined, opts) => {
     const { sessionSaveCommand } = await import("./commands/session.js");
-    await sessionSaveCommand(opts);
+    await sessionSaveCommand(label, opts);
   });
 
 session
   .command("load")
-  .description("Load a saved session from sync folder")
-  .action(async () => {
+  .description("Load a saved session from session.dir")
+  .option(
+    "--project-dir <path>",
+    "Also list this project's legacy <docsDir>/sessions",
+  )
+  .action(async (opts) => {
     const { sessionLoadCommand } = await import("./commands/session.js");
-    await sessionLoadCommand();
+    await sessionLoadCommand(opts);
+  });
+
+session
+  .command("status")
+  .description("Show session.dir, its cloud folder and suggested folders")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionStatusCommand } = await import("./commands/session.js");
+    await sessionStatusCommand(opts);
   });
 
 const memory = program

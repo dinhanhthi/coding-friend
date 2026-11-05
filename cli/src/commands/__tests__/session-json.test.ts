@@ -1,24 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, sep } from "path";
 
 import { claudeProjectDirName } from "../../lib/paths.js";
 import {
   sessionExportCommand,
   sessionListCommand,
+  sessionSaveCommand,
   sessionShowCommand,
 } from "../session.js";
 
 const UUID = "11111111-2222-4333-8444-555555555555";
 const BIG = "22222222-3333-4444-8555-666666666666";
 const THREAD = "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
+const ESCAPES = "33333333-4444-4555-8666-777777777777";
+const LEGACY_ID = "44444444-5555-4666-8777-888888888888";
 
 // Fake tokens, built by concatenation so no real-looking secret sits in the
 // source.
@@ -39,7 +44,9 @@ function jsonl(records: unknown[]): string {
 
 describe("session list|show|export --json", () => {
   let tmp: string;
+  let home: string;
   let root: string;
+  let origCwd: string;
 
   async function json(fn: () => Promise<void>) {
     const writes: string[] = [];
@@ -76,8 +83,9 @@ describe("session list|show|export --json", () => {
   beforeEach(() => {
     process.exitCode = undefined;
     vi.spyOn(console, "error").mockImplementation(() => {});
+    origCwd = process.cwd();
     tmp = realpathSync(mkdtempSync(join(tmpdir(), "cf-sessionjson-")));
-    const home = join(tmp, "home");
+    home = join(tmp, "home");
     mkdirSync(home);
     vi.stubEnv("HOME", home);
     vi.stubEnv("CLAUDE_CONFIG_DIR", join(tmp, "claude"));
@@ -156,6 +164,7 @@ describe("session list|show|export --json", () => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     process.exitCode = undefined;
+    process.chdir(origCwd);
     rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -228,7 +237,8 @@ describe("session list|show|export --json", () => {
   });
 
   it("an invalid ref is INVALID_ARGS", async () => {
-    for (const ref of ["bogus", "claude:../x"]) {
+    // legacy: is never inferred from cwd, so it needs --project-dir.
+    for (const ref of ["bogus", "claude:../x", "legacy:old-session"]) {
       const { env } = await json(() => sessionShowCommand(ref, { json: true }));
       expect(env).toMatchObject({
         ok: false,
@@ -271,5 +281,180 @@ describe("session list|show|export --json", () => {
       limit: 1,
     });
     expect(Buffer.byteLength(raw)).toBeLessThan(8 * 1024 * 1024);
+  });
+
+  it("save writes under session.dir, never under docsDir", async () => {
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, {
+        json: true,
+        sessionId: UUID,
+        projectDir: root,
+        label: "my label",
+      }),
+    );
+    expect(env).toMatchObject({ ok: true, error: null });
+    const store = join(home, ".coding-friend", "sessions");
+    expect(env.data).toMatchObject({
+      ref: `saved:${env.data.folder}`,
+      sessionId: UUID,
+      label: "my label",
+      verbatim: true,
+    });
+    expect(env.data.dir.startsWith(store + sep)).toBe(true);
+    expect(env.data.dir.startsWith(join(root, "docs"))).toBe(false);
+    expect(existsSync(join(root, "docs", "sessions"))).toBe(false);
+    expect(existsSync(join(env.data.dir, "session.jsonl"))).toBe(true);
+  });
+
+  it("save ignores a project's local session.dir", async () => {
+    const evil = join(tmp, "evil");
+    mkdirSync(join(root, ".coding-friend"));
+    writeFileSync(
+      join(root, ".coding-friend", "config.json"),
+      JSON.stringify({ session: { dir: evil } }),
+    );
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, {
+        json: true,
+        sessionId: UUID,
+        projectDir: root,
+      }),
+    );
+    expect(env.ok).toBe(true);
+    const store = join(home, ".coding-friend", "sessions");
+    expect(env.data.dir.startsWith(store + sep)).toBe(true);
+    expect(existsSync(evil)).toBe(false);
+  });
+
+  it("list --project-dir keeps only saved sessions of that project", async () => {
+    const store = join(home, ".coding-friend", "sessions");
+    const saved = (folder: string, projectPath: string) => {
+      const dir = join(store, folder);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "session.jsonl"), "{}\n");
+      writeFileSync(
+        join(dir, "meta.json"),
+        JSON.stringify({
+          sessionId: LEGACY_ID,
+          label: folder,
+          projectPath,
+          savedAt: "2026-10-01T10:05:00.000Z",
+          machine: "box",
+        }),
+      );
+    };
+    saved("mine", join(root, "sub"));
+    saved("theirs", join(home, "proj-other"));
+
+    const refs = async (projectDir?: string) => {
+      const { env } = await json(() =>
+        sessionListCommand({ json: true, provider: "saved", projectDir }),
+      );
+      expect(env.ok).toBe(true);
+      return env.data.sessions.map((s: { ref: string }) => s.ref);
+    };
+    expect(await refs(root)).toEqual(["saved:mine"]);
+    expect((await refs()).sort()).toEqual(["saved:mine", "saved:theirs"]);
+  });
+
+  it("save --session-id from another cwd records the transcript's cwd", async () => {
+    const other = join(tmp, "other");
+    mkdirSync(other);
+    process.chdir(other);
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, { json: true, sessionId: UUID }),
+    );
+    expect(env.ok).toBe(true);
+    const meta = JSON.parse(
+      readFileSync(join(env.data.dir, "meta.json"), "utf-8"),
+    );
+    expect(meta.projectPath).toBe(root);
+  });
+
+  it("save rejects a non-UUID --session-id before any write", async () => {
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, {
+        json: true,
+        sessionId: "../../x",
+        label: "x",
+      }),
+    );
+    expect(env).toMatchObject({ ok: false, error: { code: "INVALID_ARGS" } });
+    expect(existsSync(join(home, ".coding-friend"))).toBe(false);
+  });
+
+  it("show reads a legacy: session of --project-dir, redacted", async () => {
+    const folder = "old-session";
+    const dir = join(root, "docs", "sessions", folder);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "session.jsonl"),
+      jsonl([
+        {
+          cwd: root,
+          sessionId: LEGACY_ID,
+          type: "user",
+          timestamp: "2026-10-01T10:00:00.000Z",
+          message: { role: "user", content: `old run with ${GH}` },
+        },
+      ]),
+    );
+    writeFileSync(
+      join(dir, "meta.json"),
+      JSON.stringify({
+        sessionId: LEGACY_ID,
+        folderName: "../../elsewhere",
+        label: `label ${ANT}`,
+        projectPath: root,
+        savedAt: "2026-10-01T10:05:00.000Z",
+        machine: "box",
+      }),
+    );
+    const { env, raw } = await json(() =>
+      sessionShowCommand(`legacy:${folder}`, { json: true, projectDir: root }),
+    );
+    expect(env).toMatchObject({ ok: true, error: null });
+    expect(env.data.ref).toBe(`legacy:${folder}`);
+    expect(env.data.summary.source).toBe("legacy");
+    expect(env.data.turns[0]).toMatchObject({ kind: "user" });
+    expect(env.data.turns[0].text).toContain("[REDACTED:github]");
+    expectNoLeak(raw);
+  });
+
+  it("human show strips terminal escapes on a TTY, keeps newlines", async () => {
+    const evil =
+      "first line\x1b]52;c;" + "Zm9v" + "\x07\nsecond\x1b[2J line\x9b";
+    writeFileSync(
+      join(claudeDir(), `${ESCAPES}.jsonl`),
+      jsonl([
+        {
+          cwd: root,
+          sessionId: ESCAPES,
+          type: "user",
+          timestamp: "2026-11-01T12:00:00.000Z",
+          message: { role: "user", content: evil },
+        },
+      ]),
+    );
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    const isTTY = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
+    Object.defineProperty(process.stdout, "isTTY", {
+      value: true,
+      configurable: true,
+    });
+    try {
+      await sessionShowCommand(`claude:${ESCAPES}`, {});
+    } finally {
+      if (isTTY) Object.defineProperty(process.stdout, "isTTY", isTTY);
+      else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    }
+    const out = lines.join("\n");
+    expect(out).not.toContain("\x1b]52");
+    expect(out).not.toContain("\x1b[2J");
+    expect(out).not.toContain("\x9b");
+    expect(out).toContain("first line\nsecond line");
   });
 });

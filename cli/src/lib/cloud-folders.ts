@@ -15,16 +15,17 @@ export interface CloudRoot {
 
 export interface CloudFolder extends CloudRoot {
   label: string;
-  /** Suggested learn folder: always a fixed subfolder, never `root` itself. */
+  /** Suggested folder: always a fixed subfolder, never `root` itself. */
   path: string;
   exists: boolean;
 }
 
 export const LEARN_SUBFOLDER = "coding-friend-learn";
+export const SESSION_SUBFOLDER = "coding-friend-sessions";
 
 interface RootEntry extends CloudRoot {
   label: string;
-  /** Parent of the suggested learn folder (Google Drive: `<root>/My Drive`). */
+  /** Parent of the suggested folder (Google Drive: `<root>/My Drive`). */
   base: string | null;
 }
 
@@ -123,15 +124,16 @@ function cloudRoots(home: string, platform: NodeJS.Platform): RootEntry[] {
   return roots;
 }
 
-/** Suggested learn folders, one per cloud root found (macOS only). */
+/** Suggested `<base>/<subfolder>` folders, one per cloud root found (macOS only). */
 export function detectCloudFolders(
   home: string,
   platform: NodeJS.Platform,
+  subfolder: string = LEARN_SUBFOLDER,
 ): CloudFolder[] {
   return cloudRoots(home, platform).flatMap(
     ({ provider, label, root, base }) => {
       if (base === null) return [];
-      const path = join(base, LEARN_SUBFOLDER);
+      const path = join(base, subfolder);
       return [{ provider, label, root, path, exists: isDir(path) }];
     },
   );

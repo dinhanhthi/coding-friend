@@ -8,6 +8,7 @@ import {
   type CloudRoot,
   cloudRootOf,
   detectCloudFolders,
+  LEARN_SUBFOLDER,
 } from "./cloud-folders.js";
 import { resolveLearnDir } from "./config.js";
 import { run } from "./exec.js";
@@ -130,7 +131,7 @@ export function learnStatus(globalCfg: CodingFriendConfig | null): LearnStatus {
     git: gitState,
     autoCommit: globalCfg?.learn?.autoCommit ?? false,
     cloud: cloudRootOf(outputDir, home, process.platform),
-    suggestions: detectCloudFolders(home, process.platform),
+    suggestions: detectCloudFolders(home, process.platform, LEARN_SUBFOLDER),
   };
 }
 

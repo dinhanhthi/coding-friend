@@ -60,6 +60,10 @@ export const LearnConfigSchema = z.object({
   disabled: z.boolean().optional(),
 });
 
+export const SessionConfigSchema = z.object({
+  dir: z.string().optional(),
+});
+
 export const StatuslineComponentSchema = z.enum(STATUSLINE_COMPONENT_IDS);
 
 export const StatuslineConfigSchema = z.object({
@@ -171,6 +175,7 @@ export const ConfigSchema = z.object({
   docsDir: z.string().optional(),
   tdd: z.boolean().optional(),
   learn: LearnConfigSchema.optional(),
+  session: SessionConfigSchema.optional(),
   statusline: StatuslineConfigSchema.optional(),
   memory: MemoryConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),
@@ -200,6 +205,7 @@ const KNOWN_KEYS = Object.keys(ConfigSchema.shape);
 
 /** Nested objects whose unknown keys are reported, in warning order. */
 const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
+  [["session"], Object.keys(SessionConfigSchema.shape)],
   [["review"], Object.keys(ReviewConfigSchema.shape)],
   [["showcase"], Object.keys(ShowcaseConfigSchema.shape)],
   [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
@@ -444,6 +450,23 @@ export function resolveLearnDir(
     return resolvePath(globalCfg.learn.outputDir);
   }
   return resolvePath("~/.coding-friend/learn");
+}
+
+/**
+ * Resolve the saved-session store — global config only.
+ * Priority: explicit arg > globalCfg.session.dir > ~/.coding-friend/sessions
+ */
+export function resolveSessionDir(
+  globalCfg: CodingFriendConfig | null,
+  explicitPath?: string,
+): string {
+  if (explicitPath) {
+    return resolvePath(explicitPath);
+  }
+  if (globalCfg?.session?.dir) {
+    return resolvePath(globalCfg.session.dir);
+  }
+  return resolvePath("~/.coding-friend/sessions");
 }
 
 /**

@@ -382,6 +382,17 @@ function readHead(path: string, size: number): Parser {
   return p;
 }
 
+/** `cwd` from the head of a Claude transcript; "" when absent or unreadable. */
+export function readClaudeHeadCwd(path: string): string {
+  const st = lstatOrNull(path);
+  if (!st || !st.isFile()) return "";
+  try {
+    return readHead(path, st.size).cwd;
+  } catch {
+    return "";
+  }
+}
+
 function inRoot(cwd: string, root: string): boolean {
   return cwd === root || cwd.startsWith(root + sep);
 }

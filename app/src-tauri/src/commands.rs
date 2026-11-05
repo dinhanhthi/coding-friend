@@ -40,9 +40,9 @@ const CF_BIN_KEY: &str = "cfBinPath";
 const RUN_STARTED: &str = "cf-run-started";
 const PROJECT_DIR: &str = "--project-dir=";
 /// Keys that decide where CF writes files: `learn.outputDir` changes only through the learn
-/// folder picker, `docsDir` only through the CLI. A parent key (`learn`) is refused too,
-/// since `config set` writes a whole object.
-const PROTECTED_KEYS: [&str; 2] = ["learn.outputDir", "docsDir"];
+/// folder picker, `docsDir` and `session.dir` only through the CLI. A parent key (`learn`,
+/// `session`) is refused too, since `config set` writes a whole object.
+const PROTECTED_KEYS: [&str; 3] = ["learn.outputDir", "docsDir", "session.dir"];
 const MAX_CONFIG_VALUE: usize = 4096;
 /// Same limit as `MAX_URL` in app/src/lib/markdown-links.ts.
 const MAX_URL: usize = 2048;
@@ -1204,6 +1204,8 @@ mod tests {
             "learn",
             "learn.outputDir",
             "docsDir",
+            "session",
+            "session.dir",
         ] {
             assert!(
                 matches!(config_key(key), Err(CfError::Refused { .. })),

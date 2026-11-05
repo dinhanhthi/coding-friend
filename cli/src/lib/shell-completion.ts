@@ -81,7 +81,7 @@ _cf_completions() {
 
   # Subcommands for 'session'
   if [[ "\${COMP_WORDS[1]}" == "session" && \${COMP_CWORD} -eq 2 ]]; then
-    COMPREPLY=($(compgen -W "list show export save load" -- "$cur"))
+    COMPREPLY=($(compgen -W "list show export save load status" -- "$cur"))
     return
   fi
 
@@ -191,7 +191,7 @@ _cf_completions() {
     return
   fi
 
-  # Flag completion for session list/show/export
+  # Flag completion for session list/show/export/save/status/load
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "list" && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--json --provider --project-dir --limit" -- "$cur"))
     return
@@ -202,6 +202,18 @@ _cf_completions() {
   fi
   if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "export" && "$cur" == -* ]]; then
     COMPREPLY=($(compgen -W "--json --include-tool-output --project-dir" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "save" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--json --session-id --project-dir -l --label" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "status" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--json" -- "$cur"))
+    return
+  fi
+  if [[ "\${COMP_WORDS[1]}" == "session" && "\${COMP_WORDS[2]}" == "load" && "$cur" == -* ]]; then
+    COMPREPLY=($(compgen -W "--project-dir" -- "$cur"))
     return
   fi
 
@@ -418,19 +430,26 @@ const ZSH_FUNCTION_BODY = `_cf() {
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "session" ]]; then
     local -a subcommands
     subcommands=(
-      'list:List Claude Code and Codex sessions, newest first'
+      'list:List Claude Code, Codex and saved sessions, newest first'
       "show:Print a session's turns, always redacted"
       'export:Print a session as redacted Markdown'
-      'save:Save current session to docs/sessions/'
-      'load:Load a saved session from docs/sessions/'
+      'save:Save a Claude Code session verbatim (not redacted) to session.dir'
+      'load:Load a saved session from session.dir'
+      'status:Show session.dir, its cloud folder and suggested folders'
     )
     _describe 'subcommand' subcommands
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "list" ]]; then
-    _values 'flags' '--json[Output a JSON envelope]' '--provider[Only sessions of this provider (claude|codex)]' '--project-dir[Only sessions of this project (resolved to its main repo root)]' '--limit[At most this many sessions (1-500, default 50)]'
+    _values 'flags' '--json[Output a JSON envelope]' '--provider[Only sessions of this provider (claude|codex|saved)]' '--project-dir[Only sessions of this project (resolved to its main repo root)]' '--limit[At most this many sessions (1-500, default 50)]'
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "show" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' '--offset[First turn to print (default 0)]' '--limit[At most this many turns (1-1000, default 200)]' "--project-dir[Prefer this project's copy of the session]"
   elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "export" ]]; then
     _values 'flags' '--json[Output a JSON envelope]' '--include-tool-output[Include tool output (redacted, cut)]' "--project-dir[Prefer this project's copy of the session]"
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "save" ]]; then
+    _values 'flags' '--json[Output a JSON envelope]' '--session-id[Session UUID to save (default: newest)]' '--project-dir[Look for the session in this project (resolved to its main repo root)]' '-l[Label for this session]' '--label[Label for this session]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "status" ]]; then
+    _values 'flags' '--json[Output a JSON envelope]'
+  elif (( CURRENT >= 4 )) && [[ "\${words[2]}" == "session" && "\${words[3]}" == "load" ]]; then
+    _values 'flags' "--project-dir[Also list this project's legacy docs sessions]"
   elif (( CURRENT == 3 )) && [[ "\${words[2]}" == "guide" ]]; then
     local -a subcommands
     subcommands=(
@@ -595,14 +614,17 @@ complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcomman
 complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from edit delete" -l if-match -r -d "sha256 from memory show"
 complete -c cf -n "__fish_seen_subcommand_from memory; and __fish_seen_subcommand_from delete" -l yes -d "Skip the confirmation prompt (required with --json)"
 # Session subcommands and flags
-complete -c cf -n "__fish_seen_subcommand_from session" -a list -d "List Claude Code and Codex sessions, newest first"
+complete -c cf -n "__fish_seen_subcommand_from session" -a list -d "List Claude Code, Codex and saved sessions, newest first"
 complete -c cf -n "__fish_seen_subcommand_from session" -a show -d "Print a session's turns, always redacted"
 complete -c cf -n "__fish_seen_subcommand_from session" -a export -d "Print a session as redacted Markdown"
-complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save current session to docs/sessions/"
-complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from docs/sessions/"
-complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export" -l json -d "Output a JSON envelope"
-complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
-complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list" -l provider -r -d "Only sessions of this provider: claude|codex"
+complete -c cf -n "__fish_seen_subcommand_from session" -a save -d "Save a Claude Code session verbatim (not redacted) to session.dir"
+complete -c cf -n "__fish_seen_subcommand_from session" -a load -d "Load a saved session from session.dir"
+complete -c cf -n "__fish_seen_subcommand_from session" -a status -d "Show session.dir, its cloud folder and suggested folders"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export save status" -l json -d "Output a JSON envelope"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show export save load" -l project-dir -r -d "Run against this project (resolved to its main repo root)"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list" -l provider -r -d "Only sessions of this provider: claude|codex|saved"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from save" -l session-id -r -d "Session UUID to save (default: newest)"
+complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from save" -s l -l label -r -d "Label for this session"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from list show" -l limit -r -d "At most this many sessions or turns"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show" -l offset -r -d "First turn to print (default 0)"
 complete -c cf -n "__fish_seen_subcommand_from session; and __fish_seen_subcommand_from show export" -l include-tool-output -d "Include tool output (redacted, cut)"
@@ -632,7 +654,7 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
   $commands = @('install','uninstall','disable','enable','init','config','learn','mcp','memory','permission','statusline','update','status','version','doctor','docs','project','ask','reply','done','task','supervisor','chef','clean','dev','session','guide')
   $devSubcommands = @('on','off','status','restart','sync','update')
   $memorySubcommands = @('status','search','list','show','edit','delete','rm','init','config','start-daemon','stop-daemon','rebuild','mcp')
-  $sessionSubcommands = @('list','show','export','save','load')
+  $sessionSubcommands = @('list','show','export','save','load','status')
   $docsSubcommands = @('list','show')
   $projectSubcommands = @('list','add','remove')
   $taskSubcommands = @('run','list','show','cancel')
@@ -685,6 +707,15 @@ Register-ArgumentCompleter -Native -CommandName cf -ScriptBlock {
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'export') {
     @('--json','--include-tool-output','--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'save') {
+    @('--json','--session-id','--project-dir','-l','--label') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'status') {
+    @('--json') | Where-Object { $_ -like "$wordToComplete*" } |
+      ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+  } elseif ($wordToComplete -like '-*' -and $words.Count -ge 3 -and $words[1].ToString() -eq 'session' -and $words[2].ToString() -eq 'load') {
+    @('--project-dir') | Where-Object { $_ -like "$wordToComplete*" } |
       ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
   } elseif ($wordToComplete -like '-*' -and $words.Count -ge 2 -and $words[1].ToString() -eq 'doctor') {
     @('--project-dir','--json') | Where-Object { $_ -like "$wordToComplete*" } |
