@@ -424,7 +424,7 @@ The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes
 - **Requirements.** macOS or Linux. Writer tasks and every Codex and OpenCode task must run inside a git repo. The provider CLI (`claude`, `codex` 0.161.0 or newer, or `opencode` 2.0.13 or newer and below 3) must be logged in and on `PATH` (missing, or outside the supported version → `PROVIDER_UNAVAILABLE`). Login is not checked: a provider that is not logged in fails the task with its own error.
 - **Preflight.** A provider's own check (today OpenCode's version range) runs when the task is dispatched and again before every attempt (for example when `opencode` was upgraded while the task was paused); at dispatch `cf task run` is refused; before an attempt the task fails without starting the worker.
 - **What is stored.** No transcripts and no event logs: the prompt, the worker's questions and your answers, the `cf done` summary and handoff, the session/thread id (plus the Claude transcript path), the result (exit code, outcome, error) and the worker's last message (cut at 4 KB). Worker text is shown as untrusted output, control characters stripped.
-- **Approvals.** Coding Friend's auto-approve hook only approves `cf task list|show|follow` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
+- **Approvals.** Of `cf task` and `cf chef`, Coding Friend's auto-approve hook approves only `cf task list|show|follow` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
 
 ### Following a task
 

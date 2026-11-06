@@ -150,6 +150,23 @@ describe("auto-approve.agy.cjs", () => {
     }
   });
 
+  it("asks write_to_file to a tilde path outside workspace", () => {
+    const cwd = makeProject();
+    try {
+      const result = runHook(cwd, {
+        workspacePaths: [cwd],
+        toolCall: {
+          name: "write_to_file",
+          args: { TargetFile: "~/outside/x.txt" },
+        },
+      });
+      expect(result.status).toBe(0);
+      expect(result.json.decision).toBe("ask");
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("allows run_command safe (ls)", () => {
     const cwd = makeProject();
     try {
@@ -184,14 +201,14 @@ describe("auto-approve.agy.cjs", () => {
     }
   });
 
-  it("asks run_command rm -rf . when Cwd is outside workspace", () => {
+  it("asks run_command rm -rf build when Cwd is outside workspace", () => {
     const cwd = makeProject();
     try {
       const result = runHook(cwd, {
         workspacePaths: [cwd],
         toolCall: {
           name: "run_command",
-          args: { CommandLine: "rm -rf .", Cwd: os.homedir() },
+          args: { CommandLine: "rm -rf build", Cwd: os.homedir() },
         },
       });
       expect(result.status).toBe(0);
@@ -201,14 +218,16 @@ describe("auto-approve.agy.cjs", () => {
     }
   });
 
-  it("allows run_command rm -rf . when Cwd is the workspace", () => {
+  it("allows run_command rm -rf build when Cwd is the workspace", () => {
     const cwd = makeProject();
     try {
+      // Must exist: the tmp workspace sits under a symlink (/var -> /private/var).
+      fs.mkdirSync(path.join(cwd, "build"));
       const result = runHook(cwd, {
         workspacePaths: [cwd],
         toolCall: {
           name: "run_command",
-          args: { CommandLine: "rm -rf .", Cwd: cwd },
+          args: { CommandLine: "rm -rf build", Cwd: cwd },
         },
       });
       expect(result.status).toBe(0);

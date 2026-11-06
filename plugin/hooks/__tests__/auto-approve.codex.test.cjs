@@ -163,6 +163,27 @@ describe("auto-approve.codex.cjs", () => {
     }
   });
 
+  it("emits no decision for apply_patch adding a file under the home dir", () => {
+    const cwd = makeProject();
+    try {
+      const patch = [
+        "*** Begin Patch",
+        "*** Add File: ~/outside/z.txt",
+        "+x",
+        "*** End Patch",
+      ].join("\n");
+      expect(
+        runHook(cwd, {
+          hookEventName: "PermissionRequest",
+          tool_name: "apply_patch",
+          tool_input: { command: patch },
+        }),
+      ).toEqual({});
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("emits no decision for apply_patch with an unparseable envelope", () => {
     const cwd = makeProject();
     try {
