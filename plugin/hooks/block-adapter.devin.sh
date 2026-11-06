@@ -50,9 +50,9 @@ if [ "$CODE" -eq 2 ]; then
           reason = j.reason;
         }
       } catch {
-        // Inner output may be malformed JSON (e.g. privacy-block.sh
-        // interpolates a regex like \.env$ unescaped) — regex-extract the
-        // reason fields before falling back to generic text.
+        // Inner output may still be malformed JSON (privacy-block.sh now
+        // escapes its reason, but other inner hooks may not) — regex-extract
+        // the reason fields before falling back to generic text.
         const m =
           s.match(/"permissionDecisionReason"\s*:\s*"((?:[^"\\]|\\.)*)"/) ||
           s.match(/"reason"\s*:\s*"((?:[^"\\]|\\.)*)"/);
