@@ -190,7 +190,8 @@ export function DocsView({ project }: { project: string }) {
                     title={file.path}
                     onClick={() => select(file.path)}
                     className={cn(
-                      "w-full truncate rounded-md px-2 py-1 text-left font-mono text-xs text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
+                      // Wrap, not truncate: nested plan paths share a long date prefix.
+                      "w-full rounded-md px-2 py-1 text-left font-mono text-xs break-words text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
                       folder !== "" && "pl-6",
                       file.path === selected &&
                         "bg-paper-3 font-medium text-ink",

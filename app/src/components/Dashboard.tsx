@@ -48,6 +48,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
   );
   // The version queries load on the first visit of the Version view, then stay.
   const [versionSeen, setVersionSeen] = useState(false);
+  const [learnStorage, setLearnStorage] = useState(false);
 
   const projects = useCfQuery("projects", projectList);
   const supervisor = useCfQuery("supervisor", supervisorStatus);
@@ -95,7 +96,13 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
 
   const show = (next: View) => {
     setView(next);
+    setLearnStorage(false);
     if (next === "version") setVersionSeen(true);
+  };
+  // "Open Learn" from a learn.outputDir row: land on Learn with its storage card open.
+  const openLearnStorage = () => {
+    show("learn");
+    setLearnStorage(true);
   };
 
   const select = (path: string) => {
@@ -217,7 +224,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         pending={pending}
         supervisor={supervisor}
       />
-      <main className="min-w-0 flex-1 overflow-auto">
+      <main className="min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
         {view === "projects" ? (
           selected ? (
             <ProjectDetail
@@ -226,7 +233,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
               pending={pending}
               onSetConfig={setConfig}
               run={start}
-              onOpenLearn={() => show("learn")}
+              onOpenLearn={openLearnStorage}
             />
           ) : projects.status === "ok" ? (
             <NoProjects onAdd={add} disabled={pending !== null} />
@@ -237,10 +244,10 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
           <SettingsView
             pending={pending}
             onSet={setConfig}
-            onOpenLearn={() => show("learn")}
+            onOpenLearn={openLearnStorage}
           />
         ) : view === "learn" ? (
-          <LearnView pending={pending} run={start} />
+          <LearnView pending={pending} run={start} openStorage={learnStorage} />
         ) : view === "sessions" ? (
           <SessionsView projects={list} pending={pending} run={start} />
         ) : (

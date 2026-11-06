@@ -262,20 +262,51 @@ function CheckRow({
   /** Absent: no fix button, the fix shows as a manual command. */
   onFix?: (check: DoctorCheck, argv: string[]) => void;
 }) {
-  const { fix } = check;
   return (
-    <li className="flex flex-col gap-2 px-3 py-2.5">
-      <div className="flex items-start gap-2">
-        <Badge variant={STATUS_VARIANT[check.status]} className="mt-px">
-          {check.status}
-        </Badge>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+    <li className="flex items-start gap-2 px-3 py-2.5">
+      {/* Fixed width so every label starts in the same column (ok vs warn/fail). */}
+      <Badge
+        variant={STATUS_VARIANT[check.status]}
+        className="mt-px w-11 justify-center"
+      >
+        {check.status}
+      </Badge>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-0.5">
           <p className="text-sm break-words">{check.label}</p>
           {check.detail && (
             <p className="text-xs break-words text-muted">{check.detail}</p>
           )}
         </div>
+        <CheckAction
+          check={check}
+          fixing={fixing}
+          disabled={disabled}
+          error={error}
+          onFix={onFix}
+        />
       </div>
+    </li>
+  );
+}
+
+/** The fix button, manual command or hint, and the fix error, under the label. */
+function CheckAction({
+  check,
+  fixing,
+  disabled,
+  error,
+  onFix,
+}: {
+  check: DoctorCheck;
+  fixing: "confirming" | "running" | null;
+  disabled: boolean;
+  error?: string;
+  onFix?: (check: DoctorCheck, argv: string[]) => void;
+}) {
+  const { fix } = check;
+  return (
+    <>
       {fix && onFix && isRunnableFix(fix.argv) ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Button
@@ -312,7 +343,7 @@ function CheckRow({
           {error}
         </p>
       )}
-    </li>
+    </>
   );
 }
 

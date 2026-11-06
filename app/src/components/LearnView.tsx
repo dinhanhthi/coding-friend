@@ -1,4 +1,4 @@
-import { FolderOpen, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderOpen, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandLine } from "@/components/CommandLine";
@@ -82,9 +82,12 @@ function commitNotice(
 export function LearnView({
   pending,
   run,
+  openStorage = false,
 }: {
   pending: PendingRun | null;
   run: StartRun;
+  /** Start with the storage card open (arriving from "Open Learn"). */
+  openStorage?: boolean;
 }) {
   const status = useCfQuery("learn-status", learnStatus);
   const list = useCfQuery("learn-list", learnList);
@@ -92,6 +95,8 @@ export function LearnView({
   const [missing, setMissing] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [dirError, setDirError] = useState<string | null>(null);
+  // Collapsed by default like Sessions' storage card, so the notes come first.
+  const [storageOpen, setStorageOpen] = useState(openStorage);
   const note = useCfQuery(
     selected === null ? null : `learn-note:${selected}`,
     () => learnShow(selected ?? ""),
@@ -225,6 +230,8 @@ export function LearnView({
       </header>
 
       <StorageCard
+        open={storageOpen}
+        onOpen={setStorageOpen}
         status={status}
         pending={pending}
         error={dirError}
@@ -340,12 +347,16 @@ export function LearnView({
 
 /** Where learn notes live, and the two ways to change it (both confirmed by Rust). */
 function StorageCard({
+  open,
+  onOpen,
   status,
   pending,
   error,
   onChoose,
   onUse,
 }: {
+  open: boolean;
+  onOpen: (open: boolean) => void;
   status: CfQuery<LearnStatus>;
   pending: PendingRun | null;
   error: string | null;
@@ -361,9 +372,12 @@ function StorageCard({
         : key === CHOOSE_KEY
           ? "Waiting for a folder choice…"
           : "Waiting for confirmation…";
+  const Chevron = open ? ChevronDown : ChevronRight;
 
   let content;
-  if (status.error) {
+  if (!open) {
+    content = null;
+  } else if (status.error) {
     content = (
       <div className="flex flex-col items-start gap-2">
         <p role="alert" className="text-sm break-words text-danger">
@@ -506,11 +520,21 @@ function StorageCard({
       aria-labelledby="learn-storage-title"
       className="flex flex-col gap-3 rounded-lg border border-rule p-4"
     >
-      <h3
-        id="learn-storage-title"
-        className="text-xs font-medium tracking-wide text-muted uppercase"
-      >
-        Where learn notes live
+      <h3 id="learn-storage-title">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => onOpen(!open)}
+          className="flex w-full items-center gap-1.5 rounded-sm text-left text-xs font-medium tracking-wide text-muted uppercase outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        >
+          <Chevron aria-hidden className="size-3.5" />
+          Where learn notes live
+          {!open && status.data && (
+            <span className="min-w-0 flex-1 truncate font-mono tracking-normal normal-case">
+              {status.data.outputDir}
+            </span>
+          )}
+        </button>
       </h3>
       {content}
     </section>

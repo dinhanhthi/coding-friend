@@ -477,8 +477,9 @@ export function NoteItem({
           selected && "bg-paper-3 font-medium text-ink hover:bg-paper-3",
         )}
       >
-        <span className="flex items-center gap-1.5 text-xs">
-          <span className="truncate">{title || id}</span>
+        <span className="flex items-start gap-1.5 text-xs">
+          {/* Wrap, not truncate: similar titles differ only at the end. */}
+          <span className="min-w-0 break-words">{title || id}</span>
           {hasDraft && (
             <span className="shrink-0 text-[0.6875rem] text-muted">draft</span>
           )}
