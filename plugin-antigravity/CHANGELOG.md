@@ -2,6 +2,18 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.0 (2026-11-06)
+
+- Add the optional `coding-friend-mods` plugin to the marketplace: a quota sensor with a status band, toasts when a review or plan phase finishes, and a plan progress pane. Install it with `cf install --mods` [#639707d3](https://github.com/dinhanhthi/coding-friend/commit/639707d3) [#ca65d118](https://github.com/dinhanhthi/coding-friend/commit/ca65d118)
+- `/cf-session` now runs on the CLI (`cf session save`) and saves with redaction to the global session store; the four helper scripts it carried are gone, and the skill asks you to install `cf` when it is missing [#f493b674](https://github.com/dinhanhthi/coding-friend/commit/f493b674)
+- `/cf-review` writes a shadow false-positive log when the opt-in decision model is enabled (`cf decide`), without changing the review result [#4891d800](https://github.com/dinhanhthi/coding-friend/commit/4891d800)
+- The SessionStart hooks record each project in the registry the CLI and the desktop app read [#f450f421](https://github.com/dinhanhthi/coding-friend/commit/f450f421)
+- Auto-approve (Codex, Antigravity, Devin) allows `cf doctor`, `cf update --yes`, `cf session list|show|status`, `cf sync status` and `cf chef status|inbox|show`, and no longer approves `cf permission`, `cf uninstall`, `cf disable`, `cf host`, `cf memory rm|config` or `cf dev` beyond `status` [#3c38b828](https://github.com/dinhanhthi/coding-friend/commit/3c38b828) [#f493b674](https://github.com/dinhanhthi/coding-friend/commit/f493b674) [#c0d84e1e](https://github.com/dinhanhthi/coding-friend/commit/c0d84e1e)
+- Fix auto-approve resolving paths: `~`, `$HOME`, `${HOME}`, `~user`, brace and dot-glob targets are understood, `rm` of the project root, home or their parents is refused, and quoted or escaped `rm` targets, `env` with arguments, `find -exec` and `rm` after `cd` are never approved [#c0d84e1e](https://github.com/dinhanhthi/coding-friend/commit/c0d84e1e) [#6c616f44](https://github.com/dinhanhthi/coding-friend/commit/6c616f44)
+- Fix `privacy-block` (Claude Code, Codex, Devin): the deny JSON is escaped without node, input is parsed with node (without it `apply_patch` is denied), Grep and Glob patterns are checked as globs, and safe-name patterns are anchored so `config/<dotenv>.example.local` no longer slips through [#c9767052](https://github.com/dinhanhthi/coding-friend/commit/c9767052)
+- Fix the Antigravity `privacy-block` hook: `run_command` is checked token by token, including nested shells, `-c`, `env -S` and pipes or redirects into commands that are not read-only filters, and a lone `yq` argument counts as a file [#c9767052](https://github.com/dinhanhthi/coding-friend/commit/c9767052) [#75bbaf3d](https://github.com/dinhanhthi/coding-friend/commit/75bbaf3d) [#ef7a02cf](https://github.com/dinhanhthi/coding-friend/commit/ef7a02cf)
+- Fix the Antigravity `privacy-block` hook allowing every tool when `node` is missing or does not run: it now denies instead [#1b65cd6d](https://github.com/dinhanhthi/coding-friend/commit/1b65cd6d)
+
 ## v0.46.8 (2026-11-02)
 
 - The statusline shows the session's reasoning effort next to the model, e.g. `Opus 5.5 (high)`; nothing is added when the model does not support effort [#73b70012](https://github.com/dinhanhthi/coding-friend/commit/73b70012)
