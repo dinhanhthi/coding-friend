@@ -82,9 +82,17 @@ git show <hash> --stat
 
 **Cross-cutting commit attribution:** A commit that touches paths in multiple packages will appear in both `git log` results. Attribute it to the **primary** package only (see Step B2). Do NOT write duplicate entries across changelogs for the same commit.
 
-**Only edit `plugin/CHANGELOG.md`, `cli/CHANGELOG.md` and `app/CHANGELOG.md`.** `app/CHANGELOG.md` is created at the first app `/cf-ship`; keep the same `## v{version} (date)` headings — `release-app-local.sh` reads that section for the release notes. `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
+**Only edit `plugin/CHANGELOG.md`, `cli/CHANGELOG.md` and `app/CHANGELOG.md` as changelogs** (Step B4b also updates the local overview doc `docs/cf-overview.md`; that is not a changelog and is still required). `app/CHANGELOG.md` is created at the first app `/cf-ship`; keep the same `## v{version} (date)` headings — `release-app-local.sh` reads that section for the release notes. `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
 
 These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`, `app/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
+
+### Step B4b: Update the overview doc
+
+`docs/cf-overview.md` is the owner's running summary of how Coding Friend (plugin, CLI, app) works at the latest release, in Vietnamese. It lives under the gitignored `docs/`, so it is never staged or committed: edit it on disk only. Skip this step when the file does not exist (another checkout or contributor).
+
+- Set the version line at the top (`plugin vX · CLI vY · app vZ`, release date) and `Cập nhật lần cuối`, using the versions this ship releases (unchanged packages keep their current version).
+- Add one row at the top of the "Nhật ký phiên bản" table: date, the three versions, and the main changes in one or two sentences, net vs the previous release (same rule as the changelogs).
+- When a shipped change alters how something works (a new command or view, a new hook, a changed data path, a changed release flow), update the matching section above the table. Check each claim against the code, not the plan; leave sections untouched when nothing changed.
 
 ### Step B5: Ship (commit + push)
 
