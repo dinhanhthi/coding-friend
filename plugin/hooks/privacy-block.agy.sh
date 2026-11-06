@@ -678,15 +678,23 @@ function filterItems(cmds) {
   const loads = [];
   for (const words of cmds) {
     if (!FILTER_CMD.test(text(words[0]))) continue;
-    for (const w of words.slice(1)) {
+    // yq reads a lone argument naming an existing file as that file, so its
+    // first word is only a filter after -n or when another argument follows.
+    const yq = /yq$/.test(text(words[0]));
+    let nullInput = false;
+    for (let k = 1; k < words.length; k++) {
+      const w = words[k];
       const t = text(w);
       if (t[0] === "-") {
         if (!/^--?[A-Za-z][\w-]*$/.test(t) || /^-[A-Za-z]*[fL]|^--from-file/.test(t)) break;
+        if (/^(-[A-Za-z]*n[A-Za-z]*|--null-input)$/.test(t)) nullInput = true;
         continue;
       }
       if (LOADS.test(t)) {
         for (const m of t.matchAll(/"((?:[^"\\]|\\.)*)"/g)) loads.push(m[1]);
-      } else if (w.every((x) => x.q !== 0) && !t.includes("/")) w.forEach((x) => out.add(x));
+      } else if (w.every((x) => x.q !== 0) && !t.includes("/") && (!yq || nullInput || k + 1 < words.length)) {
+        w.forEach((x) => out.add(x));
+      }
       break;
     }
   }

@@ -399,6 +399,10 @@ describe("privacy-block.agy.sh", () => {
     ['echo "a.pem b" | xargs cat', "deny"],
     // A yq/jq filter that loads a file names it in a string literal.
     [`yq 'load(".env")'`, "deny"],
+    // yq reads a lone argument naming an existing file as that file.
+    ["yq '.env'", "deny"],
+    ["yq -n '.env'", "allow"],
+    ["jq '.env'", "allow"],
     [`yq '.a = load(".env")' x.yaml`, "deny"],
     [`yq -n 'load_str(".env")'`, "deny"],
     [`yq -n 'load_base64(".env")'`, "deny"],
