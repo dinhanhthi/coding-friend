@@ -401,6 +401,9 @@ describe("privacy-block.agy.sh", () => {
     [`yq 'load(".env")'`, "deny"],
     // yq reads a lone argument naming an existing file as that file.
     ["yq '.env'", "deny"],
+    ["yq '.env' -P", "deny"],
+    ["yq '.env' -o json", "deny"],
+    ["yq '.a.env' -o json f.yaml", "allow"],
     ["yq -n '.env'", "allow"],
     ["jq '.env'", "allow"],
     [`yq '.a = load(".env")' x.yaml`, "deny"],

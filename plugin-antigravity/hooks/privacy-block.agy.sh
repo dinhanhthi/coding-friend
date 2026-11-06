@@ -692,7 +692,13 @@ function filterItems(cmds) {
       }
       if (LOADS.test(t)) {
         for (const m of t.matchAll(/"((?:[^"\\]|\\.)*)"/g)) loads.push(m[1]);
-      } else if (w.every((x) => x.q !== 0) && !t.includes("/") && (!yq || nullInput || k + 1 < words.length)) {
+      } else if (
+        w.every((x) => x.q !== 0) &&
+        !t.includes("/") &&
+        // A later positional only counts when no flag precedes it (it might
+        // be that flag's value: yq '.x' -o json is still a lone argument).
+        (!yq || nullInput || words.some((v, j) => j > k + 1 && !/^-/.test(text(v)) && !/^-/.test(text(words[j - 1])) || (j === k + 1 && !/^-/.test(text(v)))))
+      ) {
         w.forEach((x) => out.add(x));
       }
       break;
