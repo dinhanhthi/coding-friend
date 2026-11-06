@@ -1,5 +1,15 @@
-import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
+import { execFileSync } from "child_process";
+import {
+  lstatSync,
+  mkdirSync,
+  readlinkSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+  type Stats,
+} from "fs";
+import { tmpdir } from "os";
+import { dirname, join, relative, resolve, sep } from "path";
 import { compareVersions } from "../../host.js";
 import { buildPreamble } from "../preamble.js";
 import { isModelName, isSessionId } from "../store.js";
@@ -69,6 +79,10 @@ export const OPENCODE_RULES: readonly Rule[] = [
   // can read dotenv files too: not a baseline guarantee.
   rule("read", "*.env", "deny"),
   rule("read", "*.env.*", "deny"),
+  rule("read", "*.npmrc", "deny"),
+  rule("read", "*.netrc", "deny"),
+  rule("read", "*.envrc", "deny"),
+  rule("read", "*.git/config", "deny"),
   rule("read", "*.env.example", "allow"),
   rule("glob", "*", "allow"),
   rule("grep", "*", "allow"),
@@ -111,6 +125,142 @@ function errorText(v: unknown): { type?: string; message?: string } {
 /** Quota error types of 2.0.13; the error line carries no reset time. */
 const QUOTA_TYPES = new Set(["provider.rate-limit", "provider.quota"]);
 
+/** `*` matches anything (also `/`), like opencode's wildcard. */
+function wildcard(pattern: string, value: string): boolean {
+  const re = pattern
+    .split("*")
+    .map((x) => x.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${re}$`, "s").test(value);
+}
+
+/**
+ * The default file systems of macOS and Windows ignore case: `.ENV` opens the
+ * same file as its lowercase name, so the guard compares names folded there.
+ */
+const FOLD_CASE = process.platform === "darwin" || process.platform === "win32";
+const fold = (s: string): string => (FOLD_CASE ? s.toLowerCase() : s);
+
+/** Effect of OPENCODE_RULES for a read of `path` (last match wins). */
+function readEffect(path: string): Rule["effect"] | undefined {
+  return [...OPENCODE_RULES]
+    .reverse()
+    .find(
+      (r) =>
+        wildcard(r.action, "read") && wildcard(fold(r.resource), fold(path)),
+    )?.effect;
+}
+
+const GIT_TIMEOUT_MS = 30_000;
+const GIT_MAX_OUTPUT = 64 * 1024 * 1024;
+
+/**
+ * Why the checkout must not run under opencode, else undefined. Opencode
+ * follows symlinks and checks its read rules against the link name (probe
+ * 2026-11-06, v2.0.13), so a link may lead outside the checkout or to a
+ * denied file under a harmless name. Every tracked or untracked, not
+ * ignored path is lstat'ed: a link is refused when its target (realpath,
+ * else lexical for a dead link) is outside the checkout, inside a `.git`
+ * dir or a denied read (names compared case-folded on macOS and Windows,
+ * realpaths in their on-disk spelling). A submodule, nested repo or other
+ * listed dir is refused (git does not list its files). Not checked:
+ * ignored symlinks, symlinks inside ignored directories and inside `.git/`.
+ * A missing checkout is accepted; a git or lstat failure is refused. git
+ * runs with a replaced env, no system config, no fsmonitor, no discovery
+ * above the checkout and an explicit work tree (a repo config could run a
+ * command or move the listing); ls-files runs no hook.
+ */
+function symlinkRefusal(checkout: string): string | undefined {
+  let root: string;
+  try {
+    root = realpathSync.native(checkout);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    return `opencode: cannot resolve the checkout (${String(err)})`;
+  }
+  // No discovery above the checkout: a vanished `.git` must not let git
+  // list an ancestor repo instead.
+  const env: NodeJS.ProcessEnv = {
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_CEILING_DIRECTORIES: dirname(root),
+  };
+  for (const k of ["PATH", "HOME"]) {
+    if (process.env[k] !== undefined) env[k] = process.env[k];
+  }
+  let out: string;
+  try {
+    out = execFileSync(
+      "git",
+      [
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.untrackedCache=false",
+        "-C",
+        root,
+        // A planted core.worktree must not move the listing elsewhere.
+        `--work-tree=${root}`,
+        "ls-files",
+        "-z",
+        "-c",
+        "-o",
+        "--exclude-standard",
+      ],
+      {
+        encoding: "utf-8",
+        cwd: tmpdir(),
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: GIT_TIMEOUT_MS,
+        killSignal: "SIGKILL",
+        maxBuffer: GIT_MAX_OUTPUT,
+      },
+    );
+  } catch {
+    return "opencode: cannot list the checkout's files with git, so its symlinks cannot be checked";
+  }
+  for (const rel of new Set(out.split("\0"))) {
+    if (!rel) continue;
+    const abs = join(root, rel);
+    let target: string;
+    let st: Stats;
+    try {
+      st = lstatSync(abs);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") continue; // tracked but deleted
+      return `opencode refuses the checkout: cannot check ${JSON.stringify(rel)} (${String(err)})`;
+    }
+    // ls-files lists a dir only for a submodule, a nested repo or a tracked
+    // path replaced by a dir: git does not list what is inside, so its links
+    // cannot be checked.
+    if (st.isDirectory()) {
+      return `opencode refuses the checkout: submodule, nested repository or directory ${JSON.stringify(rel)} cannot be checked`;
+    }
+    if (!st.isSymbolicLink()) continue;
+    try {
+      target = realpathSync.native(abs);
+    } catch {
+      try {
+        target = resolve(dirname(abs), readlinkSync(abs));
+      } catch {
+        return `opencode refuses the checkout: cannot read symlink ${JSON.stringify(rel)}`;
+      }
+    }
+    if (target !== root && !target.startsWith(root + sep)) {
+      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points outside it (opencode follows links past its read rules)`;
+    }
+    // A link into a `.git` dir: `g` → `.git`, then `g/config` escapes the
+    // `*.git/config` rule. Other dir links stay allowed.
+    if (fold(relative(root, target)).split(sep).includes(".git")) {
+      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points into a .git directory`;
+    }
+    if (readEffect(target) !== "allow") {
+      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points to a file its read rules deny`;
+    }
+  }
+  return undefined;
+}
+
 /**
  * OpenCode read-only worker (`opencode run --format json`). Preamble +
  * prompt go only through stdin (closed by the runner). `prepare()` writes the
@@ -120,10 +270,14 @@ export const opencode: ProviderAdapter = {
   bin: "opencode",
   caps: CAPS,
 
-  preflight() {
-    const found = binaryVersion("opencode", {
-      env: { OPENCODE_DISABLE_AUTOUPDATE: "1" },
-    });
+  preflight(req) {
+    // Only PATH and HOME: an inherited OPENCODE_* (config dir, config
+    // content) must not reach even the --version run.
+    const env: NodeJS.ProcessEnv = { OPENCODE_DISABLE_AUTOUPDATE: "1" };
+    for (const k of ["PATH", "HOME"]) {
+      if (process.env[k] !== undefined) env[k] = process.env[k];
+    }
+    const found = binaryVersion("opencode", { env, replaceEnv: true });
     const major = found ? Number(found.split(".")[0]) : NaN;
     if (
       !found ||
@@ -135,7 +289,10 @@ export const opencode: ProviderAdapter = {
         message: `opencode >=${MIN_OPENCODE_VERSION} <${MAX_OPENCODE_MAJOR} is required (found ${found ?? "unknown"})`,
       };
     }
-    return undefined;
+    const symlink = symlinkRefusal(req.checkout);
+    return symlink
+      ? { code: "PROVIDER_UNAVAILABLE", message: symlink }
+      : undefined;
   },
 
   async prepare(_task, ctx) {

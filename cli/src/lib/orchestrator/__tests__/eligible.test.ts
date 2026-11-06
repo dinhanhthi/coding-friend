@@ -216,6 +216,21 @@ describe("binaryVersion (providers/version.ts)", () => {
     );
   });
 
+  it("replaceEnv: opts.env is the whole env, nothing inherited", () => {
+    vi.stubEnv("CF_TEST_INHERITED", "9.9.9");
+    try {
+      const bin = fakeBin(
+        "echo-inherited",
+        'printf "%s\\n" "${CF_TEST_INHERITED:-1.0.0}"',
+      );
+      expect(binaryVersion(bin)).toBe("9.9.9");
+      expect(binaryVersion(bin, { env: {} })).toBe("9.9.9");
+      expect(binaryVersion(bin, { env: {}, replaceEnv: true })).toBe("1.0.0");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("opts.args follow --version; without them only --version", () => {
     const bin = fakeBin(
       "echo-args",
