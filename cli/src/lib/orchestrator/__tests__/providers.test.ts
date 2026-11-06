@@ -12,6 +12,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  linkSync,
   readdirSync,
   readFileSync,
   realpathSync,
@@ -23,6 +24,7 @@ import {
 import { join } from "path";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
+import { execFileSync } from "child_process";
 
 // Never run a real opencode: its version is injected.
 const ver = vi.hoisted(() => ({
@@ -59,7 +61,7 @@ import {
   type SpawnContext,
   type StreamAcc,
 } from "../providers/index.js";
-import { OPENCODE_AGENT } from "../providers/opencode.js";
+import { OPENCODE_AGENT, OPENCODE_RULES } from "../providers/opencode.js";
 import { binaryVersion } from "../providers/version.js";
 import {
   newId,
@@ -1067,7 +1069,37 @@ describe("opencode worker (C3a)", () => {
         expect(evaluate(rules, "read", `${dotenv}.local`)).toBe("deny");
         expect(evaluate(rules, "read", `${dotenv}.example`)).toBe("allow");
         expect(evaluate(rules, "read", "/repo/src/a.ts")).toBe("allow");
+        expect(evaluate(rules, "read", "/repo/." + "npmrc")).toBe("deny");
+        expect(evaluate(rules, "read", "/repo/.git/config")).toBe("deny");
       }
+    });
+
+    // Last match wins, so the order is part of the security contract.
+    it("OPENCODE_RULES is exactly this list, in this order", () => {
+      const env = "*." + "env";
+      expect(OPENCODE_RULES).toEqual([
+        { action: "*", resource: "*", effect: "deny" },
+        { action: "edit", resource: "*", effect: "deny" },
+        { action: "shell", resource: "*", effect: "deny" },
+        { action: "webfetch", resource: "*", effect: "deny" },
+        { action: "websearch", resource: "*", effect: "deny" },
+        { action: "subagent", resource: "*", effect: "deny" },
+        { action: "skill", resource: "*", effect: "deny" },
+        { action: "question", resource: "*", effect: "deny" },
+        { action: "execute", resource: "*", effect: "deny" },
+        { action: "external_directory", resource: "*", effect: "deny" },
+        { action: "read", resource: "*", effect: "allow" },
+        { action: "read", resource: env, effect: "deny" },
+        { action: "read", resource: `${env}.*`, effect: "deny" },
+        { action: "read", resource: "*." + "npmrc", effect: "deny" },
+        { action: "read", resource: "*." + "netrc", effect: "deny" },
+        { action: "read", resource: "*." + "envrc", effect: "deny" },
+        { action: "read", resource: "*.git/config", effect: "deny" },
+        { action: "read", resource: `${env}.example`, effect: "allow" },
+        { action: "glob", resource: "*", effect: "allow" },
+        { action: "grep", resource: "*", effect: "allow" },
+      ]);
+      expect(config.permissions).toEqual(OPENCODE_RULES);
     });
 
     it("pins the CF agent: default_agent, primary mode, same deny-by-default rules as the top level", () => {
@@ -1239,14 +1271,23 @@ describe("opencode worker (C3a)", () => {
     const req = { isGitRepo: true, readOnly: true, checkout: "/repo" };
 
     it.each([["2.0.13"], ["2.4.0"]])("accepts %s", (v) => {
+      vi.stubEnv("OPENCODE_CONFIG_DIR", "/user/.config/opencode");
       ver.opencode = v;
       expect(PROVIDERS.opencode.preflight!(req)).toBeUndefined();
       expect(vi.mocked(binaryVersion)).toHaveBeenCalledWith(
         "opencode",
         expect.objectContaining({
           env: expect.objectContaining({ OPENCODE_DISABLE_AUTOUPDATE: "1" }),
+          replaceEnv: true,
         }),
       );
+      const env = vi.mocked(binaryVersion).mock.calls.at(-1)![1]!.env!;
+      expect(Object.keys(env).sort()).toEqual(
+        ["HOME", "OPENCODE_DISABLE_AUTOUPDATE", "PATH"].filter(
+          (k) => k === "OPENCODE_DISABLE_AUTOUPDATE" || process.env[k],
+        ),
+      );
+      expect(env).not.toHaveProperty("OPENCODE_CONFIG_DIR");
     });
 
     it.each([["2.0.12"], ["1.9.0"], ["3.0.0"], [undefined]])(
@@ -1270,6 +1311,155 @@ describe("opencode worker (C3a)", () => {
           checkout: join(tmpdir(), "ck"),
         }),
       ).toBeUndefined();
+    });
+
+    // Probe 2026-11-06 (2.0.13): opencode reads through a symlink and checks
+    // its read rules against the link name only.
+    /** Git isolated from the developer's global and system config. */
+    const runGit = (cwd: string, ...args: string[]) =>
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "user.name=t",
+          "-c",
+          "user.email=t@t",
+          "-c",
+          "commit.gpgsign=false",
+          ...args,
+        ],
+        {
+          cwd,
+          stdio: "ignore",
+          env: {
+            ...process.env,
+            GIT_CONFIG_GLOBAL: "/dev/null",
+            GIT_CONFIG_NOSYSTEM: "1",
+          },
+        },
+      );
+
+    /** A temp git checkout `ck` under `base`, with link helpers. */
+    function tempRepo(base: string) {
+      const ck = join(base, "ck");
+      mkdirSync(ck);
+      const git = (...args: string[]) => runGit(ck, ...args);
+      git("init", "-q");
+      const commitLink = (name: string, target: string) => {
+        symlinkSync(target, join(ck, name));
+        git("add", name);
+        git("commit", "-q", "-m", name);
+      };
+      const check = () =>
+        PROVIDERS.opencode.preflight!({ ...req, checkout: ck });
+      return { ck, git, commitLink, check };
+    }
+
+    it("refuses a committed symlink to outside the checkout or to a denied file; accepts one to an inside file", () => {
+      const base = realpathSync(mkdtempSync(join(tmpdir(), "cf-oc-link-")));
+      // The guard keeps HOME; keep the developer's global excludes out.
+      vi.stubEnv("HOME", base);
+      try {
+        const { ck, git, commitLink, check } = tempRepo(base);
+        writeFileSync(join(base, "bait.txt"), "outside\n");
+        writeFileSync(join(ck, "plain.txt"), "inside\n");
+
+        commitLink("inside-link.txt", "plain.txt");
+        expect(check()).toBeUndefined();
+
+        const denied = "." + "env";
+        writeFileSync(join(ck, denied), "x\n");
+        git("add", denied);
+        commitLink("notes-link.txt", denied);
+        expect(check()).toMatchObject({
+          code: "PROVIDER_UNAVAILABLE",
+          message: expect.stringContaining("notes-link.txt"),
+        });
+        git("rm", "-q", "notes-link.txt");
+        git("commit", "-q", "-m", "rm");
+        expect(check()).toBeUndefined();
+
+        commitLink("outside-link.txt", "../bait.txt");
+        expect(check()).toMatchObject({
+          code: "PROVIDER_UNAVAILABLE",
+          message: expect.stringContaining("outside-link.txt"),
+        });
+        git("rm", "-q", "outside-link.txt");
+        git("commit", "-q", "-m", "rm");
+        expect(check()).toBeUndefined();
+
+        // Untracked counts too; an ignored link is the documented hole.
+        symlinkSync("../bait.txt", join(ck, "loose-link.txt"));
+        expect(check()?.message).toContain("loose-link.txt");
+        writeFileSync(join(ck, ".gitignore"), "loose-link.txt\n");
+        expect(check()).toBeUndefined();
+
+        // A dir link into .git (then g/config escapes *.git/config).
+        symlinkSync(".git", join(ck, "g"));
+        expect(check()?.message).toContain("points into a .git directory");
+        rmSync(join(ck, "g"));
+
+        // git lists a nested repo as one dir, never its files.
+        mkdirSync(join(ck, "nested"));
+        runGit(join(ck, "nested"), "init", "-q");
+        expect(check()?.message).toContain("nested repository");
+        rmSync(join(ck, "nested"), { recursive: true });
+        expect(check()).toBeUndefined();
+
+        // A hard link shares an outside file's inode.
+        linkSync(join(base, "bait.txt"), join(ck, "hard.txt"));
+        expect(check()?.message).toContain("hard link");
+        rmSync(join(ck, "hard.txt"));
+        expect(check()).toBeUndefined();
+
+        // An existing checkout git cannot list is refused.
+        const plain = join(base, "plain");
+        mkdirSync(plain);
+        expect(
+          PROVIDERS.opencode.preflight!({ ...req, checkout: plain }),
+        ).toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
+      } finally {
+        rmSync(base, { recursive: true, force: true });
+      }
+    });
+
+    // macOS APFS / Windows default: `.ENV` opens the lowercase file.
+    it("on a case-insensitive FS, refuses links to an upper-case denied name or .GIT", (t) => {
+      const base = realpathSync(mkdtempSync(join(tmpdir(), "cf-oc-case-")));
+      vi.stubEnv("HOME", base);
+      try {
+        writeFileSync(join(base, "X"), "");
+        const folds = existsSync(join(base, "x"));
+        if (
+          !folds ||
+          (process.platform !== "darwin" && process.platform !== "win32")
+        ) {
+          t.skip();
+          return;
+        }
+        const { ck, git, commitLink, check } = tempRepo(base);
+        const denied = "." + "env";
+        writeFileSync(join(ck, denied), "x\n");
+        git("add", denied);
+        git("commit", "-q", "-m", "dotenv");
+
+        commitLink("n", denied.toUpperCase());
+        expect(check()?.message).toContain("read rules deny");
+        git("rm", "-q", "n");
+        git("commit", "-q", "-m", "rm");
+        expect(check()).toBeUndefined();
+
+        // A dead link resolves lexically (no on-disk spelling): folded too.
+        symlinkSync(`${denied.toUpperCase()}.LOCAL`, join(ck, "dead"));
+        expect(check()?.message).toContain("read rules deny");
+        rmSync(join(ck, "dead"));
+        expect(check()).toBeUndefined();
+
+        commitLink("g", ".GIT");
+        expect(check()?.message).toContain("points into a .git directory");
+      } finally {
+        rmSync(base, { recursive: true, force: true });
+      }
     });
   });
 

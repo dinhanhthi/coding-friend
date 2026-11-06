@@ -8,8 +8,11 @@ import type { TaskRecord } from "./store.js";
  * transcript: the bundle holds only CF-written text plus a capped, clearly
  * fenced section of worker-written notes. The runner never runs git (or
  * anything else) in the checkout: worker-written repo config (fsmonitor,
- * filter drivers, ...) would execute outside the sandbox. The next worker
- * inspects the checkout itself, inside its own sandbox.
+ * filter drivers, ...) would execute outside the sandbox. The one exception:
+ * opencode's preflight runs a hardened `git ls-files` there (replaced env,
+ * fsmonitor and untrackedCache off, explicit --work-tree; ls-files runs no
+ * hook, filter or pager). The next worker inspects the checkout itself,
+ * inside its own sandbox.
  */
 
 /** handoff.md + last message together. */

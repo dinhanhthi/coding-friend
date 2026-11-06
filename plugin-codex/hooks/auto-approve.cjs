@@ -18,6 +18,7 @@
 "use strict";
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,64 @@ const ALWAYS_ALLOW_TOOLS = new Set([
  * @returns {boolean}
  */
 function isInProjectDir(filePath, projectDir) {
-  if (!filePath || typeof filePath !== "string") return false;
+  const r = resolveProjectPath(filePath, projectDir);
+  return (
+    r !== null &&
+    (r.resolved.startsWith(r.root + path.sep) || r.resolved === r.root)
+  );
+}
+
+/**
+ * Stricter check for the rm early-allow: the target must be strictly inside
+ * the project, and neither the home folder nor one of its parents (the project
+ * dir can be the home folder, e.g. a Codex session started from ~). A raw
+ * path starting with ~ or $ is never safe, so `rm -rf ~/*` reaches the deny
+ * patterns even when the project dir is the home folder. A raw path with a
+ * quote or backslash is never safe either: the shell strips them, so "/etc"
+ * is /etc, not a project folder named "/etc".
+ * @param {string} filePath
+ * @param {string} [projectDir]
+ * @returns {boolean}
+ */
+function isSafeRmTarget(filePath, projectDir) {
+  if (/["'\\]/.test(filePath)) return false;
+  if (/^[~$]/.test(filePath)) return false;
+  const r = resolveProjectPath(filePath, projectDir);
+  if (r === null || !r.resolved.startsWith(r.root + path.sep)) return false;
+  let home = os.homedir();
+  try {
+    home = fs.realpathSync(home);
+  } catch {
+    // keep the raw home dir
+  }
+  const rel = path.relative(r.resolved, home);
+  return rel.startsWith("..") || path.isAbsolute(rel);
+}
+
+/**
+ * Resolve a path the way the shell would see it, relative to the project dir.
+ * @param {string} filePath
+ * @param {string} [projectDir]
+ * @returns {{resolved: string, root: string}|null} null when the path cannot
+ *   be resolved safely (shell expansions we do not model).
+ */
+function resolveProjectPath(filePath, projectDir) {
+  if (!filePath || typeof filePath !== "string") return null;
+  // The shell expands ~ and $VAR before the command runs, so a literal "~" or
+  // "$HOME" is not a project folder. Expand the home forms; fail closed on the
+  // rest (~user, $TMPDIR, ...).
+  if (filePath === "~" || filePath.startsWith("~/")) {
+    filePath = os.homedir() + filePath.slice(1);
+  } else if (filePath.startsWith("~")) {
+    return null;
+  }
+  const homeVar = /^\$(?:HOME|\{HOME\})(?=\/|$)/.exec(filePath);
+  if (homeVar) filePath = os.homedir() + filePath.slice(homeVar[0].length);
+  if (filePath.includes("$")) return null;
+  // Brace expansion runs before tilde expansion ({~,} becomes ~), and a glob
+  // in a segment starting with "." can match ".." in older bash.
+  if (/[{}]/.test(filePath)) return null;
+  if (/(^|\/)\.[^/]*[*?[]/.test(filePath)) return null;
   const baseDir = projectDir || process.cwd();
   // Canonicalize project dir — handles symlinked project directories
   let canonicalRoot;
@@ -84,9 +142,7 @@ function isInProjectDir(filePath, projectDir) {
     // File doesn't exist yet (Write creates new files) — use path.resolve only
     resolved = path.resolve(canonicalRoot, filePath);
   }
-  return (
-    resolved.startsWith(canonicalRoot + path.sep) || resolved === canonicalRoot
-  );
+  return { resolved, root: canonicalRoot };
 }
 
 /**
@@ -326,6 +382,32 @@ function extractXargsSubcmd(cmd) {
  */
 function postMatchSafety(cmd, prefix) {
   if (prefix === "find" && cmd.includes("-delete")) return "unknown";
+  // find -exec/-execdir/-ok/-okdir run any command. Quotes, backslashes and `$`
+  // are dropped first so `-e''xec` / `$'-exec'` cannot slip past.
+  // Any `$` or brace expansion left (the `{}` placeholder aside) can rebuild
+  // `-exec` from parts (`-e${U}xec`, `{-print,-exec}`, `$'-e\x78ec'`).
+  if (prefix === "find" && /[${]/.test(cmd.replace(/\{\}/g, ""))) {
+    return "unknown";
+  }
+  // A glob in a flag token (`-e?ec`) expands to `-exec` if such a file exists.
+  if (
+    prefix === "find" &&
+    cmd
+      .replace(/["'\\]/g, "")
+      .split(/\s+/)
+      .some((t) => t.startsWith("-") && /[*?[]/.test(t))
+  ) {
+    return "unknown";
+  }
+  if (
+    prefix === "find" &&
+    /(?:^|\s)-(?:exec|ok)/.test(cmd.replace(/["'\\$]/g, ""))
+  ) {
+    return "unknown";
+  }
+  // Only bare `env` (print the environment) is safe: with arguments it runs
+  // any command (`env rm -rf ~`, `env -S "..."`).
+  if (prefix === "env" && cmd.trim() !== "env") return "unknown";
   if (prefix === "git commit" && cmd.includes("--amend")) return "ask";
   if (prefix === "xargs") {
     const subcmd = extractXargsSubcmd(cmd);
@@ -557,6 +639,10 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
       ? [...BASH_ALLOW_PREFIXES, ...allowExtra]
       : BASH_ALLOW_PREFIXES;
 
+  // A cd earlier in the chain moves later rm paths out of the project root
+  // they are checked against, so rm stops being auto-approved after one.
+  let sawCd = false;
+
   /**
    * Check if a single pipe-compound or simple segment is safe.
    * Splits on real pipe (not inside quotes, not preceded by backslash).
@@ -598,12 +684,16 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
     return finalParts.every(({ orig: part }) => {
       const trimmed = part.trim();
       if (!trimmed) return false;
+      if (matchesPrefix(trimmed, "cd") || matchesPrefix(trimmed, "pushd")) {
+        sawCd = true;
+      }
       // Allow rm targeting files entirely within the project directory
       const rmPaths = extractRmPaths(trimmed);
       if (
+        !sawCd &&
         rmPaths &&
         rmPaths.length > 0 &&
-        rmPaths.every((p) => isInProjectDir(p, projectDir))
+        rmPaths.every((p) => isSafeRmTarget(p, projectDir))
       ) {
         return true;
       }
@@ -648,8 +738,8 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
  * Each is a regex tested against the full command.
  */
 const BASH_DENY_PATTERNS = [
-  /\brm\s+(-\w*\s+)*-rf\s+[/~]/, // rm -rf / or ~ or $HOME
-  /\brm\s+(-\w*\s+)*-rf\s+\$HOME/,
+  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*[/~]/, // rm -rf / or ~ (also quoted or escaped)
+  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*\$\{?HOME\b/,
   /\bgit\s+push\s+(.*\s)?--force(?!-)/, // git push --force (not --force-with-lease)
   /\bgit\s+push\s+(.*\s)?-f\b/, // git push -f (short flag)
   /\bgit\s+reset\s+--hard\b/,
@@ -893,21 +983,16 @@ function extractBashScriptPath(afterBash) {
  */
 const CF_SAFE_SUBCOMMANDS = new Set([
   "install",
-  "uninstall",
-  "disable",
   "enable",
   "init",
   "config",
-  "host",
   "mcp",
-  "permission",
   "statusline",
   // `update` (incl. `--yes`) stays approved: a human `cf update` is already
   // approved here (it has no prompts), and `--yes` adds no capability: it only
   // allows `--json`.
   "update",
   "status",
-  "dev",
   "version",
   "project",
   // Matched by name only: `cf doctor` must stay read-only (no fix flag).
@@ -939,10 +1024,18 @@ const CF_TASK_SAFE_SUBCOMMANDS = new Set(["list", "show", "follow"]);
 const CF_CHEF_SAFE_SUBCOMMANDS = new Set(["status", "inbox", "show"]);
 
 /**
+ * `cf dev` subcommands safe to auto-approve (read-only). The others switch,
+ * sync, restart or update the installed plugin, so they are excluded. Bare
+ * `cf dev` is not approved either.
+ */
+const CF_DEV_SAFE_SUBCOMMANDS = new Set(["status"]);
+
+/**
  * `cf memory` subcommands safe to auto-approve. `status`, `search`, `list`
  * and `show` are read-only; the others were approved before this list existed
  * and are kept so nothing else changes. `edit` and `delete` change memory
- * files, so they are excluded. Bare `cf memory` only prints help and stays
+ * files, `rm` removes a project database and `config` changes memory
+ * settings, so they are excluded. Bare `cf memory` only prints help and stays
  * approved.
  */
 const CF_MEMORY_SAFE_SUBCOMMANDS = new Set([
@@ -950,12 +1043,10 @@ const CF_MEMORY_SAFE_SUBCOMMANDS = new Set([
   "search",
   "list",
   "show",
-  "rm",
   "start-daemon",
   "stop-daemon",
   "rebuild",
   "init",
-  "config",
   "mcp",
 ]);
 
@@ -999,6 +1090,7 @@ const CF_DECIDE_SAFE_SUBCOMMANDS = new Set(["log"]);
  *     (`cf config` only bare or with a CF_CONFIG_SAFE_SUBCOMMANDS subcommand,
  *     `cf task` only with a CF_TASK_SAFE_SUBCOMMANDS subcommand,
  *     `cf chef` only with a CF_CHEF_SAFE_SUBCOMMANDS subcommand,
+ *     `cf dev` only with a CF_DEV_SAFE_SUBCOMMANDS subcommand,
  *     `cf memory` only bare or with a CF_MEMORY_SAFE_SUBCOMMANDS subcommand,
  *     `cf learn` only with a CF_LEARN_SAFE_SUBCOMMANDS subcommand,
  *     `cf docs` only with a CF_DOCS_SAFE_SUBCOMMANDS subcommand,
@@ -1017,6 +1109,7 @@ function isCodingFriendBash(trimmed) {
       return CF_CONFIG_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "task") return CF_TASK_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "chef") return CF_CHEF_SAFE_SUBCOMMANDS.has(nestedSub);
+    if (subcommand === "dev") return CF_DEV_SAFE_SUBCOMMANDS.has(nestedSub);
     if (subcommand === "memory")
       return (
         nestedSub === undefined || CF_MEMORY_SAFE_SUBCOMMANDS.has(nestedSub)
@@ -1188,7 +1281,8 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
     const cmd = (toolInput && toolInput.command) || "";
     const trimmed = cmd.trim();
 
-    // Early-allow: rm targeting paths entirely within the project directory.
+    // Early-allow: rm targeting paths entirely within the project directory
+    // (never the project root itself, the home folder or one of its parents).
     // Checked before deny patterns so project-scoped cleanup is always permitted.
     // Only applies to simple commands (no shell operators).
     if (!SHELL_OPERATOR_PATTERN.test(trimmed)) {
@@ -1196,7 +1290,7 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
       if (
         rmPaths &&
         rmPaths.length > 0 &&
-        rmPaths.every((p) => isInProjectDir(p, projectDir))
+        rmPaths.every((p) => isSafeRmTarget(p, projectDir))
       ) {
         return "allow";
       }

@@ -17,6 +17,7 @@ const {
   UNSAFE_COMPOUND_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
+const os = require("os");
 
 // ---------------------------------------------------------------------------
 // Unit tests — isInProjectDir
@@ -78,6 +79,26 @@ describe("isInProjectDir", () => {
   it("uses process.cwd() when projectDir is not provided", () => {
     // Backward compatibility: no projectDir means use process.cwd()
     expect(isInProjectDir("src/foo.js")).toBe(true);
+  });
+
+  // The shell expands these before the command runs, so they must not be
+  // treated as folders named "~" or "$HOME" inside the project.
+  it.each(["~/x", "~user/x", "$TMPDIR/x", "{~,}", ".?/x", ".[.]/x"])(
+    "returns false for shell-expanded path %s",
+    (p) => {
+      expect(isInProjectDir(p, "/tmp/fake-project")).toBe(false);
+    },
+  );
+
+  it.each(["src/~/a.ts", "a~b"])(
+    "returns true for non-leading tilde %s",
+    (p) => {
+      expect(isInProjectDir(p, "/tmp/fake-project")).toBe(true);
+    },
+  );
+
+  it("expands ~ to the home dir", () => {
+    expect(isInProjectDir("~/x", os.homedir())).toBe(true);
   });
 });
 
@@ -419,6 +440,48 @@ describe("classifyByRules — block (deny)", () => {
     expect(classifyByRules("Bash", { command: "rm -rf /" })).toBe("deny");
   });
 
+  // The rm early-allow must not treat these home paths as project folders.
+  it.each([
+    "rm -rf ~/",
+    "rm -rf ~",
+    "rm -rf $HOME",
+    "rm -rf ${HOME}",
+    "rm -rf ~user/x",
+    'rm -rf "/"',
+    "rm -rf \\/etc",
+    'rm -rf "~"/x',
+    'rm -rf "$HOME"',
+  ])("denies Bash %s", (command) => {
+    expect(classifyByRules("Bash", { command })).toBe("deny");
+  });
+
+  // With the home folder as project dir, the rm early-allow must not approve
+  // removing the project root (= home) itself, or anything under it reached
+  // through ~ or $HOME.
+  it.each([
+    "rm -rf ~",
+    "rm -rf ~/",
+    "rm -rf $HOME",
+    "rm -rf ${HOME}",
+    "rm -rf ~/*",
+    "rm -rf $HOME/*",
+    "rm -rf ${HOME}/*",
+    "rm -rf ~/x",
+  ])("denies Bash %s when the project dir is the home folder", (command) => {
+    expect(classifyByRules("Bash", { command }, os.homedir())).toBe("deny");
+  });
+
+  // Without -rf the deny patterns do not match, so only the early-allow guard
+  // keeps these from being approved.
+  it.each(["rm -r ~/*", "rm -r $HOME/*", "rm -r ~/* && echo done"])(
+    "does NOT allow Bash %s when the project dir is the home folder",
+    (command) => {
+      expect(classifyByRules("Bash", { command }, os.homedir())).not.toBe(
+        "allow",
+      );
+    },
+  );
+
   it("denies Bash git push --force", () => {
     expect(classifyByRules("Bash", { command: "git push --force" })).toBe(
       "deny",
@@ -543,6 +606,55 @@ describe("classifyByRules — rm within project directory (allow)", () => {
       classifyByRules("Bash", { command: "rm -f ../../etc/passwd" }),
     ).not.toBe("allow");
   });
+
+  it("does NOT allow rm of a path under the home dir", () => {
+    expect(classifyByRules("Bash", { command: "rm ~/x" })).not.toBe("allow");
+  });
+
+  // Brace expansion runs before tilde expansion, and a cd earlier in the chain
+  // moves rm out of the project.
+  it.each([
+    "rm -rf {~,}",
+    "rm -rf {/etc,}",
+    "cd ~ && rm -rf x",
+    "cd / && rm -rf etc",
+    "cd; rm -rf x",
+  ])("does NOT allow %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  // The shell strips quotes and backslashes, so "/etc" is /etc, not a project
+  // folder named "/etc".
+  it.each([
+    'rm -rf "/etc"',
+    "rm -rf '/etc'",
+    "rm -rf '..'",
+    'rm -rf ".."',
+    "rm -rf \\..",
+    "rm -rf \\/etc",
+    'rm -rf build && rm -rf "/etc"',
+    // Compound path: not caught by the deny row, only by the quote guard.
+    'ls && rm -rf ".."',
+    'ls | rm -rf ".."',
+  ])("does NOT allow quoted or escaped rm target %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  it.each(["rm -rf .", "rm -rf ./"])(
+    "does NOT allow rm of the project root itself: %s",
+    (command) => {
+      expect(classifyByRules("Bash", { command })).not.toBe("allow");
+    },
+  );
+
+  it.each([
+    "rm -rf build",
+    "rm -rf ./build",
+    "rm -rf build/*",
+    "rm -rf dist/*.js",
+  ])("allows %s", (command) => {
+    expect(classifyByRules("Bash", { command })).toBe("allow");
+  });
 });
 
 describe("classifyByRules — working-dir file operations", () => {
@@ -556,6 +668,12 @@ describe("classifyByRules — working-dir file operations", () => {
     expect(
       classifyByRules("Write", { file_path: "/etc/passwd", content: "x" }),
     ).toBe("ask");
+  });
+
+  it("asks for Write to a path under the home dir", () => {
+    expect(classifyByRules("Write", { file_path: "~/x", content: "x" })).toBe(
+      "ask",
+    );
   });
 
   it("allows Edit to file inside cwd", () => {
@@ -975,9 +1093,37 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     ).toBe("allow");
   });
 
-  it("allows cf dev subcommand", () => {
-    expect(classifyByRules("Bash", { command: "cf dev sync" })).toBe("allow");
+  it("allows cf dev status (read-only)", () => {
+    expect(classifyByRules("Bash", { command: "cf dev status" })).toBe("allow");
   });
+
+  it("does NOT allow cf dev sync (changes the installed plugin)", () => {
+    expect(classifyByRules("Bash", { command: "cf dev sync" })).not.toBe(
+      "allow",
+    );
+  });
+
+  it("does NOT allow bare cf dev", () => {
+    expect(classifyByRules("Bash", { command: "cf dev" })).not.toBe("allow");
+  });
+
+  // Self-escalation: these change the agent's own guards or install state, or
+  // start a server, so the host must ask.
+  it.each(["permission --all --user", "uninstall", "disable", "host"])(
+    "does NOT allow cf %s",
+    (rest) => {
+      expect(classifyByRules("Bash", { command: `cf ${rest}` })).not.toBe(
+        "allow",
+      );
+    },
+  );
+
+  it.each(["init", "enable", "update", "statusline"])(
+    "keeps cf %s approved",
+    (rest) => {
+      expect(classifyByRules("Bash", { command: `cf ${rest}` })).toBe("allow");
+    },
+  );
 
   it("allows cf memory subcommand", () => {
     expect(classifyByRules("Bash", { command: "cf memory status" })).toBe(
@@ -985,25 +1131,33 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
     );
   });
 
-  // Characterization: every `cf memory` subcommand approved before the nested
-  // allow-list (B1b 1.2) must stay approved.
+  // Characterization: the `cf memory` subcommands in the safe set stay
+  // approved.
   it.each([
     "",
     " status",
     " search auth",
     " list --json",
-    " rm --project abc",
     " start-daemon",
     " stop-daemon",
     " rebuild",
     " init",
-    " config",
     " mcp",
-  ])("keeps cf memory%s approved", (rest) => {
+  ])("keeps safe cf memory%s approved", (rest) => {
     expect(classifyByRules("Bash", { command: `cf memory${rest}` })).toBe(
       "allow",
     );
   });
+
+  // `rm` removes a project database and `config` changes memory settings.
+  it.each([" rm --project abc", " config"])(
+    "does NOT approve cf memory%s",
+    (rest) => {
+      expect(classifyByRules("Bash", { command: `cf memory${rest}` })).not.toBe(
+        "allow",
+      );
+    },
+  );
 
   it("allows cf install subcommand", () => {
     expect(classifyByRules("Bash", { command: "cf install --user" })).toBe(
@@ -1261,7 +1415,7 @@ describe("classifyByRules — coding-friend Bash commands (allow)", () => {
 
   it("does NOT allow cf command with shell operators", () => {
     const result = classifyByRules("Bash", {
-      command: "cf dev sync && rm -rf /",
+      command: "cf dev status && rm -rf /",
     });
     expect(result).not.toBe("allow");
   });
@@ -1449,6 +1603,44 @@ describe("classifyByRules — dangerous sub-variants of allowed prefixes", () =>
     expect(classifyByRules("Bash", { command: "find src -name '*.ts'" })).toBe(
       "allow",
     );
+  });
+
+  it("allows find with a double-quoted -name glob", () => {
+    expect(classifyByRules("Bash", { command: 'find . -name "*.ts"' })).toBe(
+      "allow",
+    );
+  });
+
+  it("allows find . -name x", () => {
+    expect(classifyByRules("Bash", { command: "find . -name x" })).toBe(
+      "allow",
+    );
+  });
+
+  it.each([
+    "find ~ -exec rm -rf {} +",
+    "find . -execdir rm {} +",
+    "find . -ok rm {} +",
+    "find . -okdir rm {} +",
+    "find . -e''xec rm {} +",
+    "find . $'-exec' rm {} +",
+    "find ~ -e${U}xec rm -rf {} +",
+    "find ~ {-print,-exec} rm -rf {} +",
+    "find ~ $'-e\\x78ec' rm -rf {} +",
+    "find ~ -e?ec rm -rf {} +",
+    "find ~ -ex[e]c rm -rf {} +",
+    "find . -e*c rm {} +",
+  ])("does NOT allow find with exec-like action: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  it.each([
+    "env rm -r -f ~",
+    "env -C ~ rm -rf Documents",
+    "env bash -c ls",
+    "rm -rf build && env rm -r -f ~",
+  ])("does NOT allow env running a command: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
   });
 
   it("does NOT auto-approve git commit --amend", () => {
@@ -1876,8 +2068,8 @@ describe("classifyByRules — safe compound commands", () => {
     expect(classifyByRules("Bash", { command: "ps aux" })).toBe("allow");
   });
 
-  it("allows env", () => {
-    expect(classifyByRules("Bash", { command: "env" })).toBe("allow");
+  it.each(["env", "env | grep PATH"])("allows %s", (command) => {
+    expect(classifyByRules("Bash", { command })).toBe("allow");
   });
 
   it("allows printenv", () => {
