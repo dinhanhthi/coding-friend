@@ -200,6 +200,51 @@ describe("claudeProvider", () => {
     expect(scoped.sessions.map((s) => s.ref)).toEqual([`claude:${UUID}`]);
   });
 
+  it("titles a session without Claude Code's command wrapper tags", async () => {
+    const user = (text: string) => ({
+      type: "user",
+      cwd: root,
+      timestamp: "2026-11-01T10:00:00.000Z",
+      message: { role: "user", content: text },
+    });
+    const bare = "22222222-2222-4333-8444-555555555555";
+    // A bare /clear and its output say nothing: the next prompt is the title.
+    writeTranscript(
+      projectDir,
+      bare,
+      jsonl([
+        user(
+          "<command-name>/clear</command-name>\n<command-message>clear</command-message>\n<command-args></command-args>",
+        ),
+        user("<local-command-stdout></local-command-stdout>"),
+        user("fix the login bug"),
+      ]),
+    );
+    const withArgs = "33333333-2222-4333-8444-555555555555";
+    writeTranscript(
+      projectDir,
+      withArgs,
+      jsonl([
+        user(
+          "<command-message>coding-friend:cf-plan is running…</command-message>\n<command-name>/coding-friend:cf-plan</command-name>\n<command-args>--auto add dark mode</command-args>",
+        ),
+      ]),
+    );
+    const onlyCommand = "44444444-2222-4333-8444-555555555555";
+    writeTranscript(
+      projectDir,
+      onlyCommand,
+      jsonl([user("<command-name>/compact</command-name>")]),
+    );
+
+    const { sessions } = await claudeProvider.list({});
+    const title = (id: string) =>
+      sessions.find((s) => s.ref === `claude:${id}`)?.title;
+    expect(title(bare)).toBe("fix the login bug");
+    expect(title(withArgs)).toBe("/coding-friend:cf-plan --auto add dark mode");
+    expect(title(onlyCommand)).toBe("/compact");
+  });
+
   it("lists one row for the same uuid in two project dirs", async () => {
     const body = jsonl([
       {

@@ -529,7 +529,7 @@ function retentionCheck(
     ...base,
     status: "warn",
     detail,
-    hint: "cf session save, or raise cleanupPeriodDays in Claude settings",
+    hint: "Run cf session save, or raise cleanupPeriodDays in Claude settings",
   };
 }
 

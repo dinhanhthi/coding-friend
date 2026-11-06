@@ -217,12 +217,33 @@ function blocksText(content: unknown): string {
   return parts.join("\n");
 }
 
+/** Claude Code wraps slash commands and local command output in these tags. */
+const COMMAND_NAME = /<command-name>([\s\S]*?)<\/command-name>/;
+const COMMAND_ARGS = /<command-args>([\s\S]*?)<\/command-args>/;
+const WRAPPER_BLOCKS =
+  /<(command-message|local-command-stdout|local-command-stderr|local-command-caveat|system-reminder)>[\s\S]*?<\/\1>/g;
+
+/**
+ * A title from one user message. A slash command becomes `/name args`; a
+ * command without arguments (`/clear`) is weak: a later prompt says more.
+ */
+export function titleCandidate(text: string): { text: string; weak: boolean } {
+  const name = COMMAND_NAME.exec(text)?.[1]?.trim();
+  if (name) {
+    const args = COMMAND_ARGS.exec(text)?.[1]?.trim() ?? "";
+    return { text: args ? `${name} ${args}` : name, weak: !args };
+  }
+  return { text: text.replace(WRAPPER_BLOCKS, "").trim(), weak: false };
+}
+
 /** Shared state of one parse: turns, header fields and counters. */
 class Parser {
   turns: Turn[] = [];
   skipped = 0;
   recognized = 0;
   title = "";
+  /** A weak title (a bare slash command), used only when nothing better follows. */
+  weakTitle = "";
   cwd = "";
   startedAt = "";
   lastAt = "";
@@ -274,7 +295,11 @@ class Parser {
     }
     const joined = text.join("\n");
     if (!joined) return;
-    if (!this.title) this.title = joined;
+    if (!this.title) {
+      const c = titleCandidate(joined);
+      if (c.text && !c.weak) this.title = c.text;
+      else if (c.text && !this.weakTitle) this.weakTitle = c.text;
+    }
     this.turns.push({ kind: "user", text: joined });
   }
 
@@ -333,7 +358,7 @@ function summaryOf(
     ref,
     provider: "claude",
     source: "live",
-    title: p?.title ?? "",
+    title: p ? p.title || p.weakTitle : "",
     cwd: p?.cwd ?? "",
     startedAt: p?.startedAt || mtime,
     updatedAt: mtime,
