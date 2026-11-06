@@ -1,5 +1,13 @@
-import { existsSync, readdirSync, statSync, rmSync } from "fs";
-import { join, resolve, sep } from "path";
+import { execFile } from "child_process";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { isAbsolute, join, resolve, sep } from "path";
 import { homedir } from "os";
 
 import { confirm } from "@inquirer/prompts";
@@ -7,7 +15,7 @@ import { resolveMemoryDir, loadConfig } from "../lib/config.js";
 import { run, runWithStderr } from "../lib/exec.js";
 import { log, printBanner } from "../lib/log.js";
 import { getLibPath } from "../lib/lib-path.js";
-import { memoryConfigMenu, getMemoryMcpStatus } from "../lib/memory-prompts.js";
+import { memoryConfigMenu } from "../lib/memory-prompts.js";
 import {
   registerMemoryMcp,
   isMemoryMcpRegistered,
@@ -17,21 +25,28 @@ import { warnStaleMcpJson } from "../lib/mcp-state.js";
 import { checkMemoryMcpHealth, printHealthSection } from "../lib/mcp-health.js";
 import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
+import { CliError, runHuman, runJson } from "../lib/output.js";
+import { useProjectDir } from "../lib/project-option.js";
+import {
+  deleteNote,
+  readBodyFromStdin,
+  readNote,
+  replaceBody,
+  resolveNotePath,
+} from "../lib/note-io.js";
+import {
+  collectMemoryCore,
+  collectMemoryDetails,
+  countMdFiles,
+  dirSize,
+  getProjectInfo,
+  getProjectsBaseDir,
+  listMemories,
+  searchMemories,
+  type ProjectInfo,
+} from "../lib/memory-data.js";
 import type { CodingFriendConfig } from "../types.js";
 import chalk from "chalk";
-
-function countMdFiles(dir: string): number {
-  if (!existsSync(dir)) return 0;
-  let count = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      count += countMdFiles(join(dir, entry.name));
-    } else if (entry.name.endsWith(".md") && entry.name !== "README.md") {
-      count++;
-    }
-  }
-  return count;
-}
 
 function getMemoryDir(path?: string): string {
   return resolveMemoryDir(path);
@@ -151,28 +166,68 @@ function formatUptime(seconds: number): string {
   return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
 }
 
-export async function memoryStatusCommand(): Promise<void> {
+/** JSON mode never exits: a failed build becomes MEMORY_BUILD_FAILED. */
+function requireMemoryBuilt(mcpDir: string): void {
+  if (!ensureMemoryBuilt(mcpDir, { exitOnError: false })) {
+    throw new CliError("MEMORY_BUILD_FAILED", "Failed to build memory server");
+  }
+}
+
+interface JsonFlag {
+  json?: boolean;
+}
+
+interface ProjectFlags extends JsonFlag {
+  projectDir?: string;
+}
+
+/** Human mode: log a CliError's message, then exit 1 (via runHuman). */
+async function runHumanLogged(fn: () => void | Promise<void>): Promise<void> {
+  await runHuman(async () => {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof CliError) log.error(err.message);
+      throw err;
+    }
+  });
+}
+
+const MAX_QUERY_CHARS = 500;
+
+function checkQuery(query: string): void {
+  if (query.length > MAX_QUERY_CHARS) {
+    throw new CliError(
+      "INVALID_VALUE",
+      `Query is longer than ${MAX_QUERY_CHARS} characters`,
+    );
+  }
+}
+
+export async function memoryStatusCommand(opts: JsonFlag = {}): Promise<void> {
+  if (opts.json) {
+    await runJson(async () => {
+      const memoryDir = getMemoryDir();
+      const mcpDir = getLibPath("cf-memory");
+      requireMemoryBuilt(mcpDir);
+      const core = await collectMemoryCore(memoryDir, mcpDir);
+      return { ...core, ...collectMemoryDetails(memoryDir) };
+    });
+    return;
+  }
+
   const memoryDir = getMemoryDir();
-  const docCount = countMdFiles(memoryDir);
   const mcpDir = getLibPath("cf-memory");
   ensureMemoryBuilt(mcpDir);
 
-  // Dynamically import modules to check status
-  const { isDaemonRunning, getDaemonInfo } = await import(
-    join(mcpDir, "dist/daemon/process.js")
-  );
-  const { areSqliteDepsAvailable } = await import(
-    join(mcpDir, "dist/lib/lazy-install.js")
-  );
-
-  const sqliteAvailable = areSqliteDepsAvailable();
-  const running = await isDaemonRunning();
-  const daemonInfo = getDaemonInfo();
+  const core = await collectMemoryCore(memoryDir, mcpDir);
+  const sqliteAvailable = core.sqliteDeps;
+  const { daemon } = core;
 
   let tierLabel: string;
-  if (sqliteAvailable) {
+  if (core.tier === 1) {
     tierLabel = chalk.cyan("Tier 1 (SQLite + Hybrid)");
-  } else if (running) {
+  } else if (core.tier === 2) {
     tierLabel = chalk.cyan("Tier 2 (MiniSearch + Daemon)");
   } else {
     tierLabel = chalk.cyan("Tier 3 (Markdown)");
@@ -182,12 +237,12 @@ export async function memoryStatusCommand(): Promise<void> {
   console.log();
   log.info(`Tier: ${tierLabel}`);
   log.info(`Memory dir: ${chalk.cyan(memoryDir)}`);
-  log.info(`Memories in this dir: ${chalk.green(String(docCount))}`);
+  log.info(`Memories in this dir: ${chalk.green(String(core.documents))}`);
 
-  if (running && daemonInfo) {
-    const uptime = (Date.now() - daemonInfo.startedAt) / 1000;
+  if (daemon.running && daemon.startedAt !== null) {
+    const uptime = (Date.now() - daemon.startedAt) / 1000;
     log.info(
-      `Daemon: ${chalk.green("running")} (PID ${daemonInfo.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop-daemon"')}`,
+      `Daemon: ${chalk.green("running")} (PID ${daemon.pid}, uptime ${formatUptime(uptime)}) ${chalk.dim('Turn it off by "cf memory stop-daemon"')}`,
     );
   } else if (sqliteAvailable) {
     log.info(
@@ -207,18 +262,14 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   }
 
-  const config = loadConfig();
-  const embeddingConfig = config.memory?.embedding;
-  if (embeddingConfig?.provider || embeddingConfig?.model) {
-    const provider = embeddingConfig.provider ?? "transformers";
-    const model =
-      embeddingConfig.model ??
-      (provider === "ollama" ? "all-minilm:l6-v2" : "Xenova/all-MiniLM-L6-v2");
+  const details = collectMemoryDetails(memoryDir);
+  if (details.embedding) {
+    const { provider, model } = details.embedding;
     log.info(`Embedding: ${chalk.cyan(model)} ${chalk.dim(`(${provider})`)}`);
   }
 
   // MCP status
-  const mcpStatus = getMemoryMcpStatus();
+  const mcpStatus = details.mcp;
   if (mcpStatus.userScope && mcpStatus.scope === "local") {
     log.info(
       `MCP: ${chalk.green("registered")} ${chalk.dim("(user scope)")} ${chalk.yellow('⚠ project .mcp.json shadows user-scope server — run "cf update" to clean up')}`,
@@ -239,30 +290,46 @@ export async function memoryStatusCommand(): Promise<void> {
     );
   }
 
-  const autoCapture = config.memory?.autoCapture ?? false;
   log.info(
-    `Auto-capture: ${autoCapture ? chalk.green("on") : chalk.dim("off")}`,
+    `Auto-capture: ${details.autoCapture ? chalk.green("on") : chalk.dim("off")}`,
   );
 
-  if (existsSync(memoryDir)) {
-    const categories = readdirSync(memoryDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && !d.name.startsWith("."))
-      .map((d) => {
-        const catCount = countMdFiles(join(memoryDir, d.name));
-        return `${d.name} (${catCount})`;
-      })
-      .filter((s) => !s.endsWith("(0)"));
-
-    if (categories.length > 0) {
-      log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
-    }
+  if (details.categories.length > 0) {
+    const categories = details.categories.map((c) => `${c.name} (${c.count})`);
+    log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
   }
   console.log();
   log.dim(`Docs: https://cf.dinhanhthi.com/#memory`);
   console.log();
 }
 
-export async function memorySearchCommand(query: string): Promise<void> {
+export async function memorySearchCommand(
+  query: string,
+  opts: ProjectFlags = {},
+): Promise<void> {
+  if (opts.json) {
+    await runJson(() => {
+      useProjectDir(opts.projectDir);
+      checkQuery(query);
+      const memoryDir = getMemoryDir();
+      if (!existsSync(memoryDir)) {
+        throw new CliError("NOT_FOUND", `Memory dir not found: ${memoryDir}`);
+      }
+      const mcpDir = getLibPath("cf-memory");
+      requireMemoryBuilt(mcpDir);
+      return { query, results: searchMemories(memoryDir, mcpDir, query) };
+    });
+    return;
+  }
+
+  await runHumanLogged(() => {
+    useProjectDir(opts.projectDir);
+    checkQuery(query);
+    memorySearchHuman(query);
+  });
+}
+
+function memorySearchHuman(query: string): void {
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
@@ -301,13 +368,24 @@ export async function memorySearchCommand(query: string): Promise<void> {
   }
 }
 
-export async function memoryListCommand(opts: {
-  projects?: boolean;
-}): Promise<void> {
-  if (opts.projects) {
-    return memoryListProjectsCommand();
+export async function memoryListCommand(
+  opts: ProjectFlags & { projects?: boolean },
+): Promise<void> {
+  if (opts.json) {
+    await runJson<unknown[]>(() => {
+      useProjectDir(opts.projectDir);
+      return opts.projects ? listMemoryProjects() : listMemoriesJson();
+    });
+    return;
   }
 
+  await runHumanLogged(() => {
+    useProjectDir(opts.projectDir);
+    return opts.projects ? memoryListProjectsCommand() : memoryListHuman();
+  });
+}
+
+function memoryListHuman(): void {
   const memoryDir = getMemoryDir();
 
   if (!existsSync(memoryDir)) {
@@ -361,6 +439,311 @@ export async function memoryListCommand(opts: {
   if (result !== null) {
     console.log(result);
   }
+}
+
+function listMemoriesJson() {
+  const memoryDir = getMemoryDir();
+  if (!existsSync(memoryDir)) return [];
+  const mcpDir = getLibPath("cf-memory");
+  requireMemoryBuilt(mcpDir);
+  return listMemories(memoryDir, mcpDir);
+}
+
+// ─── show / edit / delete one memory ──────────────────────────────────────────
+
+type IndexState = "watched" | "stale" | "none";
+
+/** Same file cf-memory's daemon writes (daemon/process.ts), read without its mkdir. */
+function daemonPidFile(): string {
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  return join(home, ".coding-friend", "memory", "daemon.pid");
+}
+
+function processCommand(pid: number): Promise<string | null> {
+  return new Promise((done) => {
+    try {
+      execFile(
+        "ps",
+        ["-ww", "-o", "command=", "-p", String(pid)],
+        { timeout: 2000 },
+        (err, stdout) => done(err ? null : String(stdout)),
+      );
+    } catch {
+      done(null);
+    }
+  });
+}
+
+/**
+ * The docsDir argument of a daemon command line
+ * (`node …/daemon/entry.js <docsDir> [idleTimeoutMs] [--flag=…]`): the words
+ * after `entry.js` up to the idle timeout or the first flag.
+ */
+function daemonDocsDir(command: string): string | null {
+  const m = /[\\/]entry\.js +(.+)$/.exec(command.split("\n")[0].trim());
+  if (!m) return null;
+  const words = m[1].split(" ");
+  const end = words.findIndex(
+    (w, i) => i > 0 && (/^\d+$/.test(w) || w.startsWith("--")),
+  );
+  return words.slice(0, end === -1 ? undefined : end).join(" ");
+}
+
+/** True only when the shared daemon provably watches exactly `memoryDir`. */
+async function daemonWatches(memoryDir: string): Promise<boolean> {
+  if (process.platform === "win32") return false;
+  try {
+    const first = readFileSync(daemonPidFile(), "utf-8").trim().split("\n")[0];
+    const pid = parseInt(first, 10);
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    try {
+      process.kill(pid, 0);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EPERM") return false;
+    }
+    const command = await processCommand(pid);
+    const dir = command ? daemonDocsDir(command) : null;
+    if (!dir || !isAbsolute(dir)) return false;
+    return realpathSync(dir) === realpathSync(memoryDir);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Search index state after a memory file changed. Never builds cf-memory
+ * (edit/delete must stay fast); anything unknown is "stale".
+ */
+async function memoryIndexState(memoryDir: string): Promise<IndexState> {
+  if (await daemonWatches(memoryDir)) return "watched";
+  try {
+    const mcpDir = getLibPath("cf-memory");
+    if (!existsSync(join(mcpDir, "dist"))) return "stale";
+    const { tier } = await collectMemoryCore(memoryDir, mcpDir);
+    return tier === 3 ? "none" : "stale";
+  } catch {
+    return "stale";
+  }
+}
+
+function printIndexHint(index: IndexState, root: string): void {
+  if (index !== "stale") return;
+  log.dim(
+    `Search index may be stale. Rebuild it: cd "${root}" && cf memory rebuild`,
+  );
+}
+
+// Port of cf-memory src/lib/claude-md.ts (parse/build/remove), so the CLI
+// does not load the cf-memory package to drop a synced convention entry.
+const RULES_HEADER = "## CF Memory: Project Rules";
+const LEGACY_RULES_HEADER = "## CF Memory: Conventions";
+const RULE_ENTRY_RE = /^- .+ <!-- cf:(.+?) -->$/;
+
+interface RulesSection {
+  before: string;
+  entries: string[];
+  after: string;
+  untrackedLines: string[];
+}
+
+function parseRules(content: string): RulesSection {
+  let headerIdx = content.indexOf(RULES_HEADER);
+  let headerLen = RULES_HEADER.length;
+  if (headerIdx === -1) {
+    headerIdx = content.indexOf(LEGACY_RULES_HEADER);
+    headerLen = LEGACY_RULES_HEADER.length;
+  }
+  if (headerIdx === -1) {
+    return { before: content, entries: [], after: "", untrackedLines: [] };
+  }
+
+  const before = content.slice(0, headerIdx);
+  const rest = content.slice(headerIdx + headerLen);
+  const next = rest.match(/\n(## )/);
+  const sectionBody =
+    next?.index !== undefined ? rest.slice(0, next.index) : rest;
+  const after = next?.index !== undefined ? rest.slice(next.index + 1) : "";
+
+  const entries: string[] = [];
+  const untrackedLines: string[] = [];
+  for (const line of sectionBody.split("\n")) {
+    if (RULE_ENTRY_RE.test(line)) entries.push(line);
+    else if (line.trim()) untrackedLines.push(line);
+  }
+  return { before, entries, after, untrackedLines };
+}
+
+/** Rebuild the file; the section is dropped when nothing is left in it. */
+function buildRules({
+  before,
+  entries,
+  after,
+  untrackedLines,
+}: RulesSection): string {
+  if (entries.length === 0 && untrackedLines.length === 0) {
+    return before.trimEnd() + (after ? "\n\n" + after : "\n");
+  }
+  let result = before.trimEnd() + "\n\n" + RULES_HEADER + "\n\n";
+  if (untrackedLines.length > 0) result += untrackedLines.join("\n") + "\n";
+  if (entries.length > 0) result += entries.join("\n") + "\n";
+  if (after) result += "\n" + after;
+  return result;
+}
+
+/**
+ * Best-effort: drop `<!-- cf:<id> -->` from CLAUDE.md / AGENTS.md at the
+ * project root (cf-memory's root: memoryDir minus `/docs/memory` or `/memory`).
+ */
+function removeRuleEntry(
+  memoryDir: string,
+  id: string,
+): { files: string[]; warnings: string[] } {
+  const root = resolve(memoryDir)
+    .replace(/\/docs\/memory$/, "")
+    .replace(/\/memory$/, "");
+  const files: string[] = [];
+  const warnings: string[] = [];
+  for (const name of ["CLAUDE.md", "AGENTS.md"]) {
+    const file = join(root, name);
+    try {
+      if (!existsSync(file)) continue;
+      const section = parseRules(readFileSync(file, "utf-8"));
+      const entries = section.entries.filter(
+        (e) => e.match(RULE_ENTRY_RE)?.[1] !== id,
+      );
+      if (entries.length === section.entries.length) continue;
+      writeFileSync(file, buildRules({ ...section, entries }), "utf-8");
+      files.push(file);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      warnings.push(`Could not update ${file}: ${msg}`);
+    }
+  }
+  return { files, warnings };
+}
+
+export async function memoryShowCommand(
+  id: string,
+  opts: ProjectFlags = {},
+): Promise<void> {
+  const show = () => {
+    useProjectDir(opts.projectDir);
+    const path = resolveNotePath(getMemoryDir(), id);
+    const note = readNote(path);
+    return {
+      raw: note.frontmatterRaw + note.content,
+      data: {
+        id,
+        category: id.split("/")[0],
+        path,
+        frontmatter: note.frontmatter,
+        content: note.content,
+        sha256: note.sha256,
+        mtime: note.mtime,
+      },
+    };
+  };
+  if (opts.json) {
+    await runJson(() => show().data);
+    return;
+  }
+  await runHumanLogged(() => {
+    process.stdout.write(show().raw);
+  });
+}
+
+export async function memoryEditCommand(
+  id: string,
+  opts: ProjectFlags & { stdin?: boolean; ifMatch?: string } = {},
+): Promise<void> {
+  const edit = async () => {
+    const root = useProjectDir(opts.projectDir) ?? process.cwd();
+    if (!opts.stdin) {
+      throw new CliError(
+        "INVALID_ARGS",
+        "--stdin is required: pipe the new body on stdin",
+      );
+    }
+    if (!opts.ifMatch) {
+      throw new CliError(
+        "INVALID_ARGS",
+        "--if-match <sha256> is required (from `cf memory show`)",
+      );
+    }
+    const memoryDir = getMemoryDir();
+    const path = resolveNotePath(memoryDir, id);
+    const body = await readBodyFromStdin();
+    // A broken pipe sends nothing: never let it wipe a note.
+    if (body.trim() === "") throw new CliError("INVALID_VALUE", "empty body");
+    const { sha256, updated } = replaceBody(path, body, opts.ifMatch);
+    const index = await memoryIndexState(memoryDir);
+    return { root, data: { id, path, sha256, updated, index } };
+  };
+  if (opts.json) {
+    await runJson(async () => (await edit()).data);
+    return;
+  }
+  await runHumanLogged(async () => {
+    const { root, data } = await edit();
+    log.success(`Updated ${data.id} (${data.path})`);
+    printIndexHint(data.index, root);
+  });
+}
+
+export async function memoryDeleteCommand(
+  id: string,
+  opts: ProjectFlags & { yes?: boolean; ifMatch?: string } = {},
+): Promise<void> {
+  const del = async () => {
+    const root = useProjectDir(opts.projectDir) ?? process.cwd();
+    const memoryDir = getMemoryDir();
+    const path = resolveNotePath(memoryDir, id);
+    if (!opts.yes) {
+      if (opts.json) {
+        throw new CliError(
+          "INTERACTIVE_REQUIRED",
+          "Deleting a memory in JSON mode needs --yes",
+        );
+      }
+      const ok = await confirm({
+        message: `Delete memory ${id}?`,
+        default: false,
+      });
+      if (!ok) return null;
+    }
+    deleteNote(path, opts.ifMatch);
+    const { files, warnings } = removeRuleEntry(memoryDir, id);
+    const index = await memoryIndexState(memoryDir);
+    return {
+      root,
+      data: {
+        id,
+        path,
+        deleted: true as const,
+        index,
+        instructionFiles: files,
+        warnings,
+      },
+    };
+  };
+  if (opts.json) {
+    await runJson(async () => (await del())?.data);
+    return;
+  }
+  await runHumanLogged(async () => {
+    const res = await del();
+    if (!res) {
+      log.info("Cancelled.");
+      return;
+    }
+    const { root, data } = res;
+    log.success(`Deleted ${data.id} (${data.path})`);
+    for (const f of data.instructionFiles) {
+      log.info(`Removed its entry from ${f}`);
+    }
+    for (const w of data.warnings) log.warn(w);
+    printIndexHint(data.index, root);
+  });
 }
 
 export async function memoryStartDaemonCommand(): Promise<void> {
@@ -788,11 +1171,6 @@ export async function memoryConfigCommand(): Promise<void> {
 
 // ─── Helpers for list --projects / rm ──────────────────────────────────────────
 
-function getProjectsBaseDir(): string {
-  const home = homedir();
-  return join(home, ".coding-friend", "memory", "projects");
-}
-
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -812,87 +1190,34 @@ function formatDate(raw: string): string {
   return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
-function dirSize(dir: string): number {
-  let total = 0;
-  if (!existsSync(dir)) return 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, entry.name);
-    if (entry.isFile()) {
-      total += statSync(p).size;
-    } else if (entry.isDirectory()) {
-      total += dirSize(p);
-    }
-  }
-  return total;
-}
+/** JSON twin of memoryListProjectsCommand — same source_dir backfill, sorted by size. */
+async function listMemoryProjects(): Promise<ProjectInfo[]> {
+  const baseDir = getProjectsBaseDir();
+  const mcpDir = getLibPath("cf-memory");
+  requireMemoryBuilt(mcpDir);
+  if (!existsSync(baseDir)) return [];
 
-interface ProjectInfo {
-  id: string;
-  sourceDir: string | null;
-  memories: number;
-  size: number;
-  lastUpdated: string | null;
-}
+  const dirs = readdirSync(baseDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+    .map((d) => d.name);
+  if (dirs.length === 0) return [];
 
-function getProjectInfo(
-  projectDir: string,
-  projectId: string,
-  mcpDir: string,
-  knownSourceDir?: string,
-): ProjectInfo {
-  const dbPath = join(projectDir, "db.sqlite");
-  const size = dirSize(projectDir);
-  const info: ProjectInfo = {
-    id: projectId,
-    sourceDir: null,
-    memories: 0,
-    size,
-    lastUpdated: null,
-  };
+  const currentMemoryDir = resolve(getMemoryDir());
+  const { projectId } = await import(
+    join(mcpDir, "dist/backends/sqlite/index.js")
+  );
+  const currentProjectId = projectId(currentMemoryDir);
 
-  if (!existsSync(dbPath)) return info;
-
-  // Try to read metadata from SQLite
-  // If knownSourceDir is provided and source_dir is missing, backfill it
-  try {
-    const backfillDir = knownSourceDir
-      ? JSON.stringify(knownSourceDir)
-      : "null";
-    const result = run(
-      "node",
-      [
-        "-e",
-        `
-        const path = require("path");
-        const mod = require(path.join(${JSON.stringify(mcpDir)}, "dist/lib/lazy-install.js"));
-        if (!mod.areSqliteDepsAvailable()) { console.log(JSON.stringify({})); process.exit(0); }
-        const Database = require(mod.getDepsDir() + "/node_modules/better-sqlite3");
-        const backfill = ${backfillDir};
-        const db = new Database(${JSON.stringify(dbPath)}, { readonly: !backfill });
-        const getMeta = (key) => { try { const r = db.prepare("SELECT value FROM metadata WHERE key = ?").get(key); return r?.value ?? null; } catch { return null; } };
-        let sourceDir = getMeta("source_dir");
-        if (!sourceDir && backfill) {
-          try { db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run("source_dir", backfill); sourceDir = backfill; } catch {}
-        }
-        const count = (() => { try { const r = db.prepare("SELECT COUNT(*) as c FROM memories").get(); return r?.c ?? 0; } catch { return 0; } })();
-        const lastUpdated = (() => { try { const r = db.prepare("SELECT updated FROM memories ORDER BY updated DESC LIMIT 1").get(); return r?.updated ?? null; } catch { return null; } })();
-        console.log(JSON.stringify({ sourceDir, memories: count, lastUpdated }));
-        db.close();
-        `,
-      ],
-      { cwd: projectDir },
-    );
-    if (result) {
-      const parsed = JSON.parse(result.trim());
-      info.sourceDir = parsed.sourceDir ?? null;
-      info.memories = parsed.memories ?? 0;
-      info.lastUpdated = parsed.lastUpdated ?? null;
-    }
-  } catch {
-    // Ignore — will show defaults
-  }
-
-  return info;
+  return dirs
+    .map((id) =>
+      getProjectInfo(
+        join(baseDir, id),
+        id,
+        mcpDir,
+        id === currentProjectId ? currentMemoryDir : undefined,
+      ),
+    )
+    .sort((a, b) => b.size - a.size);
 }
 
 async function memoryListProjectsCommand(): Promise<void> {

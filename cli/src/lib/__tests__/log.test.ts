@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { printBoxed } from "../log.js";
+import {
+  getLogMode,
+  log,
+  printBanner,
+  printBoxed,
+  setLogMode,
+} from "../log.js";
 
 const identity = (s: string): string => s;
 
@@ -15,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   logSpy.mockRestore();
+  setLogMode("human");
 });
 
 describe("printBoxed", () => {
@@ -65,5 +72,31 @@ describe("printBoxed", () => {
   it("prints nothing for content that is only whitespace newlines", () => {
     printBoxed("\n\n\n", { color: identity });
     expect(output).toEqual([]);
+  });
+});
+
+describe("log mode", () => {
+  it("routes every log helper, printBanner and printBoxed to stderr in json mode", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    setLogMode("json");
+
+    for (const fn of Object.values(log)) fn("msg");
+    printBanner("title", { color: identity });
+    printBoxed("box", { color: identity });
+
+    expect(getLogMode()).toBe("json");
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledTimes(Object.keys(log).length + 6);
+    errorSpy.mockRestore();
+  });
+
+  it("switches back to console.log in human mode", () => {
+    setLogMode("json");
+    setLogMode("human");
+
+    log.dim("back");
+
+    expect(getLogMode()).toBe("human");
+    expect(logSpy).toHaveBeenCalledTimes(1);
   });
 });

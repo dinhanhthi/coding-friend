@@ -58,7 +58,7 @@ function installedPluginVersion() {
   const plugins = readJson(INSTALLED_PLUGINS)?.plugins;
   if (!plugins) return null;
   for (const [key, value] of Object.entries(plugins)) {
-    if (!key.includes("coding-friend")) continue;
+    if (!key.startsWith("coding-friend@")) continue;
     const entry = Array.isArray(value) ? value[0] : value;
     if (typeof entry?.version === "string") return entry.version;
   }

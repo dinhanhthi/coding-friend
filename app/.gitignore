@@ -1,0 +1,6 @@
+# Vite output (also covered by the root .gitignore)
+/dist/
+
+# Tauri (phase 4+)
+/src-tauri/target/
+/src-tauri/gen/

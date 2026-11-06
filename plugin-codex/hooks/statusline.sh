@@ -26,6 +26,11 @@
 #   { "statusline": { "components": ["version", "folder", "model", "branch", "account", "context", "rate_limit", "session", "task_agent"] } }
 #   Run `cf statusline` to configure interactively.
 #   If no config exists, all components are shown by default.
+#   A "chef N!" counter (not a component) joins line 2 only when
+#   <CF_ORCHESTRATOR_DIR or ~/.coding-friend/orchestrator>/chefs/summary.json
+#   reports chef questions or paused chefs.
+#   When stdin has rate_limits and jq is on PATH, a quota snapshot is written to
+#   <CF_QUOTA_DIR or ~/.coding-friend/quota>/claude.json (see write_quota_snapshot).
 
 set -euo pipefail
 
@@ -159,10 +164,10 @@ VERSION=""
 if component_enabled "version"; then
   PLUGIN_ROOT="${PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
   if [ -f "$PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
-    VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+    VERSION=$(jq -r '.version // empty' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null || true)
   fi
   if [ -z "$VERSION" ]; then
-    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$CF_CLAUDE_DIR/plugins/installed_plugins.json" 2>/dev/null)
+    VERSION=$(jq -r '.plugins["coding-friend@coding-friend-marketplace"][0].version // empty' "$CF_CLAUDE_DIR/plugins/installed_plugins.json" 2>/dev/null || true)
   fi
 fi
 
@@ -176,9 +181,9 @@ fi
 # Active model
 MODEL=""
 if component_enabled "model"; then
-  MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null)
+  MODEL=$(echo "$INPUT" | jq -r '.session.model // empty' 2>/dev/null || true)
   if [ -z "$MODEL" ]; then
-    MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null)
+    MODEL=$(echo "$INPUT" | jq -r '.model.display_name // empty' 2>/dev/null || true)
   fi
   # Shorten model names: "Opus 4.6 (1M context)" → "Opus (1M)"
   if [ -n "$MODEL" ]; then
@@ -201,7 +206,7 @@ fi
 # Context window usage — read from stdin JSON
 ctx_text=""
 if component_enabled "context"; then
-  ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1)
+  ctx_pct=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty' 2>/dev/null | cut -d. -f1 || true)
   if [ -n "$ctx_pct" ] && [[ "$ctx_pct" =~ ^[0-9]+$ ]]; then
     ctx_color=$(color_for_percentage "$ctx_pct")
     ctx_text="${ctx_color}ctx ${ctx_pct}%${RESET}"
@@ -297,6 +302,98 @@ if component_enabled "rate_limit"; then
   fi
 fi
 
+# Quota snapshot — written whatever the rate_limit display setting, read by the
+# CF CLI (cf status, doctor, supervisor hint). Schema v1, fixed key order:
+#   {"schemaVersion":1,"provider":"claude","configDir":"...","windows":{"five_hour":
+#    {"percentUsed":N,"resetsAt":EPOCH},"seven_day":{...}},"source":"statusline","measuredAt":EPOCH}
+# File: ${CF_QUOTA_DIR:-~/.coding-friend/quota}/claude.json (dir 0700, file 0600,
+# mktemp + mv). Skipped when the existing file has a newer measuredAt, or the same
+# windows and is < 300 s old. Never prints and never fails the statusline.
+write_quota_snapshot() {
+  command -v jq >/dev/null 2>&1 || return 0
+  local dir="${CF_QUOTA_DIR:-$HOME/.coding-friend/quota}"
+  local file="$dir/claude.json"
+  local rows="" name="" pct="" reset="" windows="" now="" existing=""
+  local old_measured="" old_windows="" config_json="" json="" w="" p="" r=""
+
+  # One row per present window: name|used_percentage|resets_at as text
+  rows=$(printf '%s' "$INPUT" | jq -r '
+    .rate_limits // {} | select(type == "object") | to_entries[]
+    | select(.key == "five_hour" or .key == "seven_day")
+    | select((.value | type) == "object")
+    | select((.value.used_percentage | type) == "number")
+    | [.key,
+       (.value.used_percentage | tostring),
+       (.value.resets_at
+        | if type == "number" then (floor | tostring)
+          elif type == "string" then .
+          else "" end)]
+    | join("|")' 2>/dev/null) || return 0
+
+  for name in five_hour seven_day; do
+    pct="" reset=""
+    while IFS='|' read -r w p r; do
+      [ "$w" = "$name" ] && { pct="$p"; reset="$r"; }
+    done <<< "$rows"
+    # Keep one decimal at most and clamp to 100, so an exhausted window is kept
+    # (awk, so jq's float printing does not matter). Negatives/non-numbers → ""
+    pct=$(awk -v v="$pct" 'BEGIN { if (v ~ /^[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?$/) { n = v + 0; if (n > 100) n = 100; s = sprintf("%.1f", n); sub(/\.0$/, "", s); print s } }')
+    [[ "$pct" =~ ^[0-9]{1,3}(\.[0-9])?$ ]] || continue
+    if [[ "$reset" =~ ^[0-9]+$ ]]; then
+      # Over 15 digits would overflow bash's 64-bit arithmetic: drop the window
+      [ "${#reset}" -gt 15 ] && continue
+      # Epoch in milliseconds (> 1e12) → seconds
+      [ "${#reset}" -ge 13 ] && reset=$((10#$reset / 1000))
+    elif [ -n "$reset" ]; then
+      reset=$(iso_to_epoch "$reset")
+    fi
+    [[ "$reset" =~ ^[0-9]+$ ]] || continue
+    [ -n "$windows" ] && windows+=","
+    windows+=$(printf '"%s":{"percentUsed":%s,"resetsAt":%s}' "$name" "$pct" "$((10#$reset))")
+  done
+  [ -n "$windows" ] || return 0
+  windows="{${windows}}"
+  now=$(date +%s)
+
+  # Never follow a symlink, never read a FIFO, never mv into a directory
+  [ -L "$file" ] && return 0
+  if [ -e "$file" ]; then
+    [ -f "$file" ] || return 0
+    existing=$(head -c 65536 "$file" 2>/dev/null) || existing=""
+    old_measured=$(printf '%s' "$existing" | jq -r '.measuredAt // empty | tostring' 2>/dev/null) || old_measured=""
+    # Both writers emit compact JSON in the fixed key order, so the windows part
+    # is the text between "windows": and ,"source": (no jq float reprinting)
+    old_windows="${existing#*\"windows\":}"
+    old_windows="${old_windows%%,\"source\":*}"
+    # A measuredAt beyond the 300 s clock-skew slack is corrupt: ignore it and overwrite
+    if [[ "$old_measured" =~ ^[0-9]{1,12}$ ]] && [ "$old_measured" -le $((now + 300)) ]; then
+      [ "$old_measured" -gt "$now" ] && return 0
+      [ "$old_windows" = "$windows" ] && [ $((now - old_measured)) -lt 300 ] && return 0
+    fi
+  fi
+
+  config_json=$(jq -n --arg d "$CF_CLAUDE_DIR" '$d' 2>/dev/null) || return 0
+  [ -n "$config_json" ] || return 0
+  json=$(printf '{"schemaVersion":1,"provider":"claude","configDir":%s,"windows":%s,"source":"statusline","measuredAt":%s}' \
+    "$config_json" "$windows" "$now")
+
+  (
+    umask 077
+    mkdir -p "$dir" 2>/dev/null && chmod 700 "$dir" 2>/dev/null || exit 0
+    [ -L "$file" ] && exit 0
+    # Temp files left by a run cancelled between mktemp and mv
+    # (exactly mktemp's 6 X's, never e.g. ~/.claude.json if the dir is $HOME)
+    find "$dir" -maxdepth 1 -name '.claude.??????' -type f -mmin +60 -delete 2>/dev/null || true
+    tmp=$(mktemp "$dir/.claude.XXXXXX" 2>/dev/null) || exit 0
+    trap 'rm -f "$tmp"' EXIT
+    if ! { printf '%s\n' "$json" > "$tmp" && mv -f "$tmp" "$file"; } 2>/dev/null; then
+      rm -f "$tmp" 2>/dev/null
+    fi
+    exit 0
+  )
+}
+write_quota_snapshot >/dev/null 2>&1 || true
+
 # ── Session ID (for "session" component) ──
 session_line=""
 if component_enabled "session"; then
@@ -335,6 +432,25 @@ if component_enabled "task_agent"; then
   fi
 fi
 
+# ── Chef counter (no component id: shown only when a chef needs the user) ──
+# <store>/chefs/summary.json is written by the CF CLI (`inbox` = unseen chef
+# questions, `paused` = paused chefs). Read with grep only (no jq). Only a
+# regular file that is not a symlink is read, capped in size, so a FIFO or a
+# link planted there cannot hang or redirect the statusline.
+chef_text=""
+CHEF_SUMMARY="${CF_ORCHESTRATOR_DIR:-$HOME/.coding-friend/orchestrator}/chefs/summary.json"
+if [ -f "$CHEF_SUMMARY" ] && [ ! -L "$CHEF_SUMMARY" ]; then
+  chef_json=$(head -c 4096 "$CHEF_SUMMARY" 2>/dev/null || true)
+  chef_inbox=$(printf '%s' "$chef_json" | grep -o '"inbox"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$' || true)
+  chef_paused=$(printf '%s' "$chef_json" | grep -o '"paused"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$' || true)
+  [[ "$chef_inbox" =~ ^[0-9]{1,6}$ ]] || chef_inbox=0
+  [[ "$chef_paused" =~ ^[0-9]{1,6}$ ]] || chef_paused=0
+  chef_total=$((10#$chef_inbox + 10#$chef_paused))
+  if [ "$chef_total" -gt 0 ]; then
+    chef_text="${YELLOW}chef ${chef_total}!${RESET}"
+  fi
+fi
+
 # Line 1: model only (leaves room for Claude Code's built-in right-side indicators
 # like effort, clipboard, MCP errors — which float on the first line by design)
 if [ -n "$MODEL" ]; then
@@ -364,6 +480,7 @@ if [ -n "$current_dir" ]; then
 fi
 
 [ -n "$account_line" ] && line2_parts+=("$account_line")
+[ -n "$chef_text" ] && line2_parts+=("$chef_text")
 
 if [ ${#line2_parts[@]} -gt 0 ]; then
   line2=""

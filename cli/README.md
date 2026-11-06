@@ -9,8 +9,9 @@ If you installed the Coding Friend plugin through the Claude Code marketplace bu
 - Fast indexed memory search — falls back to `grep -r '<query>' docs/memory/`
 - The `coding-friend-learn-host` doc viewer — open `docs/learn/*.md` directly in your editor
 - The `cf statusline` renderer — Claude Code's default statusline takes over
+- `/cf-session` — it saves the session with `cf session save`, so it stops and asks you to install the CLI
 
-Everything else (every skill, every agent, every hook except the three OPTIONAL hooks above) is unaffected. See [`../docs/cli-requirements.md`](../docs/cli-requirements.md) for the full matrix.
+Everything else (every other skill, every agent, every hook except the three OPTIONAL hooks above) is unaffected. See [`../docs/cli-requirements.md`](../docs/cli-requirements.md) for the full matrix.
 
 ### Common CLI install issues
 
@@ -59,6 +60,8 @@ cf install --local      # Install at local scope (this machine only)
 cf install --agent codex  # Register/install Coding Friend for Codex CLI
 cf install --agent agy    # Google Antigravity (beta); alias --agy
 cf install --agent devin  # Devin CLI (beta); alias --devin
+cf install --yes        # Skip prompts (default scope: user)
+cf install --yes --json # Non-interactive, JSON envelope (needs --yes or a scope flag)
                         # 💡 Safe to run multiple times (idempotent).
 cf uninstall            # Uninstall plugin (interactive scope chooser)
 cf uninstall --user     # Uninstall from user scope (full cleanup)
@@ -90,10 +93,32 @@ cf init --agent devin  # Devin CLI (beta); alias --devin
                      # 💡 You can run this anywhere, anytime.
 cf config            # Manage Coding Friend configuration (interactive menu)
                      # 💡 Edit docsDir, language, learn settings, and more.
+cf config get [key]  # Show merged config (or one dotted key) and its source
+                     # --global / --local read only that file
+cf config set <key> <value> --global|--local
+                     # Set a dotted key (JSON value, else string); `null` deletes it
+                     # 💡 --global or --local is required
+cf config get docsDir --project-dir ~/git/my-app
+                     # --project-dir <path> (get and set): act as if run from the
+                     #    main repo root of <path> (worktrees and subdirs collapse)
+cf config set tdd true --local --project-dir ~/git/my-app
+                     # Write ~/git/my-app/.coding-friend/config.json from anywhere
+cf config schema     # Print the JSON Schema of the config file
+cf learn status      # Learn folder (`learn.outputDir`), its mode (git or folder),
+                     #    cloud folder and suggested cloud folders (see Learn notes)
+cf learn list        # List learn notes (and cloud files not downloaded yet)
+cf learn search <query>          # Search notes by title, tags and body
+cf learn show -- <category/slug>  # Print one learn note
+cf learn edit --stdin --if-match <sha256> -- <category/slug>
+                     # Replace the body with stdin (frontmatter kept, `updated:` = today)
+cf learn delete -- <category/slug>  # Delete a learn note (asks first; --yes skips)
+                     # 💡 In git mode with `learn.autoCommit`, edit and delete commit
+                     #    only that file (never push)
 cf learn host [path] # Build and serve learning docs at localhost:3333
                      # [path] is optional, default is `~/.coding-friend/learn`
 cf learn push [path] # Commit and push learning docs (only if learn dir is the git root)
                      # [path] is optional, default is `~/.coding-friend/learn`
+                     # In folder mode it prints "not applicable" and exits 0
 cf mcp [path]        # Setup MCP server for LLM integration
                      # [path] is optional, default is `~/.coding-friend/learn`
                      # This prints a JSON config snippet to add to your client's MCP
@@ -118,6 +143,9 @@ cf update --agent agy   # Google Antigravity (beta); alias --agy
 cf update --agent devin # Devin CLI (beta); alias --devin
 cf update --project     # Update plugin at project scope
 cf update --local       # Update plugin at local scope
+cf update --check       # Only report installed vs latest versions (read-only)
+cf update --check --json  # Same, as a JSON envelope (--json requires --check or --yes)
+cf update --yes --json    # Run the update without prompts, JSON envelope (see Non-interactive update)
 cf dev on [path]     # Switch to local plugin source for development
 cf dev off           # Switch back to remote marketplace
 cf dev status        # Show current dev mode (local or remote)
@@ -128,6 +156,13 @@ cf memory status     # Show memory system status and stats
 cf memory search     # Search memories by keyword
 cf memory list              # List all memories in current project
 cf memory list --projects   # List all project databases with size and metadata
+cf memory show -- <category/slug>   # Print one memory file
+cf memory edit --stdin --if-match <sha256> -- <category/slug>
+                     # Replace the body with stdin (frontmatter kept, `updated:` = today)
+cf memory delete -- <category/slug>  # Delete a memory (asks first; --yes skips) and
+                     #    its rule line in CLAUDE.md / AGENTS.md
+                     # 💡 search, list, show, edit and delete take --project-dir <path>
+                     #    (act as if run from the main repo root of <path>)
 cf memory rm --project-id <id>  # Remove a specific project database
 cf memory rm --all          # Remove all project databases
 cf memory rm --prune        # Remove orphaned projects (source dir missing or 0 memories)
@@ -139,11 +174,511 @@ cf memory config     # Configure memory system settings
 cf memory mcp        # Show MCP server config for clients
 cf status            # Show comprehensive Coding Friend status
                      # (versions, per-host plugin state incl. Devin, memory, config)
+cf version           # Show CLI and per-host plugin versions
+cf doctor            # Check the Coding Friend setup (read-only, see Doctor)
+cf doctor --project-dir ~/git/my-app  # Check only one project (see Doctor)
+cf project list      # List registered projects
+cf project add [path]    # Register a project (default: current repo root)
+cf project remove <path> # Remove a project from the registry
+cf docs list         # List the markdown files under the project's docsDir
+cf docs show -- <relpath>  # Print one of them (path relative to docsDir)
 cf clean             # Clean files generated by Coding Friend in docs/
-cf session save      # Save current Claude Code session to docs/sessions/
-cf session load      # Load a saved session from docs/sessions/
+cf session list      # List Claude Code, Codex and saved sessions, newest first
+cf session show -- <ref>    # Print one session's turns, always redacted
+cf session export -- <ref>  # Print one session as redacted Markdown on stdout
+                     #    (--out <file> [--force]: write it to a file, mode 0600)
+                     #    (--redact-model, --summary: decision model filters)
+                     # 💡 <ref> is claude:<uuid>, codex:<thread-id>, saved:<folder>
+                     #    or legacy:<folder> (see Sessions)
+cf session save [-- <label>]  # Save a Claude Code session verbatim to session.dir
+cf session load      # Load a saved session from session.dir, print the resume command
+                     #    (--json --yes --target <path> [--force] -- <ref>: no prompt)
+cf session status    # Show session.dir, its cloud folder and suggested folders
+cf sync status       # Learn and session folders: cloud provider, files, placeholders
+                     #    and conflict copies (reads no file, see Sync)
+cf decide test       # (beta) One built-in synthetic request to the decision model
+cf decide eval [--point redact|review-fp]  # Score the model on the built-in golden sets
+cf decide log [--since <date>] [--threshold <n>]  # Summarize the decision log (read-only)
+cf decide review-fp --snapshot-dir <dir> --report <file>
+                     # /cf-review shadow check, logs only (see Decision layer)
+cf task run --provider claude|codex|opencode [--model <name>] [--read-only] [--no-fallback] "<prompt>"
+                     # Start a detached, sandboxed worker task (see Task runner)
+cf task list         # List tasks, newest first
+cf task show <id>    # Show a task's state, questions and result
+cf task follow <id>  # Follow a task's worker transcript until it ends (see Following a task)
+cf task cancel <id>  # Cancel a running or paused task
+cf ask "<question>"  # (worker) Ask the user a question and wait for the answer
+cf reply --task <id> <qid> "<answer>"  # Answer a task's question
+cf done --outcome succeeded|failed --summary "<s>"
+                     # (worker) Mark the task finished
+cf supervisor install    # Install the launchd agent that adopts paused tasks (macOS)
+cf supervisor uninstall  # Remove the launchd agent
+cf supervisor status     # Agent, last tick and paused tasks
+cf supervisor tick       # One supervisor pass (what launchd runs every minute)
+cf chef start <plan-dir> --provider claude|codex [--no-commit]
+                     # Start a chef for a plan in this clean checkout (see Chef)
+cf chef say <id> "<message>"  # Send the chef a message (also answers its questions)
+cf chef status [id]  # State of one chef or of every chef
+cf chef inbox [id]   # Chef questions, pauses and quota waits that need you
+cf chef show <id>    # Decisions, tasks, commits and plan notes of a chef
+cf chef stop <id>    # Stop a chef and free its checkout (its tasks keep running)
+cf chef resume <id>  # Resume a paused chef with a new baseline
 cf help              # Show all commands
 ```
+
+`--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf decide test|eval|log|review-fp`, `cf task run|list|show|follow|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
+
+## Doctor
+
+`cf doctor` is a read-only health report of the Coding Friend setup. It makes no network calls and writes no files (a host binary it probes, such as `claude`, may still create its own files). Each `claude mcp get` and `<host> --version` probe has a 10-second timeout.
+
+| Group        | Checks                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `cli`        | Node.js >= 20                                                                                                    |
+| `plugin`     | Claude Code plugin installed, marketplace registered, plugin enabled at its scope                                |
+| `memory`     | Memory MCP registered at user scope, not shadowed by `.mcp.json` in the current directory, built, daemon running |
+| `learn`      | Learn MCP registered, built, learn docs directory, learn storage not a git repo in a cloud folder                |
+| `session`    | Session storage not in a git work tree, no unsaved Claude Code session close to Claude's cleanup                 |
+| `hosts`      | Version of each host binary found (`claude` shown; codex, omp, agy, devin compared to their minimum version)     |
+| `supervisor` | launchd agent installed and loaded, last tick within 3 minutes (macOS only)                                      |
+| `registry`   | Project registry readable                                                                                        |
+
+Each check is `ok`, `warn` or `fail`. An optional feature that is not set up yet is `warn`, not `fail`: memory registration and build before `cf memory init`, learn registration and build before learn is registered (`cf mcp` or `cf init` registers it), and the learn docs directory. A registration check is also `warn` when the `claude` CLI is missing or `claude mcp get` times out, and host versions are only ever `warn`. Only these can be `fail`: Node.js too old, plugin not installed, memory MCP not registered or not built once `cf memory init` ran, learn MCP not built once registered, a launchd plist with missing program paths, and, with `--project-dir`, a local config file that is not valid JSON. The memory daemon, `.mcp.json` shadowing, learn storage, session storage and retention, marketplace, plugin enabled, launchd loaded, heartbeat and registry checks are always `warn`.
+
+`learn.storage` is `warn` when `learn.outputDir` is inside a git repo that is itself inside a cloud folder (iCloud Drive, Google Drive, Dropbox, OneDrive; detected on macOS only): cloud sync and git can damage each other's files, so the hint says to use one of the two. Any other folder is `ok`, and its detail says `git` or `folder` (plus the cloud provider).
+
+`session.storage` is `warn` when `session.dir` is inside a git work tree: saved transcripts are verbatim (not redacted), so a commit could publish them; the hint says to use a folder that is not a git repo. A folder that does not exist yet is `ok`.
+
+`session.retention` warns before Claude Code's own cleanup deletes a transcript you have not saved. It reads only `cleanupPeriodDays` from the Claude user settings (`<claude>/settings.json`, `CLAUDE_CONFIG_DIR`, default `~/.claude`; missing, broken or not a whole number >= 1 means Claude's default, 30) and no other key. A transcript `<claude>/projects/*/<uuid>.jsonl` is at risk when its session id is not in `session.dir` (a placeholder that is not downloaded yet does not count as saved) and it was last changed more than `max(1, cleanupPeriodDays - 7)` days ago, i.e. within 7 days of the cleanup. Transcripts are only stat'ed, never opened. The detail gives the number of sessions and the cleanup period; the hint is `cf session save`, or raise `cleanupPeriodDays`.
+
+A check that is not `ok` can carry a fix or a hint; the only `ok` check with a hint is `project.legacySessions`. A fix is one of exactly three commands that are safe to run without a prompt: `cf supervisor install` (launchd agent not ok), `cf supervisor tick` (stale heartbeat while the agent is loaded) and `cf install --user --yes` (plugin not installed). Anything else is a hint, a command shown to you and never run: `cf mcp`, `cf memory init`, `cf memory start-daemon`, `cf update`, `cf enable --<scope>`, `cf install`, `cf install --user`, `/cf-learn`, `cf session save` or raising `cleanupPeriodDays`, moving `session.dir` out of a git repo, a host upgrade, or (with `--project-dir`) `cf project add -- '<root>'`, `cd '<root>' && cf update`, editing the project's config file and the `mkdir -p '<session.dir>' && mv` that moves legacy sessions into `session.dir` (shown on an `ok` check).
+
+Human output groups the checks, prints the fix or hint under each check that is not `ok`, and exits `1` if any check is `fail`. With `--json`, `data = { cli: { version, node, path }, checks: [{ id, group, label, status, detail?, fix?, hint? }] }`. `id` is stable and dotted (e.g. `memory.mcp.registered`); `fix` is `{ argv, label }`, where `argv` is the arguments after `cf` and always ends with `--json`. The envelope is `ok: true` whenever doctor ran, so read each check's `status`.
+
+### One project
+
+`cf doctor --project-dir <path> [--json]` checks one project instead of the setup. `<path>` resolves like `cf config --project-dir` (a worktree or subdirectory resolves to its main repo root; a missing path is `NOT_FOUND`, a path that is not a directory is `INVALID_ARGS`). It runs only the checks of group `project`, reads files only (no `claude` or host probe) and never offers a fix, only hints:
+
+| Id                       | Checks                                                                                                                                                                                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project.registered`     | The root is in the project registry; else `warn`, hint `cf project add -- '<root>'`                                                                                                                                                                                                                               |
+| `project.config`         | `<root>/.coding-friend/config.json`: `ok` when absent or valid, `warn` on unknown keys or schema problems, `fail` when it is not valid JSON or not an object                                                                                                                                                      |
+| `project.docsDir`        | The docs folder (`docsDir` from the local config, then the global one, else `docs`) exists; else `warn`                                                                                                                                                                                                           |
+| `project.memory`         | `<docsDir>/memory` exists (the detail counts its `.md` files); else `warn`                                                                                                                                                                                                                                        |
+| `project.mcpShadow`      | `<root>/.mcp.json` (not the current directory's) has no `coding-friend-memory` entry that shadows the user-scope server, same cases as `memory.mcp.projectShadow`; else `warn`, hint `cd '<root>' && cf update`                                                                                                   |
+| `project.retention`      | Same as `session.retention` for this project's Claude Code transcripts. `cleanupPeriodDays` follows Claude's precedence: `<root>/.claude/settings.local.json`, then `<root>/.claude/settings.json`, then the user settings (a broken file is skipped); sessions in the legacy `<docsDir>/sessions` count as saved |
+| `project.legacySessions` | Always `ok`. When `<docsDir>/sessions` holds sessions saved by older versions, the detail counts them and the hint is the `mkdir -p` + `mv` that moves them into `session.dir`                                                                                                                                    |
+
+Human output prints `Project <root>` before the checks and exits `1` if any check is `fail`. With `--json`, `data = { cli, project, checks }`, where `project` is the resolved root. Like `cf doctor`, it is auto-approved by the plugin hook.
+
+## Non-interactive update
+
+`cf update --yes --json` runs the same flow as `cf update`, without prompts, and returns `data = { performed, after }`: `performed` lists the hosts it updated (with no host flag, every installed host in turn, or Claude Code when none is installed) and `after` is the same data as `cf update --check --json`. `--json` alone is rejected with `INVALID_ARGS`; `--check` wins, so `--check --yes --json` stays read-only; `--yes` without `--json` has no effect (a plain `cf update` runs).
+
+Unlike `cf doctor`, a real run uses the network and changes the machine:
+
+- **Claude Code:** updates the plugin (`claude plugin update`, reinstalling if the version did not change); updates the CLI with `npm install -g coding-friend-cli@latest` when npm has a newer version (skipped when the CLI is `npm link`ed); rebuilds the bundled memory server; registers the memory MCP at user scope if it is missing; removes a legacy project-scope `coding-friend-memory` entry from `./.mcp.json` (deleting the file if it ends up empty); refreshes the statusline; writes or refreshes the tab completion block in your shell rc file (a standalone file for fish).
+- **Codex:** `codex plugin marketplace upgrade`, plus the CLI update.
+- **omp:** redeploys the agents and the extension entry for each installed scope, refreshes the memory MCP entry, plus the CLI update.
+- **Antigravity:** redeploys the plugin, re-registers the memory MCP and keeps your other MCP servers, plus the CLI update.
+- **Devin:** reconciles the Devin plugin, plus the CLI update.
+
+**Known limit.** A failed step is only logged (to stderr), so the process can exit `1` while the envelope still says `ok: true`. Treat `data.after` (or a fresh `cf version --json` / `cf update --check --json`) as the source of truth, not `ok` alone.
+
+## Learn notes
+
+`cf learn` works on the folder of `/cf-learn` notes, `learn.outputDir` in the global config (default `~/.coding-friend/learn`), laid out as `<category>/<slug>.md`. `README.md` index files (`learn.readmeIndex`) and `docs.json` are not notes and are skipped.
+
+The storage mode is inferred from that folder, never configured:
+
+- **git mode:** the folder is inside a git repo. With `learn.autoCommit`, `cf learn edit` and `delete` commit only the file they changed (`learn: update <id>` / `learn: delete <id>`), never push. `cf learn push` commits and pushes as before.
+- **folder mode:** anything else. Plain files, which a cloud app such as iCloud Drive, Google Drive, Dropbox or OneDrive may sync. Nothing runs git; `cf learn push` prints "not applicable in folder mode (learn.outputDir is not a git repo)" and exits 0.
+
+`cf learn status` also says whether the folder is in a cloud folder and suggests a `coding-friend-learn` folder in each cloud folder found (Google Drive: `My Drive/coding-friend-learn`), never the cloud root itself. Cloud folders are only detected on macOS. A git repo inside a cloud folder is discouraged.
+
+Cloud files that are not downloaded yet (`.<name>.md.icloud`, or, inside a cloud folder on macOS, a dataless file) are listed as `placeholders` and never opened, since reading one makes the cloud app download it; `show`, `edit` and `delete` refuse them with `NOT_FOUND` "not downloaded". A note that looks like a sync conflict copy of another one (`hooks 2`, `hooks (1)`, Dropbox "conflicted copy", OneDrive `-<host>`) gets `possibleConflictOf`, the id of that note.
+
+`/cf-learn` and `/cf-teach` (through the `cf-writer` agents) also commit only the note they wrote plus the README index files they updated, never `git add -A`.
+
+## Sessions
+
+`cf session list|show|export` read the transcripts Claude Code and Codex keep on disk, and the sessions saved with `cf session save`. They only read, never write. `save` and `load` copy a Claude Code transcript into and out of the session store.
+
+- **Refs.** A session is named `claude:<uuid>`, `codex:<thread-id>`, `saved:<folder>` (a folder in `session.dir`) or `legacy:<folder>` (a folder in a project's old `<docsDir>/sessions`), as printed by `cf session list`. Pass it after `--`: `cf session show -- claude:<uuid>`. `legacy:` refs need `--project-dir`.
+- **Claude Code.** Only `<claude>/projects/*/*.jsonl` (`CLAUDE_CONFIG_DIR`, default `~/.claude`). The format is internal to Claude Code, so it is read best effort: unknown records are skipped, and a file with none it recognizes is listed as `unsupported`. Subagent transcripts are not shown. The same session in two project folders is listed once; `--project-dir` prefers that project's copy, otherwise the newest file wins.
+- **Codex.** Only `rollout-*.jsonl` under `<codex>/sessions/` and `<codex>/archived_sessions/` (`CODEX_HOME`, default `~/.codex`). Compressed `.jsonl.zst` rollouts are listed as `unsupported`, not read.
+- **`list --project-dir <path>`** keeps the sessions whose working directory is that project (its main repo root) or a folder inside it; for saved sessions that is the project path recorded at save time, so a not-yet-downloaded saved session is left out. It also adds the project's legacy `<docsDir>/sessions`.
+- **Always redacted.** `show` and `export` replace API keys, tokens, private keys, passwords and URL credentials with `[REDACTED:<kind>]`, and your home folder with `~`. Titles in `list` are redacted too. There is no raw mode.
+- **`export`** prints the session as Markdown on stdout (so `> file.md` works) and the redaction count on stderr. Tool calls are one line each (name and short arguments); tool output is left out unless `--include-tool-output`, and then cut at 2000 characters. `show` takes the same flag. `--out <file>` writes the full Markdown to that file instead (a temp file with mode `0600` in the same folder, then renamed over it); it refuses a missing folder (`NOT_FOUND`), a symlink or a non-regular file (`INVALID_ARGS`), and an existing file or folder (`CONFLICT`) unless `--force` overwrites an existing file. `--force` without `--out` is `INVALID_ARGS`.
+- **`export --redact-model` / `--summary`** run a decision model over the already regex-redacted parts (title, messages, tool output). `--redact-model` drops each part the model flags as still holding a secret, credential or personal data (in windows of 2000 characters; a window with a score at or above `decision.redactThreshold`, default 0.5, drops the whole part). `--summary` keeps the parts the model rates most important, in their order, within 12 000 characters, and drops the rest; the title, working folder and tool lines stay. Both flags together run `--redact-model` first. The whole filter has 60 seconds. They need `decision.provider` set in the **global** config (`cf config set --global decision.provider local`; a `decision` block in a project's `.coding-friend/config.json` is ignored). `local` with a loopback `baseUrl` stays on this machine; `typesafe`, `cloudflare` or a non-loopback `baseUrl` also need `decision.allowRemote: true` in the global config and the key in the environment (`TYPESAFE_API_KEY`, or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`). Provider `off`, a closed `allowRemote` gate or a missing key is `INVALID_ARGS` before the session is read or anything is written. The model can only remove text; on any failure (timeout, HTTP or network error, bad answer) the export falls back to regex redaction: `filter.status` is `error`, `timeout` or `rejected`, and human mode prints `filter: <name> <status>` and a warning on stderr. Each filtered export appends one line to `~/.coding-friend/decisions/log.jsonl` (provider, model, ok, fallback reason, latency, parts asked and dropped; never text or paths).
+- **Best effort.** Redaction matches known secret shapes and misses others. Read an export before you share it.
+
+### Saved sessions
+
+`cf session save` copies a Claude Code session into one global store, `session.dir` in the global config (default `~/.coding-friend/sessions`; a `session.dir` in a local `.coding-friend/config.json` is ignored). Point it at a cloud folder (iCloud Drive, Google Drive, Dropbox, OneDrive) to sync your sessions across machines: `cf config set --global -- session.dir <folder>`. `cf session status` prints the current folder, its cloud provider and, for each cloud folder it finds (macOS only), a suggested `coding-friend-sessions` folder inside it.
+
+- **Verbatim, not redacted.** `save` copies the transcript as it is, so it may contain secrets. Do not put `session.dir` in a shared or public place; `status` warns when it is inside a git work tree. To share a session, use `cf session export`, which is redacted.
+- **Layout.** `<session.dir>/<label-slug>/` holds `session.jsonl`, `meta.json` (session id, provider, label, project path, machine, time, size, preview) and `session/` with the session's `subagents/`, `tool-results/` and `mcp-tasks/` folders. A label already used gets a `-2`, `-3`, … suffix.
+- **`save [-l <label> | -- <label>] [--session-id <uuid>] [--project-dir <path>]`.** Without `--session-id` it takes the newest transcript of the project (`--project-dir`, else the current directory), and asks which one when several changed in the last 60 seconds. The project path in `meta.json` comes from the transcript's own working directory.
+- **`load [--project-dir <path>]`** lists the sessions in `session.dir`, asks which one to load, then always asks for the project directory to load it into (default: the current directory; the folder it was saved from is shown as a hint only). It refuses a session that is not downloaded yet, a `meta.json` whose session id is not a UUID, and a transcript that already exists in that project (`--force` overwrites it). Then it prints `claude --resume <id>`.
+- **`load --json --yes --target <path> [--project-dir <path>] [--force] -- <ref>`** loads without any prompt, for scripts and the desktop app: `<ref>` is `saved:<folder>` or `legacy:<folder>` (which needs `--project-dir`), and `--target` is the project directory to load into.
+- **Old sessions in `docs/sessions`.** Sessions saved by older versions live in `<project>/docs/sessions/` (`<docsDir>/sessions`). They are still readable: pass `--project-dir .` (or the project path) to `list`, `show`, `export` and `load`, and use `legacy:<folder>` refs. To move them into the global store (same layout): `mv <project>/docs/sessions/* ~/.coding-friend/sessions/` (or your `session.dir`).
+
+## Sync
+
+Coding Friend has no sync engine. To use your learn notes and saved sessions on several machines, point `learn.outputDir` and `session.dir` (global config) at a folder that a cloud app syncs (iCloud Drive, Google Drive, Dropbox, OneDrive); `cf learn status` and `cf session status` suggest one. The global config (`~/.coding-friend/config.json`) and the project list (`~/.coding-friend/projects.json`) are not synced: they stay on each machine.
+
+`cf sync status` shows, for each kind (`learn`, `sessions`), its folder (from the global config, never a local one), whether it exists, its cloud provider (macOS only) and three counts:
+
+- **files:** learn notes (`<category>/<slug>.md`, `README.md` skipped) or saved session folders. Placeholders are included.
+- **placeholders:** files the cloud app has not downloaded yet (`.<name>.icloud`, or, inside a cloud folder on macOS, a dataless file). They are counted, never opened, so the command downloads nothing. For sessions, a folder counts once when its `session.jsonl` or `meta.json` is a placeholder.
+- **conflicts:** sync conflict copies whose original exists next to them (`hooks 2`, `hooks (1)`, Dropbox "conflicted copy", OneDrive `-<host>` inside a OneDrive folder). For sessions this counts both copied folders and copied files inside a folder (`session 2.jsonl`, `meta 2.json`).
+
+It reads directory entries and `lstat` only, never a file, does not follow symlinks inside the folder and skips entries starting with `.`. Each kind stops after 20000 entries and is then marked `truncated`. Human output prints one line per kind and a reminder that the global config and the project list are not synced.
+
+## Decision layer
+
+An optional small model that Coding Friend can ask yes/no questions ("does this text still hold a secret?", "does this code show the problem?"). It is off by default (`decision.provider` is `off`) and read from the **global** config only; a `decision` block in a project's `.coding-friend/config.json` is ignored.
+
+- **Provider.** `cf config set --global decision.provider local|typesafe|cloudflare`. `local` talks to the server at `decision.baseUrl`; a loopback URL stays on this machine.
+- **Remote gate.** Anything that leaves the machine (`typesafe`, `cloudflare`, or a non-loopback `baseUrl`) also needs `decision.allowRemote: true` in the global config.
+- **Keys.** From the environment only: `TYPESAFE_API_KEY`, or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
+
+`cf decide` (beta) has four subcommands, all with `--json`:
+
+- **`test`** sends one built-in synthetic request and prints provider, model, answer and latency.
+- **`eval [--point redact|review-fp]`** scores the model on the built-in golden sets (accuracy, fallback rate, p50/p95 latency); default both sets. `test` and `eval` send only this built-in synthetic data, so they reach a remote provider even when `allowRemote` is `false`. Provider `off`, a missing key or an invalid config is `INVALID_ARGS` before any request.
+- **`log [--since <date>] [--threshold <n>]`** reads the decision log and prints a summary (lines per kind, `/cf-review` shadow runs, findings asked, findings skipped per reason (security, secret path, secret content, no context, over limit, budget), fallback, latency, share of findings below the threshold, default 0.2). Read-only.
+- **`review-fp --snapshot-dir <dir> --report <file>`** is the `/cf-review` shadow backend: it asks the model whether each non-security finding shows in the code and only writes the log; the review itself never changes. Both paths must be under `/tmp/coding-friend/review/`. A closed gate is not an error: `data.ok` is `false` with a `reason`.
+
+The session export filters `--redact-model` and `--summary` use the same config (see [Sessions](#sessions)).
+
+Each filtered export, `test` or `eval` run, `review-fp` run (asked and skipped counts) and `review-fp` finding asked appends one line to `~/.coding-friend/decisions/log.jsonl` (provider, model, ok, fallback reason, latency, numeric answers or counts, and for review findings a hash). It never holds text or paths.
+
+## Machine interface
+
+With `--json`, a command prints exactly **one** JSON envelope on stdout. Logs, warnings and progress go to stderr. On error the exit code is non-zero (`1`).
+
+```json
+{ "contractVersion": 1, "ok": true, "data": { "cli": "1.2.3", "hosts": {} }, "error": null }
+{ "contractVersion": 1, "ok": false, "data": null, "error": { "code": "NOT_FOUND", "message": "..." } }
+```
+
+`contractVersion` is currently `1` and changes only on a breaking change to the envelope.
+
+| Code                   | Meaning                                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `USAGE`                | Unknown command/option or missing argument; also `cf chef start` and `resume` refusals                          |
+| `INVALID_ARGS`         | Bad flag combination or argument (e.g. invalid config key)                                                      |
+| `INVALID_VALUE`        | Value fails validation, or a config/registry file is unreadable                                                 |
+| `NOT_FOUND`            | Path, registry entry or required tool (e.g. `claude`) not found                                                 |
+| `INTERACTIVE_REQUIRED` | Command would prompt; pass `--yes` or a scope flag                                                              |
+| `DEV_MODE_ACTIVE`      | Refused because `cf dev` mode is on                                                                             |
+| `COMMAND_FAILED`       | An underlying command or process failed                                                                         |
+| `MEMORY_BUILD_FAILED`  | The memory MCP server could not be built                                                                        |
+| `UNEXPECTED_EXIT`      | Process exited before producing a result                                                                        |
+| `LEASE_HELD`           | Another writer task is running in this checkout, it already has a chef, or a chef wake is running               |
+| `ASK_TIMEOUT`          | `cf ask` got no answer in time; run the same command again                                                      |
+| `ALREADY_FINISHED`     | Task is already done or cancelled, the question already answered, or the chef already stopped                   |
+| `PROVIDER_UNAVAILABLE` | Provider CLI not on PATH, no worker sandbox (native Windows), or no launchd (`cf supervisor install` off macOS) |
+| `CONFLICT`             | The file changed since it was read (`--if-match` sha256 mismatch); read it again                                |
+| `INTERNAL`             | Any other unexpected error                                                                                      |
+
+**`cf doctor --json`.** `data = { cli, checks }`, `ok: true` whenever doctor ran; per-check `status` is in `data` (see [Doctor](#doctor)). With `--project-dir <path>`, `data = { cli, project, checks }` and only the `project` checks (see [One project](#one-project)).
+
+**`cf update --yes --json`.** `data = { performed, after }`; `ok: true` does not prove every step worked, read `after` (see [Non-interactive update](#non-interactive-update)).
+
+**`cf config get|set --project-dir <path> --json`.** Runs as if from the main repo root of `<path>` (a worktree or subdirectory resolves to it), so `--local` and the merged view use that project's `.coding-friend/config.json`; `data` gains `project`, the resolved root. A missing path is `NOT_FOUND`, a path that is not a directory is `INVALID_ARGS`.
+
+**`cf docs list|show [--project-dir <path>] --json`.** Read-only access to the project's docs folder: config `docsDir` (default `docs`), relative to the project root (`--project-dir` resolves like `cf config`). `list` returns `data = { project, docsDir, exists, files: [{ path, size, mtime }], truncated }`: only `.md` and `.markdown` files, paths posix and relative to `docsDir`, sorted; symlinks, entries starting with `.` and `node_modules` are skipped; folders deeper than 10 levels are not read, and the list stops at 5000 files (`truncated: true`). A missing folder is `exists: false`, not an error. `show -- <relpath>` returns `data = { project, path, content, size, mtime, sha256 }`. An absolute path, a `..` segment, a NUL byte or a non-markdown name is `INVALID_ARGS`; a file whose real path is outside `docsDir` (through a symlink) or larger than 1 MiB is `INVALID_VALUE`; a missing file is `NOT_FOUND`. Both are auto-approved by the plugin hook.
+
+**`cf memory show|edit|delete [--project-dir <path>] --json -- <category/slug>`.** One memory file under `{docsDir}/memory/` (`--project-dir` resolves like `cf config`; `search` and `list` take it too). An id that is not `<category>/<slug>` is `INVALID_ARGS`, a missing file `NOT_FOUND`, a file outside the memory folder (through a symlink) or larger than 1 MiB `INVALID_VALUE`. `show` returns `data = { id, category, path, frontmatter, content, sha256, mtime }`. `edit --stdin --if-match <sha256>` (both required, else `INVALID_ARGS`) replaces only the body with stdin (UTF-8, at most 1 MiB; an empty body is refused with `INVALID_VALUE`): the frontmatter stays byte for byte except `updated:`, set to today, and the BOM, line endings and file mode are kept; the file is written atomically. A sha256 that no longer matches the file is `CONFLICT`. It returns `data = { id, path, sha256, updated, index }`. `delete` asks first; with `--json` it needs `--yes` (else `INTERACTIVE_REQUIRED`), and `--if-match <sha256>` makes it refuse with `CONFLICT` too. It also removes the memory's `<!-- cf:<id> -->` line from the `CLAUDE.md` / `AGENTS.md` rules section at the project root (best effort) and returns `data = { id, path, deleted, index, instructionFiles, warnings }`: the files it changed, and why one could not be changed. `index` says whether search sees the change: `watched` (the shared memory daemon is proven to watch this memory folder), `stale` (an indexed tier, but that is not proven: run `cd "<root>" && cf memory rebuild`) or `none` (markdown tier, no index). Only `show` is auto-approved by the plugin hook; `edit` and `delete` never are.
+
+**`cf learn status|list|search|show|edit|delete --json`.** See [Learn notes](#learn-notes). `status` returns `data = { outputDir, exists, mode, git: { root, isRoot, hasOrigin } | null, autoCommit, cloud: { provider, root } | null, suggestions: [{ provider, label, root, path, exists }] }` (`mode` is `git` or `folder`). `list` returns `data = { outputDir, mode, notes: [{ id, category, slug, title, tags, created, updated, size, mtime, possibleConflictOf? }], placeholders: [{ id, file }] }`, newest first; `search <query>` adds `query` and matches title, tags and body case-insensitively (placeholders are listed, not searched; a query longer than 500 characters is `INVALID_VALUE`). `show -- <category/slug>` returns `data = { id, path, frontmatter, content, sha256, mtime }`. `edit` and `delete` follow `cf memory edit|delete`: `edit --stdin --if-match <sha256>` (both required) replaces only the body and returns `data = { id, path, sha256, mode, committed, commitError? }`; `delete` needs `--yes` with `--json`, takes `--if-match` and returns `data = { id, path, deleted, mode, committed, commitError? }`. `committed` is `true` only in git mode with `learn.autoCommit`; a failed commit keeps the change and sets `commitError`. A bad id is `INVALID_ARGS`, a missing or not downloaded note `NOT_FOUND`, a stale sha256 `CONFLICT`. `status`, `list`, `search` and `show` are auto-approved by the plugin hook; `edit`, `delete`, `push` and `host` never are.
+
+**`cf session list|show|export|save|load|status --json`.** See [Sessions](#sessions). `list [--provider claude|codex|saved] [--project-dir <path>] [--limit <n>]` returns `data = { project, sessions: [{ ref, provider, source, title, cwd, startedAt, updatedAt, bytes, status, reason?, formatVersion?, warning?, archived?, saved? }], truncated }`, newest first (`--limit` 1 to 500, default 50; `status` is `ok`, `unsupported` or `placeholder`; `source` is `live`, `saved` or `legacy` (the provider is in `provider`), and saved rows carry `saved: { label, savedAt, machine }`). `--provider saved` lists only `session.dir` (with `--project-dir`, only the saved sessions whose recorded project path is that project or a folder inside it, plus the legacy folder). `show [--include-tool-output] [--offset <n>] [--limit <n>] [--project-dir <path>] -- <ref>` returns `data = { ref, provider, summary, turns: [{ kind: 'user'|'assistant', text } | { kind: 'tool', name, args, output? }], offset, limit, nextOffset, total, skipped, truncated, redactions: { total, byKind } }` (`--limit` 1 to 1000, default 200; a page stops at 4 MiB and `nextOffset` points at the next turn). `export [--include-tool-output] [--redact-model] [--summary] [--project-dir <path>] -- <ref>` returns `data = { ref, markdown, bytes, truncated, redactions, filter }` (`filter = { name, status }`: `name` is `null`, `redact-model`, `summary` or `redact-model+summary`; `status` is `none`, `applied`, `error`, `timeout` or `rejected`): `markdown` is cut at 4 MiB, while `bytes` and `redactions` count the full Markdown. A bad ref, or a `legacy:` ref without `--project-dir`, is `INVALID_ARGS`; a missing session or a cloud file not downloaded yet `NOT_FOUND`. `save [--session-id <uuid>] [--project-dir <path>] [-l <label>]` returns `data = { ref, folder, dir, sessionId, label, bytes, verbatim: true, warning }` (label default `session-<date>`); a `--session-id` that is not a UUID is `INVALID_ARGS`, several transcripts changed within 60 seconds without `--session-id` `INTERACTIVE_REQUIRED`. `status` returns `data = { dir, exists, cloud: { provider, root } | null, suggestions: [{ provider, label, path, exists }], gitRepo }`. `export --out <file> [--force]` writes the file and returns `data = { ref, out, bytes, redactions, filter }` (no `markdown`). `load --yes --target <path> [--project-dir <path>] [--force] -- <ref>` returns `data = { ref, sessionId, target, path, resumeCommand }` (`resumeCommand` is `cd '<target>' && claude --resume <id>`); without `--yes` it is `INTERACTIVE_REQUIRED`, without `--target` or a `saved:`/`legacy:` ref `INVALID_ARGS`, and a transcript already in the project `CONFLICT` unless `--force`.
+
+**`cf sync status --json`.** See [Sync](#sync). `data = { kinds: [{ kind, dir, exists, cloud: { provider, root } | null, files, placeholders, conflicts, truncated }], notSynced: ['globalConfig', 'projectList'] }`, with `kind` `learn` then `sessions`. A missing folder is `exists: false` with zero counts, not an error.
+
+**Project registry.** Coding Friend's SessionStart hook records each project (the main repo root, so worktrees collapse into it) in `~/.coding-friend/projects.json`; `cf project` reads and edits it. `$HOME` and `/` are never recorded. Set `CF_PROJECTS_FILE` to use another file. Turn recording off with the `projectRegistry` config key (default `true`; local overrides global), e.g. `cf config set projectRegistry false --global`. The hook reads the local setting from the **main** repo root, but `--local` writes `./.coding-friend/config.json` in the current directory, so run it from the main repo root (not from a worktree or subdirectory) or pass `--project-dir <path>`, which resolves to it.
+
+## Task runner
+
+`cf task run --provider claude|codex|opencode [--model <name>] [--read-only] "<prompt>"` starts a worker (Claude Code, Codex CLI, or OpenCode for read-only tasks) in the current checkout and returns its task id at once. There is no daemon: each task gets its own detached runner process that starts the worker, records the result and exits.
+
+```bash
+cf task run --provider claude "Fix the flaky date test"
+cf task run --provider opencode --model <model> --read-only "Where is the retry logic?"
+cf task list                             # id, state, provider, age, prompt
+cf task show <id>                        # state, pending questions, result
+cf task follow <id>                      # the worker's turns as it works, until the task ends
+cf reply --task <id> <qid> "Use UTC"     # answer a question the worker asked
+cf task cancel <id>
+```
+
+The worker asks questions with `cf ask` (waits for your `cf reply`) and finishes with `cf done --outcome succeeded|failed --summary "..."`. Both are already wired into the worker's instructions, with an explicit `--task <id>`. An OpenCode worker has no shell, so it cannot call either: its result is its last message.
+
+- **Store.** `~/.coding-friend/orchestrator/` (mode `0700`); set `CF_ORCHESTRATOR_DIR` to move it. It must be outside the checkout, or `cf task run` refuses.
+- **One writer per checkout.** The checkout is the git top-level, so each worktree is its own checkout. A second writer fails with `LEASE_HELD`; `--read-only` tasks take no lease.
+- **Sandbox.** Claude runs as `claude -p` with its native sandbox passed per call: enabled, fail if unavailable, no unsandboxed retries. A writer may write the checkout and its own `tasks/<id>/`. A read-only Claude task has Edit/Write disabled and writes to the checkout denied. Codex runs `codex exec` with a permission profile passed per call (`default_permissions`), based on `:workspace` (writer) or `:read-only`: the store is read-only and only the task's own `tasks/<id>/` is writable, even when the store is under `/tmp`. OpenCode has no OS sandbox: see [OpenCode](#opencode). Your Claude/Codex/OpenCode settings and hooks are never changed.
+- **Requirements.** macOS or Linux. Writer tasks and every Codex and OpenCode task must run inside a git repo. The provider CLI (`claude`, `codex` 0.161.0 or newer, or `opencode` 2.0.13 or newer and below 3) must be logged in and on `PATH` (missing, or outside the supported version → `PROVIDER_UNAVAILABLE`). Login is not checked: a provider that is not logged in fails the task with its own error.
+- **Preflight.** A provider's own check (today OpenCode's version range) runs when the task is dispatched and again before every attempt (for example when `opencode` was upgraded while the task was paused); at dispatch `cf task run` is refused; before an attempt the task fails without starting the worker.
+- **What is stored.** No transcripts and no event logs: the prompt, the worker's questions and your answers, the `cf done` summary and handoff, the session/thread id (plus the Claude transcript path), the result (exit code, outcome, error) and the worker's last message (cut at 4 KB). Worker text is shown as untrusted output, control characters stripped.
+- **Approvals.** Of `cf task` and `cf chef`, Coding Friend's auto-approve hook approves only `cf task list|show|follow` and `cf chef status|inbox|show`. `cf ask`, `cf done`, `cf reply`, `cf task run`, `cf task cancel` and `cf chef start|say|stop|resume` are not.
+
+### Following a task
+
+`cf task follow <id>` prints the worker's turns (user and assistant text, tool calls without their output, redacted like `cf session show`) as they are written, plus state changes, new questions with their `cf reply` line and a divider per attempt. It polls every second and exits once the task has ended (`succeeded`, `failed`, `cancelled` or `interrupted`; a `paused` task is still followed) and its runner has exited (the worker calls `cf done` before its last turn), with the `cf done` summary and the last message. Nothing is stored: it reads the provider's own transcript, found by the session id of each attempt.
+
+Agents should use `--json`: without it the command blocks the shell until the task ends. `cf task follow <id> --json [--cursor <c>]` does one poll and returns `data = { task, terminal, attempt: { n, provider, kind } | null, live: { supported, status, reason? }, turns, cursor, more, reset, truncated, skipped, redactions }` (`task` is the `cf task show --json` view, `hint` included). Pass the returned `cursor` to the next call; poll again at once while `more` is `true`, and stop once `terminal` is `true` and `more` is `false` (`terminal` means the task has ended and its runner has exited, so `task.result` is there unless the runner died).
+
+- **Cursor.** Opaque: `v1` (from the start) or `v1.<attempt>.<sessionId>.<byteOffset>`, never a path. A malformed cursor, or one whose session id is not that attempt's of this task, is `INVALID_ARGS`. `reset: true` means the transcript got shorter and was read again from its start.
+- **Reads.** About 1 MiB of transcript per call, and only whole lines. A single longer line is read whole up to 16 MiB; beyond that it is skipped (counted in `skipped`).
+- **Live support (`live`).** `status` is `ok`, `pending` (transcript not found yet) or `unsupported` with a `reason`:
+
+| Provider | Live | Reason when unsupported                                          |
+| -------- | ---- | ---------------------------------------------------------------- |
+| claude   | yes  | `placeholder` (cloud file not downloaded)                        |
+| codex    | yes  | `compressed` (`.jsonl.zst` rollout), `placeholder`               |
+| opencode | no   | `no transcript reader for this provider` (state and result only) |
+
+A task that has ended while its transcript was never found reports `unsupported` with `transcript not found`.
+
+### Providers
+
+| Provider   | Writer | Read-only | Read-only outside git | Needs a model | Chef | `cf ask` / `cf done` |
+| ---------- | ------ | --------- | --------------------- | ------------- | ---- | -------------------- |
+| `claude`   | yes    | yes       | yes                   | no            | yes  | yes                  |
+| `codex`    | yes    | yes       | no                    | no            | yes  | yes                  |
+| `opencode` | no     | yes       | no                    | yes           | no   | no                   |
+
+A task the provider cannot run is refused with `USAGE` when its CLI is on `PATH` (for example `--provider opencode` without `--read-only`).
+
+**Models.** `--model <name>` sets the model of the `--provider` given (`--model` without `--provider` → `USAGE`). `task.models.<provider>` sets a default model per provider, for every provider, read when `cf task run` starts and stored with the task like the other `task.*` keys. `--model` overrides `task.models.<provider>` for that provider only; after a quota switch the new provider uses its own `task.models.<provider>`. A provider that needs a model and has none fails with `USAGE` (`set task.models.<provider> or pass --model`).
+
+```bash
+cf config set task.models.opencode <model> --global
+cf config set task.models.codex <model> --local
+```
+
+#### OpenCode
+
+OpenCode runs read-only tasks only, as `opencode run --standalone --format json -m <model> --agent cf-reader`, in the checkout, with the prompt on stdin.
+
+- **No OS sandbox.** Its only boundary is a deny-by-default permission ruleset written by Coding Friend: every action is denied first, then only `read`, `glob` and `grep` are allowed. Edit, write, shell, web fetch and search, subagents, skills, questions, code mode, MCP tools and reads outside the checkout are denied. There is no shell rule at all: a shell allowed only for `cf ask` and `cf done` could still write outside the checkout through a redirect.
+- **Config isolation.** Every attempt gets a fresh CF-owned `OPENCODE_CONFIG_DIR` (in the runner's private dir of the store), project config and auto-update are turned off, and every inherited `OPENCODE_*` variable is removed. Your `~/.config/opencode` and project `.opencode/` config are not loaded or changed.
+- **Dotenv reads are blocked best-effort.** The `read` tool is denied on dotenv files (except `*.env.example`), `.npmrc`, `.netrc`, `.envrc` and `.git/config`, but `grep` checks its permission against the search pattern, not the file, so a grep on such a file still shows it. OpenCode's own rules also match names case-sensitively, so on a case-insensitive file system (the macOS and Windows default) an upper-case spelling of such a name is not denied. Read-only Claude and Codex workers can read those files too.
+- **Symlinks.** OpenCode follows symlinks and checks its read rules against the link's name, so a task is refused (`PROVIDER_UNAVAILABLE`, before every attempt) when a tracked or untracked, not ignored symlink in the checkout points outside it, into a `.git` directory or to a file the read rules deny. The guard compares names case-insensitively on macOS and Windows. A checkout with a submodule, a nested repository or a tracked path replaced by a directory is refused too, since git does not list the files inside it. Ignored symlinks, symlinks inside ignored directories (for example `.venv/bin/`, or anything listed in `.git/info/exclude`) and symlinks inside `.git/` are not checked.
+- **Model required.** Pass `--model` or set `task.models.opencode`. OpenCode 2.0.13 or newer and below 3 (checked before every attempt).
+- **What still reaches it.** OpenCode stores its sessions in its own data dir (`~/.local/share/opencode/`). Skills in `~/.claude` and `~/.agents` are scanned, but the skill deny hides them from the model. An `AGENTS.md` in a checkout subdirectory is loaded as instructions once the worker reads a file there (repo content, text only).
+- **Quota.** Error events of type `provider.rate-limit` or `provider.quota` pause the task with an unknown reset time. These names come from the OpenCode 2.0.13 source and were never seen in a real run.
+- **Result.** Success is exit 0, no error event and a session id; the last message is the result. A paused task resumes the same session (`--session`).
+
+#### Providers not enabled
+
+Cursor Agent and Grok were evaluated and are turned off; no flag or config key enables them.
+
+- **Cursor Agent:** it syncs plugins per account (even under a CF-owned `HOME`) and runs their hooks outside its sandbox with worker-controlled input, and nothing turns them off.
+- **Grok:** its `read_only` paths do not override the `~/.grok` write grant (so a run can write `~/.grok`, its binary dir and `auth.json`), and on macOS its `deny` list does not block Unix socket connects (Docker, SSH and GPG agents).
+
+### Quota handling
+
+When a worker hits its provider's usage limit, the task does not fail: it moves to the `paused` state, then continues later on the same provider or on another one. The runner process does this itself (it waits and starts the next attempt in the same process); the [supervisor](#supervisor) only steps in if that runner dies while the task is paused.
+
+**Detection.** The runner reads the worker's own JSON output stream, in memory, for documented quota signals only. It never reads provider tokens or credentials.
+
+- Claude: a `rate_limit_event` with status `rejected` (its `resetsAt` gives the reset time), or, as fallbacks without a reset time, an assistant error `rate_limit` or a final result error with HTTP status 429.
+- Codex: an error message starting with "You've hit your usage limit"; a "Try again at ..." time in it (local time) is the reset time, "Try again later." means the reset is unknown.
+- OpenCode: an error event of type `provider.rate-limit` or `provider.quota` (reset unknown; see [OpenCode](#opencode)).
+
+A quota hit only pauses the task when the attempt failed and the worker had not already called `cf done`.
+
+**Config.** Optional keys under `task`, read when `cf task run` starts and stored with the task (changing them later does not affect a running task):
+
+| Key                      | Values                                                                    | Default              |
+| ------------------------ | ------------------------------------------------------------------------- | -------------------- |
+| `task.onQuota`           | `"wait-then-switch"`, `"wait"`, `"switch"`                                | `"wait-then-switch"` |
+| `task.waitMinutes`       | integer >= 1                                                              | `30`                 |
+| `task.fallback`          | non-empty list of `"claude"`, `"codex"`, `"opencode"`, in switch order    | `["claude","codex"]` |
+| `task.models.<provider>` | model name for `claude`, `codex` or `opencode` (see [Models](#providers)) | the provider's own   |
+
+```bash
+cf config set task.onQuota switch --global
+cf config set task.waitMinutes 45 --local
+cf config set task.fallback '["codex","claude"]' --global
+cf config set task.fallback '["claude","codex","opencode"]' --local   # opt in to OpenCode (read-only tasks)
+cf config set task.onQuota null --global     # remove the key (back to the default)
+```
+
+- `wait`: wait for the reset on the same provider and continue there.
+- `switch`: move to the next eligible provider in `task.fallback` (round robin) at once. If every other provider is still blocked, wait for whichever frees up first.
+- `wait-then-switch`: wait when the reset is within `task.waitMinutes`, switch when it is further away. When the reset time is unknown, wait `task.waitMinutes` once, then switch if the provider is still blocked.
+- `cf task run --no-fallback` forces `wait` for that task, whatever `task.onQuota` says.
+- A provider is eligible for this task when, in order: its CLI is on `PATH`, it can run the task's kind (writer or read-only), the checkout is a git repo (only Claude runs read-only tasks outside one), it has a model if it needs one, and its own check passes (Codex 0.161.0 or newer, OpenCode's version range). Only the current provider and those in `task.fallback` are checked, so OpenCode is never chosen unless you add it, and a writer task never switches to it. A task that pauses 20 times fails.
+
+**Resume vs switch.** Waiting on the same provider resumes its session (`claude --resume`, `codex exec resume`, `opencode run --session`) with a one-line "continue where you left off" prompt. Switching provider always starts a new session whose prompt is a context bundle written by Coding Friend: the original prompt, plus the previous worker's handoff and last message as untrusted notes (size-limited), and an instruction to inspect the checkout with `git status` and `git diff` first. The runner does not run git in your checkout; the next worker inspects it itself, inside its sandbox. If a session cannot be resumed, the runner starts one fresh attempt on the same provider with a bundle instead. The sandbox is the same for every attempt.
+
+**Waiting.** The runner waits by the wall clock (it re-checks every 30 seconds, so sleep or a clock change is fine) and notices `cf task cancel`.
+
+**Paused tasks keep the writer lease.** The task will continue in the same checkout, so no other writer may take it. To free the checkout, run `cf task cancel <id>`.
+
+**Run directory.** Control records live in `runs/<id>/` of the store, outside `tasks/<id>/`, because the worker can write its own task directory and must not forge them. Directories are `0700` and files `0600`; records are written once (`runner.log` is appended to).
+
+- `dispatch.json`: the task digest, whether the checkout is a git repo, and the policy.
+- `<n>/` for each attempt: `attempt.json` (provider and kind: `fresh`, `resume` or `switch`), `runner.json`, `session.json`, `pause.json` (provider, reset time, source, last message) and `context-bundle.md` (when the attempt started from a bundle).
+- `runner.log`: the runner's stdout and stderr.
+
+Tasks started before this feature (no `runs/<id>/`) run as before, with a single attempt.
+
+**`cf task list` and `cf task show`.** A paused task shows as `paused (resets <local time>)` or `paused (reset unknown)`. `show` adds an `attempts:` list (number, provider, kind, pid, session, pause source and reset). When a task is paused, its runner is gone and no supervisor tick ran in the last 3 minutes, a hint is printed on stderr (a `hint` field with `--json`) suggesting `cf supervisor tick`, `cf supervisor install` or `cf task cancel <id>`.
+
+### Supervisor
+
+`cf supervisor` runs a short pass, the tick, that adopts paused tasks whose runner is gone (for example after a reboot or a kill). There is no daemon: the tick starts, does one pass and exits. Without it, a runner that is still alive keeps waiting by itself, and `cf supervisor tick` can be run by hand.
+
+```bash
+cf supervisor install [--label <label>] [--json]    # install the launchd agent (macOS)
+cf supervisor uninstall [--label <label>] [--json]  # unload the agent and remove its plist
+cf supervisor status [--label <label>] [--json]     # agent, last tick, paused tasks
+cf supervisor tick [--json]                         # one pass; works on any platform
+```
+
+`--label` defaults to `com.coding-friend.supervisor`. `install` writes `~/Library/LaunchAgents/<label>.plist` and loads it into your GUI session; running it again updates it in place. The plist has:
+
+- `ProgramArguments`: the `node` and `cf` currently running, then `supervisor tick`.
+- `StartInterval` 60 (a tick every minute) and `RunAtLoad` (a tick at login, so paused tasks are picked up after a reboot).
+- `StandardOutPath` and `StandardErrorPath`: `<store>/supervisor/tick.log`.
+- `EnvironmentVariables`: only `PATH` (your shell's, captured at install) and `CF_ORCHESTRATOR_DIR` (the store, captured at install).
+
+What a tick does: it records a heartbeat (`<store>/supervisor/heartbeat.json`), then looks only at paused tasks whose latest runner is dead. It re-checks the task file against its recorded digest, decides the next step with the same rules as the runner, and, once the wait is over, claims the next attempt and starts a new detached runner for it. Tasks with a live runner and tasks started before this feature are never touched. Overlapping ticks cannot start two runners for the same attempt. Then, unless `chef.enabled` is `false` in the global config, it runs the chef pass: it records trigger events and starts a detached wake for each chef that has one pending (see [Chef](#chef)). A tick is stopped by a watchdog after 45 seconds.
+
+`cf supervisor status` prints the agent state (plist, loaded or not), the heartbeat age and `paused: N (M orphaned)`, where orphaned means no live runner.
+
+- **macOS only for `install` and `uninstall`.** Off macOS they fail with `PROVIDER_UNAVAILABLE` and print a crontab line to use instead, `* * * * * PATH=... <node> <cf> supervisor tick`. It includes `PATH` because cron's own `PATH` does not contain `claude`, `codex` or `opencode`. `status` prints the same line.
+- **Minimal environment.** launchd gives the tick only the variables above. Credentials that exist only in your shell environment (for example an API key you export) are not available to runners started by a tick, after a reboot or otherwise. Log in to the provider in a way that persists (its own login or keychain).
+- **Reinstall after changes.** After upgrading Node (for example with nvm) or `cf`, or installing a provider CLI that changes your `PATH`, run `cf supervisor install` again. `status` warns when a path in the plist no longer exists.
+- **Sessions.** `install` needs a logged-in GUI session; over SSH into a machine with nobody logged in, launchctl may refuse it.
+- **Login Items.** macOS lists the agent under System Settings > General > Login Items under the name of whoever signed your `node` binary (for example "Node.js Foundation" for the official installer, or just "node") and may notify you when it is added. If it is switched off there, launchd stops running the tick without any error; `cf supervisor status` then shows `loaded: no` and an old heartbeat. Switch it back on, or run `cf supervisor install` again.
+
+### Chef
+
+A chef is a read-only Claude Code or Codex session that drives one plan in one checkout (OpenCode cannot run a chef; Cursor and Grok are [not enabled](#providers-not-enabled)). It never edits files: each time the [supervisor](#supervisor) tick wakes it, it reads a digest written by Coding Friend (and the checkout, by absolute path) and answers with structured actions: dispatch a worker task, answer a worker's question, ask you, commit, pause or note. Coding Friend checks every action against fixed rules, then runs it.
+
+```bash
+cd ~/code/my-app                      # run from inside the checkout
+cf chef start docs/plans/my-feature --provider claude   # prints the chef id
+cf chef status                        # state, wakes, running tasks, inbox count
+cf chef inbox                         # questions, pauses and quota waits that need you
+cf chef say <id> "Skip task 3, it is done"   # talk to the chef or answer its question
+cf chef show <id>                     # decisions, tasks, commits, plan notes
+cf chef resume <id>                   # after a pause
+cf chef stop <id>
+```
+
+**Start.** The checkout is the git top-level of the current directory, so run `cf chef start` from inside it. `<plan-dir>` (relative to the current directory, or absolute) must resolve to a directory strictly inside the checkout. Start refuses, and creates nothing, when:
+
+- the directory is not a git checkout, HEAD is detached, or the store is inside the checkout (`USAGE`);
+- the plan dir does not exist (`NOT_FOUND`) or is outside the checkout;
+- the checkout already has a chef, even for another plan (`LEASE_HELD`; of two concurrent starts only one wins);
+- the checkout is not clean: any change against HEAD (staged or not), untracked files that are not ignored, or anything Coding Friend cannot hash (a FIFO or socket, a nested git repo, an unsafe path name). Commit or stash first. A checkout too big to fingerprint (over 50,000 paths or 512 MiB) is refused too (`COMMAND_FAILED`);
+- `PATH` has an empty or relative entry, `git` or the chosen provider is not on `PATH`, or `git`, `claude`, `codex` or `opencode` resolves inside the checkout, where a task could replace it;
+- the provider cannot run a chef (`PROVIDER_UNAVAILABLE`): Claude Code older than 2.1.248 or whose `claude --help` lacks `--safe-mode` or `--add-dir`, Codex older than 0.161.0, or native Windows;
+- there is no git identity: `user.name` and `user.email` (or `author.*` and `committer.*`) must be set in `~/.gitconfig` or the repo config. Chef git calls ignore `XDG_CONFIG_HOME` (so `~/.config/git/config` is not read) and every `GIT_*` variable.
+
+Start pins what every wake uses: the git dir (read from `.git` in Node), the branch and its sha, the absolute paths of `git`, `claude`, `codex` and `opencode` found on `PATH`, the `chef.*` limits and `task.*` policy, the active hooks, and a baseline (a fingerprint of the clean tree plus snapshots of the repo guard and steering files, see below). It warns when `commit.gpgSign` is true or filter drivers are configured, since those commits will be refused (consider `--no-commit`), and suggests `cf supervisor install` when no tick ran in the last 3 minutes.
+
+**Wakes.** There is no daemon. The tick (every minute under launchd, or `cf supervisor tick` by hand) records trigger events, each fired once, and starts a detached wake (`cf chef _wake <id> <n>`) for a chef with one pending:
+
+- the start itself (the first wake);
+- a chef task ended (succeeded, failed, cancelled or interrupted), asked a question with `cf ask`, or was resumed or switched provider after a quota;
+- a `cf chef say` message;
+- a `chef.schedule` slot (`HH:MM`, local time; only the latest due slot of the day);
+- the chef's own quota reset (see below);
+- a wake that had rejected actions, so the chef sees why in the next digest;
+- a commit CF made for the chef, so it plans the next step or reports the plan done.
+
+A wake never runs in the checkout: its working directory is an empty directory in the store. Claude runs as `claude -p --restricted --safe-mode --add-dir <checkout> --tools Read Grep Glob` (no CLAUDE.md, skills, plugins, hooks or MCP), Codex as `codex exec` with a read-only permission profile; each wake resumes the previous session. Before the chef runs, the wake compares the working tree with the last known state and checks the guards, then writes the digest: goal, events, tasks, pending questions, limits, what the commit gate still needs, hooks, and then worker and user text as untrusted, fenced data. A wake is killed after 15 minutes. Its result is written once, before its actions run, so a wake that dies is never replayed; a failed or quota wake consumes no event, so they wait for the next wake.
+
+A Claude chef keeps the system prompt of its first wake for its whole session: after upgrading `cf`, a running chef keeps the old contract until you stop it and start a new one.
+
+**Limits.** Read once at `cf chef start` from the merged config (global, then the local config of the current directory) and stored with the chef; later changes do not affect it. `chef.enabled` is the exception (see below).
+
+| Key                       | Values                               | Default |
+| ------------------------- | ------------------------------------ | ------- |
+| `chef.enabled`            | boolean, global config only, live    | `true`  |
+| `chef.commit`             | boolean                              | `true`  |
+| `chef.notify`             | boolean (macOS notifications)        | `true`  |
+| `chef.schedule`           | list of `"HH:MM"` (24 h, local time) | `[]`    |
+| `chef.minWakeMinutes`     | integer >= 1                         | `5`     |
+| `chef.maxWakesPerDay`     | integer >= 1                         | `48`    |
+| `chef.maxTasksPerWake`    | integer >= 1                         | `3`     |
+| `chef.maxConcurrentTasks` | integer >= 1                         | `2`     |
+
+```bash
+cf config set chef.schedule '["09:00","18:00"]' --global
+cf config set chef.enabled false --global    # kill switch for every chef
+```
+
+- `minWakeMinutes` is the gap after the end of the last wake; events wait, they are not dropped.
+- `maxWakesPerDay` counts wakes in a sliding 24-hour window (wakes that ended on the chef's quota are not counted); reaching it pauses the chef.
+- Dispatches over `maxTasksPerWake` or `maxConcurrentTasks` (running tasks included) are rejected, and only one writer or check task runs at a time. A wake has at most 20 actions and one commit. Rejected actions are reported in the next digest; 3 wakes in a row with rejected actions pause the chef.
+- `chef.enabled` is read only from the global config (`~/.coding-friend/config.json`), never from a project, and on every use: when it is `false`, ticks wake no chef and a running wake skips its remaining dispatches and commits.
+
+**Tasks.** The chef's tasks are ordinary `cf task` workers in its checkout (`cf task list|show|cancel` work on them), with the `task.*` quota policy captured at start. Role `writer` and `check` tasks take the writer lease, `other` tasks are read-only. Each prompt starts with a Coding Friend line telling the worker not to run `git commit`, `git add` or any git command that changes the repository, and not to edit the plan folder. A worker's `cf ask` wakes the chef, which may answer it.
+
+**Commits.** Coding Friend makes the commit, never the chef or a worker, and only when the commit gate passes:
+
+- commits are on (`chef.commit` and no `--no-commit`);
+- no writer or check task is running;
+- the latest writer succeeded and was dispatched after the latest baseline (start or resume);
+- a check task dispatched after that writer passed. A check passes by outcome, not by its role: it succeeded and left tracked files and non-ignored untracked files exactly as they were (ignored build output and caches may change);
+- the working tree is still what the writer left;
+- every path is one of the changed paths, inside the checkout, not under `.git` and not a steering path; the message is one line of at most 100 characters.
+
+The commit is built with git plumbing from bytes Coding Friend read and hashed itself: `hash-object --no-filters`, `update-index` in a temporary index, `commit-tree --no-gpg-sign`, then a compare-and-swap `update-ref` of the branch; the real index is then updated for those paths. Coding Friend never runs `git add`, `git commit`, `git status` or any other git command that reads the working tree, because a writer can plant filters, fsmonitor settings or hooks there. It never pushes or creates a branch.
+
+**Hooks do not run.** Chef commits skip every repository hook. The hooks found at start (the files in `core.hooksPath`, or in `.git/hooks` without it) are listed in the digest, and the chef is told to dispatch a writer task that does what they would do (for example `npm run build:*` to regenerate generated files) and to include the generated paths in the commit. A hook that only checks (lint, tests) can be run as a check task.
+
+**Refused commits.** A commit that would differ from what `git add` and `git commit` make is refused: `commit.gpgSign` is true, a path has a `filter` (Git LFS included), `ident` or `working-tree-encoding` attribute, content has CRLF that git would convert (`text`, `eol` or `crlf` attributes, or `core.autocrlf`), a path is a gitlink (submodule), or a change is only in the index. A refused or failed commit goes to `cf chef inbox` and pauses the chef. For such repos, start with `--no-commit`: the chef still dispatches and checks, and you commit.
+
+**Steering guard.** Files that steer agents or git can never be committed by a chef, and a change to them pauses it: the plan dir, the root `CLAUDE.md`, `CLAUDE.local.md`, `AGENTS.md` and `.gitmodules`, `.githooks/`, the repo hooks dir when inside the checkout, every `.gitattributes`, and `.git/info/attributes`. A repo guard does the same for the git config (every scope, so editing `~/.gitconfig` pauses the chef too), the `.git` entry and git dir, hook files and `info/exclude`. Not watched: `.claude/**`, and `CLAUDE.md` or `AGENTS.md` in subdirectories (the chef never loads them: `--safe-mode`, or Codex from an empty directory); tasks may change and commit those. The walk skips `node_modules/` and nested git repositories, and more than 2,000 steering files, 32 MiB or 500,000 directory entries pauses the chef. Dispatch prompts asking to edit a steering path are also rejected, by a text heuristic (a sentence that forbids it, such as "do not edit CLAUDE.md", passes).
+
+**Pause and resume.** A chef pauses itself (a `pause` action), or Coding Friend pauses it when: the working tree changed while no chef writer or check task was running (your own edits included), a guard changed, a commit was refused or failed, the daily cap was reached, or 3 wakes in a row had rejected actions. A paused chef is not woken. `cf chef resume <id>`:
+
+- does not need a clean checkout, unlike `start`. It takes the current state as the new baseline: the current sha of the chef's branch (`refs/heads/<branch>`, so commits you made yourself are accepted) as the known HEAD, a new fingerprint (uncommitted changes included) and new guard snapshots. It also resets the rejected-wake count;
+- refuses when HEAD is not on the branch recorded at start (`USAGE`), or while a wake is running (`LEASE_HELD`: wait for it to end);
+- does not relax the commit gate: only a writer dispatched after the resume, then a passing check, can lead to a commit, so changes you left uncommitted are never committed without them;
+- only applies to a paused chef (`USAGE` otherwise). If you change the checkout under an active chef, its next wake pauses it; then resume it to accept your changes.
+
+**Chef quota.** When the chef's own provider hits its usage limit, the wake ends with outcome `quota` and the chef shows `quota-wait`; it never switches provider. The next wake comes 60 seconds after the reset (30 minutes after the hit when the reset time is unknown), resumes the same session and carries every event that waited. The chef's worker tasks follow [Quota handling](#quota-handling).
+
+**Plan progress.** The plan belongs to you: the chef never edits it and tasks are told not to. Progress lives in the store, as the chef's decisions: `cf chef show` lists its notes with their wake number, then its dispatches, commits and questions. Update the plan files yourself; this is a steering change, so the chef pauses, and `cf chef resume` makes the new plan its baseline.
+
+**Inbox, notifications, statusline.** `cf chef inbox` lists the chef's questions since your last `say` or `resume`, the reason of a pause, and quota waits; stopped chefs are left out. A finished plan has no special item: the chef's contract tells it to report it with a question and a pause. Answer with `cf chef say <id> "<answer>"`. On macOS, with `chef.notify` on, a question or pause from a wake also shows a notification. The statusline shows `chef N!` (N = unseen questions plus paused chefs), read from `<store>/chefs/summary.json`; nothing is shown when N is 0.
+
+**Stop.** `cf chef stop <id>` stops the wakes and frees the checkout, so another chef can start there. It does not cancel the chef's running tasks: it lists them with the `cf task cancel <id>` to run. A stopped chef cannot be messaged or resumed (`ALREADY_FINISHED`, also on a second `stop`).
+
+**launchd PATH.** Wakes run in the tick's minimal environment. The chef itself uses the `git` and provider paths pinned at start, but its worker tasks find `claude`, `codex` and `opencode` on the tick's `PATH`, captured at `cf supervisor install`. Install the supervisor from a shell whose `PATH` has the providers, and run it again when that changes.
+
+**Store.** Each chef has `<store>/chefs/<id>/` (`chef.json`, wakes, events, decisions, tasks, commits, questions, messages, pauses, resumes) and holds `<store>/chefs/by-checkout/<sha256>.json` for its checkout. Workers cannot write there: Claude workers are denied `chefs/` and Codex workers get the store read-only.
+
+**`--json`.** Every `cf chef` command takes `--json`. `status` returns one view (`id`, `state` `active|paused|stopped|quota-wait`, `reason`, `wakes`, `lastWake`, `runningTasks`, `inbox`, ...) with an id and an array of views without; `inbox` returns items with `kind` `ask`, `paused` or `quota`; `start` returns `chefId`, `branch`, `headAtStart`, `commit` and `warnings`.
+
+### Known limitations
+
+- The worker inherits your environment, including API keys and tokens (a runner started by a launchd-run tick gets only the minimal launchd environment; a tick run by hand passes your full environment).
+- The sandbox restricts writes, not reads: a Claude or Codex worker can read your home directory (other repos, `~/.ssh`, provider credentials) and other tasks' files (OpenCode's tools are limited to the checkout, but follow symlinks in it: see the OpenCode limitation below). A Codex writer can also write `$TMPDIR` and `/tmp` (outside the store).
+- If the store is placed in a directory the worker can write (for example Claude's per-user temp dir `/tmp/claude-<uid>`), the trusted `runs/`, `leases/`, `runner/` and `supervisor/` dirs are still protected, but a Claude worker could write other tasks' directories there (Codex workers get the whole store read-only). Keep the default store location.
+- A writer can modify anything in its checkout, including `.git/hooks` and scripts you run later. Review its changes before running them.
+- OpenCode workers have no OS sandbox: OpenCode's own permission checks are the only boundary, so a bug or a change in them is not caught by the kernel. Coding Friend accepts only the probed version range (2.0.13 up to, not including, 3). OpenCode follows symlinks past its read rules, so Coding Friend refuses a checkout whose symlinks point outside it, into a `.git` directory or to a denied file, and a checkout with a submodule or nested repository; ignored symlinks, or symlinks inside ignored directories, are not checked and still lead wherever they point.
+- A reused pid can keep a dead task looking "running". `cf task cancel` still marks it cancelled, and only signals a pid whose command line is that task's runner.
+- Quota signal shapes are partly unverified against real runs: Claude's `rate_limit_event` `resetsAt` was seen in seconds (a value above 1e12 is still read as milliseconds), but a real `rejected` event and the exact text and time format of Codex's usage-limit message were only tested with recorded or injected samples. If a provider changes them, a quota hit shows up as a normal failure instead of a pause.
+- There is no check before a run: a task starts even if the provider is already out of quota, and only reacts once the worker hits the limit.
+- `cf supervisor install` supports macOS (launchd) only; elsewhere use the cron line it prints.
+- Chefs: Coding Friend cannot tell your edits from a worker's, so editing the checkout while a chef has no writer or check running pauses it (`cf chef resume` accepts the changes). Hooks never run on chef commits, and repos with filters (Git LFS), CRLF conversion, `commit.gpgSign` or changed submodules need `--no-commit`. The steering prompt check is a text heuristic; the guards and the commit path rules are what enforce it. A Codex chef also receives your own `~/.codex/AGENTS.md` (Codex has no switch to skip it): keep it free of rules that conflict with the chef contract, or use a Claude chef.
+- `cf task follow` looks for transcripts under its own `CLAUDE_CONFIG_DIR` / `CODEX_HOME` (default `~/.claude`, `~/.codex`). A worker started by a launchd-run tick does not get these variables and writes to the default dir, while a `cf task follow` run from a shell that sets them looks in the custom dir: it shows no turns and, once the task ends, reports `unsupported` with `transcript not found`.
+- `cf task follow` does not show the tool calls of newer Codex versions (`custom_tool_call`) yet; their text turns are shown.
+- There is no general scheduler: the only background work is adopting paused tasks and waking chefs (`chef.schedule` slots are chef triggers, not jobs).
 
 ## 🐳 CLI Development
 

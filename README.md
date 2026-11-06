@@ -72,6 +72,23 @@ Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the termin
 
 Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated plugin directly; inside Devin invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
+#### Optional: Claude Code mods
+
+`coding-friend-mods` is a second plugin in the same marketplace. It needs the main plugin and works only in Claude Code (tested with 2.1.318; the mods API is early access).
+
+```bash
+cf install --mods
+# or inside a Claude Code session:
+/plugin install coding-friend-mods@coding-friend-marketplace
+```
+
+| Feature        | Plugin + CLI                                                       | Only with Claude Code mods                      |
+| -------------- | ------------------------------------------------------------------ | ----------------------------------------------- |
+| Quota          | statusline writes the snapshot, `cf status` shows it, tasks use it | toast and band at 80/90/95%, also writes it     |
+| Review / phase | report in the chat                                                 | toast when `/cf-review` or a plan phase is done |
+| Plan progress  | `Progress` tables in `docs/plans/<slug>/`                          | `/cf-plan-status` pane                          |
+| MCP health     | `cf doctor`                                                        | band when a CF MCP server fails                 |
+
 ## Features
 
 - Plan with autopilot (`/cf-plan --auto`)
@@ -113,7 +130,19 @@ Details: [website/src/content/index.md#-agents](website/src/content/index.md#-ag
 
 ## CLI
 
-`cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline; host flags `--agent codex|omp|agy|devin` (aliases `--codex`/`--omp`/`--agy`/`--devin`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
+`cf` (`coding-friend-cli`) manages install/init/update/memory/learn/statusline, and `cf doctor` checks the setup (read-only); host flags `--agent codex|omp|agy|devin` (aliases `--codex`/`--omp`/`--agy`/`--devin`). See [cli/README.md](cli/README.md) and [docs/cli-requirements.md](docs/cli-requirements.md).
+
+Scripts and agents can pass `--json` (status, version, doctor, config, memory, project, session, sync, task, supervisor, chef, ask, reply, done, …) for one machine-readable envelope on stdout; `cf project` lists the projects Coding Friend has seen.
+
+`cf session list|show|export|save|load|status` reads Claude Code and Codex sessions and exports them as redacted Markdown (tool output left out by default; redaction is best effort). `save` copies a Claude Code session verbatim (not redacted) into one global store, `session.dir` (default `~/.coding-friend/sessions`), and `load` puts it back into a project for `claude --resume`; `/cf-session` needs the CLI for this. There is no sync engine: point `session.dir` and `learn.outputDir` at a cloud folder, and `cf sync status` shows what that folder holds (the global config and the project list are not synced).
+
+Decision layer (opt-in, off by default): an optional small model behind `cf session export --redact-model/--summary` and an opt-in `/cf-review` shadow log, configured with `cf config set --global decision.*`. See [cli/README.md#decision-layer](cli/README.md#decision-layer).
+
+`cf task run|list|show|cancel` dispatches Claude Code / Codex workers in their native sandbox (or OpenCode as a read-only worker) without a daemon; a worker asks with `cf ask`, you answer with `cf reply`, and it finishes with `cf done`. On a usage limit the task pauses, then resumes after the reset or switches provider (`task.onQuota`, `--no-fallback`); `cf supervisor install|uninstall|status|tick` adds a macOS launchd tick that picks up paused tasks whose runner died. `cf chef start|say|status|inbox|show|stop|resume` gives one plan to a read-only chef that the tick wakes to dispatch tasks and commit checked changes.
+
+## Desktop app
+
+An optional macOS app ([app/](app/README.md)) is a window onto the CLI: it calls `cf … --json` and keeps no logic or data of its own, so the plugin and the CLI remain the full product. It needs the plugin and `cf` (with `cf doctor`). Doctor and Version/Update are views of `cf doctor --json` and `cf update --check|--yes --json`; only in the app: the project dashboard, the menu bar item and the app's own signed self-update. Releases are tagged `app-vX.Y.Z` and published from a Mac with `.coding-friend/skills/cf-ship-custom/scripts/release-app-local.sh`.
 
 ## Development
 

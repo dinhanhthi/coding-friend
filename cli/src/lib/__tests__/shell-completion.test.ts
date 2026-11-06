@@ -243,3 +243,164 @@ describe("hasShellCompletion - fish", () => {
     expect(hasShellCompletion()).toBe(false);
   });
 });
+
+// ─── command coverage ────────────────────────────────────────────────────────
+
+describe("completion blocks list the machine-callable commands", () => {
+  const cases: Array<{
+    name: string;
+    shell: string;
+    platform: NodeJS.Platform;
+    file: string[];
+    patterns: RegExp[];
+  }> = [
+    {
+      name: "bash",
+      shell: "/bin/bash",
+      platform: "linux",
+      file: [".bashrc"],
+      patterns: [
+        /local commands="[^"]*\bversion\b/,
+        /local commands="[^"]*\bproject\b/,
+        /compgen -W "list add remove"/,
+        /compgen -W "get set schema"/,
+        /--check/,
+        /--yes/,
+        /--json/,
+        /local commands="[^"]*\bsupervisor\b/,
+        /compgen -W "install uninstall status tick"/,
+        /compgen -W "--label --json"/,
+        /compgen -W "--provider --model --read-only --no-fallback --json"/,
+        /local commands="[^"]*\bchef\b/,
+        /compgen -W "start say status inbox show stop resume"/,
+        /compgen -W "--provider --no-commit --json"/,
+        /"\$\{COMP_WORDS\[1\]\}" == "chef" \|\|/,
+        /local commands="[^"]*\bdoctor\b/,
+        /local update_flags="[^"]*--yes/,
+        /"\$\{COMP_WORDS\[1\]\}" == "doctor" \|\|/,
+        /local commands="[^"]*\bdecide\b/,
+        /compgen -W "test eval log review-fp"/,
+        /compgen -W "\$scope_flags --mods --yes --json"/,
+        /compgen -W "run list show follow cancel"/,
+        /compgen -W "--cursor --json"/,
+      ],
+    },
+    {
+      name: "zsh",
+      shell: "/bin/zsh",
+      platform: "linux",
+      file: [".zshrc"],
+      patterns: [
+        /'version:/,
+        /'project:/,
+        /'schema:/,
+        /'remove:/,
+        /--check\[/,
+        /--yes\[/,
+        /--json\[/,
+        /'supervisor:/,
+        /'tick:/,
+        /--label\[/,
+        /--no-fallback\[/,
+        /'--provider\[Worker CLI \(claude, codex, opencode\)\]' '--model\[/,
+        /'--provider\[Chef CLI \(claude, codex\)\]'/,
+        /'chef:/,
+        /'inbox:/,
+        /'resume:/,
+        /--no-commit\[/,
+        /"\$\{words\[2\]\}" == "chef" \|\|/,
+        /'doctor:/,
+        /'--yes\[Run without confirmation/,
+        /"\$\{words\[2\]\}" == "doctor" \]\]/,
+        /'decide:/,
+        /'review-fp:/,
+        /'--mods\[Also install coding-friend-mods/,
+        /"follow:Follow a task/,
+        /'--cursor\[/,
+      ],
+    },
+    {
+      name: "fish",
+      shell: "/usr/bin/fish",
+      platform: "linux",
+      file: [".config", "fish", "completions", "cf.fish"],
+      patterns: [
+        /__fish_use_subcommand" -a version /,
+        /__fish_use_subcommand" -a project /,
+        /__fish_seen_subcommand_from project" -a remove /,
+        /__fish_seen_subcommand_from config" -a schema /,
+        /-l check /,
+        /-l yes /,
+        /-l json /,
+        /__fish_use_subcommand" -a supervisor /,
+        /__fish_seen_subcommand_from supervisor" -a tick /,
+        /__fish_seen_subcommand_from install uninstall status" -l label /,
+        /__fish_seen_subcommand_from run" -l no-fallback /,
+        /__fish_seen_subcommand_from run" -l model /,
+        /run" -l provider -d "Worker CLI: claude, codex, opencode"/,
+        /start" -l provider -d "Chef CLI: claude, codex"/,
+        /__fish_use_subcommand" -a chef /,
+        /__fish_seen_subcommand_from chef" -a inbox /,
+        /__fish_seen_subcommand_from chef" -a resume /,
+        /__fish_seen_subcommand_from start" -l provider /,
+        /__fish_seen_subcommand_from start" -l no-commit /,
+        /task supervisor chef" -l json /,
+        /__fish_use_subcommand" -a doctor /,
+        /__fish_seen_subcommand_from update" -l yes /,
+        /status mcp version doctor [^"]*" -l json /,
+        /__fish_use_subcommand" -a decide /,
+        /__fish_seen_subcommand_from decide" -a review-fp /,
+        /__fish_seen_subcommand_from install; [^"]*" -l mods /,
+        /__fish_seen_subcommand_from task" -a follow /,
+        /__fish_seen_subcommand_from follow" -l cursor -r /,
+      ],
+    },
+    {
+      name: "powershell",
+      shell: "",
+      platform: "win32",
+      file: ["Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1"],
+      patterns: [
+        /\$commands = @\([^)]*'version'/,
+        /\$commands = @\([^)]*'project'/,
+        /\$projectSubcommands = @\('list','add','remove'\)/,
+        /\$configSubcommands = @\('get','set','schema'\)/,
+        /'--check'/,
+        /'--yes'/,
+        /'--json'/,
+        /\$commands = @\([^)]*'supervisor'/,
+        /\$supervisorSubcommands = @\('install','uninstall','status','tick'\)/,
+        /@\('--label','--json'\)/,
+        /@\('--provider','--model','--read-only','--no-fallback','--json'\)/,
+        /\$commands = @\([^)]*'chef'/,
+        /\$chefSubcommands = @\('start','say','status','inbox','show','stop','resume'\)/,
+        /@\('--provider','--no-commit','--json'\)/,
+        /'supervisor','chef'\) -contains/,
+        /\$commands = @\([^)]*'doctor'/,
+        /\$updateFlags = @\([^)]*'--yes'/,
+        /@\('status','mcp','version','doctor'[^)]*\) -contains/,
+        /\$commands = @\([^)]*'decide'/,
+        /\$decideSubcommands = @\('test','eval','log','review-fp'\)/,
+        /\$scopeFlags \+ @\('--mods','--yes','--json'\)/,
+        /\$taskSubcommands = @\('run','list','show','follow','cancel'\)/,
+        /@\('--cursor','--json'\)/,
+      ],
+    },
+  ];
+
+  for (const c of cases) {
+    it(`${c.name} block contains version, project, config subcommands and new flags`, async () => {
+      mockEnv(c.shell, c.platform, testDir);
+      vi.stubEnv("USERPROFILE", testDir);
+      const { ensureShellCompletion } = await loadModule();
+      ensureShellCompletion({ silent: true });
+      const content = readFileSync(join(testDir, ...c.file), "utf-8");
+      for (const p of c.patterns) expect(content).toMatch(p);
+      // `cf chef _wake` is internal: never offered by completion.
+      expect(content).not.toMatch(/_wake/);
+      // Provider lists come from PROVIDER_NAMES, never a fixed pair.
+      expect(content).not.toMatch(/claude or codex/i);
+      expect(content).not.toContain("(Claude, Codex)");
+    });
+  }
+});

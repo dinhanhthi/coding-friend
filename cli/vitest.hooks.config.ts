@@ -1,3 +1,5 @@
+import os from "node:os";
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 /**
@@ -23,5 +25,10 @@ export default defineConfig({
     // Hook tests shell out to real scripts — keep them serial to avoid races
     // on shared tmp paths / env.
     fileParallelism: false,
+    // Hooks record projects via plugin/lib/project-registry.cjs; point every
+    // child process at a tmp registry so tests never touch the real home one.
+    env: {
+      CF_PROJECTS_FILE: path.join(os.tmpdir(), "cf-hooks-test-projects.json"),
+    },
   },
 });

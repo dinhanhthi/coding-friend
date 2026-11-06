@@ -172,13 +172,13 @@ describe("auto-approve.devin.cjs", () => {
     }
   });
 
-  it("asks exec rm -rf . with workdir outside the project (silence)", () => {
+  it("asks exec rm -rf build with workdir outside the project (silence)", () => {
     const cwd = makeProject();
     try {
       const result = runHook(
         cwd,
         permissionRequest(cwd, "exec", {
-          command: "rm -rf .",
+          command: "rm -rf build",
           workdir: os.homedir(),
         }),
       );
@@ -189,13 +189,13 @@ describe("auto-approve.devin.cjs", () => {
     }
   });
 
-  it("approves exec rm -rf . with workdir inside the project", () => {
+  it("approves exec rm -rf build with workdir inside the project", () => {
     const cwd = makeProject();
     try {
       const result = runHook(
         cwd,
         permissionRequest(cwd, "exec", {
-          command: "rm -rf .",
+          command: "rm -rf build",
           workdir: cwd,
         }),
       );
@@ -211,7 +211,10 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", { command: "rm -rf .", workdir: "/" }),
+        permissionRequest(cwd, "exec", {
+          command: "rm -rf build",
+          workdir: "/",
+        }),
         {
           projectEnv: false,
           configFile: path.join(cwd, ".coding-friend", "config.json"),

@@ -71,5 +71,8 @@ jobs:
           npm ci --prefix lib/cf-memory
           npm ci --prefix lib/learn-mcp
 
+      - name: Typecheck CLI
+        run: npm run typecheck
+
       - name: Run CLI and hook tests
         run: npm test

@@ -32,7 +32,11 @@ import {
   writeOmpExtensionEntry,
   type OmpScope,
 } from "../lib/omp-config.js";
-import { isPluginInstalled } from "../lib/plugin-state.js";
+import {
+  MODS_PLUGIN_ID,
+  isModsInstalled,
+  isPluginInstalled,
+} from "../lib/plugin-state.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import {
@@ -45,6 +49,8 @@ import {
   registerMemoryMcp,
 } from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
+import { CliError, runJson } from "../lib/output.js";
+import { collectUpdateCheck, type UpdateCheck } from "../lib/update-info.js";
 import chalk from "chalk";
 
 /** Returns 1 if a > b, -1 if a < b, 0 if equal */
@@ -143,7 +149,7 @@ export function getLatestVersion(): string | null {
   return tag.replace(/^v/, "");
 }
 
-function getStatuslineVersion(): string | null {
+export function getStatuslineVersion(): string | null {
   const settings = readJson<Record<string, unknown>>(claudeSettingsPath());
   if (!settings?.statusLine) return null;
 
@@ -160,11 +166,20 @@ export interface UpdateOptions extends ScopeFlags {
   cli?: boolean;
   plugin?: boolean;
   statusline?: boolean;
+  check?: boolean;
+  json?: boolean;
+  yes?: boolean;
+}
+
+interface UpdateOutcome {
+  mods?: "updated" | "failed";
 }
 
 interface UpdateRunMode {
   skipBanner?: boolean;
   skipCli?: boolean;
+  /** Sink for results reported in the `--json` envelope. */
+  outcome?: UpdateOutcome;
 }
 
 function argvHasAgentFlag(): boolean {
@@ -247,21 +262,91 @@ async function updateHost(
   return updateClaudeCommand(opts, mode);
 }
 
+function printUpdateCheck(info: UpdateCheck): void {
+  const pad = (label: string) =>
+    `  ${label}${" ".repeat(Math.max(1, 13 - label.length))}`;
+  const line = (
+    label: string,
+    current: string | null,
+    latest: string | null,
+    behind: boolean | null,
+  ): string => {
+    if (!current) return `${pad(label)}${chalk.dim("not installed")}`;
+    if (behind === null)
+      return `${pad(label)}${current} ${chalk.dim("(latest unavailable)")}`;
+    const indicator = behind
+      ? chalk.yellow("⚠ update available")
+      : chalk.green("✔ up to date");
+    return `${pad(label)}${current} → ${latest} ${indicator}`;
+  };
+
+  console.log(
+    line("CLI", info.cli.current, info.cli.latest, info.cli.updateAvailable),
+  );
+  console.log(
+    `${pad("Plugin")}${info.plugin.latest ? `latest ${info.plugin.latest}` : chalk.dim("latest unavailable")}`,
+  );
+  for (const h of info.hosts.filter((h) => h.installed)) {
+    console.log(
+      h.current
+        ? line(
+            hostSectionTitle(h.host),
+            h.current,
+            info.plugin.latest,
+            h.updateAvailable,
+          )
+        : `${pad(hostSectionTitle(h.host))}${chalk.dim("installed (version unknown)")}`,
+    );
+  }
+}
+
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
+  if (opts.check) {
+    if (opts.json) await runJson(() => collectUpdateCheck());
+    else printUpdateCheck(collectUpdateCheck());
+    return;
+  }
+  if (opts.json) {
+    // --yes is the explicit consent a non-interactive JSON caller gives. Step
+    // failures inside the flow only log (to stderr), so the envelope stays
+    // ok:true; `after` is the source of truth for what actually changed.
+    await runJson(async () => {
+      if (!opts.yes) {
+        throw new CliError("INVALID_ARGS", "--json requires --check or --yes");
+      }
+      const outcome: UpdateOutcome = {};
+      const performed = await runUpdate(opts, outcome);
+      return {
+        performed,
+        after: collectUpdateCheck(),
+        ...(outcome.mods ? { mods: outcome.mods } : {}),
+      };
+    });
+    return;
+  }
+
+  await runUpdate(opts);
+}
+
+/** Run the update flow; returns the hosts it ran an update for. */
+async function runUpdate(
+  opts: UpdateOptions,
+  outcome?: UpdateOutcome,
+): Promise<Host[]> {
   if (hasExplicitHost(opts)) {
     const { host } = resolveHostFlags(flagsForHostResolve(opts));
-    await updateHost(host, opts);
-    return;
+    await updateHost(host, opts, { outcome });
+    return [host];
   }
 
   const installed = detectHostsAvailable().filter(isHostInstalled);
   if (installed.length === 0) {
-    await updateClaudeCommand(opts);
-    return;
+    await updateClaudeCommand(opts, { outcome });
+    return ["claude"];
   }
   if (installed.length === 1) {
-    await updateHost(installed[0], opts);
-    return;
+    await updateHost(installed[0], opts, { outcome });
+    return installed;
   }
 
   printBanner("✨ Coding Friend Update ✨");
@@ -272,8 +357,27 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     await updateHost(host, opts, {
       skipBanner: true,
       skipCli: index > 0,
+      outcome,
     });
   }
+  return installed;
+}
+
+/** Update coding-friend-mods after the base plugin; a failure only warns. */
+function updateModsPlugin(scope: string | undefined): "updated" | "failed" {
+  log.step("Updating coding-friend-mods...");
+  const args = ["plugin", "update", MODS_PLUGIN_ID];
+  if (scope) args.push("--scope", scope);
+  const result = runWithStderr("claude", args);
+  if (result.exitCode === 0) {
+    log.success("coding-friend-mods updated");
+    return "updated";
+  }
+  log.warn(
+    `coding-friend-mods update failed. Try manually: claude plugin update ${MODS_PLUGIN_ID}`,
+  );
+  if (result.stderr) log.dim(`stderr: ${result.stderr}`);
+  return "failed";
 }
 
 async function updateClaudeCommand(
@@ -452,6 +556,13 @@ async function updateClaudeCommand(
         }
       }
     }
+  }
+
+  // Step 2b: coding-friend-mods has its own version line, so update it
+  // whatever the base plugin's state was (fail-soft: a failure only warns).
+  if (doPlugin && commandExists("claude") && isModsInstalled()) {
+    const mods = updateModsPlugin(scope);
+    if (mode?.outcome) mode.outcome.mods = mods;
   }
 
   // Step 3: Update CLI if needed

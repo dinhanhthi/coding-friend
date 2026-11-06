@@ -305,6 +305,28 @@ describe("findStatuslineHookPath", () => {
   });
 });
 
+describe("getInstalledVersion", () => {
+  it("returns the main plugin version when the mods key is listed first", async () => {
+    const installedFile = join(testDir, "installed_plugins.json");
+    writeFileSync(
+      installedFile,
+      JSON.stringify({
+        version: 2,
+        plugins: {
+          "coding-friend-mods@coding-friend-marketplace": [
+            { version: "0.1.0" },
+          ],
+          "coding-friend@coding-friend-marketplace": [{ version: "0.5.0" }],
+        },
+      }),
+    );
+
+    mockPaths({ installedPlugins: installedFile });
+    const { getInstalledVersion } = await import("../statusline.js");
+    expect(getInstalledVersion()).toBe("0.5.0");
+  });
+});
+
 describe("ensureStatusline", () => {
   it("writes statusline settings when hook exists", async () => {
     const cacheDir = join(testDir, "cache");

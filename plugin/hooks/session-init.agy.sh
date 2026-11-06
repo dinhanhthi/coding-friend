@@ -51,6 +51,7 @@ CF_HOST="agy"
 export CF_HOST PLUGIN_ROOT
 
 cf_resolve_paths
+node "$PLUGIN_ROOT/lib/project-registry.cjs" record "$MAIN_REPO_ROOT" "$CF_HOST" >/dev/null 2>&1 || true
 cf_detect_session
 
 DOCS_DIR="$CF_DOCS_ROOT"

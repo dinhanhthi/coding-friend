@@ -23,10 +23,14 @@ node_modules/
 
 # Build artifacts
 .next/
+# Machine-specific Cargo target (external SSD); .cargo/config.toml.example is committed
+.cargo/config.toml
 out/
 dist/
 *.tsbuildinfo
 next-env.d.ts
+# Claude Code mods: types the engine lays beside the mod
+plugin-mods/.claude-plugin/types/
 
 # Pagefind (generated at build time)
 _pagefind/

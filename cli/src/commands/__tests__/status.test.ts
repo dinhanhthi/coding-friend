@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
@@ -34,6 +37,8 @@ vi.mock("../../lib/paths.js", () => ({
     () => "/mock/project/.claude/settings.local.json",
   ),
   agyPluginDir: vi.fn(() => "/mock/.gemini/config/plugins/coding-friend"),
+  quotaSnapshotPath: vi.fn(() => "/mock/.coding-friend/quota/claude.json"),
+  resolvePath: vi.fn((p: string) => p),
 }));
 
 vi.mock("../../lib/agy-config.js", () => ({
@@ -99,6 +104,13 @@ vi.mock("../update.js", () => ({
 
 // ─── Imports ─────────────────────────────────────────────────────────
 
+import chalk from "chalk";
+import { quotaSnapshotPath, resolvePath } from "../../lib/paths.js";
+import {
+  isAgyPluginInstalled,
+  isAgyPluginEnabled,
+  readAgyPluginVersion,
+} from "../../lib/agy-config.js";
 import { getInstalledVersion } from "../../lib/statusline.js";
 import { readJson } from "../../lib/json.js";
 import { getExistingRules } from "../../lib/permissions.js";
@@ -565,5 +577,251 @@ describe("statusCommand — all sections rendered", () => {
     expect(pluginIdx).toBeGreaterThan(versionsIdx);
     expect(memoryIdx).toBeGreaterThan(pluginIdx);
     expect(configIdx).toBeGreaterThan(memoryIdx);
+  });
+});
+
+// ─── Characterization (locks pre-refactor human output; never edit) ──
+
+describe("statusCommand — human output characterization", () => {
+  let savedLevel: typeof chalk.level;
+
+  beforeEach(() => {
+    savedLevel = chalk.level;
+    chalk.level = 0;
+    mockGetInstalledVersion.mockReturnValue("0.12.0");
+    mockGetLatestVersion.mockReturnValue("0.12.1");
+    mockGetCliVersion.mockReturnValue("0.9.0");
+    mockGetLatestCliVersion.mockReturnValue("0.9.0");
+    mockGetExistingRules.mockReturnValue(["Bash(cat *)", "Bash(ls *)"]);
+    vi.mocked(isAgyPluginInstalled).mockReturnValue(true);
+    vi.mocked(isAgyPluginEnabled).mockReturnValue(true);
+    vi.mocked(readAgyPluginVersion).mockReturnValue("0.46.0");
+    mockReadDevinInstallState.mockReturnValue({
+      kind: "local",
+      path: "/mock/plugin-devin",
+      version: "0.45.3",
+    });
+    mockReadJson.mockImplementation((path: string) => {
+      if (path === "/mock/.coding-friend/config.json") {
+        return {
+          language: "en",
+          learn: {
+            outputDir: "/mock/learn",
+            categories: [{ name: "AI", description: "x" }],
+          },
+          memory: { tier: "auto", embedding: { provider: "transformers" } },
+          statusline: { components: ["version", "folder"] },
+        };
+      }
+      if (path === "/mock/project/.coding-friend/config.json") {
+        // Unknown key → sanitizeRawConfig warns and returns raw config.
+        return { language: "vi", bogusKey: 1 };
+      }
+      if (path === "/mock/.claude/settings.json") {
+        return {
+          extraKnownMarketplaces: {
+            "coding-friend-marketplace": { autoUpdate: true },
+          },
+        };
+      }
+      return null;
+    });
+  });
+
+  afterEach(() => {
+    chalk.level = savedLevel;
+  });
+
+  it("prints every section with the config warning before the config block", async () => {
+    const output = captureOutput();
+
+    await statusCommand();
+
+    expect(output.join("\n")).toMatchInlineSnapshot(`
+      "Loading status information…
+
+      📦 Versions
+        Plugin     0.12.0 → 0.12.1 ⚠ update available
+        CLI        0.9.0 → 0.9.0 ✔ up to date
+
+      🔧 Plugin
+        Scope      user
+        Status     enabled
+        Auto-update on
+        Dev mode   off
+        Permissions 2 rules → Run "cf permission" for details
+        Antigravity v0.46.0 enabled  /mock/.gemini/config/plugins/coding-friend
+        Devin      v0.45.3 local install  /mock/plugin-devin
+
+      🧠 Memory
+        Tier       unavailable
+        Daemon     unavailable
+        Documents  0 files
+        → Run "cf memory status" for details
+
+      🔌 MCP
+        Memory MCP (coding-friend-memory)
+          ✓   Registered (user scope) 
+          ✗   Package built       : cf-memory not built
+          ⚠   Daemon              : stopped (starts automatically on MCP connect)
+          → Run "cf mcp" to fix
+
+        Learn MCP (coding-friend-learn)
+          ✓   Registered (claude mcp) 
+          ✗   Package built       : learn-mcp not built
+          ✗   Docs directory      : No .md files found in /mock/learn
+          → Run "cf mcp" to fix
+      ⚠ sanitizeRawConfig: unrecognized config keys: bogusKey — returning raw config
+
+      ⚙️ Config (global: /mock/.coding-friend/config.json)
+        language        en
+        learn           ─
+          outputDir       /mock/learn
+          categories      AI
+        statusline      ─
+          components      version, folder
+        memory          ─
+          tier            auto
+          embedding       provider: transformers
+
+      ⚙️ Config (local: /mock/project/.coding-friend/config.json)
+        language        vi (overrides global)
+        bogusKey        1
+      "
+    `);
+  });
+
+  it("prints MCP unavailable after partial MCP output when wiring throws", async () => {
+    const output = captureOutput();
+    vi.mocked(resolvePath).mockImplementation(() => {
+      throw new Error("boom");
+    });
+
+    await statusCommand();
+
+    expect(output.join("\n")).toMatchInlineSnapshot(`
+      "Loading status information…
+
+      📦 Versions
+        Plugin     0.12.0 → 0.12.1 ⚠ update available
+        CLI        0.9.0 → 0.9.0 ✔ up to date
+
+      🔧 Plugin
+        Scope      user
+        Status     enabled
+        Auto-update on
+        Dev mode   off
+        Permissions 2 rules → Run "cf permission" for details
+        Antigravity v0.46.0 enabled  /mock/.gemini/config/plugins/coding-friend
+        Devin      v0.45.3 local install  /mock/plugin-devin
+
+      🧠 Memory
+        Tier       unavailable
+        Daemon     unavailable
+        Documents  0 files
+        → Run "cf memory status" for details
+
+      🔌 MCP
+        Memory MCP (coding-friend-memory)
+          ✓   Registered (user scope) 
+          ✗   Package built       : cf-memory not built
+          ⚠   Daemon              : stopped (starts automatically on MCP connect)
+          → Run "cf mcp" to fix
+
+        Learn MCP (coding-friend-learn)
+        MCP        unavailable
+      ⚠ sanitizeRawConfig: unrecognized config keys: bogusKey — returning raw config
+
+      ⚙️ Config (global: /mock/.coding-friend/config.json)
+        language        en
+        learn           ─
+          outputDir       /mock/learn
+          categories      AI
+        statusline      ─
+          components      version, folder
+        memory          ─
+          tier            auto
+          embedding       provider: transformers
+
+      ⚙️ Config (local: /mock/project/.coding-friend/config.json)
+        language        vi (overrides global)
+        bogusKey        1
+      "
+    `);
+  });
+});
+
+describe("statusCommand — quota snapshot", () => {
+  let quotaDir: string;
+  const now = Math.floor(Date.now() / 1000);
+
+  beforeEach(() => {
+    quotaDir = mkdtempSync(join(tmpdir(), "cf-status-quota-"));
+    const path = join(quotaDir, "claude.json");
+    writeFileSync(
+      path,
+      JSON.stringify({
+        schemaVersion: 1,
+        provider: "claude",
+        configDir: "/mock/.claude",
+        windows: {
+          five_hour: { percentUsed: 42, resetsAt: now + 7830 },
+          seven_day: { percentUsed: 18, resetsAt: now + 3 * 86_400 + 5400 },
+        },
+        source: "statusline",
+        measuredAt: now - 180,
+      }),
+    );
+    vi.mocked(quotaSnapshotPath).mockReturnValue(path);
+  });
+
+  afterEach(() => {
+    rmSync(quotaDir, { recursive: true, force: true });
+  });
+
+  it("--json writes one ok envelope with data.quota and nothing via console.log", async () => {
+    const logs = captureOutput();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const write = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    mockGetInstalledVersion.mockReturnValue("0.12.1");
+
+    await statusCommand({ json: true });
+
+    expect(logs).toEqual([]);
+    expect(write).toHaveBeenCalledTimes(1);
+    const env = JSON.parse(String(write.mock.calls[0][0]));
+    expect(env.ok).toBe(true);
+    expect(Object.keys(env.data)).toEqual([
+      "versions",
+      "plugin",
+      "memory",
+      "mcp",
+      "config",
+      "quota",
+    ]);
+    expect(env.data.versions.plugin.current).toBe("0.12.1");
+    expect(env.data.quota).toMatchObject({
+      measuredAt: now - 180,
+      source: "statusline",
+      windows: {
+        five_hour: { percentUsed: 42, resetsAt: now + 7830 },
+        seven_day: { percentUsed: 18 },
+      },
+    });
+    expect(env.data.quota.ageSeconds).toBeGreaterThanOrEqual(180);
+  });
+
+  it("prints one Quota line with percentages, resets and age", async () => {
+    const output = captureOutput();
+
+    await statusCommand();
+
+    const lines = output.filter((l) => l.includes("Quota"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(
+      /Claude 5h 42% \(resets in 2h 1\dm\) · 7d 18% \(resets in 3d 1h\) · 3m ago/,
+    );
   });
 });

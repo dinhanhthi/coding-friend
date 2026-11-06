@@ -25,19 +25,153 @@ vi.mock("../project-root.js", () => ({
 
 import { readJson } from "../json.js";
 import {
+  getConfigJsonSchema,
   loadConfig,
+  readGlobalChefEnabled,
+  resolveDecisionConfig,
   resolveMemoryDir,
   resolveProjectMemoryDir,
+  resolveSessionDir,
   sanitizeRawConfig,
 } from "../config.js";
 import { resolveMainRepoRoot } from "../project-root.js";
 import { log } from "../log.js";
+import { DEFAULT_CONFIG } from "../../types.js";
 
 const mockReadJson = vi.mocked(readJson);
 const mockResolveMainRepoRoot = vi.mocked(resolveMainRepoRoot);
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+// Characterization: locks the warning order/text and return values of
+// loadConfig and sanitizeRawConfig as they were with z.strictObject.
+// Do NOT edit these expectations.
+describe("config validation characterization", () => {
+  const mixed = () => ({
+    autoApprove: "yes",
+    langauge: "vi",
+    review: { withCodex: true, bogusKey: 1, maxRounds: -1 },
+    autoApproveCodex: true,
+    zzzUnknown: 42,
+    planAuto: "x",
+    tdd: "no",
+    docsDir: "documentation",
+  });
+  const unknownOnly = () => ({
+    autoApproveCodex: true,
+    review: { extra: 1, withGrok: true },
+    memory: { daemon: { idleTimeout: 30 }, autoCapture: true },
+    tdd: true,
+  });
+
+  it("loadConfig: mixed invalid values + unknown top-level/review keys + renamed key", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce(mixed());
+
+    const config = loadConfig();
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "Config: tdd — Invalid input: expected boolean, received string. Using default.",
+      ],
+      [
+        "Config: review.maxRounds — Too small: expected number to be >=0. Using default.",
+      ],
+      ["Unknown config key 'review.bogusKey'."],
+      [
+        "Config: autoApprove — Invalid input: expected boolean, received string. Using default.",
+      ],
+      [
+        "Config: planAuto — Invalid input: expected boolean, received string. Using default.",
+      ],
+      ["Unknown config key 'langauge'. Did you mean 'language'?"],
+      [
+        "Unknown config key 'autoApproveCodex'. It was replaced by 'autoApprove' — set that instead.",
+      ],
+      ["Unknown config key 'zzzUnknown'."],
+    ]);
+    expect(config).toEqual({
+      language: "en",
+      docsDir: "documentation",
+      learn: DEFAULT_CONFIG.learn,
+      review: { withCodex: true },
+    });
+  });
+
+  it("sanitizeRawConfig: mixed config warns with review then top-level unknown keys and returns raw", () => {
+    const raw = mixed();
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(result).toEqual(mixed());
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "sanitizeRawConfig: unrecognized config keys: bogusKey, langauge, autoApproveCodex, zzzUnknown — returning raw config",
+      ],
+    ]);
+  });
+
+  it("loadConfig: unknown keys only (otherwise valid) keeps nested extras via the strip path", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce(unknownOnly());
+
+    const config = loadConfig();
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      ["Unknown config key 'review.extra'."],
+      [
+        "Unknown config key 'autoApproveCodex'. It was replaced by 'autoApprove' — set that instead.",
+      ],
+    ]);
+    expect(config).toEqual({
+      language: "en",
+      docsDir: "docs",
+      learn: DEFAULT_CONFIG.learn,
+      review: { withGrok: true },
+      memory: { daemon: { idleTimeout: 30 }, autoCapture: true },
+      tdd: true,
+    });
+  });
+
+  it("sanitizeRawConfig: unknown keys only warns and returns raw", () => {
+    const raw = unknownOnly();
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(result).toEqual(unknownOnly());
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      [
+        "sanitizeRawConfig: unrecognized config keys: extra, autoApproveCodex — returning raw config",
+      ],
+    ]);
+  });
+
+  it("sanitizeRawConfig: invalid value only warns without a key list and returns raw", () => {
+    const raw = { planAuto: "x", language: "vi" };
+    const result = sanitizeRawConfig(raw);
+    expect(result).toBe(raw);
+    expect(vi.mocked(log.warn).mock.calls).toEqual([
+      ["sanitizeRawConfig: unrecognized config keys — returning raw config"],
+    ]);
+  });
+});
+
+describe("getConfigJsonSchema", () => {
+  function hasAdditionalPropertiesFalse(node: unknown): boolean {
+    if (!node || typeof node !== "object") return false;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "additionalProperties" && value === false) return true;
+      if (hasAdditionalPropertiesFalse(value)) return true;
+    }
+    return false;
+  }
+
+  it("never forbids additional properties anywhere", () => {
+    expect(hasAdditionalPropertiesFalse(getConfigJsonSchema())).toBe(false);
+  });
+
+  it("includes projectRegistry", () => {
+    const schema = getConfigJsonSchema() as {
+      properties: Record<string, unknown>;
+    };
+    expect(schema.properties.projectRegistry).toEqual({ type: "boolean" });
+  });
 });
 
 describe("sanitizeRawConfig", () => {
@@ -708,5 +842,141 @@ describe("resolveProjectMemoryDir", () => {
 
     resolveProjectMemoryDir("/some/base/dir");
     expect(mockResolveMainRepoRoot).toHaveBeenCalledWith("/some/base/dir");
+  });
+});
+
+describe("chef config", () => {
+  it('drops a chef.schedule entry that is not "HH:MM"', () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ chef: { schedule: ["9am"] } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("schedule"));
+    expect(config.chef?.schedule?.[0]).toBeUndefined();
+  });
+
+  it("only warns on an unknown chef key and keeps the known ones", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ chef: { enabled: false, wakes: 3 } });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("'chef.wakes'"),
+    );
+    expect(config.chef).toEqual({ enabled: false });
+  });
+});
+
+describe("task config", () => {
+  function load(task: unknown) {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({ task });
+    return loadConfig();
+  }
+
+  it("accepts a valid task.models and task.fallback without warnings", () => {
+    const config = load({
+      models: { codex: "gpt-5", claude: "claude-opus-4.1" },
+      fallback: ["codex", "claude"],
+    });
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.task).toEqual({
+      models: { codex: "gpt-5", claude: "claude-opus-4.1" },
+      fallback: ["codex", "claude"],
+    });
+  });
+
+  it.each(["bad model", "-x"])("rejects task.models.codex %j", (model) => {
+    const config = load({ models: { codex: model } });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("models"));
+    expect(config.task?.models?.codex).toBeUndefined();
+  });
+
+  it("rejects a task.fallback provider outside PROVIDER_NAMES", () => {
+    const config = load({ fallback: ["claude", "gpt"] });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("fallback"));
+    // Like chef.schedule: only the bad entry is dropped.
+    expect(config.task?.fallback?.[0]).toBe("claude");
+    expect(config.task?.fallback?.[1]).toBeUndefined();
+  });
+
+  it("warns on an unknown task.models provider", () => {
+    load({ models: { codex: "gpt-5", grok: "grok-4" } });
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("'task.models.grok'"),
+    );
+  });
+});
+
+describe("readGlobalChefEnabled", () => {
+  const GLOBAL = "/home/user/.coding-friend/config.json";
+
+  function configs(global: unknown, local: unknown): void {
+    mockReadJson.mockImplementation((path: string) =>
+      path === GLOBAL ? global : local,
+    );
+  }
+
+  it.each([
+    [
+      "global false, local true",
+      { chef: { enabled: false } },
+      { chef: { enabled: true } },
+      false,
+    ],
+    [
+      "global true, local false",
+      { chef: { enabled: true } },
+      { chef: { enabled: false } },
+      true,
+    ],
+    ["no global file", null, { chef: { enabled: false } }, true],
+    ["no chef.enabled key", { chef: {} }, { chef: { enabled: false } }, true],
+  ])("%s → %s", (_name, global, local, expected) => {
+    configs(global, local);
+    expect(readGlobalChefEnabled()).toBe(expected);
+    expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
+  });
+});
+
+describe("resolveSessionDir", () => {
+  it.each([
+    ["no global key: default", null, "~/.coding-friend/sessions"],
+    [
+      "global key wins",
+      { session: { dir: "~/cloud/sessions" } },
+      "~/cloud/sessions",
+    ],
+  ])(
+    "resolves the given config's session.dir (%s)",
+    (_name, global, expected) => {
+      expect(resolveSessionDir(global)).toBe(`/resolved/${expected}`);
+      expect(mockReadJson).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe("resolveDecisionConfig", () => {
+  const GLOBAL = "/home/user/.coding-friend/config.json";
+
+  it("ignores a decision block that exists only in the local config", () => {
+    mockReadJson.mockImplementation((path: string) =>
+      path === GLOBAL
+        ? null
+        : {
+            decision: {
+              provider: "typesafe",
+              allowRemote: true,
+              baseUrl: "https://attacker.example",
+            },
+          },
+    );
+    expect(resolveDecisionConfig()).toMatchObject({
+      provider: "off",
+      allowRemote: false,
+      baseUrl: "http://127.0.0.1:8009",
+    });
+    expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
   });
 });

@@ -3,14 +3,26 @@ import { z } from "zod";
 import { readJson } from "./json.js";
 import { localConfigPath, globalConfigPath, resolvePath } from "./paths.js";
 import { resolveMainRepoRoot } from "./project-root.js";
-import { CodingFriendConfig, DEFAULT_CONFIG } from "../types.js";
+import {
+  CodingFriendConfig,
+  DEFAULT_CONFIG,
+  STATUSLINE_COMPONENT_IDS,
+} from "../types.js";
 import { log } from "./log.js";
+import {
+  isModelName,
+  PROVIDER_NAMES,
+  type Provider,
+} from "./orchestrator/store.js";
 
 /**
  * Deep merge two plain objects. Local values override global at every nesting
  * level, but sibling keys from global are preserved (not dropped).
  */
-function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
+export function deepMerge<T extends Record<string, unknown>>(
+  base: T,
+  override: T,
+): T {
   const result = { ...base } as Record<string, unknown>;
   for (const key of Object.keys(override)) {
     const baseVal = result[key];
@@ -34,12 +46,12 @@ function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
   return result as T;
 }
 
-const LearnCategorySchema = z.object({
+export const LearnCategorySchema = z.object({
   name: z.string(),
   description: z.string(),
 });
 
-const LearnConfigSchema = z.object({
+export const LearnConfigSchema = z.object({
   language: z.string().optional(),
   outputDir: z.string().optional(),
   categories: z.array(LearnCategorySchema).optional(),
@@ -48,24 +60,18 @@ const LearnConfigSchema = z.object({
   disabled: z.boolean().optional(),
 });
 
-const StatuslineComponentSchema = z.enum([
-  "version",
-  "folder",
-  "model",
-  "branch",
-  "account",
-  "context",
-  "rate_limit",
-  "session",
-  "task_agent",
-]);
+export const SessionConfigSchema = z.object({
+  dir: z.string().optional(),
+});
 
-const StatuslineConfigSchema = z.object({
+export const StatuslineComponentSchema = z.enum(STATUSLINE_COMPONENT_IDS);
+
+export const StatuslineConfigSchema = z.object({
   components: z.array(StatuslineComponentSchema).optional(),
   accountAliases: z.record(z.string(), z.string()).optional(),
 });
 
-const MemoryConfigSchema = z.object({
+export const MemoryConfigSchema = z.object({
   tier: z.enum(["auto", "full", "lite", "markdown"]).optional(),
   embedding: z
     .object({
@@ -78,51 +84,112 @@ const MemoryConfigSchema = z.object({
   autoStart: z.boolean().optional(),
 });
 
-const ReviewConfigSchema = z.strictObject({
+// Plain z.object (not strict): unknown keys are found by findUnknownKeys, so
+// the JSON Schema never emits additionalProperties:false.
+export const ReviewConfigSchema = z.object({
   withCodex: z.boolean().optional(),
   withClaude: z.boolean().optional(),
   withGrok: z.boolean().optional(),
   withCursor: z.boolean().optional(),
   withGemini: z.boolean().optional(),
+  /** Default `/cf-review` to `--fix` (apply Critical/Important until clean). Autopilot passes `--no-fix`. */
   fix: z.boolean().optional(),
+  /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */
   commit: z.boolean().optional(),
+  /** Max reviews in a review-fix loop (incl. the first). `0` = unlimited (stops when a re-review makes no progress). Default 5. */
   maxRounds: z.number().int().min(0).optional(),
   // Both timeouts are whole positive seconds: zero, negative and fractional
   // values cannot be enforced as a deadline, so they are rejected here rather
   // than coerced somewhere downstream. Deliberately NOT offered in the
   // interactive `cf config` review menu — they are file-only settings.
+  /** Seconds each external reviewer subprocess may run before it is killed. Default 300. */
   agentTimeout: z.number().int().min(1).optional(),
+  /** Seconds an in-session reviewer job may run before the main agent stops waiting. Default 600. */
   nativeTimeout: z.number().int().min(1).optional(),
 });
 
 export const SHOWCASE_POSTER_SIZE_RE = /^(A4|A3|letter|\d+x\d+)$/;
 
-const ShowcaseConfigSchema = z.strictObject({
-  video: z
-    .strictObject({
-      length: z.union([z.literal("auto"), z.number().int().min(1)]).optional(),
-      aspect: z.enum(["16:9", "1:1", "9:16"]).optional(),
-      audio: z.boolean().optional(),
-      languages: z.array(z.string().min(1)).min(1).optional(),
-    })
-    .optional(),
-  poster: z
-    .strictObject({
-      size: z.string().regex(SHOWCASE_POSTER_SIZE_RE).optional(),
-      formats: z
-        .array(z.enum(["png", "pdf", "html"]))
-        .min(1)
-        .optional(),
-      languages: z.array(z.string().min(1)).min(1).optional(),
-    })
-    .optional(),
+const ShowcaseVideoConfigSchema = z.object({
+  length: z.union([z.literal("auto"), z.number().int().min(1)]).optional(),
+  aspect: z.enum(["16:9", "1:1", "9:16"]).optional(),
+  audio: z.boolean().optional(),
+  languages: z.array(z.string().min(1)).min(1).optional(),
 });
 
-const ConfigSchema = z.strictObject({
+const ShowcasePosterConfigSchema = z.object({
+  size: z.string().regex(SHOWCASE_POSTER_SIZE_RE).optional(),
+  formats: z
+    .array(z.enum(["png", "pdf", "html"]))
+    .min(1)
+    .optional(),
+  languages: z.array(z.string().min(1)).min(1).optional(),
+});
+
+export const ShowcaseConfigSchema = z.object({
+  video: ShowcaseVideoConfigSchema.optional(),
+  poster: ShowcasePosterConfigSchema.optional(),
+});
+
+const ModelNameSchema = z.string().refine(isModelName, {
+  message:
+    'Expected a model name (no leading "-", no spaces or shell characters, at most 200 chars)',
+});
+
+/** `task.models.<provider>`: one optional model name per provider. */
+const TaskModelsSchema = z.object(
+  Object.fromEntries(
+    PROVIDER_NAMES.map((p) => [p, ModelNameSchema.optional()]),
+  ) as Record<Provider, z.ZodOptional<typeof ModelNameSchema>>,
+);
+
+// No .default(): `cf task` applies the defaults in code.
+export const TaskConfigSchema = z.object({
+  /** What `cf task` does when a worker hits its quota. Default "wait-then-switch". */
+  onQuota: z.enum(["wait-then-switch", "wait", "switch"]).optional(),
+  /** Minutes to wait when the quota reset time is unknown or near. Default 30. */
+  waitMinutes: z.number().int().min(1).optional(),
+  /** Providers to switch through, in order, on quota. Default ["claude", "codex"]. */
+  fallback: z.array(z.enum(PROVIDER_NAMES)).min(1).optional(),
+  /** Model per provider, e.g. { "codex": "gpt-5" }. Default: the provider's own. */
+  models: TaskModelsSchema.optional(),
+});
+
+/** Wall-clock "HH:MM", 24-hour. */
+const CHEF_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// No .default(): the chef applies the defaults in code.
+export const ChefConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  commit: z.boolean().optional(),
+  notify: z.boolean().optional(),
+  schedule: z.array(z.string().regex(CHEF_TIME_RE)).optional(),
+  minWakeMinutes: z.number().int().min(1).optional(),
+  maxWakesPerDay: z.number().int().min(1).optional(),
+  maxTasksPerWake: z.number().int().min(1).optional(),
+  maxConcurrentTasks: z.number().int().min(1).optional(),
+});
+
+// Global-only: read through resolveDecisionConfig(), never loadConfig().
+// No .default(): resolveDecisionConfig applies the defaults in code.
+export const DecisionConfigSchema = z.object({
+  provider: z.enum(["off", "local", "typesafe", "cloudflare"]).optional(),
+  model: z.string().optional(),
+  /** Used by provider "local" only. */
+  baseUrl: z.string().optional(),
+  timeoutMs: z.number().int().min(1).optional(),
+  /** The only gate for data leaving the machine. */
+  allowRemote: z.boolean().optional(),
+  reviewShadow: z.boolean().optional(),
+  redactThreshold: z.number().min(0).max(1).optional(),
+});
+
+export const ConfigSchema = z.object({
   language: z.string().optional(),
   docsDir: z.string().optional(),
   tdd: z.boolean().optional(),
   learn: LearnConfigSchema.optional(),
+  session: SessionConfigSchema.optional(),
   statusline: StatuslineConfigSchema.optional(),
   memory: MemoryConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),
@@ -137,28 +204,31 @@ const ConfigSchema = z.strictObject({
   planCommitPerTask: z.boolean().optional(),
   planReviewFix: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
+  projectRegistry: z.boolean().optional(),
+  task: TaskConfigSchema.optional(),
+  chef: ChefConfigSchema.optional(),
+  decision: DecisionConfigSchema.optional(),
 });
 
+/** JSON Schema (input side) for the config file. */
+export function getConfigJsonSchema() {
+  return z.toJSONSchema(ConfigSchema, { io: "input" });
+}
+
 /** Known config keys for typo suggestions */
-const KNOWN_KEYS = [
-  "language",
-  "docsDir",
-  "tdd",
-  "learn",
-  "statusline",
-  "memory",
-  "review",
-  "autoApprove",
-  "autoApproveIgnore",
-  "autoApproveAllowExtra",
-  "privacyBlock",
-  "scoutBlock",
-  "disableGUIPlan",
-  "guiPlanFormat",
-  "planAuto",
-  "planCommitPerTask",
-  "planReviewFix",
-  "showcase",
+const KNOWN_KEYS = Object.keys(ConfigSchema.shape);
+
+/** Nested objects whose unknown keys are reported, in warning order. */
+const NESTED_KNOWN_KEYS: Array<[string[], string[]]> = [
+  [["session"], Object.keys(SessionConfigSchema.shape)],
+  [["review"], Object.keys(ReviewConfigSchema.shape)],
+  [["showcase"], Object.keys(ShowcaseConfigSchema.shape)],
+  [["showcase", "video"], Object.keys(ShowcaseVideoConfigSchema.shape)],
+  [["showcase", "poster"], Object.keys(ShowcasePosterConfigSchema.shape)],
+  [["task"], Object.keys(TaskConfigSchema.shape)],
+  [["task", "models"], [...PROVIDER_NAMES]],
+  [["chef"], Object.keys(ChefConfigSchema.shape)],
+  [["decision"], Object.keys(DecisionConfigSchema.shape)],
 ];
 
 /** Removed keys mapped to their replacement, for a migration hint */
@@ -198,41 +268,94 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+interface UnknownKey {
+  /** Parent path: [] for top level, ["review"] for review.*, etc. */
+  path: string[];
+  key: string;
+}
+
+/**
+ * Find keys not declared in the schema, at top level and inside `review` and
+ * `showcase`. Order matches what z.strictObject reported: nested keys, then
+ * top-level keys.
+ */
+export function findUnknownKeys(raw: Record<string, unknown>): UnknownKey[] {
+  const found: UnknownKey[] = [];
+  for (const [path, known] of NESTED_KNOWN_KEYS) {
+    let obj: unknown = raw;
+    for (const key of path) obj = isPlainObject(obj) ? obj[key] : undefined;
+    if (!isPlainObject(obj)) continue;
+    for (const key of Object.keys(obj)) {
+      if (!known.includes(key)) found.push({ path, key });
+    }
+  }
+  for (const key of Object.keys(raw)) {
+    if (!KNOWN_KEYS.includes(key)) found.push({ path: [], key });
+  }
+  return found;
+}
+
+function warnUnknownKey({ path, key }: UnknownKey): void {
+  const isNested = path.length > 0;
+  const fullKey = isNested ? `${path.join(".")}.${key}` : key;
+  const renamedTo = isNested ? undefined : RENAMED_KEYS[key];
+  const suggestion = isNested ? null : suggestKey(key);
+  const hint = renamedTo
+    ? ` It was replaced by '${renamedTo}' — set that instead.`
+    : suggestion
+      ? ` Did you mean '${suggestion}'?`
+      : "";
+  log.warn(`Unknown config key '${fullKey}'.${hint}`);
+}
+
 /**
  * Validate merged config with Zod. Warns on invalid values and unknown keys.
  * Returns sanitized config with invalid fields stripped.
  */
 function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
+  // z.object strips unknown keys silently, so find them before parsing.
+  const unknownKeys = findUnknownKeys(merged);
   const result = ConfigSchema.safeParse(merged);
-  if (result.success) return result.data as CodingFriendConfig;
+  if (result.success && unknownKeys.length === 0) {
+    return result.data as CodingFriendConfig;
+  }
 
-  // Process errors: warn and strip invalid fields
+  // Warn in the order z.strictObject used: value issues in schema order,
+  // nested unknown keys right after their section's value issues, then
+  // top-level unknown keys last.
+  type Entry = { path: PropertyKey[]; unknown?: UnknownKey; message?: string };
+  const entries: Entry[] = [
+    ...(result.success ? [] : result.error.issues),
+    ...unknownKeys.map((u) => ({ path: u.path, unknown: u })),
+  ];
+  const rank = (e: Entry): [number, number] =>
+    e.path.length === 0
+      ? [Infinity, 0]
+      : [KNOWN_KEYS.indexOf(String(e.path[0])), e.unknown ? 1 : 0];
+  entries.sort((a, b) => {
+    const [a0, a1] = rank(a);
+    const [b0, b1] = rank(b);
+    return a0 === b0 ? a1 - b1 : a0 < b0 ? -1 : 1;
+  });
+
+  // Warn and strip unknown keys and invalid fields
   const sanitized = { ...merged };
 
-  for (const issue of result.error.issues) {
-    const pathStr = issue.path.join(".");
-
-    if (issue.code === "unrecognized_keys") {
-      // Unknown keys — may be at top level or nested inside sub-objects
-      const keys = (issue as { keys: string[] }).keys ?? [];
-      for (const key of keys) {
-        const isNested = issue.path.length > 0;
-        const fullKey = isNested ? `${issue.path.join(".")}.${key}` : key;
-        const renamedTo = isNested ? undefined : RENAMED_KEYS[key];
-        const suggestion = isNested ? null : suggestKey(key);
-        const hint = renamedTo
-          ? ` It was replaced by '${renamedTo}' — set that instead.`
-          : suggestion
-            ? ` Did you mean '${suggestion}'?`
-            : "";
-        log.warn(`Unknown config key '${fullKey}'.${hint}`);
-        stripPath(sanitized, [...issue.path, key]);
-      }
+  for (const entry of entries) {
+    if (entry.unknown) {
+      warnUnknownKey(entry.unknown);
+      stripPath(sanitized, [...entry.unknown.path, entry.unknown.key]);
     } else {
       // Type/value errors
-      log.warn(`Config: ${pathStr} — ${issue.message}. Using default.`);
+      log.warn(
+        `Config: ${entry.path.join(".")} — ${entry.message}. Using default.`,
+      );
       // Strip the invalid field by walking the path
-      stripPath(sanitized, issue.path);
+      stripPath(sanitized, entry.path);
     }
   }
 
@@ -260,22 +383,18 @@ function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
 
 /**
  * Strip unsupported fields from a raw config object using the schema.
- * Falls back to the original if parsing fails (e.g. unknown top-level key),
- * and warns so callers can see the issue.
+ * Falls back to the original if there is an unknown key (top level or
+ * review.* / showcase.*) or parsing fails, and warns so callers can see the issue.
  */
 export function sanitizeRawConfig(
   raw: Record<string, unknown>,
 ): Record<string, unknown> {
-  const result = ConfigSchema.safeParse(raw);
-  if (result.success) {
-    return result.data as Record<string, unknown>;
-  }
-  // Extract key names from unrecognized_keys issues for a helpful warning
-  const unknownKeys: string[] = [];
-  for (const issue of result.error.issues) {
-    if (issue.code === "unrecognized_keys") {
-      const keys = (issue as { keys: string[] }).keys ?? [];
-      unknownKeys.push(...keys);
+  // z.object strips unknown keys silently, so find them before parsing.
+  const unknownKeys = findUnknownKeys(raw).map((u) => u.key);
+  if (unknownKeys.length === 0) {
+    const result = ConfigSchema.safeParse(raw);
+    if (result.success) {
+      return result.data as Record<string, unknown>;
     }
   }
   const keyList = unknownKeys.length > 0 ? `: ${unknownKeys.join(", ")}` : "";
@@ -298,6 +417,15 @@ export function loadConfig(): CodingFriendConfig {
   );
   const merged = deepMerge(base, (local ?? {}) as Record<string, unknown>);
   return validateConfig(merged);
+}
+
+/**
+ * `chef.enabled` from the global config only, never the cwd's local config.
+ * A missing file or key means enabled.
+ */
+export function readGlobalChefEnabled(): boolean {
+  const global = readJson<CodingFriendConfig>(globalConfigPath());
+  return global?.chef?.enabled !== false;
 }
 
 /**
@@ -338,6 +466,61 @@ export function resolveLearnDir(
     return resolvePath(globalCfg.learn.outputDir);
   }
   return resolvePath("~/.coding-friend/learn");
+}
+
+/**
+ * Resolve the saved-session store — global config only.
+ * Priority: explicit arg > globalCfg.session.dir > ~/.coding-friend/sessions
+ */
+export function resolveSessionDir(
+  globalCfg: CodingFriendConfig | null,
+  explicitPath?: string,
+): string {
+  if (explicitPath) {
+    return resolvePath(explicitPath);
+  }
+  if (globalCfg?.session?.dir) {
+    return resolvePath(globalCfg.session.dir);
+  }
+  return resolvePath("~/.coding-friend/sessions");
+}
+
+export type DecisionConfig = Required<z.infer<typeof DecisionConfigSchema>>;
+
+const DECISION_DEFAULT_MODELS: Record<DecisionConfig["provider"], string> = {
+  off: "",
+  local: "kev-latest",
+  typesafe: "jev-1.14.0",
+  cloudflare: "clef-flash",
+};
+
+/**
+ * The `decision` block — global config only: a block in the cwd's local
+ * config is ignored, so a repo cannot choose where its data is sent. An
+ * invalid global block falls back to the defaults (provider "off").
+ */
+export function resolveDecisionConfig(): DecisionConfig {
+  const global = readJson<Record<string, unknown>>(globalConfigPath());
+  const parsed = DecisionConfigSchema.safeParse(global?.decision ?? {});
+  const cfg = parsed.success ? parsed.data : {};
+  const provider = cfg.provider ?? "off";
+  return {
+    provider,
+    model: cfg.model ?? DECISION_DEFAULT_MODELS[provider],
+    baseUrl: cfg.baseUrl ?? "http://127.0.0.1:8009",
+    timeoutMs: cfg.timeoutMs ?? 5000,
+    allowRemote: cfg.allowRemote ?? false,
+    reviewShadow: cfg.reviewShadow ?? false,
+    redactThreshold: cfg.redactThreshold ?? 0.5,
+  };
+}
+
+/** Whether `<projectDir>/.coding-friend/config.json` has a (ignored) `decision` block. */
+export function localConfigHasDecision(projectDir: string): boolean {
+  const local = readJson<Record<string, unknown>>(
+    resolve(projectDir, ".coding-friend", "config.json"),
+  );
+  return local?.decision !== undefined;
 }
 
 /**

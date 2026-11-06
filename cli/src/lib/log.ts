@@ -1,13 +1,31 @@
 import chalk from "chalk";
 
+export type LogMode = "human" | "json";
+
+let mode: LogMode = "human";
+
+/** In "json" mode all log output goes to stderr so stdout stays a pure envelope. */
+export function setLogMode(next: LogMode): void {
+  mode = next;
+}
+
+export function getLogMode(): LogMode {
+  return mode;
+}
+
+function out(...args: unknown[]): void {
+  if (mode === "json") console.error(...args);
+  else console.log(...args);
+}
+
 export const log = {
-  info: (msg: string) => console.log(chalk.blue("ℹ"), msg),
-  success: (msg: string) => console.log(chalk.green("✔"), msg),
-  congrats: (msg: string) => console.log(chalk.green("🎉"), msg),
-  warn: (msg: string) => console.log(chalk.yellow("⚠"), msg),
-  error: (msg: string) => console.log(chalk.red("✖"), msg),
-  step: (msg: string) => console.log(chalk.cyan("→"), msg),
-  dim: (msg: string) => console.log(chalk.dim(msg)),
+  info: (msg: string) => out(chalk.blue("ℹ"), msg),
+  success: (msg: string) => out(chalk.green("✔"), msg),
+  congrats: (msg: string) => out(chalk.green("🎉"), msg),
+  warn: (msg: string) => out(chalk.yellow("⚠"), msg),
+  error: (msg: string) => out(chalk.red("✖"), msg),
+  step: (msg: string) => out(chalk.cyan("→"), msg),
+  dim: (msg: string) => out(chalk.dim(msg)),
 };
 
 /** Count the visual width of a string in terminal columns. */
@@ -48,9 +66,9 @@ export function printBanner(
   const top = `┌${"─".repeat(vw)}┐`;
   const mid = `│${inner}│`;
   const bot = `└${"─".repeat(vw)}┘`;
-  console.log(colorFn(top));
-  console.log(colorFn(mid));
-  console.log(colorFn(bot));
+  out(colorFn(top));
+  out(colorFn(mid));
+  out(colorFn(bot));
 }
 
 /**
@@ -72,10 +90,10 @@ export function printBoxed(
   const innerW = maxW + padding * 2;
   const top = `┌${"─".repeat(innerW)}┐`;
   const bot = `└${"─".repeat(innerW)}┘`;
-  console.log(colorFn(top));
+  out(colorFn(top));
   for (const line of lines) {
     const gap = " ".repeat(maxW - visualWidth(line));
-    console.log(`${colorFn("│")}${pad}${line}${gap}${pad}${colorFn("│")}`);
+    out(`${colorFn("│")}${pad}${line}${gap}${pad}${colorFn("│")}`);
   }
-  console.log(colorFn(bot));
+  out(colorFn(bot));
 }

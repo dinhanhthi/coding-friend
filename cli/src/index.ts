@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
-import { Command } from "commander";
+import { Command, CommanderError } from "commander";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { installedPluginsPath } from "./lib/paths.js";
+import { isJsonArgv } from "./lib/output.js";
+import { shouldSkipPostAction, toUsageEnvelope } from "./lib/json-guard.js";
+import { PROVIDERS } from "./lib/orchestrator/providers/index.js";
+import { PROVIDER_NAMES } from "./lib/orchestrator/store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -17,7 +21,7 @@ function getInstalledPluginVersion(): string | null {
     const data = JSON.parse(readFileSync(installedPluginsPath(), "utf-8"));
     const plugins = (data.plugins ?? data) as Record<string, unknown>;
     for (const [key, value] of Object.entries(plugins)) {
-      if (!key.includes("coding-friend")) continue;
+      if (!key.startsWith("coding-friend@")) continue;
       if (Array.isArray(value) && value.length > 0) {
         const entry = value[0] as Record<string, unknown>;
         if (typeof entry.version === "string") return entry.version;
@@ -46,6 +50,12 @@ const wantsVersion =
 
 const program = new Command();
 
+// JSON mode: turn commander usage errors into an envelope instead of exiting.
+// Must run before any .command(): commander copies exitOverride to
+// subcommands only when they are created.
+const jsonMode = isJsonArgv(process.argv);
+if (jsonMode) program.exitOverride();
+
 program
   .name("cf")
   .description(
@@ -68,6 +78,9 @@ program
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
+  .option("--mods", "Also install coding-friend-mods (Claude Code only)")
+  .option("--yes", "Skip prompts (default scope: user)")
+  .option("--json", "Output a JSON envelope (requires --yes or a scope flag)")
   .action(async (opts) => {
     const { installCommand } = await import("./commands/install.js");
     await installCommand(opts);
@@ -157,25 +170,180 @@ program
     await initCommand(opts);
   });
 
-program
+const config = program
   .command("config")
-  .description("Manage Coding Friend configuration")
+  .description("Manage Coding Friend configuration");
+
+// Hidden default: bare `cf config` still opens the interactive menu.
+config
+  .command("menu", { isDefault: true, hidden: true })
+  .description("Interactive configuration menu")
   .action(async () => {
     const { configCommand } = await import("./commands/config.js");
     await configCommand();
   });
 
+config
+  .command("get [key]")
+  .description("Show config (all, or one dotted key) and where it comes from")
+  .option("--global", "Read only the global config")
+  .option("--local", "Read only the local project config")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (key: string | undefined, opts) => {
+    const { configGetCommand } =
+      await import("./commands/config-subcommands.js");
+    await configGetCommand(key, opts);
+  });
+
+config
+  .command("set <key> <value>")
+  .description("Set a dotted config key (JSON value or string; null deletes)")
+  .option("--global", "Write the global config")
+  .option("--local", "Write the local project config")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (key: string, value: string, opts) => {
+    const { configSetCommand } =
+      await import("./commands/config-subcommands.js");
+    await configSetCommand(key, value, opts);
+  });
+
+config
+  .command("schema")
+  .description("Print the JSON Schema of the config file")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { configSchemaCommand } =
+      await import("./commands/config-subcommands.js");
+    await configSchemaCommand(opts);
+  });
+
+const docs = program
+  .command("docs")
+  .description("Browse the project's markdown docs (docsDir)");
+
+docs
+  .command("list")
+  .description("List markdown files under the project's docs dir")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { docsListCommand } = await import("./commands/docs.js");
+    await docsListCommand(opts);
+  });
+
+docs
+  .command("show <relpath>")
+  .description("Print one markdown file (path relative to the docs dir)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (relpath: string, opts) => {
+    const { docsShowCommand } = await import("./commands/docs.js");
+    await docsShowCommand(relpath, opts);
+  });
+
 const learn = program
   .command("learn")
-  .description("Manage learning docs — host as a website or push to git");
+  .description(
+    "Manage learning docs — browse, edit, host as a website or push to git",
+  );
 
 program.addHelpText(
   "after",
   `
 Learn subcommands:
+  learn status        Show the learn folder, its mode (git or folder) and cloud folders
+  learn list          List learn notes (and cloud files not downloaded yet)
+  learn search        Search learn notes by title, tags and body
+  learn show          Print one learn note (<category/slug>)
+  learn edit          Replace a note's body from stdin (--stdin --if-match)
+  learn delete        Delete a learn note (--yes to skip the prompt)
   learn host [path]   Build and serve learning docs as a static website
   learn push [path]   Commit and push learning docs (only if learn dir is the git root)`,
 );
+
+learn
+  .command("status")
+  .description("Show the learn folder, its storage mode and cloud folders")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { learnStatusCommand } = await import("./commands/learn.js");
+    await learnStatusCommand(opts);
+  });
+
+learn
+  .command("list")
+  .description("List learn notes")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { learnListCommand } = await import("./commands/learn.js");
+    await learnListCommand(opts);
+  });
+
+learn
+  .command("search")
+  .description("Search learn notes (title, tags, body; case-insensitive)")
+  .argument("<query>", "search text (at most 500 characters)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (query: string, opts) => {
+    const { learnSearchCommand } = await import("./commands/learn.js");
+    await learnSearchCommand(query, opts);
+  });
+
+learn
+  .command("show")
+  .description("Print one learn note")
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnShowCommand } = await import("./commands/learn.js");
+    await learnShowCommand(id, opts);
+  });
+
+learn
+  .command("edit")
+  .description(
+    "Replace a learn note's body with stdin (frontmatter kept, updated: set to today)",
+  )
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--stdin", "Read the new body from stdin (required)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `learn show`; refuse with CONFLICT if the file changed (required)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnEditCommand } = await import("./commands/learn.js");
+    await learnEditCommand(id, opts);
+  });
+
+learn
+  .command("delete")
+  .description("Delete a learn note")
+  .argument("<id>", "note id (<category>/<slug>)")
+  .option("--yes", "Skip the confirmation prompt (required with --json)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `learn show`; refuse with CONFLICT if the file changed",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { learnDeleteCommand } = await import("./commands/learn.js");
+    await learnDeleteCommand(id, opts);
+  });
 
 learn
   .command("host")
@@ -209,9 +377,10 @@ program
 program
   .command("mcp")
   .description("Setup MCP server for learning docs")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
     const { mcpCommand } = await import("./commands/mcp.js");
-    await mcpCommand();
+    await mcpCommand(opts);
   });
 
 program
@@ -291,6 +460,9 @@ program
   .option("--omp", "Alias for --agent omp")
   .option("--agy", "Shortcut for --agent agy (beta)")
   .option("--devin", "Shortcut for --agent devin (beta)")
+  .option("--check", "Only report installed vs latest versions (read-only)")
+  .option("--yes", "Run without confirmation (needed with --json)")
+  .option("--json", "Output a JSON envelope (requires --check or --yes)")
   .action(async (opts) => {
     const { updateCommand } = await import("./commands/update.js");
     await updateCommand(opts);
@@ -299,9 +471,306 @@ program
 program
   .command("status")
   .description("Show comprehensive Coding Friend status")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
     const { statusCommand } = await import("./commands/status.js");
-    await statusCommand();
+    await statusCommand(opts);
+  });
+
+program
+  .command("version")
+  .description("Show CLI and per-host plugin versions")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { versionCommand } = await import("./commands/version.js");
+    await versionCommand(pkg.version, opts);
+  });
+
+program
+  .command("doctor")
+  .description("Check the Coding Friend setup (read-only)")
+  .option(
+    "--project-dir <path>",
+    "Check only this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { doctorCommand } = await import("./commands/doctor.js");
+    await doctorCommand(pkg.version, opts);
+  });
+
+const project = program
+  .command("project")
+  .description("Manage the registry of known projects");
+
+project
+  .command("list")
+  .description("List registered projects")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { projectListCommand } = await import("./commands/project.js");
+    await projectListCommand(opts);
+  });
+
+project
+  .command("add [path]")
+  .description("Register a project (default: current directory's repo root)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (path: string | undefined, opts) => {
+    const { projectAddCommand } = await import("./commands/project.js");
+    await projectAddCommand(path, opts);
+  });
+
+project
+  .command("remove <path>")
+  .description("Remove a project from the registry")
+  .option("--json", "Output a JSON envelope")
+  .action(async (path: string, opts) => {
+    const { projectRemoveCommand } = await import("./commands/project.js");
+    await projectRemoveCommand(path, opts);
+  });
+
+program
+  .command("ask <question>")
+  .description("Ask the user a question from a task and wait for the answer")
+  .option("--task <id>", "Task id (default: $CF_TASK_ID)")
+  .option("--timeout <seconds>", "Seconds to wait for an answer (default: 100)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (question: string, opts) => {
+    const { askCommand } = await import("./commands/ask.js");
+    await askCommand(question, opts);
+  });
+
+program
+  .command("reply <qid> <answer>")
+  .description("Answer a question asked by a task")
+  .option("--task <id>", "Task that asked the question")
+  .option("--json", "Output a JSON envelope")
+  .action(async (qid: string, answer: string, opts) => {
+    const { replyCommand } = await import("./commands/reply.js");
+    await replyCommand(qid, answer, opts);
+  });
+
+program
+  .command("done")
+  .description("Mark a task finished with an outcome and summary")
+  .option("--task <id>", "Task id (default: $CF_TASK_ID)")
+  .option("--outcome <outcome>", "succeeded or failed")
+  .option("--summary <text>", "Short summary of the result")
+  .option("--handoff <path>", "Path to a handoff file")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { doneCommand } = await import("./commands/done.js");
+    await doneCommand(opts);
+  });
+
+const taskCmd = program
+  .command("task")
+  .description("Run and manage sandboxed worker tasks");
+
+taskCmd
+  .command("run <prompt>")
+  .description("Start a detached worker task in the current checkout")
+  .option("--provider <name>", `Worker CLI: ${PROVIDER_NAMES.join(", ")}`)
+  .option(
+    "--model <name>",
+    "Model of the provider given by --provider (needs --provider)",
+  )
+  .option("--read-only", "Worker may not edit the checkout (no writer lease)")
+  .option(
+    "--no-fallback",
+    "On a quota limit, wait for the reset instead of switching provider",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (prompt: string, opts) => {
+    const { taskRunCommand } = await import("./commands/task.js");
+    await taskRunCommand(prompt, opts);
+  });
+
+taskCmd
+  .command("_run <id>", { hidden: true })
+  .description("Internal: per-task runner")
+  .action(async (id: string) => {
+    const { taskRunnerCommand } = await import("./commands/task.js");
+    await taskRunnerCommand(id);
+  });
+
+taskCmd
+  .command("list")
+  .description("List tasks, newest first")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { taskListCommand } = await import("./commands/task.js");
+    await taskListCommand(opts);
+  });
+
+taskCmd
+  .command("show <id>")
+  .description("Show a task's state, questions and result")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskShowCommand } = await import("./commands/task.js");
+    await taskShowCommand(id, opts);
+  });
+
+taskCmd
+  .command("follow <id>")
+  .description(
+    "Follow a task's worker transcript until it ends (agents should use --json: one poll per call)",
+  )
+  .option("--cursor <c>", "Continue from the cursor of a previous --json call")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskFollowCommand } = await import("./commands/task.js");
+    await taskFollowCommand(id, opts);
+  });
+
+taskCmd
+  .command("cancel <id>")
+  .description("Cancel a running or paused task")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { taskCancelCommand } = await import("./commands/task.js");
+    await taskCancelCommand(id, opts);
+  });
+
+const chefCmd = program
+  .command("chef")
+  .description("Let a chef drive a plan through worker tasks");
+
+chefCmd
+  .command("start <plan-dir>")
+  .description("Start a chef for a plan in the current (clean) checkout")
+  .option(
+    "--provider <name>",
+    `Chef CLI: ${PROVIDER_NAMES.filter((p) => PROVIDERS[p].caps.chef).join(", ")}`,
+  )
+  .option("--no-commit", "Never commit: the chef only dispatches tasks")
+  .option("--json", "Output a JSON envelope")
+  .action(async (planDir: string, opts) => {
+    const { chefStartCommand } = await import("./commands/chef.js");
+    await chefStartCommand(planDir, opts);
+  });
+
+chefCmd
+  .command("say <id> <message>")
+  .description("Send the chef a message (it wakes at a coming tick)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, message: string, opts) => {
+    const { chefSayCommand } = await import("./commands/chef.js");
+    await chefSayCommand(id, message, opts);
+  });
+
+chefCmd
+  .command("status [id]")
+  .description("Show the state of one chef or of every chef")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string | undefined, opts) => {
+    const { chefStatusCommand } = await import("./commands/chef.js");
+    await chefStatusCommand(id, opts);
+  });
+
+chefCmd
+  .command("inbox [id]")
+  .description("List chef questions and pauses that need you")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string | undefined, opts) => {
+    const { chefInboxCommand } = await import("./commands/chef.js");
+    await chefInboxCommand(id, opts);
+  });
+
+chefCmd
+  .command("show <id>")
+  .description("Show a chef's decisions, tasks, commits and progress")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefShowCommand } = await import("./commands/chef.js");
+    await chefShowCommand(id, opts);
+  });
+
+chefCmd
+  .command("stop <id>")
+  .description("Stop a chef and free its checkout (its tasks keep running)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefStopCommand } = await import("./commands/chef.js");
+    await chefStopCommand(id, opts);
+  });
+
+chefCmd
+  .command("resume <id>")
+  .description(
+    "Resume a paused chef with a new baseline (no clean checkout needed)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { chefResumeCommand } = await import("./commands/chef.js");
+    await chefResumeCommand(id, opts);
+  });
+
+chefCmd
+  .command("_wake <id> <n>", { hidden: true })
+  .description("Internal: one chef wake")
+  .action(async (id: string, n: string) => {
+    const { chefWakeCommand } = await import("./commands/chef.js");
+    await chefWakeCommand(id, n);
+  });
+
+const supervisorCmd = program
+  .command("supervisor")
+  .description("Resume paused tasks in the background (launchd on macOS)");
+
+supervisorCmd
+  .command("install")
+  .description(
+    "Install the launchd agent that runs `supervisor tick` every minute",
+  )
+  .option(
+    "--label <label>",
+    "launchd label (default: com.coding-friend.supervisor)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { supervisorInstallCommand } =
+      await import("./commands/supervisor.js");
+    await supervisorInstallCommand(opts);
+  });
+
+supervisorCmd
+  .command("uninstall")
+  .description("Unload the launchd agent and remove its plist")
+  .option(
+    "--label <label>",
+    "launchd label (default: com.coding-friend.supervisor)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { supervisorUninstallCommand } =
+      await import("./commands/supervisor.js");
+    await supervisorUninstallCommand(opts);
+  });
+
+supervisorCmd
+  .command("status")
+  .description("Show the agent, the last tick and paused tasks")
+  .option(
+    "--label <label>",
+    "launchd label (default: com.coding-friend.supervisor)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { supervisorStatusCommand } =
+      await import("./commands/supervisor.js");
+    await supervisorStatusCommand(opts);
+  });
+
+supervisorCmd
+  .command("tick")
+  .description("Adopt paused tasks whose runner is gone (run by launchd/cron)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { supervisorTickCommand } = await import("./commands/supervisor.js");
+    await supervisorTickCommand(opts);
   });
 
 program
@@ -314,35 +783,239 @@ program
 
 const session = program
   .command("session")
-  .description("[beta] Save and load Claude Code sessions across machines");
+  .description(
+    "[beta] View Claude Code and Codex sessions, export them redacted, save and load across machines",
+  );
 
 program.addHelpText(
   "after",
   `
 Session subcommands (beta):
-  session save        Save current session to sync folder (use /cf-session inside a conversation)
-  session load        Load a saved session from sync folder and print resume command`,
+  session list        List Claude Code, Codex and saved sessions (newest first)
+  session show        Print one session's turns, redacted (-- <ref>)
+  session export      Print one session as redacted Markdown (-- <ref>)
+  session save        Save a Claude Code session verbatim to session.dir (-- <label>)
+  session load        Load a saved session and print the resume command
+  session status      Show session.dir, its cloud folder and suggestions`,
 );
 
 session
+  .command("list")
+  .description("List Claude Code, Codex and saved sessions, newest first")
+  .option(
+    "--provider <provider>",
+    "only this provider: claude, codex or saved (saved and legacy)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Only sessions of this project (resolved to its main repo root; saved ones by their recorded project path); adds its legacy <docsDir>/sessions",
+  )
+  .option("--limit <n>", "at most this many sessions (1-500, default 50)")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionListCommand } = await import("./commands/session.js");
+    await sessionListCommand(opts);
+  });
+
+session
+  .command("show")
+  .description("Print a session's turns, always redacted")
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option("--offset <n>", "first turn to print (default 0)")
+  .option("--limit <n>", "at most this many turns (1-1000, default 200)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session; required for legacy: refs",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionShowCommand } = await import("./commands/session.js");
+    await sessionShowCommand(ref, opts);
+  });
+
+session
+  .command("export")
+  .description(
+    "Print a session as redacted Markdown (no tool output by default)",
+  )
+  .argument(
+    "<ref>",
+    "session ref: claude:<id>, codex:<id>, saved:<folder> or legacy:<folder>",
+  )
+  .option("--include-tool-output", "include tool output (redacted, cut)")
+  .option(
+    "--project-dir <path>",
+    "Prefer this project's copy of the session; required for legacy: refs",
+  )
+  .option(
+    "--out <file>",
+    "write the full Markdown to this file (mode 0600) instead of printing it",
+  )
+  .option("--force", "with --out: overwrite an existing file")
+  .option(
+    "--redact-model",
+    "also drop parts the decision model flags as secret or personal data",
+  )
+  .option(
+    "--summary",
+    "keep only the parts the decision model rates most important",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string, opts) => {
+    const { sessionExportCommand } = await import("./commands/session.js");
+    await sessionExportCommand(ref, opts);
+  });
+
+session
   .command("save")
-  .description("Save current Claude Code session to sync folder")
+  .description(
+    "Save a Claude Code session verbatim (not redacted) to session.dir",
+  )
+  .argument("[label]", "label for this session (same as -l)")
   .option(
     "-s, --session-id <id>",
     "session UUID to save (default: auto-detect newest)",
   )
   .option("-l, --label <label>", "label for this session")
-  .action(async (opts) => {
+  .option(
+    "--project-dir <path>",
+    "Look for the session in this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (label: string | undefined, opts) => {
     const { sessionSaveCommand } = await import("./commands/session.js");
-    await sessionSaveCommand(opts);
+    await sessionSaveCommand(label, opts);
   });
 
 session
   .command("load")
-  .description("Load a saved session from sync folder")
-  .action(async () => {
+  .description("Load a saved session from session.dir")
+  .argument(
+    "[ref]",
+    "with --json: saved:<folder> or legacy:<folder> (human mode asks instead)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Also list this project's legacy <docsDir>/sessions; required for legacy: refs",
+  )
+  .option("--target <path>", "with --json: project directory to load into")
+  .option("--yes", "with --json: load without asking (required)")
+  .option("--force", "overwrite a transcript that is already there")
+  .option("--json", "Output a JSON envelope")
+  .action(async (ref: string | undefined, opts) => {
     const { sessionLoadCommand } = await import("./commands/session.js");
-    await sessionLoadCommand();
+    await sessionLoadCommand(ref, opts);
+  });
+
+session
+  .command("status")
+  .description("Show session.dir, its cloud folder and suggested folders")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { sessionStatusCommand } = await import("./commands/session.js");
+    await sessionStatusCommand(opts);
+  });
+
+const sync = program
+  .command("sync")
+  .description(
+    "[beta] Show where learn notes and saved sessions sync (cloud folders, placeholders, conflicts)",
+  );
+
+program.addHelpText(
+  "after",
+  `
+Sync subcommands (beta):
+  sync status         Show learn and session folders, cloud provider, placeholders and conflict copies`,
+);
+
+sync
+  .command("status")
+  .description(
+    "Show the learn and session folders, their cloud folder, placeholders and conflict copies (reads no file)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { syncStatusCommand } = await import("./commands/sync.js");
+    await syncStatusCommand(opts);
+  });
+
+const decideCmd = program
+  .command("decide")
+  .description(
+    "[beta] Decision model: test the provider, run the eval, read the shadow log",
+  );
+
+program.addHelpText(
+  "after",
+  `
+Decide subcommands (beta):
+  decide test         Send one built-in synthetic request and print the answer
+  decide eval         Score the model on the built-in golden sets (--point)
+  decide log          Summarize the decision log (numbers only, read-only)
+  decide review-fp    Shadow-check a /cf-review report (logs only)`,
+);
+
+decideCmd
+  .command("test")
+  .description(
+    "Send one built-in synthetic request; print provider, model, answer, latency",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideTestCommand } = await import("./commands/decide.js");
+    await decideTestCommand(opts);
+  });
+
+decideCmd
+  .command("eval")
+  .description(
+    "Score the model on the built-in golden sets (accuracy, fallback, latency)",
+  )
+  .option(
+    "--point <point>",
+    "only this set: redact or review-fp (default both)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideEvalCommand } = await import("./commands/decide.js");
+    await decideEvalCommand(opts);
+  });
+
+decideCmd
+  .command("log")
+  .description(
+    "Summarize the decision log: review shadow runs, fallback, latency, share below threshold",
+  )
+  .option("--since <date>", "only lines from this date (YYYY-MM-DD or ISO)")
+  .option(
+    "--threshold <n>",
+    "noul below this counts as a likely false positive (0-1, default 0.2)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideLogCommand } = await import("./commands/decide.js");
+    await decideLogCommand(opts);
+  });
+
+decideCmd
+  .command("review-fp")
+  .description(
+    "Ask the model whether each /cf-review finding shows in the code (shadow, logs only)",
+  )
+  .option(
+    "--snapshot-dir <dir>",
+    "review snapshot under /tmp/coding-friend/review/",
+  )
+  .option("--report <file>", "review report under /tmp/coding-friend/review/")
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
+    const { decideReviewFpCommand } = await import("./commands/decide.js");
+    await decideReviewFpCommand(opts);
   });
 
 const memory = program
@@ -356,6 +1029,9 @@ Memory subcommands:
   memory status       Show memory system status (tier, doc count, daemon)
   memory search       Search memories by query
   memory list         List memories in current project (--projects for all DBs)
+  memory show         Print one memory (<category/slug>)
+  memory edit         Replace a memory's body from stdin (--stdin --if-match)
+  memory delete       Delete a memory (--yes to skip the prompt)
   memory rm           Remove a project database (--project-id <id>, --all, or --prune)
   memory init         Initialize memory system (interactive wizard)
   memory config       Configure memory system settings
@@ -368,18 +1044,24 @@ Memory subcommands:
 memory
   .command("status")
   .description("Show memory system status")
-  .action(async () => {
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts: { json?: boolean }) => {
     const { memoryStatusCommand } = await import("./commands/memory.js");
-    await memoryStatusCommand();
+    await memoryStatusCommand(opts);
   });
 
 memory
   .command("search")
   .description("Search memories by query")
-  .argument("<query>", "search query")
-  .action(async (query: string) => {
+  .argument("<query>", "search query (max 500 characters)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (query: string, opts) => {
     const { memorySearchCommand } = await import("./commands/memory.js");
-    await memorySearchCommand(query);
+    await memorySearchCommand(query, opts);
   });
 
 memory
@@ -388,9 +1070,68 @@ memory
     "List memories in current project, or all projects with --projects",
   )
   .option("--projects", "List all project databases with size and metadata")
-  .action(async (opts: { projects?: boolean }) => {
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (opts) => {
     const { memoryListCommand } = await import("./commands/memory.js");
     await memoryListCommand(opts);
+  });
+
+memory
+  .command("show")
+  .description("Print one memory file")
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryShowCommand } = await import("./commands/memory.js");
+    await memoryShowCommand(id, opts);
+  });
+
+memory
+  .command("edit")
+  .description(
+    "Replace a memory's body with stdin (frontmatter kept, updated: set to today)",
+  )
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option("--stdin", "Read the new body from stdin (required)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `memory show`; refuse with CONFLICT if the file changed (required)",
+  )
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryEditCommand } = await import("./commands/memory.js");
+    await memoryEditCommand(id, opts);
+  });
+
+memory
+  .command("delete")
+  .description("Delete a memory file and its CLAUDE.md / AGENTS.md rule entry")
+  .argument("<id>", "memory id (<category>/<slug>)")
+  .option("--yes", "Skip the confirmation prompt (required with --json)")
+  .option(
+    "--if-match <sha256>",
+    "sha256 from `memory show`; refuse with CONFLICT if the file changed",
+  )
+  .option(
+    "--project-dir <path>",
+    "Run against this project (resolved to its main repo root)",
+  )
+  .option("--json", "Output a JSON envelope")
+  .action(async (id: string, opts) => {
+    const { memoryDeleteCommand } = await import("./commands/memory.js");
+    await memoryDeleteCommand(id, opts);
   });
 
 memory
@@ -556,13 +1297,31 @@ dev
   });
 
 // Post-command: check for CLI updates (cached, 24h TTL)
-// Skips for 'update' command (handles its own) and version/help flags
-program.hook("postAction", async () => {
+// Skips for 'update' command (handles its own), worker commands (stdout is
+// captured by the worker's shell), the hidden task runner and chef wake,
+// the supervisor tick (run by launchd), doctor (read-only, no network),
+// --json runs, and version/help flags
+program.hook("postAction", async (_this, actionCommand) => {
+  if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
-  if (topCmd === "update") return;
+  if (["update", "ask", "reply", "done", "doctor"].includes(topCmd)) return;
+  if (topCmd === "task" && process.argv[3] === "_run") return;
+  if (topCmd === "chef" && process.argv[3] === "_wake") return;
+  if (topCmd === "supervisor" && process.argv[3] === "tick") return;
 
   const { checkAndNotifyCliUpdate } = await import("./lib/update-check.js");
   checkAndNotifyCliUpdate(pkg.version);
 });
 
-await program.parseAsync();
+try {
+  await program.parseAsync();
+} catch (err) {
+  if (!jsonMode || !(err instanceof CommanderError)) throw err;
+  const envelope = toUsageEnvelope(err);
+  if (envelope) {
+    process.stdout.write(JSON.stringify(envelope) + "\n");
+    process.exitCode = 1;
+  } else {
+    process.exitCode = err.exitCode;
+  }
+}

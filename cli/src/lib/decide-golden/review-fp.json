@@ -1,0 +1,182 @@
+[
+  {
+    "id": "rfp-pos-01",
+    "finding": "Off-by-one: the loop reads one element past the end of the array.",
+    "code": "10: function sum(items) {\n11:   let total = 0;\n12:   for (let i = 0; i <= items.length; i++) {\n13:     total += items[i];\n14:   }\n15:   return total;\n16: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-02",
+    "finding": "The promise returned by saveFile is not awaited, so errors are lost and the function returns before the write finishes.",
+    "code": "20: async function persist(doc) {\n21:   saveFile(doc.path, doc.body);\n22:   return { ok: true };\n23: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-03",
+    "finding": "Possible null dereference: user can be undefined when the lookup misses, but user.name is read without a check.",
+    "code": "5: const user = users.find((u) => u.id === id);\n6: return `Hello, ${user.name}`;",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-04",
+    "finding": "The event listener is added on every render and never removed, which leaks handlers.",
+    "code": "30: function Panel() {\n31:   window.addEventListener(\"resize\", onResize);\n32:   return <div className=\"panel\" />;\n33: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-05",
+    "finding": "The comparison uses assignment instead of equality, so the branch always runs.",
+    "code": "44: if (status = \"done\") {\n45:   markComplete(task);\n46: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-06",
+    "finding": "The file handle is opened but never closed when parsing throws.",
+    "code": "8: def load(path):\n9:     f = open(path)\n10:     data = json.load(f)\n11:     f.close()\n12:     return data",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-07",
+    "finding": "The catch block swallows the error silently, so failures are invisible.",
+    "code": "60: try {\n61:   await syncAll();\n62: } catch (e) {\n63: }\n64: return true;",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-08",
+    "finding": "Array.sort is called without a comparator on numbers, so 10 sorts before 9.",
+    "code": "3: const sizes = [9, 10, 2, 33];\n4: sizes.sort();\n5: console.log(sizes[0]);",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-09",
+    "finding": "The function mutates its input argument instead of returning a copy.",
+    "code": "12: export function withDefaults(opts) {\n13:   opts.retries = opts.retries ?? 3;\n14:   opts.timeout = opts.timeout ?? 5000;\n15:   return opts;\n16: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-10",
+    "finding": "Integer division truncates the average: both operands are ints.",
+    "code": "22: int average(int total, int count) {\n23:     return total / count;\n24: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-11",
+    "finding": "The setTimeout callback captures the loop variable declared with var, so every callback logs the final value.",
+    "code": "1: for (var i = 0; i < 3; i++) {\n2:   setTimeout(() => console.log(i), 10);\n3: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-12",
+    "finding": "Division by zero is possible when the list is empty.",
+    "code": "40: function mean(xs) {\n41:   const total = xs.reduce((a, b) => a + b, 0);\n42:   return total / xs.length;\n43: }",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-13",
+    "finding": "useEffect is missing userId in its dependency array, so the data is not refetched when the user changes.",
+    "code": "15: useEffect(() => {\n16:   fetchProfile(userId).then(setProfile);\n17: }, []);",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-14",
+    "finding": "The slice end index excludes the last character, so the extension loses its final letter.",
+    "code": "7: const dot = name.lastIndexOf(\".\");\n8: const ext = name.slice(dot + 1, name.length - 1);\n9: return ext;",
+    "label": true
+  },
+  {
+    "id": "rfp-pos-15",
+    "finding": "Errors from JSON.parse are not handled; a malformed config file crashes startup.",
+    "code": "2: import { readFileSync } from \"fs\";\n3: const config = JSON.parse(readFileSync(\"config.json\", \"utf-8\"));\n4: start(config);",
+    "label": true
+  },
+  {
+    "id": "rfp-neg-01",
+    "finding": "Off-by-one: the loop reads one element past the end of the array.",
+    "code": "10: function sum(items) {\n11:   let total = 0;\n12:   for (let i = 0; i < items.length; i++) {\n13:     total += items[i];\n14:   }\n15:   return total;\n16: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-02",
+    "finding": "The promise returned by saveFile is not awaited, so errors are lost.",
+    "code": "20: async function persist(doc) {\n21:   await saveFile(doc.path, doc.body);\n22:   return { ok: true };\n23: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-03",
+    "finding": "Possible null dereference: user can be undefined when the lookup misses.",
+    "code": "5: const user = users.find((u) => u.id === id);\n6: if (!user) return \"Hello, guest\";\n7: return `Hello, ${user.name}`;",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-04",
+    "finding": "The event listener is never removed, which leaks handlers.",
+    "code": "30: useEffect(() => {\n31:   window.addEventListener(\"resize\", onResize);\n32:   return () => window.removeEventListener(\"resize\", onResize);\n33: }, []);",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-05",
+    "finding": "The comparison uses assignment instead of equality, so the branch always runs.",
+    "code": "44: if (status === \"done\") {\n45:   markComplete(task);\n46: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-06",
+    "finding": "The file handle is never closed when parsing throws.",
+    "code": "8: def load(path):\n9:     with open(path) as f:\n10:         return json.load(f)",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-07",
+    "finding": "The catch block swallows the error silently.",
+    "code": "60: try {\n61:   await syncAll();\n62: } catch (e) {\n63:   log.error(\"sync failed\", e);\n64:   throw e;\n65: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-08",
+    "finding": "Array.sort is called without a comparator on numbers.",
+    "code": "3: const sizes = [9, 10, 2, 33];\n4: sizes.sort((a, b) => a - b);\n5: console.log(sizes[0]);",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-09",
+    "finding": "The function mutates its input argument instead of returning a copy.",
+    "code": "12: export function withDefaults(opts) {\n13:   return { retries: 3, timeout: 5000, ...opts };\n14: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-10",
+    "finding": "SQL injection: the query concatenates user input.",
+    "code": "18: const rows = await db.query(\n19:   \"SELECT * FROM orders WHERE customer_id = $1\",\n20:   [customerId],\n21: );",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-11",
+    "finding": "The setTimeout callback captures the loop variable, so every callback logs the final value.",
+    "code": "1: for (let i = 0; i < 3; i++) {\n2:   setTimeout(() => console.log(i), 10);\n3: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-12",
+    "finding": "Division by zero is possible when the list is empty.",
+    "code": "40: function mean(xs) {\n41:   if (xs.length === 0) return 0;\n42:   const total = xs.reduce((a, b) => a + b, 0);\n43:   return total / xs.length;\n44: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-13",
+    "finding": "The recursive function has no base case and will overflow the stack.",
+    "code": "50: function depth(node) {\n51:   if (!node) return 0;\n52:   return 1 + Math.max(depth(node.left), depth(node.right));\n53: }",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-14",
+    "finding": "Unused import: path is imported but never used.",
+    "code": "1: import { join } from \"path\";\n2: \n3: export const logFile = (dir) => join(dir, \"log.jsonl\");",
+    "label": false
+  },
+  {
+    "id": "rfp-neg-15",
+    "finding": "The map callback does not return a value, so the result is an array of undefined.",
+    "code": "9: const names = users.map((u) => u.name.trim());\n10: render(names);",
+    "label": false
+  }
+]

@@ -1,12 +1,14 @@
 import { existsSync } from "fs";
-import { run, commandExists } from "../lib/exec.js";
+import { run, runWithStderr, commandExists } from "../lib/exec.js";
 import {
   checkAgyVersion,
   checkCodexVersion,
   checkDevinVersion,
   checkOmpVersion,
+  type Host,
 } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
+import { CliError, runHuman, runJson } from "../lib/output.js";
 import { agyPluginDir, devStatePath } from "../lib/paths.js";
 import {
   deployAgyPlugin,
@@ -28,10 +30,12 @@ import {
   isMarketplaceRegistered,
   isPluginDisabled,
   enableMarketplaceAutoUpdate,
+  MODS_PLUGIN_ID,
 } from "../lib/plugin-state.js";
 import {
   resolveHostFlags,
   resolveScope,
+  type PluginScope,
   type ScopeFlags,
 } from "../lib/prompt-utils.js";
 import { ensureShellCompletion } from "../lib/shell-completion.js";
@@ -39,21 +43,51 @@ import { getInstalledVersion } from "../lib/statusline.js";
 import { getLatestVersion, semverCompare } from "./update.js";
 import chalk from "chalk";
 
-export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
-  const { host } = resolveHostFlags(opts);
-  if (host === "codex") {
-    await installCodexCommand();
-    return;
-  } else if (host === "omp") {
-    await installOmpCommand(opts);
-    return;
-  } else if (host === "agy") {
-    await installAgyCommand();
-    return;
-  } else if (host === "devin") {
-    await installDevinCommand();
+export interface InstallOptions extends ScopeFlags {
+  yes?: boolean;
+  json?: boolean;
+  mods?: boolean;
+}
+
+export interface InstallResult {
+  host: Host;
+  scope: PluginScope | null;
+  pluginVersion: string | null;
+  alreadyInstalled: boolean;
+  disabled: boolean;
+  /** coding-friend-mods install (`--mods`); null when the flag was not passed. */
+  mods: { installed: boolean; scope: PluginScope } | null;
+}
+
+export async function installCommand(opts: InstallOptions = {}): Promise<void> {
+  if (opts.json) {
+    await runJson(() => runInstall(opts));
     return;
   }
+  await runHuman(() => runInstall(opts));
+}
+
+/**
+ * Install body shared by human and JSON mode. Expected failures throw
+ * CliError (after logging); returns null only for the human dev-mode skip.
+ */
+export async function runInstall(
+  opts: InstallOptions = {},
+): Promise<InstallResult | null> {
+  const host = resolveInstallHost(opts);
+  if (opts.mods && host !== "claude") {
+    log.error(
+      "coding-friend-mods is Claude Code only. Drop --mods for this host.",
+    );
+    throw new CliError(
+      "INVALID_ARGS",
+      "coding-friend-mods is Claude Code only",
+    );
+  }
+  if (host === "codex") return installCodexCommand();
+  if (host === "omp") return installOmpCommand(opts);
+  if (host === "agy") return installAgyCommand();
+  if (host === "devin") return installDevinCommand();
 
   printBanner("✨ Coding Friend Install ✨");
   console.log();
@@ -63,8 +97,7 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     log.error(
       "Claude CLI not found. Install it first: https://docs.anthropic.com/en/docs/claude-code/getting-started",
     );
-    process.exit(1);
-    return;
+    throw new CliError("NOT_FOUND", "Claude CLI not found");
   }
 
   // Step 2: Check dev mode (installing marketplace plugin would conflict)
@@ -73,11 +106,17 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     log.dim(
       `Run ${chalk.bold("cf dev off")} first, then install. Or use ${chalk.bold("cf dev sync")} to update the dev plugin.`,
     );
-    return;
+    if (opts.json) {
+      throw new CliError(
+        "DEV_MODE_ACTIVE",
+        "Dev mode is currently active. Run cf dev off first, then install.",
+      );
+    }
+    return null;
   }
 
   // Step 3: Resolve scope
-  const scope = await resolveScope(opts);
+  const scope = await resolveInstallScope(opts);
 
   // Step 4: Check marketplace (always global — no --scope support)
   if (isMarketplaceRegistered()) {
@@ -94,7 +133,7 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
       log.error(
         "Failed to add marketplace. Try manually: claude plugin marketplace add dinhanhthi/coding-friend",
       );
-      process.exit(1);
+      throw new CliError("COMMAND_FAILED", "Failed to add marketplace");
     }
     log.success("Marketplace added.");
   }
@@ -111,6 +150,8 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   // Step 6: Install plugin at the resolved scope
   // For non-user scopes, always run install (getInstalledVersion only checks global state)
   const installedVersion = getInstalledVersion();
+  const alreadyInstalled = !!installedVersion && scope === "user";
+  let disabled = false;
 
   if (!installedVersion || scope !== "user") {
     log.step(`Installing plugin (${chalk.cyan(scope)} scope)...`);
@@ -125,7 +166,7 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
       log.error(
         "Failed to install plugin. Try manually: claude plugin install coding-friend@coding-friend-marketplace",
       );
-      process.exit(1);
+      throw new CliError("COMMAND_FAILED", "Failed to install plugin");
     }
     log.success("Plugin installed!");
   } else {
@@ -134,7 +175,8 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     );
 
     // Check if disabled
-    if (isPluginDisabled(scope)) {
+    disabled = isPluginDisabled(scope);
+    if (disabled) {
       log.warn(
         `Plugin is installed but disabled at ${chalk.cyan(scope)} scope. Run ${chalk.bold(`cf enable --${scope}`)} to re-enable.`,
       );
@@ -156,6 +198,9 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
     }
   }
 
+  // Step 6b: Optional coding-friend-mods, always after the base plugin
+  const mods = opts.mods ? installMods(scope) : null;
+
   // Step 7: Shell completion
   ensureShellCompletion({ silent: false });
 
@@ -173,9 +218,97 @@ export async function installCommand(opts: ScopeFlags = {}): Promise<void> {
   );
   console.log();
   log.dim("Restart Claude Code (or start a new session) to use the plugin.");
+
+  return {
+    host: "claude",
+    scope,
+    pluginVersion: installedVersion ?? getInstalledVersion(),
+    alreadyInstalled,
+    disabled,
+    mods,
+  };
 }
 
-async function installCodexCommand(): Promise<void> {
+/** Install coding-friend-mods at the base plugin's scope. A failure only warns. */
+function installMods(scope: PluginScope): InstallResult["mods"] {
+  log.step(`Installing coding-friend-mods (${chalk.cyan(scope)} scope)...`);
+  const result = runWithStderr("claude", [
+    "plugin",
+    "install",
+    MODS_PLUGIN_ID,
+    "--scope",
+    scope,
+  ]);
+  if (result.exitCode !== 0) {
+    const detail =
+      (result.stderr || result.stdout).split("\n")[0].trim() ||
+      `exit code ${result.exitCode}`;
+    log.warn(
+      `Failed to install coding-friend-mods (${detail}). Try manually: claude plugin install ${MODS_PLUGIN_ID} --scope ${scope}`,
+    );
+    return { installed: false, scope };
+  }
+  log.success("coding-friend-mods installed!");
+  return { installed: true, scope };
+}
+
+/** Host flags → host. A resolution error (thrown) becomes INVALID_ARGS. */
+function resolveInstallHost(opts: InstallOptions): Host {
+  try {
+    return resolveHostFlags(opts).host;
+  } catch (err) {
+    throw new CliError(
+      "INVALID_ARGS",
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}
+
+/**
+ * JSON mode never calls resolveScope (it prompts or process.exits): flags are
+ * resolved inline. Human mode keeps resolveScope unless --yes picks "user".
+ */
+async function resolveInstallScope(opts: InstallOptions): Promise<PluginScope> {
+  const scopes = new Set<PluginScope>();
+  if (opts.user || opts.global) scopes.add("user");
+  if (opts.project) scopes.add("project");
+  if (opts.local) scopes.add("local");
+
+  if (opts.json) {
+    if (scopes.size > 1) {
+      throw new CliError(
+        "INVALID_ARGS",
+        "Only one scope flag can be used at a time: --user, --global, --project, or --local",
+      );
+    }
+    if (scopes.size === 1) return [...scopes][0];
+    if (opts.yes) return "user";
+    throw new CliError(
+      "INTERACTIVE_REQUIRED",
+      "--json needs --yes or a scope flag (--user, --global, --project, --local)",
+    );
+  }
+
+  if (opts.yes && scopes.size === 0) return "user";
+  return resolveScope(opts);
+}
+
+function hostResult(
+  host: Host,
+  overrides: Partial<InstallResult> = {},
+): InstallResult {
+  return {
+    host,
+    scope: null,
+    pluginVersion: null,
+    alreadyInstalled: false,
+    disabled: false,
+    mods: null,
+    ...overrides,
+  };
+}
+
+async function installCodexCommand(): Promise<InstallResult> {
   printBanner("✨ Coding Friend Codex Install ✨");
   console.log();
 
@@ -183,8 +316,7 @@ async function installCodexCommand(): Promise<void> {
     log.error(
       "Codex CLI not found. Install it first: https://developers.openai.com/codex",
     );
-    process.exit(1);
-    return;
+    throw new CliError("NOT_FOUND", "Codex CLI not found");
   }
 
   const version = checkCodexVersion();
@@ -193,8 +325,7 @@ async function installCodexCommand(): Promise<void> {
       `Codex CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires Codex CLI >= ${version.min}.`,
     );
     log.dim("Upgrade Codex, then rerun: cf install --agent codex");
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", "Codex CLI version is unsupported");
   }
 
   if (isCodexMarketplaceRegistered()) {
@@ -211,8 +342,7 @@ async function installCodexCommand(): Promise<void> {
       log.error(
         "Failed to add Codex marketplace. Try manually: codex plugin marketplace add dinhanhthi/coding-friend",
       );
-      process.exit(1);
-      return;
+      throw new CliError("COMMAND_FAILED", "Failed to add Codex marketplace");
     }
     log.success("Codex marketplace registered.");
   }
@@ -239,12 +369,15 @@ async function installCodexCommand(): Promise<void> {
     "Codex CLI v0.130.0 exposes marketplace registration but not scriptable plugin install.",
   );
   log.dim("Run cf update --agent codex for on-demand plugin updates.");
+  return hostResult("codex");
 }
 
 const OMP_INSTALL_URL = "https://omp.sh/";
 const OMP_INSTALL_HINT = `curl -fsSL ${OMP_INSTALL_URL}install | sh`;
 
-async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
+async function installOmpCommand(
+  opts: ScopeFlags = {},
+): Promise<InstallResult> {
   printBanner("✨ Coding Friend omp Install (beta) ✨");
   console.log();
 
@@ -252,8 +385,7 @@ async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
     log.error(
       `omp CLI not found. Install it first: ${OMP_INSTALL_URL} (${OMP_INSTALL_HINT})`,
     );
-    process.exit(1);
-    return;
+    throw new CliError("NOT_FOUND", "omp CLI not found");
   }
 
   const version = checkOmpVersion();
@@ -261,8 +393,7 @@ async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
     log.error(
       `omp CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires omp CLI >= ${version.min}. Install or upgrade: ${OMP_INSTALL_URL} (${OMP_INSTALL_HINT})`,
     );
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", "omp CLI version is unsupported");
   }
 
   const ompScope = opts.project || opts.local ? "project" : "user";
@@ -279,18 +410,18 @@ async function installOmpCommand(opts: ScopeFlags = {}): Promise<void> {
   log.success("Installed for omp (beta).");
   log.dim("Skills inherit from ~/.claude — no extra skill install needed.");
   log.dim("Restart omp (or start a new session) to pick up agents and MCP.");
+  return hostResult("omp", { scope: ompScope });
 }
 
 const AGY_INSTALL_URL = "https://antigravity.google/";
 
-async function installAgyCommand(): Promise<void> {
+async function installAgyCommand(): Promise<InstallResult> {
   printBanner("✨ Coding Friend Antigravity Install (beta) ✨");
   console.log();
 
   if (!commandExists("agy")) {
     log.error(`agy CLI not found. Install it first: ${AGY_INSTALL_URL}`);
-    process.exit(1);
-    return;
+    throw new CliError("NOT_FOUND", "agy CLI not found");
   }
 
   const version = checkAgyVersion();
@@ -298,8 +429,7 @@ async function installAgyCommand(): Promise<void> {
     log.error(
       `agy CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires agy CLI >= ${version.min}. Install or upgrade: ${AGY_INSTALL_URL}`,
     );
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", "agy CLI version is unsupported");
   }
 
   try {
@@ -310,8 +440,7 @@ async function installAgyCommand(): Promise<void> {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     log.error(detail);
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", detail);
   }
 
   registerMemoryMcp("agy");
@@ -333,18 +462,18 @@ async function installAgyCommand(): Promise<void> {
     "Restart Antigravity (or start a new `agy` session) to pick up the plugin.",
   );
   log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
+  return hostResult("agy");
 }
 
 const DEVIN_INSTALL_URL = "https://devin.ai/";
 
-async function installDevinCommand(): Promise<void> {
+async function installDevinCommand(): Promise<InstallResult> {
   printBanner("✨ Coding Friend Devin Install (beta) ✨");
   console.log();
 
   if (!commandExists("devin")) {
     log.error(`Devin CLI not found. Install it first: ${DEVIN_INSTALL_URL}`);
-    process.exit(1);
-    return;
+    throw new CliError("NOT_FOUND", "Devin CLI not found");
   }
 
   const version = checkDevinVersion();
@@ -352,15 +481,16 @@ async function installDevinCommand(): Promise<void> {
     log.error(
       `Devin CLI ${version.actual ? `v${version.actual}` : "version"} is unsupported. Coding Friend requires Devin CLI >= ${version.min}. Upgrade Devin, then rerun: cf install --devin`,
     );
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", "Devin CLI version is unsupported");
   }
 
+  let alreadyInstalled: boolean;
   try {
     // reconcileDevinPlugin checks `devin auth status` and that the target is
     // resolvable BEFORE touching any existing install.
     const action = await reconcileDevinPlugin({ allowReplace: true });
-    if (action === "unchanged") {
+    alreadyInstalled = action === "unchanged";
+    if (alreadyInstalled) {
       log.success("Devin plugin already installed (live --local link).");
     } else {
       log.success("Devin plugin installed.");
@@ -368,8 +498,7 @@ async function installDevinCommand(): Promise<void> {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     log.error(detail);
-    process.exit(1);
-    return;
+    throw new CliError("COMMAND_FAILED", detail);
   }
 
   // The memory MCP ships inside plugin-devin/.mcp.json — this only confirms
@@ -382,4 +511,5 @@ async function installDevinCommand(): Promise<void> {
   log.dim(
     "Start a new Devin session to pick up the plugin, then try /coding-friend:cf-plan.",
   );
+  return hostResult("devin", { alreadyInstalled });
 }

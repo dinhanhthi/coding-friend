@@ -10,7 +10,7 @@ description: >
   (use $cf-ask), and formatting-only changes. --fix applies Critical/Important
   findings, --commit also commits (config: review.fix, review.commit).
 created: 2026-02-17
-updated: 2026-10-28
+updated: 2026-11-05
 ---
 
 # $cf-review
@@ -193,6 +193,22 @@ Skip when `out=true`. Show `✅ Code Review Complete` only when the Summary says
 > Mode: **[TRIVIAL|QUICK|STANDARD|DEEP]** · [No blocking issues found. `$cf-commit` when ready. | **[N] critical issue(s)** — resolve before commit. Fix now? | **Review status: [PARTIAL|FAILED]** — [missing coverage]. Re-run `$cf-review` on that scope before you commit.]
 
 `fix=true` → always go to Step 11 after the banner, whatever the status (Step 11 holds the gate); replace `Fix now?` with `Applying fixes (--fix)…` instead of waiting, and when `commit=true` and clean first run the Step 11.3 `review.commit` skip check on the latest Step 2 `files.z` (same `committed`-skipping path list): it would skip → keep `` `$cf-commit` when ready. ``; otherwise replace it with `Committing (--commit)…`, or `Committing (review.commit)…` when config set `commit`.
+
+### Step 10.5: Shadow false-positive log (only when decision is enabled)
+
+Runs right after Step 10, before Step 11, whatever `fix` is. Skip when `out=true` or the mode is TRIVIAL. Otherwise check the opt-in:
+
+```bash
+bash "${PLUGIN_ROOT}/skills/cf-review/scripts/review-fp-shadow.sh" --check
+```
+
+`SHADOW=off` → do nothing more, write no file. `SHADOW=on` → write the merged report, verbatim as Step 10 displayed it, to `/tmp/coding-friend/review/<run-id>.report.md` (next to the snapshot dir, never inside it), then run this and ignore its output:
+
+```bash
+bash "${PLUGIN_ROOT}/skills/cf-review/scripts/review-fp-shadow.sh" --snapshot-dir /tmp/coding-friend/review/<run-id> --report /tmp/coding-friend/review/<run-id>.report.md
+```
+
+This step only logs numbers for `cf decide log` (opt-in via global config `decision.reviewShadow: true`). It never changes the report, the `Review status:` line, the Step 11 gate, the fix loop or the commit, never touches how security findings are handled, and its result is never shown as a finding.
 
 ### Step 11: Apply fixes and commit (only when fix=true)
 

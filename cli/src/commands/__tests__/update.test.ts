@@ -47,7 +47,9 @@ vi.mock("../../lib/host.js", async (importOriginal) => {
 });
 
 vi.mock("../../lib/plugin-state.js", () => ({
+  MODS_PLUGIN_ID: "coding-friend-mods@coding-friend-marketplace",
   isPluginInstalled: vi.fn(() => false),
+  isModsInstalled: vi.fn(() => false),
 }));
 
 vi.mock("../../lib/omp-config.js", () => ({
@@ -91,7 +93,7 @@ import {
   isCodexMarketplaceLocal,
 } from "../../lib/codex-config.js";
 import { detectHostsAvailable } from "../../lib/host.js";
-import { isPluginInstalled } from "../../lib/plugin-state.js";
+import { isModsInstalled, isPluginInstalled } from "../../lib/plugin-state.js";
 import {
   deployAgyPlugin,
   isAgyPluginInstalled,
@@ -130,6 +132,7 @@ const mockIsCodexMarketplaceRegistered = vi.mocked(
 const mockIsCodexMarketplaceLocal = vi.mocked(isCodexMarketplaceLocal);
 const mockDetectHostsAvailable = vi.mocked(detectHostsAvailable);
 const mockIsPluginInstalled = vi.mocked(isPluginInstalled);
+const mockIsModsInstalled = vi.mocked(isModsInstalled);
 const mockDeployOmpAgents = vi.mocked(deployOmpAgents);
 const mockWriteOmpExtensionEntry = vi.mocked(writeOmpExtensionEntry);
 const mockIsOmpAgentInstalled = vi.mocked(isOmpAgentInstalled);
@@ -156,6 +159,7 @@ beforeEach(() => {
   mockResolveHostFlags.mockReturnValue({ host: "claude" });
   mockDetectHostsAvailable.mockReturnValue([]);
   mockIsPluginInstalled.mockReturnValue(false);
+  mockIsModsInstalled.mockReturnValue(false);
   mockIsCodexMarketplaceRegistered.mockReturnValue(false);
   mockIsOmpAgentInstalled.mockReturnValue(false);
   mockIsAgyPluginInstalled.mockReturnValue(false);
@@ -511,6 +515,102 @@ describe("updateCommand — plugin update verification", () => {
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("Plugin updated to");
+    // mods not installed → no second `claude plugin update`
+    expect(mockRunWithStderr).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates coding-friend-mods after the base plugin, same scope, and reports it in JSON", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial check
+      .mockReturnValueOnce("0.7.2"); // verify after update
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const stdoutSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+
+    await updateCommand({ plugin: true, yes: true, json: true });
+
+    const claudeCalls = mockRunWithStderr.mock.calls.map((c) => c[1]);
+    expect(claudeCalls).toEqual([
+      [
+        "plugin",
+        "update",
+        "coding-friend@coding-friend-marketplace",
+        "--scope",
+        "user",
+      ],
+      [
+        "plugin",
+        "update",
+        "coding-friend-mods@coding-friend-marketplace",
+        "--scope",
+        "user",
+      ],
+    ]);
+    const env = JSON.parse(
+      stdoutSpy.mock.calls.map((c) => String(c[0])).join(""),
+    );
+    expect(env.data.mods).toBe("updated");
+  });
+
+  it("updates coding-friend-mods even when the base plugin is already current", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.2");
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+
+    await updateCommand({ plugin: true });
+
+    expect(mockRunWithStderr.mock.calls).toEqual([
+      [
+        "claude",
+        [
+          "plugin",
+          "update",
+          "coding-friend-mods@coding-friend-marketplace",
+          "--scope",
+          "user",
+        ],
+      ],
+    ]);
+  });
+
+  it("only warns when the coding-friend-mods update fails", async () => {
+    mockIsModsInstalled.mockReturnValue(true);
+    mockGetInstalledVersion
+      .mockReturnValueOnce("0.7.0") // initial check
+      .mockReturnValueOnce("0.7.2"); // verify after update
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm") return "1.0.0";
+      return null;
+    });
+    mockRunWithStderr
+      .mockReturnValueOnce({ stdout: "", stderr: "", exitCode: 0 })
+      .mockReturnValueOnce({ stdout: "", stderr: "boom", exitCode: 1 });
+    const prevExitCode = process.exitCode;
+
+    const consoleSpy = vi.spyOn(console, "log");
+    await updateCommand({ plugin: true });
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("Plugin updated to");
+    expect(output).toContain("coding-friend-mods update failed");
+    expect(process.exitCode).toBe(prevExitCode);
   });
 
   it("falls back to plugin install when update succeeds but version unchanged", async () => {
@@ -1046,5 +1146,114 @@ describe("updateCommand — local dev link guard", () => {
     await updateCommand({ cli: true });
 
     expect(mockRun).toHaveBeenCalledWith("npm", CLI_INSTALL_ARGS);
+  });
+});
+
+describe("updateCommand — --check", () => {
+  beforeEach(() => {
+    mockDetectHostsAvailable.mockReturnValue(["claude"]);
+    mockIsPluginInstalled.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.7.0");
+    mockCommandExists.mockReturnValue(true);
+    mockRun.mockImplementation((cmd, args) => {
+      if (cmd === "gh") return "v0.7.2";
+      if (cmd === "npm" && args?.[0] === "view") return "2.0.0";
+      return null;
+    });
+  });
+
+  function captureStdout(): () => string {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    return () => spy.mock.calls.map((c) => String(c[0])).join("");
+  }
+
+  it("is read-only: no install, no claude plugin call, no scope or host resolution", async () => {
+    await updateCommand({ check: true, project: true });
+
+    expect(mockRun).not.toHaveBeenCalledWith(
+      "npm",
+      expect.arrayContaining(["install"]),
+    );
+    expect(mockRun).not.toHaveBeenCalledWith("claude", expect.anything());
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+    expect(mockResolveScope).not.toHaveBeenCalled();
+    expect(mockResolveHostFlags).not.toHaveBeenCalled();
+    expect(mockRemoveMemoryMcpEntry).not.toHaveBeenCalled();
+  });
+
+  it("prints CLI and host versions in human mode", async () => {
+    const consoleSpy = vi.spyOn(console, "log");
+
+    await updateCommand({ check: true });
+
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toMatch(/CLI\s+1\.0\.0 → 2\.0\.0/);
+    expect(output).toMatch(/Plugin\s+latest 0\.7\.2/);
+    expect(output).toMatch(/Claude\s+0\.7\.0 → 0\.7\.2/);
+  });
+
+  it("writes one ok envelope with the update-check shape for --check --json", async () => {
+    const stdout = captureStdout();
+
+    await updateCommand({ check: true, json: true });
+
+    const env = JSON.parse(stdout());
+    expect(env.ok).toBe(true);
+    expect(env.data.cli).toMatchObject({
+      current: "1.0.0",
+      latest: "2.0.0",
+      updateAvailable: true,
+    });
+    expect(env.data.plugin).toEqual({ latest: "0.7.2" });
+    expect(env.data.hosts[0]).toEqual({
+      host: "claude",
+      installed: true,
+      current: "0.7.0",
+      updateAvailable: true,
+    });
+    expect(env.data).toHaveProperty("statusline");
+    expect(mockRunWithStderr).not.toHaveBeenCalled();
+  });
+
+  it("rejects --json without --check or --yes with an INVALID_ARGS envelope", async () => {
+    const stdout = captureStdout();
+    const prevExitCode = process.exitCode;
+
+    try {
+      await updateCommand({ json: true });
+
+      const env = JSON.parse(stdout());
+      expect(env.ok).toBe(false);
+      expect(env.error.code).toBe("INVALID_ARGS");
+      expect(process.exitCode).toBe(1);
+      expect(mockRunWithStderr).not.toHaveBeenCalled();
+      expect(mockRun).not.toHaveBeenCalled();
+    } finally {
+      process.exitCode = prevExitCode;
+    }
+  });
+
+  it("runs the update for --yes --json and writes one envelope with performed hosts and the after check", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+    const stdout = captureStdout();
+
+    await updateCommand({ yes: true, json: true });
+
+    const lines = stdout().split("\n").filter(Boolean);
+    expect(lines).toHaveLength(1);
+    const env = JSON.parse(lines[0]);
+    expect(env.ok).toBe(true);
+    expect(env.data.performed).toEqual(["claude"]);
+    expect(env.data.after.hosts[0]).toMatchObject({
+      host: "claude",
+      installed: true,
+    });
+    expect(mockRunWithStderr).toHaveBeenCalledWith(
+      "claude",
+      expect.arrayContaining(["plugin", "update"]),
+    );
   });
 });

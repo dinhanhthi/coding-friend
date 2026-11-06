@@ -1,5 +1,7 @@
+import { lstatSync, readdirSync, realpathSync } from "fs";
 import { homedir } from "os";
 import { resolve, join, isAbsolute } from "path";
+import { CliError } from "./output.js";
 
 const CODEX_MARKETPLACE_NAME = "coding-friend-marketplace";
 const CODEX_PLUGIN_NAME = "coding-friend";
@@ -119,6 +121,32 @@ export function globalConfigDir(): string {
   return join(homedir(), ".coding-friend");
 }
 
+/** Project registry file (CF_PROJECTS_FILE overrides ~/.coding-friend/projects.json) */
+export function projectsRegistryPath(): string {
+  return (
+    process.env.CF_PROJECTS_FILE || join(globalConfigDir(), "projects.json")
+  );
+}
+
+/** Orchestrator task store (CF_ORCHESTRATOR_DIR overrides ~/.coding-friend/orchestrator) */
+export function orchestratorDir(): string {
+  // resolve(): the runner runs with cwd = checkout, so pin a relative override.
+  return resolve(
+    process.env.CF_ORCHESTRATOR_DIR || join(globalConfigDir(), "orchestrator"),
+  );
+}
+
+/** Quota snapshot directory (CF_QUOTA_DIR overrides ~/.coding-friend/quota) */
+export function quotaDir(): string {
+  // resolve(): same reason as orchestratorDir — pin a relative override.
+  return resolve(process.env.CF_QUOTA_DIR || join(globalConfigDir(), "quota"));
+}
+
+/** Claude quota snapshot file (<quotaDir>/claude.json) */
+export function quotaSnapshotPath(): string {
+  return join(quotaDir(), "claude.json");
+}
+
 /** Memory dependencies directory (~/.coding-friend/memory) */
 export function memoryDepsDir(): string {
   return join(homedir(), ".coding-friend", "memory");
@@ -143,6 +171,87 @@ export function claudeProjectsDir(): string {
 /** Path to a specific project's session directory (~/.claude/projects/<encodedPath>) */
 export function claudeSessionDir(encodedPath: string): string {
   return join(claudeProjectsDir(), encodedPath);
+}
+
+/** Claude Code truncates project dir names longer than this and appends a hash. */
+const CLAUDE_DIR_NAME_MAX = 200;
+
+/**
+ * Claude Code's project dir name for a path: every non-alphanumeric character becomes "-".
+ * Names over 200 characters are truncated by Claude with an undocumented hash appended, so
+ * `long` names only carry the 200-character prefix (the hash is never computed here).
+ */
+export function claudeProjectDirName(path: string): {
+  name: string;
+  long: boolean;
+} {
+  const full = path.replace(/[^A-Za-z0-9]/g, "-");
+  const long = full.length > CLAUDE_DIR_NAME_MAX;
+  return { name: long ? full.slice(0, CLAUDE_DIR_NAME_MAX) : full, long };
+}
+
+/** Real directory (not a symlink) at `p`. */
+function isRealDir(p: string): boolean {
+  try {
+    return lstatSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** Existing dirs under claudeProjectsDir() whose name starts with `prefix`, sorted. */
+function claudeDirsWithPrefix(prefix: string): string[] {
+  const base = claudeProjectsDir();
+  let names: string[];
+  try {
+    names = readdirSync(base);
+  } catch {
+    return [];
+  }
+  return names
+    .filter((n) => n.startsWith(prefix))
+    .sort()
+    .map((n) => join(base, n))
+    .filter(isRealDir);
+}
+
+/**
+ * Existing Claude project dirs for a path, in order: the current naming rule (or, for long
+ * names, every dir starting with the 200-character prefix), then the legacy
+ * `encodeProjectPath` name. Symlinks are skipped.
+ */
+export function claudeProjectDirCandidates(path: string): string[] {
+  const { name, long } = claudeProjectDirName(path);
+  const found = long
+    ? claudeDirsWithPrefix(name)
+    : [join(claudeProjectsDir(), name)].filter(isRealDir);
+  const legacy = join(claudeProjectsDir(), encodeProjectPath(path));
+  if (!found.includes(legacy) && isRealDir(legacy)) found.push(legacy);
+  return found;
+}
+
+/**
+ * Claude project dir that `session load` writes into for a target path. The path is
+ * realpath'd first (Claude names dirs after the canonical getcwd()). Short names need not
+ * exist yet; long names must match an existing dir, since Claude's hash is undocumented.
+ */
+export function claudeLoadTargetDir(path: string): string {
+  let real: string;
+  try {
+    real = realpathSync(path);
+  } catch {
+    throw new CliError("NOT_FOUND", `Target path not found: ${path}`);
+  }
+  const { name, long } = claudeProjectDirName(real);
+  if (!long) return join(claudeProjectsDir(), name);
+  const [dir] = claudeDirsWithPrefix(name);
+  if (!dir) {
+    throw new CliError(
+      "INVALID_ARGS",
+      `No Claude project folder for this long path yet: open Claude once in that project, then load again (${real})`,
+    );
+  }
+  return dir;
 }
 
 /**

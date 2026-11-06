@@ -227,6 +227,7 @@ describe("uninstallCommand", () => {
       if (path === installedPluginsFile) {
         return JSON.stringify({
           "coding-friend@coding-friend-marketplace": {},
+          "coding-friend-mods@coding-friend-marketplace": {},
         });
       }
       if (path === knownMarketplacesFile) {
@@ -298,6 +299,36 @@ describe("uninstallCommand", () => {
       recursive: true,
       force: true,
     });
+
+    // Mods is removed first: before the base plugin, the marketplace and the cache
+    const runOrder = (args: string[]) => {
+      const i = mockRun.mock.calls.findIndex(
+        (c) => JSON.stringify(c[1]) === JSON.stringify(args),
+      );
+      expect(i).toBeGreaterThanOrEqual(0);
+      return mockRun.mock.invocationCallOrder[i];
+    };
+    const modsAt = runOrder([
+      "plugin",
+      "uninstall",
+      "coding-friend-mods@coding-friend-marketplace",
+    ]);
+    expect(modsAt).toBeLessThan(
+      runOrder([
+        "plugin",
+        "uninstall",
+        "coding-friend@coding-friend-marketplace",
+      ]),
+    );
+    expect(modsAt).toBeLessThan(
+      runOrder([
+        "plugin",
+        "marketplace",
+        "remove",
+        "coding-friend-marketplace",
+      ]),
+    );
+    expect(modsAt).toBeLessThan(mockRmSync.mock.invocationCallOrder[0]);
   });
 
   it("keeps global config when user declines config removal", async () => {
@@ -390,6 +421,80 @@ describe("uninstallCommand", () => {
       "coding-friend@coding-friend-marketplace",
       "--scope",
       "project",
+    ]);
+  });
+
+  it("uninstalls mods before the base plugin at the same scope", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("project");
+    mockReadFileSync.mockImplementation((p) => {
+      if (p.toString() === installedPluginsFile) {
+        return JSON.stringify({
+          "coding-friend@coding-friend-marketplace": {},
+          "coding-friend-mods@coding-friend-marketplace": {},
+        });
+      }
+      throw new Error("not found");
+    });
+    mockConfirm.mockResolvedValueOnce(true);
+    mockRun.mockReturnValue("ok");
+
+    await uninstallCommand({ project: true });
+
+    expect(mockRun.mock.calls.map((c) => c[1])).toEqual([
+      [
+        "plugin",
+        "uninstall",
+        "coding-friend-mods@coding-friend-marketplace",
+        "--scope",
+        "project",
+      ],
+      [
+        "plugin",
+        "uninstall",
+        "coding-friend@coding-friend-marketplace",
+        "--scope",
+        "project",
+      ],
+    ]);
+  });
+
+  it("still uninstalls the base plugin when mods uninstall fails", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockResolveScope.mockResolvedValue("local");
+    mockReadFileSync.mockImplementation((p) => {
+      if (p.toString() === installedPluginsFile) {
+        return JSON.stringify({
+          "coding-friend-mods@coding-friend-marketplace": {},
+        });
+      }
+      throw new Error("not found");
+    });
+    mockConfirm.mockResolvedValueOnce(true);
+    // Mods by id and by name both fail; the base plugin succeeds.
+    mockRun
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce(null)
+      .mockReturnValue("ok");
+
+    await uninstallCommand({ local: true });
+
+    expect(mockRun.mock.calls.map((c) => c[1])).toEqual([
+      [
+        "plugin",
+        "uninstall",
+        "coding-friend-mods@coding-friend-marketplace",
+        "--scope",
+        "local",
+      ],
+      ["plugin", "uninstall", "coding-friend-mods", "--scope", "local"],
+      [
+        "plugin",
+        "uninstall",
+        "coding-friend@coding-friend-marketplace",
+        "--scope",
+        "local",
+      ],
     ]);
   });
 
