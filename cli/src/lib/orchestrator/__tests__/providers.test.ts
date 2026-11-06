@@ -12,6 +12,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  linkSync,
   readdirSync,
   readFileSync,
   realpathSync,
@@ -1403,6 +1404,12 @@ describe("opencode worker (C3a)", () => {
         runGit(join(ck, "nested"), "init", "-q");
         expect(check()?.message).toContain("nested repository");
         rmSync(join(ck, "nested"), { recursive: true });
+        expect(check()).toBeUndefined();
+
+        // A hard link shares an outside file's inode.
+        linkSync(join(base, "bait.txt"), join(ck, "hard.txt"));
+        expect(check()?.message).toContain("hard link");
+        rmSync(join(ck, "hard.txt"));
         expect(check()).toBeUndefined();
 
         // An existing checkout git cannot list is refused.

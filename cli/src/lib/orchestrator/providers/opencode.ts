@@ -183,6 +183,11 @@ function symlinkRefusal(checkout: string): string | undefined {
   const env: NodeJS.ProcessEnv = {
     GIT_CONFIG_NOSYSTEM: "1",
     GIT_CEILING_DIRECTORIES: dirname(root),
+    // Never fetch, prompt, take locks or follow replace refs.
+    GIT_NO_LAZY_FETCH: "1",
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_TERMINAL_PROMPT: "0",
+    GIT_OPTIONAL_LOCKS: "0",
   };
   for (const k of ["PATH", "HOME"]) {
     if (process.env[k] !== undefined) env[k] = process.env[k];
@@ -196,6 +201,12 @@ function symlinkRefusal(checkout: string): string | undefined {
         "core.fsmonitor=false",
         "-c",
         "core.untrackedCache=false",
+        "-c",
+        "core.splitIndex=false",
+        "-c",
+        "core.sparseCheckout=false",
+        "-c",
+        "protocol.allow=never",
         "-C",
         root,
         // A planted core.worktree must not move the listing elsewhere.
@@ -235,6 +246,11 @@ function symlinkRefusal(checkout: string): string | undefined {
     // cannot be checked.
     if (st.isDirectory()) {
       return `opencode refuses the checkout: submodule, nested repository or directory ${JSON.stringify(rel)} cannot be checked`;
+    }
+    // A hard link shares the inode of a file that may be outside the
+    // checkout or denied; a clone never makes one, so refuse it.
+    if (st.isFile() && st.nlink > 1) {
+      return `opencode refuses the checkout: ${JSON.stringify(rel)} is a hard link, which cannot be checked`;
     }
     if (!st.isSymbolicLink()) continue;
     try {
