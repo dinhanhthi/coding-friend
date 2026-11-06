@@ -8,7 +8,10 @@ const path = require("path");
 const SCRIPT = path.resolve(__dirname, "../privacy-block.agy.sh");
 const PLUGIN_ROOT = path.resolve(__dirname, "../..");
 
-function runHook(payload, { config, bashBin = "bash", pathPrefix } = {}) {
+function runHook(
+  payload,
+  { config, bashBin = "bash", pathPrefix, pathOverride } = {},
+) {
   const tempProject = fs.mkdtempSync(
     path.join(os.tmpdir(), "cf-privacy-block-agy-"),
   );
@@ -38,6 +41,7 @@ function runHook(payload, { config, bashBin = "bash", pathPrefix } = {}) {
         ...process.env,
         CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
         ...(pathPrefix ? { PATH: `${pathPrefix}:${process.env.PATH}` } : {}),
+        ...(pathOverride ? { PATH: pathOverride } : {}),
       },
     });
     return { status: 0, stdout, json: JSON.parse(stdout.trim()) };
@@ -653,6 +657,40 @@ describe("privacy-block.agy.sh", () => {
       expect(result.status).toBe(0);
       expect(result.json.decision).toBe("deny");
       expect(result.json.reason).toContain("could not check the command");
+    } finally {
+      fs.rmSync(shim, { recursive: true, force: true });
+    }
+  });
+
+  // Without a working node the payload cannot be parsed, so nothing is
+  // checked: every matched tool is denied instead of allowed.
+  const NO_NODE_PATH = "/usr/bin:/bin:/usr/sbin:/sbin";
+  const systemNode = NO_NODE_PATH.split(":").some((dir) =>
+    fs.existsSync(path.join(dir, "node")),
+  );
+  it.skipIf(systemNode)("denies when node is missing (fail closed)", () => {
+    const result = runHook(
+      { toolCall: { name: "view_file", args: { AbsolutePath: "/x/.env" } } },
+      { bashBin: "/bin/bash", pathOverride: NO_NODE_PATH },
+    );
+    expect(result.status).toBe(0);
+    expect(result.json.decision).toBe("deny");
+    expect(result.json.reason).toContain("needs node");
+  });
+
+  it("denies when the node on PATH does not run (fail closed)", () => {
+    const shim = fs.mkdtempSync(path.join(os.tmpdir(), "cf-privacy-node-"));
+    try {
+      fs.writeFileSync(path.join(shim, "node"), "#!/bin/sh\nexit 1\n", {
+        mode: 0o755,
+      });
+      const result = runHook(
+        { toolCall: { name: "run_command", args: { CommandLine: "cat .env" } } },
+        { bashBin: "/bin/bash", pathPrefix: shim },
+      );
+      expect(result.status).toBe(0);
+      expect(result.json.decision).toBe("deny");
+      expect(result.json.reason).toContain("needs node");
     } finally {
       fs.rmSync(shim, { recursive: true, force: true });
     }

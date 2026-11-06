@@ -4,7 +4,8 @@
 # Same patterns as privacy-block.sh. Speaks AGY's hook contract:
 #   stdin  – JSON with camelCase toolCall.args
 #   stdout – {"decision":"allow"} or {"decision":"deny","reason":"..."}
-#   Exit 0 always (including deny). Malformed JSON fails open.
+#   Exit 0 always (including deny). Malformed JSON fails open; a missing
+#   node fails closed (every matched tool is denied).
 #
 # Configuration:
 #   "privacyBlock": false in .coding-friend/config.json disables the hook.
@@ -22,6 +23,19 @@ source "$PLUGIN_ROOT/lib/cf-paths.sh"
 # Hook cwd is the plugin dir. Read payload first, cd to workspacePaths[0],
 # then resolve project config (privacyBlock / .coding-friend/).
 agy_read_payload
+
+# Without a working node the payload cannot be read (agy-hook-io.sh parses it
+# with node), so nothing would be checked: deny every tool the matcher sends
+# here (all of them read or write files). `node -e 0` also catches a node on
+# PATH that does not run (a version-manager shim, a broken install). This runs
+# before the config lookup: without node the workspace is unknown, so the
+# project's privacyBlock: false cannot be read, and a config found from the
+# hook's cwd must not turn it off. The JSON is a literal: agy_emit_deny needs
+# node too. The payload is read first so the caller's write never breaks.
+if ! node -e 0 >/dev/null 2>&1; then
+  printf '%s\n' '{"decision":"deny","reason":"privacy-block needs node to check file and command tools on Antigravity. Install node: without it the project config cannot be read."}'
+  exit 0
+fi
 
 WS="$(agy_field 'workspacePaths[0]' || true)"
 WS="${WS//$'\n'/}"
