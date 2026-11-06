@@ -447,6 +447,10 @@ describe("classifyByRules — block (deny)", () => {
     "rm -rf $HOME",
     "rm -rf ${HOME}",
     "rm -rf ~user/x",
+    'rm -rf "/"',
+    "rm -rf \\/etc",
+    'rm -rf "~"/x',
+    'rm -rf "$HOME"',
   ])("denies Bash %s", (command) => {
     expect(classifyByRules("Bash", { command })).toBe("deny");
   });
@@ -616,6 +620,23 @@ describe("classifyByRules — rm within project directory (allow)", () => {
     "cd / && rm -rf etc",
     "cd; rm -rf x",
   ])("does NOT allow %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  // The shell strips quotes and backslashes, so "/etc" is /etc, not a project
+  // folder named "/etc".
+  it.each([
+    'rm -rf "/etc"',
+    "rm -rf '/etc'",
+    "rm -rf '..'",
+    'rm -rf ".."',
+    "rm -rf \\..",
+    "rm -rf \\/etc",
+    'rm -rf build && rm -rf "/etc"',
+    // Compound path: not caught by the deny row, only by the quote guard.
+    'ls && rm -rf ".."',
+    'ls | rm -rf ".."',
+  ])("does NOT allow quoted or escaped rm target %s", (command) => {
     expect(classifyByRules("Bash", { command })).not.toBe("allow");
   });
 

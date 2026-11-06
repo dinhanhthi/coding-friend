@@ -80,12 +80,15 @@ function isInProjectDir(filePath, projectDir) {
  * the project, and neither the home folder nor one of its parents (the project
  * dir can be the home folder, e.g. a Codex session started from ~). A raw
  * path starting with ~ or $ is never safe, so `rm -rf ~/*` reaches the deny
- * patterns even when the project dir is the home folder.
+ * patterns even when the project dir is the home folder. A raw path with a
+ * quote or backslash is never safe either: the shell strips them, so "/etc"
+ * is /etc, not a project folder named "/etc".
  * @param {string} filePath
  * @param {string} [projectDir]
  * @returns {boolean}
  */
 function isSafeRmTarget(filePath, projectDir) {
+  if (/["'\\]/.test(filePath)) return false;
   if (/^[~$]/.test(filePath)) return false;
   const r = resolveProjectPath(filePath, projectDir);
   if (r === null || !r.resolved.startsWith(r.root + path.sep)) return false;
@@ -735,8 +738,8 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
  * Each is a regex tested against the full command.
  */
 const BASH_DENY_PATTERNS = [
-  /\brm\s+(-\w*\s+)*-rf\s+[/~]/, // rm -rf / or ~ or $HOME
-  /\brm\s+(-\w*\s+)*-rf\s+\$\{?HOME\b/,
+  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*[/~]/, // rm -rf / or ~ (also quoted or escaped)
+  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*\$\{?HOME\b/,
   /\bgit\s+push\s+(.*\s)?--force(?!-)/, // git push --force (not --force-with-lease)
   /\bgit\s+push\s+(.*\s)?-f\b/, // git push -f (short flag)
   /\bgit\s+reset\s+--hard\b/,
