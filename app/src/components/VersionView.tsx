@@ -6,6 +6,8 @@ import { describeResolvedCf } from "@/components/CliGate";
 import { Section } from "@/components/ProjectDetail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { READING, SCROLL, VIEW } from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -62,108 +64,101 @@ export function VersionView({
   const checked = check.status === "ok" && !check.refreshing;
 
   return (
-    <article
-      aria-labelledby="version-title"
-      className="mx-auto flex max-w-3xl flex-col gap-8 px-8 py-7"
-    >
-      <header className="min-w-0">
-        <h2 id="version-title" className="text-lg font-semibold tracking-tight">
-          Version
-        </h2>
-        {cli.cf && (
-          <p
-            className="truncate font-mono text-xs text-muted"
-            title={cli.cf.path}
-          >
-            {describeResolvedCf(cli.cf)}
-          </p>
-        )}
-      </header>
-
-      <Section title="Installed">
-        <Row label="App">
-          <Value query={app}>{(v) => v}</Value>
-        </Row>
-        <Row label="CLI">
-          <Value query={version}>{(v) => v.cli}</Value>
-        </Row>
-        {version.status === "error" ? null : version.data ? (
-          Object.entries(version.data.hosts).map(([host, h]) => (
-            <Row key={host} label={host}>
-              {h.installed ? (
-                (h.version ?? "installed, version unknown")
-              ) : (
-                <span className="text-muted">not installed</span>
-              )}
+    <article aria-labelledby="version-title" className={VIEW}>
+      <PaneHeader
+        title="Version"
+        titleId="version-title"
+        subtitle={cli.cf ? describeResolvedCf(cli.cf) : undefined}
+        subtitleMono
+      />
+      <div className={SCROLL}>
+        <div className={READING}>
+          <Section title="Installed">
+            <Row label="App">
+              <Value query={app}>{(v) => v}</Value>
             </Row>
-          ))
-        ) : (
-          <Row label="Hosts">
-            <Skeleton className="h-3.5 w-24" />
-          </Row>
-        )}
-      </Section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <h3 className="flex-1 text-xs font-medium tracking-wide text-muted uppercase">
-            Updates
-          </h3>
-          {(check.showSpinner || showCheckRefreshing) && (
-            <Spinner label="Checking for updates" />
-          )}
-        </div>
-        <UpdateRows check={check} />
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            onClick={onUpdate}
-            disabled={pending !== null || !checked || !available}
-          >
-            {phase === "updating" ? (
-              <LoaderCircle aria-hidden className="animate-spin" />
+            <Row label="CLI">
+              <Value query={version}>{(v) => v.cli}</Value>
+            </Row>
+            {version.status === "error" ? null : version.data ? (
+              Object.entries(version.data.hosts).map(([host, h]) => (
+                <Row key={host} label={host}>
+                  {h.installed ? (
+                    (h.version ?? "installed, version unknown")
+                  ) : (
+                    <span className="text-muted">not installed</span>
+                  )}
+                </Row>
+              ))
             ) : (
-              <Download aria-hidden />
+              <Row label="Hosts">
+                <Skeleton className="h-3.5 w-24" />
+              </Row>
             )}
-            {phase === "updating"
-              ? "Updating…"
-              : phase === "confirming"
-                ? "Waiting for confirmation…"
-                : checked && !available && latestKnown
-                  ? "Up to date"
-                  : "Update"}
-          </Button>
-          {phase === "updating" && (
-            <p className="text-sm text-muted">
-              Updating… this can take a few minutes.
-            </p>
-          )}
-          {pending && pending.op !== "update" && (
-            <p className="text-xs text-muted">{describePending(pending)}</p>
-          )}
-        </div>
+          </Section>
 
-        {updateError && (
-          <p role="alert" className="text-sm break-words text-danger">
-            cf update failed: {updateError}
-          </p>
-        )}
-        {result && (
-          <div className="flex flex-col gap-1 text-sm">
-            <p className="text-ink-2">
-              {result.performed.length > 0
-                ? `Updated: ${result.performed.join(", ")}.`
-                : "Nothing was updated."}
-            </p>
-            {hasUpdate(result.after) && (
-              <p className="text-xs text-muted">
-                cf update finished, but an update is still available: a step may
-                have failed. The check above is the current state.
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <h3 className="flex-1 text-xs font-medium tracking-wide text-muted uppercase">
+                Updates
+              </h3>
+              {(check.showSpinner || showCheckRefreshing) && (
+                <Spinner label="Checking for updates" />
+              )}
+            </div>
+            <UpdateRows check={check} />
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={onUpdate}
+                disabled={pending !== null || !checked || !available}
+              >
+                {phase === "updating" ? (
+                  <LoaderCircle aria-hidden className="animate-spin" />
+                ) : (
+                  <Download aria-hidden />
+                )}
+                {phase === "updating"
+                  ? "Updating…"
+                  : phase === "confirming"
+                    ? "Waiting for confirmation…"
+                    : checked && !available && latestKnown
+                      ? "Up to date"
+                      : "Update"}
+              </Button>
+              {phase === "updating" && (
+                <p className="text-sm text-muted">
+                  Updating… this can take a few minutes.
+                </p>
+              )}
+              {pending && pending.op !== "update" && (
+                <p className="text-xs text-muted">{describePending(pending)}</p>
+              )}
+            </div>
+
+            {updateError && (
+              <p role="alert" className="text-sm break-words text-danger">
+                cf update failed: {updateError}
               </p>
             )}
-          </div>
-        )}
-      </section>
+            {result && (
+              <div className="flex flex-col gap-1 text-sm">
+                <p className="text-ink-2">
+                  {result.performed.length > 0
+                    ? `Updated: ${result.performed.join(", ")}.`
+                    : "Nothing was updated."}
+                </p>
+                {hasUpdate(result.after) && (
+                  <p className="text-xs text-muted">
+                    cf update finished, but an update is still available: a step
+                    may have failed. The check above is the current state.
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
     </article>
   );
 }
@@ -199,7 +194,7 @@ function Value<T>({
 function UpdateBadge({ available }: { available: boolean | null }) {
   if (available === null) return <Badge variant="outline">unknown</Badge>;
   return available ? (
-    <Badge>update available</Badge>
+    <Badge variant="info">update available</Badge>
   ) : (
     <Badge variant="outline">up to date</Badge>
   );

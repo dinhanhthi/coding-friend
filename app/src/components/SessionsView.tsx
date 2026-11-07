@@ -6,6 +6,17 @@ import { CLOUD_LABELS } from "@/components/LearnView";
 import { Markdown } from "@/components/Markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  CONTROL,
+  DETAIL,
+  LIST,
+  SEGMENT,
+  SEGMENT_ON,
+  SEGMENTS,
+  SPLIT,
+  VIEW,
+} from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -48,13 +59,6 @@ const PROVIDERS: { id: ProviderFilter; label: string }[] = [
   { id: "codex", label: "Codex" },
   { id: "saved", label: "Saved" },
 ];
-
-const LAYOUT = "flex items-start gap-6";
-const LIST =
-  "sticky top-4 flex max-h-[calc(100vh-2rem)] w-80 shrink-0 flex-col gap-1 overflow-y-auto";
-const PANE = "flex min-w-0 flex-1 flex-col gap-4";
-const CONTROL =
-  "h-7 rounded-md border border-rule bg-paper px-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50";
 
 /** `PendingRun.key` of "Choose folder…" (a suggestion uses its path). */
 const CHOOSE_KEY = "choose";
@@ -194,24 +198,42 @@ export function SessionsView({
   };
 
   return (
-    <article
-      aria-labelledby="sessions-title"
-      className="mx-auto flex max-w-6xl flex-col gap-6 px-8 py-7"
-    >
-      <header className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <h2
-              id="sessions-title"
-              className="text-lg font-semibold tracking-tight"
+    <article aria-labelledby="sessions-title" className={VIEW}>
+      <PaneHeader
+        title="Sessions"
+        titleId="sessions-title"
+        controls={
+          <>
+            <div role="radiogroup" aria-label="Provider" className={SEGMENTS}>
+              {PROVIDERS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={provider === id}
+                  onClick={() => provider !== id && changeProvider(id)}
+                  className={cn(SEGMENT, provider === id && SEGMENT_ON)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <select
+              aria-label="Project"
+              value={project ?? ""}
+              onChange={(e) => changeProject(e.target.value || null)}
+              className={cn(CONTROL, "h-7 max-w-48 min-w-0")}
             >
-              Sessions
-            </h2>
-            <p className="text-xs text-muted">
-              Claude and Codex sessions on this Mac, and saved ones. Titles and
-              transcripts are redacted by cf.
-            </p>
-          </div>
+              <option value="">All projects</option>
+              {projects.map((p) => (
+                <option key={p.path} value={p.path}>
+                  {p.path}
+                </option>
+              ))}
+            </select>
+          </>
+        }
+        actions={
           <Button
             variant="ghost"
             size="icon-sm"
@@ -224,120 +246,100 @@ export function SessionsView({
               className={showRefreshing ? "animate-spin" : ""}
             />
           </Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div
-            role="radiogroup"
-            aria-label="Provider"
-            className="flex shrink-0 overflow-hidden rounded-md border border-rule"
-          >
-            {PROVIDERS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                role="radio"
-                aria-checked={provider === id}
-                onClick={() => provider !== id && changeProvider(id)}
-                className={cn(
-                  "h-7 px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-inset",
-                  provider === id
-                    ? "bg-accent text-accent-ink"
-                    : "bg-paper text-ink-2",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <select
-            aria-label="Project"
-            value={project ?? ""}
-            onChange={(e) => changeProject(e.target.value || null)}
-            className={cn(CONTROL, "max-w-xs")}
-          >
-            <option value="">All projects</option>
-            {projects.map((p) => (
-              <option key={p.path} value={p.path}>
-                {p.path}
-              </option>
-            ))}
-          </select>
+        }
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex max-h-[45%] shrink-0 flex-col gap-3 overflow-y-auto border-b border-rule px-4 py-3">
+          <p className="text-xs text-muted">
+            Claude and Codex sessions on this Mac, and saved ones. Titles and
+            transcripts are redacted by cf.
+          </p>
           {project === null && (
             <p className="text-xs text-muted">
               Choose a project to also see its legacy saved sessions.
             </p>
           )}
+          <StorageCard
+            open={storageOpen}
+            onOpen={setStorageOpen}
+            status={status}
+            sync={sync}
+            pending={pending}
+            error={dirError}
+            onChoose={() => changeDir(CHOOSE_KEY, chooseSessionDir)}
+            onUse={(path) => changeDir(path, () => setSessionDir(path))}
+          />
         </div>
-      </header>
 
-      <StorageCard
-        open={storageOpen}
-        onOpen={setStorageOpen}
-        status={status}
-        sync={sync}
-        pending={pending}
-        error={dirError}
-        onChoose={() => changeDir(CHOOSE_KEY, chooseSessionDir)}
-        onUse={(path) => changeDir(path, () => setSessionDir(path))}
-      />
-
-      {list.error ? (
-        <div className="flex flex-col items-start gap-2">
-          <p role="alert" className="text-sm break-words text-danger">
-            Could not list the sessions: {describeError(list.error)}
-          </p>
-          <Button variant="outline" size="sm" onClick={list.refetch}>
-            Try again
-          </Button>
-        </div>
-      ) : !list.data ? (
-        <div className={LAYOUT}>
-          <div className={LIST}>
-            <SessionListSkeleton showSpinner={list.showSpinner} />
+        {list.error ? (
+          <div className={SPLIT}>
+            <div className={DETAIL}>
+              <div className="flex flex-col items-start gap-2">
+                <p role="alert" className="text-sm break-words text-danger">
+                  Could not list the sessions: {describeError(list.error)}
+                </p>
+                <Button variant="outline" size="sm" onClick={list.refetch}>
+                  Try again
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className={PANE} />
-        </div>
-      ) : list.data.sessions.length === 0 ? (
-        <p className="text-sm text-muted">No sessions found.</p>
-      ) : (
-        <div className={LAYOUT}>
-          <nav aria-label="Sessions" className={LIST}>
-            <ul className="flex flex-col gap-0.5">
-              {list.data.sessions.map((s) => (
-                <SessionItem
-                  key={s.ref}
-                  summary={s}
-                  selected={s.ref === selected?.ref}
-                  onSelect={setSelected}
+        ) : !list.data ? (
+          <div className={SPLIT}>
+            <div className={cn(LIST, "w-72")}>
+              <SessionListSkeleton showSpinner={list.showSpinner} />
+            </div>
+            <div className={DETAIL} />
+          </div>
+        ) : list.data.sessions.length === 0 ? (
+          <div className={SPLIT}>
+            <div className={DETAIL}>
+              <p className="text-sm text-muted">No sessions found.</p>
+            </div>
+          </div>
+        ) : (
+          <div className={SPLIT}>
+            <nav aria-label="Sessions" className={cn(LIST, "w-72")}>
+              <ul className="flex flex-col gap-0.5">
+                {list.data.sessions.map((s) => (
+                  <SessionItem
+                    key={s.ref}
+                    summary={s}
+                    selected={s.ref === selected?.ref}
+                    onSelect={setSelected}
+                  />
+                ))}
+              </ul>
+              {list.data.truncated && (
+                <p className="px-2 py-1 text-xs text-muted">
+                  More sessions exist; not all files were scanned.
+                </p>
+              )}
+            </nav>
+
+            <div className={DETAIL}>
+              {selected === null ? (
+                <p className="text-sm text-muted">
+                  Choose a session to read it.
+                </p>
+              ) : (
+                <SessionDetail
+                  key={selected.ref}
+                  summary={selected}
+                  project={project}
+                  projects={projects}
+                  includeToolOutput={includeToolOutput}
+                  onIncludeToolOutput={setIncludeToolOutput}
+                  pending={pending}
+                  run={run}
+                  onChanged={refreshList}
                 />
-              ))}
-            </ul>
-            {list.data.truncated && (
-              <p className="px-2 py-1 text-xs text-muted">
-                More sessions exist; not all files were scanned.
-              </p>
-            )}
-          </nav>
-
-          <div className={PANE}>
-            {selected === null ? (
-              <p className="text-sm text-muted">Choose a session to read it.</p>
-            ) : (
-              <SessionDetail
-                key={selected.ref}
-                summary={selected}
-                project={project}
-                projects={projects}
-                includeToolOutput={includeToolOutput}
-                onIncludeToolOutput={setIncludeToolOutput}
-                pending={pending}
-                run={run}
-                onChanged={refreshList}
-              />
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </article>
   );
 }
@@ -506,7 +508,7 @@ function StorageCard({
   return (
     <section
       aria-labelledby="sessions-storage-title"
-      className="flex flex-col gap-3 rounded-lg border border-rule p-4"
+      className="flex flex-col gap-3"
     >
       <h3 id="sessions-storage-title">
         <button
@@ -854,9 +856,9 @@ function SessionDetail({
 
   return (
     <article aria-label={summary.title || ref} className="flex flex-col gap-4">
-      <header className="flex flex-col gap-2 rounded-lg border border-rule p-4">
-        <div className="flex items-start gap-2">
-          <h3 className="min-w-0 flex-1 text-base font-semibold break-words">
+      <header className="flex flex-col gap-2 border-b border-rule pb-4">
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+          <h3 className="min-w-48 flex-1 text-base font-semibold break-words">
             {summary.title || ref}
           </h3>
           {first.showSpinner && <Spinner label="Loading the session" />}
@@ -1127,7 +1129,7 @@ function SavePanel({
           aria-label="Label"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className={cn(CONTROL, "w-64")}
+          className={cn(CONTROL, "h-7 w-64")}
         />
         <Button
           size="sm"
@@ -1225,7 +1227,7 @@ function LoadPanel({
             aria-label="Target project"
             value={target}
             onChange={(e) => setChosen(e.target.value)}
-            className={cn(CONTROL, "max-w-xs")}
+            className={cn(CONTROL, "h-7 max-w-xs")}
           >
             <option value="">Choose a target project…</option>
             {projects.map((p) => (

@@ -2,9 +2,6 @@ import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  NOTES_LAYOUT,
-  NOTES_LIST,
-  NOTES_PANE,
   NoteEditor,
   NoteGroup,
   NoteItem,
@@ -17,6 +14,7 @@ import {
   type NoteNotice,
 } from "@/components/NoteEditor";
 import { Button } from "@/components/ui/button";
+import { DETAIL, LIST, SPLIT } from "@/components/ui/layout";
 import {
   describeCfError,
   isCancelled,
@@ -35,6 +33,7 @@ import {
 } from "@/lib/cf";
 import type { PendingRun, StartRun } from "@/lib/runs";
 import { useCfQuery } from "@/lib/use-cf-query";
+import { cn } from "@/lib/utils";
 
 /** Typing pauses this long before a search runs. */
 const SEARCH_DELAY_MS = 300;
@@ -169,27 +168,31 @@ export function MemoryView({
 
   if (list.error) {
     return (
-      <div className="flex flex-col items-start gap-2">
-        <p role="alert" className="text-sm break-words text-danger">
-          Could not load the memories: {describeError(list.error)}
-        </p>
-        <Button variant="outline" size="sm" onClick={list.refetch}>
-          Try again
-        </Button>
+      <div className={SPLIT}>
+        <div className={DETAIL}>
+          <div className="flex flex-col items-start gap-2">
+            <p role="alert" className="text-sm break-words text-danger">
+              Could not load the memories: {describeError(list.error)}
+            </p>
+            <Button variant="outline" size="sm" onClick={list.refetch}>
+              Try again
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!items) {
     return (
-      <div className={NOTES_LAYOUT}>
-        <div className={NOTES_LIST}>
+      <div className={SPLIT}>
+        <div className={cn(LIST, "w-60")}>
           <NoteListSkeleton
             label="Loading the memories"
             showSpinner={list.showSpinner}
           />
         </div>
-        <div className={NOTES_PANE} />
+        <div className={DETAIL} />
       </div>
     );
   }
@@ -197,18 +200,20 @@ export function MemoryView({
   // The outcome of deleting the last memory still shows (e.g. the rebuild hint).
   if (items.length === 0)
     return (
-      <div className="flex flex-col gap-4">
-        <NoteOutcome notice={notes.outcome} />
-        <p className="text-sm text-muted">No memories in this project.</p>
+      <div className={SPLIT}>
+        <div className={DETAIL}>
+          <NoteOutcome notice={notes.outcome} />
+          <p className="text-sm text-muted">No memories in this project.</p>
+        </div>
       </div>
     );
 
   const draftOf = (id: string) => notes.drafts.has(id);
 
   return (
-    <div className={NOTES_LAYOUT}>
-      <nav aria-label="Memories" className={NOTES_LIST}>
-        <label className="flex items-center gap-2 rounded-md border border-rule bg-paper px-2 focus-within:ring-2 focus-within:ring-focus">
+    <div className={SPLIT}>
+      <nav aria-label="Memories" className={cn(LIST, "w-60")}>
+        <label className="flex items-center gap-2 rounded-md border border-rule bg-control px-2 focus-within:ring-2 focus-within:ring-focus">
           <Search aria-hidden className="size-3.5 shrink-0 text-muted" />
           <input
             type="search"
@@ -268,7 +273,7 @@ export function MemoryView({
         )}
       </nav>
 
-      <div className={NOTES_PANE}>
+      <div className={DETAIL}>
         <NoteOutcome notice={notes.outcome} />
         {missing && (
           <p role="alert" className="text-xs break-all text-danger">

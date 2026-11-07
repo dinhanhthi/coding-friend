@@ -14,6 +14,8 @@ import { SessionsView } from "@/components/SessionsView";
 import { Sidebar, type View } from "@/components/Sidebar";
 import { VersionView, type UpdateOutcome } from "@/components/VersionView";
 import { Button } from "@/components/ui/button";
+import { READING, SCROLL, VIEW } from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import {
   addProject,
   cfVersion,
@@ -225,52 +227,41 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         supervisor={supervisor}
       />
       <main className="my-1.5 mr-1.5 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-pane border border-rule bg-paper">
-        <div className="min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
-          {view === "projects" ? (
-            selected ? (
-              <ProjectDetail
-                project={selected}
-                activity={detail}
-                pending={pending}
-                onSetConfig={setConfig}
-                run={start}
-                onOpenLearn={openLearnStorage}
-              />
-            ) : projects.status === "ok" ? (
-              <NoProjects onAdd={add} disabled={pending !== null} />
-            ) : null
-          ) : view === "doctor" ? (
-            <DoctorView
-              cli={cli}
-              doctor={doctor}
+        {view === "projects" ? (
+          selected ? (
+            <ProjectDetail
+              project={selected}
+              activity={detail}
               pending={pending}
-              onFix={fix}
-            />
-          ) : view === "settings" ? (
-            <SettingsView
-              pending={pending}
-              onSet={setConfig}
+              onSetConfig={setConfig}
+              run={start}
               onOpenLearn={openLearnStorage}
             />
-          ) : view === "learn" ? (
-            <LearnView
-              pending={pending}
-              run={start}
-              openStorage={learnStorage}
-            />
-          ) : view === "sessions" ? (
-            <SessionsView projects={list} pending={pending} run={start} />
-          ) : (
-            <VersionView
-              cli={cli}
-              version={version}
-              check={check}
-              pending={pending}
-              outcome={updateOutcome}
-              onUpdate={update}
-            />
-          )}
-        </div>
+          ) : projects.status === "ok" ? (
+            <NoProjects onAdd={add} disabled={pending !== null} />
+          ) : null
+        ) : view === "doctor" ? (
+          <DoctorView cli={cli} doctor={doctor} pending={pending} onFix={fix} />
+        ) : view === "settings" ? (
+          <SettingsView
+            pending={pending}
+            onSet={setConfig}
+            onOpenLearn={openLearnStorage}
+          />
+        ) : view === "learn" ? (
+          <LearnView pending={pending} run={start} openStorage={learnStorage} />
+        ) : view === "sessions" ? (
+          <SessionsView projects={list} pending={pending} run={start} />
+        ) : (
+          <VersionView
+            cli={cli}
+            version={version}
+            check={check}
+            pending={pending}
+            outcome={updateOutcome}
+            onUpdate={update}
+          />
+        )}
       </main>
     </div>
   );
@@ -286,28 +277,22 @@ function SettingsView({
   onOpenLearn: () => void;
 }) {
   return (
-    <article
-      aria-labelledby="settings-title"
-      className="mx-auto flex max-w-3xl flex-col gap-6 px-8 py-7"
-    >
-      <header>
-        <h2
-          id="settings-title"
-          className="text-lg font-semibold tracking-tight"
-        >
-          Settings
-        </h2>
-        <p className="text-xs text-muted">
-          Global config. A project's own config overrides it (Config tab of the
-          project).
-        </p>
-      </header>
-      <ConfigView
-        scope="global"
-        pending={pending}
-        onSet={onSet}
-        onOpenLearn={onOpenLearn}
-      />
+    <article aria-labelledby="settings-title" className={VIEW}>
+      <PaneHeader title="Settings" titleId="settings-title" />
+      <div className={SCROLL}>
+        <div className={READING}>
+          <p className="-mb-4 text-xs text-muted">
+            Global config. A project's own config overrides it (Config tab of
+            the project).
+          </p>
+          <ConfigView
+            scope="global"
+            pending={pending}
+            onSet={onSet}
+            onOpenLearn={onOpenLearn}
+          />
+        </div>
+      </div>
     </article>
   );
 }
@@ -320,18 +305,21 @@ function NoProjects({
   disabled: boolean;
 }) {
   return (
-    <div className="grid h-full place-items-center p-8">
-      <div className="flex max-w-sm flex-col items-center gap-3 text-center">
-        <FolderPlus aria-hidden className="size-6 text-muted" />
-        <h2 className="text-base font-semibold">No projects yet</h2>
-        <p className="text-sm text-muted">
-          A project shows up here once Coding Friend runs in it. You can also
-          add a folder yourself.
-        </p>
-        <Button onClick={onAdd} disabled={disabled}>
-          <Plus aria-hidden />
-          Add project…
-        </Button>
+    <div className={VIEW}>
+      <PaneHeader title="Projects" />
+      <div className="grid min-h-0 flex-1 place-items-center p-8">
+        <div className="flex max-w-sm flex-col items-center gap-3 text-center">
+          <FolderPlus aria-hidden className="size-6 text-muted" />
+          <h3 className="text-base font-semibold">No projects yet</h3>
+          <p className="text-sm text-muted">
+            A project shows up here once Coding Friend runs in it. You can also
+            add a folder yourself.
+          </p>
+          <Button onClick={onAdd} disabled={disabled}>
+            <Plus aria-hidden />
+            Add project…
+          </Button>
+        </div>
       </div>
     </div>
   );

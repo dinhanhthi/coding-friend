@@ -8,6 +8,18 @@ import { MemoryView } from "@/components/MemoryView";
 import { TaskDetail } from "@/components/TaskDetail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DETAIL,
+  LIST,
+  READING,
+  SCROLL,
+  SEGMENT,
+  SEGMENT_ON,
+  SEGMENTS,
+  SPLIT,
+  VIEW,
+} from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -108,68 +120,60 @@ export function ProjectDetail({
     <article
       aria-labelledby="project-title"
       aria-busy={loading}
-      className="mx-auto flex max-w-3xl flex-col gap-8 px-8 py-7"
+      className={VIEW}
     >
-      <header className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h2
-            id="project-title"
-            className="truncate text-lg font-semibold tracking-tight"
-          >
-            {projectName(project.path)}
-          </h2>
-          <p
-            className="truncate font-mono text-xs text-muted"
-            title={project.path}
-          >
-            {project.path}
-          </p>
-        </div>
-        {!project.exists && <Badge variant="danger">folder missing</Badge>}
-        {loading && activity.showSpinner && (
-          <Spinner label="Loading tasks and chefs" className="mt-1" />
-        )}
-        {overview && activity.status !== "loading" && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Refresh"
-            onClick={activity.refetch}
-            disabled={activity.refreshing}
-          >
-            <RefreshCw
-              aria-hidden
-              className={showRefreshing ? "animate-spin" : ""}
-            />
-          </Button>
-        )}
-      </header>
-
-      <div role="tablist" aria-label="Project" className="-mt-4 flex gap-1">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`project-tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls="project-tabpanel"
-            onClick={() => setTab(id)}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-xs text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
-              tab === id && "bg-paper-3 font-medium text-ink",
+      <PaneHeader
+        title={projectName(project.path)}
+        titleId="project-title"
+        subtitle={project.path}
+        subtitleMono
+        controls={
+          <div role="tablist" aria-label="Project" className={SEGMENTS}>
+            {TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`project-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls="project-tabpanel"
+                onClick={() => setTab(id)}
+                className={cn(SEGMENT, tab === id && SEGMENT_ON)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+        actions={
+          <>
+            {!project.exists && <Badge variant="danger">folder missing</Badge>}
+            {loading && activity.showSpinner && (
+              <Spinner label="Loading tasks and chefs" />
             )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+            {overview && activity.status !== "loading" && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Refresh"
+                onClick={activity.refetch}
+                disabled={activity.refreshing}
+              >
+                <RefreshCw
+                  aria-hidden
+                  className={showRefreshing ? "animate-spin" : ""}
+                />
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div
         role="tabpanel"
         id="project-tabpanel"
         aria-labelledby={`project-tab-${tab}`}
-        className="flex flex-col gap-8"
+        className="flex min-h-0 flex-1 flex-col"
       >
         {overview ? (
           <Overview
@@ -181,18 +185,22 @@ export function ProjectDetail({
             run={run}
           />
         ) : !project.exists ? (
-          <p className="text-sm text-muted">
-            The folder is missing, so its {tab} cannot be read.
-          </p>
+          <Reading>
+            <p className="text-sm text-muted">
+              The folder is missing, so its {tab} cannot be read.
+            </p>
+          </Reading>
         ) : tab === "config" ? (
-          <ConfigView
-            key={project.path}
-            scope="local"
-            project={project.path}
-            pending={pending}
-            onSet={onSetConfig}
-            onOpenLearn={onOpenLearn}
-          />
+          <Reading>
+            <ConfigView
+              key={project.path}
+              scope="local"
+              project={project.path}
+              pending={pending}
+              onSet={onSetConfig}
+              onOpenLearn={onOpenLearn}
+            />
+          </Reading>
         ) : tab === "docs" ? (
           <DocsView key={project.path} project={project.path} />
         ) : tab === "memory" ? (
@@ -203,10 +211,21 @@ export function ProjectDetail({
             run={run}
           />
         ) : (
-          <HealthView key={project.path} project={project.path} />
+          <Reading>
+            <HealthView key={project.path} project={project.path} />
+          </Reading>
         )}
       </div>
     </article>
+  );
+}
+
+/** A tab body that scrolls as a whole at reading width. */
+function Reading({ children }: { children: ReactNode }) {
+  return (
+    <div className={SCROLL}>
+      <div className={READING}>{children}</div>
+    </div>
   );
 }
 
@@ -231,60 +250,68 @@ function Overview({
       selectedTask)
     : null;
   return (
-    <>
-      {activity.status === "error" && activity.error ? (
-        <p role="alert" className="text-sm break-words text-danger">
-          Could not load tasks and chefs: {describeCfError(activity.error)}
-        </p>
-      ) : (
-        <>
-          <Section title="Tasks" count={activity.data?.tasks.length}>
-            {activity.data ? (
-              activity.data.tasks.length > 0 ? (
-                activity.data.tasks.map((t) => (
-                  <TaskRow
-                    key={t.id}
-                    task={t}
-                    selected={t.id === selectedTask?.id}
-                    onSelect={onSelectTask}
-                  />
-                ))
+    <div className={SPLIT}>
+      <div className={cn(LIST, "w-72 gap-6 p-3")}>
+        {activity.status === "error" && activity.error ? (
+          <p role="alert" className="text-sm break-words text-danger">
+            Could not load tasks and chefs: {describeCfError(activity.error)}
+          </p>
+        ) : (
+          <>
+            <Section title="Tasks" count={activity.data?.tasks.length} plain>
+              {activity.data ? (
+                activity.data.tasks.length > 0 ? (
+                  activity.data.tasks.map((t) => (
+                    <TaskRow
+                      key={t.id}
+                      task={t}
+                      selected={t.id === selectedTask?.id}
+                      onSelect={onSelectTask}
+                    />
+                  ))
+                ) : (
+                  <Empty>No running, waiting, paused or queued tasks.</Empty>
+                )
               ) : (
-                <Empty>No running, waiting, paused or queued tasks.</Empty>
-              )
-            ) : (
-              <RowSkeletons />
-            )}
-          </Section>
-          {shownTask && (
-            <TaskDetail
-              key={shownTask.id}
-              task={shownTask}
-              pending={pending}
-              run={run}
-              onChanged={activity.refetch}
-              onClose={onCloseTask}
-            />
-          )}
-          <Section title="Chefs" count={activity.data?.chefs.length}>
-            {activity.data ? (
-              activity.data.chefs.length > 0 ? (
-                activity.data.chefs.map((c) => <ChefRow key={c.id} chef={c} />)
+                <RowSkeletons />
+              )}
+            </Section>
+            <Section title="Chefs" count={activity.data?.chefs.length} plain>
+              {activity.data ? (
+                activity.data.chefs.length > 0 ? (
+                  activity.data.chefs.map((c) => (
+                    <ChefRow key={c.id} chef={c} />
+                  ))
+                ) : (
+                  <Empty>No chefs.</Empty>
+                )
               ) : (
-                <Empty>No chefs.</Empty>
-              )
-            ) : (
-              <RowSkeletons />
-            )}
-          </Section>
-        </>
-      )}
+                <RowSkeletons />
+              )}
+            </Section>
+          </>
+        )}
 
-      <p className="text-xs text-muted">
-        Shows tasks and chefs whose checkout is this folder or a folder inside
-        it. Worktrees elsewhere on disk are not shown.
-      </p>
-    </>
+        <p className="text-xs text-muted">
+          Shows tasks and chefs whose checkout is this folder or a folder inside
+          it. Worktrees elsewhere on disk are not shown.
+        </p>
+      </div>
+      <div className={DETAIL}>
+        {shownTask ? (
+          <TaskDetail
+            key={shownTask.id}
+            task={shownTask}
+            pending={pending}
+            run={run}
+            onChanged={activity.refetch}
+            onClose={onCloseTask}
+          />
+        ) : (
+          <p className="text-sm text-muted">Choose a task to follow it.</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -352,19 +379,36 @@ function HealthView({ project }: { project: string }) {
 export function Section({
   title,
   count,
+  plain = false,
   children,
 }: {
   title: string;
   count?: number;
+  /** A source-list column: rows without the bordered card. */
+  plain?: boolean;
   children: ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="flex items-baseline gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+      <h3
+        className={cn(
+          "flex items-baseline gap-2 text-muted",
+          plain
+            ? "px-3 text-[11px] font-semibold"
+            : "text-xs font-medium tracking-wide uppercase",
+        )}
+      >
         {title}
         {count !== undefined && <span className="font-mono">{count}</span>}
       </h3>
-      <ul className="flex flex-col divide-y divide-rule rounded-lg border border-rule">
+      <ul
+        className={cn(
+          "flex flex-col",
+          plain
+            ? "gap-0.5"
+            : "divide-y divide-rule rounded-lg border border-rule",
+        )}
+      >
         {children}
       </ul>
     </section>
@@ -392,7 +436,7 @@ function Empty({ children }: { children: ReactNode }) {
 
 function stateVariant(state: string) {
   if (state === "running" || state === "active") return "success" as const;
-  if (state === "paused" || state === "quota-wait") return "default" as const;
+  if (state === "paused" || state === "quota-wait") return "warning" as const;
   return "outline" as const;
 }
 
@@ -407,14 +451,14 @@ function TaskRow({
 }) {
   const asks = task.pendingAsks.length;
   return (
-    <li className="flex first:*:rounded-t-lg last:*:rounded-b-lg">
+    <li className="flex">
       <button
         type="button"
         aria-pressed={selected}
         onClick={() => onSelect(task)}
         className={cn(
           ROW,
-          "w-full min-w-0 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+          "w-full min-w-0 rounded-md text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
           selected && "bg-paper-3 hover:bg-paper-3",
         )}
       >

@@ -6,6 +6,8 @@ import { CommandLine } from "@/components/CommandLine";
 import { Section } from "@/components/ProjectDetail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { READING, SCROLL, VIEW } from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   cfDoctor,
@@ -21,9 +23,9 @@ import {
 import { describePending, type PendingRun } from "@/lib/runs";
 import { useDelayed } from "@/lib/use-cf-query";
 
-const STATUS_VARIANT: Record<DoctorStatus, "success" | "default" | "danger"> = {
+const STATUS_VARIANT: Record<DoctorStatus, "success" | "warning" | "danger"> = {
   ok: "success",
-  warn: "default",
+  warn: "warning",
   fail: "danger",
 };
 
@@ -123,60 +125,54 @@ export function DoctorView({
     <article
       aria-labelledby="doctor-title"
       aria-busy={running}
-      className="mx-auto flex max-w-3xl flex-col gap-8 px-8 py-7"
+      className={VIEW}
     >
-      <header className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h2
-            id="doctor-title"
-            className="text-lg font-semibold tracking-tight"
-          >
-            Doctor
-          </h2>
-          {cli.cf && (
-            <p
-              className="truncate font-mono text-xs text-muted"
-              title={cli.cf.path}
-            >
-              {describeResolvedCf(cli.cf)}
-            </p>
-          )}
+      <PaneHeader
+        title="Doctor"
+        titleId="doctor-title"
+        subtitle={cli.cf ? describeResolvedCf(cli.cf) : undefined}
+        subtitleMono
+        actions={
+          <Button variant="outline" size="sm" onClick={run} disabled={busy}>
+            <RefreshCw
+              aria-hidden
+              className={showRunSpinner ? "animate-spin" : ""}
+            />
+            {showRunSpinner ? "Running…" : "Run again"}
+          </Button>
+        }
+      />
+      <div className={SCROLL}>
+        <div className={READING}>
           {data && (
-            <p className="font-mono text-xs text-muted">
+            <p className="-mb-4 font-mono text-xs text-muted">
               CLI {data.cli.version} · node {data.cli.node}
             </p>
           )}
+
+          {pending && pending.op !== "fix" && (
+            <p className="text-xs text-muted">{describePending(pending)}</p>
+          )}
+
+          {runError && (
+            <p role="alert" className="text-sm break-words text-danger">
+              Could not run cf doctor: {runError}
+            </p>
+          )}
+
+          {data ? (
+            <DoctorChecks
+              checks={data.checks}
+              pending={pending}
+              disabled={busy}
+              fixErrors={fixErrors}
+              onFix={onFix}
+            />
+          ) : (
+            !runError && <ChecksSkeleton />
+          )}
         </div>
-        <Button variant="outline" size="sm" onClick={run} disabled={busy}>
-          <RefreshCw
-            aria-hidden
-            className={showRunSpinner ? "animate-spin" : ""}
-          />
-          {showRunSpinner ? "Running…" : "Run again"}
-        </Button>
-      </header>
-
-      {pending && pending.op !== "fix" && (
-        <p className="text-xs text-muted">{describePending(pending)}</p>
-      )}
-
-      {runError && (
-        <p role="alert" className="text-sm break-words text-danger">
-          Could not run cf doctor: {runError}
-        </p>
-      )}
-
-      {data ? (
-        <DoctorChecks
-          checks={data.checks}
-          pending={pending}
-          disabled={busy}
-          fixErrors={fixErrors}
-          onFix={onFix}
-        />
-      ) : (
-        !runError && <ChecksSkeleton />
-      )}
+      </div>
     </article>
   );
 }

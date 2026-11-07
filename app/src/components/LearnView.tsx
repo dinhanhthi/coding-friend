@@ -3,9 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandLine } from "@/components/CommandLine";
 import {
-  NOTES_LAYOUT,
-  NOTES_LIST,
-  NOTES_PANE,
   NoteEditor,
   NoteGroup,
   NoteItem,
@@ -19,6 +16,8 @@ import {
 } from "@/components/NoteEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DETAIL, LIST, SPLIT, VIEW } from "@/components/ui/layout";
+import { PaneHeader } from "@/components/ui/pane-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -41,6 +40,7 @@ import {
 } from "@/lib/cf";
 import { describePending, type PendingRun, type StartRun } from "@/lib/runs";
 import { useCfQuery, useDelayed, type CfQuery } from "@/lib/use-cf-query";
+import { cn } from "@/lib/utils";
 
 export const CLOUD_LABELS: Record<CloudProvider, string> = {
   icloud: "iCloud Drive",
@@ -202,145 +202,152 @@ export function LearnView({
   };
 
   return (
-    <article
-      aria-labelledby="learn-title"
-      className="mx-auto flex max-w-4xl flex-col gap-8 px-8 py-7"
-    >
-      <header className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 id="learn-title" className="text-lg font-semibold tracking-tight">
-            Learn
-          </h2>
+    <article aria-labelledby="learn-title" className={VIEW}>
+      <PaneHeader
+        title="Learn"
+        titleId="learn-title"
+        actions={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Reload the learn notes"
+            onClick={refresh}
+            disabled={list.refreshing || status.refreshing}
+          >
+            <RefreshCw
+              aria-hidden
+              className={showRefreshing ? "animate-spin" : ""}
+            />
+          </Button>
+        }
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex max-h-[45%] shrink-0 flex-col gap-3 overflow-y-auto border-b border-rule px-4 py-3">
           <p className="text-xs text-muted">
             Learn notes are global: every project writes to the same folder.
           </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Reload the learn notes"
-          onClick={refresh}
-          disabled={list.refreshing || status.refreshing}
-        >
-          <RefreshCw
-            aria-hidden
-            className={showRefreshing ? "animate-spin" : ""}
+          <StorageCard
+            open={storageOpen}
+            onOpen={setStorageOpen}
+            status={status}
+            pending={pending}
+            error={dirError}
+            onChoose={() => changeDir(CHOOSE_KEY, chooseLearnDir)}
+            onUse={(path) => changeDir(path, () => setLearnDir(path))}
           />
-        </Button>
-      </header>
-
-      <StorageCard
-        open={storageOpen}
-        onOpen={setStorageOpen}
-        status={status}
-        pending={pending}
-        error={dirError}
-        onChoose={() => changeDir(CHOOSE_KEY, chooseLearnDir)}
-        onUse={(path) => changeDir(path, () => setLearnDir(path))}
-      />
-
-      {list.error ? (
-        <div className="flex flex-col items-start gap-2">
-          <p role="alert" className="text-sm break-words text-danger">
-            Could not load the learn notes: {describeError(list.error)}
-          </p>
-          <Button variant="outline" size="sm" onClick={list.refetch}>
-            Try again
-          </Button>
         </div>
-      ) : !list.data ? (
-        <div className={NOTES_LAYOUT}>
-          <div className={NOTES_LIST}>
-            <NoteListSkeleton
-              label="Loading the learn notes"
-              showSpinner={list.showSpinner}
-            />
+
+        {list.error ? (
+          <div className={SPLIT}>
+            <div className={DETAIL}>
+              <div className="flex flex-col items-start gap-2">
+                <p role="alert" className="text-sm break-words text-danger">
+                  Could not load the learn notes: {describeError(list.error)}
+                </p>
+                <Button variant="outline" size="sm" onClick={list.refetch}>
+                  Try again
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className={NOTES_PANE} />
-        </div>
-      ) : list.data.notes.length === 0 &&
-        list.data.placeholders.length === 0 ? (
-        <div className="flex flex-col gap-4">
-          <NoteOutcome notice={notes.outcome} />
-          <p className="text-sm text-muted">
-            No learn notes in this folder yet.
-          </p>
-        </div>
-      ) : (
-        <div className={NOTES_LAYOUT}>
-          <nav aria-label="Learn notes" className={NOTES_LIST}>
-            {groups.map(([category, entries]) => (
-              <NoteGroup
-                key={category}
-                category={category}
-                count={entries.length}
-              >
-                {entries.map((n) => (
-                  <NoteItem
-                    key={n.id}
-                    id={n.id}
-                    title={n.title}
-                    selected={n.id === selected}
-                    hasDraft={notes.drafts.has(n.id)}
-                    badge={
-                      n.possibleConflictOf && (
-                        <Badge
-                          variant="danger"
-                          title={`Looks like a sync conflict copy of ${n.possibleConflictOf}`}
-                        >
-                          conflict
-                        </Badge>
-                      )
-                    }
-                    onSelect={select}
-                  />
-                ))}
-              </NoteGroup>
-            ))}
-            {list.data.placeholders.length > 0 && (
-              <p
-                className="px-2 py-1 text-xs text-muted"
-                title={list.data.placeholders.map((p) => p.id).join("\n")}
-              >
-                {list.data.placeholders.length} not downloaded. The cloud app
-                has not downloaded these files yet; they are never opened here.
-              </p>
-            )}
-          </nav>
-
-          <div className={NOTES_PANE}>
-            <NoteOutcome notice={notes.outcome} />
-            {missing && (
-              <p role="alert" className="text-xs break-all text-danger">
-                {missing} is not in the learn folder.
-              </p>
-            )}
-            {linkError && (
-              <p role="alert" className="text-xs break-words text-danger">
-                Could not open the link: {linkError}
-              </p>
-            )}
-            {selected === null ? (
-              <p className="text-sm text-muted">Choose a note to read it.</p>
-            ) : (
-              <NoteEditor
-                key={selected}
-                id={selected}
-                note={note}
-                draft={notes.drafts.get(selected)}
-                onDraft={(draft) => notes.setDraft(selected, draft)}
-                status={notes.statusOf(selected)}
-                disabled={pending !== null}
-                onSave={(draft) => notes.save(selected, draft)}
-                onDelete={(sha) => notes.remove(selected, sha)}
-                onNavigate={navigate}
-                onOpenExternal={openExternal}
-                describeError={describeError}
+        ) : !list.data ? (
+          <div className={SPLIT}>
+            <div className={cn(LIST, "w-60")}>
+              <NoteListSkeleton
+                label="Loading the learn notes"
+                showSpinner={list.showSpinner}
               />
-            )}
+            </div>
+            <div className={DETAIL} />
           </div>
-        </div>
-      )}
+        ) : list.data.notes.length === 0 &&
+          list.data.placeholders.length === 0 ? (
+          <div className={SPLIT}>
+            <div className={DETAIL}>
+              <NoteOutcome notice={notes.outcome} />
+              <p className="text-sm text-muted">
+                No learn notes in this folder yet.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className={SPLIT}>
+            <nav aria-label="Learn notes" className={cn(LIST, "w-60")}>
+              {groups.map(([category, entries]) => (
+                <NoteGroup
+                  key={category}
+                  category={category}
+                  count={entries.length}
+                >
+                  {entries.map((n) => (
+                    <NoteItem
+                      key={n.id}
+                      id={n.id}
+                      title={n.title}
+                      selected={n.id === selected}
+                      hasDraft={notes.drafts.has(n.id)}
+                      badge={
+                        n.possibleConflictOf && (
+                          <Badge
+                            variant="danger"
+                            title={`Looks like a sync conflict copy of ${n.possibleConflictOf}`}
+                          >
+                            conflict
+                          </Badge>
+                        )
+                      }
+                      onSelect={select}
+                    />
+                  ))}
+                </NoteGroup>
+              ))}
+              {list.data.placeholders.length > 0 && (
+                <p
+                  className="px-2 py-1 text-xs text-muted"
+                  title={list.data.placeholders.map((p) => p.id).join("\n")}
+                >
+                  {list.data.placeholders.length} not downloaded. The cloud app
+                  has not downloaded these files yet; they are never opened
+                  here.
+                </p>
+              )}
+            </nav>
+
+            <div className={DETAIL}>
+              <NoteOutcome notice={notes.outcome} />
+              {missing && (
+                <p role="alert" className="text-xs break-all text-danger">
+                  {missing} is not in the learn folder.
+                </p>
+              )}
+              {linkError && (
+                <p role="alert" className="text-xs break-words text-danger">
+                  Could not open the link: {linkError}
+                </p>
+              )}
+              {selected === null ? (
+                <p className="text-sm text-muted">Choose a note to read it.</p>
+              ) : (
+                <NoteEditor
+                  key={selected}
+                  id={selected}
+                  note={note}
+                  draft={notes.drafts.get(selected)}
+                  onDraft={(draft) => notes.setDraft(selected, draft)}
+                  status={notes.statusOf(selected)}
+                  disabled={pending !== null}
+                  onSave={(draft) => notes.save(selected, draft)}
+                  onDelete={(sha) => notes.remove(selected, sha)}
+                  onNavigate={navigate}
+                  onOpenExternal={openExternal}
+                  describeError={describeError}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </article>
   );
 }
@@ -518,7 +525,7 @@ function StorageCard({
   return (
     <section
       aria-labelledby="learn-storage-title"
-      className="flex flex-col gap-3 rounded-lg border border-rule p-4"
+      className="flex flex-col gap-3"
     >
       <h3 id="learn-storage-title">
         <button

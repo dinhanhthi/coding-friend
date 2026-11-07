@@ -10,6 +10,7 @@ import {
 import { CommandLine } from "@/components/CommandLine";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
+import { CONTROL } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { isConflict, type CfError } from "@/lib/cf";
@@ -194,9 +195,6 @@ function frontmatterText(frontmatter: Record<string, unknown>): string | null {
   return lines.length > 0 ? lines.join("\n") : null;
 }
 
-const CONTROL =
-  "rounded-md border border-rule bg-paper px-3 py-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50";
-
 /**
  * One memory or learn note: rendered markdown (view) or its body in a textarea (edit). Save
  * sends the draft with the `sha256` the edit began from; `CONFLICT` keeps the draft. Rust
@@ -261,7 +259,10 @@ export function NoteEditor({
         value={draft.body}
         disabled={busy}
         onChange={(e) => onDraft({ ...draft, body: e.target.value })}
-        className={cn(CONTROL, "min-h-[60vh] w-full font-mono text-xs")}
+        className={cn(
+          CONTROL,
+          "min-h-[60vh] w-full px-3 py-2 font-mono text-xs",
+        )}
       />
     );
   } else if (!data) {
@@ -422,11 +423,6 @@ function Conflict({
 }
 
 // ─── Shared by the Memory tab and the Learn view ────────────────────────
-
-export const NOTES_LAYOUT = "flex items-start gap-6";
-export const NOTES_LIST =
-  "sticky top-4 flex max-h-[calc(100vh-2rem)] w-56 shrink-0 flex-col gap-1 overflow-y-auto";
-export const NOTES_PANE = "flex min-w-0 flex-1 flex-col gap-4";
 
 /** Notes by category, categories by name (each keeps the CLI's order). */
 export function groupByCategory<T extends { category: string }>(

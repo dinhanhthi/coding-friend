@@ -4,6 +4,7 @@ import { memo, useCallback, useState } from "react";
 import { Turn } from "@/components/SessionsView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CONTROL } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -28,9 +29,8 @@ const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>([
   "interrupted",
 ]);
 
-const CARD = "flex flex-col gap-4 rounded-lg border border-rule p-4";
-const CONTROL =
-  "h-7 rounded-md border border-rule bg-paper px-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50";
+/** The detail column is the surface, so the task needs no card of its own. */
+const CARD = "flex flex-col gap-4";
 /** Worker output: plain text, never Markdown. */
 const PLAIN = "text-sm break-words whitespace-pre-wrap";
 /** Rust's `MAX_ANSWER` (bytes); `maxLength` counts UTF-16 units. */
@@ -39,7 +39,7 @@ const MAX_ANSWER = 4096;
 function stateVariant(state: TaskState) {
   if (state === "running") return "success" as const;
   if (state === "failed") return "danger" as const;
-  if (state === "paused") return "default" as const;
+  if (state === "paused") return "warning" as const;
   return "outline" as const;
 }
 
@@ -345,7 +345,7 @@ function AskReply({
               send();
             }
           }}
-          className={cn(CONTROL, "min-w-0 flex-1")}
+          className={cn(CONTROL, "h-7 min-w-0 flex-1")}
         />
         <Button
           size="sm"

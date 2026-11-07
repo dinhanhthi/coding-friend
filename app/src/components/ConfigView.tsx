@@ -5,6 +5,7 @@ import { CommandLine } from "@/components/CommandLine";
 import { Section } from "@/components/ProjectDetail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CONTROL, SEGMENT, SEGMENT_ON, SEGMENTS } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -277,9 +278,6 @@ export function ConfigView({
 
 const ROW = "flex min-h-12 flex-col justify-center gap-1.5 px-3 py-2";
 
-const CONTROL =
-  "rounded-md border border-rule bg-paper px-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50";
-
 interface RowProps {
   label: string;
   value: unknown;
@@ -453,11 +451,7 @@ function FieldRow({
           {typeof value !== "boolean" && (
             <span className="text-xs text-muted">{show(value)}</span>
           )}
-          <div
-            role="radiogroup"
-            aria-label={field.key}
-            className="flex shrink-0 overflow-hidden rounded-md border border-rule"
-          >
+          <div role="radiogroup" aria-label={field.key} className={SEGMENTS}>
             {[true, false].map((option) => (
               <button
                 key={String(option)}
@@ -466,12 +460,7 @@ function FieldRow({
                 aria-checked={value === option}
                 disabled={disabled}
                 onClick={() => value !== option && send(String(option))}
-                className={cn(
-                  "h-7 px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-inset disabled:opacity-50",
-                  value === option
-                    ? "bg-accent text-accent-ink"
-                    : "bg-paper text-ink-2",
-                )}
+                className={cn(SEGMENT, value === option && SEGMENT_ON)}
               >
                 {option ? "On" : "Off"}
               </button>

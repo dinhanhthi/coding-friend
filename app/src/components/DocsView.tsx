@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
+import { DETAIL, LIST, SPLIT } from "@/components/ui/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -143,12 +144,16 @@ export function DocsView({ project }: { project: string }) {
   }, []);
 
   if (list.error)
-    return <Failed what="the docs" error={list.error} onRetry={list.refetch} />;
+    return (
+      <Whole>
+        <Failed what="the docs" error={list.error} onRetry={list.refetch} />
+      </Whole>
+    );
 
   const data = list.data;
   if (!data) {
     return (
-      <div aria-busy="true" className={LAYOUT}>
+      <div aria-busy="true" className={SPLIT}>
         <div className={TREE}>
           <div className="flex items-center gap-2 px-2 py-1">
             <Skeleton className="h-3.5 w-20" />
@@ -158,26 +163,30 @@ export function DocsView({ project }: { project: string }) {
             <Skeleton key={i} className="mx-2 my-2 h-3.5" />
           ))}
         </div>
-        <div className={PANE} />
+        <div className={DETAIL} />
       </div>
     );
   }
 
   if (!data.exists)
     return (
-      <p className="text-sm break-all text-muted">
-        No docs folder at {data.docsDir}.
-      </p>
+      <Whole>
+        <p className="text-sm break-all text-muted">
+          No docs folder at {data.docsDir}.
+        </p>
+      </Whole>
     );
   if (data.files.length === 0)
     return (
-      <p className="text-sm break-all text-muted">
-        No markdown files in {data.docsDir}.
-      </p>
+      <Whole>
+        <p className="text-sm break-all text-muted">
+          No markdown files in {data.docsDir}.
+        </p>
+      </Whole>
     );
 
   return (
-    <div className={LAYOUT}>
+    <div className={SPLIT}>
       <nav aria-label="Docs files" className={TREE}>
         {groups.map(({ folder, files: groupFiles }) => {
           const items = (
@@ -236,7 +245,7 @@ export function DocsView({ project }: { project: string }) {
         )}
       </nav>
 
-      <div className={PANE}>
+      <div className={DETAIL}>
         {missing && (
           <p role="alert" className="text-xs break-all text-danger">
             {missing} is not in the docs folder.
@@ -262,10 +271,16 @@ export function DocsView({ project }: { project: string }) {
   );
 }
 
-const LAYOUT = "flex items-start gap-6";
-const TREE =
-  "sticky top-4 flex max-h-[calc(100vh-2rem)] w-52 shrink-0 flex-col gap-0.5 overflow-y-auto";
-const PANE = "flex min-w-0 flex-1 flex-col gap-4";
+const TREE = cn(LIST, "w-60 gap-0.5");
+
+/** A state that takes the whole tab (error, no docs): the detail column without a list. */
+function Whole({ children }: { children: ReactNode }) {
+  return (
+    <div className={SPLIT}>
+      <div className={DETAIL}>{children}</div>
+    </div>
+  );
+}
 
 function DocPane({
   path,
