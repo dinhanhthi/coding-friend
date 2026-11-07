@@ -182,7 +182,10 @@ export interface WakeResult {
   n: number;
   outcome: WakeOutcome;
   consumed?: string[];
-  /** Actions the validator rejected in this wake. */
+  /**
+   * Actions the validator rejected in this wake. On a `failed` wake it is set
+   * only when the chef output failed the schema (`error` holds why).
+   */
   rejected?: number;
   /** Epoch seconds of the chef's own quota reset (outcome quota). */
   resetsAt?: number | null;
@@ -876,16 +879,23 @@ export function chefStatus(id: string): ChefStatus {
 }
 
 /**
- * Ok wakes in a row (latest first) with rejected actions, since the latest
- * resume. Quota, failed and unfinished wakes neither count nor break it.
+ * Wakes in a row (latest first) with rejected actions, since the latest
+ * resume: ok wakes with rejections and schema-invalid failed wakes count, a
+ * clean ok wake breaks it. Quota, other failed and unfinished wakes neither
+ * count nor break it.
  */
 export function consecutiveRejectedWakes(id: string): number {
   const after = listResumes(id).at(-1)?.afterWake ?? 0;
   let count = 0;
   for (const w of listWakes(id).reverse()) {
     if (w.n <= after) break;
+    const rejected = w.result?.rejected ?? 0;
+    if (w.result?.outcome === "failed" && rejected > 0) {
+      count++;
+      continue;
+    }
     if (w.result?.outcome !== "ok") continue;
-    if ((w.result.rejected ?? 0) === 0) break;
+    if (rejected === 0) break;
     count++;
   }
   return count;

@@ -271,7 +271,17 @@ describe("tickOnce cleanup of ended tasks (C3a)", () => {
     expect(existsSync(configDir(id, "claude"))).toBe(true);
   });
 
-  it("never removes a cleanupPaths entry outside the store (logged as supervisor)", () => {
+  it("keeps the leftovers when ps cannot tell (null for a live pid): unknown is not dead", () => {
+    const id = taskWithLeftovers(["claude"], process.pid);
+    recordResult(id, { exitCode: null, outcome: "failed", error: "x" });
+
+    tick(() => null);
+
+    expect(existsSync(wsDir(id))).toBe(true);
+    expect(existsSync(configDir(id, "claude"))).toBe(true);
+  });
+
+  it("never removes a cleanupPaths entry outside the store (logged as supervisor, once across ticks)", () => {
     // Same prefix as the store, but a sibling: only `<orch>/` is inside.
     const victim = `${orch}-victim`;
     mkdirSync(join(victim, "sub"), { recursive: true });
@@ -284,11 +294,18 @@ describe("tickOnce cleanup of ended tasks (C3a)", () => {
 
     expect(readFileSync(join(victim, "sub", "keep"), "utf-8")).toBe("x");
     expect(existsSync(wsDir(id))).toBe(false);
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /^supervisor: could not remove .*outside the store/,
-      ),
-    );
+    const refusals = () =>
+      vi
+        .mocked(console.error)
+        .mock.calls.filter(([m]) =>
+          /^supervisor: could not remove .*outside the store/.test(String(m)),
+        );
+    expect(refusals()).toHaveLength(1);
+
+    // Each tick is a new process: the refusal is not retried nor logged again.
+    tick();
+    expect(refusals()).toHaveLength(1);
+    expect(readFileSync(join(victim, "sub", "keep"), "utf-8")).toBe("x");
   });
 
   it("never deletes through a symlinked workspaces/", () => {

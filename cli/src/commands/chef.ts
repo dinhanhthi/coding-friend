@@ -457,6 +457,7 @@ function startChef(planArg: string, opts: StartFlags): ChefStartResult {
 
     const id = newId();
     claimChefCheckout(checkout, id); // create-once: of two starts, one wins
+    let created = false;
     try {
       createChef({
         id,
@@ -476,11 +477,20 @@ function startChef(planArg: string, opts: StartFlags): ChefStartResult {
         configDigest: snapshot.repo.config ?? "",
         baseline: { fingerprint, snapshot },
       });
+      created = true;
+      recordEvent(id, "start", "chef started");
     } catch (err) {
+      // A chef without its first wake would hold the checkout: stop it.
+      if (created) {
+        try {
+          recordStop(id, { reason: `start failed: ${(err as Error).message}` });
+        } catch {
+          // best effort: the checkout is released below either way
+        }
+      }
       releaseChefCheckout(checkout, id);
       throw err;
     }
-    recordEvent(id, "start", "chef started");
     tryUpdateSummary();
     const result: ChefStartResult = {
       chefId: id,
@@ -981,13 +991,10 @@ function liveWake(id: string): number | undefined {
   for (const w of listWakes(id).reverse()) {
     if (w.runner) {
       const pid = w.runner.pid;
-      if (
-        Number.isInteger(pid) &&
-        pid > 1 &&
-        isPidAlive(pid) &&
-        isWakeCommand(psCommand(pid), id, w.n)
-      ) {
-        return w.n;
+      if (Number.isInteger(pid) && pid > 1 && isPidAlive(pid)) {
+        // null: ps failed or could not tell; unknown counts as live.
+        const command = psCommand(pid);
+        if (command === null || isWakeCommand(command, id, w.n)) return w.n;
       }
     } else if (!w.result && !isOlderThan(w.claim.createdAt, SPAWN_GRACE_MS)) {
       return w.n;
@@ -1005,6 +1012,13 @@ export interface ChefResumeResult {
 }
 
 function resumeChef(id: string): ChefResumeResult {
+  // Defence in depth: only the user resumes, never a worker or a chef wake.
+  if (process.env.CF_TASK_ID || process.env.CF_CHEF_CLAIMED) {
+    throw new CliError(
+      "USAGE",
+      "cf chef resume cannot run inside a worker or a chef wake",
+    );
+  }
   const chef = readChef(id);
   const state = chefStatus(id).state;
   if (state === "stopped") {

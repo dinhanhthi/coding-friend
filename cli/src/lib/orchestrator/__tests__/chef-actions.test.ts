@@ -366,6 +366,25 @@ describe("validateActions: dispatch provider (C3a)", () => {
     });
     expect(thrown.rejected[0]?.reason).toBe("cannot check claude: boom");
   });
+
+  it("probes eligibility only for dispatches within the limits, once per (provider, role)", () => {
+    const calls: [Provider, ChefTaskRole][] = [];
+    const r = validateActions({
+      output: {
+        summary: "s",
+        actions: ["a", "b", "c", "d"].map(() => to("claude", "other")),
+      },
+      facts: noTasks(),
+      limits: { maxTasksPerWake: 3, maxConcurrentTasks: 10 },
+      providerProblem: (p, role) => {
+        calls.push([p, role]);
+        return null;
+      },
+    });
+    expect(r.accepted.map((a) => a.index)).toEqual([0, 1, 2]);
+    expect(reason(r)).toMatch(/maxTasksPerWake/);
+    expect(calls).toEqual([["claude", "other"]]);
+  });
 });
 
 describe("validateActions: answers, schema, streak", () => {

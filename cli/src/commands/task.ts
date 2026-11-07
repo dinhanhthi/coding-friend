@@ -325,7 +325,7 @@ function signalRunner(id: string, pid: unknown): boolean {
   if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 1) {
     return false;
   }
-  const command = exec("ps", ["-ww", "-o", "command=", "-p", String(pid)]);
+  const command = exec("/bin/ps", ["-ww", "-o", "command=", "-p", String(pid)]);
   if (!isRunnerCommand(command, id)) return false;
   try {
     process.kill(pid, "SIGTERM");

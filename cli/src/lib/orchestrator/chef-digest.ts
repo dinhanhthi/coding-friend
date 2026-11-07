@@ -27,7 +27,7 @@ export const CHEF_CONTRACT = `You are the chef of a Coding Friend plan: you coor
 ## Your role
 - You are read-only. You may read files of the checkout with Read, Grep and Glob, but you never change anything yourself. Every change happens through actions.
 - Your working directory is an empty folder, not the checkout: read files with absolute paths under the checkout path given in the digest.
-- Answer every wake with exactly one JSON object matching the output schema: a short "summary" of what you decided and why, and a list of "actions" (empty when there is nothing to do). CF validates every action; invalid ones are rejected and listed in the next digest. Three wakes in a row with rejected actions pause you.
+- Answer every wake with exactly one JSON object matching the output schema: a short "summary" of what you decided and why, and a list of "actions" (empty when there is nothing to do). CF validates every action; invalid ones are rejected, and every action that did not run (rejected, failed or skipped) is listed in the next digest. Output that does not match the schema is rejected whole. Three wakes in a row with rejected actions or rejected output pause you.
 
 ## Actions
 - dispatch (provider, role, prompt): start a worker task in the checkout. role "writer" changes files; role "check" runs tests or builds to verify the latest writer; role "other" is read-only (investigation, review). Writer and check tasks need the writer lease: at most one runs at a time. The digest states how many dispatches this wake and how many concurrent tasks are left; extra dispatches are rejected.
@@ -110,8 +110,18 @@ export interface DigestFacts {
   changedPaths?: string[];
   /** CF-detected changes nobody dispatched, if any. */
   unintendedChanges?: string[];
-  /** Actions the validator rejected in the previous wake. */
-  rejected: Array<{ index: number; kind: string; reason: string }>;
+  /**
+   * Actions of the previous wake that did not run: rejected by the validator,
+   * failed or skipped by the executor (`status`; reasons are stored data).
+   */
+  rejected: Array<{
+    index: number;
+    kind: string;
+    status: string;
+    reason: string;
+  }>;
+  /** Schema error of the previous wake, when its whole output was rejected. */
+  schemaError?: string;
   /** Pending events this wake delivers (CF-written keys and details). */
   events: Array<{ key: string; detail?: string; createdAt?: string }>;
 }
@@ -242,17 +252,17 @@ function cfSections(facts: DigestFacts): string[] {
     out.push(facts.unintendedChanges.map((c) => `- ${oneLine(c)}`).join("\n"));
   }
 
-  out.push("## Rejected actions of the previous wake");
-  out.push(
-    facts.rejected.length === 0
-      ? "(none)"
-      : facts.rejected
-          .map(
-            (r) =>
-              `- action ${Number(r.index)} (${oneLine(r.kind)}): ${oneLine(r.reason)}`,
-          )
-          .join("\n"),
+  out.push("## Actions of the previous wake that did not run");
+  const notRun = facts.rejected.map(
+    (r) =>
+      `- action ${Number(r.index)} (${oneLine(r.kind)}) ${oneLine(r.status)}: ${oneLine(r.reason)}`,
   );
+  if (facts.schemaError !== undefined) {
+    notRun.push(
+      `- chef output rejected (schema): ${oneLine(facts.schemaError)}`,
+    );
+  }
+  out.push(notRun.length === 0 ? "(none)" : notRun.join("\n"));
   return out;
 }
 

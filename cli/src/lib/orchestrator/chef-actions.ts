@@ -625,9 +625,10 @@ export interface ValidateInput {
    */
   checkPath?: (path: string) => string | null;
   /**
-   * Eligibility of a dispatch's provider for its role (null = fine), after
-   * the pure `roleCapsProblem`. The wake passes `chefDispatchProblem`;
-   * default: none.
+   * Eligibility of a dispatch's provider for its role (null = fine), the
+   * last dispatch check: only after `roleCapsProblem`, the limits and the
+   * steering heuristic pass, and once per (provider, role) per validation.
+   * The wake passes `chefDispatchProblem`; default: none.
    */
   providerProblem?: (provider: Provider, role: ChefTaskRole) => string | null;
 }
@@ -702,20 +703,30 @@ export function validateActions(input: ValidateInput): ValidationResult {
   const accepted: AcceptedAction[] = [];
   const rejected: RejectedAction[] = [];
 
+  /** providerProblem, probed once per (provider, role) in this pass. */
+  const probes = new Map<string, string | null>();
+  const probeProvider = (
+    provider: Provider,
+    role: ChefTaskRole,
+  ): string | null => {
+    const key = `${provider}:${role}`;
+    if (probes.has(key)) return probes.get(key) ?? null;
+    let problem: string | null;
+    try {
+      problem = input.providerProblem?.(provider, role) ?? null;
+    } catch (err) {
+      problem = `cannot check ${provider}: ${err instanceof Error ? err.message : String(err)}`;
+    }
+    probes.set(key, problem);
+    return problem;
+  };
+
   const judge = (action: ChefAction): string | null => {
     switch (action.type) {
       case "dispatch": {
         if (paused) return "chef paused earlier in this wake";
         const caps = roleCapsProblem(action.provider, action.role);
         if (caps) return caps;
-        let ineligible: string | null;
-        try {
-          ineligible =
-            input.providerProblem?.(action.provider, action.role) ?? null;
-        } catch (err) {
-          ineligible = `cannot check ${action.provider}: ${err instanceof Error ? err.message : String(err)}`;
-        }
-        if (ineligible) return ineligible;
         if (dispatched >= limits.maxTasksPerWake) {
           return `over maxTasksPerWake (${limits.maxTasksPerWake})`;
         }
@@ -734,6 +745,8 @@ export function validateActions(input: ValidateInput): ValidationResult {
           );
           if (hit) return `prompt asks to edit steering path ${hit}`;
         }
+        const ineligible = probeProvider(action.provider, action.role);
+        if (ineligible) return ineligible;
         dispatched++;
         if (writer) dispatchedWriters++;
         return null;

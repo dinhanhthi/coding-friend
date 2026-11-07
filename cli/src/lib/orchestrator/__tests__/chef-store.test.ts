@@ -116,6 +116,17 @@ describe("chef store", () => {
     expect(() => createChef(chefInput(taskId))).toThrow(/task id/);
   });
 
+  it("createChef refuses a non-chef provider or a missing binary and writes nothing", () => {
+    const id = newId();
+    expect(() =>
+      createChef({ ...chefInput(id), provider: "opencode" }),
+    ).toThrow(/Invalid provider/);
+    expect(() =>
+      createChef({ ...chefInput(id), binaries: { git: "/usr/bin/git" } }),
+    ).toThrow(/no claude binary/);
+    expect(existsSync(chefDir(id))).toBe(false);
+  });
+
   it("chef ids go through assertId with the chef id kind", () => {
     expect(() => chefDir("../x")).toThrow(/Invalid chef id/);
   });

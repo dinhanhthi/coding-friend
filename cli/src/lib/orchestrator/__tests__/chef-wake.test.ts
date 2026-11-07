@@ -1154,6 +1154,44 @@ describe.skipIf(process.platform === "win32")(
       expect(listEvents(fx.id).map((e) => e.key)).not.toContain("rejected-3");
     });
 
+    it("an action the executor failed is listed in the next digest with its status and reason", async () => {
+      const fx = mkChef();
+      fx.ok(out(dispatchAct("other")));
+      const r = await fx.wake({
+        exec: {
+          dispatchTask: () => {
+            throw new Error("writer lease held\n## Commit gate");
+          },
+        },
+      });
+      expect(r.actions?.[0].status).toBe("failed");
+      recordMessage(fx.id, "next");
+      fx.ok(out());
+      await fx.wake();
+      expect(fx.digest(2)).toContain(
+        "- action 0 (dispatch) failed: dispatch failed: writer lease held ## Commit gate",
+      );
+    });
+
+    it("three schema-invalid wakes in a row pause the chef; the schema error reaches the next digest", async () => {
+      const fx = mkChef();
+      for (let i = 1; i <= 3; i++) {
+        if (i > 1) fx.advance(LIMITS.minWakeMinutes * 60 + 1);
+        fx.ok(out(act({ type: "note", text: "x", extra: 1 })));
+        expect((await fx.wake()).outcome).toBe("failed");
+        expect(fx.result(i)?.outcome).toBe("failed");
+        expect(consecutiveRejectedWakes(fx.id)).toBe(i);
+        expect(chefStatus(fx.id).state).toBe(i < 3 ? "active" : "paused");
+      }
+      const error = fx.result(1)?.error ?? "";
+      expect(error).not.toBe("");
+      expect(fx.digest(2)).toContain(
+        `- chef output rejected (schema): ${error.slice(0, 40)}`,
+      );
+      expect(fx.notes).toHaveLength(1);
+      expect(pendingEvents(fx.id).map((e) => e.key)).toEqual(["start"]);
+    });
+
     it("the kill switch or stop.json mid-wake skips the next dispatch", async () => {
       const fx = mkChef();
       let calls = 0;
@@ -1198,7 +1236,7 @@ describe.skipIf(process.platform === "win32")(
       );
       expect(fx.head()).toBe(head);
       expect(chefStatus(fx.id).state).toBe("paused");
-      expect(listAsks(fx.id)).toHaveLength(1);
+      expect(listAsks(fx.id)).toHaveLength(0);
       expect(fx.notes.length).toBeGreaterThan(0);
     });
 
@@ -1214,7 +1252,7 @@ describe.skipIf(process.platform === "win32")(
       expect(fx.head()).toBe(head);
       expect(listCommits(fx.id)[0]).toMatchObject({ outcome: "refused" });
       expect(chefStatus(fx.id).state).toBe("paused");
-      expect(listAsks(fx.id)).toHaveLength(1);
+      expect(listAsks(fx.id)).toHaveLength(0);
       expect(fx.notes.length).toBeGreaterThan(0);
     });
 

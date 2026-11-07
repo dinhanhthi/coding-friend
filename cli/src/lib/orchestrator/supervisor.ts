@@ -183,7 +183,10 @@ export interface TickOptions {
   /** Epoch seconds (the unit of quota.ts). */
   now?: number;
   spawn?: typeof spawn;
-  /** `ps -o command=` of `pid`, null when there is no such process. */
+  /**
+   * `ps -o command=` of `pid`, null when ps cannot tell (no such process or
+   * ps failed). Callers check isPidAlive first: alive + null is "unknown".
+   */
   ps?: (pid: number) => string | null;
 }
 
@@ -198,7 +201,22 @@ export interface TickSummary {
 }
 
 const defaultPs = (pid: number) =>
-  exec("ps", ["-ww", "-o", "command=", "-p", String(pid)]);
+  exec("/bin/ps", ["-ww", "-o", "command=", "-p", String(pid)]);
+
+/**
+ * Whether live `pid` may still be the process `matches` describes: its
+ * command matches, or ps could not tell (unknown counts as live, so the
+ * tick never adopts, cleans or fails work a live process may still own).
+ */
+function mayBe(
+  pid: number,
+  ps: NonNullable<TickOptions["ps"]>,
+  matches: (command: string) => boolean,
+): boolean {
+  if (!isPidAlive(pid)) return false;
+  const command = ps(pid);
+  return command === null || matches(command);
+}
 
 /** Whether the words of `command` hold `seq` in a row (whole words, not prefixes). */
 function hasWordSequence(
@@ -231,14 +249,15 @@ export function isWakeCommand(
 
 /**
  * Whether `pid` is still the runner of task `id`: alive and its command line
- * is `cf task _run <id>` (after a reboot the pid may belong to anything).
+ * is `cf task _run <id>` (after a reboot the pid may belong to anything), or
+ * ps could not tell.
  */
 function isRunnerAlive(
   id: string,
   pid: number,
   ps: NonNullable<TickOptions["ps"]>,
 ): boolean {
-  return isPidAlive(pid) && isRunnerCommand(ps(pid), id);
+  return mayBe(pid, ps, (c) => isRunnerCommand(c, id));
 }
 
 /** Whether the latest runner ever started (an abandoned claim has none) still runs. */
@@ -376,19 +395,39 @@ function exists(path: string): boolean {
  * Remove the workspace and `cleanupPaths` an ended task left behind (its
  * runner died before `end()`). A live runner keeps them: the state alone is
  * not enough, done.json (worker-written) ends it while the worker still runs.
+ * Paths a removal refused (logged once) are recorded in
+ * supervisor/cleanup-refused/<id> and the task is not retried.
  */
 function cleanupEnded(
   view: TaskView,
   ps: NonNullable<TickOptions["ps"]>,
 ): void {
   if (!TASK_ENDED_STATES.includes(view.state)) return;
+  const refused = join(supervisorDir(), "cleanup-refused", view.id);
+  if (exists(refused)) return; // logged once already: never retried
   const orchDir = orchestratorDir();
   const paths = taskCleanupPaths(view, orchDir).filter(exists);
   if (paths.length === 0) return;
   const alive = view.attempts
     ? latestRunnerAlive(view.id, listAttempts(view.id), ps)
     : !!view.runner && isRunnerAlive(view.id, view.runner.pid, ps);
-  if (!alive) removeStorePaths(orchDir, paths, "supervisor");
+  if (alive) return;
+  removeStorePaths(orchDir, paths, "supervisor");
+  // Each tick is a new process: remember the refusal, or it is logged
+  // again every minute.
+  const left = paths.filter(exists);
+  if (left.length === 0) return;
+  mkdirReal(dirname(refused));
+  try {
+    writeFileSync(refused, serialize({ schemaVersion: 1, paths: left }), {
+      encoding: "utf-8",
+      mode: 0o600,
+      flag: "wx",
+    });
+  } catch (err) {
+    // Another tick wrote it first: the refusal is already recorded.
+    if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+  }
 }
 
 /**
@@ -518,7 +557,7 @@ function tickChef(
   // A wake writes result.json (ok) before it executes its actions, so a
   // live runner counts whether or not its result exists.
   const isAlive = (n: number, pid: number) =>
-    isPidAlive(pid) && isWakeCommand(deps.ps(pid), id, n);
+    mayBe(pid, deps.ps, (c) => isWakeCommand(c, id, n));
   const wakes = listWakes(id);
   if (wakes.some((w) => w.runner && isAlive(w.n, w.runner.pid))) {
     return "skipped";

@@ -1016,6 +1016,8 @@ function relPathProblem(p: unknown): string | null {
   if (typeof p !== "string" || p === "") return "empty path";
   if (p.length > 4096) return "path too long";
   if (/[\0\n\r]/.test(p)) return "path contains NUL or newline";
+  // U+FFFD: git's bytes were not UTF-8, so this is not the on-disk name.
+  if (p.includes("\uFFFD")) return "path is not valid UTF-8";
   if (p.startsWith("/") || isAbsolute(p)) return "path is absolute";
   const segs = p.split("/");
   if (segs.some((s) => s === "" || s === "." || s === "..")) {
@@ -1352,6 +1354,9 @@ export function validateCommitMessage(message: string): string | null {
     )
   ) {
     return "message must be one line without control characters";
+  }
+  if (/[\uD800-\uDFFF]/u.test(message)) {
+    return "message contains a lone UTF-16 surrogate";
   }
   return null;
 }
@@ -1783,6 +1788,30 @@ function sameInode(abs: string, dev: number, ino: number): boolean {
   }
 }
 
+/** refs/heads/<branch> now holds `sha` (false when it cannot be read). */
+function refPointsTo(ctx: GitCtx, branch: string, sha: string): boolean {
+  try {
+    return resolveBranchHead(ctx, branch) === sha;
+  } catch {
+    return false;
+  }
+}
+
+/** update-ref failed after writing the ref: the commit has landed. */
+function casLanded(
+  done: CommitDone,
+  ref: string,
+  why: string,
+): CommitPathsResult {
+  return {
+    kind: "committed-index-sync-failed",
+    ...done,
+    error: clip(
+      `update-ref reported a failure but ${ref} points to the new commit; real index not synced: ${why}`,
+    ),
+  };
+}
+
 /** Read every path once and compare with the gate (null = all match). */
 function readGatedPaths(
   ctx: GitCtx,
@@ -2099,30 +2128,41 @@ export function commitPaths(input: CommitPathsInput): CommitPathsResult {
       expectedHead,
       input.message,
     );
-    const cas = gitRun({
-      ...ctxOnly(ctx),
-      args: [
-        "update-ref",
-        "--no-deref",
-        "-m",
-        `cf chef ${input.id}`,
-        ref,
-        commit,
-        expectedHead,
-      ],
-    });
-    if (cas.status !== 0) {
-      return {
-        kind: "mismatch",
-        reason: `${ref} moved (compare-and-swap failed): ${cas.stderr}`,
-      };
-    }
     const done: CommitDone = {
       commit,
       tree,
       parent: expectedHead,
       paths: want,
     };
+    let cas: GitRunResult;
+    try {
+      cas = gitRun({
+        ...ctxOnly(ctx),
+        args: [
+          "update-ref",
+          "--no-deref",
+          "-m",
+          `cf chef ${input.id}`,
+          ref,
+          commit,
+          expectedHead,
+        ],
+      });
+    } catch (err) {
+      if (!(err instanceof ChefGitError && err.kind === "GIT_FAILED"))
+        throw err;
+      if (!refPointsTo(ctx, branch, commit)) throw err;
+      return casLanded(done, ref, err.message);
+    }
+    if (cas.status !== 0) {
+      if (refPointsTo(ctx, branch, commit)) {
+        return casLanded(done, ref, cas.stderr);
+      }
+      return {
+        kind: "mismatch",
+        reason: `${ref} moved (compare-and-swap failed): ${cas.stderr}`,
+      };
+    }
     // The commit has landed: from here nothing may throw.
     try {
       if (readSymbolicHead(ctx) !== ref) {

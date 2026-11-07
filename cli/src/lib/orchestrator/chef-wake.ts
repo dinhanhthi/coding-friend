@@ -568,15 +568,29 @@ function buildDigestFacts(
     .filter((m) => sayKeys.has(`say-${m.seq}`))
     .map((m) => ({ seq: m.seq, text: m.text }));
 
-  // Rejections of the previous ok wake (none when it was clean).
+  // Actions of the previous ok wake that did not run (rejected, failed,
+  // skipped), or the schema error of a schema-invalid wake after it.
   const prev = listWakes(id)
-    .filter((w) => w.n < n && w.result?.outcome === "ok")
+    .filter(
+      (w) =>
+        w.n < n &&
+        (w.result?.outcome === "ok" ||
+          (w.result?.outcome === "failed" && (w.result.rejected ?? 0) > 0)),
+    )
     .at(-1);
-  const rejected = prev
-    ? listDecisions(id)
-        .filter((d) => d.wake === prev.n && d.status === "rejected")
-        .map((d) => ({ index: d.index, kind: d.kind, reason: d.reason ?? "" }))
-    : [];
+  const schemaError =
+    prev?.result?.outcome === "failed" ? (prev.result.error ?? "") : undefined;
+  const rejected =
+    prev && schemaError === undefined
+      ? listDecisions(id)
+          .filter((d) => d.wake === prev.n && d.status !== "executed")
+          .map((d) => ({
+            index: d.index,
+            kind: d.kind,
+            status: d.status,
+            reason: d.reason ?? "",
+          }))
+      : [];
 
   const gate = commitGateProblem(fx);
   return {
@@ -606,6 +620,7 @@ function buildDigestFacts(
       changedPaths: Object.keys(fx.currentFingerprint.changed ?? {}),
     }),
     rejected,
+    ...(schemaError !== undefined && { schemaError }),
     events: events.map((e) => ({
       key: e.key,
       ...(e.detail !== undefined && { detail: e.detail }),
@@ -924,7 +939,17 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
     log("output.json not written: over the size cap");
   }
   if (validation.schemaError) {
-    finish(c, { outcome: "failed", error: validation.schemaError });
+    // Failed (events stay pending, so the chef wakes again), but it counts
+    // toward the rejected-wake streak and the next digest shows the error.
+    if (
+      finish(c, {
+        outcome: "failed",
+        error: validation.schemaError,
+        rejected: Math.max(1, validation.rejected.length),
+      })
+    ) {
+      await pauseOnRejectionStreak(chef, n, exec);
+    }
     return { outcome: "failed", reason: validation.schemaError };
   }
   // Another process (the tick's orphan path) already wrote result.json: the
@@ -956,15 +981,9 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
     },
     validation,
   );
-  const streak = consecutiveRejectedWakes(id);
-  if (shouldPauseForRejections(streak) && chefStatus(id).state === "active") {
-    await pauseChef(
-      chef,
-      n,
-      `${streak} wakes in a row had rejected actions`,
-      exec,
-    );
-  } else if (
+  const paused = await pauseOnRejectionStreak(chef, n, exec);
+  if (
+    !paused &&
     validation.rejected.length > 0 &&
     chefStatus(id).state === "active"
   ) {
@@ -974,10 +993,32 @@ async function wakeBody(c: Ctx): Promise<WakeRunResult> {
     recordEvent(
       id,
       `rejected-${n}`,
-      `wake ${n} had ${validation.rejected.length} rejected action${validation.rejected.length === 1 ? "" : "s"} (reasons under Rejected actions of the previous wake)`,
+      `wake ${n} had ${validation.rejected.length} rejected action${validation.rejected.length === 1 ? "" : "s"} (reasons under Actions of the previous wake that did not run)`,
     );
   }
   return { outcome: "ok", actions };
+}
+
+/** Pause an active chef whose rejected-wake streak is due; true if paused. */
+async function pauseOnRejectionStreak(
+  chef: ChefRecord,
+  n: number,
+  exec: Parameters<typeof pauseChef>[3],
+): Promise<boolean> {
+  const streak = consecutiveRejectedWakes(chef.id);
+  if (
+    !shouldPauseForRejections(streak) ||
+    chefStatus(chef.id).state !== "active"
+  ) {
+    return false;
+  }
+  await pauseChef(
+    chef,
+    n,
+    `${streak} wakes in a row had rejected actions`,
+    exec,
+  );
+  return true;
 }
 
 function fingerprintEqualsSafe(a: ChefFingerprint, b: unknown): boolean {

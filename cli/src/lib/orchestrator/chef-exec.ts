@@ -277,17 +277,15 @@ async function execDispatch(
   return { status: "executed", taskId };
 }
 
-/** Pause + inbox + notify after a commit that did not land as asked. */
+/**
+ * Pause + notify after a commit that did not land as asked. CF-written text:
+ * only the pause (the inbox's "resume with" item), never a chef question.
+ */
 async function commitProblem(
   ec: ChefExecContext,
   reason: string,
 ): Promise<void> {
-  const { chef } = ec;
-  recordAsk(chef.id, {
-    wake: ec.wake,
-    question: `Commit not made: ${reason}. Check the checkout, then run cf chef resume ${chef.id}.`,
-  });
-  await pauseChef(chef, ec.wake, `commit failed: ${reason}`, ec.deps);
+  await pauseChef(ec.chef, ec.wake, `commit failed: ${reason}`, ec.deps);
 }
 
 async function execCommit(

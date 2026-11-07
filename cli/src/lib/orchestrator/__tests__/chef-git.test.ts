@@ -40,6 +40,7 @@ import {
   resolveBranchHead,
   snapshotRepoGuard,
   snapshotSteering,
+  validateCommitMessage,
   validateCommitPath,
   type ChefFingerprint,
   type GitCtx,
@@ -94,7 +95,7 @@ function writeExec(file: string, body: string): void {
 function plainRaw(
   dir: string,
   args: string[],
-  input?: string,
+  input?: string | Buffer,
   extraEnv: Record<string, string> = {},
 ): string {
   const r = spawnSync(
@@ -669,6 +670,40 @@ describe.skipIf(process.platform === "win32")("chef-git security", () => {
     expect(branchHead(r)).toBe(res.commit);
   });
 
+  it.each([
+    ["exits non-zero", "exit 1"],
+    ["is killed", "kill -KILL $$"],
+  ])(
+    "update-ref %s after writing the ref: committed-index-sync-failed, real index untouched",
+    (_name, after) => {
+      const r = mkRepo();
+      const fp = computeFingerprint(r.ctx, r.head);
+      const before = plain(r.dir, "ls-files", "-s", "src/a.txt");
+      const gitBin = join(root, "bin", `casfailshim${repoSeq}`);
+      writeExec(
+        gitBin,
+        [
+          "#!/bin/sh",
+          'for a in "$@"; do',
+          '  case "$a" in',
+          `    update-ref) "${realGit}" "$@"; ${after} ;;`,
+          "  esac",
+          "done",
+          `exec "${realGit}" "$@"`,
+          "",
+        ].join("\n"),
+      );
+      const res = commit(r, ["src/a.txt"], fp, { ctx: { ...r.ctx, gitBin } });
+      expect(res).toMatchObject({
+        kind: "committed-index-sync-failed",
+        error: expect.stringMatching(/update-ref reported a failure/),
+      });
+      if (res.kind !== "committed-index-sync-failed") return;
+      expect(branchHead(r)).toBe(res.commit);
+      expect(plain(r.dir, "ls-files", "-s", "src/a.txt")).toBe(before);
+    },
+  );
+
   it("branch ref swapped away and back between read-tree and update-ref: commit holds only the listed paths", () => {
     const r = mkRepo();
     const fp = computeFingerprint(r.ctx, r.head);
@@ -1073,13 +1108,18 @@ describe.skipIf(process.platform === "win32")("chef-git security", () => {
     ).toBeNull();
   });
 
-  it("commitPaths refuses a multi-line message", () => {
+  it.each([
+    ["a multi-line message", "chef: one\ntwo"],
+    ["a lone UTF-16 surrogate", "chef: \uD800 half"],
+  ])("commitPaths refuses %s", (_name, message) => {
     const r = mkRepo();
     const res = commit(r, ["src/a.txt"], computeFingerprint(r.ctx, r.head), {
-      message: "chef: one\ntwo",
+      message,
     });
     expect(res).toMatchObject({ kind: "refused" });
     expect(JSON.stringify(res)).toMatch(/message:/);
+    expect(branchHead(r)).toBe(r.head);
+    expect(validateCommitMessage("chef: ok \u{1F389}")).toBeNull();
   });
 
   it("commitPaths refuses a changed steering path", () => {
@@ -1107,6 +1147,27 @@ describe.skipIf(process.platform === "win32")("chef-git security", () => {
     expect(fingerprintEquals(before, computeFingerprint(r.ctx, r.head))).toBe(
       false,
     );
+  });
+
+  it("fingerprint records a non-UTF-8 path name as a skipped unsafe-path", () => {
+    const r = mkRepo();
+    const blob = plainRaw(
+      r.dir,
+      ["hash-object", "-w", "--stdin"],
+      "x\n",
+    ).trim();
+    plainRaw(
+      r.dir,
+      ["update-index", "-z", "--index-info"],
+      Buffer.concat([
+        Buffer.from(`100644 ${blob}\t`),
+        Buffer.from([0xff]),
+        Buffer.from(".txt\0"),
+      ]),
+    );
+    const fp = computeFingerprint(r.ctx, r.head);
+    expect(fp.skipped).toContain(`unsafe-path:${JSON.stringify("\uFFFD.txt")}`);
+    expect(fp.changed).not.toHaveProperty(["\uFFFD.txt"]);
   });
 
   it("fingerprint ignores a change to an ignored file", () => {

@@ -208,7 +208,7 @@ const PS_IDENTITY = ["-ww", "-o", "lstart=,command=", "-p"];
 /** Start time + command line of `pid` as `ps` prints them, "" when unknown. */
 export function processIdentity(pid: number): string {
   try {
-    return execFileSync("ps", [...PS_IDENTITY, String(pid)], {
+    return execFileSync("/bin/ps", [...PS_IDENTITY, String(pid)], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 5000,
@@ -228,7 +228,7 @@ export function watchdogArgv(
   identity: string,
   delayS: number,
 ): string[] {
-  const ps = `ps ${PS_IDENTITY.join(" ")} "$2" 2>/dev/null`;
+  const ps = `/bin/ps ${PS_IDENTITY.join(" ")} "$2" 2>/dev/null`;
   return [
     "/bin/sh",
     "-c",

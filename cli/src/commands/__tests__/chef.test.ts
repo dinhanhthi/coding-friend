@@ -189,6 +189,10 @@ beforeEach(() => {
   vi.stubEnv("HOME", home);
   vi.stubEnv("PATH", `${bin}:/usr/bin:/bin`);
   vi.stubEnv("CF_ORCHESTRATOR_DIR", join(dir, "orch"));
+  // The suite may itself run inside a cf task worker: clear the worker markers
+  // the resume guard reads.
+  vi.stubEnv("CF_TASK_ID", "");
+  vi.stubEnv("CF_CHEF_CLAIMED", "");
   vi.spyOn(process, "cwd").mockReturnValue(repo);
   stdout = [];
   logged = [];
@@ -291,25 +295,15 @@ describe.skipIf(process.platform === "win32")("cf chef start refusals", () => {
     expectNothingCreated();
   });
 
-  it("refuses a second chef for the same checkout, even for another plan; of two parallel starts only one wins", async () => {
+  // startChef is synchronous, so two starts in one process never race: the
+  // create-once claim itself is owned by chef-store.test.ts.
+  it("refuses a second chef for the same checkout, even for another plan", async () => {
     const first = await start();
     expect(first.ok).toBe(true);
-    const second = await start({}, "docs/plans/q");
+    const second = await start({ provider: "codex" }, "docs/plans/q");
     expect(second.error.code).toBe("LEASE_HELD");
     expect(listChefs()).toHaveLength(1);
-
-    const other = newRepo("repo2");
-    vi.mocked(process.cwd).mockReturnValue(other);
-    const both = await envelopes(async () => {
-      await Promise.all([
-        chefStartCommand("docs/plans/p", { provider: "claude", json: true }),
-        chefStartCommand("docs/plans/q", { provider: "codex", json: true }),
-      ]);
-    });
-    expect(both.filter((e) => e.ok)).toHaveLength(1);
-    expect(both.filter((e) => !e.ok)[0].error.code).toBe("LEASE_HELD");
-    expect(listChefs().filter((c) => c.checkout === other)).toHaveLength(1);
-  });
+  }, 15_000);
 
   it.each([
     ["claude", "2.1.200 (Claude Code)", /2\.1\.248 or newer/],
@@ -949,6 +943,42 @@ describe.skipIf(process.platform === "win32")(
       expect(r.error.message).toMatch(/is not paused: nothing to resume/);
       expect(listResumes(id)).toEqual([]);
       expect(existsSync(join(chefDir(id), "resumes"))).toBe(false);
+    });
+
+    it("resume refuses inside a worker env (CF_TASK_ID set), and writes no resume", async () => {
+      const id = (await start()).data.chefId;
+      recordPause(id, { reason: "test" });
+      vi.stubEnv("CF_TASK_ID", "abcd1234");
+      const r = await resume(id);
+      expect(r.error.code).toBe("USAGE");
+      expect(r.error.message).toMatch(/worker/);
+      expect(listResumes(id)).toEqual([]);
+    });
+
+    it("a refused commit (commit.gpgSign) is one CF pause in the inbox, not an untrusted chef question; the statusline counts it once", async () => {
+      plain(repo, "config", "commit.gpgSign", "true");
+      const id = (await start()).data.chefId;
+      const w = wakes(id);
+      await w.wake(out(dispatchAct("writer")));
+      writeFileSync(join(repo, "src/b.txt"), "chef work\n");
+      finishTask(w.dispatched[0]);
+      await w.wake(out(dispatchAct("check")));
+      finishTask(w.dispatched[1]);
+      const r = await w.wake(out(commitAct(["src/b.txt"])));
+      expect(r.actions?.[0]).toMatchObject({ status: "failed" });
+      expect(chefStatus(id).state).toBe("paused");
+
+      const inbox = await json(() => chefInboxCommand(id, { json: true }));
+      expect(inbox.data).toEqual([
+        expect.objectContaining({
+          kind: "paused",
+          text: expect.stringMatching(/^commit failed: refused: .*gpgSign/),
+        }),
+      ]);
+      const summary = JSON.parse(
+        readFileSync(join(chefsDir(), "summary.json"), "utf-8"),
+      );
+      expect(summary).toMatchObject({ inbox: 0, paused: 1 });
     });
 
     it("resume refuses when HEAD is on another branch than at start, and writes no resume", async () => {
