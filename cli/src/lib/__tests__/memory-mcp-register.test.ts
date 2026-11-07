@@ -441,7 +441,8 @@ describe("unregisterMemoryMcp", () => {
       },
     });
 
-    expect(unregisterMemoryMcp("devin")).toBe(false);
+    // Nothing of ours to remove — not an error, and the foreign server stays.
+    expect(unregisterMemoryMcp("devin")).toBe(true);
     expect(mockRemoveDevinMcpEntry).not.toHaveBeenCalled();
     expect(mockRunWithStderr).not.toHaveBeenCalled();
   });

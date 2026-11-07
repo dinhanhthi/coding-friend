@@ -524,7 +524,11 @@ describe("initCommand — devin", () => {
     expect(localCfg.privacyBlock).toBe(true);
 
     expect(registerLearnMcp).toHaveBeenCalledWith(expect.any(String), "devin");
-    expect(registerMemoryMcp).toHaveBeenCalledWith("devin");
+    // Memory MCP ships inside the Devin plugin — never registered separately.
+    expect(registerMemoryMcp).not.toHaveBeenCalled();
+    expect(logs.join("\n")).toContain(
+      "coding-friend-memory: ships with the Devin plugin",
+    );
   });
 
   it("does not write a project AGENTS.md (double bootstrap with SessionStart)", async () => {

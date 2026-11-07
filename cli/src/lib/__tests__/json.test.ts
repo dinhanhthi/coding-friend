@@ -13,6 +13,8 @@ import {
   renameSync,
   rmSync,
   existsSync,
+  chmodSync,
+  statSync,
 } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -156,5 +158,15 @@ describe("writeJsonAtomic", () => {
     );
     expect(readFileSync(file, "utf-8")).toBe('{"old":true}\n');
     expect(readdirSync(testDir)).toEqual(["keep.json"]);
+  });
+
+  it("keeps the existing file's mode", () => {
+    const file = join(testDir, "secret.json");
+    writeFileSync(file, "{}\n", "utf-8");
+    chmodSync(file, 0o600);
+
+    writeJsonAtomic(file, { token: "x" });
+
+    expect(statSync(file).mode & 0o777).toBe(0o600);
   });
 });

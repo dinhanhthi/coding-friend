@@ -12,6 +12,7 @@ import {
 import { runWithStderr } from "./exec.js";
 import type { Host } from "./host.js";
 import { log } from "./log.js";
+import type { McpUnregisterResult } from "./memory-mcp-register.js";
 import {
   readOmpMcpJson,
   removeOmpMcpEntry,
@@ -133,6 +134,24 @@ export function isLearnMcpRegistered(host: Host = "claude"): boolean {
   return result.exitCode === 0;
 }
 
+/**
+ * Remove only the entry we wrote into ~/.config/devin/mcp_config.json — an
+ * imported ~/.claude.json entry belongs to the Claude host. A corrupt file
+ * makes removeDevinMcpEntry throw, so it is reported as "failed".
+ */
+export function unregisterDevinLearnMcp(): McpUnregisterResult {
+  try {
+    const present = hasDevinLearnEntry();
+    removeDevinMcpEntry(MCP_NAME);
+    if (hasDevinLearnEntry()) return "failed";
+    return present ? "removed" : "absent";
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unknown error";
+    log.warn(`Could not unregister MCP: ${detail}`);
+    return "failed";
+  }
+}
+
 export function unregisterLearnMcp(host: Host = "claude"): boolean {
   if (host === "omp") {
     try {
@@ -156,18 +175,7 @@ export function unregisterLearnMcp(host: Host = "claude"): boolean {
     }
   }
 
-  if (host === "devin") {
-    // Removes only the entry we wrote into ~/.config/devin/mcp_config.json —
-    // an imported ~/.claude.json entry belongs to the Claude host.
-    try {
-      removeDevinMcpEntry(MCP_NAME);
-      return !hasDevinLearnEntry();
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "unknown error";
-      log.warn(`Could not unregister MCP: ${detail}`);
-      return false;
-    }
-  }
+  if (host === "devin") return unregisterDevinLearnMcp() !== "failed";
 
   const result = runWithStderr("claude", [
     "mcp",

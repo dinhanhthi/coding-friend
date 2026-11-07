@@ -5,6 +5,7 @@ import {
   checkCodexVersion,
   checkDevinVersion,
   checkOmpVersion,
+  resolveHost,
   type Host,
 } from "../lib/host.js";
 import { log, printBanner } from "../lib/log.js";
@@ -33,7 +34,6 @@ import {
   MODS_PLUGIN_ID,
 } from "../lib/plugin-state.js";
 import {
-  resolveHostFlags,
   resolveScope,
   type PluginScope,
   type ScopeFlags,
@@ -229,6 +229,15 @@ export async function runInstall(
   };
 }
 
+/** Drop ANSI/OSC escapes and control characters (keeps \t and \n). */
+function stripControl(s: string): string {
+  return s
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/\x1b[@-_]/g, "")
+    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, "");
+}
+
 /** Install coding-friend-mods at the base plugin's scope. A failure only warns. */
 function installMods(scope: PluginScope): InstallResult["mods"] {
   log.step(`Installing coding-friend-mods (${chalk.cyan(scope)} scope)...`);
@@ -241,8 +250,9 @@ function installMods(scope: PluginScope): InstallResult["mods"] {
   ]);
   if (result.exitCode !== 0) {
     const detail =
-      (result.stderr || result.stdout).split("\n")[0].trim() ||
-      `exit code ${result.exitCode}`;
+      stripControl(result.stderr || result.stdout)
+        .split("\n")[0]
+        .trim() || `exit code ${result.exitCode}`;
     log.warn(
       `Failed to install coding-friend-mods (${detail}). Try manually: claude plugin install ${MODS_PLUGIN_ID} --scope ${scope}`,
     );
@@ -252,15 +262,18 @@ function installMods(scope: PluginScope): InstallResult["mods"] {
   return { installed: true, scope };
 }
 
-/** Host flags → host. A resolution error (thrown) becomes INVALID_ARGS. */
+/**
+ * Host flags → host. Uses resolveHost (throws) rather than resolveHostFlags
+ * (process.exits), so --json gets an INVALID_ARGS envelope; human mode logs
+ * the same error and runHuman exits 1.
+ */
 function resolveInstallHost(opts: InstallOptions): Host {
   try {
-    return resolveHostFlags(opts).host;
+    return resolveHost(opts);
   } catch (err) {
-    throw new CliError(
-      "INVALID_ARGS",
-      err instanceof Error ? err.message : String(err),
-    );
+    const message = err instanceof Error ? err.message : String(err);
+    log.error(message);
+    throw new CliError("INVALID_ARGS", message);
   }
 }
 
@@ -493,7 +506,7 @@ async function installDevinCommand(): Promise<InstallResult> {
     if (alreadyInstalled) {
       log.success("Devin plugin already installed (live --local link).");
     } else {
-      log.success("Devin plugin installed.");
+      log.success(`Devin plugin ${action}.`);
     }
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);

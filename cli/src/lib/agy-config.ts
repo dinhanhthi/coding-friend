@@ -10,7 +10,7 @@ import {
 import { dirname, join, resolve } from "path";
 
 import { commandExists, run, runWithStderr } from "./exec.js";
-import { readJson, writeJson } from "./json.js";
+import { readJson, writeJsonAtomic } from "./json.js";
 import {
   agyConfigDir,
   agyConfigJsonPath,
@@ -186,7 +186,7 @@ export function deployAgyPlugin(source: string): { files: number } {
     );
   }
 
-  writeJson(join(target, INSTALLED_VERSION_FILE), {
+  writeJsonAtomic(join(target, INSTALLED_VERSION_FILE), {
     version: readVersionFromPluginJson(resolvedSource) ?? "unknown",
     installedAt: new Date().toISOString(),
     source: resolvedSource,
@@ -239,7 +239,7 @@ export function setAgyPluginEnabled(enabled: boolean): void {
   entry.enabled = enabled;
   plugins[PLUGIN_NAME] = entry;
   data.plugins = plugins;
-  writeJson(filePath, data);
+  writeJsonAtomic(filePath, data);
 }
 
 export function isAgyPluginEnabled(): boolean {
@@ -257,7 +257,7 @@ export function removeAgyPluginConfigEntry(): boolean {
   if (!(PLUGIN_NAME in existing.plugins)) return false;
   const plugins = { ...existing.plugins };
   delete plugins[PLUGIN_NAME];
-  writeJson(filePath, { ...existing, plugins });
+  writeJsonAtomic(filePath, { ...existing, plugins });
   return true;
 }
 
@@ -284,7 +284,7 @@ export function writeAgyMcpEntry(name: string, server: AgyMcpServer): void {
     : {};
   mcpServers[name] = server;
   data.mcpServers = mcpServers;
-  writeJson(filePath, data);
+  writeJsonAtomic(filePath, data);
 }
 
 export function removeAgyMcpEntry(name: string): void {
@@ -296,7 +296,7 @@ export function removeAgyMcpEntry(name: string): void {
   };
   if (!(name in mcpServers)) return;
   delete mcpServers[name];
-  writeJson(filePath, { ...existing, mcpServers });
+  writeJsonAtomic(filePath, { ...existing, mcpServers });
 }
 
 export function validateAgyPlugin(dir: string): AgyValidateResult {

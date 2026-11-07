@@ -205,7 +205,9 @@ export function checkAgyVersion(): CodexVersionCheck {
 export function checkDevinVersion(): CodexVersionCheck {
   const min = getDevinMinVersion();
   const output = run("devin", ["--version"]);
-  const actual = output ? extractVersion(output) : undefined;
+  const actual = output
+    ? extractVersion(output, { prerelease: true })
+    : undefined;
 
   return {
     ok: actual ? compareVersions(actual, min) >= 0 : false,
@@ -214,10 +216,22 @@ export function checkDevinVersion(): CodexVersionCheck {
   };
 }
 
-export function extractVersion(input: string): string | undefined {
-  return input.match(/\b(\d+\.\d+\.\d+)\b/)?.[1];
+/**
+ * First x.y.z in the text. With `prerelease`, keeps a "-beta.1" suffix so a
+ * prerelease sorts below its release; off by default because some CLIs print a
+ * build hash after a release ("2026.10.22-27dcf5f").
+ */
+export function extractVersion(
+  input: string,
+  opts: { prerelease?: boolean } = {},
+): string | undefined {
+  const re = opts.prerelease
+    ? /\b(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?![0-9A-Za-z.-])/
+    : /\b(\d+\.\d+\.\d+)\b/;
+  return input.match(re)?.[1];
 }
 
+/** Numeric core compare; on a tie a prerelease sorts below the release. */
 export function compareVersions(a: string, b: string): number {
   const left = parseVersion(a);
   const right = parseVersion(b);
@@ -225,6 +239,9 @@ export function compareVersions(a: string, b: string): number {
     if (left[i] > right[i]) return 1;
     if (left[i] < right[i]) return -1;
   }
+  const aPre = a.includes("-");
+  const bPre = b.includes("-");
+  if (aPre !== bPre) return aPre ? -1 : 1;
   return 0;
 }
 

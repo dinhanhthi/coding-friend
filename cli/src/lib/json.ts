@@ -5,6 +5,9 @@ import {
   existsSync,
   renameSync,
   rmSync,
+  statSync,
+  chmodSync,
+  realpathSync,
 } from "fs";
 import { basename, dirname, join } from "path";
 
@@ -39,18 +42,24 @@ export function writeJson(
 /**
  * Write JSON atomically: write a temp file in the same directory, then rename
  * it over the target. On failure the temp file is removed and the old file
- * stays intact.
+ * stays intact. Follows a symlinked target (rename would otherwise replace the
+ * link itself) and keeps an existing file's mode.
  */
 export function writeJsonAtomic(filePath: string, data: unknown): void {
-  const dir = dirname(filePath);
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dirname(filePath), { recursive: true });
+  const target = existsSync(filePath) ? realpathSync(filePath) : filePath;
+  const mode = existsSync(target) ? statSync(target).mode & 0o777 : undefined;
   const tmp = join(
-    dir,
-    `.${basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
+    dirname(target),
+    `.${basename(target)}.${process.pid}.${Date.now()}.tmp`,
   );
   try {
-    writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", "utf-8");
-    renameSync(tmp, filePath);
+    writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", {
+      encoding: "utf-8",
+      mode,
+    });
+    if (mode !== undefined) chmodSync(tmp, mode); // umask may strip bits
+    renameSync(tmp, target);
   } catch (err) {
     try {
       rmSync(tmp, { force: true });

@@ -10,7 +10,7 @@ import {
 import { dirname, join, resolve } from "path";
 
 import { compareVersions } from "./host.js";
-import { readJson, writeJson } from "./json.js";
+import { readJson, writeJsonAtomic } from "./json.js";
 import { getOmpExtensionPath } from "./lib-path.js";
 import {
   ompConfigYmlPath,
@@ -482,7 +482,7 @@ export function writeOmpMcpEntry(
     : {};
   mcpServers[name] = server;
   data.mcpServers = mcpServers;
-  writeJson(filePath, data);
+  writeJsonAtomic(filePath, data);
 }
 
 export function removeOmpMcpEntry(
@@ -496,7 +496,7 @@ export function removeOmpMcpEntry(
   };
   if (!(name in mcpServers)) return;
   delete mcpServers[name];
-  writeJson(filePath, { ...existing, mcpServers });
+  writeJsonAtomic(filePath, { ...existing, mcpServers });
 }
 
 export function convertClaudeAgentToOmp(sourceMd: string): string {

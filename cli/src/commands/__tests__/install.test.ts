@@ -28,7 +28,6 @@ vi.mock("../update.js", () => ({
 
 vi.mock("../../lib/prompt-utils.js", () => ({
   resolveScope: vi.fn(),
-  resolveHostFlags: vi.fn(),
 }));
 
 vi.mock("../../lib/host.js", () => ({
@@ -36,6 +35,7 @@ vi.mock("../../lib/host.js", () => ({
   checkOmpVersion: vi.fn(),
   checkAgyVersion: vi.fn(),
   checkDevinVersion: vi.fn(),
+  resolveHost: vi.fn(),
 }));
 
 vi.mock("../../lib/agy-config.js", () => ({
@@ -84,6 +84,7 @@ import {
   checkCodexVersion,
   checkDevinVersion,
   checkOmpVersion,
+  resolveHost,
 } from "../../lib/host.js";
 import {
   deployAgyPlugin,
@@ -91,7 +92,7 @@ import {
   setAgyPluginEnabled,
   validateAgyPlugin,
 } from "../../lib/agy-config.js";
-import { resolveHostFlags, resolveScope } from "../../lib/prompt-utils.js";
+import { resolveScope } from "../../lib/prompt-utils.js";
 import {
   deployCodexAgents,
   findCodexAgentSourceDir,
@@ -117,7 +118,7 @@ const mockEnableMarketplaceAutoUpdate = vi.mocked(enableMarketplaceAutoUpdate);
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockEnsureShellCompletion = vi.mocked(ensureShellCompletion);
 const mockResolveScope = vi.mocked(resolveScope);
-const mockResolveHostFlags = vi.mocked(resolveHostFlags);
+const mockResolveHost = vi.mocked(resolveHost);
 const mockCheckCodexVersion = vi.mocked(checkCodexVersion);
 const mockIsCodexMarketplaceRegistered = vi.mocked(
   isCodexMarketplaceRegistered,
@@ -141,7 +142,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-  mockResolveHostFlags.mockReturnValue({ host: "claude" });
+  mockResolveHost.mockReturnValue("claude");
   mockResolveScope.mockResolvedValue("user");
   mockExistsSync.mockReturnValue(false); // no dev mode by default
   mockEnableMarketplaceAutoUpdate.mockReturnValue(true);
@@ -297,7 +298,7 @@ describe("installCommand", () => {
 
     await installCommand();
 
-    expect(mockResolveHostFlags).toHaveBeenCalledWith({});
+    expect(mockResolveHost).toHaveBeenCalledWith({});
     expect(mockCommandExists).toHaveBeenCalledWith("claude");
     expect(mockResolveScope).toHaveBeenCalledWith({});
     expect(mockRun.mock.calls).toMatchInlineSnapshot(`
@@ -394,7 +395,7 @@ describe("installCommand", () => {
   });
 
   it("registers Codex marketplace and deploys agents for --agent codex", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockResolveHost.mockReturnValue("codex");
     mockCommandExists.mockReturnValue(true);
     mockIsCodexMarketplaceRegistered.mockReturnValue(false);
     mockRun.mockReturnValue("ok");
@@ -416,7 +417,7 @@ describe("installCommand", () => {
   });
 
   it("exits when Codex version is too old", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockResolveHost.mockReturnValue("codex");
     mockCommandExists.mockReturnValue(true);
     mockCheckCodexVersion.mockReturnValue({
       ok: false,
@@ -439,7 +440,7 @@ describe("installCommand", () => {
   });
 
   it("deploys omp agents, extension, and memory MCP for --agent omp", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "omp" });
@@ -455,7 +456,7 @@ describe("installCommand", () => {
   });
 
   it("reports omp beta install success and skill inheritance", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
     const logSpy = vi.spyOn(console, "log");
 
@@ -469,7 +470,7 @@ describe("installCommand", () => {
   });
 
   it("uses project omp scope for --project", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "omp", project: true });
@@ -479,7 +480,7 @@ describe("installCommand", () => {
   });
 
   it("maps --local to project omp scope", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "omp", local: true });
@@ -489,7 +490,7 @@ describe("installCommand", () => {
   });
 
   it("exits when omp CLI is missing without deploying", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(false);
     const mockExit = vi
       .spyOn(process, "exit")
@@ -509,7 +510,7 @@ describe("installCommand", () => {
   });
 
   it("exits when omp version is unsupported without deploying", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
     mockCheckOmpVersion.mockReturnValue({
       ok: false,
@@ -534,7 +535,7 @@ describe("installCommand", () => {
   });
 
   it("deploys the Antigravity plugin and memory MCP for --agent agy", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockResolveHost.mockReturnValue("agy");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "agy" });
@@ -555,7 +556,7 @@ describe("installCommand", () => {
   });
 
   it("exits when agy CLI is missing without deploying", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockResolveHost.mockReturnValue("agy");
     mockCommandExists.mockReturnValue(false);
     const mockExit = vi
       .spyOn(process, "exit")
@@ -574,7 +575,7 @@ describe("installCommand", () => {
   });
 
   it("exits when agy version is unsupported without deploying", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockResolveHost.mockReturnValue("agy");
     mockCommandExists.mockReturnValue(true);
     mockCheckAgyVersion.mockReturnValue({
       ok: false,
@@ -593,7 +594,7 @@ describe("installCommand", () => {
   });
 
   it("reconciles the Devin plugin for --agent devin", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "devin" });
@@ -611,7 +612,7 @@ describe("installCommand", () => {
   });
 
   it("reconciles the Devin plugin for the --devin alias", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ devin: true });
@@ -622,7 +623,7 @@ describe("installCommand", () => {
   });
 
   it("registers the devin memory MCP after a successful reconcile", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
 
     await installCommand({ agent: "devin" });
@@ -632,7 +633,7 @@ describe("installCommand", () => {
   });
 
   it("does not register the devin memory MCP when reconcile fails", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     mockReconcileDevinPlugin.mockRejectedValue(
       new Error("Devin CLI is not signed in."),
@@ -644,7 +645,7 @@ describe("installCommand", () => {
   });
 
   it("prints the cf-plan hint after a successful Devin install", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     const logSpy = vi.spyOn(console, "log");
 
@@ -655,7 +656,7 @@ describe("installCommand", () => {
   });
 
   it("exits when devin CLI is missing without reconciling", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(false);
     const mockExit = vi
       .spyOn(process, "exit")
@@ -669,7 +670,7 @@ describe("installCommand", () => {
   });
 
   it("exits when devin version is unsupported without reconciling", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     mockCheckDevinVersion.mockReturnValue({
       ok: false,
@@ -687,7 +688,7 @@ describe("installCommand", () => {
   });
 
   it("exits with the reconcile error (auth, target, install failures)", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     mockReconcileDevinPlugin.mockRejectedValue(
       new Error("Devin CLI is not signed in. Run `devin auth login` first."),
@@ -702,6 +703,24 @@ describe("installCommand", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
     const output = logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("devin auth login");
+  });
+
+  it("strips control/ANSI sequences from the coding-friend-mods failure line", async () => {
+    mockCommandExists.mockReturnValue(true);
+    mockIsMarketplaceRegistered.mockReturnValue(true);
+    mockGetInstalledVersion.mockReturnValue("0.46.0");
+    mockRunWithStderr.mockReturnValue({
+      stdout: "",
+      stderr: "\x1b[31mboom\x1b[0m\x07\x1b]0;pwned\x07\nsecond line",
+      exitCode: 1,
+    });
+    const logSpy = vi.spyOn(console, "log");
+
+    await installCommand({ yes: true, mods: true });
+
+    const output = logSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("Failed to install coding-friend-mods (boom).");
+    expect(output).not.toMatch(/[\x00-\x08\x0b-\x1f\x7f]/);
   });
 });
 
@@ -833,7 +852,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("codex: success", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockResolveHost.mockReturnValue("codex");
     mockCommandExists.mockReturnValue(true);
     mockIsCodexMarketplaceRegistered.mockReturnValue(false);
     mockRun.mockReturnValue("ok");
@@ -859,7 +878,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("codex: unsupported version", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockResolveHost.mockReturnValue("codex");
     mockCommandExists.mockReturnValue(true);
     mockCheckCodexVersion.mockReturnValue({
       ok: false,
@@ -882,7 +901,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("omp: success", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "omp" });
+    mockResolveHost.mockReturnValue("omp");
     mockCommandExists.mockReturnValue(true);
     const output = captureLog();
 
@@ -903,7 +922,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("agy: success", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockResolveHost.mockReturnValue("agy");
     mockCommandExists.mockReturnValue(true);
     const output = captureLog();
 
@@ -925,7 +944,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("agy: deploy failure", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "agy" });
+    mockResolveHost.mockReturnValue("agy");
     mockCommandExists.mockReturnValue(true);
     mockDeployAgyPlugin.mockImplementation(() => {
       throw new Error("plugin source missing");
@@ -946,7 +965,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("devin: success", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     const output = captureLog();
 
@@ -965,7 +984,7 @@ describe("installCommand human output (characterization)", () => {
   });
 
   it("devin: already linked", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockCommandExists.mockReturnValue(true);
     mockReconcileDevinPlugin.mockResolvedValue("unchanged");
     const output = captureLog();
@@ -1109,17 +1128,18 @@ describe("installCommand --yes / --json", () => {
     expect(mockRun).not.toHaveBeenCalled();
   });
 
-  it("--json maps a host resolution error to INVALID_ARGS", async () => {
-    mockResolveHostFlags.mockImplementation(() => {
-      throw new Error('Unknown agent "foo"');
+  it("--json --agent bogus returns INVALID_ARGS without process.exit", async () => {
+    mockResolveHost.mockImplementation(() => {
+      throw new Error('Unsupported agent "bogus".');
     });
 
-    await installCommand({ json: true, yes: true, agent: "foo" });
+    await installCommand({ json: true, yes: true, agent: "bogus" });
 
     expect(envelope().error).toEqual({
       code: "INVALID_ARGS",
-      message: 'Unknown agent "foo"',
+      message: 'Unsupported agent "bogus".',
     });
+    expect(process.exit).not.toHaveBeenCalled();
   });
 
   it("--json turns a missing host CLI into an error envelope, not process.exit", async () => {
@@ -1132,7 +1152,7 @@ describe("installCommand --yes / --json", () => {
   });
 
   it("--json reports devin result", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+    mockResolveHost.mockReturnValue("devin");
     mockReconcileDevinPlugin.mockResolvedValue("unchanged");
 
     await installCommand({ json: true, agent: "devin" });
@@ -1218,7 +1238,7 @@ describe("installCommand --yes / --json", () => {
   });
 
   it("--mods with a non-Claude host returns INVALID_ARGS without installing", async () => {
-    mockResolveHostFlags.mockReturnValue({ host: "codex" });
+    mockResolveHost.mockReturnValue("codex");
 
     await installCommand({ json: true, agent: "codex", mods: true });
 

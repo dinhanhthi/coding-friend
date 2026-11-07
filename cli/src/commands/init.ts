@@ -2032,16 +2032,11 @@ async function initDevinCommand(): Promise<void> {
             log.success("Registered coding-friend-learn for Devin.");
           }
         }
-        if (isMemoryMcpRegistered("devin")) {
-          log.dim(
-            "coding-friend-memory: ships with the Devin plugin (.mcp.json)",
-          );
-        } else {
-          const registered = registerMemoryMcp("devin");
-          if (registered) {
-            log.success("Registered coding-friend-memory for Devin.");
-          }
-        }
+        // The memory MCP ships inside the Devin plugin (.mcp.json), so an
+        // installed plugin means it is already registered.
+        log.dim(
+          "coding-friend-memory: ships with the Devin plugin (.mcp.json)",
+        );
       }
     },
 

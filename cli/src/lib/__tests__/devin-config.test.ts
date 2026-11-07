@@ -292,14 +292,22 @@ describe("desiredDevinSource", () => {
     expect(() => desiredDevinSource()).toThrow(/npm run build:devin/);
   });
 
-  it("treats a blank localPath as dev mode off", () => {
+  it("trims whitespace around a non-blank localPath (still dev mode)", () => {
     const repo = makeDevRepo();
     seedDevState(`${repo}   `);
 
-    // trailing whitespace trims to a valid path — still dev mode
     expect(desiredDevinSource()).toEqual({
       kind: "local",
       path: join(repo, "plugin-devin"),
+    });
+  });
+
+  it("treats a blank localPath as dev mode off", () => {
+    seedDevState("   ");
+
+    expect(desiredDevinSource()).toEqual({
+      kind: "github",
+      spec: GITHUB_SPEC,
     });
   });
 });
@@ -487,12 +495,47 @@ describe("reconcileDevinPlugin", () => {
   it("allowReplaceOwn: replaces a plugin-devin link from another checkout", async () => {
     const repo = makeDevRepo();
     seedDevState(repo);
-    const other = makeTemp("cf-devin-other-");
+    const other = makeDevRepo();
     writeLock(lockJson([localEntry(join(other, "plugin-devin"))]));
 
     const action = await reconcileDevinPlugin({ allowReplaceOwn: true });
 
     expect(action).toBe("replaced");
+  });
+
+  it.each([
+    ["no manifest", null],
+    ["a manifest for another plugin", "other-plugin"],
+  ])(
+    "allowReplaceOwn: still refuses a plugin-devin dir with %s",
+    async (_label, manifestName) => {
+      const pluginDir = join(makeTemp("cf-devin-foreign-"), "plugin-devin");
+      mkdirSync(join(pluginDir, ".claude-plugin"), { recursive: true });
+      if (manifestName) {
+        writeFileSync(
+          join(pluginDir, ".claude-plugin", "plugin.json"),
+          `${JSON.stringify({ name: manifestName })}\n`,
+        );
+      }
+      writeLock(lockJson([localEntry(pluginDir)]));
+
+      await expect(
+        reconcileDevinPlugin({ allowReplaceOwn: true }),
+      ).rejects.toThrow(/cf install --devin/);
+      expect(devinCalls("plugins")).toEqual([]);
+    },
+  );
+
+  it("strips control characters from lock.json paths in the refusal message", async () => {
+    writeLock(lockJson([localEntry("/tmp/x\x1b[31m\x07/plugin-devin")]));
+
+    const err = (await reconcileDevinPlugin().catch(
+      (e: unknown) => e,
+    )) as Error;
+
+    expect(err.message).toMatch(/cf install --devin/);
+    expect(err.message).toContain("/tmp/x[31m/plugin-devin");
+    expect(err.message).not.toMatch(/[\x00-\x1f\x7f-\x9f]/);
   });
 
   it("allowReplaceOwn: still refuses a foreign #plugin install", async () => {
@@ -994,6 +1037,23 @@ describe("writeDevinMcpEntry", () => {
     expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(broken);
   });
 
+  it.each([
+    "[]\n",
+    '"text"\n',
+    '{ "mcpServers": [] }\n',
+    '{ "mcpServers": null }\n',
+  ])(
+    "refuses to overwrite valid JSON of the wrong shape %j (file unchanged)",
+    (content) => {
+      writeMcpConfig(content);
+
+      expect(() =>
+        writeDevinMcpEntry("coding-friend-learn", LEARN_SERVER),
+      ).toThrow(/unexpected shape/);
+      expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(content);
+    },
+  );
+
   it("treats a whitespace-only file as absent", () => {
     writeMcpConfig("  \n");
 
@@ -1115,6 +1175,16 @@ describe("removeDevinMcpEntry", () => {
       /is not valid JSON/,
     );
     expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(broken);
+  });
+
+  it("refuses a valid-JSON file of the wrong shape (file unchanged)", () => {
+    const wrong = '{ "mcpServers": "x" }\n';
+    writeMcpConfig(wrong);
+
+    expect(() => removeDevinMcpEntry("coding-friend-learn")).toThrow(
+      /unexpected shape/,
+    );
+    expect(readFileSync(devinMcpConfigPath(), "utf-8")).toBe(wrong);
   });
 
   it("no-ops when the file is missing", () => {

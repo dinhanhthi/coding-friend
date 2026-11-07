@@ -291,6 +291,11 @@ export async function permissionCommand(opts: {
       "Set `autoApprove` in .coding-friend/config.json to enable the hook's approvals (same key as Codex and Antigravity); `autoApproveIgnore` lists command prefixes that defer to the native prompt.",
     );
     log.dim(`Note: ${AUTO_APPROVE_CROSS_HOST_NOTE}`);
+    if (opts.enableAutoApprove || opts.disableAutoApprove) {
+      log.warn(
+        "--enable-auto-approve / --disable-auto-approve have no effect with --devin; set `autoApprove` in .coding-friend/config.json instead.",
+      );
+    }
     return;
   }
 

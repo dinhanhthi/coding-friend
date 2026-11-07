@@ -303,6 +303,14 @@ describe("version helpers", () => {
     expect(compareVersions("0.129.9", "0.130.0")).toBe(-1);
   });
 
+  it("keeps a prerelease below its release in the minimum check", () => {
+    expect(extractVersion("devin 3000.11.3-beta.1", { prerelease: true })).toBe(
+      "3000.11.3-beta.1",
+    );
+    expect(extractVersion("agent 2026.10.22-27dcf5f")).toBe("2026.10.22");
+    expect(compareVersions("3000.11.3-beta.1", "3000.11.3")).toBe(-1);
+  });
+
   it("passes when codex is at the minimum", () => {
     mockRun.mockReturnValue("codex-cli 0.130.0");
 

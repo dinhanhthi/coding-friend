@@ -178,4 +178,14 @@ describe("permissionCommand — devin", () => {
     expect(mockMergeJson).not.toHaveBeenCalled();
     expect(process.exit).not.toHaveBeenCalled();
   });
+
+  it("says the auto-approve flags are inert for --devin", async () => {
+    mockResolveHostFlags.mockReturnValue({ host: "devin" });
+
+    await permissionCommand({ devin: true, enableAutoApprove: true });
+
+    const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+    expect(output).toContain("no effect with --devin");
+    expect(mockMergeJson).not.toHaveBeenCalled();
+  });
 });

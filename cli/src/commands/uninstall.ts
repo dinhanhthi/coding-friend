@@ -12,8 +12,14 @@ import {
   isDevinPluginInstalled,
   removeDevinPlugin,
 } from "../lib/devin-config.js";
-import { unregisterLearnMcp } from "../lib/learn-prompts.js";
-import { unregisterMemoryMcp } from "../lib/memory-mcp-register.js";
+import {
+  unregisterDevinLearnMcp,
+  unregisterLearnMcp,
+} from "../lib/learn-prompts.js";
+import {
+  unregisterDevinMemoryMcp,
+  unregisterMemoryMcp,
+} from "../lib/memory-mcp-register.js";
 import { removeMemoryMcpEntry } from "../lib/memory-prompts.js";
 import {
   isOmpAgentInstalled,
@@ -506,11 +512,11 @@ function uninstallDevinCommand(): void {
   // Clear user-scope MCP entries first and unconditionally — they live in
   // ~/.config/devin/mcp_config.json and survive an out-of-band
   // `devin plugins remove` (the shipped .mcp.json entry leaves with the plugin).
-  const removedMemory = unregisterMemoryMcp("devin");
-  const removedLearn = unregisterLearnMcp("devin");
+  const memory = unregisterDevinMemoryMcp();
+  const learn = unregisterDevinLearnMcp();
 
   const installed = isDevinPluginInstalled();
-  if (!installed && !removedMemory && !removedLearn) {
+  if (!installed && memory === "absent" && learn === "absent") {
     log.info("Nothing to uninstall");
     return;
   }
@@ -518,6 +524,14 @@ function uninstallDevinCommand(): void {
   // removeDevinPlugin picks the remove flag matching the detected kind
   // (plain for git-subdir, --local for local installs, both for unknown).
   if (installed) removeDevinPlugin();
+
+  if (memory === "failed" || learn === "failed") {
+    // A corrupt or unreadable mcp_config.json is never reported as removed.
+    log.warn(
+      "Could not clean ~/.config/devin/mcp_config.json — see the warning above.",
+    );
+    return;
+  }
 
   log.success("Coding Friend uninstalled from Devin.");
   log.dim("Start a new Devin session for the change to take effect.");

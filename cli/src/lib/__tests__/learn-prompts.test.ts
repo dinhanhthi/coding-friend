@@ -381,6 +381,7 @@ describe("unregisterLearnMcp", () => {
   });
 
   it("returns false and warns when devin remove throws", () => {
+    mockReadDevinMcpConfig.mockReturnValue(null);
     mockRemoveDevinMcpEntry.mockImplementation(() => {
       throw new Error("EACCES");
     });

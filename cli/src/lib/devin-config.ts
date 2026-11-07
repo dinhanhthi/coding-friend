@@ -69,6 +69,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Drop C0/DEL/C1 control chars so file-controlled strings can't drive the terminal. */
+function stripControl(value: string): string {
+  return value.replace(/[\x00-\x1f\x7f-\x9f]/g, "");
+}
+
 /**
  * Tolerant parse of Devin's plugins lock.json. Returns the state of the
  * `coding-friend` entry in resolved[]:
@@ -251,15 +256,19 @@ function sameInstall(
 
 /**
  * True when the installed entry is a coding-friend Devin source we produce:
- * a local link to a `plugin-devin` dir (any checkout), or the GitHub
+ * a local link to a `plugin-devin` dir (any checkout) whose
+ * .claude-plugin/plugin.json names coding-friend, or the GitHub
  * dinhanhthi/coding-friend repo with subdir `plugin-devin`.
  */
 export function isOwnDevinSource(state: DevinInstallState): boolean {
   if (state.kind === "local") {
-    return (
-      typeof state.path === "string" &&
-      basename(resolve(state.path)) === PLUGIN_SUBDIR
+    if (typeof state.path !== "string") return false;
+    const dir = resolve(state.path);
+    if (basename(dir) !== PLUGIN_SUBDIR) return false;
+    const manifest = readJson<{ name?: unknown }>(
+      join(dir, ".claude-plugin", "plugin.json"),
     );
+    return manifest?.name === PLUGIN_NAME;
   }
   if (state.kind === "github") {
     return (
@@ -274,9 +283,9 @@ export function isOwnDevinSource(state: DevinInstallState): boolean {
 function describeState(state: DevinInstallState): string {
   switch (state.kind) {
     case "github":
-      return `github ${state.path ?? "?"}#${state.subdir ?? "?"}`;
+      return `github ${stripControl(state.path ?? "?")}#${stripControl(state.subdir ?? "?")}`;
     case "local":
-      return `local ${state.path ?? "?"}`;
+      return `local ${stripControl(state.path ?? "?")}`;
     case "unknown":
       return "an unrecognized lock entry";
     case "none":
@@ -286,7 +295,7 @@ function describeState(state: DevinInstallState): string {
 
 function describeDesired(desired: DevinDesiredSource): string {
   return desired.kind === "local"
-    ? `a local install (${desired.path})`
+    ? `a local install (${stripControl(desired.path)})`
     : `the GitHub source ${desired.spec}`;
 }
 
@@ -366,7 +375,7 @@ export async function reconcileDevinPlugin(
 
   if (state.kind === "github") {
     log.warn(
-      `Replacing GitHub-installed coding-friend (${describeState(state)}). Devin syncs manifest installs to the cloud — reinstall via \`devin plugins install ${state.path}#${state.subdir}\` to restore it.`,
+      `Replacing GitHub-installed coding-friend (${describeState(state)}). Devin syncs manifest installs to the cloud — reinstall via \`devin plugins install ${stripControl(state.path ?? "?")}#${stripControl(state.subdir ?? "?")}\` to restore it.`,
     );
   } else if (state.kind === "local") {
     log.info(
@@ -482,8 +491,9 @@ export function readDevinMcpConfig(): DevinMcpJson | null {
 /**
  * Read the raw mcp_config.json, distinguishing the file states that
  * readJson() conflates: absent or empty/whitespace-only → null (fine to
- * create); exists-but-unreadable or invalid JSON → throw, because rewriting
- * it would destroy the user's other servers and env API keys.
+ * create); exists-but-unreadable, invalid JSON, or valid JSON of the wrong
+ * shape (not an object, or a non-object mcpServers) → throw, because
+ * rewriting it would destroy the user's other servers and env API keys.
  */
 function readMcpConfigForUpdate(
   filePath: string,
@@ -498,13 +508,23 @@ function readMcpConfigForUpdate(
     );
   }
   if (!raw.trim()) return null;
+  let parsed: unknown;
   try {
-    return JSON.parse(raw) as Record<string, unknown>;
+    parsed = JSON.parse(raw);
   } catch {
     throw new Error(
       `${filePath} is not valid JSON — fix or remove it manually; refusing to overwrite it.`,
     );
   }
+  if (
+    !isPlainObject(parsed) ||
+    ("mcpServers" in parsed && !isPlainObject(parsed.mcpServers))
+  ) {
+    throw new Error(
+      `${filePath} has an unexpected shape (expected {"mcpServers": {...}}) — fix or remove it manually; refusing to overwrite it.`,
+    );
+  }
+  return parsed;
 }
 
 /** Upsert one mcpServers entry, preserving all other entries and top keys. */

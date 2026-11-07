@@ -122,6 +122,39 @@ export function isMemoryMcpRegistered(host: Host = "claude"): boolean {
   return result.exitCode === 0;
 }
 
+/** Outcome of removing one of our MCP entries from a host config file. */
+export type McpUnregisterResult = "removed" | "absent" | "failed";
+
+/**
+ * Remove a stray coding-friend-memory from ~/.config/devin/mcp_config.json.
+ * The shipped .mcp.json entry leaves with the plugin; only a user-added entry
+ * needs cleaning — and only when it points at our CLI (a foreign server that
+ * shares the name stays, reported as "absent").
+ */
+export function unregisterDevinMemoryMcp(): McpUnregisterResult {
+  try {
+    const entry = readDevinMcpConfig()?.mcpServers[MCP_NAME];
+    if (!entry) {
+      // The tolerant reader also returns null for an unreadable or invalid
+      // file; the strict remover is a no-op when the file or entry is absent
+      // and throws on a corrupt one, so corruption is not reported as absent.
+      removeDevinMcpEntry(MCP_NAME);
+      return "absent";
+    }
+    const ours =
+      entry.command === "npx" &&
+      Array.isArray(entry.args) &&
+      entry.args.includes("coding-friend-cli");
+    if (!ours) return "absent";
+    removeDevinMcpEntry(MCP_NAME);
+    return hasDevinMemoryEntry() ? "failed" : "removed";
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "unknown error";
+    log.warn(`Could not unregister MCP: ${detail}`);
+    return "failed";
+  }
+}
+
 export function unregisterMemoryMcp(host: Host = "claude"): boolean {
   if (host === "omp") {
     try {
@@ -145,27 +178,7 @@ export function unregisterMemoryMcp(host: Host = "claude"): boolean {
     }
   }
 
-  if (host === "devin") {
-    // The shipped .mcp.json entry leaves with the plugin; only a stray
-    // user-added entry in ~/.config/devin/mcp_config.json needs cleaning —
-    // and only when it actually points at our CLI (a foreign server that
-    // happens to share the name stays).
-    try {
-      const entry = readDevinMcpConfig()?.mcpServers[MCP_NAME];
-      if (
-        entry?.command === "npx" &&
-        Array.isArray(entry.args) &&
-        entry.args.includes("coding-friend-cli")
-      ) {
-        removeDevinMcpEntry(MCP_NAME);
-      }
-      return !hasDevinMemoryEntry();
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "unknown error";
-      log.warn(`Could not unregister MCP: ${detail}`);
-      return false;
-    }
-  }
+  if (host === "devin") return unregisterDevinMemoryMcp() !== "failed";
 
   const result = runWithStderr("claude", [
     "mcp",
