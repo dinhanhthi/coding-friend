@@ -27,6 +27,7 @@ const {
   classifyByRules,
   extractRmPaths,
   isInProjectDir,
+  matchesPrefix,
   SHELL_OPERATOR_PATTERN,
 } = require("./auto-approve.cjs");
 const { toClaudeToolName } = require("../lib/devin-tool-map.cjs");
@@ -114,14 +115,6 @@ function resolveRmPath(filePath, workdir, projectDir) {
   return path.resolve(absBase, expanded);
 }
 
-/** Clone of auto-approve.cjs's matchesPrefix (not exported). */
-function matchesPrefix(trimmed, prefix) {
-  const p = prefix.trimEnd();
-  return (
-    trimmed === p || trimmed.startsWith(p + " ") || trimmed.startsWith(p + "\t")
-  );
-}
-
 function emit(payload) {
   process.stdout.write(JSON.stringify(payload) + "\n");
   process.exit(0);
@@ -206,11 +199,7 @@ function main() {
 
     // autoApproveIgnore: defer to Devin's native prompt for these commands.
     // DENY still wins — ignored prefixes never unblock a destructive match.
-    if (
-      (decision === "allow" || decision === "ask" || decision === "unknown") &&
-      claudeName === "Bash" &&
-      ignore.length > 0
-    ) {
+    if (decision === "allow" && claudeName === "Bash" && ignore.length > 0) {
       const cmd = ((toolInput && toolInput.command) || "").trim();
       const pipeIdx = cmd.search(SHELL_OPERATOR_PATTERN);
       const firstSegment = pipeIdx > 0 ? cmd.slice(0, pipeIdx).trim() : cmd;

@@ -35,7 +35,7 @@ function runHook(payload, bashBin = "bash", env = undefined) {
     const stdout = execFileSync(bashBin, [SCRIPT], {
       cwd,
       env,
-      input: JSON.stringify(payload),
+      input: typeof payload === "string" ? payload : JSON.stringify(payload),
       encoding: "utf8",
       timeout: 5000,
     });
@@ -383,6 +383,28 @@ describe("privacy-block.sh", () => {
     expect(out.permissionDecision).toBe("deny");
     expect(out.permissionDecisionReason).toContain('a"b.env');
   });
+
+  // Regression: fail-closed gaps. Without node the capture kept \uXXXX
+  // escapes undecoded; with node a non-string file_path was skipped.
+  for (const [label, run, payload] of [
+    [
+      "a \\u-escaped dotenv file_path when node is missing",
+      runHookWithoutNode,
+      '{"tool_name":"Read","tool_input":{"file_path":"/p/\\u002eenv"}}',
+    ],
+    [
+      "a file_path given as an array",
+      runHook,
+      { tool_name: "Read", tool_input: { file_path: ["config/.env"] } },
+    ],
+  ]) {
+    it(`blocks ${label}`, () => {
+      const result = run(payload);
+      expect(result.status).toBe(2);
+      const out = JSON.parse(result.stdout).hookSpecificOutput;
+      expect(out.permissionDecision).toBe("deny");
+    });
+  }
 });
 
 // runHookWithoutNode <payload> — run the hook with PATH limited to a shim

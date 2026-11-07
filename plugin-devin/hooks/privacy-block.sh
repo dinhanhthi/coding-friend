@@ -145,6 +145,11 @@ if command -v node >/dev/null 2>&1; then
           }
         }
       };
+      // A non-string file_path or path (array, object) cannot be checked.
+      for (const k of ["file_path", "path"]) {
+        if (ti[k] != null && typeof ti[k] !== "string")
+          out.push("dprivacy-block cannot check a non-string " + k);
+      }
       add(ti.file_path);
       addDir(ti.path);
       // Claude Code splits a Grep glob on whitespace, then each piece
@@ -202,7 +207,11 @@ if [ "$NODE_PARSED" -eq 0 ]; then
     # Degraded mode: a wildcard Grep glob, or a \-escaped glob or Glob
     # pattern, cannot be matched without node. A Glob pattern with only
     # wildcards keeps the literal checks: denying them all would block Glob.
+    # A \uXXXX escape is not decoded here, so it could hide a sensitive name.
     case "$key:$value" in
+      *:*\\u*)
+        emit_deny "privacy-block needs node to decode the escaped $key '$value'"
+        ;;
       glob:*[*?[{]* | glob:*\\* | pattern:*\\*)
         emit_deny "privacy-block needs node to check the glob '$value'"
         ;;

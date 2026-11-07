@@ -61,8 +61,10 @@ const ALWAYS_ALLOW_TOOLS = new Set([
 
 /**
  * Check if a file path resolves to within the project directory.
- * Uses realpathSync for existing paths (follows symlinks) and path.resolve
- * for new files (Write creates files that don't exist yet).
+ * Resolution rules (symlinks, new files, shell expansions) live in
+ * resolveProjectPath. When the project dir is the home folder or one of its
+ * parents, a top-level dotfile or dot-folder of home (~/.zshrc, ~/.ssh/...,
+ * ~/.claude/settings.json) is never a project file.
  * @param {string} filePath
  * @param {string} [projectDir] — project root (defaults to process.cwd())
  * @returns {boolean}
@@ -71,7 +73,51 @@ function isInProjectDir(filePath, projectDir) {
   const r = resolveProjectPath(filePath, projectDir);
   return (
     r !== null &&
-    (r.resolved.startsWith(r.root + path.sep) || r.resolved === r.root)
+    (r.resolved.startsWith(r.root + path.sep) || r.resolved === r.root) &&
+    !isHomeDotfile(r)
+  );
+}
+
+/**
+ * The home folder, symlinks resolved.
+ * @returns {string}
+ */
+function realHome() {
+  try {
+    return fs.realpathSync(os.homedir());
+  } catch {
+    return os.homedir();
+  }
+}
+
+/**
+ * True when `dir` is the home folder or one of its parents.
+ * @param {string} dir
+ * @param {string} home
+ * @returns {boolean}
+ */
+function isHomeOrParent(dir, home) {
+  const rel = path.relative(dir, home);
+  return !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+/**
+ * True when the project root is home (or a parent of it) and the path is a
+ * top-level dotfile or dot-folder of home, or something inside one. Both the
+ * path as written and the resolved path count (~/.zshrc can link to
+ * ~/dotfiles/zshrc), each against home as given and with symlinks resolved.
+ * @param {{resolved: string, lexical: string, root: string}} r
+ * @returns {boolean}
+ */
+function isHomeDotfile(r) {
+  const home = realHome();
+  if (!isHomeOrParent(r.root, home)) return false;
+  return [home, os.homedir()].some((h) =>
+    [r.resolved, r.lexical].some((p) => {
+      const rel = path.relative(h, p);
+      const top = rel.split(path.sep)[0];
+      return top.startsWith(".") && top !== ".." && !path.isAbsolute(rel);
+    }),
   );
 }
 
@@ -82,32 +128,37 @@ function isInProjectDir(filePath, projectDir) {
  * path starting with ~ or $ is never safe, so `rm -rf ~/*` reaches the deny
  * patterns even when the project dir is the home folder. A raw path with a
  * quote or backslash is never safe either: the shell strips them, so "/etc"
- * is /etc, not a project folder named "/etc".
+ * is /etc, not a project folder named "/etc". zsh expands a leading `=`
+ * (`=node` is the node binary) and runs glob qualifiers (`*(e:cmd:)`), so
+ * those are never safe. A glob is only safe with no slash after it (an
+ * earlier `*` can match a symlink leading outside the project), and never in
+ * the home folder or one of its parents (`rm -rf *` from ~ wipes home).
  * @param {string} filePath
  * @param {string} [projectDir]
  * @returns {boolean}
  */
 function isSafeRmTarget(filePath, projectDir) {
-  if (/["'\\]/.test(filePath)) return false;
-  if (/^[~$]/.test(filePath)) return false;
+  if (/["'\\()]/.test(filePath)) return false;
+  if (/^[~$=]/.test(filePath)) return false;
+  if (/[*?[][^]*\//.test(filePath)) return false;
   const r = resolveProjectPath(filePath, projectDir);
   if (r === null || !r.resolved.startsWith(r.root + path.sep)) return false;
-  let home = os.homedir();
-  try {
-    home = fs.realpathSync(home);
-  } catch {
-    // keep the raw home dir
-  }
-  const rel = path.relative(r.resolved, home);
-  return rel.startsWith("..") || path.isAbsolute(rel);
+  const home = realHome();
+  if (isHomeOrParent(r.resolved, home) || isHomeDotfile(r)) return false;
+  return !(
+    /[*?[]/.test(filePath) && isHomeOrParent(path.dirname(r.resolved), home)
+  );
 }
 
 /**
  * Resolve a path the way the shell would see it, relative to the project dir.
  * @param {string} filePath
  * @param {string} [projectDir]
- * @returns {{resolved: string, root: string}|null} null when the path cannot
- *   be resolved safely (shell expansions we do not model).
+ * @returns {{resolved: string, lexical: string, root: string}|null} null when
+ *   the path cannot be resolved safely (shell expansions we do not model, ".."
+ *   after a real segment, a dangling symlink or an unresolvable ancestor).
+ *   `lexical` is the path as written, made absolute; `resolved` follows
+ *   symlinks.
  */
 function resolveProjectPath(filePath, projectDir) {
   if (!filePath || typeof filePath !== "string") return null;
@@ -126,23 +177,49 @@ function resolveProjectPath(filePath, projectDir) {
   // in a segment starting with "." can match ".." in older bash.
   if (/[{}]/.test(filePath)) return null;
   if (/(^|\/)\.[^/]*[*?[]/.test(filePath)) return null;
+  // ".." after a real segment is collapsed lexically below, but the shell
+  // follows it from where a symlink or glob match (`link/../x`, `*/../x`) led.
+  const segs = filePath.split("/");
+  const firstReal = segs.findIndex((s) => s !== "" && s !== "." && s !== "..");
+  if (firstReal !== -1 && segs.indexOf("..", firstReal) !== -1) return null;
   const baseDir = projectDir || process.cwd();
-  // Canonicalize project dir — handles symlinked project directories
-  let canonicalRoot;
-  try {
-    canonicalRoot = fs.realpathSync(baseDir);
-  } catch {
-    canonicalRoot = baseDir;
+  // Canonicalize project dir the same way — handles symlinked project directories
+  const canonicalRoot = realpathDeepest(path.resolve(baseDir));
+  if (canonicalRoot === null) return null;
+  const lexical = path.resolve(canonicalRoot, filePath);
+  const resolved = realpathDeepest(lexical);
+  return resolved === null ? null : { resolved, lexical, root: canonicalRoot };
+}
+
+/**
+ * Canonicalize the deepest existing ancestor of an absolute path (follows
+ * symlinks, e.g. /tmp -> /private/tmp or build -> ../outside) and re-append the
+ * missing segments (a new file, or a glob such as `*`).
+ * @param {string} absPath
+ * @returns {string|null} null when an ancestor exists but cannot be resolved
+ *   (dangling symlink, loop, no permission).
+ */
+function realpathDeepest(absPath) {
+  const tail = [];
+  let p = absPath;
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync(p), ...tail);
+    } catch (e) {
+      if (e.code !== "ENOENT" && e.code !== "ENOTDIR") return null;
+      // A dangling symlink: writing through it creates its target anywhere.
+      try {
+        fs.lstatSync(p);
+        return null;
+      } catch {
+        // p really does not exist — try its parent
+      }
+    }
+    const parent = path.dirname(p);
+    if (parent === p) return null;
+    tail.unshift(path.basename(p));
+    p = parent;
   }
-  let resolved;
-  try {
-    // For existing files/symlinks, resolve to canonical path (follows symlinks)
-    resolved = fs.realpathSync(path.resolve(canonicalRoot, filePath));
-  } catch {
-    // File doesn't exist yet (Write creates new files) — use path.resolve only
-    resolved = path.resolve(canonicalRoot, filePath);
-  }
-  return { resolved, root: canonicalRoot };
 }
 
 /**
@@ -381,7 +458,6 @@ function extractXargsSubcmd(cmd) {
  * @returns {"allow"|"unknown"|"ask"}
  */
 function postMatchSafety(cmd, prefix) {
-  if (prefix === "find" && cmd.includes("-delete")) return "unknown";
   // find -exec/-execdir/-ok/-okdir run any command. Quotes, backslashes and `$`
   // are dropped first so `-e''xec` / `$'-exec'` cannot slip past.
   // Any `$` or brace expansion left (the `{}` placeholder aside) can rebuild
@@ -399,9 +475,10 @@ function postMatchSafety(cmd, prefix) {
   ) {
     return "unknown";
   }
+  // -delete and -fprint/-fprintf/-fls (write files) are side effects too.
   if (
     prefix === "find" &&
-    /(?:^|\s)-(?:exec|ok)/.test(cmd.replace(/["'\\$]/g, ""))
+    /(?:^|\s)-(?:exec|ok|delete|fprint|fls)/.test(cmd.replace(/["'\\$]/g, ""))
   ) {
     return "unknown";
   }
@@ -475,6 +552,8 @@ function removeQuotedContent(str) {
           // syntax: the value becomes a literal word/argument to the command. So
           // ${VAR} cannot inject operators and does not need special handling here.
           // The { after $ is blanked by the default else branch, which is fine.
+          // (zsh parameter flags like ${(e)...} do re-evaluate: hasZshExpansion
+          // checks those on the raw command.)
           i++;
           if (i < chars.length && chars[i] === "(") {
             i++; // keep the ( too — don't blank it
@@ -738,8 +817,9 @@ function isSafeCompoundCommand(cmd, allowExtra, projectDir) {
  * Each is a regex tested against the full command.
  */
 const BASH_DENY_PATTERNS = [
-  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*[/~]/, // rm -rf / or ~ (also quoted or escaped)
-  /\brm\s+(-\w*\s+)*-rf\s+["'\\]*\$\{?HOME\b/,
+  // rm with a recursive and a force flag in any spelling or order (-rf, -fr,
+  // -r -f, --recursive --force, -rf --) on / or ~ (also quoted or escaped)
+  /\brm\s+(?=(?:-\S+\s+)*-(?:[^-\s]*[rR]|-recursive)\S*\s)(?=(?:-\S+\s+)*-(?:[^-\s]*f|-force)\S*\s)(?:-\S+\s+)*["'\\]*(?:[/~]|\$\{?HOME\b)/,
   /\bgit\s+push\s+(.*\s)?--force(?!-)/, // git push --force (not --force-with-lease)
   /\bgit\s+push\s+(.*\s)?-f\b/, // git push -f (short flag)
   /\bgit\s+reset\s+--hard\b/,
@@ -1228,6 +1308,41 @@ function matchesPrefix(trimmed, prefix) {
 }
 
 /**
+ * True when a command has an unquoted `(` or `)`, or a word starting with an
+ * unquoted `=`. zsh runs glob qualifiers (`ls *(e:id:)` runs `id`) and expands
+ * `=cmd` to the command's path. Quoted and backslash-escaped text is literal;
+ * an unclosed quote counts as true (fail closed), and so does any ANSI-C
+ * quote `$'...'` (its `\'` does not close it, which removeQuotedContent misses).
+ * A live `$` (not single-quoted or escaped, even inside double quotes) before
+ * `{(`, `{~`, `{^`, `{=`, `~`, `^`, `=` or `[` counts too: parameter flags such
+ * as `${(e)...}` re-evaluate the value (command substitution with no literal
+ * `$(`), `${~...}` and `$~name` glob it (qualifiers), and `$[...]` evaluates
+ * arithmetic.
+ * @param {string} cmd
+ * @returns {boolean}
+ */
+function hasZshExpansion(cmd) {
+  const sanitized = removeQuotedContent(cmd);
+  if (sanitized === null) return true;
+  // `$'` whose `$` survives sanitizing is an ANSI-C quote (not `'foo$'`).
+  for (let i = 0; i < cmd.length - 1; i++) {
+    if (cmd[i] === "$" && cmd[i + 1] === "'" && sanitized[i] === "$")
+      return true;
+  }
+  const san = sanitized.replace(/\\[\s\S]/g, "  ");
+  if (/[()]/.test(san)) return true;
+  for (let i = 0; i < san.length - 1; i++) {
+    if (san[i] !== "$") continue;
+    if (/[[~^=]/.test(cmd[i + 1] || "")) return true;
+    if (cmd[i + 1] === "{" && /[(~^=]/.test(cmd[i + 2] || "")) return true;
+  }
+  for (let i = 0; i < san.length; i++) {
+    if (san[i] === "=" && (i === 0 || /[\s;&|]/.test(cmd[i - 1]))) return true;
+  }
+  return false;
+}
+
+/**
  * Extract target file paths from a simple rm command.
  * Strips flags (tokens starting with `-`) and handles `--` end-of-options.
  * Returns the array of path arguments, or null if not an rm command or no paths found.
@@ -1281,11 +1396,16 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
     const cmd = (toolInput && toolInput.command) || "";
     const trimmed = cmd.trim();
 
+    // zsh glob qualifiers and =cmd run commands even inside a read-only
+    // command (`ls *(e:id:)`), so they skip every allow path below.
+    const zshExpansion = hasZshExpansion(trimmed);
+
     // Early-allow: rm targeting paths entirely within the project directory
     // (never the project root itself, the home folder or one of its parents).
     // Checked before deny patterns so project-scoped cleanup is always permitted.
-    // Only applies to simple commands (no shell operators).
-    if (!SHELL_OPERATOR_PATTERN.test(trimmed)) {
+    // Only applies to simple commands (no shell operators, no zsh expansion:
+    // `rm -rf build -*(e:id:)` reads -*(...) as a flag but zsh runs it).
+    if (!zshExpansion && !SHELL_OPERATOR_PATTERN.test(trimmed)) {
       const rmPaths = extractRmPaths(trimmed);
       if (
         rmPaths &&
@@ -1312,17 +1432,25 @@ function classifyByRules(toolName, toolInput, projectDir, allowExtra) {
     const isCompound = SHELL_OPERATOR_PATTERN.test(trimmed);
 
     // Safe compound commands: pipe-only chains where every segment is safe
-    if (isCompound && isSafeCompoundCommand(trimmed, allowExtra, projectDir)) {
+    if (
+      !zshExpansion &&
+      isCompound &&
+      isSafeCompoundCommand(trimmed, allowExtra, projectDir)
+    ) {
       return "allow";
     }
 
     // CF plugin scripts with safe redirects and/or allow-listed follow-up commands
-    if (isCompound && isCodingFriendCompound(trimmed, allowExtra)) {
+    if (
+      !zshExpansion &&
+      isCompound &&
+      isCodingFriendCompound(trimmed, allowExtra)
+    ) {
       return "allow";
     }
 
     // Check allow prefixes (safe read-only commands) — only if simple command
-    if (!isCompound) {
+    if (!isCompound && !zshExpansion) {
       for (const prefix of effectiveAllow) {
         if (matchesPrefix(trimmed, prefix)) {
           return postMatchSafety(trimmed, prefix);
@@ -1362,6 +1490,7 @@ module.exports = {
   splitByLogicalOperators,
   extractBashScriptPath,
   extractRmPaths,
+  matchesPrefix,
   SHELL_OPERATOR_PATTERN,
   UNSAFE_COMPOUND_PATTERN,
   TEST_RUNNER_PATTERN,

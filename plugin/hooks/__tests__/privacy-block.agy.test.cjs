@@ -418,6 +418,8 @@ describe("privacy-block.agy.sh", () => {
     [`yq 'load(".e*")'`, "deny"],
     [`yq 'load("/x/.e*")'`, "deny"],
     [`jq 'include ".env"; 1'`, "deny"],
+    // A jq program read from stdin is unchecked text that can import files.
+    ["echo '.' | jq -nf /dev/stdin", "deny"],
     // env -S splits its string into a command.
     ["env -S 'cat .e*'", "deny"],
     [`env -S 'bash -c "cat .e*"'`, "deny"],
@@ -544,6 +546,7 @@ describe("privacy-block.agy.sh", () => {
     ["curl -s 'https://x/api?key=1' | python3 -m json.tool", "allow"],
     [`curl -s "https://example.com/a*b" | node x.js`, "allow"],
     ["echo 'cat .e*' 'https://x' | mytool", "deny"],
+    ["echo 'http://a/../.e*' | mytool", "deny"],
     ["echo 'cat .e*' | head -1 | cut -c1", "allow"],
     // -o takes an argument, so the -c after it is still the script flag.
     ["grep -c 'api.*key' src/ && bash -o pipefail -c 'ls'", "allow"],
@@ -558,6 +561,18 @@ describe("privacy-block.agy.sh", () => {
     ["tar -czf out.tgz 'src'", "allow"],
     ["grep -c 'api.*key' src/", "allow"],
     ["git stash && grep -c 'api.*key' src/", "allow"],
+    // A shell -c or a sudo/ssh/watch only rechecks the quoted words of its
+    // own command, not those of a later one.
+    ["bash -c 'ls' && grep -c 'api.*key' src/", "allow"],
+    // An operator inside $( ), <( ) or ( ) does not end the segment.
+    ["sudo $(true; echo -s) 'cat .e*'", "deny"],
+    ["$(echo eval; true) 'cat .e*'", "deny"],
+    ["sudo <(true; echo -s) 'cat .e*'", "deny"],
+    ["eval <(true; true) 'cat .e*'", "deny"],
+    // An opener that never closes keeps the rest of the line together.
+    ["sudo <(true; echo 'cat .e*'", "deny"],
+    ['sudo git push && git commit -m "fix: handle *.pem files"', "allow"],
+    ["sudo sh -c 'cat .env'", "deny"],
     ['git -C /repo commit -m "fix: handle *.pem files"', "allow"],
     ['git -c a.b=c commit -m "fix: handle *.pem files"', "allow"],
     // rg/grep glob values select files like find -name.

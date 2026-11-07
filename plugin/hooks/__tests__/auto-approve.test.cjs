@@ -17,7 +17,9 @@ const {
   UNSAFE_COMPOUND_PATTERN,
   PLUGIN_ROOT,
 } = require("../auto-approve.cjs");
+const fs = require("fs");
 const os = require("os");
+const path = require("path");
 
 // ---------------------------------------------------------------------------
 // Unit tests — isInProjectDir
@@ -99,6 +101,35 @@ describe("isInProjectDir", () => {
 
   it("expands ~ to the home dir", () => {
     expect(isInProjectDir("~/x", os.homedir())).toBe(true);
+  });
+
+  it("allows a new file under a project reached through a symlinked parent", () => {
+    const tmp = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "cf-aa-")),
+    );
+    try {
+      fs.mkdirSync(path.join(tmp, "real"));
+      fs.symlinkSync(path.join(tmp, "real"), path.join(tmp, "link"));
+      const viaLink = path.join(tmp, "link");
+      expect(isInProjectDir(path.join(viaLink, "new.txt"), viaLink)).toBe(true);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("does NOT allow Write through a dangling symlink in the project", () => {
+    const tmp = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "cf-aa-")),
+    );
+    try {
+      fs.symlinkSync(path.join(tmp, "missing"), path.join(tmp, "link"));
+      for (const f of ["link", "link/new.txt"]) {
+        const file_path = path.join(tmp, f);
+        expect(classifyByRules("Write", { file_path }, tmp)).not.toBe("allow");
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 
@@ -451,6 +482,12 @@ describe("classifyByRules — block (deny)", () => {
     "rm -rf \\/etc",
     'rm -rf "~"/x',
     'rm -rf "$HOME"',
+    // Any spelling of recursive + force, not just a literal -rf.
+    "rm -fr ~",
+    "rm -r -f ~",
+    "rm --recursive --force ~",
+    "rm -rf -- ~",
+    "rm -Rf /",
   ])("denies Bash %s", (command) => {
     expect(classifyByRules("Bash", { command })).toBe("deny");
   });
@@ -473,7 +510,14 @@ describe("classifyByRules — block (deny)", () => {
 
   // Without -rf the deny patterns do not match, so only the early-allow guard
   // keeps these from being approved.
-  it.each(["rm -r ~/*", "rm -r $HOME/*", "rm -r ~/* && echo done"])(
+  it.each([
+    "rm -r ~/*",
+    "rm -r $HOME/*",
+    "rm -r ~/* && echo done",
+    // A bare top-level glob wipes the home folder itself.
+    "rm -rf *",
+    "rm -rf ./*",
+  ])(
     "does NOT allow Bash %s when the project dir is the home folder",
     (command) => {
       expect(classifyByRules("Bash", { command }, os.homedir())).not.toBe(
@@ -481,6 +525,16 @@ describe("classifyByRules — block (deny)", () => {
       );
     },
   );
+
+  it("does NOT allow Bash rm -rf * when the project dir is a parent of home", () => {
+    expect(
+      classifyByRules(
+        "Bash",
+        { command: "rm -rf *" },
+        path.dirname(os.homedir()),
+      ),
+    ).not.toBe("allow");
+  });
 
   it("denies Bash git push --force", () => {
     expect(classifyByRules("Bash", { command: "git push --force" })).toBe(
@@ -619,6 +673,15 @@ describe("classifyByRules — rm within project directory (allow)", () => {
     "cd ~ && rm -rf x",
     "cd / && rm -rf etc",
     "cd; rm -rf x",
+    // zsh: =cmd expands to the command's path, (...) is a glob qualifier.
+    "rm -rf =node",
+    "rm -rf *(e:x:)",
+    // A -* glob looks like a flag but still runs its qualifier.
+    "rm -rf build -*(e:id:)",
+    // A glob before the last segment can match a symlink leading outside.
+    "rm -rf */x",
+    // ".." after a glob is followed from wherever the glob matched.
+    "rm -rf */../x",
   ])("does NOT allow %s", (command) => {
     expect(classifyByRules("Bash", { command })).not.toBe("allow");
   });
@@ -655,6 +718,25 @@ describe("classifyByRules — rm within project directory (allow)", () => {
   ])("allows %s", (command) => {
     expect(classifyByRules("Bash", { command })).toBe("allow");
   });
+
+  // A glob can reach outside the project through a symlink (build -> outside).
+  it.each(["rm -rf build/*"])(
+    "does NOT allow %s when build links outside the project",
+    (command) => {
+      const tmp = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), "cf-aa-")),
+      );
+      try {
+        const proj = path.join(tmp, "proj");
+        fs.mkdirSync(proj);
+        fs.mkdirSync(path.join(tmp, "outside"));
+        fs.symlinkSync(path.join(tmp, "outside"), path.join(proj, "build"));
+        expect(classifyByRules("Bash", { command }, proj)).not.toBe("allow");
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
 });
 
 describe("classifyByRules — working-dir file operations", () => {
@@ -694,6 +776,49 @@ describe("classifyByRules — working-dir file operations", () => {
         new_string: "b",
       }),
     ).toBe("ask");
+  });
+
+  // With the home folder as project dir, its top-level dotfiles (shell
+  // startup files, ssh keys, agent settings) are not project files.
+  it.each([".zshrc", ".ssh/authorized_keys", "~/.claude/settings.json"])(
+    "asks for Write to home dotfile %s when the project dir is the home folder",
+    (file_path) => {
+      expect(
+        classifyByRules("Write", { file_path, content: "x" }, os.homedir()),
+      ).toBe("ask");
+    },
+  );
+
+  // A home dotfile can be a symlink to a non-dot folder (~/.config ->
+  // ~/dotfiles/config): the path as written still names a dotfile.
+  it.each([".cfg/x", "~/.cfg/x"])(
+    "asks for Write to %s when the home dotfile links to a non-dot folder",
+    (file_path) => {
+      const home = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), "cf-aa-home-")),
+      );
+      const spy = vi.spyOn(os, "homedir").mockReturnValue(home);
+      try {
+        fs.mkdirSync(path.join(home, "cfg"));
+        fs.symlinkSync(path.join(home, "cfg"), path.join(home, ".cfg"));
+        expect(
+          classifyByRules("Write", { file_path, content: "x" }, home),
+        ).toBe("ask");
+      } finally {
+        spy.mockRestore();
+        fs.rmSync(home, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("allows Write to a non-dot file when the project dir is the home folder", () => {
+    expect(
+      classifyByRules(
+        "Write",
+        { file_path: "src/x.ts", content: "x" },
+        os.homedir(),
+      ),
+    ).toBe("allow");
   });
 
   it("asks for Write with undefined file_path", () => {
@@ -1630,7 +1755,10 @@ describe("classifyByRules — dangerous sub-variants of allowed prefixes", () =>
     "find ~ -e?ec rm -rf {} +",
     "find ~ -ex[e]c rm -rf {} +",
     "find . -e*c rm {} +",
-  ])("does NOT allow find with exec-like action: %s", (command) => {
+    "find . -fprint /tmp/x",
+    "find . -fls /tmp/x",
+    "find . -del''ete",
+  ])("does NOT allow find with exec-like or write action: %s", (command) => {
     expect(classifyByRules("Bash", { command })).not.toBe("allow");
   });
 
@@ -1641,6 +1769,32 @@ describe("classifyByRules — dangerous sub-variants of allowed prefixes", () =>
     "rm -rf build && env rm -r -f ~",
   ])("does NOT allow env running a command: %s", (command) => {
     expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  // zsh runs glob qualifiers (`*(e:cmd:)`) and expands `=cmd` to a path.
+  // `\'` inside $'...' is an escaped quote, so `*(e:id:)` below is unquoted.
+  it.each([
+    "ls *(e:id:)",
+    "cat =node",
+    "ls *(e:id:) | head",
+    String.raw`ls $'\'' *(e:id:) \'`,
+    // Parameter flags and $[...] still expand inside double quotes.
+    'echo "${(e):-${:-\\$}(id)}"',
+    'echo "$[1+1]"',
+    "ls ${~:-'*(e:id:)'}",
+    // Bare $~name globs the value, so its qualifiers run.
+    "ls $~x",
+  ])("does NOT allow a zsh glob qualifier or =cmd: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).not.toBe("allow");
+  });
+
+  it.each([
+    "git log --format='(%h)'",
+    "grep '(foo)' x | head",
+    "grep 'foo$' file",
+    'echo "${HOME}"',
+  ])("allows a quoted ( or a plain ${VAR}: %s", (command) => {
+    expect(classifyByRules("Bash", { command })).toBe("allow");
   });
 
   it("does NOT auto-approve git commit --amend", () => {

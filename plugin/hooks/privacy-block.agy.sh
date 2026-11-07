@@ -469,14 +469,15 @@ function opaqueItems(cmds) {
   return out;
 }
 
-// nested(words, depth) — check what a nested shell runs (sh -c '...',
+// nested(items, depth) — check what a nested shell runs (sh -c '...',
 // eval ...) as a command of its own, so a glob quoted for the outer shell
 // counts as a glob; and match find's -name/-path/-regex value as a glob,
-// strictly (2 literal characters of a name). Words count anywhere in the
-// line (sudo sh -c, xargs sh -c): that can only deny more. After a command
-// that hands a string to a shell (su -c, sudo -s, watch, ssh host, script
-// -c, parallel, env -S) every quoted word is checked that way: where its
-// command string sits varies with the options. So it is after a shell's
+// strictly (2 literal characters of a name). Words count anywhere in their
+// command segment (sudo sh -c, xargs sh -c), which ends at | |& || && & ;
+// or a newline. After a command that hands a string to a shell (su -c,
+// sudo -s, watch, ssh host, script -c, parallel, env -S) every quoted word
+// of its segment is checked that way: where its command string sits
+// varies with the options. So it is after a shell's
 // -c (options may sit between -c and the script; the first non-option word
 // is checked too), after any -c / -Command word whatever the command, and in
 // the whole line when a shell or source / . reads its script from stdin
@@ -602,15 +603,44 @@ function stdinShell(cmds) {
   });
 }
 
-// urlWord(w) — a quoted URL (scheme://, no whitespace or shell syntax): it
-// names no file, so the -c and stdin rechecks skip it like a pattern.
-const URL_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s;&|<>()`$'"\\{}]*$/;
+// urlWord(w) — a quoted URL (scheme://, no whitespace, shell syntax or *):
+// it names no file, so the -c and stdin rechecks skip it like a pattern.
+// A * keeps it checked, as a glob a shell could expand (? and [ stay: a
+// query string such as ?key=1 would read as a glob of a name).
+const URL_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s;&|<>()`$'"\\{}*]*$/;
 const urlWord = (w) => w.some((x) => x.q !== 0) && URL_RE.test(text(w));
-function nested(words, depth, cmds, opaque, filters) {
+// segments(items) — the words of each command segment: the line split at
+// | |& || && & ; and newline outside any ( $( <( >( or `...` (so sudo
+// $(true; echo -s) -c '...' stays one segment; units() keeps >& and &> as
+// redirections). An opener that never closes keeps the rest of the line in
+// its segment.
+const SEGMENT_END = new Set(["|", "|&", "||", "&&", "&", ";", "\n"]);
+function segments(items) {
+  const out = [[]];
+  let depth = 0;
+  let tick = false;
+  for (const u of units(items)) {
+    if (u.w) out[out.length - 1].push(u.w);
+    else if (OPENERS.has(u.op)) depth++;
+    else if (u.op === ")") depth = Math.max(0, depth - 1);
+    else if (u.op === "`") tick = !tick;
+    else if (!depth && !tick && SEGMENT_END.has(u.op)) out.push([]);
+  }
+  return out.filter((s) => s.length);
+}
+function nested(items, depth, cmds, opaque, filters) {
+  const stdin = stdinShell(cmds);
+  for (const words of segments(items)) {
+    const hit = nestedSegment(words, depth, stdin, opaque, filters);
+    if (hit) return hit;
+  }
+  return null;
+}
+function nestedSegment(words, depth, stdin, opaque, filters) {
   let shell = false;
   let env = false;
   let grep = false;
-  let reentry = stdinShell(cmds);
+  let reentry = stdin;
   let dashC = false;
   for (let k = 0; k < words.length; k++) {
     const t = text(words[k]);
@@ -719,6 +749,35 @@ function filterItems(cmds) {
     }
   }
   return { filters: out, loads };
+}
+
+// jqStdinProgram(cmds) — whether jq (past wrappers) reads its program from
+// stdin, a /dev or /proc file or a <(...) input: with -f / --from-file its
+// first positional word is the program file. That text is never checked,
+// and it can import or include a file (echo ... | base64 -d | jq -nf
+// /dev/stdin). A program in a regular file (jq -f prog.jq) is like sh x.sh.
+const JQ_TWO_VALUES = /^--(arg|argjson|slurpfile|rawfile)$/;
+const JQ_ONE_VALUE = /^(-L|--indent)$/;
+function jqStdinProgram(cmds) {
+  return cmds.some((words) => {
+    const ts = words.map(text);
+    const i = commandWord(ts).i;
+    if (!/(^|\/)jq$/.test(ts[i] || "")) return false;
+    let fromFile = false;
+    let program = null;
+    for (let k = i + 1; k < ts.length; k++) {
+      const t = ts[k];
+      if (t === "--") {
+        if (program === null) program = ts[k + 1] || "";
+        break;
+      }
+      if (JQ_TWO_VALUES.test(t)) k += 2;
+      else if (JQ_ONE_VALUE.test(t)) k++;
+      else if (/^(-[A-Za-z]*f[A-Za-z]*|--from-file)$/.test(t)) fromFile = true;
+      else if (!/^-./.test(t) && program === null) program = t;
+    }
+    return fromFile && program !== null && /^(\/dev\/|\/proc\/|-$|<)/.test(program);
+  });
 }
 
 // SAFE_CONSUMERS — command words (basenames) that read stdin and never run
@@ -888,7 +947,8 @@ function checkItems(items, depth) {
   const cmds = commands(items);
   const opaque = opaqueItems(cmds);
   const { filters, loads } = filterItems(cmds);
-  const inner = nested(words, depth, cmds, opaque, filters);
+  if (jqStdinProgram(cmds)) return "jq program read from stdin";
+  const inner = nested(items, depth, cmds, opaque, filters);
   if (inner) return inner;
   const fed = stdinFeeds(items, depth, opaque, filters);
   if (fed) return fed;

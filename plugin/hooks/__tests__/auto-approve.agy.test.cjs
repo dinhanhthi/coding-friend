@@ -221,8 +221,6 @@ describe("auto-approve.agy.cjs", () => {
   it("allows run_command rm -rf build when Cwd is the workspace", () => {
     const cwd = makeProject();
     try {
-      // Must exist: the tmp workspace sits under a symlink (/var -> /private/var).
-      fs.mkdirSync(path.join(cwd, "build"));
       const result = runHook(cwd, {
         workspacePaths: [cwd],
         toolCall: {

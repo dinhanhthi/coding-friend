@@ -65,7 +65,7 @@ function runHook(cwd, payload, { projectEnv = true, configFile } = {}) {
   }
 }
 
-function permissionRequest(cwd, toolName, toolInput) {
+function permissionRequest(toolName, toolInput) {
   return {
     hook_event_name: "PermissionRequest",
     session_id: "devin-slug",
@@ -82,7 +82,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "read", {
+        permissionRequest("read", {
           file_path: path.join(cwd, "README.md"),
         }),
       );
@@ -98,7 +98,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "read", {
+        permissionRequest("read", {
           file_path: path.join(cwd, "README.md"),
         }),
       );
@@ -114,7 +114,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "read", {
+        permissionRequest("read", {
           file_path: path.join(cwd, "README.md"),
         }),
       );
@@ -130,7 +130,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "edit", {
+        permissionRequest("edit", {
           file_path: path.join(cwd, "src", "a.ts"),
           old_string: "a",
           new_string: "b",
@@ -148,7 +148,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", { command: "rm -rf /" }),
+        permissionRequest("exec", { command: "rm -rf /" }),
       );
       expect(result.status).toBe(0);
       expect(result.json.decision).toBe("block");
@@ -161,10 +161,7 @@ describe("auto-approve.devin.cjs", () => {
   it("approves exec safe command (ls)", () => {
     const cwd = makeProject();
     try {
-      const result = runHook(
-        cwd,
-        permissionRequest(cwd, "exec", { command: "ls" }),
-      );
+      const result = runHook(cwd, permissionRequest("exec", { command: "ls" }));
       expect(result.status).toBe(0);
       expect(result.json).toEqual({ decision: "approve" });
     } finally {
@@ -177,7 +174,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", {
+        permissionRequest("exec", {
           command: "rm -rf build",
           workdir: os.homedir(),
         }),
@@ -194,7 +191,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", {
+        permissionRequest("exec", {
           command: "rm -rf build",
           workdir: cwd,
         }),
@@ -211,7 +208,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", {
+        permissionRequest("exec", {
           command: "rm -rf build",
           workdir: "/",
         }),
@@ -232,7 +229,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "browser_preview", { url: "http://localhost" }),
+        permissionRequest("browser_preview", { url: "http://localhost" }),
       );
       expect(result.status).toBe(0);
       expect(result.stdout.trim()).toBe("");
@@ -246,7 +243,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "mcp__coding-friend-memory__memory_search", {
+        permissionRequest("mcp__coding-friend-memory__memory_search", {
           query: "hooks",
         }),
       );
@@ -262,7 +259,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "edit", {
+        permissionRequest("edit", {
           file_path: "/etc/hosts",
           old_string: "a",
           new_string: "b",
@@ -283,7 +280,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", { command: "npm test" }),
+        permissionRequest("exec", { command: "npm test" }),
       );
       expect(result.status).toBe(0);
       expect(result.stdout.trim()).toBe("");
@@ -300,7 +297,7 @@ describe("auto-approve.devin.cjs", () => {
     try {
       const result = runHook(
         cwd,
-        permissionRequest(cwd, "exec", { command: "rm -rf /" }),
+        permissionRequest("exec", { command: "rm -rf /" }),
       );
       expect(result.status).toBe(0);
       expect(result.json.decision).toBe("block");
