@@ -1,15 +1,20 @@
 import { createHash } from "crypto";
 import {
+  closeSync,
+  constants,
+  fstatSync,
   lstatSync,
+  openSync,
   readdirSync,
-  readFileSync,
+  readSync,
   realpathSync,
   statSync,
 } from "fs";
 import { extname, isAbsolute, join, relative, sep } from "path";
 import { loadConfig } from "./config.js";
+import { readJson } from "./json.js";
 import { CliError } from "./output.js";
-import { resolvePath } from "./paths.js";
+import { localConfigPath, resolvePath } from "./paths.js";
 
 const MAX_DEPTH = 10;
 const MAX_FILES = 5000;
@@ -37,9 +42,33 @@ export interface DocContent {
   sha256: string;
 }
 
-/** Project docs dir: config `docsDir` (default `docs`), relative to cwd (the project root). */
+function realOrSelf(p: string): string {
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
+/**
+ * Project docs dir: config `docsDir` (default `docs`), relative to cwd (the project root).
+ * A `docsDir` from the repo-local config must resolve inside the project root;
+ * one from the global config may point anywhere.
+ */
 export function resolveProjectDocsDir(): string {
-  return resolvePath(loadConfig().docsDir ?? "docs");
+  const docsDir = resolvePath(loadConfig().docsDir ?? "docs");
+  const local = readJson<{ docsDir?: unknown }>(localConfigPath());
+  if (local?.docsDir === undefined) return docsDir;
+
+  const real = realOrSelf(docsDir);
+  const rel = relative(realOrSelf(process.cwd()), real);
+  if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) {
+    throw new CliError(
+      "INVALID_VALUE",
+      `docsDir in .coding-friend/config.json is outside the project: ${docsDir}`,
+    );
+  }
+  return real;
 }
 
 function isMarkdown(name: string): boolean {
@@ -69,16 +98,27 @@ export function listDocs(docsDir: string): DocsList {
     } catch {
       return;
     }
+    // Visit entries in full-path order (a dir sorts as "name/"), so a truncated
+    // listing keeps exactly the first MAX_FILES paths of the sorted list.
+    const entries = [];
     for (const name of names) {
-      if (truncated) return;
       if (name.startsWith(".") || name === "node_modules") continue;
       const abs = join(dir, name);
-      let st;
       try {
-        st = lstatSync(abs);
+        const st = lstatSync(abs);
+        entries.push({
+          name,
+          abs,
+          st,
+          key: st.isDirectory() ? name + "/" : name,
+        });
       } catch {
         continue;
       }
+    }
+    entries.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    for (const { name, abs, st } of entries) {
+      if (truncated) return;
       if (st.isSymbolicLink()) continue;
       if (st.isDirectory()) {
         if (depth < MAX_DEPTH) walk(abs, depth + 1);
@@ -131,14 +171,49 @@ export function readDoc(docsDir: string, relpath: string): DocContent {
     );
   }
 
-  const st = statSync(real);
-  if (!st.isFile()) {
-    throw new CliError("INVALID_VALUE", `Not a file: ${relpath}`);
+  // Open once and check/read through the fd: no swap between check and read.
+  let fd: number;
+  try {
+    fd = openSync(
+      real,
+      constants.O_RDONLY |
+        (constants.O_NOFOLLOW ?? 0) |
+        (constants.O_NONBLOCK ?? 0),
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new CliError("NOT_FOUND", `Doc not found: ${relpath}`);
+    }
+    throw new CliError("INVALID_VALUE", `Cannot open doc: ${relpath}`);
   }
-  if (st.size > MAX_DOC_BYTES) {
+  let st;
+  let buf: Buffer;
+  try {
+    st = fstatSync(fd);
+    if (!st.isFile()) {
+      throw new CliError("INVALID_VALUE", `Not a file: ${relpath}`);
+    }
+    if (st.size > MAX_DOC_BYTES) {
+      throw new CliError(
+        "INVALID_VALUE",
+        `Doc is larger than 1 MiB: ${relpath}`,
+      );
+    }
+    // Read at most MAX + 1 bytes: a file growing after fstat is never slurped.
+    const max = Buffer.alloc(MAX_DOC_BYTES + 1);
+    let total = 0;
+    while (total < max.length) {
+      const n = readSync(fd, max, total, max.length - total, null);
+      if (n === 0) break;
+      total += n;
+    }
+    buf = max.subarray(0, total);
+  } finally {
+    closeSync(fd);
+  }
+  if (buf.length > MAX_DOC_BYTES) {
     throw new CliError("INVALID_VALUE", `Doc is larger than 1 MiB: ${relpath}`);
   }
-  const buf = readFileSync(real);
   return {
     path: segments.filter((s) => s && s !== ".").join("/"),
     content: buf.toString("utf8"),

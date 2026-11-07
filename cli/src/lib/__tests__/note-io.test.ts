@@ -10,7 +10,13 @@ import {
 } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { readNote, replaceBody, resolveNotePath } from "../note-io.js";
+import { Readable } from "stream";
+import {
+  readBodyFromStdin,
+  readNote,
+  replaceBody,
+  resolveNotePath,
+} from "../note-io.js";
 import { CliError } from "../output.js";
 
 let tmp: string;
@@ -105,5 +111,25 @@ describe("resolveNotePath", () => {
     expect(codeOf(() => resolveNotePath(root, "bugs/out"))).toBe(
       "INVALID_VALUE",
     );
+  });
+
+  it("resolves a note when the root is /", () => {
+    const slug = `cf-note-io-${process.pid}-${Date.now()}`;
+    const p = join("/tmp", `${slug}.md`);
+    writeFileSync(p, "# x\n");
+    try {
+      expect(resolveNotePath("/", `tmp/${slug}`)).toBe(realpathSync(p));
+    } finally {
+      rmSync(p, { force: true });
+    }
+  });
+});
+
+describe("readBodyFromStdin", () => {
+  it("refuses a body over the cap with INVALID_VALUE", async () => {
+    const stream = Readable.from([Buffer.alloc(11)]);
+    await expect(
+      readBodyFromStdin(10, stream as unknown as NodeJS.ReadStream),
+    ).rejects.toMatchObject({ code: "INVALID_VALUE" });
   });
 });

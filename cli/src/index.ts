@@ -1300,7 +1300,8 @@ dev
 // Skips for 'update' command (handles its own), worker commands (stdout is
 // captured by the worker's shell), the hidden task runner and chef wake,
 // the supervisor tick (run by launchd), doctor (read-only, no network),
-// --json runs, version/help flags, and CF_NO_UPDATE_CHECK=1 (checked inside;
+// --json runs, the stdio MCP servers (mcp-serve, mcp-serve-learn: stdout is
+// JSON-RPC), version/help flags, and CF_NO_UPDATE_CHECK=1 (checked inside;
 // a non-global entry such as tsx or a repo build never auto-installs)
 program.hook("postAction", async (_this, actionCommand) => {
   if (shouldSkipPostAction(actionCommand)) return;

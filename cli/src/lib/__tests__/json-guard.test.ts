@@ -4,11 +4,22 @@ import { shouldSkipPostAction, toUsageEnvelope } from "../json-guard.js";
 
 describe("shouldSkipPostAction", () => {
   it("skips when the action command has --json", () => {
-    expect(shouldSkipPostAction({ opts: () => ({ json: true }) })).toBe(true);
+    expect(
+      shouldSkipPostAction({ name: () => "x", opts: () => ({ json: true }) }),
+    ).toBe(true);
   });
 
   it("does not skip in human mode", () => {
-    expect(shouldSkipPostAction({ opts: () => ({}) })).toBe(false);
+    expect(shouldSkipPostAction({ name: () => "x", opts: () => ({}) })).toBe(
+      false,
+    );
+  });
+
+  // Stdio MCP servers: anything on stdout corrupts the JSON-RPC stream.
+  it.each(["mcp-serve", "mcp-serve-learn"])("skips for %s", (cmd) => {
+    expect(shouldSkipPostAction({ name: () => cmd, opts: () => ({}) })).toBe(
+      true,
+    );
   });
 });
 

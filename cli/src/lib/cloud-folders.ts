@@ -57,7 +57,9 @@ function withSuffix(label: string, name: string, prefix: string): string {
 /**
  * Existing cloud roots. macOS only: the table below follows each vendor's
  * macOS layout; other platforms return [].
- * - iCloud Drive: ~/Library/Mobile Documents/com~apple~CloudDocs.
+ * - iCloud Drive: ~/Library/Mobile Documents/com~apple~CloudDocs. App
+ *   containers next to it (e.g. an Obsidian vault) sync too, so Mobile
+ *   Documents itself is a root after it (no suggestion).
  * - File Provider apps (Google Drive for desktop, Dropbox, OneDrive):
  *   ~/Library/CloudStorage/<Provider>-<account>. Google Drive's root only
  *   holds "My Drive" and "Shared drives", so the learn folder goes in My Drive.
@@ -67,18 +69,22 @@ function cloudRoots(home: string, platform: NodeJS.Platform): RootEntry[] {
   if (platform !== "darwin") return [];
   const roots: RootEntry[] = [];
 
-  const icloud = join(
-    home,
-    "Library",
-    "Mobile Documents",
-    "com~apple~CloudDocs",
-  );
+  const mobile = join(home, "Library", "Mobile Documents");
+  const icloud = join(mobile, "com~apple~CloudDocs");
   if (isDir(icloud)) {
     roots.push({
       provider: "icloud",
       label: "iCloud Drive",
       root: icloud,
       base: icloud,
+    });
+  }
+  if (isDir(mobile)) {
+    roots.push({
+      provider: "icloud",
+      label: "iCloud",
+      root: mobile,
+      base: null,
     });
   }
 
@@ -113,8 +119,11 @@ function cloudRoots(home: string, platform: NodeJS.Platform): RootEntry[] {
     }
   }
 
+  const seen = new Set(roots.map((r) => realish(r.root)));
   for (const name of listDirs(home, /^Dropbox( \(.+\))?$/)) {
     const root = join(home, name);
+    // ~/Dropbox may be a symlink to a CloudStorage root listed above.
+    if (seen.has(realish(root))) continue;
     roots.push({
       provider: "dropbox",
       label: withSuffix("Dropbox", name, "Dropbox"),

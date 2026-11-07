@@ -24,6 +24,11 @@ vi.mock("../../lib/exec.js", () => ({
   runWithStderr: (...args: unknown[]) => mockRunWithStderr(...args),
 }));
 
+const mockReadJson = vi.fn();
+vi.mock("../../lib/json.js", () => ({
+  readJson: (...args: unknown[]) => mockReadJson(...args),
+}));
+
 const mockExit = vi.spyOn(process, "exit").mockImplementation((() => {
   // noop
 }) as (code?: string | number | null | undefined) => never);
@@ -34,6 +39,7 @@ beforeEach(() => {
   mockExistsSync.mockReturnValue(true);
   mockStatSync.mockReturnValue({ isDirectory: () => true });
   mockRunWithStderr.mockReturnValue({ stdout: "", stderr: "", exitCode: 0 });
+  mockReadJson.mockReturnValue(null);
 });
 
 describe("mcpServeLearnCommand", () => {
@@ -205,5 +211,50 @@ describe("ensureLearnBuilt (bootstrap guard)", () => {
     mcpServeLearnCommand("/some/docs");
 
     expect(mockExit).toHaveBeenCalledWith(1);
+  });
+});
+
+// Regression: MCP stdio reserves stdout for JSON-RPC — any pre-spawn
+// diagnostic on stdout makes strict clients drop the server.
+describe("stdout stays clean before the server starts", () => {
+  it.each([
+    {
+      name: "first run: install ok, build fails",
+      setup: () => {
+        mockExistsSync.mockImplementation(
+          (p: string) =>
+            p !== "/fake/learn-mcp/node_modules" &&
+            p !== "/fake/learn-mcp/dist",
+        );
+        mockRunWithStderr.mockImplementation((_cmd: string, args: string[]) =>
+          args[0] === "install"
+            ? { stdout: "", stderr: "", exitCode: 0 }
+            : { stdout: "", stderr: "tsc error", exitCode: 1 },
+        );
+      },
+    },
+    {
+      name: "learn.disabled",
+      setup: () => {
+        mockReadJson.mockReturnValue({ learn: { disabled: true } });
+      },
+    },
+  ])("writes diagnostics to stderr only ($name)", async ({ setup }) => {
+    mockSpawn.mockReturnValue(new EventEmitter());
+    setup();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const writeSpy = vi.spyOn(process.stdout, "write");
+
+    const { mcpServeLearnCommand } = await import("../mcp-serve-learn.js");
+    await mcpServeLearnCommand("/some/docs");
+
+    const stdoutCalls = [...logSpy.mock.calls, ...writeSpy.mock.calls];
+    const stderrCount = errSpy.mock.calls.length;
+    logSpy.mockRestore();
+    errSpy.mockRestore();
+    writeSpy.mockRestore();
+    expect(stdoutCalls).toEqual([]);
+    expect(stderrCount).toBeGreaterThan(0);
   });
 });

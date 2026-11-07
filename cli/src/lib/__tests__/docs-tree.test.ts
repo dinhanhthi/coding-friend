@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHash } from "crypto";
 import {
   mkdirSync,
@@ -10,7 +10,7 @@ import {
 } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { listDocs, readDoc } from "../docs-tree.js";
+import { listDocs, readDoc, resolveProjectDocsDir } from "../docs-tree.js";
 import { CliError } from "../output.js";
 
 let tmp: string;
@@ -55,5 +55,39 @@ describe("docs-tree", () => {
     const doc = readDoc(docs, "plans/a.md");
     expect(doc.content).toBe("# A\n");
     expect(doc.sha256).toBe(createHash("sha256").update("# A\n").digest("hex"));
+  });
+});
+
+describe("resolveProjectDocsDir", () => {
+  const origCwd = process.cwd();
+  let project: string;
+  let home: string;
+
+  beforeEach(() => {
+    project = join(tmp, "project");
+    home = join(tmp, "home");
+    mkdirSync(join(project, ".coding-friend"), { recursive: true });
+    mkdirSync(join(home, ".coding-friend"), { recursive: true });
+    vi.stubEnv("HOME", home);
+    process.chdir(project);
+  });
+
+  afterEach(() => {
+    process.chdir(origCwd);
+    vi.unstubAllEnvs();
+  });
+
+  it("refuses a local docsDir outside the project but allows a global absolute one", () => {
+    writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ docsDir: docs }),
+    );
+    expect(resolveProjectDocsDir()).toBe(docs);
+
+    writeFileSync(
+      join(project, ".coding-friend", "config.json"),
+      JSON.stringify({ docsDir: "../docs" }),
+    );
+    expect(codeOf(() => resolveProjectDocsDir())).toBe("INVALID_VALUE");
   });
 });

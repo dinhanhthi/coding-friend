@@ -16,7 +16,8 @@ import {
   conflictBaseOf,
   isCloudPlaceholder,
 } from "./cloud-folders.js";
-import { readNote, resolveNotePath } from "./note-io.js";
+// Same id-segment grammar as resolveNotePath, so every listed id is showable.
+import { readNote, resolveNotePath, validSegment } from "./note-io.js";
 import { CliError } from "./output.js";
 
 /**
@@ -54,19 +55,6 @@ export const MAX_QUERY_CHARS = 500;
 /** Frontmatter is read from the first bytes only (a dataless file may be large). */
 const HEAD_BYTES = 8 * 1024;
 const LEGACY_ICLOUD = /^\.(.+)\.md\.icloud$/;
-
-/** Same id-segment grammar as note-io's resolveNotePath, so every listed id is showable. */
-function validSegment(s: string): boolean {
-  return (
-    s.trim() !== "" &&
-    s !== "." &&
-    s !== ".." &&
-    !s.startsWith("-") &&
-    !s.includes("/") &&
-    !s.includes("\\") &&
-    !/[\x00-\x1f\x7f]/.test(s)
-  );
-}
 
 function lstatOrNull(p: string): Stats | null {
   try {

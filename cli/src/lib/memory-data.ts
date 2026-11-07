@@ -258,11 +258,22 @@ export function searchMemories(
   );
 }
 
+/**
+ * cf-memory's parser String()s the Date js-yaml makes from `updated: 2026-11-02`
+ * (UTC midnight) in local time, so it can read as the day before. Map it back to
+ * the note's UTC date; a YYYY-MM-DD string stays as-is.
+ */
+function toNoteDate(value: string): string {
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? value : new Date(time).toISOString().slice(0, 10);
+}
+
 export function listMemories(
   memoryDir: string,
   mcpDir: string,
 ): MemoryListItem[] {
-  return runJsonChild<MemoryListItem[]>(
+  const items = runJsonChild<MemoryListItem[]>(
     `
     import { MarkdownBackend } from ${JSON.stringify(join(mcpDir, "dist/backends/markdown.js"))};
     const backend = new MarkdownBackend(${JSON.stringify(memoryDir)});
@@ -279,4 +290,5 @@ export function listMemories(
     `,
     memoryDir,
   );
+  return items.map((m) => ({ ...m, updated: toNoteDate(m.updated) }));
 }

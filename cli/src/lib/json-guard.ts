@@ -8,11 +8,18 @@ const DISPLAY_CODES = new Set([
   "commander.help",
 ]);
 
-/** postAction hook: JSON runs skip the update check and auto-update. */
+// Stdio MCP servers: stdout is the JSON-RPC stream, so nothing may follow.
+const MCP_SERVE_COMMANDS = new Set(["mcp-serve", "mcp-serve-learn"]);
+
+/** postAction hook: JSON runs and stdio MCP servers skip the update check and auto-update. */
 export function shouldSkipPostAction(actionCommand: {
+  name(): string;
   opts(): Record<string, unknown>;
 }): boolean {
-  return Boolean(actionCommand.opts().json);
+  return (
+    MCP_SERVE_COMMANDS.has(actionCommand.name()) ||
+    Boolean(actionCommand.opts().json)
+  );
 }
 
 /** USAGE envelope for a commander error, or null for help/version display. */

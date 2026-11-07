@@ -3,32 +3,34 @@ import { existsSync, mkdirSync, statSync } from "fs";
 import { join } from "path";
 import { getLibPath } from "../lib/lib-path.js";
 import { runWithStderr } from "../lib/exec.js";
-import { log } from "../lib/log.js";
 import { readJson } from "../lib/json.js";
 import { globalConfigPath } from "../lib/paths.js";
 import { type CodingFriendConfig } from "../types.js";
 
+// MCP stdio protocol: stdout is reserved for JSON-RPC — every diagnostic
+// before (and around) the server goes to stderr. npm output stays piped by
+// runWithStderr, so it never inherits stdout either.
 function ensureLearnBuilt(mcpDir: string): void {
   if (!existsSync(join(mcpDir, "node_modules"))) {
-    log.step("Installing learn server dependencies (one-time setup)...");
+    console.error("Installing learn server dependencies (one-time setup)...");
     const result = runWithStderr("npm", ["install"], { cwd: mcpDir });
     if (result.exitCode !== 0) {
-      log.error("Failed to install dependencies");
-      if (result.stderr) log.error(result.stderr);
+      console.error("Failed to install dependencies");
+      if (result.stderr) console.error(result.stderr);
       process.exit(1);
     }
-    log.success("Done.");
+    console.error("Done.");
   }
 
   if (!existsSync(join(mcpDir, "dist"))) {
-    log.step("Building learn server...");
+    console.error("Building learn server...");
     const result = runWithStderr("npm", ["run", "build"], { cwd: mcpDir });
     if (result.exitCode !== 0) {
-      log.error("Failed to build learn server");
-      if (result.stderr) log.error(result.stderr);
+      console.error("Failed to build learn server");
+      if (result.stderr) console.error(result.stderr);
       process.exit(1);
     }
-    log.success("Done.");
+    console.error("Done.");
   }
 }
 
@@ -41,7 +43,7 @@ function ensureLearnBuilt(mcpDir: string): void {
 export async function mcpServeLearnCommand(docsDir: string): Promise<void> {
   const globalCfg = readJson<CodingFriendConfig>(globalConfigPath());
   if (globalCfg?.learn?.disabled) {
-    log.warn(
+    console.error(
       "CF Learn is disabled (learn.disabled = true in ~/.coding-friend/config.json). MCP server not started.",
     );
     process.exit(0);
@@ -51,7 +53,7 @@ export async function mcpServeLearnCommand(docsDir: string): Promise<void> {
   if (!existsSync(docsDir)) {
     mkdirSync(docsDir, { recursive: true });
   } else if (!statSync(docsDir).isDirectory()) {
-    log.error(`Path exists but is not a directory: ${docsDir}`);
+    console.error(`Path exists but is not a directory: ${docsDir}`);
     process.exit(1);
     return;
   }
@@ -66,7 +68,7 @@ export async function mcpServeLearnCommand(docsDir: string): Promise<void> {
   });
 
   child.on("error", (err) => {
-    log.error(`Failed to start learn MCP server: ${err.message}`);
+    console.error(`Failed to start learn MCP server: ${err.message}`);
     process.exit(1);
   });
 

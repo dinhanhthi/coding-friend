@@ -1,7 +1,7 @@
 import { execFileSync } from "child_process";
 import { realpathSync, statSync } from "fs";
 import { homedir } from "os";
-import { basename, dirname, isAbsolute, join, relative } from "path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "path";
 
 import {
   type CloudFolder,
@@ -39,13 +39,25 @@ type GitResult = { ok: true; stdout: string } | { ok: false; error: string };
 /**
  * Run git without a shell, with a timeout and no interactive prompts.
  * GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE (set when called from another repo's
- * hook) would override `-C`, so they are dropped.
+ * hook) would override `-C`, so they are dropped, as are config injected
+ * through the environment (GIT_CONFIG_PARAMETERS, GIT_CONFIG_COUNT/KEY/VALUE)
+ * and env-named programs. The system config is never read.
  */
 function git(args: string[], timeout: number): GitResult {
-  const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    GIT_TERMINAL_PROMPT: "0",
+    GIT_CONFIG_NOSYSTEM: "1",
+  };
   delete env.GIT_DIR;
   delete env.GIT_WORK_TREE;
   delete env.GIT_INDEX_FILE;
+  delete env.GIT_EXTERNAL_DIFF;
+  delete env.GIT_ASKPASS;
+  delete env.GIT_CONFIG_PARAMETERS;
+  for (const key of Object.keys(env)) {
+    if (/^GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)$/.test(key)) delete env[key];
+  }
   try {
     const stdout = execFileSync("git", args, {
       encoding: "utf-8",
@@ -162,20 +174,76 @@ export function commitLearnChange(
   } catch {
     return { committed: false, commitError: `cannot resolve ${file}` };
   }
-  if (!rel || rel.startsWith("..") || isAbsolute(rel)) {
+  if (!rel || rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) {
     return { committed: false, commitError: `${file} is outside ${root}` };
   }
 
   const deadline = Date.now() + COMMIT_TIMEOUT_MS;
   // Literal pathspecs: a name with `*` or `:` must not match other files.
-  const base = ["--literal-pathspecs", "-C", root];
+  // A synced or cloned learn repo must not run code: no hooks, fsmonitor,
+  // signing program or auto gc, and (below) no commit when it defines filters.
+  const base = [
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "core.hooksPath=/dev/null",
+    "-c",
+    "commit.gpgsign=false",
+    "-c",
+    "gc.auto=0",
+    "-c",
+    "core.untrackedCache=false",
+    "-c",
+    "core.splitIndex=false",
+    "--literal-pathspecs",
+    "-C",
+    root,
+  ];
+  const left = () => Math.max(1, deadline - Date.now());
+  // Git cannot turn filter drivers off, and add/commit run them on the work
+  // tree. Only the user's global config is trusted: a filter or attributes
+  // file set by the repo (local, worktree or included config) skips the commit.
+  const config = git([...base, "config", "--show-scope", "--list"], left());
+  if (!config.ok) return { committed: false, commitError: config.error };
+  const repoFilters = config.stdout
+    .split("\n")
+    .some((line) =>
+      /^(?!global\t)[^\t]*\t(filter\.|core\.attributesfile=)/i.test(line),
+    );
+  if (repoFilters) {
+    return {
+      committed: false,
+      commitError: "learn repo defines git filters; auto-commit skipped",
+    };
+  }
+  // Deleting a note git never tracked leaves nothing to commit.
+  if (action === "delete") {
+    const tracked = git([...base, "ls-files", "--", rel], left());
+    if (!tracked.ok) return { committed: false, commitError: tracked.error };
+    if (tracked.stdout === "") return { committed: false };
+  }
   // `git add` stages a removal too (git >= 2.0).
-  const add = git([...base, "add", "--", rel], COMMIT_TIMEOUT_MS);
+  const add = git([...base, "add", "--", rel], left());
   if (!add.ok) return { committed: false, commitError: add.error };
-  const left = Math.max(1, deadline - Date.now());
+  // An edit that restores the committed content stages nothing.
+  const staged = git(
+    [...base, "diff", "--cached", "--name-only", "--", rel],
+    left(),
+  );
+  if (!staged.ok) return { committed: false, commitError: staged.error };
+  if (staged.stdout === "") return { committed: false };
   const commit = git(
-    [...base, "commit", "-q", "-m", `learn: ${action} ${id}`, "--", rel],
-    left,
+    [
+      ...base,
+      "commit",
+      "-q",
+      "--no-gpg-sign",
+      "-m",
+      `learn: ${action} ${id}`,
+      "--",
+      rel,
+    ],
+    left(),
   );
   if (!commit.ok) return { committed: false, commitError: commit.error };
   return { committed: true };

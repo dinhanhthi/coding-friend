@@ -15,6 +15,7 @@ import { Readable } from "stream";
 import {
   learnDeleteCommand,
   learnEditCommand,
+  learnPushCommand,
   learnShowCommand,
 } from "../learn.js";
 
@@ -169,5 +170,36 @@ describe("learn show|edit|delete --json", () => {
     });
     expect(existsSync(note)).toBe(false);
     expect(git("log", "-1", "--format=%s")).toBe("learn: delete concepts/x");
+  });
+});
+
+describe("learn push", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("exits 0 in folder mode", async () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "cf-learnpush-")));
+    vi.stubEnv("HOME", dir);
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...a) => {
+      logs.push(a.join(" "));
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const exit = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new Error(`exit ${code}`);
+    }) as typeof process.exit);
+    process.exitCode = undefined;
+    try {
+      await learnPushCommand(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    expect(exit).not.toHaveBeenCalled();
+    expect(process.exitCode).toBeUndefined();
+    expect(logs.join("\n")).toContain("not applicable in folder mode");
   });
 });

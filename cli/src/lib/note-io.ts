@@ -9,7 +9,7 @@ import {
   writeFileSync,
   type Stats,
 } from "fs";
-import { basename, dirname, join, sep } from "path";
+import { basename, dirname, isAbsolute, join, relative, sep } from "path";
 import { parse } from "yaml";
 import { CliError } from "./output.js";
 
@@ -46,7 +46,8 @@ function sha256(buf: Buffer): string {
   return createHash("sha256").update(buf).digest("hex");
 }
 
-function validSegment(s: string): boolean {
+/** Grammar of one id segment (`<category>` or `<slug>`). */
+export function validSegment(s: string): boolean {
   return (
     s.trim() !== "" &&
     s !== "." &&
@@ -55,6 +56,17 @@ function validSegment(s: string): boolean {
     !s.includes("/") &&
     !s.includes("\\") &&
     !CONTROL_RE.test(s)
+  );
+}
+
+/** True when `p` is strictly inside `root` (works for a root of `/`). */
+function isInside(root: string, p: string): boolean {
+  const rel = relative(root, p);
+  return (
+    rel !== "" &&
+    rel !== ".." &&
+    !rel.startsWith(".." + sep) &&
+    !isAbsolute(rel)
   );
 }
 
@@ -79,7 +91,7 @@ export function resolveNotePath(root: string, id: string): string {
   } catch {
     throw new CliError("NOT_FOUND", `Note not found: ${id}`);
   }
-  if (!real.startsWith(realRoot + sep)) {
+  if (!isInside(realRoot, real)) {
     throw new CliError("INVALID_VALUE", `Note is outside its root: ${id}`);
   }
   if (!statSync(real).isFile()) {

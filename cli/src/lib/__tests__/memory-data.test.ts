@@ -113,6 +113,32 @@ describe("searchMemories / listMemories", () => {
     expect(opts?.["env"]?.CF_SEARCH_QUERY).toBe("a`b'c");
   });
 
+  it("lists the note's YYYY-MM-DD updated date, not a shifted Date string", () => {
+    // cf-memory's parser String()s the YAML Date (UTC midnight) in local time,
+    // e.g. at UTC-6 `updated: 2026-11-02` arrives as the evening before.
+    const item = {
+      id: "a",
+      category: "c",
+      title: "t",
+      description: "",
+      type: "fact",
+      tags: [],
+    };
+    vi.mocked(run).mockReturnValue(
+      JSON.stringify([
+        {
+          ...item,
+          updated: "Sun Nov 01 2026 18:00:00 GMT-0600 (Central Standard Time)",
+        },
+        { ...item, id: "b", updated: "2026-11-03" },
+      ]),
+    );
+    expect(listMemories(dir, "/mcp").map((m) => m.updated)).toEqual([
+      "2026-11-02",
+      "2026-11-03",
+    ]);
+  });
+
   it("throws COMMAND_FAILED when the child fails or prints non-JSON", () => {
     vi.mocked(run).mockReturnValue(null);
     expect(() => listMemories(dir, "/mcp")).toThrow(CliError);
