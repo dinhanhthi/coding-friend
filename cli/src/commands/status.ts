@@ -19,16 +19,13 @@ import {
   type QuotaStatus,
   type VersionsStatus,
 } from "../lib/status-data.js";
+import { formatUptime } from "../lib/uptime.js";
+
+export { formatUptime };
 
 const VERSION_COL = 11;
 const CONFIG_KEY_COL = 16;
 const CONFIG_SUB_COL = 16;
-
-function formatUptime(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-  return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
-}
 
 /** Compact span, rounded down: "45s", "3m", "2h 10m", "3d 1h". */
 function formatSpan(seconds: number): string {

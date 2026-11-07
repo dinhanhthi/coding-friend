@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "fs";
 import { join } from "path";
@@ -21,6 +23,7 @@ import {
   install,
   plistPath,
   readProgramArgs,
+  tccProtectedPaths,
   validateLabel,
 } from "../launchd.js";
 import { CliError } from "../output.js";
@@ -28,12 +31,14 @@ import { CliError } from "../output.js";
 const LABEL = "com.coding-friend.supervisor-test";
 
 let root: string;
+const origPlatform = process.platform;
 
 beforeEach(() => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "cf-launchd-")));
 });
 
 afterEach(() => {
+  Object.defineProperty(process, "platform", { value: origPlatform });
   vi.clearAllMocks();
   rmSync(root, { recursive: true, force: true });
 });
@@ -125,5 +130,32 @@ describe("launchd install", () => {
     expect(statSync(file).mode & 0o777).toBe(0o644);
     expect(readFileSync(file, "utf-8")).toContain(`<string>${LABEL}</string>`);
     expect(existsSync(join(storeDir, "supervisor"))).toBe(true);
+  });
+});
+
+describe("launchd TCC-protected program paths", () => {
+  it("flags paths (or symlink targets) under ~/Documents, not /usr/local", () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const node = join(root, "Documents", "node", "bin", "node");
+    mkdirSync(join(root, "Documents", "node", "bin"), { recursive: true });
+    writeFileSync(node, "");
+    mkdirSync(join(root, "bin"));
+    const link = join(root, "bin", "node");
+    symlinkSync(node, link);
+    const args = [
+      "/usr/local/bin/node",
+      join(root, "DocumentsArchive", "cf.js"),
+      node,
+      link,
+      "supervisor",
+    ];
+    expect(tccProtectedPaths(args, root)).toEqual([node, link]);
+  });
+
+  it("flags nothing off macOS", () => {
+    Object.defineProperty(process, "platform", { value: "linux" });
+    expect(tccProtectedPaths([join(root, "Documents", "cf.js")], root)).toEqual(
+      [],
+    );
   });
 });

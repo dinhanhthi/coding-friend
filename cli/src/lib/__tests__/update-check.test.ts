@@ -33,8 +33,19 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   rmSync(testDir, { recursive: true, force: true });
 });
+
+/** Fake global npm root with an installed CLI entry; returns its paths. */
+function fakeGlobalInstall(): { root: string; entry: string } {
+  const root = join(testDir, "lib", "node_modules");
+  const distDir = join(root, "coding-friend-cli", "dist");
+  mkdirSync(distDir, { recursive: true });
+  const entry = join(distDir, "index.js");
+  writeFileSync(entry, "");
+  return { root, entry };
+}
 
 describe("isCheckStale", () => {
   it("returns true when cache is null", () => {
@@ -150,20 +161,56 @@ describe("checkAndNotifyCliUpdate", () => {
   });
 
   it("auto-updates when enabled and update is available", () => {
-    // First call returns latest version, second call is the auto-update
+    const { root, entry } = fakeGlobalInstall();
     mockRun.mockImplementation((_cmd, args) => {
       if (args?.[0] === "view") return "2.0.0";
+      if (args?.[0] === "root") return root;
       if (args?.[0] === "install") return "ok";
       return null;
     });
 
-    checkAndNotifyCliUpdate("1.0.0", { autoUpdate: true });
+    checkAndNotifyCliUpdate("1.0.0", { autoUpdate: true, entryPath: entry });
 
     expect(mockRun).toHaveBeenCalledWith("npm", [
       "install",
       "-g",
       "coding-friend-cli@latest",
     ]);
+  });
+
+  it("never auto-installs when the entry is not the global install, but still notifies", () => {
+    const { root } = fakeGlobalInstall();
+    const devEntry = join(testDir, "repo", "cli", "dist", "index.js");
+    mkdirSync(join(testDir, "repo", "cli", "dist"), { recursive: true });
+    writeFileSync(devEntry, "");
+    mockRun.mockImplementation((_cmd, args) => {
+      if (args?.[0] === "view") return "2.0.0";
+      if (args?.[0] === "root") return root;
+      if (args?.[0] === "install") return "ok";
+      return null;
+    });
+    const consoleSpy = vi.spyOn(console, "log");
+
+    checkAndNotifyCliUpdate("1.0.0", {
+      autoUpdate: true,
+      entryPath: devEntry,
+    });
+
+    expect(mockRun).not.toHaveBeenCalledWith(
+      "npm",
+      expect.arrayContaining(["install"]),
+    );
+    const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(output).toContain("Update available");
+  });
+
+  it("skips the whole check when CF_NO_UPDATE_CHECK=1", () => {
+    vi.stubEnv("CF_NO_UPDATE_CHECK", "1");
+    mockRun.mockReturnValue("2.0.0");
+
+    checkAndNotifyCliUpdate("1.0.0", { autoUpdate: true });
+
+    expect(mockRun).not.toHaveBeenCalled();
   });
 
   it("skips auto-update when disabled", () => {
@@ -197,14 +244,16 @@ describe("checkAndNotifyCliUpdate", () => {
   });
 
   it("shows fallback message when auto-update fails", () => {
+    const { root, entry } = fakeGlobalInstall();
     mockRun.mockImplementation((_cmd, args) => {
       if (args?.[0] === "view") return "2.0.0";
+      if (args?.[0] === "root") return root;
       if (args?.[0] === "install") return null; // simulate failure
       return null;
     });
 
     const consoleSpy = vi.spyOn(console, "log");
-    checkAndNotifyCliUpdate("1.0.0", { autoUpdate: true });
+    checkAndNotifyCliUpdate("1.0.0", { autoUpdate: true, entryPath: entry });
 
     const output = consoleSpy.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(output).toContain("Auto-update failed");

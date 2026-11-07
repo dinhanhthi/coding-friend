@@ -9,7 +9,7 @@ import {
   mkdirSync,
   openSync,
   readdirSync,
-  readFileSync,
+  readSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
@@ -356,7 +356,13 @@ function claimedAttemptDir(id: string, n: number): string {
     }
     assertRealDir(d);
   }
-  if (!existsSync(join(dir, "attempt.json"))) {
+  let claimed = false;
+  try {
+    claimed = lstatSync(join(dir, "attempt.json")).isFile();
+  } catch {
+    // not claimed
+  }
+  if (!claimed) {
     throw new CliError("NOT_FOUND", `Attempt ${n} of task ${id} not claimed`);
   }
   return dir;
@@ -397,7 +403,9 @@ export function assertRealDir(dir: string): void {
 /**
  * Bytes of a regular file of at most `max` bytes, else undefined. Workers
  * write their task dir: O_NOFOLLOW refuses a symlink and O_NONBLOCK keeps a
- * planted FIFO from blocking the read (fstat then rejects it).
+ * planted FIFO from blocking the read (fstat then rejects it). Reads at most
+ * fstat's size + 1 bytes (<= max + 1), so a writer growing the file after
+ * fstat cannot pass the cap: a grown file reads as undefined.
  */
 export function readRegularFile(
   file: string,
@@ -414,7 +422,16 @@ export function readRegularFile(
   }
   try {
     const st = fstatSync(fd);
-    return st.isFile() && st.size <= max ? readFileSync(fd) : undefined;
+    if (!st.isFile() || st.size > max) return undefined;
+    const buf = Buffer.alloc(st.size + 1);
+    let len = 0;
+    while (len < buf.length) {
+      const n = readSync(fd, buf, len, buf.length - len, null);
+      if (n === 0) break;
+      len += n;
+    }
+    // More bytes than fstat saw: the file grew mid-read, never a torn prefix.
+    return len > st.size ? undefined : buf.subarray(0, len);
   } catch {
     return undefined;
   } finally {

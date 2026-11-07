@@ -33,6 +33,7 @@ import * as fs from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { RUNNABLE_FIXES } from "../doctor.js";
+import { buildPlist } from "../launchd.js";
 import { claudeProjectDirName } from "../paths.js";
 import { doctorCommand } from "../../commands/doctor.js";
 
@@ -269,6 +270,38 @@ describe("cf doctor --json", () => {
     );
     expect(storage).toMatchObject({ group: "learn", status: "warn" });
     expect(storage.hint).toMatch(/either git or a cloud folder/);
+  });
+  it("warns (hint, no reinstall fix) when the supervisor agent's program is under ~/Downloads", async () => {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const cli = join(home, "Downloads", "cf", "index.js");
+    realFs.mkdirSync(join(home, "Downloads", "cf"), { recursive: true });
+    realFs.writeFileSync(cli, "");
+    const agents = join(home, "Library", "LaunchAgents");
+    realFs.mkdirSync(agents, { recursive: true });
+    realFs.writeFileSync(
+      join(agents, "com.coding-friend.supervisor.plist"),
+      buildPlist({
+        label: "com.coding-friend.supervisor",
+        programArgs: [process.execPath, cli, "supervisor", "tick"],
+        storeDir: join(home, "store"),
+        path: "/usr/bin",
+      }),
+    );
+    // `launchctl print` succeeds: the agent is loaded.
+    execFileSync.mockImplementation(((bin: string, args?: readonly string[]) =>
+      bin === "/bin/launchctl"
+        ? ""
+        : fakeExec(bin, args)) as unknown as typeof childProcess.execFileSync);
+
+    const env = await runDoctorJson();
+    const launchd = env.data.checks.find(
+      (c: { id: string }) => c.id === "supervisor.launchd",
+    );
+    expect(launchd).toMatchObject({ group: "supervisor", status: "warn" });
+    expect(launchd.detail).toContain(cli);
+    expect(launchd.hint).toMatch(/Full Disk Access/);
+    expect(launchd.fix).toBeUndefined();
   });
   it("reports decision env keys by name only, flags an ignored local block, and never calls fetch", async () => {
     const realFs = await vi.importActual<typeof import("fs")>("fs");

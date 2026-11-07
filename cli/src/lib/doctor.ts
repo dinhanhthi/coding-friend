@@ -633,9 +633,15 @@ function supervisorChecks(): DoctorCheck[] {
   } else if (!s.loaded) {
     launchd.status = "warn";
     launchd.detail = "installed but not loaded";
+  } else if (s.protectedPaths.length) {
+    launchd.status = "warn";
+    launchd.detail = `program path(s) in a macOS privacy-protected folder: ${s.protectedPaths.join(", ")}`;
+    // A reinstall writes the same paths: no runnable fix.
+    launchd.hint =
+      "Move node / the cf CLI out of Desktop, Documents, Downloads or iCloud Drive and rerun `cf supervisor install`, or grant Full Disk Access to node";
   }
   // `supervisor install` rewrites the plist and bootstraps it.
-  if (launchd.status !== "ok")
+  if (launchd.status !== "ok" && !launchd.hint)
     launchd.fix = fix(RUNNABLE_FIXES.supervisorInstall);
 
   const at = readHeartbeat();

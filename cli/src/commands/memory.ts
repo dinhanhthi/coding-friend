@@ -5,7 +5,7 @@ import {
   readdirSync,
   realpathSync,
   rmSync,
-  writeFileSync,
+  statSync,
 } from "fs";
 import { isAbsolute, join, resolve, sep } from "path";
 import { homedir } from "os";
@@ -27,7 +27,9 @@ import { globalConfigPath, localConfigPath } from "../lib/paths.js";
 import { showConfigHint } from "../lib/prompt-utils.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { useProjectDir } from "../lib/project-option.js";
+import { formatUptime } from "../lib/uptime.js";
 import {
+  atomicWrite,
   deleteNote,
   readBodyFromStdin,
   readNote,
@@ -158,12 +160,6 @@ export function printMemoryMcpConfig(memoryDir: string): void {
     "Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.",
   );
   console.log();
-}
-
-function formatUptime(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-  return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
 }
 
 /** JSON mode never exits: a failed build becomes MEMORY_BUILD_FAILED. */
@@ -612,7 +608,14 @@ function removeRuleEntry(
         (e) => e.match(RULE_ENTRY_RE)?.[1] !== id,
       );
       if (entries.length === section.entries.length) continue;
-      writeFileSync(file, buildRules({ ...section, entries }), "utf-8");
+      // Write the real file (AGENTS.md is often a symlink to CLAUDE.md) atomically,
+      // so a crash mid-write never leaves a truncated rules file.
+      const target = realpathSync(file);
+      atomicWrite(
+        target,
+        Buffer.from(buildRules({ ...section, entries }), "utf-8"),
+        statSync(target).mode & 0o777,
+      );
       files.push(file);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -648,7 +651,18 @@ export async function memoryShowCommand(
     return;
   }
   await runHumanLogged(() => {
-    process.stdout.write(show().raw);
+    const raw = show().raw;
+    // On a terminal, drop control characters (ESC, C1…), a lone CR and bidi
+    // overrides so a note cannot drive or disguise the terminal; keep tab and
+    // newlines. Pipes still get the exact bytes.
+    process.stdout.write(
+      process.stdout.isTTY
+        ? raw.replace(
+            /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]|\r(?!\n)/g,
+            "",
+          )
+        : raw,
+    );
   });
 }
 

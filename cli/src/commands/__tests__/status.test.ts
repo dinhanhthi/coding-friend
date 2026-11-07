@@ -124,7 +124,7 @@ import {
   getCliVersion,
   getLatestCliVersion,
 } from "../update.js";
-import { statusCommand } from "../status.js";
+import { formatUptime, statusCommand } from "../status.js";
 
 const mockGetInstalledVersion = vi.mocked(getInstalledVersion);
 const mockReadJson = vi.mocked(readJson);
@@ -823,5 +823,12 @@ describe("statusCommand — quota snapshot", () => {
     expect(lines[0]).toMatch(
       /Claude 5h 42% \(resets in 2h 1\dm\) · 7d 18% \(resets in 3d 1h\) · 3m ago/,
     );
+  });
+});
+
+describe("formatUptime", () => {
+  it("rounds down, so an uptime just under an hour never prints 60m", () => {
+    expect(formatUptime(3599)).toBe("59m");
+    expect(formatUptime(25190)).toBe("6h 59m");
   });
 });

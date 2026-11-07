@@ -54,6 +54,13 @@ import {
 } from "../chef-store.js";
 import { pendingEvents } from "../chef-triggers.js";
 
+// Host-independent ticks: every candidate provider is eligible (no real
+// `which claude/codex`).
+vi.mock("../providers/eligible.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../providers/eligible.js")>()),
+  eligibleProviders: vi.fn((_req: unknown, c: readonly Provider[]) => [...c]),
+}));
+
 const NOW = Math.floor(Date.now() / 1000);
 
 let root: string;

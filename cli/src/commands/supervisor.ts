@@ -1,9 +1,10 @@
-import { spawn } from "child_process";
+import { execFileSync, spawn } from "child_process";
 import {
   DEFAULT_LABEL,
   install,
   isSupported,
   status,
+  tccProtectedPaths,
   tickLogPath,
   tickProgramArgs,
   uninstall,
@@ -57,7 +58,9 @@ function cronLine(): string {
   if (process.env.CF_ORCHESTRATOR_DIR) {
     env += `CF_ORCHESTRATOR_DIR=${shellQuote(orchestratorDir())} `;
   }
-  return `* * * * * ${env}${tickProgramArgs().map(shellQuote).join(" ")}`;
+  const command = `${env}${tickProgramArgs().map(shellQuote).join(" ")}`;
+  // cron reads an unescaped % as a newline, even inside quotes.
+  return `* * * * * ${command.replace(/%/g, "\\%")}`;
 }
 
 function assertSupported(): void {
@@ -76,19 +79,28 @@ export async function supervisorInstallCommand(
     () => {
       assertSupported();
       const storeDir = orchestratorDir();
+      const programArgs = tickProgramArgs();
       const res = install({
         label: opts.label ?? DEFAULT_LABEL,
-        programArgs: tickProgramArgs(),
+        programArgs,
         storeDir,
         path: process.env.PATH ?? "",
       });
-      return { ...res, logPath: tickLogPath(storeDir), storeDir };
+      const warnings: string[] = [];
+      const protectedPaths = tccProtectedPaths(programArgs);
+      if (protectedPaths.length) {
+        warnings.push(
+          `launchd cannot run program path(s) in a macOS privacy-protected folder without Full Disk Access: ${protectedPaths.join(", ")}. Move node / the cf CLI out of Desktop, Documents, Downloads or iCloud Drive and reinstall, or grant Full Disk Access to node.`,
+        );
+      }
+      return { ...res, logPath: tickLogPath(storeDir), storeDir, warnings };
     },
     (r) => {
       log.success(`Installed launchd agent ${r.label}`);
       console.log(`  plist: ${r.plistPath}`);
       console.log(`  log:   ${r.logPath}`);
       console.log(`  store: ${r.storeDir}`);
+      for (const w of r.warnings) log.warn(w);
       log.warn(
         "Credentials set only in this shell's environment are not passed to launchd: runners it starts after a reboot will not see them.",
       );
@@ -190,6 +202,44 @@ export async function supervisorStatusCommand(opts: LabelFlags): Promise<void> {
 /** Below launchd's StartInterval (60 s): a hung tick ends before the next. */
 const TICK_TIMEOUT_S = 45;
 
+/** `ps` columns naming one process: its start time and full command line. */
+const PS_IDENTITY = ["-ww", "-o", "lstart=,command=", "-p"];
+
+/** Start time + command line of `pid` as `ps` prints them, "" when unknown. */
+export function processIdentity(pid: number): string {
+  try {
+    return execFileSync("ps", [...PS_IDENTITY, String(pid)], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 5000,
+    }).replace(/\n+$/, ""); // as sh's $(...) strips it
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * argv of the watchdog: after `delayS`, SIGTERM `pid` only if `ps` still
+ * reports the identity captured at start, so a reused pid is never killed.
+ * pid and identity are positional args, never parsed as shell code.
+ */
+export function watchdogArgv(
+  pid: number,
+  identity: string,
+  delayS: number,
+): string[] {
+  const ps = `ps ${PS_IDENTITY.join(" ")} "$2" 2>/dev/null`;
+  return [
+    "/bin/sh",
+    "-c",
+    `sleep "$1"; [ "$(${ps})" = "$3" ] && kill -TERM "$2"`,
+    "sh",
+    String(delayS),
+    String(pid),
+    identity,
+  ];
+}
+
 /**
  * SIGTERM this process after TICK_TIMEOUT_S unless it exits first. A
  * separate process, not a timer: the tick is synchronous, so a blocked read
@@ -197,11 +247,10 @@ const TICK_TIMEOUT_S = 45;
  */
 function startWatchdog(): void {
   if (process.platform === "win32") return;
-  const child = spawn(
-    "/bin/sh",
-    ["-c", `sleep ${TICK_TIMEOUT_S}; kill -TERM ${process.pid}`],
-    { detached: true, stdio: "ignore" },
-  );
+  const identity = processIdentity(process.pid);
+  if (!identity) return; // no identity to check: never kill blind
+  const [sh, ...args] = watchdogArgv(process.pid, identity, TICK_TIMEOUT_S);
+  const child = spawn(sh, args, { detached: true, stdio: "ignore" });
   child.once("error", () => {}); // no watchdog: the tick still runs
   child.unref();
   // On every exit (process.exit included): stop sh and its sleep.

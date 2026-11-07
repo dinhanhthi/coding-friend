@@ -198,7 +198,8 @@ function setUpdated(block: string, eol: string, today: string): string {
   return `${block.slice(0, close)}updated: ${today}${eol}${block.slice(close)}`;
 }
 
-function atomicWrite(path: string, data: Buffer, mode: number): void {
+/** Write via a temp file in the same dir + rename; the temp is removed on failure. */
+export function atomicWrite(path: string, data: Buffer, mode: number): void {
   const tmp = join(
     dirname(path),
     `.${basename(path)}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`,

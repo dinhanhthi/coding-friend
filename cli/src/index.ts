@@ -1300,7 +1300,8 @@ dev
 // Skips for 'update' command (handles its own), worker commands (stdout is
 // captured by the worker's shell), the hidden task runner and chef wake,
 // the supervisor tick (run by launchd), doctor (read-only, no network),
-// --json runs, and version/help flags
+// --json runs, version/help flags, and CF_NO_UPDATE_CHECK=1 (checked inside;
+// a non-global entry such as tsx or a repo build never auto-installs)
 program.hook("postAction", async (_this, actionCommand) => {
   if (shouldSkipPostAction(actionCommand)) return;
   const topCmd = process.argv[2];
@@ -1310,7 +1311,9 @@ program.hook("postAction", async (_this, actionCommand) => {
   if (topCmd === "supervisor" && process.argv[3] === "tick") return;
 
   const { checkAndNotifyCliUpdate } = await import("./lib/update-check.js");
-  checkAndNotifyCliUpdate(pkg.version);
+  checkAndNotifyCliUpdate(pkg.version, {
+    entryPath: fileURLToPath(import.meta.url),
+  });
 });
 
 try {

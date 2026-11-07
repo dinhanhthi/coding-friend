@@ -10,9 +10,10 @@ import {
   writeFileSync,
 } from "fs";
 import { homedir } from "os";
-import { join } from "path";
+import { join, sep } from "path";
 import { runWithStderr, type RunResult } from "./exec.js";
 import { CliError } from "./output.js";
+import { assertRealDir, mkdirReal } from "./orchestrator/store.js";
 
 /** launchd agent that runs `cf supervisor tick` every minute (macOS only). */
 
@@ -50,6 +51,8 @@ export interface LaunchdStatus {
   /** Absolute paths named in ProgramArguments that no longer exist. */
   missingPaths: string[];
   needsReinstall: boolean;
+  /** Program paths under a TCC-protected folder (see tccProtectedPaths). */
+  protectedPaths: string[];
 }
 
 export function isSupported(): boolean {
@@ -94,6 +97,43 @@ export function tickProgramArgs(): string[] {
     "supervisor",
     "tick",
   ];
+}
+
+/** Home folders macOS privacy (TCC) guards: launchd jobs get EPERM there. */
+const TCC_DIRS = [
+  "Desktop",
+  "Documents",
+  "Downloads",
+  join("Library", "Mobile Documents"),
+];
+
+function realOrSelf(p: string): string {
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
+}
+
+/**
+ * Absolute paths in `args` that are, or resolve to, a path under a
+ * TCC-protected home folder; empty off macOS. Best effort: unresolvable
+ * paths are checked as written.
+ */
+export function tccProtectedPaths(
+  args: string[],
+  home: string = homedir(),
+): string[] {
+  if (!isSupported()) return [];
+  const roots = TCC_DIRS.flatMap((d) => {
+    const dir = join(home, d);
+    return [dir, realOrSelf(dir)];
+  });
+  const under = (p: string) =>
+    roots.some((r) => p === r || p.startsWith(r + sep));
+  return args.filter(
+    (a) => a.startsWith("/") && (under(a) || under(realOrSelf(a))),
+  );
 }
 
 function escapeXml(value: string): string {
@@ -225,11 +265,12 @@ export function install(opts: InstallOptions): {
     path: opts.path,
   });
   mkdirSync(opts.launchAgentsDir ?? launchAgentsDir(), { recursive: true });
-  // launchd does not create the log's parent directory.
-  mkdirSync(join(opts.storeDir, "supervisor"), {
-    recursive: true,
-    mode: 0o700,
-  });
+  // launchd does not create the log's parent directory. Never through a symlink.
+  if (!existsSync(opts.storeDir)) {
+    mkdirSync(opts.storeDir, { recursive: true, mode: 0o700 });
+  }
+  assertRealDir(opts.storeDir);
+  mkdirReal(join(opts.storeDir, "supervisor"));
   writePlistAtomic(file, xml);
   launchctl(["bootout", service]); // not loaded yet is fine
   const r = launchctl(["bootstrap", domain, file]);
@@ -277,5 +318,6 @@ export function status(opts: LaunchdOptions = {}): LaunchdStatus {
     programArgs,
     missingPaths,
     needsReinstall: missingPaths.length > 0,
+    protectedPaths: tccProtectedPaths(programArgs ?? []),
   };
 }

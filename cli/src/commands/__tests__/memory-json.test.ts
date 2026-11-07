@@ -10,11 +10,14 @@ import {
 } from "vitest";
 import {
   existsSync,
+  lstatSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
@@ -170,7 +173,7 @@ describe("memoryStatusCommand — human output characterization", () => {
         ℹ Tier: Tier 2 (MiniSearch + Daemon)
         ℹ Memory dir: <MEMDIR>
         ℹ Memories in this dir: 3
-        ℹ Daemon: running (PID 4242, uptime 2m) Turn it off by "cf memory stop-daemon"
+        ℹ Daemon: running (PID 4242, uptime 1m) Turn it off by "cf memory stop-daemon"
         ℹ SQLite deps: not installed (run "cf memory init" to enable Tier 1)
         ⚠ Unknown config key 'bogusKey'.
         ℹ Embedding: all-minilm:l6-v2 (ollama)
@@ -532,5 +535,68 @@ describe("memory show|edit|delete --json --project-dir", () => {
     expect(md).not.toContain("cf:conventions/x");
     expect(md).toContain("- Keep <!-- cf:conventions/y -->");
     expect(md).toContain("## Other\n\ntext\n");
+  });
+
+  it("delete keeps a symlinked AGENTS.md -> CLAUDE.md a symlink", async () => {
+    const claude = join(target, "CLAUDE.md");
+    const agents = join(target, "AGENTS.md");
+    writeFileSync(
+      claude,
+      "# P\n\n## CF Memory: Project Rules\n\n" +
+        "- Tabs <!-- cf:conventions/x -->\n- Keep <!-- cf:conventions/y -->\n",
+    );
+    symlinkSync("CLAUDE.md", agents);
+
+    const env = await json(() =>
+      memoryDeleteCommand("conventions/x", {
+        json: true,
+        yes: true,
+        projectDir: target,
+      }),
+    );
+    expect(env.data.warnings).toEqual([]);
+    expect(lstatSync(agents).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(agents)).toBe("CLAUDE.md");
+    const md = readFileSync(claude, "utf8");
+    expect(md).not.toContain("cf:conventions/x");
+    expect(md).toContain("- Keep <!-- cf:conventions/y -->");
+  });
+
+  describe("show (human) on a terminal", () => {
+    const body = "a\tb\x1b]52;c;AAAA\x07c\u202Ed\u2066e\rf\r\ng\n";
+    let savedTTY: PropertyDescriptor | undefined;
+
+    beforeEach(() => {
+      savedTTY = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
+      writeFileSync(note(target), `---\ntitle: t\n---\n${body}`);
+    });
+
+    afterEach(() => {
+      if (savedTTY) Object.defineProperty(process.stdout, "isTTY", savedTTY);
+      else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    });
+
+    async function showHuman(isTTY: boolean): Promise<string> {
+      Object.defineProperty(process.stdout, "isTTY", {
+        value: isTTY,
+        configurable: true,
+        writable: true,
+      });
+      const writes = captureStdout();
+      await memoryShowCommand("conventions/x", { projectDir: target });
+      vi.mocked(process.stdout.write).mockRestore();
+      return writes.join("");
+    }
+
+    it("drops control and bidi characters but keeps tab and newlines", async () => {
+      const out = await showHuman(true);
+      expect(out).not.toMatch(/[\x1b\x07\u202e\u2066]/);
+      expect(out).not.toMatch(/\r(?!\n)/);
+      expect(out).toBe("---\ntitle: t\n---\na\tb]52;c;AAAAcdef\r\ng\n");
+    });
+
+    it("writes the exact bytes when stdout is not a terminal", async () => {
+      expect(await showHuman(false)).toBe(`---\ntitle: t\n---\n${body}`);
+    });
   });
 });

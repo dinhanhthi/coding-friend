@@ -1,5 +1,11 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  realpathSync,
+} from "fs";
+import { isAbsolute, join, relative } from "path";
 import { globalConfigDir } from "./paths.js";
 import { run } from "./exec.js";
 import { log } from "./log.js";
@@ -15,6 +21,8 @@ export interface UpdateCache {
 
 export interface UpdateCheckOptions {
   autoUpdate?: boolean;
+  /** Path of the running entry script (default: process.argv[1]). */
+  entryPath?: string;
 }
 
 export function getUpdateCachePath(): string {
@@ -60,13 +68,45 @@ function semverCompare(a: string, b: string): number {
 }
 
 /**
- * Check for CLI updates with 24h cache, show notification, and optionally auto-update.
+ * True when `entryRealPath` lives inside the global `coding-friend-cli`
+ * package under `globalRootRealPath` (`npm root -g`). Dev entries (tsx, a repo
+ * build, an `npm link`, a scratch prefix) do not, so they never auto-install.
+ */
+function isGlobalInstallEntry(
+  entryRealPath: string,
+  globalRootRealPath: string,
+): boolean {
+  const rel = relative(
+    join(globalRootRealPath, "coding-friend-cli"),
+    entryRealPath,
+  );
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+}
+
+function runsFromGlobalInstall(entryPath: string | undefined): boolean {
+  if (!entryPath) return false;
+  const root = run("npm", ["root", "-g"]);
+  if (!root) return false;
+  try {
+    return isGlobalInstallEntry(
+      realpathSync(entryPath),
+      realpathSync(root.trim()),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check for CLI updates with 24h cache, show notification, and optionally
+ * auto-update (only from the global npm install). CF_NO_UPDATE_CHECK=1 skips it.
  */
 export function checkAndNotifyCliUpdate(
   currentVersion: string,
   opts: UpdateCheckOptions = {},
 ): void {
-  const { autoUpdate = true } = opts;
+  const { autoUpdate = true, entryPath = process.argv[1] } = opts;
+  if (process.env.CF_NO_UPDATE_CHECK === "1") return;
 
   try {
     const cache = readUpdateCache();
@@ -92,8 +132,8 @@ export function checkAndNotifyCliUpdate(
       `Update available: ${chalk.dim(`v${currentVersion}`)} → ${chalk.green(`v${latestVersion}`)}. Run ${chalk.cyan("cf update --cli")} to update.`,
     );
 
-    // Auto-update
-    if (autoUpdate) {
+    // Auto-update, only when running from the global npm install
+    if (autoUpdate && runsFromGlobalInstall(entryPath)) {
       log.step("Auto-updating CLI...");
       const result = run("npm", ["install", "-g", "coding-friend-cli@latest"]);
       if (result !== null) {

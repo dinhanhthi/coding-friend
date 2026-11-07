@@ -856,6 +856,15 @@ describe("chef config", () => {
     expect(config.chef?.schedule?.[0]).toBeUndefined();
   });
 
+  it("drops invalid chef.schedule entries without leaving holes", () => {
+    mockReadJson.mockReturnValueOnce(null).mockReturnValueOnce({
+      chef: { schedule: ["9am", "10:00", "x", "11:30"] },
+    });
+
+    const config = loadConfig();
+    expect(config.chef?.schedule).toEqual(["10:00", "11:30"]);
+  });
+
   it("only warns on an unknown chef key and keeps the known ones", () => {
     mockReadJson
       .mockReturnValueOnce(null)

@@ -228,6 +228,8 @@ cf help              # Show all commands
 
 `--json` is accepted by `cf status`, `cf mcp`, `cf version`, `cf memory status|search|list|show|edit|delete`, `cf learn status|list|search|show|edit|delete`, `cf config get|set|schema`, `cf project list|add|remove`, `cf docs list|show`, `cf session list|show|export|save|load|status`, `cf sync status`, `cf decide test|eval|log|review-fp`, `cf task run|list|show|follow|cancel`, `cf ask`, `cf reply`, `cf done`, `cf supervisor install|uninstall|status|tick`, `cf chef start|say|status|inbox|show|stop|resume`, `cf install`, `cf doctor` and `cf update --check|--yes`. See [Machine interface](#machine-interface).
 
+**Update check.** After most commands (not `--json` runs) the CLI checks npm once a day and prints a notice when a newer version exists; it runs `npm install -g coding-friend-cli@latest` itself only when the running `cf` is the global npm install (never from a repo build, `npx tsx`, an `npm link` or another prefix). Set `CF_NO_UPDATE_CHECK=1` to skip the check entirely.
+
 ## Doctor
 
 `cf doctor` is a read-only health report of the Coding Friend setup. It makes no network calls and writes no files (a host binary it probes, such as `claude`, may still create its own files). Each `claude mcp get` and `<host> --version` probe has a 10-second timeout.

@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync } from "fs";
+import { existsSync, lstatSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../lib/json.js";
@@ -66,11 +66,22 @@ export function semverCompare(a: string, b: string): number {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * The CLI's own version. Walks up from this file to the nearest package.json,
+ * so it works from the bundle (dist/) and from source (src/commands/, tsx).
+ */
 export function getCliVersion(): string {
-  const pkg = JSON.parse(
-    readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
-  );
-  return pkg.version;
+  let dir = __dirname;
+  for (;;) {
+    const candidate = join(dir, "package.json");
+    if (existsSync(candidate)) {
+      return JSON.parse(readFileSync(candidate, "utf-8")).version;
+    }
+    const parent = dirname(dir);
+    if (parent === dir)
+      throw new Error("coding-friend-cli package.json not found");
+    dir = parent;
+  }
 }
 
 export function getLatestCliVersion(): string | null {

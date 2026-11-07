@@ -344,19 +344,25 @@ function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
 
   // Warn and strip unknown keys and invalid fields
   const sanitized = { ...merged };
+  // Arrays that lost an element: compacted after all strips, so the indices of
+  // later issues in the same array still point at the right element.
+  const touched = new Set<unknown[]>();
 
   for (const entry of entries) {
     if (entry.unknown) {
       warnUnknownKey(entry.unknown);
-      stripPath(sanitized, [...entry.unknown.path, entry.unknown.key]);
+      stripPath(sanitized, [...entry.unknown.path, entry.unknown.key], touched);
     } else {
       // Type/value errors
       log.warn(
         `Config: ${entry.path.join(".")} — ${entry.message}. Using default.`,
       );
       // Strip the invalid field by walking the path
-      stripPath(sanitized, entry.path);
+      stripPath(sanitized, entry.path, touched);
     }
+  }
+  for (const arr of touched) {
+    for (let i = arr.length - 1; i >= 0; i--) if (!(i in arr)) arr.splice(i, 1);
   }
 
   // Re-merge with defaults to fill stripped fields
@@ -366,8 +372,12 @@ function validateConfig(merged: Record<string, unknown>): CodingFriendConfig {
   ) as CodingFriendConfig;
 }
 
-/** Remove a nested key from an object given a path */
-function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
+/** Remove a nested key from an object given a path; record arrays it punched holes in. */
+function stripPath(
+  obj: Record<string, unknown>,
+  path: PropertyKey[],
+  touched: Set<unknown[]>,
+): void {
   if (path.length === 0) return;
   let current: Record<string, unknown> = obj;
   for (let i = 0; i < path.length - 1; i++) {
@@ -379,6 +389,7 @@ function stripPath(obj: Record<string, unknown>, path: PropertyKey[]): void {
     }
   }
   delete current[String(path[path.length - 1])];
+  if (Array.isArray(current)) touched.add(current);
 }
 
 /**
