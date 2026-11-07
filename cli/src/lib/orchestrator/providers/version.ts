@@ -1,6 +1,5 @@
 import { execFileSync } from "child_process";
 import { realpathSync } from "fs";
-import { tmpdir } from "os";
 import { extractVersion } from "../../host.js";
 
 /**
@@ -9,13 +8,21 @@ import { extractVersion } from "../../host.js";
  * TDZ depending on import order (index.ts reads adapter bindings at top level).
  */
 
-const VERSION_TIMEOUT_MS = 10_000;
+/** Kill a `--version` probe still running after this long. */
+export const PROBE_TIMEOUT_MS = 10_000;
+
+/**
+ * The cwd of every provider probe: not the runner's cwd (a worker-writable
+ * checkout) nor a shared temp dir, where another user could plant config a
+ * binary reads from its cwd. `/` always exists and only root can write it.
+ */
+export const PROBE_CWD = "/";
 
 /**
  * The `x.y.z` version printed by `<bin> --version ...args`, else undefined.
  * Tolerates a `v` prefix (`opencode v2.0.13` → `2.0.13`); a date version
- * keeps its date (`2026.10.22-27dcf5f` → `2026.10.22`). Runs in a neutral
- * cwd (the runner's cwd is a worker-writable checkout) with a short timeout;
+ * keeps its date (`2026.10.22-27dcf5f` → `2026.10.22`). Runs in PROBE_CWD
+ * with PROBE_TIMEOUT_MS;
  * `opts.env` adds to or overrides the current env, or with `replaceEnv` is
  * the whole env of the child.
  */
@@ -27,14 +34,14 @@ export function binaryVersion(
   try {
     output = execFileSync(bin, ["--version", ...(opts?.args ?? [])], {
       encoding: "utf-8",
-      cwd: tmpdir(),
+      cwd: PROBE_CWD,
       env: opts?.replaceEnv
         ? (opts.env ?? {})
         : opts?.env
           ? { ...process.env, ...opts.env }
           : process.env,
       stdio: ["ignore", "pipe", "pipe"],
-      timeout: VERSION_TIMEOUT_MS,
+      timeout: PROBE_TIMEOUT_MS,
       killSignal: "SIGKILL",
     });
   } catch {

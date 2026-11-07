@@ -80,6 +80,7 @@ import {
   recordAttemptRunner,
   recordCancel,
   recordDone,
+  recordPause,
   recordResult,
   recordRunner,
   recordSession,
@@ -608,6 +609,37 @@ describe("cf task follow", () => {
     expect(printed).not.toMatch(/[\x1b\x07]/);
     expect(process.listenerCount("SIGINT")).toBe(sigint);
     expect(process.exitCode).toBeUndefined();
+  });
+});
+
+describe("cf task follow hint", () => {
+  it("human mode prints the hint of a paused task nobody will resume, once", async () => {
+    // Paused on a quota, its runner gone, no supervisor heartbeat ever.
+    const id = createTask({
+      provider: "claude",
+      prompt: "do it",
+      readOnly: true,
+      checkout: realpathSync(root),
+    }).id;
+    claimAttempt(id, { n: 1, provider: "claude", kind: "fresh" });
+    recordAttemptRunner(id, 1, {
+      pid: spawnSync(process.execPath, ["-e", ""]).pid!,
+      startedAt: new Date().toISOString(),
+    });
+    recordPause(id, 1, { provider: "claude", resetsAt: null, source: "test" });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const done = taskFollowCommand(id, {});
+      await vi.advanceTimersByTimeAsync(3500);
+      process.emit("SIGINT");
+      await done;
+    } finally {
+      vi.useRealTimers();
+    }
+    const hints = vi
+      .mocked(console.error)
+      .mock.calls.filter((c) => String(c[0]).includes("no runner is waiting"));
+    expect(hints).toHaveLength(1);
   });
 });
 

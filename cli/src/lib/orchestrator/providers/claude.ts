@@ -1,5 +1,11 @@
+import { realpathSync } from "fs";
 import { join } from "path";
-import { claudeSessionDir, encodeProjectPath } from "../../paths.js";
+import {
+  claudeProjectDirCandidates,
+  claudeProjectDirName,
+  claudeProjectsDir,
+  encodeProjectPath,
+} from "../../paths.js";
 import { buildPreamble, shellQuote } from "../preamble.js";
 import { normalizeResetsAt } from "../quota.js";
 import { isModelName, isSessionId } from "../store.js";
@@ -7,11 +13,24 @@ import type { ProviderAdapter, ProviderCaps, SpawnContext } from "./index.js";
 
 const MAX_TEXT = 4096;
 
+/**
+ * Claude names the project dir after realpath(cwd) (the worker runs in the
+ * checkout). An existing dir wins (current rule, long-name prefix, then the
+ * legacy name); before Claude creates one, the name it will create, or the
+ * legacy name for a long path (its hash suffix is undocumented).
+ */
 function transcriptPath(ctx: SpawnContext, sessionId: string): string {
-  return join(
-    claudeSessionDir(encodeProjectPath(ctx.checkout)),
-    `${sessionId}.jsonl`,
-  );
+  let real = ctx.checkout;
+  try {
+    real = realpathSync.native(ctx.checkout);
+  } catch {
+    // Missing checkout: keep the path as given.
+  }
+  const { name, long } = claudeProjectDirName(real);
+  const dir =
+    claudeProjectDirCandidates(real)[0] ??
+    join(claudeProjectsDir(), long ? encodeProjectPath(real) : name);
+  return join(dir, `${sessionId}.jsonl`);
 }
 
 // Module consts so buildPreamble gets the same values, with literal types.

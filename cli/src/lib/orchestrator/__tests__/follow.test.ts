@@ -12,6 +12,7 @@ import {
 import { join } from "path";
 import { tmpdir } from "os";
 import { CliError } from "../../output.js";
+import { locateCodexRollout } from "../../transcript-codex.js";
 import { claudeProjectDirName } from "../../paths.js";
 import { encodeCursor, followTask } from "../follow.js";
 import {
@@ -25,6 +26,12 @@ import {
   recordSession,
   type Provider,
 } from "../store.js";
+
+vi.mock("../../transcript-codex.js", async (importActual) => {
+  const actual =
+    await importActual<typeof import("../../transcript-codex.js")>();
+  return { ...actual, locateCodexRollout: vi.fn(actual.locateCodexRollout) };
+});
 
 const SID = "11111111-2222-4333-8444-555555555555";
 const OTHER = "99999999-2222-4333-8444-555555555555";
@@ -73,6 +80,7 @@ function codeOf(fn: () => unknown): string | undefined {
 }
 
 beforeEach(() => {
+  vi.mocked(locateCodexRollout).mockClear();
   tmp = realpathSync(mkdtempSync(join(tmpdir(), "cf-follow-")));
   vi.stubEnv("CF_ORCHESTRATOR_DIR", join(tmp, "orch"));
   vi.stubEnv("CLAUDE_CONFIG_DIR", join(tmp, "claude"));
@@ -241,6 +249,66 @@ describe("followTask", () => {
     expect(third.turns).toEqual([{ kind: "user", text: "three" }]);
     expect(third.reset).toBe(false);
     expect(third.cursor).toBe(encodeCursor(3, THREAD, statSync(rollout).size));
+  });
+
+  it("reads again from 0 when the file is shorter than the cursor", () => {
+    const id = newTask();
+    recordSession(id, { sessionId: SID });
+    const file = transcriptFile(SID);
+    writeFileSync(file, lines([user("a long first message"), user("two")]));
+    const first = followTask(id);
+    writeFileSync(file, lines([user("new")]));
+    const again = followTask(id, first.cursor);
+    expect(again.reset).toBe(true);
+    expect(again.turns).toEqual([{ kind: "user", text: "new" }]);
+    expect(again.cursor).toBe(encodeCursor(1, SID, statSync(file).size));
+  });
+
+  it("does not follow a session id whose transcript is in another project's dir", () => {
+    const id = newTask();
+    recordSession(id, { sessionId: SID });
+    const other = join(tmp, "claude", "projects", "-elsewhere-other-repo");
+    mkdirSync(other, { recursive: true });
+    writeFileSync(join(other, `${SID}.jsonl`), lines([user("not yours")]));
+    const d = followTask(id);
+    expect(d.turns).toEqual([]);
+    expect(d.live).toEqual({ supported: true, status: "pending" });
+  });
+
+  it("locates the rollout once per attempt across the polls of one follow", () => {
+    const id = newTask("codex");
+    claimAttempt(id, { n: 1, provider: "codex", kind: "fresh" });
+    recordAttemptSession(id, 1, { sessionId: THREAD });
+    const day = join(tmp, "codex", "sessions", "2026", "11", "05");
+    mkdirSync(day, { recursive: true });
+    const rollout = join(day, `rollout-2026-11-05T10-00-00-${THREAD}.jsonl`);
+    const said = (text: string) => ({
+      type: "response_item",
+      payload: {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text }],
+      },
+    });
+    writeFileSync(
+      rollout,
+      lines([
+        {
+          type: "session_meta",
+          payload: { id: THREAD, cwd: checkout, cli_version: "0.50.0" },
+        },
+        said("one"),
+      ]),
+    );
+    const cache = new Map();
+    const first = followTask(id, undefined, cache);
+    appendFileSync(rollout, lines([said("two")]));
+    const second = followTask(id, first.cursor, cache);
+    const third = followTask(id, second.cursor, cache);
+    expect(first.turns).toEqual([{ kind: "user", text: "one" }]);
+    expect(second.turns).toEqual([{ kind: "user", text: "two" }]);
+    expect(third.turns).toEqual([]);
+    expect(locateCodexRollout).toHaveBeenCalledTimes(1);
   });
 
   it("reports opencode, and a finished task without a transcript, as unsupported", () => {

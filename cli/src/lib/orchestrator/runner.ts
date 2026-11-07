@@ -466,6 +466,8 @@ async function runWorker(
 
     const acc: StreamAcc = {};
     let sessionRecorded = false;
+    /** Ids the record refused: tried (and logged) once, not on every line. */
+    const rejectedIds = new Set<string>();
     let killed = false;
     const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
     rl.on("line", (line) => {
@@ -478,12 +480,13 @@ async function runWorker(
       const session =
         (acc.sessionId ? adapter.session(acc, c) : undefined) ??
         (acc.accepted && pendingId ? { sessionId: pendingId } : undefined);
-      if (!session) return;
+      if (!session || rejectedIds.has(session.sessionId)) return;
       try {
         onSession(session);
         // Only once recorded: a rejected id leaves room for a later valid one.
         sessionRecorded = true;
       } catch (err) {
+        rejectedIds.add(session.sessionId);
         console.error(`runner: could not record session: ${String(err)}`);
       }
     });
@@ -663,6 +666,8 @@ export function claimNextAttempt(
           lastMessage: listAttempts(id)
             .filter((e) => e.pause)
             .at(-1)?.pause?.lastMessage,
+          // A no-shell target cannot run git: word the bundle for it.
+          cfShell: PROVIDERS[next.provider].caps.cfShell,
         });
   const claim: Claim =
     next.kind === "resume"

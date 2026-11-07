@@ -19,15 +19,20 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { fileURLToPath } from "url";
 
-const fake = vi.hoisted(() => ({ missing: new Set<string>() }));
+const fake = vi.hoisted(() => ({ missing: new Set<string>(), real: false }));
 
-vi.mock("../../exec.js", () => ({
-  commandExists: (bin: string) => !fake.missing.has(bin),
-  run: () => "codex-cli 999.0.0",
-}));
+vi.mock("../../exec.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../exec.js")>();
+  return {
+    commandExists: (bin: string) => !fake.missing.has(bin),
+    run: (...a: Parameters<typeof actual.run>) =>
+      fake.real ? actual.run(...a) : "codex-cli 999.0.0",
+  };
+});
 
 import {
   binaryVersion as reexported,
+  codexVersionError,
   eligibleProviders,
   providerIneligibility,
 } from "../providers/eligible.js";
@@ -68,6 +73,7 @@ afterEach(() => {
   PROVIDERS.codex = saved.codex;
   PROVIDERS.opencode = saved.opencode;
   fake.missing.clear();
+  fake.real = false;
 });
 
 describe("eligibleProviders", () => {
@@ -144,6 +150,25 @@ describe("providerIneligibility", () => {
       code: "PROVIDER_UNAVAILABLE",
       message: "too new",
     });
+  });
+});
+
+describe("codexVersionError", () => {
+  it("a hung codex --version is killed at the timeout → unknown, not eligible", () => {
+    const dir = realpathSync(mkdtempSync(join(tmpdir(), "cf-hang-")));
+    const bin = join(dir, "codex");
+    writeFileSync(bin, "#!/bin/sh\nsleep 3\n");
+    chmodSync(bin, 0o755);
+    vi.stubEnv("PATH", `${dir}:${process.env.PATH ?? ""}`);
+    fake.real = true;
+    try {
+      const start = Date.now();
+      expect(codexVersionError(300)).toContain("found unknown");
+      expect(Date.now() - start).toBeLessThan(2000);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -240,12 +265,8 @@ describe("binaryVersion (providers/version.ts)", () => {
     expect(binaryVersion(bin, { args: ["--no-auto-update"] })).toBe("2.0.0");
   });
 
-  it("runs in tmpdir(), never the caller's cwd", () => {
-    const want = realpathSync(tmpdir());
-    const bin = fakeBin(
-      "echo-cwd",
-      `[ "$(pwd -P)" = "${want}" ] && echo 3.3.3`,
-    );
+  it("runs in /, never the caller's cwd or a shared temp dir", () => {
+    const bin = fakeBin("echo-cwd", '[ "$(pwd -P)" = "/" ] && echo 3.3.3');
     expect(binaryVersion(bin)).toBe("3.3.3");
   });
 

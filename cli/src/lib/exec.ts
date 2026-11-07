@@ -2,12 +2,13 @@ import { execFileSync, spawn, type SpawnOptions } from "child_process";
 
 /**
  * Run a command synchronously using execFileSync (no shell injection risk).
- * Returns stdout as string, or null if command fails.
+ * Returns stdout as string, or null if command fails. With `timeoutMs`, a
+ * command still running then is SIGKILLed and counts as failed (null).
  */
 export function run(
   cmd: string,
   args: string[] = [],
-  opts?: { cwd?: string; env?: NodeJS.ProcessEnv },
+  opts?: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number },
 ): string | null {
   try {
     return execFileSync(cmd, args, {
@@ -15,6 +16,10 @@ export function run(
       cwd: opts?.cwd,
       env: opts?.env,
       stdio: ["pipe", "pipe", "pipe"],
+      ...(opts?.timeoutMs !== undefined && {
+        timeout: opts.timeoutMs,
+        killSignal: "SIGKILL" as const,
+      }),
     }).trim();
   } catch {
     return null;

@@ -83,6 +83,10 @@ export const OPENCODE_RULES: readonly Rule[] = [
   rule("read", "*.netrc", "deny"),
   rule("read", "*.envrc", "deny"),
   rule("read", "*.git/config", "deny"),
+  rule("read", "*.git/*", "deny"), // packed history, config.worktree, hooks
+  rule("read", "*.git-credentials", "deny"),
+  rule("read", "*.pypirc", "deny"),
+  rule("read", "*.docker/config.json", "deny"),
   rule("read", "*.env.example", "allow"),
   rule("glob", "*", "allow"),
   rule("grep", "*", "allow"),
@@ -158,14 +162,19 @@ const GIT_MAX_OUTPUT = 64 * 1024 * 1024;
  * Why the checkout must not run under opencode, else undefined. Opencode
  * follows symlinks and checks its read rules against the link name (probe
  * 2026-11-06, v2.0.13), so a link may lead outside the checkout or to a
- * denied file under a harmless name. Every tracked or untracked, not
- * ignored path is lstat'ed: a link is refused when its target (realpath,
+ * denied file under a harmless name. Every tracked, untracked and ignored
+ * path (also inside ignored dirs: a `.gitignore` or repo excludesFile can
+ * hide a link) is lstat'ed: a link is refused when its target (realpath,
  * else lexical for a dead link) is outside the checkout, inside a `.git`
  * dir or a denied read (names compared case-folded on macOS and Windows,
- * realpaths in their on-disk spelling). A submodule, nested repo or other
- * listed dir is refused (git does not list its files). Not checked:
- * ignored symlinks, symlinks inside ignored directories and inside `.git/`.
- * A missing checkout is accepted; a git or lstat failure is refused. git
+ * realpaths in their on-disk spelling). For tracked and untracked paths, a
+ * submodule, nested repo or other listed dir (git does not list its files)
+ * and a hard link are refused too; ignored ones are checked for links only
+ * (pnpm hard-links node_modules). A name git printed lossily (not UTF-8,
+ * possible on Linux) is refused: it cannot be lstat'ed. Not checked:
+ * symlinks inside an ignored nested repo and inside `.git/`. A missing
+ * checkout is accepted; a git failure (or output over the cap) and an
+ * lstat failure other than a deleted path are refused. git
  * runs with a replaced env, no system config, no fsmonitor, no discovery
  * above the checkout and an explicit work tree (a repo config could run a
  * command or move the listing); ls-files runs no hook.
@@ -192,9 +201,8 @@ function symlinkRefusal(checkout: string): string | undefined {
   for (const k of ["PATH", "HOME"]) {
     if (process.env[k] !== undefined) env[k] = process.env[k];
   }
-  let out: string;
-  try {
-    out = execFileSync(
+  const lsFiles = (...args: string[]): string =>
+    execFileSync(
       "git",
       [
         "-c",
@@ -213,9 +221,7 @@ function symlinkRefusal(checkout: string): string | undefined {
         `--work-tree=${root}`,
         "ls-files",
         "-z",
-        "-c",
-        "-o",
-        "--exclude-standard",
+        ...args,
       ],
       {
         encoding: "utf-8",
@@ -227,20 +233,48 @@ function symlinkRefusal(checkout: string): string | undefined {
         maxBuffer: GIT_MAX_OUTPUT,
       },
     );
+  let listed: string;
+  let ignored: string;
+  try {
+    listed = lsFiles("-c", "-o", "--exclude-standard");
+    // Walks ignored dirs too (node_modules): the output cap still applies.
+    ignored = lsFiles("-o", "-i", "--exclude-standard");
   } catch {
     return "opencode: cannot list the checkout's files with git, so its symlinks cannot be checked";
   }
-  for (const rel of new Set(out.split("\0"))) {
-    if (!rel) continue;
-    const abs = join(root, rel);
-    let target: string;
-    let st: Stats;
-    try {
-      st = lstatSync(abs);
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") continue; // tracked but deleted
-      return `opencode refuses the checkout: cannot check ${JSON.stringify(rel)} (${String(err)})`;
+  const check = (out: string, linksOnly: boolean): string | undefined => {
+    for (const rel of new Set(out.split("\0"))) {
+      if (!rel) continue;
+      const why = pathRefusal(root, rel, linksOnly);
+      if (why) return why;
     }
+    return undefined;
+  };
+  return check(listed, false) ?? check(ignored, true);
+}
+
+/** Why `rel` (as listed by git) makes the checkout unsafe, else undefined. */
+function pathRefusal(
+  root: string,
+  rel: string,
+  linksOnly: boolean,
+): string | undefined {
+  // git printed a byte sequence that is not UTF-8: the decoded name is not
+  // the one on disk, so lstat would check another path (or none).
+  if (rel.includes("\uFFFD")) {
+    return `opencode refuses the checkout: ${JSON.stringify(rel)} is not a UTF-8 name, which cannot be checked`;
+  }
+  const abs = join(root, rel);
+  let target: string;
+  let st: Stats;
+  try {
+    st = lstatSync(abs);
+  } catch (err) {
+    // Tracked but deleted, or removed since the listing.
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    return `opencode refuses the checkout: cannot check ${JSON.stringify(rel)} (${String(err)})`;
+  }
+  if (!linksOnly) {
     // ls-files lists a dir only for a submodule, a nested repo or a tracked
     // path replaced by a dir: git does not list what is inside, so its links
     // cannot be checked.
@@ -252,27 +286,27 @@ function symlinkRefusal(checkout: string): string | undefined {
     if (st.isFile() && st.nlink > 1) {
       return `opencode refuses the checkout: ${JSON.stringify(rel)} is a hard link, which cannot be checked`;
     }
-    if (!st.isSymbolicLink()) continue;
+  }
+  if (!st.isSymbolicLink()) return undefined;
+  try {
+    target = realpathSync.native(abs);
+  } catch {
     try {
-      target = realpathSync.native(abs);
+      target = resolve(dirname(abs), readlinkSync(abs));
     } catch {
-      try {
-        target = resolve(dirname(abs), readlinkSync(abs));
-      } catch {
-        return `opencode refuses the checkout: cannot read symlink ${JSON.stringify(rel)}`;
-      }
+      return `opencode refuses the checkout: cannot read symlink ${JSON.stringify(rel)}`;
     }
-    if (target !== root && !target.startsWith(root + sep)) {
-      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points outside it (opencode follows links past its read rules)`;
-    }
-    // A link into a `.git` dir: `g` → `.git`, then `g/config` escapes the
-    // `*.git/config` rule. Other dir links stay allowed.
-    if (fold(relative(root, target)).split(sep).includes(".git")) {
-      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points into a .git directory`;
-    }
-    if (readEffect(target) !== "allow") {
-      return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points to a file its read rules deny`;
-    }
+  }
+  if (target !== root && !target.startsWith(root + sep)) {
+    return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points outside it (opencode follows links past its read rules)`;
+  }
+  // A link into a `.git` dir: `g` → `.git`, then `g/config` escapes the
+  // `*.git/config` rule. Other dir links stay allowed.
+  if (fold(relative(root, target)).split(sep).includes(".git")) {
+    return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points into a .git directory`;
+  }
+  if (readEffect(target) !== "allow") {
+    return `opencode refuses the checkout: symlink ${JSON.stringify(rel)} points to a file its read rules deny`;
   }
   return undefined;
 }
@@ -389,8 +423,14 @@ export const opencode: ProviderAdapter = {
     // Any event means the run read the prompt (no preset session id: inert
     // for the runner); finish() uses it to tell "no event" from "no id".
     if (typeof ev.type === "string") acc.accepted = true;
-    // Only an id the stream reported (a failed lookup reports "").
-    if (!acc.sessionId && typeof ev.sessionID === "string" && ev.sessionID) {
+    // Only an id an event reported (a failed lookup reports ""): an object
+    // line without a string type is not an event.
+    if (
+      !acc.sessionId &&
+      typeof ev.type === "string" &&
+      typeof ev.sessionID === "string" &&
+      ev.sessionID
+    ) {
       acc.sessionId = ev.sessionID;
     }
     switch (ev.type) {

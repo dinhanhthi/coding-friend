@@ -1,8 +1,7 @@
-import { lstatSync, readFileSync } from "fs";
 import { join } from "path";
 import { buildPreamble } from "../preamble.js";
 import { parseCodexRetryAt } from "../quota.js";
-import { isModelName, isSessionId } from "../store.js";
+import { isModelName, isSessionId, readRegularFile } from "../store.js";
 import type {
   ProviderAdapter,
   ProviderCaps,
@@ -29,9 +28,8 @@ function lastMessageFile(ctx: SpawnContext): string {
 
 function readLastMessage(ctx: SpawnContext): string | undefined {
   try {
-    const file = lastMessageFile(ctx);
-    if (!lstatSync(file).isFile()) return undefined; // never read through a symlink
-    const text = readFileSync(file, "utf-8");
+    // Bounded, never through a symlink or a FIFO.
+    const text = readRegularFile(lastMessageFile(ctx))?.toString("utf-8");
     return text ? text.slice(0, MAX_TEXT) : undefined;
   } catch {
     return undefined;

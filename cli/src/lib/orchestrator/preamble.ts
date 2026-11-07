@@ -38,7 +38,7 @@ export function buildPreamble(
       head,
       ...readOnlyNote,
       "You cannot ask the user questions: when something is unclear, make the most reasonable assumption and say so in your final message.",
-      `If you have notes for whoever continues this work, write them to ${handoff}`,
+      'If you have notes for whoever continues this work, put them in a "Handoff" section of your final message.',
       "Coding Friend reads the outcome of this task from your final message: end with a short summary of what you did, or of why you could not complete the task.",
     ].join("\n\n");
   }
@@ -51,9 +51,7 @@ export function buildPreamble(
   const waitNote =
     n === 100
       ? "Each call can wait up to 100 seconds for an answer; let it finish and do not run it in the background."
-      : n === 25
-        ? "Each call waits up to 25 seconds for an answer."
-        : `Each call waits up to ${n} seconds for an answer.`;
+      : `Each call waits up to ${n} seconds for an answer.`;
 
   return [
     head,

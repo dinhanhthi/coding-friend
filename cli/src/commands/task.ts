@@ -4,7 +4,11 @@ import { run as exec } from "../lib/exec.js";
 import { log } from "../lib/log.js";
 import { CliError, runHuman, runJson } from "../lib/output.js";
 import { dispatchTask } from "../lib/orchestrator/dispatch.js";
-import { followTask, type FollowData } from "../lib/orchestrator/follow.js";
+import {
+  followTask,
+  type FollowCache,
+  type FollowData,
+} from "../lib/orchestrator/follow.js";
 import { resolveTaskPolicy } from "../lib/orchestrator/quota.js";
 import { runTask } from "../lib/orchestrator/runner.js";
 import {
@@ -190,7 +194,8 @@ function supervisorIsStale(): boolean {
 
 /**
  * Add a `hint` to a paused C2a task whose latest runner is gone while no
- * supervisor ticks: nothing would resume it. `stale` is read once per command.
+ * supervisor ticks: nothing would resume it. `stale` is read once per command
+ * (per poll in human `cf task follow`).
  */
 function withHint(t: TaskView, stale: boolean): HintedView {
   if (!stale || !t.attempts || t.state !== "paused") return t;
@@ -396,10 +401,11 @@ interface FollowSeen {
   attempt?: number;
   reasons: Set<string>;
   asks: Set<string>;
+  hints: Set<string>;
 }
 
 function printFollowPoll(d: FollowData, seen: FollowSeen): void {
-  const t = d.task;
+  const t = withHint(d.task, supervisorIsStale());
   const state = stateLabel(t);
   if (state !== seen.state) {
     seen.state = state;
@@ -418,6 +424,10 @@ function printFollowPoll(d: FollowData, seen: FollowSeen): void {
       seen.reasons.add(key);
       log.warn(`No live transcript: ${sanitize(d.live.reason)}`);
     }
+  }
+  if (t.hint && !seen.hints.has(t.hint)) {
+    seen.hints.add(t.hint);
+    console.error(t.hint);
   }
   for (const turn of d.turns) printFollowTurn(turn);
   for (const a of t.pendingAsks) {
@@ -452,7 +462,12 @@ async function followLoop(
   id: string,
   cursor: string | undefined,
 ): Promise<FollowData | null> {
-  const seen: FollowSeen = { reasons: new Set(), asks: new Set() };
+  const seen: FollowSeen = {
+    reasons: new Set(),
+    asks: new Set(),
+    hints: new Set(),
+  };
+  const cache: FollowCache = new Map();
   let timer: NodeJS.Timeout | undefined;
   let wake: (() => void) | undefined;
   let stopped = false;
@@ -467,7 +482,7 @@ async function followLoop(
     // and drained, wait once more, then drain again.
     let lastWait = false;
     for (;;) {
-      const d = followTask(id, cursor);
+      const d = followTask(id, cursor, cache);
       cursor = d.cursor;
       printFollowPoll(d, seen);
       if (d.more || (d.terminal && lastWait && d.turns.length > 0)) continue;

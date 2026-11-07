@@ -87,6 +87,20 @@ describe.skipIf(process.platform === "win32")("buildContextBundle", () => {
     expect(text).toContain("`git diff --stat`");
   });
 
+  it("gives a no-shell worker the change list instead of git commands", () => {
+    const text = buildContextBundle({
+      task: task(),
+      taskDir,
+      cfShell: false,
+      changes: ["src/CHANGED-FILE.ts"],
+    });
+    expect(text).not.toContain("git status");
+    expect(text).not.toContain("git diff");
+    const list = text.indexOf("## Changes so far");
+    expect(list).toBeGreaterThan(-1);
+    expect(text.indexOf("src/CHANGED-FILE.ts")).toBeGreaterThan(list);
+  });
+
   it("does not read a symlinked handoff.md", () => {
     const secret = join(root, "secret");
     writeFileSync(secret, "SECRET-CONTENT");

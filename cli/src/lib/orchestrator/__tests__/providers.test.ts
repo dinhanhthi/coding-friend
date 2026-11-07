@@ -319,6 +319,30 @@ describe("stream parsing", () => {
     });
   });
 
+  // Claude names the dir after realpath(cwd), every non-alphanumeric char → "-".
+  it("claude transcript path uses Claude's project dir name for a checkout with dots and spaces", () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "cf-claude-tp-")));
+    vi.stubEnv("CLAUDE_CONFIG_DIR", join(base, "cfg"));
+    try {
+      const checkout = join(base, "my.repo name");
+      mkdirSync(checkout);
+      const projects = join(base, "cfg", "projects");
+      const current = join(projects, checkout.replace(/[^A-Za-z0-9]/g, "-"));
+      const legacy = join(projects, checkout.replace(/[\\/:]/g, "-"));
+      const path = () =>
+        PROVIDERS.claude.session({ sessionId: "sess-1" }, { ...ctx, checkout })
+          ?.transcriptPath;
+      // Not created yet (first stream line): the name Claude will create.
+      expect(path()).toBe(join(current, "sess-1.jsonl"));
+      mkdirSync(legacy, { recursive: true });
+      expect(path()).toBe(join(legacy, "sess-1.jsonl"));
+      mkdirSync(current, { recursive: true });
+      expect(path()).toBe(join(current, "sess-1.jsonl"));
+    } finally {
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
+
   it("codex thread.started + turn.completed → succeeded with thread id", () => {
     const fin = parse("codex", [
       '{"type":"thread.started","thread_id":"thread-1"}',
@@ -1071,6 +1095,18 @@ describe("opencode worker (C3a)", () => {
         expect(evaluate(rules, "read", "/repo/src/a.ts")).toBe("allow");
         expect(evaluate(rules, "read", "/repo/." + "npmrc")).toBe("deny");
         expect(evaluate(rules, "read", "/repo/.git/config")).toBe("deny");
+        for (const secret of [
+          ".git/HEAD",
+          ".git/config.worktree",
+          ".git-credentials",
+          ".pypirc",
+          ".docker/config.json",
+        ]) {
+          expect(evaluate(rules, "read", `/repo/${secret}`)).toBe("deny");
+        }
+        expect(evaluate(rules, "read", "/repo/.github/workflows/ci.yml")).toBe(
+          "allow",
+        );
       }
     });
 
@@ -1095,6 +1131,10 @@ describe("opencode worker (C3a)", () => {
         { action: "read", resource: "*." + "netrc", effect: "deny" },
         { action: "read", resource: "*." + "envrc", effect: "deny" },
         { action: "read", resource: "*.git/config", effect: "deny" },
+        { action: "read", resource: "*.git/*", effect: "deny" },
+        { action: "read", resource: "*.git-credentials", effect: "deny" },
+        { action: "read", resource: "*.pypirc", effect: "deny" },
+        { action: "read", resource: "*.docker/config.json", effect: "deny" },
         { action: "read", resource: `${env}.example`, effect: "allow" },
         { action: "glob", resource: "*", effect: "allow" },
         { action: "grep", resource: "*", effect: "allow" },
@@ -1388,10 +1428,27 @@ describe("opencode worker (C3a)", () => {
         git("commit", "-q", "-m", "rm");
         expect(check()).toBeUndefined();
 
-        // Untracked counts too; an ignored link is the documented hole.
+        // Untracked counts too, and so do ignored links (a .gitignore or a
+        // repo excludesFile can hide them), also inside an ignored dir.
         symlinkSync("../bait.txt", join(ck, "loose-link.txt"));
         expect(check()?.message).toContain("loose-link.txt");
-        writeFileSync(join(ck, ".gitignore"), "loose-link.txt\n");
+        writeFileSync(join(ck, ".gitignore"), "loose-link.txt\nign/\n");
+        expect(check()?.message).toContain("loose-link.txt");
+        rmSync(join(ck, "loose-link.txt"));
+        mkdirSync(join(ck, "ign", "sub"), { recursive: true });
+        symlinkSync("../../../bait.txt", join(ck, "ign", "sub", "link"));
+        expect(check()?.message).toContain("ign/sub/link");
+        rmSync(join(ck, "ign", "sub", "link"));
+        // Ignored entries are checked for links only (pnpm hard-links them).
+        linkSync(join(base, "bait.txt"), join(ck, "ign", "hard.txt"));
+        expect(check()).toBeUndefined();
+        rmSync(join(ck, "ign"), { recursive: true });
+
+        // A name git printed lossily (not UTF-8 on disk) cannot be checked:
+        // APFS rejects such names, so a literal U+FFFD stands in for one.
+        writeFileSync(join(ck, "bad-�.txt"), "x\n");
+        expect(check()?.message).toContain("UTF-8");
+        rmSync(join(ck, "bad-�.txt"));
         expect(check()).toBeUndefined();
 
         // A dir link into .git (then g/config escapes *.git/config).
@@ -1553,14 +1610,20 @@ describe("opencode worker (C3a)", () => {
       }
     });
 
-    // SYNTHETIC: events whose sessionID is missing or empty.
+    // SYNTHETIC: events whose sessionID is missing or empty, and an object
+    // line with a sessionID but no string type (not an event).
     it("exit 0 with events but no session id → failed without a session id", () => {
       const noId = JSON.parse(TEXT);
       delete noId.sessionID;
       const emptyId = JSON.parse(STEP_START);
       emptyId.sessionID = "";
       const { acc, fin } = run(
-        [JSON.stringify(emptyId), JSON.stringify(noId)],
+        [
+          JSON.stringify(emptyId),
+          JSON.stringify({ sessionID: SID }),
+          JSON.stringify({ type: 1, sessionID: SID }),
+          JSON.stringify(noId),
+        ],
         0,
       );
       expect(fin).toEqual({

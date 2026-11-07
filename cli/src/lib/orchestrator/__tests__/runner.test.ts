@@ -23,10 +23,11 @@ import { PassThrough, Writable } from "stream";
 // Never a real provider binary or version probe.
 vi.mock("../providers/eligible.js", () => ({
   providerIneligibility: () => undefined,
-  eligibleProviders: () => ["claude", "codex"],
+  eligibleProviders: vi.fn(() => ["claude", "codex"]),
 }));
 
 import { acquireLease } from "../lease.js";
+import { eligibleProviders } from "../providers/eligible.js";
 import { buildResumePrompt } from "../bundle.js";
 import {
   PROVIDERS,
@@ -165,6 +166,7 @@ function dispatch(
   opts: {
     models?: Partial<Record<Provider, string>>;
     firstProvider?: string;
+    noFallback?: boolean;
   } = {},
 ): string {
   const task = createTask({
@@ -182,7 +184,7 @@ function dispatch(
       onQuota,
       waitMinutes: 30,
       fallback: ["claude", "codex"],
-      noFallback: false,
+      noFallback: opts.noFallback ?? false,
       ...(opts.models && { models: opts.models }),
     },
   });
@@ -351,6 +353,23 @@ describe("runner attempt loop", () => {
     expect(existsSync(join(orch, "runs", id, "5"))).toBe(false);
     expect(readTask(id).state).toBe("failed");
     expect(leases()).toEqual([]);
+  });
+
+  it("noFallback: eligibility is asked for the attempt's provider only; the task stays on it", async () => {
+    const id = dispatch("switch", { noFallback: true });
+    const eligible = vi.mocked(eligibleProviders);
+    eligible.mockClear();
+    queue = [claudeQuota(clock + 600), claudeOk(SID)];
+
+    await run(id);
+
+    expect(eligible.mock.calls.map((c) => c[1])).toEqual([["claude"]]);
+    expect(calls.map((c) => c.cmd)).toEqual(["claude", "claude"]);
+    expect(readJson(id, "2", "attempt.json")).toMatchObject({
+      provider: "claude",
+      kind: "resume",
+    });
+    expect(readTask(id).state).toBe("succeeded");
   });
 
   it("cancel while waiting for the reset → cancelled, lease released", async () => {
@@ -704,6 +723,28 @@ describe("runner worker contract (C3a)", () => {
     expect(readJson(id, "1", "session.json").sessionId).toBe(SID);
   });
 
+  it("a rejected preset id is tried and logged once, not on every stream line", async () => {
+    const id = dispatch("wait");
+    fakeClaude({
+      prepare: async () => ({ sessionId: "-not a session id" }),
+      session: () => undefined,
+      parseLine: presetParse,
+    });
+    const status = { type: "system", subtype: "status" };
+    queue = [{ code: 0, lines: [ACCEPTED, status, status, status, okResult] }];
+
+    await run(id);
+
+    const logged = vi
+      .mocked(console.error)
+      .mock.calls.filter(([m]) =>
+        String(m).includes("could not record session"),
+      );
+    expect(logged).toHaveLength(1);
+    expect(existsSync(join(orch, "runs", id, "1", "session.json"))).toBe(false);
+    expect(readTask(id).state).toBe("succeeded");
+  });
+
   describe("prepare exec", () => {
     const printEnvKeys = [
       "-e",
@@ -792,6 +833,54 @@ describe("runner worker contract (C3a)", () => {
       expect(elapsed).toBeLessThan(1000 + 2000 + 2500);
       expect(calls).toEqual([]);
       expect(readTask(id).result?.error).toContain("timed out after 1000 ms");
+    }, 15_000);
+
+    it("resolves once the command exits, before the deadline, while a grandchild holds the pipes", async () => {
+      const id = dispatch("wait");
+      const pidFile = join(root, "grandchild.pid");
+      // The grandchild keeps stdout/stderr open; the command itself exits.
+      const script = [
+        "const { spawn } = require('child_process');",
+        "const g = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 20000)'],",
+        "  { detached: true, stdio: ['ignore', 'inherit', 'inherit'] });",
+        "require('fs').writeFileSync(process.argv[1], String(g.pid));",
+        "g.unref();",
+        "process.stdout.write('parent-out');",
+      ].join("\n");
+      let result: { code: number; stdout: string } | undefined;
+      let elapsed = 0;
+      fakeClaude({
+        prepare: async (_t, _c, exec) => {
+          const t0 = Date.now();
+          try {
+            result = await exec(process.execPath, ["-e", script, pidFile], {
+              timeoutMs: 20_000,
+            });
+          } finally {
+            elapsed = Date.now() - t0;
+          }
+          return {};
+        },
+      });
+      queue = [claudeOk(SID)];
+
+      try {
+        await run(id);
+      } finally {
+        if (existsSync(pidFile)) {
+          try {
+            process.kill(Number(readFileSync(pidFile, "utf-8")), "SIGKILL");
+          } catch {
+            // already gone
+          }
+        }
+      }
+
+      expect(existsSync(pidFile)).toBe(true);
+      expect(result).toMatchObject({ code: 0, stdout: "parent-out" });
+      expect(elapsed).toBeLessThan(2000 + 2500);
+      expect(calls).toHaveLength(1);
+      expect(readTask(id).state).toBe("succeeded");
     }, 15_000);
   });
 

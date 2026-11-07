@@ -4,8 +4,10 @@
 // position from one call to the next.
 
 import { homedir } from "os";
+import { dirname } from "path";
 
 import { CliError } from "../output.js";
+import { claudeProjectDirCandidates } from "../paths.js";
 import {
   locateClaudeTranscript,
   readClaudeTranscriptSlice,
@@ -147,6 +149,9 @@ function info(r: Run): FollowAttempt {
 
 type Source = { path: string } | { unsupported: string } | null;
 
+/** Located transcript paths of one follow loop, by `<attempt>:<sessionId>`. */
+export type FollowCache = Map<string, { path: string }>;
+
 const NO_READER: Source = {
   unsupported: "no transcript reader for this provider",
 };
@@ -155,11 +160,17 @@ function hasReader(p: Provider): boolean {
   return p === "claude" || p === "codex";
 }
 
-/** The attempt's transcript file, null when not found (yet). */
+/**
+ * The attempt's transcript file, null when not found (yet). A Claude one only
+ * in the checkout's project dirs: the session id is worker-reported.
+ */
 function locate(r: Run, sessionId: string, checkout: string): Source {
   if (r.provider === "claude") {
     const f = locateClaudeTranscript(sessionId, { projectDir: checkout });
     if (!f) return null;
+    if (!claudeProjectDirCandidates(checkout).includes(dirname(f.path))) {
+      return null;
+    }
     return f.placeholder ? { unsupported: "placeholder" } : { path: f.path };
   }
   if (r.provider === "codex") {
@@ -206,14 +217,18 @@ function liveOf(src: Source, found: boolean, terminal: boolean): FollowLive {
  * New turns of task `id` since `cursor` (default `v1`, the first attempt with
  * a session id). One attempt per call: when the current one has no complete
  * line left and a later attempt has a session id, move to it (same session
- * keeps the offset, another starts at 0).
+ * keeps the offset, another starts at 0). `cache` keeps located paths across
+ * the calls of one follow loop.
  */
-export function followTask(id: string, cursor?: string): FollowData {
+export function followTask(
+  id: string,
+  cursor?: string,
+  cache?: FollowCache,
+): FollowData {
   const task = readTask(id);
   const pos = decodeCursor(cursor ?? "v1");
   const runs = runsOf(task);
-  const terminal =
-    FOLLOW_TERMINAL.includes(task.state) && runnerFinished(task);
+  const terminal = FOLLOW_TERMINAL.includes(task.state) && runnerFinished(task);
   const empty = {
     task,
     terminal,
@@ -255,11 +270,14 @@ export function followTask(id: string, cursor?: string): FollowData {
     const run = runs[i];
     const sessionId = run.sessionId as string;
     const next = runs.findIndex((r, j) => j > i && r.sessionId !== undefined);
-    const src = locate(run, sessionId, task.checkout);
+    const key = `${run.n}:${sessionId}`;
+    const src = cache?.get(key) ?? locate(run, sessionId, task.checkout);
     let slice: TranscriptSlice | null = null;
     let reset = false;
     if (src && "path" in src) {
+      cache?.set(key, src);
       slice = readSlice(run.provider, src.path, offset);
+      if (!slice) cache?.delete(key);
       if (slice && slice.size < offset) {
         reset = true;
         slice = readSlice(run.provider, src.path, 0);

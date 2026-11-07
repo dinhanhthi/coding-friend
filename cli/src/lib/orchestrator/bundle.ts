@@ -65,10 +65,17 @@ function readCapped(file: string, max: number): string | undefined {
   }
 }
 
+/**
+ * `cfShell` is the target adapter's `caps.cfShell` (default true). A no-shell
+ * worker cannot run git: it gets `changes` (paths changed so far, names chosen
+ * by workers) instead of the git commands.
+ */
 export function buildContextBundle(opts: {
   task: TaskRecord;
   taskDir: string;
   lastMessage?: string;
+  cfShell?: boolean;
+  changes?: string[];
 }): string {
   const { task, taskDir } = opts;
   // One budget for both notes: the last message first (small), handoff the rest.
@@ -82,9 +89,25 @@ export function buildContextBundle(opts: {
     ? truncate(handoffRaw, left)
     : "(no handoff notes)";
 
+  const intro =
+    "A previous attempt at this task stopped before finishing. You are continuing it in a fresh session: the checkout may contain uncommitted changes from the previous attempt.";
+  const inspect =
+    opts.cfShell === false
+      ? [
+          `${intro} The changes so far are listed below; continue from there instead of starting over.`,
+          "## Changes so far",
+          "Paths changed in the checkout (names chosen by the previous worker):",
+          fence(
+            opts.changes?.length ? opts.changes.join("\n") : "(none recorded)",
+          ),
+        ]
+      : [
+          `${intro} Before changing anything, inspect them with \`git status --short\` and \`git diff --stat\` (and \`git diff\` where needed), then continue from there instead of starting over.`,
+        ];
+
   return [
     `# Context for Coding Friend task ${task.id}`,
-    "A previous attempt at this task stopped before finishing. You are continuing it in a fresh session: the checkout may contain uncommitted changes from the previous attempt. Before changing anything, inspect them with `git status --short` and `git diff --stat` (and `git diff` where needed), then continue from there instead of starting over.",
+    ...inspect,
     "## Original task prompt",
     fence(task.prompt),
     "## Untrusted worker notes",
