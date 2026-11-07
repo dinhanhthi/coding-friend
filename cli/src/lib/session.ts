@@ -1,18 +1,21 @@
 import {
   readdirSync,
   lstatSync,
+  chmodSync,
   copyFileSync,
   cpSync,
   readFileSync,
   mkdirSync,
+  writeFileSync,
   type Stats,
 } from "fs";
 import { basename, dirname, join } from "path";
 import { homedir, hostname as osHostname } from "os";
 import { cloudRootOf, isCloudPlaceholder } from "./cloud-folders.js";
-import { readJson, writeJson } from "./json.js";
+import { readJson } from "./json.js";
 import { CliError } from "./output.js";
 import { claudeLoadTargetDir, claudeProjectDirCandidates } from "./paths.js";
+import { redactText } from "./redact.js";
 import { readClaudeHeadCwd } from "./transcript-claude.js";
 
 /** Only these parts of Claude's sibling `<sessionId>/` folder are saved and restored. */
@@ -177,8 +180,11 @@ function inCloud(root: string): boolean {
   return cloudRootOf(root, homedir(), process.platform) !== null;
 }
 
-/** True when meta.json or session.jsonl is not downloaded. Never opens a file. */
-function isPlaceholderFolder(dir: string, cloud: boolean): boolean {
+/**
+ * True when meta.json or session.jsonl is not downloaded. Never opens a file.
+ * `cloud`: `dir` is inside a cloud root (enables the dataless heuristic).
+ */
+export function isPlaceholderFolder(dir: string, cloud: boolean): boolean {
   return SAVED_FILES.some((name) => {
     if (lstatOrNull(join(dir, `.${name}.icloud`))?.isFile()) return true;
     const st = lstatOrNull(join(dir, name));
@@ -238,40 +244,10 @@ export function listSavedSessions(
 }
 
 /**
- * Remap an original project path to the current machine by replacing the home prefix.
- * Handles Unix paths (/Users/<name>, /home/<name>) and Windows paths (C:\Users\<name>).
- */
-export function remapProjectPath(
-  originalPath: string,
-  currentHome: string,
-): string {
-  // Unix: /Users/<name> or /home/<name>
-  const unixPattern = /^(\/(?:Users|home)\/[^/]+)(\/.*)?$/;
-  const unixMatch = originalPath.match(unixPattern);
-  if (unixMatch) {
-    const origHomeDir = unixMatch[1];
-    const rest = unixMatch[2] ?? "";
-    if (origHomeDir === currentHome) return originalPath;
-    return currentHome + rest;
-  }
-
-  // Windows: C:\Users\<name> (case-insensitive drive letter)
-  const winPattern = /^([A-Za-z]:\\Users\\[^\\]+)(\\.*)?$/;
-  const winMatch = originalPath.match(winPattern);
-  if (winMatch) {
-    const origHomeDir = winMatch[1];
-    const rest = winMatch[2] ?? "";
-    if (origHomeDir === currentHome) return originalPath;
-    return currentHome + rest;
-  }
-
-  return originalPath;
-}
-
-/**
  * Save a live Claude transcript to `<storeRoot>/<label-slug>/`: session.jsonl
  * (verbatim), meta.json, and `session/{subagents,tool-results,mcp-tasks}/`
- * from Claude's sibling `<sessionId>/` folder when present.
+ * from Claude's sibling `<sessionId>/` folder when present. The folder is
+ * 0700 and both files 0600: the transcript may hold secrets.
  */
 export function saveSession(opts: SaveSessionOpts): SaveSessionResult {
   const { jsonlPath, sessionId, label, storeRoot, projectDir, previewText } =
@@ -295,9 +271,11 @@ export function saveSession(opts: SaveSessionOpts): SaveSessionResult {
   mkdirSync(storeRoot, { recursive: true });
   const folder = uniqueFolderName(storeRoot, slugifyLabel(label));
   const dir = join(storeRoot, folder);
-  mkdirSync(dir);
+  mkdirSync(dir, { mode: 0o700 });
+  chmodSync(dir, 0o700); // umask may strip bits
   const destJsonl = join(dir, "session.jsonl");
   copyFileSync(jsonlPath, destJsonl);
+  chmodSync(destJsonl, 0o600); // copyFileSync keeps the source's mode
   copySessionSubdirs(join(dirname(jsonlPath), sessionId), join(dir, "session"));
   const bytes = lstatSync(destJsonl).size;
 
@@ -309,10 +287,16 @@ export function saveSession(opts: SaveSessionOpts): SaveSessionResult {
     projectPath,
     savedAt: new Date().toISOString(),
     machine: hostname(),
-    previewText,
+    // meta.json may sit in a synced folder: the preview is redacted there too.
+    previewText: redactText(previewText, { home: homedir() }).text,
     bytes,
   };
-  writeJson(join(dir, "meta.json"), meta as unknown as Record<string, unknown>);
+  const metaPath = join(dir, "meta.json");
+  writeFileSync(metaPath, JSON.stringify(meta, null, 2) + "\n", {
+    flag: "wx",
+    mode: 0o600,
+  });
+  chmodSync(metaPath, 0o600);
   return { folder, dir, bytes, warning: VERBATIM_WARNING };
 }
 
@@ -322,13 +306,17 @@ function copySessionSubdirs(from: string, to: string): void {
   for (const sub of SESSION_SUBDIRS) {
     const src = join(from, sub);
     if (!isRealDir(src)) continue;
-    cpSync(src, join(to, sub), { recursive: true, filter: skipSymlinks });
+    cpSync(src, join(to, sub), { recursive: true, filter: filesAndDirsOnly });
   }
 }
 
-/** cpSync filter: never copy symlinks (a tampered sync folder could point at secrets). */
-function skipSymlinks(src: string): boolean {
-  return !lstatSync(src).isSymbolicLink();
+/**
+ * cpSync filter: only regular files and folders. A tampered sync folder could
+ * hold symlinks to secrets, or FIFOs and devices that hang or fail the copy.
+ */
+function filesAndDirsOnly(src: string): boolean {
+  const st = lstatSync(src);
+  return st.isFile() || st.isDirectory();
 }
 
 /** True for a single path segment that cannot escape its parent directory. */

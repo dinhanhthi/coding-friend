@@ -6,11 +6,13 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   symlinkSync,
   utimesSync,
   writeFileSync,
 } from "fs";
-import { homedir, tmpdir } from "os";
+import { execFileSync } from "child_process";
+import { tmpdir } from "os";
 import { join } from "path";
 import { claudeProjectDirName, encodeProjectPath } from "../paths.js";
 import {
@@ -19,11 +21,12 @@ import {
   saveSession,
   loadSession,
   buildPreviewText,
-  remapProjectPath,
   slugifyLabel,
 } from "../session.js";
 
 const UUID = "0b5c2f9e-3a4d-4e6f-8a1b-2c3d4e5f6a7b";
+// Fake token, built by concatenation so no real-looking secret sits here.
+const GH = "gh" + "p_" + "Q".repeat(36);
 
 let tmp: string;
 let claude: string;
@@ -179,23 +182,6 @@ describe("listSavedSessions", () => {
   });
 });
 
-describe("remapProjectPath", () => {
-  it("replaces home prefix with current home when different", () => {
-    const currentHome = homedir();
-    const result = remapProjectPath("/Users/alice/git/foo", currentHome);
-    if ("/Users/alice" !== currentHome) {
-      expect(result).toBe(join(currentHome, "git", "foo"));
-    } else {
-      expect(result).toBe("/Users/alice/git/foo");
-    }
-  });
-
-  it("returns path unchanged when home is the same", () => {
-    const result = remapProjectPath(join(homedir(), "git", "foo"), homedir());
-    expect(result).toBe(join(homedir(), "git", "foo"));
-  });
-});
-
 describe("slugifyLabel", () => {
   it("converts spaces to dashes and lowercases", () => {
     expect(slugifyLabel("My Session Label")).toBe("my-session-label");
@@ -250,7 +236,7 @@ describe("saveSession", () => {
     );
   }
 
-  it("writes session.jsonl and meta.json into <storeRoot>/<label-slug>/", () => {
+  it("writes session.jsonl and meta.json into <storeRoot>/<label-slug>/, owner-only", () => {
     const jsonlPath = liveTranscript();
 
     const r = saveSession({
@@ -259,7 +245,7 @@ describe("saveSession", () => {
       label: "My label",
       storeRoot: store,
       projectDir: join(tmp, "fallback"),
-      previewText: "hello world",
+      previewText: `hello ${GH}`,
     });
 
     const dir = join(store, "my-label");
@@ -277,9 +263,14 @@ describe("saveSession", () => {
       // From the transcript head, not the projectDir fallback.
       projectPath: project,
       bytes: r.bytes,
-      previewText: "hello world",
+      previewText: "hello [REDACTED:github]",
     });
     expect(r.bytes).toBeGreaterThan(0);
+    // Verbatim transcripts may hold secrets: folder 0700, files 0600.
+    expect(statSync(dir).mode & 0o777).toBe(0o700);
+    for (const name of ["session.jsonl", "meta.json"]) {
+      expect(statSync(join(dir, name)).mode & 0o777).toBe(0o600);
+    }
   });
 
   it("appends numeric suffix when folder already exists", () => {
@@ -296,7 +287,7 @@ describe("saveSession", () => {
     expect(r.folder).toBe("my-label-2");
   });
 
-  it("copies only subagents, tool-results and mcp-tasks of the sibling folder", () => {
+  it("copies only files and folders of subagents, tool-results and mcp-tasks", () => {
     const jsonlPath = liveTranscript();
     const sibling = join(claudeDir(project), UUID);
     write(join(sibling, "subagents", "agent-1.jsonl"), "{}\n");
@@ -304,6 +295,7 @@ describe("saveSession", () => {
     write(join(sibling, "other", "secret.txt"), "no");
     write(join(tmp, "outside.txt"), "no");
     symlinkSync(join(tmp, "outside.txt"), join(sibling, "subagents", "link"));
+    execFileSync("mkfifo", [join(sibling, "tool-results", "fifo")]);
 
     const r = saveSession({
       jsonlPath,
@@ -318,6 +310,7 @@ describe("saveSession", () => {
     expect(existsSync(join(dest, "tool-results", "r.txt"))).toBe(true);
     expect(existsSync(join(dest, "other"))).toBe(false);
     expect(existsSync(join(dest, "subagents", "link"))).toBe(false);
+    expect(existsSync(join(dest, "tool-results", "fifo"))).toBe(false);
   });
 
   it("skips the session folder copy when it does not exist", () => {

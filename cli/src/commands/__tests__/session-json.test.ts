@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { execFileSync } from "child_process";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -14,6 +16,21 @@ import { tmpdir } from "os";
 import { join, sep } from "path";
 
 import { claudeProjectDirName } from "../../lib/paths.js";
+
+// Lets a test create the --out file between export's last check and its write.
+const fsHooks = vi.hoisted(() => ({
+  beforeChmod: null as null | ((path: string) => void),
+}));
+vi.mock("fs", async (importOriginal) => {
+  const fs = await importOriginal<typeof import("fs")>();
+  return {
+    ...fs,
+    chmodSync: (...args: Parameters<typeof fs.chmodSync>) => {
+      fsHooks.beforeChmod?.(String(args[0]));
+      return fs.chmodSync(...args);
+    },
+  };
+});
 import {
   sessionExportCommand,
   sessionListCommand,
@@ -183,6 +200,8 @@ describe("session list|show|export --json", () => {
       (s: { ref: string }) => s.ref === `claude:${UUID}`,
     );
     expect(claude.title).toContain("[REDACTED:github]");
+    // Live rows redact the home dir in cwd, as show and saved rows do.
+    expect(claude.cwd).toBe("~/proj");
     expectNoLeak(raw);
   });
 
@@ -329,6 +348,42 @@ describe("session list|show|export --json", () => {
     expect(existsSync(evil)).toBe(false);
   });
 
+  it("save --json with several recent transcripts is INTERACTIVE_REQUIRED", async () => {
+    writeFileSync(join(claudeDir(), `${BIG}.jsonl`), jsonl([{ cwd: root }]));
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, { json: true, projectDir: root }),
+    );
+    expect(env).toMatchObject({
+      ok: false,
+      error: { code: "INTERACTIVE_REQUIRED" },
+    });
+    expect(existsSync(join(home, ".coding-friend"))).toBe(false);
+  });
+
+  it("a project docsDir outside the project never becomes the legacy store", async () => {
+    const dir = join(tmp, "sessions", "escaped");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "session.jsonl"), "{}\n");
+    writeFileSync(
+      join(dir, "meta.json"),
+      JSON.stringify({
+        sessionId: LEGACY_ID,
+        label: "x",
+        savedAt: "2026-10-01",
+      }),
+    );
+    mkdirSync(join(root, ".coding-friend"));
+    writeFileSync(
+      join(root, ".coding-friend", "config.json"),
+      JSON.stringify({ docsDir: "../.." }),
+    );
+    const { env } = await json(() =>
+      sessionListCommand({ json: true, provider: "saved", projectDir: root }),
+    );
+    expect(env.ok).toBe(true);
+    expect(env.data.sessions).toEqual([]);
+  });
+
   it("list --project-dir keeps only saved sessions of that project", async () => {
     const store = join(home, ".coding-friend", "sessions");
     const saved = (folder: string, projectPath: string) => {
@@ -372,6 +427,49 @@ describe("session list|show|export --json", () => {
       readFileSync(join(env.data.dir, "meta.json"), "utf-8"),
     );
     expect(meta.projectPath).toBe(root);
+  });
+
+  it("save --project-dir <worktree> saves the worktree's transcript, not the main repo's", async () => {
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-C", root, ...args], {
+        stdio: "ignore",
+        env: { ...process.env, GIT_CONFIG_NOSYSTEM: "1" },
+      });
+    git("init", "-q");
+    git(
+      "-c",
+      "user.name=t",
+      "-c",
+      "user.email=t@t",
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      "init",
+    );
+    const wt = join(tmp, "wt");
+    git("worktree", "add", "-q", wt);
+    const wtProjects = join(
+      tmp,
+      "claude",
+      "projects",
+      claudeProjectDirName(wt).name,
+    );
+    mkdirSync(wtProjects, { recursive: true });
+    writeFileSync(
+      join(wtProjects, `${BIG}.jsonl`),
+      jsonl([{ cwd: wt, sessionId: BIG, type: "user" }]),
+    );
+
+    const { env } = await json(() =>
+      sessionSaveCommand(undefined, { json: true, projectDir: wt }),
+    );
+    expect(env.ok).toBe(true);
+    expect(env.data.sessionId).toBe(BIG);
+    const meta = JSON.parse(
+      readFileSync(join(env.data.dir, "meta.json"), "utf-8"),
+    );
+    expect(meta.projectPath).toBe(wt);
   });
 
   it("save rejects a non-UUID --session-id before any write", async () => {
@@ -454,6 +552,54 @@ describe("session list|show|export --json", () => {
       sessionExportCommand(`claude:${UUID}`, { json: true, out: file }),
     );
     expect(env).toMatchObject({ ok: false, error: { code: "CONFLICT" } });
+    expect(readFileSync(file).equals(before)).toBe(true);
+  });
+
+  it("export --out never replaces a file created after its last check", async () => {
+    const file = join(tmp, "export.md");
+    fsHooks.beforeChmod = () => {
+      if (!existsSync(file)) writeFileSync(file, "keep me\n");
+    };
+    try {
+      const { env } = await json(() =>
+        sessionExportCommand(`claude:${UUID}`, { json: true, out: file }),
+      );
+      expect(env).toMatchObject({ ok: false, error: { code: "CONFLICT" } });
+    } finally {
+      fsHooks.beforeChmod = null;
+    }
+    expect(readFileSync(file, "utf-8")).toBe("keep me\n");
+    expect(readdirSync(tmp).filter((n) => n.endsWith(".tmp"))).toEqual([]);
+  });
+
+  it("export --out --force replaces a file with mode 0600 but refuses a symlink", async () => {
+    const file = join(tmp, "export.md");
+    writeFileSync(file, "old\n", { mode: 0o644 });
+    const forced = await json(() =>
+      sessionExportCommand(`claude:${UUID}`, {
+        json: true,
+        out: file,
+        force: true,
+      }),
+    );
+    expect(forced.env).toMatchObject({ ok: true, error: null });
+    expect(readFileSync(file, "utf-8")).toContain("- tool: Login");
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+
+    const link = join(tmp, "link.md");
+    symlinkSync(file, link);
+    const before = readFileSync(file);
+    const refused = await json(() =>
+      sessionExportCommand(`claude:${UUID}`, {
+        json: true,
+        out: link,
+        force: true,
+      }),
+    );
+    expect(refused.env).toMatchObject({
+      ok: false,
+      error: { code: "INVALID_ARGS" },
+    });
     expect(readFileSync(file).equals(before)).toBe(true);
   });
 
@@ -571,9 +717,14 @@ describe("session list|show|export --json", () => {
     });
   });
 
-  it("human show strips terminal escapes on a TTY, keeps newlines", async () => {
+  it("human show strips terminal escapes on a TTY, then redacts", async () => {
+    // A token split by a NUL and a bidi override would rejoin once stripped.
+    const split = GH.slice(0, 20) + "\x00" + GH.slice(20);
     const evil =
-      "first line\x1b]52;c;" + "Zm9v" + "\x07\nsecond\x1b[2J line\x9b";
+      "first line\x1b]52;c;" +
+      "Zm9v" +
+      "\x07\nsecond\x1b[2J line\x9b\n\u202e" +
+      split;
     writeFileSync(
       join(claudeDir(), `${ESCAPES}.jsonl`),
       jsonl([
@@ -605,6 +756,9 @@ describe("session list|show|export --json", () => {
     expect(out).not.toContain("\x1b]52");
     expect(out).not.toContain("\x1b[2J");
     expect(out).not.toContain("\x9b");
+    expect(out).not.toContain("\u202e");
     expect(out).toContain("first line\nsecond line");
+    expect(out).toContain("[REDACTED:github]");
+    expectNoLeak(out);
   });
 });

@@ -957,6 +957,12 @@ describe("resolveSessionDir", () => {
       { session: { dir: "~/cloud/sessions" } },
       "~/cloud/sessions",
     ],
+    // A relative path would resolve against cwd, maybe inside a work tree.
+    [
+      "relative key ignored",
+      { session: { dir: "sessions" } },
+      "~/.coding-friend/sessions",
+    ],
   ])(
     "resolves the given config's session.dir (%s)",
     (_name, global, expected) => {

@@ -146,6 +146,41 @@ describe("claudeProvider", () => {
     });
   });
 
+  it("drops a non-ISO timestamp and a malformed version from the summary", async () => {
+    const big = "A".repeat(10 * 1024);
+    writeTranscript(
+      projectDir,
+      UUID,
+      jsonl([
+        {
+          type: "user",
+          cwd: root,
+          version: "x\n## Fake",
+          timestamp: "<script>",
+          message: { role: "user", content: "hi" },
+        },
+        {
+          type: "assistant",
+          cwd: root,
+          version: "y\n## Fake",
+          timestamp: big,
+          message: { role: "assistant", content: "ok" },
+        },
+      ]),
+    );
+
+    const { sessions } = await claudeProvider.list({});
+    const t = await claudeProvider.read({ kind: "claude", id: UUID }, {});
+    for (const s of [sessions[0], t.summary]) {
+      expect(s.status).toBe("ok");
+      expect(Number.isNaN(Date.parse(s.startedAt))).toBe(false);
+      expect(s.startedAt).not.toContain("<script>");
+      expect(s.updatedAt).not.toContain(big);
+      expect(s.formatVersion).toBeUndefined();
+    }
+    expect(t.formatVersion).toBeUndefined();
+  });
+
   it("reports a garbage file as unsupported without throwing", async () => {
     writeTranscript(projectDir, UUID, "garbage\n\u0000\u0001 not json\n");
 

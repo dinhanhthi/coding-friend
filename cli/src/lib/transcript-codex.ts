@@ -27,7 +27,11 @@ import { cloudRootOf, isCloudPlaceholder } from "./cloud-folders.js";
 import { readCompleteLines } from "./jsonl-slice.js";
 import { CliError } from "./output.js";
 import { codexConfigDir } from "./paths.js";
-import type { TranscriptSlice } from "./transcript-claude.js";
+import {
+  isIsoTimestamp,
+  VERSION_RE,
+  type TranscriptSlice,
+} from "./transcript-claude.js";
 import type {
   ListOptions,
   ParsedRef,
@@ -274,9 +278,17 @@ function metaHeader(rec: Rec | null): Header | null {
   if (rec?.type !== "session_meta" || !payload) return null;
   return {
     cwd: str(payload.cwd),
-    startedAt: str(payload.timestamp) || str(rec.timestamp),
+    // Both reach show JSON and export Markdown: keep only well-formed values.
+    startedAt: isIsoTimestamp(payload.timestamp)
+      ? payload.timestamp
+      : isIsoTimestamp(rec.timestamp)
+        ? rec.timestamp
+        : "",
     version:
-      typeof payload.cli_version === "string" ? payload.cli_version : undefined,
+      typeof payload.cli_version === "string" &&
+      VERSION_RE.test(payload.cli_version)
+        ? payload.cli_version
+        : undefined,
   };
 }
 
@@ -298,7 +310,7 @@ class Parser implements Header {
       if (line.trim()) this.skipped++;
       return;
     }
-    if (typeof rec.timestamp === "string") {
+    if (isIsoTimestamp(rec.timestamp)) {
       if (!this.startedAt) this.startedAt = rec.timestamp;
       this.lastAt = rec.timestamp;
     }
@@ -317,10 +329,16 @@ class Parser implements Header {
       this.skipped++;
       return;
     }
+    // Newer Codex writes shell calls as `custom_tool_call` (raw `input`).
     if (payload.type === "message") this.message(payload);
-    else if (payload.type === "function_call") this.call(payload);
-    else if (payload.type === "function_call_output") this.output(payload);
-    else this.skipped++;
+    else if (payload.type === "function_call") this.call(payload, "arguments");
+    else if (payload.type === "custom_tool_call") this.call(payload, "input");
+    else if (
+      payload.type === "function_call_output" ||
+      payload.type === "custom_tool_call_output"
+    ) {
+      this.output(payload);
+    } else this.skipped++;
   }
 
   private message(p: Rec): void {
@@ -340,12 +358,12 @@ class Parser implements Header {
     if (text) this.turns.push({ kind: p.role as "user" | "assistant", text });
   }
 
-  private call(p: Rec): void {
+  private call(p: Rec, argsKey: "arguments" | "input"): void {
     this.recognized++;
     const turn: Turn & { kind: "tool" } = {
       kind: "tool",
       name: str(p.name),
-      args: serialize(p.arguments),
+      args: serialize(p[argsKey]),
     };
     this.turns.push(turn);
     if (typeof p.call_id === "string") this.tools.set(p.call_id, turn);

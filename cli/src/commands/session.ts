@@ -1,10 +1,13 @@
 import { input, select } from "@inquirer/prompts";
 import chalk from "chalk";
-import { execFileSync } from "child_process";
 import { randomBytes } from "crypto";
 import {
   chmodSync,
+  constants,
+  copyFileSync,
+  linkSync,
   lstatSync,
+  realpathSync,
   renameSync,
   statSync,
   unlinkSync,
@@ -12,10 +15,10 @@ import {
   type Stats,
 } from "fs";
 import { homedir } from "os";
-import { join, basename, dirname, sep } from "path";
+import { join, basename, dirname, resolve, sep } from "path";
 import { log } from "../lib/log.js";
-import { run } from "../lib/exec.js";
 import { readJson } from "../lib/json.js";
+import { inGitWorkTree, isDir } from "../lib/learn-storage.js";
 import { globalConfigPath, resolvePath } from "../lib/paths.js";
 import {
   cloudRootOf,
@@ -88,27 +91,47 @@ function sessionStoreRoot(): string {
   return resolveSessionDir(readJson<CodingFriendConfig>(globalConfigPath()));
 }
 
-/** Legacy store `<P>/<docsDir>/sessions` of a `--project-dir` root (cwd is already there). */
-function legacyStoreRoot(root: string): string {
-  return join(root, loadConfig().docsDir ?? "docs", "sessions");
+/**
+ * Legacy store `<P>/<docsDir>/sessions` of a `--project-dir` root (cwd is
+ * already there), or null when docsDir leaves the project (absolute or `..`).
+ */
+function legacyStoreRoot(root: string): string | null {
+  const docs = resolve(root, loadConfig().docsDir ?? "docs");
+  return inRoot(docs, root) ? join(docs, "sessions") : null;
+}
+
+/** Legacy store of a `legacy:` ref; a docsDir outside the project is refused. */
+function requireLegacyStore(root: string): string {
+  const store = legacyStoreRoot(root);
+  if (!store) {
+    throw new CliError(
+      "INVALID_VALUE",
+      "docsDir points outside the project: legacy sessions are not read",
+    );
+  }
+  return store;
 }
 
 /**
- * Strip terminal escapes (OSC, CSI, 2-byte ESC) and C0/C1 control chars,
- * keeping \n and \t, so transcript text can't drive the terminal (OSC 52
- * clipboard writes, screen clears, titles).
+ * Strip terminal escapes (OSC, CSI, 2-byte ESC), C0/C1 control chars (keeping
+ * \n and \t) and Unicode bidi overrides, so transcript text can't drive the
+ * terminal (OSC 52 clipboard writes, screen clears, titles) or reorder it.
  */
 function stripControl(s: string): string {
   return s
     .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
     .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
     .replace(/\x1b[@-_]/g, "")
-    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, "");
+    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, "")
+    .replace(/[\u202a-\u202e\u2066-\u2069]/g, "");
 }
 
-/** Human mode: transcript-derived text bound for a terminal is stripped. */
+/**
+ * Human mode: transcript-derived text bound for a terminal is stripped, then
+ * redacted again, so a secret split by a control char can't rejoin on screen.
+ */
 function tty(s: string): string {
-  return process.stdout.isTTY ? stripControl(s) : s;
+  return process.stdout.isTTY ? redactText(stripControl(s), {}).text : s;
 }
 
 /** meta.json is untrusted: a field is used only when it is a string. */
@@ -125,7 +148,7 @@ function formatSessionChoice(s: SavedSession, home: string): string {
   const tag = s.source === "legacy" ? "(legacy) " : "";
   if (!s.meta) return `${tag}[${s.folder}]  (not downloaded)`;
   const clean = (v: unknown): string =>
-    stripControl(redactText(str(v), { home }).text).replace(/\s+/g, " ");
+    redactText(stripControl(str(v)), { home }).text.replace(/\s+/g, " ");
   const at = isoOrNull(s.meta.savedAt);
   const date = at ? new Date(at).toLocaleString() : "?";
   const preview = truncateChars(clean(s.meta.previewText).trim(), 60);
@@ -212,10 +235,13 @@ async function saveCurrentSession(
   }
   const cwd = process.cwd();
   const root = useProjectDir(opts.projectDir);
+  // Claude keys transcripts by the dir it ran in: a worktree's own path, not
+  // the main repo root that useProjectDir returns.
+  const lookup = root ? realpathSync(resolve(cwd, opts.projectDir!)) : cwd;
   const json = !!opts.json;
   const jsonlPath = opts.sessionId
-    ? findTranscript(opts.sessionId, root)
-    : await pickTranscript(root ?? cwd, json);
+    ? findTranscript(opts.sessionId, root && lookup)
+    : await pickTranscript(lookup, json);
   const label =
     opts.label ??
     labelArg ??
@@ -231,7 +257,7 @@ async function saveCurrentSession(
     sessionId,
     label,
     storeRoot: sessionStoreRoot(),
-    projectDir: root ?? cwd,
+    projectDir: lookup,
     previewText: buildPreviewText(jsonlPath),
   });
   return {
@@ -275,51 +301,6 @@ interface StatusData {
     exists: boolean;
   }[];
   gitRepo: boolean;
-}
-
-const GIT_TIMEOUT_MS = 5_000;
-
-/** True when `dir` is inside a git work tree; false when git is missing or fails. */
-function inGitWorkTree(dir: string): boolean {
-  // macOS /usr/bin/git is a shim that opens the Command Line Tools dialog
-  // when no developer dir is set (same guard as learn-storage).
-  if (process.platform === "darwin") {
-    const git = run("which", ["git"]);
-    if (git === null) return false;
-    if (
-      git.split("\n")[0] === "/usr/bin/git" &&
-      run("xcode-select", ["-p"]) === null
-    ) {
-      return false;
-    }
-  }
-  const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
-  delete env.GIT_DIR;
-  delete env.GIT_WORK_TREE;
-  delete env.GIT_INDEX_FILE;
-  try {
-    const out = execFileSync(
-      "git",
-      ["-C", dir, "rev-parse", "--is-inside-work-tree"],
-      {
-        encoding: "utf-8",
-        timeout: GIT_TIMEOUT_MS,
-        stdio: ["ignore", "pipe", "ignore"],
-        env,
-      },
-    );
-    return out.trim() === "true";
-  } catch {
-    return false;
-  }
-}
-
-function isDir(p: string): boolean {
-  try {
-    return statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
 }
 
 function sessionStatus(): StatusData {
@@ -427,7 +408,7 @@ function loadRef(ref: string | undefined, opts: LoadOpts): LoadData {
   const target = resolvePath(opts.target, cwd);
   const loaded = loadSession({
     storeRoot:
-      parsed.kind === "saved" ? sessionStoreRoot() : legacyStoreRoot(root!),
+      parsed.kind === "saved" ? sessionStoreRoot() : requireLegacyStore(root!),
     folder: parsed.id,
     target,
     force: !!opts.force,
@@ -450,6 +431,9 @@ export async function sessionLoadCommand(
     return;
   }
   await runHumanLogged(async () => {
+    if (ref !== undefined || opts.target !== undefined || opts.yes) {
+      log.warn("[ref], --target and --yes only apply with --json: ignored.");
+    }
     // Relative answers resolve against the cwd the user ran `cf` from.
     const cwd = process.cwd();
     const root = useProjectDir(opts.projectDir);
@@ -459,7 +443,8 @@ export async function sessionLoadCommand(
       { root: savedRoot, source: "saved" },
     ];
     // Legacy is never inferred from cwd: only with --project-dir.
-    if (root) stores.push({ root: legacyStoreRoot(root), source: "legacy" });
+    const legacy = root ? legacyStoreRoot(root) : null;
+    if (legacy) stores.push({ root: legacy, source: "legacy" });
     const choices = stores.flatMap(({ root: storeRoot, source }) =>
       listSavedSessions(storeRoot, source).map((session) => ({
         name: formatSessionChoice(session, home),
@@ -493,7 +478,7 @@ export async function sessionLoadCommand(
     // meta.projectPath is untrusted: a hint only, never the default.
     const savedPath = str(session.meta?.projectPath);
     const hint = savedPath
-      ? ` (saved from ${stripControl(redactText(savedPath, { home }).text)})`
+      ? ` (saved from ${redactText(stripControl(savedPath), { home }).text})`
       : "";
     const answer = await input({
       message: `Project directory to load into${hint}:`,
@@ -508,7 +493,7 @@ export async function sessionLoadCommand(
 
     const label = str(session.meta?.label) || session.folder;
     log.success(
-      `Session "${stripControl(redactText(label, { home }).text)}" loaded.`,
+      `Session "${redactText(stripControl(label), { home }).text}" loaded.`,
     );
     log.info(`To resume, run:`);
     console.log(`\n  claude --resume ${loaded.sessionId}\n`);
@@ -586,7 +571,7 @@ async function readTranscript(
     return readStored(sessionStoreRoot(), "saved", parsed.id);
   }
   if (parsed.kind === "legacy") {
-    return readStored(legacyStoreRoot(projectDir!), "legacy", parsed.id);
+    return readStored(requireLegacyStore(projectDir!), "legacy", parsed.id);
   }
   return PROVIDERS[parsed.kind].read(parsed, { projectDir });
 }
@@ -732,10 +717,16 @@ async function listSessions(opts: ListOpts): Promise<SessionList> {
   if (provider === undefined || provider === "saved") {
     stored.push(...storedRows(sessionStoreRoot(), "saved", home, root));
     // Legacy is never inferred from cwd: only with --project-dir.
-    if (root) stored.push(...storedRows(legacyStoreRoot(root), "legacy", home));
+    const legacy = root ? legacyStoreRoot(root) : null;
+    if (legacy) stored.push(...storedRows(legacy, "legacy", home));
   }
+  // Saved rows are redacted already; a second pass changes nothing.
   const merged = [...results.flatMap((r) => r.sessions), ...stored]
-    .map((s) => ({ ...s, title: redactTitle(s.title, home).text }))
+    .map((s) => ({
+      ...s,
+      title: redactTitle(s.title, home).text,
+      cwd: redactText(s.cwd, { home }).text,
+    }))
     .sort((a, b) =>
       a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0,
     );
@@ -946,16 +937,51 @@ function checkExportTarget(out: string, force: boolean): void {
   }
 }
 
-/** Temp file in the same folder, mode 0600, then rename over `out`. */
-function writeExportFile(out: string, text: string): void {
+function errCode(err: unknown): string | undefined {
+  return (err as NodeJS.ErrnoException).code;
+}
+
+/**
+ * Put `tmp` at `out` only if nothing is there: a hard link, or an exclusive
+ * copy where the filesystem has no hard links (exFAT, some network mounts).
+ */
+function placeExclusive(tmp: string, out: string): void {
+  const conflict = () =>
+    new CliError(
+      "CONFLICT",
+      `File already exists: ${out} (pass --force to overwrite)`,
+    );
+  try {
+    linkSync(tmp, out);
+    return;
+  } catch (err) {
+    if (errCode(err) === "EEXIST") throw conflict();
+  }
+  try {
+    copyFileSync(tmp, out, constants.COPYFILE_EXCL);
+  } catch (err) {
+    throw errCode(err) === "EEXIST" ? conflict() : err;
+  }
+}
+
+/**
+ * Temp file in the same folder, mode 0600, then moved to `out`: renamed over
+ * it with `force`, else placed only if no file appeared since the check.
+ */
+function writeExportFile(out: string, text: string, force: boolean): void {
   const tmp = join(
     dirname(out),
-    `.${basename(out)}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`,
+    `.cf-export.${process.pid}.${randomBytes(4).toString("hex")}.tmp`,
   );
   try {
     writeFileSync(tmp, text, { flag: "wx", mode: 0o600 });
     chmodSync(tmp, 0o600);
-    renameSync(tmp, out);
+    if (force) {
+      renameSync(tmp, out);
+    } else {
+      placeExclusive(tmp, out);
+      unlinkSync(tmp);
+    }
   } catch (err) {
     try {
       unlinkSync(tmp);
@@ -1097,7 +1123,7 @@ async function exportSession(ref: string, opts: ExportOpts) {
   }
   if (out) {
     checkExportTarget(out, !!opts.force);
-    writeExportFile(out, r.fullMarkdown);
+    writeExportFile(out, r.fullMarkdown, !!opts.force);
   }
   return { ref: t.ref, out, fallbackReason, ...r };
 }

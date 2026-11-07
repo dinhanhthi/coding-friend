@@ -466,6 +466,32 @@ describe("cf doctor session retention", () => {
     );
   });
 
+  it("gives no legacy mv hint when session.dir is the legacy folder itself", async () => {
+    const fsx = await realFs();
+    const project = join(home, "proj");
+    const legacyDir = join(project, "docs", "sessions");
+    writeFile(
+      fsx,
+      join(legacyDir, "old", "meta.json"),
+      JSON.stringify({
+        sessionId: SAVED_OLD,
+        label: "old",
+        savedAt: new Date().toISOString(),
+      }),
+    );
+    writeFile(
+      fsx,
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ session: { dir: legacyDir } }),
+    );
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      stdout.push(args.join(" "));
+    });
+
+    await doctorCommand("9.9.9", { projectDir: project });
+    expect(stdout.join("\n")).not.toContain(" && mv ");
+  });
+
   it("never echoes a settings value other than cleanupPeriodDays", async () => {
     const fsx = await realFs();
     const project = join(home, "proj");

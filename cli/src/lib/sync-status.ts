@@ -9,13 +9,13 @@ import {
   type CloudRoot,
 } from "./cloud-folders.js";
 import { resolveLearnDir, resolveSessionDir } from "./config.js";
+import { isPlaceholderFolder } from "./session.js";
 import type { CodingFriendConfig } from "../types.js";
 
 /** Walk budget per kind: stop after this many directory entries. */
 export const MAX_SYNC_ENTRIES = 20000;
 
 const LEGACY_ICLOUD = /^\.(.+)\.icloud$/;
-const SAVED_FILES = ["meta.json", "session.jsonl"];
 
 export interface SyncKindStatus {
   kind: "learn" | "sessions";
@@ -143,17 +143,7 @@ function walkSessions(dir: string, cloud: CloudRoot | null, budget: Budget) {
       conflicts += countConflicts(set, set, oneDrive);
     }
 
-    const placeholder = SAVED_FILES.some((name) => {
-      if (lstatOrNull(join(folderDir, `.${name}.icloud`))?.isFile())
-        return true;
-      const st = lstatOrNull(join(folderDir, name));
-      return (
-        cloud !== null &&
-        st !== null &&
-        isCloudPlaceholder(name, st, process.platform)
-      );
-    });
-    if (placeholder) placeholders++;
+    if (isPlaceholderFolder(folderDir, cloud !== null)) placeholders++;
   }
   conflicts += countConflicts(folders, new Set(folders), oneDrive);
   return { files: folders.length, placeholders, conflicts };

@@ -47,6 +47,17 @@ const HEAD_READS_PER_LIMIT = 4;
 const ID_RE = /^[A-Za-z0-9._-]{1,200}$/;
 const ICLOUD_RE = /^\.(.+)\.jsonl\.icloud$/;
 const NO_RECORDS = "no recognizable records";
+/** A transcript's `version`, kept only in this shape (it reaches show JSON and export Markdown). */
+export const VERSION_RE = /^[0-9A-Za-z.+-]{1,32}$/;
+const ISO_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
+
+/** An ISO-8601 timestamp that parses; anything else is ignored. */
+export function isIsoTimestamp(v: unknown): v is string {
+  return (
+    typeof v === "string" && ISO_RE.test(v) && !Number.isNaN(Date.parse(v))
+  );
+}
 
 interface Entry {
   id: string;
@@ -265,10 +276,14 @@ class Parser {
     }
     this.recognized++;
     if (!this.cwd && typeof rec.cwd === "string") this.cwd = rec.cwd;
-    if (this.version === undefined && typeof rec.version === "string") {
+    if (
+      this.version === undefined &&
+      typeof rec.version === "string" &&
+      VERSION_RE.test(rec.version)
+    ) {
       this.version = rec.version;
     }
-    if (typeof rec.timestamp === "string") {
+    if (isIsoTimestamp(rec.timestamp)) {
       if (!this.startedAt) this.startedAt = rec.timestamp;
       this.lastAt = rec.timestamp;
     }

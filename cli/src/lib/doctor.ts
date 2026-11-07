@@ -9,7 +9,7 @@ import {
 } from "fs";
 import { createConnection } from "net";
 import { homedir } from "os";
-import { basename, join } from "path";
+import { basename, join, resolve } from "path";
 import { isMemoryInitialized } from "../commands/memory.js";
 import {
   ConfigSchema,
@@ -989,7 +989,10 @@ export function collectProjectChecks(root: string): DoctorCheck[] {
     ...(legacy.length > 0
       ? {
           detail: `${legacy.length} session(s) in ${legacyDir}`,
-          hint: `mkdir -p ${quotePath(sessionDir)} && mv ${quotePath(legacyDir)}/* ${quotePath(sessionDir)}/`,
+          // No move hint when session.dir already is the legacy folder.
+          ...(resolve(sessionDir) !== resolve(legacyDir) && {
+            hint: `mkdir -p ${quotePath(sessionDir)} && mv ${quotePath(legacyDir)}/* ${quotePath(sessionDir)}/`,
+          }),
         }
       : { detail: "none" }),
   });

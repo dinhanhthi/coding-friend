@@ -4,9 +4,12 @@
 // Invariant: a `[REDACTED:<kind>]` marker never re-matches any pattern, so a
 // second `redactText` pass over its own output always counts 0. Free-value
 // groups (generic value, Bearer token, URL userinfo, webhook path) start with
-// `(?!\[REDACTED:)`; fixed-prefix vendor patterns cannot match a marker.
+// `(?!\[REDACTED:)`; fixed-prefix vendor patterns cannot match a marker. A
+// generic value also never starts with the truncation ellipsis `…`, so a cut
+// that leaves `key=…` is not redacted again.
 
 const NOT_MARKER = String.raw`(?!\[REDACTED:)`;
+const NOT_MARKER_OR_CUT = String.raw`(?!\[REDACTED:|…)`;
 // Not preceded by a letter or digit. Unlike `\b`, `_` counts as a boundary, so
 // `my_sk_live_…` is still caught while `task-…` is not taken for `sk-…`.
 const START = String.raw`(?<![A-Za-z0-9])`;
@@ -87,6 +90,18 @@ const RULES: Rule[] = [
     keepPrefix: true,
   },
   {
+    // Only after an Authorization header (also as a JSON key), so prose such
+    // as "Basic authentication" is left alone.
+    kind: "basic",
+    re: new RegExp(
+      String.raw`(\bAuthorization(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?Basic\s+)` +
+        NOT_MARKER +
+        String.raw`[A-Za-z0-9+/=]{8,}`,
+      "gi",
+    ),
+    keepPrefix: true,
+  },
+  {
     kind: "url-userinfo",
     re: new RegExp(
       String.raw`(\b[a-z][a-z0-9+.-]*://)` +
@@ -101,16 +116,21 @@ const RULES: Rule[] = [
     // quote after the key matches serialized JSON (`"password":"…"`), also
     // when nested and escaped (`\"password\":\"…\"`). Only the value is
     // replaced: a quoted value up to its closing quote (spaces allowed, any
-    // length), otherwise up to whitespace, a quote or `,;&}`.
+    // length), otherwise up to whitespace, a quote or `,;&}`. A `--password`
+    // style flag also takes its value after spaces or tabs on the same line.
     kind: "generic",
     re: new RegExp(
-      String.raw`((?:key|secret|token|password|passwd|pwd|api_key)(?:\\?['"])?\s*[:=]\s*)` +
+      String.raw`((?:secret_key_base|passphrase|key|secret|token|password|passwd|pwd|api_key)(?:\\?['"])?\s*[:=]\s*|--(?:password|passwd|pwd|passphrase|secret|token|api-key|api_key)[ \t]+)` +
         "(?:" +
         [
-          String.raw`(\\")` + NOT_MARKER + String.raw`(?:(?!\\")[^\r\n])+`,
-          `(")` + NOT_MARKER + String.raw`(?:[^"\\\r\n]|\\.)+`,
-          `(')` + NOT_MARKER + String.raw`(?:[^'\\\r\n]|\\.)+`,
-          String.raw`(?!\\?["'])` + NOT_MARKER + String.raw`[^\s'",;&}]+`,
+          String.raw`(\\")` +
+            NOT_MARKER_OR_CUT +
+            String.raw`(?:(?!\\")[^\r\n])+`,
+          `(")` + NOT_MARKER_OR_CUT + String.raw`(?:[^"\\\r\n]|\\.)+`,
+          `(')` + NOT_MARKER_OR_CUT + String.raw`(?:[^'\\\r\n]|\\.)+`,
+          String.raw`(?!\\?["'])` +
+            NOT_MARKER_OR_CUT +
+            String.raw`[^\s'",;&}]+`,
         ].join("|") +
         ")",
       "gi",

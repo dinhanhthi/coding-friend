@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { join } from "path";
 import { homedir } from "os";
 import { encodeProjectPath, resolvePath } from "../paths.js";
-import { remapProjectPath } from "../session.js";
 
 // ─── encodeProjectPath ──────────────────────────────────────────────
 
@@ -41,47 +40,5 @@ describe("resolvePath — Windows compatibility", () => {
 
   it("still expands ~/", () => {
     expect(resolvePath("~/projects")).toBe(join(homedir(), "projects"));
-  });
-});
-
-// ─── remapProjectPath — Windows paths ───────────────────────────────
-
-describe("remapProjectPath — Windows compatibility", () => {
-  it("remaps Unix /Users/<name> paths", () => {
-    const result = remapProjectPath("/Users/alice/git/foo", "/Users/bob");
-    expect(result).toBe("/Users/bob/git/foo");
-  });
-
-  it("remaps Unix /home/<name> paths", () => {
-    const result = remapProjectPath("/home/alice/git/foo", "/home/bob");
-    expect(result).toBe("/home/bob/git/foo");
-  });
-
-  it("remaps Windows C:\\Users\\<name> paths", () => {
-    const result = remapProjectPath(
-      "C:\\Users\\alice\\git\\foo",
-      "C:\\Users\\bob",
-    );
-    expect(result).toBe("C:\\Users\\bob\\git\\foo");
-  });
-
-  it("handles Windows path with only home dir (no trailing subpath)", () => {
-    const result = remapProjectPath("C:\\Users\\alice", "C:\\Users\\bob");
-    expect(result).toBe("C:\\Users\\bob");
-  });
-
-  it("returns non-matching paths unchanged", () => {
-    expect(remapProjectPath("/opt/data", "/Users/bob")).toBe("/opt/data");
-    expect(remapProjectPath("D:\\Data\\project", "/Users/bob")).toBe(
-      "D:\\Data\\project",
-    );
-  });
-
-  it("returns path unchanged when home is the same (Windows)", () => {
-    const result = remapProjectPath(
-      "C:\\Users\\alice\\git\\foo",
-      "C:\\Users\\alice",
-    );
-    expect(result).toBe("C:\\Users\\alice\\git\\foo");
   });
 });

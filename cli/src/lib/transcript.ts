@@ -395,6 +395,8 @@ export async function renderMarkdown(
     if (piece.kind !== "tool") {
       if (removed(piece.seg)) continue;
       const heading = piece.kind === "user" ? "## User" : "## Assistant";
+      // A `- tool:` line just before needs a blank line above the heading.
+      if (lines[lines.length - 1] !== "") lines.push("");
       lines.push(heading, "", seg[piece.seg], "");
       continue;
     }

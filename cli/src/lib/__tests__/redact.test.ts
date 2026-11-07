@@ -51,6 +51,13 @@ const SHORT_AND_QUOTED = [
   }),
 ];
 const LONG_GITHUB = "gh" + "p_" + x(48);
+// Flag values after a space, Basic auth and two more secret names.
+const MORE_FORMS = [
+  "mysql --pass" + "word hunter2 -u root",
+  "Authorization: Basic " + x(24) + "==",
+  "pass" + "phrase=opensesame",
+  "secret_key" + "_base: " + x(32),
+];
 
 const total = (counts: Record<string, number>) =>
   Object.values(counts).reduce((a, b) => a + b, 0);
@@ -112,6 +119,19 @@ describe("redactText", () => {
     expect(text).toContain("[REDACTED:github]");
   });
 
+  it("redacts --flag values, Basic auth, passphrase and secret_key_base", () => {
+    const { text } = redactText(MORE_FORMS.join("\n"), {});
+    for (const leak of ["hunter2", x(24), "opensesame", x(32)]) {
+      expect(text).not.toContain(leak);
+    }
+    expect(text).toContain("--password [REDACTED:");
+    expect(text).toContain(" -u root");
+    expect(text).toContain("Authorization: Basic [REDACTED:");
+    // A flag at the end of a line does not take the next line as its value.
+    const prose = "use --pass" + "word\nflag";
+    expect(redactText(prose, {})).toEqual({ text: prose, counts: {} });
+  });
+
   it("replaces the home directory with ~ after secrets", () => {
     const { text, counts } = redactText(
       "open /Users/fake/proj/a.ts and /Users/fakeother/b",
@@ -131,6 +151,7 @@ describe("redactText", () => {
       JSON.stringify({ token: x(20) }),
       "/Users/fake/notes",
       ...SHORT_AND_QUOTED,
+      ...MORE_FORMS,
       LONG_GITHUB,
     ].join("\n");
     const first = redactText(input, { home: "/Users/fake" });

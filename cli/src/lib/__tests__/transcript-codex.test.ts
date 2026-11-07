@@ -119,6 +119,38 @@ describe("codexProvider", () => {
     });
   });
 
+  it("reads custom_tool_call / custom_tool_call_output as tool turns", async () => {
+    writeFileSync(
+      join(dayDir, `rollout-${STAMP}-${THREAD}.jsonl`),
+      jsonl([
+        {
+          timestamp: "2026-11-01T10:00:00.000Z",
+          type: "session_meta",
+          payload: { id: THREAD, cwd: root, cli_version: "0.130.0" },
+        },
+        item({
+          type: "custom_tool_call",
+          status: "completed",
+          call_id: "call_1",
+          name: "exec",
+          input: "ls -la",
+        }),
+        item({
+          type: "custom_tool_call_output",
+          call_id: "call_1",
+          output: [{ type: "input_text", text: "a.txt" }],
+        }),
+      ]),
+    );
+
+    const t = await codexProvider.read({ kind: "codex", id: THREAD }, {});
+
+    expect(t.turns).toEqual([
+      { kind: "tool", name: "exec", args: "ls -la", output: "a.txt" },
+    ]);
+    expect(t.summary.status).toBe("ok");
+  });
+
   it("lists a compressed rollout as unsupported without opening it", async () => {
     writeFileSync(
       join(dayDir, `rollout-${STAMP}-${THREAD}.jsonl.zst`),

@@ -482,6 +482,8 @@ export function resolveLearnDir(
 /**
  * Resolve the saved-session store — global config only.
  * Priority: explicit arg > globalCfg.session.dir > ~/.coding-friend/sessions
+ * A relative session.dir is ignored: it would resolve against cwd, maybe a
+ * project work tree where verbatim transcripts could be committed.
  */
 export function resolveSessionDir(
   globalCfg: CodingFriendConfig | null,
@@ -490,8 +492,9 @@ export function resolveSessionDir(
   if (explicitPath) {
     return resolvePath(explicitPath);
   }
-  if (globalCfg?.session?.dir) {
-    return resolvePath(globalCfg.session.dir);
+  const dir = globalCfg?.session?.dir;
+  if (dir && (isAbsolute(dir) || dir.startsWith("~/"))) {
+    return resolvePath(dir);
   }
   return resolvePath("~/.coding-friend/sessions");
 }
