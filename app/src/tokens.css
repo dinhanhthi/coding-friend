@@ -1,25 +1,28 @@
-/* Copied from website/src/app/tokens.css — keep in sync.
- * Coral (monochrome ink · shadcn-zinc) · light + dark (:root[data-theme="dark"]) · anchor hue 264
- * Fonts come from @fontsource-variable (see main.tsx + index.css @theme), so no --font-* here.
+/* App-only design tokens. Color values copied once from Rex merino-light /
+ * merino-dark (themes.json -> cssVariables, SuperUI_SuperDesignTokens.bundle of
+ * /Applications/Rex Beta.app) on 2026-11-06. NOT synced with the website.
+ * Light in :root, dark via :root[data-theme="dark"].
  */
 :root {
   color-scheme: light;
-  --color-paper: oklch(99% 0.003 264);
-  --color-paper-2: oklch(97% 0.004 264);
-  --color-paper-3: oklch(94.5% 0.006 264);
-  --color-ink: oklch(20% 0.012 264);
-  --color-ink-2: oklch(32% 0.01 264);
-  --color-muted: oklch(48% 0.012 264);
-  --color-rule: oklch(90% 0.008 264);
-  --color-rule-strong: oklch(84% 0.01 264);
-  --color-accent: oklch(20% 0.012 264);
-  --color-accent-ink: oklch(99% 0.003 264);
-  --color-focus: oklch(48% 0.14 264);
-  --color-hover: oklch(96% 0.005 264);
-  --color-danger: oklch(52% 0.18 25);
-  --color-success: oklch(48% 0.14 155);
-  /* Local extra — zoom modal / palette backdrop */
-  --color-scrim: oklch(20% 0.012 264 / 0.35);
+  --color-canvas: rgb(246 247 249);
+  --color-paper: rgb(248 249 251);
+  --color-paper-2: rgb(250 251 252);
+  --color-paper-3: rgb(31 35 40 / 0.079);
+  --color-control: rgb(31 35 40 / 0.019);
+  --color-hover: rgb(31 35 40 / 0.041);
+  --color-ink: rgb(31 35 40);
+  --color-ink-2: rgb(31 35 40);
+  --color-muted: rgb(105 109 113);
+  --color-rule: rgb(231 233 235);
+  --color-rule-strong: rgb(209 210 213);
+  --color-accent: rgb(9 105 218);
+  --color-accent-ink: rgb(255 255 255);
+  --color-focus: rgb(6 103 216);
+  --color-danger: rgb(207 34 46);
+  --color-success: rgb(17 99 41);
+  --color-warning: rgb(157 92 0);
+  --color-info: rgb(6 103 216);
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
@@ -49,6 +52,7 @@
   --dur-long: 420ms;
 
   --radius-sm: 0.5rem;
+  --radius-pane: 0.625rem;
   --radius-card: 0.75rem;
   --radius-input: 0.75rem;
   --radius-pill: 999px;
@@ -61,19 +65,22 @@
 /* Dark theme — applied via the data-theme attribute on <html> */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-paper: oklch(15% 0.005 264);
-  --color-paper-2: oklch(19% 0.006 264);
-  --color-paper-3: oklch(24% 0.008 264);
-  --color-ink: oklch(96% 0.004 264);
-  --color-ink-2: oklch(88% 0.006 264);
-  --color-muted: oklch(70% 0.01 264);
-  --color-rule: oklch(28% 0.008 264);
-  --color-rule-strong: oklch(36% 0.01 264);
-  --color-accent: oklch(96% 0.004 264);
-  --color-accent-ink: oklch(15% 0.005 264);
-  --color-focus: oklch(72% 0.14 264);
-  --color-hover: oklch(21% 0.006 264);
-  --color-danger: oklch(70% 0.17 25);
-  --color-success: oklch(72% 0.14 155);
-  --color-scrim: oklch(10% 0.005 264 / 0.6);
+  --color-canvas: rgb(12 14 17);
+  --color-paper: rgb(15 19 25);
+  --color-paper-2: rgb(30 32 35);
+  --color-paper-3: rgb(230 237 243 / 0.073);
+  --color-control: rgb(230 237 243 / 0.021);
+  --color-hover: rgb(230 237 243 / 0.042);
+  --color-ink: rgb(230 237 243);
+  --color-ink-2: rgb(230 237 243);
+  --color-muted: rgb(130 135 140);
+  --color-rule: rgb(46 49 53);
+  --color-rule-strong: rgb(66 69 73);
+  --color-accent: rgb(47 129 247);
+  --color-accent-ink: rgb(13 17 23);
+  --color-focus: rgb(52 133 250);
+  --color-danger: rgb(255 123 114);
+  --color-success: rgb(63 185 80);
+  --color-warning: rgb(210 153 34);
+  --color-info: rgb(88 166 255);
 }

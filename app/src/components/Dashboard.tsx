@@ -211,7 +211,7 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
   };
 
   return (
-    <div className="flex h-screen bg-paper text-ink">
+    <div className="flex h-screen bg-canvas text-ink">
       <Sidebar
         view={view}
         onView={show}
@@ -224,42 +224,53 @@ export function Dashboard({ cli }: { cli: CliStatus }) {
         pending={pending}
         supervisor={supervisor}
       />
-      <main className="min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
-        {view === "projects" ? (
-          selected ? (
-            <ProjectDetail
-              project={selected}
-              activity={detail}
+      <main className="my-1.5 mr-1.5 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-pane border border-rule bg-paper">
+        <div className="min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
+          {view === "projects" ? (
+            selected ? (
+              <ProjectDetail
+                project={selected}
+                activity={detail}
+                pending={pending}
+                onSetConfig={setConfig}
+                run={start}
+                onOpenLearn={openLearnStorage}
+              />
+            ) : projects.status === "ok" ? (
+              <NoProjects onAdd={add} disabled={pending !== null} />
+            ) : null
+          ) : view === "doctor" ? (
+            <DoctorView
+              cli={cli}
+              doctor={doctor}
               pending={pending}
-              onSetConfig={setConfig}
-              run={start}
+              onFix={fix}
+            />
+          ) : view === "settings" ? (
+            <SettingsView
+              pending={pending}
+              onSet={setConfig}
               onOpenLearn={openLearnStorage}
             />
-          ) : projects.status === "ok" ? (
-            <NoProjects onAdd={add} disabled={pending !== null} />
-          ) : null
-        ) : view === "doctor" ? (
-          <DoctorView cli={cli} doctor={doctor} pending={pending} onFix={fix} />
-        ) : view === "settings" ? (
-          <SettingsView
-            pending={pending}
-            onSet={setConfig}
-            onOpenLearn={openLearnStorage}
-          />
-        ) : view === "learn" ? (
-          <LearnView pending={pending} run={start} openStorage={learnStorage} />
-        ) : view === "sessions" ? (
-          <SessionsView projects={list} pending={pending} run={start} />
-        ) : (
-          <VersionView
-            cli={cli}
-            version={version}
-            check={check}
-            pending={pending}
-            outcome={updateOutcome}
-            onUpdate={update}
-          />
-        )}
+          ) : view === "learn" ? (
+            <LearnView
+              pending={pending}
+              run={start}
+              openStorage={learnStorage}
+            />
+          ) : view === "sessions" ? (
+            <SessionsView projects={list} pending={pending} run={start} />
+          ) : (
+            <VersionView
+              cli={cli}
+              version={version}
+              check={check}
+              pending={pending}
+              outcome={updateOutcome}
+              onUpdate={update}
+            />
+          )}
+        </div>
       </main>
     </div>
   );

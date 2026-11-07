@@ -1,5 +1,4 @@
 import {
-  FolderKanban,
   GraduationCap,
   Info,
   MessagesSquare,
@@ -27,13 +26,17 @@ import { cn } from "@/lib/utils";
 export type View =
   "projects" | "learn" | "sessions" | "doctor" | "version" | "settings";
 
-const VIEWS: { id: View; label: string; icon: LucideIcon }[] = [
-  { id: "projects", label: "Projects", icon: FolderKanban },
+type ViewEntry = { id: View; label: string; icon: LucideIcon };
+
+const TOP_VIEWS: ViewEntry[] = [
   { id: "learn", label: "Learn", icon: GraduationCap },
   { id: "sessions", label: "Sessions", icon: MessagesSquare },
   { id: "doctor", label: "Doctor", icon: Stethoscope },
-  { id: "version", label: "Version", icon: Info },
+];
+
+const BOTTOM_VIEWS: ViewEntry[] = [
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "version", label: "Version", icon: Info },
 ];
 
 export function Sidebar({
@@ -65,11 +68,30 @@ export function Sidebar({
   const reason =
     pending && pending.op !== "projectRemove" ? describePending(pending) : null;
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-rule bg-paper-2">
-      <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-        <h1 className="flex-1 text-sm font-semibold tracking-tight">
-          Coding Friend
-        </h1>
+    <aside className="flex w-60 shrink-0 flex-col select-none">
+      {/* Overlay titlebar: the traffic lights sit on this strip. */}
+      <div data-tauri-drag-region className="h-13 shrink-0">
+        <h1 className="sr-only">Coding Friend</h1>
+      </div>
+
+      <nav aria-label="Views" className="flex flex-col gap-px px-2.5">
+        {TOP_VIEWS.map((entry) => (
+          <ViewRow
+            key={entry.id}
+            entry={entry}
+            selected={view === entry.id}
+            onView={onView}
+          />
+        ))}
+      </nav>
+
+      <div className="mt-4 flex h-7 items-center pr-2.5 pl-4.5">
+        <h2
+          id="sidebar-projects"
+          className="flex-1 text-[11px] font-semibold text-muted"
+        >
+          Projects
+        </h2>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -82,7 +104,10 @@ export function Sidebar({
         </Button>
       </div>
 
-      <nav aria-label="Projects" className="min-h-0 flex-1 overflow-auto px-2">
+      <nav
+        aria-labelledby="sidebar-projects"
+        className="min-h-0 flex-1 overflow-auto px-2.5"
+      >
         <ProjectItems
           projects={projects}
           selectedPath={selectedPath}
@@ -93,7 +118,7 @@ export function Sidebar({
       </nav>
 
       {(projects.data?.warning || actionError || reason) && (
-        <div className="flex flex-col gap-1 px-4 py-2 text-xs break-words">
+        <div className="flex flex-col gap-1 px-4.5 py-2 text-xs break-words">
           {projects.data?.warning && (
             <p className="text-muted">{projects.data.warning}</p>
           )}
@@ -106,27 +131,48 @@ export function Sidebar({
         </div>
       )}
 
-      <footer className="flex flex-col gap-2 border-t border-rule p-2">
-        <SupervisorLine supervisor={supervisor} />
-        <nav aria-label="Views" className="grid grid-cols-2 gap-1">
-          {VIEWS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              aria-current={view === id ? "page" : undefined}
-              onClick={() => onView(id)}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ink-2 outline-none last:odd:col-span-2 hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-focus",
-                view === id && "bg-paper-3 font-medium text-ink",
-              )}
-            >
-              <Icon aria-hidden className="size-3.5" />
-              {label}
-            </button>
+      <footer className="flex flex-col gap-px px-2.5 pt-2 pb-2.5">
+        <nav aria-label="App" className="flex flex-col gap-px">
+          {BOTTOM_VIEWS.map((entry) => (
+            <ViewRow
+              key={entry.id}
+              entry={entry}
+              selected={view === entry.id}
+              onView={onView}
+            />
           ))}
         </nav>
+        <SupervisorLine supervisor={supervisor} />
       </footer>
     </aside>
+  );
+}
+
+function ViewRow({
+  entry: { id, label, icon: Icon },
+  selected,
+  onView,
+}: {
+  entry: ViewEntry;
+  selected: boolean;
+  onView: (view: View) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-current={selected ? "page" : undefined}
+      onClick={() => onView(id)}
+      className={cn(
+        "flex h-7 w-full items-center gap-2 rounded-md px-2 text-[13px] text-ink outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+        selected && "bg-paper-3 font-medium hover:bg-paper-3",
+      )}
+    >
+      <Icon
+        aria-hidden
+        className={cn("size-4 text-muted", selected && "text-accent")}
+      />
+      {label}
+    </button>
   );
 }
 
@@ -193,13 +239,13 @@ function ProjectItems({
               onClick={() => onSelect(project.path)}
               title={project.path}
               className={cn(
-                "flex min-w-0 flex-1 flex-col rounded-md py-1.5 pr-9 pl-2 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+                "flex min-w-0 flex-1 flex-col rounded-md py-1 pr-8 pl-2 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
                 selected && "bg-paper-3 hover:bg-paper-3",
               )}
             >
               <span
                 className={cn(
-                  "flex items-center gap-1.5 text-sm",
+                  "flex items-center gap-1.5 text-[13px]",
                   !project.exists && "text-muted",
                 )}
               >

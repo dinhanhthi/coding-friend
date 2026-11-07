@@ -2,11 +2,13 @@
 @import "tw-animate-css";
 @import "./tokens.css";
 
-/* Token mapping — same as website/src/app/globals.css @theme inline. */
+/* Token mapping — app-only (Rex merino), see tokens.css. */
 @theme inline {
+  --color-canvas: var(--color-canvas);
   --color-paper: var(--color-paper);
   --color-paper-2: var(--color-paper-2);
   --color-paper-3: var(--color-paper-3);
+  --color-control: var(--color-control);
   --color-ink: var(--color-ink);
   --color-ink-2: var(--color-ink-2);
   --color-muted: var(--color-muted);
@@ -18,18 +20,17 @@
   --color-hover: var(--color-hover);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
-  --color-scrim: var(--color-scrim);
+  --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
+  --radius-pane: var(--radius-pane);
   --font-sans:
-    "Geist Variable", -apple-system, "system-ui", "Segoe UI", system-ui,
-    sans-serif;
-  --font-mono:
-    "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
   body {
-    background: var(--color-paper);
+    background: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;

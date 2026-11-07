@@ -46,8 +46,9 @@ export function CliGate({
     return (
       <div
         aria-busy="true"
-        className="grid h-screen place-items-center bg-paper"
+        className="grid h-screen place-items-center bg-canvas"
       >
+        <DragStrip />
         {cli.showSpinner && (
           <p className="flex items-center gap-2 text-sm text-muted">
             <Spinner label="Checking the Coding Friend CLI" />
@@ -69,6 +70,20 @@ export function CliGate({
       error={error}
       checking={cli.refreshing}
       onRecheck={cli.refetch}
+    />
+  );
+}
+
+/**
+ * The window has an overlay titlebar, so the gate (no sidebar) needs its own drag strip.
+ * Kept off `main` itself: a drag region blocks text selection in the commands below.
+ */
+function DragStrip() {
+  return (
+    <div
+      aria-hidden
+      data-tauri-drag-region
+      className="fixed inset-x-0 top-0 z-10 h-13 bg-canvas"
     />
   );
 }
@@ -116,7 +131,8 @@ function GateScreen({
   };
 
   return (
-    <main className="grid min-h-screen place-items-center bg-paper p-8">
+    <main className="grid min-h-screen place-items-center bg-canvas px-8 pt-13 pb-8">
+      <DragStrip />
       <section
         aria-labelledby="gate-title"
         className="flex w-full max-w-lg flex-col gap-5"

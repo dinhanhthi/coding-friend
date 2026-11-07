@@ -8,7 +8,7 @@ It needs `cf` (the `coding-friend-cli` npm package) with `cf doctor`. If `cf` is
 
 ## Development
 
-The frontend is Vite + React 19 + Tailwind v4, with the website's design tokens (`src/tokens.css`, copied from `website/src/app/tokens.css`; keep them in sync). It follows the system light/dark appearance.
+The frontend is Vite + React 19 + Tailwind v4, with its own design tokens (`src/tokens.css`, Rex merino-light/merino-dark values copied once; not synced with the website), the macOS system font, and an overlay titlebar. It follows the system light/dark appearance.
 
 ```bash
 cd app
