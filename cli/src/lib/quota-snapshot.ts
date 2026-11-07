@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync } from "fs";
+import { closeSync, constants, fstatSync, openSync, readSync } from "fs";
 import { resolve } from "path";
 import {
   MEASURED_AT_MAX_SKEW_S,
@@ -137,13 +137,28 @@ function parseSnapshot(v: unknown): QuotaSnapshot | null {
 export function readQuotaSnapshot(
   path: string = quotaSnapshotPath(),
 ): QuotaSnapshot | null {
+  // O_NOFOLLOW refuses a symlink (e.g. to /dev/zero) at open, with no
+  // lstat-then-read race; O_NONBLOCK keeps a FIFO from hanging; fstat checks
+  // the opened file itself.
+  let fd: number;
   try {
-    // lstat: a symlink (e.g. to /dev/zero) or a FIFO must not be followed or hang.
-    const st = lstatSync(path);
-    if (!st.isFile() || st.size > MAX_SNAPSHOT_BYTES) return null;
-    return parseSnapshot(JSON.parse(readFileSync(path, "utf-8")));
+    fd = openSync(
+      path,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
   } catch {
     return null;
+  }
+  try {
+    const st = fstatSync(fd);
+    if (!st.isFile() || st.size > MAX_SNAPSHOT_BYTES) return null;
+    const buf = Buffer.alloc(st.size);
+    const n = readSync(fd, buf, 0, buf.length, 0);
+    return parseSnapshot(JSON.parse(buf.subarray(0, n).toString("utf-8")));
+  } catch {
+    return null;
+  } finally {
+    closeSync(fd);
   }
 }
 

@@ -15,12 +15,14 @@
 # the injected context, with "Before context is compacted" rewritten to
 # "Context was just compacted".
 #
-# Marker dir defaults to /tmp; CF_DEVIN_MARKER_DIR overrides it (tests).
+# Marker dir: the private per-user dir memory-capture.devin.sh writes,
+# ${TMPDIR:-/tmp}/coding-friend-<uid>, ignored when it is a symlink or not
+# owned by the user. CF_DEVIN_MARKER_DIR overrides it (tests).
 
 set -uo pipefail
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-MARKER_DIR="${CF_DEVIN_MARKER_DIR:-/tmp}"
+MARKER_DIR="${CF_DEVIN_MARKER_DIR:-${TMPDIR:-/tmp}/coding-friend-$(id -u)}"
 
 INPUT=$(cat)
 
@@ -35,7 +37,7 @@ REMINDER_OUT=$(printf '%s' "$INPUT" | "$PLUGIN_ROOT/hooks/rules-reminder.sh" 2>/
 # ── Compaction marker → deferred memory-capture prompt ──
 CAPTURE_OUT=""
 MARKER="$MARKER_DIR/cf-devin-compacted-$SESSION_ID"
-if [ -f "$MARKER" ]; then
+if [ ! -L "$MARKER_DIR" ] && [ -O "$MARKER_DIR" ] && [ -f "$MARKER" ]; then
   rm -f "$MARKER"
   CAPTURE_OUT=$(printf '%s' "$INPUT" | "$PLUGIN_ROOT/hooks/memory-capture.sh" 2>/dev/null \
     | sed 's/Before context is compacted/Context was just compacted/g' || true)

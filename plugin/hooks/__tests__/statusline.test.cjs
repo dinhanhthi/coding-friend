@@ -329,13 +329,15 @@ describe("statusline.sh quota snapshot", () => {
       fs.mkdirSync(quotaDir, { mode: 0o700 });
       const old = new Date(Date.now() - 2 * 3600 * 1000);
       const keep = path.join(quotaDir, ".claude.json");
+      const keepDotted = path.join(quotaDir, ".claude.v2.bak");
       const stale = path.join(quotaDir, ".claude.Ab12Cd");
-      for (const file of [keep, stale]) {
+      for (const file of [keep, keepDotted, stale]) {
         fs.writeFileSync(file, "x");
         fs.utimesSync(file, old, old);
       }
       runStatusline(binWithJq);
       expect(fs.existsSync(keep)).toBe(true);
+      expect(fs.existsSync(keepDotted)).toBe(true);
       expect(fs.existsSync(stale)).toBe(false);
     },
   );
@@ -348,5 +350,23 @@ describe("statusline.sh quota snapshot", () => {
     runStatusline(binWithJq);
     expect(fs.lstatSync(snapshot).isSymbolicLink()).toBe(true);
     expect(fs.readFileSync(target, "utf8")).toBe("keep");
+  });
+
+  itWithJq("refuses to write through a symlinked quota dir", () => {
+    const elsewhere = path.join(run, "elsewhere");
+    fs.mkdirSync(elsewhere, { mode: 0o755 });
+    fs.symlinkSync(elsewhere, quotaDir);
+    runStatusline(binWithJq);
+    expect(fs.lstatSync(quotaDir).isSymbolicLink()).toBe(true);
+    expect(fs.readdirSync(elsewhere)).toEqual([]);
+    expect(fs.statSync(elsewhere).mode & 0o777).toBe(0o755);
+  });
+
+  itWithJq("keeps the mode of a pre-existing quota dir", () => {
+    fs.mkdirSync(quotaDir);
+    fs.chmodSync(quotaDir, 0o750);
+    runStatusline(binWithJq);
+    expect(fs.existsSync(snapshot)).toBe(true);
+    expect(fs.statSync(quotaDir).mode & 0o777).toBe(0o750);
   });
 });

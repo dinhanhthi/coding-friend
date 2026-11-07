@@ -76,7 +76,7 @@ describe("session-init.agy.sh", () => {
       expect(msg).toContain("MAIN_REPO_ROOT");
       expect(msg).toContain(workspace);
       expect(msg).toContain("PROJECT_TYPE: single-repo");
-      expect(msg).not.toContain("You have the coding-friend toolkit loaded");
+      expect(msg).not.toContain("## Security: Content Isolation");
       expect(msg.length).toBeLessThan(12000);
     } finally {
       fs.rmSync(workspace, { recursive: true, force: true });

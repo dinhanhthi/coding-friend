@@ -1,8 +1,6 @@
 // The state contract of coding-friend-mods. Later features add their keys
 // to the "coding-friend-mods" entry below.
 
-export type ModsSession = { isInteractive: boolean };
-
 /** One Claude quota window as the band draws it (from the quota snapshot). */
 export type ModsQuotaWindow = {
   kind: "five_hour" | "seven_day";

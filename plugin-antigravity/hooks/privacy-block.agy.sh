@@ -610,23 +610,41 @@ function stdinShell(cmds) {
 const URL_RE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s;&|<>()`$'"\\{}*]*$/;
 const urlWord = (w) => w.some((x) => x.q !== 0) && URL_RE.test(text(w));
 // segments(items) — the words of each command segment: the line split at
-// | |& || && & ; and newline outside any ( $( <( >( or `...` (so sudo
-// $(true; echo -s) -c '...' stays one segment; units() keeps >& and &> as
-// redirections). An opener that never closes keeps the rest of the line in
-// its segment.
+// | |& || && & ; and newline outside any ( $( <( >(, ${...} or `...` (so
+// sudo $(true; echo -s) -c '...' and sudo ${X:+;} -s '...' stay one segment;
+// units() keeps >& and &> as redirections). An opener that never closes keeps
+// the rest of the line in its segment.
 const SEGMENT_END = new Set(["|", "|&", "||", "&&", "&", ";", "\n"]);
 function segments(items) {
   const out = [[]];
-  let depth = 0;
+  const open = []; // "(" per ( $( <( >(, the quote level of a ${ or { in it
   let tick = false;
   for (const u of units(items)) {
-    if (u.w) out[out.length - 1].push(u.w);
-    else if (OPENERS.has(u.op)) depth++;
-    else if (u.op === ")") depth = Math.max(0, depth - 1);
-    else if (u.op === "`") tick = !tick;
-    else if (!depth && !tick && SEGMENT_END.has(u.op)) out.push([]);
+    if (u.w) {
+      out[out.length - 1].push(u.w);
+      if (!tick) braces(u.w, open);
+    } else if (OPENERS.has(u.op)) open.push("(");
+    else if (u.op === ")") {
+      if (open[open.length - 1] === "(") open.pop();
+    } else if (u.op === "`") tick = !tick;
+    else if (!open.length && !tick && SEGMENT_END.has(u.op)) out.push([]);
   }
   return out.filter((s) => s.length);
+}
+// braces(word, open) — track the ${ of word on open: a $ and { with the same
+// quoting opens one; inside it a { or } with the opener's quoting (a quoted
+// "}" in ${X:+"}"} does not close it) opens or closes a nested pair.
+function braces(word, open) {
+  for (let k = 0; k < word.length; k++) {
+    const x = word[k];
+    const top = open[open.length - 1];
+    if (x.q === 1) continue;
+    if (x.c === "$" && word[k + 1] && word[k + 1].c === "{" && word[k + 1].q === x.q) {
+      open.push(x.q);
+      k++;
+    } else if (top === x.q && x.c === "{") open.push(x.q);
+    else if (top === x.q && x.c === "}") open.pop();
+  }
 }
 function nested(items, depth, cmds, opaque, filters) {
   const stdin = stdinShell(cmds);

@@ -9,12 +9,13 @@
 # memory.autoCapture config gate still applies (it exits empty when
 # disabled), so the marker is written unconditionally.
 #
-# Marker dir defaults to /tmp; CF_DEVIN_MARKER_DIR overrides it (tests).
-# Always exit 0, no stdout.
+# Marker dir defaults to a private per-user dir, ${TMPDIR:-/tmp}/coding-friend-<uid>
+# (0700; refused if it is a symlink or not owned by the user), never shared
+# /tmp. CF_DEVIN_MARKER_DIR overrides it (tests). Always exit 0, no stdout.
 
 set -uo pipefail
 
-MARKER_DIR="${CF_DEVIN_MARKER_DIR:-/tmp}"
+MARKER_DIR="${CF_DEVIN_MARKER_DIR:-${TMPDIR:-/tmp}/coding-friend-$(id -u)}"
 
 INPUT=$(cat)
 
@@ -22,5 +23,10 @@ SESSION_ID=$(printf '%s' "$INPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]
 [ -z "$SESSION_ID" ] && SESSION_ID="default"
 SESSION_ID="${SESSION_ID//\//_}"
 
+(umask 077; mkdir -p "$MARKER_DIR") 2>/dev/null || true
+if [ -L "$MARKER_DIR" ] || [ ! -d "$MARKER_DIR" ] || [ ! -O "$MARKER_DIR" ]; then
+  exit 0
+fi
+chmod 700 "$MARKER_DIR" 2>/dev/null || true
 touch "$MARKER_DIR/cf-devin-compacted-$SESSION_ID" 2>/dev/null || true
 exit 0

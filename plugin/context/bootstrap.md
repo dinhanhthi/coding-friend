@@ -77,7 +77,7 @@ Opt-in via `autoApprove` in config. Codex, Antigravity and Devin only — Claude
 
 - **Codex**: PermissionRequest, deterministic only. Unknown/ask defer to native approval.
 - **Antigravity**: PreToolUse, deterministic; unknown → `ask`. No LLM.
-- **Devin**: PermissionRequest event, deterministic only; unhandled → native prompt
+- **Devin**: PermissionRequest event, deterministic only; unhandled → native prompt (auto-denied under `-p`)
 
 ## Memory System
 

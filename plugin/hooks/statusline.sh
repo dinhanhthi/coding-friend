@@ -314,7 +314,7 @@ write_quota_snapshot() {
   local dir="${CF_QUOTA_DIR:-$HOME/.coding-friend/quota}"
   local file="$dir/claude.json"
   local rows="" name="" pct="" reset="" windows="" now="" existing=""
-  local old_measured="" old_windows="" config_json="" json="" w="" p="" r=""
+  local old_measured="" old_windows="" config_json="" json="" w="" p="" r="" entry=""
 
   # One row per present window: name|used_percentage|resets_at as text
   rows=$(printf '%s' "$INPUT" | jq -r '
@@ -349,13 +349,16 @@ write_quota_snapshot() {
     fi
     [[ "$reset" =~ ^[0-9]+$ ]] || continue
     [ -n "$windows" ] && windows+=","
-    windows+=$(printf '"%s":{"percentUsed":%s,"resetsAt":%s}' "$name" "$pct" "$((10#$reset))")
+    # printf -v: no subshell fork on every refresh
+    printf -v entry '"%s":{"percentUsed":%s,"resetsAt":%s}' "$name" "$pct" "$((10#$reset))"
+    windows+="$entry"
   done
   [ -n "$windows" ] || return 0
   windows="{${windows}}"
   now=$(date +%s)
 
-  # Never follow a symlink, never read a FIFO, never mv into a directory
+  # Never follow a symlink (file or quota dir), never read a FIFO, never mv into a directory
+  [ -L "$dir" ] && return 0
   [ -L "$file" ] && return 0
   if [ -e "$file" ]; then
     [ -f "$file" ] || return 0
@@ -379,11 +382,18 @@ write_quota_snapshot() {
 
   (
     umask 077
-    mkdir -p "$dir" 2>/dev/null && chmod 700 "$dir" 2>/dev/null || exit 0
+    # chmod only a dir created here: a pre-existing CF_QUOTA_DIR keeps its mode
+    if [ ! -d "$dir" ]; then
+      mkdir -p "$dir" 2>/dev/null && chmod 700 "$dir" 2>/dev/null || exit 0
+    fi
+    # Never write through a symlinked quota dir or into one owned by someone else
+    [ -L "$dir" ] && exit 0
+    [ -O "$dir" ] || exit 0
     [ -L "$file" ] && exit 0
-    # Temp files left by a run cancelled between mktemp and mv
-    # (exactly mktemp's 6 X's, never e.g. ~/.claude.json if the dir is $HOME)
-    find "$dir" -maxdepth 1 -name '.claude.??????' -type f -mmin +60 -delete 2>/dev/null || true
+    # Temp files left by a run cancelled between mktemp and mv: exactly mktemp's
+    # 6 alphanumerics (never e.g. ~/.claude.json if the dir is $HOME). A user file
+    # with 6 alphanumerics after ".claude." (e.g. .claude.backup) still matches.
+    find "$dir" -maxdepth 1 -name '.claude.[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]' -type f -mmin +60 -delete 2>/dev/null || true
     tmp=$(mktemp "$dir/.claude.XXXXXX" 2>/dev/null) || exit 0
     trap 'rm -f "$tmp"' EXIT
     if ! { printf '%s\n' "$json" > "$tmp" && mv -f "$tmp" "$file"; } 2>/dev/null; then

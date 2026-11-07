@@ -48,7 +48,7 @@ function uniqueSessionId(tag) {
 describe("block-adapter.devin.sh", () => {
   it("translates inner exit 2 + Claude JSON into top-level block decision", () => {
     const root = makeFixturePluginRoot({
-      "fake-block.sh": `#!/usr/bin/env bash
+      "privacy-block.sh": `#!/usr/bin/env bash
 cat >/dev/null
 cat <<'EOF'
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Access blocked by fixture"}}
@@ -57,7 +57,7 @@ exit 2
 `,
     });
     try {
-      const res = runBash(BLOCK_ADAPTER, ["fake-block.sh"], {
+      const res = runBash(BLOCK_ADAPTER, ["privacy-block.sh"], {
         input: JSON.stringify({ tool_name: "read", tool_input: {} }),
         env: { ...process.env, CLAUDE_PLUGIN_ROOT: root },
       });
@@ -74,14 +74,14 @@ exit 2
 
   it("extracts reason from nested hookSpecificOutput decision+reason", () => {
     const root = makeFixturePluginRoot({
-      "fake-scout.sh": `#!/usr/bin/env bash
+      "scout-block.cjs": `#!/usr/bin/env bash
 cat >/dev/null
 echo '{"hookSpecificOutput":{"decision":"block","reason":"ignore pattern hit"}}'
 exit 2
 `,
     });
     try {
-      const res = runBash(BLOCK_ADAPTER, ["fake-scout.sh"], {
+      const res = runBash(BLOCK_ADAPTER, ["scout-block.cjs"], {
         input: "{}",
         env: { ...process.env, CLAUDE_PLUGIN_ROOT: root },
       });
@@ -94,14 +94,14 @@ exit 2
 
   it("passes inner stdout through verbatim on exit 0", () => {
     const root = makeFixturePluginRoot({
-      "fake-allow.sh": `#!/usr/bin/env bash
+      "privacy-block.sh": `#!/usr/bin/env bash
 cat >/dev/null
 echo '{"some":"inner-output"}'
 exit 0
 `,
     });
     try {
-      const res = runBash(BLOCK_ADAPTER, ["fake-allow.sh"], {
+      const res = runBash(BLOCK_ADAPTER, ["privacy-block.sh"], {
         input: "{}",
         env: { ...process.env, CLAUDE_PLUGIN_ROOT: root },
       });
@@ -115,7 +115,7 @@ exit 0
   it("prints {} and exits 0 when the inner script is missing (fail open)", () => {
     const root = makeFixturePluginRoot({});
     try {
-      const res = runBash(BLOCK_ADAPTER, ["does-not-exist.sh"], {
+      const res = runBash(BLOCK_ADAPTER, ["scout-block.cjs"], {
         input: "{}",
         env: { ...process.env, CLAUDE_PLUGIN_ROOT: root },
       });
@@ -123,6 +123,89 @@ exit 0
       expect(res.stdout.trim()).toBe("{}");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses an inner name with a path or .. (never runs it)", () => {
+    const root = makeFixturePluginRoot({});
+    // Outside hooks/: reachable only through "../privacy-block.sh"
+    const outside = path.join(root, "privacy-block.sh");
+    fs.writeFileSync(
+      outside,
+      `#!/usr/bin/env bash
+cat >/dev/null
+echo '{"decision":"block","reason":"outside hooks dir ran"}'
+exit 2
+`,
+    );
+    fs.chmodSync(outside, 0o755);
+    try {
+      for (const name of ["../privacy-block.sh", `${root}/privacy-block.sh`]) {
+        const res = runBash(BLOCK_ADAPTER, [name], {
+          input: "{}",
+          env: { ...process.env, CLAUDE_PLUGIN_ROOT: root },
+        });
+        expect(res.status).toBe(0);
+        expect(res.stdout.trim()).toBe("{}");
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["grep", { pattern: "TODO", path: "node_modules/x" }, "node_modules"],
+    ["glob", { pattern: "**/*.js", path: "dist" }, "dist"],
+  ])(
+    "adapts the real scout-block.cjs on a Devin %s payload",
+    (toolName, toolInput, pattern) => {
+      const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-cwd-"));
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-home-"));
+      try {
+        // Hermetic HOME: a user ~/.coding-friend config must not disable it
+        const env = { ...process.env, HOME: home };
+        delete env.CLAUDE_PLUGIN_ROOT;
+        const res = runBash(BLOCK_ADAPTER, ["scout-block.cjs"], {
+          cwd,
+          input: JSON.stringify({
+            hook_event_name: "PreToolUse",
+            session_id: uniqueSessionId("scout"),
+            tool_name: toolName,
+            tool_input: toolInput,
+          }),
+          env,
+        });
+        expect(res.status).toBe(2);
+        const json = JSON.parse(res.stdout.trim());
+        expect(json.decision).toBe("block");
+        expect(json.reason).toContain(`ignore pattern: ${pattern}`);
+      } finally {
+        fs.rmSync(cwd, { recursive: true, force: true });
+        fs.rmSync(home, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("lets the real scout-block.cjs allow a Devin grep outside ignored dirs", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-cwd-"));
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-home-"));
+    try {
+      const env = { ...process.env, HOME: home };
+      delete env.CLAUDE_PLUGIN_ROOT;
+      const res = runBash(BLOCK_ADAPTER, ["scout-block.cjs"], {
+        cwd,
+        input: JSON.stringify({
+          hook_event_name: "PreToolUse",
+          tool_name: "grep",
+          tool_input: { pattern: "TODO", path: "src" },
+        }),
+        env,
+      });
+      expect(res.status).toBe(0);
+      expect(res.stdout.trim()).toBe("{}");
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+      fs.rmSync(home, { recursive: true, force: true });
     }
   });
 
@@ -314,6 +397,55 @@ describe("memory-capture.devin.sh", () => {
       ).toBe(true);
     } finally {
       fs.rmSync(markerDir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the marker in a private per-user 0700 dir under TMPDIR", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-tmpdir-"));
+    const sessionId = uniqueSessionId("mc-private");
+    try {
+      const env = { ...process.env, TMPDIR: tmp };
+      delete env.CF_DEVIN_MARKER_DIR;
+      const res = runBash(MEMORY_CAPTURE, [], {
+        input: JSON.stringify({
+          hook_event_name: "PostCompaction",
+          session_id: sessionId,
+        }),
+        env,
+      });
+      expect(res.status).toBe(0);
+      const dir = path.join(tmp, `coding-friend-${process.getuid()}`);
+      expect(fs.statSync(dir).mode & 0o777).toBe(0o700);
+      expect(
+        fs.existsSync(path.join(dir, `cf-devin-compacted-${sessionId}`)),
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+      fs.rmSync(`/tmp/cf-devin-compacted-${sessionId}`, { force: true });
+    }
+  });
+
+  it("refuses a private marker dir that is a symlink", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-tmpdir-"));
+    const target = fs.mkdtempSync(path.join(os.tmpdir(), "cf-devin-target-"));
+    const sessionId = uniqueSessionId("mc-symlink");
+    fs.symlinkSync(target, path.join(tmp, `coding-friend-${process.getuid()}`));
+    try {
+      const env = { ...process.env, TMPDIR: tmp };
+      delete env.CF_DEVIN_MARKER_DIR;
+      const res = runBash(MEMORY_CAPTURE, [], {
+        input: JSON.stringify({
+          hook_event_name: "PostCompaction",
+          session_id: sessionId,
+        }),
+        env,
+      });
+      expect(res.status).toBe(0);
+      expect(fs.readdirSync(target)).toEqual([]);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+      fs.rmSync(target, { recursive: true, force: true });
+      fs.rmSync(`/tmp/cf-devin-compacted-${sessionId}`, { force: true });
     }
   });
 

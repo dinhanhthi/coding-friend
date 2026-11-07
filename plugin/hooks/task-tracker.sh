@@ -39,18 +39,31 @@ if [ -z "$EVENT" ]; then
   exit 0
 fi
 
-# Acquire lock (mkdir is atomic on all Unix systems)
-RETRIES=0
-while ! mkdir "$LOCK_DIR" 2>/dev/null; do
-  RETRIES=$((RETRIES + 1))
-  if [ "$RETRIES" -gt 20 ]; then
-    # Give up after ~1s — don't block indefinitely
-    exit 0
+# Acquire lock (mkdir is atomic on all Unix systems). The trap is set first so
+# a hook killed right after mkdir still releases the lock; it only removes a
+# lock this hook holds.
+HAVE_LOCK=0
+trap '[ "$HAVE_LOCK" = 1 ] && rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+while :; do
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    HAVE_LOCK=1
+    break
+  fi
+  # Holders keep the lock for milliseconds, so one still held when this hook
+  # has run ~2-3 s (SECONDS counts whole seconds since start) is stale or
+  # stuck. Break it and do the update anyway: a dropped TaskCreated/
+  # TaskCompleted leaves the statusline wrong for the rest of the session,
+  # while a rare unlocked write risks at most the same miscount.
+  if [ "$SECONDS" -ge 3 ]; then
+    echo "[$(date '+%Y-%m-%dT%H:%M:%S')] task-tracker: lock $LOCK_DIR still held after ${SECONDS}s; breaking it for $EVENT" >>"$ERR_LOG" 2>/dev/null || true
+    rmdir "$LOCK_DIR" 2>/dev/null || true
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+      HAVE_LOCK=1
+    fi
+    break
   fi
   sleep 0.05
 done
-# Ensure lock is released on exit
-trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
 # Read current state
 TOTAL=0
