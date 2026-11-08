@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.2 (2026-11-08)
+
+- Fix the agent and task tracker hooks breaking a lock a live hook still held when they started slowly (a loaded machine): the wait for the lock is now counted from the first failed attempt, not from the hook start, so the statusline agent and task counters no longer lose an update [#037d070f](https://github.com/dinhanhthi/coding-friend/commit/037d070f)
+
 ## v0.47.1 (2026-11-08)
 
 - Fix auto-approve (Codex, Antigravity, Devin) path checks: targets resolve through the deepest existing ancestor so symlinks cannot escape the project, home dotfiles are protected, zsh expansions (`$'...'`, `${(...)}`, `$~`) are never approved and the `rm` deny pattern is stricter [#f72de37c](https://github.com/dinhanhthi/coding-friend/commit/f72de37c) [#8323db03](https://github.com/dinhanhthi/coding-friend/commit/8323db03)
