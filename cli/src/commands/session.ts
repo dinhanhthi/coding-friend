@@ -44,9 +44,9 @@ import {
   type DecisionConfig,
 } from "../lib/config.js";
 import {
-  CLOUDFLARE_MODELS,
   checkGate,
-  type GateResult,
+  decisionConfigProblem,
+  gateMessage,
 } from "../lib/decide.js";
 import {
   composeFilters,
@@ -998,40 +998,6 @@ interface ModelFilter {
   stats: FilterStats[];
 }
 
-/** Names the fix only (env var names, never values). */
-function gateMessage(
-  cfg: DecisionConfig,
-  reason: Exclude<GateResult, { ok: true }>["reason"],
-): string {
-  if (reason === "off") {
-    return "--redact-model and --summary need a decision model, but decision.provider is off; set it with cf config set --global decision.provider local";
-  }
-  if (reason === "gate" && cfg.provider === "local") {
-    return "decision.baseUrl is not a loopback address (127.0.0.1, ::1, localhost), so decision.provider local would send data off this machine; point decision.baseUrl at a local server, or only if a remote server is intended set cf config set --global decision.allowRemote true";
-  }
-  if (reason === "gate") {
-    return `decision.provider "${cfg.provider}" sends data off this machine and decision.allowRemote is false in the global config; set it with cf config set --global decision.allowRemote true`;
-  }
-  return cfg.provider === "cloudflare"
-    ? "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set for decision.provider cloudflare"
-    : "TYPESAFE_API_KEY is not set (needed for decision.provider typesafe)";
-}
-
-/** Config the gate does not check but every request would fail on (never values). */
-function configProblem(cfg: DecisionConfig): string | null {
-  if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {
-    return `decision.model must be one of ${[...CLOUDFLARE_MODELS].join(", ")} for decision.provider cloudflare`;
-  }
-  if (cfg.provider === "local") {
-    try {
-      new URL(cfg.baseUrl);
-    } catch {
-      return "decision.baseUrl is not a valid URL (needed for decision.provider local)";
-    }
-  }
-  return null;
-}
-
 /**
  * The --redact-model/--summary filter, or null. A config problem (provider off,
  * gate closed, missing key, bad model or baseUrl) throws here, before the
@@ -1040,18 +1006,24 @@ function configProblem(cfg: DecisionConfig): string | null {
 function modelFilter(opts: ExportOpts): ModelFilter | null {
   if (!opts.redactModel && !opts.summary) return null;
   const cfg = resolveDecisionConfig();
-  const gate = checkGate(cfg, { allowSynthetic: false });
-  if (!gate.ok) {
-    throw new CliError("INVALID_ARGS", gateMessage(cfg, gate.reason));
-  }
-  const problem = configProblem(cfg);
+  // A bad baseUrl also closes the gate: name the URL, not allowRemote.
+  const problem = decisionConfigProblem(cfg);
   if (problem) throw new CliError("INVALID_ARGS", problem);
+  const gate = checkGate(cfg);
+  if (!gate.ok) {
+    throw new CliError(
+      "INVALID_ARGS",
+      gate.reason === "off"
+        ? "--redact-model and --summary need a decision model, but decision.provider is off; set it with cf config set --global decision.provider local"
+        : gateMessage(cfg, gate.reason),
+    );
+  }
   const stats: FilterStats[] = [];
   const onStats = (s: FilterStats): void => {
     stats.push(s);
   };
   const redact = opts.redactModel ? redactModelFilter(cfg, { onStats }) : null;
-  const summary = opts.summary ? summaryFilter(cfg, { onStats }) : null;
+  const summary = opts.summary ? summaryFilter({ onStats }) : null;
   const filter =
     redact && summary ? composeFilters(redact, summary) : (redact ?? summary)!;
   return { cfg, filter, stats };
@@ -1113,6 +1085,9 @@ async function exportSession(ref: string, opts: ExportOpts) {
   const fallbackReason = model
     ? exportFallbackReason(model, r.filter.status)
     : undefined;
+  // Logged before the --out write on purpose: the line records the model call
+  // (data already sent), so a later CONFLICT must not drop it; `ok` is the
+  // filter's outcome, not the write's.
   if (model) {
     logExportDecision(
       model,

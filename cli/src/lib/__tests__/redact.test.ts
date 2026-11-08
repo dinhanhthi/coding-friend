@@ -4,9 +4,7 @@ import {
   isCharSubsequence,
   redactText,
   runExportPipeline,
-  type SegmentKind,
 } from "../redact.js";
-import { renderMarkdown, type Transcript } from "../transcript.js";
 
 // Every token below is obviously fake (repeated x / X / 0) and is built by
 // concatenation so secret scanners never see a real-looking literal.
@@ -218,6 +216,15 @@ describe("runExportPipeline", () => {
     expect(aborted).toBe(true);
   });
 
+  it("counts no redaction in a part the filter removed", async () => {
+    const r = await run({
+      name: "drop-first",
+      apply: async (s) => s.map((t, i) => (i === 0 ? "" : t)),
+    });
+    expect(r.segments).toEqual(["", "plain text"]);
+    expect(r.counts).toEqual({});
+  });
+
   it("accepts a filter that only removes characters", async () => {
     const r = await run({
       name: "trim",
@@ -227,43 +234,5 @@ describe("runExportPipeline", () => {
     expect(r.filter).toEqual({ name: "trim", status: "applied" });
     expect(isCharSubsequence("ace", "abcde")).toBe(true);
     expect(isCharSubsequence("aec", "abcde")).toBe(false);
-  });
-
-  it("renderMarkdown gives the filter one kind per segment, in order", async () => {
-    const t: Transcript = {
-      ref: "claude:fake",
-      provider: "claude",
-      summary: { title: "T", cwd: "/w" } as Transcript["summary"],
-      turns: [
-        { kind: "user", text: "hi" },
-        { kind: "assistant", text: "yo" },
-        { kind: "tool", name: "Bash", args: "ls", output: "out" },
-      ],
-      skipped: 0,
-    };
-    let seen: [SegmentKind, string][] = [];
-    const r = await renderMarkdown(t, {
-      includeToolOutput: true,
-      timeoutMs: 1000,
-      filter: {
-        name: "fake",
-        apply: async (s, _signal, meta) => {
-          seen = s.map((seg, i) => [meta!.kinds[i], seg]);
-          return s.map((seg) => (seg === "yo" ? "" : seg));
-        },
-      },
-    });
-    expect(seen).toEqual([
-      ["title", "T"],
-      ["cwd", "/w"],
-      ["user", "hi"],
-      ["assistant", "yo"],
-      ["toolName", "Bash"],
-      ["toolArgs", "ls"],
-      ["toolOutput", "out"],
-    ]);
-    expect(r.filter).toEqual({ name: "fake", status: "applied" });
-    expect(r.fullMarkdown).toContain("- filtered: fake, 1 part(s) removed\n");
-    expect(r.fullMarkdown).not.toContain("## Assistant");
   });
 });

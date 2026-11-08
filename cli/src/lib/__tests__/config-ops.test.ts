@@ -144,6 +144,17 @@ describe("setConfigValue", () => {
     );
   });
 
+  it("refuses to set a local decision key but deletes a stray local block", () => {
+    write(dirs.local, { tdd: true, decision: { allowRemote: true } });
+    expect(
+      codeOf(() => setConfigValue("local", "decision.allowRemote", "true")),
+    ).toBe("INVALID_ARGS");
+
+    setConfigValue("local", "decision", "null");
+
+    expect(read(dirs.local)).toEqual({ tdd: true });
+  });
+
   it("parses JSON values and creates the file and parent objects", () => {
     const res = setConfigValue("local", "review.maxRounds", "4");
     expect(res).toEqual({

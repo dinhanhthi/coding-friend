@@ -277,18 +277,24 @@ export async function runExportPipeline(
     kinds?: SegmentKind[];
   },
 ): Promise<ExportPipelineResult> {
-  const counts: Record<string, number> = {};
-  const redacted = segments.map((seg) => {
-    const r = redactText(seg, { home: opts.home });
-    for (const [kind, n] of Object.entries(r.counts)) {
-      counts[kind] = (counts[kind] ?? 0) + n;
-    }
-    return r.text;
-  });
+  const results = segments.map((seg) => redactText(seg, { home: opts.home }));
+  const redacted = results.map((r) => r.text);
+  // Counts only parts that stay in the output: a part the filter emptied
+  // shows none of its redactions.
+  const countKept = (out: string[]): Record<string, number> => {
+    const counts: Record<string, number> = {};
+    results.forEach((r, i) => {
+      if (out[i] === "" && redacted[i] !== "") return;
+      for (const [kind, n] of Object.entries(r.counts)) {
+        counts[kind] = (counts[kind] ?? 0) + n;
+      }
+    });
+    return counts;
+  };
   if (!opts.filter) {
     return {
       segments: redacted,
-      counts,
+      counts: countKept(redacted),
       filter: { name: null, status: "none" },
     };
   }
@@ -298,9 +304,10 @@ export async function runExportPipeline(
     opts.timeoutMs,
     opts.kinds && { kinds: opts.kinds },
   );
+  const out = filtered ?? redacted;
   return {
-    segments: filtered ?? redacted,
-    counts,
+    segments: out,
+    counts: countKept(out),
     filter: { name: opts.filter.name, status },
   };
 }

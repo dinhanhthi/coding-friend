@@ -45,6 +45,14 @@ describe("useProjectDir", () => {
     expect(process.cwd()).toBe(repo);
   });
 
+  it("rejects an empty --project-dir= with INVALID_ARGS instead of using cwd", () => {
+    process.chdir(join(repo, "sub"));
+    expect(() => useProjectDir("")).toThrow(
+      expect.objectContaining({ code: "INVALID_ARGS" }),
+    );
+    expect(process.cwd()).toBe(join(repo, "sub"));
+  });
+
   it("config get --json with a missing dir prints one NOT_FOUND envelope", async () => {
     const stdout: string[] = [];
     const stderr: string[] = [];

@@ -339,6 +339,89 @@ describe("cf doctor --json", () => {
   });
 
   it.each([
+    {
+      name: "an invalid global block",
+      decision: { provider: "bogus" },
+      id: "decision.config",
+    },
+    {
+      name: "a cloudflare model decide() refuses",
+      decision: { provider: "cloudflare", model: "llama" },
+      id: "decision.model",
+    },
+  ])("warns on $name", async ({ decision, id }) => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    realFs.mkdirSync(join(home, ".coding-friend"));
+    realFs.writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({ decision }),
+    );
+
+    const env = await runDoctorJson();
+    const check = env.data.checks.find((c: { id: string }) => c.id === id);
+    expect(check).toMatchObject({ group: "decision", status: "warn" });
+  });
+
+  // `localhost` counts as remote: the fix is a loopback IP, not allowRemote.
+  it("points a local localhost baseUrl at 127.0.0.1, not at allowRemote", async () => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    realFs.mkdirSync(join(home, ".coding-friend"));
+    realFs.writeFileSync(
+      join(home, ".coding-friend", "config.json"),
+      JSON.stringify({
+        decision: { provider: "local", baseUrl: "http://localhost:8009" },
+      }),
+    );
+
+    const env = await runDoctorJson();
+    const gate = env.data.checks.find(
+      (c: { id: string }) => c.id === "decision.gate",
+    );
+    expect(gate).toMatchObject({ status: "warn" });
+    expect(gate.hint).toContain("127.0.0.1");
+    expect(`${gate.detail} ${gate.hint}`).not.toContain("allowRemote is true");
+  });
+
+  it("fails project.config on invalid JSON without echoing the file", async () => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const project = join(home, "proj");
+    realFs.mkdirSync(join(project, ".coding-friend"), { recursive: true });
+    realFs.writeFileSync(
+      join(project, ".coding-friend", "config.json"),
+      '{"k": SECRET42}',
+    );
+
+    await doctorCommand("9.9.9", { json: true, projectDir: project });
+    const env = JSON.parse(stdout[0]);
+    const config = env.data.checks.find(
+      (c: { id: string }) => c.id === "project.config",
+    );
+    expect(config).toMatchObject({ status: "fail" });
+    expect(config.detail).toContain("not valid JSON");
+    expect(stdout[0]).not.toContain("SECRET42");
+  });
+
+  it("fails project.docsDir for a local docsDir outside the project and counts nothing there", async () => {
+    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const project = join(home, "proj");
+    realFs.mkdirSync(join(project, ".coding-friend"), { recursive: true });
+    realFs.writeFileSync(
+      join(project, ".coding-friend", "config.json"),
+      JSON.stringify({ docsDir: "../outside" }),
+    );
+    realFs.mkdirSync(join(home, "outside", "memory"), { recursive: true });
+    realFs.writeFileSync(join(home, "outside", "memory", "a.md"), "# a\n");
+
+    await doctorCommand("9.9.9", { json: true, projectDir: project });
+    const env = JSON.parse(stdout[0]);
+    const byId = (id: string) =>
+      env.data.checks.find((c: { id: string }) => c.id === id);
+    expect(byId("project.docsDir")).toMatchObject({ status: "fail" });
+    expect(byId("project.docsDir").detail).toMatch(/outside the project/);
+    expect(byId("project.memory").detail).not.toMatch(/file\(s\)/);
+  });
+
+  it.each([
     { name: "absent", ageS: null, status: "ok" },
     { name: "stale", ageS: 25 * 3600, status: "warn" },
   ])(

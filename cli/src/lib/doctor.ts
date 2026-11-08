@@ -13,6 +13,7 @@ import { basename, join, resolve } from "path";
 import { isMemoryInitialized } from "../commands/memory.js";
 import {
   ConfigSchema,
+  DecisionConfigSchema,
   findUnknownKeys,
   localConfigHasDecision,
   resolveDecisionConfig,
@@ -20,7 +21,13 @@ import {
   resolveSessionDir,
   type DecisionConfig,
 } from "./config.js";
-import { checkGate } from "./decide.js";
+import {
+  CLOUDFLARE_MODELS,
+  checkGate,
+  decisionConfigProblem,
+  gateMessage,
+} from "./decide.js";
+import { isOutsideRoot } from "./docs-tree.js";
 import { listMdFilesRecursive } from "./fs-utils.js";
 import {
   detectHostsAvailable,
@@ -53,6 +60,7 @@ import {
   claudeSettingsPath,
   globalConfigPath,
   memoryDepsDir,
+  projectsRegistryPath,
   quotaSnapshotPath,
   resolvePath,
 } from "./paths.js";
@@ -696,6 +704,21 @@ function decisionChecks(): DoctorCheck[] {
   const cfg = resolveDecisionConfig();
   const group = "decision";
   const checks: DoctorCheck[] = [];
+  // resolveDecisionConfig silently falls back to "off" on an invalid block.
+  const block = readJson<Record<string, unknown>>(globalConfigPath())?.decision;
+  const parsed = DecisionConfigSchema.safeParse(block ?? {});
+  if (!parsed.success) {
+    checks.push({
+      id: "decision.config",
+      group,
+      label: "Decision config",
+      status: "warn",
+      detail: `ignored, decision is off: ${parsed.error.issues
+        .map((i) => `${i.path.join(".") || "decision"}: ${i.message}`)
+        .join("; ")}`,
+      hint: `Fix the decision block in ${globalConfigPath()}`,
+    });
+  }
   const provider = {
     id: "decision.provider",
     group,
@@ -722,19 +745,40 @@ function decisionChecks(): DoctorCheck[] {
     );
   }
 
+  // A bad local baseUrl also closes the gate: name the URL, not allowRemote.
+  const urlProblem =
+    cfg.provider === "local" ? decisionConfigProblem(cfg) : null;
+  if (urlProblem) {
+    checks.push({
+      id: "decision.baseUrl",
+      group,
+      label: "Decision base URL",
+      status: "warn",
+      detail: urlProblem,
+      hint: "set decision.baseUrl to http(s)://127.0.0.1 or [::1] with the server's port",
+    });
+  }
   // Remote per the gate itself: with allowRemote off, only remote is refused.
   const probe = checkGate({ ...cfg, allowRemote: false });
-  if (!probe.ok && probe.reason === "gate") {
+  if (!urlProblem && !probe.ok && probe.reason === "gate") {
     const gate = { id: "decision.gate", group, label: "Decision data gate" };
     checks.push(
       cfg.allowRemote
         ? { ...gate, status: "ok", detail: "allowRemote is true" }
-        : {
-            ...gate,
-            status: "warn",
-            detail:
-              "nothing will be sent until decision.allowRemote is true in the global config",
-          },
+        : cfg.provider === "local"
+          ? {
+              ...gate,
+              status: "warn",
+              detail:
+                "decision.baseUrl is not loopback, so nothing will be sent",
+              hint: gateMessage(cfg, "gate"),
+            }
+          : {
+              ...gate,
+              status: "warn",
+              detail:
+                "nothing will be sent until decision.allowRemote is true in the global config",
+            },
     );
   }
 
@@ -748,6 +792,16 @@ function decisionChecks(): DoctorCheck[] {
       hint: "set decision.model to a versioned id, e.g. jev-1.14.0",
     });
   }
+  if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {
+    checks.push({
+      id: "decision.model",
+      group,
+      label: "Decision model",
+      status: "warn",
+      detail: `${cfg.model} is not a supported cloudflare model`,
+      hint: `set decision.model to ${[...CLOUDFLARE_MODELS].join(" or ")}`,
+    });
+  }
 
   if (localConfigHasDecision(process.cwd())) {
     checks.push({
@@ -756,7 +810,7 @@ function decisionChecks(): DoctorCheck[] {
       label: "Local decision block",
       status: "warn",
       detail: "ignored: decision is read from the global config only",
-      hint: "remove the decision block from .coding-friend/config.json by hand",
+      hint: "cf config set --local decision null",
     });
   }
   return checks;
@@ -869,14 +923,15 @@ function readJsonObject(
       ? { ok: true, value }
       : { ok: false, error: "not a JSON object" };
   } catch (err) {
+    // Never the raw message: a JSON parse error quotes the file's content.
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: err instanceof SyntaxError ? "not valid JSON" : "cannot be read",
     };
   }
 }
+
 /** POSIX single-quote a path for a copyable hint (`'` → `'\''`). */
-/** POSIX single-quote a path for a copyable hint (`'` → `'\\''`). */
 function quotePath(path: string): string {
   return `'${path.replaceAll("'", "'\\''")}'`;
 }
@@ -898,7 +953,10 @@ export function collectProjectChecks(root: string): DoctorCheck[] {
       ? {}
       : {
           detail: warning ?? "not in the project registry",
-          hint: `cf project add -- ${quotePath(root)}`,
+          // cf project add refuses to overwrite an unreadable registry.
+          hint: warning
+            ? `Fix or delete ${projectsRegistryPath()}, then cf project add -- ${quotePath(root)}`
+            : `cf project add -- ${quotePath(root)}`,
         }),
   });
 
@@ -944,31 +1002,46 @@ export function collectProjectChecks(root: string): DoctorCheck[] {
     (v): v is string => typeof v === "string",
   );
   const docsDir = resolvePath(docsSetting ?? "docs", root);
+  // Same rule as cf docs: a repo-local docsDir must stay inside the project,
+  // and doctor reads nothing under one that does not.
+  const outside =
+    typeof local.docsDir === "string" && isOutsideRoot(docsDir, root);
+  const skipped = "skipped: docsDir is outside the project";
   const docsExists = existsSync(docsDir);
   checks.push({
     id: "project.docsDir",
     group,
     label: "Docs directory",
-    status: docsExists ? "ok" : "warn",
-    detail: docsExists ? docsDir : `missing: ${docsDir}`,
+    ...(outside
+      ? {
+          status: "fail",
+          detail: `outside the project: ${docsDir}`,
+          hint: `Edit ${configPath}`,
+        }
+      : {
+          status: docsExists ? "ok" : "warn",
+          detail: docsExists ? docsDir : `missing: ${docsDir}`,
+        }),
   });
 
   const memoryDir = join(docsDir, "memory");
-  const memoryExists = existsSync(memoryDir);
+  const memoryExists = !outside && existsSync(memoryDir);
   checks.push({
     id: "project.memory",
     group,
     label: "Memory",
     status: memoryExists ? "ok" : "warn",
-    detail: memoryExists
-      ? `${listMdFilesRecursive(memoryDir).length} file(s) in ${memoryDir}`
-      : `missing: ${memoryDir}`,
+    detail: outside
+      ? skipped
+      : memoryExists
+        ? `${listMdFilesRecursive(memoryDir).length} file(s) in ${memoryDir}`
+        : `missing: ${memoryDir}`,
   });
 
   // Claude's precedence for cleanupPeriodDays: local, then project, then user.
   const sessionDir = resolveSessionDir(global as CodingFriendConfig | null);
   const legacyDir = join(docsDir, "sessions");
-  const legacy = listSavedSessions(legacyDir, "legacy");
+  const legacy = outside ? [] : listSavedSessions(legacyDir, "legacy");
   checks.push(
     retentionCheck(
       { id: "project.retention", group, label: "Session retention" },
@@ -994,7 +1067,7 @@ export function collectProjectChecks(root: string): DoctorCheck[] {
             hint: `mkdir -p ${quotePath(sessionDir)} && mv ${quotePath(legacyDir)}/* ${quotePath(sessionDir)}/`,
           }),
         }
-      : { detail: "none" }),
+      : { detail: outside ? skipped : "none" }),
   });
 
   // Same condition as memory.mcp.projectShadow, for this root's .mcp.json.

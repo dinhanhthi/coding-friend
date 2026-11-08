@@ -1,7 +1,19 @@
 import { createHash } from "crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import {
+  chmodSync,
+  closeSync,
+  constants,
+  existsSync,
+  fchmodSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  writeSync,
+} from "fs";
 import { join, resolve } from "path";
 import type { DecisionConfig } from "./config.js";
+import { percentile } from "./decide-util.js";
 import { globalConfigDir } from "./paths.js";
 
 /**
@@ -106,16 +118,33 @@ function sanitize(entry: DecisionLogEntry): DecisionLogEntry | null {
   return out;
 }
 
-/** Append one line. Never throws: a log failure must not break the command. */
+/**
+ * Append one line. Never throws: a log failure must not break the command.
+ * The dir is 0700 and the file 0600 even when they already existed; a
+ * symlinked dir or file is never written through.
+ */
 export function appendDecisionLog(entry: DecisionLogEntry): void {
   try {
     const line = sanitize(entry);
     if (!line) return;
-    mkdirSync(decisionsDir(), { recursive: true, mode: 0o700 });
-    appendFileSync(logFile(), `${JSON.stringify(line)}\n`, {
-      encoding: "utf-8",
-      mode: 0o600,
-    });
+    const dir = decisionsDir();
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    if (lstatSync(dir).isSymbolicLink()) return;
+    chmodSync(dir, 0o700);
+    const fd = openSync(
+      logFile(),
+      constants.O_WRONLY |
+        constants.O_APPEND |
+        constants.O_CREAT |
+        constants.O_NOFOLLOW,
+      0o600,
+    );
+    try {
+      fchmodSync(fd, 0o600);
+      writeSync(fd, `${JSON.stringify(line)}\n`);
+    } finally {
+      closeSync(fd);
+    }
   } catch {
     // swallowed on purpose
   }
@@ -185,13 +214,6 @@ export interface DecisionLogSummary {
     p95Ms: number;
     bySeverity: Record<(typeof SEVERITY_LIST)[number], SeveritySummary>;
   } & Record<(typeof SKIP_LIST)[number], number>;
-}
-
-/** Nearest-rank percentile of `values` (0 when empty). */
-function percentile(values: number[], p: number): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)];
 }
 
 /**

@@ -79,7 +79,9 @@ export type GateResult =
 export const MAX_QUESTIONS = 64;
 const QUESTION_ID_RE = /^[A-Za-z0-9_.-]{1,100}$/;
 export const CLOUDFLARE_MODELS = new Set(["clef", "clef-flash"]);
-const LOOPBACK_HOSTS = new Set(["127.0.0.1", "::1", "[::1]", "localhost"]);
+// IP literals only: a hostname such as `localhost` is resolved by the OS and
+// may point anywhere. URL.hostname keeps the brackets of an IPv6 literal.
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "[::1]"]);
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -93,9 +95,14 @@ function envValue(name: string): string | undefined {
   return process.env[name]?.trim() || undefined;
 }
 
+/** An http(s) URL whose host is a loopback IP literal. */
 function isLoopbackUrl(baseUrl: string): boolean {
   try {
-    return LOOPBACK_HOSTS.has(new URL(baseUrl).hostname);
+    const url = new URL(baseUrl);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      LOOPBACK_HOSTS.has(url.hostname)
+    );
   } catch {
     return false;
   }
@@ -103,17 +110,13 @@ function isLoopbackUrl(baseUrl: string): boolean {
 
 /**
  * The data-egress gate. Remote = typesafe, cloudflare, or local with a
- * non-loopback baseUrl (an unparseable URL counts as remote). Remote needs
- * `allowRemote === true` from the global config; `allowSynthetic` is only for
- * `cf decide test|eval`, which send built-in synthetic data.
+ * baseUrl that is not loopback (an unparseable URL counts as remote). Remote
+ * needs `allowRemote === true` from the global config, whatever is sent.
  */
-export function checkGate(
-  cfg: DecisionConfig,
-  opts: { allowSynthetic?: boolean } = {},
-): GateResult {
+export function checkGate(cfg: DecisionConfig): GateResult {
   if (cfg.provider === "off") return { ok: false, reason: "off" };
   const remote = cfg.provider !== "local" || !isLoopbackUrl(cfg.baseUrl);
-  if (remote && cfg.allowRemote !== true && !opts.allowSynthetic) {
+  if (remote && cfg.allowRemote !== true) {
     return { ok: false, reason: "gate" };
   }
   if (cfg.provider === "typesafe" && !envValue("TYPESAFE_API_KEY")) {
@@ -126,6 +129,48 @@ export function checkGate(
     return { ok: false, reason: "no-key" };
   }
   return { ok: true };
+}
+
+/**
+ * Config the gate does not check but every request would fail on. Check it
+ * before checkGate: a bad baseUrl also closes the gate, and the fix is the URL,
+ * not allowRemote. Names keys only, never values.
+ */
+export function decisionConfigProblem(cfg: DecisionConfig): string | null {
+  if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {
+    return `decision.model must be one of ${[...CLOUDFLARE_MODELS].join(", ")} for decision.provider cloudflare`;
+  }
+  if (cfg.provider === "local") {
+    let protocol: string | null = null;
+    try {
+      protocol = new URL(cfg.baseUrl).protocol;
+    } catch {
+      // reported below
+    }
+    if (protocol !== "http:" && protocol !== "https:") {
+      return "decision.baseUrl is not a valid http(s) URL (needed for decision.provider local)";
+    }
+  }
+  return null;
+}
+
+/** The fix for a closed gate. Names keys and env vars only, never values. */
+export function gateMessage(
+  cfg: DecisionConfig,
+  reason: Exclude<GateResult, { ok: true }>["reason"],
+): string {
+  if (reason === "off") {
+    return "decision.provider is off; set it with cf config set --global decision.provider local";
+  }
+  if (reason === "gate" && cfg.provider === "local") {
+    return "decision.baseUrl is not a loopback address (http(s) to 127.0.0.1 or [::1]; localhost counts as remote), so decision.provider local would send data off this machine; point decision.baseUrl at http(s)://127.0.0.1 or [::1], and set decision.allowRemote only if a remote server is intended";
+  }
+  if (reason === "gate") {
+    return `decision.provider "${cfg.provider}" sends data off this machine and decision.allowRemote is false in the global config; set it with cf config set --global decision.allowRemote true`;
+  }
+  return cfg.provider === "cloudflare"
+    ? "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set for decision.provider cloudflare"
+    : "TYPESAFE_API_KEY is not set (needed for decision.provider typesafe)";
 }
 
 function isValidQuestion(q: unknown): boolean {
@@ -167,19 +212,6 @@ export function isValidRequest(request: DecisionRequest): boolean {
     entries.length <= MAX_QUESTIONS &&
     entries.every(([id, q]) => QUESTION_ID_RE.test(id) && isValidQuestion(q))
   );
-}
-
-/** Split a question map into chunks of at most `size` questions (order kept). */
-export function chunkQuestions(
-  questions: Record<string, Question>,
-  size = MAX_QUESTIONS,
-): Record<string, Question>[] {
-  const entries = Object.entries(questions);
-  const chunks: Record<string, Question>[] = [];
-  for (let i = 0; i < entries.length; i += size) {
-    chunks.push(Object.fromEntries(entries.slice(i, i + size)));
-  }
-  return chunks;
 }
 
 function endpoint(cfg: DecisionConfig): {
@@ -262,16 +294,11 @@ function parseAnswers(
  */
 export async function decide(
   request: DecisionRequest,
-  opts: {
-    point: string;
-    signal?: AbortSignal;
-    allowSynthetic?: boolean;
-    cfg?: DecisionConfig;
-  },
+  opts: { point: string; signal?: AbortSignal },
 ): Promise<DecideResult> {
   try {
-    const cfg = opts.cfg ?? resolveDecisionConfig();
-    const gate = checkGate(cfg, { allowSynthetic: opts.allowSynthetic });
+    const cfg = resolveDecisionConfig();
+    const gate = checkGate(cfg);
     if (!gate.ok) return gate;
     if (!isValidRequest(request)) return { ok: false, reason: "invalid" };
     if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {

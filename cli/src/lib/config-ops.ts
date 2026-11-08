@@ -214,10 +214,11 @@ export function setConfigValue(
     );
   }
   const parts = splitKey(key);
-  if (scope === "local" && parts[0] === "decision") {
+  const value = parseValue(raw);
+  // Deleting (null) stays allowed, so a stray local block can be removed.
+  if (scope === "local" && parts[0] === "decision" && value !== null) {
     throw new CliError("INVALID_ARGS", "decision is global-only");
   }
-  const value = parseValue(raw);
   const path = scopePath(scope);
   const candidate = structuredClone(readRaw(path));
   setPath(candidate, parts, value);

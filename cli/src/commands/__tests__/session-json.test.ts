@@ -603,19 +603,43 @@ describe("session list|show|export --json", () => {
     expect(readFileSync(file).equals(before)).toBe(true);
   });
 
-  it("export --redact-model with the decision provider off fails before any write", async () => {
-    const file = join(tmp, "export.md");
-    const { env } = await json(() =>
-      sessionExportCommand(`claude:${UUID}`, {
-        json: true,
-        out: file,
-        redactModel: true,
-      }),
-    );
-    expect(env).toMatchObject({ ok: false, error: { code: "INVALID_ARGS" } });
-    expect(env.error.message).toContain("decision.provider");
-    expect(existsSync(file)).toBe(false);
-  });
+  // A bad baseUrl names the URL, never the allowRemote gate.
+  it.each([
+    ["the decision provider off", undefined, "decision.provider"],
+    [
+      "an unparseable local baseUrl",
+      { provider: "local", baseUrl: "not a url" },
+      "decision.baseUrl is not a valid",
+    ],
+    [
+      "a non-http local baseUrl",
+      { provider: "local", baseUrl: "ftp://127.0.0.1" },
+      "decision.baseUrl is not a valid",
+    ],
+  ])(
+    "export --redact-model with %s fails before any write",
+    async (_, decision, message) => {
+      if (decision) {
+        mkdirSync(join(home, ".coding-friend"), { recursive: true });
+        writeFileSync(
+          join(home, ".coding-friend", "config.json"),
+          JSON.stringify({ decision }),
+        );
+      }
+      const file = join(tmp, "export.md");
+      const { env } = await json(() =>
+        sessionExportCommand(`claude:${UUID}`, {
+          json: true,
+          out: file,
+          redactModel: true,
+        }),
+      );
+      expect(env).toMatchObject({ ok: false, error: { code: "INVALID_ARGS" } });
+      expect(env.error.message).toContain(message);
+      expect(env.error.message).not.toContain("allowRemote");
+      expect(existsSync(file)).toBe(false);
+    },
+  );
 
   describe("load --json", () => {
     const FOLDER = "old-session";

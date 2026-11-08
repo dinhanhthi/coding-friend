@@ -6,6 +6,7 @@ import {
 } from "./decide.js";
 import { REDACT_INSTRUCTIONS } from "./decide-filters.js";
 import { appendDecisionLog } from "./decide-log.js";
+import { percentile, runPool } from "./decide-util.js";
 import {
   INSTRUCTIONS as REVIEW_FP_INSTRUCTIONS,
   QUESTION_ID as REVIEW_FP_QUESTION_ID,
@@ -15,8 +16,9 @@ import reviewFpGolden from "./decide-golden/review-fp.json";
 
 /**
  * `cf decide test|eval`: measure the decision model on built-in synthetic
- * golden sets. Only data bundled with the CLI is sent (allowSynthetic), never
- * a session or user code. Requests use the exact production instructions.
+ * golden sets. Only data bundled with the CLI is sent, never a session or
+ * user code, but the remote gate still applies. Requests use the exact
+ * production instructions.
  */
 
 export type EvalPoint = "redact" | "review-fp";
@@ -92,24 +94,6 @@ function samplesFor(point: EvalPoint): Sample[] {
   }));
 }
 
-/** Run jobs with at most CONCURRENCY in flight; jobs never throw. */
-async function runPool(jobs: Array<() => Promise<void>>): Promise<void> {
-  let next = 0;
-  const worker = async (): Promise<void> => {
-    while (next < jobs.length) await jobs[next++]();
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, worker),
-  );
-}
-
-/** Nearest-rank percentile of `values` (0 when empty). */
-function percentile(values: number[], p: number): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)];
-}
-
 /**
  * Ask the model about every golden sample of `point` (one request each) and
  * score the answers against the labels. A failed request counts as fallback;
@@ -133,8 +117,6 @@ export async function runEval(
       const res = await decide(sample.request, {
         point: "eval",
         signal: opts.signal,
-        allowSynthetic: true,
-        cfg,
       });
       const noul = res.ok ? res.answers[sample.questionId] : undefined;
       if (!res.ok || typeof noul !== "number") {
@@ -145,6 +127,7 @@ export async function runEval(
       latencies.push(res.latencyMs);
       if (noul >= threshold === sample.label) correct++;
     }),
+    { concurrency: CONCURRENCY },
   );
 
   const answered = latencies.length;
@@ -200,8 +183,6 @@ export async function runTest(
   const res = await decide(TEST_REQUEST, {
     point: "test",
     signal: opts.signal,
-    allowSynthetic: true,
-    cfg,
   });
   const answer = res.ok ? res.answers[TEST_QUESTION_ID] : undefined;
   const result: TestResult =

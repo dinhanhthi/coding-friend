@@ -994,4 +994,13 @@ describe("resolveDecisionConfig", () => {
     });
     expect(mockReadJson.mock.calls.map(([p]) => p)).toEqual([GLOBAL]);
   });
+
+  it("loadConfig drops a local decision block, keeping the global one", () => {
+    mockReadJson.mockImplementation((path: string) =>
+      path === GLOBAL
+        ? { decision: { provider: "local" } }
+        : { decision: { provider: "typesafe", allowRemote: true } },
+    );
+    expect(loadConfig().decision).toEqual({ provider: "local" });
+  });
 });

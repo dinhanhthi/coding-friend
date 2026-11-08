@@ -991,7 +991,10 @@ decideCmd
   .description(
     "Summarize the decision log: review shadow runs, fallback, latency, share below threshold",
   )
-  .option("--since <date>", "only lines from this date (YYYY-MM-DD or ISO)")
+  .option(
+    "--since <date>",
+    "only lines from this date (YYYY-MM-DD = local midnight, or ISO)",
+  )
   .option(
     "--threshold <n>",
     "noul below this counts as a likely false positive (0-1, default 0.2)",

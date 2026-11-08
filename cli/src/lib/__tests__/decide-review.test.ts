@@ -16,6 +16,15 @@ const REVIEW_ROOT = "/tmp/coding-friend/review";
 // PEM body line and END marker, built at runtime so scanners never see a key.
 const PEM_BODY = "Q".repeat(48);
 const PEM_END = "-----" + "END RSA " + "PRIVATE" + " KEY-----";
+// URL-safe base64 (with - and _), the shape of a JWT segment.
+const URLSAFE_B64 = "Q".repeat(30) + "-_" + "Q".repeat(30);
+// Credential files beyond the env/pem/key ones: one row per pattern shape.
+const SECRET_FILES = [
+  [".pgpass", "PGPASS"],
+  ["deploy/kubeconfig", "KUBECONFIG"],
+  ["keys/service-account-prod.json", "SERVICE_ACCOUNT"],
+  ["release.jks", "JKS"],
+];
 
 const diff = [
   "=== METADATA ===",
@@ -54,6 +63,15 @@ const diff = [
   PEM_END,
   "`;",
   "",
+  "--- new file: src/blob.ts",
+  "export const BLOB =",
+  URLSAFE_B64,
+  "",
+  ...SECRET_FILES.flatMap(([path, tag]) => [
+    `--- new file: ${path}`,
+    `${tag}_MARKER=1`,
+    "",
+  ]),
   "",
 ].join("\n");
 
@@ -73,6 +91,10 @@ const report = [
   "### 💡 Suggestions",
   "- **[L4]** [src/util.ts:2] UTIL_FINDING add a test",
   "- **[L4]** [src/cert.ts:1] PEM_FINDING embedded cert body",
+  "- **[L4]** [src/blob.ts:1] BLOB_FINDING embedded blob",
+  ...SECRET_FILES.map(
+    ([path, tag]) => `- **[L4]** [${path}:1] ${tag}_FINDING value committed`,
+  ),
   "",
   "### 📋 Summary",
   "- **[L2]** [src/app.ts:1] SUMMARY_BULLET must not be parsed",
@@ -116,11 +138,11 @@ afterEach(() => {
   snapshotDir = undefined;
 });
 
-function writeSnapshot(dir: string): string {
+function writeSnapshot(dir: string, d = diff, r = report): string {
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "diff.txt"), diff);
+  writeFileSync(join(dir, "diff.txt"), d);
   const reportPath = join(dir, "report.md");
-  writeFileSync(reportPath, report);
+  writeFileSync(reportPath, r);
   return reportPath;
 }
 
@@ -137,8 +159,8 @@ describe("reviewFalsePositives", () => {
     expect(result.ok).toBe(true);
     expect(result.asked).toBe(2);
     expect(result.skippedSecurity).toBe(2);
-    expect(result.skippedSecretPath).toBe(2);
-    expect(result.skippedSecretContent).toBe(1);
+    expect(result.skippedSecretPath).toBe(2 + SECRET_FILES.length);
+    expect(result.skippedSecretContent).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     const bodies = fetchMock.mock.calls.map(
@@ -160,6 +182,8 @@ describe("reviewFalsePositives", () => {
       expect(body).not.toContain("PASSWORD_FINDING");
       expect(body).not.toContain("PEM_FINDING");
       expect(body).not.toContain(PEM_BODY);
+      expect(body).not.toContain(URLSAFE_B64);
+      for (const [, tag] of SECRET_FILES) expect(body).not.toContain(tag);
     }
 
     const log = readFileSync(join(root, "decisions", "log.jsonl"), "utf-8");
@@ -174,12 +198,12 @@ describe("reviewFalsePositives", () => {
       point: "review_fp",
       runId: basename(snapshotDir),
     });
-    // asked + all skipped = the 7 parsed findings
+    // asked + all skipped = every parsed finding
     expect(runLines[0].answers).toEqual({
       asked: 2,
       skippedSecurity: 2,
-      skippedSecretPath: 2,
-      skippedSecretContent: 1,
+      skippedSecretPath: 2 + SECRET_FILES.length,
+      skippedSecretContent: 2,
       skippedNoContext: 0,
       skippedOverLimit: 0,
       skippedBudget: 0,
@@ -203,6 +227,43 @@ describe("reviewFalsePositives", () => {
     const result = await reviewFalsePositives({ snapshotDir, reportPath });
 
     expect(result).toMatchObject({ ok: false, reason: "gate" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the later diff section's lines for a file in both sections", async () => {
+    snapshotDir = join(
+      REVIEW_ROOT,
+      `cf-test-decide-review-sections-${process.pid}-${Date.now()}`,
+    );
+    const twoSections = [
+      "=== git diff main...HEAD (committed branch changes) ===",
+      "diff --git a/src/late.ts b/src/late.ts",
+      "--- a/src/late.ts",
+      "+++ b/src/late.ts",
+      "@@ -0,0 +1,3 @@",
+      "+export const one = 1;",
+      "+export const two = 2;",
+      "+export const three = 3;",
+      "",
+      "=== git diff HEAD (uncommitted changes) ===",
+      "diff --git a/src/late.ts b/src/late.ts",
+      "--- a/src/late.ts",
+      "+++ b/src/late.ts",
+      "@@ -10,1 +10,1 @@",
+      "-export const ten = 10;",
+      "+export const ten = 11;",
+      "",
+    ].join("\n");
+    const stale = [
+      "### ⚠️ Important Issues",
+      "- **[L2]** [src/late.ts:2] STALE_FINDING wrong constant",
+    ].join("\n");
+    const reportPath = writeSnapshot(snapshotDir, twoSections, stale);
+
+    const result = await reviewFalsePositives({ snapshotDir, reportPath });
+
+    // Line 2 is only in the earlier (now stale) section: no context.
+    expect(result).toMatchObject({ ok: true, asked: 0, skippedNoContext: 1 });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

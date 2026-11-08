@@ -1,5 +1,6 @@
 import type { DecisionConfig } from "./config.js";
 import { decide, type Answer, type DecisionRequest } from "./decide.js";
+import { runPool } from "./decide-util.js";
 import type { ExtraFilter, SegmentKind } from "./redact.js";
 import { TOOL_OUTPUT_MAX_CHARS } from "./transcript.js";
 
@@ -11,10 +12,13 @@ import { TOOL_OUTPUT_MAX_CHARS } from "./transcript.js";
  * - Any failure throws (message = a reason token, never text), so runFilter
  *   falls back to the regex-only segments.
  * - Segment text is untrusted state: it is only sent for scoring.
- * - `cfg` must come from resolveDecisionConfig() (global only).
+ * - redactModelFilter's `cfg` (its threshold) must come from
+ *   resolveDecisionConfig() (global only); decide() reads its own config.
  */
 
 export const WINDOW_CHARS = 2000;
+/** Redact windows overlap, so PII across a window edge is seen whole once. */
+const WINDOW_OVERLAP_CHARS = 200;
 export const CONCURRENCY = 4;
 export const SUMMARY_BUDGET_CHARS = 12_000;
 
@@ -72,47 +76,12 @@ function rendered(seg: string, kind: SegmentKind): string {
   return kind === "toolOutput" ? seg.slice(0, TOOL_OUTPUT_MAX_CHARS) : seg;
 }
 
-/** Run jobs with at most CONCURRENCY in flight; the first failure aborts the rest. */
-async function runPool<T>(
-  jobs: Array<(signal: AbortSignal) => Promise<T>>,
-  signal: AbortSignal,
-): Promise<T[]> {
-  const ac = new AbortController();
-  const onAbort = (): void => ac.abort();
-  if (signal.aborted) ac.abort();
-  else signal.addEventListener("abort", onAbort, { once: true });
-  const results: T[] = new Array(jobs.length);
-  let next = 0;
-  const worker = async (): Promise<void> => {
-    while (next < jobs.length) {
-      if (ac.signal.aborted) throw new Error("aborted");
-      const i = next++;
-      results[i] = await jobs[i](ac.signal);
-    }
-  };
-  try {
-    const n = Math.min(CONCURRENCY, jobs.length);
-    await Promise.all(
-      Array.from({ length: n }, () =>
-        worker().catch((err: unknown) => {
-          ac.abort();
-          throw err;
-        }),
-      ),
-    );
-    return results;
-  } finally {
-    signal.removeEventListener("abort", onAbort);
-  }
-}
-
 /** One request; throws an Error whose message is the fail reason only. */
 async function ask(
-  cfg: DecisionConfig,
   request: DecisionRequest,
   signal: AbortSignal,
 ): Promise<Record<string, Answer>> {
-  const result = await decide(request, { point: "export", signal, cfg });
+  const result = await decide(request, { point: "export", signal });
   if (!result.ok) throw new Error(result.reason);
   return result.answers;
 }
@@ -157,13 +126,18 @@ export function redactModelFilter(
         segments.forEach((full, i) => {
           if (!REDACT_KINDS.has(kinds[i]) || full === "") return;
           const seg = rendered(full, kinds[i]);
-          for (let w = 0; w * WINDOW_CHARS < seg.length; w++) {
+          const stride = WINDOW_CHARS - WINDOW_OVERLAP_CHARS;
+          // A window starts only where the previous one leaves new text.
+          for (
+            let w = 0;
+            w === 0 || w * stride + WINDOW_OVERLAP_CHARS < seg.length;
+            w++
+          ) {
             const id = `w${i}_${w}`;
-            const state = seg.slice(w * WINDOW_CHARS, (w + 1) * WINDOW_CHARS);
+            const state = seg.slice(w * stride, w * stride + WINDOW_CHARS);
             owner.push(i);
             jobs.push(async (s) => {
               const answers = await ask(
-                cfg,
                 {
                   state,
                   questions: {
@@ -179,7 +153,10 @@ export function redactModelFilter(
           }
         });
         stats.asked = jobs.length;
-        const scores = await runPool(jobs, signal);
+        const scores = await runPool(jobs, {
+          concurrency: CONCURRENCY,
+          signal,
+        });
         const flagged = new Set<number>();
         scores.forEach((p, j) => {
           if (p >= cfg.redactThreshold) flagged.add(owner[j]);
@@ -191,23 +168,23 @@ export function redactModelFilter(
 }
 
 /** Keep the most important content segments within SUMMARY_BUDGET_CHARS. */
-export function summaryFilter(
-  cfg: DecisionConfig,
-  opts: FilterOptions = {},
-): ExtraFilter {
+export function summaryFilter(opts: FilterOptions = {}): ExtraFilter {
   const name = "summary";
   return {
     name,
     apply: (segments, signal, meta) =>
       withStats(name, opts, async (stats) => {
         const kinds = kindsOf(segments, meta);
-        const candidates = segments
+        const parts = segments
           .map((_, i) => i)
           .filter((i) => SUMMARY_KINDS.has(kinds[i]) && segments[i] !== "");
+        // A part over the whole budget can never be kept: never ask about it.
+        const candidates = parts.filter(
+          (i) => rendered(segments[i], kinds[i]).length <= SUMMARY_BUDGET_CHARS,
+        );
         const jobs = candidates.map((i) => async (s: AbortSignal) => {
           const id = `s${i}`;
           const answers = await ask(
-            cfg,
             {
               state: rendered(segments[i], kinds[i]).slice(0, WINDOW_CHARS),
               questions: {
@@ -228,7 +205,10 @@ export function summaryFilter(
           return a.score;
         });
         stats.asked = jobs.length;
-        const scores = await runPool(jobs, signal);
+        const scores = await runPool(jobs, {
+          concurrency: CONCURRENCY,
+          signal,
+        });
 
         // Highest score first, earlier segment first on ties.
         const ranked = candidates
@@ -242,7 +222,7 @@ export function summaryFilter(
           used += size;
           keep.add(i);
         }
-        stats.dropped = candidates.length - keep.size;
+        stats.dropped = parts.length - keep.size;
         return segments.map((seg, i) =>
           SUMMARY_KINDS.has(kinds[i]) && !keep.has(i) ? "" : seg,
         );

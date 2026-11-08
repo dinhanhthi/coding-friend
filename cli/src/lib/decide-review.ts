@@ -11,6 +11,7 @@ import { basename, isAbsolute, join, relative } from "path";
 import { resolveDecisionConfig } from "./config.js";
 import { checkGate, decide, type DecisionRequest } from "./decide.js";
 import { appendDecisionLog, hashState } from "./decide-log.js";
+import { runPool } from "./decide-util.js";
 import { CliError } from "./output.js";
 import { redactText } from "./redact.js";
 
@@ -23,7 +24,7 @@ import { redactText } from "./redact.js";
  *   findings whose line is not in the snapshot's post-image, and findings
  *   whose code context looks like key material.
  * - Finding text and code context go through redactText before sending.
- * - The gate is required (no allowSynthetic); cfg is global-only.
+ * - The gate is required; cfg is global-only.
  */
 
 const REVIEW_ROOT = "/tmp/coding-friend/review";
@@ -43,13 +44,14 @@ const RUN_ID_RE = /^[A-Za-z0-9_.-]{1,100}$/;
 // and keyword patterns) plus a few credential files, but without its safe
 // allowlist or code-extension exemption: over-skipping only costs a sample.
 const SECRET_PATH_RE =
-  /(^|\/)\.env|\.env$|\.env\.|\.(pem|key|p12|pfx|keystore|tfvars)$|(^|\/)id_|id_rsa|id_ed25519|\.(ssh|aws|gnupg)\/|\.(npmrc|netrc)$|credential|secret/i;
+  /(^|\/)\.env|\.env$|\.env\.|\.(pem|key|p12|pfx|keystore|tfvars)$|(^|\/)id_|id_rsa|id_ed25519|\.(ssh|aws|gnupg)\/|\.(npmrc|netrc)$|credential|secret|(^|\/)\.(pgpass|htpasswd|dockercfg)$|kubeconfig|(^|\/)service-account[^/]*\.json$|\.(jks|p8|gpg)$/i;
 // Security wording in a finding filed under another layer.
 const SECURITY_TEXT_RE =
   /secret|secur|vulnerab|token|credential|password|passwd|api[ _-]?key|private[ _-]?key|injection|xss|csrf|ssrf|auth|permission|sanitiz|escape|crypto|cve/i;
 // Key material redactText may miss, e.g. a context window starting mid-PEM.
 const SECRET_CONTENT_RE = /PRIVATE KEY|-----END/;
-const BASE64_LINE_RE = /^[A-Za-z0-9+/=]{40,}$/;
+// Standard and URL-safe base64 (- _), and JWT segments joined by dots.
+const BASE64_LINE_RE = /^[A-Za-z0-9+/=_.-]{40,}$/;
 
 function isSecretPath(path: string): boolean {
   return SECRET_PATH_RE.test(path.replace(/\\/g, "/"));
@@ -169,12 +171,18 @@ function parseFindings(report: string): ReviewFinding[] {
 const HUNK_RE = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const NEW_FILE_RE = /^--- new file: (.*)$/;
 
-/** File → (post-image line number → text) from a gather-diff snapshot. */
+/**
+ * File → (post-image line number → text) from a gather-diff snapshot. A file
+ * in several `=== ` sections (branch, then working tree) keeps only the lines
+ * of its last section: earlier line numbers may be stale.
+ */
 function parsePostImage(diff: string): Map<string, Map<number, string>> {
   const files = new Map<string, Map<number, string>>();
+  let inSection = new Set<string>();
   const fileMap = (path: string): Map<number, string> => {
     let m = files.get(path);
-    if (!m) files.set(path, (m = new Map()));
+    if (!m || !inSection.has(path)) files.set(path, (m = new Map()));
+    inSection.add(path);
     return m;
   };
   const lines = diff.split("\n");
@@ -200,6 +208,7 @@ function parsePostImage(diff: string): Map<string, Map<number, string>> {
     }
     if (line.startsWith("diff --git ") || line.startsWith("=== ")) {
       current = null;
+      if (line.startsWith("=== ")) inSection = new Set();
       continue;
     }
     if (line.startsWith("+++ ")) {
@@ -286,17 +295,6 @@ function readCapped(path: string, max: number): string | null {
   } finally {
     closeSync(fd);
   }
-}
-
-/** Run jobs with at most CONCURRENCY in flight; jobs never throw. */
-async function runPool(jobs: Array<() => Promise<void>>): Promise<void> {
-  let next = 0;
-  const worker = async (): Promise<void> => {
-    while (next < jobs.length) await jobs[next++]();
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, worker),
-  );
 }
 
 /**
@@ -424,7 +422,6 @@ export async function reviewFalsePositives(opts: {
         const res = await decide(request, {
           point: "review_fp",
           signal: ac.signal,
-          cfg,
         });
         const noul =
           res.ok && typeof res.answers[QUESTION_ID] === "number"
@@ -462,6 +459,8 @@ export async function reviewFalsePositives(opts: {
           findingHash: hash,
         });
       }),
+      // No signal: each job counts a budget abort as skippedBudget itself.
+      { concurrency: CONCURRENCY },
     );
   } finally {
     clearTimeout(timer);

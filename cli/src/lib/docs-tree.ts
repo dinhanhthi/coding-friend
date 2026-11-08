@@ -50,6 +50,12 @@ function realOrSelf(p: string): string {
   }
 }
 
+/** Whether `dir` resolves (through symlinks) outside `root`. */
+export function isOutsideRoot(dir: string, root: string): boolean {
+  const rel = relative(realOrSelf(root), realOrSelf(dir));
+  return rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel);
+}
+
 /**
  * Project docs dir: config `docsDir` (default `docs`), relative to cwd (the project root).
  * A `docsDir` from the repo-local config must resolve inside the project root;
@@ -61,8 +67,7 @@ export function resolveProjectDocsDir(): string {
   if (local?.docsDir === undefined) return docsDir;
 
   const real = realOrSelf(docsDir);
-  const rel = relative(realOrSelf(process.cwd()), real);
-  if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) {
+  if (isOutsideRoot(real, process.cwd())) {
     throw new CliError(
       "INVALID_VALUE",
       `docsDir in .coding-friend/config.json is outside the project: ${docsDir}`,

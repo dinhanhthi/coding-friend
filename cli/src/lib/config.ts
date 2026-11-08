@@ -421,12 +421,14 @@ export function sanitizeRawConfig(
  */
 export function loadConfig(): CodingFriendConfig {
   const global = readJson<CodingFriendConfig>(globalConfigPath());
-  const local = readJson<CodingFriendConfig>(localConfigPath());
+  // `decision` is global-only: a repo must not choose where its data goes.
+  const { decision: _ignored, ...local } =
+    readJson<CodingFriendConfig>(localConfigPath()) ?? {};
   const base = deepMerge(
     DEFAULT_CONFIG as unknown as Record<string, unknown>,
     (global ?? {}) as Record<string, unknown>,
   );
-  const merged = deepMerge(base, (local ?? {}) as Record<string, unknown>);
+  const merged = deepMerge(base, local as Record<string, unknown>);
   return validateConfig(merged);
 }
 

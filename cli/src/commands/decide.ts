@@ -1,6 +1,10 @@
 import { log } from "../lib/log.js";
 import { resolveDecisionConfig } from "../lib/config.js";
-import { CLOUDFLARE_MODELS, checkGate } from "../lib/decide.js";
+import {
+  checkGate,
+  decisionConfigProblem,
+  gateMessage,
+} from "../lib/decide.js";
 import { runEval, runTest, type EvalPoint } from "../lib/decide-eval.js";
 import { readDecisionLog, summarizeDecisionLog } from "../lib/decide-log.js";
 import { reviewFalsePositives } from "../lib/decide-review.js";
@@ -41,18 +45,18 @@ function failure(reason: string): CliError {
 }
 
 /**
- * Config check for test/eval (synthetic data, so the remote gate is open).
- * Throws before any request so eval never prints a table of fallbacks.
+ * Config check for test/eval: the same gate as real data (a remote provider
+ * needs allowRemote). A bad model or baseUrl is reported before the gate, which
+ * it also closes. Throws before any request so eval never prints a table of
+ * fallbacks.
  */
 function assertSyntheticUsable(): void {
   const cfg = resolveDecisionConfig();
-  const gate = checkGate(cfg, { allowSynthetic: true });
-  if (!gate.ok) throw failure(gate.reason);
-  if (cfg.provider === "cloudflare" && !CLOUDFLARE_MODELS.has(cfg.model)) {
-    throw failure("invalid");
-  }
-  if (cfg.provider === "local" && !URL.canParse(cfg.baseUrl)) {
-    throw failure("invalid");
+  const problem = decisionConfigProblem(cfg);
+  if (problem) throw new CliError("INVALID_ARGS", problem);
+  const gate = checkGate(cfg);
+  if (!gate.ok) {
+    throw new CliError("INVALID_ARGS", gateMessage(cfg, gate.reason));
   }
 }
 
@@ -110,10 +114,27 @@ export async function decideEvalCommand(
 
 // ─── cf decide log ───────────────────────────────────────────────────────────
 
+/**
+ * `--since` in ms: a bare YYYY-MM-DD is local midnight (Date.parse would read
+ * it as UTC), anything else goes to Date.parse. NaN when invalid.
+ */
+function parseSince(since: string): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(since);
+  if (!m) return Date.parse(since);
+  const [y, mo, d] = [Number(m[1]), Number(m[2]) - 1, Number(m[3])];
+  const date = new Date(y, mo, d);
+  // Reject a day that rolls over (2026-02-31 → March 3).
+  return date.getFullYear() === y &&
+    date.getMonth() === mo &&
+    date.getDate() === d
+    ? date.getTime()
+    : NaN;
+}
+
 function logData(opts: { since?: string; threshold?: string }) {
   let sinceMs: number | undefined;
   if (opts.since !== undefined) {
-    sinceMs = Date.parse(opts.since);
+    sinceMs = parseSince(opts.since);
     if (Number.isNaN(sinceMs)) {
       throw new CliError(
         "INVALID_ARGS",

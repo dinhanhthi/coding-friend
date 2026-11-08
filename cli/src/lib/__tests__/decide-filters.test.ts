@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import type { DecisionConfig } from "../config.js";
@@ -7,6 +7,7 @@ import {
   composeFilters,
   redactModelFilter,
   summaryFilter,
+  type FilterStats,
 } from "../decide-filters.js";
 import { runExportPipeline, type SegmentKind } from "../redact.js";
 
@@ -56,6 +57,10 @@ beforeEach(() => {
   vi.stubEnv("TYPESAFE_API_KEY", "");
   vi.stubEnv("CLOUDFLARE_API_TOKEN", "");
   vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
+  // decide() reads the global config itself; `cfg` gives the filters' threshold.
+  const dir = join(root, "home", ".coding-friend");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "config.json"), JSON.stringify({ decision: cfg }));
 });
 
 afterEach(() => {
@@ -96,7 +101,7 @@ describe("model export filters", () => {
       const regexOnly = await runExportPipeline(segments, { timeoutMs: 50 });
 
       const result = await runExportPipeline(segments, {
-        filter: composeFilters(redactModelFilter(cfg), summaryFilter(cfg)),
+        filter: composeFilters(redactModelFilter(cfg), summaryFilter()),
         timeoutMs: 50,
         kinds,
       });
@@ -133,7 +138,7 @@ describe("model export filters", () => {
     );
 
     const result = await runExportPipeline(segments, {
-      filter: composeFilters(redactModelFilter(cfg), summaryFilter(cfg)),
+      filter: composeFilters(redactModelFilter(cfg), summaryFilter()),
       timeoutMs: 5000,
       kinds,
     });
@@ -188,5 +193,70 @@ describe("model export filters", () => {
 
     expect(states).toEqual([head]);
     expect(result).toEqual([output]);
+  });
+
+  it("overlaps redact windows so PII across a 2000-char boundary is seen whole", async () => {
+    const states: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const body = JSON.parse(String(init.body)) as {
+          state: string;
+          questions: Record<string, unknown>;
+        };
+        states.push(body.state);
+        const noul = body.state.includes("555-0100") ? 0.9 : 0.1;
+        const answers: Record<string, unknown> = {};
+        for (const id of Object.keys(body.questions)) {
+          answers[id] = { type: "noul", noul };
+        }
+        return json({ model: "kev-test-1", answers });
+      }),
+    );
+    // The sentinel "555-0100" spans index 2000: no 2000-char window holds it.
+    const text = "a".repeat(1996) + "555-0100" + "b".repeat(1000);
+
+    const result = await redactModelFilter(cfg).apply(
+      [text],
+      new AbortController().signal,
+      { kinds: ["user"] },
+    );
+
+    expect(result).toEqual([""]);
+    expect(states.every((s) => s.length <= 2000)).toBe(true);
+  });
+
+  it("never asks about a part over the summary budget and counts it as dropped", async () => {
+    const states: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const body = JSON.parse(String(init.body)) as {
+          state: string;
+          questions: Record<string, unknown>;
+        };
+        states.push(body.state);
+        const answers: Record<string, unknown> = {};
+        for (const id of Object.keys(body.questions)) {
+          answers[id] = { type: "score", score: 3, confidence: 1 };
+        }
+        return json({ model: "kev-test-1", answers });
+      }),
+    );
+    const big = "OVERSIZED part\n".repeat(900); // 13500 chars > 12000
+    const small = "short answer";
+    let stats: FilterStats | undefined;
+
+    const result = await summaryFilter({
+      onStats: (s) => {
+        stats = s;
+      },
+    }).apply([big, small], new AbortController().signal, {
+      kinds: ["assistant", "user"],
+    });
+
+    expect(states).toEqual([small]);
+    expect(result).toEqual(["", small]);
+    expect(stats).toMatchObject({ asked: 1, dropped: 1 });
   });
 });
