@@ -154,7 +154,12 @@ export function SessionsView({
   useEffect(() => {
     latest.current = { list, status, sync };
   });
-  const refreshList = useCallback(() => latest.current.list.refetch(), []);
+  // After a save or load: the list, and the folder badge and sync counts it may change.
+  const refreshAfterWrite = useCallback(() => {
+    latest.current.list.refetch();
+    latest.current.status.refetch();
+    latest.current.sync.refetch();
+  }, []);
 
   // Another folder holds other saved sessions: the open one may be gone.
   const changeDir = (key: string, action: () => Promise<unknown>) => {
@@ -318,7 +323,8 @@ export function SessionsView({
               )}
             </nav>
 
-            <div className={DETAIL}>
+            {/* Keyed: another session starts at the top, not at the last one's scroll. */}
+            <div key={selected?.ref ?? ""} className={DETAIL}>
               {selected === null ? (
                 <p className="text-sm text-muted">
                   Choose a session to read it.
@@ -333,7 +339,7 @@ export function SessionsView({
                   onIncludeToolOutput={setIncludeToolOutput}
                   pending={pending}
                   run={run}
-                  onChanged={refreshList}
+                  onChanged={refreshAfterWrite}
                 />
               )}
             </div>

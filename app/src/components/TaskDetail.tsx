@@ -19,7 +19,8 @@ import {
   type TaskView,
 } from "@/lib/cf";
 import { describePending, type PendingRun, type StartRun } from "@/lib/runs";
-import { useTaskFollow, type FollowItem } from "@/lib/use-task-follow";
+import type { FollowItem } from "@/lib/task-follow";
+import { useTaskFollow } from "@/lib/use-task-follow";
 import { cn } from "@/lib/utils";
 
 const TERMINAL_STATES: ReadonlySet<TaskState> = new Set<TaskState>([
@@ -64,9 +65,9 @@ export function TaskDetail({
 }) {
   const follow = useTaskFollow(row.id);
   const task = follow.task ?? row;
-  const terminal = follow.loaded
-    ? follow.terminal
-    : TERMINAL_STATES.has(task.state);
+  // `follow.terminal` waits for the runner to exit (~5 s after `cf done`); a
+  // Cancel click in between could stop it before it writes its result.
+  const terminal = follow.terminal || TERMINAL_STATES.has(task.state);
   const [error, setError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
@@ -152,9 +153,9 @@ export function TaskDetail({
         )}
         {follow.items.length > 0 ? (
           <ol className="flex flex-col gap-3">
-            {follow.items.map((item, i) => (
+            {follow.items.map((item) => (
               <Item
-                key={i}
+                key={item.seq}
                 item={item}
                 onNavigate={navigate}
                 onOpenExternal={openExternal}
@@ -185,7 +186,7 @@ export function TaskDetail({
   return (
     <section aria-label={`Task ${task.id}`} className={CARD}>
       <header className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <Badge variant={stateVariant(task.state)}>{task.state}</Badge>
           <span className="text-ink-2">{task.provider}</span>
           {task.readOnly && <Badge variant="outline">read-only</Badge>}

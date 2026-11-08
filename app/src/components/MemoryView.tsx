@@ -284,7 +284,8 @@ export function MemoryView({
         )}
       </nav>
 
-      <div className={DETAIL}>
+      {/* Keyed: another memory starts at the top, not at the last one's scroll. */}
+      <div key={selected ?? ""} className={DETAIL}>
         <NoteOutcome notice={notes.outcome} />
         {missing && (
           <p role="alert" className="text-xs break-all text-danger">

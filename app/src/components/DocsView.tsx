@@ -245,7 +245,8 @@ export function DocsView({ project }: { project: string }) {
         )}
       </nav>
 
-      <div className={DETAIL}>
+      {/* Keyed: another file starts at the top, not at the last one's scroll. */}
+      <div key={selected ?? ""} className={DETAIL}>
         {missing && (
           <p role="alert" className="text-xs break-all text-danger">
             {missing} is not in the docs folder.

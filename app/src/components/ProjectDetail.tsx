@@ -308,7 +308,10 @@ function Overview({
             onClose={onCloseTask}
           />
         ) : (
-          <p className="text-sm text-muted">Choose a task to follow it.</p>
+          // On a load error the list column already says why; no prompt to choose.
+          activity.status !== "error" && (
+            <p className="text-sm text-muted">Choose a task to follow it.</p>
+          )
         )}
       </div>
     </div>

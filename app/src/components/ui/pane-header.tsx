@@ -38,8 +38,8 @@ export function PaneHeader({
         {subtitle && (
           <span
             className={cn(
-              // The path gives way first; the title truncates only when it alone does not fit.
-              "min-w-0 shrink-[999] truncate text-xs text-muted",
+              // The title is shrink-0 (capped by its max-w), so only the subtitle shrinks.
+              "min-w-0 truncate text-xs text-muted",
               subtitleMono && "font-mono",
             )}
             title={subtitle}

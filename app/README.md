@@ -96,7 +96,7 @@ Every save, delete and folder change asks first: a native confirm from Rust show
 
 - **Export** (any readable session): a preview of the redacted Markdown `cf session export` would write. **Save as…** runs the preview again in Rust for the byte and redaction counts (never taken from the page), opens a native save dialog, confirms with the destination, counts and "redaction is best effort", then runs `cf session export --out=<file> --force` (the file is mode `0600`).
 - **Save** (live Claude Code sessions): `cf session save --session-id <uuid> -- <label>` (default label `session-<date>`). The confirm names `session.dir` as Rust read it from `cf session status` and says the transcript is copied verbatim, not redacted.
-- **Load** (saved and legacy Claude Code sessions): `cf session load --yes --target=<project> -- <ref>` into a registered project only; a `legacy:` session also needs the project it came from. A transcript already in that project is `CONFLICT` and nothing is overwritten. The app shows the `cd '<project>' && claude --resume <id>` command to copy and never runs it.
+- **Load** (saved and legacy Claude Code sessions): `cf session load --yes --target=<project> -- <ref>` into a registered project only; a `legacy:` session also needs the project it came from. A transcript already in that project is `CONFLICT` and nothing is overwritten. The app shows the `cd '<project>' && claude --resume <id>` command to copy and never runs it. A loaded transcript keeps the `cwd` it was recorded in, so the project filter lists it under the project it came from, not under the one it was loaded into.
 
 ### Where sessions live
 
@@ -109,6 +109,8 @@ A collapsed card shows `session.dir` (`cf session status --json`), its cloud dri
 - **Universal** (`universal-apple-darwin`, under `<target>/universal-apple-darwin/`) when both `aarch64-apple-darwin` and `x86_64-apple-darwin` rustup targets are installed; otherwise the host architecture only (under `<target>/release/`), with a warning. `<target>` is Cargo's target dir (see [Target on the external SSD](#target-on-the-external-ssd)): `/Volumes/Thi2TB/cargo-target/coding-friend` on Thi's Mac.
 - **Ad-hoc signed** by default (`signingIdentity: "-"` in `tauri.conf.json`). Set `APPLE_SIGNING_IDENTITY` to sign with a real identity; the script passes it as a `--config` override.
 - **Updater artifacts** (`.app.tar.gz` and `.sig`) only when `TAURI_SIGNING_PRIVATE_KEY` is set, to the key itself or a path to the key file (the documented Tauri v2 variable; its password goes in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). Without it the script turns `createUpdaterArtifacts` off, so local and VM builds need no key.
+
+To test a bundle in a clean macOS VM, the VM also needs `node` on its login-shell PATH, since `cf` is a node script: a fresh VM has none. Copy a `node` binary in next to the packed `cf` prefix, link it into a folder on that PATH (such as `~/bin`), and remove the link afterwards.
 
 ## Cargo build cache
 

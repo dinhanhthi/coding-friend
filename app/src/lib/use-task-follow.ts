@@ -3,34 +3,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   taskFollow,
   toCfError,
-  type AttemptSummary,
   type CfError,
   type FollowLive,
-  type Provider,
-  type SessionTurn,
   type TaskAttemptRef,
-  type TaskFollow,
   type TaskView,
 } from "./cf";
+import {
+  applyFollow,
+  emptySnapshot,
+  errorDelay,
+  nextDelay,
+  type FollowItem,
+  type Snapshot,
+} from "./task-follow";
 import { SPINNER_DELAY_MS } from "./use-cf-query";
-
-/** Poll delays (ms) by task state; `more` polls again at once. */
-const LIVE_POLL_MS = 2000;
-const IDLE_POLL_MS = 10_000;
-const ERROR_RETRY_MS = 10_000;
-/** Past this many items the oldest are dropped down to `KEEP_ITEMS`. */
-const MAX_ITEMS = 2000;
-const KEEP_ITEMS = 1500;
-
-/** A divider before the turns of attempt `n`. */
-export interface AttemptMarker {
-  kind: "attempt";
-  n: number;
-  provider: Provider;
-  attemptKind: AttemptSummary["kind"];
-}
-
-export type FollowItem = SessionTurn | AttemptMarker;
 
 export interface TaskFollowState {
   task: TaskView | null;
@@ -39,7 +25,7 @@ export interface TaskFollowState {
   terminal: boolean;
   /** Turns of every poll so far, with a marker each time the attempt changes. */
   items: FollowItem[];
-  /** The last poll failed; `items` stay. Cleared by the next good poll. */
+  /** The last poll failed; `items` stay. Cleared by the next good poll, or by Try again before the first load. */
   error: CfError | null;
   /** A first response has arrived for this task. */
   loaded: boolean;
@@ -53,96 +39,8 @@ export interface TaskFollowState {
   refetch: () => void;
 }
 
-interface Snapshot {
-  taskId: string;
-  task: TaskView | null;
-  live: FollowLive | null;
-  attempt: TaskAttemptRef | null;
-  terminal: boolean;
-  items: FollowItem[];
-  error: CfError | null;
-  loaded: boolean;
-  truncated: boolean;
-  trimmed: boolean;
-}
-
-const emptySnapshot = (taskId: string): Snapshot => ({
-  taskId,
-  task: null,
-  live: null,
-  attempt: null,
-  terminal: false,
-  items: [],
-  error: null,
-  loaded: false,
-  truncated: false,
-  trimmed: false,
-});
-
 /** What a task with no response yet reads as (stable, so it can sit in deps). */
 const EMPTY = emptySnapshot("");
-
-/** Index of the last marker for attempt `n`, or -1. */
-function lastMarkerIndex(items: FollowItem[], n: number): number {
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    if (item.kind === "attempt" && item.n === n) return i;
-  }
-  return -1;
-}
-
-function applyFollow(prev: Snapshot, res: TaskFollow): Snapshot {
-  let items = prev.items;
-  let lastN = prev.attempt?.n;
-  if (res.reset) {
-    // The attempt's file starts over: drop what it showed so far. With its
-    // marker trimmed away, everything left belongs to it.
-    const at = res.attempt ? lastMarkerIndex(items, res.attempt.n) : -1;
-    items = at >= 0 ? items.slice(0, at) : [];
-    lastN = undefined;
-  }
-  const added: FollowItem[] = [];
-  if (res.attempt && res.attempt.n !== lastN) {
-    added.push({
-      kind: "attempt",
-      n: res.attempt.n,
-      provider: res.attempt.provider,
-      attemptKind: res.attempt.kind,
-    });
-  }
-  added.push(...res.turns);
-  if (added.length > 0) items = [...items, ...added];
-  let trimmed = prev.trimmed;
-  if (items.length > MAX_ITEMS) {
-    items = items.slice(items.length - KEEP_ITEMS);
-    trimmed = true;
-  }
-  return {
-    taskId: prev.taskId,
-    task: res.task,
-    live: res.live,
-    attempt: res.attempt ?? prev.attempt,
-    terminal: res.terminal,
-    items,
-    error: null,
-    loaded: true,
-    truncated: res.truncated,
-    trimmed,
-  };
-}
-
-/** Delay before the next poll, or null to stop. */
-function nextDelay(res: TaskFollow): number | null {
-  if (res.more) return 0;
-  if (res.terminal) return null;
-  switch (res.task.state) {
-    case "paused":
-    case "queued":
-      return IDLE_POLL_MS;
-    default:
-      return LIVE_POLL_MS;
-  }
-}
 
 /**
  * Follows task `taskId` (`null` = nothing) through `cf task follow --json`, one
@@ -179,6 +77,8 @@ export function useTaskFollow(taskId: string | null): TaskFollowState {
     taskFollow(id, cursor.current).then(
       (res) => {
         if (g !== gen.current) return;
+        // An answer about another task never moves this task's cursor.
+        if (res.task.id !== id) return schedule(nextDelay(res));
         cursor.current = res.cursor;
         setSnap((prev) =>
           applyFollow(prev?.taskId === id ? prev : emptySnapshot(id), res),
@@ -192,7 +92,7 @@ export function useTaskFollow(taskId: string | null): TaskFollowState {
           ...(prev?.taskId === id ? prev : emptySnapshot(id)),
           error,
         }));
-        schedule(ERROR_RETRY_MS);
+        schedule(errorDelay(error));
       },
     );
   }, []);
@@ -227,7 +127,15 @@ export function useTaskFollow(taskId: string | null): TaskFollowState {
   }, [waiting, taskId]);
 
   const refetch = useCallback(() => {
-    if (taskId !== null) poll(taskId);
+    if (taskId === null) return;
+    // Try again before the first load: the placeholder (and its delayed spinner)
+    // comes back in this frame, not when the answer arrives.
+    setSnap((prev) =>
+      prev?.taskId === taskId && !prev.loaded && prev.error !== null
+        ? { ...prev, error: null }
+        : prev,
+    );
+    poll(taskId);
   }, [taskId, poll]);
 
   return {
