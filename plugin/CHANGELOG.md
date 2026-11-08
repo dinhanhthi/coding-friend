@@ -2,6 +2,18 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.1 (2026-11-08)
+
+- Fix auto-approve (Codex, Antigravity, Devin) path checks: targets resolve through the deepest existing ancestor so symlinks cannot escape the project, home dotfiles are protected, zsh expansions (`$'...'`, `${(...)}`, `$~`) are never approved and the `rm` deny pattern is stricter [#f72de37c](https://github.com/dinhanhthi/coding-friend/commit/f72de37c) [#8323db03](https://github.com/dinhanhthi/coding-friend/commit/8323db03)
+- Fix `privacy-block`: `\u` escapes and non-string input are handled, and the Antigravity hook re-checks every command segment, including `${...}` brace segments [#f72de37c](https://github.com/dinhanhthi/coding-friend/commit/f72de37c) [#8323db03](https://github.com/dinhanhthi/coding-friend/commit/8323db03)
+- Fix the hook tracker locks, the Devin marker folder and the quota snapshot file, which no longer follows a symlink [#8323db03](https://github.com/dinhanhthi/coding-friend/commit/8323db03)
+- Fix the Codex, Antigravity and Devin builds: paths ending in `}` or `)` are rewritten correctly, `\$cf-x` survives in `.sh` files, nothing is rewritten twice, and `update-plugin-local` skips Devin [#02134e5f](https://github.com/dinhanhthi/coding-friend/commit/02134e5f)
+- `/cf-showcase` only inlines assets inside its source folder: the default root is the source folder, dotfiles, symlinks that leave it and dot segments are refused even with `--root` (copy assets into `source/`); the poster and video templates and `verify-video.sh` are fixed [#5c323773](https://github.com/dinhanhthi/coding-friend/commit/5c323773)
+- `/cf-plan-review` builds its prompt without files matched by `.coding-friend/ignore` and stops when that file cannot be read [#a59c85b4](https://github.com/dinhanhthi/coding-friend/commit/a59c85b4)
+- `/cf-review` writes its snapshot and report in a private (0700) folder under `/tmp/coding-friend/review` [#a59c85b4](https://github.com/dinhanhthi/coding-friend/commit/a59c85b4)
+- `/cf-ask` uses `{CF_DOCS_ROOT}` for every memory path, and the `cf-writer` agents quote file paths and commit messages safely [#a59c85b4](https://github.com/dinhanhthi/coding-friend/commit/a59c85b4)
+- `/cf-help` answers about the decision-model gate and the Codex or Antigravity limits match the CLI [#02134e5f](https://github.com/dinhanhthi/coding-friend/commit/02134e5f)
+
 ## v0.47.0 (2026-11-06)
 
 - Add the optional `coding-friend-mods` plugin to the marketplace: a quota sensor with a status band, toasts when a review or plan phase finishes, and a plan progress pane. Install it with `cf install --mods` [#639707d3](https://github.com/dinhanhthi/coding-friend/commit/639707d3) [#ca65d118](https://github.com/dinhanhthi/coding-friend/commit/ca65d118)

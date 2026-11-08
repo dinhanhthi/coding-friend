@@ -5,6 +5,18 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.43.1 (2026-11-08)
+
+- `cf decide test|eval` obey `decision.allowRemote`; `localhost` counts as remote, only `127.0.0.1` and `[::1]` are local, and an empty `--project-dir=` is an `INVALID_ARGS` error instead of using the current project [#89daf4dc](https://github.com/dinhanhthi/coding-friend/commit/89daf4dc)
+- Add `decision.*` checks to `cf doctor` [#89daf4dc](https://github.com/dinhanhthi/coding-friend/commit/89daf4dc)
+- Fix `cf install`, `cf uninstall` and the config writers: JSON host flags resolve per host, the Devin config is hardened, uninstall reports removed, absent or failed, and config files keep their mode and symlink [#6b5a28a9](https://github.com/dinhanhthi/coding-friend/commit/6b5a28a9)
+- Fix the task runner: OpenCode refuses ignored symlinks that point outside the checkout (for example `.venv/bin/python`) and gets deny rules, provider probes time out, `cf task follow` only reads inside the Claude folder, and Claude transcript paths are found [#79b2346e](https://github.com/dinhanhthi/coding-friend/commit/79b2346e)
+- Fix `cf chef`: the git compare-and-swap, pausing when a commit is refused, the wake digest and process checks [#b873fe1f](https://github.com/dinhanhthi/coding-friend/commit/b873fe1f)
+- Fix `cf supervisor` hardening, `CF_NO_UPDATE_CHECK`, version lookup, the macOS privacy-prompt warning, and `cf memory show` strips terminal control characters [#0af54d49](https://github.com/dinhanhthi/coding-friend/commit/0af54d49)
+- Fix `cf docs` and notes containment, harden the `cf learn` git calls (no signing, no filters, no system config) and fix memory dates [#00bdfb87](https://github.com/dinhanhthi/coding-friend/commit/00bdfb87)
+- Fix `cf session`: Codex custom tool calls, transcript validation, more redaction patterns, saved sessions are 0700 and 0600, exports never overwrite an existing file; sessions are titled without command wrapper tags [#d088f1a0](https://github.com/dinhanhthi/coding-friend/commit/d088f1a0) [#ad9db706](https://github.com/dinhanhthi/coding-friend/commit/ad9db706)
+- `cf version` says "plugin" for the installed plugin version; the JSON fields are unchanged [#7440c21a](https://github.com/dinhanhthi/coding-friend/commit/7440c21a)
+
 ## v1.43.0 (2026-11-06)
 
 - Add `cf task run|list|show|cancel|follow` plus `cf ask`, `cf reply` and `cf done`: a daemon-less sandboxed worker runner with providers `claude`, `codex` and `opencode` (read-only, needs a model); `cf task follow` reads a worker's transcript live by byte offset [#18867e9e](https://github.com/dinhanhthi/coding-friend/commit/18867e9e) [#60fc2e98](https://github.com/dinhanhthi/coding-friend/commit/60fc2e98) [#93224b2d](https://github.com/dinhanhthi/coding-friend/commit/93224b2d) [#b4e96a9f](https://github.com/dinhanhthi/coding-friend/commit/b4e96a9f) [#a29c8127](https://github.com/dinhanhthi/coding-friend/commit/a29c8127)
