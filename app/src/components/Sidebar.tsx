@@ -163,8 +163,8 @@ function ViewRow({
       aria-current={selected ? "page" : undefined}
       onClick={() => onView(id)}
       className={cn(
-        "flex h-7 w-full items-center gap-2 rounded-md px-2 text-[13px] text-ink outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
-        selected && "bg-paper-3 font-medium hover:bg-paper-3",
+        "flex h-7 w-full items-center gap-2 rounded-[0.875rem] border-[0.5px] border-transparent px-2 text-[13px] text-ink outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+        selected && "border-rule-strong bg-rule font-medium hover:bg-rule",
       )}
     >
       <Icon
@@ -239,8 +239,8 @@ function ProjectItems({
               onClick={() => onSelect(project.path)}
               title={project.path}
               className={cn(
-                "flex min-w-0 flex-1 flex-col rounded-md py-1 pr-8 pl-2 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
-                selected && "bg-paper-3 hover:bg-paper-3",
+                "flex min-w-0 flex-1 flex-col rounded-[0.875rem] border-[0.5px] border-transparent py-1 pr-8 pl-2 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus",
+                selected && "border-rule-strong bg-rule hover:bg-rule",
               )}
             >
               <span
