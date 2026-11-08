@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-ERR_LOG="${TMPDIR:-/tmp}$cf-hook-errors.log"
+ERR_LOG="${TMPDIR:-/tmp}/cf-hook-errors.log"
 
 INPUT=$(cat)
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
@@ -151,6 +152,8 @@ test("renders Claude-native Coding Friend references for Codex", () => {
       "${CLAUDE_PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.CLAUDE_PLUGIN_ROOT",
       "Use cf-writer (sonnet) and read CLAUDE.md.",
+      'ERR_LOG="${TMPDIR:-/tmp}/cf-hook-errors.log"',
+      'source "$(dirname "$0")/cf-paths.sh"',
     ].join("\n"),
   );
 
@@ -162,7 +165,34 @@ test("renders Claude-native Coding Friend references for Codex", () => {
       "${PLUGIN_ROOT}/hooks/rules-reminder.sh",
       "process.env.PLUGIN_ROOT",
       "Use cf-writer (medium reasoning effort) and read AGENTS.md.",
+      'ERR_LOG="${TMPDIR:-/tmp}/cf-hook-errors.log"',
+      'source "$(dirname "$0")/cf-paths.sh"',
     ].join("\n"),
+  );
+});
+
+test("shell scripts print Codex $cf-x instead of expanding $cf", async () => {
+  const script = renderCodexFile(
+    "plugin/skills/cf-example/scripts/hint.sh",
+    [
+      "#!/usr/bin/env bash",
+      "cat <<EOF",
+      "/cf-review-in label",
+      "EOF",
+      `echo "Run '/cf-review-in label' next."`,
+      "",
+    ].join("\n"),
+  );
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "cf-codex-sh-"));
+  const file = path.join(dir, "hint.sh");
+  await fs.writeFile(file, script);
+
+  const result = spawnSync("bash", ["-u", file], { encoding: "utf8" });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    result.stdout,
+    "$cf-review-in label\nRun '$cf-review-in label' next.\n",
   );
 });
 
@@ -490,7 +520,7 @@ test("copies plan/ask/scan templates into Codex dest and keeps external-reviewer
     "should not copy\n",
   );
 
-  await buildCodexPlugin({ repoRoot });
+  await buildCodexPlugin({ repoRoot, strict: false });
 
   for (const [rel, body] of kept) {
     const dest = await fs.readFile(
@@ -677,10 +707,10 @@ test("builds Codex plugin fixture idempotently", async () => {
   const repoRoot = await createFixtureRepo();
   const codexPluginDir = path.join(repoRoot, "plugin-codex");
 
-  await buildCodexPlugin({ repoRoot });
+  await buildCodexPlugin({ repoRoot, strict: false });
   const firstSnapshot = await snapshotTree(codexPluginDir);
 
-  await buildCodexPlugin({ repoRoot });
+  await buildCodexPlugin({ repoRoot, strict: false });
   const secondSnapshot = await snapshotTree(codexPluginDir);
 
   assert.deepEqual(secondSnapshot, firstSnapshot);

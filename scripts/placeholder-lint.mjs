@@ -97,6 +97,16 @@ const CODEX_PATTERNS = [
   },
 ];
 
+// In a generated shell script an unescaped `$cf-x` expands `$cf` (unbound
+// under `set -u`); the builder must emit `\$cf-x`.
+const CODEX_SHELL_PATTERNS = [
+  {
+    name: "unescaped Codex skill ref in shell",
+    regex: /(?<!\\)\$cf-[a-z0-9-]+/g,
+    scanRaw: true,
+  },
+];
+
 const CODEX_MUST_CONTAIN = [
   {
     file: "plugin-codex/context/bootstrap.md",
@@ -149,7 +159,9 @@ const DEVIN_MUST_CONTAIN = [
 const DEVIN_PATTERNS = [
   { name: "unresolved host placeholder", regex: /\{\{cf:[^}]+\}\}/g },
   { name: "Claude subagent type", regex: /\bsubagent_type\b/g },
-  { name: "Claude agent tool", regex: /\bAgent tool\b/g },
+  { name: "Claude agent tool", regex: /\bAgent tools?\b/g },
+  { name: "Claude host name", regex: /\bin Claude Code\b/g },
+  { name: "Claude-only dev workflow", regex: /\bcf dev sync\b/g },
 ];
 
 const AGY_PATTERNS = [
@@ -191,8 +203,11 @@ async function collectFilesRecursive(dir, relativePrefix, predicate) {
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return files;
+  } catch (error) {
+    // A missing tree (fixture repos omit dirs) is empty; any other error
+    // (permissions, ENOTDIR) must fail the lint, not hide files from it.
+    if (error?.code === "ENOENT") return files;
+    throw error;
   }
 
   for (const entry of entries) {
@@ -244,10 +259,7 @@ function lineNumberForIndex(source, index) {
 }
 
 function mustContainStrict(options = {}) {
-  if (options.strict === false || options.optional === true) {
-    return false;
-  }
-  return true;
+  return options.strict !== false;
 }
 
 async function findIssues(files, patterns, root = repoRoot) {
@@ -366,8 +378,14 @@ export async function findCodexArtifactLintIssues(
   } catch {
     // Fixture repos may not include a bootstrap context file.
   }
+  const shellFiles = await collectFilesRecursive(
+    path.join(root, "plugin-codex"),
+    "plugin-codex",
+    (name) => name.endsWith(".sh"),
+  );
   return [
     ...(await findIssues(files.sort(), CODEX_PATTERNS, root)),
+    ...(await findIssues(shellFiles.sort(), CODEX_SHELL_PATTERNS, root)),
     ...(await findMissingRequired(root, CODEX_MUST_CONTAIN, options)),
   ];
 }

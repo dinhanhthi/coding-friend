@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const {
   DEVIN_EXCLUDED_SOURCE_PATHS,
   DEVIN_HOOK_EVENTS,
+  assertDevinHooksContract,
   buildDevinPlugin,
   createDevinMcpConfig,
   createDevinPluginManifest,
@@ -117,7 +118,9 @@ async function createFixtureRepo() {
     const content =
       script === "session-init.sh"
         ? '#!/usr/bin/env bash\necho "${CLAUDE_PLUGIN_ROOT}"\n'
-        : `#!/usr/bin/env bash\necho ${script}\n`;
+        : script.endsWith(".cjs")
+          ? `#!/usr/bin/env node\nconsole.log(${JSON.stringify(script)});\n`
+          : `#!/usr/bin/env bash\necho ${script}\n`;
     await writeText(
       path.join(repoRoot, "plugin", "hooks", script),
       content,
@@ -282,6 +285,7 @@ test("renders Claude-native Coding Friend references for Devin", () => {
       'use the Agent tool with `subagent_type: "coding-friend:<agent>"`.',
       '`subagent_type: "coding-friend:cf-explorer"`',
       "Use the **Agent tool** here, or the Agent tool there.",
+      "Several Agent tools at once.",
       'bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-x/scripts/run.sh"',
       "/cf-plan stays bare",
     ].join("\n"),
@@ -293,6 +297,7 @@ test("renders Claude-native Coding Friend references for Devin", () => {
       "use the `run_subagent` tool with profile `coding-friend:<agent>`.",
       "`run_subagent` profile `coding-friend:cf-explorer`",
       "Use the `run_subagent` tool here, or the `run_subagent` tool there.",
+      "Several `run_subagent` tools at once.",
       'bash "<plugin-root>/skills/cf-x/scripts/run.sh"',
       "/cf-plan stays bare",
     ].join("\n"),
@@ -815,6 +820,53 @@ test("fails when a referenced hook script is missing from the tree", async () =>
     () => buildDevinPlugin({ repoRoot }),
     /privacy-block\.sh/,
   );
+});
+
+test("hooks contract fails on a command token that is not a bare hook script", async (t) => {
+  const devinPluginDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), "cf-devin-contract-"),
+  );
+  t.after(() => fs.rm(devinPluginDir, { recursive: true, force: true }));
+  await writeText(
+    path.join(devinPluginDir, "hooks", "session-log.sh"),
+    "#!/usr/bin/env bash\n",
+    0o755,
+  );
+
+  await assert.rejects(
+    () =>
+      assertDevinHooksContract(
+        {
+          hooks: {
+            Stop: [
+              {
+                matcher: "",
+                hooks: [
+                  {
+                    type: "command",
+                    command:
+                      "CF_HOST=devin ${CLAUDE_PLUGIN_ROOT}/hooks/../hooks/session-log.sh",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        devinPluginDir,
+      ),
+    /hooks\/\.\.\/hooks\/session-log\.sh/,
+  );
+});
+
+test("fails when a generated script does not parse", async () => {
+  const repoRoot = await createFixtureRepo();
+  await writeText(
+    path.join(repoRoot, "plugin", "skills", "cf-example", "scripts", "bad.sh"),
+    "#!/usr/bin/env bash\nif [ -n x ]; then\n",
+    0o755,
+  );
+
+  await assert.rejects(() => buildDevinPlugin({ repoRoot }), /bad\.sh/);
 });
 
 test("fails fast when plugin source directory is missing", async () => {

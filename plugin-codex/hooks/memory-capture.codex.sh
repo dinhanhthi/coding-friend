@@ -27,7 +27,7 @@ if [[ "$AUTO_CAPTURE" != "true" ]]; then
   exit 0
 fi
 
-TMP_INPUT=$(mktemp "${TMPDIR:-/tmp}$cf-codex-memory-input.XXXXXX")
+TMP_INPUT=$(mktemp "${TMPDIR:-/tmp}/cf-codex-memory-input.XXXXXX")
 trap 'rm -f "$TMP_INPUT"' EXIT
 printf '%s' "$INPUT" > "$TMP_INPUT"
 

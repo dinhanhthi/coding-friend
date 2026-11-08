@@ -2,7 +2,7 @@
 # run-agent-review.sh — run a headless external-agent review via a CF-format prompt.
 # Usage: bash run-agent-review.sh <agent> <result-file> [prompt-file] [--snapshot-dir <dir>]
 #   <agent> ∈ claude|gemini|cursor|grok|codex
-#   [prompt-file]     optional pre-built prompt for $cf-plan-review; skips gather-diff + empty check
+#   [prompt-file]     optional pre-built prompt for \$cf-plan-review; skips gather-diff + empty check
 #   --snapshot-dir D  reuse the scope cf-review already captured (D/diff.txt)
 #                     instead of gathering it a second time; mutually exclusive
 #                     with [prompt-file]. Without either, the legacy auto-scope

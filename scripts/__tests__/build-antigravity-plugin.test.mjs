@@ -219,6 +219,15 @@ test("renders Claude-native Coding Friend references for Antigravity", () => {
   assert.doesNotMatch(rendered, /\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.doesNotMatch(rendered, /\bAGY_PLUGIN_ROOT\b/);
   assert.doesNotMatch(rendered, /bash "\.\/skills\//);
+
+  // The full Agent-tool + subagent_type phrase must be rewritten once, not
+  // twice ("`invoke_subagent` with `invoke_subagent` with agent …").
+  assert.equal(
+    renderAgyInstructionText(
+      'Use the Agent tool with `subagent_type: "coding-friend:cf-writer"`, or the **Agent tool** with `subagent_type: "coding-friend:cf-explorer"`.',
+    ),
+    "Use `invoke_subagent` with agent `cf-writer`, or `invoke_subagent` with agent `cf-explorer`.",
+  );
 });
 
 test("rewrites skill plugin-root for workspace cwd, not plugin cwd", () => {
@@ -597,7 +606,7 @@ test("copies plan/ask/scan templates into Antigravity dest and keeps external-re
     "should not copy\n",
   );
 
-  await buildAntigravityPlugin({ repoRoot });
+  await buildAntigravityPlugin({ repoRoot, strict: false });
 
   for (const [rel, body] of kept) {
     const dest = await fs.readFile(
@@ -876,10 +885,10 @@ test("builds Antigravity plugin fixture idempotently", async () => {
   const repoRoot = await createFixtureRepo();
   const agyPluginDir = path.join(repoRoot, "plugin-antigravity");
 
-  await buildAntigravityPlugin({ repoRoot });
+  await buildAntigravityPlugin({ repoRoot, strict: false });
   const firstSnapshot = await snapshotTree(agyPluginDir);
 
-  await buildAntigravityPlugin({ repoRoot });
+  await buildAntigravityPlugin({ repoRoot, strict: false });
   const secondSnapshot = await snapshotTree(agyPluginDir);
 
   assert.deepEqual(secondSnapshot, firstSnapshot);

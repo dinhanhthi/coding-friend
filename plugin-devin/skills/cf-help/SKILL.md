@@ -43,7 +43,7 @@ Never invent a flag, config key, hook name, CLI command, or host difference.
 
 ### Step 2: Provide overview (if general question)
 
-Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code. Check skills first; TDD optional (`--add-tests` or `tdd: true`); `/cf-plan` autopilot optional (`--auto` or `planAuto: true`, `--no-auto` forces off); verify before claiming done.
+Coding Friend is a lean toolkit for disciplined engineering workflows in Devin CLI. Check skills first; TDD optional (`--add-tests` or `tdd: true`); `/cf-plan` autopilot optional (`--auto` or `planAuto: true`, `--no-auto` forces off); verify before claiming done.
 
 Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent agy` / `--agy`), **Devin CLI** (beta; `--agent devin` / `--devin`). Plugin works alone; `coding-friend-cli` is optional. Skills never call `cf`. Flags / config / native prompt-reduction: `topics.md`.
 
@@ -122,7 +122,6 @@ Present the workflows in `topics.md`. Distinction: `/cf-remember` = project know
 - **Skill not triggering?** Invoke `/cf-<skill-name>` manually.
 - **Config / custom guides?** `topics.md`.
 - **Permission prompts?** Native modes: Claude `auto` / `acceptEdits` / `sandbox.autoAllowBashIfSandboxed`; Codex `approval_policy` / Smart Approvals / `--approve-for-me`; AGY remembers per-conversation; omp `yolo`; Devin `--permission-mode dangerous` (CF `PermissionRequest` hook approve/block). CF hook `autoApprove`: Codex / AGY / Devin only. Details: `topics.md`.
-- **After editing plugin files?** Run `cf dev sync` to copy changes to the cached version.
 - **More?** [Troubleshooting](https://cf.dinhanhthi.com/#help).
 
 ### Step 6: Answer concisely

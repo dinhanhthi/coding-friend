@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const { spawnSync } = require("node:child_process");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -134,8 +135,8 @@ function renderDevinText(input, { keepPluginRoot = false } = {}) {
       /`subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
       (_match, name) => `\`run_subagent\` profile \`coding-friend:${name}\``,
     )
-    .replace(/\*\*Agent tool\*\*/g, "`run_subagent` tool")
-    .replace(/\bAgent tool\b/g, "`run_subagent` tool");
+    .replace(/\*\*Agent tool(s?)\*\*/g, "`run_subagent` tool$1")
+    .replace(/\bAgent tool(s?)\b/g, "`run_subagent` tool$1");
   if (keepPluginRoot) return rendered;
   return rendered
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}\//g, `${DEVIN_PLUGIN_ROOT_TOKEN}/`)
@@ -179,6 +180,18 @@ function renderDevinFile(sourcePath, input) {
 
   if (normalizedPath.endsWith("/skills/cf-session/SKILL.md")) {
     rendered = renderDevinSessionSkill();
+  } else if (normalizedPath.endsWith("/skills/cf-help/SKILL.md")) {
+    // `cf dev sync` is Claude-only advice: a `--local` Devin install is a
+    // live symlink, so edits need no sync step.
+    rendered = rendered
+      .replace(
+        "Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code.",
+        "Coding Friend is a lean toolkit for disciplined engineering workflows in Devin CLI.",
+      )
+      .replace(
+        /\n- \*\*After editing plugin files\?\*\* Run `cf dev sync` to copy changes to the cached version\./,
+        "",
+      );
   }
 
   // Verified: Devin accepts Claude skill frontmatter natively
@@ -365,7 +378,12 @@ async function assertDevinHooksContract(hooks, devinPluginDir) {
           const script = token.startsWith("${CLAUDE_PLUGIN_ROOT}/hooks/")
             ? token.slice("${CLAUDE_PLUGIN_ROOT}/hooks/".length)
             : token;
-          if (!/^[\w.-]+\.(?:sh|cjs)$/.test(script)) continue;
+          if (!/^[\w.-]+\.(?:sh|cjs)$/.test(script)) {
+            problems.push(
+              `hooks.json ${event} command token is not a bare hook script name: ${token}`,
+            );
+            continue;
+          }
           const scriptPath = path.join(hooksDir, script);
           try {
             await fs.access(scriptPath, fs.constants.X_OK);
@@ -415,6 +433,45 @@ async function assertNoForeignHostPaths(devinPluginDir) {
     throw new Error(
       `Generated Devin plugin contains other-host files:\n${offenders
         .map((offender) => `  - ${offender}`)
+        .join("\n")}`,
+    );
+  }
+}
+
+// Post-copy guard: the plugin-root rewrites edit executable scripts as plain
+// text, so a rewrite landing inside a quoted string or template literal can
+// break the script. Syntax-check every generated shell and Node script.
+async function assertDevinScriptsParse(devinPluginDir) {
+  const failures = [];
+
+  async function walk(dir, prefix = "") {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const absolutePath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(absolutePath, relativePath);
+        continue;
+      }
+      const command = entry.name.endsWith(".sh")
+        ? ["bash", ["-n", absolutePath]]
+        : /\.(?:cjs|mjs)$/.test(entry.name)
+          ? [process.execPath, ["--check", absolutePath]]
+          : null;
+      if (!command) continue;
+      const result = spawnSync(command[0], command[1], { encoding: "utf8" });
+      if (result.status !== 0) {
+        const detail = (result.stderr || String(result.error ?? "")).trim();
+        failures.push(`${relativePath}: ${detail.split("\n")[0]}`);
+      }
+    }
+  }
+
+  await walk(devinPluginDir);
+  if (failures.length > 0) {
+    throw new Error(
+      `Generated Devin plugin contains scripts that do not parse:\n${failures
+        .map((failure) => `  - ${failure}`)
         .join("\n")}`,
     );
   }
@@ -508,7 +565,8 @@ Compared to the Claude Code plugin, on Devin CLI:
 `;
 }
 
-async function buildDevinPlugin({ repoRoot = REPO_ROOT } = {}) {
+// `strict: false` lets must-contain checks skip files a fixture repo omits.
+async function buildDevinPlugin({ repoRoot = REPO_ROOT, strict = true } = {}) {
   const pluginSourceDir = path.join(repoRoot, "plugin");
   const devinPluginDir = path.join(repoRoot, "plugin-devin");
   await assertSourceDir(pluginSourceDir);
@@ -573,12 +631,13 @@ async function buildDevinPlugin({ repoRoot = REPO_ROOT } = {}) {
   );
 
   await assertNoForeignHostPaths(devinPluginDir);
+  await assertDevinScriptsParse(devinPluginDir);
 
   const { findDevinArtifactLintIssues } = await import(
     pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
   );
   const lintIssues = await findDevinArtifactLintIssues(repoRoot, {
-    strict: path.resolve(repoRoot) === path.resolve(REPO_ROOT),
+    strict,
   });
   if (lintIssues.length > 0) {
     const details = lintIssues
@@ -602,6 +661,7 @@ if (require.main === module) {
 module.exports = {
   DEVIN_EXCLUDED_SOURCE_PATHS,
   DEVIN_HOOK_EVENTS,
+  assertDevinHooksContract,
   buildDevinPlugin,
   createDevinMcpConfig,
   createDevinPluginManifest,

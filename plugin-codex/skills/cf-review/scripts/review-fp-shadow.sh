@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# review-fp-shadow.sh — opt-in shadow check of a finished $cf-review report:
+# review-fp-shadow.sh — opt-in shadow check of a finished \$cf-review report:
 # asks `cf decide review-fp` whether each finding shows in the code, and the
 # CLI only LOGS the answers. Purely observational.
 #

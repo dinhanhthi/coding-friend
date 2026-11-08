@@ -12,6 +12,12 @@ import {
   findPlaceholderLintIssues,
 } from "../placeholder-lint.mjs";
 
+async function makeTempRoot(t, prefix) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  return root;
+}
+
 test("published Claude sources do not contain unresolved placeholders", async () => {
   const issues = await findPlaceholderLintIssues();
   assert.deepEqual(issues, []);
@@ -32,8 +38,8 @@ test("generated Devin instructions do not contain Claude-only runtime APIs", asy
   assert.deepEqual(issues, []);
 });
 
-test("Devin lint reports leftover placeholders and Claude dispatch vocabulary", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-refs-"));
+test("Devin lint reports leftover placeholders and Claude dispatch vocabulary", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-devin-refs-");
   await fs.mkdir(path.join(root, "plugin-devin", "skills", "cf-x"), {
     recursive: true,
   });
@@ -46,28 +52,34 @@ test("Devin lint reports leftover placeholders and Claude dispatch vocabulary", 
       "Use {{cf:slash cf-review}}.",
       'Dispatch with `subagent_type: "coding-friend:cf-writer"`.',
       "Ask the Agent tool for help.",
+      "Several Agent tools at once.",
+      "A toolkit for workflows in Claude Code.",
+      "Run `cf dev sync` after edits.",
       "",
     ].join("\n"),
   );
 
   const issues = await findDevinArtifactLintIssues(root, { strict: false });
-  const types = issues
+  const found = issues
     .filter((issue) => issue.file === "plugin-devin/skills/cf-x/SKILL.md")
-    .map((issue) => issue.type);
+    .map((issue) => `${issue.type}: ${issue.value}`);
   for (const expected of [
-    "unresolved host placeholder",
-    "Claude subagent type",
-    "Claude agent tool",
+    "unresolved host placeholder: {{cf:slash cf-review}}",
+    "Claude subagent type: subagent_type",
+    "Claude agent tool: Agent tool",
+    "Claude agent tool: Agent tools",
+    "Claude host name: in Claude Code",
+    "Claude-only dev workflow: cf dev sync",
   ]) {
     assert.ok(
-      types.includes(expected),
-      `expected Devin lint to report ${expected}, got ${JSON.stringify(types)}`,
+      found.includes(expected),
+      `expected Devin lint to report ${expected}, got ${JSON.stringify(found)}`,
     );
   }
 });
 
-test("Devin lint reports Claude-only hook events and missing CF_HOST prefix", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-hooks-"));
+test("Devin lint reports Claude-only hook events and missing CF_HOST prefix", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-devin-hooks-");
   await fs.mkdir(path.join(root, "plugin-devin", "hooks"), {
     recursive: true,
   });
@@ -111,8 +123,8 @@ test("Devin lint reports Claude-only hook events and missing CF_HOST prefix", as
   assert.equal(missingPrefix.value, "./hooks/session-log.sh");
 });
 
-test("Devin lint reports foreign-host artifact paths", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-paths-"));
+test("Devin lint reports foreign-host artifact paths", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-devin-paths-");
   await fs.mkdir(path.join(root, "plugin-devin", "hooks"), {
     recursive: true,
   });
@@ -142,8 +154,8 @@ test("Devin lint reports foreign-host artifact paths", async () => {
   ]);
 });
 
-test("Devin must-contain reports missing required host phrasing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-devin-must-"));
+test("Devin must-contain reports missing required host phrasing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-devin-must-");
   await fs.mkdir(path.join(root, "plugin-devin", "context"), {
     recursive: true,
   });
@@ -178,8 +190,8 @@ test("Devin must-contain reports missing required host phrasing", async () => {
   ]);
 });
 
-test("Codex lint reports Claude host name in skill sub-files", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-subfile-"));
+test("Codex lint reports Claude host name in skill sub-files", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-subfile-");
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x", "modes"), {
     recursive: true,
   });
@@ -205,8 +217,8 @@ test("Codex lint reports Claude host name in skill sub-files", async () => {
   assert.equal(hit.type, "Claude host name");
 });
 
-test("Codex must-contain reports missing required host phrasing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-must-"));
+test("Codex must-contain reports missing required host phrasing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-must-");
   await fs.mkdir(path.join(root, "plugin-codex", "skills"), {
     recursive: true,
   });
@@ -228,8 +240,8 @@ test("Codex must-contain reports missing required host phrasing", async () => {
   assert.equal(issues[0].line, 0);
 });
 
-test("AGY must-contain reports missing required host phrasing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-agy-must-"));
+test("AGY must-contain reports missing required host phrasing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-agy-must-");
   await fs.mkdir(path.join(root, "plugin-antigravity", "rules"), {
     recursive: true,
   });
@@ -250,8 +262,8 @@ test("AGY must-contain reports missing required host phrasing", async () => {
   assert.equal(issues[0].line, 0);
 });
 
-test("Codex production lint fails when a must-contain file is missing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-prod-miss-"));
+test("Codex production lint fails when a must-contain file is missing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-prod-miss-");
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-plan"), {
     recursive: true,
   });
@@ -280,8 +292,8 @@ test("Codex production lint fails when a must-contain file is missing", async ()
   );
 });
 
-test("Codex must-contain reports present-but-wrong host phrasing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-wrong-codex-"));
+test("Codex must-contain reports present-but-wrong host phrasing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-wrong-codex-");
   await fs.mkdir(path.join(root, "plugin-codex", "context"), {
     recursive: true,
   });
@@ -319,8 +331,8 @@ test("Codex must-contain reports present-but-wrong host phrasing", async () => {
   ]);
 });
 
-test("AGY must-contain reports present-but-wrong host phrasing", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-wrong-agy-"));
+test("AGY must-contain reports present-but-wrong host phrasing", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-wrong-agy-");
   await fs.mkdir(path.join(root, "plugin-antigravity", "rules"), {
     recursive: true,
   });
@@ -355,8 +367,8 @@ test("AGY must-contain reports present-but-wrong host phrasing", async () => {
   ]);
 });
 
-test("Codex must-contain fails on unreadable files even in fixture mode", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-unread-"));
+test("Codex must-contain fails on unreadable files even in fixture mode", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-unread-");
   await fs.mkdir(
     path.join(root, "plugin-codex", "skills", "cf-plan", "SKILL.md"),
     {
@@ -374,8 +386,8 @@ test("Codex must-contain fails on unreadable files even in fixture mode", async 
   assert.ok(hit, "expected unreadable must-contain file to fail, not skip");
 });
 
-test("Codex lint reports leftover subagent_type", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-subagent-"));
+test("Codex lint reports leftover subagent_type", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-subagent-");
   await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x"), {
     recursive: true,
   });
@@ -397,31 +409,33 @@ test("Codex lint reports leftover subagent_type", async () => {
   assert.match(hit.value, /subagent_type/);
 });
 
-test("Codex lint reports fenced run_in_background in skill sub-files", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-fenced-bg-"));
-  await fs.mkdir(path.join(root, "plugin-codex", "skills", "cf-x", "modes"), {
-    recursive: true,
-  });
-  await fs.mkdir(path.join(root, "plugin-codex", "agents"), {
-    recursive: true,
-  });
-  await fs.writeFile(
-    path.join(root, "plugin-codex", "skills", "cf-x", "SKILL.md"),
-    "# clean\n",
-  );
-  await fs.writeFile(
-    path.join(root, "plugin-codex", "skills", "cf-x", "modes", "a.md"),
-    "```\nrun_in_background: true\nbash x\n```\n",
-  );
+test("Codex and AGY lint report fenced run_in_background in skill sub-files", async (t) => {
+  for (const [hostDir, lint] of [
+    ["plugin-codex", findCodexArtifactLintIssues],
+    ["plugin-antigravity", findAntigravityArtifactLintIssues],
+  ]) {
+    const root = await makeTempRoot(t, "cf-lint-fenced-bg-");
+    await fs.mkdir(path.join(root, hostDir, "skills", "cf-x", "modes"), {
+      recursive: true,
+    });
+    await fs.writeFile(
+      path.join(root, hostDir, "skills", "cf-x", "SKILL.md"),
+      "# clean\n",
+    );
+    await fs.writeFile(
+      path.join(root, hostDir, "skills", "cf-x", "modes", "a.md"),
+      "```\nrun_in_background: true\nbash x\n```\n",
+    );
 
-  const issues = await findCodexArtifactLintIssues(root, { strict: false });
-  const hit = issues.find(
-    (issue) =>
-      issue.file === "plugin-codex/skills/cf-x/modes/a.md" &&
-      issue.type === "Claude background flag",
-  );
-  assert.ok(hit, "expected fenced run_in_background to be reported");
-  assert.match(hit.value, /run_in_background/);
+    const issues = await lint(root, { strict: false });
+    const hit = issues.find(
+      (issue) =>
+        issue.file === `${hostDir}/skills/cf-x/modes/a.md` &&
+        issue.type === "Claude background flag",
+    );
+    assert.ok(hit, `expected fenced run_in_background in ${hostDir}`);
+    assert.match(hit.value, /run_in_background/);
+  }
 });
 
 async function writeSourceLintFixture(root, files) {
@@ -436,16 +450,17 @@ async function writeSourceLintFixture(root, files) {
     );
   }
   for (const [relativePath, content] of Object.entries(files)) {
+    if (relativePath.split(/[\\/]/).includes("..")) {
+      throw new Error(`fixture path escapes the fixture root: ${relativePath}`);
+    }
     const absolutePath = path.join(root, relativePath);
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, content);
   }
 }
 
-test("source lint reports leftover Claude tool names in plugin skills", async () => {
-  const root = await fs.mkdtemp(
-    path.join(os.tmpdir(), "cf-lint-source-tools-"),
-  );
+test("source lint reports leftover Claude tool names in plugin skills", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-source-tools-");
   await writeSourceLintFixture(root, {
     "plugin/skills/cf-x/SKILL.md": [
       "Use the Agent tool",
@@ -477,54 +492,55 @@ test("source lint reports leftover Claude tool names in plugin skills", async ()
   }
 });
 
-test("source lint reports leftovers in cf-plan/cf-review and still skips bootstrap", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-source-skip-"));
+test("source lint reports leftovers in cf-plan/cf-review and still skips bootstrap", async (t) => {
+  // One line per bootstrap-exempt (Phase 3) pattern, planted in every file.
+  const phase3Leftovers = {
+    "Claude agent tool": "Use the Agent tool here.",
+    "Claude question tool": "AskUserQuestion",
+    "Claude background flag": "run_in_background",
+    "Claude Skill tool": "Skill tool",
+    "Claude host name": "if Claude finds itself",
+    "Claude-specific review prose": "Claude's own review",
+  };
+  const planted = `${Object.values(phase3Leftovers).join("\n")}\n`;
+  const root = await makeTempRoot(t, "cf-lint-source-skip-");
   await writeSourceLintFixture(root, {
-    "plugin/skills/cf-plan/SKILL.md":
-      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
-    "plugin/skills/cf-review/SKILL.md":
-      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
-    "plugin/context/bootstrap.md":
-      "{{cf:slash cf-review}}\nUse the Agent tool here.\n",
-    "plugin/skills/cf-x/SKILL.md": "Use the Agent tool here.\n",
+    "plugin/skills/cf-plan/SKILL.md": `{{cf:slash cf-review}}\n${planted}`,
+    "plugin/skills/cf-review/SKILL.md": `{{cf:slash cf-review}}\n${planted}`,
+    "plugin/context/bootstrap.md": `{{cf:slash cf-review}}\n${planted}`,
+    "plugin/skills/cf-x/SKILL.md": planted,
   });
 
   const issues = await findPlaceholderLintIssues(root);
-  const leftoverFiles = issues
-    .filter((issue) => issue.type === "Claude agent tool")
-    .map((issue) => issue.file);
-  const placeholderFiles = issues
-    .filter((issue) => issue.type === "unresolved host placeholder")
-    .map((issue) => issue.file);
-
-  assert.ok(
-    leftoverFiles.includes("plugin/skills/cf-x/SKILL.md"),
-    "expected in-scope skill to be reported for Agent tool",
-  );
-  assert.ok(
-    leftoverFiles.includes("plugin/skills/cf-plan/SKILL.md"),
-    "expected cf-plan leftovers to be reported",
-  );
-  assert.ok(
-    leftoverFiles.includes("plugin/skills/cf-review/SKILL.md"),
-    "expected cf-review leftovers to be reported",
-  );
-  assert.equal(leftoverFiles.includes("plugin/context/bootstrap.md"), false);
-
-  for (const excluded of [
-    "plugin/skills/cf-plan/SKILL.md",
-    "plugin/skills/cf-review/SKILL.md",
-    "plugin/context/bootstrap.md",
-  ]) {
-    assert.ok(
-      placeholderFiles.includes(excluded),
-      `expected unresolved host placeholder in ${excluded}, got ${JSON.stringify(placeholderFiles)}`,
+  for (const type of Object.keys(phase3Leftovers)) {
+    const leftoverFiles = issues
+      .filter((issue) => issue.type === type)
+      .map((issue) => issue.file)
+      .sort();
+    assert.deepEqual(
+      leftoverFiles,
+      [
+        "plugin/skills/cf-plan/SKILL.md",
+        "plugin/skills/cf-review/SKILL.md",
+        "plugin/skills/cf-x/SKILL.md",
+      ],
+      `${type}: bootstrap must stay exempt, every skill must be reported`,
     );
   }
+
+  const placeholderFiles = issues
+    .filter((issue) => issue.type === "unresolved host placeholder")
+    .map((issue) => issue.file)
+    .sort();
+  assert.deepEqual(placeholderFiles, [
+    "plugin/context/bootstrap.md",
+    "plugin/skills/cf-plan/SKILL.md",
+    "plugin/skills/cf-review/SKILL.md",
+  ]);
 });
 
-test("agent lint reports agents without a tools allow-list", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cf-lint-agent-tools-"));
+test("agent lint reports agents without a tools allow-list", async (t) => {
+  const root = await makeTempRoot(t, "cf-lint-agent-tools-");
   await fs.mkdir(path.join(root, "plugin", "agents"), { recursive: true });
   await fs.writeFile(
     path.join(root, "plugin", "agents", "cf-open.md"),

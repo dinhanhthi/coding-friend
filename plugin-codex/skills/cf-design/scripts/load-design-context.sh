@@ -21,5 +21,5 @@ if [[ -f "$PATTERNS_FILE" ]]; then
   echo "=== End Design Patterns ==="
 else
   echo "No DESIGN.md found at $DOCS_DIR/DESIGN.md."
-  echo "Run '$cf-design scan' to extract and save your project's design patterns."
+  echo "Run '\$cf-design scan' to extract and save your project's design patterns."
 fi

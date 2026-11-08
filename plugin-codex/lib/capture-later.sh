@@ -15,7 +15,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 if [ -z "${CF_DOCS_ROOT:-}" ]; then
   # shellcheck source=plugin/lib/cf-paths.sh
-  source "$(dirname "$0")$cf-paths.sh"
+  source "$(dirname "$0")/cf-paths.sh"
   cf_resolve_paths
 fi
 

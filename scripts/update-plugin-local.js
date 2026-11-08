@@ -17,7 +17,13 @@
 // Wired as: npm run ud-plugin-local
 
 const { execFileSync } = require("node:child_process");
-const { rmSync, existsSync, readFileSync } = require("node:fs");
+const {
+  rmSync,
+  existsSync,
+  readFileSync,
+  accessSync,
+  constants,
+} = require("node:fs");
 const { homedir } = require("node:os");
 const path = require("node:path");
 
@@ -35,6 +41,19 @@ const INSTALLED_PLUGINS = path.join(
 
 function run(cmd, args) {
   execFileSync(cmd, args, { stdio: "inherit", cwd: REPO_ROOT });
+}
+
+/** True when an executable `name` is on PATH. */
+function onPath(name) {
+  return (process.env.PATH ?? "").split(path.delimiter).some((dir) => {
+    if (!dir) return false;
+    try {
+      accessSync(path.join(dir, name), constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 function readJson(file) {
@@ -134,16 +153,22 @@ try {
 
 // 2d. Refresh the Devin install — a dev --local link is already live (new
 //     sessions pick up edits); prod runs `devin plugins update`.
-//     A failure (cf prints its own error above) is reported but does not abort.
-let devinSynced = false;
+//     Skipped when the devin CLI is not on PATH. A failure (cf prints its own
+//     error above) is reported but does not abort.
+let devinStatus = "failed";
 console.log("\n  → cf update --agent devin --plugin");
-try {
-  run("cf", ["update", "--agent", "devin", "--plugin"]);
-  devinSynced = true;
-} catch {
-  console.log(
-    "  ⚠ devin update failed — see the error above (if there is none: is `cf` on PATH?)",
-  );
+if (!onPath("devin")) {
+  devinStatus = "skipped";
+  console.log("  ⚠ devin update skipped (devin not installed)");
+} else {
+  try {
+    run("cf", ["update", "--agent", "devin", "--plugin"]);
+    devinStatus = "synced";
+  } catch {
+    console.log(
+      "  ⚠ devin update failed — see the error above (if there is none: is `cf` on PATH?)",
+    );
+  }
 }
 
 // 3. Clear the Codex cache so Codex re-copies plugin-codex/ on next launch.
@@ -182,11 +207,11 @@ if (agySynced) {
     "    • Antigravity — not updated; install agy and ensure `cf` is on PATH, then run this script again",
   );
 }
-if (devinSynced) {
+if (devinStatus === "synced") {
   console.log(
     "    • Devin — start a new session (dev link is live; prod updated via `devin plugins update`)",
   );
-} else {
+} else if (devinStatus === "failed") {
   console.log(
     "    • Devin — not updated; install/sign in to devin and ensure `cf` is on PATH, then run this script again",
   );

@@ -56,6 +56,9 @@ const CODEX_HOOK_EVENTS = new Set([
   "SubagentStop",
 ]);
 
+// The last rule skips `/cf-…` after `}` or `)`: that is a shell path such as
+// `${TMPDIR:-/tmp}/cf-hook-errors.log` or `$(dirname "$0")/cf-paths.sh`, not a
+// slash command; rewriting it yields `$cf-…`, an unbound variable.
 function renderCodexText(input) {
   return input
     .replace(/\{\{cf:slash\s+([a-z0-9-]+)\}\}/g, (_match, name) => `$${name}`)
@@ -88,7 +91,7 @@ function renderCodexText(input) {
       (_match, name) => `\`${name}\` custom agent`,
     )
     .replace(
-      /(?<![A-Za-z0-9_-])\/(cf-[a-z0-9-]+)\b/g,
+      /(?<![A-Za-z0-9_})-])\/(cf-[a-z0-9-]+)\b/g,
       (_match, name) => `$${name}`,
     );
 }
@@ -251,10 +254,6 @@ function renderCodexFile(sourcePath, input) {
         "Coding Friend is a lean toolkit for disciplined engineering workflows in Codex CLI.",
       )
       .replace(
-        / Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report \(set `review\.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable\)\./,
-        "",
-      )
-      .replace(
         /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\$cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default \(likewise `review\.withClaude`, `review\.withGrok`, `review\.withCursor`, `review\.withGemini`\); `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.nativeTimeout` \(default 600s\) bounds each in-session reviewer job; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
         "Flags: `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `$cf-review-out` prompt with in-session findings embedded. `--with-codex`/`--codex` and `review.withCodex` are ignored on Codex (do not spawn a nested Codex review). `review.withClaude`, `review.withGrok`, `review.withCursor`, `review.withGemini` are not yet supported on Codex (ignored). `review.agentTimeout` (default 300s) bounds each external agent; `review.nativeTimeout` (default 600s) bounds each in-session reviewer job; `review.maxRounds` (default 5) caps the autopilot fix loop. Unavailable agents are skipped with a warning.",
       )
@@ -280,6 +279,13 @@ function renderCodexFile(sourcePath, input) {
       /> \*\*Using Codex\?\*\*[\s\S]*?(?=\n\n)/,
       "> **Using Codex?** Run `$cf-review` directly. The review-out/review-in round trip remains available for other external reviewers or humans.",
     );
+  }
+
+  // In a shell script `$cf-x` expands `$cf` (unbound under `set -u`) in
+  // heredocs, double quotes and bare words; `\$cf-x` prints `$cf-x` there.
+  // No script has `/cf-x` under outer single quotes, where `\` would print.
+  if (normalizedPath.endsWith(".sh")) {
+    rendered = rendered.replace(/(?<!\\)\$(cf-[a-z0-9-]+)/g, "\\$$$1");
   }
 
   return rendered.replace(
@@ -441,7 +447,8 @@ function createCodexMcpConfig() {
   };
 }
 
-async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
+// `strict: false` lets must-contain checks skip files a fixture repo omits.
+async function buildCodexPlugin({ repoRoot = REPO_ROOT, strict = true } = {}) {
   const pluginSourceDir = path.join(repoRoot, "plugin");
   const codexPluginDir = path.join(repoRoot, "plugin-codex");
   await assertSourceDir(pluginSourceDir);
@@ -519,7 +526,7 @@ async function buildCodexPlugin({ repoRoot = REPO_ROOT } = {}) {
     pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
   );
   const lintIssues = await findCodexArtifactLintIssues(repoRoot, {
-    strict: path.resolve(repoRoot) === path.resolve(REPO_ROOT),
+    strict,
   });
   if (lintIssues.length > 0) {
     const details = lintIssues

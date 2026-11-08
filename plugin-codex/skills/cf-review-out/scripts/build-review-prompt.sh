@@ -74,7 +74,7 @@ if [ "$line_count" -gt "$MAX_DIFF_LINES" ]; then
   diff_lines_included="$MAX_DIFF_LINES"
   truncated_note="
 > NOTE: The diff was truncated from $line_count to $MAX_DIFF_LINES lines. Review covers a subset."
-  # Machine-readable for a piping caller (run-agent-review.sh, $cf-review --out):
+  # Machine-readable for a piping caller (run-agent-review.sh, \$cf-review --out):
   # whoever reviews this prompt saw a subset and must never be recorded as
   # covering the whole target.
   echo "CF_PROMPT_SCOPE=subset diff truncated from $line_count to $MAX_DIFF_LINES lines" >&2
@@ -254,7 +254,7 @@ For example, if you are Gemini: \`${DOCS_DIR}/reviews/${LABEL}-result-gemini.md\
 Once you have written your review to \`${DOCS_DIR}/reviews/${LABEL}-result-<service>.md\`, tell the user to paste the following prompt to Codex to collect the results:
 
 \`\`\`
-$cf-review-in ${LABEL}
+\$cf-review-in ${LABEL}
 \`\`\`
 
 ## Important: Diff Scope & How to Review

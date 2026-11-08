@@ -116,7 +116,7 @@ render_scope() {
   fi
 }
 
-out_file=$(mktemp "${TMPDIR:-/tmp}$cf-gather-diff.XXXXXX") || {
+out_file=$(mktemp "${TMPDIR:-/tmp}/cf-gather-diff.XXXXXX") || {
   # No temp file: still emit the scope, just without a snapshot.
   render_scope
   exit "$collect_status"

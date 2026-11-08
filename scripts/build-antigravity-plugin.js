@@ -102,6 +102,9 @@ function rewriteAgySkillScriptPluginRoot(normalizedPath, input) {
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, expr);
 }
 
+// The whole Agent-tool + subagent_type phrase is rewritten before the bare
+// subagent_type rule: rewriting `subagent_type` alone leaves "Agent tool" for
+// renderAgyInstructionText, which doubles it.
 function renderAgyText(input) {
   return input
     .replace(/\{\{cf:slash\s+([a-z0-9-]+)\}\}/g, (_match, name) => `/${name}`)
@@ -124,6 +127,10 @@ function renderAgyText(input) {
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}\//g, `${AGY_PLUGIN_ROOT_TOKEN}/`)
     .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, AGY_PLUGIN_ROOT_TOKEN)
     .replace(/\bCLAUDE\.md\b/g, "AGENTS.md")
+    .replace(
+      /(?:the )?\*{0,2}Agent tool\*{0,2} with `subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
+      (_match, name) => `\`invoke_subagent\` with agent \`${name}\``,
+    )
     .replace(
       /`subagent_type: "coding-friend:(cf-[a-z0-9-]+)"`/g,
       (_match, name) => `\`invoke_subagent\` with agent \`${name}\``,
@@ -303,10 +310,6 @@ function renderAgyFile(sourcePath, input) {
       .replace(
         "Coding Friend is a lean toolkit for disciplined engineering workflows in Claude Code.",
         "Coding Friend is a lean toolkit for disciplined engineering workflows in Google Antigravity.",
-      )
-      .replace(
-        / Flag: `--with-codex` runs a Codex second-opinion review in parallel and merges both into one report \(set `review\.withCodex: true` in config to enable by default; auto-skips with a warning if Codex is unavailable\)\./,
-        "",
       )
       .replace(
         /Flags: `--with-codex`\/`--codex`, `--claude`, `--gemini`, `--cursor`, `--grok` run headless external reviewers in parallel and merge into one report; `--out` exports a `\/cf-review-out` prompt with Claude's findings embedded\. Set `review\.withCodex: true` in config to enable Codex by default \(likewise `review\.withClaude`, `review\.withGrok`, `review\.withCursor`, `review\.withGemini`\); `review\.agentTimeout` \(default 300s\) bounds each external agent; `review\.nativeTimeout` \(default 600s\) bounds each in-session reviewer job; `review\.maxRounds` \(default 5\) caps the autopilot fix loop\. Unavailable agents are skipped with a warning\./,
@@ -492,7 +495,11 @@ async function writeAgyRules(pluginSourceDir, agyPluginDir) {
   await fs.writeFile(targetPath, content);
 }
 
-async function buildAntigravityPlugin({ repoRoot = REPO_ROOT } = {}) {
+// `strict: false` lets must-contain checks skip files a fixture repo omits.
+async function buildAntigravityPlugin({
+  repoRoot = REPO_ROOT,
+  strict = true,
+} = {}) {
   const pluginSourceDir = path.join(repoRoot, "plugin");
   const agyPluginDir = path.join(repoRoot, "plugin-antigravity");
   await assertSourceDir(pluginSourceDir);
@@ -563,7 +570,7 @@ async function buildAntigravityPlugin({ repoRoot = REPO_ROOT } = {}) {
     pathToFileURL(path.join(__dirname, "placeholder-lint.mjs")).href
   );
   const lintIssues = await findAntigravityArtifactLintIssues(repoRoot, {
-    strict: path.resolve(repoRoot) === path.resolve(REPO_ROOT),
+    strict,
   });
   if (lintIssues.length > 0) {
     const details = lintIssues
