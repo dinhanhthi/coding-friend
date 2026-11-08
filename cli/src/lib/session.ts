@@ -268,7 +268,15 @@ export function saveSession(opts: SaveSessionOpts): SaveSessionResult {
   const projectPath =
     readClaudeHeadCwd(jsonlPath) || projectDir || process.cwd();
 
-  mkdirSync(storeRoot, { recursive: true });
+  // A new store root is owner-only (its folder names are session labels); an
+  // existing one, maybe a synced folder the user picked, keeps its mode.
+  mkdirSync(dirname(storeRoot), { recursive: true });
+  try {
+    mkdirSync(storeRoot, { mode: 0o700 });
+    chmodSync(storeRoot, 0o700); // umask may strip bits
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+  }
   const folder = uniqueFolderName(storeRoot, slugifyLabel(label));
   const dir = join(storeRoot, folder);
   mkdirSync(dir, { mode: 0o700 });

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -271,6 +272,21 @@ describe("saveSession", () => {
     for (const name of ["session.jsonl", "meta.json"]) {
       expect(statSync(join(dir, name)).mode & 0o777).toBe(0o600);
     }
+    // Folder names are labels: a store root it creates is owner-only too.
+    expect(statSync(store).mode & 0o777).toBe(0o700);
+  });
+
+  it("keeps the mode of a store root that already exists", () => {
+    mkdirSync(store, { recursive: true, mode: 0o755 });
+    chmodSync(store, 0o755);
+    saveSession({
+      jsonlPath: liveTranscript(),
+      sessionId: UUID,
+      label: "x",
+      storeRoot: store,
+      previewText: "",
+    });
+    expect(statSync(store).mode & 0o777).toBe(0o755);
   });
 
   it("appends numeric suffix when folder already exists", () => {
