@@ -32,7 +32,14 @@ function makeBin(root, excluded) {
     for (const name of names) {
       if (excluded.includes(name)) continue;
       const link = path.join(bin, name);
-      if (fs.existsSync(link)) continue;
+      // lstat, not existsSync: a dangling link from the first dir (e.g. a
+      // broken /bin/grub-ntldr-img on a CI image) still occupies the name.
+      try {
+        fs.lstatSync(link);
+        continue;
+      } catch {
+        /* free name */
+      }
       fs.symlinkSync(path.join(dir, name), link);
     }
   }

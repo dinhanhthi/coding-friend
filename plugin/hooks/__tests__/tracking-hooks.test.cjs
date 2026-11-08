@@ -51,6 +51,36 @@ function cleanup() {
   }
 }
 
+/**
+ * Runs a tracker hook that started slowly (SECONDS already 10, as on a loaded
+ * CI runner) while a live holder owns the lock for 400 ms. Resolves true when
+ * the holder released the lock itself, false when the hook broke it first.
+ * Breaking a lock held for milliseconds loses an update.
+ */
+function runBehindLiveLock(script, lockDir, payload) {
+  const { execFile } = require("child_process");
+  fs.mkdirSync(lockDir);
+  let releasedByHolder = false;
+  setTimeout(() => {
+    try {
+      fs.rmdirSync(lockDir);
+      releasedByHolder = true;
+    } catch {
+      /* the hook already broke the lock */
+    }
+  }, 400);
+  return new Promise((resolve) => {
+    const child = execFile(
+      "bash",
+      [script],
+      { timeout: 5000, env: { ...process.env, SECONDS: "10" } },
+      () => resolve(releasedByHolder),
+    );
+    child.stdin.write(JSON.stringify(payload));
+    child.stdin.end();
+  });
+}
+
 // ---------------------------------------------------------------------------
 // agent-tracker.sh
 // ---------------------------------------------------------------------------
@@ -178,6 +208,21 @@ describe("agent-tracker.sh", () => {
     expect(fs.readFileSync(countFile, "utf8").trim()).toBe("1");
   });
 
+  it("waits for a live lock even when the hook started slowly", async () => {
+    const released = await runBehindLiveLock(
+      AGENT_TRACKER,
+      `/tmp/cf-agent-count-${SESSION_ID}.lock`,
+      {
+        hook_event_name: "SubagentStart",
+        agent_type: "cf-reviewer",
+        session_id: SESSION_ID,
+      },
+    );
+    expect(released).toBe(true);
+    const countFile = `/tmp/cf-agent-count-${SESSION_ID}`;
+    expect(fs.readFileSync(countFile, "utf8").trim()).toBe("1");
+  });
+
   it("maintains correct count under concurrent starts", () => {
     const { execFile } = require("child_process");
 
@@ -234,6 +279,17 @@ describe("task-tracker.sh", () => {
     const data = JSON.parse(fs.readFileSync(tasksFile, "utf8"));
     expect(data.total).toBe(1);
     expect(data.completed).toBe(0);
+  });
+
+  it("waits for a live lock even when the hook started slowly", async () => {
+    const released = await runBehindLiveLock(
+      TASK_TRACKER,
+      `/tmp/cf-tasks-${SESSION_ID}.lock`,
+      { hook_event_name: "TaskCreated", session_id: SESSION_ID },
+    );
+    expect(released).toBe(true);
+    const tasksFile = `/tmp/cf-tasks-${SESSION_ID}.json`;
+    expect(JSON.parse(fs.readFileSync(tasksFile, "utf8")).total).toBe(1);
   });
 
   it("increments completed on TaskCompleted", () => {
