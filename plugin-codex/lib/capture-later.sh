@@ -70,7 +70,7 @@ detect_conversation_id() {
 
   encoded=$(printf '%s' "$PWD" | sed 's|/|-|g')
 
-  # Mirror cf_claude_dir() / detect-session.sh: honor CLAUDE_CONFIG_DIR, default ~/.claude
+  # Mirror cf_claude_dir() (cf-paths.sh) / claudeConfigDir() (cli/src/lib/paths.ts): honor CLAUDE_CONFIG_DIR, default ~/.claude
   claude_dir="${CLAUDE_CONFIG_DIR-}"
   claude_dir="${claude_dir#"${claude_dir%%[![:space:]]*}"}"
   claude_dir="${claude_dir%"${claude_dir##*[![:space:]]}"}"

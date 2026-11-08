@@ -18,6 +18,53 @@ if [ ! -f "$ENTRY" ]; then
   exit 1
 fi
 
+# Ignore patterns from .coding-friend/ignore (CFIGNORE_PATTERNS), parsed by the
+# shared lib exactly as cf-review's scope filter does. Filtering is a security
+# control (the prompt goes to external reviewers): no lib → fail closed.
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[ "$SCRIPT_DIR" = "${BASH_SOURCE[0]}" ] && SCRIPT_DIR="."
+LIB_DIR="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd)/lib"
+if [ ! -r "$LIB_DIR/cf-paths.sh" ] || [ ! -r "$LIB_DIR/session-detect.sh" ]; then
+  echo "ERROR: Coding Friend lib not found at $LIB_DIR — cannot apply .coding-friend/ignore" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+. "$LIB_DIR/cf-paths.sh"
+# shellcheck source=/dev/null
+. "$LIB_DIR/session-detect.sh"
+[ -n "${MAIN_REPO_ROOT:-}" ] || cf_resolve_paths
+PLUGIN_ROOT="${PLUGIN_ROOT:-${LIB_DIR%/lib}}"
+# An ignore file that exists but cannot be read would silently embed everything.
+if [ -e "$MAIN_REPO_ROOT/.coding-friend/ignore" ] && [ ! -r "$MAIN_REPO_ROOT/.coding-friend/ignore" ]; then
+  echo "ERROR: cannot read $MAIN_REPO_ROOT/.coding-friend/ignore — refusing to build the prompt" >&2
+  exit 1
+fi
+# Its grep pipeline exits 1 on an ignore file with only comments; that is fine.
+cf_detect_session >/dev/null 2>&1 || true
+
+# is_ignored <path> — 0 when <path> (made relative to the repo root) matches an
+# ignore entry, with the same four forms as cf-review's review-scope.sh.
+is_ignored() {
+  local p="$1" pat
+  [ -n "${CFIGNORE_PATTERNS:-}" ] || return 1
+  p="${p#./}"
+  case "$p" in
+    "$MAIN_REPO_ROOT"/*) p="${p#"$MAIN_REPO_ROOT"/}" ;;
+  esac
+  # Read line by line: an unquoted `for` would glob-expand the patterns.
+  while IFS= read -r pat; do
+    pat="${pat%/}"
+    [ -n "$pat" ] || continue
+    # shellcheck disable=SC2254 # ignore entries are glob patterns by design
+    case "$p" in
+      $pat | $pat/* | */$pat | */$pat/*) return 0 ;;
+    esac
+  done <<PATTERNS
+$(printf '%s\n' "$CFIGNORE_PATTERNS" | tr '|' '\n')
+PATTERNS
+  return 1
+}
+
 entry_base=$(basename "$ENTRY")
 plan_dir=$(dirname "$ENTRY")
 
@@ -32,6 +79,10 @@ fi
 emit_file() {
   heading="$1"
   file="$2"
+  if is_ignored "$file"; then
+    printf '> Skipped %s — matches .coding-friend/ignore (not included in this prompt).\n\n' "$heading"
+    return 0
+  fi
   printf '### %s\n\n```markdown\n' "$heading"
   cat "$file"
   printf '\n```\n\n'

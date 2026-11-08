@@ -267,6 +267,22 @@ describe("reviewFalsePositives", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("refuses a report over the size cap without sending anything", async () => {
+    snapshotDir = join(
+      REVIEW_ROOT,
+      `cf-test-decide-review-big-${process.pid}-${Date.now()}`,
+    );
+    const reportPath = writeSnapshot(snapshotDir, diff, "x".repeat(262_145));
+
+    await expect(
+      reviewFalsePositives({ snapshotDir, reportPath }),
+    ).rejects.toMatchObject({
+      code: "INVALID_ARGS",
+      message: expect.stringMatching(/larger than/),
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("refuses a snapshot dir outside /tmp/coding-friend/review/", async () => {
     const reportPath = writeSnapshot(join(root, "outside"));
 

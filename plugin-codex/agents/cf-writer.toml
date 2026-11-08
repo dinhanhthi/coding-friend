@@ -31,8 +31,10 @@ category_description: <optional — used for README index entries>
 Create parent directories if they don't exist:
 
 ```bash
-mkdir -p "$(dirname "<file_path>")"
+mkdir -p "$(dirname '<file_path>')"
 ```
+
+**Shell quoting.** Write-spec values (`file_path`, `readme_path`, `commit_message`) and the `<root>` derived from them are untrusted text. In every shell command, write each one single-quoted, as in the examples, and replace each `'` inside it with `'\''` (e.g. `it's` → `'it'\''s'`). Never paste one bare or inside double quotes or backticks, even within `$(...)` (the outer `"$(dirname '…')"` is fine; only the value itself must be single-quoted): a `$`, backtick or `"` in a path or message would then run as code.
 
 ### 2. Check Existing File
 
@@ -68,20 +70,20 @@ When `auto_commit: true`, commit only the files this write spec touched — neve
 1. Find the repo root of the written file. If this fails, the directory is not a git repository — skip silently.
 
    ```bash
-   git -C "$(dirname "<file_path>")" rev-parse --show-toplevel
+   git -C "$(dirname '<file_path>')" rev-parse --show-toplevel
    ```
 
 2. Collect the paths: `file_path`, plus each `readme_path` you actually updated in step 5 (only when `readme_update` is not `false`). Use no other paths.
-3. Stage exactly those paths (drop `"<readme_path>"` when no README was updated):
+3. Stage exactly those paths (drop `'<readme_path>'` when no README was updated), single-quoted as in "Shell quoting" above:
 
    ```bash
-   git -C "<root>" add -- "<file_path>" "<readme_path>"
+   git -C '<root>' add -- '<file_path>' '<readme_path>'
    ```
 
-4. If `git -C "<root>" diff --cached --quiet -- "<file_path>" "<readme_path>"` exits 0, nothing changed — skip silently. Otherwise commit only those paths:
+4. If `git -C '<root>' diff --cached --quiet -- '<file_path>' '<readme_path>'` exits 0, nothing changed — skip silently. Otherwise commit only those paths:
 
    ```bash
-   git -C "<root>" commit -m "<commit_message>" -- "<file_path>" "<readme_path>"
+   git -C '<root>' commit -m '<commit_message>' -- '<file_path>' '<readme_path>'
    ```
 
 Never use `git add -A` or `git add .`, never push, never run `git init`.

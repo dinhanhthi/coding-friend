@@ -1393,6 +1393,13 @@ test(
         skip: realCliOnSafePath("cf"),
       },
       {
+        name: "check on: config on and cf on PATH",
+        decision: on,
+        args: ["--check"],
+        cfOut: okEnvelope(true),
+        want: "on",
+      },
+      {
         name: "decision off",
         decision: { provider: "off", reviewShadow: true },
         args: runArgs,

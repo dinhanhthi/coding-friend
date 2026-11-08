@@ -424,12 +424,62 @@ cf_scope__collect_untracked() {
 
 # ── snapshot ────────────────────────────────────────────────────────
 
+# 0 when every existing component of $1 (absolute), up to the first root-owned
+# or sticky ancestor (/tmp, /var/folders/…), is a real directory we own — so no
+# other user can swap in a symlink we would write through. stat without -L
+# never follows a symlink (macOS /tmp -> private/tmp is root-owned: walk ends).
+cf_scope__owned_chain() {
+  local d="$1" uid owner
+  uid=$(id -u) || return 1
+  while [ -n "$d" ]; do
+    if [ -e "$d" ] || [ -L "$d" ]; then
+      owner=$(stat -c %u -- "$d" 2>/dev/null || stat -f %u -- "$d" 2>/dev/null) || return 1
+      if [ "$owner" != "$uid" ]; then
+        [ "$owner" = 0 ] && return 0
+        return 1
+      fi
+      { [ ! -L "$d" ] && [ -d "$d" ]; } || return 1
+      [ -k "$d" ] && return 0
+    fi
+    d="${d%/*}"
+  done
+  return 0
+}
+
+# Create $1 private (0700) for the snapshot. Its parent — the review root,
+# /tmp/coding-friend/review, which also holds the Step 10.5 <run-id>.report.md —
+# is made 0700 too when we own it. Returns 1 (refuse) on a symlink or a
+# component owned by another user; the chain is checked before mkdir (never
+# create through a symlink) and after it (a component may have raced in).
+cf_scope__private_dir() {
+  local dir="${1%/}" parent
+  case "$dir" in /*) ;; *) dir="$PWD/$dir" ;; esac
+  cf_scope__owned_chain "$dir" || return 1
+  (umask 077 && mkdir -p -- "$dir") 2>/dev/null || return 1
+  cf_scope__owned_chain "$dir" || return 1
+  chmod 700 "$dir" 2>/dev/null || return 1
+  parent="${dir%/*}"
+  # Only the review root itself is tightened: a --snapshot-dir elsewhere (e.g.
+  # ./snap) must never chmod its parent (the project root).
+  case "$parent" in
+    */coding-friend/review) ;;
+    *) return 0 ;;
+  esac
+  if [ -O "$parent" ] && [ ! -k "$parent" ]; then
+    chmod 700 "$parent" 2>/dev/null || return 1
+  fi
+  return 0
+}
+
 # Returns 0 when CF_SCOPE_SNAPSHOT_DIR is usable; clears it and warns otherwise,
 # so the caller silently falls back to the already-captured stdout content.
+# Stale artifacts are removed and diff.txt is created with noclobber (O_EXCL),
+# so a re-run never writes through an existing file or symlink.
 cf_scope_snapshot_init() {
   [ -n "$CF_SCOPE_SNAPSHOT_DIR" ] || return 1
-  if mkdir -p "$CF_SCOPE_SNAPSHOT_DIR" 2>/dev/null &&
-    : >"$CF_SCOPE_SNAPSHOT_DIR/diff.txt" 2>/dev/null; then
+  if cf_scope__private_dir "$CF_SCOPE_SNAPSHOT_DIR" &&
+    rm -f -- "$CF_SCOPE_SNAPSHOT_DIR"/{diff.txt,metadata.txt,files.z,excluded.z} 2>/dev/null &&
+    (set -C && : >"$CF_SCOPE_SNAPSHOT_DIR/diff.txt") 2>/dev/null; then
     return 0
   fi
   echo "WARNING: cannot write snapshot dir '$CF_SCOPE_SNAPSHOT_DIR' — continuing with stdout only" >&2

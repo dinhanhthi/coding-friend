@@ -576,6 +576,11 @@ test("--snapshot-dir writes a reusable scope snapshot", () => {
         snapshotDir,
         "METADATA must advertise the snapshot dir",
       );
+      assert.equal(
+        fs.statSync(snapshotDir).mode & 0o777,
+        0o700,
+        "the snapshot dir must be private",
+      );
     } finally {
       fs.rmSync(snapshotDir, { recursive: true, force: true });
     }
@@ -610,18 +615,36 @@ test("an unusable snapshot dir degrades to stdout instead of failing", () => {
   withRepo((dir) => {
     const blocker = path.join(dir, "..", `cf-snap-file-${process.pid}`);
     fs.writeFileSync(blocker, "not a directory\n");
+    // A planted symlinked review root: the snapshot must never be written
+    // through it (security — /tmp/coding-friend/review is a shared path).
+    const target = fs.mkdtempSync(path.join(os.tmpdir(), "cf-snap-target-"));
+    const link = path.join(dir, "..", `cf-snap-link-${process.pid}`);
+    fs.symlinkSync(target, link);
     try {
       fs.writeFileSync(path.join(dir, "base.txt"), "base\nFALLBACK_MARK\n");
-      const result = gatherWith(dir, ["--snapshot-dir", blocker]);
-      assert.equal(result.status, 0, result.stderr);
-      assert.ok(
-        result.stdout.includes("FALLBACK_MARK"),
-        "in-memory content must still be emitted",
+      for (const snap of [blocker, path.join(link, "run-1")]) {
+        const result = gatherWith(dir, ["--snapshot-dir", snap]);
+        assert.equal(result.status, 0, result.stderr);
+        assert.ok(
+          result.stdout.includes("FALLBACK_MARK"),
+          "in-memory content must still be emitted",
+        );
+        assert.match(
+          result.stderr,
+          /WARNING/,
+          "the limitation must be reported",
+        );
+        assert.equal(parseMetadata(result.stdout).snapshot_dir, "");
+      }
+      assert.deepEqual(
+        fs.readdirSync(target),
+        [],
+        "nothing may be written through the symlink",
       );
-      assert.match(result.stderr, /WARNING/, "the limitation must be reported");
-      assert.equal(parseMetadata(result.stdout).snapshot_dir, "");
     } finally {
       fs.rmSync(blocker, { force: true });
+      fs.rmSync(link, { force: true });
+      fs.rmSync(target, { recursive: true, force: true });
     }
   });
 });

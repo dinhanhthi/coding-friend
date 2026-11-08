@@ -5,7 +5,7 @@ description: >
   "how does X work?", "where is Y defined?", "what's the flow for Z?", "explain this
   module", "why is this done this way?". Unlike $cf-research, one answer.
 created: 2026-02-20
-updated: 2026-09-09
+updated: 2026-11-07
 ---
 
 # $cf-ask
@@ -110,7 +110,7 @@ If IS_FLOW_QUESTION: add a plain-text ASCII diagram (box/arrow characters, no Me
 ### Step 6: Save to Memory (via cf-writer agent)
 
 1. Read `language` config (local `.coding-friend/config.json` overrides global `~/.coding-friend/config.json`, default: `en`)
-2. Search existing memory files in `{docsDir}/memory/` — if an existing file covers the same topic, use `task: update` (append). Otherwise, use `task: create`.
+2. Search existing memory files in `{CF_DOCS_ROOT}/memory/` — if an existing file covers the same topic, use `task: update` (append). Otherwise, use `task: create`.
 3. Choose the appropriate category:
    - `features/YYYY-MM-DD-<name>.md` — for feature-specific logic, flows, APIs
    - `conventions/YYYY-MM-DD-<name>.md` — for project-wide patterns and rules
@@ -155,7 +155,7 @@ Show the user a 2-line summary:
 
 - Delegate exploration to the cf-explorer agent — keep the main context lean
 - Stay lightweight — no multi-doc output
-- Always save to `{docsDir}/memory/` — saving is mandatory, not optional
+- Always save to `{CF_DOCS_ROOT}/memory/` — saving is mandatory, not optional
 - Search existing memory files before creating new ones
 - NEVER overwrite existing content — only append
 - Respect `.coding-friend/ignore` patterns

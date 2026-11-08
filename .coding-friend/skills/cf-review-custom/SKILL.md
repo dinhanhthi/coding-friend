@@ -6,11 +6,11 @@ After the standard review completes, check if any changed files require document
 
 From the files already reviewed in this session, filter for changes in these source directories:
 
-| Source path pattern             | Documentation target                            |
-| ------------------------------- | ----------------------------------------------- |
-| `plugin/skills/{name}/SKILL.md` | `website/src/content/docs/skills/{name}.mdx`    |
-| `plugin/agents/{name}.md`       | `website/src/content/docs/reference/agents.mdx` |
-| `cli/src/commands/{name}.ts`    | `website/src/content/docs/cli/cf-{name}.mdx`    |
+| Source path pattern             | Documentation target (single-page site `website/src/content/index.md`) |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `plugin/skills/{name}/SKILL.md` | the `{name}` bullet under "✨ Features"                                |
+| `plugin/agents/{name}.md`       | the "🧭 Agents" section                                                |
+| `cli/src/commands/{name}.ts`    | every mention of `cf {name}` (there is no CLI section)                 |
 
 Only consider files that were actually changed in this conversation's diff — do NOT scan the entire codebase.
 
@@ -21,7 +21,7 @@ If no implementation files match the patterns above, skip the remaining steps an
 For each matched implementation file:
 
 1. Read the implementation file to understand what changed (use the diff from the review, not the entire file)
-2. Read the corresponding documentation file
+2. Read the corresponding section of `website/src/content/index.md`
 3. Check whether the documentation already reflects the changes — look for:
    - New or renamed workflow steps, flags, arguments
    - Changed behavior, conditions, or modes
@@ -37,8 +37,8 @@ Append a **Doc Sync** section to the review report:
 
 | Source | Doc | Status |
 |---|---|---|
-| `plugin/skills/cf-ask/SKILL.md` | `website/.../skills/cf-ask.mdx` | Out of date — missing new `--verbose` flag |
-| `plugin/agents/cf-explorer.md` | `website/.../reference/agents.mdx` | Up to date |
+| `plugin/skills/cf-ask/SKILL.md` | `index.md` › Features › `/cf-ask` | Out of date — missing new `--verbose` flag |
+| `plugin/agents/cf-explorer.md` | `index.md` › Agents | Up to date |
 
 **Action needed:** <list specific updates required, or "None — all docs are in sync">
 ```
@@ -48,6 +48,6 @@ If updates are needed, ask the user whether to apply them now or leave as a remi
 ## Rules
 
 - Only check documentation for files that were changed in the current conversation — never do a full-repo audit.
-- Do not rewrite entire doc files. Only update the specific sections that drifted from the implementation.
+- Do not rewrite the whole page. Only update the specific sections that drifted from the implementation.
 - Preserve the existing documentation style, frontmatter, and structure when making updates.
-- If a documentation file does not exist for a new implementation file, flag it as "Missing doc" rather than creating one automatically.
+- If `index.md` has no entry for a new implementation file, flag it as "Missing doc" rather than adding one automatically.

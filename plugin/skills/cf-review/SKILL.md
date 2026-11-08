@@ -11,7 +11,7 @@ description: >
   findings, --commit also commits (config: review.fix, review.commit).
 user-invocable: true
 created: 2026-02-17
-updated: 2026-11-05
+updated: 2026-11-07
 model: opus
 ---
 
@@ -72,7 +72,7 @@ Flags for the Step 1 target: default or natural-language → none (branch commit
 
 **Exit `2` and exit `3` mean the same in Step 2 and Step 3.** Exit `2` = the scope is unusable (bad flag, invalid range, no git; or a missing, truncated, or mismatched snapshot) → stop, fix the scope, re-run: never continue as "no changes", never fall back to QUICK. Exit `3` = the scope is usable but incomplete (`SCOPE_COMPLETE=false`, i.e. something under `=== Excluded from review scope (NOT reviewed) ===` was unreadable) → continue, and carry that gap into the final report as uncovered scope, never as clean.
 
-**Only you** write the snapshot (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); reviewer agents only read it. If the script warns the snapshot dir is unusable, keep using this command's stdout and note the limitation in the Summary — a background reviewer must never request write permission.
+**Only you** write the snapshot (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); reviewer agents only read it. The script creates the snapshot dir and its review dir private (0700) and refuses one that is a symlink or owned by another user. If the script warns the snapshot dir is unusable, keep using this command's stdout and note the limitation in the Summary — a background reviewer must never request write permission.
 
 **Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
 
@@ -214,7 +214,7 @@ Runs right after Step 10, before Step 11, whatever `fix` is. Skip when `out=true
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/review-fp-shadow.sh" --check
 ```
 
-`SHADOW=off` → do nothing more, write no file. `SHADOW=on` → write the merged report, verbatim as Step 10 displayed it, to `/tmp/coding-friend/review/<run-id>.report.md` (next to the snapshot dir, never inside it), then run this and ignore its output:
+`SHADOW=off`, or Step 2 warned the snapshot dir was unusable → do nothing more, write no file (the review dir was not verified private). `SHADOW=on` → write the merged report, verbatim as Step 10 displayed it, to `/tmp/coding-friend/review/<run-id>.report.md` (next to the snapshot dir, never inside it; Step 2 made that review dir private: 0700, owned by you, no symlink), then run this and ignore its output:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/review-fp-shadow.sh" --snapshot-dir /tmp/coding-friend/review/<run-id> --report /tmp/coding-friend/review/<run-id>.report.md

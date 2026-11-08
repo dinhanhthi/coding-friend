@@ -6,7 +6,7 @@ user-invocable: true
 argument-hint: "[plan] [--fix|--inline|--no-fix] [--codex|--gemini|--claude|--cursor|--grok]"
 model: opus
 created: 2026-09-05
-updated: 2026-10-28
+updated: 2026-11-07
 ---
 
 # /cf-plan-review
@@ -78,6 +78,8 @@ mkdir -p "${CF_DOCS_ROOT}/reviews" && \
   > "${CF_DOCS_ROOT}/reviews/<slug>-plan-prompt.md"
 ```
 
+The script leaves out any plan file that matches `.coding-friend/ignore` and notes it in the prompt (`> Skipped …`), so no reviewer receives it.
+
 ### Step 3: Spawn external reviewers (only when agents non-empty)
 
 Skip when `agents=[]`.
@@ -120,7 +122,7 @@ Never block on an external reviewer — failures degrade gracefully.
 
 **When no external source survived:** use Source 1 as-is. Do not reformat.
 
-**When any external source survived:** merge via Dispatch `cf-reviewer-reducer`. Source 1 is the in-session report; each surviving external review is a numbered source:
+**When any external source survived:** Dispatch `cf-reviewer-reducer` to merge them. Source 1 is the in-session report; each surviving external review is a numbered source:
 
 > Merge these review reports into one unified, deduplicated, severity-ranked report.
 >

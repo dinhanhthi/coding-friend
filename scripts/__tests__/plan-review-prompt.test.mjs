@@ -15,9 +15,17 @@ const script = path.join(
   "plugin/skills/cf-plan-review/scripts/build-plan-review-prompt.sh",
 );
 
-function run(entryFile, docsDir) {
+// Tests that do not set MAIN_REPO_ROOT get an empty root, so the developer's
+// own .coding-friend/ignore never filters the fixtures.
+const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plan-review-root-"));
+process.on("exit", () =>
+  fs.rmSync(emptyRoot, { recursive: true, force: true }),
+);
+
+function run(entryFile, docsDir, env = process.env) {
   return spawnSync("bash", [script, entryFile, docsDir], {
     cwd: repoRoot,
+    env: { ...env, MAIN_REPO_ROOT: env.MAIN_REPO_ROOT ?? emptyRoot },
     encoding: "utf8",
     maxBuffer: 10 * 1024 * 1024,
   });
@@ -70,6 +78,41 @@ test("embeds cf-plan-review folder files and the four output headings", () => {
   // Line-anchored: embedded plan bodies mention these strings in prose.
   assert.ok(!/^### overview\./m.test(stdout), "must skip overview.* files");
   assert.ok(!/^### review\.md$/m.test(stdout), "must skip review.md");
+});
+
+// Security: ignored plan files must never reach the prompt sent to external reviewers.
+test("skips plan files that match .coding-friend/ignore", () => {
+  const tmp = makeFixtureRoot();
+  const planDir = path.join(tmp, "plans", "ignored-plan");
+  fs.mkdirSync(planDir, { recursive: true });
+  fs.mkdirSync(path.join(tmp, ".coding-friend"));
+  fs.writeFileSync(
+    path.join(tmp, ".coding-friend", "ignore"),
+    "# private notes\nplans/ignored-plan/phase-2-private.md\n",
+  );
+  fs.writeFileSync(path.join(planDir, "README.md"), "# Plan\n");
+  fs.writeFileSync(path.join(planDir, "phase-1-public.md"), "# Phase 1\n");
+  fs.writeFileSync(
+    path.join(planDir, "phase-2-private.md"),
+    "IGNORED-PLAN-CONTENT-zz9\n",
+  );
+
+  const result = run(path.join(planDir, "README.md"), tmp, {
+    ...process.env,
+    MAIN_REPO_ROOT: tmp,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes("### phase-1-public.md"));
+  assert.ok(
+    !result.stdout.includes("IGNORED-PLAN-CONTENT-zz9"),
+    "ignored file content must not be embedded",
+  );
+  assert.ok(!/^### phase-2-private\.md$/m.test(result.stdout));
+  assert.match(
+    result.stdout,
+    /phase-2-private\.md[^\n]*\.coding-friend\/ignore/,
+    "skipped file must be noted in the prompt",
+  );
 });
 
 test("reports missing brief.md for a folder plan without one", () => {

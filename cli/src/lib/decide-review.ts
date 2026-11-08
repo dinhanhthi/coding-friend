@@ -1,11 +1,4 @@
-import {
-  closeSync,
-  openSync,
-  readFileSync,
-  readSync,
-  realpathSync,
-  statSync,
-} from "fs";
+import { closeSync, openSync, readSync, realpathSync, statSync } from "fs";
 import { homedir } from "os";
 import { basename, isAbsolute, join, relative } from "path";
 import { resolveDecisionConfig } from "./config.js";
@@ -312,9 +305,11 @@ export async function reviewFalsePositives(opts: {
   if (!statSync(snapshotDir).isDirectory()) {
     invalid("--snapshot-dir must be a directory");
   }
-  const reportStat = statSync(reportPath);
-  if (!reportStat.isFile()) invalid("--report must be a file");
-  if (reportStat.size > MAX_REPORT_BYTES) {
+  // not a regular file (e.g. a FIFO would block the read)
+  if (!statSync(reportPath).isFile()) invalid("--report must be a file");
+  // Bounded read, not stat-then-readFileSync: the file can grow in between.
+  const reportText = readCapped(reportPath, MAX_REPORT_BYTES);
+  if (reportText === null) {
     invalid(`--report is larger than ${MAX_REPORT_BYTES} bytes`);
   }
   const runId = basename(snapshotDir);
@@ -335,7 +330,7 @@ export async function reviewFalsePositives(opts: {
   const gate = checkGate(cfg);
   if (!gate.ok) return { ...result, reason: gate.reason };
 
-  const all = parseFindings(readFileSync(reportPath, "utf-8"));
+  const all = parseFindings(reportText);
   const findings = all.slice(0, MAX_FINDINGS);
   result.skippedOverLimit = all.length - findings.length;
 
