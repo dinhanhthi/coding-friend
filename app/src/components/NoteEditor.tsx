@@ -18,6 +18,9 @@ import type { PendingRun, RunOp, StartRun } from "@/lib/runs";
 import type { CfQuery } from "@/lib/use-cf-query";
 import { cn } from "@/lib/utils";
 
+/** A body over this many UTF-8 bytes is refused (cf.rs `MAX_BODY`, note-io.ts `MAX_NOTE_BYTES`). */
+const MAX_BODY_BYTES = 1024 * 1024;
+
 /** What `memory show` and `learn show` both return. */
 export interface NoteData {
   path: string;
@@ -234,6 +237,15 @@ export function NoteEditor({
     [data],
   );
   const busy = status !== null;
+  // A refetch still shows the old note: acting on it would send a stale sha256.
+  const stale = note.refreshing;
+  const draftBody = draft?.body;
+  const bodyBytes = useMemo(
+    () =>
+      draftBody === undefined ? 0 : new TextEncoder().encode(draftBody).length,
+    [draftBody],
+  );
+  const tooLarge = bodyBytes > MAX_BODY_BYTES;
   const unchanged =
     draft !== undefined &&
     data !== undefined &&
@@ -318,6 +330,8 @@ export function NoteEditor({
               size="sm"
               disabled={
                 disabled ||
+                stale ||
+                tooLarge ||
                 draft.conflict ||
                 unchanged ||
                 draft.body.trim() === ""
@@ -333,7 +347,7 @@ export function NoteEditor({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={disabled}
+                disabled={disabled || stale}
                 onClick={() =>
                   onDraft({
                     body: data.content,
@@ -348,7 +362,7 @@ export function NoteEditor({
               <Button
                 variant="destructive"
                 size="sm"
-                disabled={disabled}
+                disabled={disabled || stale}
                 onClick={() => onDelete(data.sha256)}
               >
                 <Trash2 aria-hidden />
@@ -361,6 +375,12 @@ export function NoteEditor({
       {status && (
         <p role="status" className="text-xs text-muted">
           {status}
+        </p>
+      )}
+      {tooLarge && (
+        <p role="alert" className="text-xs text-danger">
+          The body is {Math.ceil(bodyBytes / 1024)} KiB, over the 1 MiB (1024
+          KiB) limit, so it cannot be saved. Shorten it first.
         </p>
       )}
       {draft?.conflict && (

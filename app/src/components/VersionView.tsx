@@ -84,9 +84,9 @@ export function VersionView({
               Object.entries(version.data.hosts).map(([host, h]) => (
                 <Row key={host} label={host}>
                   {h.installed ? (
-                    (h.version ?? "installed, version unknown")
+                    `plugin ${h.version ?? "installed, version unknown"}`
                   ) : (
-                    <span className="text-muted">not installed</span>
+                    <span className="text-muted">plugin not installed</span>
                   )}
                 </Row>
               ))
@@ -247,7 +247,7 @@ function UpdateRows({ check }: { check: CfQuery<UpdateCheck> }) {
                 <UpdateBadge available={h.updateAvailable} />
               </span>
             ) : (
-              <span className="text-muted">not installed</span>
+              <span className="text-muted">plugin not installed</span>
             )}
           </Row>
         ))}

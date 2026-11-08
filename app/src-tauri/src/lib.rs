@@ -35,6 +35,7 @@ pub fn run() {
     builder
         .manage(commands::LastDoctor::default())
         .manage(commands::MutationLock::default())
+        .manage(commands::OpenUrlLock::default())
         .manage(commands::KnownProjects::default())
         .invoke_handler(tauri::generate_handler![
             commands::cf_version,

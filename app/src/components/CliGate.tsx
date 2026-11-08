@@ -273,7 +273,10 @@ function gateCopy(
           error?.kind === "refused"
             ? "This CLI path was refused"
             : "Coding Friend CLI did not answer",
-        body: "The app could not use cf. Fix the problem below, then check again.",
+        body:
+          error?.kind === "timeout"
+            ? "The app could not use cf. If macOS is asking for permission to access a folder, allow it, then check again."
+            : "The app could not use cf. Fix the problem below, then check again.",
       };
   }
 }

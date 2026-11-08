@@ -41,11 +41,11 @@ describe("versionCommand", () => {
     expect(stdout).toEqual([]);
     expect(logs).toEqual([
       "CLI    1.42.0",
-      "claude 0.46.0",
-      "codex  (not installed)",
-      "omp    (installed)",
-      "agy    (not installed)",
-      "devin  0.43.0",
+      "claude plugin 0.46.0",
+      "codex  plugin (not installed)",
+      "omp    plugin (installed)",
+      "agy    plugin (not installed)",
+      "devin  plugin 0.43.0",
     ]);
   });
 

@@ -10,7 +10,9 @@
 //! `set_session_dir` accept only a path equal to one of the `suggestions` Rust itself fetched
 //! from `learn status` / `session status`, `session_load` only targets known projects, and
 //! memory/learn edit and delete name their file by a validated id (`data_arg`, after `--`),
-//! which the CLI re-checks with realpath inside its root. Bodies go to `cf` on stdin, never in argv or the dialog.
+//! which the CLI re-checks with realpath inside its root; `docs_show` takes a relpath
+//! (`doc_path_arg`, after `--`) the CLI re-checks the same way. Bodies go to `cf` on stdin,
+//! never in argv or the dialog.
 //! `open_url` (an `https:` link from rendered markdown) also asks first, then opens the
 //! system browser without running `cf`.
 
@@ -86,6 +88,8 @@ const MAX_SESSION_LABEL: usize = 200;
 const MAX_FOLLOW_CURSOR: usize = 160;
 /// Longest `reply` answer the page may send (bytes).
 const MAX_ANSWER: usize = 4096;
+/// Most chars of a worker question or reply answer a confirm dialog shows.
+const MAX_SHOWN_CHARS: usize = 300;
 
 /// The last `doctor --json` data (from `check_cli` or `cf_doctor`), reused by the UI and tray.
 #[derive(Default)]
@@ -145,6 +149,10 @@ impl KnownProjects {
 #[derive(Default)]
 pub struct MutationLock(tokio::sync::Mutex<()>);
 
+/// Held while an `open_url` confirm is up: a second link is refused, not stacked.
+#[derive(Default)]
+pub struct OpenUrlLock(tokio::sync::Mutex<()>);
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CfInfo {
@@ -197,13 +205,14 @@ fn project_path(path: &str, must_exist: bool) -> Result<PathBuf, CfError> {
     }
 }
 
-/// An id or relative path from the page (memory, docs, learn): never empty, an option, a `..`
-/// segment, a backslash or a control char, and at most `max` bytes. The CLI checks again
-/// that it resolves inside its root.
+/// An id from the page (memory, learn, session ref): never empty, an option, absolute (a
+/// leading `/`), a `..` segment, a backslash or a control char, and at most `max` bytes. The
+/// CLI checks again that it resolves inside its root.
 pub fn data_arg(s: &str, max: usize) -> Result<String, CfError> {
     if s.is_empty()
         || s.len() > max
         || s.starts_with('-')
+        || s.starts_with('/')
         || s.contains('\\')
         || s.chars().any(char::is_control)
         || s.split('/').any(|segment| segment == "..")
@@ -214,14 +223,61 @@ pub fn data_arg(s: &str, max: usize) -> Result<String, CfError> {
 }
 
 /// A config value or search query from the page: any text (empty, `-1` and `../x` included,
-/// since it goes after `--`), without control chars and at most `max` bytes.
+/// since it goes after `--`), without control or format chars and at most `max` bytes.
 fn text_arg(s: &str, max: usize) -> Result<String, CfError> {
-    if s.len() > max || s.chars().any(char::is_control) {
+    if s.len() > max || s.chars().any(|c| c.is_control() || is_format(c)) {
         return Err(refused(format!(
-            "text must be at most {max} bytes, without control characters"
+            "text must be at most {max} bytes, without control or format characters"
         )));
     }
     Ok(s.to_string())
+}
+
+/// The invisible Unicode format (Cf) chars that can hide or reorder text in a dialog: soft
+/// hyphen U+00AD, Arabic letter mark U+061C, Mongolian vowel separator U+180E, zero-width
+/// space U+200B, direction marks U+200E-200F, bidi embeddings and overrides U+202A-202E, word joiner
+/// and invisible operators U+2060-2064, bidi isolates and deprecated format chars
+/// U+2066-206F, BOM U+FEFF, interlinear annotations U+FFF9-FFFB and tags U+E0001-E007F.
+/// Not every Cf char (e.g. the Arabic number signs U+0600-0605 are left out), and the
+/// joiners U+200C/U+200D stay allowed: emoji sequences and Persian/Indic text need them.
+fn is_format(c: char) -> bool {
+    matches!(
+        c,
+        '\u{00AD}'
+            | '\u{061C}'
+            | '\u{180E}'
+            | '\u{200B}'
+            | '\u{200E}'
+            | '\u{200F}'
+            | '\u{202A}'..='\u{202E}'
+            | '\u{2060}'..='\u{2064}'
+            | '\u{2066}'..='\u{206F}'
+            | '\u{FEFF}'
+            | '\u{FFF9}'..='\u{FFFB}'
+            | '\u{E0001}'..='\u{E007F}'
+    )
+}
+
+/// A docs relpath from the page (from `docs list`): `text_arg` rules (at most
+/// `MAX_DOC_PATH` bytes), never empty, absolute (a leading `/`) or with a `..` segment
+/// (split on `/` and `\\`, like the CLI's `readDoc`). A leading `-` is fine: it goes after
+/// `--`, and the CLI checks again that it resolves inside the docs folder.
+fn doc_path_arg(s: &str) -> Result<String, CfError> {
+    let s = text_arg(s, MAX_DOC_PATH)?;
+    if s.is_empty() || s.starts_with('/') || s.split(['/', '\\']).any(|segment| segment == "..") {
+        return Err(refused(format!("not a valid doc path: {s:?}")));
+    }
+    Ok(s)
+}
+
+/// `s` Debug-quoted for a confirm dialog, cut to its first `max_chars` chars (never inside a
+/// char) with the full byte count when longer. The Debug quoting is the protection: it shows
+/// control, bidi and other invisible chars from untrusted text as `\u{..}` escapes.
+fn preview(s: &str, max_chars: usize) -> String {
+    match s.char_indices().nth(max_chars) {
+        Some((end, _)) => format!("{:?} … (cut, {} bytes)", &s[..end], s.len()),
+        None => format!("{s:?}"),
+    }
 }
 
 /// A sha256 from a `show` answer: exactly 64 lowercase hex chars.
@@ -470,6 +526,19 @@ fn task_reply_argv(task_id: &str, qid: &str, answer: &str) -> Result<Vec<String>
         text_arg(answer, MAX_ANSWER)?,
     ]);
     Ok(args)
+}
+
+/// The question of pending ask `qid` in `task show` data; `Refused` when the task has no
+/// such pending ask (answered, or never asked).
+fn pending_question(task: &Value, qid: &str) -> Result<String, CfError> {
+    task["pendingAsks"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|ask| ask["qid"] == qid)
+        .and_then(|ask| ask["question"].as_str())
+        .map(str::to_string)
+        .ok_or_else(|| refused(format!("task has no pending question {qid:?}")))
 }
 
 /// `task cancel --json -- <id>`.
@@ -915,7 +984,7 @@ pub async fn docs_show(
         "--json".into(),
         project_dir_arg(&known, &project)?,
         "--".into(),
-        data_arg(&relpath, MAX_DOC_PATH)?,
+        doc_path_arg(&relpath)?,
     ];
     cf::run_cf(&argv, cf::QUERY_TIMEOUT).await
 }
@@ -936,10 +1005,19 @@ pub async fn project_doctor(
 }
 
 /// Opens an `https:` link in the system browser after a native confirm showing the full URL.
-/// No `MutationLock` and no `RUN_STARTED`: it never runs `cf`.
+/// No `MutationLock` and no `RUN_STARTED`: it never runs `cf`. While one link's confirm is
+/// up, another `open_url` is refused (`OpenUrlLock`), so clicks never stack dialogs.
 #[tauri::command]
-pub async fn open_url(app: AppHandle, url: String) -> Result<(), CfError> {
+pub async fn open_url(
+    app: AppHandle,
+    lock: State<'_, OpenUrlLock>,
+    url: String,
+) -> Result<(), CfError> {
     let url = external_url(&url)?;
+    let _guard = lock
+        .0
+        .try_lock()
+        .map_err(|_| refused("another link is waiting to be opened".to_string()))?;
     ask(
         &app,
         "Open this link?",
@@ -1449,7 +1527,9 @@ pub async fn task_follow(id: String, cursor: Option<String>) -> Result<Value, Cf
     cf::run_cf(&args, cf::QUERY_TIMEOUT).await
 }
 
-/// `reply --json --task <id> -- <qid> <answer>`, after a native confirm that shows the answer.
+/// `reply --json --task <id> -- <qid> <answer>`, after a native confirm that shows the
+/// question (from Rust's own `task show`, never from the page) and the answer, both
+/// Debug-quoted and cut to `MAX_SHOWN_CHARS`. Under the `MutationLock` for the whole flow.
 #[tauri::command]
 pub async fn task_reply(
     app: AppHandle,
@@ -1459,21 +1539,25 @@ pub async fn task_reply(
     answer: String,
 ) -> Result<Value, CfError> {
     let args = task_reply_argv(&task_id, &qid, &answer)?;
-    let details = [
-        format!("Answer question {qid} of task {task_id} with:"),
-        format!("{answer:?}"),
-    ];
-    confirm_and_run(
-        &app,
-        &lock,
-        "taskReply",
-        &command_line(&args),
-        &details,
-        &args,
-        None,
+    let _guard = lock.0.lock().await;
+    let task = run(
+        &["task", "show", "--json", "--", &task_id],
         cf::QUERY_TIMEOUT,
     )
-    .await
+    .await?;
+    let question = pending_question(&task, &qid)?;
+    // Built by hand (not `command_line`) so the shown answer is cut too; both ids are
+    // validated 8-char alphanumerics.
+    let line = format!(
+        "cf reply --task {task_id} -- {qid:?} {}",
+        preview(&answer, MAX_SHOWN_CHARS)
+    );
+    let details = [
+        format!("Question {qid} of task {task_id}:"),
+        preview(&question, MAX_SHOWN_CHARS),
+    ];
+    confirm(&app, "taskReply", &line, &details, None).await?;
+    cf::run_cf(&args, cf::QUERY_TIMEOUT).await
 }
 
 /// `task cancel --json -- <id>`, after a native confirm.
@@ -1660,7 +1744,9 @@ mod tests {
         for arg in ["notes/a-b.md", "Algo_Structure/foo (1)"] {
             assert_eq!(data_arg(arg, 30), Ok(arg.to_string()));
         }
-        for arg in ["", "-x", "a\0b", "a\nb", "../x", "a/../b", "a\\b", "abcdef"] {
+        for arg in [
+            "", "-x", "/x", "a\0b", "a\nb", "../x", "a/../b", "a\\b", "abcdef",
+        ] {
             assert!(
                 matches!(data_arg(arg, 5), Err(CfError::Refused { .. })),
                 "{arg:?}"
@@ -1670,15 +1756,67 @@ mod tests {
 
     #[test]
     fn text_arg_keeps_values_and_refuses_control_chars_and_long_input() {
-        for arg in ["../shared-docs", "-1", ""] {
+        for arg in ["../shared-docs", "-1", "", "a\u{200D}b", "a\u{200C}b"] {
             assert_eq!(text_arg(arg, 20), Ok(arg.to_string()));
         }
-        for arg in ["a\0b", "a\nb", &"x".repeat(21)] {
+        for arg in [
+            "a\0b",
+            "a\nb",
+            "a\u{202E}b",
+            "a\u{2066}b",
+            "a\u{200B}b",
+            "a\u{200F}b",
+            "\u{FEFF}x",
+            &"x".repeat(21),
+        ] {
             assert!(
                 matches!(text_arg(arg, 20), Err(CfError::Refused { .. })),
                 "{arg:?}"
             );
         }
+    }
+
+    #[test]
+    fn doc_path_arg_allows_leading_dash_and_refuses_traversal_and_absolute_paths() {
+        for arg in ["-notes.md", "a/b.md", "a\\b.md"] {
+            assert_eq!(doc_path_arg(arg), Ok(arg.to_string()));
+        }
+        for arg in [
+            "",
+            "/etc/x.md",
+            "../x.md",
+            "a/../b.md",
+            "a\\..\\b.md",
+            "a\nb.md",
+        ] {
+            assert!(
+                matches!(doc_path_arg(arg), Err(CfError::Refused { .. })),
+                "{arg:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn preview_debug_quotes_and_cuts_on_a_char_boundary() {
+        assert_eq!(preview("a\nb", 10), r#""a\nb""#);
+        assert_eq!(preview("a\u{202E}b", 10), r#""a\u{202e}b""#);
+        // 3 chars kept of "éééé" (8 bytes): never a byte slice inside a char.
+        assert_eq!(preview("éééé", 3), r#""ééé" … (cut, 8 bytes)"#);
+    }
+
+    #[test]
+    fn pending_question_finds_the_qid_or_refuses() {
+        let task = serde_json::json!({
+            "pendingAsks": [{ "qid": "efgh5678", "question": "Which DB?" }]
+        });
+        assert_eq!(
+            pending_question(&task, "efgh5678"),
+            Ok("Which DB?".to_string())
+        );
+        assert!(matches!(
+            pending_question(&task, "zzzz9999"),
+            Err(CfError::Refused { .. })
+        ));
     }
 
     #[test]
@@ -1853,21 +1991,25 @@ mod tests {
     }
 
     #[test]
-    fn command_line_quotes_out_and_target_paths() {
+    fn command_line_quotes_flag_paths_and_words_after_dashes() {
         let argv = words(&[
             "session",
             "export",
             "--json",
             "--out=/tmp/a\nOK",
             "--target=/p\nq",
+            "--project-dir=/d\ne",
             "--force",
             "--",
             "saved:x",
+            "--",
+            "a\nb",
         ]);
-        // A real newline in the argv shows as the two characters `\n`.
+        // A real newline in the argv shows as the two characters `\n`; every word after
+        // the first `--` is quoted, a second `--` included.
         assert_eq!(
             command_line(&argv),
-            r#"cf session export --out="/tmp/a\nOK" --target="/p\nq" --force -- "saved:x""#
+            r#"cf session export --out="/tmp/a\nOK" --target="/p\nq" --project-dir="/d\ne" --force -- "saved:x" "--" "a\nb""#
         );
     }
 

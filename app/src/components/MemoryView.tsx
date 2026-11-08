@@ -58,6 +58,13 @@ function indexNotice(
     : { text };
 }
 
+/** The project instruction files whose rule line for the memory went with it. */
+function ruleNotice(files: string[]): string[] {
+  if (files.length === 0) return [];
+  const names = files.map((f) => f.split("/").pop() ?? f);
+  return [`Its rule line was also removed from ${names.join(" and ")}.`];
+}
+
 /**
  * A project's memories (`docs/memory/`): search or the list by category on the left, the
  * selected memory on the right. Save and delete go through Rust's native confirm.
@@ -113,7 +120,11 @@ export function MemoryView({
     saved: (id, result) => indexNotice(`Saved ${id}.`, result.index, project),
     deleted: (id, result) =>
       indexNotice(
-        [`Deleted ${id}.`, ...result.warnings].join(" "),
+        [
+          `Deleted ${id}.`,
+          ...ruleNotice(result.instructionFiles),
+          ...result.warnings,
+        ].join(" "),
         result.index,
         project,
       ),

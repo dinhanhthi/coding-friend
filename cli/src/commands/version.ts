@@ -2,8 +2,8 @@ import { runJson } from "../lib/output.js";
 import { collectVersionInfo, type HostVersion } from "../lib/version-info.js";
 
 function hostLabel(host: HostVersion): string {
-  if (host.version) return host.version;
-  return host.installed ? "(installed)" : "(not installed)";
+  if (host.version) return `plugin ${host.version}`;
+  return host.installed ? "plugin (installed)" : "plugin (not installed)";
 }
 
 export async function versionCommand(

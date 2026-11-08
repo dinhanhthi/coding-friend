@@ -14,6 +14,7 @@ import {
   configView,
   describeCfError,
   encodeConfigValue,
+  READ_ONLY_KEYS,
   shellQuote,
   unknownConfigKeys,
   valueSource,
@@ -52,15 +53,6 @@ export function configCommand(args: ConfigSetArgs): string {
     : "";
   return `cf config set --${args.scope}${dir} -- ${JSON.stringify(args.key)} ${JSON.stringify(args.value)}`;
 }
-
-/** Rust refuses writes to these: they decide where Coding Friend writes files or sends data. */
-const READ_ONLY_KEYS = new Set([
-  "learn.outputDir",
-  "docsDir",
-  "session.dir",
-  "decision.allowRemote",
-  "decision.baseUrl",
-]);
 
 function getPath(obj: Record<string, unknown>, key: string): unknown {
   let cur: unknown = obj;

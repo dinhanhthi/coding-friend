@@ -70,7 +70,7 @@ export function describeCfError(e: CfError): string {
         ? "No cf command on your login shell's PATH."
         : `No cf command at ${e.path}.`;
     case "timeout":
-      return `cf did not answer within ${e.secs} s.`;
+      return `cf did not answer within ${e.secs} s; a macOS permission prompt may be waiting.`;
     case "cliTooOld":
       return "This cf does not have the commands the app needs.";
     case "incompatible":
@@ -430,6 +430,18 @@ export interface ConfigSetResult {
   project?: string;
 }
 
+/**
+ * Rust refuses writes to these: they decide where Coding Friend writes files or sends data.
+ * Keep in sync with `PROTECTED_KEYS` in app/src-tauri/src/commands.rs (pinned by a test).
+ */
+export const READ_ONLY_KEYS: ReadonlySet<string> = new Set([
+  "learn.outputDir",
+  "docsDir",
+  "session.dir",
+  "decision.allowRemote",
+  "decision.baseUrl",
+]);
+
 function hasPath(obj: Record<string, unknown>, key: string): boolean {
   let cur: unknown = obj;
   for (const part of key.split(".")) {
@@ -597,11 +609,12 @@ export interface DocContent {
   sha256: string;
 }
 
-const FRONTMATTER = /^---\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
+const FRONTMATTER = /^\uFEFF?---\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
 
 /**
  * A leading YAML frontmatter block (`---` fences on their own lines, at the very start)
- * split off the markdown body; `frontmatter` is the text between the fences.
+ * split off the markdown body; `frontmatter` is the text between the fences. A leading
+ * UTF-8 BOM goes with the block.
  */
 export function splitFrontmatter(text: string): {
   frontmatter: string | null;
@@ -942,7 +955,10 @@ export function isCopyableCommand(hint: string): boolean {
   );
 }
 
-/** One POSIX shell word that pastes as literal text: `$(...)`, backticks and `'` stay inert. */
+/**
+ * One POSIX shell word that pastes as literal text: `$(...)`, backticks and `'` stay inert.
+ * POSIX sh only (not cmd.exe or PowerShell): use it only for copyable command text.
+ */
 export function shellQuote(arg: string): string {
   return `'${arg.replaceAll("'", "'\\''")}'`;
 }
@@ -1023,11 +1039,6 @@ export const memoryDelete = (project: string, id: string, sha: string) =>
   invoke<MemoryDeleteResult>("memory_delete", { project, id, sha });
 export const learnStatus = () => invoke<LearnStatus>("learn_status");
 export const learnList = () => invoke<LearnList>("learn_list");
-/** An empty query never reaches the CLI: no notes. */
-export const learnSearch = (query: string) =>
-  query.trim() === ""
-    ? Promise.resolve<LearnList>({ notes: [], placeholders: [] })
-    : invoke<LearnList>("learn_search", { query });
 export const learnShow = (id: string) =>
   invoke<LearnNote>("learn_show", { id });
 /** Rust shows the native confirm; `body` goes on stdin. A changed note rejects `CONFLICT`. */

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import commandsRs from "../../src-tauri/src/commands.rs?raw";
 import {
   INSTALL_COMMAND,
+  READ_ONLY_KEYS,
   RUNNABLE_FIXES,
   UPDATE_COMMAND,
   configFields,
@@ -170,8 +172,28 @@ describe("splitFrontmatter", () => {
     });
   });
 
+  it("splits the block off a file that starts with a UTF-8 BOM", () => {
+    expect(splitFrontmatter("\uFEFF---\ntitle: A\n---\nbody")).toEqual({
+      frontmatter: "title: A",
+      body: "body",
+    });
+  });
+
   it("leaves text without a leading block unchanged", () => {
     const text = "# Title\n\n---\nnot: frontmatter\n---\n";
     expect(splitFrontmatter(text)).toEqual({ frontmatter: null, body: text });
+  });
+});
+
+describe("READ_ONLY_KEYS", () => {
+  it("matches the keys Rust refuses to write (commands.rs PROTECTED_KEYS)", () => {
+    const array = /const PROTECTED_KEYS: \[&str; \d+\] = \[([^\]]*)\];/.exec(
+      commandsRs,
+    );
+    const keys = [...(array?.[1] ?? "").matchAll(/"([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    expect(keys.length).toBeGreaterThan(0);
+    expect([...READ_ONLY_KEYS].sort()).toEqual(keys.sort());
   });
 });
