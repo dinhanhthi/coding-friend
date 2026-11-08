@@ -103,20 +103,32 @@ test("each scene registers SCENES[<filename>]", () => {
   }
 });
 
-test("strings.example.js has the same keys in en and vi", () => {
+test("strings.example.js and poster.html STR have the same keys in en and vi", () => {
   const window = {};
   vm.runInNewContext(read(path.join(templatesDir, "strings.example.js")), {
     window,
   });
-  const preset = window.STR_PRESET;
-  assert.ok(preset?.en && preset?.vi, "STR_PRESET.en / .vi missing");
+  const m = /const STR = (\{[\s\S]*?\n {6}\});/.exec(
+    read(path.join(templatesDir, "poster.html")),
+  );
+  assert.ok(m, "poster.html STR literal not found");
   const keys = (o, p = "") =>
     Object.entries(o).flatMap(([k, v]) =>
       v && typeof v === "object" && !Array.isArray(v)
         ? keys(v, `${p}${k}.`)
         : [`${p}${k}`],
     );
-  assert.deepEqual(keys(preset.vi).sort(), keys(preset.en).sort());
+  for (const [where, table] of [
+    ["strings.example.js", window.STR_PRESET],
+    ["poster.html", vm.runInNewContext(`(${m[1]})`)],
+  ]) {
+    assert.ok(table?.en && table?.vi, `${where}: en / vi missing`);
+    assert.deepEqual(
+      keys(table.vi).sort(),
+      keys(table.en).sort(),
+      `${where}: en and vi keys differ`,
+    );
+  }
 });
 
 test("every script .sh passes bash -n", () => {
@@ -240,6 +252,59 @@ test("inline-assets.mjs rejects refs outside --root and keeps in-root ../ refs",
   }
 });
 
+test("inline-assets.mjs never inlines dotfiles, absolute paths, escaping symlinks or files outside the source folder", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cf-showcase-leak-"));
+  try {
+    const root = path.join(tmp, "root");
+    const sub = path.join(root, "sub");
+    fs.mkdirSync(sub, { recursive: true });
+    fs.writeFileSync(path.join(root, "ok.png"), Buffer.from([0x89, 0x50]));
+    fs.writeFileSync(path.join(tmp, "outside.txt"), "secret");
+    fs.writeFileSync(path.join(sub, ".env"), "TOKEN=secret");
+    fs.symlinkSync(path.join(tmp, "outside.txt"), path.join(sub, "link.png"));
+    fs.symlinkSync(path.join(sub, ".env"), path.join(sub, "env.png"));
+    // Without --root, a git repo around the source folder must not widen it.
+    spawnSync("git", ["init", "-q", root]);
+    const script = path.join(templatesDir, "inline-assets.mjs");
+    const out = path.join(tmp, "out.html");
+    for (const [ref, args] of [
+      ["link.png", ["--root", root]],
+      [path.join(tmp, "outside.txt"), ["--root", root]],
+      [".env", ["--root", root]],
+      ["env.png", ["--root", root]],
+      ["../ok.png", []],
+    ]) {
+      const src = path.join(sub, "page.html");
+      fs.writeFileSync(src, `<img src="${ref}">`);
+      fs.rmSync(out, { force: true });
+      const result = spawnSync(
+        process.execPath,
+        [script, "--src", src, "--out", out, ...args],
+        { encoding: "utf8" },
+      );
+      assert.notEqual(result.status, 0, `${ref} must be rejected`);
+      assert.ok(!fs.existsSync(out), `${ref} must not be inlined`);
+    }
+
+    // The default root (the source folder) still inlines refs inside it.
+    fs.mkdirSync(path.join(sub, "img"));
+    fs.writeFileSync(path.join(sub, "ok2.png"), Buffer.from([0x89, 0x50]));
+    fs.writeFileSync(path.join(sub, "img/ok3.png"), Buffer.from([0x89, 0x50]));
+    const src = path.join(sub, "page.html");
+    fs.writeFileSync(src, '<img src="ok2.png"><img src="img/ok3.png">');
+    fs.rmSync(out, { force: true });
+    const good = spawnSync(
+      process.execPath,
+      [script, "--src", src, "--out", out],
+      { encoding: "utf8" },
+    );
+    assert.equal(good.status, 0, good.stderr);
+    assert.equal(read(out).match(/data:image\/png;base64/g)?.length, 2);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("verify-video.sh fails on long black tail and allows a short black start", (t) => {
   for (const tool of ["ffmpeg", "ffprobe"]) {
     const probe = spawnSync(tool, ["-version"]);
@@ -282,16 +347,30 @@ test("verify-video.sh fails on long black tail and allows a short black start", 
     assert.equal(result.status, 0, result.stderr);
     return file;
   };
-  const verify = (file) =>
-    spawnSync("bash", [script, file, "--fps", "60", "--size", "320x180"], {
-      encoding: "utf8",
-    });
+  const verify = (file, ...extra) =>
+    spawnSync(
+      "bash",
+      [script, file, "--fps", "60", "--size", "320x180", ...extra],
+      { encoding: "utf8" },
+    );
   try {
     const tail = verify(make("tail.mp4", "white", 1, "black", 3));
     assert.equal(tail.status, 1, tail.stdout + tail.stderr);
 
     const start = verify(make("start.mp4", "black", 0.3, "blue", 3.7));
     assert.equal(start.status, 0, start.stdout + start.stderr);
+
+    // Flag values are data for awk, never program text.
+    const marker = path.join(tmp, "pwned");
+    // A big leading number keeps !(a <= b) false, so injected code would run.
+    const hostile = `1e9)||system("touch ${marker}")||(1`;
+    const hostileRun = verify(path.join(tmp, "start.mp4"), "--max-mb", hostile);
+    assert.ok(
+      !fs.existsSync(marker),
+      "--max-mb value must not run as awk code",
+    );
+    // The value reached the size check as a number (1e9), so it passes.
+    assert.match(hostileRun.stdout, /PASS\s+file size/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -476,9 +555,16 @@ test("sample copy carries the SAMPLE: marker and the docs grep for it", () => {
 
 test("no comment spells the SAMPLE: marker", () => {
   // The docs gate on `grep -c 'SAMPLE:'` printing 0 once every string is
-  // replaced; inline-assets keeps comments, so they must never spell it.
+  // replaced; inline-assets keeps comments (scenes are inlined too), so they
+  // must never spell it.
   const comments = /\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->|(?<![:"'\\])\/\/[^\n]*/g;
-  for (const file of ["strings.example.js", "poster.html", "video.html"]) {
+  const files = [
+    "strings.example.js",
+    "poster.html",
+    "video.html",
+    ...sceneNames.map((n) => `scenes/${n}.js`),
+  ];
+  for (const file of files) {
     for (const c of read(path.join(templatesDir, file)).match(comments) ?? []) {
       assert.doesNotMatch(
         c,

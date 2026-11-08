@@ -255,7 +255,7 @@
    One table per language, same keys everywhere; scenes read their group, opts override it. */
       const STR = window.STR_PRESET;
       const LANGS = Object.keys(STR);
-      let LANG = STR[Q.get("lang")] ? Q.get("lang") : LANGS[0];
+      let LANG = Object.hasOwn(STR, Q.get("lang")) ? Q.get("lang") : LANGS[0];
 
       /* ---------- timeline: data, not magic numbers in scene code ---------- */
       /* Starts are cumulative and the last entry ends at the target length. A slot longer than a
@@ -284,7 +284,8 @@
             ],
           },
         },
-        // CLI or library: use the terminal demo instead (length is set by its lines).
+        // CLI or library: use the terminal demo instead (length is set by its lines,
+        // ~5 s for the sample; the rest of this 9 s slot holds the final screen).
         // { scene: "demo-terminal", start: 8, dur: 9 },
         { scene: "feature-grid", start: 17, dur: 4 },
         { scene: "orbit", start: 21, dur: 3 },

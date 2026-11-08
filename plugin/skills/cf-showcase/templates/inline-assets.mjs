@@ -4,9 +4,8 @@
 //
 // Inlines local <script src>, <link rel="stylesheet" href>, <img src> and CSS url(...)
 // as inline code or data URIs. http(s), protocol-relative, data: and # URLs are left alone.
-// Local refs must resolve inside --root (default: the git toplevel of the --src folder,
-// else the --src folder); anything outside is rejected.
-import { spawnSync } from "node:child_process";
+// Local refs must resolve inside --root (default: the --src folder), checked before and
+// after resolving symlinks; anything outside, and any dotfile or dot-folder, is rejected.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -56,30 +55,37 @@ function parseArgs(argv) {
 
 const isRemote = (url) => /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url.trim());
 
-// Git toplevel of dir when available, else dir itself.
-function defaultRoot(dir) {
-  const git = spawnSync("git", ["rev-parse", "--show-toplevel"], {
-    cwd: dir,
-    encoding: "utf8",
-  });
-  const top = git.status === 0 ? git.stdout.trim() : "";
-  return top ? path.resolve(top) : dir;
-}
-
 let root = "";
 
-function localPath(url, baseDir) {
-  const clean = decodeURI(url.trim().replace(/[?#].*$/, ""));
-  const file = path.resolve(baseDir, clean);
-  if (!fs.existsSync(file))
-    fail(`missing local asset "${url}" (looked for ${file})`);
-  // Compare real paths so symlinks cannot escape root either.
-  const rel = path.relative(root, fs.realpathSync(file));
+// Fails unless file sits inside root with no dot-named segment (.env, .git/...).
+function assertInside(file, url) {
+  const rel = path.relative(root, file);
   if (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel))
     fail(
-      `asset "${url}" resolves outside --root ${root} (${file}); move it inside or pass a wider --root`,
+      `asset "${url}" resolves outside --root ${root} (${file}); copy it into the source folder or pass a wider --root`,
     );
-  return file;
+  if (rel.split(path.sep).some((part) => part.startsWith(".")))
+    fail(
+      `asset "${url}" is a dotfile or sits in a dot-folder (${file}); refusing to inline it (copy it into the source folder under a name without a leading dot)`,
+    );
+}
+
+function localPath(url, baseDir) {
+  let clean;
+  try {
+    clean = decodeURI(url.trim().replace(/[?#].*$/, ""));
+  } catch {
+    fail(`malformed percent-encoding in asset "${url}"`);
+  }
+  const file = path.resolve(baseDir, clean);
+  // Literal path first, so a ref outside root is never even probed.
+  assertInside(file, url);
+  if (!fs.existsSync(file))
+    fail(`missing local asset "${url}" (looked for ${file})`);
+  // Real path again, so a symlink cannot escape root or reach a dotfile.
+  const real = fs.realpathSync(file);
+  assertInside(real, url);
+  return real;
 }
 
 function dataUri(file) {
@@ -90,7 +96,7 @@ function dataUri(file) {
 
 // CSS url(...) -> data URI, resolved against the CSS file's own folder.
 function inlineCssUrls(css, baseDir) {
-  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (all, q, url) =>
+  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (all, _q, url) =>
     isRemote(url) ? all : `url("${dataUri(localPath(url, baseDir))}")`,
   );
 }
@@ -138,11 +144,11 @@ function inline(html, baseDir) {
   // url(...) inside <style> blocks and style="" attributes
   html = html.replace(
     /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
-    (all, open, css, close) => open + inlineCssUrls(css, baseDir) + close,
+    (_all, open, css, close) => open + inlineCssUrls(css, baseDir) + close,
   );
   html = html.replace(
     /(\sstyle\s*=\s*")([^"]*)(")/gi,
-    (all, open, css, close) =>
+    (_all, open, css, close) =>
       open + inlineCssUrls(css, baseDir).replace(/"/g, "'") + close,
   );
   return html;
@@ -152,10 +158,8 @@ const opts = parseArgs(process.argv.slice(2));
 if (!fs.existsSync(opts.src)) fail(`--src not found: ${opts.src}`);
 if (opts.root && !fs.existsSync(opts.root))
   fail(`--root not found: ${opts.root}`);
-const srcDir = path.dirname(path.resolve(opts.src));
-root = fs.realpathSync(
-  opts.root ? path.resolve(opts.root) : defaultRoot(srcDir),
-);
+const srcDir = fs.realpathSync(path.dirname(path.resolve(opts.src)));
+root = fs.realpathSync(opts.root ? path.resolve(opts.root) : srcDir);
 const html = inline(fs.readFileSync(opts.src, "utf8"), srcDir);
 fs.mkdirSync(path.dirname(path.resolve(opts.out)), { recursive: true });
 fs.writeFileSync(opts.out, html);

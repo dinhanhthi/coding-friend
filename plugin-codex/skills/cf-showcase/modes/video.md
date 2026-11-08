@@ -74,7 +74,7 @@ node inline-assets.mjs --src video.html --out dist/video.html
 open dist/video.html   # Linux: xdg-open
 ```
 
-`inline-assets.mjs` inlines `<script src>`, stylesheets, `<img src>` and CSS `url(...)`; paths built inside JS strings stay as they are and load from disk. Local refs must resolve inside `--root` (default: the git toplevel of the source folder, or the source folder itself outside git); pass `--root <dir>` to widen it on purpose. A multi-file `"dom"` film can also be captured directly (`--src film.html`).
+`inline-assets.mjs` inlines `<script src>`, stylesheets, `<img src>` and CSS `url(...)`; paths built inside JS strings stay as they are and load from disk. Local refs must resolve inside `--root` (default: the source folder, so copy brand assets into `source/`); pass `--root <dir>` to widen it on purpose. Dotfiles and anything in a dot-folder are never inlined, even through a symlink. A multi-file `"dom"` film can also be captured directly (`--src film.html`).
 
 **Canvas films and images:** the page runs from `file://`, so an image loaded from disk and drawn onto a canvas taints it, and capture fails with `Tainted canvases may not be exported`. In `"canvas"` mode, load every image through an `<img src>` in the HTML (then inline the page, which turns it into a `data:` URL) or as a `data:` URL in JS, never as a file path built in JS. A film that loads files from JS, or is captured as several files, uses `mode: "dom"`.
 
@@ -174,7 +174,7 @@ Do this before declaring done. A render that "finished" is not a video that look
 Pick the best settled frame (a moment where everything has landed, not mid-animation) and extract it:
 
 ```bash
-ffmpeg -ss <t> -i $OUT/<name>-intro.mp4 -frames:v 1 -q:v 2 $OUT/<name>-intro-poster.jpg
+ffmpeg -ss <t> -i "$OUT/<name>-intro.mp4" -frames:v 1 -q:v 2 "$OUT/<name>-intro-poster.jpg"
 ```
 
 Use it as the `<video poster>` on a landing page or as the README thumbnail.

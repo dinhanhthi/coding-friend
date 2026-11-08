@@ -39,8 +39,12 @@ pass() { echo "PASS  $1"; }
 fail() { echo "FAIL  $1"; FAILS=$((FAILS + 1)); }
 warn() { echo "WARN  $1"; WARNS=$((WARNS + 1)); }
 info() { echo "INFO  $1"; }
-# awk-based float test: fcmp "<expr>" -> exit 0 when true
-fcmp() { awk "BEGIN { exit !($1) }"; }
+# awk-based float test: fcmp '<expr over a, b, c>' A [B [C]] -> exit 0 when true.
+# Values go in through awk -v, never into the program text.
+fcmp() {
+  local expr="$1"; shift
+  awk -v a="${1:-0}" -v b="${2:-0}" -v c="${3:-0}" "BEGIN { a += 0; b += 0; c += 0; exit !($expr) }"
+}
 
 probe() { ffprobe -v error "$@" -of default=noprint_wrappers=1:nokey=1 "$FILE" 2>/dev/null | head -1; }
 
@@ -59,7 +63,7 @@ fi
 
 # duration
 if [ -n "$WANT_DUR" ]; then
-  if fcmp "($DUR - $WANT_DUR) <= $TOL && ($WANT_DUR - $DUR) <= $TOL"; then
+  if fcmp '(a - b) <= c && (b - a) <= c' "$DUR" "$WANT_DUR" "$TOL"; then
     pass "duration ${DUR}s (want ${WANT_DUR}s +/- ${TOL}s)"
   else
     fail "duration ${DUR}s (want ${WANT_DUR}s +/- ${TOL}s)"
@@ -70,7 +74,7 @@ fi
 
 # fps
 FPS="$(echo "$RATE" | awk -F/ '{ if ($2 == "" || $2 == 0) print $1; else printf "%.3f", $1 / $2 }')"
-if fcmp "($FPS - $WANT_FPS) < 0.01 && ($WANT_FPS - $FPS) < 0.01"; then
+if fcmp '(a - b) < 0.01 && (b - a) < 0.01' "$FPS" "$WANT_FPS"; then
   pass "fps $RATE (want $WANT_FPS)"
 else
   fail "fps $RATE = $FPS (want $WANT_FPS)"
@@ -119,7 +123,7 @@ if [ "$AUDIO_STREAMS" -gt 0 ]; then
   PEAK="$(echo "$LOUD" | awk '/True peak:/ { f = 1 } f && /Peak:/ { v = $2; f = 0 } END { print v }')"
   if [ -z "$LUFS" ]; then
     warn "loudness: could not read ebur128 output"
-  elif fcmp "$LUFS >= -20 && $LUFS <= -14"; then
+  elif fcmp 'a >= -20 && a <= -14' "$LUFS"; then
     pass "loudness ${LUFS} LUFS, true peak ${PEAK:-?} dBFS (target -20..-14)"
   else
     warn "loudness ${LUFS} LUFS, true peak ${PEAK:-?} dBFS (outside -20..-14; adjust audio.py --lufs)"
@@ -129,7 +133,7 @@ fi
 # file size
 BYTES="$(wc -c < "$FILE" | tr -d ' ')"
 MB="$(awk -v b="$BYTES" 'BEGIN { printf "%.2f", b / 1048576 }')"
-if fcmp "$BYTES <= $MAX_MB * 1048576"; then
+if fcmp 'a <= b * 1048576' "$BYTES" "$MAX_MB"; then
   pass "file size ${MB} MB (max $MAX_MB MB)"
 else
   fail "file size ${MB} MB (max $MAX_MB MB; re-encode with a higher CRF)"

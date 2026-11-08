@@ -1,6 +1,7 @@
 /* Scene "demo-terminal": a terminal window types real commands and prints their real output.
    Use it for CLIs and libraries. Key = filename: TIMELINE uses { scene: "demo-terminal" }.
-   Load after the engine defines SCENES. Natural length: set by the lines (~9 s for 5 lines).
+   Load after the engine defines SCENES. Natural length: set by the lines (~5 s for the
+   5 sample lines); a longer slot holds the final screen.
    opts (defaults: env.str.terminal): window (title), prompt, chip, caption,
    lines: [{ cmd } | { out }], typeSpeed (seconds per character, default 0.045).
    Copy commands and output verbatim from the docs; never invent output. */

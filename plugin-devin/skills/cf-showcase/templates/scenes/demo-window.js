@@ -140,6 +140,10 @@
     ctx.stroke();
   }
 
+  let warnedSelect = false;
+  /* Cursor anchor names; any other name falls back to the frame center. */
+  const ANCHORS = new Set(["selStart", "selEnd", "action", "apply"]);
+
   /* Static layout: depends on env + opts only, never on time. */
   function layout(ctx, env, T) {
     const { W, H } = env;
@@ -164,11 +168,17 @@
     const lh = size * 1.6;
     const words = layoutWords(ctx, T.body, font, content.w);
     const range = findRange(words, T.select);
-    const replaced = T.body.includes(T.select)
-      ? T.body.replace(T.select, T.result)
-      : T.body;
+    const hasSel = T.body.includes(T.select);
+    if (!hasSel && !warnedSelect) {
+      warnedSelect = true;
+      console.warn(
+        `demo-window: select "${T.select}" is not a verbatim phrase of body`,
+      );
+    }
+    /* a function replacement, so $& or $1 in the result stay literal */
+    const replaced = hasSel ? T.body.replace(T.select, () => T.result) : T.body;
     const words2 = layoutWords(ctx, replaced, font, content.w);
-    const resStart = T.body.includes(T.select)
+    const resStart = hasSel
       ? T.body.slice(0, T.body.indexOf(T.select)).split(/\s+/).filter(Boolean)
           .length
       : -1;
@@ -283,7 +293,9 @@
       const at = (a) =>
         Array.isArray(a)
           ? [L.wx + a[0] * L.ww, L.wy + a[1] * L.wh]
-          : L[a] || [W / 2, H / 2];
+          : ANCHORS.has(a)
+            ? L[a]
+            : [W / 2, H / 2];
       const tDown = (kf.find((k) => k.down) || { t: 1e9 }).t;
       const tUp = (kf.find((k) => k.up) || { t: tDown }).t;
       const tAction = (

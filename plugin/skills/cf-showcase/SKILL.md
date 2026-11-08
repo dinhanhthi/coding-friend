@@ -11,7 +11,7 @@ description: >
 user-invocable: true
 argument-hint: "[--video] [--poster] [--default] [--out <dir>]"
 created: 2026-09-27
-updated: 2026-10-16
+updated: 2026-11-07
 state: beta
 ---
 
@@ -189,6 +189,8 @@ Wait for the user's OK. If they steer, rework the concept and show it again. Ren
 
 ### Step 6: Set up the source folder
 
+If `$OUT/source/` already exists, stop and ask before running the copy below: it may hold a previous showcase the user edited by hand, and `cp -R` overwrites it. Get the user's OK to overwrite, or pick another `--out`, first.
+
 Copy the kit into `$OUT/source/`. It holds the tooling (`capture.mjs`, `inline-assets.mjs`, `audio.py`) and reference material (`video.html`, `scenes/`, `poster.html`, `strings.example.js`). The tooling is what you need; the reference material is optional. Read it for the page contract and the helpers, then reuse, restyle, rewrite or delete it as your concept demands:
 
 ```bash
@@ -216,8 +218,6 @@ case "$OUT/" in
     ;;
 esac
 ```
-
-Existing `$OUT/source/` → ask before overwriting. It may hold a previous showcase the user edited by hand.
 
 ### Step 7: Run the mode
 

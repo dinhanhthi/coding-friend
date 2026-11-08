@@ -397,7 +397,7 @@
   <body data-layout="hero" data-size="1200x630">
     <div class="stage">
       <main id="poster" class="poster">
-        <!-- Optional logo: add src="../path/to/logo.png" (a local file, inlined by
+        <!-- Optional logo: add src="logo.png" (copy the file into source/; inlined by
              inline-assets.mjs). Without a src the wordmark is used instead. -->
         <img id="logo" class="logo" alt="" hidden />
 
@@ -677,7 +677,7 @@
         },
       };
       const LANGS = Object.keys(STR);
-      const LANG = STR[Q.get("lang")] ? Q.get("lang") : LANGS[0];
+      const LANG = Object.hasOwn(STR, Q.get("lang")) ? Q.get("lang") : LANGS[0];
 
       /* ---------- fonts: every family and weight used above ---------- */
       const FONT_LIST = [

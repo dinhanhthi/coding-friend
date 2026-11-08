@@ -23,7 +23,7 @@ Write the copy from the fact sheet only: every claim, number and name has a sour
 
 ## 3. Build
 
-Write the poster as one HTML page, sized in CSS px to the chosen frame. Vendor fonts and images into `source/` (or use Google Fonts, which capture waits for). Requirements, because capture renders it headless:
+Write the poster as one HTML page, sized in CSS px to the chosen frame. Vendor fonts and images into `source/` (or use Google Fonts, which capture waits for; the kit's `poster.html` does). `inline-assets.mjs` leaves remote URLs alone, so a Google Fonts page still fetches its fonts over the network and falls back to system fonts offline; vendor the font files when the HTML must work without a connection. Requirements, because capture renders it headless:
 
 - **Contract** — the page sets `window.__showcase = { ready, fonts, fontSample }`: `ready` resolves once fonts and images are loaded, `fonts` lists `[{family, weight}]` to verify, `fontSample` holds the special characters of every language (for example `ăâđêôơư ẤỆỮ` for Vietnamese). Capture opens it with `?size=<S>&lang=<xx>`, sets the viewport to that size, and screenshots from the top-left corner (PNG) or prints one page (PDF), so the frame fills exactly the viewport.
 - **Deterministic** — no `Date.now()`, no unseeded `Math.random()`, no running animations.
@@ -39,7 +39,7 @@ Inline everything into one self-contained file:
 node inline-assets.mjs --src poster.html --out dist/poster.html
 ```
 
-Local refs (including `../` ones such as a repo logo) must resolve inside `--root`, which defaults to the git toplevel of the source folder (or the source folder itself outside git). Pass `--root <dir>` to widen it on purpose.
+Local refs must resolve inside `--root`, which defaults to the source folder, so copy brand assets (logo, screenshots, font files) into `source/` rather than pointing `../` at the repo. Pass `--root <dir>` to widen it on purpose. Dotfiles and anything in a dot-folder are never inlined, even through a symlink.
 
 Open `dist/poster.html?size=<S>&lang=<xx>` in a browser for a quick look.
 

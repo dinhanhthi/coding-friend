@@ -29,7 +29,7 @@ node inline-assets.mjs --src video.html --out dist/video.html
 open dist/video.html   # Linux: xdg-open
 ```
 
-Local asset refs must resolve inside `--root` (default: the git toplevel, or this folder outside git). Pass `--root <dir>` to allow assets from a wider folder.
+Local asset refs must resolve inside `--root` (default: this folder). Pass `--root <dir>` to allow assets from a wider folder. Dotfiles and dot-folders are never inlined.
 
 `<Describe the live preview: how to play, scrub or jump to a scene.>`
 

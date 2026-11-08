@@ -3,3 +3,7 @@ frames/
 dist/
 *.wav
 sheet-*.jpg
+check-*.jpg
+timeline.json
+*.muxed.mp4
+*.tmp.mp4
