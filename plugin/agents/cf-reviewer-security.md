@@ -10,7 +10,7 @@ description: >
 model: sonnet
 tools: Read, Glob, Grep, Bash
 created: 2026-04-04
-updated: 2026-09-16
+updated: 2026-11-09
 ---
 
 # Security Reviewer
@@ -57,6 +57,7 @@ Check changed code against these categories:
 
 - Hardcoded keys/tokens, weak crypto, improper key storage
 - Secrets in source code, logs, or error messages
+- Never reproduce a secret value in a finding: cite `file:line` and the credential type only, and recommend rotation, not just removal
 
 **Code Execution**
 

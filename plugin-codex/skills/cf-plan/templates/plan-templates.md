@@ -54,11 +54,11 @@ status: in-progress # in-progress | done | failed — `cf clean` sweeps only `do
 
 1. <task 1>
    - Files: <specific files>
-   - Verify: <how to verify>
+   - Verify: <command> → <expected result> (no command fits → manual: <what to check>)
    - Rollback: <how to undo — hard mode only>
 2. <task 2>
    - Files: <specific files>
-   - Verify: <how to verify>
+   - Verify: <command> → <expected result> (no command fits → manual: <what to check>)
 
 ## Risks
 
@@ -113,6 +113,14 @@ status: in-progress # in-progress | done | failed — authority; body **Status:*
 | ⬜ TODO | Phase 1: <name> | [phase-1-<name>.md](./phase-1-<name>.md) | N tasks |
 | ⬜ TODO | Phase 2: <name> | [phase-2-<name>.md](./phase-2-<name>.md) | N tasks |
 
+## Verify chains
+
+<!-- exact commands confirmed while exploring, never guessed; keep the line below in the written plan. Omit this whole section when the plan defines no chains -->
+
+A task may cite a chain by name (`Verify: <NAME> chain → <expected result>`). When dispatching that task, replace the name with the chain's full command — never pass a bare chain name to cf-implementer.
+
+- **<NAME>:** `<command && command>` → <expected result>
+
 ## Assumptions
 
 - <assumption> — basis: <why>
@@ -157,11 +165,11 @@ Autopilot plan — follow the `## AUTOPILOT` contract in [README.md](./README.md
 
 1. <task 1>
    - Files: <specific files>
-   - Verify: <how to verify>
+   - Verify: <command> → <expected result> (no command fits → manual: <what to check>)
    - Rollback: <how to undo — hard mode only>
 2. <task 2>
    - Files: <specific files>
-   - Verify: <how to verify>
+   - Verify: <command> → <expected result> (no command fits → manual: <what to check>)
 ```
 
 ## Brief (brief.md — normal/hard mode only)

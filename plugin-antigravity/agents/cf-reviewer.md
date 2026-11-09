@@ -51,6 +51,7 @@ Five layers, one pass, in this order:
 - **Only changes inside the given scope.** Pre-existing issues, generated files, and lockfiles are out of scope unless the diff changed their behavior.
 - **Concrete impact** — what breaks, for whom, when. A pattern violation with no impact is not a finding.
 - **`file:line`** for every finding, plus the evidence you read (the line, the rule, the missing test).
+- **Never reproduce a secret value.** A key, token, password, or credential-file content you come across never appears in a finding, quote, or summary — cite `file:line` and the credential type only, and recommend rotation (a committed secret stays compromised after it is deleted).
 - **Confidence ≥ 0.8** — below that, you are guessing; drop it. Show the score on Critical and Important findings.
 - **Zero findings is a valid result.** If the diff is clean, every finding section shows `None.` and the Summary says what you checked. Do not invent a finding to prove you worked.
 - **Praise is not a Suggestion.** "Nice error handling" belongs in the Summary, if anywhere.

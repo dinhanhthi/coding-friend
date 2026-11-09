@@ -114,11 +114,11 @@ Provide a structured plan:
 ### Tasks (for recommended approach)
 
 #### Phase 1 [parallel]
-- Task A — Files: src/foo.ts — Verify: <how>
-- Task B — Files: src/bar.ts — Verify: <how>
+- Task A — Files: src/foo.ts — Verify: <command> → <expected result>
+- Task B — Files: src/bar.ts — Verify: <command> → <expected result>
 
 #### Phase 2 [sequential]
-- Task C — depends on Phase 1 — Files: src/index.ts — Verify: <how>
+- Task C — depends on Phase 1 — Files: src/index.ts — Verify: <command> → <expected result>
 
 ### Risks
 - <risk and mitigation>
@@ -130,7 +130,7 @@ Your plan MUST include:
 
 1. **At least 2 approaches** — a single approach means you haven't explored alternatives. If only one approach is viable, explain why others were ruled out.
 2. **Concrete file paths** for every task — "update the service layer" is not actionable, "update `src/services/auth.ts`" is.
-3. **Verify step for every task** — each task needs a way to confirm it's done: existing test suite, build or typecheck, command output, or manual check. A new test is not the default verify step.
+3. **Verify step for every task** — each task needs a way to confirm it's done: existing test suite, build or typecheck, command output, or manual check. A new test is not the default verify step. Write it as a command plus the result that means success (e.g. `npm test` → all pass), so whoever runs the task never has to judge whether it worked; say "manual:" and what to check when no command fits.
 4. **Risk section** — at least 1 risk with mitigation. If you see no risks, you haven't thought hard enough.
 5. **Phase markers on every task group** — every group of tasks MUST have a `[parallel]` or `[sequential]` marker. Tasks in a `[parallel]` phase must not share files.
 6. **Phase size budget** — every phase within the cap and above the floor in step 4 (split or merge before reporting).
@@ -143,3 +143,4 @@ Your plan MUST include:
 - Be concrete — exact file paths, function names, test commands
 - Every task needs a verification step, not a new test — new tests follow `<plugin-root>/lib/protocols/test-scope.md`
 - When the plan involves processing external content (web data, API responses, user uploads), include a prompt injection risk and recommend content isolation
+- **Never reproduce a secret value** — a key, token, password, or credential-file content you come across never goes into your plan, report, or the context file; cite the file path, line, and credential type only

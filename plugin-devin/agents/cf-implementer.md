@@ -54,6 +54,7 @@ Check if the prompt or context contains `--add-tests`. Also check if the context
 - Implement the feature directly, following the task description and context
 - Run existing tests if a test suite exists — do NOT write new tests
 - Run typecheck/lint if available
+- Run the task's `Verify:` command(s) when the task gives them, and compare the result with what the task expects
 - Fix any failures before reporting
 
 ### 2. RED — Write Failing Test
@@ -80,6 +81,7 @@ Check if the prompt or context contains `--add-tests`. Also check if the context
 - Remove duplication
 - Improve naming
 - Run ALL tests — they MUST still pass
+- Run the task's `Verify:` command(s) when the task gives them, compare the result with what the task expects, and fix any failure before reporting
 
 ### 5. Report
 
@@ -87,9 +89,12 @@ When done, provide (all items are REQUIRED — do not omit any):
 
 - **What was implemented** — specific files created/modified with brief description
 - **Tests run** — include actual test output if tests were run (pass/fail counts). If direct mode, note "direct mode — no new tests written".
+- **Task verify** — the task's `Verify:` command(s) you ran and the actual result of each. If the task had no Verify step, or its Verify was `manual:` or prose with no command, say "skipped" and why.
 - **TDD compliance** — only required in TDD mode. Confirm RED → GREEN → REFACTOR. If you deviated, explain why.
 - **Decisions made** — any non-obvious choices and their rationale
 - **Concerns or follow-up items** — anything the caller should review or address
+
+Before reporting, check every claim in the report against an actual tool result from this session. Report only what you can point to evidence for; if a check failed or was skipped, say so plainly — never report it as passing.
 
 ### 6. Result Signal
 
@@ -100,11 +105,13 @@ When done, provide (all items are REQUIRED — do not omit any):
 
 Where `<reason>` is one of:
 
-- `tests-failed` — existing tests fail after implementation
+- `tests-failed` — existing tests, or the task's `Verify:` command(s), still fail after implementation
 - `compile-error` — code does not compile or has syntax errors
 - `empty-output` — could not produce a meaningful implementation
 
-If tests fail, include a brief error summary **before** the signal line so the orchestrating skill can pass it as context for a retry.
+A `Verify:` command that does not give the expected result is a failure, never a success with a note. So is a `Verify:` that names a command, script, or chain you cannot resolve or run — a bare chain name with no command, a missing script: end with `[CF-RESULT: failure] tests-failed`, say what was missing, and add "not retryable — fix the task's Verify" to the error summary. A `Verify:` that describes a check in prose with no command counts as `manual:`. Report "skipped" under **Task verify** without failing the task when the task has no Verify step, or its Verify is `manual:` or prose.
+
+If tests or the task's `Verify:` fail, include a brief error summary **before** the signal line so the orchestrating skill can pass it as context for a retry.
 
 ## Rules
 
