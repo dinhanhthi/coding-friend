@@ -1,6 +1,6 @@
 # Execution protocol (shared by cf-plan Step 7 and cf-plan-resume)
 
-Execute the plan phase by phase. Read by `$cf-plan` (after approval at Step 7) and `$cf-plan-resume` (after the user confirms resuming).
+Execute the plan phase by phase. Read by `$cf-plan` (after approval at Step 7) and `$cf-plan-resume` (right after listing the pending tasks).
 
 > **No-file mode guard** — no plan file was written (cf-plan `--inline`, or single-phase `--fast` without `--auto`) → replace every plan-file / Progress-table edit below with an update to the matching progress item (Track progress). Never applies to `$cf-plan-resume` (it always has a plan file).
 
