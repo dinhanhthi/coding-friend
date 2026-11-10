@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.4 (2026-11-10)
+
+- `cf-plan-resume` no longer asks "Resume from the first pending task? (y/n)": it lists the pending tasks and starts at once, since invoking the command is the go-ahead [#f52f95fb](https://github.com/dinhanhthi/coding-friend/commit/f52f95fb)
+
 ## v0.47.3 (2026-11-09)
 
 - Plans and `cf-implementer` now treat a task's `Verify:` as a command plus the result that means success: the implementer runs it, compares the result, and reports a failing or unrunnable `Verify:` as `tests-failed`; plan templates gain an optional "Verify chains" section and the implementer's report must be backed by tool results from the session [#6c1cf508](https://github.com/dinhanhthi/coding-friend/commit/6c1cf508)
