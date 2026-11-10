@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.43.2 (2026-11-09)
+
+- Fix `cf session`: a newly created session store root is now owner-only (`0700`); an existing folder, such as a synced one you picked, keeps its mode [#c5f9b592](https://github.com/dinhanhthi/coding-friend/commit/c5f9b592)
+
 ## v1.43.1 (2026-11-08)
 
 - `cf decide test|eval` obey `decision.allowRemote`; `localhost` counts as remote, only `127.0.0.1` and `[::1]` are local, and an empty `--project-dir=` is an `INVALID_ARGS` error instead of using the current project [#89daf4dc](https://github.com/dinhanhthi/coding-friend/commit/89daf4dc)

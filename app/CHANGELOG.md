@@ -2,6 +2,10 @@
 
 > Plugin changelog: [`plugin/CHANGELOG.md`](../plugin/CHANGELOG.md) · CLI changelog: [`cli/CHANGELOG.md`](../cli/CHANGELOG.md)
 
+## v0.1.2 (2026-11-09)
+
+- Fix the window traffic lights so they line up with the pane header [#72bfdeec](https://github.com/dinhanhthi/coding-friend/commit/72bfdeec)
+
 ## v0.1.1 (2026-11-08)
 
 - New look: system font, overlay titlebar, source-list sidebar with a Rex-style selected item, and full-width split views with pane headers [#48ad7cf9](https://github.com/dinhanhthi/coding-friend/commit/48ad7cf9) [#4c5ffe1f](https://github.com/dinhanhthi/coding-friend/commit/4c5ffe1f) [#dd760749](https://github.com/dinhanhthi/coding-friend/commit/dd760749)

@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.3 (2026-11-09)
+
+- Plans and `cf-implementer` now treat a task's `Verify:` as a command plus the result that means success: the implementer runs it, compares the result, and reports a failing or unrunnable `Verify:` as `tests-failed`; plan templates gain an optional "Verify chains" section and the implementer's report must be backed by tool results from the session [#6c1cf508](https://github.com/dinhanhthi/coding-friend/commit/6c1cf508)
+- Agents (`cf-explorer`, `cf-implementer`, `cf-planner`, `cf-reviewer`, `cf-reviewer-security`) never reproduce a secret value in a report, plan, finding or context file: they cite the file, line and credential type only [#6c1cf508](https://github.com/dinhanhthi/coding-friend/commit/6c1cf508)
+
 ## v0.47.2 (2026-11-08)
 
 - Fix the agent and task tracker hooks breaking a lock a live hook still held when they started slowly (a loaded machine): the wait for the lock is now counted from the first failed attempt, not from the hook start, so the statusline agent and task counters no longer lose an update [#037d070f](https://github.com/dinhanhthi/coding-friend/commit/037d070f)
