@@ -10,7 +10,7 @@ description: >
   (use /cf-ask), and formatting-only changes. --fix applies Critical/Important
   findings, --commit also commits (config: review.fix, review.commit).
 created: 2026-02-17
-updated: 2026-11-07
+updated: 2026-11-16
 ---
 
 # /cf-review
@@ -53,7 +53,8 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 **Antigravity host behavior:**
 
 - This skill already runs inside Google Antigravity. Ignore `--with-codex`, its `--codex` alias, and `review.withCodex`; do not launch a nested `codex review` subprocess.
-- `review.withClaude`, `review.withGrok`, `review.withCursor` and `review.withGemini` are not yet supported on this host; ignore them.
+- `review.withClaude`, `review.withGrok` and `review.withCursor` are not yet supported on this host; ignore them.
+- `--gemini` / `review.withGemini` were removed: Google does not allow an agent to run Gemini CLI or `agy` headless. If either is set, strip `--gemini` from `$ARGUMENTS`, print `> ⚠ --gemini is no longer supported: Google lets only you, not an agent, run Gemini headless. Run /cf-review-out and paste the prompt into Gemini yourself.` and continue without it.
 - Run the Coding Friend multi-agent review below.
 
 ### Step 2: Gather the diff
@@ -70,7 +71,7 @@ Flags for the Step 1 target: default or natural-language → none (branch commit
 
 **Only you** write the snapshot (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); reviewer agents only read it. The script creates the snapshot dir and its review dir private (0700) and refuses one that is a symlink or owned by another user. If the script warns the snapshot dir is unusable, keep using this command's stdout and note the limitation in the Summary — a background reviewer must never request write permission.
 
-**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
+**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
 
 ### Step 3: Assess change size
 
@@ -255,5 +256,5 @@ Before emitting, compare `git rev-parse HEAD` and `git status --porcelain` for t
 
 - **Deduplicate only on the same `file:line` AND the same root cause.** Two different issues on the same line stay two findings.
 - A merged finding keeps the **highest severity** any source gave it.
-- **Record provenance** — tag each contributing source on the merged finding (`[Codex]`, `[Gemini]`, …); the in-session review needs no tag unless another source contributed.
+- **Record provenance** — tag each contributing source on the merged finding (`[Codex]`, `[Cursor]`, …); the in-session review needs no tag unless another source contributed.
 - **Repetition is not evidence.** Several sources repeating the same speculation does not raise its confidence — keep the original score and still drop anything below 0.8.

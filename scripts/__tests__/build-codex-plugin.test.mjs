@@ -413,7 +413,7 @@ test("rewrites cf-review for Codex", async () => {
     externalsSource,
     /collect `CF_AGENT` only when agent jobs were spawned/,
   );
-  assert.match(externalsSource, /`--gemini` alone must NOT spawn Codex/);
+  assert.match(externalsSource, /`--cursor` alone must NOT spawn Codex/);
   assert.match(
     externalsSource,
     /`--with-codex` alone must NOT run `run-agent-review\.sh` with literal `<agent>`/,

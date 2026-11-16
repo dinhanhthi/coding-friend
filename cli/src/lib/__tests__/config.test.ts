@@ -454,7 +454,6 @@ describe("loadConfig validation", () => {
     "withClaude",
     "withGrok",
     "withCursor",
-    "withGemini",
     "fix",
     "commit",
   ] as const) {

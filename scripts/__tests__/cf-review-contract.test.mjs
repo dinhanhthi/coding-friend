@@ -585,7 +585,7 @@ const REPORT_CASES = [
     name: "a failed external source is a warning only — native coverage stays sufficient",
     report: buildReport({
       summary:
-        "Native coverage: cf-reviewer complete.\nExternal sources: Gemini unavailable (not on PATH) — warning only.\nReview status: COMPLETE",
+        "Native coverage: cf-reviewer complete.\nExternal sources: Cursor unavailable (not on PATH) — warning only.\nReview status: COMPLETE",
     }),
     status: "COMPLETE",
     contract: [

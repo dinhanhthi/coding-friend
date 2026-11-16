@@ -766,7 +766,6 @@ const REVIEW_AGENTS = {
   withClaude: { name: "Claude", cli: "Claude Code" },
   withGrok: { name: "Grok", cli: "Grok" },
   withCursor: { name: "Cursor", cli: "Cursor Agent" },
-  withGemini: { name: "Gemini", cli: "Gemini" },
 } as const;
 
 type ReviewAgentKey = keyof typeof REVIEW_AGENTS;
@@ -908,7 +907,6 @@ async function reviewSubMenu(): Promise<void> {
       case "withClaude":
       case "withGrok":
       case "withCursor":
-      case "withGemini":
         await editReviewWithAgent(choice, globalCfg, localCfg);
         break;
       case "fix":

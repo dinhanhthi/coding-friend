@@ -11,7 +11,7 @@ description: >
   findings, --commit also commits (config: review.fix, review.commit).
 user-invocable: true
 created: 2026-02-17
-updated: 2026-11-07
+updated: 2026-11-16
 model: opus
 ---
 
@@ -55,7 +55,8 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 **Codex dual-review flag:**
 
 - `--with-codex`/`--codex` → `codex=true`; else `review.withCodex` from config
-- `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`; also add `claude`/`grok`/`cursor`/`gemini` when `review.withClaude`/`review.withGrok`/`review.withCursor`/`review.withGemini` is `true` in config
+- `--claude`/`--cursor`/`--grok` → `agents=[…]`; also add `claude`/`grok`/`cursor` when `review.withClaude`/`review.withGrok`/`review.withCursor` is `true` in config
+- `--gemini` / `review.withGemini` → removed (Google does not allow an agent to run Gemini CLI or `agy` headless, e.g. `gemini -p` / `agy -p`; only the user may). If either is set, strip `--gemini` from `$ARGUMENTS`, print `> ⚠ --gemini is no longer supported: Google lets only you, not an agent, run Gemini headless. Run /cf-review-out and paste the prompt into Gemini yourself.` and continue without it.
 - `--out` → `out=true` (exclusive with agent flags)
 - Default target only — file path or commit range disables all external reviewers.
 - Any of the three set → read `references/external-reviewers.md` now; it owns the target/host-match/exclusivity checks, Steps 2.5 and 6.5, and the `--out` pipeline. None set → skip that file entirely.
@@ -74,7 +75,7 @@ Flags for the Step 1 target: default or natural-language → none (branch commit
 
 **Only you** write the snapshot (`diff.txt`, `metadata.txt`, `files.z`, `excluded.z`); reviewer agents only read it. The script creates the snapshot dir and its review dir private (0700) and refuses one that is a symlink or owned by another user. If the script warns the snapshot dir is unusable, keep using this command's stdout and note the limitation in the Summary — a background reviewer must never request write permission.
 
-**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--gemini`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
+**Flag parse:** `--out` → `out=true` (skip headless spawn/collect). `--claude`/`--cursor`/`--grok` → `agents=[…]`. Skip a flag that matches `HOST` (do not spawn `--claude` when `HOST` is `claude`).
 
 ### Step 2.5: Spawn Codex review in the background (only when `codex=true`)
 
@@ -194,7 +195,7 @@ If the review found **architectural insights** or **recurring patterns**, call `
 
 ### Step 10: Final output
 
-Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix (e.g. `· Reviewed by: Claude + Codex + Gemini`). Label from `HOST` (capitalized); if no `HOST:` line, use `In-session AI` — do NOT hardcode `Claude`. Omit the suffix when only the in-session reviewer ran.
+Display the cf-reviewer's report first, then append the appropriate banner. When any external source contributed, add a `· Reviewed by: <in-session> + …` suffix (e.g. `· Reviewed by: Claude + Codex + Cursor`). Label from `HOST` (capitalized); if no `HOST:` line, use `In-session AI` — do NOT hardcode `Claude`. Omit the suffix when only the in-session reviewer ran.
 
 MUST: display the full report and the status banner in **one message**; do NOT split them.
 
@@ -267,7 +268,7 @@ Before emitting, compare `git rev-parse HEAD` and `git status --porcelain` for t
 
 - **Deduplicate only on the same `file:line` AND the same root cause.** Two different issues on the same line stay two findings.
 - A merged finding keeps the **highest severity** any source gave it.
-- **Record provenance** — tag each contributing source on the merged finding (`[Codex]`, `[Gemini]`, …); the in-session review needs no tag unless another source contributed.
+- **Record provenance** — tag each contributing source on the merged finding (`[Codex]`, `[Cursor]`, …); the in-session review needs no tag unless another source contributed.
 - **Repetition is not evidence.** Several sources repeating the same speculation does not raise its confidence — keep the original score and still drop anything below 0.8.
 
 > Plugin root: the `PLUGIN_ROOT:` path in the session bootstrap context (HOST: devin), or the parent of the `skills/` folder that contains this SKILL.md. Replace `<plugin-root>` with it when running bundled scripts.

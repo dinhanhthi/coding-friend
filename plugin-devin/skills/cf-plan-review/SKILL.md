@@ -3,10 +3,10 @@ name: cf-plan-review
 description: >
   Review a saved /cf-plan folder with a fresh reviewer before implementing; triggers "review the plan", "plan review", "second opinion on the plan", "check the plan before implementing", "cf-plan-review"; --fix/--inline (or config planReviewFix) applies Critical/Important findings without asking and re-reviews until clean, --no-fix forces off; does NOT review code (use /cf-review).
 user-invocable: true
-argument-hint: "[plan] [--fix|--inline|--no-fix] [--codex|--gemini|--claude|--cursor|--grok]"
+argument-hint: "[plan] [--fix|--inline|--no-fix] [--codex|--claude|--cursor|--grok]"
 model: opus
 created: 2026-09-05
-updated: 2026-11-07
+updated: 2026-11-16
 ---
 
 # /cf-plan-review
@@ -36,7 +36,8 @@ Read `docsDir` from `.coding-friend/config.json` (default: `docs`). Prefer `CF_D
 
 **External reviewer flags:**
 
-- Parse `--codex`, `--gemini`, `--claude`, `--cursor`, `--grok` (and `--with-<agent>` aliases) into `agents=[…]`; strip them from `$ARGUMENTS`.
+- Parse `--codex`, `--claude`, `--cursor`, `--grok` (and `--with-<agent>` aliases) into `agents=[…]`; strip them from `$ARGUMENTS`.
+- `--gemini` (`--with-gemini`) → removed (Google does not allow an agent to run Gemini CLI or `agy` headless, e.g. `gemini -p` / `agy -p`; only the user may). Strip it from `$ARGUMENTS`, print `> ⚠ --gemini is no longer supported: Google lets only you, not an agent, run Gemini headless. Paste the plan prompt into Gemini yourself.` and continue without it.
 - **Host-match no-op:** skip a matching flag only when a `HOST:` line exists **and** equals the flag (the flag matching the current host is skipped). Drop that agent and print:
 
   > ⚠ `--<host>` skipped: <Host> is already the in-session reviewer.
@@ -132,7 +133,7 @@ Never block on an external reviewer — failures degrade gracefully.
 > **Source K — \<Agent\> review:** (for each surviving external source)
 > [raw result file]
 >
-> Tag each external finding with `[\<Agent\>]` (codex → `[Codex]`, gemini → `[Gemini]`, etc.). Same file:line + same issue → one finding (highest severity) and note agreement. Output 🚨/⚠️/💡/📋.
+> Tag each external finding with `[\<Agent\>]` (codex → `[Codex]`, cursor → `[Cursor]`, etc.). Same file:line + same issue → one finding (highest severity) and note agreement. Output 🚨/⚠️/💡/📋.
 
 End the merged report with a banner suffix when any external source contributed:
 

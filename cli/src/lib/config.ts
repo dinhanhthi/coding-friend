@@ -91,7 +91,8 @@ export const ReviewConfigSchema = z.object({
   withClaude: z.boolean().optional(),
   withGrok: z.boolean().optional(),
   withCursor: z.boolean().optional(),
-  withGemini: z.boolean().optional(),
+  // No withGemini: Google does not allow an agent to run Gemini CLI or agy
+  // headless, so the Gemini reviewer was removed (a leftover key warns as unknown).
   /** Default `/cf-review` to `--fix` (apply Critical/Important until clean). Autopilot passes `--no-fix`. */
   fix: z.boolean().optional(),
   /** Default `/cf-review` to `--commit` (implies `fix`). Autopilot passes `--no-fix`. */

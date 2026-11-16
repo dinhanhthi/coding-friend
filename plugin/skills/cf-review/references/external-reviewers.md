@@ -50,7 +50,7 @@ When `agents` is non-empty, run the in-session review (Steps 2–6) **and** each
 
 ## `--out` mutual exclusivity
 
-`--out` + any headless-agent flag (`--claude`/`--gemini`/`--cursor`/`--grok`/`--codex`) → print:
+`--out` + any headless-agent flag (`--claude`/`--cursor`/`--grok`/`--codex`) → print:
 
 > ⚠ `--out` (manual external review) can't combine with auto reviewer flags — ignoring the agent flags.
 
@@ -68,7 +68,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-codex-review.sh" "${CF_
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cf-review/scripts/run-agent-review.sh" <agent> "${CF_DOCS_ROOT}/reviews/<label>-result-<agent>.md" --snapshot-dir /tmp/coding-friend/review/<run-id>
 ```
 
-Run `run-codex-review.sh` only when `codex=true` and `out=false` (`--gemini` alone must NOT spawn Codex), and `run-agent-review.sh` only when `agents` is non-empty and `out=false` (`--with-codex` alone must NOT run `run-agent-review.sh` with literal `<agent>`).
+Run `run-codex-review.sh` only when `codex=true` and `out=false` (`--cursor` alone must NOT spawn Codex), and `run-agent-review.sh` only when `agents` is non-empty and `out=false` (`--with-codex` alone must NOT run `run-agent-review.sh` with literal `<agent>`).
 
 Run exactly one Codex line — the one the `has_committed` value in `metadata.txt` selects (see **Codex scope** above for what each one actually covers, and what to say in the Summary when Codex sees less than the in-session review). `--snapshot-dir` makes the agent reuse `diff.txt` from the Step 2 snapshot, so every agent reads the same bytes as the in-session reviewers.
 

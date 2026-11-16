@@ -67,7 +67,7 @@ const baseEnv = {
 
 /**
  * A deliberately minimal PATH: it carries the POSIX tools the runners need
- * (bash, git, perl, grep) but can never reach a real `claude`/`codex`/`gemini`
+ * (bash, git, perl, grep) but can never reach a real `claude`/`codex`/`cursor-agent`
  * install, so no test can accidentally start a paid agent run.
  */
 const nodeBinDir = mkTmp("cf-runners-node-");

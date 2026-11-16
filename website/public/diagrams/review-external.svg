@@ -27,7 +27,7 @@
 
   <rect id="review" data-node-id="review" x="290" y="50" width="380" height="72" rx="6" fill="oklch(97% 0.004 264)" stroke="oklch(20% 0.012 264)" stroke-width="1.5" data-graph-role="node" data-graph-bounds="290,50,670,122"/>
   <text x="304" y="76" class="nm">/cf-review</text>
-  <text x="304" y="94" class="dt">--codex · --gemini · --cursor · --grok</text>
+  <text x="304" y="94" class="dt">--codex · --cursor · --grok</text>
   <text x="304" y="110" class="dt">parallel, then merge</text>
 
   <rect id="review-out" data-node-id="review-out" x="80" y="230" width="200" height="64" rx="6" fill="oklch(97% 0.004 264)" stroke="oklch(84% 0.01 264)" stroke-width="1" data-graph-role="node" data-graph-bounds="80,230,280,294"/>

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # run-agent-review.sh — run a headless external-agent review via a CF-format prompt.
 # Usage: bash run-agent-review.sh <agent> <result-file> [prompt-file] [--snapshot-dir <dir>]
-#   <agent> ∈ claude|gemini|cursor|grok|codex
+#   <agent> ∈ claude|cursor|grok|codex
+#   (gemini was removed: Google does not allow an agent to run Gemini CLI / agy
+#   headless — only the user may. Use \$cf-review-out and paste the prompt yourself.)
 #   [prompt-file]     optional pre-built prompt for \$cf-plan-review; skips gather-diff + empty check
 #   --snapshot-dir D  reuse the scope cf-review already captured (D/diff.txt)
 #                     instead of gathering it a second time; mutually exclusive
@@ -107,12 +109,6 @@ case "$AGENT" in
     # denylist-by-name (which misses NotebookEdit and is version-fragile).
     # Smoke-tested: returns a CF-format review, exit 0.
     READONLY_ARGS=(--permission-mode plan)
-    ;;
-  gemini)
-    CLI="gemini"
-    # -p/--prompt requires a value; empty string enables headless mode with stdin appended
-    HEADLESS_ARGS=(--prompt "")
-    READONLY_ARGS=(--approval-mode plan --skip-trust)
     ;;
   cursor)
     CLI="cursor-agent"
