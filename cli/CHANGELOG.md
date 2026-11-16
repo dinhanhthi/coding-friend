@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.43.3 (2026-11-16)
+
+- Remove `review.withGemini` from the config schema and the `cf config` review menu: Google does not allow an agent to run Gemini headless, so the Gemini reviewer is gone; a leftover `withGemini` key is reported as unknown [#d529799f](https://github.com/dinhanhthi/coding-friend/commit/d529799f)
+
 ## v1.43.2 (2026-11-09)
 
 - Fix `cf session`: a newly created session store root is now owner-only (`0700`); an existing folder, such as a synced one you picked, keeps its mode [#c5f9b592](https://github.com/dinhanhthi/coding-friend/commit/c5f9b592)

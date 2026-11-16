@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.5 (2026-11-16)
+
+- Remove the headless Gemini reviewer: `$cf-review` and `$cf-plan-review` no longer accept `--gemini` or `review.withGemini`, because Google does not allow an agent to run Gemini CLI or `agy` headless (`gemini -p`, `agy -p`), only you may. A leftover `--gemini` is ignored with a warning; for a Gemini review run `$cf-review-out` and paste the prompt into Gemini yourself. `cf-help` and the docs say so [#d529799f](https://github.com/dinhanhthi/coding-friend/commit/d529799f)
+
 ## v0.47.4 (2026-11-10)
 
 - `cf-plan-resume` no longer asks "Resume from the first pending task? (y/n)": it lists the pending tasks and starts at once, since invoking the command is the go-ahead [#f52f95fb](https://github.com/dinhanhthi/coding-friend/commit/f52f95fb)
