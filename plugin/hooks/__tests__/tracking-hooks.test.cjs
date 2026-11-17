@@ -226,19 +226,35 @@ describe("agent-tracker.sh", () => {
   it("maintains correct count under concurrent starts", () => {
     const { execFile } = require("child_process");
 
-    // Launch 5 SubagentStart hooks concurrently
+    // Launch 5 SubagentStart hooks concurrently. Each child gets its own
+    // TMPDIR so the hook's error log holds only this test's lines; on a
+    // miscount the failure message shows every child's exit and that log.
     const CONCURRENCY = 5;
+    const errDir = fs.mkdtempSync(path.join(os.tmpdir(), "cf-agent-race-"));
+    const children = [];
     const promises = [];
     for (let i = 0; i < CONCURRENCY; i++) {
       promises.push(
         new Promise((resolve) => {
+          const start = Date.now();
           const child = execFile(
             "bash",
             [AGENT_TRACKER],
             {
               timeout: 5000,
+              env: { ...process.env, TMPDIR: errDir },
             },
-            () => resolve(),
+            (err, _stdout, stderr) => {
+              children.push({
+                i,
+                ms: Date.now() - start,
+                code: err ? err.code : 0,
+                signal: err ? err.signal : null,
+                killed: err ? err.killed : false,
+                stderr: stderr.trim(),
+              });
+              resolve();
+            },
           );
           child.stdin.write(
             JSON.stringify({
@@ -255,7 +271,20 @@ describe("agent-tracker.sh", () => {
     return Promise.all(promises).then(() => {
       const countFile = `/tmp/cf-agent-count-${SESSION_ID}`;
       const count = parseInt(fs.readFileSync(countFile, "utf8").trim(), 10);
-      expect(count).toBe(CONCURRENCY);
+      let errLog = "";
+      try {
+        errLog = fs.readFileSync(
+          path.join(errDir, "cf-hook-errors.log"),
+          "utf8",
+        );
+      } catch {
+        /* no hook logged anything */
+      }
+      fs.rmSync(errDir, { recursive: true, force: true });
+      expect(
+        count,
+        `children: ${JSON.stringify(children)}\nhook error log:\n${errLog || "(empty)"}`,
+      ).toBe(CONCURRENCY);
     });
   });
 });
