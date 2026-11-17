@@ -410,7 +410,25 @@ Learn notes default to `~/.coding-friend/learn/` (`learn.outputDir` is configura
 - `autoCapture` — boolean. Save session context on PreCompact.
 - `autoStart` — boolean. Start the memory daemon when the MCP server connects.
 
-List gitignore-style paths in `.coding-friend/ignore` so scout-block skips them. A global `~/.coding-friend/ignore` applies too; local overrides global. Use `!pattern` to unblock a default (e.g. `!vendor`) or, in the local file, a pattern from the global file; to unblock a custom pattern, delete its line.
+### 🚧 Blocked folders (scout-block)
+
+The scout-block hook stops the agent's file tools (read, write, edit, glob, grep) from opening generated or vendored folders, so they don't eat context. Shell commands are not checked. These folder names are blocked by default:
+
+`node_modules`, `.pnpm`, `dist`, `build`, `.next`, `.nuxt`, `.svelte-kit`, `out`, `.output`, `__pycache__`, `.venv`, `venv`, `.tox`, `vendor`, `target`, `.git`, `coverage`, `.nyc_output`, `.turbo`, `.cache`, `.parcel-cache`, `.webpack`
+
+To change the list, create `.coding-friend/ignore` in the project (nothing creates it for you), one pattern per line:
+
+```
+# let the agent read build/ folders
+!build
+# also block this folder
+fixtures-large
+```
+
+- `!name` unblocks a default (or, in the project file, a pattern from the global file). To unblock your own pattern, delete its line.
+- A pattern is a folder name, not a path or glob: `build` matches `build/`, `app/build/` and `a/build/b`, but not `build.sh`. `!app/build` or `*.log` does nothing.
+- A global `~/.coding-friend/ignore` applies to every project; the project file is applied after it, so it wins.
+- The file is read on every tool call, so no restart is needed. Set `"scoutBlock": false` to turn the whole hook off.
 
 ### 🔄 Loop until clean
 
