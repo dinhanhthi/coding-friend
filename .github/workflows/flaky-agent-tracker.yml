@@ -7,12 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "test = only the flaky test, file = tracking-hooks.test.cjs, suite = full npm test (slow, ~2 min per run)"
+        description: "test = only the flaky test, file = tracking-hooks.test.cjs, suite = full npm test (slow, ~2 min per run), trace = flaky test with xtrace (use few iterations)"
         type: choice
         options:
           - test
           - file
           - suite
+          - trace
         default: file
       iterations:
         description: "How many runs"
@@ -62,6 +63,9 @@ jobs:
             test) CMD=(npx vitest run --config vitest.hooks.config.ts "$FILE" -t "maintains correct count under concurrent starts") ;;
             file) CMD=(npx vitest run --config vitest.hooks.config.ts "$FILE") ;;
             suite) CMD=(npm test) ;;
+            # xtrace every hook child with timestamps; the trace lands in the
+            # children[].stderr of the assertion message
+            trace) CMD=(env SHELLOPTS=xtrace "PS4=+ \${EPOCHREALTIME} \${BASHPID} " npx vitest run --config vitest.hooks.config.ts "$FILE" -t "maintains correct count under concurrent starts") ;;
           esac
           fails=0
           for n in $(seq 1 "$ITERATIONS"); do
