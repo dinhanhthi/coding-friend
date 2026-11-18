@@ -1,0 +1,76 @@
+name: Flaky agent-tracker repro
+
+# Manual loop to reproduce the CI-only flake in tracking-hooks.test.cjs
+# ("maintains correct count under concurrent starts": expected 5, got 4).
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "test = only the flaky test, file = tracking-hooks.test.cjs, suite = full npm test (slow, ~2 min per run)"
+        type: choice
+        options:
+          - test
+          - file
+          - suite
+        default: file
+      iterations:
+        description: "How many runs"
+        type: number
+        default: 200
+
+permissions:
+  contents: read
+
+jobs:
+  repro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            cli/package-lock.json
+            cli/lib/cf-memory/package-lock.json
+            cli/lib/learn-mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install bundled lib dependencies
+        if: inputs.scope == 'suite'
+        run: |
+          npm ci --prefix lib/cf-memory
+          npm ci --prefix lib/learn-mcp
+
+      - name: Loop the tests
+        env:
+          SCOPE: ${{ inputs.scope }}
+          ITERATIONS: ${{ inputs.iterations }}
+        run: |
+          FILE=../plugin/hooks/__tests__/tracking-hooks.test.cjs
+          case "$SCOPE" in
+            test) CMD=(npx vitest run --config vitest.hooks.config.ts "$FILE" -t "maintains correct count under concurrent starts") ;;
+            file) CMD=(npx vitest run --config vitest.hooks.config.ts "$FILE") ;;
+            suite) CMD=(npm test) ;;
+          esac
+          fails=0
+          for n in $(seq 1 "$ITERATIONS"); do
+            if ! "${CMD[@]}" >out.txt 2>&1; then
+              fails=$((fails + 1))
+              echo "::group::run $n failed"
+              grep -E "FAIL |AssertionError|children:|hook error log|expected" out.txt | head -20 || true
+              echo "::endgroup::"
+            fi
+          done
+          echo "scope=$SCOPE fails=$fails/$ITERATIONS" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$fails" -eq 0 ]
