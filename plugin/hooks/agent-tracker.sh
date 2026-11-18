@@ -38,7 +38,7 @@ fi
 
 AGENT_FILE="/tmp/cf-agent-${SESSION_ID}"
 COUNT_FILE="/tmp/cf-agent-count-${SESSION_ID}"
-LOCK_DIR="/tmp/cf-agent-count-${SESSION_ID}.lock"
+LOCK_FILE="/tmp/cf-agent-count-${SESSION_ID}.lock"
 EVENT=$(json_string "hook_event_name")
 if [ -z "$EVENT" ]; then
   EVENT=$(json_string "hookEventName")
@@ -60,29 +60,32 @@ if [ "$EVENT" = "SubagentStart" ]; then
   fi
 fi
 
-# Acquire lock (mkdir is atomic on all Unix systems). The trap is set first so
-# a hook killed right after mkdir still releases the lock; it only removes a
+# Acquire lock: a lock file created with noclobber, which bash opens with
+# O_CREAT|O_EXCL (atomic). Not mkdir: uutils mkdir (Ubuntu 26.04) lets
+# concurrent calls on one path all succeed. The trap is set first so a hook
+# killed right after the create still releases the lock; it only removes a
 # lock this hook holds.
 HAVE_LOCK=0
 WAIT_START=""
-trap '[ "$HAVE_LOCK" = 1 ] && rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+trap '[ "$HAVE_LOCK" = 1 ] && rm -f "$LOCK_FILE" 2>/dev/null || true' EXIT
 while :; do
-  if mkdir "$LOCK_DIR" 2>/dev/null; then
+  if ( set -C; : >"$LOCK_FILE" ) 2>/dev/null; then
     HAVE_LOCK=1
     break
   fi
   # Holders keep the lock for milliseconds, so a lock still held after this
   # hook has waited ~2-3 s for it is stale or stuck. The wait is counted from
-  # the first failed mkdir (SECONDS has whole-second resolution), never from
+  # the first failed create (SECONDS has whole-second resolution), never from
   # the hook start: on a loaded machine the start alone can take seconds.
   # Break it and do the update anyway: a dropped start/stop
   # leaves the statusline wrong for the rest of the session, while a rare
   # unlocked write risks at most the same miscount.
   [ -n "$WAIT_START" ] || WAIT_START=$SECONDS
   if [ $((SECONDS - WAIT_START)) -ge 3 ]; then
-    echo "[$(date '+%Y-%m-%dT%H:%M:%S')] agent-tracker: lock $LOCK_DIR still held after waiting $((SECONDS - WAIT_START))s; breaking it for $EVENT" >>"$ERR_LOG" 2>/dev/null || true
-    rmdir "$LOCK_DIR" 2>/dev/null || true
-    if mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo "[$(date '+%Y-%m-%dT%H:%M:%S')] agent-tracker: lock $LOCK_FILE still held after waiting $((SECONDS - WAIT_START))s; breaking it for $EVENT" >>"$ERR_LOG" 2>/dev/null || true
+    # Remove a lock file, or a lock dir left by an older (mkdir) version
+    rm -f "$LOCK_FILE" 2>/dev/null || rmdir "$LOCK_FILE" 2>/dev/null || true
+    if ( set -C; : >"$LOCK_FILE" ) 2>/dev/null; then
       HAVE_LOCK=1
     fi
     break

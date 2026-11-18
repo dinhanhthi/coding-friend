@@ -57,13 +57,13 @@ function cleanup() {
  * the holder released the lock itself, false when the hook broke it first.
  * Breaking a lock held for milliseconds loses an update.
  */
-function runBehindLiveLock(script, lockDir, payload) {
+function runBehindLiveLock(script, lockPath, payload) {
   const { execFile } = require("child_process");
-  fs.mkdirSync(lockDir);
+  fs.writeFileSync(lockPath, "");
   let releasedByHolder = false;
   setTimeout(() => {
     try {
-      fs.rmdirSync(lockDir);
+      fs.unlinkSync(lockPath);
       releasedByHolder = true;
     } catch {
       /* the hook already broke the lock */
@@ -191,17 +191,17 @@ describe("agent-tracker.sh", () => {
     );
   });
 
-  it("uses mkdir-based locking to protect concurrent access", () => {
-    // The lock dir should not persist after the hook exits (released in EXIT trap)
+  it("uses a lock file to protect concurrent access", () => {
+    // The lock file should not persist after the hook exits (released in EXIT trap)
     runHook(AGENT_TRACKER, {
       hook_event_name: "SubagentStart",
       agent_type: "cf-reviewer",
       session_id: SESSION_ID,
     });
 
-    const lockDir = `/tmp/cf-agent-count-${SESSION_ID}.lock`;
+    const lockPath = `/tmp/cf-agent-count-${SESSION_ID}.lock`;
     // Lock should be released after hook completes
-    expect(fs.existsSync(lockDir)).toBe(false);
+    expect(fs.existsSync(lockPath)).toBe(false);
 
     // Count file should still work correctly
     const countFile = `/tmp/cf-agent-count-${SESSION_ID}`;
