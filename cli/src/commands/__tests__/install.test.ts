@@ -309,7 +309,7 @@ describe("installCommand", () => {
             "plugin",
             "marketplace",
             "add",
-            "dinhanhthi/coding-friend",
+            "Coprimal/coding-friend",
           ],
         ],
         [
@@ -347,7 +347,7 @@ describe("installCommand", () => {
       "plugin",
       "marketplace",
       "add",
-      "dinhanhthi/coding-friend",
+      "Coprimal/coding-friend",
     ]);
   });
 
@@ -407,7 +407,7 @@ describe("installCommand", () => {
       "plugin",
       "marketplace",
       "add",
-      "dinhanhthi/coding-friend",
+      "Coprimal/coding-friend",
     ]);
     expect(mockSetCodexPluginEnabled).toHaveBeenCalledWith(true);
     expect(mockDeployCodexAgents).toHaveBeenCalledWith(
@@ -435,7 +435,7 @@ describe("installCommand", () => {
       "plugin",
       "marketplace",
       "add",
-      "dinhanhthi/coding-friend",
+      "Coprimal/coding-friend",
     ]);
   });
 
@@ -805,7 +805,7 @@ describe("installCommand human output (characterization)", () => {
       └─────────────────────────────────┘
 
       ✔ Marketplace already registered.
-      ⚠ Cannot make plugin auto-update. Please enable it manually: https://cf.dinhanhthi.com/#install
+      ⚠ Cannot make plugin auto-update. Please enable it manually: https://cf.coprimal.dev/#install
       ✔ Plugin already installed (v0.7.2).
       Could not check for updates (no network or GitHub rate limit).
 

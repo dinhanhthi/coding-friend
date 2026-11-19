@@ -101,7 +101,7 @@ export function enableMarketplaceAutoUpdate(): boolean {
       entry.autoUpdate = true;
     } else {
       marketplaces[MARKETPLACE_NAME] = {
-        source: { source: "github", repo: "dinhanhthi/coding-friend" },
+        source: { source: "github", repo: "Coprimal/coding-friend" },
         autoUpdate: true,
       };
     }

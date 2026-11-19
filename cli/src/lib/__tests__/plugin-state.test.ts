@@ -285,7 +285,7 @@ describe("enableMarketplaceAutoUpdate", () => {
       {
         extraKnownMarketplaces: {
           "coding-friend-marketplace": {
-            source: { source: "github", repo: "dinhanhthi/coding-friend" },
+            source: { source: "github", repo: "Coprimal/coding-friend" },
             autoUpdate: true,
           },
         },

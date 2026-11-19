@@ -71,6 +71,7 @@ import {
   desiredDevinSource,
   ensureDevinAuth,
   isDevinPluginInstalled,
+  isOwnDevinSource,
   readDevinInstallState,
   readDevinMcpConfig,
   readDevinPluginVersion,
@@ -88,7 +89,10 @@ import {
 
 const mockRun = vi.mocked(run);
 
-const GITHUB_SPEC = "dinhanhthi/coding-friend#plugin-devin";
+const GITHUB_SPEC = "Coprimal/coding-friend#plugin-devin";
+// The repo URL cf emits (install spec, ls-remote, raw manifest).
+const EMITTED_GITHUB_URL = "https://github.com/Coprimal/coding-friend";
+// The URL recorded in lock.json by installs made before the move to Coprimal.
 const GITHUB_URL = "https://github.com/dinhanhthi/coding-friend";
 
 const tmpDirs: string[] = [];
@@ -267,6 +271,23 @@ describe("readDevinInstallState", () => {
   });
 });
 
+describe("isOwnDevinSource", () => {
+  it("recognises both the old dinhanhthi and the new Coprimal repo as own", () => {
+    for (const url of [
+      GITHUB_URL,
+      "https://github.com/Coprimal/coding-friend.git",
+      "git@github.com:Coprimal/coding-friend",
+    ]) {
+      const entry = githubEntry("plugin-devin");
+      entry.spec.url = url;
+      entry.identity = `${url}#plugin-devin`;
+      writeLock(lockJson([entry]));
+
+      expect(isOwnDevinSource(readDevinInstallState())).toBe(true);
+    }
+  });
+});
+
 describe("desiredDevinSource", () => {
   it("returns the github spec when dev mode is off", () => {
     expect(desiredDevinSource()).toEqual({
@@ -355,12 +376,12 @@ describe("checkDevinTargetResolvable", () => {
 
     expect(mockRun).toHaveBeenCalledWith("git", [
       "ls-remote",
-      `${GITHUB_URL}.git`,
+      `${EMITTED_GITHUB_URL}.git`,
       "HEAD",
     ]);
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining(
-        "raw.githubusercontent.com/dinhanhthi/coding-friend",
+        "raw.githubusercontent.com/Coprimal/coding-friend",
       ),
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );

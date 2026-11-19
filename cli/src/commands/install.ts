@@ -127,11 +127,11 @@ export async function runInstall(
       "plugin",
       "marketplace",
       "add",
-      "dinhanhthi/coding-friend",
+      "Coprimal/coding-friend",
     ]);
     if (result === null) {
       log.error(
-        "Failed to add marketplace. Try manually: claude plugin marketplace add dinhanhthi/coding-friend",
+        "Failed to add marketplace. Try manually: claude plugin marketplace add Coprimal/coding-friend",
       );
       throw new CliError("COMMAND_FAILED", "Failed to add marketplace");
     }
@@ -143,7 +143,7 @@ export async function runInstall(
     log.success("Auto-update enabled for coding-friend plugin.");
   } else {
     log.warn(
-      `Cannot make plugin auto-update. Please enable it manually: ${chalk.cyan("https://cf.dinhanhthi.com/#install")}`,
+      `Cannot make plugin auto-update. Please enable it manually: ${chalk.cyan("https://cf.coprimal.dev/#install")}`,
     );
   }
 
@@ -349,11 +349,11 @@ async function installCodexCommand(): Promise<InstallResult> {
       "plugin",
       "marketplace",
       "add",
-      "dinhanhthi/coding-friend",
+      "Coprimal/coding-friend",
     ]);
     if (result === null && !isCodexMarketplaceRegistered()) {
       log.error(
-        "Failed to add Codex marketplace. Try manually: codex plugin marketplace add dinhanhthi/coding-friend",
+        "Failed to add Codex marketplace. Try manually: codex plugin marketplace add Coprimal/coding-friend",
       );
       throw new CliError("COMMAND_FAILED", "Failed to add Codex marketplace");
     }

@@ -26,7 +26,7 @@ export { checkAgyVersion } from "./host.js";
 
 const PLUGIN_NAME = "coding-friend";
 const PLUGIN_SUBDIR = "plugin-antigravity";
-const SOURCE_REPO = "https://github.com/dinhanhthi/coding-friend";
+const SOURCE_REPO = "https://github.com/Coprimal/coding-friend";
 const INSTALLED_VERSION_FILE = "installed_version.json";
 const PLUGIN_JSON = "plugin.json";
 const MCP_CONFIG = "mcp_config.json";

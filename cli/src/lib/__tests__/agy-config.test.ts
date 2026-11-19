@@ -58,7 +58,7 @@ const mockCommandExists = vi.mocked(commandExists);
 const mockRun = vi.mocked(run);
 const mockRunWithStderr = vi.mocked(runWithStderr);
 
-const SOURCE_REPO = "https://github.com/dinhanhthi/coding-friend";
+const SOURCE_REPO = "https://github.com/Coprimal/coding-friend";
 const MEMORY_SERVER = {
   command: "npx",
   args: ["-y", "coding-friend-cli", "mcp-serve", "/tmp/memory"],

@@ -130,7 +130,7 @@ export function getLatestVersion(): string | null {
   // Try gh CLI first — filter for plugin tags (v0.x.x, not cli-v*, learn-*-v*)
   tag = run("gh", [
     "api",
-    "repos/dinhanhthi/coding-friend/releases?per_page=100",
+    "repos/Coprimal/coding-friend/releases?per_page=100",
     "--jq",
     '[.[] | select(.tag_name | test("^v[0-9]"))][0].tag_name',
   ]);
@@ -139,7 +139,7 @@ export function getLatestVersion(): string | null {
   if (!tag) {
     const json = run("curl", [
       "-s",
-      "https://api.github.com/repos/dinhanhthi/coding-friend/releases?per_page=100",
+      "https://api.github.com/repos/Coprimal/coding-friend/releases?per_page=100",
     ]);
     if (json) {
       try {
@@ -477,7 +477,7 @@ async function updateClaudeCommand(
   if (doPlugin) {
     if (!latestVersion) {
       log.warn(
-        "Cannot check latest plugin version. Verify manually at https://github.com/dinhanhthi/coding-friend/releases",
+        "Cannot check latest plugin version. Verify manually at https://github.com/Coprimal/coding-friend/releases",
       );
     } else if (!currentVersion) {
       log.warn(

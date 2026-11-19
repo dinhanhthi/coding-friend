@@ -27,7 +27,7 @@ import { ensureShellCompletion } from "../lib/shell-completion.js";
 import { ensureStatusline, getInstalledVersion } from "../lib/statusline.js";
 import chalk from "chalk";
 
-const REMOTE_URL = "https://github.com/dinhanhthi/coding-friend.git";
+const REMOTE_URL = "https://github.com/Coprimal/coding-friend.git";
 const MARKETPLACE_NAME = "coding-friend-marketplace";
 const PLUGIN_NAME = "coding-friend";
 const PLUGIN_ID = `${PLUGIN_NAME}@${MARKETPLACE_NAME}`;

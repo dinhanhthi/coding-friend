@@ -26,10 +26,10 @@ import {
 
 const PLUGIN_NAME = "coding-friend";
 const PLUGIN_SUBDIR = "plugin-devin";
-const GITHUB_SPEC = "dinhanhthi/coding-friend#plugin-devin";
-const GITHUB_REPO_URL = "https://github.com/dinhanhthi/coding-friend";
+const GITHUB_SPEC = "Coprimal/coding-friend#plugin-devin";
+const GITHUB_REPO_URL = "https://github.com/Coprimal/coding-friend";
 const GITHUB_REPO_GIT = `${GITHUB_REPO_URL}.git`;
-const GITHUB_MANIFEST_RAW_URL = `https://raw.githubusercontent.com/dinhanhthi/coding-friend/HEAD/${PLUGIN_SUBDIR}/.claude-plugin/plugin.json`;
+const GITHUB_MANIFEST_RAW_URL = `https://raw.githubusercontent.com/Coprimal/coding-friend/HEAD/${PLUGIN_SUBDIR}/.claude-plugin/plugin.json`;
 const FETCH_TIMEOUT_MS = 10_000;
 
 export type DevinInstallKind = "github" | "local" | "none" | "unknown";
@@ -226,6 +226,14 @@ function samePath(a: string, b: string): boolean {
   return realpathOrResolved(a) === realpathOrResolved(b);
 }
 
+// Installs made before the move to Coprimal recorded the dinhanhthi URL.
+const OWN_GITHUB_REPOS = new Set([
+  "github.com/dinhanhthi/coding-friend",
+  "github.com:dinhanhthi/coding-friend",
+  "github.com/coprimal/coding-friend",
+  "github.com:coprimal/coding-friend",
+]);
+
 function sameGithubRepo(url: string): boolean {
   const normalized = url
     .toLowerCase()
@@ -233,10 +241,7 @@ function sameGithubRepo(url: string): boolean {
     .replace(/^git@/, "")
     .replace(/\.git$/, "")
     .replace(/\/$/, "");
-  return (
-    normalized === "github.com/dinhanhthi/coding-friend" ||
-    normalized === "github.com:dinhanhthi/coding-friend"
-  );
+  return OWN_GITHUB_REPOS.has(normalized);
 }
 
 /** True when the installed state already matches the desired source+target. */
@@ -258,7 +263,8 @@ function sameInstall(
  * True when the installed entry is a coding-friend Devin source we produce:
  * a local link to a `plugin-devin` dir (any checkout) whose
  * .claude-plugin/plugin.json names coding-friend, or the GitHub
- * dinhanhthi/coding-friend repo with subdir `plugin-devin`.
+ * Coprimal/coding-friend repo (or its old dinhanhthi/coding-friend home)
+ * with subdir `plugin-devin`.
  */
 export function isOwnDevinSource(state: DevinInstallState): boolean {
   if (state.kind === "local") {
