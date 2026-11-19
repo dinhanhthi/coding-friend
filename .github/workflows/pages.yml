@@ -1,6 +1,6 @@
 name: Deploy website
 
-# Publishes the static export of website/ to GitHub Pages (custom domain cf.dinhanhthi.com).
+# Publishes the static export of website/ to GitHub Pages (custom domain cf.coprimal.dev).
 # Requires Settings > Pages > Source = "GitHub Actions".
 
 on:

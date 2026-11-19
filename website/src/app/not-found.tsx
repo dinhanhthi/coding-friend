@@ -5,7 +5,7 @@ import Link from "next/link";
 const legacyRedirects = `
 var p = location.pathname;
 if (/^\\/docs(\\/|$)/.test(p)) location.replace("/");
-else if (/^\\/changelog\\/?$/.test(p)) location.replace("https://github.com/dinhanhthi/coding-friend/releases");
+else if (/^\\/changelog\\/?$/.test(p)) location.replace("https://github.com/Coprimal/coding-friend/releases");
 `;
 
 export default function NotFound() {

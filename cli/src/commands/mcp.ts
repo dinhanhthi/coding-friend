@@ -118,7 +118,7 @@ async function runMcp(json: boolean): Promise<McpData> {
   }
 }`);
   console.log();
-  log.dim("See full docs: https://cf.dinhanhthi.com/#memory");
+  log.dim("See full docs: https://cf.coprimal.dev/#memory");
   console.log();
 
   // ─── Auto-activate CF Learn MCP (user scope) ─────────────────────────────

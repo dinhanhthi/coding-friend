@@ -1,6 +1,6 @@
 # Coding Friend Mods
 
-Optional Claude Code mods for [Coding Friend](https://cf.dinhanhthi.com). Mods are function hooks that run inside the Claude Code process, so this plugin can show things the main `coding-friend` plugin cannot: toasts, a band above the prompt and a pane. It needs the main `coding-friend` plugin.
+Optional Claude Code mods for [Coding Friend](https://cf.coprimal.dev). Mods are function hooks that run inside the Claude Code process, so this plugin can show things the main `coding-friend` plugin cannot: toasts, a band above the prompt and a pane. It needs the main `coding-friend` plugin.
 
 ## Features
 

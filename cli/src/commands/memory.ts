@@ -154,7 +154,7 @@ export function printMemoryMcpConfig(memoryDir: string): void {
 }`);
   console.log();
 
-  log.dim("Available tools & resources: https://cf.dinhanhthi.com/#memory");
+  log.dim("Available tools & resources: https://cf.coprimal.dev/#memory");
   console.log();
   log.dim(
     "Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.",
@@ -295,7 +295,7 @@ export async function memoryStatusCommand(opts: JsonFlag = {}): Promise<void> {
     log.info(`Categories: ${chalk.dim(categories.join(", "))}`);
   }
   console.log();
-  log.dim(`Docs: https://cf.dinhanhthi.com/#memory`);
+  log.dim(`Docs: https://cf.coprimal.dev/#memory`);
   console.log();
 }
 
@@ -1120,14 +1120,14 @@ export async function memoryInitWizard(
   );
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
   log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/#memory")}`,
+    `  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`,
   );
 }
 
 function printInitDone(): void {
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
   log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.dinhanhthi.com/#memory")}`,
+    `  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`,
   );
 }
 

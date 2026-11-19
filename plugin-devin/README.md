@@ -4,14 +4,14 @@ Lean toolkit for disciplined engineering workflows — the same skills, agents,
 hooks and memory system as the Claude Code plugin, repackaged for Devin CLI.
 
 > **Beta:** Devin support is new — report issues at
-> https://github.com/dinhanhthi/coding-friend/issues.
+> https://github.com/Coprimal/coding-friend/issues.
 
 ## Install
 
 Production (GitHub, the `plugin-devin/` subdirectory of the repo):
 
 ```bash
-devin plugins install dinhanhthi/coding-friend#plugin-devin
+devin plugins install Coprimal/coding-friend#plugin-devin
 ```
 
 Development (local checkout — symlinked, so edits apply to new sessions):

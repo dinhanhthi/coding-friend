@@ -3,7 +3,7 @@ import MdxLink from "@/components/MdxLink";
 import type { ChangelogEntry } from "@/lib/changelog";
 import { mdxOptions } from "@/lib/mdx";
 
-const RELEASES_URL = "https://github.com/dinhanhthi/coding-friend/releases";
+const RELEASES_URL = "https://github.com/Coprimal/coding-friend/releases";
 const VISIBLE_BULLETS = 2;
 
 function BulletList({ bullets }: { bullets: string[] }) {

@@ -737,7 +737,7 @@ test("builds Devin plugin fixture idempotently", async () => {
   assert.match(readme, /# Coding Friend — Devin CLI \(beta\)/);
   assert.match(
     readme,
-    /devin plugins install dinhanhthi\/coding-friend#plugin-devin/,
+    /devin plugins install Coprimal\/coding-friend#plugin-devin/,
   );
   assert.match(readme, /devin plugins install --local/);
   assert.match(readme, /\/coding-friend:cf-plan/);

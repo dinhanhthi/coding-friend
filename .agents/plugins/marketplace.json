@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Lean toolkit for disciplined engineering workflows with Codex CLI",
   "owner": {
-    "name": "Anh-Thi Dinh"
+    "name": "Coprimal"
   },
   "plugins": [
     {
@@ -14,7 +14,7 @@
       },
       "description": "Lean toolkit for disciplined engineering workflows with Codex CLI",
       "author": {
-        "name": "Anh-Thi Dinh"
+        "name": "Coprimal"
       },
       "keywords": [
         "skills",

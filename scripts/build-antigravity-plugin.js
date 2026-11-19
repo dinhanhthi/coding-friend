@@ -446,9 +446,9 @@ function createAntigravityPluginManifest({ version }) {
     description:
       "Lean toolkit for disciplined engineering workflows with Google Antigravity (beta)",
     author: {
-      name: "Anh-Thi Dinh",
-      email: "me@dinhanhthi.com",
-      url: "https://dinhanhthi.com",
+      name: "Coprimal",
+      email: "contact@coprimal.dev",
+      url: "https://coprimal.dev",
     },
     license: "MIT",
     keywords: [

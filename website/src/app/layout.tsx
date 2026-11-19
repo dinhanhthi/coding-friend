@@ -20,7 +20,7 @@ const POSTER_ALT =
   "Coding Friend — a lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cf.dinhanhthi.com"),
+  metadataBase: new URL("https://cf.coprimal.dev"),
   title: {
     default: SITE_HEADLINE,
     template: `%s | ${SITE_TITLE}`,
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     images: [{ url: "/og.jpg", alt: POSTER_ALT }],
   },
   alternates: {
-    canonical: "https://cf.dinhanhthi.com",
+    canonical: "https://cf.coprimal.dev",
   },
 };
 

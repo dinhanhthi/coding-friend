@@ -1,6 +1,6 @@
 # coding-friend-cli
 
-CLI companion for the [coding-friend](https://github.com/dinhanhthi/coding-friend) plugin — a lean toolkit for disciplined engineering workflows with Claude Code and Codex CLI.
+CLI companion for the [coding-friend](https://github.com/Coprimal/coding-friend) plugin — a lean toolkit for disciplined engineering workflows with Claude Code and Codex CLI.
 
 ## Plugin without the CLI?
 
@@ -24,7 +24,7 @@ Everything else (every other skill, every agent, every hook except the three OPT
 
 - Node.js >= 20
 - npm (included with Node.js, but on some Linux distros you may need to install it separately)
-- The [coding-friend plugin](https://github.com/dinhanhthi/coding-friend) installed in Claude Code or Codex CLI
+- The [coding-friend plugin](https://github.com/Coprimal/coding-friend) installed in Claude Code or Codex CLI
 
 ### Additional requirements for `cf memory init`
 

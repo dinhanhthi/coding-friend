@@ -6,7 +6,7 @@ import ThemeToggle from "./ThemeToggle";
 
 type Section = { id: string; text: string };
 
-const GITHUB_HREF = "https://github.com/dinhanhthi/coding-friend";
+const GITHUB_HREF = "https://github.com/Coprimal/coding-friend";
 const PLUGIN_VERSION = process.env.NEXT_PUBLIC_PLUGIN_VERSION;
 
 const NAV_LABELS = ["Install", "Workflow", "Memory"];

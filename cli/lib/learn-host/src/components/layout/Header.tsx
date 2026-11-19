@@ -31,7 +31,7 @@ export default function Header({ categories }: { categories: CategoryInfo[] }) {
 
           {/* GitHub */}
           <a
-            href="https://github.com/dinhanhthi/coding-friend"
+            href="https://github.com/Coprimal/coding-friend"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden cursor-pointer rounded-lg p-2 text-slate-500 transition-colors duration-200 hover:text-slate-900 md:flex dark:text-slate-400 dark:hover:text-white"
@@ -99,7 +99,7 @@ export default function Header({ categories }: { categories: CategoryInfo[] }) {
           ))}
           <div className="flex items-center gap-3 px-3 pt-2">
             <a
-              href="https://github.com/dinhanhthi/coding-friend"
+              href="https://github.com/Coprimal/coding-friend"
               target="_blank"
               rel="noopener noreferrer"
               className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400"

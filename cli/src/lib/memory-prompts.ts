@@ -217,7 +217,7 @@ export async function editMemoryEmbedding(
         console.log();
         log.warn("Ollama is not running at " + url);
         log.dim(
-          "Install Ollama: https://ollama.ai · Docs: https://cf.dinhanhthi.com/#memory",
+          "Install Ollama: https://ollama.ai · Docs: https://cf.coprimal.dev/#memory",
         );
         console.log();
         const fallback = await confirm({

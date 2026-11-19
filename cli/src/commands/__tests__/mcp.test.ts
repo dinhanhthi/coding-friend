@@ -482,7 +482,7 @@ describe("mcpCommand — human output characterization", () => {
         }
       }
 
-      See full docs: https://cf.dinhanhthi.com/#memory
+      See full docs: https://cf.coprimal.dev/#memory
 
       ✔ Added coding-friend-learn (user scope). Restart Claude Code to activate.
 
@@ -517,7 +517,7 @@ describe("mcpCommand — human output characterization", () => {
         }
       }
 
-      Available tools & resources: https://cf.dinhanhthi.com/#memory
+      Available tools & resources: https://cf.coprimal.dev/#memory
 
       Note: this explicit path is needed only for clients that can't set CLAUDE_PROJECT_DIR. Claude Code resolves the project automatically and needs no manual config.
 

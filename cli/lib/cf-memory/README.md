@@ -1,6 +1,6 @@
 # CF Memory
 
-Persistent memory system for [Coding Friend](https://cf.dinhanhthi.com/). Provides MCP (Model Context Protocol) tools for storing, searching, and retrieving project knowledge across sessions.
+Persistent memory system for [Coding Friend](https://cf.coprimal.dev/). Provides MCP (Model Context Protocol) tools for storing, searching, and retrieving project knowledge across sessions.
 
 ## Architecture
 
@@ -314,4 +314,4 @@ If these are missing, `cf memory init` will fail at the "Installing SQLite depen
 
 ## Versioning
 
-Part of the [coding-friend](https://github.com/dinhanhthi/coding-friend) monorepo. Versioned and released as part of the CLI package. Changelog: [`cli/CHANGELOG.md`](../../CHANGELOG.md).
+Part of the [coding-friend](https://github.com/Coprimal/coding-friend) monorepo. Versioned and released as part of the CLI package. Changelog: [`cli/CHANGELOG.md`](../../CHANGELOG.md).

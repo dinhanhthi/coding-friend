@@ -11,7 +11,7 @@ export type ChangelogEntry = {
   bullets: string[];
 };
 
-const REPO_URL = "https://github.com/dinhanhthi/coding-friend";
+const REPO_URL = "https://github.com/Coprimal/coding-friend";
 const VERSION_HEADING = /^## v(\d+\.\d+\.\d+) \((\d{4}-\d{2}-\d{2})\)\s*$/;
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 2;

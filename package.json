@@ -22,14 +22,14 @@
     "format:check": "prettier --check --ignore-path .prettierignore --ignore-path .prettierignore-root . && cd website && npx prettier --check . && cd ../cli/lib/learn-host && npx prettier --check ."
   },
   "author": {
-    "name": "Anh-Thi Dinh",
-    "email": "me@dinhanhthi.com",
-    "url": "https://dinhanhthi.com"
+    "name": "Coprimal",
+    "email": "contact@coprimal.dev",
+    "url": "https://coprimal.dev"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dinhanhthi/coding-friend.git"
+    "url": "git+https://github.com/Coprimal/coding-friend.git"
   },
   "devDependencies": {
     "@lenml/tokenizer-claude": "^3.7.2",

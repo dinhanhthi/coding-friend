@@ -1,6 +1,6 @@
 # Coding Friend website
 
-One-page site for [Coding Friend](https://github.com/dinhanhthi/coding-friend), rendered from `src/content/index.md`.
+One-page site for [Coding Friend](https://github.com/Coprimal/coding-friend), rendered from `src/content/index.md`.
 
 ## Local development
 

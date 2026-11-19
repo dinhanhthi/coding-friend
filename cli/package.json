@@ -59,14 +59,14 @@
     "codex"
   ],
   "author": {
-    "name": "Anh-Thi Dinh",
-    "email": "me@dinhanhthi.com",
-    "url": "https://dinhanhthi.com"
+    "name": "Coprimal",
+    "email": "contact@coprimal.dev",
+    "url": "https://coprimal.dev"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dinhanhthi/coding-friend.git",
+    "url": "git+https://github.com/Coprimal/coding-friend.git",
     "directory": "cli"
   },
   "engines": {

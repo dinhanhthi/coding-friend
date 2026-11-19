@@ -401,9 +401,9 @@ function createCodexPluginManifest({ version }) {
     description:
       "Lean toolkit for disciplined engineering workflows with Codex CLI",
     author: {
-      name: "Anh-Thi Dinh",
-      email: "me@dinhanhthi.com",
-      url: "https://dinhanhthi.com",
+      name: "Coprimal",
+      email: "contact@coprimal.dev",
+      url: "https://coprimal.dev",
     },
     license: "MIT",
     keywords: [
@@ -423,10 +423,10 @@ function createCodexPluginManifest({ version }) {
       shortDescription: "Disciplined engineering workflows for Codex CLI",
       longDescription:
         "Coding Friend adds structured planning, debugging, review, commit, learning, research, and memory workflows to Codex CLI.",
-      developerName: "Anh-Thi Dinh",
+      developerName: "Coprimal",
       category: "Developer Tools",
       capabilities: ["Read", "Write", "Interactive"],
-      websiteURL: "https://cf.dinhanhthi.com/",
+      websiteURL: "https://cf.coprimal.dev/",
       defaultPrompt: [
         "Plan and implement this feature with Coding Friend",
         "Review my current changes with Coding Friend",

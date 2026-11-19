@@ -130,6 +130,42 @@ Version files, bump levels, and the changelog rules live in
 [CLAUDE.md](CLAUDE.md#versioning). The flow is `/cf-commit` → `/cf-review` →
 `/cf-ship` → merge the PR → `/release` on `main`.
 
+## Old addresses
+
+The repo moved from `dinhanhthi/coding-friend` to `Coprimal/coding-friend`, and
+the site from `cf.dinhanhthi.com` to `cf.coprimal.dev`. Builds released before
+the move still use the old addresses, so they must keep working:
+
+- **Site:** `cf.coprimal.dev` is served by GitHub Pages (Source "GitHub
+  Actions", `.github/workflows/pages.yml`). DNS: CNAME `cf` →
+  `coprimal.github.io`, DNS only, in the Cloudflare zone `coprimal.dev`.
+- **Old site host:** `cf.dinhanhthi.com` answers 301 to the same path and query
+  on `cf.coprimal.dev`, through a Cloudflare redirect rule in the zone
+  `dinhanhthi.com`. The rule only runs because the `cf.dinhanhthi.com` record is
+  proxied. Never delete the rule or un-proxy the record.
+- **Old GitHub paths:** git clones and marketplace updates
+  (`dinhanhthi/coding-friend`, `#plugin-devin`), the releases API used by
+  `cf update`, `raw.githubusercontent.com/dinhanhthi/coding-friend/...` and the
+  app updater feed
+  `github.com/dinhanhthi/coding-friend/releases/download/app-latest/latest.json`
+  keep working only through GitHub's transfer redirects. Never create or fork a
+  repo named `dinhanhthi/coding-friend`: it would take over the old path and
+  break every old install.
+- **Recorded installs:** the CLI still treats a Devin install recorded with the
+  old `dinhanhthi` URL as its own (`sameGithubRepo` in
+  `cli/src/lib/devin-config.ts`). Keep both owners there.
+- **npm:** the trusted publisher of `coding-friend-cli` must point to
+  `Coprimal/coding-friend` with the workflow `publish-cli.yml`, or
+  `npm publish --provenance` fails.
+
+Checks:
+
+```bash
+curl -sI 'https://cf.dinhanhthi.com/x?y=1'   # 301, location: https://cf.coprimal.dev/x?y=1
+curl -sIL https://github.com/dinhanhthi/coding-friend/releases/download/app-latest/latest.json | grep HTTP   # ends 200
+git ls-remote https://github.com/dinhanhthi/coding-friend.git HEAD   # prints a sha
+```
+
 ## Reference
 
 - [docs/architecture.md](docs/architecture.md) — plugin vs CLI overview

@@ -4,7 +4,7 @@
 
 <p align="center"><em>A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer.</em></p>
 
-<p align="center"><a href="https://cf.dinhanhthi.com">Website</a> · <a href="https://github.com/dinhanhthi/coding-friend/releases">Releases</a> · <a href="https://github.com/dinhanhthi/coding-friend/issues">Report Bug</a> · <a href="https://github.com/dinhanhthi/coding-friend/discussions">Discussions</a></p>
+<p align="center"><a href="https://cf.coprimal.dev">Website</a> · <a href="https://github.com/Coprimal/coding-friend/releases">Releases</a> · <a href="https://github.com/Coprimal/coding-friend/issues">Report Bug</a> · <a href="https://github.com/Coprimal/coding-friend/discussions">Discussions</a></p>
 
 ## What it does
 
@@ -32,7 +32,7 @@ Read more in [website/src/content/index.md](website/src/content/index.md).
 
 Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
 
-> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+> **Install Coding Friend from https://cf.coprimal.dev on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
 
 ### 📋 Manual Installation
 
@@ -60,17 +60,17 @@ cf init
 #### Via Plugin Manager
 
 ```bash
-claude plugin marketplace add dinhanhthi/coding-friend
+claude plugin marketplace add Coprimal/coding-friend
 claude plugin install coding-friend@coding-friend-marketplace
 
 # Or inside Claude Code session:
-/plugin marketplace add dinhanhthi/coding-friend
+/plugin marketplace add Coprimal/coding-friend
 /plugin install coding-friend@coding-friend-marketplace
 ```
 
 Codex CLI note: Codex v0.130.0 can register/upgrade marketplaces from the terminal, but plugin install still requires one manual step inside Codex: open `codex`, run `/plugins`, then install `coding-friend`.
 
-Devin CLI note (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated plugin directly; inside Devin invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
+Devin CLI note (beta): `devin plugins install Coprimal/coding-friend#plugin-devin` installs the generated plugin directly; inside Devin invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
 #### Optional: Claude Code mods
 
@@ -106,7 +106,7 @@ cf install --mods
 - Statusline (Claude only)
   ```
   🧠 Opus (1M)
-  cf v0.42.1 | 📂 MyProject (⎇ main) | 👤 Thi Dinh (me@dinhanhthi.com)
+  cf v0.42.1 | 📂 MyProject (⎇ main) | 👤 Coprimal (contact@coprimal.dev)
   ctx 42% | [5h] 30% → 2:30pm | [7d] 10% → mar 15, 2:30pm
   🆔 a1b2c3d4-e5f6-7890-abcd-ef1234567890
   📋 Tasks: 2/5 | 🤖 Agent: cf-reviewer
@@ -150,4 +150,4 @@ An optional macOS app ([app/](app/README.md)) is a window onto the CLI: it calls
 
 ## License
 
-MIT
+MIT © [Coprimal](https://coprimal.dev)

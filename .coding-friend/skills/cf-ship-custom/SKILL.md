@@ -84,7 +84,7 @@ git show <hash> --stat
 
 **Only edit `plugin/CHANGELOG.md`, `cli/CHANGELOG.md` and `app/CHANGELOG.md` as changelogs** (Step B4b also updates the local overview doc `docs/cf-overview.md`; that is not a changelog and is still required). `app/CHANGELOG.md` is created at the first app `/cf-ship`; keep the same `## v{version} (date)` headings — `release-app-local.sh` reads that section for the release notes. `plugin-codex/CHANGELOG.md` and `plugin-antigravity/CHANGELOG.md` are **generated mirrors** of `plugin/CHANGELOG.md` — the `.githooks/pre-commit` hook reruns `npm run build:codex` + `npm run build:agy` + `npm run build:devin` and stages the result whenever `plugin/` or `package.json` is staged. Never hand-edit them (the codex mirror rewrites `/cf-*` to `$cf-*`). Same for the generated manifests `plugin-codex/.codex-plugin/plugin.json`, `plugin-antigravity/plugin.json` and `plugin-devin/.claude-plugin/plugin.json`: they inherit their version from root `package.json` at build time, so `bump.sh plugin` is all you need.
 
-These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`, `app/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/dinhanhthi/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
+These package changelogs (`plugin/CHANGELOG.md`, `cli/CHANGELOG.md`, `app/CHANGELOG.md`) are the source for GitHub Releases. The public changelog is the [GitHub Releases](https://github.com/Coprimal/coding-friend/releases) page (`/changelog` on the website redirects there). Do **not** update `website/src/content/index.md` or any other website markdown as part of ship.
 
 ### Step B4b: Update the overview doc
 
@@ -194,7 +194,7 @@ Released:
   App v0.1.0       → tag app-v0.1.0 pushed (you) → release-app-local.sh (local, no CI)
 
 Check CI/CD status:
-  https://github.com/dinhanhthi/coding-friend/actions
+  https://github.com/Coprimal/coding-friend/actions
 ```
 
 Always list Codex, AGY and Devin in this summary when a plugin `v*` was pushed — they ship on that same tag, not as extra tags. If `release.yml` has not finished, point at the run; do not treat that as a missed step.

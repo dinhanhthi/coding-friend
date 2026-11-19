@@ -65,7 +65,7 @@ export default function Home() {
     "@type": "SoftwareApplication",
     name: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: "https://cf.dinhanhthi.com",
+    url: "https://cf.coprimal.dev",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",
     offers: {
@@ -74,9 +74,9 @@ export default function Home() {
       priceCurrency: "USD",
     },
     author: {
-      "@type": "Person",
-      name: "Anh-Thi Dinh",
-      url: "https://dinhanhthi.com",
+      "@type": "Organization",
+      name: "Coprimal",
+      url: "https://coprimal.dev",
     },
   };
 
@@ -161,13 +161,13 @@ export default function Home() {
           </div>
         </main>
         <footer className="site-footer">
-          <FooterLink href="https://github.com/dinhanhthi/coding-friend/blob/main/LICENSE">
+          <FooterLink href="https://github.com/Coprimal/coding-friend/blob/main/LICENSE">
             MIT
           </FooterLink>
           {" · "}
-          Made by <FooterLink href="https://dinhanhthi.com">Thi</FooterLink>
+          Made by <FooterLink href="https://coprimal.dev">Coprimal</FooterLink>
           {" · "}
-          <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+          <FooterLink href="https://github.com/Coprimal/coding-friend/releases">
             Changelog
           </FooterLink>
           {" · "}
@@ -175,7 +175,7 @@ export default function Home() {
           {PLUGIN_VERSION ? (
             <>
               {" · "}
-              <FooterLink href="https://github.com/dinhanhthi/coding-friend/releases">
+              <FooterLink href="https://github.com/Coprimal/coding-friend/releases">
                 plugin v{PLUGIN_VERSION}
               </FooterLink>
             </>

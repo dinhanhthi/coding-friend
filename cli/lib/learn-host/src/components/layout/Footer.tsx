@@ -13,7 +13,7 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
           <span>
             Powered by{" "}
             <a
-              href="https://github.com/dinhanhthi/coding-friend"
+              href="https://github.com/Coprimal/coding-friend"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sky-600 hover:text-orange-500 dark:text-sky-300 dark:hover:text-orange-400"
@@ -22,12 +22,12 @@ export default function Footer({ isHome = false }: { isHome?: boolean }) {
             </a>
             , developed by{" "}
             <a
-              href="https://dinhanhthi.com"
+              href="https://coprimal.dev"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sky-600 hover:text-orange-500 dark:text-sky-300 dark:hover:text-orange-400"
             >
-              Anh-Thi Dinh
+              Coprimal
             </a>
             .
           </span>

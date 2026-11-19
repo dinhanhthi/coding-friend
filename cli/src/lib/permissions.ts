@@ -605,7 +605,7 @@ export function afterAutoApproveEnabled(log: {
   log.dim(
     "Tip: Fine-tune with autoApproveAllowExtra (and autoApproveIgnore on Devin) in config.json",
   );
-  log.dim("Docs: https://cf.dinhanhthi.com/#auto-approve");
+  log.dim("Docs: https://cf.coprimal.dev/#auto-approve");
 }
 
 // ─── Shared UI helpers ──────────────────────────────────────────────

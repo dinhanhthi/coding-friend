@@ -1,4 +1,4 @@
-const GITHUB_HREF = "https://github.com/dinhanhthi/coding-friend";
+const GITHUB_HREF = "https://github.com/Coprimal/coding-friend";
 
 function GitHubIcon() {
   return (

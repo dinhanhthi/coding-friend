@@ -181,7 +181,7 @@ describe("memoryStatusCommand — human output characterization", () => {
         ℹ Auto-capture: on
         ℹ Categories: bugs (1), features (2)
 
-        Docs: https://cf.dinhanhthi.com/#memory
+        Docs: https://cf.coprimal.dev/#memory
         "
       `);
   });

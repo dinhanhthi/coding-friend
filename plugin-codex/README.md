@@ -32,7 +32,7 @@ For the full per-skill / per-agent / per-hook matrix and FAQ, see [`docs/cli-req
 ## Development Setup
 
 ```bash
-git clone https://github.com/dinhanhthi/coding-friend.git
+git clone https://github.com/Coprimal/coding-friend.git
 cd coding-friend
 ```
 
@@ -113,6 +113,6 @@ claude plugin install coding-friend
 # Switch back to remote
 claude plugin uninstall coding-friend
 claude plugin marketplace remove coding-friend-marketplace
-claude plugin marketplace add https://github.com/dinhanhthi/coding-friend.git
+claude plugin marketplace add https://github.com/Coprimal/coding-friend.git
 claude plugin install coding-friend
 ```

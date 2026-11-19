@@ -2,7 +2,7 @@
 
 _A lean, opinionated toolkit that makes your AI coding agent work like a disciplined engineer._
 
-> 💡 If you have problems with CF, use `/cf-help` to get help or ask in the [GitHub Discussions](https://github.com/dinhanhthi/coding-friend/discussions).
+> 💡 If you have problems with CF, use `/cf-help` to get help or ask in the [GitHub Discussions](https://github.com/Coprimal/coding-friend/discussions).
 
 Coding Friend adds skills, agents, and hooks to the tools you already use. You get plan → implement → review → commit, with project knowledge in `docs/` and learning notes in `~/.coding-friend/learn/`. A memory system runs underneath, along with useful hooks and mechanisms to protect your privacy and security.
 
@@ -35,7 +35,7 @@ Coding Friend installs on the host you already use.
 
 Copy and paste this prompt into your AI agent — it will read the documentation and set up everything automatically:
 
-> **Install Coding Friend from https://cf.dinhanhthi.com on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
+> **Install Coding Friend from https://cf.coprimal.dev on my system. First read the installation documentation to understand what Coding Friend is and how to install it properly. Check if I have Node.js 20+, install coding-friend-cli globally, then install the plugin for my current AI agent (auto-detect: Claude Code, Codex, oh-my-pi, Antigravity, Devin CLI, etc.). After installation, initialize the project with `cf init`. Guide me through the entire process and verify everything works correctly.**
 
 ### 📋 Manual Installation
 
@@ -65,11 +65,11 @@ Scope with `--user | --project | --local`. Host aliases: `--codex` / `--omp` / `
 #### Via Plugin Manager
 
 ```bash
-plugin marketplace add dinhanhthi/coding-friend
+plugin marketplace add Coprimal/coding-friend
 plugin install coding-friend@coding-friend-marketplace
 ```
 
-Devin CLI (beta): `devin plugins install dinhanhthi/coding-friend#plugin-devin` installs the generated [`plugin-devin/`](https://github.com/dinhanhthi/coding-friend/tree/main/plugin-devin) directly. Inside Devin, invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
+Devin CLI (beta): `devin plugins install Coprimal/coding-friend#plugin-devin` installs the generated [`plugin-devin/`](https://github.com/Coprimal/coding-friend/tree/main/plugin-devin) directly. Inside Devin, invoke skills bare or namespaced — `/cf-plan` or `/coding-friend:cf-plan`.
 
 After `cf init` or working with CF, a folder `docs/` is created inside your project with nested folders for plans, memory, research, reviews,... and more.
 
@@ -102,7 +102,7 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
 
 ### 🗺️ Plan & build
 
-- `/cf-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Each phase stays reviewable (at most 15 files) without over-splitting (fewest phases that fit, normally 3+ tasks each), so reviews stay fast and cheap. Available modes:
+- `/cf-plan` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-plan/SKILL.md)) — Brainstorms with you, then writes a phased plan under `docs/plans/<plan-name>/` (plus `brief.md` with the original request and Q&A in normal/hard mode). Under the hood: `cf-explorer` maps the repo, `cf-planner` compares approaches, then `cf-implementer` runs each task. Each phase stays reviewable (at most 15 files) without over-splitting (fewest phases that fit, normally 3+ tasks each), so reviews stay fast and cheap. Available modes:
   - (none) — normal: full workflow, writes the plan file
   - `--fast` / `--quick` — skip discovery and the planner; plan stays in chat, no file. If the plan turns multi-phase it switches to normal and writes the file. Combined with autopilot (`--auto` or `planAuto`), the file is always written
   - `--hard` — extra discovery plus rollback planning
@@ -129,19 +129,19 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   #### Phase 1 [sequential]
   ```
 
-- `/cf-plan-resume` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan-resume/SKILL.md)) — Reloads a saved plan and its context file, skips DONE tasks, re-runs the rest via the same execute protocol. If the plan has `auto: true` and an `AUTOPILOT` section, it continues in autopilot, honoring frontmatter `commitPerTask: true`; `--commit-per-task` / `--no-commit-per-task` override it.
-- `/cf-plan-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-plan-review/SKILL.md)) — Reviews a saved plan folder with a fresh in-session reviewer before you implement it; `--codex` / `--claude` / `--cursor` / `--grok` add external reviewers in parallel and merge. `--fix` (`--inline`) applies Critical/Important findings to the plan and re-reviews until clean (up to `review.maxRounds`); config `planReviewFix: true` makes that the default, `--no-fix` forces off. Writes `review.md` next to the plan and, without `--fix`, offers to apply Critical/Important findings.
-- `/cf-advise` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-advise/SKILL.md)) — Interviews one question at a time, then a verdict-first recommendation with pitfalls and ranked alternatives. Never writes code or a plan. Flags: `--quick` / `--fast` (2–3 questions), `--save` (write to `docs/memory/decisions/`).
-- `/cf-design` (beta) ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-design/SKILL.md)) — Makes new or changed UI match the project's existing look. The first word of the argument picks the mode (empty → it asks which one):
+- `/cf-plan-resume` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-plan-resume/SKILL.md)) — Reloads a saved plan and its context file, skips DONE tasks, re-runs the rest via the same execute protocol. If the plan has `auto: true` and an `AUTOPILOT` section, it continues in autopilot, honoring frontmatter `commitPerTask: true`; `--commit-per-task` / `--no-commit-per-task` override it.
+- `/cf-plan-review` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-plan-review/SKILL.md)) — Reviews a saved plan folder with a fresh in-session reviewer before you implement it; `--codex` / `--claude` / `--cursor` / `--grok` add external reviewers in parallel and merge. `--fix` (`--inline`) applies Critical/Important findings to the plan and re-reviews until clean (up to `review.maxRounds`); config `planReviewFix: true` makes that the default, `--no-fix` forces off. Writes `review.md` next to the plan and, without `--fix`, offers to apply Critical/Important findings.
+- `/cf-advise` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-advise/SKILL.md)) — Interviews one question at a time, then a verdict-first recommendation with pitfalls and ranked alternatives. Never writes code or a plan. Flags: `--quick` / `--fast` (2–3 questions), `--save` (write to `docs/memory/decisions/`).
+- `/cf-design` (beta) ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-design/SKILL.md)) — Makes new or changed UI match the project's existing look. The first word of the argument picks the mode (empty → it asks which one):
   - `scan [path]` — read existing UI files, extract colors / type / spacing / components, write `docs/DESIGN.md`
   - `[description]` — implement new UI from that description, using `docs/DESIGN.md` (or a fresh scan) as the base
   - `modify [what] -- [how]` — change one element and keep it consistent with the rest of the project
-- `/cf-showcase` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-showcase/SKILL.md)) — Builds an intro video (mp4) or poster (png / pdf / html) from the project's real content into `docs/showcase/`. The agent invents the concept itself (no fixed scene order, scene types or style) and only asks practical questions: length, language, aspect or size, output format, what to emphasize, audio. `--video` / `--poster` skip the format question. Video is 30s by default; above 90s it warns about file size and render time, then lets you decide. `--default` skips the questions and uses your saved defaults (`showcase` in config, or built-ins); it still shows the concept first. Without it, the skill offers to save your answers as defaults for this project or all projects. You can also edit them with `cf config` or the `cf init` menu.
-- `/cf-optimize` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-optimize/SKILL.md)) — Detects available profilers, measures a baseline, changes one thing, re-measures, compares.
+- `/cf-showcase` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-showcase/SKILL.md)) — Builds an intro video (mp4) or poster (png / pdf / html) from the project's real content into `docs/showcase/`. The agent invents the concept itself (no fixed scene order, scene types or style) and only asks practical questions: length, language, aspect or size, output format, what to emphasize, audio. `--video` / `--poster` skip the format question. Video is 30s by default; above 90s it warns about file size and render time, then lets you decide. `--default` skips the questions and uses your saved defaults (`showcase` in config, or built-ins); it still shows the concept first. Without it, the skill offers to save your answers as defaults for this project or all projects. You can also edit them with `cf config` or the `cf init` menu.
+- `/cf-optimize` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-optimize/SKILL.md)) — Detects available profilers, measures a baseline, changes one thing, re-measures, compares.
 
 ### 🐛 Fix & debug
 
-- `/cf-fix` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-fix/SKILL.md)) — Reproduces the bug, searches past bug docs, explores, fixes, verifies, then reviews. Escalates hard bugs to `cf-sys-debug`. `--add-tests` (or `--tdd`) writes a failing test first when none exists.
+- `/cf-fix` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-fix/SKILL.md)) — Reproduces the bug, searches past bug docs, explores, fixes, verifies, then reviews. Escalates hard bugs to `cf-sys-debug`. `--add-tests` (or `--tdd`) writes a failing test first when none exists.
 
   Example output:
 
@@ -155,13 +155,13 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   Status: DONE
   ```
 
-- `cf-sys-debug` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-sys-debug/SKILL.md)) — Four phases: state a file:line hypothesis before touching code, test it, apply a regression-guarded fix, write a bug doc. Auto-invoked for recurring or unclear bugs.
-- `cf-tdd` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-tdd/SKILL.md)) — Auto-loaded before production code. Direct mode (default) writes no new tests. TDD mode is `--add-tests` or `--tdd`, or `tdd: true` via `cf config`. `--auto` then reviews, fixes Critical/Important, and commits.
-- `cf-verification` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-verification/SKILL.md)) — Auto-invoked after code changes. Runs tests / build / lint, shows the output, and blocks a "done" claim without evidence.
+- `cf-sys-debug` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-sys-debug/SKILL.md)) — Four phases: state a file:line hypothesis before touching code, test it, apply a regression-guarded fix, write a bug doc. Auto-invoked for recurring or unclear bugs.
+- `cf-tdd` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-tdd/SKILL.md)) — Auto-loaded before production code. Direct mode (default) writes no new tests. TDD mode is `--add-tests` or `--tdd`, or `tdd: true` via `cf config`. `--auto` then reviews, fixes Critical/Important, and commits.
+- `cf-verification` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-verification/SKILL.md)) — Auto-invoked after code changes. Runs tests / build / lint, shows the output, and blocks a "done" claim without evidence.
 
 ### 🚀 Review & ship
 
-- `/cf-review` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Snapshots the diff and hands it to `cf-reviewer`, which checks all five layers: project rules, plan alignment, correctness, security, tests.
+- `/cf-review` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-review/SKILL.md)) — Snapshots the diff and hands it to `cf-reviewer`, which checks all five layers: project rules, plan alignment, correctness, security, tests.
   - **Depth** — auto from change size, or force with `--quick` / `--deep`:
     - TRIVIAL — no reviewer: ≤2 files and ≤20 lines, no sensitive paths, only a secrets check (skipped when you pass `--quick` / `--deep`)
     - QUICK / STANDARD — 1 reviewer
@@ -201,37 +201,37 @@ You plan, implement, review, commit, then ship. Bugs loop through `/cf-fix` and 
   Review status: COMPLETE
   ```
 
-- `/cf-review-out` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review-out/SKILL.md)) — Writes a self-contained prompt + diff to `docs/reviews/` for any external AI or a human.
-- `/cf-review-in` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-review-in/SKILL.md)) — Reads that result file, presents findings, offers to fix.
-- `/cf-commit` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-commit/SKILL.md)) — Analyzes the diff, soft-review check, conventional commit focused on why.
-- `/cf-ship` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-ship/SKILL.md)) — Verify → commit → push → PR. `--dry-run` simulates and does not commit, push, or open a PR. Custom Before guides run first (for example a version bump).
+- `/cf-review-out` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-review-out/SKILL.md)) — Writes a self-contained prompt + diff to `docs/reviews/` for any external AI or a human.
+- `/cf-review-in` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-review-in/SKILL.md)) — Reads that result file, presents findings, offers to fix.
+- `/cf-commit` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-commit/SKILL.md)) — Analyzes the diff, soft-review check, conventional commit focused on why.
+- `/cf-ship` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-ship/SKILL.md)) — Verify → commit → push → PR. `--dry-run` simulates and does not commit, push, or open a PR. Custom Before guides run first (for example a version bump).
 
 ![External review: /cf-review runs --codex, --cursor, or --grok in parallel and merges; or hand off manually — /cf-review-out writes a prompt for any AI, /cf-review-in reads the results back](/diagrams/review-external.svg)
 
 ### 💡 Knowledge
 
-- `/cf-ask` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-ask/SKILL.md)) — Explores the codebase (`cf-explorer`), answers a focused question, saves the Q&A to `docs/memory/`.
-- `/cf-scan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-scan/SKILL.md)) — Token-heavy project scan; writes architecture, conventions, and stack into memory (updates, does not duplicate).
-- `/cf-remember` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-remember/SKILL.md)) — Extracts conversation knowledge into `docs/memory/` (bugs, decisions, conventions, features) for later AI recall. Also auto-invoked.
-- `/cf-learn` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-learn/SKILL.md)) — Writes educational notes for you (default `~/.coding-friend/learn/`). Host with `cf learn host` or share with `cf mcp`. Output, language, and related settings: `cf config`.
+- `/cf-ask` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-ask/SKILL.md)) — Explores the codebase (`cf-explorer`), answers a focused question, saves the Q&A to `docs/memory/`.
+- `/cf-scan` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-scan/SKILL.md)) — Token-heavy project scan; writes architecture, conventions, and stack into memory (updates, does not duplicate).
+- `/cf-remember` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-remember/SKILL.md)) — Extracts conversation knowledge into `docs/memory/` (bugs, decisions, conventions, features) for later AI recall. Also auto-invoked.
+- `/cf-learn` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-learn/SKILL.md)) — Writes educational notes for you (default `~/.coding-friend/learn/`). Host with `cf learn host` or share with `cf mcp`. Output, language, and related settings: `cf config`.
   Run `cf learn host` and you get a site like this:
   ![Learn host](/cf-host.png)
-- `/cf-teach` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-teach/SKILL.md)) — Conversational story of what happened and why. Writes under `docs/learn` by default (not the same folder as `/cf-learn`). Language and output: `cf config`.
-- `/cf-research` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-research/SKILL.md)) — Parallel web / subagent research → `docs/research/`. Does not plan or build.
+- `/cf-teach` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-teach/SKILL.md)) — Conversational story of what happened and why. Writes under `docs/learn` by default (not the same folder as `/cf-learn`). Language and output: `cf config`.
+- `/cf-research` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-research/SKILL.md)) — Parallel web / subagent research → `docs/research/`. Does not plan or build.
 
 ### 📌 Context & session
 
-- `/cf-session` (beta) ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-session/SKILL.md)) — Claude only, needs the CLI. Runs `cf session save` to copy the session verbatim (not redacted) into `session.dir` (default `~/.coding-friend/sessions`), so you can `cf session load` it on another machine and `claude --resume` it.
+- `/cf-session` (beta) ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-session/SKILL.md)) — Claude only, needs the CLI. Runs `cf session save` to copy the session verbatim (not redacted) into `session.dir` (default `~/.coding-friend/sessions`), so you can `cf session load` it on another machine and `claude --resume` it.
   The CLI also reads sessions: `cf session list|show|export|status` cover Claude Code, Codex and saved sessions; `export` is redacted Markdown with tool output left out by default (best-effort redaction: read it before sharing). There is no sync engine: point `session.dir` at a cloud folder (iCloud Drive, Google Drive, Dropbox, OneDrive) and check it with `cf sync status`. The global config and the project list stay on each machine. Sessions saved by older versions in `docs/sessions/` stay readable with `--project-dir`.
-- `/cf-checkpoint` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-checkpoint/SKILL.md)) — Writes a resume snapshot (goal, decisions, next steps) to `docs/context/checkpoints/`.
-- `/cf-checkpoint-from` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-checkpoint-from/SKILL.md)) — Loads that snapshot into a fresh chat, then does the rest of the message. `--recap` also prints a short summary of the restored context.
-- `/cf-warm` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-warm/SKILL.md)) — Reads git history since you were away, groups it by topic, writes `docs/warm/`. `--user <name>` (else `git config user.name`), `--n-commits <N>` (default 10).
-- `/cf-later` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-later/SKILL.md)) — Saves a task you want to defer to `docs/later/`; on Claude Code it runs in a separate subagent, so your current chat stays clean. Pick it up later with `/cf-later-do`.
-- `/cf-later-do` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-later-do/SKILL.md)) — Lists `docs/later/` items, you pick one, routes to `/cf-fix` or `/cf-plan`, deletes the file only after the fix is verified.
+- `/cf-checkpoint` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-checkpoint/SKILL.md)) — Writes a resume snapshot (goal, decisions, next steps) to `docs/context/checkpoints/`.
+- `/cf-checkpoint-from` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-checkpoint-from/SKILL.md)) — Loads that snapshot into a fresh chat, then does the rest of the message. `--recap` also prints a short summary of the restored context.
+- `/cf-warm` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-warm/SKILL.md)) — Reads git history since you were away, groups it by topic, writes `docs/warm/`. `--user <name>` (else `git config user.name`), `--n-commits <N>` (default 10).
+- `/cf-later` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-later/SKILL.md)) — Saves a task you want to defer to `docs/later/`; on Claude Code it runs in a separate subagent, so your current chat stays clean. Pick it up later with `/cf-later-do`.
+- `/cf-later-do` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-later-do/SKILL.md)) — Lists `docs/later/` items, you pick one, routes to `/cf-fix` or `/cf-plan`, deletes the file only after the fix is verified.
 
 ### ❓ Help
 
-- `/cf-help` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/skills/cf-help/SKILL.md)) — Ask anything about Coding Friend: skills, flags, agents, hooks, CLI, config, memory, hosts. Also auto-invoked when you ask about the toolkit itself.
+- `/cf-help` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/skills/cf-help/SKILL.md)) — Ask anything about Coding Friend: skills, flags, agents, hooks, CLI, config, memory, hosts. Also auto-invoked when you ask about the toolkit itself.
 
 ### 🧠 Memory
 
@@ -290,18 +290,18 @@ Skills dispatch agents as subagents that run in their own context.
 
 | Agent                                                                                                                          | Model   | Does                                           | Dispatched by                                                                                              |
 | ------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `cf-explorer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-explorer.md))                   | haiku   | Maps the repo and writes context files         | `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-advise`, `/cf-optimize`, `/cf-research`, `/cf-scan`, `/cf-showcase` |
-| `cf-planner` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-planner.md))                     | inherit | Compares approaches and breaks work into tasks | `/cf-plan`                                                                                                 |
-| `cf-implementer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-implementer.md))             | inherit | Writes the code (TDD with `--add-tests`)       | `/cf-plan`, `/cf-plan-resume`, `/cf-fix`, `/cf-optimize`, `/cf-review --fix`, `cf-tdd`                     |
-| `cf-reviewer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer.md))                   | inherit | Reviews the diff across all five layers        | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP)                                                                 |
-| `cf-reviewer-plan` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md))         | sonnet  | Checks the diff against the plan               | direct call only                                                                                           |
-| `cf-reviewer-security` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md)) | sonnet  | Finds security issues in the diff              | `/cf-review` in DEEP (2nd reviewer)                                                                        |
-| `cf-reviewer-quality` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md))   | haiku   | Names, complexity, duplication, slop           | direct call only                                                                                           |
-| `cf-reviewer-tests` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md))       | haiku   | Coverage and missing tests                     | direct call only                                                                                           |
-| `cf-reviewer-rules` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md))       | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | direct call only                                                                                           |
-| `cf-reviewer-reducer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md))   | haiku   | Deduplicates and ranks findings                | `/cf-plan-review` (merges external reviews) — `/cf-review` merges inline                                   |
-| `cf-writer` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer.md))                       | haiku   | Writes straightforward markdown                | `/cf-learn`, `/cf-remember`, `/cf-scan`, `/cf-fix`, `/cf-ask`, `/cf-advise`, `/cf-sys-debug`, `/cf-warm`   |
-| `cf-writer-deep` ([source](https://github.com/dinhanhthi/coding-friend/blob/main/plugin/agents/cf-writer-deep.md))             | sonnet  | Writes deep technical docs                     | `/cf-learn`, `/cf-teach`, `/cf-plan` (overview), `/cf-remember`, `/cf-scan`                                |
+| `cf-explorer` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-explorer.md))                     | haiku   | Maps the repo and writes context files         | `/cf-plan`, `/cf-fix`, `/cf-ask`, `/cf-advise`, `/cf-optimize`, `/cf-research`, `/cf-scan`, `/cf-showcase` |
+| `cf-planner` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-planner.md))                       | inherit | Compares approaches and breaks work into tasks | `/cf-plan`                                                                                                 |
+| `cf-implementer` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-implementer.md))               | inherit | Writes the code (TDD with `--add-tests`)       | `/cf-plan`, `/cf-plan-resume`, `/cf-fix`, `/cf-optimize`, `/cf-review --fix`, `cf-tdd`                     |
+| `cf-reviewer` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer.md))                     | inherit | Reviews the diff across all five layers        | `/cf-review` (1 QUICK, 1 STANDARD, 2 DEEP)                                                                 |
+| `cf-reviewer-plan` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-plan.md))           | sonnet  | Checks the diff against the plan               | direct call only                                                                                           |
+| `cf-reviewer-security` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-security.md))   | sonnet  | Finds security issues in the diff              | `/cf-review` in DEEP (2nd reviewer)                                                                        |
+| `cf-reviewer-quality` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-quality.md))     | haiku   | Names, complexity, duplication, slop           | direct call only                                                                                           |
+| `cf-reviewer-tests` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-tests.md))         | haiku   | Coverage and missing tests                     | direct call only                                                                                           |
+| `cf-reviewer-rules` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-rules.md))         | haiku   | CLAUDE.md MUST/SHOULD/ALWAYS/NEVER             | direct call only                                                                                           |
+| `cf-reviewer-reducer` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-reviewer-reducer.md))     | haiku   | Deduplicates and ranks findings                | `/cf-plan-review` (merges external reviews) — `/cf-review` merges inline                                   |
+| `cf-writer` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-writer.md))                         | haiku   | Writes straightforward markdown                | `/cf-learn`, `/cf-remember`, `/cf-scan`, `/cf-fix`, `/cf-ask`, `/cf-advise`, `/cf-sys-debug`, `/cf-warm`   |
+| `cf-writer-deep` ([source](https://github.com/Coprimal/coding-friend/blob/main/plugin/agents/cf-writer-deep.md))               | sonnet  | Writes deep technical docs                     | `/cf-learn`, `/cf-teach`, `/cf-plan` (overview), `/cf-remember`, `/cf-scan`                                |
 
 ## 📘 Custom Guides
 

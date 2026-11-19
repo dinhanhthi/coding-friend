@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://cf.dinhanhthi.com/sitemap.xml",
+    sitemap: "https://cf.coprimal.dev/sitemap.xml",
   };
 }

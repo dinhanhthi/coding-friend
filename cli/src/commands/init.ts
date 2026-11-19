@@ -659,7 +659,7 @@ async function stepLearnConfig(
       'Enter categories (format: "name: description"). Empty line to finish.',
     );
     log.dim(
-      "Tip: you can also edit config.json later -- see https://cf.dinhanhthi.com/#config",
+      "Tip: you can also edit config.json later -- see https://cf.coprimal.dev/#config",
     );
     console.log();
     const customCats: LearnCategory[] = [];

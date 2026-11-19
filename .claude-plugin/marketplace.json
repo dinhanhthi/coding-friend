@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
   "owner": {
-    "name": "Anh-Thi Dinh"
+    "name": "Coprimal"
   },
   "plugins": [
     {
@@ -12,7 +12,7 @@
       "source": "./plugin",
       "description": "Lean toolkit for disciplined engineering workflows with Claude Code",
       "author": {
-        "name": "Anh-Thi Dinh"
+        "name": "Coprimal"
       },
       "keywords": [
         "skills",
@@ -31,7 +31,7 @@
       "source": "./plugin-mods",
       "description": "Optional Claude Code mods for Coding Friend: quota sensor, review and phase toasts, plan progress pane, MCP health band",
       "author": {
-        "name": "Anh-Thi Dinh"
+        "name": "Coprimal"
       },
       "keywords": ["mods", "quota", "statusline", "toasts", "workflows"],
       "license": "MIT",
