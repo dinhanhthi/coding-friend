@@ -2,6 +2,11 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.6 (2026-11-19)
+
+- Coding Friend now lives at `Coprimal/coding-friend` (site `cf.coprimal.dev`): author, links and install commands point there, and the old GitHub and website addresses keep working through redirects [#082b51a9](https://github.com/Coprimal/coding-friend/commit/082b51a9)
+- Fix flaky agent and task counts in the tracker hooks: concurrent updates now take a `noclobber` lock file instead of a `mkdir` lock [#4ad46f02](https://github.com/Coprimal/coding-friend/commit/4ad46f02)
+
 ## v0.47.5 (2026-11-16)
 
 - Remove the headless Gemini reviewer: `$cf-review` and `$cf-plan-review` no longer accept `--gemini` or `review.withGemini`, because Google does not allow an agent to run Gemini CLI or `agy` headless (`gemini -p`, `agy -p`), only you may. A leftover `--gemini` is ignored with a warning; for a Gemini review run `$cf-review-out` and paste the prompt into Gemini yourself. `cf-help` and the docs say so [#d529799f](https://github.com/dinhanhthi/coding-friend/commit/d529799f)

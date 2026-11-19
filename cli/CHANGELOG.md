@@ -5,6 +5,10 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.43.4 (2026-11-19)
+
+- Install, update, `cf dev` and the Antigravity and Devin installers now use `Coprimal/coding-friend`, and docs links point to `cf.coprimal.dev`; installs recorded with the old `dinhanhthi/coding-friend` address are still recognised as Coding Friend's own, so Devin is not reinstalled [#1dfc48e7](https://github.com/Coprimal/coding-friend/commit/1dfc48e7) [#082b51a9](https://github.com/Coprimal/coding-friend/commit/082b51a9)
+
 ## v1.43.3 (2026-11-16)
 
 - Remove `review.withGemini` from the config schema and the `cf config` review menu: Google does not allow an agent to run Gemini headless, so the Gemini reviewer is gone; a leftover `withGemini` key is reported as unknown [#d529799f](https://github.com/dinhanhthi/coding-friend/commit/d529799f)
