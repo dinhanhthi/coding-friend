@@ -43,8 +43,6 @@ website/public/llms-full.txt
 
 .understand-anything/
 
-graphify-out/
-
 # AI config files (managed by AI Sync)
 .agent/
 .agents/
