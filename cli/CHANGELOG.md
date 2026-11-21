@@ -5,6 +5,11 @@
 > Learn MCP, Learn Host, and CF Memory are bundled libs — their changes are included in CLI versions below.
 > Historical changelogs from when they were independently versioned are preserved at the bottom of this file.
 
+## v1.43.5 (2026-11-21)
+
+- Add the `planBranch` config key (boolean) to the schema and the `cf config` menu ("Plan branch"), which makes `/cf-plan` create a branch named after the plan before implementing [#308e7edb](https://github.com/Coprimal/coding-friend/commit/308e7edb)
+- `npm run format:check` now passes and skips gitignored local files [#89db8b8e](https://github.com/Coprimal/coding-friend/commit/89db8b8e)
+
 ## v1.43.4 (2026-11-19)
 
 - Install, update, `cf dev` and the Antigravity and Devin installers now use `Coprimal/coding-friend`, and docs links point to `cf.coprimal.dev`; installs recorded with the old `dinhanhthi/coding-friend` address are still recognised as Coding Friend's own, so Devin is not reinstalled [#1dfc48e7](https://github.com/Coprimal/coding-friend/commit/1dfc48e7) [#082b51a9](https://github.com/Coprimal/coding-friend/commit/082b51a9)

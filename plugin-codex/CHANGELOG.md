@@ -2,6 +2,10 @@
 
 > CLI changelog: `[cli/CHANGELOG.md](../cli/CHANGELOG.md)`
 
+## v0.47.7 (2026-11-21)
+
+- `cf-plan` can create a branch named after the plan before implementing: add `--branch` (or set `planBranch: true`), `--no-branch` forces it off for one run. The branch is recorded in the plan frontmatter as `branch:`, `cf-plan-resume` switches back to it, per-phase reviews cover only the uncommitted work, and nothing is merged, pushed or deleted for you [#e5e1977e](https://github.com/Coprimal/coding-friend/commit/e5e1977e)
+
 ## v0.47.6 (2026-11-19)
 
 - Coding Friend now lives at `Coprimal/coding-friend` (site `cf.coprimal.dev`): author, links and install commands point there, and the old GitHub and website addresses keep working through redirects [#082b51a9](https://github.com/Coprimal/coding-friend/commit/082b51a9)
