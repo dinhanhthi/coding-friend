@@ -687,6 +687,28 @@ describe("loadConfig validation", () => {
     expect(config.planCommitPerTask).toBeUndefined();
   });
 
+  it("accepts planBranch as a valid config key (boolean)", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planBranch: true });
+
+    const config = loadConfig();
+    expect(log.warn).not.toHaveBeenCalled();
+    expect(config.planBranch).toBe(true);
+  });
+
+  it("warns and strips planBranch when given the wrong type", () => {
+    mockReadJson
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce({ planBranch: "yes" });
+
+    const config = loadConfig();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("planBranch"),
+    );
+    expect(config.planBranch).toBeUndefined();
+  });
+
   it("accepts planReviewFix as a valid config key (boolean)", () => {
     mockReadJson
       .mockReturnValueOnce(null)

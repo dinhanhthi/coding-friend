@@ -203,6 +203,7 @@ export const ConfigSchema = z.object({
   guiPlanFormat: z.enum(["html", "md"]).optional(),
   planAuto: z.boolean().optional(),
   planCommitPerTask: z.boolean().optional(),
+  planBranch: z.boolean().optional(),
   planReviewFix: z.boolean().optional(),
   showcase: ShowcaseConfigSchema.optional(),
   projectRegistry: z.boolean().optional(),

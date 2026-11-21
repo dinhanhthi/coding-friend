@@ -707,6 +707,28 @@ async function editPlanCommitPerTask(
   writeToScope(scope, { planCommitPerTask: value });
 }
 
+async function editPlanBranch(
+  globalCfg: CodingFriendConfig | null,
+  localCfg: CodingFriendConfig | null,
+): Promise<void> {
+  const currentValue = getMergedValue("planBranch", globalCfg, localCfg) as
+    | boolean
+    | undefined;
+  if (currentValue !== undefined) {
+    log.dim(`Current: ${currentValue}`);
+  }
+
+  const value = await confirm({
+    message:
+      "Create a branch named after the plan before /cf-plan implements? (--branch / --no-branch override per run)",
+    default: currentValue ?? false,
+  });
+
+  const scope = await askScope();
+  if (scope === "back") return;
+  writeToScope(scope, { planBranch: value });
+}
+
 async function editPlanReviewFix(
   globalCfg: CodingFriendConfig | null,
   localCfg: CodingFriendConfig | null,
@@ -1251,6 +1273,11 @@ export async function configCommand(): Promise<void> {
       localCfg,
     ) as boolean | undefined;
 
+    const planBranchScope = getScopeLabel("planBranch", globalCfg, localCfg);
+    const planBranchVal = getMergedValue("planBranch", globalCfg, localCfg) as
+      | boolean
+      | undefined;
+
     const planReviewFixScope = getScopeLabel(
       "planReviewFix",
       globalCfg,
@@ -1352,6 +1379,12 @@ export async function configCommand(): Promise<void> {
               "  Commit each task separately under /cf-plan autopilot (same as passing --commit-per-task)",
           },
           {
+            name: `Plan branch ${formatScopeLabel(planBranchScope)}${planBranchVal !== undefined ? ` (${planBranchVal})` : ""}`,
+            value: "planBranch",
+            description:
+              "  Before implementing, /cf-plan creates branch <plan-name> in this checkout (same as --branch)",
+          },
+          {
             name: `Plan review fix ${formatScopeLabel(planReviewFixScope)}${planReviewFixVal !== undefined ? ` (${planReviewFixVal})` : ""}`,
             value: "planReviewFix",
             description:
@@ -1441,6 +1474,9 @@ export async function configCommand(): Promise<void> {
         break;
       case "planCommitPerTask":
         await editPlanCommitPerTask(globalCfg, localCfg);
+        break;
+      case "planBranch":
+        await editPlanBranch(globalCfg, localCfg);
         break;
       case "planReviewFix":
         await editPlanReviewFix(globalCfg, localCfg);
