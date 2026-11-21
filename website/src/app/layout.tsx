@@ -1,18 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 import { SITE_DESCRIPTION, SITE_HEADLINE, SITE_TITLE } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 
-const geist = Geist({
+// next/font self-hosts both families at build time: the site makes no request to Google.
+const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
-  variable: "--font-geist",
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-sans",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
   display: "swap",
 });
 
@@ -52,16 +57,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [{ url: "/og.jpg", alt: POSTER_ALT }],
   },
-  alternates: {
-    canonical: "https://cf.coprimal.dev",
-  },
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#18181b" },
-  ],
+  themeColor: "#0e0e10",
 };
 
 export default function RootLayout({
@@ -72,16 +71,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="light"
+      data-theme="dark"
       suppressHydrationWarning
-      className={`${geist.variable} ${geistMono.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable}`}
       data-scroll-behavior="smooth"
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="bg-paper text-ink font-sans antialiased">
-        {children}
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
+        <SiteHeader />
+        <div id="main">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );

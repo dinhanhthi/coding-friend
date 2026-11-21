@@ -2,13 +2,10 @@ export const THEME_KEY = "theme";
 
 export type Theme = "light" | "dark";
 
-/** A valid saved choice wins; otherwise follow the system preference. */
-export function resolveInitialTheme(
-  saved: string | null,
-  prefersDark: boolean,
-): Theme {
+/** A valid saved choice wins; otherwise the site is dark (its main look), whatever the system prefers. */
+export function resolveInitialTheme(saved: string | null): Theme {
   if (saved === "light" || saved === "dark") return saved;
-  return prefersDark ? "dark" : "light";
+  return "dark";
 }
 
 export function nextTheme(t: Theme): Theme {
@@ -23,4 +20,4 @@ export function diagramDarkSrc(src: string): string | null {
 }
 
 /** Inline `<head>` script that sets `<html data-theme>` before first paint (no flash). */
-export const themeInitScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(THEME_KEY)});var d=matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=s==="light"||s==="dark"?s:d?"dark":"light"}catch(e){}})()`;
+export const themeInitScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(THEME_KEY)});document.documentElement.dataset.theme=s==="light"?"light":"dark"}catch(e){}})()`;

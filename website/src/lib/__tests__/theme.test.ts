@@ -8,16 +8,15 @@ import {
   themeInitScript,
 } from "../theme";
 
-test("a valid saved theme wins over the system preference", () => {
-  assert.equal(resolveInitialTheme("light", true), "light");
-  assert.equal(resolveInitialTheme("dark", false), "dark");
+test("a valid saved theme wins", () => {
+  assert.equal(resolveInitialTheme("light"), "light");
+  assert.equal(resolveInitialTheme("dark"), "dark");
 });
 
-test("falls back to the system preference when nothing valid is saved", () => {
-  assert.equal(resolveInitialTheme(null, true), "dark");
-  assert.equal(resolveInitialTheme(null, false), "light");
-  assert.equal(resolveInitialTheme("purple", true), "dark");
-  assert.equal(resolveInitialTheme("", false), "light");
+test("the site is dark until the visitor picks light, whatever the system says", () => {
+  assert.equal(resolveInitialTheme(null), "dark");
+  assert.equal(resolveInitialTheme("purple"), "dark");
+  assert.equal(resolveInitialTheme(""), "dark");
 });
 
 test("nextTheme toggles between light and dark", () => {
@@ -72,7 +71,8 @@ test("themeInitScript applies the same rules as resolveInitialTheme", () => {
   assert.equal(runInitScript("light", true), "light");
   assert.equal(runInitScript("dark", false), "dark");
   assert.equal(runInitScript(null, true), "dark");
-  assert.equal(runInitScript("purple", false), "light");
+  assert.equal(runInitScript(null, false), "dark");
+  assert.equal(runInitScript("purple", false), "dark");
 });
 
 test("themeInitScript swallows storage errors", () => {
