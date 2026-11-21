@@ -9,6 +9,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
 
 2. **Run review** — Once all tasks in the phase reach ✅ DONE, Load `/cf-review --no-fix` (no other args — `--no-fix` keeps `review.fix`/`review.commit` config out of this loop). The uncommitted diff is this phase's work (prior phases are already committed). (On Google Antigravity, cf-review uses the native Coding Friend multi-agent review and ignores the Claude-only `review.withCodex` setting.) Count this as review round 1.
    - **Commit-per-task mode** — the work is already committed, so run `/cf-review <phaseBase>..HEAD` (the phase's commit range) instead. Never pass `--fix`/`--commit` with a range. External reviewers (`review.with*`, e.g. `review.withCodex`) do NOT run on a range target — only the native review covers the phase.
+   - **Plan branch** (frontmatter `branch:` set, not commit-per-task): resolve `<root>` with `git rev-parse --show-toplevel` yourself, then run `/cf-review --no-fix <root>` (the literal absolute path) instead — the default target would include earlier phases' commits. External reviewers do not run on a path target. See Review target in `<plugin-root>/skills/cf-plan/modes/branch.md`.
 
 3. **Read the review status, then parse findings** — cf-review returns bullets under 4 emoji headers plus one status line in 📋 Summary.
 
@@ -31,6 +32,7 @@ When the plan was created with `--auto` (or has `auto: true` in frontmatter), ea
      - **Fix-task failure path** — fix cf-implementer returns `[CF-RESULT: failure]` → STOP autopilot immediately, without consuming another review round. Mark phase ❌ FAILED (big plans: revert README phase row ✅ DONE → ❌ FAILED if already flipped). Surface the failure to user.
      - Otherwise, re-run `/cf-review --no-fix` (next round).
        - **Commit-per-task mode** — first, if `git status --porcelain` is non-empty, `git add -A` and commit `<type>(<scope>): phase <N>/<M> review fixes` (commit rules: step 5). Then re-review the same range: `/cf-review <phaseBase>..HEAD`.
+       - **Plan branch** (not commit-per-task) — re-review the same path target: `/cf-review --no-fix <root>`.
      - Apply the status gate to that review too, before counting: `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot (no commit).
      - Passed the gate with `Review status: COMPLETE` and no Critical/Important left (Suggestions may remain) → exit the fix loop and continue to commit.
      - **Stall guard** (only when `maxRounds` is `0`) — reduce each Critical/Important finding to a key = file + first sentence of the issue. A re-review's key set equals the key set of any earlier review in this loop → no progress: STOP autopilot, mark phase ❌ FAILED (revert README phase row for big plans), surface ALL review outputs and fix attempts, ask user (same as the max-rounds path). Message: `⚠️ Stopped — no progress`. New findings keep the loop going.
@@ -61,7 +63,7 @@ EOF
 - User explicitly interrupts.
 - All phases reach ✅ DONE in plan file.
 
-**Review call**: always pass `--no-fix` to `/cf-review` on the uncommitted target, even when an older plan's embedded contract says "no extra args" — config `review.fix`/`review.commit` must never run inside this loop.
+**Review call**: always pass `--no-fix` to `/cf-review` on the uncommitted target, even when an older plan's embedded contract says "no extra args" — config `review.fix`/`review.commit` must never run inside this loop. Exception: a plan with `branch:` (not commit-per-task) reviews the path target `/cf-review --no-fix <root>` (`<root>` = the literal output of `git rev-parse --show-toplevel`), not the default one.
 
 **Unlimited rounds**: `review.maxRounds: 0` = unlimited with the no-progress stall guard, even when an older plan's embedded contract does not say so.
 
@@ -82,6 +84,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
    - **Commit-per-task mode** (only when frontmatter has `commitPerTask: true`): phase has no ✅ DONE task yet → record fresh `phaseBase=$(git rev-parse HEAD)` before its first task and write `phaseBase: <sha>` to the README frontmatter (rides along in the first task commit); phase already has a ✅ DONE task → reuse frontmatter `phaseBase` (missing → STOP and ask the user for the phase's base commit; never guess). Run `[parallel]` phases sequentially. After each task's `🔄 IN PROGRESS` → `✅ DONE` flip, `git add -A` and commit `<type>(<scope>): phase <N>/<M> task <i>/<K> <task-title>` (`<i>` = task position in this phase, `<K>` = task count in this phase, e.g. `feat(ui): phase 3/4 task 1/5 add toggle`), using the quoted-heredoc form `git commit -m "$(cat <<'EOF' ... EOF)"` (titles may contain backticks). Commit rules: step 5.
 2. After all tasks in the phase reach ✅ DONE, run `/cf-review --no-fix` (no other arguments; `--no-fix` keeps `review.fix`/`review.commit` config out of this loop) — it reviews everything not yet committed, which is this phase's work. This is review round 1.
    - **Commit-per-task mode:** run `/cf-review <phaseBase>..HEAD` instead (never with `--fix`/`--commit`). External reviewers (`review.with*`) do not run on a range target.
+   - **Plan branch** (frontmatter `branch:` set, not commit-per-task): resolve `<root>` with `git rev-parse --show-toplevel` yourself, then run `/cf-review --no-fix <root>` (the literal absolute path) instead — the default target would include earlier phases' commits. External reviewers do not run on a path target.
 3. Read the review status **before** counting findings. Find the single `Review status:` line in the 📋 Summary:
    - `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot, mark the phase ❌ FAILED (and revert the README phase row if applicable), report the coverage the status line names as missing. Do NOT commit. Never infer a clean review from an absence of findings — zero findings only counts when the status says `COMPLETE`.
    - `Review status: COMPLETE` → parse review findings:
@@ -94,6 +97,7 @@ This plan was created with `--auto`. When resuming or continuing this plan, foll
      - Fix cf-implementer returns `[CF-RESULT: failure]` → STOP autopilot immediately (do NOT consume another review round), mark the phase ❌ FAILED (and revert the README phase row if applicable), surface the failure to user.
      - Otherwise, re-run `/cf-review --no-fix`.
        - **Commit-per-task mode:** first, if `git status --porcelain` is non-empty, `git add -A` and commit `<type>(<scope>): phase <N>/<M> review fixes`; then re-review `/cf-review <phaseBase>..HEAD`.
+       - **Plan branch** (not commit-per-task): re-review the same path target, `/cf-review --no-fix <root>`.
      - Apply the same status gate to that review; `PARTIAL`, `FAILED`, missing, or unparseable → STOP autopilot without committing.
      - `Review status: COMPLETE` with no Critical/Important → continue to commit.
      - `maxRounds` is `0` and a re-review reports the same Critical/Important set (file + first sentence of each issue) as any earlier review in this phase → no progress: STOP autopilot, mark phase ❌ FAILED (and revert the README phase row if applicable), report all review outputs to user.

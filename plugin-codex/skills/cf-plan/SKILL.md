@@ -9,7 +9,7 @@ description: >
   bug (use cf-fix), deciding whether to build at all (use $cf-advise), or resuming
   an existing plan (use $cf-plan-resume).
 created: 2026-02-17
-updated: 2026-11-09
+updated: 2026-11-20
 ---
 
 # $cf-plan
@@ -23,6 +23,7 @@ Create an implementation plan for: **$ARGUMENTS**
 - `--auto` — after approval, run all phases (review + fix + commit, no prompts). Combines with any mode. Also on when config `planAuto: true` (local overrides global) unless `--no-auto`.
 - `--no-auto` — force autopilot off for this run, even if `planAuto: true`. Incompatible with `--auto`.
 - `--commit-per-task` / `--no-commit-per-task` — autopilot only: each task commits as `phase N/M task i/K`; review runs once per phase over its commits (no `review.with*` external reviewers). Also on when config `planCommitPerTask: true` (local overrides global) unless `--no-commit-per-task`.
+- `--branch` / `--no-branch` — before implementing, create a branch named after the plan (task-id without the `YYYY-MM-DD-` prefix) in the current checkout. Also on when config `planBranch: true` (local overrides global) unless `--no-branch`.
 - `--inline` (`--no-file`) — no plan file; chat only; Track progress. Incompatible with autopilot (`--auto` or `planAuto`).
 - `--gui` (`--human`; or config `disableGUIPlan: false`; `guiPlanFormat` html|md) — overview at Step 6 when a file is written. Fast: none unless `--gui`.
 - `--model <alias>` — pin cf-planner at Step 3 (`--model <alias>` or `--model=<alias>`).
@@ -42,7 +43,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
 
 ### Step 0.5: Determine Mode
 
-**Config lookup** (used by 1a, 1c, 1e): merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins).
+**Config lookup** (used by 1a, 1c, 1e, 1f): merge global `~/.coding-friend/config.json` + local `.coding-friend/config.json` (local wins).
 
 0. **Resume** — bare `--resume` → print `> ℹ️ Resuming a plan is now \`$cf-plan-resume <plan>\` (not \`$cf-plan --resume\`).` and stop.
 1. **Explicit flag** — `--quick` → `--fast`; honor `--fast` or `--hard`.
@@ -52,6 +53,7 @@ If the block above printed anything, apply only the `## Before`, `## Rules`, and
    1d. **`--model` flag** <!-- cf-plan-model-flag -->
    Accept `--model <name>` (two tokens, e.g. `--model gpt-5.5`) AND `--model=<name>` (one token). **Strip both the flag and the value**. Example: `$cf-plan --model gpt-5.5 Add a healthz endpoint` → remaining task description is exactly `Add a healthz endpoint`. The value is a **Codex model name** (example: `gpt-5.5`). Claude model aliases are not valid on Codex. Do not accept `inherit`. Invalid → print this exact warning then CONTINUE (do NOT stop): `> ⚠️ --model <value> is not a Codex model name. Ignoring it; cf-planner inherits the session model.` If `--fast`/`--quick` is already in `$ARGUMENTS`, print this exact warning then CONTINUE: `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` Auto-detected fast is not known yet — item 4 re-checks after mode is resolved (steps 2–3). `--hard` still dispatches cf-planner. When a valid Codex model name is parsed, it is used at Step 3 unless skipped as fast.
    1e. **Commit per task** — if `$ARGUMENTS` contains both `--commit-per-task` and `--no-commit-per-task` → print `> ⚠️ --commit-per-task cannot be combined with --no-commit-per-task. Pick one.` and stop. `--no-commit-per-task` → false; strip. `--commit-per-task` → true; strip. Else config lookup: true only when `planCommitPerTask` is explicitly `true`. If true but autopilot is off → print `> ⚠️ --commit-per-task only applies under autopilot (only autopilot commits). Ignored.` and treat as false. If true with autopilot, announce: `> 🧩 Commit per task — each task commits as "phase N/M task i/K"; review runs once per phase over its commits.`
+   1f. **Branch** — if `$ARGUMENTS` contains both `--branch` and `--no-branch` → print `> ⚠️ --branch cannot be combined with --no-branch. Pick one.` and stop. `--branch` → branchMode `on`; strip. `--no-branch` → `off`; strip. Else config lookup: `on` only when `planBranch` is explicitly `true`, else `off`. When `on`, announce: `> 🌿 Branch mode — creates branch <name> before implementing.`
 2. **Auto-detect** — 2+ signals. Fast: existing pattern, single module, additive, "just/simple/quick". Hard: multi-module, breaking/schema, security, "refactor/migrate/rewrite", public API.
 3. **Confirm**: 3+ → apply; 2 → ask; mixed → normal. Fast: chat only; 2+ phases → write as normal unless autopilot (always writes).
 4. **`--model` vs resolved fast mode** — after explicit `--fast`/`--quick` or auto-detect: if `--model` was parsed and fast is active, print `> ⚠️ --model bị bỏ qua ở fast mode (Step 3 không dispatch cf-planner).` (skip if 1d already warned); do not pass the model at Step 3.
@@ -110,7 +112,7 @@ Agent-only: tasks, files, verify, phase markers, minimum Context/Assumptions/App
 
 ### Step 7: Offer Implementation
 
-Ask **"Ready to start implementing?"** Yes + autopilot → `modes/autopilot.md` (checkpoints still apply). Else `modes/execute.md` (shared with `$cf-plan-resume`).
+Ask **"Ready to start implementing?"** On yes, branchMode = `on` → Read `${PLUGIN_ROOT}/skills/cf-plan/modes/branch.md` section Setup and follow it first. Then autopilot → `modes/autopilot.md` (checkpoints still apply). Else `modes/execute.md` (shared with `$cf-plan-resume`).
 
 ## Templates
 

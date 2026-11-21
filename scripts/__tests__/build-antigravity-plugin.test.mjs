@@ -342,6 +342,7 @@ test("rewrites cf-plan --model spawn and cf-help for Antigravity", async () => {
   assert.match(plan, /`--model` vs resolved fast mode/);
   assert.match(plan, /<!-- cf-plan-model-flag -->/);
   assert.match(plan, /1e\. \*\*Commit per task\*\*/);
+  assert.match(plan, /1f\. \*\*Branch\*\*/);
   assert.match(plan, /2\. \*\*Auto-detect\*\*/);
   assert.match(plan, /<plugin-root>\/lib\/load-custom-guide\.sh/);
   assert.doesNotMatch(plan, /bash "\.\/(?:skills|lib)\//);

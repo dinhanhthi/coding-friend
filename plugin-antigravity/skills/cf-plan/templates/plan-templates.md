@@ -12,6 +12,7 @@ slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `/cf-plan-
 auto: false # set true when created with --auto or when planAuto defaulted the run
 commitPerTask: false # true when --commit-per-task or planCommitPerTask resolved on under autopilot
 # phaseBase: <sha> — written by autopilot in commit-per-task mode
+# branch: <name> — written at Step 7 when branch mode is on (modes/branch.md)
 status: in-progress # in-progress | done | failed — `cf clean` sweeps only `done` (see modes/execute.md "Plan done")
 ---
 
@@ -85,6 +86,7 @@ slug: YYYY-MM-DD-<slug> # = plan folder name; copy this to mention or `/cf-plan-
 auto: false # set true when created with --auto or when planAuto defaulted the run
 commitPerTask: false # true when --commit-per-task or planCommitPerTask resolved on under autopilot
 # phaseBase: <sha> — written by autopilot in commit-per-task mode
+# branch: <name> — written at Step 7 when branch mode is on (modes/branch.md)
 status: in-progress # in-progress | done | failed — authority; body **Status:** mirrors it (see modes/execute.md "Plan done")
 ---
 

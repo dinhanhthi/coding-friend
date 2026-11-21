@@ -11,7 +11,7 @@ user-invocable: true
 model: haiku
 allowed-tools: [Read, Glob, Grep]
 created: 2026-02-17
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # /cf-help — Coding Friend Help
@@ -51,8 +51,8 @@ Hosts: Claude Code (default), Codex CLI, omp, **Google Antigravity** (`--agent a
 
 - `/cf-advise [decision]` — ⚡⚡ — Advisory interview. `--quick`, `--save`
 - `/cf-ask [question]` — ⚡⚡ — Codebase Q&A → docs/memory/
-- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--no-auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot also from config `planAuto: true` (local overrides global) unless `--no-auto`. Autopilot review-fix cap: `review.maxRounds` (default 5; `0` = unlimited until no progress). `--commit-per-task` / `--no-commit-per-task` (or config `planCommitPerTask: true`, autopilot only): commit each task as `phase N/M task i/K <title>`, review once per phase over its commits, `[parallel]` phases run sequentially. Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
-- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors that plan's `auto: true` + `## AUTOPILOT` section. Does **not** read config `planAuto` / `planCommitPerTask`; honors frontmatter `commitPerTask: true` (`--commit-per-task` / `--no-commit-per-task` rewrite it).
+- `/cf-plan [task]` — ⚡⚡ — Phased plans. `--fast`/`--quick`, `--hard`, `--auto`, `--no-auto`, `--inline`/`--no-file`, `--gui`/`--human`, `--model <alias>` pin the model for cf-planner at the brainstorm step. Autopilot also from config `planAuto: true` (local overrides global) unless `--no-auto`. Autopilot review-fix cap: `review.maxRounds` (default 5; `0` = unlimited until no progress). `--commit-per-task` / `--no-commit-per-task` (or config `planCommitPerTask: true`, autopilot only): commit each task as `phase N/M task i/K <title>`, review once per phase over its commits, `[parallel]` phases run sequentially. `--branch` / `--no-branch` (or config `planBranch: true`, local overrides global): before implementing, create a branch named after the plan (task-id minus `YYYY-MM-DD-`, e.g. `add-login`) in the current checkout and record `branch:` in the plan; never merged, pushed, or deleted automatically; both flags together → refused. Normal/hard mode also writes `brief.md` (request, Q&A, assumptions) for `/cf-plan-review`.
+- `/cf-plan-resume <plan>` — ⚡⚡ — Resume a saved plan. Honors that plan's `auto: true` + `## AUTOPILOT` section. Does **not** read config `planAuto` / `planCommitPerTask` / `planBranch`; honors frontmatter `commitPerTask: true` (`--commit-per-task` / `--no-commit-per-task` rewrite it). Switches back to the plan's frontmatter `branch:` before running tasks.
 - `/cf-plan-review [plan]` — ⚡⚡ — Review a saved plan with a fresh in-session reviewer before implementing. `--codex`, `--claude`, `--cursor`, `--grok` add external reviewers in parallel (the flag matching the current host is skipped); `--gemini` was removed (Google does not allow an agent to run Gemini headless). `--fix` (`--inline`) applies 🚨/⚠️ immediately and re-reviews until clean (≤ `review.maxRounds`, `0` = unlimited); config `planReviewFix: true` (local overrides global) makes that the default, `--no-fix` forces off; otherwise offers to apply. Writes `review.md`.
 - `/cf-later <text>` — ⚡ — Defer a side-task to `docs/later/` from a forked subagent (one-line result)
 - `/cf-later-do [item]` — ⚡⚡ — Resolve `docs/later/` via `/cf-fix` or `/cf-plan`
