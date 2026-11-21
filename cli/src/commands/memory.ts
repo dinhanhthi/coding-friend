@@ -1119,16 +1119,12 @@ export async function memoryInitWizard(
     `Tip: Run ${chalk.cyan("/cf-scan")} in Claude Code to populate memory with project knowledge.`,
   );
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
-  log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`,
-  );
+  log.dim(`  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`);
 }
 
 function printInitDone(): void {
   log.dim(`  Change settings anytime: ${chalk.cyan("cf memory config")}`);
-  log.dim(
-    `  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`,
-  );
+  log.dim(`  Documentation: ${chalk.cyan("https://cf.coprimal.dev/#memory")}`);
 }
 
 async function setupMemoryMcp(): Promise<void> {

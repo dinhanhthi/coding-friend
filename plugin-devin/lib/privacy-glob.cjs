@@ -23,7 +23,10 @@ function ere(src) {
   });
   return new RegExp(js, "i");
 }
-const list = (E, k) => String(E[k] || "").split("\n").filter(Boolean);
+const list = (E, k) =>
+  String(E[k] || "")
+    .split("\n")
+    .filter(Boolean);
 function one(E, k) {
   if (!E[k]) throw new Error("missing " + k);
   return ere(E[k]);
@@ -84,7 +87,8 @@ function classTest(body, neg) {
   for (let i = 0; i < body.length; i++) {
     const end = unitEnd(body, i);
     if (end > 0) {
-      const re = body[i + 1] === ":" ? CLASSES[body.slice(i + 2, end - 2)] : null;
+      const re =
+        body[i + 1] === ":" ? CLASSES[body.slice(i + 2, end - 2)] : null;
       if (!re) return () => true;
       parts.push((ch) => re.test(ch));
       i = end - 1;
@@ -184,7 +188,8 @@ function createMatcher(E, opts) {
   const CODE_EXT = one(E, "CF_PRIVACY_CODE_EXT");
   const SECRET_STEM = one(E, "CF_PRIVACY_SECRET_STEM");
   const DOC_EXT = one(E, "CF_PRIVACY_DOC_EXT");
-  if (!sensitive.length || !globNames.length) throw new Error("missing patterns");
+  if (!sensitive.length || !globNames.length)
+    throw new Error("missing patterns");
 
   // A name that matches no SENSITIVE row (*secret*) is a keyword name: a
   // glob segment ending in a source extension (*secret*.ts) is exempt from
@@ -232,7 +237,8 @@ function createMatcher(E, opts) {
         if (n.keyword && codeTail) {
           if (DOC_EXT.test(tail)) continue;
           const S = globTokens(seg.slice(0, last + tail.lastIndexOf(".")));
-          for (const s of n.stems) if (overlap(S, s.tokens, strict) >= 2) return s.name;
+          for (const s of n.stems)
+            if (overlap(S, s.tokens, strict) >= 2) return s.name;
           continue;
         }
         const need = n.dot && lead && !strict ? 1 : 2;
